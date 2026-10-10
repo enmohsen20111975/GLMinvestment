@@ -268,13 +268,16 @@ def send_photo(chat_id: int, photo_path: Path, caption: str, reply_markup: Optio
     """إرسال صورة وشارت عالي الدقة مع التسمية التوضيحية والأزرار التفاعلية."""
     url = f"{TELEGRAM_API}/sendPhoto"
     
-    # ضمان ألا تتجاوز التسمية 1024 حرفاً حسب قيود تليجرام
-    if len(caption) > 1000:
-        caption = caption[:995] + "..."
-
+    # CHART-FIX (2026-10-10): المشكلة كانت إن الرسالة بتتقصّ عند 1000 حرف
+    # وده بيكسر HTML tags → Telegram بيرفض الصورة (400 Bad Request)
+    # الحل: نبعت الصورة مع caption قصير، وبعدين نبعت التحليل الكامل كرسالة منفصلة
+    
+    # caption قصير للصورة (تحت 200 حرف — آمن)
+    short_caption = f"📊 شارت سهم {caption.split('—')[0].strip() if '—' in caption else caption[:80]}"
+    
     data = {
         "chat_id": chat_id,
-        "caption": caption,
+        "caption": short_caption[:200],
         "parse_mode": "HTML"
     }
     if reply_markup:
@@ -283,7 +286,7 @@ def send_photo(chat_id: int, photo_path: Path, caption: str, reply_markup: Optio
     try:
         with open(photo_path, 'rb') as f:
             files = {'photo': f}
-            r = requests.post(url, data=data, files=files, timeout=25)
+            r = requests.post(url, data=data, files=files, timeout=30)
             res = r.json()
             if not res.get('ok'):
                 log.warning(f"فشل إرسال الصورة عبر sendPhoto: {res}")
@@ -936,8 +939,14 @@ def send_stock_analysis_response(
         except Exception:
             pass
 
-    # 4. إذا فشلت الصورة نرسل التحليل كنص أنيق
-    if not photo_sent:
+    # 4. CHART-FIX (2026-10-10):
+    # لو الصورة ات send → ابعت التحليل الكامل كرسالة منفصلة (text message)
+    # لو الصورة فشلت → ابعت التحليل كنص أنيق (الـ flow القديم)
+    if photo_sent:
+        # الصورة اتبعتت بنجاح → ابعت التحليل الكامل كرسالة نصية منفصلة
+        send_message(chat_id, msg, reply_markup=kb)
+    else:
+        # الصورة فشلت → ابعت التحليل كنص أنيق فقط
         send_message(chat_id, msg, reply_markup=kb)
 
 # ─────────────────────────────────────────────────────────────────────────────
