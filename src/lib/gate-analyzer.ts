@@ -18,6 +18,8 @@
  */
 
 import { detectBBSqueeze, type BBSqueezeResult } from '@/lib/dynamic-analysis-engine';
+import { getMarketProfile } from '@/lib/market-profiles';
+import type { MarketType } from '@/lib/store';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,6 +51,13 @@ export interface GateAnalysisInput {
   bollingerWidthPct?: number;
   /** Recent BB width history for squeeze trend (optional) */
   bollingerWidthHistory?: number[];
+  /**
+   * السوق اللي السهم بينتمي ليه — Rule 27/29 fix.
+   * قبل كده: close>1.0 ثابت كان بيرفض penny stocks US + micro-cap crypto.
+   * دلوقتي: priceFloor بيتحدد حسب MarketProfile (CRYPTO=0.000001، US=1.0، EGX=0.5).
+   * لو مش متاح → fallback لـ EGX profile (محافظظ على السلوك التاريخي).
+   */
+  market?: MarketType;
 }
 
 export interface GateResult {
@@ -283,14 +292,25 @@ function evaluateGate1(
   input: GateAnalysisInput,
   config: RegimeConfig
 ): GateResult {
-  const passed = input.volume > config.minVolumeThreshold && input.close > 1.0;
+  // RULE-27 MARKET-AWARE: price floor بيتحدد حسب MarketProfile (مش 1.0 ثابت).
+  // قبل كده: BTC=$50K و AAPL=$190 وافوا، بس DOGE=$0.40 فشل، و أي EGX penny stock فشل.
+  // كمان relative volume check: لو volume مطلق صغير بس relative عالي (أكبر من متوسط 20 يوم)
+  // → السهم سيوله كافية (Rule 29: سيولة نسبية مش مطلقة).
+  const profile = input.market ? getMarketProfile(input.market) : null;
+  const priceFloor = profile?.priceFloor ?? 1.0;
+  const relativeVol = input.avgVolume20 > 0 ? input.volume / input.avgVolume20 : 0;
+  // absolute threshold (قديم) OR relative ≥ 1.0 (جديد — يسمح بأسهم صغيرة شغّالة)
+  const volumeOk = input.volume > config.minVolumeThreshold || relativeVol >= 1.0;
+  const priceOk = input.close > priceFloor;
+  const passed = volumeOk && priceOk;
+  const floorLabel = priceFloor >= 1 ? priceFloor.toFixed(2) : priceFloor.toExponential(2);
   return {
     passed,
     name: "Liquidity",
     nameAr: "السيولة",
     reason: passed
-      ? `Volume ${input.volume.toLocaleString()} > ${config.minVolumeThreshold.toLocaleString()} threshold, price ${input.close.toFixed(2)} > 1.0`
-      : `Volume ${input.volume.toLocaleString()} ${input.volume <= config.minVolumeThreshold ? `≤ ${config.minVolumeThreshold.toLocaleString()} threshold` : "OK"}${input.close <= 1.0 ? `, price ${input.close.toFixed(2)} ≤ 1.0` : ""}`,
+      ? `Volume ${input.volume.toLocaleString()} > ${config.minVolumeThreshold.toLocaleString()} threshold (or relative ${relativeVol.toFixed(2)}x avg20), price ${input.close.toFixed(2)} > ${floorLabel}`
+      : `Volume ${input.volume.toLocaleString()} ${!volumeOk ? `≤ ${config.minVolumeThreshold.toLocaleString()} threshold (relative ${relativeVol.toFixed(2)}x)` : "OK"}${!priceOk ? `, price ${input.close.toFixed(2)} ≤ ${floorLabel}` : ""}`,
     reasonAr: passed
       ? `الحجم ${input.volume.toLocaleString()} أعلى من الحد ${config.minVolumeThreshold.toLocaleString()}، السعر ${input.close.toFixed(2)}`
       : `الحجم ${input.volume.toLocaleString()} أقل من الحد ${config.minVolumeThreshold.toLocaleString()}`,

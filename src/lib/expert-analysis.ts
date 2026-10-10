@@ -34,6 +34,9 @@
  *   const analysis = generateExpertAnalysis(stockData);
  */
 
+import { currencyUnitAr } from '@/lib/market-profiles';
+import type { MarketType } from '@/lib/store';
+
 export interface StockDataForAnalysis {
   ticker: string;
   name?: string | null;
@@ -405,7 +408,7 @@ function analyzeROE(roe: number | null): ExpertAnalysis['fundamental']['roe'] {
 
 // ─── EPS Analysis ───────────────────────────────────────────────────────
 
-function analyzeEPS(eps: number | null, price: number | null): ExpertAnalysis['fundamental']['eps'] {
+function analyzeEPS(eps: number | null, price: number | null, currencyAr: string = 'جنيه'): ExpertAnalysis['fundamental']['eps'] {
   if (eps === null) {
     return {
       value: null,
@@ -418,11 +421,11 @@ function analyzeEPS(eps: number | null, price: number | null): ExpertAnalysis['f
 
   if (price !== null && price > 0) {
     const impliedPE = price / eps;
-    analysis = `EPS of ${eps.toFixed(2)} EGP means each share earns ${eps.toFixed(2)} EGP annually. At current price ${price.toFixed(2)}, this implies a P/E of ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'Reasonable valuation.' : impliedPE < 25 ? 'Moderate valuation.' : 'Premium valuation — requires growth justification.'}`;
-    analysis_ar = `ربحية السهم ${eps.toFixed(2)} جنيه تعني أن كل سهم يحقق ${eps.toFixed(2)} جنيه سنوياً. عند السعر الحالي ${price.toFixed(2)}، يعني ذلك مكرر ربحية ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'تقييم معقول.' : impliedPE < 25 ? 'تقييم متوسط.' : 'تقييم مرتفع — يتطلب مبرر نمو.'}`;
+    analysis = `EPS of ${eps.toFixed(2)} means each share earns ${eps.toFixed(2)} annually. At current price ${price.toFixed(2)}, this implies a P/E of ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'Reasonable valuation.' : impliedPE < 25 ? 'Moderate valuation.' : 'Premium valuation — requires growth justification.'}`;
+    analysis_ar = `ربحية السهم ${eps.toFixed(2)} ${currencyAr} تعني أن كل سهم يحقق ${eps.toFixed(2)} ${currencyAr} سنوياً. عند السعر الحالي ${price.toFixed(2)}، يعني ذلك مكرر ربحية ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'تقييم معقول.' : impliedPE < 25 ? 'تقييم متوسط.' : 'تقييم مرتفع — يتطلب مبرر نمو.'}`;
   } else {
-    analysis = `EPS of ${eps.toFixed(2)} EGP reflects per-share earnings. Positive EPS indicates profitability. Compare with historical EPS to assess growth trajectory.`;
-    analysis_ar = `ربحية السهم ${eps.toFixed(2)} جنيه تعكس الأرباح لكل سهم. ربحية موجبة تشير إلى تحقيق أرباح. قارن مع ربحية السهم التاريخية لتقييم مسار النمو.`;
+    analysis = `EPS of ${eps.toFixed(2)} reflects per-share earnings. Positive EPS indicates profitability. Compare with historical EPS to assess growth trajectory.`;
+    analysis_ar = `ربحية السهم ${eps.toFixed(2)} ${currencyAr} تعكس الأرباح لكل سهم. ربحية موجبة تشير إلى تحقيق أرباح. قارن مع ربحية السهم التاريخية لتقييم مسار النمو.`;
   }
 
   return { value: eps, analysis, analysis_ar };
@@ -576,6 +579,11 @@ function assessRisk(
 // ─── Main: Generate Expert Analysis ────────────────────────────────────
 
 export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalysis {
+  // RULE-27/29 MARKET-AWARE: currency unit بتتجب من MarketProfile (مش "جنيه" hard-coded).
+  // قبل كده: تحليل AAPL كان بيقول "نقطة الدخول: 190 جنيه" = كذب (Rule 27).
+  // دلوقتي: currencyAr بيتحدد حسب data.market (EGX→جنيه، US→دولار، CRYPTO→دولار...).
+  const marketRaw = (data.market ?? 'EGX') as MarketType;
+  const currencyAr = currencyUnitAr(marketRaw);
   const price = safeNum(data.current_price);
   const rsi = safeNum(data.rsi);
   const ma50 = safeNum(data.ma_50);
@@ -665,7 +673,7 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
   // Fundamental analysis
   const peAnalysis = analyzePE(pe);
   const roeAnalysis = analyzeROE(roe);
-  const epsAnalysis = analyzeEPS(eps, price);
+  const epsAnalysis = analyzeEPS(eps, price, currencyAr);
   const pbAnalysis = analyzePB(pb);
   const divAnalysis = analyzeDividend(divYield);
 
@@ -683,17 +691,17 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
 ═══════════════════════════════════════
 
 🎯 **التوصية**: ${rec_ar}
-📍 **السعر الحالي**: ${fmt(price)} جنيه
+📍 **السعر الحالي**: ${fmt(price)} ${currencyAr}
 🏦 **القطاع**: ${sector}
 
 ━━━ **نقاط الدخول والخروج** ━━━
-🟢 **نقطة الدخول**: ${fmt(entry)} جنيه
+🟢 **نقطة الدخول**: ${fmt(entry)} ${currencyAr}
    المبرر: ${entry === support ? 'قرب مستوى الدعم القوي' : entry === ma50 ? 'قرب المتوسط المتحرك 50' : 'مستوى دخول فني محسوب'}
-🎯 **الهدف الأول**: ${fmt(calcTarget1)} جنيه (${fmtPct(target1Pct)})
+🎯 **الهدف الأول**: ${fmt(calcTarget1)} ${currencyAr} (${fmtPct(target1Pct)})
    المبرر: ${calcTarget1 === resistance ? 'عند مستوى المقاومة القوية' : 'هدف فني محسوب بناءً على R:R'}
-🚀 **الهدف الثاني**: ${fmt(calcTarget2)} جنيه (${fmtPct(target2Pct)})
+🚀 **الهدف الثاني**: ${fmt(calcTarget2)} ${currencyAr} (${fmtPct(target2Pct)})
    المبرر: هدف موسع بعد اختراق المقاومة
-🔴 **وقف الخسارة**: ${fmt(calcStop)} جنيه (${fmtPct(stopPct)})
+🔴 **وقف الخسارة**: ${fmt(calcStop)} ${currencyAr} (${fmtPct(stopPct)})
    المبرر: ${calcStop === support ? 'تحت مستوى الدعم' : 'وقف خسارة فني (5% تحت الدخول)'}
 ⚖️ **نسبة المخاطرة/العائد**: ${rr ? rr.toFixed(2) : '—'} (المستهدف ≥ 2.0)
 
@@ -722,7 +730,7 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
 🏦 **العائد على حقوق الملكية (ROE)**: ${fmt(roe, 1)}% — ${roeAnalysis.rating_ar}
    ${roeAnalysis.analysis_ar}
 
-💵 **ربحية السهم (EPS)**: ${fmt(eps)} جنيه
+💵 **ربحية السهم (EPS)**: ${fmt(eps)} ${currencyAr}
    ${epsAnalysis.analysis_ar}
 
 📊 **مكرر القيمة الدفترية (P/B)**: ${fmt(pb, 2)}x — ${pbAnalysis.rating_ar}

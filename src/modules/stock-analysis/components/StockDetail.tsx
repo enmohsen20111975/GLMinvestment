@@ -257,12 +257,12 @@ function buildStockInfographicDataFromStock(
   // لو unified API مش متاح → sentimentLabel = '— بيانات غير متاحة' (لا fabrication).
   const unifiedScore = unifiedData?.canonical?.master_score ?? null;
   const effectiveScore = unifiedScore ?? score;
+  // RULE-73 UNIFY: استخدم canonical classifySignal بدل thresholds محلية 75/60/45/30.
+  // قبل كده: fallback بيستخدم 75/60/45/30 المتعارضة مع canonical 78/65/55/40/25 = تناقض.
   const sentimentLabel = unifiedData?.canonical?.signal_ar
-    ?? (effectiveScore >= 75 ? 'شراء قوي'
-        : effectiveScore >= 60 ? 'شراء'
-        : effectiveScore >= 45 ? 'محايد'
-        : effectiveScore >= 30 ? 'بيع'
-        : 'بيع قوي');
+    ?? (effectiveScore !== null && effectiveScore !== undefined && !Number.isNaN(effectiveScore)
+        ? signalAr(classifySignal(effectiveScore))
+        : '— بيانات غير متاحة');
 
   // Rating — map score to stars + verdict label
   const starsCount =

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend'
+import { classifySignal, signalAr } from '@/lib/canonical-signal'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,17 +111,14 @@ export async function POST(req: NextRequest) {
         const rawScore = analysis.master_score ?? null;
         const finalScore = rawScore === null ? null : Math.max(10, Math.min(95, rawScore + scoreBoost));
 
-        // AUDIT-FIX: لو مفيش score → signal = null (مش HOLD افتراضي)
+        // RULE-73 UNIFY: استخدم canonical classifySignal (78/65/55/40/25) بدل 75/60/50 المتعارضة.
+        // قبل كده: نفس السهم كان بيعطي BUY هنا و ACCUMULATE في StockDetail = تناقض يكسر الثقة.
         let signal: string | null = null;
         let signal_ar: string | null = null;
         if (finalScore !== null) {
-          signal = 'HOLD'; signal_ar = 'احتفاظ';
-          if (finalScore >= 75) { signal = 'STRONG_BUY'; signal_ar = 'شراء قوي' }
-          else if (finalScore >= 60) { signal = 'BUY'; signal_ar = 'شراء' }
-          else if (finalScore >= 50) { signal = 'ACCUMULATE'; signal_ar = 'تجميع' }
-          else if (finalScore <= 25) { signal = 'STRONG_SELL'; signal_ar = 'بيع قوي' }
-          else if (finalScore <= 40) { signal = 'SELL'; signal_ar = 'بيع' }
-          else if (finalScore < 50) { signal = 'REDUCE'; signal_ar = 'تخفيف' }
+          const canonical = classifySignal(finalScore);
+          signal = canonical;
+          signal_ar = signalAr(canonical);
         }
 
         const result = {
@@ -288,14 +286,10 @@ export async function POST(req: NextRequest) {
           const scoreBoost = personaProfile ? personaProfile.score_boost : 0
           const finalScore = Math.max(10, Math.min(95, (analysis.master_score || 50) + scoreBoost))
 
-          let signal = 'HOLD'
-          let signal_ar = 'احتفاظ'
-          if (finalScore >= 75) { signal = 'STRONG_BUY'; signal_ar = 'شراء قوي' }
-          else if (finalScore >= 60) { signal = 'BUY'; signal_ar = 'شراء' }
-          else if (finalScore >= 50) { signal = 'ACCUMULATE'; signal_ar = 'تجميع' }
-          else if (finalScore <= 25) { signal = 'STRONG_SELL'; signal_ar = 'بيع قوي' }
-          else if (finalScore <= 40) { signal = 'SELL'; signal_ar = 'بيع' }
-          else if (finalScore < 50) { signal = 'REDUCE'; signal_ar = 'تخفيف' }
+          // RULE-73 UNIFY: canonical classifySignal (78/65/55/40/25) — لا thresholds محلية.
+          const canonical = classifySignal(finalScore);
+          const signal = canonical;
+          const signal_ar = signalAr(canonical);
 
           comparison[p.id] = {
             persona_ar: p.name_ar,
