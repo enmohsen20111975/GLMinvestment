@@ -407,7 +407,14 @@ module.exports = {
         MIN_IMPORTANCE_SCORE: process.env.MIN_IMPORTANCE_SCORE || '55',
         MAX_NEWS_PER_BATCH: process.env.MAX_NEWS_PER_BATCH || '20',
         ENABLE_EGYPTIAN_SOURCES: process.env.ENABLE_EGYPTIAN_SOURCES || '0',
-        // Forward Telegram credentials (used by TelegramCollector when present).
+        TELEGRAM_WEB_ENABLED: process.env.TELEGRAM_WEB_ENABLED || '0',
+        TELEGRAM_COLLECTOR_ENABLED: process.env.TELEGRAM_COLLECTOR_ENABLED || '0',
+        TG_MIN_IMPORTANCE: process.env.TG_MIN_IMPORTANCE || '85',
+        TG_MAX_PER_BATCH: process.env.TG_MAX_PER_BATCH || '1',
+        TG_REQUIRE_TICKERS: process.env.TG_REQUIRE_TICKERS || '1',
+        TG_MAX_PER_DAY: process.env.TG_MAX_PER_DAY || '3',
+        TG_COOLDOWN_MINUTES: process.env.TG_COOLDOWN_MINUTES || '60',
+        // Forward Telegram credentials
         TELEGRAM_API_ID: process.env.TELEGRAM_API_ID || '',
         TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH || '',
         TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',

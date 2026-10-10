@@ -101,6 +101,7 @@ import { PlatformPerformanceView } from './platform-performance/PlatformPerforma
 import { NewsManagementTab as NewsManagementTabComponent } from './NewsManagementTab';
 import { BacktestTab } from './BacktestTab';
 import { DbBackupPanel } from './DbBackupPanel';
+import { GitHubFileManager } from './GitHubFileManager';
 import { SystemMonitorPanel } from './SystemMonitorPanel';
 import { UserManagementPanel } from './UserManagementPanel';
 
@@ -129,6 +130,7 @@ import { TelegramPredictionsTab } from './TelegramPredictionsTab';
 import { SystemHealthCard } from './SystemHealthCard';
 // Task 31-B (Engine Monitor Battalion) — unified engine control room.
 import { EngineControlRoomTab } from './EngineControlRoomTab';
+import { InstapayAdminTab } from './InstapayAdminTab';
 
 // ============================================================================
 // Phase 3 — Next.js Bundle Diet (Lazy Loading Heavy Components)
@@ -395,9 +397,11 @@ type AdminTab =
   | 'backtest'
   | 'users'
   | 'user-management'
+  | 'instapay'
   | 'telegram'
   | 'reports'
   | 'databases'
+  | 'git-files'
   | 'db-backup'
   | 'system-control'
   | 'system-monitor'
@@ -1042,6 +1046,7 @@ export function AdminView() {
       accent: 'border-sky-500/40 bg-sky-500/5',
       tabs: [
         { id: 'databases', label: 'قواعد البيانات', icon: <Database className="w-3.5 h-3.5" />, desc: 'إدارة DBs' },
+        { id: 'git-files', label: '🐙 ملفات GitHub', icon: <GitBranch className="w-3.5 h-3.5" />, desc: 'عرض + حذف + تتبع' },
         { id: 'db-backup', label: 'النسخ الاحتياطي', icon: <Upload className="w-3.5 h-3.5" />, desc: 'backup/restore' },
         { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" />, desc: 'scraper + sync + cron' },
         { id: 'news-control', label: 'إدارة الأخبار', icon: <Newspaper className="w-3.5 h-3.5" />, desc: 'أخبار + مصادر' },
@@ -1059,6 +1064,7 @@ export function AdminView() {
       tabs: [
         { id: 'user-management', label: 'إدارة المستخدمين', icon: <Users className="w-3.5 h-3.5" />, desc: 'CRUD + باقات' },
         { id: 'pricing', label: 'التسعير + البوابات', icon: <DollarSign className="w-3.5 h-3.5" />, desc: 'plans + 7 paywall gates' },
+        { id: 'instapay', label: 'دفع إنستاباي 💳', icon: <Coins className="w-3.5 h-3.5" />, desc: 'إثباتات الدفع + التفعيل الفوري' },
         { id: 'feedback', label: 'آراء المستخدمين', icon: <MessageSquareText className="w-3.5 h-3.5" />, count: feedbackCount, desc: 'ملاحظات + شكاوى' },
         // Task ADMIN-CLEANUP: أخفينا 'users' (تحليلات عرضية) + 'promo-codes' (عرضي)
       ],
@@ -1809,6 +1815,11 @@ export function AdminView() {
         <PricingEditorTab />
       )}
 
+      {/* ==================== INSTAPAY ADMIN TAB ==================== */}
+      {activeTab === 'instapay' && (
+        <InstapayAdminTab />
+      )}
+
       {/* FIX-P3-P5-P6 (Group P6 — Fix 7): 'behavior' tab removed.
           The inline analytics table was unreachable from ADMIN_HUBS
           nav — analytics live in the 'users' tab now. */}
@@ -1869,6 +1880,11 @@ export function AdminView() {
       {/* ==================== DATABASES TAB (Full Database Manager) ==================== */}
       {activeTab === 'databases' && (
         <DatabaseManagerFull />
+      )}
+
+      {/* ==================== GITHUB FILES MANAGER TAB (NEW — 2026-10-10) ==================== */}
+      {activeTab === 'git-files' && (
+        <GitHubFileManager />
       )}
 
       {/* ==================== DB BACKUP TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}

@@ -101,10 +101,19 @@ export async function PATCH(
     // Build update data
     const updateData: any = {};
 
+    let targetTier: string | null = null;
     if (role) {
-      // Map role to subscription_tier
-      updateData.subscription_tier = role === 'admin' ? 'admin' : 
-                                     role === 'premium' ? 'premium' : 'free';
+      const { PAID_TIERS } = await import('@/lib/subscription-gate');
+      const normalizedRole = String(role).toLowerCase().trim();
+      targetTier = normalizedRole === 'admin' ? 'admin' :
+                   PAID_TIERS.has(normalizedRole) ? normalizedRole :
+                   normalizedRole === 'premium' ? 'premium' :
+                   normalizedRole === 'user' || normalizedRole === 'free' ? 'free' : normalizedRole;
+
+      updateData.subscription_tier = targetTier;
+      if (PAID_TIERS.has(targetTier)) {
+        updateData.trial_ends_at = null; // Clear trial since user is upgraded
+      }
     }
 
     if (status) {
@@ -151,6 +160,55 @@ export async function PATCH(
       },
     });
 
+    // If tier was updated, ensure UserSubscription table reflects active state and cache is cleared
+    if (targetTier) {
+      try {
+        const { PAID_TIERS, invalidateSubStatusCache } = await import('@/lib/subscription-gate');
+        const { randomUUID } = await import('crypto');
+
+        if (PAID_TIERS.has(targetTier)) {
+          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          const existingSub = await db.userSubscription.findFirst({ where: { user_id: id } });
+          if (existingSub) {
+            await db.userSubscription.update({
+              where: { id: existingSub.id },
+              data: {
+                plan_id: targetTier,
+                status: 'active',
+                expires_at: expiresAt,
+                payment_method: 'admin_grant',
+                started_at: new Date().toISOString(),
+              },
+            });
+          } else {
+            await db.userSubscription.create({
+              data: {
+                id: randomUUID(),
+                user_id: id,
+                plan_id: targetTier,
+                status: 'active',
+                expires_at: expiresAt,
+                payment_method: 'admin_grant',
+                started_at: new Date().toISOString(),
+              },
+            });
+          }
+        } else if (targetTier === 'free') {
+          const existingSub = await db.userSubscription.findFirst({ where: { user_id: id } });
+          if (existingSub) {
+            await db.userSubscription.update({
+              where: { id: existingSub.id },
+              data: { status: 'cancelled' },
+            });
+          }
+        }
+
+        invalidateSubStatusCache(id);
+      } catch (subErr) {
+        console.warn('[PATCH /api/admin/users/[id]] UserSubscription sync warning:', subErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       user: {
@@ -159,7 +217,7 @@ export async function PATCH(
         username: user.username,
         name: user.name,
         role: user.subscription_tier === 'admin' ? 'admin' : 
-              user.subscription_tier === 'premium' ? 'premium' : 'user',
+              user.subscription_tier !== 'free' ? user.subscription_tier : 'user',
         status: user.is_active ? 'active' : 'inactive',
         updatedAt: user.updated_at,
       },

@@ -200,6 +200,17 @@ const SUB_STATUS_CACHE_MAX = 10_000;
 const subStatusCache = new Map<string, { active: boolean; ts: number }>();
 
 /**
+ * Invalidate in-memory subscription status cache when admin updates a user or payment is approved.
+ */
+export function invalidateSubStatusCache(userId?: string): void {
+  if (userId) {
+    subStatusCache.delete(userId);
+  } else {
+    subStatusCache.clear();
+  }
+}
+
+/**
  * Look up the user's UserSubscription row and return whether it is still
  * active (expires_at > now). Fail-open semantics (Rule 50):
  *   - No subscription row → assume lifetime/grandfathered → return true.
