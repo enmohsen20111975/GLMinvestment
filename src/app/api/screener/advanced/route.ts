@@ -80,10 +80,16 @@ export async function GET(req: NextRequest) {
     const fs = require('fs');
     const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
     if (!fs.existsSync(stocksDbPath)) {
-      return NextResponse.json(
-        { success: false, error: 'stocks.db not found' },
-        { status: 500 }
-      );
+      // FIX (FLUTTER-PROD-5): return 200 + empty array بدل 500
+      return NextResponse.json({
+        success: true,
+        source: 'unavailable',
+        stocks: [],
+        count: 0,
+        sectors: [],
+        filters_applied: { market },
+        message: 'قاعدة بيانات الأسهم غير متاحة حالياً',
+      }, { status: 200 });
     }
     const Database = require('better-sqlite3');
     const db = new Database(stocksDbPath, { readonly: true });
@@ -422,13 +428,16 @@ export async function GET(req: NextRequest) {
     }, screenerLocked));
   } catch (e) {
     console.error('[screener:advanced]', e);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'internal_error',
-      },
-      { status: 500 }
-    );
+    // FIX (FLUTTER-PROD-5): return 200 + empty array بدل 500
+    return NextResponse.json({
+      success: true,
+      source: 'unavailable',
+      stocks: [],
+      count: 0,
+      sectors: [],
+      filters_applied: {},
+      message: 'تعذر الوصول لقاعدة بيانات الأسهم — يرجى المحاولة لاحقاً',
+    });
   }
 }
 
