@@ -748,9 +748,9 @@ export function SimulationView() {
     const q = searchQuery.toLowerCase();
     return stocks.filter(
       (s) =>
-        s.ticker.toLowerCase().includes(q) ||
-        s.name_ar.includes(q) ||
-        s.sector.includes(q)
+        (s.ticker || '').toLowerCase().includes(q) ||
+        (s.name_ar ?? '').includes(q) ||
+        (s.sector ?? '').includes(q)
     );
   }, [stocks, searchQuery]);
 

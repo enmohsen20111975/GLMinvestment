@@ -167,8 +167,8 @@ export function StockSelector({
     return validStocks.filter((stock) => {
       return (
         stock.ticker.toLowerCase().includes(q) ||
-        stock.name.toLowerCase().includes(q) ||
-        stock.name_ar.includes(q)
+        (stock.name ?? '').toLowerCase().includes(q) ||
+        (stock.name_ar ?? '').includes(q)
       );
     }).slice(0, 30);
   }, [hasLocalStocks, stocks, serverResults, debouncedQuery]);

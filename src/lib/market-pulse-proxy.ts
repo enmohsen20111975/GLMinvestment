@@ -31,7 +31,10 @@ export async function marketPulseProxy(req: NextRequest): Promise<NextResponse> 
 
     const res = await fetch(targetUrl, options);
     const data = await res.json();
-    return NextResponse.json(data);
+    // BUG 7 FIX (FIX-A-API): القديم كان بيرجّع NextResponse.json(data) من غير
+    // status arg — فـ Python 5xx كان بيرجع كـ HTTP 200 للعميل، وبيكسر الـ client
+    // error handling. الحل: نمرّر الـ upstream status code زيه ما هو.
+    return NextResponse.json(data, { status: res.status });
   } catch (e) {
     console.error('[marketPulseProxy]', e);
     return NextResponse.json({

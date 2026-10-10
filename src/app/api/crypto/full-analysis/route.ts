@@ -138,7 +138,14 @@ async function resolveCoinId(symbol: string): Promise<string | null> {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const ticker = (searchParams.get('ticker') || 'BTC').toUpperCase();
+  // BUG 2 FIX (FIX-A-API): القديم كان بيقرأ `ticker` فقط — فلما العميل يبعت
+  // `?symbol=ETH` (زي ما Flutter/الـ QA بيعملوا) كان بيتجاهل، ورجّع BTC default.
+  // الحل: نقرأ `symbol` كمان كـ alias، ونفضّل `ticker` لو موجود.
+  const ticker = (
+    searchParams.get('ticker')
+    || searchParams.get('symbol')
+    || 'BTC'
+  ).toUpperCase();
   const timeframe = searchParams.get('timeframe') || 'DAY';
   // Map timeframe to CoinGecko days. Crypto is 24/7 so "DAY" = 365 daily candles.
   const DAYS_MAP: Record<string, number> = {

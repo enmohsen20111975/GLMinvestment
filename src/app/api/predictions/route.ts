@@ -134,17 +134,29 @@ export async function GET(request: NextRequest) {
         ? `AND market IN (${marketVariants.map(() => '?').join(',')})`
         : '';
       const marketParams = marketVariants;
-      // NOTE: schema uses `risk_reward` (not `risk_reward_ratio`) — the validator
-      // below derives `risk_reward_ratio` numerically and merges it into the row.
+      // BUG 1 + BUG 8 FIX (FIX-A-API): the previous SELECT referenced 6 columns
+      // that DON'T EXIST in the predictions table (`entry_price_min`,
+      // `entry_price_max`, `support_level`, `support_level_2`, `resistance_level`,
+      // `resistance_level_2`) → SQLite threw "no such column" → caught silently
+      // → empty array returned. Removed them; the validator below already
+      // null-guards these fields via the `??` operator.
+      //
+      // BUG 8: `holding_days` is always stored as 0 even when outcome_date is
+      // weeks after prediction_date. Compute it on read so existing rows are
+      // fixed without a migration (Rule 27: prefer truth over a stored lie).
       const query = `
         SELECT
           id, ticker, signal, signal_type, prediction_date,
-          entry_price, entry_price_min, entry_price_max,
-          target_price, target_price_2, stop_loss,
-          support_level, support_level_2, resistance_level, resistance_level_2,
+          entry_price, target_price, target_price_2, stop_loss,
           master_score, technical_score, fundamental_score, confidence, persona,
           market, outcome_date, exit_price, actual_return,
-          hit_target, hit_stop, is_correct, holding_days,
+          hit_target, hit_stop, is_correct,
+          CASE
+            WHEN holding_days > 0 THEN holding_days
+            WHEN outcome_date IS NOT NULL AND prediction_date IS NOT NULL
+              THEN CAST(julianday(outcome_date) - julianday(prediction_date) AS INTEGER)
+            ELSE 0
+          END AS holding_days,
           status, risk_reward, created_at, analysis_json
         FROM predictions
         WHERE ticker = ? ${marketClause}
@@ -187,7 +199,8 @@ export async function GET(request: NextRequest) {
         const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
         const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
         const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
-        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
+        // FIX-A-API BUG 1: لا يوجد support_level/resistance_level في الجدول، فدائماً r1=null fallback لـ v.target1 (مش validated.target1 اللي كان بيعمل ReferenceError قبل initialization).
+        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (v.target1 ?? null);
         const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
 
         return enrichWithTechnical({
@@ -348,15 +361,9 @@ export async function GET(request: NextRequest) {
         signal_type,
         prediction_date,
         entry_price,
-        entry_price_min,
-        entry_price_max,
         target_price,
         target_price_2,
         stop_loss,
-        support_level,
-        support_level_2,
-        resistance_level,
-        resistance_level_2,
         master_score,
         confidence,
         market,
@@ -366,7 +373,12 @@ export async function GET(request: NextRequest) {
         hit_target,
         hit_stop,
         is_correct,
-        holding_days,
+        CASE
+          WHEN holding_days > 0 THEN holding_days
+          WHEN outcome_date IS NOT NULL AND prediction_date IS NOT NULL
+            THEN CAST(julianday(outcome_date) - julianday(prediction_date) AS INTEGER)
+          ELSE 0
+        END AS holding_days,
         created_at,
         analysis_json
       FROM predictions

@@ -2012,11 +2012,11 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         )}
       </div>
 
-      {data.errors.length > 0 && (
+      {data?.errors?.length ? (
         <p className="text-xs text-muted-foreground mt-3 italic">
           ⚠ تحذيرات المحركات: {data.errors.join('، ')}
         </p>
-      )}
+      ) : null}
     </SectionCard>
   );
 }

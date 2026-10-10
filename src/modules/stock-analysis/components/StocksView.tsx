@@ -1021,8 +1021,8 @@ export function StocksView() {
         const q = debouncedSearch.toLowerCase();
         const matchesSearch =
           stock.ticker.toLowerCase().includes(q) ||
-          stock.name.toLowerCase().includes(q) ||
-          stock.name_ar.includes(q);
+          (stock.name ?? '').toLowerCase().includes(q) ||
+          (stock.name_ar ?? '').includes(q);
         if (!matchesSearch) return false;
       }
 

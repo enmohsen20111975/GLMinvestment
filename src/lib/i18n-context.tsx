@@ -133,6 +133,13 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     } else {
       loadMessages(locale)
         .then((msgs) => setMessages(msgs))
+        .catch((err) => {
+          console.error('[i18n] load failed for locale', locale, err);
+          // Fallback to empty messages so the UI still renders instead of
+          // permanently hanging in loading state (which would white-screen
+          // the whole app — i18n wraps everything in Providers.tsx).
+          setMessages({});
+        })
         .finally(() => setLoading(false));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,6 +151,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (!locale) return;
     loadMessages(locale)
       .then((msgs) => setMessages(msgs))
+      .catch((err) => {
+        console.error('[i18n] load failed for locale', locale, err);
+        // Fallback to empty messages so the UI still renders instead of
+        // permanently hanging in loading state.
+        setMessages({});
+      })
       .finally(() => setLoading(false));
   }, [locale]);
 

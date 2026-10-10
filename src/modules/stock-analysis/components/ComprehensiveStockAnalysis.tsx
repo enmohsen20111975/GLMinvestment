@@ -326,7 +326,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
       />
 
       {/* Error warnings (if any API failed) */}
-      {data.errors.length > 0 && (
+      {data?.errors?.length ? (
         <Card className="border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
@@ -335,7 +335,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       {/* Quick Stats Row (3 cards — Maestro card removed per user request 2026-09-28) */}
       <QuickStatsRow price={price} tech={tech} metrics={metrics} />

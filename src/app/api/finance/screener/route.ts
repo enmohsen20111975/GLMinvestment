@@ -49,20 +49,26 @@ export async function GET(request: NextRequest) {
     const whereParams: (string | number)[] = [];
     whereConditions.push(`ta.symbol NOT IN ('السعودية', 'مصر', 'الكويت', 'قطر', 'بيع', 'بيع قوي', 'حيادية', 'شراء', 'شراء قوي')`);
 
-    // Market filter
-    if (market !== 'all') {
-      const marketMap: Record<string, string> = {
-        'eg': 'مصر',
-        'sa': 'السعودية',
-        'kw': 'الكويت',
-        'qa': 'قطر'
-      };
-      // Only allow pre-defined market aliases; reject any unknown market value
-      // (prevents injection when `marketMap[market]` falls back to the raw `market`).
-      const resolvedMarket = marketMap[market];
+    // Market filter — accept both short ISO aliases (eg/sa/kw/qa) and the
+    // long-form names used elsewhere in the app (egx/tadawul/kse/qse/us).
+    // BUG 6 FIX (FIX-A-API): قبل كده `market=all` كان بيرجّع TADAWUL فقط بسبب
+    // `ORDER BY ta.market` (السعودية بتيجي قبل بقية الأسواق أبجديًا). كمان كنا
+    // بنرفض القيم زي egx/tadawul كـ "invalid". الحل: نقبل الأسماء الطويلة كمان،
+    // ولما market=all نستخدم window function عشان نوزّع الـ limit على كل الأسواق.
+    const marketMap: Record<string, string> = {
+      'eg': 'مصر', 'egx': 'مصر',
+      'sa': 'السعودية', 'tadawul': 'السعودية',
+      'kw': 'الكويت', 'kse': 'الكويت',
+      'qa': 'قطر', 'qse': 'قطر',
+      // US market ليس موجود في data_engine.db — نرجّع empty لو طلبه المستخدم.
+      'us': 'US', 'us-markets': 'US',
+    };
+    const isSpecificMarket = market !== 'all' && market !== '';
+    if (isSpecificMarket) {
+      const resolvedMarket = marketMap[market.toLowerCase()];
       if (!resolvedMarket) {
         return NextResponse.json(
-          { success: false, error: `Invalid market filter: '${market}'. Allowed: eg, sa, kw, qa, all` },
+          { success: false, error: `Invalid market filter: '${market}'. Allowed: eg/egx, sa/tadawul, kw/kse, qa/qse, us, all` },
           { status: 400 }
         );
       }
@@ -85,8 +91,14 @@ export async function GET(request: NextRequest) {
 
     const whereClause = whereConditions.join(' AND ');
 
+    // BUG 6: لما market=all نوزّع الـ limit على كل الأسواق بالتساوي عبر window
+    // function. كده المستخدم بيشوف mix من كل الأسواق مش TADAWUL فقط.
+    const perMarketLimit = isSpecificMarket
+      ? null  // filter is specific → ORDER BY symbol only (already filtered to one market)
+      : Math.max(5, Math.ceil(limit / 4)); // 4 active markets in data_engine.db
+
     // Main query
-    const query = `
+    const innerSelect = `
       SELECT 
         ta.symbol,
         ta.market,
@@ -107,18 +119,32 @@ export async function GET(request: NextRequest) {
         perf.perf_6m,
         perf.perf_1y,
         d.div_yield,
-        d.dps_ttm
+        d.dps_ttm,
+        ROW_NUMBER() OVER (PARTITION BY ta.market ORDER BY ta.symbol) AS _rn
       FROM tab_technical_analysis ta
       LEFT JOIN tab_valuation v ON ta.symbol = v.symbol AND ta.market = v.market
       LEFT JOIN tab_profitability p ON ta.symbol = p.symbol AND ta.market = p.market
       LEFT JOIN tab_performance perf ON ta.symbol = perf.symbol AND ta.market = perf.market
       LEFT JOIN tab_dividends d ON ta.symbol = d.symbol AND ta.market = d.market
       WHERE ${whereClause}
-      ORDER BY ta.market, ta.symbol
-      LIMIT ? OFFSET ?
     `;
+    const query = perMarketLimit
+      ? `
+        SELECT * FROM (${innerSelect})
+        WHERE _rn <= ?
+        ORDER BY market, symbol
+        LIMIT ? OFFSET ?
+      `
+      : `
+        SELECT * FROM (${innerSelect})
+        ORDER BY market, symbol
+        LIMIT ? OFFSET ?
+      `;
+    const queryParams = perMarketLimit
+      ? [...whereParams, perMarketLimit, limit, offset]
+      : [...whereParams, limit, offset];
 
-    let stocks = db.prepare(query).all(...whereParams, limit, offset);
+    let stocks = db.prepare(query).all(...queryParams) as any[];
 
     // Apply numeric filters in JavaScript (since data is stored as strings)
     stocks = stocks.filter((stock: any) => {

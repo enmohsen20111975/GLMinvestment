@@ -197,8 +197,18 @@ export function DualTrackPredictionsView() {
 
   useEffect(() => {
     (async () => {
-      await Promise.all([fetchStats(), fetchPredictions('all')]);
-      setLoading(false);
+      try {
+        await Promise.all([fetchStats(), fetchPredictions('all')]);
+      } catch (err) {
+        // Bug FIX-B-FRONTEND / DATA-H13: unhandled rejection would propagate
+        // to the React error boundary and white-screen the predictions panel.
+        // fetchStats / fetchPredictions already swallow their own errors, but
+        // guard Promise.all + any synchronous throws so we always reach the
+        // settled state.
+        console.error('[DualTrack] init failed', err);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [fetchStats, fetchPredictions]);
 

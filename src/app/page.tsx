@@ -589,8 +589,39 @@ function AppShell() {
       // === رادار السيولة (Liquidity Radar) — شاشة منفصلة ===
       // N8: كان تبويب جوّه MarketAnalysisView باسم "رادار الميكرز". دلوقتي شاشة مستقلة
       // قابلة للوصول مباشرة من القائمة. أهم خدمة للمستثمرين (80% من الأرباح).
-      case 'liquidity-radar':
-        return <LiquidityRadarView market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} />;
+      case 'liquidity-radar': {
+        // Bug FIX-B-FRONTEND / DATA-H11 (Rule 27 — NO-FAKE-DATA):
+        // Previously this silently fell back to `market='EGX'` when the user
+        // was on the CRYPTO market, displaying EGX liquidity data as if it
+        // were crypto. We now render an explicit empty-state instead of
+        // lying about the data.
+        if (currentMarket === 'CRYPTO') {
+          return (
+            <div className="min-h-screen flex flex-col bg-background">
+              <Header
+                title="رادار السيولة"
+                subtitle={`لوحة متابعة السيولة — ${MARKET_NAMES_AR.CRYPTO}`}
+              />
+              <main id="main-content" className="flex-1 p-3 md:p-4" dir="rtl">
+                <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
+                  <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+                    <span className="font-semibold">
+                      الرصد السيولي غير متاح للكريبتو.
+                    </span>
+                    <span className="block mt-1 text-xs text-amber-700 dark:text-amber-300">
+                      هذه الأداة متاحة لأسواق الأسهم فقط (EGX / TADAWUL / KSE / QSE / US).
+                      للوصول لرادار السيولة، بدّل السوق إلى أحد أسواق الأسهم من قائمة الأسواق بأعلى الصفحة.
+                    </span>
+                  </AlertDescription>
+                </Alert>
+              </main>
+              <Footer />
+            </div>
+          );
+        }
+        return <LiquidityRadarView market={currentMarket} />;
+      }
 
       // === عمق السوق (Market Depth) — شاشة منفصلة (MARKET-DEPTH-VIEW) ===
       // Owner directive: "حركة العملات والذهب + حركة السيولة + تدفّق المستثمرين +

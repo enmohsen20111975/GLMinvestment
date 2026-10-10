@@ -129,24 +129,39 @@ export function MultiMarketWidget() {
       fetch('/api/data-engine/gold').then(r => r.ok ? r.json() : null),
       fetch('/api/data-engine/crypto?limit=10').then(r => r.ok ? r.json() : null),
       fetch('/api/data-engine/forex').then(r => r.ok ? r.json() : null),
-    ]).then(([goldRes, cryptoRes, forexRes]) => {
-      if (!isMounted) return;
+    ])
+      .then(([goldRes, cryptoRes, forexRes]) => {
+        if (!isMounted) return;
 
-      if (goldRes.status === 'fulfilled' && goldRes.value?.gold) {
-        setGoldData(goldRes.value.gold);
-      }
+        if (goldRes.status === 'fulfilled' && goldRes.value?.gold) {
+          setGoldData(goldRes.value.gold);
+        }
 
-      if (cryptoRes.status === 'fulfilled' && cryptoRes.value) {
-        const cryptos = cryptoRes.value.data || cryptoRes.value.cryptos || [];
-        setCryptoData(cryptos);
-      }
+        if (cryptoRes.status === 'fulfilled' && cryptoRes.value) {
+          const cryptos = cryptoRes.value.data || cryptoRes.value.cryptos || [];
+          setCryptoData(cryptos);
+        }
 
-      if (forexRes.status === 'fulfilled' && forexRes.value?.data?.rates) {
-        setForexRates(forexRes.value.data.rates);
-      }
+        if (forexRes.status === 'fulfilled' && forexRes.value?.data?.rates) {
+          setForexRates(forexRes.value.data.rates);
+        }
 
-      setLoadingGeneral(false);
-    });
+        setLoadingGeneral(false);
+      })
+      .catch((err) => {
+        // Bug FIX-B-FRONTEND / DATA-H13: Promise.allSettled itself never
+        // rejects, but the inner `.then()` callbacks (res.json()) can throw
+        // if the response body is malformed JSON. Without this catch the
+        // rejection would propagate to the React error boundary and
+        // white-screen the whole dashboard widget.
+        console.error('[MultiMarketWidget] general data load failed', err);
+        if (isMounted) {
+          setGoldData(null);
+          setCryptoData([]);
+          setForexRates({});
+          setLoadingGeneral(false);
+        }
+      });
 
     return () => { isMounted = false; };
   }, []);

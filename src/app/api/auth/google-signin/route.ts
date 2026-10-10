@@ -21,18 +21,52 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Build the signin URL
-  const baseUrl = process.env.NEXTAUTH_URL || 
-    (request.headers.get('x-forwarded-host') 
-      ? `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('x-forwarded-host')}`
-      : 'http://localhost:3000');
-  
+  // Build the signin URL.
+  // Bug FIX-B-FRONTEND / DATA-H12 (security): previously fell back to a
+  // hardcoded `http://localhost:3000` when both NEXTAUTH_URL and the
+  // x-forwarded-host header were missing — in prod that breaks the OAuth
+  // callback AND leaks an internal URL. We now resolve the host from the
+  // request itself (x-forwarded-host → host header) and only fall back to
+  // localhost in true local development. If none of those resolve in a
+  // non-dev environment we return a 500 with a clear message instead of
+  // silently redirecting to localhost.
+  const xfProto = request.headers.get('x-forwarded-proto') || 'https';
+  const xfHost = request.headers.get('x-forwarded-host');
+  const hostHeader = request.headers.get('host');
+  const isDev = process.env.NODE_ENV === 'development';
+
+  let baseUrl: string | null = null;
+  if (process.env.NEXTAUTH_URL) {
+    baseUrl = process.env.NEXTAUTH_URL;
+  } else if (xfHost) {
+    baseUrl = `${xfProto}://${xfHost}`;
+  } else if (hostHeader) {
+    baseUrl = `${xfProto}://${hostHeader}`;
+  } else if (isDev) {
+    baseUrl = 'http://localhost:3000';
+  }
+
+  if (!baseUrl) {
+    console.error(
+      '[Google Signin] Cannot determine OAuth callback URL: NEXTAUTH_URL is not configured ' +
+      'and no host header was present on the request.',
+    );
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'OAuth callback URL is not configured (NEXTAUTH_URL missing)',
+        error_en: 'OAuth callback URL is not configured (NEXTAUTH_URL missing)',
+      },
+      { status: 500 },
+    );
+  }
+
   // Redirect to NextAuth's Google signin endpoint
   const signinUrl = new URL('/api/auth/signin/google', baseUrl);
   signinUrl.searchParams.set('callbackUrl', callbackUrl);
-  
+
   console.log('[Google Signin] Redirecting to:', signinUrl.toString());
-  
+
   return NextResponse.redirect(signinUrl.toString());
 }
 
