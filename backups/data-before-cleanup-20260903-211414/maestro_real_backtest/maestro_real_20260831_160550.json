@@ -1,0 +1,28 @@
+{
+  "timestamp": "20260831_160550",
+  "db_path": "/home/z/my-project/db/data_engine.db",
+  "metrics": {
+    "n": 0,
+    "wr": 0,
+    "pf": 0,
+    "total_ret": 0,
+    "avg_hold": 0,
+    "max_dd": 0,
+    "wins": 0,
+    "losses": 0
+  },
+  "stats": {
+    "total_analyzed": 666,
+    "total_buy": 266,
+    "total_rejected": 266,
+    "errors": 2,
+    "elapsed_seconds": 151.01900601387024
+  },
+  "criteria": {
+    "pf_ok": false,
+    "wr_ok": false,
+    "dd_ok": true,
+    "ret_ok": false
+  },
+  "verdict": "❌ Maestro لسه خاسر — محتاج إصلاحات إضافية"
+}

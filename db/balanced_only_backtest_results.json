@@ -1,0 +1,58 @@
+{
+  "total_predictions": 35,
+  "persona_distribution": {
+    "crypto_balanced": 3,
+    "conservative": 16,
+    "balanced": 16
+  },
+  "signal_distribution": {
+    "BUY": 3,
+    "STRONG_BUY": 20,
+    "WATCH": 12
+  },
+  "status_distribution": {
+    "ACTIVE": 3,
+    "STOPPED": 19,
+    "TARGET_HIT": 11,
+    "CLOSED": 2
+  },
+  "before_metrics": {
+    "total_closed": 32,
+    "wins": 9,
+    "losses": 23,
+    "win_rate": 28.12,
+    "profit_factor": 0.436,
+    "avg_win": 7.95,
+    "avg_loss": 7.13,
+    "max_drawdown": 106.47,
+    "total_return": -92.43
+  },
+  "after_metrics": {
+    "total_closed": 32,
+    "wins": 9,
+    "losses": 23,
+    "win_rate": 28.12,
+    "profit_factor": 0.436,
+    "avg_win": 7.95,
+    "avg_loss": 7.13,
+    "max_drawdown": 106.47,
+    "total_return": -92.43
+  },
+  "rejected_metrics": {
+    "total_closed": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": 0,
+    "profit_factor": 0,
+    "avg_win": 0,
+    "avg_loss": 0,
+    "max_drawdown": 0,
+    "total_return": 0
+  },
+  "verdict": {
+    "wr_improved": true,
+    "pf_improved": true,
+    "dd_improved": true,
+    "all_improved": true
+  }
+}

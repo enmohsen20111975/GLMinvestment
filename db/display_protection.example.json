@@ -1,0 +1,10 @@
+{
+  "mode": "off",
+  "top_n": 3,
+  "min_evidence": 4,
+  "min_score": 70,
+  "min_confidence": 70,
+  "enabled_at": null,
+  "enabled_by": null,
+  "reason": null
+}

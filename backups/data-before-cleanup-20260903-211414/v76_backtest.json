@@ -1,0 +1,266 @@
+{
+  "trades": [
+    {
+      "ticker": "AJWA",
+      "date": "2026-07-09",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 179.0800018310547,
+      "exit": 176.99000549316406,
+      "return_pct": -1.17,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "AJWA",
+      "date": "2026-07-13",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 183.97000122070312,
+      "exit": 169.5500030517578,
+      "return_pct": -7.84,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "AXPH",
+      "date": "2026-07-12",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 1199.22998046875,
+      "exit": 1227.5,
+      "return_pct": 2.36,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "CAED",
+      "date": "2026-07-31",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 125.11,
+      "exit": 137.621,
+      "return_pct": 10.0,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "CAED",
+      "date": "2026-08-01",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 125.11,
+      "exit": 119.02999877929688,
+      "return_pct": -4.86,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "COMI",
+      "date": "2026-07-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 129.7100067138672,
+      "exit": 134.52000427246094,
+      "return_pct": 3.71,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "DOMT",
+      "date": "2026-07-16",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 27.030000686645508,
+      "exit": 27.020000457763672,
+      "return_pct": -0.04,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "FAITA",
+      "date": "2026-07-15",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 0.9900000095367432,
+      "exit": 0.9710000157356262,
+      "return_pct": -1.92,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "GIHD",
+      "date": "2026-08-04",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 43.47,
+      "exit": 47.817,
+      "return_pct": 10.0,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "GIHD",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 60.69,
+      "exit": 60.0,
+      "return_pct": -1.14,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "GTWL",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 100.69,
+      "exit": 110.759,
+      "return_pct": 10.0,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "HDBK",
+      "date": "2026-08-04",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 161.92,
+      "exit": 145.72799999999998,
+      "return_pct": -10.0,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "HDBK",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 84.4,
+      "exit": 85.26,
+      "return_pct": 1.02,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "HDBK",
+      "date": "2026-08-06",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 84.78,
+      "exit": 85.26,
+      "return_pct": 0.57,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "ISMA",
+      "date": "2026-08-04",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 29.59,
+      "exit": 32.09,
+      "return_pct": 8.45,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "MICH",
+      "date": "2026-08-04",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 37.5,
+      "exit": 41.25,
+      "return_pct": 10.0,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "MPCI",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 315.9,
+      "exit": 328.04,
+      "return_pct": 3.84,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "NIPH",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 273.4,
+      "exit": 300.74,
+      "return_pct": 10.0,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "PHTV",
+      "date": "2026-07-31",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 321.35,
+      "exit": 289.21500000000003,
+      "return_pct": -10.0,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "PHTV",
+      "date": "2026-08-01",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 321.35,
+      "exit": 289.21500000000003,
+      "return_pct": -10.0,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "RACC",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 10.2,
+      "exit": 10.1,
+      "return_pct": -0.98,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "ROTO",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 45.99,
+      "exit": 46.69,
+      "return_pct": 1.52,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "RREI",
+      "date": "2026-08-05",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 4.58,
+      "exit": 4.75,
+      "return_pct": 3.71,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "SCFM",
+      "date": "2026-08-06",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 279.58,
+      "exit": 281.0,
+      "return_pct": 0.51,
+      "is_win": true,
+      "confidence": 70
+    },
+    {
+      "ticker": "SEIG",
+      "date": "2026-08-07",
+      "signal": "PUMP_FROM_DESERT",
+      "entry": 267.0,
+      "exit": 264.32,
+      "return_pct": -1.0,
+      "is_win": false,
+      "confidence": 70
+    }
+  ],
+  "signal_counts": {
+    "GOLDEN_RETEST": 0,
+    "PUMP_FROM_DESERT": 25,
+    "WAIT": 1001,
+    "NEUTRAL": 24783
+  },
+  "summary": {
+    "total": 25,
+    "wins": 14,
+    "wr": 56.0,
+    "ret": 26.7
+  }
+}

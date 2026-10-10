@@ -1,0 +1,71 @@
+{
+  "symbol": "COMI",
+  "name_ar": "البنك التجاري الدولي -مصر (سى اى بى )",
+  "market": "EGX",
+  "sector": "",
+  "last_updated": "2026-09-01",
+  "version": 4,
+  "identity": {
+    "is_index_related": true,
+    "related_index": "EGX30",
+    "liquidity_profile": "high",
+    "free_float_note": "",
+    "ownership_concentration": "low",
+    "is_story_stock": false,
+    "is_zombie_prone": false,
+    "notes": "سهم قيادي — البنك التجاري الدولي. أكبر بنك خاص في مصر. سلوك مستقر."
+  },
+  "price_behavior": {
+    "typical_correction_pct": 16.0,
+    "typical_correction_range": [
+      7.8,
+      24.0
+    ],
+    "avg_up_move_after_correction_pct": 0,
+    "moves_violently_with_volume": false,
+    "respects_key_levels": true,
+    "gap_behavior": "fills_most_gaps",
+    "ramadan_behavior": "lower_volume_slower_moves",
+    "notes": "التصحيحات منضبطة (10-16%)، بيحترم المتوسطات. بيرتد من EMA50."
+  },
+  "liquidity_and_sector": {
+    "liquidity_sensitivity": "medium",
+    "leads_sector": false,
+    "follows_sector": true,
+    "follows_specific_stock": null,
+    "sector_beta_note": "",
+    "notes": ""
+  },
+  "events_behavior": {
+    "dividend": {
+      "typical_ex_date_drop_pct": 4,
+      "drop_range": [
+        3,
+        6
+      ],
+      "behavior_before_ex": "mild_bid",
+      "notes": "بينزل يوم الاستحقاق بقيمة الكوبون تقريباً. بيرتد خلال أسبوع."
+    },
+    "rights_issue_history": [],
+    "capital_increase_history": [],
+    "other_recurring_events": []
+  },
+  "danger_flags": [],
+  "learned_lessons": [
+    {
+      "date": "2026-04-15",
+      "type": "success",
+      "summary": "دخل بعد تصحيح 14% من القمة، ارتد من EMA50 بحجم",
+      "lesson": "يحترم التصحيح في نطاق 12-16% + يرتد من EMA50"
+    }
+  ],
+  "machine_summary": {
+    "typical_correction_pct": 14,
+    "max_expected_correction_pct": 18,
+    "liquidity_profile": "high",
+    "danger_level": 1,
+    "preferred_entry_style": "correction_or_grab",
+    "avoid_chase": true,
+    "distribution_sensitivity": "low"
+  }
+}

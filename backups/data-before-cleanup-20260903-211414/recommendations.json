@@ -1,0 +1,130 @@
+{
+  "recommendations": [
+    {
+      "ticker": "COMI",
+      "action": "BUY",
+      "expert": "AF",
+      "type": "detailed",
+      "price": 85.50,
+      "buyFrom": 84.00,
+      "buyTo": 87.00,
+      "target": 95.00,
+      "target2": 100.00,
+      "investTarget": 110.00,
+      "stopLoss": 80.00,
+      "date": "2025-05-31",
+      "notes": "توصية شراء على البنك التجاري الدولي - هدف قصير المدى 95 جنيه"
+    },
+    {
+      "ticker": "EMFD",
+      "action": "BUY",
+      "expert": "RR",
+      "type": "detailed",
+      "price": 18.50,
+      "buyFrom": 18.00,
+      "buyTo": 19.00,
+      "target": 21.00,
+      "target2": 23.00,
+      "stopLoss": 16.50,
+      "date": "2025-05-31",
+      "notes": "توصية شراء على مودرن فيورز للتنمية"
+    },
+    {
+      "ticker": "ETEL",
+      "action": "BUY",
+      "expert": "AF",
+      "type": "quick",
+      "price": 25.80,
+      "target": 28.50,
+      "stopLoss": 24.00,
+      "date": "2025-05-31",
+      "notes": "توصية سريعة على أورانج"
+    },
+    {
+      "ticker": "HRHO",
+      "action": "BUY",
+      "expert": "MH",
+      "type": "detailed",
+      "price": 12.40,
+      "buyFrom": 12.00,
+      "buyTo": 13.00,
+      "target": 15.00,
+      "target2": 17.00,
+      "investTarget": 20.00,
+      "stopLoss": 11.00,
+      "date": "2025-05-31",
+      "notes": "هيرميس قوية جداً مع أهداف تصاعدية"
+    },
+    {
+      "ticker": "FWRY",
+      "action": "BUY",
+      "expert": "RR",
+      "type": "detailed",
+      "price": 1.85,
+      "buyFrom": 1.80,
+      "buyTo": 1.90,
+      "target": 2.20,
+      "target2": 2.50,
+      "stopLoss": 1.60,
+      "date": "2025-05-30",
+      "notes": "فوري فرصة استثمارية ممتازة"
+    },
+    {
+      "ticker": "TALAAT",
+      "action": "ACCUMULATE",
+      "expert": "AF",
+      "type": "detailed",
+      "price": 3.20,
+      "buyFrom": 3.10,
+      "buyTo": 3.30,
+      "target": 3.80,
+      "target2": 4.20,
+      "stopLoss": 2.90,
+      "date": "2025-05-30",
+      "notes": "تجميع على طلعت مصطفى"
+    },
+    {
+      "ticker": "AMOC",
+      "action": "BUY",
+      "expert": "MH",
+      "type": "quick",
+      "price": 320.00,
+      "target": 360.00,
+      "stopLoss": 300.00,
+      "date": "2025-05-30",
+      "notes": "أسيوط للمشتلات البترولية"
+    },
+    {
+      "ticker": "EGX30",
+      "action": "HOLD",
+      "expert": "AF",
+      "type": "detailed",
+      "price": 19500,
+      "notes": "السوق في حالة تردد - انتظار توضيح الاتجاه",
+      "date": "2025-05-31"
+    }
+  ],
+  "experts": [
+    {
+      "code": "AF",
+      "name_ar": "أحمد الفيومي",
+      "source": "واتساب",
+      "type": "محلل فني",
+      "description": "محلل فني متخصص في الأسهم المصرية"
+    },
+    {
+      "code": "RR",
+      "name_ar": "ريمون رؤوف",
+      "source": "واتساب",
+      "type": "محلل فني",
+      "description": "خبير في تحليل الأسواق المالية"
+    },
+    {
+      "code": "MH",
+      "name_ar": "محسن",
+      "source": "EGX Analysis",
+      "type": "محلل استثماري",
+      "description": "محلل استثماري متخصص"
+    }
+  ]
+}

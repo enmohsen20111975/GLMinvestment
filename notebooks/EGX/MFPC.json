@@ -1,0 +1,76 @@
+{
+  "symbol": "MFPC",
+  "name_ar": "مصر لإنتاج الأسمدة - موبكو",
+  "market": "EGX",
+  "sector": "",
+  "last_updated": "2026-09-01",
+  "version": 4,
+  "identity": {
+    "is_index_related": false,
+    "related_index": null,
+    "liquidity_profile": "high",
+    "free_float_note": "",
+    "ownership_concentration": "high",
+    "is_story_stock": true,
+    "is_zombie_prone": false,
+    "notes": "مصفاة فلسطين — سهم ملعوب. ملكية مركزة. بيتحرك بعنف مع الحجم."
+  },
+  "price_behavior": {
+    "typical_correction_pct": 15.8,
+    "typical_correction_range": [
+      7.4,
+      27.0
+    ],
+    "avg_up_move_after_correction_pct": 0,
+    "moves_violently_with_volume": true,
+    "respects_key_levels": false,
+    "gap_behavior": "fills_most_gaps",
+    "ramadan_behavior": "",
+    "notes": "بيفرقع بقوة مع حجم. التصحيح عميق (20-30%). سهم مضاربي بامتياز."
+  },
+  "liquidity_and_sector": {
+    "liquidity_sensitivity": "medium",
+    "leads_sector": false,
+    "follows_sector": true,
+    "follows_specific_stock": null,
+    "sector_beta_note": "",
+    "notes": ""
+  },
+  "events_behavior": {
+    "dividend": {
+      "typical_ex_date_drop_pct": 0,
+      "drop_range": [
+        0,
+        0
+      ],
+      "behavior_before_ex": "",
+      "notes": ""
+    },
+    "rights_issue_history": [],
+    "capital_increase_history": [],
+    "other_recurring_events": []
+  },
+  "danger_flags": [
+    "concentrated_ownership",
+    "story_stock",
+    "distributes_hard_after_pump",
+    "low_float_volatile"
+  ],
+  "learned_lessons": [
+    {
+      "date": "2026-03-20",
+      "type": "failure",
+      "summary": "دخل بعد صعود 30%، توزيع قاسي -15% في يومين",
+      "lesson": "ممنوع الدخول بعد صعود قوي — السهم ملعوب وبيوزع بعنف"
+    }
+  ],
+  "machine_summary": {
+    "typical_correction_pct": 22,
+    "max_expected_correction_pct": 35,
+    "liquidity_profile": "high",
+    "danger_level": 4,
+    "preferred_entry_style": "grab_only",
+    "avoid_chase": true,
+    "distribution_sensitivity": "high"
+  }
+}

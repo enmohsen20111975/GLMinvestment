@@ -1,0 +1,22 @@
+# News Agent — local-only files (لا تُرفع لـ git)
+
+# Disabled DBs (backed up local فقط)
+_disabled_dbs/*.db
+_disabled_dbs/*.db-shm
+_disabled_dbs/*.db-wal
+
+# Telegram session + images (بيانات حساسة + حجم كبير)
+data/telegram_images/
+data/*.session
+data/*.session-journal
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Disabled scrapers (محتفظ بيهم بس مش نشطين)
+*.disabled
+
+# Backup files
+*.bak
+*.backup
