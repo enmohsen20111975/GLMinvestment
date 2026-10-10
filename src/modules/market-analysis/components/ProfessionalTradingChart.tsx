@@ -230,7 +230,17 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   // ملء الشرطات الفارغة (—) بقيم حقيقية من unified API
   const radar = canonical?.radar;
   const tech = canonical?.technical;
-  
+
+  // TDZ-FIX (2026-10-10): أنقلنا declarations السعر لـ هنا (قبل الـ useMemo اللي بيستخدمها).
+  // قبل كده: livePrice كان معلن على سطر 342 (بعد useMemo على 246/267) = TDZ violation
+  // → ReferenceError: Cannot access 'tk' before initialization (الـ minifier سمّاه tk).
+  const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
+  const tc = liveData?.today_candle || data?.ohlcv?.[data.ohlcv.length - 1];
+  const livePrice = liveData?.today_candle?.close ?? tc?.close ?? stockInfo?.current_price ?? 0;
+  const prevClose = data?.ohlcv?.[data.ohlcv.length - 2]?.close ?? livePrice;
+  const chgPct = prevClose > 0 ? ((livePrice - prevClose) / prevClose) * 100 : 0;
+  const isUp = chgPct >= 0;
+
   // RSI القيمة + التقييم العربي
   const rsiValue = tech?.rsi ?? data?.current_indicators?.rsi ?? null;
   const rsiAr = useMemo(() => {
@@ -336,13 +346,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
     return { summary: summary + who, action, risk, pythonReason };
   }, [pred, canonical, signalFinal, signalAr, entry, target1, stop, rr, currencyLabel]);
 
-  // السعر الحالي
-  const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
-  const tc = liveData?.today_candle || data?.ohlcv?.[data.ohlcv.length - 1];
-  const livePrice = liveData?.today_candle?.close ?? tc?.close ?? stockInfo?.current_price ?? 0;
-  const prevClose = data?.ohlcv?.[data.ohlcv.length - 2]?.close ?? livePrice;
-  const chgPct = prevClose > 0 ? ((livePrice - prevClose) / prevClose) * 100 : 0;
-  const isUp = chgPct >= 0;
+  // (السعر الحالي declarations اتقلت لـ سطر 237 — قبل الـ useMemo عشان تتجنب TDZ)
 
   // ─── 2) MarketWarning: شريط رفيع فقط لو خطر حقيقي ────────────────────────────
   const makerState = decision?.maker_state;
