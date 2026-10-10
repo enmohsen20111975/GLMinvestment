@@ -926,7 +926,8 @@ def send_stock_analysis_response(
             from telegram.telegram_chart_generator import generate_stock_chart_image
         chart_path = asyncio.run(generate_stock_chart_image(stock['symbol']))
         if chart_path and Path(chart_path).exists():
-            r = send_photo(chat_id, Path(chart_path), msg, reply_markup=kb)
+            # CHART-FIX: الصورة بتبعت بدون reply_markup — الأزرار هتبقى مع الرسالة النصية
+            r = send_photo(chat_id, Path(chart_path), msg, reply_markup=None)
             if r and r.get('ok'):
                 photo_sent = True
     except Exception as e:
