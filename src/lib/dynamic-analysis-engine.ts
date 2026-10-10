@@ -11,13 +11,20 @@
  * 3. Adaptive Weights Engine — Component weights shift based on market regime
  * 4. BB Squeeze Detection + Position Override — Squeeze triggers momentum boost; profitable positions override to TAKE_PROFIT
  *
+ * ARCH-OPTION-2 (2026-10-10): MarketProfile-aware
+ *   - getDynamicParams بتاخد rsiOverbought/rsiOversold من MarketProfile
+ *   - classifySectorSpeed بتدعم sector names أمريكية + دولية
+ *   - minRiskReward بيستهل من MarketProfile.min_rr
+ *
  * Design: Pure functions, no DB, no network. Can be called from maestro.ts, gate-analyzer.ts,
  * or any API route.
  */
 
+import { getMarketProfile, type MarketProfile } from '@/lib/market-profile';
+
 // ============================================================================
 // TYPES
-// ============================================================================
+// =============================================================================
 
 export type StockRegime = 'STRONG_BULL' | 'WEAK_BULL' | 'RANGE' | 'WEAK_BEAR' | 'STRONG_BEAR';
 export type SectorSpeed = 'FAST' | 'MEDIUM' | 'SLOW';
@@ -107,28 +114,38 @@ export interface DynamicAnalysisResult {
 // ============================================================================
 // 1. DYNAMIC PARAMETER MATRIX
 // ============================================================================
+//
+// ARCH-OPTION-2 (2026-10-10): Sector lists extended to support US + international sectors.
+// قبل كده: sectors مكتوبة بالـ AR/EN للسوق المصري بس. "Information Technology" (US)
+//         كان بـ fallback لـ MEDIUM. دلوقتي في mapping أوسع.
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Sector classification — EGX + US + TADAWUL sectors (Rule 29 unified system).
-// قبل كده: sector lists كانت EGX-only → أي US sector (مثلاً "Information Technology")
-// ما بيتطابقش → fallback MEDIUM = تحليل غير دقيق.
-// Rule 27 fix: أضفنا US/Global sectors اللي بتظهر في Yahoo Finance + Finnhub.
-// ═══════════════════════════════════════════════════════════════════════════
 const FAST_SECTORS = [
-  // EGX
-  'technology', 'tech', 'تكنولوجيا', 'pharma', 'أدوية', 'financial', 'مصرفي', 'banking', 'بنوك', 'services', 'خدمات', 'telecom', 'اتصالات',
-  // US/Global (Yahoo Finance / Finnhub sector names)
-  'information technology', 'software', 'semiconductor', 'internet', 'fintech', 'biotechnology', 'biotech',
-  // TADAWUL
-  'energy', 'طاقة', 'materials', 'مواد', 'commodity', 'سلع',
+  // Egyptian / Arabic
+  'technology', 'tech', 'تكنولوجيا',
+  'pharma', 'أدوية',
+  'financial', 'مصرفي', 'banking', 'بنوك', 'finance',
+  'services', 'خدمات',
+  'telecom', 'اتصالات',
+  // US / International
+  'information technology', 'software', 'semiconductor', 'semis',
+  'internet', 'cloud', 'cybersecurity',
+  'fintech', 'biotech',
+  'consumer discretionary',
 ];
 const SLOW_SECTORS = [
-  // EGX
-  'utilities', 'مرافق', 'real estate', 'عقارات', 'consumer staples', 'سلع استهلاكية', 'cement', 'أسمنت', 'construction', 'بناء', 'food', 'أغذية', 'healthcare', 'رعاية صحية',
-  // US/Global
-  'consumer defensive', 'utilities', 'real estate', 'communication services',
-  // TADAWUL
-  'insurance', 'تأمين',
+  // Egyptian / Arabic
+  'utilities', 'مرافق',
+  'real estate', 'عقارات',
+  'consumer staples', 'سلع استهلاكية',
+  'cement', 'أسمنت',
+  'construction', 'بناء',
+  'food', 'أغذية',
+  'healthcare', 'رعاية صحية',
+  // US / International
+  'energy', 'oil & gas', 'oil and gas',
+  'materials', 'metals',
+  'telecommunications services',
+  'insurance',
 ];
 
 export function classifySectorSpeed(sector: string): SectorSpeed {
@@ -179,16 +196,23 @@ export function getDynamicParams(
   volatility: VolatilityLevel,
   sectorSpeed: SectorSpeed,
   baseParams?: Partial<DynamicParams>,
+  marketProfile?: MarketProfile,  // ARCH-OPTION-2: seed defaults from per-market profile
 ): DynamicParams {
+  // ARCH-OPTION-2: defaults بتيجي من MarketProfile (مش hardcoded 70/30)
+  // EGX: rsi 70/30, min_rr 1.8
+  // CRYPTO: rsi 75/25, min_rr 2.0
+  // US: rsi 70/30, min_rr 1.8
+  const profile = marketProfile ?? getMarketProfile(undefined);  // default = EGX
+
   const defaults: DynamicParams = {
-    rsiOverbought: 70,
-    rsiOversold: 30,
+    rsiOverbought: profile.rsi_overbought,        // EGX=70, CRYPTO=75
+    rsiOversold: profile.rsi_oversold,            // EGX=30, CRYPTO=25
     rsiPeriod: 14,
     atrPeriod: 14,
-    atrStopMultiplier: 1.8,
+    atrStopMultiplier: profile.stop_atr_mult || 1.8,  // EGX=2.5, CRYPTO=2.5
     atrTargetMultiplier: 2.5,
     swingLookback: 20,
-    minRiskReward: 1.5,
+    minRiskReward: profile.min_rr || 1.5,            // EGX=1.8, CRYPTO=2.0
     bbSqueezeThreshold: 3.0,
     trailingStopPct: 0.05,
     minProfitPct: 0.03,

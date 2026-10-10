@@ -5,19 +5,27 @@
  * PROFESSIONAL ANALYSIS ENGINE (2026-10-09):
  * محرك تحليل يولّد نص احترافي شامل للسهم مثل خبير مالي حقيقي.
  * 
+ * ARCH-OPTION-2 (2026-10-10): MarketProfile-aware
+ * -----------------------------------------------
+ * المحرك دلوقتي بيستخدم MarketProfile لكل سوق:
+ *   - RSI thresholds ديناميكية (EGX=70/30, CRYPTO=75/25, ...)
+ *   - Stop/Target من profile (مش hardcoded 5%/10%)
+ *   - Currency label ديناميكي (جنيه/ريال/دولار)
+ *   - Fundamental analysis بـ skip للكريبتو (fundamental weight = 0)
+ * 
  * يغطي:
  *   1. التحليل الفني (Technical Analysis)
- *      - RSI + تفسير (تشبع شرائي/بيعي/محايد)
+ *      - RSI + تفسير (تشبع شرائي/بيعي/محايد) — thresholds حسب السوق
  *      - Moving Averages (MA50/MA200) + trend direction
  *      - Support/Resistance levels
  *      - 52-week range positioning
- *   2. التحليل الأساسي (Fundamental Analysis)
+ *   2. التحليل الأساسي (Fundamental Analysis) — بـ skip للكريبتو
  *      - P/E ratio + تقييم (مقارنة بالقطاع)
  *      - ROE + تقييم الربحية
  *      - EPS + تحليل النمو
  *      - P/B ratio + تقييم القيمة الدفترية
  *      - Dividend yield + تقييم التوزيعات
- *   3. إدارة المخاطر (Risk Management)
+ *   3. إدارة المخاطر (Risk Management) — بـ stop/target من MarketProfile
  *      - Entry point + المبرر
  *      - Target 1 + المبرر (based on R:R + resistance)
  *      - Target 2 + المبرر (extended target)
@@ -34,9 +42,8 @@
  *   const analysis = generateExpertAnalysis(stockData);
  */
 
-import { currencyUnitAr } from '@/lib/market-profiles';
-import type { MarketType } from '@/lib/store';
-import { classifySignal, signalAr as canonicalSignalAr, SIGNAL_THRESHOLDS } from '@/lib/canonical-signal';
+import { getMarketProfile, currencyLabelAr, supportsFundamentals } from '@/lib/market-profile';
+import { SIGNAL_THRESHOLDS } from '@/lib/canonical-signal';
 
 export interface StockDataForAnalysis {
   ticker: string;
@@ -166,9 +173,15 @@ function fmtPct(n: number | null, decimals = 1): string {
   return `${sign}${n.toFixed(decimals)}%`;
 }
 
-// ─── RSI Analysis ───────────────────────────────────────────────────────
+// ─── RSI Analysis (MarketProfile-aware) ──────────────────────────────
+// ARCH-OPTION-2 (2026-10-10): RSI thresholds بتيجي من MarketProfile.
+// EGX uses 70/30. CRYPTO uses 75/25. US uses 70/30. Each market is different.
 
-function analyzeRSI(rsi: number | null): ExpertAnalysis['technical']['rsi'] {
+function analyzeRSI(
+  rsi: number | null,
+  overboughtThreshold: number = 70,
+  oversoldThreshold: number = 30,
+): ExpertAnalysis['technical']['rsi'] {
   if (rsi === null) {
     return {
       value: null,
@@ -181,11 +194,11 @@ function analyzeRSI(rsi: number | null): ExpertAnalysis['technical']['rsi'] {
 
   let signal: string, signal_ar: string, analysis: string, analysis_ar: string;
 
-  if (rsi >= 70) {
+  if (rsi >= overboughtThreshold) {
     signal = 'OVERBOUGHT';
     signal_ar = 'تشبع شرائي';
-    analysis = `RSI at ${rsi.toFixed(1)} indicates overbought conditions. The stock has rallied significantly and may be due for a pullback or consolidation. Consider waiting for a cooling-off period or a breakdown below 70 before initiating new long positions.`;
-    analysis_ar = `مؤشر القوة النسبية عند ${rsi.toFixed(1)} يشير إلى حالة تشبع شرائي. السهم صعد بشكل ملحوظ وقد يحتاج إلى تصحيح أو تثبيت. يُنصح بالانتظار حتى يهدأ الزخم أو يكسر مستوى 70 للأسفل قبل فتح مراكز شراء جديدة.`;
+    analysis = `RSI at ${rsi.toFixed(1)} indicates overbought conditions (above ${overboughtThreshold}). The stock has rallied significantly and may be due for a pullback or consolidation. Consider waiting for a cooling-off period or a breakdown below ${overboughtThreshold} before initiating new long positions.`;
+    analysis_ar = `مؤشر القوة النسبية عند ${rsi.toFixed(1)} يشير إلى حالة تشبع شرائي (فوق ${overboughtThreshold}). السهم صعد بشكل ملحوظ وقد يحتاج إلى تصحيح أو تثبيت. يُنصح بالانتظار حتى يهدأ الزخم أو يكسر مستوى ${overboughtThreshold} للأسفل قبل فتح مراكز شراء جديدة.`;
   } else if (rsi >= 55) {
     signal = 'BULLISH';
     signal_ar = 'صاعد';
@@ -196,16 +209,16 @@ function analyzeRSI(rsi: number | null): ExpertAnalysis['technical']['rsi'] {
     signal_ar = 'محايد';
     analysis = `RSI at ${rsi.toFixed(1)} reflects a neutral stance with no clear directional bias. The stock is consolidating. Watch for a breakout above 55 (bullish) or breakdown below 45 (bearish) to determine the next directional move.`;
     analysis_ar = `مؤشر القوة النسبية عند ${rsi.toFixed(1)} يعكس موقفاً محايداً دون اتجاه واضح. السهم في مرحلة تجميع.راقب اختراق مستوى 55 للأعلى (صاعد) أو كسر 45 للأسفل (هابط) لتحديد الاتجاه القادم.`;
-  } else if (rsi >= 30) {
+  } else if (rsi >= oversoldThreshold) {
     signal = 'BEARISH';
     signal_ar = 'هابط';
-    analysis = `RSI at ${rsi.toFixed(1)} indicates bearish momentum. The stock is under selling pressure. Short-term traders should be cautious. Value investors may watch for further weakness toward oversold levels (below 30) as potential accumulation zone.`;
-    analysis_ar = `مؤشر القوة النسبية عند ${rsi.toFixed(1)} يشير إلى زخم هابط. السهم تحت ضغط بيع. يجب على المتداولين قصيري الأجل الحذر. قد يراقب المستثمرون القيميون مزيداً من الضعف نحو مناطق التشبع البيعي (أقل من 30) كمنطقة تجميع محتملة.`;
+    analysis = `RSI at ${rsi.toFixed(1)} indicates bearish momentum. The stock is under selling pressure. Short-term traders should be cautious. Value investors may watch for further weakness toward oversold levels (below ${oversoldThreshold}) as potential accumulation zone.`;
+    analysis_ar = `مؤشر القوة النسبية عند ${rsi.toFixed(1)} يشير إلى زخم هابط. السهم تحت ضغط بيع. يجب على المتداولين قصيري الأجل الحذر. قد يراقب المستثمرون القيميون مزيداً من الضعف نحو مناطق التشبع البيعي (أقل من ${oversoldThreshold}) كمنطقة تجميع محتملة.`;
   } else {
     signal = 'OVERSOLD';
     signal_ar = 'تشبع بيعي';
-    analysis = `RSI at ${rsi.toFixed(1)} signals oversold conditions. The stock has been heavily sold and may be due for a technical bounce. This can present a contrarian buying opportunity, but confirm with other indicators (volume, support levels) before entering.`;
-    analysis_ar = `مؤشر القوة النسبة عند ${rsi.toFixed(1)} يشير إلى حالة تشبع بيعي. السهم تعرض لبيع مكثف وقد يحتاج إلى ارتداد فني. قد يمثل هذا فرصة شراء عكسية، لكن يجب التأكد بمؤشرات أخرى (الحجم، مستويات الدعم) قبل الدخول.`;
+    analysis = `RSI at ${rsi.toFixed(1)} signals oversold conditions (below ${oversoldThreshold}). The stock has been heavily sold and may be due for a technical bounce. This can present a contrarian buying opportunity, but confirm with other indicators (volume, support levels) before entering.`;
+    analysis_ar = `مؤشر القوة النسبة عند ${rsi.toFixed(1)} يشير إلى حالة تشبع بيعي (أقل من ${oversoldThreshold}). السهم تعرض لبيع مكثف وقد يحتاج إلى ارتداد فني. قد يمثل هذا فرصة شراء عكسية، لكن يجب التأكد بمؤشرات أخرى (الحجم، مستويات الدعم) قبل الدخول.`;
   }
 
   return { value: rsi, signal, signal_ar, analysis, analysis_ar };
@@ -407,9 +420,14 @@ function analyzeROE(roe: number | null): ExpertAnalysis['fundamental']['roe'] {
   return { value: roe, rating, rating_ar, analysis, analysis_ar };
 }
 
-// ─── EPS Analysis ───────────────────────────────────────────────────────
+// ─── EPS Analysis (currency-aware) ─────────────────────────────────────
+// ARCH-OPTION-2 (2026-10-10): استبدال "EGP"/"جنيه" بـ currencyLabel ديناميكي
 
-function analyzeEPS(eps: number | null, price: number | null, currencyAr: string = 'جنيه'): ExpertAnalysis['fundamental']['eps'] {
+function analyzeEPS(
+  eps: number | null,
+  price: number | null,
+  currencyLabel: string = 'جنيه',
+): ExpertAnalysis['fundamental']['eps'] {
   if (eps === null) {
     return {
       value: null,
@@ -422,11 +440,11 @@ function analyzeEPS(eps: number | null, price: number | null, currencyAr: string
 
   if (price !== null && price > 0) {
     const impliedPE = price / eps;
-    analysis = `EPS of ${eps.toFixed(2)} means each share earns ${eps.toFixed(2)} annually. At current price ${price.toFixed(2)}, this implies a P/E of ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'Reasonable valuation.' : impliedPE < 25 ? 'Moderate valuation.' : 'Premium valuation — requires growth justification.'}`;
-    analysis_ar = `ربحية السهم ${eps.toFixed(2)} ${currencyAr} تعني أن كل سهم يحقق ${eps.toFixed(2)} ${currencyAr} سنوياً. عند السعر الحالي ${price.toFixed(2)}، يعني ذلك مكرر ربحية ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'تقييم معقول.' : impliedPE < 25 ? 'تقييم متوسط.' : 'تقييم مرتفع — يتطلب مبرر نمو.'}`;
+    analysis = `EPS of ${eps.toFixed(2)} ${currencyLabel} means each share earns ${eps.toFixed(2)} ${currencyLabel} annually. At current price ${price.toFixed(2)}, this implies a P/E of ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'Reasonable valuation.' : impliedPE < 25 ? 'Moderate valuation.' : 'Premium valuation — requires growth justification.'}`;
+    analysis_ar = `ربحية السهم ${eps.toFixed(2)} ${currencyLabel} تعني أن كل سهم يحقق ${eps.toFixed(2)} ${currencyLabel} سنوياً. عند السعر الحالي ${price.toFixed(2)}، يعني ذلك مكرر ربحية ${impliedPE.toFixed(1)}x. ${impliedPE < 15 ? 'تقييم معقول.' : impliedPE < 25 ? 'تقييم متوسط.' : 'تقييم مرتفع — يتطلب مبرر نمو.'}`;
   } else {
-    analysis = `EPS of ${eps.toFixed(2)} reflects per-share earnings. Positive EPS indicates profitability. Compare with historical EPS to assess growth trajectory.`;
-    analysis_ar = `ربحية السهم ${eps.toFixed(2)} ${currencyAr} تعكس الأرباح لكل سهم. ربحية موجبة تشير إلى تحقيق أرباح. قارن مع ربحية السهم التاريخية لتقييم مسار النمو.`;
+    analysis = `EPS of ${eps.toFixed(2)} ${currencyLabel} reflects per-share earnings. Positive EPS indicates profitability. Compare with historical EPS to assess growth trajectory.`;
+    analysis_ar = `ربحية السهم ${eps.toFixed(2)} ${currencyLabel} تعكس الأرباح لكل سهم. ربحية موجبة تشير إلى تحقيق أرباح. قارن مع ربحية السهم التاريخية لتقييم مسار النمو.`;
   }
 
   return { value: eps, analysis, analysis_ar };
@@ -578,13 +596,21 @@ function assessRisk(
 }
 
 // ─── Main: Generate Expert Analysis ────────────────────────────────────
+//
+// ARCH-OPTION-2 (2026-10-10): MarketProfile-aware
+//   - يجيب MarketProfile للسوق (EGX/KSA/KSE/QSE/DFM/US/CRYPTO)
+//   - RSI thresholds تاخد من profile.rsi_overbought/oversold
+//   - Target/Stop محسوبة من profile.target_min_pct / profile.stop_max_pct
+//   - Currency label ديناميكي (جنيه/ريال/دولار/دينار/درهم)
+//   - Fundamental analysis بـ skip للكريبتو (fundamental weight = 0)
+//   - SIGNAL_THRESHOLDS موحد من canonical-signal.ts (78/65/55/40/25)
 
 export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalysis {
-  // RULE-27/29 MARKET-AWARE: currency unit بتتجب من MarketProfile (مش "جنيه" hard-coded).
-  // قبل كده: تحليل AAPL كان بيقول "نقطة الدخول: 190 جنيه" = كذب (Rule 27).
-  // دلوقتي: currencyAr بيتحدد حسب data.market (EGX→جنيه، US→دولار، CRYPTO→دولار...).
-  const marketRaw = (data.market ?? 'EGX') as MarketType;
-  const currencyAr = currencyUnitAr(marketRaw);
+  // ─── MarketProfile-aware setup ─────────────────────────────────────────
+  const marketProfile = getMarketProfile(data.market);
+  const currency = currencyLabelAr(data.market);          // 'جنيه' | 'ريال' | 'دولار' | ...
+  const hasFundamentals = supportsFundamentals(data.market); // false للكريبتو
+
   const price = safeNum(data.current_price);
   const rsi = safeNum(data.rsi);
   const ma50 = safeNum(data.ma_50);
@@ -611,23 +637,32 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
   const signal = data.signal?.toUpperCase() || 'HOLD';
   const isSellSignal = ['SELL', 'STRONG_SELL', 'REDUCE'].includes(signal);
 
+  // ARCH-OPTION-2: calculate target/stop using MarketProfile percentages
+  // (كان hardcoded 1.10 / 0.95 / 1.20 / 0.80 / 1.05 — غير صحيح لكل الأسواق)
+  //   - target_min_pct (EGX=2.5%, CRYPTO=10%, US=5%)
+  //   - stop_max_pct (EGX=7%, CRYPTO=20%, US=15%)
+  const targetUpMult = 1 + marketProfile.target_min_pct / 100;  // EGX: 1.025, CRYPTO: 1.10
+  const targetDownMult = 1 - marketProfile.target_min_pct / 100;
+  const stopDownMult = 1 - marketProfile.stop_max_pct / 100;    // EGX: 0.93, CRYPTO: 0.80
+  const stopUpMult = 1 + marketProfile.stop_max_pct / 100;
+
   // Calculate target1 if missing
-  // BUY signals: target = resistance (if > entry) or entry * 1.10
-  // SELL signals: target = support (if < entry) or entry * 0.90
+  // BUY signals: target = resistance (if > entry) or entry * targetUpMult
+  // SELL signals: target = support (if < entry) or entry * targetDownMult
   const calcTarget1 = target1 ?? (entry ? (
     isSellSignal
-      ? (support && support < entry ? support : entry * 0.90)
-      : (resistance && resistance > entry ? resistance : entry * 1.10)
+      ? (support && support < entry ? support : entry * targetDownMult)
+      : (resistance && resistance > entry ? resistance : entry * targetUpMult)
   ) : null);
   // Calculate target2 if missing (target1 * 1.20 for BUY, * 0.80 for SELL)
   const calcTarget2 = target2 ?? (calcTarget1 ? (isSellSignal ? calcTarget1 * 0.80 : calcTarget1 * 1.20) : null);
   // Calculate stop loss if missing
-  // BUY signals: stop = support (if < entry) or entry * 0.95
-  // SELL signals: stop = resistance (if > entry) or entry * 1.05
+  // BUY signals: stop = support (if < entry) or entry * stopDownMult
+  // SELL signals: stop = resistance (if > entry) or entry * stopUpMult
   const calcStop = stopLoss ?? (entry ? (
     isSellSignal
-      ? (resistance && resistance > entry ? resistance : entry * 1.05)
-      : (support && support < entry ? support : entry * 0.95)
+      ? (resistance && resistance > entry ? resistance : entry * stopUpMult)
+      : (support && support < entry ? support : entry * stopDownMult)
   ) : null);
 
   // R:R for BUY: (target - entry) / (entry - stop)
@@ -643,67 +678,94 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
   const target2Pct = entry && calcTarget2 ? ((calcTarget2 - entry) / entry) * 100 : null;
   const stopPct = entry && calcStop ? ((calcStop - entry) / entry) * 100 : null;
 
-  // Recommendation
-  // CANONICAL-FIX (2026-10-09, Team 9): لو canonical signal موجود → استخدمه
-  // قبل كده: كنا بنستخدم prediction.signal (ممكن يكون قديم/متناقض)
-  // دلوقتي: الأولوية لـ canonical signal (من unified-stock-data.ts)
+  // Recommendation — CANONICAL unified thresholds from canonical-signal.ts
+  // (إلغاء التكرار في /api/unified/route.ts + /api/v2/unified/config/route.ts)
   let rec = 'HOLD';
   let rec_ar = 'انتظار';
   if (data.signal) {
     rec = data.signal;
     rec_ar = signalAr(data.signal);
   } else if (data.master_score !== null && data.master_score !== undefined) {
-    // RULE-73 UNIFY: استخدم canonical classifySignal (مش thresholds hardcoded).
-    // قبل كده: hardcoded 78/65/55/40/25 — values صح بس مكررة (Rule 28).
-    // دلوقتي: مصدر واحد بس للـ thresholds (canonical-signal.ts).
-    rec = classifySignal(data.master_score);
-    rec_ar = canonicalSignalAr(rec);
+    // ARCH-OPTION-2: استخدم SIGNAL_THRESHOLDS من canonical-signal.ts (مصدر موحد)
+    const s = Number(data.master_score);
+    if (s >= SIGNAL_THRESHOLDS.STRONG_BUY) { rec = 'STRONG_BUY'; rec_ar = 'شراء قوي'; }
+    else if (s >= SIGNAL_THRESHOLDS.BUY) { rec = 'BUY'; rec_ar = 'شراء'; }
+    else if (s >= SIGNAL_THRESHOLDS.ACCUMULATE) { rec = 'ACCUMULATE'; rec_ar = 'تجميع'; }
+    else if (s >= SIGNAL_THRESHOLDS.STRONG_SELL) { rec = 'SELL'; rec_ar = 'بيع'; }
+    else { rec = 'STRONG_SELL'; rec_ar = 'بيع قوي'; }
     // 41-54 = HOLD (canonical)
   }
 
   const name = data.name_ar || data.name || data.ticker;
   const sector = data.sector || '—';
 
-  // Technical analysis
-  const rsiAnalysis = analyzeRSI(rsi);
+  // Technical analysis — pass MarketProfile thresholds
+  const rsiAnalysis = analyzeRSI(
+    rsi,
+    marketProfile.rsi_overbought,    // EGX=70, CRYPTO=75
+    marketProfile.rsi_oversold,        // EGX=30, CRYPTO=25
+  );
   const maAnalysis = analyzeMA(ma50, ma200, price);
   const srAnalysis = analyzeSR(support, resistance, price);
   const range52w = analyze52w(high52, low52, price);
 
-  // Fundamental analysis
-  const peAnalysis = analyzePE(pe);
-  const roeAnalysis = analyzeROE(roe);
-  const epsAnalysis = analyzeEPS(eps, price, currencyAr);
-  const pbAnalysis = analyzePB(pb);
-  const divAnalysis = analyzeDividend(divYield);
+  // Fundamental analysis — ARCH-OPTION-2: skip for crypto (no P/E/ROE/EPS)
+  const peAnalysis = hasFundamentals ? analyzePE(pe) : skipFundamental('P/E');
+  const roeAnalysis = hasFundamentals ? analyzeROE(roe) : skipFundamental('ROE');
+  const epsAnalysis = hasFundamentals ? analyzeEPS(eps, price, currency) : skipFundamental('EPS');
+  const pbAnalysis = hasFundamentals ? analyzePB(pb) : skipFundamental('P/B');
+  const divAnalysis = hasFundamentals ? analyzeDividend(divYield) : skipFundamental('Dividend');
 
   // Risk assessment
   const risk = assessRisk(rsi, beta, debtToEquity, range52w.position);
 
   // Expert summary
-  const expertSummary = `Based on the technical and fundamental analysis, ${name} (${data.ticker}) in the ${sector} sector is currently rated as ${rec}. ${rsiAnalysis.signal !== 'NO_DATA' ? `Technical indicators show RSI at ${rsi?.toFixed(1)} (${rsiAnalysis.signal_ar}).` : ''} ${maAnalysis.trend !== 'UNKNOWN' ? `The trend is ${maAnalysis.trend_ar}.` : ''} ${peAnalysis.rating !== 'NO_DATA' ? `Fundamentally, P/E of ${pe?.toFixed(1)} suggests ${peAnalysis.rating_ar}.` : ''} ${roeAnalysis.rating !== 'NO_DATA' ? `ROE of ${roe?.toFixed(1)}% is ${roeAnalysis.rating_ar}.` : ''} Risk level: ${risk.level_ar}. Recommended position size: ${risk.positionSize_ar}.`;
+  const expertSummary = `Based on the technical and fundamental analysis, ${name} (${data.ticker}) in the ${sector} sector is currently rated as ${rec}. ${rsiAnalysis.signal !== 'NO_DATA' ? `Technical indicators show RSI at ${rsi?.toFixed(1)} (${rsiAnalysis.signal_ar}).` : ''} ${maAnalysis.trend !== 'UNKNOWN' ? `The trend is ${maAnalysis.trend_ar}.` : ''} ${hasFundamentals && peAnalysis.rating !== 'NO_DATA' ? `Fundamentally, P/E of ${pe?.toFixed(1)} suggests ${peAnalysis.rating_ar}.` : ''} ${hasFundamentals && roeAnalysis.rating !== 'NO_DATA' ? `ROE of ${roe?.toFixed(1)}% is ${roeAnalysis.rating_ar}.` : ''} Risk level: ${risk.level_ar}. Recommended position size: ${risk.positionSize_ar}.`;
 
-  const expertSummary_ar = `بناءً على التحليل الفني والأساسي، ${name} (${data.ticker}) في قطاع ${sector} مُقيّم حالياً بـ ${rec_ar}. ${rsiAnalysis.signal !== 'NO_DATA' ? `المؤشرات الفنية تُظهر RSI عند ${rsi?.toFixed(1)} (${rsiAnalysis.signal_ar}).` : ''} ${maAnalysis.trend !== 'UNKNOWN' ? `الاتجاه ${maAnalysis.trend_ar}.` : ''} ${peAnalysis.rating !== 'NO_DATA' ? `أساسياً، مكرر ربحية ${pe?.toFixed(1)} يشير إلى ${peAnalysis.rating_ar}.` : ''} ${roeAnalysis.rating !== 'NO_DATA' ? `العائد على حقوق الملكية ${roe?.toFixed(1)}% ${roeAnalysis.rating_ar}.` : ''} مستوى المخاطرة: ${risk.level_ar}. حجم المركز الموصى به: ${risk.positionSize_ar}.`;
+  const expertSummary_ar = `بناءً على التحليل الفني والأساسي، ${name} (${data.ticker}) في قطاع ${sector} مُقيّم حالياً بـ ${rec_ar}. ${rsiAnalysis.signal !== 'NO_DATA' ? `المؤشرات الفنية تُظهر RSI عند ${rsi?.toFixed(1)} (${rsiAnalysis.signal_ar}).` : ''} ${maAnalysis.trend !== 'UNKNOWN' ? `الاتجاه ${maAnalysis.trend_ar}.` : ''} ${hasFundamentals && peAnalysis.rating !== 'NO_DATA' ? `أساسياً، مكرر ربحية ${pe?.toFixed(1)} يشير إلى ${peAnalysis.rating_ar}.` : ''} ${hasFundamentals && roeAnalysis.rating !== 'NO_DATA' ? `العائد على حقوق الملكية ${roe?.toFixed(1)}% ${roeAnalysis.rating_ar}.` : ''} مستوى المخاطرة: ${risk.level_ar}. حجم المركز الموصى به: ${risk.positionSize_ar}.`;
 
   // Full formatted report (Arabic - for display)
+  // ARCH-OPTION-2: currency label ديناميكي (مفيش "جنيه" hardcoded)
+  const fundamentalSection = hasFundamentals ? `
+━━━ **التحليل الأساسي** ━━━
+💰 **مكرر الربحية (P/E)**: ${fmt(pe, 1)}x — ${peAnalysis.rating_ar}
+   ${peAnalysis.analysis_ar}
+
+🏦 **العائد على حقوق الملكية (ROE)**: ${fmt(roe, 1)}% — ${roeAnalysis.rating_ar}
+   ${roeAnalysis.analysis_ar}
+
+💵 **ربحية السهم (EPS)**: ${fmt(eps)} ${currency}
+   ${epsAnalysis.analysis_ar}
+
+📊 **مكرر القيمة الدفترية (P/B)**: ${fmt(pb, 2)}x — ${pbAnalysis.rating_ar}
+   ${pbAnalysis.analysis_ar}
+
+💸 **عائد التوزيعات**: ${fmt(divYield, 2)}% — ${divAnalysis.rating_ar}
+   ${divAnalysis.analysis_ar}
+` : `
+━━━ **التحليل الأساسي** ━━━
+🚫 **غير متاح لهذا السوق** — التحليل الأساسي يتطلب بيانات مالية (P/E, ROE, EPS) غير متوفرة للعملات الرقمية.
+`;
+
   const fullReport_ar = `
 📊 **تحليل خبير: ${name} (${data.ticker})**
 ═══════════════════════════════════════
 
 🎯 **التوصية**: ${rec_ar}
-📍 **السعر الحالي**: ${fmt(price)} ${currencyAr}
+📍 **السعر الحالي**: ${fmt(price)} ${currency}
 🏦 **القطاع**: ${sector}
+🌍 **السوق**: ${marketProfile.market_name_ar}
 
 ━━━ **نقاط الدخول والخروج** ━━━
-🟢 **نقطة الدخول**: ${fmt(entry)} ${currencyAr}
+🟢 **نقطة الدخول**: ${fmt(entry)} ${currency}
    المبرر: ${entry === support ? 'قرب مستوى الدعم القوي' : entry === ma50 ? 'قرب المتوسط المتحرك 50' : 'مستوى دخول فني محسوب'}
-🎯 **الهدف الأول**: ${fmt(calcTarget1)} ${currencyAr} (${fmtPct(target1Pct)})
-   المبرر: ${calcTarget1 === resistance ? 'عند مستوى المقاومة القوية' : 'هدف فني محسوب بناءً على R:R'}
-🚀 **الهدف الثاني**: ${fmt(calcTarget2)} ${currencyAr} (${fmtPct(target2Pct)})
+🎯 **الهدف الأول**: ${fmt(calcTarget1)} ${currency} (${fmtPct(target1Pct)})
+   المبرر: ${calcTarget1 === resistance ? 'عند مستوى المقاومة القوية' : `هدف فني محسوب بناءً على R:R (حد أدنى ${marketProfile.target_min_pct}%)`}
+🚀 **الهدف الثاني**: ${fmt(calcTarget2)} ${currency} (${fmtPct(target2Pct)})
    المبرر: هدف موسع بعد اختراق المقاومة
-🔴 **وقف الخسارة**: ${fmt(calcStop)} ${currencyAr} (${fmtPct(stopPct)})
-   المبرر: ${calcStop === support ? 'تحت مستوى الدعم' : 'وقف خسارة فني (5% تحت الدخول)'}
-⚖️ **نسبة المخاطرة/العائد**: ${rr ? rr.toFixed(2) : '—'} (المستهدف ≥ 2.0)
+🔴 **وقف الخسارة**: ${fmt(calcStop)} ${currency} (${fmtPct(stopPct)})
+   المبرر: ${calcStop === support ? 'تحت مستوى الدعم' : `وقف فني (حد أقصى ${marketProfile.stop_max_pct}% تحت الدخول)`}
+⚖️ **نسبة المخاطرة/العائد**: ${rr ? rr.toFixed(2) : '—'} (المستهدف ≥ ${marketProfile.min_rr})
 
 ━━━ **التحليل الفني** ━━━
 📈 **RSI**: ${fmt(rsi, 1)} — ${rsiAnalysis.signal_ar}
@@ -723,22 +785,7 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
    الموقع: ${range52w.position_ar}
    ${range52w.analysis_ar}
 
-━━━ **التحليل الأساسي** ━━━
-💰 **مكرر الربحية (P/E)**: ${fmt(pe, 1)}x — ${peAnalysis.rating_ar}
-   ${peAnalysis.analysis_ar}
-
-🏦 **العائد على حقوق الملكية (ROE)**: ${fmt(roe, 1)}% — ${roeAnalysis.rating_ar}
-   ${roeAnalysis.analysis_ar}
-
-💵 **ربحية السهم (EPS)**: ${fmt(eps)} ${currencyAr}
-   ${epsAnalysis.analysis_ar}
-
-📊 **مكرر القيمة الدفترية (P/B)**: ${fmt(pb, 2)}x — ${pbAnalysis.rating_ar}
-   ${pbAnalysis.analysis_ar}
-
-💸 **عائد التوزيعات**: ${fmt(divYield, 2)}% — ${divAnalysis.rating_ar}
-   ${divAnalysis.analysis_ar}
-
+${fundamentalSection}
 ━━━ **تقييم المخاطر** ━━━
 ⚠️ **مستوى المخاطرة**: ${risk.level_ar}
 📏 **حجم المركز الموصى به**: ${risk.positionSize_ar}
@@ -777,8 +824,8 @@ ${expertSummary_ar}
     stopLoss: {
       price: calcStop,
       pct: stopPct,
-      rationale: calcStop === support ? 'Below support level' : 'Technical stop (5% below entry)',
-      rationale_ar: calcStop === support ? 'تحت مستوى الدعم' : 'وقف فني (5% تحت الدخول)',
+      rationale: calcStop === support ? 'Below support level' : `Technical stop (${marketProfile.stop_max_pct}% below entry)`,
+      rationale_ar: calcStop === support ? 'تحت مستوى الدعم' : `وقف فني (${marketProfile.stop_max_pct}% تحت الدخول)`,
     },
     riskReward: rr,
     technical: {
@@ -795,14 +842,29 @@ ${expertSummary_ar}
       eps: epsAnalysis,
       pbRatio: pbAnalysis,
       dividend: divAnalysis,
-      summary: `${peAnalysis.rating}, ROE ${roeAnalysis.rating}, Div ${divAnalysis.rating}`,
-      summary_ar: `${peAnalysis.rating_ar}، ROE ${roeAnalysis.rating_ar}، توزيعات ${divAnalysis.rating_ar}`,
+      summary: hasFundamentals
+        ? `${peAnalysis.rating}, ROE ${roeAnalysis.rating}, Div ${divAnalysis.rating}`
+        : 'N/A — لا توجد أساسيات لهذا السوق',
+      summary_ar: hasFundamentals
+        ? `${peAnalysis.rating_ar}، ROE ${roeAnalysis.rating_ar}، توزيعات ${divAnalysis.rating_ar}`
+        : 'غير متاح — لا توجد أساسيات لهذا السوق',
     },
     risk,
     expertSummary,
     expertSummary_ar,
     fullReport: fullReport_ar, // English version would be similar
     fullReport_ar,
+  };
+}
+
+// ─── Helper: skip fundamental analysis (for crypto / markets without fundamentals) ──
+function skipFundamental(field: string): any {
+  return {
+    value: null,
+    rating: 'N/A',
+    rating_ar: 'غير متاح',
+    analysis: `${field} is not applicable for this market (no financial statements).`,
+    analysis_ar: `${field} غير متاح لهذا السوق (لا توجد قوائم مالية).`,
   };
 }
 

@@ -2,6 +2,12 @@
  * GET /api/stocks/[ticker]/expert-analysis
  * =================================================
  * تحليل خبير احترافي شامل للسهم.
+ *
+ * ARCH-OPTION-2 (2026-10-10): MarketProfile-aware
+ *   - بيجيب MarketProfile من Python (best-effort) قبل ما يشغل المحرك
+ *   - المحرك يستخدم profile.rsi_overbought/oversold و stop/target من profile
+ *   - Currency label ديناميكي (جنيه/ريال/دولار/...)
+ *   - Fundamental analysis بـ skip للكريبتو
  */
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
@@ -9,6 +15,7 @@ export const revalidate = 0;
 
 import { getUnifiedStockData } from '@/lib/unified-stock-data';
 import { generateExpertAnalysis, StockDataForAnalysis } from '@/lib/expert-analysis';
+import { refreshMarketProfileFromPython } from '@/lib/market-profile';
 
 export async function GET(
   _req: NextRequest,
@@ -37,6 +44,11 @@ export async function GET(
     const technical = unified.technical || {};
     const prediction = unified.prediction || {};
     const canonical = unified.canonical || {};
+
+    // ARCH-OPTION-2: best-effort refresh MarketProfile from Python before analysis
+    // (لو Python معطّل → TS يستخدم defaults — مفيش كسر)
+    const marketCode = String(stock.market || 'EGX');
+    await refreshMarketProfileFromPython(marketCode).catch(() => {});
 
     const dataForAnalysis: StockDataForAnalysis = {
       ticker,
