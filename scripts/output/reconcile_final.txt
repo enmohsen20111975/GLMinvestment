@@ -1,0 +1,46 @@
+[INFO] predictions.db:   /home/z/my-project/db/predictions.db
+[INFO] price_history.db: /home/z/my-project/db/price_history.db
+[INFO] READ-ONLY mode (URI ?mode=ro) — no DB writes will occur.
+
+[1/4] Fetched 1213 closed predictions.
+[2/4] Fetching price history for 80 distinct tickers (batched per-ticker)...
+      Price-history rows cached for 79 / 80 tickers.
+
+========================================================================
+[3/4] RECONCILIATION SUMMARY
+========================================================================
+Total closed predictions checked : 1213
+  MATCH (recorded == actual)      : 792  (65.29%)
+  MISMATCH (recorded != actual)   : 384  (31.66%)
+  INSUFFICIENT_DATA               : 37  (3.05%)
+
+Mismatches by type (recorded_to_actual):
+  EXPIRED_to_TARGET_HIT            : 235
+  EXPIRED_to_STOPPED               : 89
+  STOPPED_to_TARGET_HIT            : 28
+  STOPPED_to_EXPIRED               : 28
+  TARGET_HIT_to_EXPIRED            : 4
+
+Anomalies (exit_date < prediction_date etc.): 0
+
+Top 10 mismatches (by largest |recorded actual_return|):
+------------------------------------------------------------------------
+id      ticker   pred_date   recorded     actual           entry    target     stop   max_high    min_low     ret%
+------------------------------------------------------------------------
+50777   PHDC     2026-02-25  EXPIRED      TARGET_HIT        8.99     16.38     8.45      16.43       7.99   +49.50
+50793   PHDC     2026-03-02  EXPIRED      TARGET_HIT        8.85     16.35     8.33      16.43       7.99   +49.15
+50889   MASR     2026-03-30  EXPIRED      TARGET_HIT        5.16     45.19     4.85      62.14       5.01   +48.84
+50783   PHDC     2026-02-26  EXPIRED      TARGET_HIT        9.05     16.39     8.51      16.43       7.99   +48.51
+50787   PHDC     2026-03-01  EXPIRED      TARGET_HIT        8.90     16.36     8.37      16.43       7.99   +48.31
+50676   ABUK     2026-01-28  EXPIRED      TARGET_HIT       64.16    116.86    60.34     124.63      62.01   +46.04
+50795   MASR     2026-03-03  EXPIRED      TARGET_HIT        5.29     45.22     4.98      62.14       5.01   +45.18
+50800   MASR     2026-03-04  EXPIRED      TARGET_HIT        5.30     45.22     4.99      62.14       5.01   +44.91
+50791   MASR     2026-03-02  EXPIRED      TARGET_HIT        5.42     45.24     5.10      62.14       5.01   +41.70
+50812   MASR     2026-03-08  EXPIRED      TARGET_HIT        5.42     45.24     5.10      62.14       5.01   +41.70
+
+[4/4] Wrote JSON report: /home/z/my-project/scripts/output/hit_target_reconciliation_20260927T162626Z.json
+[4/4] Wrote SQL fixes : /home/z/my-project/scripts/output/hit_target_fixes_20260927T162626Z.sql
+
+========================================================================
+DONE. checked=1213  match=792 (65.29%)  mismatch=384 (31.66%)  insufficient=37
+========================================================================

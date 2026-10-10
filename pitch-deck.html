@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>GLMinvestment — دليل الاستثمار | عرض تقديمي للاستحواذ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #070b13; font-family: 'Cairo', sans-serif; color: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { box-sizing: border-box; }
+
+  .page {
+    width: 1280px;
+    height: 720px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(1200px 700px at 80% -10%, rgba(234,179,8,0.10), transparent 60%),
+      radial-gradient(900px 600px at -5% 110%, rgba(234,179,8,0.06), transparent 55%),
+      #070b13;
+    padding: 56px 72px 56px 72px;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* Subtle grid texture */
+  .page::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.022) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.022) 1px, transparent 1px);
+    background-size: 80px 80px;
+    pointer-events: none;
+  }
+
+  /* Top accent bar */
+  .top-bar {
+    position: absolute;
+    top: 0; right: 0; left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #eab308 0%, #facc15 50%, #d97706 100%);
+  }
+
+  /* Brand chip — top right (RTL) */
+  .brand-chip {
+    position: absolute;
+    top: 28px; right: 72px;
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 15px;
+    color: #facc15; letter-spacing: 0.5px;
+  }
+  .brand-chip .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #eab308; box-shadow: 0 0 12px rgba(234,179,8,0.7);
+  }
+  .brand-chip .sep { color: #475569; font-weight: 400; }
+  .brand-chip .sub { color: #94a3b8; font-weight: 500; font-size: 13px; }
+
+  /* Slide number — top left (RTL) */
+  .slide-no {
+    position: absolute;
+    top: 28px; left: 72px;
+    color: #475569; font-size: 13px; font-weight: 600;
+    letter-spacing: 1.5px;
+    font-family: 'Cairo', monospace;
+  }
+
+  /* Footer */
+  .footer {
+    position: absolute;
+    bottom: 24px; right: 72px; left: 72px;
+    display: flex; justify-content: space-between; align-items: center;
+    color: #475569; font-size: 11.5px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 12px;
+  }
+  .footer .left { color: #64748b; }
+  .footer .right { color: #94a3b8; font-weight: 600; }
+  .footer .right b { color: #eab308; }
+
+  /* Headings */
+  .eyebrow {
+    color: #eab308;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1.title {
+    font-size: 52px; font-weight: 800; line-height: 1.15;
+    margin: 0 0 14px 0;
+    color: #ffffff;
+  }
+  h1.title .gold { color: #facc15; }
+  h2.section-title {
+    font-size: 42px; font-weight: 800; line-height: 1.15;
+    margin: 0 0 10px 0;
+    color: #ffffff;
+  }
+  h2.section-title .gold { color: #facc15; }
+  .section-sub {
+    color: #94a3b8; font-size: 17px; font-weight: 500;
+    margin-bottom: 28px; max-width: 950px; line-height: 1.6;
+  }
+
+  /* Cards */
+  .card {
+    background: linear-gradient(180deg, #0e1726 0%, #131d31 100%);
+    border: 1px solid rgba(234,179,8,0.18);
+    border-radius: 14px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card.accent {
+    border-color: rgba(234,179,8,0.45);
+    box-shadow: 0 0 0 1px rgba(234,179,8,0.10) inset, 0 18px 40px -22px rgba(234,179,8,0.30);
+  }
+  .card .icon {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    background: rgba(234,179,8,0.12);
+    border: 1px solid rgba(234,179,8,0.35);
+    display: flex; align-items: center; justify-content: center;
+    color: #facc15; font-size: 20px; font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .card h3 {
+    margin: 0 0 8px 0;
+    color: #ffffff;
+    font-size: 18px; font-weight: 700;
+  }
+  .card p {
+    margin: 0; color: #94a3b8; font-size: 13.5px; line-height: 1.65;
+  }
+
+  /* Big stat */
+  .stat-num {
+    font-size: 64px; font-weight: 900; line-height: 1;
+    color: #facc15;
+    font-feature-settings: "tnum";
+  }
+  .stat-label {
+    color: #94a3b8; font-size: 13px; font-weight: 600;
+    margin-top: 8px; letter-spacing: 0.3px;
+  }
+  .stat-sub {
+    color: #64748b; font-size: 11.5px; margin-top: 4px;
+  }
+
+  /* Layout helpers */
+  .grid { display: grid; gap: 18px; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .row { display: flex; gap: 18px; align-items: stretch; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 700;
+    background: rgba(234,179,8,0.10);
+    border: 1px solid rgba(234,179,8,0.35);
+    color: #facc15;
+  }
+  .badge.green { background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.4); color: #34d399; }
+  .badge.red { background: rgba(239,68,68,0.10); border-color: rgba(239,68,68,0.4); color: #f87171; }
+  .badge.gray { background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.3); color: #94a3b8; }
+
+  .hr-gold {
+    height: 2px; width: 64px;
+    background: linear-gradient(90deg, #eab308, transparent);
+    margin: 14px 0 18px 0;
+  }
+
+  /* ---------- COVER ---------- */
+  .cover {
+    background:
+      radial-gradient(1100px 700px at 78% 8%, rgba(234,179,8,0.18), transparent 60%),
+      radial-gradient(900px 700px at 8% 95%, rgba(234,179,8,0.08), transparent 55%),
+      #070b13;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 80px 100px;
+  }
+  .cover .logo-mark {
+    width: 92px; height: 92px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #facc15 0%, #eab308 50%, #b45309 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #0a0f1c; font-size: 40px; font-weight: 900;
+    box-shadow: 0 20px 60px -15px rgba(234,179,8,0.6), 0 0 0 1px rgba(234,179,8,0.5) inset;
+    margin-bottom: 36px;
+    font-family: 'Cairo', sans-serif;
+    letter-spacing: -1px;
+  }
+  .cover h1 {
+    font-size: 78px; font-weight: 900; line-height: 1.05;
+    margin: 0 0 18px 0; color: #ffffff;
+  }
+  .cover h1 .gold { color: #facc15; }
+  .cover .sub-title {
+    font-size: 26px; font-weight: 600; color: #cbd5e1;
+    margin-bottom: 36px;
+  }
+  .cover .meta-row {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    margin-top: 24px;
+  }
+  .cover .pill {
+    padding: 9px 18px; border-radius: 999px;
+    border: 1px solid rgba(234,179,8,0.35);
+    background: rgba(234,179,8,0.08);
+    color: #facc15; font-size: 14px; font-weight: 700;
+  }
+  .cover .pill.ghost {
+    border-color: rgba(148,163,184,0.25);
+    background: transparent;
+    color: #94a3b8;
+  }
+  .cover .date-tag {
+    position: absolute;
+    bottom: 56px; left: 100px;
+    color: #475569; font-size: 13px; font-weight: 600; letter-spacing: 2px;
+  }
+  .cover .vertical-line {
+    position: absolute;
+    right: 100px; top: 80px; bottom: 80px;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(234,179,8,0.45), transparent);
+  }
+
+  /* ---------- TABLE ---------- */
+  table.pricing {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    font-size: 13.5px;
+  }
+  table.pricing th, table.pricing td {
+    padding: 14px 16px;
+    text-align: right;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  table.pricing thead th {
+    color: #facc15; font-weight: 800; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    background: rgba(234,179,8,0.05);
+    border-bottom: 1px solid rgba(234,179,8,0.25);
+  }
+  table.pricing tbody tr:hover { background: rgba(255,255,255,0.02); }
+  table.pricing .tier { color: #ffffff; font-weight: 700; }
+  table.pricing .price { color: #facc15; font-weight: 800; font-size: 15px; font-feature-settings: "tnum"; }
+  table.pricing .feat { color: #94a3b8; }
+
+  /* ---------- ADVANTAGE LIST ---------- */
+  .adv {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 16px;
+    background: linear-gradient(180deg, rgba(14,23,38,0.6), rgba(19,29,49,0.6));
+    border: 1px solid rgba(255,255,255,0.05);
+    border-right: 3px solid #eab308;
+    border-radius: 8px;
+  }
+  .adv .num {
+    width: 32px; height: 32px; flex-shrink: 0;
+    border-radius: 8px;
+    background: rgba(234,179,8,0.12);
+    border: 1px solid rgba(234,179,8,0.4);
+    color: #facc15;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px;
+  }
+  .adv h4 { margin: 0 0 4px 0; color: #ffffff; font-size: 15px; font-weight: 700; }
+  .adv p { margin: 0; color: #94a3b8; font-size: 12.5px; line-height: 1.55; }
+
+  /* ---------- BIG STAT PANEL ---------- */
+  .stat-panel {
+    background: linear-gradient(180deg, #0e1726, #131d31);
+    border: 1px solid rgba(234,179,8,0.25);
+    border-radius: 16px;
+    padding: 22px 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-panel::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #eab308, transparent);
+  }
+  .stat-panel .label {
+    color: #94a3b8; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+  .stat-panel .value {
+    color: #facc15; font-size: 64px; font-weight: 900; line-height: 1;
+    font-feature-settings: "tnum";
+  }
+  .stat-panel .unit { color: #94a3b8; font-size: 22px; font-weight: 700; margin-right: 6px; }
+  .stat-panel .desc { color: #cbd5e1; font-size: 13px; margin-top: 10px; line-height: 1.5; }
+
+  /* ---------- RADAR DIAGRAM ---------- */
+  .radar-path {
+    background: linear-gradient(180deg, #0e1726, #131d31);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
+    position: relative;
+  }
+  .radar-path .code {
+    display: inline-block;
+    background: rgba(234,179,8,0.12);
+    color: #facc15;
+    border: 1px solid rgba(234,179,8,0.4);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11.5px; font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .radar-path h4 { margin: 0 0 4px 0; color: #ffffff; font-size: 14px; font-weight: 700; }
+  .radar-path p { margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.5; }
+
+  /* ---------- TECH STACK ---------- */
+  .stack-row {
+    display: flex; gap: 12px; align-items: center;
+    padding: 12px 14px;
+    background: rgba(14,23,38,0.6);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+  }
+  .stack-row .icon-box {
+    width: 36px; height: 36px; flex-shrink: 0;
+    border-radius: 8px;
+    background: rgba(234,179,8,0.10);
+    border: 1px solid rgba(234,179,8,0.3);
+    color: #facc15;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800;
+  }
+  .stack-row .label { color: #94a3b8; font-size: 12px; }
+  .stack-row .value { color: #ffffff; font-size: 17px; font-weight: 800; }
+
+  /* ---------- CONTACT ---------- */
+  .contact-card {
+    background: linear-gradient(180deg, rgba(14,23,38,0.95), rgba(19,29,49,0.95));
+    border: 1px solid rgba(234,179,8,0.35);
+    border-radius: 14px;
+    padding: 22px 26px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .contact-card .icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: rgba(234,179,8,0.12);
+    border: 1px solid rgba(234,179,8,0.4);
+    color: #facc15;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .contact-card .label { color: #94a3b8; font-size: 12px; margin-bottom: 3px; }
+  .contact-card .value { color: #ffffff; font-size: 16px; font-weight: 700; }
+  .contact-card .value.gold { color: #facc15; }
+
+  /* Misc */
+  .pill-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 6px 12px; border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: #cbd5e1; font-size: 12px; font-weight: 600;
+  }
+  .chip.gold { background: rgba(234,179,8,0.10); border-color: rgba(234,179,8,0.35); color: #facc15; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .kpi-tile {
+    background: linear-gradient(180deg, #0e1726, #131d31);
+    border: 1px solid rgba(234,179,8,0.20);
+    border-radius: 14px;
+    padding: 18px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-tile .num {
+    color: #facc15; font-size: 44px; font-weight: 900; line-height: 1;
+    font-feature-settings: "tnum";
+  }
+  .kpi-tile .lbl {
+    color: #94a3b8; font-size: 12.5px; font-weight: 600;
+    margin-top: 10px; letter-spacing: 0.5px;
+  }
+  .kpi-tile .sub {
+    color: #64748b; font-size: 11px; margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SLIDE 1 — COVER
+     ============================================================ -->
+<div class="page cover">
+  <div class="top-bar"></div>
+  <div class="vertical-line"></div>
+
+  <div class="logo-mark">GLM</div>
+
+  <div class="eyebrow">GLMinvestment · دليل الاستثمار</div>
+  <h1>منصة استثمارية<br/><span class="gold">متعددة الأسواق</span></h1>
+  <div class="sub-title">عرض تقديمي للاستحواذ — موجه لشركات الوساطة المالية</div>
+
+  <div class="hr-gold" style="width: 120px; margin-top: 8px;"></div>
+
+  <div class="meta-row">
+    <span class="pill">عرض تقديمي للاستحواذ</span>
+    <span class="pill ghost">سرّي — للاستخدام الداخلي</span>
+    <span class="pill ghost">v2026.10</span>
+  </div>
+
+  <div class="date-tag">أكتوبر 2026 · invist.m2y.net</div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 2 — PROBLEM
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">المشكلة</span></div>
+  <div class="slide-no">02 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">المشكلة</div>
+  <h2 class="section-title">المستثمر العربي يفتقد <span class="gold">لأدوات احترافية</span></h2>
+  <div class="section-sub">رغم وجود ملايين المستثمرين الأفراد في 7 أسواق عربية ودولية، ما زالت صناعة القرار الاستثماري تعتمد على معلومات مبعثرة وأدوات غير متخصصة، ما يُكلّف المستثمر فرصًا ووقتًا.</div>
+
+  <div class="grid grid-3">
+    <div class="card accent">
+      <div class="icon">01</div>
+      <h3>بيانات مبعثرة</h3>
+      <p>المستثمر يتنقّل بين مواقع متعددة لجمع بيانات السهم والأساسيات والأخبار، بلا مصدر موحّد ولا تأكيد على جودة الأرقام أو تحديثها.</p>
+    </div>
+    <div class="card accent">
+      <div class="icon">02</div>
+      <h3>غياب تحليل السيولة</h3>
+      <p>لا توجد أداة عربية تكشف بصمة صنّاع السوت وتوقيت الدخول والخروج بناءً على حجم السيولة المتدفّق على السهم قبل الانفجار السعري.</p>
+    </div>
+    <div class="card accent">
+      <div class="icon">03</div>
+      <h3>توقعات غير موثوقة</h3>
+      <p>التوصيات المنتشرة شفهية وغير قابلة للقياس، ما يُضعف ثقة المستثمر في صناعة القرار ويُعرّضه لقرارات عاطفية غير مدروسة.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>المشكلة</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 3 — SOLUTION
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">الحل</span></div>
+  <div class="slide-no">03 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">الحل</div>
+  <h2 class="section-title">منصة متكاملة <span class="gold">من البداية للنهاية</span></h2>
+  <div class="section-sub">أربع طبقات مترابطة تجمع البيانات والتحليل والتوقعات وتجربة المستخدم في منصة واحدة، تغطّي دورة الاستثمار كاملة من الفحص وحتى تنفيذ قرار الخروج.</div>
+
+  <div class="grid grid-4">
+    <div class="card">
+      <div class="icon">١</div>
+      <h3>طبقة البيانات</h3>
+      <p>محرّك جمع موحّد لـ 7 أسواق (EGX / TADAWUL / KSE / QSE / US / CRYPTO / GOLD) مع تحديث لحظي وتاريخي ومؤشرات الأساسيات لكل سهم.</p>
+    </div>
+    <div class="card">
+      <div class="icon">٢</div>
+      <h3>طبقة التحليل</h3>
+      <p>رادار سيولة متعدّد المسارات + محرّك توقعات V40.2 + فلتر نظام السوق (DEFENSIVE / NORMAL / AGGRESSIVE) + بطاقة أساسيات لكل شركة.</p>
+    </div>
+    <div class="card">
+      <div class="icon">٣</div>
+      <h3>طبقة التوقعات</h3>
+      <p>1,359 توقّعًا مُتتبَّعًا في قاعدة بيانات مغلقة الحلقة مع التحقّق الآلي من النتائج (TARGET_HIT / STOPPED / EXPIRED) ومعدّل نجاح فعلي ~55%.</p>
+    </div>
+    <div class="card">
+      <div class="icon">٤</div>
+      <h3>طبقة العرض</h3>
+      <p>واجهة ويب + تطبيق Flutter + بوت تليجرام تفاعلي، متصلة بنفس مصدر البيانات، مع تجربة عربية موحّدة احترافية لكل قنوات الوصول.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>الحل</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 4 — MARKET SIZE
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">حجم السوق</span></div>
+  <div class="slide-no">04 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">حجم السوق</div>
+  <h2 class="section-title">7 أسواق · <span class="gold">918 سهمًا</span> · ملايين المستثمرين</h2>
+  <div class="section-sub">المنصة تغطّي أكثر الأسواق نشاطًا في المنطقة العربية مع أسواق دولية مكمّلة، ما يضع المنتج أمام قاعدة مستخدمين يتجاوز عشرات الملايين من المستثمرين الأفراد والمحافظ.</div>
+
+  <div class="grid grid-3" style="margin-bottom: 18px;">
+    <div class="stat-panel">
+      <div class="label">الأسواق المُغطّاة</div>
+      <div class="value">7<span class="unit"></span></div>
+      <div class="desc">EGX · TADAWUL · KSE · QSE · US · CRYPTO · GOLD</div>
+    </div>
+    <div class="stat-panel">
+      <div class="label">الأسهم المُتاحة للتداول</div>
+      <div class="value">918<span class="unit"></span></div>
+      <div class="desc">بأسعار لحظية + تاريخية + أساسيات</div>
+    </div>
+    <div class="stat-panel">
+      <div class="label">قاعدة المستثمرين المحتملة</div>
+      <div class="value">+10<span class="unit">مليون</span></div>
+      <div class="desc">مستثمر فرد في الأسواق المُغطّاة</div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top: 6px;">
+    <div class="card" style="flex: 1;">
+      <h3 style="font-size: 14px; color: #facc15; margin-bottom: 12px;">الأسواق المدعومة (ترتيب أبجدي)</h3>
+      <div class="pill-list">
+        <span class="chip gold">EGX — مصر</span>
+        <span class="chip gold">TADAWUL — السعودية</span>
+        <span class="chip gold">KSE — الكويت</span>
+        <span class="chip gold">QSE — قطر</span>
+        <span class="chip">US — الولايات المتحدة</span>
+        <span class="chip">CRYPTO — العملات الرقمية</span>
+        <span class="chip">GOLD — المعادن</span>
+      </div>
+    </div>
+    <div class="card" style="flex: 1;">
+      <h3 style="font-size: 14px; color: #facc15; margin-bottom: 12px;">جاهزية التوسّع</h3>
+      <p>البنية التقنية تدعم إضافة أسواق جديدة (DFM · ADX · BSE · ASE) بإضافة مصدر بيانات واحد فقط، دون إعادة كتابة أي طبقة من المنصة.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>حجم السوق</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 5 — V40.2 ENGINE
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">محرّك التوقعات</span></div>
+  <div class="slide-no">05 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">المحرك V40.2</div>
+  <h2 class="section-title">محرّك التوقعات <span class="gold">الذكي</span></h2>
+  <div class="section-sub">محرّك التوقعات الإنتاجي الوحيد الفعّال على المنصة (KILL-MAESTRO 2026-08-31) — ينتج يوميًا 5 توصيات لكل سوق ويتتبّع النتائج في قاعدة بيانات مغلقة الحلقة مع التحقّق الآلي.</div>
+
+  <div class="kpi-grid">
+    <div class="kpi-tile">
+      <div class="num">55%</div>
+      <div class="lbl">معدّل النجاح الفعلي</div>
+      <div class="sub">بعد تنظيف HELI (سبتمبر 2026)</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="num">2.94</div>
+      <div class="lbl">عامل الربحية (PF)</div>
+      <div class="sub">Profit Factor · محسوب فعليًا</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="num">1,359</div>
+      <div class="lbl">توقّع متتبَّع</div>
+      <div class="sub">في قاعدة predictions.db</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="num">7</div>
+      <div class="lbl">حدّث max loss streak</div>
+      <div class="sub">أقصى سلسلة خسارة مُسجَّلة</div>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top: 14px;">
+    <div class="card" style="padding: 16px 18px;">
+      <h3 style="font-size: 13px; color: #facc15;">حالة التوقعات</h3>
+      <div class="hr-gold" style="margin: 8px 0;"></div>
+      <div class="row" style="gap: 8px;">
+        <span class="badge green" style="font-size: 11px;">TARGET_HIT · 501</span>
+        <span class="badge gray" style="font-size: 11px;">EXPIRED · 491</span>
+      </div>
+      <div class="row" style="gap: 8px; margin-top: 6px;">
+        <span class="badge red" style="font-size: 11px;">STOPPED · 238</span>
+        <span class="badge gray" style="font-size: 11px;">ACTIVE · 129</span>
+      </div>
+    </div>
+    <div class="card" style="padding: 16px 18px;">
+      <h3 style="font-size: 13px; color: #facc15;">دورة الحلقة المغلقة</h3>
+      <div class="hr-gold" style="margin: 8px 0;"></div>
+      <p style="font-size: 12px; line-height: 1.6; color: #94a3b8;">
+        ١. توليد يومي (V40.2 generator) · ٢. تتبّع النتائج (daily_closer) · ٣. تحقّق آلي عند الهدف/الإيقاف · ٤. تعلّم آلي (learning_engine)
+      </p>
+    </div>
+    <div class="card" style="padding: 16px 18px;">
+      <h3 style="font-size: 13px; color: #facc15;">أنماط التشغيل</h3>
+      <div class="hr-gold" style="margin: 8px 0;"></div>
+      <p style="font-size: 12px; line-height: 1.7; color: #94a3b8;">
+        <b style="color:#34d399;">NORMAL</b> — RR 1.8 · Stop 5%<br/>
+        <b style="color:#facc15;">CONSERVATIVE</b> — RR أعلى · اختيار أصرم<br/>
+        <b style="color:#f87171;">AGGRESSIVE</b> — اختيار أوسع
+      </p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>محرّك V40.2</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 6 — LIQUIDITY RADAR
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">رادار السيولة</span></div>
+  <div class="slide-no">06 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">رادار السيولة</div>
+  <h2 class="section-title">كشف صنّاع السوق <span class="gold">قبل الانفجار السعري</span></h2>
+  <div class="section-sub">منظومة رادار متعدّدة المسارات تقرأ بصمة السيولة على السهم قبل أن يراها المتداول العادي، مع نظام تنبيهات من 5 مراحل + رادار خروج يحفظ الأرباح قبل الارتداد.</div>
+
+  <div class="grid grid-3" style="margin-bottom: 12px;">
+    <div class="radar-path" style="padding: 12px 14px;">
+      <span class="code" style="font-size: 11px;">X1 · توزيع</span>
+      <h4 style="font-size: 13px;">توزيع صنّاع السوق</h4>
+      <p>السهم وصل لمرحلة توزيع — بدأ صانع السوق في البيع على القمم.</p>
+    </div>
+    <div class="radar-path" style="padding: 12px 14px;">
+      <span class="code" style="font-size: 11px;">X2 · تباعد حجمي</span>
+      <h4 style="font-size: 13px;">تباعد الحجم</h4>
+      <p>السعر يصعد لكن الحجم يتراجع — إشارة ضعف في الاستمرارية.</p>
+    </div>
+    <div class="radar-path" style="padding: 12px 14px;">
+      <span class="code" style="font-size: 11px;">X3 · رفض مقاومة</span>
+      <h4 style="font-size: 13px;">رفض مستوى المقاومة</h4>
+      <p>السعر يرتدّ من منطقة مقاومة قوية مع شموع انعكاسية.</p>
+    </div>
+    <div class="radar-path" style="padding: 12px 14px;">
+      <span class="code" style="font-size: 11px;">X4 · استنزاف</span>
+      <h4 style="font-size: 13px;">فجوة استنزاف</h4>
+      <p>السعر يصعد بسرعة غير طبيعية — اقتراب قمة.</p>
+    </div>
+    <div class="radar-path" style="padding: 12px 14px;">
+      <span class="code" style="font-size: 11px;">X5 · kill switch</span>
+      <h4 style="font-size: 13px;">مفتاح الإيقاف</h4>
+      <p>إشارة خروج فوري — خطر هيكلي على السهم أو السوق.</p>
+    </div>
+    <div class="radar-path" style="padding: 12px 14px; border-color: rgba(16,185,129,0.4); background: linear-gradient(180deg, rgba(16,185,129,0.06), rgba(16,185,129,0.02));">
+      <span class="code" style="font-size: 11px; background: rgba(16,185,129,0.15); color: #34d399; border-color: rgba(16,185,129,0.4);">EXIT RADAR</span>
+      <h4 style="font-size: 13px;">رادار الخروج الموحّد</h4>
+      <p>تجميع إشارات X1–X5 في قائمة واحدة لمتابعة لحظية للأسهم المُتتبَّعة.</p>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 14px 18px;">
+    <div class="row" style="gap: 24px; align-items: center;">
+      <div style="flex-shrink: 0;">
+        <div class="badge">تنبيهات من 5 مراحل</div>
+      </div>
+      <div style="flex: 1;">
+        <p style="margin: 0; font-size: 12.5px; color: #cbd5e1; line-height: 1.6;">
+          <b style="color:#facc15;">١.</b> فرصة تراكم هادئ ·
+          <b style="color:#facc15;">٢.</b> ترقية الإشارة ·
+          <b style="color:#facc15;">٣.</b> ارتفاع حجم ×2 ·
+          <b style="color:#facc15;">٤.</b> ضرب الهدف الأول ·
+          <b style="color:#facc15;">٥.</b> اقتراب الهدف الثاني — مع إشارات إضافية: radar_explosive / radar_distribution / radar_flare
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>رادار السيولة</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 7 — TECHNICAL ARCHITECTURE
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">البنية التقنية</span></div>
+  <div class="slide-no">07 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">التقنية</div>
+  <h2 class="section-title">بنية تقنية <span class="gold">متطوّرة</span></h2>
+  <div class="section-sub">معمارية رباعية الطبقات (Frontend · API · Python Backend · Mobile) تعمل بإنتاجية عالية، مع طبقة بيانات موحّدة وواجهات برمجية منظّمة بنظام موديولات.</div>
+
+  <div class="grid grid-3" style="margin-bottom: 16px;">
+    <div class="stack-row">
+      <div class="icon-box">API</div>
+      <div>
+        <div class="label">عدد المسارات (Routes)</div>
+        <div class="value">690 route</div>
+      </div>
+    </div>
+    <div class="stack-row">
+      <div class="icon-box">M</div>
+      <div>
+        <div class="label">وحدات الواجهة (Modules)</div>
+        <div class="value">17 module</div>
+      </div>
+    </div>
+    <div class="stack-row">
+      <div class="icon-box">UI</div>
+      <div>
+        <div class="label">مكوّنات الواجهة</div>
+        <div class="value">294 component</div>
+      </div>
+    </div>
+    <div class="stack-row">
+      <div class="icon-box">DB</div>
+      <div>
+        <div class="label">قواعد البيانات</div>
+        <div class="value">6 dbs · 1.3 GB</div>
+      </div>
+    </div>
+    <div class="stack-row">
+      <div class="icon-box">PY</div>
+      <div>
+        <div class="label">خدمات Python</div>
+        <div class="value">+65 ملف API</div>
+      </div>
+    </div>
+    <div class="stack-row">
+      <div class="icon-box">📱</div>
+      <div>
+        <div class="label">تطبيق Mobile</div>
+        <div class="value">Flutter · Riverpod</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3 style="font-size: 14px; color: #facc15;">المكدّس التقني (Stack)</h3>
+      <div class="hr-gold" style="margin: 10px 0;"></div>
+      <div class="pill-list">
+        <span class="chip">Next.js 15</span>
+        <span class="chip">TypeScript</span>
+        <span class="chip">Prisma ORM</span>
+        <span class="chip">better-sqlite3</span>
+        <span class="chip">Python Flask</span>
+        <span class="chip">Caddy Reverse Proxy</span>
+        <span class="chip">Sentry + Logger</span>
+        <span class="chip">Qwen 1.5B (Local AI)</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-size: 14px; color: #facc15;">قواعد البيانات (6)</h3>
+      <div class="hr-gold" style="margin: 10px 0;"></div>
+      <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.8;">
+        <b style="color:#cbd5e1;">stocks.db</b> (14.2 MB) — بيانات الأسهم والرادار<br/>
+        <b style="color:#cbd5e1;">data_engine.db</b> (272.5 MB) — الأساسيات + العملات<br/>
+        <b style="color:#cbd5e1;">predictions.db</b> (224.3 MB) — التوقعات والدروس<br/>
+        <b style="color:#cbd5e1;">price_history.db</b> (292.9 MB) — تاريخ 25 سنة<br/>
+        <b style="color:#cbd5e1;">intraday.db</b> (427.5 MB) — بيانات اللحظي<br/>
+        <b style="color:#cbd5e1;">auth.db</b> (208 KB) — المستخدمون والاشتراكات
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>التقنية</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 8 — BUSINESS MODEL
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">النموذج التجاري</span></div>
+  <div class="slide-no">08 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">النموذج التجاري</div>
+  <h2 class="section-title"><span class="gold">5 طبقات</span> اشتراك — لكل شريحة من المستخدمين</h2>
+  <div class="section-sub">نموذج متدرّج يخدم المستثمر الفردي (Free → Premium → Pro) ومؤسسات الوساطة (B2B) — مع فترة تجريبية مدّتها 14 يومًا تُفعّل تلقائيًا لكل مستخدم جديد.</div>
+
+  <table class="pricing">
+    <thead>
+      <tr>
+        <th style="width: 18%;">الباقة</th>
+        <th style="width: 22%;">السعر الشهري</th>
+        <th style="width: 22%;">السعر السنوي</th>
+        <th>أبرز المزايا</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="tier">
+          Free
+          <div style="font-size: 11px; color: #64748b; font-weight: 500;">المجانية</div>
+        </td>
+        <td class="price">مجانًا</td>
+        <td class="price">—</td>
+        <td class="feat">وصول مقيد · قائمة مراقبة محدودة (5 أسهم) · رادار أساسي · بدون بوت تليجرام</td>
+      </tr>
+      <tr>
+        <td class="tier">
+          Premium
+          <div style="font-size: 11px; color: #64748b; font-weight: 500;">للمستثمر الفرد</div>
+        </td>
+        <td class="price">99 EGP</td>
+        <td class="price">990 EGP</td>
+        <td class="feat">رادار كامل · توقعات V40.2 · تنبيهات 5 مراحل · بوت تليجرام · محفظة كاملة</td>
+      </tr>
+      <tr>
+        <td class="tier">
+          Pro
+          <div style="font-size: 11px; color: #64748b; font-weight: 500;">للمستثمر النشط</div>
+        </td>
+        <td class="price">199 EGP</td>
+        <td class="price">1,990 EGP</td>
+        <td class="feat">كل مزايا Premium + رادار الخروج X1–X5 · تقارير PDF أسبوعية · تحليل أساسيات متقدّم</td>
+      </tr>
+      <tr>
+        <td class="tier">
+          B2B Starter
+          <div style="font-size: 11px; color: #64748b; font-weight: 500;">لشركات الوساطة</div>
+        </td>
+        <td class="price">—</td>
+        <td class="price">$99</td>
+        <td class="feat">API key واحد · حدّ 10k طلب/شهر · شعار الشركة على التقارير</td>
+      </tr>
+      <tr>
+        <td class="tier">
+          B2B Pro
+          <div style="font-size: 11px; color: #64748b; font-weight: 500;">للوسطاء المتوسطين</div>
+        </td>
+        <td class="price">—</td>
+        <td class="price">$299</td>
+        <td class="feat">5 API keys · حدّ 100k طلب/شهر · لوحة عملاء مُخصّصة</td>
+      </tr>
+      <tr>
+        <td class="tier">
+          B2B Enterprise
+          <div style="font-size: 11px; color: #64748b; font-weight: 500;">للمؤسسات الكبرى</div>
+        </td>
+        <td class="price">—</td>
+        <td class="price">$999</td>
+        <td class="feat">مفاتيح غير محدودة · SLA مخصّص · دعم تقني مباشر · تكامل خاص</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="row" style="margin-top: 16px; gap: 12px;">
+    <div class="badge green">14 يوم تجربة Premium تلقائيًا لكل مستخدم جديد</div>
+    <div class="badge">دفع عبر Paymob (بوابة مصرية معتمدة)</div>
+    <div class="badge gray">الأسعار بالعملة المحلية حسب السوق المختار</div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>النموذج التجاري</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 9 — COMPETITIVE ADVANTAGE
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">الميزة التنافسية</span></div>
+  <div class="slide-no">09 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">الميزة التنافسية</div>
+  <h2 class="section-title">ما الذي <span class="gold">يميّزنا؟</span></h2>
+  <div class="section-sub">ست مزايا هيكلية تجعل المنصة قابلة للتوسّع سريعًا داخل أي شركة وساطة مستحوِذة، دون الحاجة لإعادة بناء أي طبقة.</div>
+
+  <div class="grid grid-3" style="gap: 12px;">
+    <div class="adv">
+      <div class="num">١</div>
+      <div>
+        <h4>تغطية 7 أسواق في منصة واحدة</h4>
+        <p>EGX + TADAWUL + KSE + QSE + US + CRYPTO + GOLD — لا توجد منصة عربية أخرى تجمع هذه الأسواق في تجربة موحّدة.</p>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">٢</div>
+      <div>
+        <h4>رادار سيولة متعدّد المسارات</h4>
+        <p>5 مسارات دخول (X1–X5) + رادار خروج + تنبيهات من 5 مراحل — قابلية كشف صنّاع السوق قبل الانفجار السعري.</p>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">٣</div>
+      <div>
+        <h4>محرّك توقعات بإحصاءات حقيقية</h4>
+        <p>1,359 توقّعًا مُتتبَّعًا بمعدّل نجاح فعلي 55% وعامل ربحية PF 2.94 — لا ادّعاءات تسويقية، أرقام قابلة للمراجعة.</p>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">٤</div>
+      <div>
+        <h4>حلقة مغلقة للتعلّم الآلي</h4>
+        <p>كل توقّع يُسجَّل ويُتحقَّق منه آليًا (TARGET_HIT / STOPPED / EXPIRED)، وتُغذّى الدروس في محرّك التعلّم لتحسين الجولة القادمة.</p>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">٥</div>
+      <div>
+        <h4>قناة وصول واحدة أم ثلاث</h4>
+        <p>واجهة ويب + تطبيق Flutter (iOS/Android) + بوت تليجرام تفاعلي — كلها متصلة بنفس مصدر البيانات والهوية.</p>
+      </div>
+    </div>
+    <div class="adv">
+      <div class="num">٦</div>
+      <div>
+        <h4>طبقة B2B جاهزة لشركات الوساطة</h4>
+        <p>نظام API keys تلقائي + فواتير بالعملة المحلية + لوحة تحكّم بالعملاء — جاهز للتشغيل الفوري بعد الاستحواذ.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>الميزة التنافسية</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 10 — KEY METRICS
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">الأرقام الرئيسية</span></div>
+  <div class="slide-no">10 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">الأرقام الرئيسية</div>
+  <h2 class="section-title">أرقام <span class="gold">حقيقية</span> من الكود وقواعد البيانات</h2>
+  <div class="section-sub">كل رقم في هذه الصفحة مأخوذ مباشرة من الكود المصدري وقواعد البيانات الإنتاجية — لا تقديرات ولا أرقام تسويقية.</div>
+
+  <div class="grid grid-2" style="gap: 18px; margin-top: 6px;">
+    <div class="stat-panel">
+      <div class="label">عدد الأسهم المُغطّاة</div>
+      <div class="value">918<span class="unit">سهم</span></div>
+      <div class="desc">عبر 7 أسواق (EGX / TADAWUL / KSE / QSE / US / CRYPTO / GOLD)</div>
+    </div>
+    <div class="stat-panel">
+      <div class="label">إجمالي التوقعات المُتتبَّعة</div>
+      <div class="value">1,359<span class="unit">توقّع</span></div>
+      <div class="desc">في قاعدة predictions.db (46 جدولًا · 198,680 صفًا)</div>
+    </div>
+    <div class="stat-panel">
+      <div class="label">الأسواق المدعومة</div>
+      <div class="value">7<span class="unit">أسواق</span></div>
+      <div class="desc">4 أسواق عربية + 3 أسواق دولية (أسهم + عملات + معادن)</div>
+    </div>
+    <div class="stat-panel">
+      <div class="label">قواعد البيانات الإنتاجية</div>
+      <div class="value">6<span class="unit">DBs · 1.3 GB</span></div>
+      <div class="desc">إجمالي 2.04 مليون صف بيانات (تاريخ 25 سنة + لحظي)</div>
+    </div>
+  </div>
+
+  <div class="grid grid-4" style="margin-top: 14px; gap: 12px;">
+    <div class="kpi-tile" style="padding: 16px 14px;">
+      <div class="num" style="font-size: 36px;">690</div>
+      <div class="lbl" style="font-size: 11px;">API route</div>
+    </div>
+    <div class="kpi-tile" style="padding: 16px 14px;">
+      <div class="num" style="font-size: 36px;">17</div>
+      <div class="lbl" style="font-size: 11px;">frontend module</div>
+    </div>
+    <div class="kpi-tile" style="padding: 16px 14px;">
+      <div class="num" style="font-size: 36px;">294</div>
+      <div class="lbl" style="font-size: 11px;">UI component</div>
+    </div>
+    <div class="kpi-tile" style="padding: 16px 14px;">
+      <div class="num" style="font-size: 36px;">55%</div>
+      <div class="lbl" style="font-size: 11px;">win rate فعلي</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>الأرقام الرئيسية</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 11 — WHAT'S INCLUDED IN THE SALE
+     ============================================================ -->
+<div class="page">
+  <div class="top-bar"></div>
+  <div class="brand-chip"><span class="dot"></span> GLMinvestment <span class="sep">·</span> <span class="sub">حزمة الاستحواذ</span></div>
+  <div class="slide-no">11 / 12</div>
+
+  <div class="eyebrow" style="margin-top: 28px;">ما يشمله البيع</div>
+  <h2 class="section-title">حزمة الاستحواذ <span class="gold">الكاملة</span></h2>
+  <div class="section-sub">تسليم شامل لكل أصول المنصة (كود + بيانات + هوية + عملاء) بنقل ملكية كامل — جاهز للتشغيل الفوري تحت علامة المستحوِذ.</div>
+
+  <div class="grid grid-3" style="gap: 14px;">
+    <div class="card accent" style="padding: 18px 20px;">
+      <div class="icon" style="width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px;">💻</div>
+      <h3 style="font-size: 16px;">الكود المصدري الكامل</h3>
+      <p>مستودع Next.js + Python + Flutter — 17 module + 690 route + 294 component + 65 ملف Python — مع تاريخ Git كامل.</p>
+    </div>
+    <div class="card accent" style="padding: 18px 20px;">
+      <div class="icon" style="width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px;">🗄</div>
+      <h3 style="font-size: 16px;">قواعد البيانات الإنتاجية</h3>
+      <p>الـ 6 قواعد بكامل بياناتها (1.3 GB) — تاريخ 25 سنة للأسعار + بيانات لحظية + توقعات + أساسيات + مستخدمون.</p>
+    </div>
+    <div class="card accent" style="padding: 18px 20px;">
+      <div class="icon" style="width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px;">🌐</div>
+      <h3 style="font-size: 16px;">النطاق + الاستضافة</h3>
+      <p>نطاق <b style="color:#facc15;">invist.m2y.net</b> + إعداد Caddy مع شهادات HTTPS تلقائية — جاهز للنقل خلال ساعات.</p>
+    </div>
+    <div class="card accent" style="padding: 18px 20px;">
+      <div class="icon" style="width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px;">📱</div>
+      <h3 style="font-size: 16px;">تطبيق Flutter (Mobile)</h3>
+      <p>تطبيق iOS + Android مكتمل (Riverpod + Dio + Flutter charts) — جاهز للنشر على المتاجر بعد تغيير العلامة.</p>
+    </div>
+    <div class="card accent" style="padding: 18px 20px;">
+      <div class="icon" style="width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px;">🤖</div>
+      <h3 style="font-size: 16px;">بوت تليجرام التفاعلي</h3>
+      <p>بوت <b style="color:#facc15;">@investusernamebot</b> مكتمل مع بوابة ربط الاشتراك + نظام التحقّق + النشر التلقائي للتقارير.</p>
+    </div>
+    <div class="card accent" style="padding: 18px 20px;">
+      <div class="icon" style="width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px;">⭐</div>
+      <h3 style="font-size: 16px;">العلامة التجارية + الهوية</h3>
+      <p>شعار GLMinvestment + أصول الهوية البصرية + أيقونات لكل سهم EGX + خط Cairo مُدمج في كل القنوات.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 16px; padding: 14px 18px;">
+    <div class="row" style="gap: 24px; align-items: center;">
+      <div style="flex-shrink: 0;">
+        <span class="badge green">عملية نقل سلسة</span>
+      </div>
+      <div style="flex: 1;">
+        <p style="margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.6;">
+          تتضمّن الحزمة أيضًا: توثيق كامل (5 ملفات cornerstone) + سجل تشغيلي (45,000+ سطر worklog) + سكربتات نشر + إعداد cron كامل + مفاتيح API الجاهزة.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="left">GLMinvestment · دليل الاستثمار</div>
+    <div class="right">عرض الاستحواذ — <b>ما يشمله البيع</b></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SLIDE 12 — CONTACT
+     ============================================================ -->
+<div class="page cover" style="justify-content: center; padding: 80px 100px;">
+  <div class="top-bar"></div>
+  <div class="vertical-line"></div>
+
+  <div class="eyebrow" style="margin-bottom: 8px;">تواصل معنا</div>
+  <h1 style="font-size: 64px;">لنبنِ مستقبل<br/><span class="gold">الاستثمار العربي</span> معًا</h1>
+  <div class="sub-title" style="margin-bottom: 28px;">نحن جاهزون لمناقشة تفاصيل الاستحواذ وعرض أي بيانات إضافية مطلوبة.</div>
+
+  <div class="hr-gold" style="width: 120px; margin-bottom: 24px;"></div>
+
+  <div class="grid grid-2" style="gap: 16px; max-width: 920px;">
+    <div class="contact-card">
+      <div class="icon">🌐</div>
+      <div>
+        <div class="label">المنصة الإنتاجية</div>
+        <div class="value gold" dir="ltr">invist.m2y.net</div>
+      </div>
+    </div>
+    <div class="contact-card">
+      <div class="icon">📧</div>
+      <div>
+        <div class="label">البريد الرسمي</div>
+        <div class="value" dir="ltr">contact@invist.m2y.net</div>
+      </div>
+    </div>
+    <div class="contact-card">
+      <div class="icon">🤖</div>
+      <div>
+        <div class="label">بوت تليجرام</div>
+        <div class="value" dir="ltr">@investusernamebot</div>
+      </div>
+    </div>
+    <div class="contact-card">
+      <div class="icon">📞</div>
+      <div>
+        <div class="label">جاهزون لاجتماع العرض</div>
+        <div class="value">جدولة مكالمة خلال 48 ساعة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="date-tag" style="bottom: 48px;">أكتوبر 2026 · GLMinvestment · دليل الاستثمار · عرض تقديمي للاستحواذ</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "symbol": "AMES",
+  "name_ar": "الاسكندرية للخدمات الطبية - المركز الطبى الجديد - الاسكندرية",
+  "market": "EGX",
+  "sector": "",
+  "last_updated": "2026-09-01",
+  "version": 2,
+  "identity": {
+    "is_index_related": false,
+    "related_index": null,
+    "liquidity_profile": "very_low",
+    "free_float_note": "",
+    "ownership_concentration": "medium",
+    "is_story_stock": false,
+    "is_zombie_prone": false,
+    "notes": ""
+  },
+  "price_behavior": {
+    "typical_correction_pct": 15.8,
+    "typical_correction_range": [
+      8.2,
+      25.7
+    ],
+    "avg_up_move_after_correction_pct": 0,
+    "moves_violently_with_volume": true,
+    "respects_key_levels": true,
+    "gap_behavior": "fills_most_gaps",
+    "ramadan_behavior": "",
+    "notes": ""
+  },
+  "liquidity_and_sector": {
+    "liquidity_sensitivity": "medium",
+    "leads_sector": false,
+    "follows_sector": true,
+    "follows_specific_stock": null,
+    "sector_beta_note": "",
+    "notes": ""
+  },
+  "events_behavior": {
+    "dividend": {
+      "typical_ex_date_drop_pct": 0,
+      "drop_range": [
+        0,
+        0
+      ],
+      "behavior_before_ex": "",
+      "notes": ""
+    },
+    "rights_issue_history": [],
+    "capital_increase_history": [],
+    "other_recurring_events": []
+  },
+  "danger_flags": [],
+  "learned_lessons": [],
+  "machine_summary": {
+    "typical_correction_pct": 15.8,
+    "max_expected_correction_pct": 25.67120580780961,
+    "liquidity_profile": "very_low",
+    "danger_level": 3,
+    "preferred_entry_style": "correction_or_grab",
+    "avoid_chase": true,
+    "distribution_sensitivity": "medium"
+  }
+}

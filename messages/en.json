@@ -1,0 +1,1363 @@
+{
+  "common": {
+    "appName": "Investment Guide",
+    "tagline": "Stock & Cryptocurrency Analytics",
+    "siteUrl": "invist.m2y.net",
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "register": "Create Account",
+    "subscribe": "Subscribe Now",
+    "language": "Language",
+    "arabic": "العربية",
+    "english": "English",
+    "or": "or",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "radar": "Liquidity Radar",
+    "predictions": "Predictions",
+    "portfolio": "Portfolio",
+    "watchlist": "Watchlist",
+    "news": "News",
+    "education": "Academy",
+    "crypto": "Crypto",
+    "gold": "Gold",
+    "multiMarket": "Multi-Market",
+    "admin": "Admin",
+    "settings": "Settings",
+    "stocks": "Stocks",
+    "reports": "Reports",
+    "academy": "Academy",
+    "tools": "Tools",
+    "ai": "AI"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Market Overview",
+    "marketSummary": "Market Summary",
+    "indexCards": "Indices",
+    "marketPulse": "Market Pulse",
+    "marketSentiment": "Market Sentiment",
+    "todayPredictions": "Today's Predictions",
+    "autoAnalysis": "Auto Analysis",
+    "topMovers": "Top Movers",
+    "maestro": "Maestro Console",
+    "myStocksBriefing": "Your Stocks Briefing",
+    "portfolioSummary": "Portfolio Summary",
+    "currentValue": "Current Value",
+    "gainsLosses": "Gains/Losses",
+    "stockCount": "Stock Count",
+    "costValue": "Cost Value",
+    "actionableAlerts": "Alerts Needing Decision",
+    "latestNews": "Latest News on Your Stocks",
+    "quickLookup": "Quick Stock Lookup",
+    "exportPdf": "Export PDF",
+    "viewAllNews": "View All News",
+    "noAlerts": "All your stocks are in normal condition — no urgent alerts right now. ✅"
+  },
+  "alerts": {
+    "exitRadar": "Exit Signal",
+    "stopLoss": "Stop Loss",
+    "takeProfit": "Take Profit",
+    "approachingTarget": "Approaching Target",
+    "hold": "Hold",
+    "critical": "Critical",
+    "warning": "Warning",
+    "caution": "Caution",
+    "noAlerts": "All your stocks are in normal condition — no urgent alerts right now. ✅",
+    "action": "Action",
+    "alertsNeedDecision": "Alerts Needing Decision",
+    "viewStock": "View Stock"
+  },
+  "markets": {
+    "EGX": "Egyptian Exchange",
+    "TADAWUL": "Saudi Stock Exchange",
+    "KSE": "Kuwait Stock Exchange",
+    "QSE": "Qatar Stock Exchange",
+    "US": "US Markets",
+    "CRYPTO": "Cryptocurrencies",
+    "GOLD": "Gold",
+    "egypt": "Egypt",
+    "saudiArabia": "Saudi Arabia",
+    "kuwait": "Kuwait",
+    "qatar": "Qatar",
+    "unitedStates": "United States"
+  },
+  "footer": {
+    "officialSite": "Official Website",
+    "androidApp": "Android App",
+    "facebook": "Facebook",
+    "telegram": "Telegram",
+    "whatsapp": "WhatsApp",
+    "site": "Website",
+    "android": "Android",
+    "bot": "Analysis Bot",
+    "botApp": "Smart Stock Analysis Bot",
+    "disclaimer": "Disclaimer:",
+    "rights": "All rights reserved",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "madeWith": "Crafted with passion in Egypt"
+  },
+  "auth": {
+    "loginTitle": "Sign In",
+    "welcome": "Welcome to Investment Guide",
+    "loginPrompt": "Enter your credentials to access your account",
+    "usernameOrEmail": "Username or Email",
+    "password": "Password",
+    "usernameOrEmailPlaceholder": "Enter username or email",
+    "passwordPlaceholder": "Enter your password",
+    "googleLogin": "Continue with Google",
+    "newAccount": "Create Account",
+    "joinInvestment": "Join Investment Guide",
+    "email": "Email",
+    "emailPlaceholder": "example@email.com",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "passwordPlaceholder2": "At least 8 characters, with letters and numbers",
+    "selectLevel": "Select level",
+    "riskLow": "Low — Conservative",
+    "riskMedium": "Medium — Balanced",
+    "riskHigh": "High — Aggressive",
+    "tagline": "Smart Investing, Made Simple"
+  },
+  "theme": {
+    "light": "Light Mode",
+    "dark": "Dark Mode",
+    "toggle": "Theme",
+    "currencyEGP": "View in Egyptian Pound",
+    "currencyUSD": "View in US Dollar",
+    "currencySAR": "View in Saudi Riyal"
+  },
+  "marketAnalysis": {
+    "title": "Predictions Tracking",
+    "tabs": {
+      "predictions": "Predictions",
+      "marketStatus": "Market Status",
+      "sectorsTracking": "Sectors Tracking",
+      "exitRadar": "Exit Radar",
+      "weeklyReport": "Weekly Report",
+      "historicalTrades": "Historical Trades",
+      "multiMarketRadar": "Multi-Market Radar",
+      "radarAccuracy": "Radar Accuracy",
+      "personalizedRadar": "Personalized Radar",
+      "netPicks": "Net Picks"
+    },
+    "socialFollow": "📍 Follow the latest market analyses on"
+  },
+  "stocks": {
+    "title": {
+      "crypto": "Cryptocurrencies",
+      "stocks": "Stocks"
+    },
+    "subtitle": {
+      "crypto": "Browse and trade cryptocurrencies",
+      "stocks": "Browse all stocks traded in {market}"
+    },
+    "tabs": {
+      "stocks": "Stocks",
+      "crypto": "Cryptocurrencies",
+      "bonds": "Treasury Bonds & Investment Certificates"
+    },
+    "detail": {
+      "title": "Stock Details"
+    },
+    "stats": {
+      "total": "Total",
+      "gainers": "Gainers",
+      "losers": "Losers",
+      "unchanged": "Unchanged",
+      "avgChange": "Avg Change"
+    },
+    "card": {
+      "currencyCrypto": "USD",
+      "currencyEgx": "EGP",
+      "volume": "Volume",
+      "pe": "P/E",
+      "marketCap": "Market Cap"
+    },
+    "presets": {
+      "title": "Predefined Lists",
+      "subtitle": "— Pick a list to view categorized stocks"
+    },
+    "filters": {
+      "sector": "Sector",
+      "noSectors": "No sectors available",
+      "priceRange": "Price Range",
+      "changeRange": "Change Range %",
+      "resetAdvanced": "Reset Advanced Filters",
+      "min": "Min",
+      "max": "Max",
+      "reset": "Reset"
+    },
+    "search": {
+      "placeholder": "Search by name or ticker..."
+    },
+    "filterButton": {
+      "title": "Custom filters (sector, price range, change)",
+      "label": "Filter"
+    },
+    "period": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "footer": {
+      "count": "Count",
+      "lastUpdate": "Last Update",
+      "loading": "Loading..."
+    },
+    "empty": {
+      "presetMissing": "No data for the selected list — may not be computed yet after market close",
+      "noMatches": "No stocks match your search",
+      "resetFilters": "Reset Filters",
+      "showAll": "Show All Stocks"
+    },
+    "pagination": {
+      "page": "Page {current} of {total}"
+    },
+    "mobile": {
+      "week": "Week",
+      "fairValue": "Fair Value",
+      "opportunity": "Opportunity"
+    },
+    "columns": {
+      "ticker": "Ticker",
+      "name": "Name",
+      "sector": "Sector",
+      "price": "Price {currency}",
+      "dayPct": "Day %",
+      "highLow": "High/Low",
+      "chart7d": "7d Chart",
+      "weekPct": "Week %",
+      "monthPct": "Month %",
+      "volumeToday": "Today Volume",
+      "turnover": "Turnover",
+      "volumeWeek": "Week Volume",
+      "fairValue": "Fair Value",
+      "opportunityPct": "Opportunity %",
+      "pe": "P/E",
+      "signal": "Signal",
+      "marketCap": "Market Cap"
+    },
+    "signal": {
+      "buy": "Buy",
+      "sell": "Sell",
+      "hold": "Hold",
+      "overbought": "Overbought",
+      "oversold": "Oversold",
+      "bullish": "Bullish",
+      "bearish": "Bearish"
+    }
+  },
+  "watchlist": {
+    "title": "Watchlist",
+    "subtitle": "Track your favorite stocks and profits",
+    "toggle": {
+      "regular": "Regular List",
+      "smart": "Smart Analysis"
+    },
+    "buttons": {
+      "refresh": "Refresh",
+      "addStock": "Add Stock",
+      "cancel": "Cancel",
+      "save": "Save",
+      "add": "Add",
+      "delete": "Delete",
+      "edit": "Edit",
+      "retry": "Try Again",
+      "support": "Contact Support"
+    },
+    "stats": {
+      "count": "Stock Count",
+      "totalInvested": "Total Invested",
+      "currentValue": "Current Value",
+      "pnl": "Profit/Loss"
+    },
+    "empty": {
+      "title": "Watchlist is empty",
+      "body": "Add the stocks you want to watch to display them here. You can add stocks from the Stocks page or by clicking the \"Add Stock\" button.",
+      "addButton": "Add Stock"
+    },
+    "error": {
+      "title": "Failed to load watchlist",
+      "body": "An error occurred while connecting to the server. Check your internet connection and try again. If the problem persists, contact support."
+    },
+    "delete": {
+      "title": "Confirm Deletion",
+      "body": "Are you sure you want to delete this stock from your watchlist? This action cannot be undone."
+    },
+    "dialog": {
+      "addTitle": "Add Stock to Watchlist",
+      "addDescription": "Search for the stock and add it with purchase price and alerts",
+      "editTitle": "Edit Stock",
+      "tickerLabel": "Stock Ticker",
+      "searchPlaceholder": "Search by ticker or name...",
+      "currentPrice": "Current Price",
+      "purchasePrice": "Purchase Price (EGP)",
+      "quantity": "Quantity",
+      "alertAbove": "Alert if above",
+      "alertBelow": "Alert if below",
+      "alertChange": "Alert on change (%)",
+      "notes": "Notes",
+      "notesOptional": "Notes (optional)",
+      "notesPlaceholder": "Add your notes here...",
+      "advisor": "Advisor",
+      "advisorTitle": "Trade Advisor",
+      "searchRequired": "Please select a stock from the list",
+      "addSuccess": "Stock added to watchlist",
+      "addFailed": "Failed to add stock",
+      "editSuccess": "Stock updated successfully",
+      "editFailed": "Failed to update stock",
+      "deleteSuccess": "Stock removed from watchlist",
+      "deleteFailed": "Failed to remove stock",
+      "loadFailed": "Failed to load watchlist",
+      "connectionError": "Connection error occurred"
+    },
+    "columns": {
+      "stock": "Stock",
+      "currentPrice": "Current Price",
+      "chart7d": "7d Chart",
+      "purchasePrice": "Purchase Price",
+      "quantity": "Quantity",
+      "investor": "Invested",
+      "currentValue": "Current Value",
+      "pnl": "Profit/Loss",
+      "change": "Change",
+      "alerts": "Alerts",
+      "actions": "Actions"
+    }
+  },
+  "portfolio": {
+    "title": "Financial Portfolio",
+    "subtitle": "Manage your assets, income and expenses, and obligations",
+    "tabs": {
+      "assets": "Assets",
+      "incomeExpense": "Income & Expenses",
+      "obligations": "Obligations",
+      "reports": "Financial Status"
+    },
+    "subPortfolio": {
+      "banner": "📊 Assets below are filtered and belong to the selected sub-portfolio only",
+      "badge": "Custom Portfolio #{id}"
+    },
+    "summary": {
+      "totalAssets": "Total Assets",
+      "totalLiabilities": "Total Liabilities",
+      "afterDeduction": "After deducting {amount} liabilities",
+      "netWorth": "Net Worth",
+      "monthlyYield": "Monthly Yield",
+      "annualYield": "Annual: {amount}"
+    },
+    "persona": {
+      "label": "Profile: {persona}",
+      "retest": "Retake Profile Test"
+    },
+    "currency": {
+      "label": "Values in currency: {currency}"
+    },
+    "buttons": {
+      "all": "All",
+      "liveRefresh": "Live Refresh",
+      "addAsset": "Add Asset"
+    },
+    "empty": {
+      "noAssets": "No assets"
+    },
+    "assetTypes": {
+      "stock": "Stocks",
+      "gold": "Gold",
+      "bank": "Bank",
+      "certificate": "Deposit Certificates",
+      "fund": "Investment Funds",
+      "crypto": "Cryptocurrencies",
+      "real_estate": "Real Estate",
+      "other": "Other"
+    },
+    "toast": {
+      "loadAssetsFailed": "Failed to load assets",
+      "addToWatchlistSuccess": "{ticker} added to watchlist",
+      "selectStock": "Please select a stock from the list",
+      "selectCrypto": "Please select a cryptocurrency from the list",
+      "enterAssetName": "Please enter asset name",
+      "serverError": "Server error occurred, try again",
+      "addAssetSuccess": "Asset added successfully",
+      "addAssetFailed": "Failed to add asset",
+      "connectionError": "Connection error occurred",
+      "updateAssetSuccess": "Asset updated successfully",
+      "updateAssetFailed": "Failed to update asset",
+      "deleteAssetSuccess": "Asset deleted successfully",
+      "deleteAssetFailed": "Failed to delete asset",
+      "portfolioBalanced": "Portfolio is balanced per your investment profile"
+    }
+  },
+  "alertsCenter": {
+    "title": "Alerts Center",
+    "subtitle": "Stock, cryptocurrency, and portfolio alerts",
+    "buttons": {
+      "refresh": "Refresh",
+      "all": "All",
+      "stocks": "Stocks",
+      "crypto": "Cryptocurrencies"
+    },
+    "tabs": {
+      "price": "Price Alerts",
+      "priceShort": "Prices",
+      "portfolio": "Portfolio",
+      "market": "Market",
+      "obligations": "📅 Due Obligations",
+      "obligationsShort": "📅 Obligations"
+    },
+    "stats": {
+      "total": "Total Alerts",
+      "stocks": "Stock Alerts",
+      "crypto": "Crypto Alerts",
+      "portfolio": "Portfolio Alerts"
+    },
+    "empty": {
+      "priceTitle": "No price alerts",
+      "priceBody": "Add stocks or cryptocurrencies to your watchlist to create alerts",
+      "portfolioTitle": "No portfolio alerts",
+      "portfolioBody": "Profit/loss alerts and large movements will appear here",
+      "marketTitle": "No market events",
+      "marketBody": "Market news and important events will appear here",
+      "obligationsTitle": "No obligations due soon",
+      "obligationsBody": "All active obligations are due in more than 30 days"
+    },
+    "card": {
+      "cryptoType": "Cryptocurrency",
+      "stockType": "Stock",
+      "triggered": "Triggered",
+      "currentPrice": "Current Price",
+      "targetAbove": "Target Price (above)",
+      "targetBelow": "Target Price (below)",
+      "distance": "Distance",
+      "monthlyInstallment": "Monthly Installment",
+      "remaining": "Remaining",
+      "nextDueDate": "Next Due Date"
+    },
+    "time": {
+      "now": "Now",
+      "minutesAgo": "{count} minutes ago",
+      "hoursAgo": "{count} hours ago",
+      "daysAgo": "{count} days ago"
+    },
+    "toast": {
+      "loadFailed": "Failed to load alerts"
+    }
+  },
+  "news": {
+    "feed": {
+      "title": "Financial and Economic News",
+      "subtitle": "Comprehensive coverage of stock exchange and listed company news with full text and images from sources",
+      "refresh": "Refresh",
+      "clear": "Clear",
+      "searchPlaceholder": "Search news or stock symbol (e.g., COMI, TMGH)...",
+      "filterAll": "All News ({count})",
+      "filterEGX": "Egyptian Stock Exchange",
+      "filterGlobal": "Global Markets",
+      "retry": "Retry",
+      "emptyTitle": "No matching news currently",
+      "emptyBody": "New articles will be displayed automatically as soon as they arrive from the news agent and exchange sources.",
+      "loadMore": "Show more news ({count} remaining)",
+      "errorLoad": "Failed to load news",
+      "errorConnection": "Server connection error",
+      "toastRefreshed": "News refreshed",
+      "imageFromSource": "Image from source ({source})",
+      "zoom": "Enlarge",
+      "closeAriaLabel": "Close",
+      "importanceHigh": "Important and urgent",
+      "readFullArticle": "Read full article ↓",
+      "hidePartialText": "Hide part of the text ↑",
+      "insight": {
+        "title": "Local Investment Analysis",
+        "copy": "Copy",
+        "copied": "Done",
+        "toastCopySuccess": "Investment analysis copied",
+        "toastCopyFailed": "Copy failed",
+        "sentimentPositive": "Positive",
+        "sentimentNegative": "Negative",
+        "sentimentNeutral": "Neutral",
+        "buyOpportunity": "Buy opportunity",
+        "sellSignal": "Sell signal",
+        "monitor": "Monitor",
+        "stocksLabel": "Stocks:",
+        "copyTextTemplate": "Investment analysis for news ({title})",
+        "sentimentLabel": "Sentiment",
+        "recommendationLabel": "Recommendation",
+        "analysisLabel": "Analysis"
+      },
+      "share": {
+        "label": "Share and publish:",
+        "sourceLink": "Original source link",
+        "sourceLinkTitle": "Go to original source site",
+        "toastCopySuccess": "Full news text copied",
+        "toastCopyFailed": "Copy failed",
+        "sourceLabel": "Source:"
+      }
+    }
+  },
+  "reports": {
+    "view": {
+      "brandName": "Investment Guide",
+      "title": "Professional Reports",
+      "subtitle": "Comprehensive reports for the Egyptian Stock Exchange",
+      "disclaimer": "⚠️ Disclaimer: The platform provides an automated personal opinion for educational and analytical purposes only, not an investment recommendation. The decision is the client's responsibility.",
+      "tabs": {
+        "dailyMarket": "Daily Market Report",
+        "stockAnalysis": "Stock Analysis",
+        "sector": "Sector Report",
+        "recommendations": "Analysis Report"
+      },
+      "columns": {
+        "stock": "Stock",
+        "sector": "Sector",
+        "price": "Price",
+        "change": "Change",
+        "score": "Score",
+        "stockCount": "Stock Count",
+        "avgChangePercent": "Avg Change %",
+        "performance": "Performance"
+      },
+      "sentiment": {
+        "positive": "Positive",
+        "negative": "Negative",
+        "neutral": "Neutral"
+      },
+      "riskLevel": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "toast": {
+        "copiedReport": "Report copied for sharing",
+        "copyFailed": "Failed to copy text",
+        "reportExported": "Report exported successfully",
+        "exportFailed": "An error occurred while exporting PDF",
+        "reportNotFound": "Report content not found"
+      },
+      "buttons": {
+        "exportPdf": "Export PDF",
+        "exporting": "Exporting...",
+        "copyReport": "Copy Report",
+        "copied": "Copied"
+      },
+      "sector": {
+        "title": "Sector Report",
+        "dailyTitle": "Daily Sector Report",
+        "empty": "Sector data has not been loaded",
+        "stats": {
+          "sectorCount": "Sector Count",
+          "totalStocks": "Total Stocks",
+          "avgChange": "Average Change",
+          "marketScore": "Market Score",
+          "bestSector": "Best Sector",
+          "worstSector": "Worst Sector",
+          "stocksUnit": "stocks"
+        },
+        "comparison": "Sector Comparison",
+        "chartLabel": "Performance Chart",
+        "footer": "This report was generated automatically by Investment Guide"
+      },
+      "recommendations": {
+        "title": "Analysis Report",
+        "empty": "Analysis data has not been loaded",
+        "scoreDistribution": {
+          "strongBuy": "Strong Buy (≥75)",
+          "buy": "Buy (60-74)",
+          "accumulate": "Accumulate (50-59)",
+          "hold": "Hold (40-49)",
+          "sell": "Sell (25-39)",
+          "strongSell": "Strong Sell (<25)"
+        },
+        "dataSourceLive": "Data source: Live analyses (stored_analyses)",
+        "dataSourceFallback": "Data source: Real-time market data (fallback)",
+        "summary": "Market Summary and Analysis",
+        "marketScore": "Market Score",
+        "sentiment": "Sentiment",
+        "totalStocksAnalyzed": "Total Stocks Analyzed",
+        "riskLevel": "Risk Level",
+        "sentimentLabels": {
+          "positiveAccumulate": "Positive / Accumulate",
+          "hold": "Hold",
+          "sell": "Sell"
+        },
+        "scoreDistributionTitle": "Score Distribution (by price momentum)",
+        "buySection": {
+          "live": "Top {count} Buy Stocks",
+          "fallback": "Buy and Strong Buy Stocks ({count})",
+          "fromLive": "From Live Analyses",
+          "empty": "No buy analyses currently"
+        },
+        "holdSection": {
+          "live": "Top {count} Hold Stocks",
+          "fallback": "Accumulate and Hold Stocks ({count})",
+          "fromLive": "From Live Analyses",
+          "empty": "No accumulate or hold analyses currently"
+        },
+        "sellSection": {
+          "live": "Top {count} Sell Stocks",
+          "fallback": "Sell and Strong Sell Stocks ({count})",
+          "fromLive": "From Live Analyses",
+          "empty": "No sell analyses currently"
+        },
+        "footer": "This report was generated automatically by Investment Guide",
+        "disclaimer": "Data is for educational and informational purposes only, not investment advice"
+      },
+      "share": {
+        "sectorText": {
+          "title": "📊 Sector Report — {date}",
+          "marketSentiment": "🧠 Market Sentiment: {sentiment}",
+          "accuracy": "📈 Accuracy: {score}%",
+          "decision": "🔍 Decision: {decision}",
+          "bestSector": "🏆 Best Sector: {name} (+{change}%) — {count} stocks",
+          "worstSector": "⚠️ Worst Sector: {name} ({change}%) — {count} stocks",
+          "performanceHeader": "📋 Sector Performance:",
+          "performanceItem": "{i}. {name}: {arrow} {change}% ({count} stocks)",
+          "disclaimer": "⚠️ This data is for informational purposes only and is not investment advice."
+        },
+        "recommendationsText": {
+          "title": "🛡️ Analysis Report — {date}",
+          "marketSentiment": "🧠 Market Sentiment: {sentiment}",
+          "accuracy": "📈 Accuracy: {score}%",
+          "riskLevel": "🔍 Risk Level: {level}",
+          "totalStocksLive": "📊 Total Stocks Analyzed (live): {total}",
+          "topBuys": "🟢 Top {count} Buy Stocks:",
+          "topSells": "🔴 Top {count} Sell Stocks:",
+          "totalStocks": "📊 Total Stocks Analyzed: {count}",
+          "strongBuy": "🟢 Strong Buy ({count}):",
+          "buy": "🔵 Buy ({count}):",
+          "sell": "🔴 Sell ({count}):",
+          "disclaimer": "⚠️ This data is for informational purposes only and is not investment advice."
+        }
+      }
+    }
+  },
+  "screener": {
+    "advanced": {
+      "title": "Advanced Stock Screener",
+      "subtitle": "Comprehensive filtering + technical stock state identification (correction / recovery / peak / near breakout)",
+      "subtitleAuto": "Comprehensive filtering + technical stock state identification — results auto-updated",
+      "tabs": {
+        "advancedFilters": "Advanced Filters",
+        "topPerformers": "Top Gainers / Losers"
+      },
+      "stateNames": {
+        "recovery": "Correction Ended",
+        "balancedMomentum": "Balanced Momentum",
+        "nearBreak": "Near Breakout",
+        "atPeak": "At Peak",
+        "nearPeak": "Near Peak",
+        "neutral": "Neutral",
+        "inCorrection": "In Correction",
+        "stillFalling": "Still Falling",
+        "insufficientData": "Insufficient Data"
+      },
+      "stateDescriptions": {
+        "recovery": "RSI between 40-45 + above MA50 + up today — recovery signal after correction.",
+        "balancedMomentum": "RSI between 55-65 + above MA50 — sustained healthy momentum.",
+        "nearBreak": "Price near the average from below (within 2%) — poised for upward breakout.",
+        "atPeak": "RSI ≥ 70 — overbought, may retreat after the peak.",
+        "nearPeak": "RSI between 65-70 — near overbought, caution.",
+        "neutral": "RSI between 45-55 + adequate volume — awaiting a clear direction.",
+        "inCorrection": "RSI < 40 + below MA50 — in correction phase. If RSI < 30 and near 52-week low → oversold (may rebound).",
+        "stillFalling": "RSI < 40 + below MA50 + down today — still declining.",
+        "insufficientData": "Insufficient data for classification (RSI or MA50 missing) — data update required."
+      },
+      "stockStateColumn": {
+        "above": "Above",
+        "below": "Below"
+      },
+      "collapsible": {
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "showFilters": "Show Filters",
+        "hideStateHelp": "Hide",
+        "showStateHelp": "Show",
+        "stateHelpLabel": "Explanation of the seven stock states",
+        "hideFilters": "Hide Filters",
+        "readyFilters": "Ready Filters"
+      },
+      "presets": {
+        "recovery": "Recovery After Correction",
+        "balancedMomentum": "Balanced Momentum",
+        "nearBreak": "Near Upward Breakout",
+        "atPeak": "At Peak",
+        "active": "Active Stocks",
+        "dead": "Dead Stocks",
+        "undervalued": "Undervalued (Low PE)",
+        "oversold": "Oversold",
+        "highDividend": "High Dividend Stocks",
+        "growth": "Growth Stocks",
+        "value": "Value Stocks",
+        "largeCap": "Large Caps",
+        "highLiquidity": "High Liquidity",
+        "sharpDrop": "Sharp Drop",
+        "low52w": "52-Week Low",
+        "high52w": "52-Week High",
+        "aboveMa": "Above Moving Averages",
+        "belowMa": "Below Moving Averages",
+        "moderateRsi": "Moderate RSI",
+        "reversalOpportunity": "Reversal Opportunities",
+        "stable": "Stable (Low Volatility)",
+        "highMomentum": "High Momentum",
+        "strongAccumulation": "Strong Accumulation",
+        "more": "More"
+      },
+      "columns": {
+        "stock": "Stock",
+        "price": "Price",
+        "changePercent": "Change %",
+        "chart": "Chart",
+        "volume": "Volume",
+        "liquidityEGP": "Liquidity (EGP)",
+        "peRatio": "P/E Ratio",
+        "stockState": "Stock State",
+        "aboveMa50": "Above MA50"
+      },
+      "toast": {
+        "loadFailed": "Failed to load data",
+        "connectionError": "Connection error",
+        "filtersReset": "Filters have been reset",
+        "exported": "Exported {count} stocks",
+        "copyFailed": "Failed to copy text",
+        "copyToClipboard": "Text copied to clipboard",
+        "presetApplied": "Applied: {preset}"
+      },
+      "buttons": {
+        "reset": "Reset",
+        "refresh": "Refresh",
+        "export": "Export",
+        "retry": "Retry",
+        "showMore": "Show",
+        "publish": "Publish"
+      },
+      "kpi": {
+        "totalResults": "Total Results",
+        "gainers": "Gainers",
+        "losers": "Losers",
+        "avgChange": "Average Change",
+        "totalLiquidity": "Total Liquidity",
+        "volumeMomentum": "Volume Momentum",
+        "filterResults": "Filter Results",
+        "egpSuffix": "EGP",
+        "daysUnit": "days"
+      },
+      "loading": {
+        "loadingStocks": "Loading stocks...",
+        "loadingPerformers": "Loading top gainers / losers..."
+      },
+      "empty": {
+        "noResults": "No results match the current filters"
+      },
+      "share": {
+        "title": "Stock Filter — {count} stocks",
+        "filterTitle": "Advanced Stock Filter Results",
+        "filterTitleProfessional": "Professional Stock Filter Results",
+        "stock": "Stocks",
+        "filter": "Filter",
+        "hashtags": "technical_analysis,trading,stock_filter",
+        "copyText": "Copy Text",
+        "exportResults": "Export Results",
+        "whatsapp": "WhatsApp",
+        "facebook": "Facebook"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by name or symbol...",
+        "market": "Market",
+        "allMarkets": "All Markets",
+        "egx": "Egyptian Stock Exchange",
+        "sector": "Sector",
+        "allSectors": "All Sectors",
+        "sort": "Sort",
+        "sortOptions": {
+          "liquidity": "Liquidity",
+          "changePercent": "Change %",
+          "volume": "Volume",
+          "marketCap": "Market Cap",
+          "peRatio": "P/E Ratio",
+          "roe": "Return on Equity",
+          "high52w": "52-Week High",
+          "low52w": "52-Week Low",
+          "dividendYield": "Dividend Yield",
+          "momentum": "Momentum (computed)",
+          "stockState": "Stock State (computed)"
+        },
+        "order": {
+          "desc": "Descending (highest first)",
+          "asc": "Ascending (lowest first)"
+        },
+        "trend": {
+          "all": "All",
+          "upOnly": "Up only (> 0)",
+          "downOnly": "Down only (< 0)",
+          "neutral": "Neutral (~ 0)"
+        },
+        "aboveMa": {
+          "all": "All",
+          "ma50": "Above MA50 only",
+          "ma200": "Above MA200 only",
+          "both": "Above both"
+        },
+        "rsi": {
+          "all": "All",
+          "oversold": "Oversold (< 30)",
+          "overbought": "Overbought (> 70)"
+        },
+        "stockState": {
+          "all": "All states",
+          "recovery": "Correction Ended (Recovery)",
+          "balancedMomentum": "Balanced Momentum",
+          "nearBreak": "Near Breakout (upward)",
+          "neutral": "Neutral",
+          "nearPeak": "Near Peak",
+          "atPeak": "At Peak",
+          "inCorrection": "In Correction",
+          "stillFalling": "Still Falling",
+          "insufficientData": "Insufficient Data"
+        },
+        "minPrice": "Min Price",
+        "maxPrice": "Max Price",
+        "minVolume": "Min Volume",
+        "minTurnover": "Min Liquidity (EGP)",
+        "minPe": "Min P/E",
+        "maxPe": "Max P/E",
+        "minRoe": "Min ROE (%)",
+        "minDividendYield": "Min Dividend Yield (%)",
+        "minMarketCap": "Min Market Cap (EGP)",
+        "maxMarketCap": "Max Market Cap (EGP)",
+        "resultCount": "Result Count",
+        "volumeSurge": "Volume Surge (1.5× average)",
+        "near52wHigh": "Near 52-week high",
+        "near52wLow": "Near 52-week low",
+        "show": "Show",
+        "labels": {
+          "sortBy": "Sort by",
+          "orderDirection": "Order direction",
+          "dailyTrend": "Daily trend",
+          "aboveBelowMa": "Above/Below average",
+          "rsiIndicator": "RSI Indicator",
+          "technicalStockState": "Technical stock state"
+        }
+      },
+      "filterHelp": {
+        "market": "Specifies the financial market (EGX = Egyptian Stock Exchange).",
+        "sector": "Specifies the sector — choose from the list or All.",
+        "price": "Price range (min / max) in EGP.",
+        "volume": "Minimum daily trading volume (number of shares traded).",
+        "turnover": "Minimum liquidity (trade value in EGP = price × volume).",
+        "trend": "Daily change direction: up (> 0), down (< 0), or neutral (~ 0).",
+        "aboveMa": "Above moving average: MA50 (short-term), MA200 (long-term), or both.",
+        "rsi": "Relative Strength Index: oversold < 30 (may rebound), overbought > 70 (may retreat).",
+        "volume_surge": "Volume higher than 1.5× average volume — likely liquidity inflow.",
+        "near_52w_high": "Price within 5% of 52-week high — near testing the peak.",
+        "near_52w_low": "Price within 5% of 52-week low — near testing the bottom.",
+        "pe": "Price-to-Earnings ratio (P/E): value range. Lower = relatively cheaper.",
+        "roe": "Minimum return on equity (%) — higher = better efficiency.",
+        "dividend_yield": "Minimum dividend yield (%) — regular income.",
+        "market_cap": "Market cap (EGP): company size range.",
+        "stock_state": "Technical stock state: see explanation next to each option."
+      },
+      "periods": {
+        "yesterday": "Yesterday (1 day)",
+        "week": "Week (7 days)",
+        "fifteenDays": "15 days",
+        "month": "Month (30 days)",
+        "threeMonths": "3 months",
+        "sixMonths": "6 months",
+        "ytd": "Year-to-date",
+        "year": "Full year (365 days)"
+      },
+      "performers": {
+        "both": "Top and Bottom",
+        "gainers": "Top Gainers",
+        "losers": "Top Losers",
+        "directions": {
+          "gainers": "Gainers",
+          "losers": "Losers",
+          "all": "All"
+        },
+        "title": "Top Gainers and Losers — results auto-updated",
+        "topPerformersTitle": "Top Gainers / Losers Stocks",
+        "periodLabel": "Period:",
+        "to": "to",
+        "kpi": {
+          "totalStocks": "Total Stocks",
+          "gainers": "Gainers",
+          "losers": "Losers",
+          "avgChange": "Average Change",
+          "bestWorst": "Best and Worst Stock"
+        },
+        "filters": {
+          "period": "Period",
+          "direction": "Type",
+          "market": "Market",
+          "resultsTable": "Results Table"
+        },
+        "columns": {
+          "stock": "Stock",
+          "sector": "Sector",
+          "startPrice": "Start Price",
+          "endPrice": "End Price",
+          "changePct": "Change %",
+          "days": "Days",
+          "volume": "Volume (end)"
+        },
+        "empty": "No results for the current filters",
+        "topGainer": "Top gainer — {period}",
+        "topLoser": "Top loser — {period}",
+        "fromWord": "From",
+        "toWord": "to",
+        "footer": "Top Gainers and Losers — results auto-updated"
+      },
+      "shareText": {
+        "screenerHeader": "📊 Advanced Stock Filters — {market}",
+        "allMarkets": "All Markets",
+        "resultCount": "📋 Result count: {count}",
+        "stockLine": "  💰 Price: {price} EGP | ⚡ Change: {sign}{changePercent}%",
+        "stockLineLiquidity": "  📊 Volume: {volume} | 💸 Liquidity: {liquidity} EGP",
+        "stockLineExtra": "  🏷️ State: {state} | 🔥 Momentum: {momentum}",
+        "disclaimer": "⚠️ This analysis is for educational purposes only — not investment advice",
+        "performersHeader": "🏆 Top Gainers / Losers",
+        "performersPeriod": "📋 Period: {period} ({direction} | Result count: {count}",
+        "performersDateRange": "📅 From {startDate} to {endDate}",
+        "performersStockLine": "  💰 From {startPrice} → {endPrice} EGP | ⚡ Change: {sign}{changePct}%",
+        "performersStockPeriod": "  📅 Period: {days} days"
+      }
+    }
+  },
+  "radar": {
+    "exit": {
+      "title": "Exit Radar",
+      "titleWithEmoji": "🚪 Exit Radar",
+      "subtitle": "Distribution and exit signals — inverse of the maker radar. Last updated: {cacheAge}",
+      "marketLabel": "Market:",
+      "scannedLabel": "Scanned:",
+      "exitCount": "{count} exit signals",
+      "noSignals": "No exit signals ✅",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "loadFailed": "Failed to load exit radar",
+      "connectionError": "Connection error",
+      "loading": "Exit radar loading",
+      "warmingUp": "First run — building the exit signal list. Please try again in a minute.",
+      "errorPrefix": "Failed to load exit radar: {error}",
+      "cacheAge": {
+        "unknown": "Unknown",
+        "seconds": "{count} seconds ago",
+        "minutes": "{count} minutes ago",
+        "hours": "{count} hours ago"
+      },
+      "lock": {
+        "title": "🔒 Exit Radar — Available to Subscribers",
+        "body": "The exit radar detects distribution and institutional selling signals before they occur.",
+        "teaser": "3 stocks approaching an exit signal",
+        "cta": "Subscribe to access the exit radar"
+      },
+      "empty": {
+        "title": "No exit signals today",
+        "body": "None of the scanned stocks currently show distribution or exit signals. Check the radar regularly during trading hours."
+      },
+      "footer": {
+        "title": "ℹ️ How does the exit radar work?",
+        "body": "The script scans all stocks daily across 5 exit paths (X1-X5). Signals are ordered by priority: X5 (Kill Switch) → X1 (strong distribution) → X4 (exhaustion gap) → X3 (resistance rejection) → X2 (volume divergence). Each stock appears with its highest achieved exit path. Source:"
+      },
+      "table": {
+        "ticker": "Stock",
+        "price": "Price",
+        "volumeToday": "Today Volume",
+        "rally5d": "5-Day Rally",
+        "allPaths": "All Paths",
+        "reason": "Reason",
+        "empty": "No stocks in this path"
+      },
+      "stocksCount": "stocks",
+      "suggestedAction": "Suggested Action:",
+      "paths": {
+        "x1": {
+          "label": "Strong Distribution",
+          "desc": "Strong institutional selling — high volume with close in the lower half",
+          "action": "Full sell or strong position reduction"
+        },
+        "x2": {
+          "label": "Volume Divergence",
+          "desc": "Fake rally — price broke the peak but volume is weak",
+          "action": "Reduce half the position + tight stop"
+        },
+        "x3": {
+          "label": "Resistance Rejection",
+          "desc": "Tested resistance and closed with a long upper shadow",
+          "action": "Stop at last low + monitor breakout"
+        },
+        "x4": {
+          "label": "Exhaustion Gap",
+          "desc": "After a long rally, a gap up followed by a red close",
+          "action": "Full sell — momentum exhausted"
+        },
+        "x5": {
+          "label": "Kill Switch",
+          "desc": "Immediate exit signal (Limit Up Trap / fatal distribution)",
+          "action": "Immediate exit — do not wait"
+        }
+      }
+    },
+    "weekly": {
+      "title": "Weekly Radar Report",
+      "loading": "Weekly report generating",
+      "warmingUp": "First run — generating the weekly report. Please try again in a minute.",
+      "errorPrefix": "Failed to load weekly report: {error}",
+      "retry": "Retry",
+      "loadFailed": "Failed to load weekly report",
+      "connectionError": "Connection error",
+      "noData": "No report data available.",
+      "weekLabel": "Week {week}, {year}",
+      "regenerate": "Regenerate",
+      "regenerating": "Regenerating...",
+      "downloadPdf": "Download PDF",
+      "regimeLabel": "Market regime: {regime}",
+      "regimes": {
+        "DEFENSIVE": "Defensive (tighten the reins)",
+        "NORMAL": "Normal",
+        "AGGRESSIVE": "Aggressive (press on the gas)"
+      },
+      "stockOfWeek": {
+        "title": "Stock of the Week",
+        "currentPrice": "Current Price",
+        "target1": "Target 1",
+        "target2": "Target 2",
+        "stopLoss": "🛑 Stop Loss",
+        "signalStrength": "Signal strength:",
+        "reason": "Reason",
+        "empty": "No featured stock this week — run the maker radar first."
+      },
+      "top5": {
+        "title": "Top 5 Stocks for Next Week",
+        "empty": "No stocks in cache — run the maker radar first."
+      },
+      "lastWeek": {
+        "title": "Last Week Stocks Performance",
+        "avgReturn": "Average Return",
+        "winRatio": "Win Ratio",
+        "winRate": "🏆 Win Rate",
+        "enteredAt": "Entered {price}",
+        "empty": "No tracked stocks from last week.",
+        "emptyHint": "Start tracking stocks from the maker radar to see them here next week."
+      },
+      "sectors": {
+        "title": "Sector Heatmap",
+        "stockCount": "({count} stocks)"
+      },
+      "subscribe": {
+        "title": "Weekly Report Every Sunday",
+        "body": "Subscribe to receive the weekly report on Telegram every Sunday morning — top 5 stocks + stock of the week + performance tracking.",
+        "telegram": "Join the Telegram channel",
+        "website": "Website",
+        "android": "Android App"
+      },
+      "footer": {
+        "disclaimer": "Automated analysis — not investment advice. Make your decisions based on your own research.",
+        "lastUpdate": "Last update:"
+      }
+    },
+    "multiMarket": {
+      "title": "Unified Multi-Market Radar",
+      "marketsCount": "{count} markets",
+      "stocksUnderRadar": "{count} stocks under monitoring",
+      "marketsOpen": "{count} markets open",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "loadFailed": "Failed to load unified radar",
+      "connectionError": "Connection error",
+      "displayedMarkets": "Displayed markets:",
+      "summaryTitle": "Markets Summary",
+      "marketClosed": "Closed",
+      "stats": {
+        "stocks": "Stocks",
+        "opportunities": "Opportunities",
+        "currency": "Currency"
+      },
+      "marketRegimeLabel": "Market regime:",
+      "warmingUp": "Warming up the radar...",
+      "cacheAge": {
+        "seconds": "{count}s ago",
+        "minutes": "{count}m ago"
+      },
+      "unifiedTop5": {
+        "title": "Top 5 Opportunities Across All Markets",
+        "empty": "No opportunities available at the moment — markets may be closed or warming up"
+      },
+      "table": {
+        "rank": "#",
+        "market": "Market",
+        "stock": "Stock",
+        "path": "Path",
+        "price": "Price",
+        "target": "Target",
+        "change": "Change",
+        "roc10d": "ROC 10d",
+        "volume": "Volume"
+      },
+      "detailTitle": "Per-Market Detail",
+      "marketDetail": {
+        "stocksAndOpportunities": "{stockCount} stocks · {opportunityCount} opportunities",
+        "warmingUp": "Radar is warming up — check back later",
+        "empty": "No opportunities in this market at the moment"
+      },
+      "regimes": {
+        "defensive": "Defensive",
+        "normal": "Normal",
+        "aggressive": "Aggressive",
+        "bull": "Bullish",
+        "bear": "Bearish",
+        "sideways": "Sideways",
+        "unknown": "Unknown"
+      },
+      "paths": {
+        "preSurge": "Pre-Surge",
+        "strongAccumulation": "Strong Accumulation",
+        "weakAccumulation": "Weak Accumulation",
+        "explosiveSurge": "Explosive Surge",
+        "earlyBreak": "Early Break"
+      },
+      "footer": {
+        "autoRefresh": "Auto-refreshes every 60 seconds",
+        "dataSource": "Data from cached radar JSON per market",
+        "lastUpdate": "Last update:"
+      }
+    }
+  },
+  "predictions": {
+    "tracking": {
+      "title": "Prediction Tracking",
+      "subtitle": "Follow the success rate of predictions over time",
+      "refresh": "Refresh",
+      "publish": "Publish",
+      "statuses": {
+        "pending": "Pending",
+        "target_hit": "Target Reached",
+        "stop_hit": "Stop Hit",
+        "expired": "Expired"
+      },
+      "filterStatus": {
+        "label": "Status:",
+        "ariaLabel": "Status filter",
+        "all": "All",
+        "pending": "Pending",
+        "target_hit": "Target Reached",
+        "stop_hit": "Stop Hit",
+        "expired": "Expired"
+      },
+      "toast": {
+        "verifySuccess": "Verified: {target_hit} reached target, {stop_hit} hit stop, {expired} expired",
+        "verifyFailed": "Failed to verify predictions",
+        "connectionError": "Failed to connect to server",
+        "generatingV40": "Starting the analysis system and real-time liquidity scan...",
+        "generateSuccess": "Predictions generated successfully!",
+        "generateSuccessDesc": "Opportunities updated and saved to the system",
+        "generateFailed": "Failed to generate predictions",
+        "serverError": "Server connection error"
+      },
+      "stats": {
+        "total": "Total Predictions",
+        "pending": "Pending",
+        "successRate": "Success Rate",
+        "failureRate": "Failure Rate",
+        "totalHint": "Last {days} days — {market}",
+        "pendingHint": "Predictions not yet resolved",
+        "successHint": "Reached target: {count}",
+        "failureHint": "Hit stop: {count}"
+      },
+      "summary": {
+        "targetHit": "Reached target:",
+        "stopHit": "Hit stop:",
+        "expired": "Expired:",
+        "avgReturn": "Average return:",
+        "resolved": "Resolved predictions: {resolved} of {total}"
+      },
+      "table": {
+        "title": "Predictions Log",
+        "countLabel": "{count} predictions — {market}",
+        "empty": "No tracked predictions yet — predictions will appear here automatically when generated.",
+        "lastVerified": "Last verified: {date}",
+        "columns": {
+          "ticker": "Stock",
+          "pickDate": "Pick Date",
+          "entry": "Entry",
+          "stop": "Stop",
+          "target": "Target",
+          "currentPrice": "Current Price",
+          "diff": "Diff",
+          "returnPct": "Return %",
+          "status": "Status"
+        }
+      },
+      "infoNote": "💡 Every prediction is saved automatically when generated, and verified daily against the current price to check whether the target was reached or the stop was hit.",
+      "publishContent": {
+        "title": "Prediction Tracking",
+        "total": "Total",
+        "pending": "Pending",
+        "successRate": "Success rate",
+        "failureRate": "Failure rate",
+        "top10Header": "Latest predictions",
+        "entry": "entry",
+        "target": "target",
+        "stop": "stop"
+      }
+    },
+    "makerRadar": {
+      "title": "Maker Radar",
+      "paths": {
+        "A_pre_surge": {
+          "label": "Pre-Surge (early accumulation)",
+          "short": "Pre-Surge",
+          "descShort": "Very early accumulation",
+          "descLong": "Stock is accumulating before the breakout — highest priority"
+        },
+        "B_quiet_accumulation_strong": {
+          "label": "Under the Microscope",
+          "short": "Microscope",
+          "descShort": "Strong silent accumulation",
+          "descLong": "Big money entering quietly — gradual entry opportunity"
+        },
+        "C_quiet_accumulation_weak": {
+          "label": "Weak Accumulation",
+          "short": "Weak",
+          "descShort": "Weak silent accumulation",
+          "descLong": "Early signals — for monitoring and tracking"
+        },
+        "D_explosive_surge": {
+          "label": "Explosive Wave",
+          "short": "Explosive",
+          "descShort": "Volume explosion",
+          "descLong": "Confirmed — entry for monitoring, not for catching"
+        },
+        "E_early_break": {
+          "label": "Early Breakout",
+          "short": "Breakout",
+          "descShort": "Potential early breakout",
+          "descLong": "Opportunity before formation — narrow range breakout"
+        }
+      },
+      "signals": {
+        "volume_high_recurring": "Recurring volume",
+        "buy_pressure": "Buy pressure",
+        "compressed": "Range tight",
+        "volume_not_low": "Healthy volume",
+        "not_explosive": "Not explosive",
+        "no_distribution": "No distribution",
+        "volume_gradient": "Volume gradient",
+        "range_compressed": "Compressed range",
+        "near_ma10": "Near MA10",
+        "buy_days": "Buy days"
+      },
+      "kpi": {
+        "scanned": "Total Stocks Scanned",
+        "underMicroscope": "Under Microscope",
+        "explosive": "Explosive Waves",
+        "tracked": "Tracked Stocks"
+      },
+      "pathSections": {
+        "preSurge": {
+          "title": "Pre-Surge — Expected Breakout",
+          "subtitle": "Highest priority — stock accumulating before breakout"
+        },
+        "explosive": {
+          "title": "🔥 Stocks Exploding Now",
+          "subtitle": "Sudden volume + strong move — immediate alert"
+        },
+        "microscope": {
+          "title": "🎯 Under the Microscope",
+          "subtitle": "Quiet accumulation — stocks building up before exploding"
+        },
+        "earlyBreak": {
+          "title": "⚡ Early Breakout",
+          "subtitle": "Breakout of narrow range with volume — first breakout signal"
+        }
+      },
+      "table": {
+        "rank": "#",
+        "ticker": "Stock",
+        "price": "Price",
+        "changePct": "Change%",
+        "roc10": "ROC10",
+        "roc20": "ROC20",
+        "relVolume": "Rel Vol",
+        "rebounds": "Rebounds",
+        "spark": "Spark",
+        "liquidityPct": "Liquidity %",
+        "netFlow": "Net Flow",
+        "cycleUp": "Up Cycle",
+        "accDist": "Accum/Dist",
+        "freq": "Frequency",
+        "expected": "Expected",
+        "activation": "Activation",
+        "priceHeader": "Price",
+        "movement": "Movement",
+        "stars": "⭐"
+      },
+      "buttons": {
+        "refresh": "Refresh",
+        "rerunRadar": "Run Radar",
+        "warmupCache": "Re-read cache",
+        "rerunRadarTitle": "Re-run the radar (Python script)",
+        "generateTodayTitle": "Generate today's predictions",
+        "publishRadar": "Publish Radar",
+        "publishStock": "Publish Analysis",
+        "openStockDetail": "Open full stock page",
+        "untrack": "Remove from tracking",
+        "track": "Add to tracking"
+      },
+      "toast": {
+        "radarWarmed": "Radar updated ({sec}s)",
+        "warmupFailed": "Failed to run radar",
+        "predictionsStarted": "Prediction generation started...",
+        "predictionsGenerated": "Predictions generated successfully!",
+        "predictionsFailed": "Failed to generate predictions",
+        "trackAdded": "{ticker} added to tracking",
+        "trackRemoved": "{ticker} removed from tracking",
+        "trackFailed": "Failed to update tracking"
+      },
+      "cache": {
+        "fresh": "Fresh {sec}s",
+        "stale": "Stale {min}m",
+        "warmupRunning": "Radar is running...",
+        "lastError": "Last error",
+        "dbSource": "Database source used"
+      },
+      "empty": {
+        "noStocks": "No matching stocks",
+        "noStocksHint": "Try a different filter or refresh shortly",
+        "noTracked": "⚠️ No stocks in the tracking list — open any stock and tap ⭐ to add it",
+        "noSignals": "No clear fundamentals signals currently"
+      },
+      "drawer": {
+        "title": "Stock analysis: {ticker}",
+        "priceSummary": "Price summary ({days} days)",
+        "daysTracked": "{days} days · from {price}",
+        "positionSizeTitle": "Suggested position size from portfolio"
+      },
+      "stats": {
+        "roc10d": "ROC 10 days",
+        "range20d": "20-day range",
+        "avgVol20": "Avg volume 20d",
+        "avgTurnover20": "Avg liquidity 20d"
+      },
+      "publishContent": {
+        "title": "Maker Radar",
+        "header": "Maker Radar — {title}",
+        "stocksCount": "{count} stocks"
+      }
+    }
+  }
+}

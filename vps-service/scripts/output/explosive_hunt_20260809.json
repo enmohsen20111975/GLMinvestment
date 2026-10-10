@@ -1,0 +1,809 @@
+{
+  "summary": {
+    "scanned": 536,
+    "errors": 404,
+    "total_explosive_candidates": 29,
+    "coverage_new_thresholds": {
+      "gambler_buys": 29,
+      "balanced_buys": 22,
+      "conservative_buys": 8
+    },
+    "coverage_old_thresholds": {
+      "gambler_buys": 29,
+      "balanced_buys": 2,
+      "conservative_buys": 0
+    },
+    "improvement": {
+      "gambler_delta": 0,
+      "gambler_pct_increase": 0.0,
+      "balanced_delta": 20,
+      "balanced_pct_increase": 1000.0,
+      "conservative_delta": 8,
+      "conservative_pct_increase": Infinity
+    },
+    "generated_at": "2026-08-09T16:20:10.345761",
+    "data_source": "production"
+  },
+  "top_candidates": [
+    {
+      "ticker": "VLMRA",
+      "name_ar": "Valmore Holding",
+      "sector": "Finance",
+      "explosive_score": 75,
+      "reasons": "5d momentum +6.25% | volume 3.3× (massive accumulation) | breakout (new 20d high) | 20d trend +62.21%",
+      "maestro_score_proxy": 61,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 30.6,
+        "momentum_20d": 62.21,
+        "momentum_5d": 6.25,
+        "volume_ratio": 3.3,
+        "atr_pct": 2.98,
+        "vol_pct": 35.8,
+        "is_breakout": true,
+        "high_20d": 30.8,
+        "dist_from_high_pct": 0.65,
+        "avg_vol_20": 799842
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -33
+        },
+        "balanced": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -19
+        },
+        "conservative": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -11
+        }
+      }
+    },
+    {
+      "ticker": "COMI",
+      "name_ar": "Commercial International Bank - Egypt (CIB) S.A.E.",
+      "sector": "Finance",
+      "explosive_score": 70,
+      "reasons": "5d momentum +7.61% | volume 2.48× (heavy accumulation) | breakout (new 20d high) | 20d trend +100%",
+      "maestro_score_proxy": 58,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 140.0,
+        "momentum_20d": 111.5,
+        "momentum_5d": 7.61,
+        "volume_ratio": 2.48,
+        "atr_pct": 2.61,
+        "vol_pct": 31.3,
+        "is_breakout": true,
+        "high_20d": 140.4,
+        "dist_from_high_pct": 0.28,
+        "avg_vol_20": 1601208
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -30
+        },
+        "balanced": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -16
+        },
+        "conservative": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -8
+        }
+      }
+    },
+    {
+      "ticker": "DIFC",
+      "name_ar": "ديفكو2",
+      "sector": null,
+      "explosive_score": 70,
+      "reasons": "5d momentum +42.33% (surge) | volume 6.22× (massive accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 49,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 15.5,
+        "momentum_20d": -89.25,
+        "momentum_5d": 42.33,
+        "volume_ratio": 6.22,
+        "atr_pct": 51.65,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 145.79,
+        "dist_from_high_pct": 89.37,
+        "avg_vol_20": 1719
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -21
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -7
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 1
+        }
+      }
+    },
+    {
+      "ticker": "EFIH",
+      "name_ar": "e-finance for Digital and Financial Investments S.A.E.",
+      "sector": "Technology Services",
+      "explosive_score": 70,
+      "reasons": "5d momentum +11.01% (surge) | volume 4.14× (massive accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 49,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 23.39,
+        "momentum_20d": -54.68,
+        "momentum_5d": 11.01,
+        "volume_ratio": 4.14,
+        "atr_pct": 11.62,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 52.45,
+        "dist_from_high_pct": 55.4,
+        "avg_vol_20": 1345194
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -21
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -7
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 1
+        }
+      }
+    },
+    {
+      "ticker": "OCDI",
+      "name_ar": "Six of October Development & Investment (SODIC)",
+      "sector": "Finance",
+      "explosive_score": 70,
+      "reasons": "5d momentum +32.28% (surge) | volume 3.31× (massive accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 49,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 27.5,
+        "momentum_20d": -99.32,
+        "momentum_5d": 32.28,
+        "volume_ratio": 3.31,
+        "atr_pct": 538.15,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 4281.97,
+        "dist_from_high_pct": 99.36,
+        "avg_vol_20": 983299
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -21
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -7
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 1
+        }
+      }
+    },
+    {
+      "ticker": "ORHD",
+      "name_ar": "Orascom Development Egypt (S.A.E)",
+      "sector": "Consumer Durables",
+      "explosive_score": 70,
+      "reasons": "5d momentum +10.53% (surge) | volume 3.22× (massive accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 49,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 40.4,
+        "momentum_20d": -85.21,
+        "momentum_5d": 10.53,
+        "volume_ratio": 3.22,
+        "atr_pct": 29.59,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 284.11,
+        "dist_from_high_pct": 85.78,
+        "avg_vol_20": 2636616
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -21
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -7
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 1
+        }
+      }
+    },
+    {
+      "ticker": "CERA",
+      "name_ar": "Arab Ceramic Co. - Ceramica Remas",
+      "sector": "Producer Manufacturing",
+      "explosive_score": 65,
+      "reasons": "5d momentum +10.83% (surge) | volume 2.0× (heavy accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 46,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 1.33,
+        "momentum_20d": -99.27,
+        "momentum_5d": 10.83,
+        "volume_ratio": 2.0,
+        "atr_pct": 612.77,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 191.34,
+        "dist_from_high_pct": 99.3,
+        "avg_vol_20": 6252562
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -18
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -4
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 4
+        }
+      }
+    },
+    {
+      "ticker": "HELI",
+      "name_ar": "Heliopolis Housing",
+      "sector": "Consumer Durables",
+      "explosive_score": 65,
+      "reasons": "5d momentum +29.42% (surge) | volume 2.67× (heavy accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 46,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 8.27,
+        "momentum_20d": -99.09,
+        "momentum_5d": 29.42,
+        "volume_ratio": 2.67,
+        "atr_pct": 415.87,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 953.83,
+        "dist_from_high_pct": 99.13,
+        "avg_vol_20": 7095094
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -18
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -4
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 4
+        }
+      }
+    },
+    {
+      "ticker": "MILS",
+      "name_ar": "North Cairo Mills Co.",
+      "sector": "Process Industries",
+      "explosive_score": 63,
+      "reasons": "5d momentum +22.22% (surge) | volume 5.22× (massive accumulation)",
+      "maestro_score_proxy": 52,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 172.0,
+        "momentum_20d": -29.04,
+        "momentum_5d": 22.22,
+        "volume_ratio": 5.22,
+        "atr_pct": 6.03,
+        "vol_pct": 72.4,
+        "is_breakout": false,
+        "high_20d": 258.56,
+        "dist_from_high_pct": 33.48,
+        "avg_vol_20": 62846
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -24
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -10
+        },
+        "conservative": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -2
+        }
+      }
+    },
+    {
+      "ticker": "SWDY",
+      "name_ar": "El Sewedy Electric Company",
+      "sector": "Producer Manufacturing",
+      "explosive_score": 60,
+      "reasons": "5d momentum +7.34% | volume 4.16× (massive accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 46,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 93.6,
+        "momentum_20d": -63.24,
+        "momentum_5d": 7.34,
+        "volume_ratio": 4.16,
+        "atr_pct": 17.66,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 271.98,
+        "dist_from_high_pct": 65.59,
+        "avg_vol_20": 74302
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -18
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -4
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 4
+        }
+      }
+    },
+    {
+      "ticker": "CALT",
+      "name_ar": "Cairo Oils & Soap",
+      "sector": "Diversified",
+      "explosive_score": 56,
+      "reasons": "5d momentum +13.49% (surge) | near 20d high (1.36%)",
+      "maestro_score_proxy": 51,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 74.53,
+        "momentum_20d": 10.73,
+        "momentum_5d": 13.49,
+        "volume_ratio": 0.01,
+        "atr_pct": 5.45,
+        "vol_pct": 65.4,
+        "is_breakout": false,
+        "high_20d": 75.56,
+        "dist_from_high_pct": 1.36,
+        "avg_vol_20": 7811
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -23
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -9
+        },
+        "conservative": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -1
+        }
+      }
+    },
+    {
+      "ticker": "ETEL",
+      "name_ar": "Telecom Egypt",
+      "sector": "Communications",
+      "explosive_score": 55,
+      "reasons": "5d momentum +9.81% | volume 2.4× (heavy accumulation) | explosive volatility (87.9%)",
+      "maestro_score_proxy": 48,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 103.28,
+        "momentum_20d": -34.34,
+        "momentum_5d": 9.81,
+        "volume_ratio": 2.4,
+        "atr_pct": 7.33,
+        "vol_pct": 87.9,
+        "is_breakout": false,
+        "high_20d": 158.98,
+        "dist_from_high_pct": 35.04,
+        "avg_vol_20": 919730
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -20
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -6
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 2
+        }
+      }
+    },
+    {
+      "ticker": "PHAR",
+      "name_ar": "Egyptian International Pharmaceutical Industries Co.",
+      "sector": "Health Technology",
+      "explosive_score": 55,
+      "reasons": "5d momentum +5.66% | volume 2.6× (heavy accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 43,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 91.5,
+        "momentum_20d": -96.16,
+        "momentum_5d": 5.66,
+        "volume_ratio": 2.6,
+        "atr_pct": 108.35,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 2621.41,
+        "dist_from_high_pct": 96.51,
+        "avg_vol_20": 196324
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -15
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -1
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 7
+        }
+      }
+    },
+    {
+      "ticker": "MTEZ",
+      "name_ar": "Suez Fertilizers Company",
+      "sector": "Diversified",
+      "explosive_score": 52,
+      "reasons": "5d momentum +99.31% (surge) | near 20d high (1.55%) | 20d trend +91.1%",
+      "maestro_score_proxy": 53,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 85.38,
+        "momentum_20d": 91.1,
+        "momentum_5d": 99.31,
+        "volume_ratio": 0.0,
+        "atr_pct": 3.15,
+        "vol_pct": 37.7,
+        "is_breakout": false,
+        "high_20d": 86.73,
+        "dist_from_high_pct": 1.55,
+        "avg_vol_20": 8773407
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -25
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -11
+        },
+        "conservative": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -3
+        }
+      }
+    },
+    {
+      "ticker": "NASR",
+      "name_ar": "النصر لصناعة المحولات - الماكو",
+      "sector": "Diversified",
+      "explosive_score": 52,
+      "reasons": "5d momentum +12.26% (surge) | near 20d high (1.6%) | 20d trend +28.91%",
+      "maestro_score_proxy": 53,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 14.34,
+        "momentum_20d": 28.91,
+        "momentum_5d": 12.26,
+        "volume_ratio": 0.78,
+        "atr_pct": 3.31,
+        "vol_pct": 39.8,
+        "is_breakout": false,
+        "high_20d": 14.57,
+        "dist_from_high_pct": 1.6,
+        "avg_vol_20": 98
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -25
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -11
+        },
+        "conservative": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -3
+        }
+      }
+    },
+    {
+      "ticker": "DCRC",
+      "name_ar": "Delta Construction & Rebuilding Co.",
+      "sector": "Finance",
+      "explosive_score": 50,
+      "reasons": "volume 4.23× (massive accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 43,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 52.0,
+        "momentum_20d": -91.79,
+        "momentum_5d": 4.0,
+        "volume_ratio": 4.23,
+        "atr_pct": 45.94,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 657.54,
+        "dist_from_high_pct": 92.09,
+        "avg_vol_20": 14170
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -15
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -1
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 7
+        }
+      }
+    },
+    {
+      "ticker": "OCIC",
+      "name_ar": "Orascom Construction Industries",
+      "sector": "Real Estate",
+      "explosive_score": 50,
+      "reasons": "5d momentum +7.74% | breakout (new 20d high) | 20d trend +27.35%",
+      "maestro_score_proxy": 53,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 2814.59,
+        "momentum_20d": 27.35,
+        "momentum_5d": 7.74,
+        "volume_ratio": 0.84,
+        "atr_pct": 3.03,
+        "vol_pct": 36.4,
+        "is_breakout": true,
+        "high_20d": 2827.4,
+        "dist_from_high_pct": 0.45,
+        "avg_vol_20": 508730
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -25
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -11
+        },
+        "conservative": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -3
+        }
+      }
+    },
+    {
+      "ticker": "TMGH",
+      "name_ar": "Talaat Moustafa Group Holding",
+      "sector": "Finance",
+      "explosive_score": 50,
+      "reasons": "volume 3.0× (massive accumulation) | explosive volatility (100%)",
+      "maestro_score_proxy": 43,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 100.5,
+        "momentum_20d": -88.84,
+        "momentum_5d": 3.93,
+        "volume_ratio": 3.0,
+        "atr_pct": 25.97,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 929.29,
+        "dist_from_high_pct": 89.19,
+        "avg_vol_20": 1825984
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -15
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -1
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 7
+        }
+      }
+    },
+    {
+      "ticker": "MNHD",
+      "name_ar": "Madinet Nasr Housing",
+      "sector": "Real Estate",
+      "explosive_score": 46,
+      "reasons": "5d momentum +5.77% | near 20d high (1.08%)",
+      "maestro_score_proxy": 48,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 61.47,
+        "momentum_20d": 12.07,
+        "momentum_5d": 5.77,
+        "volume_ratio": 0.0,
+        "atr_pct": 4.26,
+        "vol_pct": 51.1,
+        "is_breakout": false,
+        "high_20d": 62.14,
+        "dist_from_high_pct": 1.08,
+        "avg_vol_20": 56218
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "strong_buy",
+          "would_buy": true,
+          "buy_gap": -20
+        },
+        "balanced": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -6
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 2
+        }
+      }
+    },
+    {
+      "ticker": "AMER",
+      "name_ar": "Amer Group Holding",
+      "sector": "Finance",
+      "explosive_score": 45,
+      "reasons": "5d momentum +55.11% (surge) | explosive volatility (100%)",
+      "maestro_score_proxy": 41,
+      "indicators": {
+        "enough_data": true,
+        "is_bad_data": false,
+        "current_price": 4.25,
+        "momentum_20d": -98.72,
+        "momentum_5d": 55.11,
+        "volume_ratio": 1.43,
+        "atr_pct": 313.19,
+        "vol_pct": 100,
+        "is_breakout": false,
+        "high_20d": 350.27,
+        "dist_from_high_pct": 98.79,
+        "avg_vol_20": 10368424
+      },
+      "persona_predictions": {
+        "gambler": {
+          "recommendation": "buy",
+          "would_buy": true,
+          "buy_gap": -13
+        },
+        "balanced": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 1
+        },
+        "conservative": {
+          "recommendation": "hold",
+          "would_buy": false,
+          "buy_gap": 9
+        }
+      }
+    }
+  ]
+}

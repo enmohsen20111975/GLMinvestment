@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "test": "V40.2 NEWS IMPACT BACKTEST",
+    "data_source": "V40.2 production pipeline (v40_2_daily_generator.py)",
+    "universe": "10 EGX-canonical tickers",
+    "window": "2026-07-01 → 2026-08-14 (6 months, scan_interval=1)",
+    "dbs_verified": [
+      "data_engine.db",
+      "news.db (7809 rows)",
+      "predictions.db"
+    ],
+    "goal": "هل تفعيل V40_2_NEWS_IMPACT=1 (قراءة من news.db) بيحسّن V40.2 فعلًا؟",
+    "production_module": "vps-service/analyzers/news_fetcher_analyzer.py + news_impact_scorer.py",
+    "integration": "vps-service/jobs/v40_2_daily_generator.py (V40_2_NEWS_IMPACT flag)",
+    "news_source": "news.db/market_news (News Agent المحلي + AlphaVantage + GNews)"
+  },
+  "results": {
+    "baseline_NO_news": {
+      "label": "baseline_NO_news",
+      "trades": 1,
+      "wins": 1,
+      "losses": 0,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 7.7,
+      "total_return_pct": 7.7,
+      "max_drawdown_pct": 0,
+      "profit_factor": 999.99,
+      "avg_holding_days": 7.0,
+      "exit_types": {
+        "unknown": 1
+      },
+      "runtime_sec": 2.2,
+      "news_actions": {
+        "VETO": 0,
+        "BOOST": 0,
+        "BOOST_STRONG": 0,
+        "REDUCE": 0,
+        "NEUTRAL": 0
+      },
+      "stdout_log": "/home/z/my-project/GLMinvestment/data/v402_news_impact_test/baseline_NO_news_stdout.log"
+    },
+    "news_IMPACT_on": {
+      "label": "news_IMPACT_on",
+      "trades": 1,
+      "wins": 1,
+      "losses": 0,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 7.7,
+      "total_return_pct": 7.7,
+      "max_drawdown_pct": 0,
+      "profit_factor": 999.99,
+      "avg_holding_days": 7.0,
+      "exit_types": {
+        "unknown": 1
+      },
+      "runtime_sec": 79.5,
+      "news_actions": {
+        "VETO": 0,
+        "BOOST": 1,
+        "BOOST_STRONG": 0,
+        "REDUCE": 0,
+        "NEUTRAL": 0
+      },
+      "stdout_log": "/home/z/my-project/GLMinvestment/data/v402_news_impact_test/news_IMPACT_on_stdout.log"
+    }
+  },
+  "timestamp": "2026-09-02T18:30:50.509816"
+}

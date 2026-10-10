@@ -1,0 +1,74 @@
+{
+  "symbol": "TMGH",
+  "name_ar": "مجموعة طلعت مصطفى القابضة",
+  "market": "EGX",
+  "sector": "",
+  "last_updated": "2026-09-01",
+  "version": 4,
+  "identity": {
+    "is_index_related": true,
+    "related_index": "EGX30",
+    "liquidity_profile": "high",
+    "free_float_note": "",
+    "ownership_concentration": "medium",
+    "is_story_stock": true,
+    "is_zombie_prone": false,
+    "notes": "TMG القابضة — سهم عقاري قيادي. قصة نمو + أراضي ضخمة."
+  },
+  "price_behavior": {
+    "typical_correction_pct": 13.3,
+    "typical_correction_range": [
+      8.6,
+      20.1
+    ],
+    "avg_up_move_after_correction_pct": 0,
+    "moves_violently_with_volume": true,
+    "respects_key_levels": false,
+    "gap_behavior": "fills_most_gaps",
+    "ramadan_behavior": "",
+    "notes": "بيتحرك بعنف مع الأخبار. التصحيح ممكن يوصل 25%. قصة سهم مش سهم عادي."
+  },
+  "liquidity_and_sector": {
+    "liquidity_sensitivity": "medium",
+    "leads_sector": false,
+    "follows_sector": true,
+    "follows_specific_stock": null,
+    "sector_beta_note": "",
+    "notes": ""
+  },
+  "events_behavior": {
+    "dividend": {
+      "typical_ex_date_drop_pct": 0,
+      "drop_range": [
+        0,
+        0
+      ],
+      "behavior_before_ex": "",
+      "notes": ""
+    },
+    "rights_issue_history": [],
+    "capital_increase_history": [],
+    "other_recurring_events": []
+  },
+  "danger_flags": [
+    "story_stock",
+    "earnings_miss_sensitive"
+  ],
+  "learned_lessons": [
+    {
+      "date": "2026-05-10",
+      "type": "failure",
+      "summary": "دخل قرب القمة بعد صعود 25%، تراجع 20%",
+      "lesson": "سهم قصة — بيتحرك بعنف. ممنوع المطاردة"
+    }
+  ],
+  "machine_summary": {
+    "typical_correction_pct": 18,
+    "max_expected_correction_pct": 28,
+    "liquidity_profile": "high",
+    "danger_level": 3,
+    "preferred_entry_style": "correction_or_grab",
+    "avoid_chase": true,
+    "distribution_sensitivity": "high"
+  }
+}

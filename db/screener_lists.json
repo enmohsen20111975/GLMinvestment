@@ -1,0 +1,7343 @@
+{
+  "مصر": {
+    "most_active": [
+      {
+        "rank": 1,
+        "symbol": "PHAR",
+        "name": "ايبيكو"
+      },
+      {
+        "rank": 2,
+        "symbol": "GTWL",
+        "name": "جولدن تكس"
+      },
+      {
+        "rank": 3,
+        "symbol": "CCAP",
+        "name": "القلعة للاستشارات المالية"
+      },
+      {
+        "rank": 4,
+        "symbol": "BIOC",
+        "name": "جلاكسو سميثكلاين"
+      },
+      {
+        "rank": 5,
+        "symbol": "NIPH",
+        "name": "النيل للادوية"
+      },
+      {
+        "rank": 6,
+        "symbol": "LUTS",
+        "name": "Lotus For Agricultural Investments And Development"
+      },
+      {
+        "rank": 7,
+        "symbol": "PHDC",
+        "name": "بالم هيلز"
+      },
+      {
+        "rank": 8,
+        "symbol": "COMI",
+        "name": "البنك التجاري الدولي"
+      },
+      {
+        "rank": 9,
+        "symbol": "AMOC",
+        "name": "أموك"
+      },
+      {
+        "rank": 10,
+        "symbol": "SPIN",
+        "name": "سبينالكس"
+      },
+      {
+        "rank": 11,
+        "symbol": "SCEM",
+        "name": "اسمنت سيناء"
+      },
+      {
+        "rank": 12,
+        "symbol": "EGAL",
+        "name": "مصر للالومنيوم"
+      },
+      {
+        "rank": 13,
+        "symbol": "CRST",
+        "name": "ليفت سلاب مصر"
+      },
+      {
+        "rank": 14,
+        "symbol": "AMIA",
+        "name": "الملتقى العربي للاستثمارات"
+      },
+      {
+        "rank": 15,
+        "symbol": "ETEL",
+        "name": "المصرية للاتصالات"
+      },
+      {
+        "rank": 16,
+        "symbol": "SIPC",
+        "name": "سبأ"
+      },
+      {
+        "rank": 17,
+        "symbol": "EFIC",
+        "name": "المالية والصناعية المصرية"
+      },
+      {
+        "rank": 18,
+        "symbol": "ISPH",
+        "name": "ابن سينا فارما"
+      },
+      {
+        "rank": 19,
+        "symbol": "INFI",
+        "name": "فوديكو"
+      },
+      {
+        "rank": 20,
+        "symbol": "ORAS",
+        "name": "اوراسكوم كونستراكشون ليميتد"
+      },
+      {
+        "rank": 21,
+        "symbol": "BTFH",
+        "name": "بلتون المالية"
+      },
+      {
+        "rank": 22,
+        "symbol": "EGCH",
+        "name": "كيما"
+      },
+      {
+        "rank": 23,
+        "symbol": "TMGH",
+        "name": "طلعت مصطفى"
+      },
+      {
+        "rank": 24,
+        "symbol": "MPCI",
+        "name": "ممفيس للادوية"
+      },
+      {
+        "rank": 25,
+        "symbol": "MBSC",
+        "name": "مصر بنى سويف للأسمنت"
+      },
+      {
+        "rank": 26,
+        "symbol": "EFIH",
+        "name": "e-finance for Digital and Financial Investments S.A.E."
+      },
+      {
+        "rank": 27,
+        "symbol": "ETRS",
+        "name": "إيجيترانس"
+      },
+      {
+        "rank": 28,
+        "symbol": "FWRY",
+        "name": "Fawry For Banking Technology And Electronic Payment"
+      },
+      {
+        "rank": 29,
+        "symbol": "SKPC",
+        "name": "سيدي كرير للبتروكيماويات"
+      },
+      {
+        "rank": 30,
+        "symbol": "ENGC",
+        "name": "ايكون"
+      },
+      {
+        "rank": 31,
+        "symbol": "AALR",
+        "name": "العامة لاستصلاح الأراضي"
+      },
+      {
+        "rank": 32,
+        "symbol": "RAYA",
+        "name": "راية"
+      },
+      {
+        "rank": 33,
+        "symbol": "AMER",
+        "name": "عامر جروب"
+      },
+      {
+        "rank": 34,
+        "symbol": "EFID",
+        "name": "ايديتا"
+      },
+      {
+        "rank": 35,
+        "symbol": "RUBX",
+        "name": "روبكس"
+      },
+      {
+        "rank": 36,
+        "symbol": "KZPC",
+        "name": "كفر الزيات للمبيدات والكيماويات"
+      },
+      {
+        "rank": 37,
+        "symbol": "MCRO",
+        "name": "Macro Group Pharmaceutical S.A.E."
+      },
+      {
+        "rank": 38,
+        "symbol": "HELI",
+        "name": "مصر الجديدة للاسكان"
+      },
+      {
+        "rank": 39,
+        "symbol": "MFPC",
+        "name": "موبكو"
+      },
+      {
+        "rank": 40,
+        "symbol": "ABUK",
+        "name": "ابوقير للاسمدة"
+      },
+      {
+        "rank": 41,
+        "symbol": "ATQA",
+        "name": "عتاقة"
+      },
+      {
+        "rank": 42,
+        "symbol": "AIFI",
+        "name": "اطلس لاستصلاح الاراضى"
+      },
+      {
+        "rank": 43,
+        "symbol": "ARCC",
+        "name": "العربية للأسمنت"
+      },
+      {
+        "rank": 44,
+        "symbol": "SWDY",
+        "name": "السويدي اليكتريك"
+      },
+      {
+        "rank": 45,
+        "symbol": "AFMC",
+        "name": "مطاحن ومخابز الإسكندرية"
+      },
+      {
+        "rank": 46,
+        "symbol": "HRHO",
+        "name": "هيرميس"
+      },
+      {
+        "rank": 47,
+        "symbol": "RMDA",
+        "name": "Tenth of Ramadan Pharmaceutical Industries & Diagnostic-Rameda"
+      },
+      {
+        "rank": 48,
+        "symbol": "SVCE",
+        "name": "جنوب الوادي للاسمنت"
+      },
+      {
+        "rank": 49,
+        "symbol": "AJWA",
+        "name": "اجواء"
+      },
+      {
+        "rank": 50,
+        "symbol": "GGCC",
+        "name": "الجيزة العامة للمقاولات"
+      },
+      {
+        "rank": 51,
+        "symbol": "MCQE",
+        "name": "مصر للأسمنت - قنا"
+      },
+      {
+        "rank": 52,
+        "symbol": "DSCW",
+        "name": "دايس"
+      },
+      {
+        "rank": 53,
+        "symbol": "EALR",
+        "name": "العربية لاستصلاح الاراضي"
+      },
+      {
+        "rank": 54,
+        "symbol": "NHPS",
+        "name": "الوطنية للاسكان"
+      },
+      {
+        "rank": 55,
+        "symbol": "VALU",
+        "name": "U Consumer Finance S.A.E"
+      },
+      {
+        "rank": 56,
+        "symbol": "ACGC",
+        "name": "العربية لحليج الأقطان"
+      },
+      {
+        "rank": 57,
+        "symbol": "ORWE",
+        "name": "النساجون الشرقيون"
+      },
+      {
+        "rank": 58,
+        "symbol": "KABO",
+        "name": "كابو"
+      },
+      {
+        "rank": 59,
+        "symbol": "OBRI",
+        "name": "العبور للاستثمار العقارى"
+      },
+      {
+        "rank": 60,
+        "symbol": "GBCO",
+        "name": "جي بي اوتو"
+      },
+      {
+        "rank": 61,
+        "symbol": "MPCO",
+        "name": "المنصورة للدواجن"
+      },
+      {
+        "rank": 62,
+        "symbol": "BONY",
+        "name": "Bonyan for Development and Trade"
+      },
+      {
+        "rank": 63,
+        "symbol": "CLHO",
+        "name": "مستشفى كليوباترا"
+      },
+      {
+        "rank": 64,
+        "symbol": "EAST",
+        "name": "ايسترن كومباني"
+      },
+      {
+        "rank": 65,
+        "symbol": "PRCL",
+        "name": "شينى"
+      },
+      {
+        "rank": 66,
+        "symbol": "RACC",
+        "name": "راية لخدمات مراكز الاتصالات"
+      },
+      {
+        "rank": 67,
+        "symbol": "OCDI",
+        "name": "سوديك"
+      },
+      {
+        "rank": 68,
+        "symbol": "MOIN",
+        "name": "المهندس للتأمين"
+      },
+      {
+        "rank": 69,
+        "symbol": "RREI",
+        "name": "اليكو"
+      },
+      {
+        "rank": 70,
+        "symbol": "ELEC",
+        "name": "الكابلات الكهربائية المصرية"
+      },
+      {
+        "rank": 71,
+        "symbol": "CIRA",
+        "name": "Cairo For Investment And Real Estate Developments -CIRA Education"
+      },
+      {
+        "rank": 72,
+        "symbol": "HDBK",
+        "name": "بنك التعمير والاسكان"
+      },
+      {
+        "rank": 73,
+        "symbol": "ZMID",
+        "name": "زهراء المعادي"
+      },
+      {
+        "rank": 74,
+        "symbol": "WKOL",
+        "name": "وادي كوم امبو"
+      },
+      {
+        "rank": 75,
+        "symbol": "KORA",
+        "name": "KORRA"
+      },
+      {
+        "rank": 76,
+        "symbol": "AREH",
+        "name": "المجموعة المصرية العقارية"
+      },
+      {
+        "rank": 77,
+        "symbol": "PRDC",
+        "name": "Pioneers Properties for Urban Development"
+      },
+      {
+        "rank": 78,
+        "symbol": "EHDR",
+        "name": "المصريين للاسكان"
+      },
+      {
+        "rank": 79,
+        "symbol": "ORHD",
+        "name": "اوراسكوم للتنمية مصر"
+      },
+      {
+        "rank": 80,
+        "symbol": "JUFO",
+        "name": "جهينة"
+      },
+      {
+        "rank": 81,
+        "symbol": "SUGR",
+        "name": "الدلتا للسكر"
+      },
+      {
+        "rank": 82,
+        "symbol": "TAQA",
+        "name": "TAQA Arabia"
+      },
+      {
+        "rank": 83,
+        "symbol": "ICFC",
+        "name": "الدولية للأسمدة"
+      },
+      {
+        "rank": 84,
+        "symbol": "OIH",
+        "name": "اوراسكوم للاتصالات والاعلام والتكنولوجيا"
+      },
+      {
+        "rank": 85,
+        "symbol": "DTPP",
+        "name": "دلتا للطباعة والتغليف"
+      },
+      {
+        "rank": 86,
+        "symbol": "ADRI",
+        "name": "أراب للتنمية و الاستثمار العقاري"
+      },
+      {
+        "rank": 87,
+        "symbol": "ADPC",
+        "name": "آراب ديري-باندا"
+      },
+      {
+        "rank": 88,
+        "symbol": "TYCN",
+        "name": "الاسكندرية الوطنية للاستثمارات المالية"
+      },
+      {
+        "rank": 89,
+        "symbol": "MASR",
+        "name": "مدينة نصر للاسكان"
+      },
+      {
+        "rank": 90,
+        "symbol": "MILS",
+        "name": "مطاحن شمال القاهرة"
+      },
+      {
+        "rank": 91,
+        "symbol": "ODIN",
+        "name": "المصريين في الخارج للاستثمار والتنمية"
+      },
+      {
+        "rank": 92,
+        "symbol": "EMFD",
+        "name": "إعمار مصر"
+      },
+      {
+        "rank": 93,
+        "symbol": "ELKA",
+        "name": "القاهرة للاسكان"
+      },
+      {
+        "rank": 94,
+        "symbol": "ASCM",
+        "name": "اسيك للتعدين"
+      },
+      {
+        "rank": 95,
+        "symbol": "ICID",
+        "name": "العالمية للاستثمار والتنمية"
+      },
+      {
+        "rank": 96,
+        "symbol": "OCPH",
+        "name": "اكتوبر فارما"
+      },
+      {
+        "rank": 97,
+        "symbol": "COSG",
+        "name": "القاهرة للزيوت والصابون"
+      },
+      {
+        "rank": 98,
+        "symbol": "ATLC",
+        "name": "ايه تي ليس"
+      },
+      {
+        "rank": 99,
+        "symbol": "ROTO",
+        "name": "الرواد"
+      },
+      {
+        "rank": 100,
+        "symbol": "ISMQ",
+        "name": "Iron & Steel for Mines & Quarries"
+      }
+    ],
+    "high_dividend": [
+      {
+        "rank": 1,
+        "symbol": "MEGM",
+        "name": "الشرق الأوسط لصناعة الزجاج"
+      },
+      {
+        "rank": 2,
+        "symbol": "SAIB",
+        "name": "بنك الشركة المصرفية العربية الدولية"
+      },
+      {
+        "rank": 3,
+        "symbol": "CIEB",
+        "name": "كريدي أجريكول"
+      },
+      {
+        "rank": 4,
+        "symbol": "MFPC",
+        "name": "موبكو"
+      },
+      {
+        "rank": 5,
+        "symbol": "MICH",
+        "name": "مصر لصناعة الكيماويات"
+      },
+      {
+        "rank": 6,
+        "symbol": "EAST",
+        "name": "ايسترن كومباني"
+      },
+      {
+        "rank": 7,
+        "symbol": "EGSA",
+        "name": "نايل سات"
+      },
+      {
+        "rank": 8,
+        "symbol": "ARCC",
+        "name": "العربية للأسمنت"
+      },
+      {
+        "rank": 9,
+        "symbol": "OLFI",
+        "name": "عبور لاند للصناعات الغذائية"
+      },
+      {
+        "rank": 10,
+        "symbol": "CSAG",
+        "name": "القناة للتوكيلات الملاحية"
+      },
+      {
+        "rank": 11,
+        "symbol": "MFSC",
+        "name": "مصر للاسواق الحرة"
+      },
+      {
+        "rank": 12,
+        "symbol": "VLMR",
+        "name": "القابضة المصرية الكويتية"
+      },
+      {
+        "rank": 13,
+        "symbol": "ATLC",
+        "name": "ايه تي ليس"
+      },
+      {
+        "rank": 14,
+        "symbol": "ABUK",
+        "name": "ابوقير للاسمدة"
+      },
+      {
+        "rank": 15,
+        "symbol": "ORWE",
+        "name": "النساجون الشرقيون"
+      },
+      {
+        "rank": 16,
+        "symbol": "WCDF",
+        "name": "مطاحن وسط وغرب الدلتا"
+      },
+      {
+        "rank": 17,
+        "symbol": "HELI",
+        "name": "مصر الجديدة للاسكان"
+      },
+      {
+        "rank": 18,
+        "symbol": "EDFM",
+        "name": "مطاحن شرق الدلتا"
+      },
+      {
+        "rank": 19,
+        "symbol": "MBSC",
+        "name": "مصر بنى سويف للأسمنت"
+      },
+      {
+        "rank": 20,
+        "symbol": "UBEE",
+        "name": "United Bank SAE"
+      },
+      {
+        "rank": 21,
+        "symbol": "SAUD",
+        "name": "بنك البركة"
+      },
+      {
+        "rank": 22,
+        "symbol": "FAIT",
+        "name": "بنك فيصل الإسلامي المصري"
+      },
+      {
+        "rank": 23,
+        "symbol": "WKOL",
+        "name": "وادي كوم امبو"
+      },
+      {
+        "rank": 24,
+        "symbol": "HDBK",
+        "name": "بنك التعمير والاسكان"
+      },
+      {
+        "rank": 25,
+        "symbol": "CICH",
+        "name": "سي اي كابيتال القابضة"
+      },
+      {
+        "rank": 26,
+        "symbol": "ISMQ",
+        "name": "Iron & Steel for Mines & Quarries"
+      },
+      {
+        "rank": 27,
+        "symbol": "COMI",
+        "name": "البنك التجاري الدولي"
+      },
+      {
+        "rank": 28,
+        "symbol": "MCQE",
+        "name": "مصر للأسمنت - قنا"
+      },
+      {
+        "rank": 29,
+        "symbol": "MHOT",
+        "name": "مصر للفنادق"
+      },
+      {
+        "rank": 30,
+        "symbol": "NHPS",
+        "name": "الوطنية للاسكان"
+      },
+      {
+        "rank": 31,
+        "symbol": "AMOC",
+        "name": "أموك"
+      },
+      {
+        "rank": 32,
+        "symbol": "CEFM",
+        "name": "مطاحن مصر الوسطى"
+      },
+      {
+        "rank": 33,
+        "symbol": "KZPC",
+        "name": "كفر الزيات للمبيدات والكيماويات"
+      },
+      {
+        "rank": 34,
+        "symbol": "UEFM",
+        "name": "مطاحن مصر العليا"
+      },
+      {
+        "rank": 35,
+        "symbol": "MPCI",
+        "name": "ممفيس للادوية"
+      },
+      {
+        "rank": 36,
+        "symbol": "AXPH",
+        "name": "الاسكندرية للادوية"
+      },
+      {
+        "rank": 37,
+        "symbol": "EHDR",
+        "name": "المصريين للاسكان"
+      },
+      {
+        "rank": 38,
+        "symbol": "DTPP",
+        "name": "دلتا للطباعة والتغليف"
+      },
+      {
+        "rank": 39,
+        "symbol": "ZMID",
+        "name": "زهراء المعادي"
+      },
+      {
+        "rank": 40,
+        "symbol": "ETRS",
+        "name": "إيجيترانس"
+      },
+      {
+        "rank": 41,
+        "symbol": "ORAS",
+        "name": "اوراسكوم كونستراكشون ليميتد"
+      },
+      {
+        "rank": 42,
+        "symbol": "CPCI",
+        "name": "القاهرة للادوية"
+      },
+      {
+        "rank": 43,
+        "symbol": "BINV",
+        "name": "بى بى اى القابضة"
+      },
+      {
+        "rank": 44,
+        "symbol": "ALCN",
+        "name": "الاسكندرية لتداول الحاويات"
+      },
+      {
+        "rank": 45,
+        "symbol": "EGBE",
+        "name": "البنك المصري الخليجي"
+      },
+      {
+        "rank": 46,
+        "symbol": "ADCI",
+        "name": "أدكو"
+      },
+      {
+        "rank": 47,
+        "symbol": "EFID",
+        "name": "ايديتا"
+      },
+      {
+        "rank": 48,
+        "symbol": "PHAR",
+        "name": "ايبيكو"
+      },
+      {
+        "rank": 49,
+        "symbol": "EGAL",
+        "name": "مصر للالومنيوم"
+      },
+      {
+        "rank": 50,
+        "symbol": "SCTS",
+        "name": "قناة السويس لتوطين التكنولوجيا"
+      },
+      {
+        "rank": 51,
+        "symbol": "ODIN",
+        "name": "المصريين في الخارج للاستثمار والتنمية"
+      },
+      {
+        "rank": 52,
+        "symbol": "MASR",
+        "name": "مدينة نصر للاسكان"
+      },
+      {
+        "rank": 53,
+        "symbol": "SWDY",
+        "name": "السويدي اليكتريك"
+      },
+      {
+        "rank": 54,
+        "symbol": "MILS",
+        "name": "مطاحن شمال القاهرة"
+      },
+      {
+        "rank": 55,
+        "symbol": "UTOP",
+        "name": "يوتوبيا"
+      },
+      {
+        "rank": 56,
+        "symbol": "GSSC",
+        "name": "العامة للصوامع والتخزين"
+      },
+      {
+        "rank": 57,
+        "symbol": "GOUR",
+        "name": "Gourmet Egypt.Com Foods"
+      },
+      {
+        "rank": 58,
+        "symbol": "SMFR",
+        "name": "ايجيفرت"
+      },
+      {
+        "rank": 59,
+        "symbol": "ETEL",
+        "name": "المصرية للاتصالات"
+      },
+      {
+        "rank": 60,
+        "symbol": "EFIH",
+        "name": "e-finance for Digital and Financial Investments S.A.E."
+      },
+      {
+        "rank": 61,
+        "symbol": "JUFO",
+        "name": "جهينة"
+      },
+      {
+        "rank": 62,
+        "symbol": "GBCO",
+        "name": "جي بي اوتو"
+      },
+      {
+        "rank": 63,
+        "symbol": "CAED",
+        "name": "القاهرة للخدمات التعليمية"
+      },
+      {
+        "rank": 64,
+        "symbol": "MPRC",
+        "name": "مدينة الانتاج الاعلامى"
+      },
+      {
+        "rank": 65,
+        "symbol": "HRHO",
+        "name": "هيرميس"
+      },
+      {
+        "rank": 66,
+        "symbol": "PHTV",
+        "name": "بيراميزا"
+      },
+      {
+        "rank": 67,
+        "symbol": "ISPH",
+        "name": "ابن سينا فارما"
+      },
+      {
+        "rank": 68,
+        "symbol": "CIRA",
+        "name": "Cairo For Investment And Real Estate Developments -CIRA Education"
+      },
+      {
+        "rank": 69,
+        "symbol": "ORHD",
+        "name": "اوراسكوم للتنمية مصر"
+      },
+      {
+        "rank": 70,
+        "symbol": "EFIC",
+        "name": "المالية والصناعية المصرية"
+      },
+      {
+        "rank": 71,
+        "symbol": "POUL",
+        "name": "القاهرة للدواجن"
+      },
+      {
+        "rank": 72,
+        "symbol": "AMIA",
+        "name": "الملتقى العربي للاستثمارات"
+      },
+      {
+        "rank": 73,
+        "symbol": "SEIG",
+        "name": "السعودية المصرية للاستثمار والتمويل"
+      },
+      {
+        "rank": 74,
+        "symbol": "INFI",
+        "name": "فوديكو"
+      },
+      {
+        "rank": 75,
+        "symbol": "UNIT",
+        "name": "المتحدة للاسكان"
+      },
+      {
+        "rank": 76,
+        "symbol": "NIPH",
+        "name": "النيل للادوية"
+      },
+      {
+        "rank": 77,
+        "symbol": "RMDA",
+        "name": "Tenth of Ramadan Pharmaceutical Industries & Diagnostic-Rameda"
+      },
+      {
+        "rank": 78,
+        "symbol": "ELSH",
+        "name": "الشمس للاسكان"
+      },
+      {
+        "rank": 79,
+        "symbol": "MIPH",
+        "name": "مينا فارم للأدوية"
+      },
+      {
+        "rank": 80,
+        "symbol": "AFMC",
+        "name": "مطاحن ومخابز الإسكندرية"
+      },
+      {
+        "rank": 81,
+        "symbol": "TMGH",
+        "name": "طلعت مصطفى"
+      },
+      {
+        "rank": 82,
+        "symbol": "MOSC",
+        "name": "مصر للزيوت والصابون"
+      },
+      {
+        "rank": 83,
+        "symbol": "BIOC",
+        "name": "جلاكسو سميثكلاين"
+      }
+    ],
+    "top_losers": [
+      {
+        "rank": 1,
+        "symbol": "SCEM",
+        "name": "اسمنت سيناء"
+      },
+      {
+        "rank": 2,
+        "symbol": "MCQE",
+        "name": "مصر للأسمنت - قنا"
+      },
+      {
+        "rank": 3,
+        "symbol": "ICFC",
+        "name": "الدولية للأسمدة"
+      },
+      {
+        "rank": 4,
+        "symbol": "AFDI",
+        "name": "الاهلي للتنمية والاستثمار"
+      },
+      {
+        "rank": 5,
+        "symbol": "SNFI",
+        "name": "Souhag National Food Industries"
+      },
+      {
+        "rank": 6,
+        "symbol": "MBSC",
+        "name": "مصر بنى سويف للأسمنت"
+      },
+      {
+        "rank": 7,
+        "symbol": "ALEX",
+        "name": "Alexandria Cement Co."
+      },
+      {
+        "rank": 8,
+        "symbol": "TANM",
+        "name": "Tanmiya for Real Estate Investment"
+      },
+      {
+        "rank": 9,
+        "symbol": "FTNS",
+        "name": "Fitness Prime"
+      },
+      {
+        "rank": 10,
+        "symbol": "UEFM",
+        "name": "مطاحن مصر العليا"
+      },
+      {
+        "rank": 11,
+        "symbol": "PHTV",
+        "name": "بيراميزا"
+      },
+      {
+        "rank": 12,
+        "symbol": "IFAP",
+        "name": "الدولية للمحاصيل الزراعية"
+      },
+      {
+        "rank": 13,
+        "symbol": "SVCE",
+        "name": "جنوب الوادي للاسمنت"
+      },
+      {
+        "rank": 14,
+        "symbol": "UNIT",
+        "name": "المتحدة للاسكان"
+      },
+      {
+        "rank": 15,
+        "symbol": "ROTO",
+        "name": "الرواد"
+      },
+      {
+        "rank": 16,
+        "symbol": "EGCH",
+        "name": "كيما"
+      },
+      {
+        "rank": 17,
+        "symbol": "MFPC",
+        "name": "موبكو"
+      },
+      {
+        "rank": 18,
+        "symbol": "ARCC",
+        "name": "العربية للأسمنت"
+      },
+      {
+        "rank": 19,
+        "symbol": "MPRC",
+        "name": "مدينة الانتاج الاعلامى"
+      },
+      {
+        "rank": 20,
+        "symbol": "ORWE",
+        "name": "النساجون الشرقيون"
+      },
+      {
+        "rank": 21,
+        "symbol": "DAPH",
+        "name": "التعمير والاستشارات الهندسية"
+      },
+      {
+        "rank": 22,
+        "symbol": "EGS385S1C012",
+        "name": "فيركيم"
+      },
+      {
+        "rank": 23,
+        "symbol": "ADRI",
+        "name": "أراب للتنمية و الاستثمار العقاري"
+      },
+      {
+        "rank": 24,
+        "symbol": "ORAS",
+        "name": "اوراسكوم كونستراكشون ليميتد"
+      },
+      {
+        "rank": 25,
+        "symbol": "COSG",
+        "name": "القاهرة للزيوت والصابون"
+      },
+      {
+        "rank": 26,
+        "symbol": "LKGP",
+        "name": "The Holding Company for Financial Investment - The Lakah Group"
+      },
+      {
+        "rank": 27,
+        "symbol": "AMII",
+        "name": "العربية للمحابس"
+      },
+      {
+        "rank": 28,
+        "symbol": "TALM",
+        "name": "Taaleem Management Services S.A.E"
+      },
+      {
+        "rank": 29,
+        "symbol": "LCSW",
+        "name": "ليسيكو"
+      },
+      {
+        "rank": 30,
+        "symbol": "MPCO",
+        "name": "المنصورة للدواجن"
+      },
+      {
+        "rank": 31,
+        "symbol": "CIRA",
+        "name": "Cairo For Investment And Real Estate Developments -CIRA Education"
+      },
+      {
+        "rank": 32,
+        "symbol": "ETEL",
+        "name": "المصرية للاتصالات"
+      },
+      {
+        "rank": 33,
+        "symbol": "POUL",
+        "name": "القاهرة للدواجن"
+      },
+      {
+        "rank": 34,
+        "symbol": "AIFI",
+        "name": "اطلس لاستصلاح الاراضى"
+      },
+      {
+        "rank": 35,
+        "symbol": "EPCO",
+        "name": "إجيبكو"
+      },
+      {
+        "rank": 36,
+        "symbol": "EGTS",
+        "name": "المصرية للمنتجعات السياحية"
+      },
+      {
+        "rank": 37,
+        "symbol": "EFID",
+        "name": "ايديتا"
+      },
+      {
+        "rank": 38,
+        "symbol": "RACC",
+        "name": "راية لخدمات مراكز الاتصالات"
+      },
+      {
+        "rank": 39,
+        "symbol": "RKAZ",
+        "name": "بورسعيد للتنمية الزراعية و المقاولات"
+      },
+      {
+        "rank": 40,
+        "symbol": "JUFO",
+        "name": "جهينة"
+      },
+      {
+        "rank": 41,
+        "symbol": "ISMQ",
+        "name": "Iron & Steel for Mines & Quarries"
+      },
+      {
+        "rank": 42,
+        "symbol": "GBCO",
+        "name": "جي بي اوتو"
+      },
+      {
+        "rank": 43,
+        "symbol": "ASCM",
+        "name": "اسيك للتعدين"
+      },
+      {
+        "rank": 44,
+        "symbol": "EGSA",
+        "name": "نايل سات"
+      },
+      {
+        "rank": 45,
+        "symbol": "ABUK",
+        "name": "ابوقير للاسمدة"
+      },
+      {
+        "rank": 46,
+        "symbol": "MCRO",
+        "name": "Macro Group Pharmaceutical S.A.E."
+      },
+      {
+        "rank": 47,
+        "symbol": "EHDR",
+        "name": "المصريين للاسكان"
+      },
+      {
+        "rank": 48,
+        "symbol": "ALCN",
+        "name": "الاسكندرية لتداول الحاويات"
+      },
+      {
+        "rank": 49,
+        "symbol": "MILS",
+        "name": "مطاحن شمال القاهرة"
+      },
+      {
+        "rank": 50,
+        "symbol": "EDFM",
+        "name": "مطاحن شرق الدلتا"
+      },
+      {
+        "rank": 51,
+        "symbol": "CCRS",
+        "name": "الخليجية الكندية للاستثمار العقاري العربي"
+      },
+      {
+        "rank": 52,
+        "symbol": "SMFR",
+        "name": "ايجيفرت"
+      },
+      {
+        "rank": 53,
+        "symbol": "MEPA",
+        "name": "العبوات الطبية"
+      },
+      {
+        "rank": 54,
+        "symbol": "CSAG",
+        "name": "القناة للتوكيلات الملاحية"
+      },
+      {
+        "rank": 55,
+        "symbol": "EEII",
+        "name": "العربية للصناعات الهندسية"
+      },
+      {
+        "rank": 56,
+        "symbol": "VERT",
+        "name": "فرتيكا"
+      },
+      {
+        "rank": 57,
+        "symbol": "COMI",
+        "name": "البنك التجاري الدولي"
+      },
+      {
+        "rank": 58,
+        "symbol": "ADPC",
+        "name": "آراب ديري-باندا"
+      },
+      {
+        "rank": 59,
+        "symbol": "DOMT",
+        "name": "دومتي"
+      },
+      {
+        "rank": 60,
+        "symbol": "UBEE",
+        "name": "United Bank SAE"
+      },
+      {
+        "rank": 61,
+        "symbol": "ZMID",
+        "name": "زهراء المعادي"
+      },
+      {
+        "rank": 62,
+        "symbol": "CERA",
+        "name": "ريماس"
+      },
+      {
+        "rank": 63,
+        "symbol": "TORA",
+        "name": "Tourah Cement Co"
+      },
+      {
+        "rank": 64,
+        "symbol": "ELNA",
+        "name": "النصر لتصنيع الحاصلات الزراعية"
+      },
+      {
+        "rank": 65,
+        "symbol": "SCFM",
+        "name": "مطاحن جنوب القاهرة والجيزة"
+      },
+      {
+        "rank": 66,
+        "symbol": "AFMC",
+        "name": "مطاحن ومخابز الإسكندرية"
+      },
+      {
+        "rank": 67,
+        "symbol": "NIPH",
+        "name": "النيل للادوية"
+      },
+      {
+        "rank": 68,
+        "symbol": "OLFI",
+        "name": "عبور لاند للصناعات الغذائية"
+      },
+      {
+        "rank": 69,
+        "symbol": "WCDF",
+        "name": "مطاحن وسط وغرب الدلتا"
+      },
+      {
+        "rank": 70,
+        "symbol": "ELKA",
+        "name": "القاهرة للاسكان"
+      },
+      {
+        "rank": 71,
+        "symbol": "OIH",
+        "name": "اوراسكوم للاتصالات والاعلام والتكنولوجيا"
+      },
+      {
+        "rank": 72,
+        "symbol": "SNFC",
+        "name": "الشرقية الوطنية للامن الغذائي"
+      },
+      {
+        "rank": 73,
+        "symbol": "SWDY",
+        "name": "السويدي اليكتريك"
+      },
+      {
+        "rank": 74,
+        "symbol": "MTIE",
+        "name": "إم تي أي"
+      },
+      {
+        "rank": 75,
+        "symbol": "DSCW",
+        "name": "دايس"
+      },
+      {
+        "rank": 76,
+        "symbol": "TWSA",
+        "name": "TAWASOA FOR FACTORING"
+      },
+      {
+        "rank": 77,
+        "symbol": "ATQA",
+        "name": "عتاقة"
+      },
+      {
+        "rank": 78,
+        "symbol": "UPMS",
+        "name": "الاتحاد الصيدلى"
+      },
+      {
+        "rank": 79,
+        "symbol": "UEGC",
+        "name": "الصعيد العامة للمقاولات"
+      },
+      {
+        "rank": 80,
+        "symbol": "OCDI",
+        "name": "سوديك"
+      },
+      {
+        "rank": 81,
+        "symbol": "PRMH",
+        "name": "برايم القابضة"
+      },
+      {
+        "rank": 82,
+        "symbol": "ACTF",
+        "name": "Act Financial"
+      },
+      {
+        "rank": 83,
+        "symbol": "CANA",
+        "name": "بنك قناة السويس"
+      },
+      {
+        "rank": 84,
+        "symbol": "ADIB",
+        "name": "مصرف أبو ظبي الإسلامي"
+      },
+      {
+        "rank": 85,
+        "symbol": "EGAL",
+        "name": "مصر للالومنيوم"
+      },
+      {
+        "rank": 86,
+        "symbol": "KORA",
+        "name": "KORRA"
+      },
+      {
+        "rank": 87,
+        "symbol": "ODIN",
+        "name": "المصريين في الخارج للاستثمار والتنمية"
+      },
+      {
+        "rank": 88,
+        "symbol": "EFIH",
+        "name": "e-finance for Digital and Financial Investments S.A.E."
+      },
+      {
+        "rank": 89,
+        "symbol": "APSW",
+        "name": "يونيراب"
+      },
+      {
+        "rank": 90,
+        "symbol": "RREI",
+        "name": "اليكو"
+      },
+      {
+        "rank": 91,
+        "symbol": "CNFN",
+        "name": "Contact Financial Holding SAE"
+      },
+      {
+        "rank": 92,
+        "symbol": "IDRE",
+        "name": "الاسماعيلية الجديدة للتطوير"
+      },
+      {
+        "rank": 93,
+        "symbol": "ETRS",
+        "name": "إيجيترانس"
+      },
+      {
+        "rank": 94,
+        "symbol": "IBCT",
+        "name": "انترناشيونال بزنيس كوربوريشن"
+      },
+      {
+        "rank": 95,
+        "symbol": "TMGH",
+        "name": "طلعت مصطفى"
+      },
+      {
+        "rank": 96,
+        "symbol": "NBKE",
+        "name": "National Bank of Kuwait - Egypt"
+      },
+      {
+        "rank": 97,
+        "symbol": "NCGC",
+        "name": "Nile Cotton Ginning"
+      },
+      {
+        "rank": 98,
+        "symbol": "EXPA",
+        "name": "البنك المصري لتنمية الصادرات"
+      },
+      {
+        "rank": 99,
+        "symbol": "ZEOT",
+        "name": "الزيوت المستخلصة"
+      },
+      {
+        "rank": 100,
+        "symbol": "AJWA",
+        "name": "اجواء"
+      }
+    ],
+    "top_gainers": [
+      {
+        "rank": 1,
+        "symbol": "AMIA",
+        "name": "الملتقى العربي للاستثمارات"
+      },
+      {
+        "rank": 2,
+        "symbol": "DCRC",
+        "name": "Delta Construction & Rebuilding Co."
+      },
+      {
+        "rank": 3,
+        "symbol": "LUTS",
+        "name": "Lotus For Agricultural Investments And Development"
+      },
+      {
+        "rank": 4,
+        "symbol": "TYCN",
+        "name": "الاسكندرية الوطنية للاستثمارات المالية"
+      },
+      {
+        "rank": 5,
+        "symbol": "GTWL",
+        "name": "جولدن تكس"
+      },
+      {
+        "rank": 6,
+        "symbol": "ICID",
+        "name": "العالمية للاستثمار والتنمية"
+      },
+      {
+        "rank": 7,
+        "symbol": "AALR",
+        "name": "العامة لاستصلاح الأراضي"
+      },
+      {
+        "rank": 8,
+        "symbol": "BIOC",
+        "name": "جلاكسو سميثكلاين"
+      },
+      {
+        "rank": 9,
+        "symbol": "INFI",
+        "name": "فوديكو"
+      },
+      {
+        "rank": 10,
+        "symbol": "SPIN",
+        "name": "سبينالكس"
+      },
+      {
+        "rank": 11,
+        "symbol": "AMOC",
+        "name": "أموك"
+      },
+      {
+        "rank": 12,
+        "symbol": "CRST",
+        "name": "ليفت سلاب مصر"
+      },
+      {
+        "rank": 13,
+        "symbol": "RUBX",
+        "name": "روبكس"
+      },
+      {
+        "rank": 14,
+        "symbol": "FIRE",
+        "name": "الأولى للاستثمار"
+      },
+      {
+        "rank": 15,
+        "symbol": "ECAP",
+        "name": "الجوهرة"
+      },
+      {
+        "rank": 16,
+        "symbol": "ENGC",
+        "name": "ايكون"
+      },
+      {
+        "rank": 17,
+        "symbol": "GRCA",
+        "name": "جراند انفستمنت القابضة للاستثمارات المالية"
+      },
+      {
+        "rank": 18,
+        "symbol": "NEDA",
+        "name": "نيوداب"
+      },
+      {
+        "rank": 19,
+        "symbol": "ATLC",
+        "name": "ايه تي ليس"
+      },
+      {
+        "rank": 20,
+        "symbol": "GTHE",
+        "name": "Global Telecom Holding S.A.E."
+      },
+      {
+        "rank": 21,
+        "symbol": "AREH",
+        "name": "المجموعة المصرية العقارية"
+      },
+      {
+        "rank": 22,
+        "symbol": "HBCO",
+        "name": "Heibco Npv"
+      },
+      {
+        "rank": 23,
+        "symbol": "ISPH",
+        "name": "ابن سينا فارما"
+      },
+      {
+        "rank": 24,
+        "symbol": "MBEG",
+        "name": "إم بي"
+      },
+      {
+        "rank": 25,
+        "symbol": "PRDC",
+        "name": "Pioneers Properties for Urban Development"
+      },
+      {
+        "rank": 26,
+        "symbol": "RMDA",
+        "name": "Tenth of Ramadan Pharmaceutical Industries & Diagnostic-Rameda"
+      },
+      {
+        "rank": 27,
+        "symbol": "EFIC",
+        "name": "المالية والصناعية المصرية"
+      },
+      {
+        "rank": 28,
+        "symbol": "WKOL",
+        "name": "وادي كوم امبو"
+      },
+      {
+        "rank": 29,
+        "symbol": "MENA",
+        "name": "مينا للاستثمار السياحي"
+      },
+      {
+        "rank": 30,
+        "symbol": "NHPS",
+        "name": "الوطنية للاسكان"
+      },
+      {
+        "rank": 31,
+        "symbol": "PHDC",
+        "name": "بالم هيلز"
+      },
+      {
+        "rank": 32,
+        "symbol": "EASB",
+        "name": "ثمار"
+      },
+      {
+        "rank": 33,
+        "symbol": "MOSC",
+        "name": "مصر للزيوت والصابون"
+      },
+      {
+        "rank": 34,
+        "symbol": "RAKT",
+        "name": "راكتا"
+      },
+      {
+        "rank": 35,
+        "symbol": "GGRN",
+        "name": "Gogreen for Agricultural Investment and Development Company"
+      },
+      {
+        "rank": 36,
+        "symbol": "CAED",
+        "name": "القاهرة للخدمات التعليمية"
+      },
+      {
+        "rank": 37,
+        "symbol": "KABO",
+        "name": "كابو"
+      },
+      {
+        "rank": 38,
+        "symbol": "ALUM",
+        "name": "الالومنيوم العربية"
+      },
+      {
+        "rank": 39,
+        "symbol": "EALR",
+        "name": "العربية لاستصلاح الاراضي"
+      },
+      {
+        "rank": 40,
+        "symbol": "MPCI",
+        "name": "ممفيس للادوية"
+      },
+      {
+        "rank": 41,
+        "symbol": "GSSC",
+        "name": "العامة للصوامع والتخزين"
+      },
+      {
+        "rank": 42,
+        "symbol": "OBRI",
+        "name": "العبور للاستثمار العقارى"
+      },
+      {
+        "rank": 43,
+        "symbol": "NINH",
+        "name": "مستشفى النزهه الدولي"
+      },
+      {
+        "rank": 44,
+        "symbol": "GPIM",
+        "name": "المصريين للاستثمار"
+      },
+      {
+        "rank": 45,
+        "symbol": "IRON",
+        "name": "الحديد والصلب المصرية"
+      },
+      {
+        "rank": 46,
+        "symbol": "KWIN",
+        "name": "القاهرة الوطنية للاستثمار والاوراق المالية"
+      },
+      {
+        "rank": 47,
+        "symbol": "AMER",
+        "name": "عامر جروب"
+      },
+      {
+        "rank": 48,
+        "symbol": "UTOP",
+        "name": "يوتوبيا"
+      },
+      {
+        "rank": 49,
+        "symbol": "ACGC",
+        "name": "العربية لحليج الأقطان"
+      },
+      {
+        "rank": 50,
+        "symbol": "CCAP",
+        "name": "القلعة للاستشارات المالية"
+      },
+      {
+        "rank": 51,
+        "symbol": "PHAR",
+        "name": "ايبيكو"
+      },
+      {
+        "rank": 52,
+        "symbol": "ISMA",
+        "name": "الاسماعيلية مصر للدواجن"
+      },
+      {
+        "rank": 53,
+        "symbol": "EPPK",
+        "name": "الاهرام للطباعة والتغليف"
+      },
+      {
+        "rank": 54,
+        "symbol": "FAIT",
+        "name": "بنك فيصل الإسلامي المصري"
+      },
+      {
+        "rank": 55,
+        "symbol": "DGTZ",
+        "name": "Digitize for Investment And Technology"
+      },
+      {
+        "rank": 56,
+        "symbol": "CPCI",
+        "name": "القاهرة للادوية"
+      },
+      {
+        "rank": 57,
+        "symbol": "MIPH",
+        "name": "مينا فارم للأدوية"
+      },
+      {
+        "rank": 58,
+        "symbol": "FCMD",
+        "name": "ايكمي"
+      },
+      {
+        "rank": 59,
+        "symbol": "DTPP",
+        "name": "دلتا للطباعة والتغليف"
+      },
+      {
+        "rank": 60,
+        "symbol": "PRCL",
+        "name": "شينى"
+      },
+      {
+        "rank": 61,
+        "symbol": "SUGR",
+        "name": "الدلتا للسكر"
+      },
+      {
+        "rank": 62,
+        "symbol": "MICH",
+        "name": "مصر لصناعة الكيماويات"
+      },
+      {
+        "rank": 63,
+        "symbol": "GOUR",
+        "name": "Gourmet Egypt.Com Foods"
+      },
+      {
+        "rank": 64,
+        "symbol": "CLHO",
+        "name": "مستشفى كليوباترا"
+      },
+      {
+        "rank": 65,
+        "symbol": "HELI",
+        "name": "مصر الجديدة للاسكان"
+      },
+      {
+        "rank": 66,
+        "symbol": "CIEB",
+        "name": "كريدي أجريكول"
+      },
+      {
+        "rank": 67,
+        "symbol": "MHOT",
+        "name": "مصر للفنادق"
+      },
+      {
+        "rank": 68,
+        "symbol": "CPME",
+        "name": "Catalyst Partners Middle East"
+      },
+      {
+        "rank": 69,
+        "symbol": "BONY",
+        "name": "Bonyan for Development and Trade"
+      },
+      {
+        "rank": 70,
+        "symbol": "RTVC",
+        "name": "رمكو"
+      },
+      {
+        "rank": 71,
+        "symbol": "SIPC",
+        "name": "سبأ"
+      },
+      {
+        "rank": 72,
+        "symbol": "TAQA",
+        "name": "TAQA Arabia"
+      },
+      {
+        "rank": 73,
+        "symbol": "MAAL",
+        "name": "مرسيليا"
+      },
+      {
+        "rank": 74,
+        "symbol": "CEFM",
+        "name": "مطاحن مصر الوسطى"
+      },
+      {
+        "rank": 75,
+        "symbol": "BTFH",
+        "name": "بلتون المالية"
+      },
+      {
+        "rank": 76,
+        "symbol": "NARE",
+        "name": "ريكاب"
+      },
+      {
+        "rank": 77,
+        "symbol": "HDBK",
+        "name": "بنك التعمير والاسكان"
+      },
+      {
+        "rank": 78,
+        "symbol": "ODIN",
+        "name": "المصريين في الخارج للاستثمار والتنمية"
+      },
+      {
+        "rank": 79,
+        "symbol": "ELWA",
+        "name": "الوادى"
+      },
+      {
+        "rank": 80,
+        "symbol": "RAYA",
+        "name": "راية"
+      },
+      {
+        "rank": 81,
+        "symbol": "GMCI",
+        "name": "جى إم سى"
+      },
+      {
+        "rank": 82,
+        "symbol": "QNBE",
+        "name": "بنك قطر الوطني الاهلي"
+      },
+      {
+        "rank": 83,
+        "symbol": "SWDY",
+        "name": "السويدي اليكتريك"
+      },
+      {
+        "rank": 84,
+        "symbol": "EGREF",
+        "name": "وثائق شركة صندوق استثمار المصريين للاستثمار العقاري"
+      },
+      {
+        "rank": 85,
+        "symbol": "INTERNATIONAL DRY ICE CO.",
+        "name": "EGS30AJ1C016-EGP"
+      },
+      {
+        "rank": 86,
+        "symbol": "ELSH",
+        "name": "الشمس للاسكان"
+      },
+      {
+        "rank": 87,
+        "symbol": "EGAS",
+        "name": "غاز مصر"
+      },
+      {
+        "rank": 88,
+        "symbol": "KZPC",
+        "name": "كفر الزيات للمبيدات والكيماويات"
+      },
+      {
+        "rank": 89,
+        "symbol": "MASR",
+        "name": "مدينة نصر للاسكان"
+      },
+      {
+        "rank": 90,
+        "symbol": "EMFD",
+        "name": "إعمار مصر"
+      },
+      {
+        "rank": 91,
+        "symbol": "ADCI",
+        "name": "أدكو"
+      },
+      {
+        "rank": 92,
+        "symbol": "NCCW",
+        "name": "النصر للأعمال المدنية"
+      },
+      {
+        "rank": 93,
+        "symbol": "BINV",
+        "name": "بى بى اى القابضة"
+      },
+      {
+        "rank": 94,
+        "symbol": "SAUD",
+        "name": "بنك البركة"
+      },
+      {
+        "rank": 95,
+        "symbol": "AXPH",
+        "name": "الاسكندرية للادوية"
+      },
+      {
+        "rank": 96,
+        "symbol": "EAST",
+        "name": "ايسترن كومباني"
+      },
+      {
+        "rank": 97,
+        "symbol": "RREI",
+        "name": "اليكو"
+      },
+      {
+        "rank": 98,
+        "symbol": "CNFN",
+        "name": "Contact Financial Holding SAE"
+      },
+      {
+        "rank": 99,
+        "symbol": "VALU",
+        "name": "U Consumer Finance S.A.E"
+      },
+      {
+        "rank": 100,
+        "symbol": "TWSA",
+        "name": "TAWASOA FOR FACTORING"
+      }
+    ]
+  },
+  "السعودية": {
+    "most_active": [
+      {
+        "rank": 1,
+        "symbol": "1120",
+        "name": "الراجحي"
+      },
+      {
+        "rank": 2,
+        "symbol": "2380",
+        "name": "بترو رابغ"
+      },
+      {
+        "rank": 3,
+        "symbol": "2222",
+        "name": "أرامكو السعودية"
+      },
+      {
+        "rank": 4,
+        "symbol": "1150",
+        "name": "الإنماء"
+      },
+      {
+        "rank": 5,
+        "symbol": "1180",
+        "name": "الأهلي"
+      },
+      {
+        "rank": 6,
+        "symbol": "2223",
+        "name": "لوبريف"
+      },
+      {
+        "rank": 7,
+        "symbol": "1010",
+        "name": "الرياض"
+      },
+      {
+        "rank": 8,
+        "symbol": "1211",
+        "name": "معادن"
+      },
+      {
+        "rank": 9,
+        "symbol": "1111",
+        "name": "مجموعة تداول"
+      },
+      {
+        "rank": 10,
+        "symbol": "1020",
+        "name": "الجزيرة"
+      },
+      {
+        "rank": 11,
+        "symbol": "2010",
+        "name": "سابك"
+      },
+      {
+        "rank": 12,
+        "symbol": "1303",
+        "name": "الصناعات الكهربائية"
+      },
+      {
+        "rank": 13,
+        "symbol": "2080",
+        "name": "الغاز القابضة"
+      },
+      {
+        "rank": 14,
+        "symbol": "7010",
+        "name": "اس تي سي"
+      },
+      {
+        "rank": 15,
+        "symbol": "8313",
+        "name": "رسن"
+      },
+      {
+        "rank": 16,
+        "symbol": "2084",
+        "name": "مياهنا"
+      },
+      {
+        "rank": 17,
+        "symbol": "4264",
+        "name": "طيران ناس"
+      },
+      {
+        "rank": 18,
+        "symbol": "4030",
+        "name": "البحري"
+      },
+      {
+        "rank": 19,
+        "symbol": "1060",
+        "name": "الأول"
+      },
+      {
+        "rank": 20,
+        "symbol": "8010",
+        "name": "التعاونية"
+      },
+      {
+        "rank": 21,
+        "symbol": "1213",
+        "name": "نسيج"
+      },
+      {
+        "rank": 22,
+        "symbol": "4280",
+        "name": "المملكة"
+      },
+      {
+        "rank": 23,
+        "symbol": "7020",
+        "name": "إتحاد إتصالات"
+      },
+      {
+        "rank": 24,
+        "symbol": "2290",
+        "name": "ينساب"
+      },
+      {
+        "rank": 25,
+        "symbol": "4240",
+        "name": "سينومي ريتيل"
+      },
+      {
+        "rank": 26,
+        "symbol": "4322",
+        "name": "رتال"
+      },
+      {
+        "rank": 27,
+        "symbol": "2083",
+        "name": "مرافق"
+      },
+      {
+        "rank": 28,
+        "symbol": "1140",
+        "name": "البلاد"
+      },
+      {
+        "rank": 29,
+        "symbol": "2320",
+        "name": "البابطين"
+      },
+      {
+        "rank": 30,
+        "symbol": "4300",
+        "name": "دار الأركان"
+      },
+      {
+        "rank": 31,
+        "symbol": "2082",
+        "name": "أكوا"
+      },
+      {
+        "rank": 32,
+        "symbol": "3008",
+        "name": "الكثيري"
+      },
+      {
+        "rank": 33,
+        "symbol": "7203",
+        "name": "علم"
+      },
+      {
+        "rank": 34,
+        "symbol": "2030",
+        "name": "المصافي"
+      },
+      {
+        "rank": 35,
+        "symbol": "4190",
+        "name": "جرير"
+      },
+      {
+        "rank": 36,
+        "symbol": "7202",
+        "name": "سلوشنز"
+      },
+      {
+        "rank": 37,
+        "symbol": "6050",
+        "name": "الأسماك"
+      },
+      {
+        "rank": 38,
+        "symbol": "4002",
+        "name": "المواساة"
+      },
+      {
+        "rank": 39,
+        "symbol": "1050",
+        "name": "بي اس اف"
+      },
+      {
+        "rank": 40,
+        "symbol": "4250",
+        "name": "جبل عمر"
+      },
+      {
+        "rank": 41,
+        "symbol": "2020",
+        "name": "سابك للمغذيات الزراعية"
+      },
+      {
+        "rank": 42,
+        "symbol": "1321",
+        "name": "أنابيب الشرق"
+      },
+      {
+        "rank": 43,
+        "symbol": "4310",
+        "name": "مدينة المعرفة"
+      },
+      {
+        "rank": 44,
+        "symbol": "1810",
+        "name": "سيرا"
+      },
+      {
+        "rank": 45,
+        "symbol": "2240",
+        "name": "صناعات"
+      },
+      {
+        "rank": 46,
+        "symbol": "4071",
+        "name": "العربية"
+      },
+      {
+        "rank": 47,
+        "symbol": "7205",
+        "name": "دي بي اس"
+      },
+      {
+        "rank": 48,
+        "symbol": "2350",
+        "name": "كيان السعودية"
+      },
+      {
+        "rank": 49,
+        "symbol": "1831",
+        "name": "مهارة"
+      },
+      {
+        "rank": 50,
+        "symbol": "1212",
+        "name": "أسترا الصناعية"
+      },
+      {
+        "rank": 51,
+        "symbol": "1322",
+        "name": "أماك"
+      },
+      {
+        "rank": 52,
+        "symbol": "2330",
+        "name": "المتقدمة"
+      },
+      {
+        "rank": 53,
+        "symbol": "6040",
+        "name": "تبوك الزراعية"
+      },
+      {
+        "rank": 54,
+        "symbol": "8230",
+        "name": "تكافل الراجحي"
+      },
+      {
+        "rank": 55,
+        "symbol": "7204",
+        "name": "توبي"
+      },
+      {
+        "rank": 56,
+        "symbol": "2230",
+        "name": "الكيميائية"
+      },
+      {
+        "rank": 57,
+        "symbol": "4083",
+        "name": "تسهيل"
+      },
+      {
+        "rank": 58,
+        "symbol": "4261",
+        "name": "ذيب"
+      },
+      {
+        "rank": 59,
+        "symbol": "4164",
+        "name": "النهدي"
+      },
+      {
+        "rank": 60,
+        "symbol": "4325",
+        "name": "مسار"
+      },
+      {
+        "rank": 61,
+        "symbol": "2060",
+        "name": "التصنيع"
+      },
+      {
+        "rank": 62,
+        "symbol": "4013",
+        "name": "سليمان الحبيب"
+      },
+      {
+        "rank": 63,
+        "symbol": "2280",
+        "name": "المراعي"
+      },
+      {
+        "rank": 64,
+        "symbol": "4260",
+        "name": "بدجت السعودية"
+      },
+      {
+        "rank": 65,
+        "symbol": "8150",
+        "name": "أسيج"
+      },
+      {
+        "rank": 66,
+        "symbol": "2190",
+        "name": "سيسكو القابضة"
+      },
+      {
+        "rank": 67,
+        "symbol": "1202",
+        "name": "مبكو"
+      },
+      {
+        "rank": 68,
+        "symbol": "4003",
+        "name": "إكسترا"
+      },
+      {
+        "rank": 69,
+        "symbol": "2050",
+        "name": "مجموعة صافولا"
+      },
+      {
+        "rank": 70,
+        "symbol": "8311",
+        "name": "عناية"
+      },
+      {
+        "rank": 71,
+        "symbol": "1214",
+        "name": "شاكر"
+      },
+      {
+        "rank": 72,
+        "symbol": "4050",
+        "name": "ساسكو"
+      },
+      {
+        "rank": 73,
+        "symbol": "4031",
+        "name": "الخدمات الأرضية"
+      },
+      {
+        "rank": 74,
+        "symbol": "8030",
+        "name": "ميدغلف للتأمين"
+      },
+      {
+        "rank": 75,
+        "symbol": "2382",
+        "name": "أديس"
+      },
+      {
+        "rank": 76,
+        "symbol": "2300",
+        "name": "صناعة الورق"
+      },
+      {
+        "rank": 77,
+        "symbol": "4020",
+        "name": "العقارية"
+      },
+      {
+        "rank": 78,
+        "symbol": "4009",
+        "name": "السعودي الألماني الصحية"
+      },
+      {
+        "rank": 79,
+        "symbol": "4001",
+        "name": "أسواق ع العثيم"
+      },
+      {
+        "rank": 80,
+        "symbol": "1080",
+        "name": "العربي"
+      },
+      {
+        "rank": 81,
+        "symbol": "4040",
+        "name": "سابتكو"
+      },
+      {
+        "rank": 82,
+        "symbol": "4142",
+        "name": "كابلات الرياض"
+      },
+      {
+        "rank": 83,
+        "symbol": "2081",
+        "name": "الخريف"
+      },
+      {
+        "rank": 84,
+        "symbol": "4321",
+        "name": "سينومي سنترز"
+      },
+      {
+        "rank": 85,
+        "symbol": "4263",
+        "name": "سال"
+      },
+      {
+        "rank": 86,
+        "symbol": "5110",
+        "name": "السعودية للطاقة"
+      },
+      {
+        "rank": 87,
+        "symbol": "7040",
+        "name": "قو للإتصالات"
+      },
+      {
+        "rank": 88,
+        "symbol": "2310",
+        "name": "سبكيم العالمية"
+      },
+      {
+        "rank": 89,
+        "symbol": "6018",
+        "name": "الأندية للرياضة"
+      },
+      {
+        "rank": 90,
+        "symbol": "8200",
+        "name": "الإعادة السعودية"
+      },
+      {
+        "rank": 91,
+        "symbol": "4210",
+        "name": "الأبحاث والإعلام"
+      },
+      {
+        "rank": 92,
+        "symbol": "7030",
+        "name": "زين السعودية"
+      },
+      {
+        "rank": 93,
+        "symbol": "1834",
+        "name": "سماسكو"
+      },
+      {
+        "rank": 94,
+        "symbol": "4148",
+        "name": "الوسائل الصناعية"
+      },
+      {
+        "rank": 95,
+        "symbol": "8210",
+        "name": "بوبا العربية"
+      },
+      {
+        "rank": 96,
+        "symbol": "2170",
+        "name": "اللجين"
+      },
+      {
+        "rank": 97,
+        "symbol": "7200",
+        "name": "ام آي اس"
+      },
+      {
+        "rank": 98,
+        "symbol": "4270",
+        "name": "طباعة وتغليف"
+      },
+      {
+        "rank": 99,
+        "symbol": "4100",
+        "name": "مكة"
+      },
+      {
+        "rank": 100,
+        "symbol": "3003",
+        "name": "أسمنت المدينة"
+      }
+    ],
+    "unusual_volume": [
+      {
+        "rank": 1,
+        "symbol": "9650",
+        "name": "ساحة المجد"
+      },
+      {
+        "rank": 2,
+        "symbol": "9602",
+        "name": "يقين"
+      },
+      {
+        "rank": 3,
+        "symbol": "3008",
+        "name": "الكثيري"
+      },
+      {
+        "rank": 4,
+        "symbol": "1213",
+        "name": "نسيج"
+      },
+      {
+        "rank": 5,
+        "symbol": "9515",
+        "name": "فش فاش"
+      },
+      {
+        "rank": 6,
+        "symbol": "9549",
+        "name": "البابطين الغذائية"
+      },
+      {
+        "rank": 7,
+        "symbol": "9522",
+        "name": "الحاسوب"
+      },
+      {
+        "rank": 8,
+        "symbol": "9627",
+        "name": "طوارئيات"
+      },
+      {
+        "rank": 9,
+        "symbol": "4014",
+        "name": "دار المعدات"
+      },
+      {
+        "rank": 10,
+        "symbol": "2084",
+        "name": "مياهنا"
+      },
+      {
+        "rank": 11,
+        "symbol": "2030",
+        "name": "المصافي"
+      },
+      {
+        "rank": 12,
+        "symbol": "4332",
+        "name": "جدوى ريت الحرمين"
+      },
+      {
+        "rank": 13,
+        "symbol": "9559",
+        "name": "بلدي"
+      },
+      {
+        "rank": 14,
+        "symbol": "4220",
+        "name": "إعمار"
+      },
+      {
+        "rank": 15,
+        "symbol": "4141",
+        "name": "العمران"
+      },
+      {
+        "rank": 16,
+        "symbol": "9600",
+        "name": "كومل"
+      },
+      {
+        "rank": 17,
+        "symbol": "9626",
+        "name": "سمايل كير"
+      },
+      {
+        "rank": 18,
+        "symbol": "7201",
+        "name": "بحر العرب"
+      },
+      {
+        "rank": 19,
+        "symbol": "6012",
+        "name": "ريدان"
+      },
+      {
+        "rank": 20,
+        "symbol": "9570",
+        "name": "تام التنموية"
+      },
+      {
+        "rank": 21,
+        "symbol": "7204",
+        "name": "توبي"
+      },
+      {
+        "rank": 22,
+        "symbol": "4300",
+        "name": "دار الأركان"
+      },
+      {
+        "rank": 23,
+        "symbol": "9589",
+        "name": "فاد"
+      },
+      {
+        "rank": 24,
+        "symbol": "9624",
+        "name": "الشهيلي المعدنية"
+      },
+      {
+        "rank": 25,
+        "symbol": "4331",
+        "name": "الجزيرة ريت"
+      },
+      {
+        "rank": 26,
+        "symbol": "2360",
+        "name": "الفخارية"
+      },
+      {
+        "rank": 27,
+        "symbol": "2080",
+        "name": "الغاز القابضة"
+      },
+      {
+        "rank": 28,
+        "symbol": "4264",
+        "name": "طيران ناس"
+      },
+      {
+        "rank": 29,
+        "symbol": "4280",
+        "name": "المملكة"
+      },
+      {
+        "rank": 30,
+        "symbol": "4349",
+        "name": "الإنماء ريت الفندقي"
+      },
+      {
+        "rank": 31,
+        "symbol": "9635",
+        "name": "دخون"
+      },
+      {
+        "rank": 32,
+        "symbol": "9655",
+        "name": "مسقا"
+      },
+      {
+        "rank": 33,
+        "symbol": "9608",
+        "name": "الأشغال الميسرة"
+      },
+      {
+        "rank": 34,
+        "symbol": "4334",
+        "name": "المعذر ريت"
+      },
+      {
+        "rank": 35,
+        "symbol": "2223",
+        "name": "لوبريف"
+      },
+      {
+        "rank": 36,
+        "symbol": "2060",
+        "name": "التصنيع"
+      },
+      {
+        "rank": 37,
+        "symbol": "4240",
+        "name": "سينومي ريتيل"
+      },
+      {
+        "rank": 38,
+        "symbol": "2290",
+        "name": "ينساب"
+      },
+      {
+        "rank": 39,
+        "symbol": "9617",
+        "name": "ارابيكا ستار"
+      },
+      {
+        "rank": 40,
+        "symbol": "3010",
+        "name": "أسمنت العربية"
+      },
+      {
+        "rank": 41,
+        "symbol": "4337",
+        "name": "العزيزية ريت"
+      },
+      {
+        "rank": 42,
+        "symbol": "4083",
+        "name": "تسهيل"
+      },
+      {
+        "rank": 43,
+        "symbol": "9563",
+        "name": "بناء"
+      },
+      {
+        "rank": 44,
+        "symbol": "8160",
+        "name": "التأمين العربية"
+      },
+      {
+        "rank": 45,
+        "symbol": "9539",
+        "name": "أقاسيم"
+      },
+      {
+        "rank": 46,
+        "symbol": "1150",
+        "name": "الإنماء"
+      },
+      {
+        "rank": 47,
+        "symbol": "4321",
+        "name": "سينومي سنترز"
+      },
+      {
+        "rank": 48,
+        "symbol": "9583",
+        "name": "المتحدة للتعدين"
+      },
+      {
+        "rank": 49,
+        "symbol": "7202",
+        "name": "سلوشنز"
+      },
+      {
+        "rank": 50,
+        "symbol": "4310",
+        "name": "مدينة المعرفة"
+      },
+      {
+        "rank": 51,
+        "symbol": "4080",
+        "name": "سناد القابضة"
+      },
+      {
+        "rank": 52,
+        "symbol": "4335",
+        "name": "مشاركة ريت"
+      },
+      {
+        "rank": 53,
+        "symbol": "8311",
+        "name": "عناية"
+      },
+      {
+        "rank": 54,
+        "symbol": "2330",
+        "name": "المتقدمة"
+      },
+      {
+        "rank": 55,
+        "symbol": "4322",
+        "name": "رتال"
+      },
+      {
+        "rank": 56,
+        "symbol": "1140",
+        "name": "البلاد"
+      },
+      {
+        "rank": 57,
+        "symbol": "4345",
+        "name": "الإنماء ريت للتجزئة"
+      },
+      {
+        "rank": 58,
+        "symbol": "4164",
+        "name": "النهدي"
+      },
+      {
+        "rank": 59,
+        "symbol": "4071",
+        "name": "العربية"
+      },
+      {
+        "rank": 60,
+        "symbol": "4002",
+        "name": "المواساة"
+      },
+      {
+        "rank": 61,
+        "symbol": "4001",
+        "name": "أسواق ع العثيم"
+      },
+      {
+        "rank": 62,
+        "symbol": "4070",
+        "name": "تهامة"
+      },
+      {
+        "rank": 63,
+        "symbol": "4009",
+        "name": "السعودي الألماني الصحية"
+      },
+      {
+        "rank": 64,
+        "symbol": "1212",
+        "name": "أسترا الصناعية"
+      },
+      {
+        "rank": 65,
+        "symbol": "1020",
+        "name": "الجزيرة"
+      },
+      {
+        "rank": 66,
+        "symbol": "2287",
+        "name": "إنتاج"
+      },
+      {
+        "rank": 67,
+        "symbol": "4051",
+        "name": "باعظيم"
+      },
+      {
+        "rank": 68,
+        "symbol": "3003",
+        "name": "أسمنت المدينة"
+      },
+      {
+        "rank": 69,
+        "symbol": "4020",
+        "name": "العقارية"
+      },
+      {
+        "rank": 70,
+        "symbol": "9545",
+        "name": "الدولية"
+      },
+      {
+        "rank": 71,
+        "symbol": "4193",
+        "name": "نايس ون"
+      },
+      {
+        "rank": 72,
+        "symbol": "4210",
+        "name": "الأبحاث والإعلام"
+      },
+      {
+        "rank": 73,
+        "symbol": "1324",
+        "name": "صالح الراشد"
+      },
+      {
+        "rank": 74,
+        "symbol": "8230",
+        "name": "تكافل الراجحي"
+      },
+      {
+        "rank": 75,
+        "symbol": "1303",
+        "name": "الصناعات الكهربائية"
+      },
+      {
+        "rank": 76,
+        "symbol": "4194",
+        "name": "محطة البناء"
+      },
+      {
+        "rank": 77,
+        "symbol": "4323",
+        "name": "سمو"
+      },
+      {
+        "rank": 78,
+        "symbol": "4190",
+        "name": "جرير"
+      },
+      {
+        "rank": 79,
+        "symbol": "4342",
+        "name": "جدوى ريت السعودية"
+      },
+      {
+        "rank": 80,
+        "symbol": "1010",
+        "name": "الرياض"
+      },
+      {
+        "rank": 81,
+        "symbol": "2380",
+        "name": "بترو رابغ"
+      },
+      {
+        "rank": 82,
+        "symbol": "8010",
+        "name": "التعاونية"
+      },
+      {
+        "rank": 83,
+        "symbol": "3090",
+        "name": "أسمنت تبوك"
+      },
+      {
+        "rank": 84,
+        "symbol": "1111",
+        "name": "مجموعة تداول"
+      },
+      {
+        "rank": 85,
+        "symbol": "2220",
+        "name": "معدنية"
+      },
+      {
+        "rank": 86,
+        "symbol": "2300",
+        "name": "صناعة الورق"
+      },
+      {
+        "rank": 87,
+        "symbol": "1050",
+        "name": "بي اس اف"
+      },
+      {
+        "rank": 88,
+        "symbol": "1030",
+        "name": "الإستثمار"
+      },
+      {
+        "rank": 89,
+        "symbol": "2040",
+        "name": "الخزف السعودي"
+      },
+      {
+        "rank": 90,
+        "symbol": "2282",
+        "name": "نقي"
+      },
+      {
+        "rank": 91,
+        "symbol": "4170",
+        "name": "شمس"
+      },
+      {
+        "rank": 92,
+        "symbol": "8313",
+        "name": "رسن"
+      },
+      {
+        "rank": 93,
+        "symbol": "2286",
+        "name": "المطاحن الرابعة"
+      },
+      {
+        "rank": 94,
+        "symbol": "1810",
+        "name": "سيرا"
+      },
+      {
+        "rank": 95,
+        "symbol": "1834",
+        "name": "سماسكو"
+      },
+      {
+        "rank": 96,
+        "symbol": "4144",
+        "name": "رؤوم"
+      },
+      {
+        "rank": 97,
+        "symbol": "2140",
+        "name": "أيان"
+      },
+      {
+        "rank": 98,
+        "symbol": "2250",
+        "name": "المجموعة السعودية"
+      },
+      {
+        "rank": 99,
+        "symbol": "9630",
+        "name": "ريشيو"
+      },
+      {
+        "rank": 100,
+        "symbol": "4191",
+        "name": "أبو معطي"
+      }
+    ],
+    "high_dividend": [
+      {
+        "rank": 1,
+        "symbol": "9634",
+        "name": "أدير"
+      },
+      {
+        "rank": 2,
+        "symbol": "9552",
+        "name": "قمة السعودية"
+      },
+      {
+        "rank": 3,
+        "symbol": "4350",
+        "name": "الإستثمار ريت"
+      },
+      {
+        "rank": 4,
+        "symbol": "9578",
+        "name": "مصاعد أطلس"
+      },
+      {
+        "rank": 5,
+        "symbol": "3060",
+        "name": "أسمنت ينبع"
+      },
+      {
+        "rank": 6,
+        "symbol": "4321",
+        "name": "سينومي سنترز"
+      },
+      {
+        "rank": 7,
+        "symbol": "9597",
+        "name": "الليف"
+      },
+      {
+        "rank": 8,
+        "symbol": "9603",
+        "name": "الأفق التعليمية"
+      },
+      {
+        "rank": 9,
+        "symbol": "3003",
+        "name": "أسمنت المدينة"
+      },
+      {
+        "rank": 10,
+        "symbol": "4347",
+        "name": "بنيان ريت"
+      },
+      {
+        "rank": 11,
+        "symbol": "4342",
+        "name": "جدوى ريت السعودية"
+      },
+      {
+        "rank": 12,
+        "symbol": "4349",
+        "name": "الإنماء ريت الفندقي"
+      },
+      {
+        "rank": 13,
+        "symbol": "9523",
+        "name": "جروب فايف"
+      },
+      {
+        "rank": 14,
+        "symbol": "4003",
+        "name": "إكسترا"
+      },
+      {
+        "rank": 15,
+        "symbol": "2270",
+        "name": "سدافكو"
+      },
+      {
+        "rank": 16,
+        "symbol": "4345",
+        "name": "الإنماء ريت للتجزئة"
+      },
+      {
+        "rank": 17,
+        "symbol": "9589",
+        "name": "فاد"
+      },
+      {
+        "rank": 18,
+        "symbol": "2310",
+        "name": "سبكيم العالمية"
+      },
+      {
+        "rank": 19,
+        "symbol": "4031",
+        "name": "الخدمات الأرضية"
+      },
+      {
+        "rank": 20,
+        "symbol": "4339",
+        "name": "دراية ريت"
+      },
+      {
+        "rank": 21,
+        "symbol": "4334",
+        "name": "المعذر ريت"
+      },
+      {
+        "rank": 22,
+        "symbol": "4348",
+        "name": "الخبير ريت"
+      },
+      {
+        "rank": 23,
+        "symbol": "4344",
+        "name": "سدكو كابيتال ريت"
+      },
+      {
+        "rank": 24,
+        "symbol": "3040",
+        "name": "أسمنت القصيم"
+      },
+      {
+        "rank": 25,
+        "symbol": "2284",
+        "name": "المطاحن الحديثة"
+      },
+      {
+        "rank": 26,
+        "symbol": "9543",
+        "name": "نت وركرس"
+      },
+      {
+        "rank": 27,
+        "symbol": "4336",
+        "name": "ملكية ريت"
+      },
+      {
+        "rank": 28,
+        "symbol": "4340",
+        "name": "الراجحي ريت"
+      },
+      {
+        "rank": 29,
+        "symbol": "4333",
+        "name": "تعليم ريت"
+      },
+      {
+        "rank": 30,
+        "symbol": "3090",
+        "name": "أسمنت تبوك"
+      },
+      {
+        "rank": 31,
+        "symbol": "3010",
+        "name": "أسمنت العربية"
+      },
+      {
+        "rank": 32,
+        "symbol": "9618",
+        "name": "الفاخرة"
+      },
+      {
+        "rank": 33,
+        "symbol": "9649",
+        "name": "جمجوم فاشن"
+      },
+      {
+        "rank": 34,
+        "symbol": "4330",
+        "name": "الرياض ريت"
+      },
+      {
+        "rank": 35,
+        "symbol": "4163",
+        "name": "الدواء"
+      },
+      {
+        "rank": 36,
+        "symbol": "2283",
+        "name": "المطاحن الأولى"
+      },
+      {
+        "rank": 37,
+        "symbol": "2050",
+        "name": "مجموعة صافولا"
+      },
+      {
+        "rank": 38,
+        "symbol": "4084",
+        "name": "دراية"
+      },
+      {
+        "rank": 39,
+        "symbol": "2286",
+        "name": "المطاحن الرابعة"
+      },
+      {
+        "rank": 40,
+        "symbol": "3030",
+        "name": "أسمنت السعودية"
+      },
+      {
+        "rank": 41,
+        "symbol": "2290",
+        "name": "ينساب"
+      },
+      {
+        "rank": 42,
+        "symbol": "3092",
+        "name": "أسمنت الرياض"
+      },
+      {
+        "rank": 43,
+        "symbol": "4335",
+        "name": "مشاركة ريت"
+      },
+      {
+        "rank": 44,
+        "symbol": "4332",
+        "name": "جدوى ريت الحرمين"
+      },
+      {
+        "rank": 45,
+        "symbol": "2120",
+        "name": "متطورة"
+      },
+      {
+        "rank": 46,
+        "symbol": "4338",
+        "name": "الأهلي ريت 1"
+      },
+      {
+        "rank": 47,
+        "symbol": "1060",
+        "name": "الأول"
+      },
+      {
+        "rank": 48,
+        "symbol": "4012",
+        "name": "الأصيل"
+      },
+      {
+        "rank": 49,
+        "symbol": "4337",
+        "name": "العزيزية ريت"
+      },
+      {
+        "rank": 50,
+        "symbol": "2223",
+        "name": "لوبريف"
+      },
+      {
+        "rank": 51,
+        "symbol": "1010",
+        "name": "الرياض"
+      },
+      {
+        "rank": 52,
+        "symbol": "4164",
+        "name": "النهدي"
+      },
+      {
+        "rank": 53,
+        "symbol": "1080",
+        "name": "العربي"
+      },
+      {
+        "rank": 54,
+        "symbol": "9581",
+        "name": "كلين لايف"
+      },
+      {
+        "rank": 55,
+        "symbol": "1182",
+        "name": "أملاك"
+      },
+      {
+        "rank": 56,
+        "symbol": "2020",
+        "name": "سابك للمغذيات الزراعية"
+      },
+      {
+        "rank": 57,
+        "symbol": "1180",
+        "name": "الأهلي"
+      },
+      {
+        "rank": 58,
+        "symbol": "4261",
+        "name": "ذيب"
+      },
+      {
+        "rank": 59,
+        "symbol": "9611",
+        "name": "المتحدة للزجاج المسطح"
+      },
+      {
+        "rank": 60,
+        "symbol": "2083",
+        "name": "مرافق"
+      },
+      {
+        "rank": 61,
+        "symbol": "1835",
+        "name": "تمكين"
+      },
+      {
+        "rank": 62,
+        "symbol": "1323",
+        "name": "يو سي آي سي"
+      },
+      {
+        "rank": 63,
+        "symbol": "1324",
+        "name": "صالح الراشد"
+      },
+      {
+        "rank": 64,
+        "symbol": "9517",
+        "name": "موبي للصناعة"
+      },
+      {
+        "rank": 65,
+        "symbol": "2010",
+        "name": "سابك"
+      },
+      {
+        "rank": 66,
+        "symbol": "1050",
+        "name": "بي اس اف"
+      },
+      {
+        "rank": 67,
+        "symbol": "9635",
+        "name": "دخون"
+      },
+      {
+        "rank": 68,
+        "symbol": "4143",
+        "name": "تالكو"
+      },
+      {
+        "rank": 69,
+        "symbol": "2222",
+        "name": "أرامكو السعودية"
+      },
+      {
+        "rank": 70,
+        "symbol": "9650",
+        "name": "ساحة المجد"
+      },
+      {
+        "rank": 71,
+        "symbol": "7010",
+        "name": "اس تي سي"
+      },
+      {
+        "rank": 72,
+        "symbol": "1301",
+        "name": "أسلاك"
+      },
+      {
+        "rank": 73,
+        "symbol": "1030",
+        "name": "الإستثمار"
+      },
+      {
+        "rank": 74,
+        "symbol": "4001",
+        "name": "أسواق ع العثيم"
+      },
+      {
+        "rank": 75,
+        "symbol": "9548",
+        "name": "ابيكو"
+      },
+      {
+        "rank": 76,
+        "symbol": "7030",
+        "name": "زين السعودية"
+      },
+      {
+        "rank": 77,
+        "symbol": "3080",
+        "name": "أسمنت الشرقية"
+      },
+      {
+        "rank": 78,
+        "symbol": "9628",
+        "name": "لمسات"
+      },
+      {
+        "rank": 79,
+        "symbol": "7020",
+        "name": "إتحاد إتصالات"
+      },
+      {
+        "rank": 80,
+        "symbol": "1834",
+        "name": "سماسكو"
+      },
+      {
+        "rank": 81,
+        "symbol": "9604",
+        "name": "ميرال"
+      },
+      {
+        "rank": 82,
+        "symbol": "4190",
+        "name": "جرير"
+      },
+      {
+        "rank": 83,
+        "symbol": "6014",
+        "name": "الآمار"
+      },
+      {
+        "rank": 84,
+        "symbol": "9631",
+        "name": "هضاب الخليج"
+      },
+      {
+        "rank": 85,
+        "symbol": "1831",
+        "name": "مهارة"
+      },
+      {
+        "rank": 86,
+        "symbol": "4260",
+        "name": "بدجت السعودية"
+      },
+      {
+        "rank": 87,
+        "symbol": "4007",
+        "name": "الحمادي"
+      },
+      {
+        "rank": 88,
+        "symbol": "3020",
+        "name": "أسمنت اليمامة"
+      },
+      {
+        "rank": 89,
+        "symbol": "1020",
+        "name": "الجزيرة"
+      },
+      {
+        "rank": 90,
+        "symbol": "1140",
+        "name": "البلاد"
+      },
+      {
+        "rank": 91,
+        "symbol": "4145",
+        "name": "أو جي سي"
+      },
+      {
+        "rank": 92,
+        "symbol": "5110",
+        "name": "السعودية للطاقة"
+      },
+      {
+        "rank": 93,
+        "symbol": "4263",
+        "name": "سال"
+      },
+      {
+        "rank": 94,
+        "symbol": "9641",
+        "name": "هوية"
+      },
+      {
+        "rank": 95,
+        "symbol": "9569",
+        "name": "آل منيف"
+      },
+      {
+        "rank": 96,
+        "symbol": "9550",
+        "name": "شور"
+      },
+      {
+        "rank": 97,
+        "symbol": "1150",
+        "name": "الإنماء"
+      },
+      {
+        "rank": 98,
+        "symbol": "2040",
+        "name": "الخزف السعودي"
+      },
+      {
+        "rank": 99,
+        "symbol": "4142",
+        "name": "كابلات الرياض"
+      },
+      {
+        "rank": 100,
+        "symbol": "4323",
+        "name": "سمو"
+      }
+    ],
+    "top_losers": [
+      {
+        "rank": 1,
+        "symbol": "9549",
+        "name": "البابطين الغذائية"
+      },
+      {
+        "rank": 2,
+        "symbol": "3008",
+        "name": "الكثيري"
+      },
+      {
+        "rank": 3,
+        "symbol": "9655",
+        "name": "مسقا"
+      },
+      {
+        "rank": 4,
+        "symbol": "9588",
+        "name": "حديد الرياض"
+      },
+      {
+        "rank": 5,
+        "symbol": "9548",
+        "name": "ابيكو"
+      },
+      {
+        "rank": 6,
+        "symbol": "4334",
+        "name": "المعذر ريت"
+      },
+      {
+        "rank": 7,
+        "symbol": "1213",
+        "name": "نسيج"
+      },
+      {
+        "rank": 8,
+        "symbol": "2240",
+        "name": "صناعات"
+      },
+      {
+        "rank": 9,
+        "symbol": "9570",
+        "name": "تام التنموية"
+      },
+      {
+        "rank": 10,
+        "symbol": "1323",
+        "name": "يو سي آي سي"
+      },
+      {
+        "rank": 11,
+        "symbol": "4335",
+        "name": "مشاركة ريت"
+      },
+      {
+        "rank": 12,
+        "symbol": "4141",
+        "name": "العمران"
+      },
+      {
+        "rank": 13,
+        "symbol": "9515",
+        "name": "فش فاش"
+      },
+      {
+        "rank": 14,
+        "symbol": "9579",
+        "name": "رماث"
+      },
+      {
+        "rank": 15,
+        "symbol": "3010",
+        "name": "أسمنت العربية"
+      },
+      {
+        "rank": 16,
+        "symbol": "9522",
+        "name": "الحاسوب"
+      },
+      {
+        "rank": 17,
+        "symbol": "8060",
+        "name": "ولاء"
+      },
+      {
+        "rank": 18,
+        "symbol": "9574",
+        "name": "بروميديكس"
+      },
+      {
+        "rank": 19,
+        "symbol": "6040",
+        "name": "تبوك الزراعية"
+      },
+      {
+        "rank": 20,
+        "symbol": "8010",
+        "name": "التعاونية"
+      },
+      {
+        "rank": 21,
+        "symbol": "9605",
+        "name": "نفط الشرق"
+      },
+      {
+        "rank": 22,
+        "symbol": "1322",
+        "name": "أماك"
+      },
+      {
+        "rank": 23,
+        "symbol": "4270",
+        "name": "طباعة وتغليف"
+      },
+      {
+        "rank": 24,
+        "symbol": "9587",
+        "name": "لانا"
+      },
+      {
+        "rank": 25,
+        "symbol": "6017",
+        "name": "جاهز"
+      },
+      {
+        "rank": 26,
+        "symbol": "9580",
+        "name": "الراشد للصناعة"
+      },
+      {
+        "rank": 27,
+        "symbol": "1201",
+        "name": "تكوين"
+      },
+      {
+        "rank": 28,
+        "symbol": "2320",
+        "name": "البابطين"
+      },
+      {
+        "rank": 29,
+        "symbol": "9545",
+        "name": "الدولية"
+      },
+      {
+        "rank": 30,
+        "symbol": "9636",
+        "name": "الخزامى"
+      },
+      {
+        "rank": 31,
+        "symbol": "4160",
+        "name": "ثمار"
+      },
+      {
+        "rank": 32,
+        "symbol": "9589",
+        "name": "فاد"
+      },
+      {
+        "rank": 33,
+        "symbol": "9581",
+        "name": "كلين لايف"
+      },
+      {
+        "rank": 34,
+        "symbol": "6004",
+        "name": "كاتريون"
+      },
+      {
+        "rank": 35,
+        "symbol": "4040",
+        "name": "سابتكو"
+      },
+      {
+        "rank": 36,
+        "symbol": "4130",
+        "name": "درب السعودية"
+      },
+      {
+        "rank": 37,
+        "symbol": "9535",
+        "name": "لدن"
+      },
+      {
+        "rank": 38,
+        "symbol": "4291",
+        "name": "الوطنية للتعليم"
+      },
+      {
+        "rank": 39,
+        "symbol": "4015",
+        "name": "جمجوم فارما"
+      },
+      {
+        "rank": 40,
+        "symbol": "6016",
+        "name": "برغرايززر"
+      },
+      {
+        "rank": 41,
+        "symbol": "8260",
+        "name": "الخليجية العامة"
+      },
+      {
+        "rank": 42,
+        "symbol": "9607",
+        "name": "عسق"
+      },
+      {
+        "rank": 43,
+        "symbol": "9568",
+        "name": "ميار"
+      },
+      {
+        "rank": 44,
+        "symbol": "2082",
+        "name": "أكوا"
+      },
+      {
+        "rank": 45,
+        "symbol": "9564",
+        "name": "آفاق الغذاء"
+      },
+      {
+        "rank": 46,
+        "symbol": "8100",
+        "name": "سايكو"
+      },
+      {
+        "rank": 47,
+        "symbol": "2160",
+        "name": "أميانتيت"
+      },
+      {
+        "rank": 48,
+        "symbol": "9552",
+        "name": "قمة السعودية"
+      },
+      {
+        "rank": 49,
+        "symbol": "9563",
+        "name": "بناء"
+      },
+      {
+        "rank": 50,
+        "symbol": "3007",
+        "name": "الواحة"
+      },
+      {
+        "rank": 51,
+        "symbol": "6050",
+        "name": "الأسماك"
+      },
+      {
+        "rank": 52,
+        "symbol": "7202",
+        "name": "سلوشنز"
+      },
+      {
+        "rank": 53,
+        "symbol": "1835",
+        "name": "تمكين"
+      },
+      {
+        "rank": 54,
+        "symbol": "9624",
+        "name": "الشهيلي المعدنية"
+      },
+      {
+        "rank": 55,
+        "symbol": "9632",
+        "name": "رؤية المستقبل"
+      },
+      {
+        "rank": 56,
+        "symbol": "4180",
+        "name": "مجموعة فتيحي"
+      },
+      {
+        "rank": 57,
+        "symbol": "4142",
+        "name": "كابلات الرياض"
+      },
+      {
+        "rank": 58,
+        "symbol": "2010",
+        "name": "سابك"
+      },
+      {
+        "rank": 59,
+        "symbol": "8190",
+        "name": "المتحدة للتأمين"
+      },
+      {
+        "rank": 60,
+        "symbol": "9600",
+        "name": "كومل"
+      },
+      {
+        "rank": 61,
+        "symbol": "6002",
+        "name": "هرفي للأغذية"
+      },
+      {
+        "rank": 62,
+        "symbol": "2340",
+        "name": "ارتيكس"
+      },
+      {
+        "rank": 63,
+        "symbol": "6019",
+        "name": "المسار الشامل"
+      },
+      {
+        "rank": 64,
+        "symbol": "6060",
+        "name": "الشرقية للتنمية"
+      },
+      {
+        "rank": 65,
+        "symbol": "4292",
+        "name": "عطاء"
+      },
+      {
+        "rank": 66,
+        "symbol": "2284",
+        "name": "المطاحن الحديثة"
+      },
+      {
+        "rank": 67,
+        "symbol": "7200",
+        "name": "ام آي اس"
+      },
+      {
+        "rank": 68,
+        "symbol": "1834",
+        "name": "سماسكو"
+      },
+      {
+        "rank": 69,
+        "symbol": "8170",
+        "name": "الاتحاد"
+      },
+      {
+        "rank": 70,
+        "symbol": "2280",
+        "name": "المراعي"
+      },
+      {
+        "rank": 71,
+        "symbol": "2001",
+        "name": "كيمانول"
+      },
+      {
+        "rank": 72,
+        "symbol": "4338",
+        "name": "الأهلي ريت 1"
+      },
+      {
+        "rank": 73,
+        "symbol": "9569",
+        "name": "آل منيف"
+      },
+      {
+        "rank": 74,
+        "symbol": "6018",
+        "name": "الأندية للرياضة"
+      },
+      {
+        "rank": 75,
+        "symbol": "9583",
+        "name": "المتحدة للتعدين"
+      },
+      {
+        "rank": 76,
+        "symbol": "8210",
+        "name": "بوبا العربية"
+      },
+      {
+        "rank": 77,
+        "symbol": "7040",
+        "name": "قو للإتصالات"
+      },
+      {
+        "rank": 78,
+        "symbol": "4346",
+        "name": "ميفك ريت"
+      },
+      {
+        "rank": 79,
+        "symbol": "9513",
+        "name": "حديد وطني"
+      },
+      {
+        "rank": 80,
+        "symbol": "4072",
+        "name": "مجموعة إم بي سي"
+      },
+      {
+        "rank": 81,
+        "symbol": "4011",
+        "name": "لازوردي"
+      },
+      {
+        "rank": 82,
+        "symbol": "3090",
+        "name": "أسمنت تبوك"
+      },
+      {
+        "rank": 83,
+        "symbol": "1050",
+        "name": "بي اس اف"
+      },
+      {
+        "rank": 84,
+        "symbol": "1120",
+        "name": "الراجحي"
+      },
+      {
+        "rank": 85,
+        "symbol": "4326",
+        "name": "الماجدية"
+      },
+      {
+        "rank": 86,
+        "symbol": "6001",
+        "name": "حلواني إخوان"
+      },
+      {
+        "rank": 87,
+        "symbol": "2180",
+        "name": "فيبكو"
+      },
+      {
+        "rank": 88,
+        "symbol": "2282",
+        "name": "نقي"
+      },
+      {
+        "rank": 89,
+        "symbol": "2222",
+        "name": "أرامكو السعودية"
+      },
+      {
+        "rank": 90,
+        "symbol": "4004",
+        "name": "دله الصحية"
+      },
+      {
+        "rank": 91,
+        "symbol": "1831",
+        "name": "مهارة"
+      },
+      {
+        "rank": 92,
+        "symbol": "4349",
+        "name": "الإنماء ريت الفندقي"
+      },
+      {
+        "rank": 93,
+        "symbol": "2100",
+        "name": "وفرة"
+      },
+      {
+        "rank": 94,
+        "symbol": "4321",
+        "name": "سينومي سنترز"
+      },
+      {
+        "rank": 95,
+        "symbol": "1214",
+        "name": "شاكر"
+      },
+      {
+        "rank": 96,
+        "symbol": "4148",
+        "name": "الوسائل الصناعية"
+      },
+      {
+        "rank": 97,
+        "symbol": "4007",
+        "name": "الحمادي"
+      },
+      {
+        "rank": 98,
+        "symbol": "7204",
+        "name": "توبي"
+      },
+      {
+        "rank": 99,
+        "symbol": "3003",
+        "name": "أسمنت المدينة"
+      },
+      {
+        "rank": 100,
+        "symbol": "4200",
+        "name": "الدريس"
+      }
+    ],
+    "top_gainers": [
+      {
+        "rank": 1,
+        "symbol": "6012",
+        "name": "ريدان"
+      },
+      {
+        "rank": 2,
+        "symbol": "9617",
+        "name": "ارابيكا ستار"
+      },
+      {
+        "rank": 3,
+        "symbol": "9608",
+        "name": "الأشغال الميسرة"
+      },
+      {
+        "rank": 4,
+        "symbol": "4300",
+        "name": "دار الأركان"
+      },
+      {
+        "rank": 5,
+        "symbol": "2380",
+        "name": "بترو رابغ"
+      },
+      {
+        "rank": 6,
+        "symbol": "4280",
+        "name": "المملكة"
+      },
+      {
+        "rank": 7,
+        "symbol": "9559",
+        "name": "بلدي"
+      },
+      {
+        "rank": 8,
+        "symbol": "4083",
+        "name": "تسهيل"
+      },
+      {
+        "rank": 9,
+        "symbol": "2030",
+        "name": "المصافي"
+      },
+      {
+        "rank": 10,
+        "symbol": "4322",
+        "name": "رتال"
+      },
+      {
+        "rank": 11,
+        "symbol": "2190",
+        "name": "سيسكو القابضة"
+      },
+      {
+        "rank": 12,
+        "symbol": "4342",
+        "name": "جدوى ريت السعودية"
+      },
+      {
+        "rank": 13,
+        "symbol": "9530",
+        "name": "طبية"
+      },
+      {
+        "rank": 14,
+        "symbol": "2290",
+        "name": "ينساب"
+      },
+      {
+        "rank": 15,
+        "symbol": "4332",
+        "name": "جدوى ريت الحرمين"
+      },
+      {
+        "rank": 16,
+        "symbol": "2060",
+        "name": "التصنيع"
+      },
+      {
+        "rank": 17,
+        "symbol": "2223",
+        "name": "لوبريف"
+      },
+      {
+        "rank": 18,
+        "symbol": "2080",
+        "name": "الغاز القابضة"
+      },
+      {
+        "rank": 19,
+        "symbol": "9514",
+        "name": "الناقول"
+      },
+      {
+        "rank": 20,
+        "symbol": "4161",
+        "name": "بن داود"
+      },
+      {
+        "rank": 21,
+        "symbol": "9627",
+        "name": "طوارئيات"
+      },
+      {
+        "rank": 22,
+        "symbol": "9619",
+        "name": "الأعمال المتعددة"
+      },
+      {
+        "rank": 23,
+        "symbol": "1303",
+        "name": "الصناعات الكهربائية"
+      },
+      {
+        "rank": 24,
+        "symbol": "4190",
+        "name": "جرير"
+      },
+      {
+        "rank": 25,
+        "symbol": "9615",
+        "name": "مفيد"
+      },
+      {
+        "rank": 26,
+        "symbol": "7201",
+        "name": "بحر العرب"
+      },
+      {
+        "rank": 27,
+        "symbol": "4071",
+        "name": "العربية"
+      },
+      {
+        "rank": 28,
+        "symbol": "9594",
+        "name": "المداواة"
+      },
+      {
+        "rank": 29,
+        "symbol": "8280",
+        "name": "ليفا"
+      },
+      {
+        "rank": 30,
+        "symbol": "2330",
+        "name": "المتقدمة"
+      },
+      {
+        "rank": 31,
+        "symbol": "9611",
+        "name": "المتحدة للزجاج المسطح"
+      },
+      {
+        "rank": 32,
+        "symbol": "1020",
+        "name": "الجزيرة"
+      },
+      {
+        "rank": 33,
+        "symbol": "9635",
+        "name": "دخون"
+      },
+      {
+        "rank": 34,
+        "symbol": "4030",
+        "name": "البحري"
+      },
+      {
+        "rank": 35,
+        "symbol": "4014",
+        "name": "دار المعدات"
+      },
+      {
+        "rank": 36,
+        "symbol": "4050",
+        "name": "ساسكو"
+      },
+      {
+        "rank": 37,
+        "symbol": "2084",
+        "name": "مياهنا"
+      },
+      {
+        "rank": 38,
+        "symbol": "4290",
+        "name": "الخليج للتدريب"
+      },
+      {
+        "rank": 39,
+        "symbol": "8311",
+        "name": "عناية"
+      },
+      {
+        "rank": 40,
+        "symbol": "4310",
+        "name": "مدينة المعرفة"
+      },
+      {
+        "rank": 41,
+        "symbol": "4260",
+        "name": "بدجت السعودية"
+      },
+      {
+        "rank": 42,
+        "symbol": "8230",
+        "name": "تكافل الراجحي"
+      },
+      {
+        "rank": 43,
+        "symbol": "9539",
+        "name": "أقاسيم"
+      },
+      {
+        "rank": 44,
+        "symbol": "4264",
+        "name": "طيران ناس"
+      },
+      {
+        "rank": 45,
+        "symbol": "8300",
+        "name": "الوطنية"
+      },
+      {
+        "rank": 46,
+        "symbol": "2310",
+        "name": "سبكيم العالمية"
+      },
+      {
+        "rank": 47,
+        "symbol": "1140",
+        "name": "البلاد"
+      },
+      {
+        "rank": 48,
+        "symbol": "4262",
+        "name": "لومي"
+      },
+      {
+        "rank": 49,
+        "symbol": "7211",
+        "name": "عزم"
+      },
+      {
+        "rank": 50,
+        "symbol": "9540",
+        "name": "تدوير"
+      },
+      {
+        "rank": 51,
+        "symbol": "2360",
+        "name": "الفخارية"
+      },
+      {
+        "rank": 52,
+        "symbol": "9602",
+        "name": "يقين"
+      },
+      {
+        "rank": 53,
+        "symbol": "8030",
+        "name": "ميدغلف للتأمين"
+      },
+      {
+        "rank": 54,
+        "symbol": "4144",
+        "name": "رؤوم"
+      },
+      {
+        "rank": 55,
+        "symbol": "4001",
+        "name": "أسواق ع العثيم"
+      },
+      {
+        "rank": 56,
+        "symbol": "4143",
+        "name": "تالكو"
+      },
+      {
+        "rank": 57,
+        "symbol": "9650",
+        "name": "ساحة المجد"
+      },
+      {
+        "rank": 58,
+        "symbol": "2381",
+        "name": "الحفر العربية"
+      },
+      {
+        "rank": 59,
+        "symbol": "2040",
+        "name": "الخزف السعودي"
+      },
+      {
+        "rank": 60,
+        "symbol": "4090",
+        "name": "طيبة"
+      },
+      {
+        "rank": 61,
+        "symbol": "1030",
+        "name": "الإستثمار"
+      },
+      {
+        "rank": 62,
+        "symbol": "4323",
+        "name": "سمو"
+      },
+      {
+        "rank": 63,
+        "symbol": "4165",
+        "name": "الماجد للعود"
+      },
+      {
+        "rank": 64,
+        "symbol": "2070",
+        "name": "الدوائية"
+      },
+      {
+        "rank": 65,
+        "symbol": "7205",
+        "name": "دي بي اس"
+      },
+      {
+        "rank": 66,
+        "symbol": "4194",
+        "name": "محطة البناء"
+      },
+      {
+        "rank": 67,
+        "symbol": "9542",
+        "name": "كير"
+      },
+      {
+        "rank": 68,
+        "symbol": "1150",
+        "name": "الإنماء"
+      },
+      {
+        "rank": 69,
+        "symbol": "6013",
+        "name": "التطويرية الغذائية"
+      },
+      {
+        "rank": 70,
+        "symbol": "8160",
+        "name": "التأمين العربية"
+      },
+      {
+        "rank": 71,
+        "symbol": "9626",
+        "name": "سمايل كير"
+      },
+      {
+        "rank": 72,
+        "symbol": "9618",
+        "name": "الفاخرة"
+      },
+      {
+        "rank": 73,
+        "symbol": "4320",
+        "name": "الأندلس"
+      },
+      {
+        "rank": 74,
+        "symbol": "2081",
+        "name": "الخريف"
+      },
+      {
+        "rank": 75,
+        "symbol": "4003",
+        "name": "إكسترا"
+      },
+      {
+        "rank": 76,
+        "symbol": "4163",
+        "name": "الدواء"
+      },
+      {
+        "rank": 77,
+        "symbol": "8020",
+        "name": "ملاذ للتأمين"
+      },
+      {
+        "rank": 78,
+        "symbol": "8250",
+        "name": "جي آي جي"
+      },
+      {
+        "rank": 79,
+        "symbol": "8070",
+        "name": "الدرع العربي"
+      },
+      {
+        "rank": 80,
+        "symbol": "9521",
+        "name": "إنمار"
+      },
+      {
+        "rank": 81,
+        "symbol": "1810",
+        "name": "سيرا"
+      },
+      {
+        "rank": 82,
+        "symbol": "9630",
+        "name": "ريشيو"
+      },
+      {
+        "rank": 83,
+        "symbol": "4170",
+        "name": "شمس"
+      },
+      {
+        "rank": 84,
+        "symbol": "4082",
+        "name": "مرنة"
+      },
+      {
+        "rank": 85,
+        "symbol": "6070",
+        "name": "الجوف"
+      },
+      {
+        "rank": 86,
+        "symbol": "4327",
+        "name": "الرمز"
+      },
+      {
+        "rank": 87,
+        "symbol": "4019",
+        "name": "اس ام سي للرعاية الصحية"
+      },
+      {
+        "rank": 88,
+        "symbol": "4250",
+        "name": "جبل عمر"
+      },
+      {
+        "rank": 89,
+        "symbol": "4348",
+        "name": "الخبير ريت"
+      },
+      {
+        "rank": 90,
+        "symbol": "2285",
+        "name": "المطاحن العربية"
+      },
+      {
+        "rank": 91,
+        "symbol": "1321",
+        "name": "أنابيب الشرق"
+      },
+      {
+        "rank": 92,
+        "symbol": "4018",
+        "name": "الموسى"
+      },
+      {
+        "rank": 93,
+        "symbol": "9634",
+        "name": "أدير"
+      },
+      {
+        "rank": 94,
+        "symbol": "1111",
+        "name": "مجموعة تداول"
+      },
+      {
+        "rank": 95,
+        "symbol": "4261",
+        "name": "ذيب"
+      },
+      {
+        "rank": 96,
+        "symbol": "2130",
+        "name": "صدق"
+      },
+      {
+        "rank": 97,
+        "symbol": "6014",
+        "name": "الآمار"
+      },
+      {
+        "rank": 98,
+        "symbol": "2050",
+        "name": "مجموعة صافولا"
+      },
+      {
+        "rank": 99,
+        "symbol": "4031",
+        "name": "الخدمات الأرضية"
+      },
+      {
+        "rank": 100,
+        "symbol": "2281",
+        "name": "تنمية"
+      }
+    ]
+  },
+  "الكويت": {
+    "most_active": [
+      {
+        "rank": 1,
+        "symbol": "TIJARA",
+        "name": "التجارة والاستثمار العقاري"
+      },
+      {
+        "rank": 2,
+        "symbol": "KFH",
+        "name": "بيت التمويل الكويتي"
+      },
+      {
+        "rank": 3,
+        "symbol": "NBK",
+        "name": "بنك الكويت الوطني"
+      },
+      {
+        "rank": 4,
+        "symbol": "ARKAN",
+        "name": "أركان الكويت العقارية"
+      },
+      {
+        "rank": 5,
+        "symbol": "MKHZN",
+        "name": "Agility Public Warehousing Co. K.S.C."
+      },
+      {
+        "rank": 6,
+        "symbol": "ABK",
+        "name": "البنك الأهلي الكويتي"
+      },
+      {
+        "rank": 7,
+        "symbol": "GBK",
+        "name": "بنك الخليج ش.م.ك.ع"
+      },
+      {
+        "rank": 8,
+        "symbol": "ASC",
+        "name": "الأنظمة الآلية ش.م.ك.ع"
+      },
+      {
+        "rank": 9,
+        "symbol": "PHC",
+        "name": "Privatization Holding Co. KSCC"
+      },
+      {
+        "rank": 10,
+        "symbol": "ZAIN",
+        "name": "الاتصالات المتنقلة"
+      },
+      {
+        "rank": 11,
+        "symbol": "CLEANING",
+        "name": "الشركة الوطنية للتنظيف ش.م.ك.ع"
+      },
+      {
+        "rank": 12,
+        "symbol": "CABLE",
+        "name": "شركة مجموعة الخليج للكابلات والصناعات الكهربائية ش.م.ك.ع"
+      },
+      {
+        "rank": 13,
+        "symbol": "ABAR",
+        "name": "برقان لحفر الآبار"
+      },
+      {
+        "rank": 14,
+        "symbol": "NINV",
+        "name": "شركة الإستثمارات الوطنية"
+      },
+      {
+        "rank": 15,
+        "symbol": "JAZEERA",
+        "name": "طيران الجزيرة ش.م.ك.ع"
+      },
+      {
+        "rank": 16,
+        "symbol": "ALOLA",
+        "name": "الشركة الأولى للإستثمار"
+      },
+      {
+        "rank": 17,
+        "symbol": "BPCC",
+        "name": "بوبيان للبتروكيماويات ش.م.ك.ع"
+      },
+      {
+        "rank": 18,
+        "symbol": "GIH",
+        "name": "بيت الاستثمار الخليجي"
+      },
+      {
+        "rank": 19,
+        "symbol": "NRE",
+        "name": "الشركة الوطنية العقارية ش.م.ك"
+      },
+      {
+        "rank": 20,
+        "symbol": "NIND",
+        "name": "مجموعة الصناعات الوطنية القابضة"
+      },
+      {
+        "rank": 21,
+        "symbol": "MABANEE",
+        "name": "شركة المباني ش.م.ك.ع"
+      },
+      {
+        "rank": 22,
+        "symbol": "ALG",
+        "name": "شركة أولاد علي الغانم للسيارات"
+      },
+      {
+        "rank": 23,
+        "symbol": "NIH",
+        "name": "الوطنية الدولية القابضة ش.م.ك"
+      },
+      {
+        "rank": 24,
+        "symbol": "CGC",
+        "name": "المجموعة المشتركة للمقاولات ش.م.ك.ع"
+      },
+      {
+        "rank": 25,
+        "symbol": "SHIP",
+        "name": "الصناعات الهندسية الثقيلة وبناء السفن"
+      },
+      {
+        "rank": 26,
+        "symbol": "BOUBYAN",
+        "name": "بنك بوبيان"
+      },
+      {
+        "rank": 27,
+        "symbol": "WARBABANK",
+        "name": "بنك وربة"
+      },
+      {
+        "rank": 28,
+        "symbol": "BEYOUT",
+        "name": "شــركة مجموعــة البيــوت الاســتثمارية القابضــة"
+      },
+      {
+        "rank": 29,
+        "symbol": "KFIC",
+        "name": "شركة كفيك للإستثمار (ش.م.ك.ع)"
+      },
+      {
+        "rank": 30,
+        "symbol": "TROLLEY",
+        "name": "Trolley General Trading Company K.S.C.C."
+      },
+      {
+        "rank": 31,
+        "symbol": "RASIYAT",
+        "name": "شركة راسيات القابضة ش.م.ك.ع"
+      },
+      {
+        "rank": 32,
+        "symbol": "BURG",
+        "name": "بنك برقان"
+      },
+      {
+        "rank": 33,
+        "symbol": "SRE",
+        "name": "الصالحية العقارية"
+      },
+      {
+        "rank": 34,
+        "symbol": "SANAM",
+        "name": "شركة سنام العقارية"
+      },
+      {
+        "rank": 35,
+        "symbol": "ALTIJARIA",
+        "name": "الشركة التجارية العقارية ش.م.ك"
+      },
+      {
+        "rank": 36,
+        "symbol": "AAYAN",
+        "name": "أعيان للاجارة والاستثمار"
+      },
+      {
+        "rank": 37,
+        "symbol": "WARBACAP",
+        "name": "وربة كابيتال القابضة"
+      },
+      {
+        "rank": 38,
+        "symbol": "OULAFUEL",
+        "name": "الأولى للتسويق المحلي للوقود"
+      },
+      {
+        "rank": 39,
+        "symbol": "IFA",
+        "name": "الاستشارات المالية الدولية القابضة"
+      },
+      {
+        "rank": 40,
+        "symbol": "ALIMTIAZ",
+        "name": "مجموعة الامتياز الاستثمارية"
+      },
+      {
+        "rank": 41,
+        "symbol": "ARZAN",
+        "name": "مجموعة أرزان المالية للتمويل والاستثمار"
+      },
+      {
+        "rank": 42,
+        "symbol": "MEZZAN",
+        "name": "ميزان القابضة"
+      },
+      {
+        "rank": 43,
+        "symbol": "ALSAFAT",
+        "name": ".شركة الصفاة للاستثمار ش.م.ك"
+      },
+      {
+        "rank": 44,
+        "symbol": "KIB",
+        "name": "بنك الكويت الدولي"
+      },
+      {
+        "rank": 45,
+        "symbol": "MUNSHAAT",
+        "name": "منشآت للمشاريع العقارية"
+      },
+      {
+        "rank": 46,
+        "symbol": "IFAHR",
+        "name": "ايفا للفنادق والمنتجعات"
+      },
+      {
+        "rank": 47,
+        "symbol": "MUBARRAD",
+        "name": "شركة مبرد القابضة (ش.م.ك.ع)"
+      },
+      {
+        "rank": 48,
+        "symbol": "WINSRE",
+        "name": "شركة وربة للتأمين و إعادة التأمين (ش.م.ك.ع)"
+      },
+      {
+        "rank": 49,
+        "symbol": "ACICO",
+        "name": "أسيكو للصناعات"
+      },
+      {
+        "rank": 50,
+        "symbol": "EMIRATES",
+        "name": "الشركة الكويتية الإماراتية القابضة ( ش.ك.م.ع)"
+      },
+      {
+        "rank": 51,
+        "symbol": "INTEGRATED",
+        "name": "الشركة المتكاملة القابضة"
+      },
+      {
+        "rank": 52,
+        "symbol": "ARGAN",
+        "name": "الأرجان العالمية العقارية"
+      },
+      {
+        "rank": 53,
+        "symbol": "SECH",
+        "name": "بيت الأوراق المالية ش.م.ك"
+      },
+      {
+        "rank": 54,
+        "symbol": "KRE",
+        "name": "عقارات الكويت ش.م.ك"
+      },
+      {
+        "rank": 55,
+        "symbol": "SENERGY",
+        "name": "سنرجي القابضة"
+      },
+      {
+        "rank": 56,
+        "symbol": "MARAKEZ",
+        "name": "مراكز التجارة العقارية"
+      },
+      {
+        "rank": 57,
+        "symbol": "AZNOULA",
+        "name": "شركة شمال الزور الاولي للطاقة والمياة ش. م. ك. ع"
+      },
+      {
+        "rank": 58,
+        "symbol": "MENA",
+        "name": "مينا العقارية"
+      },
+      {
+        "rank": 59,
+        "symbol": "AQAR",
+        "name": "عقار للاستثمارات العقارية"
+      },
+      {
+        "rank": 60,
+        "symbol": "ALFTAQA",
+        "name": "Action Energy Company K.S.C.C."
+      },
+      {
+        "rank": 61,
+        "symbol": "UPAC",
+        "name": "المشاريع المتحدة للخدمات الجوية"
+      },
+      {
+        "rank": 62,
+        "symbol": "EQUIPMENT",
+        "name": "المعدات القابضة"
+      },
+      {
+        "rank": 63,
+        "symbol": "ALENMA",
+        "name": "Al-Enmaa Real Estate Company KSCP"
+      },
+      {
+        "rank": 64,
+        "symbol": "ARABREC",
+        "name": "الشركة العربية العقارية ش.م.ك"
+      },
+      {
+        "rank": 65,
+        "symbol": "BOURSA",
+        "name": "شركة بورصة الكويت للأوراق المالية ش م ك ع"
+      },
+      {
+        "rank": 66,
+        "symbol": "DIGITUS",
+        "name": "شركة حياة للاتصالات"
+      },
+      {
+        "rank": 67,
+        "symbol": "AAYANRE",
+        "name": "أعيان العقارية ش.م.ك.ع"
+      },
+      {
+        "rank": 68,
+        "symbol": "OSOUL",
+        "name": "أصول للاستثمار"
+      },
+      {
+        "rank": 69,
+        "symbol": "MASHAER",
+        "name": "مشاعر القابضة ش م ك عامة"
+      },
+      {
+        "rank": 70,
+        "symbol": "KBT",
+        "name": "مدينة الأعمال الكويتية العقارية"
+      },
+      {
+        "rank": 71,
+        "symbol": "HUMANSOFT",
+        "name": "هيومن سوفت القابضة"
+      },
+      {
+        "rank": 72,
+        "symbol": "JTC",
+        "name": "شركة جاسم للنقليات والمناولة ش.م.ك.(عامة)"
+      },
+      {
+        "rank": 73,
+        "symbol": "THURAYA",
+        "name": "دار الثريا العقارية"
+      },
+      {
+        "rank": 74,
+        "symbol": "NOOR",
+        "name": "نور للاستثمار المالي"
+      },
+      {
+        "rank": 75,
+        "symbol": "STC",
+        "name": "الاتصالات الكويتية"
+      },
+      {
+        "rank": 76,
+        "symbol": "KPROJ",
+        "name": "مشاريع الكويت القابضة"
+      },
+      {
+        "rank": 77,
+        "symbol": "MUNTAZAHAT",
+        "name": "الكويتية للمنتزهات"
+      },
+      {
+        "rank": 78,
+        "symbol": "ALDEERA",
+        "name": "الديرة القابضة"
+      },
+      {
+        "rank": 79,
+        "symbol": "KINV",
+        "name": "الشركة الكويتية للاستثمار ش.م.ك.ع"
+      },
+      {
+        "rank": 80,
+        "symbol": "UNICAP",
+        "name": "يونيكاب للاستثمار والتمويل"
+      },
+      {
+        "rank": 81,
+        "symbol": "MARKAZ",
+        "name": "المركز المالي الكويتي"
+      },
+      {
+        "rank": 82,
+        "symbol": "MANAZEL",
+        "name": "منازل القابضة"
+      },
+      {
+        "rank": 83,
+        "symbol": "EKTTITAB",
+        "name": "اكتتاب القابضة"
+      },
+      {
+        "rank": 84,
+        "symbol": "FTI",
+        "name": "الأولى للتأمين التكافلي"
+      },
+      {
+        "rank": 85,
+        "symbol": "SOKOUK",
+        "name": "صكوك القابضة"
+      },
+      {
+        "rank": 86,
+        "symbol": "FUTUREKID",
+        "name": "طفل المستقبل الترفيهية العقارية"
+      },
+      {
+        "rank": 87,
+        "symbol": "MRC",
+        "name": "المعادن والصناعات التحويلية"
+      },
+      {
+        "rank": 88,
+        "symbol": "MAZAYA",
+        "name": "المزايا القابضة"
+      },
+      {
+        "rank": 89,
+        "symbol": "KFOUC",
+        "name": "السكب الكويتية"
+      },
+      {
+        "rank": 90,
+        "symbol": "WETHAQ",
+        "name": "وثاق للتأمين التكافلي"
+      },
+      {
+        "rank": 91,
+        "symbol": "BAYANINV",
+        "name": "شركة بيان للاستثمار القابضة"
+      },
+      {
+        "rank": 92,
+        "symbol": "INJAZZAT",
+        "name": "إنجازات للتنمية العقارية"
+      },
+      {
+        "rank": 93,
+        "symbol": "MADAR",
+        "name": "شركة المدار للاستثمار"
+      },
+      {
+        "rank": 94,
+        "symbol": "SPEC",
+        "name": "مجموعة الخصوصية القابضة"
+      },
+      {
+        "rank": 95,
+        "symbol": "NCCI",
+        "name": "الشركة الوطنية الاستهلاكية القابضة"
+      },
+      {
+        "rank": 96,
+        "symbol": "ASIYA",
+        "name": "آسيا كابيتال الاستثمارية"
+      },
+      {
+        "rank": 97,
+        "symbol": "URC",
+        "name": "العقارات المتحدة ش.م.ك"
+      },
+      {
+        "rank": 98,
+        "symbol": "ALMANAR",
+        "name": "شركة المنار للتمويل والإجارة ش.م.ك عامة"
+      },
+      {
+        "rank": 99,
+        "symbol": "CATTL",
+        "name": "نقل وتجارة المواشي ش.م.ك"
+      },
+      {
+        "rank": 100,
+        "symbol": "AMAR",
+        "name": "عمار للتمويل والإجارة"
+      }
+    ],
+    "unusual_volume": [
+      {
+        "rank": 1,
+        "symbol": "INJAZZAT",
+        "name": "إنجازات للتنمية العقارية"
+      },
+      {
+        "rank": 2,
+        "symbol": "MIDAN",
+        "name": "عيادة الميدان لخدمات طب الفم والاسنان ش.م.ك.ع"
+      },
+      {
+        "rank": 3,
+        "symbol": "ARKAN",
+        "name": "أركان الكويت العقارية"
+      },
+      {
+        "rank": 4,
+        "symbol": "WINSRE",
+        "name": "شركة وربة للتأمين و إعادة التأمين (ش.م.ك.ع)"
+      },
+      {
+        "rank": 5,
+        "symbol": "TAMINV",
+        "name": "التمدين الاستثمارية ش.م.ك"
+      },
+      {
+        "rank": 6,
+        "symbol": "TIJARA",
+        "name": "التجارة والاستثمار العقاري"
+      },
+      {
+        "rank": 7,
+        "symbol": "ABAR",
+        "name": "برقان لحفر الآبار"
+      },
+      {
+        "rank": 8,
+        "symbol": "ABK",
+        "name": "البنك الأهلي الكويتي"
+      },
+      {
+        "rank": 9,
+        "symbol": "KCPC",
+        "name": "الكويتية لبناء المعامل والمقاولات"
+      },
+      {
+        "rank": 10,
+        "symbol": "JTC",
+        "name": "شركة جاسم للنقليات والمناولة ش.م.ك.(عامة)"
+      },
+      {
+        "rank": 11,
+        "symbol": "MENA",
+        "name": "مينا العقارية"
+      },
+      {
+        "rank": 12,
+        "symbol": "JAZEERA",
+        "name": "طيران الجزيرة ش.م.ك.ع"
+      },
+      {
+        "rank": 13,
+        "symbol": "AAYANRE",
+        "name": "أعيان العقارية ش.م.ك.ع"
+      },
+      {
+        "rank": 14,
+        "symbol": "CLEANING",
+        "name": "الشركة الوطنية للتنظيف ش.م.ك.ع"
+      },
+      {
+        "rank": 15,
+        "symbol": "AAYAN",
+        "name": "أعيان للاجارة والاستثمار"
+      },
+      {
+        "rank": 16,
+        "symbol": "MUNSHAAT",
+        "name": "منشآت للمشاريع العقارية"
+      },
+      {
+        "rank": 17,
+        "symbol": "SENERGY",
+        "name": "سنرجي القابضة"
+      },
+      {
+        "rank": 18,
+        "symbol": "ALMANAR",
+        "name": "شركة المنار للتمويل والإجارة ش.م.ك عامة"
+      },
+      {
+        "rank": 19,
+        "symbol": "GIH",
+        "name": "بيت الاستثمار الخليجي"
+      },
+      {
+        "rank": 20,
+        "symbol": "MKHZN",
+        "name": "Agility Public Warehousing Co. K.S.C."
+      },
+      {
+        "rank": 21,
+        "symbol": "ALIMTIAZ",
+        "name": "مجموعة الامتياز الاستثمارية"
+      },
+      {
+        "rank": 22,
+        "symbol": "UPAC",
+        "name": "المشاريع المتحدة للخدمات الجوية"
+      },
+      {
+        "rank": 23,
+        "symbol": "KBT",
+        "name": "مدينة الأعمال الكويتية العقارية"
+      },
+      {
+        "rank": 24,
+        "symbol": "CABLE",
+        "name": "شركة مجموعة الخليج للكابلات والصناعات الكهربائية ش.م.ك.ع"
+      },
+      {
+        "rank": 25,
+        "symbol": "OSOUL",
+        "name": "أصول للاستثمار"
+      },
+      {
+        "rank": 26,
+        "symbol": "GBK",
+        "name": "بنك الخليج ش.م.ك.ع"
+      },
+      {
+        "rank": 27,
+        "symbol": "NINV",
+        "name": "شركة الإستثمارات الوطنية"
+      },
+      {
+        "rank": 28,
+        "symbol": "KFOUC",
+        "name": "السكب الكويتية"
+      },
+      {
+        "rank": 29,
+        "symbol": "ALENMA",
+        "name": "Al-Enmaa Real Estate Company KSCP"
+      },
+      {
+        "rank": 30,
+        "symbol": "BURG",
+        "name": "بنك برقان"
+      },
+      {
+        "rank": 31,
+        "symbol": "MRC",
+        "name": "المعادن والصناعات التحويلية"
+      },
+      {
+        "rank": 32,
+        "symbol": "NBK",
+        "name": "بنك الكويت الوطني"
+      },
+      {
+        "rank": 33,
+        "symbol": "ASC",
+        "name": "الأنظمة الآلية ش.م.ك.ع"
+      },
+      {
+        "rank": 34,
+        "symbol": "ALTIJARIA",
+        "name": "الشركة التجارية العقارية ش.م.ك"
+      },
+      {
+        "rank": 35,
+        "symbol": "ALSAFAT",
+        "name": ".شركة الصفاة للاستثمار ش.م.ك"
+      },
+      {
+        "rank": 36,
+        "symbol": "ALOLA",
+        "name": "الشركة الأولى للإستثمار"
+      },
+      {
+        "rank": 37,
+        "symbol": "ALG",
+        "name": "شركة أولاد علي الغانم للسيارات"
+      },
+      {
+        "rank": 38,
+        "symbol": "SECH",
+        "name": "بيت الأوراق المالية ش.م.ك"
+      },
+      {
+        "rank": 39,
+        "symbol": "AMAR",
+        "name": "عمار للتمويل والإجارة"
+      },
+      {
+        "rank": 40,
+        "symbol": "BEYOUT",
+        "name": "شــركة مجموعــة البيــوت الاســتثمارية القابضــة"
+      },
+      {
+        "rank": 41,
+        "symbol": "ALAQARIA",
+        "name": "الكويتية العقارية القابضة"
+      },
+      {
+        "rank": 42,
+        "symbol": "MANAZEL",
+        "name": "منازل القابضة"
+      },
+      {
+        "rank": 43,
+        "symbol": "ZAIN",
+        "name": "الاتصالات المتنقلة"
+      },
+      {
+        "rank": 44,
+        "symbol": "MAZAYA",
+        "name": "المزايا القابضة"
+      },
+      {
+        "rank": 45,
+        "symbol": "GFC",
+        "name": "الامتيازات الخليجية القابضة"
+      },
+      {
+        "rank": 46,
+        "symbol": "BPCC",
+        "name": "بوبيان للبتروكيماويات ش.م.ك.ع"
+      },
+      {
+        "rank": 47,
+        "symbol": "NRE",
+        "name": "الشركة الوطنية العقارية ش.م.ك"
+      },
+      {
+        "rank": 48,
+        "symbol": "IFAHR",
+        "name": "ايفا للفنادق والمنتجعات"
+      },
+      {
+        "rank": 49,
+        "symbol": "SRE",
+        "name": "الصالحية العقارية"
+      },
+      {
+        "rank": 50,
+        "symbol": "EKTTITAB",
+        "name": "اكتتاب القابضة"
+      },
+      {
+        "rank": 51,
+        "symbol": "BAYANINV",
+        "name": "شركة بيان للاستثمار القابضة"
+      },
+      {
+        "rank": 52,
+        "symbol": "BOUBYAN",
+        "name": "بنك بوبيان"
+      },
+      {
+        "rank": 53,
+        "symbol": "MUBARRAD",
+        "name": "شركة مبرد القابضة (ش.م.ك.ع)"
+      },
+      {
+        "rank": 54,
+        "symbol": "SHIP",
+        "name": "الصناعات الهندسية الثقيلة وبناء السفن"
+      },
+      {
+        "rank": 55,
+        "symbol": "ARGAN",
+        "name": "الأرجان العالمية العقارية"
+      },
+      {
+        "rank": 56,
+        "symbol": "WETHAQ",
+        "name": "وثاق للتأمين التكافلي"
+      },
+      {
+        "rank": 57,
+        "symbol": "INTEGRATED",
+        "name": "الشركة المتكاملة القابضة"
+      },
+      {
+        "rank": 58,
+        "symbol": "WARBACAP",
+        "name": "وربة كابيتال القابضة"
+      },
+      {
+        "rank": 59,
+        "symbol": "TAM",
+        "name": "التمدين العقارية ش.م.ك"
+      },
+      {
+        "rank": 60,
+        "symbol": "KFH",
+        "name": "بيت التمويل الكويتي"
+      },
+      {
+        "rank": 61,
+        "symbol": "CGC",
+        "name": "المجموعة المشتركة للمقاولات ش.م.ك.ع"
+      },
+      {
+        "rank": 62,
+        "symbol": "AZNOULA",
+        "name": "شركة شمال الزور الاولي للطاقة والمياة ش. م. ك. ع"
+      },
+      {
+        "rank": 63,
+        "symbol": "KUWAITRE",
+        "name": "إعادة التأمين الكويتية ش.م.ك.ع"
+      },
+      {
+        "rank": 64,
+        "symbol": "MASHAER",
+        "name": "مشاعر القابضة ش م ك عامة"
+      },
+      {
+        "rank": 65,
+        "symbol": "IFA",
+        "name": "الاستشارات المالية الدولية القابضة"
+      },
+      {
+        "rank": 66,
+        "symbol": "TROLLEY",
+        "name": "Trolley General Trading Company K.S.C.C."
+      },
+      {
+        "rank": 67,
+        "symbol": "MABANEE",
+        "name": "شركة المباني ش.م.ك.ع"
+      },
+      {
+        "rank": 68,
+        "symbol": "MUNTAZAHAT",
+        "name": "الكويتية للمنتزهات"
+      },
+      {
+        "rank": 69,
+        "symbol": "MARKAZ",
+        "name": "المركز المالي الكويتي"
+      },
+      {
+        "rank": 70,
+        "symbol": "FTI",
+        "name": "الأولى للتأمين التكافلي"
+      },
+      {
+        "rank": 71,
+        "symbol": "SANAM",
+        "name": "شركة سنام العقارية"
+      },
+      {
+        "rank": 72,
+        "symbol": "UNICAP",
+        "name": "يونيكاب للاستثمار والتمويل"
+      },
+      {
+        "rank": 73,
+        "symbol": "EMIRATES",
+        "name": "الشركة الكويتية الإماراتية القابضة ( ش.ك.م.ع)"
+      },
+      {
+        "rank": 74,
+        "symbol": "NIND",
+        "name": "مجموعة الصناعات الوطنية القابضة"
+      },
+      {
+        "rank": 75,
+        "symbol": "KFIC",
+        "name": "شركة كفيك للإستثمار (ش.م.ك.ع)"
+      },
+      {
+        "rank": 76,
+        "symbol": "DIGITUS",
+        "name": "شركة حياة للاتصالات"
+      },
+      {
+        "rank": 77,
+        "symbol": "WARBABANK",
+        "name": "بنك وربة"
+      },
+      {
+        "rank": 78,
+        "symbol": "KRE",
+        "name": "عقارات الكويت ش.م.ك"
+      },
+      {
+        "rank": 79,
+        "symbol": "EQUIPMENT",
+        "name": "المعدات القابضة"
+      },
+      {
+        "rank": 80,
+        "symbol": "RASIYAT",
+        "name": "شركة راسيات القابضة ش.م.ك.ع"
+      },
+      {
+        "rank": 81,
+        "symbol": "MADAR",
+        "name": "شركة المدار للاستثمار"
+      },
+      {
+        "rank": 82,
+        "symbol": "KIB",
+        "name": "بنك الكويت الدولي"
+      },
+      {
+        "rank": 83,
+        "symbol": "AQAR",
+        "name": "عقار للاستثمارات العقارية"
+      },
+      {
+        "rank": 84,
+        "symbol": "ARZAN",
+        "name": "مجموعة أرزان المالية للتمويل والاستثمار"
+      },
+      {
+        "rank": 85,
+        "symbol": "FUTUREKID",
+        "name": "طفل المستقبل الترفيهية العقارية"
+      },
+      {
+        "rank": 86,
+        "symbol": "MARAKEZ",
+        "name": "مراكز التجارة العقارية"
+      },
+      {
+        "rank": 87,
+        "symbol": "NICBM",
+        "name": "الصناعات الوطنية ش.م.ك"
+      },
+      {
+        "rank": 88,
+        "symbol": "ALFTAQA",
+        "name": "Action Energy Company K.S.C.C."
+      },
+      {
+        "rank": 89,
+        "symbol": "NIH",
+        "name": "الوطنية الدولية القابضة ش.م.ك"
+      },
+      {
+        "rank": 90,
+        "symbol": "PHC",
+        "name": "Privatization Holding Co. KSCC"
+      },
+      {
+        "rank": 91,
+        "symbol": "OULAFUEL",
+        "name": "الأولى للتسويق المحلي للوقود"
+      },
+      {
+        "rank": 92,
+        "symbol": "ARABREC",
+        "name": "الشركة العربية العقارية ش.م.ك"
+      },
+      {
+        "rank": 93,
+        "symbol": "SOKOUK",
+        "name": "صكوك القابضة"
+      },
+      {
+        "rank": 94,
+        "symbol": "MEZZAN",
+        "name": "ميزان القابضة"
+      },
+      {
+        "rank": 95,
+        "symbol": "NCCI",
+        "name": "الشركة الوطنية الاستهلاكية القابضة"
+      },
+      {
+        "rank": 96,
+        "symbol": "ASIYA",
+        "name": "آسيا كابيتال الاستثمارية"
+      },
+      {
+        "rank": 97,
+        "symbol": "SPEC",
+        "name": "مجموعة الخصوصية القابضة"
+      },
+      {
+        "rank": 98,
+        "symbol": "SOOR",
+        "name": "السور لتسويق الوقود"
+      },
+      {
+        "rank": 99,
+        "symbol": "KPROJ",
+        "name": "مشاريع الكويت القابضة"
+      },
+      {
+        "rank": 100,
+        "symbol": "BOURSA",
+        "name": "شركة بورصة الكويت للأوراق المالية ش م ك ع"
+      }
+    ],
+    "high_dividend": [
+      {
+        "rank": 1,
+        "symbol": "HUMANSOFT",
+        "name": "هيومن سوفت القابضة"
+      },
+      {
+        "rank": 2,
+        "symbol": "KINV",
+        "name": "الشركة الكويتية للاستثمار ش.م.ك.ع"
+      },
+      {
+        "rank": 3,
+        "symbol": "NINV",
+        "name": "شركة الإستثمارات الوطنية"
+      },
+      {
+        "rank": 4,
+        "symbol": "OOREDOO",
+        "name": "الوطنية للاتصالات المتنقلة"
+      },
+      {
+        "rank": 5,
+        "symbol": "WINSRE",
+        "name": "شركة وربة للتأمين و إعادة التأمين (ش.م.ك.ع)"
+      },
+      {
+        "rank": 6,
+        "symbol": "MIDAN",
+        "name": "عيادة الميدان لخدمات طب الفم والاسنان ش.م.ك.ع"
+      },
+      {
+        "rank": 7,
+        "symbol": "FACIL",
+        "name": "التسهيلات التجارية ش.م.ك"
+      },
+      {
+        "rank": 8,
+        "symbol": "CBK",
+        "name": "البنك التجاري الكويتي"
+      },
+      {
+        "rank": 9,
+        "symbol": "BEYOUT",
+        "name": "شــركة مجموعــة البيــوت الاســتثمارية القابضــة"
+      },
+      {
+        "rank": 10,
+        "symbol": "IPG",
+        "name": "المجموعة البترولية المستقلة ش.م.ك.ع"
+      },
+      {
+        "rank": 11,
+        "symbol": "AREEC",
+        "name": "أجيال العقارية الترفيهية"
+      },
+      {
+        "rank": 12,
+        "symbol": "KINS",
+        "name": "الكويت للتأمين ش.م.ك"
+      },
+      {
+        "rank": 13,
+        "symbol": "NAPESCO",
+        "name": "الوطنية للخدمات البترولية"
+      },
+      {
+        "rank": 14,
+        "symbol": "STC",
+        "name": "الاتصالات الكويتية"
+      },
+      {
+        "rank": 15,
+        "symbol": "KCIN",
+        "name": "السينما الكويتية الوطنية"
+      },
+      {
+        "rank": 16,
+        "symbol": "PCEM",
+        "name": "أسمنت بورتلاند كويت"
+      },
+      {
+        "rank": 17,
+        "symbol": "JTC",
+        "name": "شركة جاسم للنقليات والمناولة ش.م.ك.(عامة)"
+      },
+      {
+        "rank": 18,
+        "symbol": "MARKAZ",
+        "name": "المركز المالي الكويتي"
+      },
+      {
+        "rank": 19,
+        "symbol": "TAMINV",
+        "name": "التمدين الاستثمارية ش.م.ك"
+      },
+      {
+        "rank": 20,
+        "symbol": "NOOR",
+        "name": "نور للاستثمار المالي"
+      },
+      {
+        "rank": 21,
+        "symbol": "KUWAITRE",
+        "name": "إعادة التأمين الكويتية ش.م.ك.ع"
+      },
+      {
+        "rank": 22,
+        "symbol": "ALG",
+        "name": "شركة أولاد علي الغانم للسيارات"
+      },
+      {
+        "rank": 23,
+        "symbol": "ALKOUT",
+        "name": "الكوت للمشاريع الصناعية"
+      },
+      {
+        "rank": 24,
+        "symbol": "KAMCO",
+        "name": "كامكو للاستثمار"
+      },
+      {
+        "rank": 25,
+        "symbol": "KCPC",
+        "name": "الكويتية لبناء المعامل والمقاولات"
+      },
+      {
+        "rank": 26,
+        "symbol": "BOURSA",
+        "name": "شركة بورصة الكويت للأوراق المالية ش م ك ع"
+      },
+      {
+        "rank": 27,
+        "symbol": "TAM",
+        "name": "التمدين العقارية ش.م.ك"
+      },
+      {
+        "rank": 28,
+        "symbol": "CABLE",
+        "name": "شركة مجموعة الخليج للكابلات والصناعات الكهربائية ش.م.ك.ع"
+      },
+      {
+        "rank": 29,
+        "symbol": "ALENMA",
+        "name": "Al-Enmaa Real Estate Company KSCP"
+      },
+      {
+        "rank": 30,
+        "symbol": "NICBM",
+        "name": "الصناعات الوطنية ش.م.ك"
+      },
+      {
+        "rank": 31,
+        "symbol": "AINS",
+        "name": "الشركة الأهلية للتأمين ش.م.ك.ع."
+      },
+      {
+        "rank": 32,
+        "symbol": "INJAZZAT",
+        "name": "إنجازات للتنمية العقارية"
+      },
+      {
+        "rank": 33,
+        "symbol": "MEZZAN",
+        "name": "ميزان القابضة"
+      },
+      {
+        "rank": 34,
+        "symbol": "NBK",
+        "name": "بنك الكويت الوطني"
+      },
+      {
+        "rank": 35,
+        "symbol": "SRE",
+        "name": "الصالحية العقارية"
+      },
+      {
+        "rank": 36,
+        "symbol": "MUBARRAD",
+        "name": "شركة مبرد القابضة (ش.م.ك.ع)"
+      },
+      {
+        "rank": 37,
+        "symbol": "ALMANAR",
+        "name": "شركة المنار للتمويل والإجارة ش.م.ك عامة"
+      },
+      {
+        "rank": 38,
+        "symbol": "SHIP",
+        "name": "الصناعات الهندسية الثقيلة وبناء السفن"
+      },
+      {
+        "rank": 39,
+        "symbol": "INTEGRATED",
+        "name": "الشركة المتكاملة القابضة"
+      },
+      {
+        "rank": 40,
+        "symbol": "AZNOULA",
+        "name": "شركة شمال الزور الاولي للطاقة والمياة ش. م. ك. ع"
+      },
+      {
+        "rank": 41,
+        "symbol": "KBT",
+        "name": "مدينة الأعمال الكويتية العقارية"
+      },
+      {
+        "rank": 42,
+        "symbol": "ABK",
+        "name": "البنك الأهلي الكويتي"
+      },
+      {
+        "rank": 43,
+        "symbol": "BPCC",
+        "name": "بوبيان للبتروكيماويات ش.م.ك.ع"
+      },
+      {
+        "rank": 44,
+        "symbol": "CGC",
+        "name": "المجموعة المشتركة للمقاولات ش.م.ك.ع"
+      },
+      {
+        "rank": 45,
+        "symbol": "AAYANRE",
+        "name": "أعيان العقارية ش.م.ك.ع"
+      },
+      {
+        "rank": 46,
+        "symbol": "KFH",
+        "name": "بيت التمويل الكويتي"
+      },
+      {
+        "rank": 47,
+        "symbol": "BURG",
+        "name": "بنك برقان"
+      },
+      {
+        "rank": 48,
+        "symbol": "KIB",
+        "name": "بنك الكويت الدولي"
+      },
+      {
+        "rank": 49,
+        "symbol": "AQAR",
+        "name": "عقار للاستثمارات العقارية"
+      },
+      {
+        "rank": 50,
+        "symbol": "TIJARA",
+        "name": "التجارة والاستثمار العقاري"
+      },
+      {
+        "rank": 51,
+        "symbol": "MUNTAZAHAT",
+        "name": "الكويتية للمنتزهات"
+      },
+      {
+        "rank": 52,
+        "symbol": "SHUAIBA",
+        "name": "Shuaiba Industrial Co. (K.S.C)"
+      },
+      {
+        "rank": 53,
+        "symbol": "AAYAN",
+        "name": "أعيان للاجارة والاستثمار"
+      },
+      {
+        "rank": 54,
+        "symbol": "ALSAFAT",
+        "name": ".شركة الصفاة للاستثمار ش.م.ك"
+      },
+      {
+        "rank": 55,
+        "symbol": "ARKAN",
+        "name": "أركان الكويت العقارية"
+      },
+      {
+        "rank": 56,
+        "symbol": "SOOR",
+        "name": "السور لتسويق الوقود"
+      },
+      {
+        "rank": 57,
+        "symbol": "GBK",
+        "name": "بنك الخليج ش.م.ك.ع"
+      },
+      {
+        "rank": 58,
+        "symbol": "OULAFUEL",
+        "name": "الأولى للتسويق المحلي للوقود"
+      },
+      {
+        "rank": 59,
+        "symbol": "NIND",
+        "name": "مجموعة الصناعات الوطنية القابضة"
+      },
+      {
+        "rank": 60,
+        "symbol": "MUNSHAAT",
+        "name": "منشآت للمشاريع العقارية"
+      },
+      {
+        "rank": 61,
+        "symbol": "MABANEE",
+        "name": "شركة المباني ش.م.ك.ع"
+      },
+      {
+        "rank": 62,
+        "symbol": "KCEM",
+        "name": "أسمنت الكويت ش.م.ك.ع"
+      },
+      {
+        "rank": 63,
+        "symbol": "WARBABANK",
+        "name": "بنك وربة"
+      },
+      {
+        "rank": 64,
+        "symbol": "ALTIJARIA",
+        "name": "الشركة التجارية العقارية ش.م.ك"
+      },
+      {
+        "rank": 65,
+        "symbol": "MKHZN",
+        "name": "Agility Public Warehousing Co. K.S.C."
+      },
+      {
+        "rank": 66,
+        "symbol": "KFOUC",
+        "name": "السكب الكويتية"
+      },
+      {
+        "rank": 67,
+        "symbol": "NIH",
+        "name": "الوطنية الدولية القابضة ش.م.ك"
+      },
+      {
+        "rank": 68,
+        "symbol": "SPEC",
+        "name": "مجموعة الخصوصية القابضة"
+      },
+      {
+        "rank": 69,
+        "symbol": "CLEANING",
+        "name": "الشركة الوطنية للتنظيف ش.م.ك.ع"
+      },
+      {
+        "rank": 70,
+        "symbol": "BOUBYAN",
+        "name": "بنك بوبيان"
+      },
+      {
+        "rank": 71,
+        "symbol": "ARZAN",
+        "name": "مجموعة أرزان المالية للتمويل والاستثمار"
+      }
+    ],
+    "top_losers": [
+      {
+        "rank": 1,
+        "symbol": "TIJARA",
+        "name": "التجارة والاستثمار العقاري"
+      },
+      {
+        "rank": 2,
+        "symbol": "MIDAN",
+        "name": "عيادة الميدان لخدمات طب الفم والاسنان ش.م.ك.ع"
+      },
+      {
+        "rank": 3,
+        "symbol": "EMIRATES",
+        "name": "الشركة الكويتية الإماراتية القابضة ( ش.ك.م.ع)"
+      },
+      {
+        "rank": 4,
+        "symbol": "ALKOUT",
+        "name": "الكوت للمشاريع الصناعية"
+      },
+      {
+        "rank": 5,
+        "symbol": "ARKAN",
+        "name": "أركان الكويت العقارية"
+      },
+      {
+        "rank": 6,
+        "symbol": "KINS",
+        "name": "الكويت للتأمين ش.م.ك"
+      },
+      {
+        "rank": 7,
+        "symbol": "ARABREC",
+        "name": "الشركة العربية العقارية ش.م.ك"
+      },
+      {
+        "rank": 8,
+        "symbol": "GINS",
+        "name": "مجموعة الخليج للتأمين ش.م.ك.ع"
+      },
+      {
+        "rank": 9,
+        "symbol": "GFC",
+        "name": "الامتيازات الخليجية القابضة"
+      },
+      {
+        "rank": 10,
+        "symbol": "MRC",
+        "name": "المعادن والصناعات التحويلية"
+      },
+      {
+        "rank": 11,
+        "symbol": "UNICAP",
+        "name": "يونيكاب للاستثمار والتمويل"
+      },
+      {
+        "rank": 12,
+        "symbol": "MUNSHAAT",
+        "name": "منشآت للمشاريع العقارية"
+      },
+      {
+        "rank": 13,
+        "symbol": "SENERGY",
+        "name": "سنرجي القابضة"
+      },
+      {
+        "rank": 14,
+        "symbol": "WINSRE",
+        "name": "شركة وربة للتأمين و إعادة التأمين (ش.م.ك.ع)"
+      },
+      {
+        "rank": 15,
+        "symbol": "MUBARRAD",
+        "name": "شركة مبرد القابضة (ش.م.ك.ع)"
+      },
+      {
+        "rank": 16,
+        "symbol": "KCEM",
+        "name": "أسمنت الكويت ش.م.ك.ع"
+      },
+      {
+        "rank": 17,
+        "symbol": "UPAC",
+        "name": "المشاريع المتحدة للخدمات الجوية"
+      },
+      {
+        "rank": 18,
+        "symbol": "INJAZZAT",
+        "name": "إنجازات للتنمية العقارية"
+      },
+      {
+        "rank": 19,
+        "symbol": "KCPC",
+        "name": "الكويتية لبناء المعامل والمقاولات"
+      },
+      {
+        "rank": 20,
+        "symbol": "URC",
+        "name": "العقارات المتحدة ش.م.ك"
+      },
+      {
+        "rank": 21,
+        "symbol": "MEZZAN",
+        "name": "ميزان القابضة"
+      },
+      {
+        "rank": 22,
+        "symbol": "SECH",
+        "name": "بيت الأوراق المالية ش.م.ك"
+      },
+      {
+        "rank": 23,
+        "symbol": "ALOLA",
+        "name": "الشركة الأولى للإستثمار"
+      },
+      {
+        "rank": 24,
+        "symbol": "ALAQARIA",
+        "name": "الكويتية العقارية القابضة"
+      },
+      {
+        "rank": 25,
+        "symbol": "AAYANRE",
+        "name": "أعيان العقارية ش.م.ك.ع"
+      },
+      {
+        "rank": 26,
+        "symbol": "THURAYA",
+        "name": "دار الثريا العقارية"
+      },
+      {
+        "rank": 27,
+        "symbol": "FTI",
+        "name": "الأولى للتأمين التكافلي"
+      },
+      {
+        "rank": 28,
+        "symbol": "AQAR",
+        "name": "عقار للاستثمارات العقارية"
+      },
+      {
+        "rank": 29,
+        "symbol": "BEYOUT",
+        "name": "شــركة مجموعــة البيــوت الاســتثمارية القابضــة"
+      },
+      {
+        "rank": 30,
+        "symbol": "EKTTITAB",
+        "name": "اكتتاب القابضة"
+      },
+      {
+        "rank": 31,
+        "symbol": "MADAR",
+        "name": "شركة المدار للاستثمار"
+      },
+      {
+        "rank": 32,
+        "symbol": "AAYAN",
+        "name": "أعيان للاجارة والاستثمار"
+      },
+      {
+        "rank": 33,
+        "symbol": "NCCI",
+        "name": "الشركة الوطنية الاستهلاكية القابضة"
+      },
+      {
+        "rank": 34,
+        "symbol": "JAZEERA",
+        "name": "طيران الجزيرة ش.م.ك.ع"
+      },
+      {
+        "rank": 35,
+        "symbol": "NOOR",
+        "name": "نور للاستثمار المالي"
+      },
+      {
+        "rank": 36,
+        "symbol": "OSOUL",
+        "name": "أصول للاستثمار"
+      },
+      {
+        "rank": 37,
+        "symbol": "MABANEE",
+        "name": "شركة المباني ش.م.ك.ع"
+      },
+      {
+        "rank": 38,
+        "symbol": "NBK",
+        "name": "بنك الكويت الوطني"
+      },
+      {
+        "rank": 39,
+        "symbol": "ACICO",
+        "name": "أسيكو للصناعات"
+      },
+      {
+        "rank": 40,
+        "symbol": "KFOUC",
+        "name": "السكب الكويتية"
+      },
+      {
+        "rank": 41,
+        "symbol": "ALENMA",
+        "name": "Al-Enmaa Real Estate Company KSCP"
+      },
+      {
+        "rank": 42,
+        "symbol": "MARAKEZ",
+        "name": "مراكز التجارة العقارية"
+      },
+      {
+        "rank": 43,
+        "symbol": "SANAM",
+        "name": "شركة سنام العقارية"
+      },
+      {
+        "rank": 44,
+        "symbol": "NINV",
+        "name": "شركة الإستثمارات الوطنية"
+      },
+      {
+        "rank": 45,
+        "symbol": "BOURSA",
+        "name": "شركة بورصة الكويت للأوراق المالية ش م ك ع"
+      },
+      {
+        "rank": 46,
+        "symbol": "CGC",
+        "name": "المجموعة المشتركة للمقاولات ش.م.ك.ع"
+      },
+      {
+        "rank": 47,
+        "symbol": "MANAZEL",
+        "name": "منازل القابضة"
+      },
+      {
+        "rank": 48,
+        "symbol": "ARZAN",
+        "name": "مجموعة أرزان المالية للتمويل والاستثمار"
+      },
+      {
+        "rank": 49,
+        "symbol": "KRE",
+        "name": "عقارات الكويت ش.م.ك"
+      },
+      {
+        "rank": 50,
+        "symbol": "KIB",
+        "name": "بنك الكويت الدولي"
+      },
+      {
+        "rank": 51,
+        "symbol": "OULAFUEL",
+        "name": "الأولى للتسويق المحلي للوقود"
+      },
+      {
+        "rank": 52,
+        "symbol": "ALIMTIAZ",
+        "name": "مجموعة الامتياز الاستثمارية"
+      },
+      {
+        "rank": 53,
+        "symbol": "NIH",
+        "name": "الوطنية الدولية القابضة ش.م.ك"
+      },
+      {
+        "rank": 54,
+        "symbol": "COAST",
+        "name": "الساحل للتنمية والاستثمار"
+      },
+      {
+        "rank": 55,
+        "symbol": "EQUIPMENT",
+        "name": "المعدات القابضة"
+      },
+      {
+        "rank": 56,
+        "symbol": "ALMANAR",
+        "name": "شركة المنار للتمويل والإجارة ش.م.ك عامة"
+      },
+      {
+        "rank": 57,
+        "symbol": "ARGAN",
+        "name": "الأرجان العالمية العقارية"
+      },
+      {
+        "rank": 58,
+        "symbol": "FUTUREKID",
+        "name": "طفل المستقبل الترفيهية العقارية"
+      },
+      {
+        "rank": 59,
+        "symbol": "NIND",
+        "name": "مجموعة الصناعات الوطنية القابضة"
+      },
+      {
+        "rank": 60,
+        "symbol": "MUNTAZAHAT",
+        "name": "الكويتية للمنتزهات"
+      },
+      {
+        "rank": 61,
+        "symbol": "KBT",
+        "name": "مدينة الأعمال الكويتية العقارية"
+      },
+      {
+        "rank": 62,
+        "symbol": "SOKOUK",
+        "name": "صكوك القابضة"
+      },
+      {
+        "rank": 63,
+        "symbol": "ALFTAQA",
+        "name": "Action Energy Company K.S.C.C."
+      },
+      {
+        "rank": 64,
+        "symbol": "MARKAZ",
+        "name": "المركز المالي الكويتي"
+      },
+      {
+        "rank": 65,
+        "symbol": "MASHAER",
+        "name": "مشاعر القابضة ش م ك عامة"
+      },
+      {
+        "rank": 66,
+        "symbol": "AZNOULA",
+        "name": "شركة شمال الزور الاولي للطاقة والمياة ش. م. ك. ع"
+      },
+      {
+        "rank": 67,
+        "symbol": "SOOR",
+        "name": "السور لتسويق الوقود"
+      },
+      {
+        "rank": 68,
+        "symbol": "KFH",
+        "name": "بيت التمويل الكويتي"
+      },
+      {
+        "rank": 69,
+        "symbol": "KPROJ",
+        "name": "مشاريع الكويت القابضة"
+      },
+      {
+        "rank": 70,
+        "symbol": "SHIP",
+        "name": "الصناعات الهندسية الثقيلة وبناء السفن"
+      },
+      {
+        "rank": 71,
+        "symbol": "HUMANSOFT",
+        "name": "هيومن سوفت القابضة"
+      },
+      {
+        "rank": 72,
+        "symbol": "PCEM",
+        "name": "أسمنت بورتلاند كويت"
+      },
+      {
+        "rank": 73,
+        "symbol": "BPCC",
+        "name": "بوبيان للبتروكيماويات ش.م.ك.ع"
+      },
+      {
+        "rank": 74,
+        "symbol": "KFIC",
+        "name": "شركة كفيك للإستثمار (ش.م.ك.ع)"
+      },
+      {
+        "rank": 75,
+        "symbol": "IFA",
+        "name": "الاستشارات المالية الدولية القابضة"
+      },
+      {
+        "rank": 76,
+        "symbol": "KINV",
+        "name": "الشركة الكويتية للاستثمار ش.م.ك.ع"
+      },
+      {
+        "rank": 77,
+        "symbol": "BURG",
+        "name": "بنك برقان"
+      },
+      {
+        "rank": 78,
+        "symbol": "OSOS",
+        "name": "مجموعة أسس القابضة"
+      },
+      {
+        "rank": 79,
+        "symbol": "INTEGRATED",
+        "name": "الشركة المتكاملة القابضة"
+      },
+      {
+        "rank": 80,
+        "symbol": "KAMCO",
+        "name": "كامكو للاستثمار"
+      },
+      {
+        "rank": 81,
+        "symbol": "ASIYA",
+        "name": "آسيا كابيتال الاستثمارية"
+      },
+      {
+        "rank": 82,
+        "symbol": "ABAR",
+        "name": "برقان لحفر الآبار"
+      },
+      {
+        "rank": 83,
+        "symbol": "WARBACAP",
+        "name": "وربة كابيتال القابضة"
+      },
+      {
+        "rank": 84,
+        "symbol": "NICBM",
+        "name": "الصناعات الوطنية ش.م.ك"
+      },
+      {
+        "rank": 85,
+        "symbol": "SPEC",
+        "name": "مجموعة الخصوصية القابضة"
+      },
+      {
+        "rank": 86,
+        "symbol": "ENERGYH",
+        "name": "بيت الطاقة القابضة"
+      },
+      {
+        "rank": 87,
+        "symbol": "WARBABANK",
+        "name": "بنك وربة"
+      },
+      {
+        "rank": 88,
+        "symbol": "SRE",
+        "name": "الصالحية العقارية"
+      },
+      {
+        "rank": 89,
+        "symbol": "BOUBYAN",
+        "name": "بنك بوبيان"
+      }
+    ],
+    "top_gainers": [
+      {
+        "rank": 1,
+        "symbol": "ASC",
+        "name": "الأنظمة الآلية ش.م.ك.ع"
+      },
+      {
+        "rank": 2,
+        "symbol": "KHOT",
+        "name": "الفنادق الكويتية ش.م.ك.ع"
+      },
+      {
+        "rank": 3,
+        "symbol": "ATC",
+        "name": "التقدم التكنولوجي"
+      },
+      {
+        "rank": 4,
+        "symbol": "CATTL",
+        "name": "نقل وتجارة المواشي ش.م.ك"
+      },
+      {
+        "rank": 5,
+        "symbol": "TAMINV",
+        "name": "التمدين الاستثمارية ش.م.ك"
+      },
+      {
+        "rank": 6,
+        "symbol": "CLEANING",
+        "name": "الشركة الوطنية للتنظيف ش.م.ك.ع"
+      },
+      {
+        "rank": 7,
+        "symbol": "PAPCO",
+        "name": "النخيل للإنتاج الزراعي"
+      },
+      {
+        "rank": 8,
+        "symbol": "GIH",
+        "name": "بيت الاستثمار الخليجي"
+      },
+      {
+        "rank": 9,
+        "symbol": "CBK",
+        "name": "البنك التجاري الكويتي"
+      },
+      {
+        "rank": 10,
+        "symbol": "OOREDOO",
+        "name": "الوطنية للاتصالات المتنقلة"
+      },
+      {
+        "rank": 11,
+        "symbol": "AMAR",
+        "name": "عمار للتمويل والإجارة"
+      },
+      {
+        "rank": 12,
+        "symbol": "MENA",
+        "name": "مينا العقارية"
+      },
+      {
+        "rank": 13,
+        "symbol": "KUWAITRE",
+        "name": "إعادة التأمين الكويتية ش.م.ك.ع"
+      },
+      {
+        "rank": 14,
+        "symbol": "SHUAIBA",
+        "name": "Shuaiba Industrial Co. (K.S.C)"
+      },
+      {
+        "rank": 15,
+        "symbol": "KMEFIC",
+        "name": "الكويت والشرق الأوسط للاستثمار المالي"
+      },
+      {
+        "rank": 16,
+        "symbol": "ALDEERA",
+        "name": "الديرة القابضة"
+      },
+      {
+        "rank": 17,
+        "symbol": "ABK",
+        "name": "البنك الأهلي الكويتي"
+      },
+      {
+        "rank": 18,
+        "symbol": "RASIYAT",
+        "name": "شركة راسيات القابضة ش.م.ك.ع"
+      },
+      {
+        "rank": 19,
+        "symbol": "TROLLEY",
+        "name": "Trolley General Trading Company K.S.C.C."
+      },
+      {
+        "rank": 20,
+        "symbol": "DIGITUS",
+        "name": "شركة حياة للاتصالات"
+      },
+      {
+        "rank": 21,
+        "symbol": "JTC",
+        "name": "شركة جاسم للنقليات والمناولة ش.م.ك.(عامة)"
+      },
+      {
+        "rank": 22,
+        "symbol": "BAYANINV",
+        "name": "شركة بيان للاستثمار القابضة"
+      },
+      {
+        "rank": 23,
+        "symbol": "CABLE",
+        "name": "شركة مجموعة الخليج للكابلات والصناعات الكهربائية ش.م.ك.ع"
+      },
+      {
+        "rank": 24,
+        "symbol": "ALG",
+        "name": "شركة أولاد علي الغانم للسيارات"
+      }
+    ]
+  },
+  "قطر": {
+    "most_active": [
+      {
+        "rank": 1,
+        "symbol": "QNBK",
+        "name": "بنك قطر الدولي"
+      },
+      {
+        "rank": 2,
+        "symbol": "IGRD",
+        "name": "استثمار القابضة"
+      },
+      {
+        "rank": 3,
+        "symbol": "ORDS",
+        "name": "OOREDOO"
+      },
+      {
+        "rank": 4,
+        "symbol": "GISS",
+        "name": "الخليج الدولية"
+      },
+      {
+        "rank": 5,
+        "symbol": "MARK",
+        "name": "الريان"
+      },
+      {
+        "rank": 6,
+        "symbol": "QGMD",
+        "name": "الطبية"
+      },
+      {
+        "rank": 7,
+        "symbol": "QFBQ",
+        "name": "الأول"
+      },
+      {
+        "rank": 8,
+        "symbol": "QIBK",
+        "name": "المصرف"
+      },
+      {
+        "rank": 9,
+        "symbol": "BRES",
+        "name": "بروة"
+      },
+      {
+        "rank": 10,
+        "symbol": "BLDN",
+        "name": "Baladna Q.P.S.C"
+      },
+      {
+        "rank": 11,
+        "symbol": "IQCD",
+        "name": "صناعات قطر"
+      },
+      {
+        "rank": 12,
+        "symbol": "CBQK",
+        "name": "التجاري"
+      },
+      {
+        "rank": 13,
+        "symbol": "QAMC",
+        "name": "Qatar Aluminium Manufacturing Company"
+      },
+      {
+        "rank": 14,
+        "symbol": "QEWS",
+        "name": "كهرباء وماء"
+      },
+      {
+        "rank": 15,
+        "symbol": "QFLS",
+        "name": "قطر للوقود"
+      },
+      {
+        "rank": 16,
+        "symbol": "MPHC",
+        "name": "مسيعيد"
+      },
+      {
+        "rank": 17,
+        "symbol": "DUBK",
+        "name": "Dukhan Bank Q.P.S.C."
+      },
+      {
+        "rank": 18,
+        "symbol": "QIIK",
+        "name": "الدولي"
+      },
+      {
+        "rank": 19,
+        "symbol": "QNNS",
+        "name": "الملاحة"
+      },
+      {
+        "rank": 20,
+        "symbol": "MEZA",
+        "name": "Meeza QSTP LLC"
+      },
+      {
+        "rank": 21,
+        "symbol": "DHBK",
+        "name": "بنك الدوحة"
+      },
+      {
+        "rank": 22,
+        "symbol": "VFQS",
+        "name": "فودافون قطر"
+      },
+      {
+        "rank": 23,
+        "symbol": "QATI",
+        "name": "قطر"
+      },
+      {
+        "rank": 24,
+        "symbol": "QGTS",
+        "name": "ناقلات"
+      },
+      {
+        "rank": 25,
+        "symbol": "GWCS",
+        "name": "مخازن"
+      },
+      {
+        "rank": 26,
+        "symbol": "QIGD",
+        "name": "المستثمرين"
+      },
+      {
+        "rank": 27,
+        "symbol": "MCCS",
+        "name": "مجمع المناعي"
+      },
+      {
+        "rank": 28,
+        "symbol": "ZHCD",
+        "name": "زاد"
+      },
+      {
+        "rank": 29,
+        "symbol": "MCGS",
+        "name": "الرعاية"
+      },
+      {
+        "rank": 30,
+        "symbol": "AKHI",
+        "name": "الخليج التكافلي"
+      },
+      {
+        "rank": 31,
+        "symbol": "QISI",
+        "name": "الاسلامية"
+      },
+      {
+        "rank": 32,
+        "symbol": "QNCD",
+        "name": "الاسمنت"
+      },
+      {
+        "rank": 33,
+        "symbol": "MHAR",
+        "name": "Al Mahhar Holding Company QPSC"
+      },
+      {
+        "rank": 34,
+        "symbol": "WDAM",
+        "name": "ودام"
+      },
+      {
+        "rank": 35,
+        "symbol": "MERS",
+        "name": "الميرة"
+      },
+      {
+        "rank": 36,
+        "symbol": "DBIS",
+        "name": "دلالة"
+      },
+      {
+        "rank": 37,
+        "symbol": "QLMI",
+        "name": "QLM Life & Medical Insurance Company QPSC"
+      },
+      {
+        "rank": 38,
+        "symbol": "ABQK",
+        "name": "الاهلي"
+      },
+      {
+        "rank": 39,
+        "symbol": "MKDM",
+        "name": "Mekdam Holding Group Company"
+      },
+      {
+        "rank": 40,
+        "symbol": "QIMD",
+        "name": "التحويلية"
+      },
+      {
+        "rank": 41,
+        "symbol": "IHGS",
+        "name": "الإسلامية القابضة"
+      },
+      {
+        "rank": 42,
+        "symbol": "BEMA",
+        "name": "Damaan Islamic Insurance Company (Beema)"
+      },
+      {
+        "rank": 43,
+        "symbol": "TQES",
+        "name": "Qatar Electronic Systems Co. (Techno Q) QPSC"
+      },
+      {
+        "rank": 44,
+        "symbol": "QGRI",
+        "name": "العامة"
+      },
+      {
+        "rank": 45,
+        "symbol": "DOHI",
+        "name": "الدوحة"
+      },
+      {
+        "rank": 46,
+        "symbol": "QCFS",
+        "name": "السينما"
+      }
+    ],
+    "unusual_volume": [
+      {
+        "rank": 1,
+        "symbol": "QCFS",
+        "name": "السينما"
+      },
+      {
+        "rank": 2,
+        "symbol": "QLMI",
+        "name": "QLM Life & Medical Insurance Company QPSC"
+      },
+      {
+        "rank": 3,
+        "symbol": "QGMD",
+        "name": "الطبية"
+      },
+      {
+        "rank": 4,
+        "symbol": "QNCD",
+        "name": "الاسمنت"
+      },
+      {
+        "rank": 5,
+        "symbol": "MEZA",
+        "name": "Meeza QSTP LLC"
+      },
+      {
+        "rank": 6,
+        "symbol": "CBQK",
+        "name": "التجاري"
+      },
+      {
+        "rank": 7,
+        "symbol": "QFBQ",
+        "name": "الأول"
+      },
+      {
+        "rank": 8,
+        "symbol": "GISS",
+        "name": "الخليج الدولية"
+      },
+      {
+        "rank": 9,
+        "symbol": "QEWS",
+        "name": "كهرباء وماء"
+      },
+      {
+        "rank": 10,
+        "symbol": "BRES",
+        "name": "بروة"
+      },
+      {
+        "rank": 11,
+        "symbol": "MARK",
+        "name": "الريان"
+      },
+      {
+        "rank": 12,
+        "symbol": "QIGD",
+        "name": "المستثمرين"
+      },
+      {
+        "rank": 13,
+        "symbol": "QATI",
+        "name": "قطر"
+      },
+      {
+        "rank": 14,
+        "symbol": "UDCD",
+        "name": "المتحدة للتنمية"
+      },
+      {
+        "rank": 15,
+        "symbol": "ZHCD",
+        "name": "زاد"
+      },
+      {
+        "rank": 16,
+        "symbol": "DUBK",
+        "name": "Dukhan Bank Q.P.S.C."
+      },
+      {
+        "rank": 17,
+        "symbol": "NLCS",
+        "name": "الاجارة"
+      },
+      {
+        "rank": 18,
+        "symbol": "QNBK",
+        "name": "بنك قطر الدولي"
+      },
+      {
+        "rank": 19,
+        "symbol": "QFLS",
+        "name": "قطر للوقود"
+      },
+      {
+        "rank": 20,
+        "symbol": "ORDS",
+        "name": "OOREDOO"
+      },
+      {
+        "rank": 21,
+        "symbol": "IGRD",
+        "name": "استثمار القابضة"
+      },
+      {
+        "rank": 22,
+        "symbol": "MHAR",
+        "name": "Al Mahhar Holding Company QPSC"
+      },
+      {
+        "rank": 23,
+        "symbol": "DHBK",
+        "name": "بنك الدوحة"
+      },
+      {
+        "rank": 24,
+        "symbol": "QIBK",
+        "name": "المصرف"
+      },
+      {
+        "rank": 25,
+        "symbol": "QISI",
+        "name": "الاسلامية"
+      },
+      {
+        "rank": 26,
+        "symbol": "MPHC",
+        "name": "مسيعيد"
+      },
+      {
+        "rank": 27,
+        "symbol": "IQCD",
+        "name": "صناعات قطر"
+      },
+      {
+        "rank": 28,
+        "symbol": "QIMD",
+        "name": "التحويلية"
+      },
+      {
+        "rank": 29,
+        "symbol": "AHCS",
+        "name": "أعمال"
+      },
+      {
+        "rank": 30,
+        "symbol": "QIIK",
+        "name": "الدولي"
+      },
+      {
+        "rank": 31,
+        "symbol": "ERES",
+        "name": "إزدان القابضة"
+      },
+      {
+        "rank": 32,
+        "symbol": "AKHI",
+        "name": "الخليج التكافلي"
+      },
+      {
+        "rank": 33,
+        "symbol": "SIIS",
+        "name": "السلام"
+      },
+      {
+        "rank": 34,
+        "symbol": "MERS",
+        "name": "الميرة"
+      },
+      {
+        "rank": 35,
+        "symbol": "QNNS",
+        "name": "الملاحة"
+      },
+      {
+        "rank": 36,
+        "symbol": "GWCS",
+        "name": "مخازن"
+      },
+      {
+        "rank": 37,
+        "symbol": "MKDM",
+        "name": "Mekdam Holding Group Company"
+      },
+      {
+        "rank": 38,
+        "symbol": "MCGS",
+        "name": "الرعاية"
+      },
+      {
+        "rank": 39,
+        "symbol": "QAMC",
+        "name": "Qatar Aluminium Manufacturing Company"
+      },
+      {
+        "rank": 40,
+        "symbol": "VFQS",
+        "name": "فودافون قطر"
+      },
+      {
+        "rank": 41,
+        "symbol": "QOIS",
+        "name": "قطروعمان"
+      },
+      {
+        "rank": 42,
+        "symbol": "BLDN",
+        "name": "Baladna Q.P.S.C"
+      },
+      {
+        "rank": 43,
+        "symbol": "MCCS",
+        "name": "مجمع المناعي"
+      },
+      {
+        "rank": 44,
+        "symbol": "WDAM",
+        "name": "ودام"
+      },
+      {
+        "rank": 45,
+        "symbol": "QGTS",
+        "name": "ناقلات"
+      },
+      {
+        "rank": 46,
+        "symbol": "MRDS",
+        "name": "مزايا قطر"
+      },
+      {
+        "rank": 47,
+        "symbol": "BEMA",
+        "name": "Damaan Islamic Insurance Company (Beema)"
+      },
+      {
+        "rank": 48,
+        "symbol": "IHGS",
+        "name": "الإسلامية القابضة"
+      },
+      {
+        "rank": 49,
+        "symbol": "ABQK",
+        "name": "الاهلي"
+      },
+      {
+        "rank": 50,
+        "symbol": "QGRI",
+        "name": "العامة"
+      },
+      {
+        "rank": 51,
+        "symbol": "DBIS",
+        "name": "دلالة"
+      },
+      {
+        "rank": 52,
+        "symbol": "TQES",
+        "name": "Qatar Electronic Systems Co. (Techno Q) QPSC"
+      },
+      {
+        "rank": 53,
+        "symbol": "DOHI",
+        "name": "الدوحة"
+      },
+      {
+        "rank": 54,
+        "symbol": "FALH",
+        "name": "Al Faleh Educational Holding Co."
+      }
+    ],
+    "high_dividend": [
+      {
+        "rank": 1,
+        "symbol": "QNCD",
+        "name": "الاسمنت"
+      },
+      {
+        "rank": 2,
+        "symbol": "BRES",
+        "name": "بروة"
+      },
+      {
+        "rank": 3,
+        "symbol": "SIIS",
+        "name": "السلام"
+      },
+      {
+        "rank": 4,
+        "symbol": "QIGD",
+        "name": "المستثمرين"
+      },
+      {
+        "rank": 5,
+        "symbol": "TQES",
+        "name": "Qatar Electronic Systems Co. (Techno Q) QPSC"
+      },
+      {
+        "rank": 6,
+        "symbol": "CBQK",
+        "name": "التجاري"
+      },
+      {
+        "rank": 7,
+        "symbol": "UDCD",
+        "name": "المتحدة للتنمية"
+      },
+      {
+        "rank": 8,
+        "symbol": "IQCD",
+        "name": "صناعات قطر"
+      },
+      {
+        "rank": 9,
+        "symbol": "AHCS",
+        "name": "أعمال"
+      },
+      {
+        "rank": 10,
+        "symbol": "MHAR",
+        "name": "Al Mahhar Holding Company QPSC"
+      },
+      {
+        "rank": 11,
+        "symbol": "QFLS",
+        "name": "قطر للوقود"
+      },
+      {
+        "rank": 12,
+        "symbol": "MKDM",
+        "name": "Mekdam Holding Group Company"
+      },
+      {
+        "rank": 13,
+        "symbol": "QAMC",
+        "name": "Qatar Aluminium Manufacturing Company"
+      },
+      {
+        "rank": 14,
+        "symbol": "QISI",
+        "name": "الاسلامية"
+      },
+      {
+        "rank": 15,
+        "symbol": "ABQK",
+        "name": "الاهلي"
+      },
+      {
+        "rank": 16,
+        "symbol": "DOHI",
+        "name": "الدوحة"
+      },
+      {
+        "rank": 17,
+        "symbol": "QIMD",
+        "name": "التحويلية"
+      },
+      {
+        "rank": 18,
+        "symbol": "QATI",
+        "name": "قطر"
+      },
+      {
+        "rank": 19,
+        "symbol": "ORDS",
+        "name": "OOREDOO"
+      },
+      {
+        "rank": 20,
+        "symbol": "GISS",
+        "name": "الخليج الدولية"
+      },
+      {
+        "rank": 21,
+        "symbol": "MCCS",
+        "name": "مجمع المناعي"
+      },
+      {
+        "rank": 22,
+        "symbol": "MARK",
+        "name": "الريان"
+      },
+      {
+        "rank": 23,
+        "symbol": "NLCS",
+        "name": "الاجارة"
+      },
+      {
+        "rank": 24,
+        "symbol": "QEWS",
+        "name": "كهرباء وماء"
+      },
+      {
+        "rank": 25,
+        "symbol": "ZHCD",
+        "name": "زاد"
+      },
+      {
+        "rank": 26,
+        "symbol": "AKHI",
+        "name": "الخليج التكافلي"
+      },
+      {
+        "rank": 27,
+        "symbol": "DHBK",
+        "name": "بنك الدوحة"
+      },
+      {
+        "rank": 28,
+        "symbol": "DUBK",
+        "name": "Dukhan Bank Q.P.S.C."
+      },
+      {
+        "rank": 29,
+        "symbol": "QIIK",
+        "name": "الدولي"
+      },
+      {
+        "rank": 30,
+        "symbol": "QLMI",
+        "name": "QLM Life & Medical Insurance Company QPSC"
+      },
+      {
+        "rank": 31,
+        "symbol": "BEMA",
+        "name": "Damaan Islamic Insurance Company (Beema)"
+      },
+      {
+        "rank": 32,
+        "symbol": "VFQS",
+        "name": "فودافون قطر"
+      },
+      {
+        "rank": 33,
+        "symbol": "QNNS",
+        "name": "الملاحة"
+      },
+      {
+        "rank": 34,
+        "symbol": "QNBK",
+        "name": "بنك قطر الدولي"
+      },
+      {
+        "rank": 35,
+        "symbol": "QCFS",
+        "name": "السينما"
+      },
+      {
+        "rank": 36,
+        "symbol": "GWCS",
+        "name": "مخازن"
+      },
+      {
+        "rank": 37,
+        "symbol": "QIBK",
+        "name": "المصرف"
+      },
+      {
+        "rank": 38,
+        "symbol": "MCGS",
+        "name": "الرعاية"
+      },
+      {
+        "rank": 39,
+        "symbol": "MPHC",
+        "name": "مسيعيد"
+      },
+      {
+        "rank": 40,
+        "symbol": "QGTS",
+        "name": "ناقلات"
+      },
+      {
+        "rank": 41,
+        "symbol": "MERS",
+        "name": "الميرة"
+      },
+      {
+        "rank": 42,
+        "symbol": "MEZA",
+        "name": "Meeza QSTP LLC"
+      },
+      {
+        "rank": 43,
+        "symbol": "FALH",
+        "name": "Al Faleh Educational Holding Co."
+      },
+      {
+        "rank": 44,
+        "symbol": "QFBQ",
+        "name": "الأول"
+      },
+      {
+        "rank": 45,
+        "symbol": "QGRI",
+        "name": "العامة"
+      },
+      {
+        "rank": 46,
+        "symbol": "IHGS",
+        "name": "الإسلامية القابضة"
+      },
+      {
+        "rank": 47,
+        "symbol": "MFMS",
+        "name": "Mosanada Facilities Management Services Q.P.S.C."
+      }
+    ],
+    "top_losers": [
+      {
+        "rank": 1,
+        "symbol": "DOHI",
+        "name": "الدوحة"
+      },
+      {
+        "rank": 2,
+        "symbol": "GISS",
+        "name": "الخليج الدولية"
+      },
+      {
+        "rank": 3,
+        "symbol": "QATI",
+        "name": "قطر"
+      },
+      {
+        "rank": 4,
+        "symbol": "QAMC",
+        "name": "Qatar Aluminium Manufacturing Company"
+      },
+      {
+        "rank": 5,
+        "symbol": "QLMI",
+        "name": "QLM Life & Medical Insurance Company QPSC"
+      },
+      {
+        "rank": 6,
+        "symbol": "IQCD",
+        "name": "صناعات قطر"
+      },
+      {
+        "rank": 7,
+        "symbol": "IGRD",
+        "name": "استثمار القابضة"
+      },
+      {
+        "rank": 8,
+        "symbol": "QNBK",
+        "name": "بنك قطر الدولي"
+      },
+      {
+        "rank": 9,
+        "symbol": "ZHCD",
+        "name": "زاد"
+      },
+      {
+        "rank": 10,
+        "symbol": "QISI",
+        "name": "الاسلامية"
+      },
+      {
+        "rank": 11,
+        "symbol": "QIBK",
+        "name": "المصرف"
+      },
+      {
+        "rank": 12,
+        "symbol": "QIIK",
+        "name": "الدولي"
+      },
+      {
+        "rank": 13,
+        "symbol": "QNNS",
+        "name": "الملاحة"
+      },
+      {
+        "rank": 14,
+        "symbol": "GWCS",
+        "name": "مخازن"
+      },
+      {
+        "rank": 15,
+        "symbol": "QFBQ",
+        "name": "الأول"
+      },
+      {
+        "rank": 16,
+        "symbol": "BEMA",
+        "name": "Damaan Islamic Insurance Company (Beema)"
+      },
+      {
+        "rank": 17,
+        "symbol": "QGTS",
+        "name": "ناقلات"
+      },
+      {
+        "rank": 18,
+        "symbol": "MPHC",
+        "name": "مسيعيد"
+      },
+      {
+        "rank": 19,
+        "symbol": "MERS",
+        "name": "الميرة"
+      },
+      {
+        "rank": 20,
+        "symbol": "MARK",
+        "name": "الريان"
+      },
+      {
+        "rank": 21,
+        "symbol": "MCGS",
+        "name": "الرعاية"
+      },
+      {
+        "rank": 22,
+        "symbol": "AKHI",
+        "name": "الخليج التكافلي"
+      },
+      {
+        "rank": 23,
+        "symbol": "QGRI",
+        "name": "العامة"
+      },
+      {
+        "rank": 24,
+        "symbol": "ORDS",
+        "name": "OOREDOO"
+      },
+      {
+        "rank": 25,
+        "symbol": "VFQS",
+        "name": "فودافون قطر"
+      },
+      {
+        "rank": 26,
+        "symbol": "BLDN",
+        "name": "Baladna Q.P.S.C"
+      },
+      {
+        "rank": 27,
+        "symbol": "DUBK",
+        "name": "Dukhan Bank Q.P.S.C."
+      },
+      {
+        "rank": 28,
+        "symbol": "MKDM",
+        "name": "Mekdam Holding Group Company"
+      },
+      {
+        "rank": 29,
+        "symbol": "QIGD",
+        "name": "المستثمرين"
+      },
+      {
+        "rank": 30,
+        "symbol": "WDAM",
+        "name": "ودام"
+      },
+      {
+        "rank": 31,
+        "symbol": "QFLS",
+        "name": "قطر للوقود"
+      },
+      {
+        "rank": 32,
+        "symbol": "MHAR",
+        "name": "Al Mahhar Holding Company QPSC"
+      },
+      {
+        "rank": 33,
+        "symbol": "MEZA",
+        "name": "Meeza QSTP LLC"
+      },
+      {
+        "rank": 34,
+        "symbol": "DHBK",
+        "name": "بنك الدوحة"
+      },
+      {
+        "rank": 35,
+        "symbol": "DBIS",
+        "name": "دلالة"
+      },
+      {
+        "rank": 36,
+        "symbol": "QNCD",
+        "name": "الاسمنت"
+      },
+      {
+        "rank": 37,
+        "symbol": "BRES",
+        "name": "بروة"
+      },
+      {
+        "rank": 38,
+        "symbol": "MCCS",
+        "name": "مجمع المناعي"
+      }
+    ],
+    "top_gainers": [
+      {
+        "rank": 1,
+        "symbol": "QCFS",
+        "name": "السينما"
+      },
+      {
+        "rank": 2,
+        "symbol": "ABQK",
+        "name": "الاهلي"
+      },
+      {
+        "rank": 3,
+        "symbol": "QGMD",
+        "name": "الطبية"
+      },
+      {
+        "rank": 4,
+        "symbol": "CBQK",
+        "name": "التجاري"
+      },
+      {
+        "rank": 5,
+        "symbol": "IHGS",
+        "name": "الإسلامية القابضة"
+      },
+      {
+        "rank": 6,
+        "symbol": "TQES",
+        "name": "Qatar Electronic Systems Co. (Techno Q) QPSC"
+      },
+      {
+        "rank": 7,
+        "symbol": "QIMD",
+        "name": "التحويلية"
+      }
+    ]
+  }
+}
