@@ -268,13 +268,18 @@ def send_photo(chat_id: int, photo_path: Path, caption: str, reply_markup: Optio
     """إرسال صورة وشارت عالي الدقة مع التسمية التوضيحية والأزرار التفاعلية."""
     url = f"{TELEGRAM_API}/sendPhoto"
     
-    # CHART-FIX (2026-10-10): caption قصير (تحت 200 حرف — آمن)
-    short_caption = f"📊 شارت سهم {caption.split('—')[0].strip() if '—' in caption else caption[:80]}"
+    # CHART-FIX-v5 (2026-10-10): caption نصي بسيط بدون HTML tags
+    # المشكلة: msg فيه HTML tags (<b>, <code>) ولما بنقصّ بنكسرها → Telegram error 400
+    # الحل: نص بسيط بدون أي HTML
+    ticker_name = caption.split('—')[0].strip() if '—' in caption else caption[:80]
+    # شيل أي HTML tags
+    import re as _re
+    ticker_name = _re.sub(r'<[^>]+>', '', ticker_name)
+    short_caption = f"📊 شارت {ticker_name}"
     
     data = {
         "chat_id": chat_id,
         "caption": short_caption[:200],
-        "parse_mode": "HTML"
     }
     if reply_markup:
         data["reply_markup"] = json.dumps(reply_markup)
