@@ -100,6 +100,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
+  // CHART-FIX (2026-10-10): تبديل بين TradingView والشارت المحلي
+  const [chartMode, setChartMode] = useState<'tradingview' | 'local'>('tradingview');
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
   const [advancedLevels, setAdvancedLevels] = useState(false); // Fib/FVG/OB
   const [extraIndicators, setExtraIndicators] = useState(false); // RSI/MACD
@@ -500,7 +502,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
       {/* ════════════════════════════════════════════════════════════════════════
           §3 — شارت TradingView (القسم الرئيسي — بطل الصفحة)
-          عرض افتراضي نظيف: Price + MA20/50/200 + S/R + Volume
+          CHART-FIX (2026-10-10): إضافة TradingView widget كافتراضي + تبديل للشارت المحلي
       ════════════════════════════════════════════════════════════════════════ */}
       <div className="px-4 py-3">
         {/* شريط أدوات الشارت */}
@@ -509,30 +511,38 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             شارت الأسعار
           </div>
           <div className="flex items-center gap-1.5">
+            {/* CHART-FIX: زر تبديل بين TradingView الأصلي والشارت المحلي */}
             <Button
-              variant={advancedLevels ? 'default' : 'outline'}
+              variant={chartMode === 'tradingview' ? 'default' : 'outline'}
               size="sm"
-              onClick={toggleAdvancedLevels}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', advancedLevels && 'bg-emerald-600 text-white')}
+              onClick={() => setChartMode('tradingview')}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'tradingview' && 'bg-emerald-600 text-white')}
             >
-              <Activity className="w-3 h-3 ml-1" />
-              مستويات متقدمة
+              TradingView
             </Button>
             <Button
-              variant={extraIndicators ? 'default' : 'outline'}
+              variant={chartMode === 'local' ? 'default' : 'outline'}
               size="sm"
-              onClick={toggleExtraIndicators}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', extraIndicators && 'bg-sky-600 text-white')}
+              onClick={() => setChartMode('local')}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'local' && 'bg-emerald-600 text-white')}
             >
-              <Gauge className="w-3 h-3 ml-1" />
-              مؤشرات
+              <Activity className="w-3 h-3 ml-1" />
+              شارت محلي
             </Button>
           </div>
         </div>
 
         {/* الشارت — كبير + نظيف */}
         <div className={cn('rounded-xl overflow-hidden border border-border', isMaximized ? 'h-[600px]' : 'h-[400px] md:h-[500px]')}>
-          {data?.ohlcv && data.ohlcv.length > 0 ? (
+          {chartMode === 'tradingview' ? (
+            /* CHART-FIX: TradingView widget — بيجيب الشموع الحية مباشرة بدون فجوات */
+            <iframe
+              src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(`EGX:${selectedTicker}`)}&interval=D&theme=dark&style=1&timezone=Africa%2FCairo&locale=ar_AE&enable_publishing=false&allow_symbol_change=1&save_image=1&hide_side_toolbar=0&utm_source=invist.m2y.net`}
+              className="w-full h-full border-0"
+              title={`TradingView ${selectedTicker}`}
+              allowFullScreen
+            />
+          ) : data?.ohlcv && data.ohlcv.length > 0 ? (
             <InteractiveChart
               ohlcv={data.ohlcv}
               indicators={data.indicators || {}}
@@ -548,7 +558,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-              لا توجد بيانات شارت متاحة
+              لا توجد بيانات شارت متاحة — استخدم TradingView
             </div>
           )}
         </div>
@@ -556,8 +566,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
       {/* ════════════════════════════════════════════════════════════════════════
           §4 — ملخص خطة الصفقة (Trade Plan Card)
+          CHART-FIX (2026-10-10): إخفاء خطة الشراء الوهمية لو مفيش توقع حقيقي
       ════════════════════════════════════════════════════════════════════════ */}
-      {(entry !== null || target1 !== null || stop !== null) && (
+      {/* CHART-FIX: بس اعرض خطة الصفقة لو فيه إشارة BUY حقيقية (مش null/—) */}
+      {decision?.signal && decision.signal !== '—' && (entry !== null || target1 !== null || stop !== null) && (
         <div className="px-4 py-3 border-t border-border">
           <div className="rounded-xl border border-border bg-muted/30 p-3">
             <div className="flex items-center justify-between mb-2">
