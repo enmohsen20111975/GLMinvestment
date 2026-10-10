@@ -361,9 +361,9 @@ function buildStockInfographicDataFromStock(
       // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ─────────────────
       // شيلنا client-side signal counts — استخدم canonical values فقط.
       // لو unified NULL → 0 (لا fabrication).
-      buy_signals: unifiedData?.canonical?.master_score != null && unifiedData.canonical.master_score >= 60 ? 1 : 0,
-      neutral_signals: unifiedData?.canonical?.master_score == null ? 1 : (unifiedData.canonical.master_score >= 40 && unifiedData.canonical.master_score < 60 ? 1 : 0),
-      sell_signals: unifiedData?.canonical?.master_score != null && unifiedData.canonical.master_score < 40 ? 1 : 0,
+      buy_signals: unifiedData?.canonical?.master_score != null && unifiedData?.canonical?.master_score >= 60 ? 1 : 0,
+      neutral_signals: unifiedData?.canonical?.master_score == null ? 1 : (unifiedData?.canonical?.master_score >= 40 && unifiedData?.canonical?.master_score < 60 ? 1 : 0),
+      sell_signals: unifiedData?.canonical?.master_score != null && unifiedData?.canonical?.master_score < 40 ? 1 : 0,
       sentiment_label: sentimentLabel,
       gauge_score: effectiveScore,
     },
@@ -1474,7 +1474,7 @@ export function StockDetail() {
               <div className="text-[10px] text-muted-foreground">الدرجة الإجمالية</div>
               <div className="font-bold tabular-nums">
                 {unifiedData?.canonical?.master_score != null
-                  ? Math.round(Number(unifiedData.canonical.master_score))
+                  ? Math.round(Number(unifiedData?.canonical?.master_score))
                   : '—'}
               </div>
             </div>
@@ -1486,24 +1486,24 @@ export function StockDetail() {
               <div>
                 <div className="text-[10px] text-muted-foreground">سعر الدخول</div>
                 <div className="font-bold tabular-nums">
-                  {unifiedData.prediction.entry_price != null
-                    ? safeToFixed(unifiedData.prediction.entry_price)
+                  {unifiedData?.prediction?.entry_price != null
+                    ? safeToFixed(unifiedData?.prediction?.entry_price)
                     : '—'}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">السعر المستهدف</div>
                 <div className="font-bold tabular-nums text-emerald-600">
-                  {unifiedData.prediction.target_price != null
-                    ? safeToFixed(unifiedData.prediction.target_price)
+                  {unifiedData?.prediction?.target_price != null
+                    ? safeToFixed(unifiedData?.prediction?.target_price)
                     : '—'}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">وقف الخسارة</div>
                 <div className="font-bold tabular-nums text-red-600">
-                  {unifiedData.prediction.stop_loss != null
-                    ? safeToFixed(unifiedData.prediction.stop_loss)
+                  {unifiedData?.prediction?.stop_loss != null
+                    ? safeToFixed(unifiedData?.prediction?.stop_loss)
                     : '—'}
                 </div>
               </div>

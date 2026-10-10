@@ -126,7 +126,7 @@ function showBrowserNotification(title: string, body: string): void {
       badge: '/favicon.ico',
       tag: `alert-${Date.now()}`,
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Silent fail
   }
 }
@@ -141,7 +141,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   try {
     const permission = await Notification.requestPermission();
     return permission === 'granted';
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -220,7 +220,7 @@ export function useAlerts(
           ? 'bg-emerald-950/80 border-emerald-700'
           : direction === 'down'
             ? 'bg-red-950/80 border-red-700'
-            : 'bg-blue-950/80 border-blue-700';
+            : 'bg-slate-900/80 border-primary';
 
       toast.custom(
         () => (

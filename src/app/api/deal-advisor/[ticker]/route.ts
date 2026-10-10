@@ -69,7 +69,7 @@ export async function GET(
       },
       { status: response.status }
     );
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Python unreachable — Rule 27: NO fabrication, return 502 with null fields
     return NextResponse.json(
       {

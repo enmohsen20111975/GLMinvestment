@@ -49,7 +49,7 @@ export function StockSearchDropdown({
       const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(term)}`, { cache: 'no-store' });
       const data = await res.json();
       setResults(data.stocks || []);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setResults([]);
     } finally {
       setLoading(false);

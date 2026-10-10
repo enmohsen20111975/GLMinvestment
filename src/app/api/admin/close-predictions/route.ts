@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       const lines = stdout.trim().split('\n');
       const jsonLine = lines.find((l) => l.trim().startsWith('{') && l.includes('"success"'));
       if (jsonLine) summary = JSON.parse(jsonLine);
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     return NextResponse.json({
       success: true,

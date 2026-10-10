@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         try {
           const notFoundData = await response.json();
           return NextResponse.json(notFoundData, { status: 404 });
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // fallback
         }
       }

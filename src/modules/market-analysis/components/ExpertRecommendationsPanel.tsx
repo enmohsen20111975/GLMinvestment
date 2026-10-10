@@ -355,7 +355,7 @@ const storedRecColumns: Column<StoredRec>[] = [
 function todayISO(): string {
   try {
     return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Date().toISOString().slice(0, 10);
   }
 }

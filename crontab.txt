@@ -199,3 +199,5 @@
 # CRYPTO + GOLD — 24/7 (بتتداول كل أيام الأسبوع + كل ساعة)
 */5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market CRYPTO --json-only >> /tmp/maker_radar_crypto.log 2>&1
 */5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market GOLD --json-only >> /tmp/maker_radar_gold.log 2>&1
+# Smart Recalculation: تحديث ذكي لـ support/resistance كل ساعة (50 سهم/ساعة = 1200/يوم)
+0 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/smart_recalc.py --rolling 50 >> /tmp/smart_recalc.log 2>&1

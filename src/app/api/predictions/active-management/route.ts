@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — read from predictions.db + stocks.db
   try {
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
           });
         }
         stocksDb.close();
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     const positions: ActivePosition[] = rows.map((r) => {

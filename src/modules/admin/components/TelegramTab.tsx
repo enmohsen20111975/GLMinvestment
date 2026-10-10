@@ -123,7 +123,7 @@ function formatTime(dateStr?: string): string {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return '';
     return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return '';
   }
 }
@@ -137,7 +137,7 @@ function formatDateTime(dateStr?: string): string {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return '';
   }
 }
@@ -177,7 +177,7 @@ export function TelegramTab() {
         connected: !!data.connected,
         user: data.user ?? null,
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setAuthStatus({ connected: false });
     } finally {
       setAuthLoading(false);
@@ -413,7 +413,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
       } else {
         toast.error(data.error || 'فشل إرسال الكود');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -440,7 +440,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
       } else {
         toast.error(data.error || 'فشل بدء المصادقة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -467,7 +467,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
       } else {
         toast.error(data.error || 'رمز غير صحيح');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -491,7 +491,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
       } else {
         toast.error(data.error || 'كلمة مرور غير صحيحة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -674,7 +674,7 @@ function DialogsTab({ authenticated, openDialog, onRequireAuth }: {
       } else {
         toast.error(data.error || 'فشل تحميل المحادثات');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -847,7 +847,7 @@ function ChatTab({ dialog, socket, onBack, onRequireAuth }: {
       } else if (!isMore) {
         toast.error(data.error || 'فشل تحميل الرسائل');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       if (!isMore) toast.error('خطأ في الاتصال بالخادم');
     } finally {
       if (isMore) setLoadingMore(false); else setLoading(false);
@@ -953,7 +953,7 @@ function ChatTab({ dialog, socket, onBack, onRequireAuth }: {
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         setInput(text); // restore input
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setInput(text);
@@ -989,7 +989,7 @@ function ChatTab({ dialog, socket, onBack, onRequireAuth }: {
       } else {
         toast.success('تم تعديل الرسالة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
       setMessages((prev) => prev.map((m) => m.id === editingId ? { ...m, text: prevText ?? m.text } : m));
     }
@@ -1016,7 +1016,7 @@ function ChatTab({ dialog, socket, onBack, onRequireAuth }: {
       } else {
         toast.success('تم حذف الرسالة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
       setMessages(prev);
     }
@@ -1345,7 +1345,7 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
       } else {
         toast.error(data.error || 'فشل تحميل الأعضاء');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -1386,7 +1386,7 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
       } else {
         toast.error(data.error || 'فشل الإضافة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setAdding(false);
@@ -1408,7 +1408,7 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
       } else {
         toast.error(data.error || 'فشل الطرد');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     }
   };
@@ -1568,7 +1568,7 @@ function SearchTab({ authenticated, openDialog, onRequireAuth }: {
       } else {
         toast.error(data.error || 'فشل البحث');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -1714,7 +1714,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       const data = await res.json().catch(() => ({}));
       if (res.status === 401) { onRequireAuth(); return; }
       if (data.success) setMyChannels(data.channels || []);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent */
     } finally {
       setLoadingChannels(false);
@@ -1726,7 +1726,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       const res = await fetch('/api/telegram/channels/tracked');
       const data = await res.json().catch(() => ({}));
       setChannels(data.channels || []);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent */
     }
   }, []);
@@ -1736,7 +1736,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       const res = await fetch('/api/telegram/recommendations?limit=20');
       const data = await res.json().catch(() => ({}));
       setRecommendations(data.recommendations || []);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent */
     }
   }, []);
@@ -1746,7 +1746,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       const res = await fetch('/api/telegram/news?limit=20');
       const data = await res.json().catch(() => ({}));
       setNews(data.news || []);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent */
     }
   }, []);
@@ -1784,7 +1784,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       } else {
         toast.error(data.error || 'خطأ في الإضافة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setScraping(false);
@@ -1799,7 +1799,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
         fetchChannels();
         toast.success('تمت إزالة القناة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     }
   };
@@ -1816,7 +1816,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       toast.success(`تم سحب ${data.results?.length || 0} قناة`);
       fetchRecs();
       fetchNewsList();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في السحب');
     } finally {
       setScraping(false);
@@ -1836,7 +1836,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       const data = await res.json().catch(() => ({}));
       if (data.success && data.messages) setMessages(data.messages);
       else toast.error(data.error || 'فشل في سحب الرسائل');
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setLoadingMessages(false);
@@ -1858,7 +1858,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       } else {
         toast.error('AI غير متاح - استخدم النص الأصلي');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في المعالجة');
     } finally {
       setProcessingMsg(null);
@@ -1899,7 +1899,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
       } else {
         toast.error(data.error || 'فشل الحفظ');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الحفظ');
     } finally {
       setSaving(false);

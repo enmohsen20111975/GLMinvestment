@@ -81,7 +81,7 @@ export async function isVpsApiAvailable(): Promise<boolean> {
     });
     const data = await response.json();
     return data.status === 'ok' || data.status === 'healthy';
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -234,7 +234,7 @@ export async function isEgxpyAvailable(): Promise<boolean> {
     const result = await runTvFetcher(['quote', 'COMI'], 10_000);
     const data = JSON.parse(result);
     return data.success === true;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

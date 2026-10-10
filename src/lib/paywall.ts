@@ -2,6 +2,7 @@ import { verifyAdminRequest } from './admin-auth-server';
 import { isAdmin } from './admin-auth';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { PAID_TIERS } from './subscription-gate';
 
 export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
   // default: free user
@@ -27,11 +28,11 @@ export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
       if (session?.user?.email) {
         const email = session.user.email.toLowerCase().trim();
         const username = ((session.user as Record<string, unknown>).username as string || '').toLowerCase().trim();
+        const tier = (((session.user as Record<string, unknown>).subscription_tier as string) || 'free').toLowerCase();
         const isUserAdmin =
           isAdmin(email, username) ||
           (session.user as Record<string, unknown>).is_admin === true ||
-          (session.user as Record<string, unknown>).subscription_tier === 'admin' ||
-          (session.user as Record<string, unknown>).subscription_tier === 'premium';
+          tier === 'admin';
 
         if (isUserAdmin) {
           return {
@@ -41,15 +42,14 @@ export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
           };
         }
 
-        const tier = ((session.user as Record<string, unknown>).subscription_tier as string) || 'free';
-        const isPremiumTier = tier === 'premium' || tier === 'admin';
+        const isPremiumTier = PAID_TIERS.has(tier);
         return {
           is_premium: isPremiumTier,
-          subscription_tier: isPremiumTier ? 'premium' : tier,
+          subscription_tier: isPremiumTier ? tier : 'free',
           user_id: session.user.id || null,
         };
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Ignore session read error, fallback to /api/auth/me fetch
     }
 
@@ -66,16 +66,16 @@ export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
     if (authRes.ok) {
       const authData = await authRes.json();
       if (authData.success && authData.user) {
-        const tier = authData.user.subscription_tier || 'free';
+        const tier = (authData.user.subscription_tier || 'free').toLowerCase();
         const isUserAdmin =
           authData.user.is_admin === true ||
           tier === 'admin' ||
-          tier === 'premium' ||
           isAdmin(authData.user.email, authData.user.username);
 
+        const isPaid = isUserAdmin || PAID_TIERS.has(tier);
         return {
-          is_premium: isUserAdmin || tier === 'premium' || tier === 'admin',
-          subscription_tier: isUserAdmin ? 'admin' : tier,
+          is_premium: isPaid,
+          subscription_tier: isUserAdmin ? 'admin' : (isPaid ? tier : 'free'),
           user_id: authData.user.id || null,
         };
       }

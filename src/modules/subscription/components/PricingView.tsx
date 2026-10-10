@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { InstapayModal } from './InstapayModal';
 
 interface Plan {
   tier: string;
@@ -59,16 +60,16 @@ const TIER_ICONS: Record<string, React.ReactNode> = {
   vip_pass: <Crown className="w-5 h-5 text-amber-400 animate-bounce" />,
   b2b_starter: <Building2 className="w-5 h-5 text-sky-500" />,
   b2b_pro: <Building2 className="w-5 h-5 text-sky-600" />,
-  b2b_enterprise: <Building2 className="w-5 h-5 text-indigo-600" />,
+  b2b_enterprise: <Building2 className="w-5 h-5 text-emerald-600" />,
 };
 
 const TIER_ACCENT: Record<string, string> = {
   premium: 'border-amber-500/50 bg-gradient-to-br from-amber-500/5 to-orange-500/5 shadow-md shadow-amber-500/5',
   pro: 'border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5 shadow-md shadow-purple-500/5',
   vip_pass: 'border-amber-400/80 bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15 ring-2 ring-amber-400/60 shadow-xl shadow-amber-500/15',
-  b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-blue-500/5',
-  b2b_pro: 'border-sky-600/40 bg-gradient-to-br from-sky-600/5 to-indigo-500/5',
-  b2b_enterprise: 'border-indigo-600/40 bg-gradient-to-br from-indigo-600/5 to-purple-600/5',
+  b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-primary/5',
+  b2b_pro: 'border-sky-600/40 bg-gradient-to-br from-sky-600/5 to-emerald-500/5',
+  b2b_enterprise: 'border-emerald-600/40 bg-gradient-to-br from-emerald-600/5 to-purple-600/5',
 };
 
 export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }: PricingViewProps) {
@@ -77,6 +78,14 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [instapayPlan, setInstapayPlan] = useState<{
+    tier: string;
+    name_ar: string;
+    price: number;
+    currency: string;
+    billingCycle: string;
+    market: string;
+  } | null>(null);
 
   // auto-detect السوق من navigator.language
   useEffect(() => {
@@ -91,7 +100,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
       else if (lang.startsWith('ar-qa')) setMarket('qse');
       else if (lang.startsWith('en-us')) setMarket('us');
       else setMarket('egx');
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setMarket('egx');
     }
   }, [forcedMarket]);
@@ -294,22 +303,45 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                     ))}
                   </ul>
 
-                  <Button
-                    onClick={() => handleCheckout(plan.tier)}
-                    disabled={checkoutLoading === plan.tier}
-                    className={cn(
-                      'w-full gap-2',
-                      popular && 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white',
+                  <div className="space-y-2 mt-auto">
+                    <Button
+                      onClick={() => handleCheckout(plan.tier)}
+                      disabled={checkoutLoading === plan.tier}
+                      className={cn(
+                        'w-full gap-2',
+                        popular && 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white',
+                      )}
+                      variant={popular ? 'default' : 'outline'}
+                    >
+                      {checkoutLoading === plan.tier ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Crown className="w-4 h-4" />
+                      )}
+                      {isB2B ? 'تواصل معنا' : 'الدفع بالبطاقة / كاش'}
+                    </Button>
+
+                    {!isB2B && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          setInstapayPlan({
+                            tier: plan.tier,
+                            name_ar: plan.name_ar,
+                            price: plan.price_local,
+                            currency: plan.currency,
+                            billingCycle: plan.billing_cycle,
+                            market,
+                          })
+                        }
+                        className="w-full gap-2 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
+                      >
+                        <span>⚡</span>
+                        الدفع عبر إنستاباي (InstaPay)
+                      </Button>
                     )}
-                    variant={popular ? 'default' : 'outline'}
-                  >
-                    {checkoutLoading === plan.tier ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Crown className="w-4 h-4" />
-                    )}
-                    {isB2B ? 'تواصل معنا' : 'اشترك الآن'}
-                  </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -327,6 +359,14 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
           </p>
         )}
       </div>
+
+      {instapayPlan && (
+        <InstapayModal
+          open={!!instapayPlan}
+          onOpenChange={(open) => !open && setInstapayPlan(null)}
+          plan={instapayPlan}
+        />
+      )}
     </div>
   );
 }

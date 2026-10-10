@@ -195,7 +195,7 @@ async function tryPython(pathAndQuery: string, timeoutMs = 6000): Promise<any | 
     return data && (data.success === true || data.config || data.personas || data.engines)
       ? data
       : null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -214,7 +214,7 @@ async function tryNext(request: NextRequest, path: string, timeoutMs = 5000): Pr
     clearTimeout(timeout);
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

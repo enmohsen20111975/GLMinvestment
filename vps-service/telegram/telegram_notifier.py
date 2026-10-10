@@ -54,11 +54,16 @@ class TelegramNotifier:
         # TELEGRAM_CHAT_ID أو TELEGRAM_CHANNEL_ID (المالك بعت TELEGRAM_CHANNEL_ID=@Arabian_investment_guide)
         self.chat_id = os.environ.get('TELEGRAM_CHAT_ID', '') or os.environ.get('TELEGRAM_CHANNEL_ID', '')
         self.enabled = bool(self.bot_token and self.chat_id)
+        # DISCLAIMER-FIX (2026-10-09, Team 5): إضافة disclaimer لكل رسالة
+        self.LEGAL_DISCLAIMER = "\n\n━━━━━━━━━━━━━━━━━━━\n⚠️ <i>تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.</i>"
 
     def _send(self, message: str, reply_markup: Optional[Dict[str, Any]] = None, ticker: Optional[str] = None) -> bool:
         """إرسال رسالة للتليجرام مع الأزرار الرسمية (الموقع + البوت + الخدمات + التواصل)."""
         if not self.enabled:
             return False
+        # DISCLAIMER-FIX: ضيف disclaimer لكل رسالة (لو مش موجود بالفعل)
+        if 'ليس نصيحة استثمارية' not in message:
+            message = message + self.LEGAL_DISCLAIMER
         try:
             import urllib.request
             import urllib.parse

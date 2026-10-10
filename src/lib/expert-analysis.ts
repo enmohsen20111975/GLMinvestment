@@ -635,17 +635,22 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
   const stopPct = entry && calcStop ? ((calcStop - entry) / entry) * 100 : null;
 
   // Recommendation
+  // CANONICAL-FIX (2026-10-09, Team 9): لو canonical signal موجود → استخدمه
+  // قبل كده: كنا بنستخدم prediction.signal (ممكن يكون قديم/متناقض)
+  // دلوقتي: الأولوية لـ canonical signal (من unified-stock-data.ts)
   let rec = 'HOLD';
   let rec_ar = 'انتظار';
   if (data.signal) {
     rec = data.signal;
     rec_ar = signalAr(data.signal);
   } else if (data.master_score !== null && data.master_score !== undefined) {
-    if (data.master_score >= 75) { rec = 'STRONG_BUY'; rec_ar = 'شراء قوي'; }
-    else if (data.master_score >= 60) { rec = 'BUY'; rec_ar = 'شراء'; }
-    else if (data.master_score >= 50) { rec = 'ACCUMULATE'; rec_ar = 'تجميع'; }
+    // CANONICAL-FIX: استخدم canonical thresholds (78/65/55/40/25)
+    if (data.master_score >= 78) { rec = 'STRONG_BUY'; rec_ar = 'شراء قوي'; }
+    else if (data.master_score >= 65) { rec = 'BUY'; rec_ar = 'شراء'; }
+    else if (data.master_score >= 55) { rec = 'ACCUMULATE'; rec_ar = 'تجميع'; }
     else if (data.master_score <= 25) { rec = 'STRONG_SELL'; rec_ar = 'بيع قوي'; }
     else if (data.master_score <= 40) { rec = 'SELL'; rec_ar = 'بيع'; }
+    // 41-54 = HOLD (canonical)
   }
 
   const name = data.name_ar || data.name || data.ticker;

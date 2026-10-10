@@ -721,7 +721,7 @@ function determineSignal(ctx: SignalContext): {
     return {
       signal: "ACCUMULATE",
       signalAr: "تجميع",
-      signalColor: "bg-blue-500",
+      signalColor: "bg-primary",
       narrative: `${ctx.gatesPassed}/5 بوابات مكتملة (أقل من المطلوب ${ctx.minGates}) لكن قرب الدعم ونسبة ${ctx.rrRatio.toFixed(2)} مقبولة. يمكن التجميع التدريجي.`,
     };
   }

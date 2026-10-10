@@ -75,7 +75,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
       if (json && json.success) {
         setData(json);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Keep existing data gracefully
     } finally {
       setLoading(false);
@@ -140,7 +140,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
         isDefensive
           ? 'bg-gradient-to-l from-rose-950/20 via-rose-900/10 to-amber-950/20 border-rose-500/40 text-foreground ring-1 ring-rose-500/20'
           : isAggressive
-          ? 'bg-gradient-to-l from-purple-950/20 via-indigo-900/10 to-background border-purple-500/40 text-foreground ring-1 ring-purple-500/20'
+          ? 'bg-gradient-to-l from-purple-950/20 via-emerald-900/10 to-background border-purple-500/40 text-foreground ring-1 ring-purple-500/20'
           : 'bg-gradient-to-l from-emerald-950/15 via-teal-900/10 to-background border-emerald-500/30 text-foreground'
       } ${className}`}
       dir="rtl"

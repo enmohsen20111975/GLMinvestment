@@ -21,7 +21,7 @@ const fs = require('fs');
 const path = require('path');
 
 function dbExists(p: string): boolean {
-  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { return false; }
+  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { /* safe-by-design */ return false; }
 }
 
 async function tryPythonRiskSummary(userId: string | undefined): Promise<any | null> {
@@ -38,7 +38,7 @@ async function tryPythonRiskSummary(userId: string | undefined): Promise<any | n
       }
     }
     return null;
-  } catch { return null; }
+  } catch { /* safe-by-design */ return null; }
 }
 
 const SECTOR_LABELS_AR: Record<string, string> = {
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       try {
         const session = await getSessionUserId();
         userId = session.userId || undefined;
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
     if (!userId) {
       return NextResponse.json(
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
           '18k': live['18k'] || goldPrices['18k'],
         };
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
 
     const sectorTotals: Record<string, { total: number; invested: number; assets: number }> = {};
     let grandTotal = 0;
@@ -151,12 +151,12 @@ export async function GET(request: NextRequest) {
                 const { getLastCleanClose } = await import('@/lib/data-engine-db-sqljs');
                 const clean = await getLastCleanClose(asset.stock_ticker);
                 if (clean.price > 0) livePrice = clean.price;
-              } catch { /* ignore */ }
+              } catch { /* ignore - safe-by-design */ }
             }
             const qty = Number(asset.quantity || 0);
             if (livePrice > 0 && qty > 0) current = livePrice * qty;
           }
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
         if (!sector) sector = 'stocks_other';
       } else if (type === 'gold' || type === 'silver') {
         const weightGrams = Number(asset.weight_grams || 0);

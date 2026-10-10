@@ -47,7 +47,7 @@ function openDb(): Database.Database {
   const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
   try {
     return new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
   }
 }

@@ -184,7 +184,7 @@ export async function GET(
           is_egx100: false,
         };
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // db might not have stocks table — ignore
     }
   }

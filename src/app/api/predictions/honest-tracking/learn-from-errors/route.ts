@@ -10,7 +10,7 @@ function openDb(): Database.Database {
   const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
   try {
     return new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
   }
 }
@@ -153,7 +153,7 @@ function extractLessonsFromDb(): PredictionLesson[] {
     for (const l of lessons) {
       try {
         insert.run(l.type, l.category, l.rule, l.evidence, l.failure_rate, l.sample_size, l.recommendation);
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
     writeDb.close();
   } catch (e) {
@@ -183,7 +183,7 @@ async function handle(req: NextRequest) {
         signal: AbortSignal.timeout(60000),
       });
       pythonResult = await res.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Python engine unavailable — use local lessons only
     }
 

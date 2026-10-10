@@ -42,7 +42,7 @@ function parseAnalysisJson(raw: any): {
       return { technical_explanation: te as Record<string, any>, analysis_obj: obj as Record<string, any> };
     }
     return { technical_explanation: null, analysis_obj: obj as Record<string, any> };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { technical_explanation: null, analysis_obj: null };
   }
 }
@@ -134,18 +134,31 @@ export async function GET(request: NextRequest) {
         ? `AND market IN (${marketVariants.map(() => '?').join(',')})`
         : '';
       const marketParams = marketVariants;
-      // NOTE: schema uses `risk_reward` (not `risk_reward_ratio`) — the validator
-      // below derives `risk_reward_ratio` numerically and merges it into the row.
+      // BUG 1 + BUG 8 FIX (FIX-A-API): the previous SELECT referenced 6 columns
+      // that DON'T EXIST in the predictions table (`entry_price_min`,
+      // `entry_price_max`, `support_level`, `support_level_2`, `resistance_level`,
+      // `resistance_level_2`) → SQLite threw "no such column" → caught silently
+      // → empty array returned. Removed them; the validator below already
+      // null-guards these fields via the `??` operator.
+      //
+      // BUG 8: `holding_days` is always stored as 0 even when outcome_date is
+      // weeks after prediction_date. Compute it on read so existing rows are
+      // fixed without a migration (Rule 27: prefer truth over a stored lie).
       const query = `
         SELECT
           id, ticker, signal, signal_type, prediction_date,
-          entry_price, entry_price_min, entry_price_max,
-          target_price, target_price_2, stop_loss,
-          support_level, support_level_2, resistance_level, resistance_level_2,
+          entry_price, target_price, target_price_2, stop_loss,
           master_score, technical_score, fundamental_score, confidence, persona,
           market, outcome_date, exit_price, actual_return,
-          hit_target, hit_stop, is_correct, holding_days,
-          status, risk_reward, created_at, analysis_json
+          hit_target, hit_stop, is_correct,
+          CASE
+            WHEN holding_days > 0 THEN holding_days
+            WHEN outcome_date IS NOT NULL AND prediction_date IS NOT NULL
+              THEN CAST(julianday(outcome_date) - julianday(prediction_date) AS INTEGER)
+            ELSE 0
+          END AS holding_days,
+          status, risk_reward, created_at, analysis_json,
+          who_is_buying, morning_bell, evidence_count, explosive_label
         FROM predictions
         WHERE ticker = ? ${marketClause}
         ORDER BY prediction_date DESC, id DESC
@@ -183,12 +196,14 @@ export async function GET(request: NextRequest) {
         // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
         // (entry*0.99/1.01, support entry*0.96, target1*1.05). Now NULL when
         // the prediction record lacks these fields.
-        const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : null;
-        const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
-        const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
-        const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
-        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
-        const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
+        // FIX (2026-10-10): entry_price_min/max + support/resistance مش موجودة في الإنتاج
+        // استخدم entry_price + target/stop كـ fallback
+        const entryMin = null;
+        const entryMax = null;
+        const s1 = null;
+        const s2 = null;
+        const r1 = validated.target1 ?? null;
+        const r2 = p.target_price_2 ?? null;
 
         return enrichWithTechnical({
           ...p,
@@ -348,15 +363,9 @@ export async function GET(request: NextRequest) {
         signal_type,
         prediction_date,
         entry_price,
-        entry_price_min,
-        entry_price_max,
         target_price,
         target_price_2,
         stop_loss,
-        support_level,
-        support_level_2,
-        resistance_level,
-        resistance_level_2,
         master_score,
         confidence,
         market,
@@ -366,9 +375,18 @@ export async function GET(request: NextRequest) {
         hit_target,
         hit_stop,
         is_correct,
-        holding_days,
+        CASE
+          WHEN holding_days > 0 THEN holding_days
+          WHEN outcome_date IS NOT NULL AND prediction_date IS NOT NULL
+            THEN CAST(julianday(outcome_date) - julianday(prediction_date) AS INTEGER)
+          ELSE 0
+        END AS holding_days,
         created_at,
-        analysis_json
+        analysis_json,
+        who_is_buying,
+        morning_bell,
+        evidence_count,
+        explosive_label
       FROM predictions
       ${fbMarketClause}
       ORDER BY prediction_date DESC, master_score DESC
@@ -408,15 +426,13 @@ export async function GET(request: NextRequest) {
         target1: p.target_price,
         stop_loss: p.stop_loss,
       });
-      // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
-      // (entry*0.99/1.01, support entry*0.96, target1*1.05). Now NULL when
-      // the prediction record lacks these fields.
-      const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : null;
-      const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
-      const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
-      const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
-      const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
-      const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
+      // FIX (2026-10-10): entry_price_min/max + support/resistance مش موجودة في الإنتاج
+      const entryMin = null;
+      const entryMax = null;
+      const s1 = null;
+      const s2 = null;
+      const r1 = validated.target1 ?? null;
+      const r2 = p.target_price_2 ?? null;
 
       return enrichWithTechnical({
         ...p,

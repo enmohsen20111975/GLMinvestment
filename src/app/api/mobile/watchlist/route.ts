@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
             stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
           }
           stocksDb2.close();
-        } catch {}
+        } catch { /* safe-by-design */ }
 
         // جلب السعر من data_engine.db
         if (stockInfo.ticker) {
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
               stockInfo.price = Number(deRow.price || 0);
               stockInfo.change_percent = Number(deRow.change_percent || 0);
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
 
         return {
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
           view_count: row.view_count,
         };
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // fallback: ارجع البيانات بدون enrichment
       enrichedItems = rows.map((row) => ({
         id: row.id,
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
       if (row) {
         stockId = row.id;
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // إضافة لقائمة المراقبة
     const result = stocksDb.prepare(`

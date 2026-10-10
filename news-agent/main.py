@@ -67,14 +67,9 @@ class NewsAgent:
         self.running  = False
 
         self.collectors = [WebScraper(self.store), RSSCollector(self.store)]
-        if os.getenv('TELEGRAM_WEB_ENABLED', '1').lower() in ('1', 'true', 'yes', 'on'):
-            self.collectors.append(TelegramWebCollector(self.store))
-        telegram_creds = all([
-            os.getenv('TELEGRAM_API_ID'),
-            os.getenv('TELEGRAM_API_HASH'),
-        ])
-        if telegram_creds:
-            self.collectors.insert(0, TelegramCollector(self.store))
+        # Task OWNER-DIRECTIVE: إلغاء التليجرام كمصدر للأخبار تماماً بناءً على طلب المالك الصريح
+        # تم تعطيل جامعي التليجرام نهائياً (TelegramWebCollector و TelegramCollector)
+        log.info("🚫 سحب الأخبار من التليجرام ملغي تماماً بناءً على توجيه المالك")
         if os.getenv('ENABLE_EGYPTIAN_SOURCES', '0').lower() in ('1', 'true', 'yes'):
             self.collectors.append(EgyptianSourcesCollector(self.store))
 
@@ -157,23 +152,56 @@ class NewsAgent:
         self.store.mark_sent(sent_ids)
 
         # 2. نشر على منصات التواصل (تيليجرام) للأخبار المؤثرة وذات الصلة بالأسهم
-        # ─── TELEGRAM-FILTER (Task PHASE-2-COMPLETE-2026-10-07) ────────────────
-        # العميل اشتكى إن الأخبار بتيجي على التليجرام بكميات كبيرة (80+ رسالة في كل مرة).
-        # الفلتر الجديد:
-        #   (أ) EGX فقط: mkt='EGX' (مش news عامة)
-        #   (ب) درجة أهمية عالية: importance >= 70 (مش 50/60)
-        #   (ج) لازم يكون فيه tickers مرتبطة (فيه EGX stock)
-        #   (د) حد أقصى 10 رسائل لكل batch (لو cron كل 5 دقايق = ~80 رسالة/يوم كحد أقصى)
+        # ─── TELEGRAM-FILTER: للأخبار شديدة الأهمية فقط وتجنب الإغراق (Owner Directive) ───
+        # شرط المالك: "وماتوديش لقناة التليجرام أخبار وبوستات كتير غير المهم بس"
+        #   (أ) EGX فقط: mkt='EGX'
+        #   (ب) درجة أهمية عالية جداً: importance >= 85 (أو محفز كبير catalyst + importance >= 80)
+        #   (ج) وجود tickers صريحة مرتبطة بأسهم مصرية
+        #   (د) حد أقصى خبر واحد فقط لكل دفعة (TG_MAX_PER_BATCH = 1)
+        #   (هـ) cooldown: على الأقل 60 دقيقة بين المنشورات وسقف يومي صارم
         social_platforms = [p.strip() for p in os.getenv('SOCIAL_PLATFORMS', 'telegram').split(',') if p.strip()]
         if not social_platforms:
             console.print('[dim]  ↳ النشر الاجتماعي متوقف لهذا الوكيل[/dim]')
             return sent
 
-        # Config للفلتر (env-driven، تقدر تـ override)
-        TG_MIN_IMPORTANCE = int(os.getenv('TG_MIN_IMPORTANCE', '70'))
+        # Config للفلتر الصارم
+        TG_MIN_IMPORTANCE = int(os.getenv('TG_MIN_IMPORTANCE', '85'))
         TG_REQUIRE_TICKERS = os.getenv('TG_REQUIRE_TICKERS', '1').lower() in ('1', 'true', 'yes', 'on')
         TG_MARKET_FILTER = os.getenv('TG_MARKET_FILTER', 'EGX').upper()
-        TG_MAX_PER_BATCH = int(os.getenv('TG_MAX_PER_BATCH', '10'))
+        TG_MAX_PER_BATCH = int(os.getenv('TG_MAX_PER_BATCH', '1'))
+        TG_COOLDOWN_MINUTES = int(os.getenv('TG_COOLDOWN_MINUTES', '60'))
+        TG_MAX_PER_DAY = int(os.getenv('TG_MAX_PER_DAY', '3'))
+
+        state = self._load_state()
+        tg_state = state.setdefault('telegram_publishing', {
+            'last_post': None,
+            'posts_today_date': None,
+            'posts_today_count': 0,
+            'recent_tickers': {}
+        })
+
+        now = datetime.now()
+        today_str = now.strftime('%Y-%m-%d')
+        if tg_state.get('posts_today_date') != today_str:
+            tg_state['posts_today_date'] = today_str
+            tg_state['posts_today_count'] = 0
+            tg_state['recent_tickers'] = {}
+
+        # فحص الحد اليومي للنشر على التليجرام
+        if tg_state.get('posts_today_count', 0) >= TG_MAX_PER_DAY:
+            console.print(f'[dim]  ↳ تم بلوغ الحد اليومي لنشر الأخبار على التليجرام ({tg_state.get("posts_today_count")}/{TG_MAX_PER_DAY}) — تخطّي النشر حفاظاً على نظافة القناة[/dim]')
+            return sent
+
+        # فحص فترة التهدئة الزمنية (cooldown)
+        last_post_iso = tg_state.get('last_post')
+        cooldown_active = False
+        if last_post_iso:
+            try:
+                last_post_time = datetime.fromisoformat(last_post_iso)
+                if (now - last_post_time).total_seconds() < (TG_COOLDOWN_MINUTES * 60):
+                    cooldown_active = True
+            except Exception:
+                pass
 
         # فلترة الأخبار المؤهلة للنشر على التليجرام
         tg_eligible = []
@@ -188,8 +216,12 @@ class NewsAgent:
             importance = raw_analysis.get('importance', item.get('importance', 0))
             is_catalyst = bool(raw_analysis.get('is_catalyst') or item.get('is_catalyst'))
 
-            # (أ) درجة الأهمية: لازم >= TG_MIN_IMPORTANCE (default 70)
-            if importance < TG_MIN_IMPORTANCE:
+            # (أ) درجة الأهمية: للأخبار فائقة الأهمية فقط (>= 85)
+            if importance < TG_MIN_IMPORTANCE and not (is_catalyst and importance >= 80):
+                continue
+
+            # في فترة التهدئة: لا يُنشر إلا حدث استثنائي عاجل جداً (importance >= 95)
+            if cooldown_active and importance < 95:
                 continue
 
             # (ب) لازم يكون فيه tickers مرتبطة (لها صلة بأسهم EGX)
@@ -210,6 +242,22 @@ class NewsAgent:
             if TG_MARKET_FILTER and item_market and item_market != TG_MARKET_FILTER:
                 continue
 
+            # فحص عدم تكرار نفس السهم خلال 3 ساعات
+            recent_tickers = tg_state.get('recent_tickers', {})
+            ticker_spammed = False
+            for tk in item_tickers:
+                last_tk_time = recent_tickers.get(str(tk).upper())
+                if last_tk_time:
+                    try:
+                        tk_dt = datetime.fromisoformat(last_tk_time)
+                        if (now - tk_dt).total_seconds() < (180 * 60):
+                            ticker_spammed = True
+                            break
+                    except Exception:
+                        pass
+            if ticker_spammed and importance < 92:
+                continue
+
             tg_eligible.append({
                 'item': item,
                 'raw_analysis': raw_analysis,
@@ -218,16 +266,15 @@ class NewsAgent:
                 'tickers': item_tickers,
             })
 
-        # (د) حد أقصى 10 رسائل لكل batch — عشان التليجرام ما يغرقش
-        # لو فيه catalyst قوي (importance >= 85) → له الأولوية
+        if not tg_eligible:
+            console.print(f'[dim]  ↳ لا توجد أخبار استثنائية تستدعي التليجرام (EGX + importance≥{TG_MIN_IMPORTANCE} + tickers) — نظافة القناة محفوظة[/dim]')
+            return sent
+
+        # نختار الأعلى أهمية فقط وبحد أقصى TG_MAX_PER_BATCH (افتراضي 1)
         tg_eligible.sort(key=lambda x: -x['importance'])
         tg_to_publish = tg_eligible[:TG_MAX_PER_BATCH]
 
-        if not tg_to_publish:
-            console.print(f'[dim]  ↳ مفيش أخبار جاية معايير التليجرام (EGX + importance≥{TG_MIN_IMPORTANCE} + tickers) — تخطّي النشر[/dim]')
-            return sent
-
-        console.print(f'[cyan]  📢 {len(tg_to_publish)} خبر مؤهل للتليجرام (من {len(valid_items[:sent])} تم تحليلهم) — importance≥{TG_MIN_IMPORTANCE}, market={TG_MARKET_FILTER}[/cyan]')
+        console.print(f'[cyan]  📢 {len(tg_to_publish)} خبر فائق الأهمية مؤهل للتليجرام (importance≥{TG_MIN_IMPORTANCE}, market={TG_MARKET_FILTER})[/cyan]')
 
         for entry in tg_to_publish:
             item = entry['item']
@@ -236,26 +283,30 @@ class NewsAgent:
             item_tickers = entry['tickers']
             importance = entry['importance']
 
-            # (تم استخراج tickers + is_catalyst + importance فوق في الـ filter)
-            # شروط النشر على تيليجرام (كلها اتطمنت في الفلتر فوق، بس نتأكد)
-            should_publish = is_catalyst or importance >= TG_MIN_IMPORTANCE
-            if should_publish:
-                try:
-                    item_to_publish = dict(item)
-                    if is_catalyst:
-                        item_to_publish['is_catalyst'] = True
-                    if item_tickers:
-                        item_to_publish['tickers'] = item_tickers
-                    if raw_analysis.get('summary_ar') and not item_to_publish.get('summary_ar'):
-                        item_to_publish['summary_ar'] = raw_analysis.get('summary_ar')
+            try:
+                item_to_publish = dict(item)
+                if is_catalyst:
+                    item_to_publish['is_catalyst'] = True
+                if item_tickers:
+                    item_to_publish['tickers'] = item_tickers
+                if raw_analysis.get('summary_ar') and not item_to_publish.get('summary_ar'):
+                    item_to_publish['summary_ar'] = raw_analysis.get('summary_ar')
 
-                    links = await self.social.publish(item_to_publish, platforms=social_platforms)
-                    self.store.save_published_links(item['id'], links)
-                    console.print(f"[bold cyan]  📢 [{importance}/100] نُشر على تليجرام: {item.get('title', '')[:40]}...[/bold cyan]")
-                except Exception as e:
-                    log.warning(f"Social publish error for {item['id']}: {e}")
+                links = await self.social.publish(item_to_publish, platforms=social_platforms)
+                self.store.save_published_links(item['id'], links)
 
-        console.print(f"[green]  ✓ تم نشر {len(tg_to_publish)} خبر على التليجرام (من {sent} تم إرسالهم للموقع)[/green]")
+                # تحديث حالة النشر للتليجرام
+                tg_state['last_post'] = now.isoformat()
+                tg_state['posts_today_count'] = tg_state.get('posts_today_count', 0) + 1
+                for tk in item_tickers:
+                    tg_state['recent_tickers'][str(tk).upper()] = now.isoformat()
+                self._save_state(state)
+
+                console.print(f"[bold cyan]  📢 [{importance}/100] نُشر خبر فائق الأهمية على تليجرام: {item.get('title', '')[:40]}...[/bold cyan]")
+            except Exception as e:
+                log.warning(f"Social publish error for {item['id']}: {e}")
+
+        console.print(f"[green]  ✓ تم نشر {len(tg_to_publish)} خبر مهم على التليجرام (من {sent} أرسلوا للموقع)[/green]")
         return sent
 
     def _state_file(self) -> Path:

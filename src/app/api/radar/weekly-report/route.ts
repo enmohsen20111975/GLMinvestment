@@ -51,13 +51,13 @@ function findLatestWeeklyReport(market?: string): string | null {
           if ((data?.market || '').toUpperCase() === market.toUpperCase()) {
             return fp;
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // skip malformed file
         }
       }
     }
     return path.join(OUTPUT_DIR, files[0]);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -69,7 +69,7 @@ function readWeeklyReport(market?: string): { data: any; filePath: string } | nu
   try {
     const data = JSON.parse(readFileSync(fp, 'utf-8'));
     return { data, filePath: fp };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
     child.stderr?.on('data', (chunk) => { stderr += chunk.toString(); });
 
     const timer = setTimeout(() => {
-      try { child.kill('SIGKILL'); } catch { /* ignore */ }
+      try { child.kill('SIGKILL'); } catch { /* ignore - safe-by-design */ }
       warmupInMemory = false;
       resolve(NextResponse.json({
         success: false,

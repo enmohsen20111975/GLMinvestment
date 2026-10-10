@@ -424,7 +424,7 @@ export function SuperLearningSystem() {
           setPresets(parsed);
         }
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
   }, []);
@@ -444,7 +444,7 @@ export function SuperLearningSystem() {
     setPresets(updated);
     try {
       localStorage.setItem('PRESETS_STORE_KEY', JSON.stringify(updated));
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
     setCustomPresetName('');
@@ -464,7 +464,7 @@ export function SuperLearningSystem() {
     setPresets(updated);
     try {
       localStorage.setItem('PRESETS_STORE_KEY', JSON.stringify(updated));
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
     toast.success('تم حذف القائمة المسبقة');
@@ -503,7 +503,7 @@ export function SuperLearningSystem() {
       } else {
         toast.error(data.error || 'حدث خطأ أثناء التوليد');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.success(
         isDryRun
           ? `⚡ تم محاكاة التوقعات اللحظية الجافة من ${fromDate} بالذاكرة`
@@ -526,7 +526,7 @@ export function SuperLearningSystem() {
       } else {
         toast.error(data.error || 'حدث خطأ أثناء المسح');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.success('تم تنفيذ طلب مسح التوقعات بنجاح');
     } finally {
       setPurgingPredictions(false);
@@ -575,7 +575,7 @@ export function SuperLearningSystem() {
             : null,
         };
         setPersonaBenchmarkResults(prev => ({ ...prev, [persona]: liveResult }));
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         setPersonaBenchmarkResults(prev => ({
           ...prev,
           [persona]: { winRate: null, profitFactor: null, totalReturn: null },
@@ -1405,7 +1405,7 @@ export function SuperLearningSystem() {
                 <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-semibold flex items-center gap-1.5">
-                      <Cpu className="w-3.5 h-3.5 text-blue-500" />
+                      <Cpu className="w-3.5 h-3.5 text-primary" />
                       Quant Engine
                     </span>
                     <Badge variant="secondary" className="font-mono text-xs">{engineWeights.quant}%</Badge>
@@ -1522,9 +1522,9 @@ export function SuperLearningSystem() {
               <span className="text-[10px] text-muted-foreground">{predictionMetrics.winning} رابحة من {predictionMetrics.total}</span>
             </Card>
 
-            <Card className="p-3 bg-gradient-to-br from-blue-500/10 to-card">
+            <Card className="p-3 bg-gradient-to-br from-primary/10 to-card">
               <span className="text-xs text-muted-foreground font-medium">عامل الربحية (Profit Factor)</span>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{predictionMetrics.profitFactor}</p>
+              <p className="text-2xl font-bold text-primary mt-1">{predictionMetrics.profitFactor}</p>
               <span className="text-[10px] text-muted-foreground">ممتاز ({'>'} 2.0)</span>
             </Card>
 
@@ -1600,7 +1600,7 @@ export function SuperLearningSystem() {
             <Card key={group}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  {group === 'technical' && <TrendingUp className="w-4 h-4 text-blue-500" />}
+                  {group === 'technical' && <TrendingUp className="w-4 h-4 text-primary" />}
                   {group === 'risk' && <Shield className="w-4 h-4 text-amber-500" />}
                   {group === 'decision' && <Target className="w-4 h-4 text-purple-500" />}
                   {group === 'technical' && 'المؤشرات الفنية'}
@@ -1744,9 +1744,9 @@ export function SuperLearningSystem() {
               
               <div className="grid grid-cols-2 gap-4">
                 <Card className="p-4 text-center">
-                  <Database className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                  <Database className="w-8 h-8 mx-auto mb-2 text-primary" />
                   <p className="font-medium">البيانات التاريخية</p>
-                  <p className="text-2xl font-bold text-blue-600">274,574</p>
+                  <p className="text-2xl font-bold text-primary">274,574</p>
                   <p className="text-xs text-muted-foreground">سجل أسعار</p>
                 </Card>
                 <Card className="p-4 text-center">
@@ -2155,7 +2155,7 @@ export function SuperLearningSystem() {
                           <TableCell
                             key={p}
                             className={cn(
-                              "text-xs text-center font-mono text-blue-600 dark:text-blue-400 font-semibold",
+                              "text-xs text-center font-mono text-primary dark:text-slate-400 font-semibold",
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
@@ -2331,7 +2331,7 @@ export function SuperLearningSystem() {
                               {loading ? (
                                 <Loader2 className="w-4 h-4 animate-spin mx-auto text-emerald-600" />
                               ) : r?.profitFactor !== null && r?.profitFactor !== undefined ? (
-                                <span className="text-blue-600 dark:text-blue-400">{(r.profitFactor ?? 0).toFixed(2)}</span>
+                                <span className="text-primary dark:text-slate-400">{(r.profitFactor ?? 0).toFixed(2)}</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}

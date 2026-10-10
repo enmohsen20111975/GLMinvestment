@@ -811,7 +811,9 @@ def _format_monthly_post(report: Dict, market: str) -> str:
 # SCHEDULER
 # ============================================================================
 def should_run_daily_opportunities(state: Dict) -> bool:
-    """هل يجب تشغيل الفرص اليومية الآن؟ (4:00 م - أيام عمل فقط)"""
+    """هل يجب تشغيل الفرص اليومية الآن؟ (معطل افتراضياً لمنع التكرار مع ملخص اليوم)"""
+    if os.environ.get('AUTO_POST_DAILY_OPPORTUNITIES', '0').lower() not in ('1', 'true', 'yes', 'on'):
+        return False
     now = datetime.now()
     if now.weekday() not in [6, 0, 1, 2, 3]:
         return False
@@ -829,7 +831,9 @@ def should_run_daily_opportunities(state: Dict) -> bool:
 
 
 def should_run_daily(state: Dict) -> bool:
-    """هل يجب تشغيل التقرير اليومي الآن؟"""
+    """هل يجب تشغيل التقرير اليومي الإضافي الآن؟ (معطل افتراضياً لمنع التكرار مع ملخص اليوم)"""
+    if os.environ.get('AUTO_POST_DAILY_PREDICTIONS', '0').lower() not in ('1', 'true', 'yes', 'on'):
+        return False
     now = datetime.now()
     # Check if it's the right hour (and a working day: Sunday-Thursday = 6,0,1,2,3)
     if now.weekday() not in [6, 0, 1, 2, 3]:
@@ -922,7 +926,9 @@ def _is_holiday(now: datetime) -> bool:
 
 
 def should_run_tomorrow_picks(state: Dict) -> bool:
-    """هل يجب تشغيل توقعات الغد الآن؟ (8:30 ص - أيام عمل فقط)"""
+    """هل يجب تشغيل توقعات الغد الآن؟ (معطل افتراضياً لمنع التكرار مع جرس الصباح 9:45)"""
+    if os.environ.get('AUTO_POST_TOMORROW_PICKS', '0').lower() not in ('1', 'true', 'yes', 'on'):
+        return False
     if not REPORTS_ENGINE_AVAILABLE:
         return False
     now = _cairo_now()

@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
       });
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 

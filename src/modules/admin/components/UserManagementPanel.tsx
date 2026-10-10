@@ -108,7 +108,7 @@ function promoBadge(promo: AdminUser['promoCode']) {
           ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40"
           : isPremium
           ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
-          : "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40"
+          : "bg-primary/15 text-primary dark:text-slate-300 border-primary/40"
       )}
     >
       <Ticket className="w-3 h-3 text-current shrink-0" />
@@ -185,7 +185,7 @@ export function UserManagementPanel() {
           setBotStatus(svc.status === 'online' ? 'online' : svc.status === 'offline' ? 'offline' : 'unknown');
           setBotLastSeen(svc.last_seen || null);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // silent — don't spam toast
       }
     }
@@ -375,7 +375,7 @@ export function UserManagementPanel() {
           failCount++;
           failedIds.push(id);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         failCount++;
         failedIds.push(id);
       }
@@ -412,7 +412,7 @@ export function UserManagementPanel() {
         } else {
           failCount++;
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         failCount++;
       }
     }
@@ -442,7 +442,7 @@ export function UserManagementPanel() {
         } else {
           failCount++;
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         failCount++;
       }
     }

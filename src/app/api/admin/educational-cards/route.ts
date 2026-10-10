@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     let body: unknown = {};
     try {
       body = await request.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Empty body is OK (we'll let Python handle validation)
     }
 

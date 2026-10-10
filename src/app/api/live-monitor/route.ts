@@ -114,7 +114,11 @@ async function getPortfolioSummary() {
   }
 }
 
-export async function GET() {
+export async function GET(request?: Request) {
+  // MULTI-MARKET-FIX (2026-10-09, Team 7): إضافة market param بدل hardcoded EGX
+  const url = request ? new URL(request.url) : null;
+  const market = url?.searchParams.get('market') || 'EGX';
+  const marketFilter = market === 'EGX' ? "market IN ('EGX','مصر')" : "market = ?";
   // 1) Try Python first (5s timeout)
   try {
     const res = await fetch(`${PY}/api/live-monitor`, {
@@ -189,13 +193,13 @@ export async function GET() {
           ${hasIsEgx30 ? ', is_egx30' : hasEgx30Member ? ', egx30_member AS is_egx30' : ''}
           ${colNames.has('is_egx100') ? ', is_egx100' : colNames.has('egx100_member') ? ', egx100_member AS is_egx100' : ''}
         FROM stocks
-        WHERE market = 'EGX'
+        WHERE ${marketFilter}
         ORDER BY volume DESC
         LIMIT 30
       `;
-      const stockRows = stocksDb
-        .prepare(selectSql)
-        .all() as Array<Record<string, unknown>>;
+      const stockRows = market === 'EGX'
+        ? stocksDb.prepare(selectSql).all() as Array<Record<string, unknown>>
+        : stocksDb.prepare(selectSql).all(market) as Array<Record<string, unknown>>;
       activeStocks = stockRows.map((r) => {
         // احسب change_percent لو مفيش column
         let chgPct = 0;

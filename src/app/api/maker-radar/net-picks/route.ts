@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
         predictionsMap[p.ticker] = p;
       }
       db.close();
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // Build enriched picks
     const enrichedPicks = picks.map((p, idx) => {

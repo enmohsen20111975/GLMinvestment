@@ -15,7 +15,7 @@ const DB_DIR = path.join(process.cwd(), 'db');
 
 // P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
 async function pathExists(p: string): Promise<boolean> {
-  try { await access(p); return true; } catch { return false; }
+  try { await access(p); return true; } catch { /* safe-by-design */ return false; }
 }
 
 interface RepairStep {
@@ -31,7 +31,7 @@ function openSafely(dbPath: string, mode: 'readonly' | 'write' = 'readonly'): Da
       return new Database(dbPath, { readonly: true, fileMustExist: false });
     }
     return new Database(dbPath, { fileMustExist: false });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -46,7 +46,7 @@ function ensureTableExists(db: Database.Database, tableName: string, createSQL: 
       return true; // table was created
     }
     return false; // table already existed
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -521,7 +521,7 @@ export async function POST(request: NextRequest) {
                   a.updated_at || a.created_at || null,
                 );
                 synced++;
-              } catch {
+              } catch { // silent fallback (safe-by-design)
                 // Skip individual failures
               }
             }

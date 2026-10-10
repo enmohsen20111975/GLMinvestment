@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     let body: { tickers?: string[]; source?: 'mubasher' | 'websearch' | 'auto' };
     try {
       body = await request.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 

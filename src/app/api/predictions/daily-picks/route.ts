@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
       }
       return NextResponse.json(applyPicksPaywall(data, picksLocked, isPaidUser));
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — read from predictions.db
   try {
@@ -179,7 +179,7 @@ export async function GET(req: NextRequest) {
         }
         stocksDb.close();
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     const where: string[] = ['market = ?'];
     const params: unknown[] = [market];

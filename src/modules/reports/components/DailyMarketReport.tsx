@@ -55,6 +55,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAppStore, type MarketType, MARKET_NAMES_AR } from '@/lib/store';
 import {
   fetchDailyReport,
   exportReportToPng,
@@ -68,6 +69,13 @@ import {
 
 interface DailyMarketReportProps {
   printMode?: boolean;
+  /**
+   * Market to render the report for. Defaults to the app store's
+   * `currentMarket` so the report always reflects the user's currently
+   * selected market (Bug FIX-B-FRONTEND / DATA-H10: previously hardcoded
+   * to 'EGX' — TADAWUL/KSE/QSE/US users always saw the EGX report).
+   */
+  market?: MarketType;
 }
 
 /* ========== Loading Skeleton ========== */
@@ -335,7 +343,13 @@ function OfflineState({ reason }: { reason: string }) {
 }
 
 /* ========== Main Component ========== */
-export function DailyMarketReport({ printMode = false }: DailyMarketReportProps) {
+export function DailyMarketReport({ printMode = false, market }: DailyMarketReportProps) {
+  // Default to the app store's currently-selected market when the prop is
+  // omitted. Previously this was hardcoded to 'EGX' which caused
+  // TADAWUL/KSE/QSE/US users to always see the EGX report (Bug DATA-H10).
+  const storeMarket = useAppStore((s) => s.currentMarket);
+  const activeMarket: MarketType = market ?? storeMarket ?? 'EGX';
+
   const [report, setReport] = useState<DailyReportPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [exportingPng, setExportingPng] = useState(false);
@@ -344,9 +358,9 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchDailyReport({ market: 'EGX' });
+      const data = await fetchDailyReport({ market: activeMarket });
       setReport(data);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setReport({
         success: false,
         skipped: true,
@@ -355,7 +369,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeMarket]);
 
   useEffect(() => {
     fetchData();
@@ -417,8 +431,9 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
       {/* Header */}
       <ReportHeader
         title="التقرير اليومي للسوق"
-        subtitle="Daily Market Summary — EGX"
+        subtitle={`${MARKET_NAMES_AR[activeMarket]} · Daily Market Summary — ${activeMarket}`}
         dateStr={dateStr}
+        market={activeMarket}
       />
 
       {/* Legal Disclaimer */}

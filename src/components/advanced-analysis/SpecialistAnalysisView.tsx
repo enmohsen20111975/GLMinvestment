@@ -80,6 +80,7 @@ import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 // الحل: استيراد classifyAccumulation من canonical-signal.ts
 import { classifyAccumulation } from '@/lib/canonical-signal';
 import { StockPublisher } from '@/modules/publishing/components/StockPublisher';
+import { StockSearchSelector } from '@/components/shared/StockSearchSelector';
 
 // ============================================================================
 // TYPES — Rule 67: every field optional because engines may fail independently.
@@ -2011,11 +2012,11 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         )}
       </div>
 
-      {data.errors.length > 0 && (
+      {data?.errors?.length ? (
         <p className="text-xs text-muted-foreground mt-3 italic">
           ⚠ تحذيرات المحركات: {data.errors.join('، ')}
         </p>
-      )}
+      ) : null}
     </SectionCard>
   );
 }
@@ -2600,12 +2601,12 @@ export function SpecialistAnalysisView() {
               computed_at: new Date().toISOString(),
             } as FootprintData);
           }
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       }
 
       // TERTIARY: predictions
       if (predRes.status === 'fulfilled') {
-        try { setPredictions(await predRes.value.json()); } catch { /* ignore */ }
+        try { setPredictions(await predRes.value.json()); } catch { /* ignore - safe-by-design */ }
       }
 
       // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
@@ -2613,14 +2614,14 @@ export function SpecialistAnalysisView() {
       // الـ unified API بيوفر كل القيم المطلوبة في مكان واحد.
 
       if (shariaRes.status === 'fulfilled') {
-        try { setSharia(await shariaRes.value.json()); } catch { /* ignore */ }
+        try { setSharia(await shariaRes.value.json()); } catch { /* ignore - safe-by-design */ }
       }
       // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — best-effort unified fetch.
       if (unifiedRes.status === 'fulfilled') {
         try {
           const u = await unifiedRes.value.json();
           if (u?.success) setUnified(u);
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال بالخادم');
@@ -2695,23 +2696,15 @@ export function SpecialistAnalysisView() {
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-2">
-            <select
+            <StockSearchSelector
               value={ticker}
-              onChange={(e) => {
-                const val = e.target.value;
+              onSelectStock={(val) => {
                 setTicker(val);
-                if (val) fetchAnalysis(val);
+                fetchAnalysis(val);
               }}
-              disabled={loading}
-              className="flex-1 px-3 sm:px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-background text-foreground text-sm sm:text-base min-w-0"
-            >
-              <option value="">اختر سهماً من {MARKET_NAMES_AR[currentMarket] || currentMarket}...</option>
-              {stocks.map((stock) => (
-                <option key={stock.ticker} value={stock.ticker}>
-                  {stock.ticker} {stock.name_ar ? `- ${stock.name_ar}` : stock.name ? `- ${stock.name}` : ''}
-                </option>
-              ))}
-            </select>
+              placeholder={`ابحث بالرمز أو الاسم العربي أو الإنجليزي...`}
+              buttonClassName="flex-1 justify-start font-normal"
+            />
             <Button onClick={handleSearch} disabled={loading || !ticker} className="flex-shrink-0 gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               <span>تحليل</span>

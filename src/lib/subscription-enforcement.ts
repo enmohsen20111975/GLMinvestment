@@ -122,7 +122,7 @@ async function openStocksDbReadonly(): Promise<{
     const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
     return {
       count: 0, // sentinel — actual count returned by caller
-      close: () => { try { db.close(); } catch { /* ignore */ } },
+      close: () => { try { db.close(); } catch { /* ignore - safe-by-design */ } },
     };
   } catch (err) {
     console.warn('[subscription-enforcement] openStocksDbReadonly: better-sqlite3 unavailable:', err);
@@ -165,7 +165,7 @@ export async function enforceWatchlistLimit(userId: string | null): Promise<void
         throw new EnforcementError('WATCHLIST_LIMIT', tier, limit, currentCount);
       }
     } finally {
-      try { db.close(); } catch { /* ignore */ }
+      try { db.close(); } catch { /* ignore - safe-by-design */ }
     }
   } catch (err) {
     if (err instanceof EnforcementError) throw err;
@@ -246,7 +246,7 @@ export async function enforceAlertLimit(userId: string | null): Promise<void> {
         throw new EnforcementError('ALERT_LIMIT', tier, limit, currentCount);
       }
     } finally {
-      try { db.close(); } catch { /* ignore */ }
+      try { db.close(); } catch { /* ignore - safe-by-design */ }
     }
   } catch (err) {
     if (err instanceof EnforcementError) throw err;

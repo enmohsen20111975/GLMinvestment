@@ -76,7 +76,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             });
             continue;
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           /* file not found */
         }
         allCached = false;
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             if (skipBtn) (skipBtn as HTMLElement).click();
           });
           await page.waitForTimeout(600);
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           /* ignore */
         }
 

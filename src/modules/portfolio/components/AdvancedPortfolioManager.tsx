@@ -301,7 +301,7 @@ export function AdvancedPortfolioManager() {
                     تحليلات
                   </h4>
                   {portfolioState.recommendations.map((rec: string, i: number) => (
-                    <div key={i} className="p-2 bg-blue-50 dark:bg-teal-900/20 rounded text-sm">
+                    <div key={i} className="p-2 bg-slate-50 dark:bg-teal-900/20 rounded text-sm">
                       {rec}
                     </div>
                   ))}

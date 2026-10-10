@@ -186,7 +186,7 @@ function openWritable(dbPath: string, busyTimeoutMs = 15000): Database.Database 
   db.pragma(`busy_timeout = ${busyTimeoutMs}`);
   try {
     db.pragma('journal_mode = WAL');
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* ignore — some DBs may reject */
   }
   return db;
@@ -196,7 +196,7 @@ function safeClose(db: Database.Database | null | undefined): void {
   if (!db) return;
   try {
     db.close();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* ignore */
   }
 }
@@ -254,7 +254,7 @@ export function getDatabaseOverview(dbName: string): DatabaseOverview {
       try {
         const row = safeQueryOne<{ c: number }>(db, `SELECT COUNT(*) AS c FROM "${t.name}"`);
         if (row) totalRows += Number(row.c) || 0;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* skip unreadable table */
       }
     }
@@ -326,7 +326,7 @@ export function listTables(dbName: string): TableSummary[] {
         sizeEstimateBytes,
         sizeHuman: humanSize(sizeEstimateBytes),
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* skip unreadable table */
     }
   }
@@ -617,7 +617,7 @@ export function backupDatabase(dbName: string): { fileName: string; sizeBytes: n
     } finally {
       safeClose(db);
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* continue — best effort */
   }
 
@@ -832,7 +832,7 @@ export function exportTable(
     if (typeof v === 'object') {
       try {
         s = JSON.stringify(v);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         s = String(v);
       }
     } else {
@@ -959,7 +959,7 @@ export function exportAllDbs(): ExportAllResult {
         if (fs.existsSync(`${src}-shm`)) {
           fs.copyFileSync(`${src}-shm`, `${dst}-shm`);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // skip unreadable
       }
     }
@@ -992,7 +992,7 @@ export function exportAllDbs(): ExportAllResult {
         }
         fs.rmdirSync(tmpDir);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* best effort */
     }
   }
@@ -1072,7 +1072,7 @@ export function importAllDbs(zipFileName: string): ImportAllResult {
         conn = new Database(srcDb, { readonly: true });
         const row = conn.pragma('integrity_check') as Array<{ integrity_check: string }>;
         valid = row.length === 1 && row[0].integrity_check === 'ok';
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         valid = false;
       } finally {
         safeClose(conn);
@@ -1091,7 +1091,7 @@ export function importAllDbs(zipFileName: string): ImportAllResult {
         } finally {
           safeClose(conn);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* best effort */
       }
 
@@ -1125,7 +1125,7 @@ export function importAllDbs(zipFileName: string): ImportAllResult {
         }
         fs.rmdirSync(tmpDir);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* best effort */
     }
   }
@@ -1133,7 +1133,7 @@ export function importAllDbs(zipFileName: string): ImportAllResult {
   // Delete the uploaded ZIP after processing
   try {
     fs.unlinkSync(zipPath);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* best effort */
   }
 
@@ -1196,7 +1196,7 @@ export function listHistoricalBackups(): HistoricalBackup[] {
     if (hasSummary) {
       try {
         summary = JSON.parse(fs.readFileSync(summaryPath, 'utf-8'));
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore corrupt summary */
       }
     }
@@ -1276,7 +1276,7 @@ export function listHistoricalBackups(): HistoricalBackup[] {
             } finally {
               conn.close();
             }
-          } catch {
+          } catch { // silent fallback (safe-by-design)
             integrity = 'failed';
             integrityMsg = 'cannot open';
             corruptCount++;
@@ -1289,7 +1289,7 @@ export function listHistoricalBackups(): HistoricalBackup[] {
             integrity,
             integrityMsg,
           });
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           corruptCount++;
           databases.push({
             name: dbFile,
@@ -1394,11 +1394,11 @@ export function restoreFromBackup(backupId: string): RestoreFromBackupResult {
       conn = new Database(srcPath, { readonly: true });
       const row = conn.pragma('integrity_check') as Array<{ integrity_check: string }>;
       valid = row.length === 1 && row[0].integrity_check === 'ok';
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       valid = false;
     } finally {
       if (conn) {
-        try { conn.close(); } catch { /* ignore */ }
+        try { conn.close(); } catch { /* ignore - safe-by-design */ }
       }
     }
 

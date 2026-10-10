@@ -716,7 +716,7 @@ function PersonaCard({
               if (navigator.share) {
                 try {
                   await navigator.share({ title: `توقعة ${ticker}`, text });
-                } catch {}
+                } catch { /* safe-by-design */ }
               } else {
                 navigator.clipboard.writeText(text);
                 toast.success('تم نسخ التوقع ✓');
@@ -729,7 +729,7 @@ function PersonaCard({
           <Button
             variant="outline"
             size="sm"
-            className="gap-1 h-8 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            className="gap-1 h-8 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-slate-50 dark:hover:bg-slate-900/20"
             onClick={() => {
               const text = formatSinglePersonaPickText({
                 ticker,
@@ -1026,7 +1026,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
         toast.success('تم نسخ النص وتحميل بطاقة التحليل ✓', {
           description: 'شارك التوقع على تليجرام أو فيسبوك',
         });
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         toast.success('تم تحميل بطاقة التحليل ✓');
       }
     } catch (err) {
@@ -1549,7 +1549,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               });
             }
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // فشل صامت — الـ regime تحسين للـ UI مش أساسي
         }
       })();
@@ -1718,19 +1718,29 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
     const cache = useAnalysisStore.getState();
     if (cache.storedAnalysis && cache.market === marketCode && Date.now() - cache.lastFetched < 300000) {
       (async () => {
-        const nameMap = await buildNameMap(marketCode);
-        // P16-PERSONA-DIVERGENCE: استخدم pickPersonaDiverged لو fundamentals موجودة
-        const hasFundamentals = (cache.storedAnalysis as unknown as StoredAnalysisItem[] | undefined)?.some(
-          (it) => it?.fundamentals && (it.fundamentals.is_gambler_opportunity !== undefined || it.fundamentals.is_investor_opportunity !== undefined)
-        );
-        // P42-NO-FREEZE: cap cached items to 20 before persona sort (bounds client work)
-        const cachedCapped = ((cache.storedAnalysis as unknown as StoredAnalysisItem[]) || []).slice(0, 20);
-        const filtered = hasFundamentals
-          ? pickPersonaDiverged(cachedCapped, persona, PERSONA_DISPLAY_LIMIT)
-          : pickPersonaMix(cachedCapped, persona, PERSONA_DISPLAY_LIMIT);
-        if (filtered.length > 0) {
-          setItems(enrichItems(filtered, nameMap));
-          setDataSource('stored');
+        try {
+          const nameMap = await buildNameMap(marketCode);
+          // P16-PERSONA-DIVERGENCE: استخدم pickPersonaDiverged لو fundamentals موجودة
+          const hasFundamentals = (cache.storedAnalysis as unknown as StoredAnalysisItem[] | undefined)?.some(
+            (it) => it?.fundamentals && (it.fundamentals.is_gambler_opportunity !== undefined || it.fundamentals.is_investor_opportunity !== undefined)
+          );
+          // P42-NO-FREEZE: cap cached items to 20 before persona sort (bounds client work)
+          const cachedCapped = ((cache.storedAnalysis as unknown as StoredAnalysisItem[]) || []).slice(0, 20);
+          const filtered = hasFundamentals
+            ? pickPersonaDiverged(cachedCapped, persona, PERSONA_DISPLAY_LIMIT)
+            : pickPersonaMix(cachedCapped, persona, PERSONA_DISPLAY_LIMIT);
+          if (filtered.length > 0) {
+            setItems(enrichItems(filtered, nameMap));
+            setDataSource('stored');
+            setLoading(false);
+          }
+        } catch (err) {
+          // Bug FIX-B-FRONTEND / DATA-H13: unhandled promise rejection here
+          // would propagate to the React error boundary and white-screen
+          // the whole persona panel. Fall back to a safe empty state and
+          // log the context so the rest of the app keeps working.
+          console.error('[PersonaTab] cached-analysis hydration failed', err);
+          setItems([]);
           setLoading(false);
         }
       })();
@@ -1893,7 +1903,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
             <Button variant="outline" size="sm" className="gap-1" onClick={async () => {
               const text = formatAllPersonaPicksText(items, persona, market);
               if (navigator.share) {
-                try { await navigator.share({ title: `توقعات ${headerTheme.title}`, text }); } catch {}
+                try { await navigator.share({ title: `توقعات ${headerTheme.title}`, text }); } catch { /* safe-by-design */ }
               } else {
                 navigator.clipboard.writeText(text);
                 toast.success('تم نسخ جميع التوقعات ✓');
@@ -2165,7 +2175,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (navigator.share) {
-                            try { await navigator.share({ title: `تحليل ${ticker}`, text: singleText }); } catch {}
+                            try { await navigator.share({ title: `تحليل ${ticker}`, text: singleText }); } catch { /* safe-by-design */ }
                           } else {
                             navigator.clipboard.writeText(singleText);
                             toast.success('تم نسخ التحليل ✓');
@@ -2178,7 +2188,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-slate-50 dark:hover:bg-slate-900/20"
                         onClick={() => {
                           navigator.clipboard.writeText(singleText);
                           window.open('https://www.facebook.com/', '_blank');

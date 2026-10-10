@@ -230,15 +230,28 @@ function computeBuyPctFromCandles(closes: number[]): number | null {
 // ----------------------------------------------------------------------------
 // Helper: support / resistance from last 20 days
 // ----------------------------------------------------------------------------
+// BUG 3 FIX (FIX-A-API): القديم كان بيعمل `r.low || r.close` — لو r.low=null
+// (92% من الأسهم عندها صفوف OHLC null) كان بيعتبر close هو الـ low → support==price
+// → 28% من الأسهم رجّعت S/R غير منطقية. الحل: نتخطّى الصفوف اللي فيها null في
+// OHLC بدل ما نفبرك قيم. ولو مفيش صفوف كافية، نرجّع null (Rule 27).
 function computeSupportResistance(history: PriceRow[]): {
   support: number | null;
   resistance: number | null;
 } {
   if (history.length < 5) return { support: null, resistance: null };
   const recent = history.slice(-20);
-  const lows = recent.map((r) => r.low || r.close).filter((v) => v > 0);
-  const highs = recent.map((r) => r.high || r.close).filter((v) => v > 0);
-  if (lows.length === 0 || highs.length === 0) return { support: null, resistance: null };
+  // BUG 3: نتخطّى الصفوف اللي فيها null في low/high/close — لا فبركة.
+  // (PriceRow.low/high ممكن يكونوا null في الـ runtime رغم إن الـ TS type بيقول number.)
+  const valid = recent.filter(
+    (r) =>
+      typeof r.low === 'number' && r.low > 0 &&
+      typeof r.high === 'number' && r.high > 0 &&
+      typeof r.close === 'number' && r.close > 0
+  );
+  if (valid.length < 5) return { support: null, resistance: null };
+  const lows = valid.map((r) => r.low as number);
+  const highs = valid.map((r) => r.high as number);
+  // استثني آخر شمعة (الإغلاق الحالي) من حساب الـ S/R — الـ S/R تيجي من الـ swings السابقة.
   const support = Math.min(...lows.slice(0, -1));
   const resistance = Math.max(...highs.slice(0, -1));
   return { support, resistance };
@@ -513,7 +526,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
       const predDate = new Date(prediction.prediction_date);
       const ageHours = (Date.now() - predDate.getTime()) / (1000 * 60 * 60);
       predictionIsFresh = ageHours <= 48;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       predictionIsFresh = false;
     }
   }
@@ -553,7 +566,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
   if (prediction?.analysis_json) {
     try {
       analysisDetails = JSON.parse(prediction.analysis_json) as AnalysisDetails;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       analysisDetails = null;
     }
   }

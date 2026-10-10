@@ -16,9 +16,14 @@ export async function GET(request: NextRequest) {
     100,
     Math.max(5, parseInt(request.nextUrl.searchParams.get('limit') || '10', 10))
   );
+  // BUG 4 FIX (FIX-A-API): القديم كان بيـ ignore الـ `market` param — كل الأسواق
+  // كانت ترجّع نفس 10 أسهم EGX. الحل: نقرأ الـ market ونبعته للـ fallback function.
+  const market = (request.nextUrl.searchParams.get('market') || '').trim().toUpperCase() || undefined;
 
   try {
-    const res = await fetch(`http://localhost:8010/api/live/scan?limit=${limit}`, {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (market) qs.set('market', market);
+    const res = await fetch(`http://localhost:8010/api/live/scan?${qs.toString()}`, {
       signal: AbortSignal.timeout(5000),
       cache: 'no-store',
     });
@@ -28,16 +33,17 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(data);
       }
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 
-  // SQLite fallback — top movers from stocks.db
-  const { gainers, losers, most_active } = getTopMoversFallback(limit);
+  // SQLite fallback — top movers from stocks.db (filtered by market)
+  const { gainers, losers, most_active } = getTopMoversFallback(limit, market);
   const scan = [...gainers, ...losers].slice(0, limit);
   return NextResponse.json({
     success: true,
     source: 'sqlite_fallback',
+    market: market || 'ALL',
     scan,
     results: scan,
     data: scan,

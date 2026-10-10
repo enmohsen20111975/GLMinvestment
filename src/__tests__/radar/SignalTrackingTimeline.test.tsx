@@ -255,7 +255,7 @@ describe('<SignalTrackingTimeline /> — color coding of progress bars', () => {
       el.className.includes('bg-amber-500')
     );
     const hasBlue = Array.from(fills).some((el) =>
-      el.className.includes('bg-blue-500')
+      el.className.includes('bg-primary')
     );
     const hasEmerald = Array.from(fills).some((el) =>
       el.className.includes('bg-emerald-500')

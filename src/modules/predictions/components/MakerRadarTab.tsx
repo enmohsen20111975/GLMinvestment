@@ -655,7 +655,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         }
         setStockMap(map);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent — sector strip will just hide
     }
   }, [market]);
@@ -718,7 +718,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         }
       }
       setPredMap(map);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent — prediction column stays empty
     }
   }, [market]);
@@ -1194,8 +1194,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 </Badge>
               )}
               {data?.warmup_running && (
-                <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-200 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse mr-1" />
+                <Badge variant="outline" className="text-[10px] text-primary border-slate-200 bg-slate-50 dark:text-slate-400 dark:bg-slate-900/40">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse mr-1" />
                   بيشتغل
                 </Badge>
               )}
@@ -1326,7 +1326,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             ? 'border-l-red-500 bg-red-500/10 dark:bg-red-950/30 border-red-300 dark:border-red-800 shadow-lg shadow-red-500/20'
             : data.market_regime.regime === 'AGGRESSIVE'
               ? 'border-l-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
-              : 'border-l-blue-500 bg-blue-500/5 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+              : 'border-l-primary bg-primary/5 dark:bg-slate-900/20 border-slate-200 dark:border-primary'
         }`}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
@@ -1335,7 +1335,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                   ? 'text-red-600 dark:text-red-400 animate-pulse'
                   : data.market_regime.regime === 'AGGRESSIVE'
                     ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-blue-600 dark:text-blue-400'
+                    : 'text-primary dark:text-slate-400'
               }`} />
               <div>
                 <div className="flex items-center gap-2">
@@ -1347,7 +1347,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                       ? 'bg-red-100 text-red-900 border-red-400 dark:bg-red-950 dark:text-red-200 dark:border-red-700'
                       : data.market_regime.regime === 'AGGRESSIVE'
                         ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
-                        : 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200'
+                        : 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-900 dark:text-slate-200'
                   }`}>
                     {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
                       ? '🔴 دِفاعي — قلّل الحجم وركّز على وقف الخسارة'
@@ -1878,7 +1878,7 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
 
 function KpiCard({ icon, label, value, sub, accent }: KpiCardProps) {
   const colors: Record<KpiCardProps['accent'], { bg: string; text: string; ring: string }> = {
-    blue:   { bg: 'bg-blue-50 dark:bg-blue-950/40',     text: 'text-blue-600 dark:text-blue-400',     ring: 'ring-blue-100 dark:ring-blue-900/40' },
+    blue:   { bg: 'bg-slate-50 dark:bg-slate-900/40',     text: 'text-primary dark:text-slate-400',     ring: 'ring-slate-100 dark:ring-slate-800/40' },
     amber:  { bg: 'bg-amber-50 dark:bg-amber-950/40',  text: 'text-amber-600 dark:text-amber-400',   ring: 'ring-amber-100 dark:ring-amber-900/40' },
     rose:   { bg: 'bg-rose-50 dark:bg-rose-950/40',    text: 'text-rose-600 dark:text-rose-400',     ring: 'ring-rose-100 dark:ring-rose-900/40' },
     emerald:{ bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400', ring: 'ring-emerald-100 dark:ring-emerald-900/40' },
@@ -3187,7 +3187,7 @@ function StockDetailDrawer({
               <Card className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Layers className="h-4 w-4 text-primary dark:text-slate-400" />
                     <div>
                       <div className="text-xs font-semibold">قطاع: {sector}</div>
                       <div className="text-[10px] text-muted-foreground">أداء القطاع اليوم</div>
@@ -3485,7 +3485,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
       <div className="bg-background/60 rounded-md p-2 border border-border/40 mb-2">
         <div className="flex items-baseline justify-between flex-wrap gap-1">
           <span className="text-[11px] text-muted-foreground">💰 الدخول</span>
-          <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400" dir="ltr">
+          <span className="font-mono text-sm font-bold text-primary dark:text-slate-400" dir="ltr">
             {fmtNum(entryZoneLow)} → {fmtNum(entryZoneHigh)}
           </span>
         </div>
@@ -3569,7 +3569,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
 
       {/* ─── Dynamic analysis text — changes based on MA10 / volume / range ─── */}
       <div className="pt-2 border-t border-border/50">
-        <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 mb-1">💡 التحليل:</div>
+        <div className="text-[11px] font-semibold text-primary dark:text-slate-300 mb-1">💡 التحليل:</div>
         <div className="space-y-0.5 text-[11px] text-muted-foreground leading-relaxed">
           {analysis_lines.map((line, i) => (
             <p key={i}>{line}</p>
@@ -3695,7 +3695,7 @@ interface ProofMetricCardProps {
 
 function ProofMetricCard({ icon, label, value, sub, accent }: ProofMetricCardProps) {
   const colors: Record<ProofMetricCardProps['accent'], { bg: string; text: string }> = {
-    blue:    { bg: 'bg-blue-50 dark:bg-blue-950/40',    text: 'text-blue-600 dark:text-blue-400' },
+    blue:    { bg: 'bg-slate-50 dark:bg-slate-900/40',    text: 'text-primary dark:text-slate-400' },
     amber:   { bg: 'bg-amber-50 dark:bg-amber-950/40',  text: 'text-amber-600 dark:text-amber-400' },
     rose:    { bg: 'bg-rose-50 dark:bg-rose-950/40',   text: 'text-rose-600 dark:text-rose-400' },
     emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400' },

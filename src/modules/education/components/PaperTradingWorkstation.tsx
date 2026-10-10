@@ -298,7 +298,7 @@ export function PaperTradingWorkstation() {
       if (data?.success && data.account) {
         setAccount(data.account);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent — polling will retry */
     } finally {
       setLoadingAccount(false);
@@ -363,7 +363,7 @@ export function PaperTradingWorkstation() {
           }
         }
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent — polling will retry */
     }
   }, []);
@@ -381,7 +381,7 @@ export function PaperTradingWorkstation() {
       if (data?.success) {
         setClosedOrders(Array.isArray(data.orders) ? data.orders : []);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent */
     }
   }, []);
@@ -473,7 +473,7 @@ export function PaperTradingWorkstation() {
           return prev; // user has overridden — keep their value
         });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* silent */
     } finally {
       setLivePriceLoading(false);

@@ -200,6 +200,17 @@ const SUB_STATUS_CACHE_MAX = 10_000;
 const subStatusCache = new Map<string, { active: boolean; ts: number }>();
 
 /**
+ * Invalidate in-memory subscription status cache when admin updates a user or payment is approved.
+ */
+export function invalidateSubStatusCache(userId?: string): void {
+  if (userId) {
+    subStatusCache.delete(userId);
+  } else {
+    subStatusCache.clear();
+  }
+}
+
+/**
  * Look up the user's UserSubscription row and return whether it is still
  * active (expires_at > now). Fail-open semantics (Rule 50):
  *   - No subscription row → assume lifetime/grandfathered → return true.
@@ -543,12 +554,12 @@ export function getTrialStatus(
   const trialEndsAt = user.trial_ends_at ? new Date(user.trial_ends_at) : new Date(validCreated.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
 
   const now = new Date();
-  const diffMs = now.getTime() - validCreated.getTime();
-  const daysPassed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.max(0, TRIAL_DAYS - daysPassed);
+  const isTrialExpired = now.getTime() > trialEndsAt.getTime();
+  const msLeft = trialEndsAt.getTime() - now.getTime();
+  const daysLeft = isTrialExpired ? 0 : Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+  const daysPassed = Math.max(0, Math.floor((now.getTime() - validCreated.getTime()) / (1000 * 60 * 60 * 24)));
 
-  const isInTrial = daysLeft > 0;
-  const isTrialExpired = daysLeft <= 0;
+  const isInTrial = !isTrialExpired;
 
   const warningEndsAt = trialEndsAt; // مفيش فترة سماح — الحظر فوري
   const isInWarning = false;

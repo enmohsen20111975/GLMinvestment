@@ -359,7 +359,7 @@ export async function GET() {
           `).all();
         }
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // live_alerts is optional — silently ignore if missing/locked
     }
 

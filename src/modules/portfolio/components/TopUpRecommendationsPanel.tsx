@@ -148,7 +148,7 @@ export function TopUpRecommendationsPanel() {
         toast.error(data.error || 'فشل تحميل المحفظة');
         setHoldings([]);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل الاتصال بالخادم');
       setHoldings([]);
     } finally {

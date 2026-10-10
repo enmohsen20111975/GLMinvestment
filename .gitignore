@@ -305,3 +305,9 @@ data/db_backup_*.zip.part
 archive/databases-from-github/*.zip
 # Windows NTFS alternate-data-stream artifacts (Zone.Identifier) from WSL/Windows copies
 *:Zone.Identifier
+
+# GIT-FILES-MANAGER (2026-10-10): إيقاف تتبع ملفات DB backups
+# الملفات موجودة على GitHub بس مش متتبعة بعد كده
+data/db_backup_*
+data/db_backup*.zip
+data/db_backup*.zip.part

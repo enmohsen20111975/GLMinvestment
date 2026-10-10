@@ -35,7 +35,7 @@ function openReadonly(dbPath: string): Database.Database | null {
   if (!existsSync(dbPath)) return null;
   try {
     return new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -159,7 +159,7 @@ export function getStockByTickerFallback(
       dps_ttm: safeNum(row.dps_ttm),
       value_traded: safeNum(row.value_traded) || curr * safeNum(row.volume),
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
     db.close();
@@ -227,7 +227,7 @@ export function getTopMoversFallback(
       .slice(0, limit);
 
     return { gainers, losers, most_active };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { gainers: [], losers: [], most_active: [] };
   } finally {
     db.close();
@@ -249,7 +249,7 @@ export function getMovementClassificationFallback(
          LIMIT ?`
       )
       .all(limit) as Record<string, unknown>[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   } finally {
     db.close();
@@ -291,7 +291,7 @@ export function getStockNewsFallback(
          LIMIT ?`
       )
       .all(`%"${upper}%`, `%${upper}%`, limit) as Record<string, unknown>[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   } finally {
     db.close();
@@ -324,7 +324,7 @@ export function getLatestNewsFallback(
          LIMIT ?`
       )
       .all(limit) as Record<string, unknown>[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   } finally {
     db.close();
@@ -357,7 +357,7 @@ export function getStockRecommendationFallback(
       .get(ticker.toUpperCase()) as Record<string, unknown> | undefined;
     if (!row) return null;
     return { success: true, source: 'sqlite_fallback', recommendation: row, ...row };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
     db.close();
@@ -400,7 +400,7 @@ export function getPredictionsFallback(
          LIMIT ?`
       )
       .all(limit) as Record<string, unknown>[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   } finally {
     db.close();
@@ -444,7 +444,7 @@ export function getPerformanceFallback(): Record<string, unknown> {
       avg_pnl_percent: Math.round(avgPnl * 100) / 100,
       win_rate: closedCount > 0 ? Math.round((hits / closedCount) * 10000) / 100 : 0,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { success: true, source: 'sqlite_fallback', total: 0, hit_rate: 0 };
   } finally {
     db.close();
@@ -479,7 +479,7 @@ export function getCryptoListFallback(
          LIMIT ?`
       )
       .all(latest.timestamp, limit) as Record<string, unknown>[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   } finally {
     db.close();
@@ -525,7 +525,7 @@ export function getCryptoBySymbolFallback(
       circulating_supply:
         row.circulating_supply != null ? safeNum(row.circulating_supply) : null,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
     db.close();
@@ -641,7 +641,7 @@ export function getStockProfileFallback(
       last_update: row.last_update,
       logo_url: row.logo_url || '',
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
     db.close();

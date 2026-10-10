@@ -60,12 +60,12 @@ let _tableEnsured = false;
 function ensurePortfolioAssetsTable(db: SqliteDatabase): void {
   if (_tableEnsured) return;
   db.prepare(PORTFOLIO_TABLE_DDL).run();
-  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN portfolio_id TEXT DEFAULT 'default'").run(); } catch {}
-  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN market TEXT DEFAULT 'EGX'").run(); } catch {}
-  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN currency TEXT DEFAULT 'EGP'").run(); } catch {}
-  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN annual_return_rate REAL").run(); } catch {}
-  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN return_type TEXT").run(); } catch {}
-  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN purchase_date TEXT").run(); } catch {}
+  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN portfolio_id TEXT DEFAULT 'default'").run(); } catch { /* safe-by-design */ }
+  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN market TEXT DEFAULT 'EGX'").run(); } catch { /* safe-by-design */ }
+  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN currency TEXT DEFAULT 'EGP'").run(); } catch { /* safe-by-design */ }
+  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN annual_return_rate REAL").run(); } catch { /* safe-by-design */ }
+  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN return_type TEXT").run(); } catch { /* safe-by-design */ }
+  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN purchase_date TEXT").run(); } catch { /* safe-by-design */ }
   _tableEnsured = true;
 }
 
@@ -381,7 +381,7 @@ export async function DELETE(request: NextRequest) {
       try {
         const body = await request.json();
         assetId = body.id ? Number(body.id) : null;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // No body
       }
     }

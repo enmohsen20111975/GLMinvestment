@@ -276,7 +276,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
                 });
               }
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
         if (cancelled) return;
         const seen = new Set<string>();

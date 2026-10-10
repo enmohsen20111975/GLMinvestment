@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     let body: any = {};
     try {
       body = await request.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Empty body — fall through to plan_id check below
     }
     const { plan_id, billing_period = 'monthly', payment_type = 'card' } = body;

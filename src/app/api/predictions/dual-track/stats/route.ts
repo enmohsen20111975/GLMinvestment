@@ -28,7 +28,7 @@ const fs = require('fs');
 function dbExists(path: string): boolean {
   try {
     return fs.existsSync(path) && fs.statSync(path).size > 0;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -127,7 +127,7 @@ function getMarketStats(db: Database.Database): Array<SqlRow> {
       WHERE market IS NOT NULL
       GROUP BY market
     `).all() as Array<SqlRow>;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -147,7 +147,7 @@ function getTopTickers(db: Database.Database, limit = 10): Array<SqlRow> {
       ORDER BY wins DESC, avg_return DESC
       LIMIT ?
     `).all(limit) as Array<SqlRow>;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -161,7 +161,7 @@ function getThresholds(db: Database.Database): Array<SqlRow> {
         SELECT market, MAX(threshold_date) FROM liquidity_dynamic_threshold GROUP BY market
       )
     `).all() as Array<SqlRow>;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -174,7 +174,7 @@ function getBacktestResults(db: Database.Database): Array<SqlRow> {
       FROM liquidity_backtest_results
       ORDER BY market
     `).all() as Array<SqlRow>;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }

@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = await req.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return NextResponse.json({ success: false, error: 'invalid_json' }, { status: 400 });
   }
 
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
   let payload: unknown;
   try {
     payload = JSON.parse(result.stdout);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return NextResponse.json(
       { success: false, error: 'calculator_bad_json', raw: result.stdout.slice(0, 500) },
       { status: 500 }

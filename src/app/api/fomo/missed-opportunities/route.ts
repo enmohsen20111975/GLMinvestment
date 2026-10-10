@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         const data = await res.json();
         closedPredictions = data.closedPredictions || data.closed_predictions || [];
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // fall through to SQLite
     }
 

@@ -22,7 +22,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       reg.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
     return reg;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -36,7 +36,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   try {
     const result = await Notification.requestPermission();
     return result as NotificationPermissionState;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 'denied';
   }
 }
@@ -72,7 +72,7 @@ export async function showPushNotification(
         tag: options?.tag || 'robo-advisor',
       });
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ساكت — الإشعار مش critical
   }
 }

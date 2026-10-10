@@ -28,7 +28,7 @@ function openDb(): Database.Database {
     const db = new Database(dbPath, { timeout: 3000 });
     ensureSchema(db);
     return db;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Fallback: open immutable (read-only) if writable open fails
     return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
   }
@@ -364,7 +364,7 @@ export async function GET(request: NextRequest) {
       // V40.1: evidence_count, morning_bell, kill_filter_result (added by V40 generator)
       hasV40Fields = cols.some((c) => c.name === 'evidence_count')
         && cols.some((c) => c.name === 'morning_bell');
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       hasTargetPrice2 = false;
       hasV40Fields = false;
     }
@@ -584,7 +584,7 @@ export async function GET(request: NextRequest) {
               const aj = JSON.parse(r.analysis_json);
               return aj.analysis_reason || aj.reason || null;
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
           // fallback: اقرأ من notes
           if (r.notes) {
             const parts = r.notes.split(';').map((p: string) => p.trim());
@@ -599,7 +599,7 @@ export async function GET(request: NextRequest) {
               const aj = JSON.parse(r.analysis_json);
               return aj.target_3 || aj.target_price_3 || null;
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
           return null;
         })(),
         who_is_buying: (() => {
@@ -608,7 +608,7 @@ export async function GET(request: NextRequest) {
               const aj = JSON.parse(r.analysis_json);
               return aj.who_is_buying_state || null;
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
           return null;
         })(),
         hmm_regime: (() => {
@@ -617,7 +617,7 @@ export async function GET(request: NextRequest) {
               const aj = JSON.parse(r.analysis_json);
               return aj.hmm_regime_ar || null;
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
           return null;
         })(),
         // الدعوم والمقاومات (من notes أو analysis_json)

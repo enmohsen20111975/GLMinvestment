@@ -125,7 +125,7 @@ export function DataEngineTab() {
         minute: '2-digit',
         second: '2-digit'
       })
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return dateStr
     }
   }
@@ -206,7 +206,7 @@ export function DataEngineTab() {
             <Button
               variant="outline"
               size="lg"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50 h-11"
+              className="border-primary text-primary hover:bg-slate-50 h-11"
               onClick={() => fetchData()}
             >
               <RefreshCw className="w-5 h-5" />
@@ -246,9 +246,9 @@ export function DataEngineTab() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3 mb-4">
-        <div className="bg-white rounded-xl p-4 text-center border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-          <TrendingUp className="w-6 h-6 mx-auto text-blue-600 mb-2" />
-          <div className="text-2xl font-bold text-blue-600">{formatNum(counts?.stocks || 0)}</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <TrendingUp className="w-6 h-6 mx-auto text-primary mb-2" />
+          <div className="text-2xl font-bold text-primary">{formatNum(counts?.stocks || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">STOCKS</div>
         </div>
         <div className="bg-white rounded-xl p-4 text-center border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
@@ -300,7 +300,7 @@ export function DataEngineTab() {
               {Object.entries(by_market).map(([market, count]) => (
                 <div key={market} className="bg-slate-100 px-4 py-2 rounded-lg text-base flex items-center gap-3">
                   <span className="text-slate-600 font-medium">{market}</span>
-                  <span className="text-blue-600 font-bold text-lg">{formatNum(count as number)}</span>
+                  <span className="text-primary font-bold text-lg">{formatNum(count as number)}</span>
                 </div>
               ))}
             </div>
@@ -343,10 +343,10 @@ export function DataEngineTab() {
         {/* Stocks */}
         <div className={cn(
           "bg-white rounded-xl p-4 border-2 shadow-sm",
-          engine?.stocks_running ? "border-blue-500" : "border-slate-200"
+          engine?.stocks_running ? "border-primary" : "border-slate-200"
         )}>
           <div className="flex items-center justify-between mb-3">
-            <TrendingUp className="w-6 h-6 text-blue-600" />
+            <TrendingUp className="w-6 h-6 text-primary" />
             <button
               className={cn(
                 "text-sm px-3 py-1 rounded-lg font-bold",
@@ -362,7 +362,7 @@ export function DataEngineTab() {
           <Button
             variant="outline"
             size="lg"
-            className="w-full h-10 text-sm border-blue-500 text-blue-600 hover:bg-blue-50"
+            className="w-full h-10 text-sm border-primary text-primary hover:bg-slate-50"
             onClick={() => triggerAction('trigger_stocks')}
             disabled={triggeringAction !== null}
           >
@@ -502,7 +502,7 @@ export function DataEngineTab() {
         </div>
 
         {/* Run All */}
-        <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-4 border-2 border-emerald-400 shadow-sm">
+        <div className="bg-gradient-to-br from-emerald-50 to-slate-50 rounded-xl p-4 border-2 border-emerald-400 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <Zap className="w-6 h-6 text-emerald-600" />
           </div>
@@ -523,7 +523,7 @@ export function DataEngineTab() {
       {/* Market Hours */}
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-4">
         <div className="flex items-center gap-3 mb-3">
-          <Clock className="w-5 h-5 text-blue-600" />
+          <Clock className="w-5 h-5 text-primary" />
           <span className="text-base font-bold">MARKET HOURS (Local)</span>
         </div>
         <div className="grid grid-cols-4 gap-3 text-sm">
@@ -582,7 +582,7 @@ export function DataEngineTab() {
                     log.includes('✅') || log.includes('completed') || log.includes('SUCCESS') ? "text-emerald-400" :
                     log.includes('❌') || log.includes('ERROR') ? "text-red-400" :
                     log.includes('⚠️') || log.includes('WARNING') ? "text-yellow-400" :
-                    log.includes('📥') || log.includes('Fetching') ? "text-blue-400" :
+                    log.includes('📥') || log.includes('Fetching') ? "text-slate-400" :
                     log.includes('📊') ? "text-cyan-400" :
                     "text-slate-300"
                   )}>

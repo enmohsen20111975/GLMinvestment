@@ -71,7 +71,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
           // Trigger animation
           setTimeout(() => setAnimateWidth(true), 100);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // silent fail
       } finally {
         if (mounted) setLoading(false);

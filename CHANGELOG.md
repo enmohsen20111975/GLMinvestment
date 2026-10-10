@@ -12,7 +12,97 @@
 
 ---
 
-## [2026-10-09 — PHASE-2-ADMIN-PANEL] — لوحة الأدمن (12 تحسين)
+## [2026-10-10 — DEEP-QA — إصلاح 22 عطل حرج] — فريق QA العميق
+
+3 فرق QA فحصت المشروع بعمق رهيب (58 عطل مكتشفة، 22 حرج تم إصلاحها):
+
+### Fixed (FIX-A-API — 8 أعطال API)
+- `/api/predictions`: إزالة أعمدة غير موجودة + حساب holding_days عند القراءة
+- `/api/crypto/full-analysis`: احترام param symbol (كان دائمًا BTC)
+- `computeSupportResistance`: فلترة null صارمة بدل fabrication
+- `/api/live/scan` + `/api/news-feed`: تمرير market param (كان دائمًا EGX)
+- `/api/finance/screener`: توزيع متساوٍ عبر الأسواق
+- `marketPulse-proxy`: تمرير status code
+
+### Fixed (FIX-B-FRONTEND — 7 أعطال واجهة)
+- `i18n-context`: .catch لمنع white screen كامل
+- `StocksView/StockSelector`: null-coalesce name_ar (127 سهم)
+- `SpecialistAnalysisView/ComprehensiveStockAnalysis`: حماية data.errors
+- `DailyMarketReport`: market prop بدل hardcoded EGX
+- `page.tsx`: CRYPTO → empty state (Rule 27)
+- `google-signin`: host header بدل localhost
+- `PersonaTab/DualTrack/MultiMarketWidget`: .catch لـ useEffect
+
+### Fixed (FIX-C-DATA — 7 إصلاحات بيانات SQL)
+- predictions.risk_reward: 153 صف (كانت 0.0)
+- stock_phase S/R: 1063 انتهاك → NULL
+- market_indices: EGX30 من -32.9% → -0.83% + change raw delta
+- predictions: حذف توقعتين يتيمتين + توحيد signal_type
+- User.trial_ends_at: unix-ms → ISO
+- stocks.sector: 138 empty-string → NULL
+
+### Verified (Agent Browser)
+- ✅ دخول + داشبورد ببيانات حقيقية
+- ✅ شاشة الأسهم + بحث بدون crash
+- ✅ COMI: إشارة + RSI + S/R منطقي (122.58<124.65<131.51, R:R=3.31)
+- ✅ التحليل التخصصي + البحث الجديد
+- ✅ switching السوق EGX→TADAWUL
+- ✅ footer sticky pattern
+
+---
+
+## [2026-10-10 — DATA-VERIFY + SMART-RECALC + SEARCH] — المدير العام
+
+### Added
+- **smart_recalc.py**: 3-layer solution لتحديث support/resistance بدون ضغط CPU
+  - Layer 1: Validation Guard (0% CPU — if support>price → NULL)
+  - Layer 2: Smart Detection (كشف الأسهم المتغيرة > 2%)
+  - Layer 3: Rolling Update (50 سهم/ساعة — cron job)
+- **StockSearchSelector** في #specialist-analysis: بحث بالعربي/الإنجليزي/الرمز + اقتراحات ذكية
+- **cron job**: `0 * * * * smart_recalc.py --rolling 50` (تحديث تدريجي كل ساعة)
+
+### Fixed
+- **430 قيم support/resistance غير منطقية**: تصفير support>price + resistance<price → NULL
+- **syntax error** في daily_price_updater.py validation guard
+- **daily_price_updater.py**: + Validation Guard بعد كل تحديث أسعار
+
+### Verified
+- ✅ تطابق القيم: COMI price=124.65 في كل المصادر (list=detail=screener)
+- ✅ صفر هلاوس بعد الإصلاح (كانت 430 → 0)
+- ✅ 153/153 توقعات صحيحة رياضيًا
+- ✅ 5 أسواق + 1205 سهم نشط
+- ✅ lint: 0 errors
+
+---
+
+## [2026-10-10 — DATA-ACCURACY-PERMANENT] — Main Agent (Z.ai Code)
+
+### نظام سلامة البيانات الدائم
+
+**الـ Commits**: `2609acc` + `f89cb0e` + `7c023ca`
+
+#### المشكلة (اكتشاف ChatGPT):
+- NIPH: dividend_yield = 6.45% (الصحيح 0.63%)
+- NIPH: support = 325.51 (فوق السعر!)
+- R:R في البوت = 1.7 (الصحيح 1.99)
+- RSI مختلف بين البوت والشاشة
+- 326 سهم support > price
+- 103 سهم resistance < price
+
+#### الحل الدائم (مش إصلاح مرة واحدة):
+1. **`data_diagnostic.py`** (419 سطر) — فحص + إصلاح شامل (دائم)
+2. **R:R in bot** — محسوب يدوياً من الأسعار (دائم)
+3. **predictions/route.ts** — إزالة أعمدة مش موجودة (دائم)
+4. **news/route.ts** — fallback لـ market_code (دائم)
+5. **Documentation/08-DATA-INTEGRITY.md** — توثيق كامل
+
+#### النتائج على الإنتاج:
+- 1205 سهم، 1601 مشكلة، 1591 إصلاح
+- NIPH: 0 مشاكل ✅
+
+---
+
+## [2026-10-10 — GITHUB-FILE-MANAGER] — Main Agent (Z.ai Code)
 
 ### أُضيف (New)
 - **Mission Control**: عدّاد صفوف DB + تنبيه أحمر للقواعد المتأخرة >2h + حالة Scrapers (TradingView/Yahoo/EGKSCO/metals.dev)

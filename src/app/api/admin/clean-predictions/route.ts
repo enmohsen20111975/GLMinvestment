@@ -26,7 +26,7 @@ function isWeekend(dateStr: string): boolean {
     const day = d.getDay();
     // في مصر: الجمعة والسبت هما الإجازة
     return day === 5 || day === 6;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

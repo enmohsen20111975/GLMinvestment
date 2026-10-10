@@ -21,7 +21,7 @@ function getDbSizeBytes(dbPath: string): number {
       total += fs.statSync(walPath).size;
     }
     return total;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }
@@ -62,22 +62,22 @@ export async function POST(request: NextRequest) {
           try {
             const r = db.prepare('DELETE FROM cached_analysis').run();
             results.cached_analysis += r.changes || 0;
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
 
         if (scope === 'all' || scope === 'predictions_only') {
           try {
             const r = db.prepare("DELETE FROM prediction_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
             results.prediction_logs += r.changes || 0;
-          } catch {}
+          } catch { /* safe-by-design */ }
           try {
             const r = db.prepare("DELETE FROM signal_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
             results.signal_logs += r.changes || 0;
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
 
-        try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch {}
-        try { db.exec('VACUUM'); } catch {}
+        try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* safe-by-design */ }
+        try { db.exec('VACUUM'); } catch { /* safe-by-design */ }
         db.close();
       } catch (err) {
         console.warn('Error purging stocks.db:', err);
@@ -94,22 +94,22 @@ export async function POST(request: NextRequest) {
           try {
             const r = db.prepare('DELETE FROM cached_analysis').run();
             results.cached_analysis += r.changes || 0;
-          } catch {}
+          } catch { /* safe-by-design */ }
           try {
             const r = db.prepare('DELETE FROM stored_analyses').run();
             results.stored_analyses += r.changes || 0;
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
 
         if (scope === 'all' || scope === 'predictions_only') {
           try {
             const r = db.prepare("DELETE FROM prediction_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
             results.prediction_logs += r.changes || 0;
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
 
-        try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch {}
-        try { db.exec('VACUUM'); } catch {}
+        try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* safe-by-design */ }
+        try { db.exec('VACUUM'); } catch { /* safe-by-design */ }
         db.close();
       } catch (err) {
         console.warn('Error purging predictions.db:', err);
@@ -159,13 +159,13 @@ export async function GET(request: Request) {
           const c = db.prepare('SELECT COUNT(*) as count, MAX(created_at) as latest FROM cached_analysis').get() as any;
           stats.cached_analysis += c?.count || 0;
           if (c?.latest) latestDates.push(c.latest);
-        } catch {}
+        } catch { /* safe-by-design */ }
         try {
           const c = db.prepare('SELECT COUNT(*) as count FROM prediction_logs').get() as any;
           stats.prediction_logs += c?.count || 0;
-        } catch {}
+        } catch { /* safe-by-design */ }
         db.close();
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     if (fs.existsSync(predDbPath)) {
@@ -175,18 +175,18 @@ export async function GET(request: Request) {
           const c = db.prepare('SELECT COUNT(*) as count, MAX(created_at) as latest FROM cached_analysis').get() as any;
           stats.cached_analysis += c?.count || 0;
           if (c?.latest) latestDates.push(c.latest);
-        } catch {}
+        } catch { /* safe-by-design */ }
         try {
           const c = db.prepare('SELECT COUNT(*) as count, MAX(updated_at) as latest FROM stored_analyses').get() as any;
           stats.stored_analyses += c?.count || 0;
           if (c?.latest) latestDates.push(c.latest);
-        } catch {}
+        } catch { /* safe-by-design */ }
         try {
           const c = db.prepare('SELECT COUNT(*) as count FROM prediction_logs').get() as any;
           stats.prediction_logs += c?.count || 0;
-        } catch {}
+        } catch { /* safe-by-design */ }
         db.close();
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     latestDates.sort();

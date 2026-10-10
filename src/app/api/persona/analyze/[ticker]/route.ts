@@ -42,9 +42,9 @@ async function getNext(request: NextRequest, path: string, timeoutMs = 15000): P
     });
     clearTimeout(timeout);
     let data: any = null;
-    try { data = await res.json(); } catch { /* non-JSON body */ }
+    try { data = await res.json(); } catch { /* non-JSON body - safe-by-design */ }
     return { ok: res.ok, status: res.status, data };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { ok: false, status: 0, data: null };
   }
 }
@@ -91,7 +91,7 @@ export async function GET(
             });
           }
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Fall through to Next.js dual-persona
       }
     }

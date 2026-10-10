@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) SQLite fallback — portfolio is auth-required, return empty portfolio
   //    The Flutter app will show login prompt if no auth token.

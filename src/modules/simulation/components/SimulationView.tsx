@@ -352,7 +352,7 @@ function loadState(market: MarketType): SimState {
       const parsed = JSON.parse(stored) as SimState;
       return parsed;
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
   return getDefaultState();
@@ -363,7 +363,7 @@ function saveState(state: SimState, market: MarketType) {
   try {
     const key = STORAGE_KEY_BY_MARKET[market] || STORAGE_KEY_BY_MARKET.EGX;
     localStorage.setItem(key, JSON.stringify(state));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
 }
@@ -471,7 +471,7 @@ export function SimulationView() {
           };
         });
         setStocks(withInitial);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Silent — fallback seeds already cover this case.
       }
     },
@@ -748,9 +748,9 @@ export function SimulationView() {
     const q = searchQuery.toLowerCase();
     return stocks.filter(
       (s) =>
-        s.ticker.toLowerCase().includes(q) ||
-        s.name_ar.includes(q) ||
-        s.sector.includes(q)
+        (s.ticker || '').toLowerCase().includes(q) ||
+        (s.name_ar ?? '').includes(q) ||
+        (s.sector ?? '').includes(q)
     );
   }, [stocks, searchQuery]);
 

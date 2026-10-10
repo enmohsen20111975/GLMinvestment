@@ -35,7 +35,7 @@ function tableExists(db: ReturnType<typeof getDataEngineDb>, tableName: string):
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=? LIMIT 1")
       .get(tableName) as { name?: string } | undefined;
     return !!row?.name;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -262,7 +262,7 @@ export async function GET(req: NextRequest) {
                 item.volume = Math.round(safeNum(row.volume));
                 item.market_cap = row.market_cap != null ? safeNum(row.market_cap) : null;
               }
-            } catch { /* skip */ }
+            } catch { /* skip - safe-by-design */ }
           }
         }
       } catch (e) {

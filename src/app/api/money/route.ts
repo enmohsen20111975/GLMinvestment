@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       try {
         const a = db.prepare('SELECT COUNT(*) as c FROM price_alerts WHERE user_id = ? AND is_active = 1').get(userId) as { c?: number } | undefined;
         alertsCount = a?.c || 0;
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       let journal: { total: number; open: number; wins: number; losses: number } = { total: 0, open: 0, wins: 0, losses: 0 };
       try {
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
             SUM(CASE WHEN status = 'closed' AND result <= 0 THEN 1 ELSE 0 END) as losses
           FROM trading_journal WHERE user_id = ?
         `).get(userId) || journal;
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       let totalInvested = 0, totalCurrent = 0;
       for (const a of portfolio) {
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
             COALESCE(AVG(CASE WHEN status = 'closed' THEN result_pct ELSE NULL END), 0) as avg_return
           FROM trading_journal WHERE user_id = ?
         `).get(userId) || stats;
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       db.close();
       return NextResponse.json({

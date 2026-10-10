@@ -147,6 +147,13 @@ export default async function RootLayout({
         className="antialiased bg-background text-foreground font-sans"
         suppressHydrationWarning
       >
+        {/* A11Y-FIX (2026-10-09, Team 8): skip-to-main-content للـ keyboard users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:right-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg"
+        >
+          تخطّي إلى المحتوى الرئيسي
+        </a>
         <Providers>
 
           {children}

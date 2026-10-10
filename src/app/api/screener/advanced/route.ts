@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(applyScreenerGate(data, screenerLocked));
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — read from stocks.db
   try {

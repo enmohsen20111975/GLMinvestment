@@ -563,7 +563,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
       {/* وصف تفصيلي لحالة السوق (لى حصل ولى بيحصل) — يوليو 2026 */}
       {stocks.length > 0 && marketNarrative && (
-        <Card className="border-teal-200 dark:border-teal-900 bg-blue-50/40 dark:bg-blue-950/20">
+        <Card className="border-teal-200 dark:border-teal-900 bg-slate-50/40 dark:bg-slate-900/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Radio className="h-4 w-4 text-teal-600" />
@@ -922,7 +922,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
           {/* Additional Stats */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-            <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950">
+            <div className="text-center p-3 rounded-lg bg-slate-50 dark:bg-slate-900">
               <p className="text-muted-foreground text-xs mb-1">إجمالي الأسهم</p>
               <p className="text-xl font-bold text-teal-600">{weekStats.totalStocks}</p>
             </div>
@@ -1018,7 +1018,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
               <div className="space-y-2">
                 {weekStats.mostActive.length > 0 ? (
                   weekStats.mostActive.map((stock, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-blue-50 dark:bg-blue-950 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
+                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-slate-50 dark:bg-slate-900 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
                       <div className="flex items-center gap-2 min-w-0">
                         {stock.logo_url ? (
                           <img

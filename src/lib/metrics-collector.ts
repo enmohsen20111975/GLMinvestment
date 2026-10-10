@@ -105,7 +105,7 @@ async function readProcStat(): Promise<CpuTimes | null> {
       idle: Number(parts[4]) || 0,
       irq: Number(parts[5] || 0) + Number(parts[6] || 0),
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -179,7 +179,7 @@ async function readRootDisk(): Promise<DiskRoot> {
       usedGb: round1(used / 1024 / 1024 / 1024),
       totalGb: round1(total / 1024 / 1024 / 1024),
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { pct: 0, usedGb: 0, totalGb: 0 };
   }
 }
@@ -207,7 +207,7 @@ async function readPm2(): Promise<{ processes: Pm2Process[]; online: number; tot
     let parsed: Pm2RawEntry[];
     try {
       parsed = JSON.parse(stdout);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return empty;
     }
     if (!Array.isArray(parsed)) return empty;
@@ -247,7 +247,7 @@ async function readPm2(): Promise<{ processes: Pm2Process[]; online: number; tot
       totalCpu: round1(totalCpu),
       totalMemMb: round1(totalMemMb),
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return empty;
   }
 }
@@ -276,7 +276,7 @@ async function readNetDev(): Promise<{ rxBytes: number; txBytes: number } | null
       txTotal += Number(parts[9]) || 0;
     }
     return { rxBytes: rxTotal, txBytes: txTotal };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -310,7 +310,7 @@ async function computeNetRate(): Promise<{ rxKbS: number; txKbS: number }> {
 function readNodeRss(): number {
   try {
     return round1(process.memoryUsage().rss / 1024 / 1024);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }

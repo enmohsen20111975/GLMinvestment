@@ -28,6 +28,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / 'db' / 'stocks.db'
 DRY_RUN = '--dry-run' in sys.argv
 
+# DB-LOCK-FIX (2026-10-10): إضافة WAL + busy_timeout لمنع "database is locked"
+def _open_db():
+    conn = sqlite3.connect(str(DB_PATH), timeout=30)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=30000")
+    return conn
+
 # TradingView global scanner مع tickers filter للمؤشرات
 TV_SCANNER_URL = 'https://scanner.tradingview.com/global/scan'
 TV_COLUMNS = ['name', 'description', 'close', 'change', 'change_abs', 'high', 'low', 'volume']
@@ -169,7 +176,7 @@ def update_market_indices():
         log(f"❌ قاعدة البيانات غير موجودة: {DB_PATH}", 'ERROR')
         return
 
-    conn = sqlite3.connect(str(DB_PATH))
+    conn = _open_db()  # DB-LOCK-FIX: استخدام WAL + busy_timeout
     ensure_table_schema(conn)
     cur = conn.cursor()
 

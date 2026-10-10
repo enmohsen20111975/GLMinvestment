@@ -402,7 +402,7 @@ export function NewsManagementTab() {
               <p className="text-xs text-muted-foreground">إجمالي الأخبار الحالية</p>
               <h3 className="text-2xl font-bold text-foreground mt-1">{total}</h3>
             </div>
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
               <Newspaper className="w-5 h-5" />
             </div>
           </CardContent>

@@ -137,7 +137,7 @@ function verifyHmac(data: Record<string, string>, receivedHmac: string): boolean
       Buffer.from(calculated.toLowerCase(), 'utf-8'),
       Buffer.from(receivedHmac.toLowerCase(), 'utf-8')
     );
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
     let body: any = {};
     try {
       body = await request.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       body = {};
     }
     const { order_id, transaction_id, tx_hash, hmac: bodyHmac } = body;

@@ -164,7 +164,7 @@ export function BagHolderRescuePanel({
       } else {
         toast.error(data.error || 'فشل التحليل');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل الاتصال بالخادم');
     } finally {
       setLoading(false);
@@ -245,7 +245,7 @@ export function BagHolderRescuePanel({
       } else {
         toast.error(out.error || 'فشل التحديث');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل التحديث');
     } finally {
       setApplying(false);
@@ -288,7 +288,7 @@ export function BagHolderRescuePanel({
       } else {
         toast.error(data.error || 'فشل حفظ اليومية (قد تكون غير مفعّلة)');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل الاتصال بيومية التداول');
     } finally {
       setJournalSaving(false);

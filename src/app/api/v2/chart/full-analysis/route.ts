@@ -54,7 +54,7 @@ function readStockOHLC(ticker: string, limit: number): Record<string, unknown>[]
       .all(ticker.toUpperCase(), limit) as Record<string, unknown>[];
     db.close();
     return rows.reverse();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
       paywalledData._paywall = { is_premium: user.is_premium };
       return NextResponse.json(paywalledData);
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through to SQLite
   }
 
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
     const paywalledData = applyPaywallToChartAnalysis(data, user.is_premium);
     paywalledData._paywall = { is_premium: user.is_premium };
     return NextResponse.json(paywalledData);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return NextResponse.json(data);
   }
 }

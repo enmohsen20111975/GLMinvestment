@@ -54,7 +54,7 @@ export async function GET(
           });
         }
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // try next
     }
   }

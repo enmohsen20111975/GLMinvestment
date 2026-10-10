@@ -133,7 +133,7 @@ function fmtDate(iso: string, opts?: Intl.DateTimeFormatOptions): string {
       month: 'long',
       year: 'numeric',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return iso;
   }
 }
@@ -1160,7 +1160,7 @@ export function MonthlyResultsTemplate({ data }: MonthlyResultsTemplateProps) {
       const d = new Date(period_start);
       if (Number.isNaN(d.getTime())) return period_start;
       return d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return period_start;
     }
   })();

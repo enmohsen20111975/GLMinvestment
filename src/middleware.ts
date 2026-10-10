@@ -20,7 +20,7 @@ function generateRequestId(): string {
     if (c && typeof c.randomUUID === 'function') {
       return c.randomUUID();
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore — fall through to time-based fallback
   }
   // Fallback: time-based ID (works in any runtime, including edge)

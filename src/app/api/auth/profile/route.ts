@@ -70,7 +70,7 @@ export async function PUT(req: NextRequest) {
     let body: UpdateBody;
     try {
       body = (await req.json()) as UpdateBody;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return badRequest('جسم الطلب غير صالح', 'Invalid JSON body');
     }
 

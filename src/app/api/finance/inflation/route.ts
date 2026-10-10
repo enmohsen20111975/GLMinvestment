@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         recorded_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
       )`).run();
-    } catch { /* exists */ }
+    } catch { /* exists - safe-by-design */ }
 
     // إدراج أو تحديث
     db.prepare(`
@@ -65,7 +65,7 @@ export async function GET() {
       if (row) {
         return NextResponse.json({ success: true, rate: row.indicator_value, source: row.source, date: row.recorded_at });
       }
-    } catch { /* table might not exist */ }
+    } catch { /* table might not exist - safe-by-design */ }
     console.error('[finance:inflation]', e);
     return NextResponse.json({ success: true, rate: 0, source: 'none', date: null });
   } catch (e) {

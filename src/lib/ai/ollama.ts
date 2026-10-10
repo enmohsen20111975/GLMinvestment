@@ -61,7 +61,7 @@ export async function listTextModels(): Promise<LocalTextModel[]> {
       sizeMb: Math.round(Number(m?.size || 0) / 1_048_576),
       capabilities: Array.isArray(m?.capabilities) ? m.capabilities : [],
     }));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -73,7 +73,7 @@ export async function isOllamaUp(): Promise<boolean> {
     const res = await fetch(`${OLLAMA_URL}/api/tags`, { signal: ctrl.signal });
     clearTimeout(timer);
     return res.ok;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -186,7 +186,7 @@ export function extractJson<T = unknown>(raw: string): T | null {
 
   try {
     return JSON.parse(cleaned) as T;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* fall through */
   }
 
@@ -195,7 +195,7 @@ export function extractJson<T = unknown>(raw: string): T | null {
   if (braceStart !== -1 && braceEnd > braceStart) {
     try {
       return JSON.parse(cleaned.slice(braceStart, braceEnd + 1)) as T;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* fall through */
     }
   }

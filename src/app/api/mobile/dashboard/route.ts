@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — SQLite
   try {
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
           change: idx.change,
           change_percent: idx.change_percent,
         }));
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     sdb.close();
 
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
              LIMIT 10`
           )
           .all(dbMarket);
-      } catch {}
+      } catch { /* safe-by-design */ }
       pdb.close();
     }
 

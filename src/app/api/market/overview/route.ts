@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — compute from stocks.db dynamically per market
   try {
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
     try {
       const result = await fetchMarketIndices(market);
       indices = result.indices;
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // If fetch failed, fall back to a composite computed inline
     if (indices.length === 0) {

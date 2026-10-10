@@ -278,7 +278,7 @@ export async function POST(req: NextRequest) {
     child.stderr?.on('data', (chunk) => { stderr += chunk.toString(); });
 
     const timer = setTimeout(() => {
-      try { child.kill('SIGKILL'); } catch { /* ignore */ }
+      try { child.kill('SIGKILL'); } catch { /* ignore - safe-by-design */ }
       warmupInMemory = false;
       resolve(NextResponse.json({
         success: false,

@@ -251,7 +251,7 @@ function loadSnapshot(): RadarSnapshot | EmptySnapshot {
           ? parsed.stock_stages
           : {},
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return empty;
   }
 }
@@ -272,7 +272,7 @@ function loadTracking(): Record<string, TrackedStock> {
     const raw = readFileSync(TRACKING_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return {};
   }
 }
@@ -417,7 +417,7 @@ function loadExitRadarEntries(): Map<string, ExitRadarEntry> {
       });
     }
     return out;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return out;
   }
 }
@@ -1122,7 +1122,7 @@ export async function runPortfolioMonitor(userId?: string): Promise<number> {
             }
           }
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       // 4. Check if V40.2 prediction hit target or stop
       try {
@@ -1165,7 +1165,7 @@ export async function runPortfolioMonitor(userId?: string): Promise<number> {
             }
           }
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     db.close();

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(d);
       }
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 

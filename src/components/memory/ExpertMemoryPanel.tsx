@@ -92,7 +92,7 @@ export function ExpertMemoryPanel({
         } else {
           setError(data.error || 'فشل في جلب البيانات');
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         setError('خطأ في الاتصال');
       } finally {
         setLoading(false);

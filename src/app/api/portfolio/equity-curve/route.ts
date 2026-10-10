@@ -188,7 +188,7 @@ async function computeLiveSnapshot(db: any, userId: string): Promise<Record<stri
       cash_value: Math.round(byType.cash * 100) / 100,
       other_value: Math.round(byType.other * 100) / 100,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

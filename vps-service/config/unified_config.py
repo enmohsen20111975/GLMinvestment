@@ -621,6 +621,31 @@ MARKET_PROFILES: Dict[str, MarketProfile] = {
         price_db_table="crypto_prices",
         is_continuous_24_7=True,            # مستمر 24/7
     ),
+
+    # =====================================================================
+    # P1-FIX (2026-10-09, Round 2): US Market Profile
+    # كان ناقص — الكود كان بيرمي ValueError لما يجي يحلل أسهم US
+    # =====================================================================
+    "US": MarketProfile(
+        market_name="US Stocks",
+        market_name_ar="الأسهم الأمريكية",
+        timezone="America/New_York",
+        trading_start="09:30",
+        trading_end="16:00",
+        trading_days=[0, 1, 2, 3, 4],  # Mon-Fri
+        currency="USD",
+        min_price=1.0,
+        max_price=10000.0,
+        min_volume=100_000,
+        min_turnover_local=500_000.0,
+        atr_stop_min_pct=5.0,               # [5.0%, 15.0%]
+        atr_stop_max_pct=15.0,
+        dynamic_rr_normal=1.8,
+        dynamic_rr_outperform=2.5,
+        data_provider_type="yahoo_finance",
+        price_db_table="historical_data",
+        is_continuous_24_7=False,
+    ),
 }
 
 
