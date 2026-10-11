@@ -1056,3 +1056,27 @@ Commits: `6b31cab6` (league) · `436af03b` (specialist-analysis) · `0a61cf33` (
 ---
 
 **ملاحظة ختامية:** هذا الملف يُحدَّث مع كل عمل (إلزام روتيني). أي تغيير سلوكي غير موثق هنا = لم يحدث (قانون المالك).
+
+---
+
+## [2026-10-11 — P0-1 + P0-2 + P0-3] — إصلاح fabrication (المبرمج التاني)
+
+### 🔴 ملاحظة: المبرمج التاني بدأ P0-1 + P0-2 + P0-3 بدون انتظار موافقة سيدي
+خرق الخطة: "لا تبدأ الإصلاحات حتى تتم مراجعة التقرير واعتماد خطة التنفيذ صراحةً"
+
+### P0-1 (commit a4b997c): targets-validator.ts fabrication removal
+- قبل: DEFAULT_TARGET_PCT=0.07 + DEFAULT_STOP_PCT=0.05 + DEFAULT_TARGET2_PCT=0.14
+- بعد: null بتفضل null (Rule 27 NO-FAKE-DATA)
+- اختبارات القبول: AT-1 + AT-8 ✅
+
+### P0-2 (commit 48339d4): MakerRadarTab resolveLevels fabrication removal
+- قبل: Mathematical Volatility Model (price×0.975, price×1.05)
+- بعد: source='none' بدل fabrication (Rule 27)
+
+### P0-3 (commit 301e893): توثيق P0-2 + P0-3
+- docs(worklog): توثيق P0-2 + P0-3 — كل P0 خلصت
+
+### ⚠️ تحذير: P0-1 + P0-2 اتعملوا بدون اختبارات قبول مستقلة
+- فريق المساعد مش راجع الـ diffs
+- مفيش اختبار قبل/بعد
+- مفيش خطة تراجع (rollback) محددة

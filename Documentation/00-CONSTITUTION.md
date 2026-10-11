@@ -3599,3 +3599,28 @@ Stage Summary:
 **المدير العام:** Z.ai
 **التاريخ:** 2026-10-01
 **المرجعية:** `00-CONSTITUTION.md` Rule 62 + `BREACH-LOG.md` BREACH-001
+
+
+---
+
+## 📋 P0-1 + P0-2 + P0-3 FIXES (2026-10-11 — by Meme)
+
+> **تحذير:** المبرمج التاني بدأ P0-1 + P0-2 + P0-3 بدون انتظار موافقة سيدي.
+> خرق الخطة: "لا تبدأ الإصلاحات حتى تتم مراجعة التقرير واعتماد خطة التنفيذ صراحةً"
+
+### P0-1 (commit `a4b997c`): targets-validator.ts
+- إزالة DEFAULT_TARGET_PCT=0.07 + DEFAULT_STOP_PCT=0.05 + DEFAULT_TARGET2_PCT=0.14
+- null بتفضل null (Rule 27 NO-FAKE-DATA)
+- اختبارات القبول: AT-1 + AT-8 ✅
+
+### P0-2 (commit `48339d4`): MakerRadarTab resolveLevels
+- إزالة Mathematical Volatility Model (price×0.975, price×1.05)
+- source='none' بدل fabrication (Rule 27)
+
+### P0-3 (commit `301e893`): توثيق
+- docs(worklog): توثيق P0-2 + P0-3
+
+### ⚠️ ما زال محتاج:
+- اختبارات قبول مستقلة من فريق المساعد
+- خطة تراجع (rollback) محددة
+- مراجعة الـ diffs
