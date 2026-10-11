@@ -75836,3 +75836,136 @@ Stage Summary:
 - الجولة 4: 3/4 مهام اكتملت (AUDIT-18,19,20) + AUDIT-21 معلّق
 - اكتشافات حرجة: ExecutiveReportView منسي + case-sensitivity trigger gap
 - الـ work record لـ DEV-19 فيه ادعاء غير دقيق ("0 remaining")
+
+---
+Task ID: AUDIT-RECHECK-R4
+Agent: المدقق المستقل (المساعد) — إعادة تدقيق على 9eedb85
+Task: إعادة تدقيق الجولة 4 بعد رد المنفذ الفني على اكتشافاتي
+
+## البيئة
+- HEAD: 9eedb85 (fix(dev-19b): ExecutiveReportView colors)
+- المنفذ الفني ردّ على اكتشافي بـ DEV-19b فقط
+- DEV-20 (case-sensitivity) + DEV-21 (dry-run) لم يُبدأا
+
+---
+
+## AUDIT-19 verify: إعادة عد الألوان بعد DEV-19b
+
+### النتيجة: ✅ 0 ألوان ثابتة في الكود
+
+```
+ألوان في الكود الفعلي: 0 (كان 40 قبل DEV-19b)
+```
+
+المنفذ الفني استبدل كل الألوان بـ design tokens:
+- `#10b981` → `hsl(var(--success))` ✅
+- `#2dd4bf` → `hsl(var(--chart-2))` ✅
+- `#f43f5e` → `hsl(var(--danger))` ✅
+- `#f59e0b` → `hsl(var(--warning))` ✅
+- `#64748b` → `hsl(var(--muted-foreground))` ✅
+- `#0a0f1c` → `hsl(var(--background))` ✅
+- `rgba(255,255,255,0.1)` → `hsl(var(--foreground) / 0.1)` ✅
+- `#94a3b8` → `hsl(var(--muted-foreground))` ✅
+
+كل الـ design tokens موجودة في globals.css (light + dark mode) ✅
+
+### 🔴 لكن فيه خطأ نحوي حرج في السطر 1341
+
+```tsx
+// السطر 1341 (خطأ):
+className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b 
+  from-sl(var(--card))] via-sl(var(--background))] to-sl(var(--card))] 
+  border-2 border-amber-500/25 ..."
+```
+
+**المفروض يكون:**
+```tsx
+from-[hsl(var(--card))] via-[hsl(var(--background))] to-[hsl(var(--card))]
+```
+
+**الأخطاء:**
+1. `from-sl(` — نسي `[h` (المفروض `from-[hsl(`)
+2. `via-sl(` — نفس الخطأ
+3. `to-sl(` — نفس الخطأ
+4. `]` زائد بعد `)` — المفروض `])` مش `))]`
+
+**التأثير:** الـ gradient مش هيتطبّق (Tailwind بـ يتجاهل classes الغلط). الـ container هيظهر بلون افتراضي مش الـ gradient المطلوب. مش هياخد الـ design tokens.
+
+### ملاحظة: باقي الكود صحيح
+كل الـ replacements التانية (Pie chart colors, tooltip backgroundColor, SVG stops, axis tick fills, CartesianGrid stroke) — كلها صحيحة. الخطأ بس في السطر 1341.
+
+---
+
+## AUDIT-20 verify: إعادة اختبار case-sensitivity
+
+### النتيجة: 🔴 الثغرة لسه موجودة (لم تُصلح)
+
+أعدت اختبار الـ triggers على 9eedb85:
+```
+[UPPER SELL] signal='SELL' entry=100 target=110 → ✅ ABORT
+[lower sell] signal='sell' entry=100 target=110 → 🔴 BYPASS
+[Mixed SeLl] signal='SeLl' entry=100 target=110 → 🔴 BYPASS
+[UPPER BUY]  signal='BUY'  entry=100 target=90  → ✅ ABORT
+[lower buy]  signal='buy'  entry=100 target=90  → 🔴 BYPASS
+```
+
+**3/5 bypass** — الثغرة لسه موجودة في:
+- `trg_prevent_wrong_direction` (BUY) L108: `NEW.signal IN ('BUY', ...)` 
+- `trg_prevent_wrong_direction_sell` (SELL) L122: `NEW.signal IN ('SELL', ...)`
+
+المنفذ الفني **لم يصلح** هذه الثغرة. لا يوجد commit لها.
+
+### تذكير: الخطر
+- الكود الإنتاجي آمن حاليًا (Python `.upper()` يحمي)
+- لكن defense-in-depth ناقص — لو حد بـ INSERT مباشر بـ sqlite3 CLI → bypass
+
+---
+
+## AUDIT-21 verify: حالة DEV-21
+
+### النتيجة: ❌ لم يُبدأ بعد
+
+```
+git log --all --oneline | grep -i "dev-21" → 0 نتائج
+```
+
+آخر commit: `9eedb85` (DEV-19b). لا يوجد أي عمل على DEV-21 (dry-run لـ backfill + recover 28).
+
+---
+
+## ملخص إعادة التدقيق
+
+| AUDIT | الحالة السابقة | الحالة بعد الـ recheck | التغيير |
+|-------|---------------|----------------------|---------|
+| AUDIT-18 (screener timing) | ✅ SQL 0.29ms | ✅ بدون تغيير | — |
+| AUDIT-19 (colors) | ⚠️ 40 لون متبقية | ✅ 0 لون + 🔴 خطأ نحوي | تحسن + خطأ جديد |
+| AUDIT-20 (SELL trigger) | 🔴 case-sensitivity gap | 🔴 لسه موجودة | لم يُصلح |
+| AUDIT-21 (dry-run) | ⏸️ معلّق | ⏸️ معلّق | لم يبدأ |
+
+## التوصيات المحدّثة للمنفذ الفني
+
+### 1. إصلاح عاجل (خطأ نحوي DEV-19b):
+السطر 1341 في `ExecutiveReportView.tsx`:
+```diff
+- from-sl(var(--card))] via-sl(var(--background))] to-sl(var(--card))]
++ from-[hsl(var(--card))] via-[hsl(var(--background))] to-[hsl(var(--card))]
+```
+
+### 2. إصلاح case-sensitivity (AUDIT-20):
+في `apply_guard_triggers.py`:
+```diff
+- WHEN NEW.signal IN ('BUY', 'STRONG_BUY', 'ACCUMULATE')
++ WHEN UPPER(NEW.signal) IN ('BUY', 'STRONG_BUY', 'ACCUMULATE')
+
+- WHEN NEW.signal IN ('SELL', 'STRONG_SELL', 'REDUCE')
++ WHEN UPPER(NEW.signal) IN ('SELL', 'STRONG_SELL', 'REDUCE')
+```
+
+### 3. تنفيذ DEV-21:
+شغّل `backfill_hit_timestamps.py --dry-run` + `recover_deleted_legit.py --dry-run` على DB الإنتاج.
+
+Stage Summary:
+- AUDIT-19: 0 ألوان ✅ لكن خطأ نحوي في gradient class (from-sl بدل from-[hsl])
+- AUDIT-20: ثغرة case-sensitivity لسه موجودة (3/5 bypass) — لم تُصلح
+- AUDIT-21: لم يبدأ
+- المنفذ الفني ردّ على 1 من 3 توصيات (ExecutiveReportView) لكن فيه خطأ نحوي
