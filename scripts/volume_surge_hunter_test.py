@@ -276,4 +276,18 @@ def main():
         print(f'\n💾 Saved {len(predictions)} surge_hunter predictions to DB (persona=surge_hunter)')
 
 if __name__ == '__main__':
+    # DEV-07 (2026-10-12 — FULL INPUT GUARD): non-canonical writer disabled.
+    # Rule 35: V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY writer
+    # to predictions.db. This script INSERTs surge_hunter predictions directly
+    # — bypassing safe_insert_prediction() / record_prediction() guards —
+    # so it must remain disabled until redirected to the canonical path.
+    # To re-enable: replace the raw INSERT in main() with safe_insert_prediction()
+    # calls. Do NOT delete (Rule 16 VERIFY-BEFORE-DELETE).
+    print(
+        '[DEV-07] GUARD: volume_surge_hunter_test.py disabled (Rule 35 — V40.2 is '
+        'the only writer to predictions.db). To re-enable, redirect the INSERT '
+        'to vps-service/core/safe_insert_prediction.py.',
+        flush=True,
+    )
+    sys.exit(0)
     main()
