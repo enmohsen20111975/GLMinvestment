@@ -63,6 +63,7 @@ def main():
                 result = 'profit' if row['direction_correct_5d'] == 1 else 'loss'
             
             predictions_db.execute('''
+                -- DEV-07 verified-disabled (dead code — early-return at L21, RULE35-DISABLED)
                 INSERT INTO predictions 
                 (id, ticker, signal, confidence, entry_price, target_price, stop_loss,
                  reasoning, verified, final_price, result, created_at)
