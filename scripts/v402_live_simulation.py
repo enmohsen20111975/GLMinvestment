@@ -168,10 +168,15 @@ def run_v40_2(label: str, env_overrides: dict, start_date: str, end_date: str) -
     temp_db.chmod(0o644)
     c = sqlite3.connect(str(temp_db))
     try:
-        c.execute('DELETE FROM predictions')
+        # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+        # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+        c.execute(
+            "UPDATE predictions SET status='ARCHIVED', "
+            "notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE 1=1"
+        )
         c.commit()
     except Exception as e:
-        print(f"  ⚠ DELETE failed: {e}")
+        print(f"  ⚠ UPDATE failed: {e}")
     c.close()
 
     env = os.environ.copy()
