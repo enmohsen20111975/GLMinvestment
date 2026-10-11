@@ -594,7 +594,9 @@ def generate_predictions_internal(
                 deleted_main = old_count_main[0]['cnt'] if old_count_main else 0
                 if deleted_main > 0:
                     execute_db(PREDICTIONS_DB, \"""
-                        DELETE FROM predictions WHERE prediction_date < ?
+                        -- DEV-06 (2026-10-12): Hard DELETE disabled per Rule 21/35 — function already
+                        -- disabled via REAPPLY-CRITICAL-FIXES early-return at L548. UPDATE shown below.
+                        UPDATE predictions SET status='ARCHIVED', notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE prediction_date < ?
                     \""", (today,))
                     print(f"[AI Generate Internal] Cleared {deleted_main} old predictions from predictions (before {today})")
             except Exception as e_clear:
