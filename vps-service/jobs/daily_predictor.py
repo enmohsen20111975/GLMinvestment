@@ -2147,6 +2147,34 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _dyn_err:
                 pass  # safe-by-design: لو فشل، سيب الـ stop/target القديم
 
+            # ─── PREDICTION-INTEGRITY (2026-10-11): validate stop/target direction ───
+            # FIX: daily_predictor.py ما كانش بيستدعي validate_target_stop_direction.
+            # ده السبب الجذري لـ DOMT (stop=25.91 > entry=24.90 مع signal=HOLD).
+            # validate_target_stop_direction بتـ fix تلقائياً: stop > entry للـ BUY → entry*0.97.
+            # القاعدة 8 (ATR stop [5%,9%]) + القاعدة 18 (R:R ≥ 1.8) + Rule 67 (canonical).
+            try:
+                from core.opportunity_quality import validate_target_stop_direction
+                _dir_check = validate_target_stop_direction(
+                    signal, entry, target, stop
+                )
+                if not _dir_check['valid'] and _dir_check['action'] == 'fix_target' and _dir_check['fixed']:
+                    if 'stop_loss' in _dir_check['fixed']:
+                        _old_stop = stop
+                        stop = _dir_check['fixed']['stop_loss']
+                        print(f"[DIR-FIX] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"stop {_old_stop:.2f}→{stop:.2f} ({_dir_check['reason']})", flush=True)
+                    if 'target_price' in _dir_check['fixed']:
+                        _old_target = target
+                        target = _dir_check['fixed']['target_price']
+                        print(f"[DIR-FIX] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"target {_old_target:.2f}→{target:.2f} ({_dir_check['reason']})", flush=True)
+                    # إعادة حساب R:R بعد الـ fix
+                    risk = abs(entry - stop)
+                    reward = abs(target - entry)
+                    r_mult = round(reward / risk, 2) if risk > 0 else 0
+            except Exception as _dir_err:
+                print(f"[DIR-FIX-WARN] {ticker}: validate_target_stop_direction failed: {_dir_err}", flush=True)
+
             # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
             # Owner directive: replace flat dynamic_rr_normal with get_dynamic_min_rr(regime).
             #   bull  → 2.0  (نطمع أكتر)
@@ -3306,6 +3334,35 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             fit_tag = sig.get('persona_fit', 'balanced')
             fit_scores = sig.get('persona_fit_scores', {})
             fit_score = fit_scores.get(fit_tag, 0.0)
+
+            # ── V40.2 EVIDENCE GATE (2026-10-12 — PRED-WRITE-GUARD) ─────────
+            # B.3 FIX: When V40.2 evidence engine fails (e.g., stale
+            # egksco_price_history → institutional_decision_engine exception
+            # → fallback returns evidence=0), skip the prediction instead of
+            # writing a placeholder.
+            #
+            # This is the root-cause fix for the 2026-09-27 catastrophe:
+            # IMPROVEMENT-12 was converting WAIT→HOLD and writing placeholder
+            # predictions (evidence=0 + kill_filter=NULL). The PREDICTION-
+            # WRITE-GUARD in record_prediction() will block these anyway,
+            # but this early-skip prevents:
+            #   1. The DB write attempt (cleaner audit trail)
+            #   2. The notebook integration for placeholder predictions
+            #   3. Confusion in logs (explicit skip vs. silent guard reject)
+            #
+            # Threshold: evidence >= 3 (V40.2 minimum — Rule 21 lists 6
+            # evidences; 3 is the floor for "engine actually computed evidence")
+            _sig_signal = (sig.get('signal') or '').upper()
+            _sig_evidence = int(sig.get('evidence', 0) or 0)
+            if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _sig_evidence < 3:
+                print(
+                    f"[V40_2-EVIDENCE-SKIP] {sig['ticker']} {_sig_signal} "
+                    f"evidence={_sig_evidence}/6 < 3 → SKIP "
+                    f"(Rule 21 — placeholder prevention, B.3 fix)",
+                    flush=True,
+                )
+                continue
+
             try:
                 # Rule 54 BUG FIX: master_score كان = tech_score (نفس القيمة في العمودين)
                 # دلوقتي master_score = combined_score (يشمل تأثير الأخبار + كل التعديلات)
@@ -3323,6 +3380,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     morning_bell=sig['morning_bell'],
                     risk_reward=sig.get('r_multiple'),  # P0 FIX (V402-DIAGNOSIS R5): كان محسوب لكن غير مكتوب
                     who_is_buying_state=sig.get('who_is_buying_state', ''),  # P0 FIX (V402-DIAGNOSIS R6)
+                    # FIX (PREDICTION-INTEGRITY 2026-10-11): S/R levels من الـ analysis result
+                    # السبب: كانت 0.0 في 87% من التوقعات لأنها ما كانتش بتـ تمرر لـ record_prediction.
+                    support_level=sig.get('support_level', 0.0),
+                    resistance_level=sig.get('resistance_level', 0.0),
                     kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}" + f" | V68:prob={sig.get('v68_probability', 0)}/100 dir={sig.get('v68_future_direction', 'flat')}" + (" | A+GRAB" if sig.get('v68_liquidity_grab') else "") + (" | QUIET-ACC" if sig.get('v68_quiet_accumulation') else ""),
                 ) if tracker else None
                 if pred_id and tracker:
@@ -3872,21 +3933,42 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                         pass  # safe-by-design
 
                 # تخزين التوقع
+                # ── RULE 35 HARD DISABLE (2026-10-12 — PRED-WRITE-GUARD) ─────
+                # CRYPTO path was writing placeholder predictions:
+                #   - evidence_count=0 (default — V40.2 evidence engine not run)
+                #   - kill_filter_result='' (default — no V40.2 kill filters)
+                #   - master_score=60+(100-rsi) — FAKE formula, not from V40.2
+                #     evidence pipeline (Rule 27 NO-FAKE-DATA + Rule 67 breach)
+                #   - persona='crypto_balanced' — not in 3 canonical personas
+                #     (gambler/balanced/conservative) per Rule 23
+                #   - technical_score=rsi — RSI is NOT the technical_score
+                #
+                # This violates Rule 35 (V40.2 is the only writer) + Rule 21
+                # (BUY requires 6 evidences) + Rule 27 (no fake data) + Rule 67
+                # (CALCULATION-CANONICAL).
+                #
+                # The PREDICTION-WRITE-GUARD in record_prediction() will REJECT
+                # this call anyway, but we add this explicit early-skip so:
+                #   1. No DB write attempt is made (cleaner logs)
+                #   2. The CRYPTO path is documented as disabled pending a real
+                #      V40.2 CRYPTO evidence pipeline implementation
+                #   3. Rule 16 VERIFY-BEFORE-DELETE: code preserved for reference
+                #
+                # TODO: Implement V40.2 CRYPTO evidence pipeline (6 evidences
+                # adapted for crypto markets: Trend + Makers + DNA + On-chain
+                # + Sentiment + Benchmark). Until then, CRYPTO predictions are
+                # served by the live crypto_lab_scheduler.py + crypto_predictions
+                # table (separate from predictions.db).
                 if tracker and not dry_run:
-                    try:
-                        pred_id = tracker.record_prediction(
-                            ticker=ticker, signal=signal,
-                            entry_price=entry, target_price=target,
-                            stop_loss=stop, master_score=60 + (100 - rsi),
-                            technical_score=rsi, persona='crypto_balanced',
-                            prediction_date=scan_date,
-                        )
-                        if pred_id:
-                            total_generated += 1
-                            daily_picks += 1
-                            print(f"  ✓ {ticker} {signal} entry=${entry:.2f} target=${target:.2f} RSI={rsi:.0f}", flush=True)
-                    except Exception as e:
-                        print(f"  ⚠️ Store error {ticker}: {e}", flush=True)
+                    print(
+                        f"[RULE35-DISABLED] CRYPTO path for {ticker} {signal} "
+                        f"entry=${entry:.2f} RSI={rsi:.0f} — placeholder "
+                        f"prediction BLOCKED (Rule 35 ENGINE-UNIFY). CRYPTO "
+                        f"V40.2 evidence pipeline not yet implemented. "
+                        f"Use crypto_lab_scheduler.py for live crypto signals.",
+                        flush=True,
+                    )
+                    pred_id = None  # Rule 35: no INSERT
                 else:
                     print(f"  [DRY] {ticker} {signal} entry=${entry:.2f} RSI={rsi:.0f}", flush=True)
                     daily_picks += 1

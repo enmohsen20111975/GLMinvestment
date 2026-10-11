@@ -1,12 +1,28 @@
-# 📌 05-CURRENT_STATE — الحالة الحالية للكود (2026-10-09)
+# 📌 05-CURRENT_STATE — الحالة الحالية للكود (2026-10-10)
 
 > **THE single source of truth for the CURRENT state of the codebase.**
 > This file is the **only** consolidated snapshot of what is actually live,
 > what is wired, what is pending — derived from reading the actual code
 > (not from old docs).
 >
-> **آخر تحديث:** 2026-10-09 (Task `AUDIT-DEEP-INSPECTION` + `EXPERT-ANALYSIS-INTEGRATION` — Main Agent (Z.ai Code) — أوديت عميق + محرك تحليل احترافي + ربط كامل بالشاشات والتليجرام).
+> **آخر تحديث:** 2026-10-10 (Main Agent (Z.ai Code) — CHART-ENRICH + ICONS-AUTO + DAILY-PNL + NEW-STOCK-DETECTION + CONSTITUTION-FIXES + LEAGUE-CARD + SPECIALIST-ANALYSIS-REBUILD + FLUTTER-PROD-5).
 >
+> ملخص تحديثات هذا الـ pass:
+> (p) NEW §17.18 — **TradingView Icons Auto-Scraping** — Python scraper (`vps-service/data/stock_logo_scraper.py`) ينزّل أيقونات الأسهم تلقائياً من TradingView CDN (scanner API → logoid → SVG). `--update` flag للتحديث التلقائي + `--max-age-days=30`. شيلت `KNOWN_ICONS` hardcoded list (150 ticker) من `stock-icon.ts` — قراءة تلقائية. النتيجة: 151 → 187 أيقونة. Commits: `0a61cf33` + `c878f497`.
+> (q) NEW §17.19 — **New Stock Detection (تمييز الأسهم الجديدة)** — `src/types/index.ts`: `created_at` + `listing_date` fields + `isNewStock()` helper (90 يوم threshold). `StockIcon` component بعرض `NewStockBadge` (★ شارة ذهبية) لو السهم جديد. أي شاشة تقدر تمرر `isNew={isNewStock(stock)}`. Commit `21453829`.
+> (r) NEW §17.20 — **CHART-ENRICH (إثراء شاشة #trading-chart)** — ProfessionalTradingChart.tsx بقى غرفة تداول متكاملة: AI Executive Stock Story panel + ملء الشرطات الفارغة + استبدال الـ Accordion الميت بـ 4 تبويبات (نبض السيولة/SMC/مستشار الدخول/تفاصيل فنية). إصلاح TDZ violation (`Cannot access 'tk' before initialization`). Commits: `11432cee` + `26054ee6`.
+> (s) NEW §17.21 — **SPECIALIST-ANALYSIS-REBUILD** — استبدال handmade SVG في SpecialistAnalysisView بـ TradingView widget (iframe) + symbol mapping per market + زر تبديل (TradingView/محلي). إصلاح RSI bug (clamp [0,100] + null لو >100) + إصلاح نصوص الأخطاء #WCH و XX (Number.isFinite check). Commit `436af03b`.
+> (t) NEW §17.22 — **DAILY-PNL (نبض الأداء اليومي)** — استبدال شارت الأرباح التراكمية (cumulativeProfitData المضلل) بنظام الأداء اليومي المستقل في PredictionTrackingDashboard: `dailyPerformanceData` (تجميع يومي) + `dailyKPIs` (bestDay/worstDay/greenDaysPct/avgTradesPerDay) + KPI Strip (4 كروت) + Tooltip متطور (تاريخ عربي + الأسهم المغلقة + عوائدها). Commit `21453829`.
+> (u) NEW §17.23 — **LEAGUE-CARD تجديد** — StockLeagueImageCard.tsx: شيل "الدوري الممتاز للسوق" → "أفضل مكاسب" + شيل الكؤوس → لوجو المنصة + إضافة تواريخ التوقع ← التحقق + شكل مبهج (gradient أخضر). Commit `6b31cab6`.
+> (v) NEW §17.24 — **CONSTITUTION-FIXES (إزالة 6 انتهاكات)** — Rule 73: 3 thresholds hardcoded → classifySignal (v2/unified/analyze + expert-analysis + expert-consensus). Rule 27: Math.random() shuffle → deterministic hash sort. Rule 15/17: hardcoded localhost:8010 → PYTHON_BACKEND_URL. Commit `1e7b44ed`.
+> (w) NEW §17.25 — **FLUTTER-PROD (إصلاحات الأندرويد)** — 5 phases:
+>   - FLUTTER-PROD-1: إصلاحات جاهزية Google Store
+>   - FLUTTER-PROD-4: إصلاح 5 endpoints (404→200: /api/ai/analyze-stock, /api/unified-learning/intelligent, /api/portfolio/accounts/[id]/equity-curve)
+>   - FLUTTER-PROD-5: /api/stocks + /api/screener/advanced → 200 بدل 500/503
+>   - flutter analyze: 0 errors ✅
+>   - Commits على flutter_investment_App: bb9983a + 332f522
+>
+> **تحديث سابق:** 2026-10-09 (Task `AUDIT-DEEP-INSPECTION` + `EXPERT-ANALYSIS-INTEGRATION` — Main Agent (Z.ai Code) — أوديت عميق + محرك تحليل احترافي + ربط كامل بالشاشات والتليجرام).
 > ملخص تحديثات هذا الـ pass:
 > (k) NEW §17.15 — **Deep Audit Findings (17 مشكلة)** — فحص شامل كـ "مستخدم صايع معلم" اكتشف 8 CRITICAL + 6 HIGH + 3 MEDIUM. 3 migration scripts أنشئت (`migrate_audit_phase1.py` + `migrate_calc_indicators.py` + `migrate_cleanup_archive.py`) مع `--dry-run` + `--verify` + backup تلقائي. تم تشغيلها على الإنتاج بنجاح: تعطيل 39 سهم بسعر=0 + تصفير 234 RSI + رفض 128 توقع BUY بـ R:R<1 + حساب high_52w/low_52w لـ 611 سهم + حذف 75 خبر متكرر + أرشفة 755 توقع قديم. Commit `860286e`.
 > (l) NEW §17.16 — **Expert Analysis Engine (محرك تحليل احترافي)** — محرك شامل (786 سطر) بيوفر تحليل فني (RSI/MA/S-R/52w) + أساسي (P/E/ROE/EPS/P-B/Dividend) + إدارة مخاطر (Entry/Targets/Stop/R:R/Position size) + ملخص خبير + تقرير منسق. API: `/api/stocks/[ticker]/expert-analysis`. Commit `dfe7ed9`.

@@ -398,6 +398,8 @@ class PredictionTracker:
         kill_filter_result: str = '',
         risk_reward: Optional[float] = None,           # P0 FIX (V402-DIAGNOSIS R5)
         who_is_buying_state: str = '',                 # P0 FIX (V402-DIAGNOSIS R6)
+        support_level: float = 0.0,                    # FIX (PREDICTION-INTEGRITY 2026-10-11)
+        resistance_level: float = 0.0,                 # FIX (PREDICTION-INTEGRITY 2026-10-11)
     ) -> int:
         """
         Record a new prediction.
@@ -487,6 +489,49 @@ class PredictionTracker:
                     flush=True,
                 )
                 return None
+
+        # ── PREDICTION-WRITE-GUARD (Rule 35 + Rule 67 — Single Source of Truth) ──
+        # 2026-10-12: THE SINGLE GATE. Blocks rogue paths from writing placeholder
+        # predictions. Enforces that every prediction originates from V40.2 /
+        # V40.2-intraday / dual_track AND passes evidence requirements.
+        #
+        # Rogue paths blocked here:
+        #   B.1: sniper_routes.py::track_ticker() — evidence_count=0 + kf=''
+        #   B.2: daily_predictor.py CRYPTO path — fake master_score + no evidence
+        #   B.3: daily_predictor.py EGX path when V40.2 evidence engine fails
+        #
+        # References:
+        #   - Rule 35 (ENGINE-UNIFY): V40.2 is the only sanctioned writer
+        #   - Rule 21 (V40.2 evidence-based): BUY requires 6 evidences
+        #   - Rule 27 (NO-FAKE-DATA): master_score=50 placeholder forbidden
+        #   - Rule 67 (CALCULATION-CANONICAL + ROOT-CAUSE-FIRST)
+        try:
+            from core.prediction_write_guard import validate_prediction_evidence
+            _ok, _reason = validate_prediction_evidence(
+                signal=signal,
+                evidence_count=evidence_count,
+                kill_filter_result=kill_filter_result,
+                master_score=master_score,
+                notes=notes,
+                source='record_prediction',
+            )
+            if not _ok:
+                print(
+                    f"[PRED_GUARD_REJECT] ticker={ticker} signal={signal} "
+                    f"| {_reason}",
+                    flush=True,
+                )
+                return None
+        except ImportError:
+            # Guard module unavailable — fail-open with loud warning
+            # (do NOT block production if the guard module is missing,
+            # but make the gap visible in logs)
+            print(
+                f"[PRED_GUARD_WARN] prediction_write_guard module unavailable — "
+                f"fail-open for ticker={ticker} signal={signal} "
+                f"(Rule 35 enforcement disabled — install core/prediction_write_guard.py)",
+                flush=True,
+            )
 
         # ── RL-FIX-17 (OWNER-MANDATE): 5 توقعات بحد أقصى + dedup ───────────
         # المالك: "عدد الأسهم لا يزيد عن خمس توقعات بحد أقصى". قبل كده أي تحليل
@@ -632,8 +677,9 @@ class PredictionTracker:
                     notes, persona, created_at, atr_at_entry,
                     target_price_2, explosive_score, explosive_label,
                     evidence_count, morning_bell, kill_filter_result,
-                    risk_reward, who_is_buying
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    risk_reward, who_is_buying,
+                    support_level, resistance_level
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 ticker, signal, signal_type,
                 _pred_date,
@@ -645,6 +691,7 @@ class PredictionTracker:
                 _target_price_2, _explosive_score, _explosive_label,
                 _evidence_count, _morning_bell, _kill_filter_result,
                 risk_reward, who_is_buying_state,
+                support_level, resistance_level,
             ))
         except Exception:
             # fallback: schema قديم مفيهوش atr_at_entry/T2 columns

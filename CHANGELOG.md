@@ -12,6 +12,92 @@
 
 ---
 
+## [2026-10-10 — CHART-ENRICH + ICONS-AUTO + DAILY-PNL + NEW-STOCK-DETECTION] — Main Agent (Z.ai Code)
+
+سيدي طلبات متعددة في نفس اليوم — كلها منفذة:
+
+### Added (NEW-STOCK-DETECTION — تمييز الأسهم الجديدة)
+- `src/types/index.ts`: أضفت `created_at` + `listing_date` fields لـ Stock interface
+- أضفت `NEW_STOCK_THRESHOLD_DAYS = 90 يوم` + `isNewStock()` helper
+- `src/modules/stock-analysis/components/StockIcon.tsx`: أضفت `NewStockBadge` (★ شارة ذهبية فوق الأيقونة)
+- أي شاشة بتستخدم `StockIcon` تقدر تمرر `isNew={isNewStock(stock)}` وتظهر الشارة تلقائياً
+
+### Added (TradingView Icons Auto-Scraping)
+- `vps-service/data/stock_logo_scraper.py` (Python — Rule 20): scraper للأيقونات من TradingView CDN
+  - API: `scanner.tradingview.com/symbol?symbol=EGX:COMI&fields=logoid` → logoid
+  - CDN: `s3-symbol-logo.tradingview.com/{logoid}.svg` → SVG حقيقي
+  - `--update` flag: تحديث الأيقونات القديمة (force re-download)
+  - `--max-age-days` (default 30): حد عمر الأيقونة قبل التحديث
+  - fallback لـ `egx_stocks_complete.py` لو stocks.db مش موجود
+- `src/lib/stock-icon.ts`: شيلت `KNOWN_ICONS` hardcoded list (150 ticker) — قراءة تلقائية من filesystem
+- النتيجة: 151 → 187 أيقونة SVG (COMI/PHAR/ETEL/SWDY بقت 200 بدل 404)
+
+### Changed (CHART-ENRICH — إثراء شاشة الشارت #trading-chart)
+- `src/modules/market-analysis/components/ProfessionalTradingChart.tsx`:
+  - AI Executive Stock Story panel (لوحة التشخيص المالي)
+  - ملء الشرطات الفارغة (—) في أسباب القرار
+  - استبدال الـ Accordion الميت بـ 4 تبويبات حية:
+    * Tab 1: نبض السيولة والمؤسسات (WhoIsBuying + MoneyFlow + TrapDetector)
+    * Tab 2: مستويات التداول و SMC (SMCKeyLevelsPanel — 10 مستويات)
+    * Tab 3: مستشار الدخول والصفقة (DealAdvisorPanel)
+    * Tab 4: التفاصيل الفنية (للخبراء)
+
+### Fixed (TDZ violation في ProfessionalTradingChart)
+- `ReferenceError: Cannot access 'tk' before initialization` — نقل declarations السعر قبل الـ useMemo
+
+### Changed (SPECIALIST-ANALYSIS — استبدال SVG اليدوي بـ TradingView)
+- `src/components/advanced-analysis/SpecialistAnalysisView.tsx`:
+  - استبدال handmade SVG بـ TradingView widget (iframe)
+  - symbol mapping per market (EGX/TADAWUL/KSE/QSE/US/CRYPTO)
+  - زر تبديل بين TradingView و الشارت المحلي (fallback)
+  - إصلاح RSI bug (clamp [0, 100] + null لو >100)
+  - إصلاح نصوص الأخطاء #WCH و XX (Number.isFinite check في fmtNum/fmtPct/fmtInt/fmtCompact)
+
+### Changed (LEAGUE-CARD — تجديد الدوري الشهري)
+- `src/components/market/StockLeagueImageCard.tsx`:
+  - شيل "الدوري الممتاز للسوق" → "أفضل مكاسب {month} {year}"
+  - شيل الكؤوس (Trophy/Crown/Medal/Award) → لوجو المنصة
+  - إضافة تواريخ التوقع ← التحقق + الفترة بينهم
+  - شكل مبهج (gradient أخضر بدل amber)
+
+### Changed (DAILY-PNL — استبدال شارت التراكمي بنظام الأداء اليومي)
+- `src/modules/predictions/components/PredictionTrackingDashboard.tsx`:
+  - شيلت `cumulativeProfitData` (تراكمي مضلل)
+  - أضفت `dailyPerformanceData` (تجميع يومي: netReturnPct + winCount + lossCount + tickers[])
+  - أضفت `dailyKPIs` (bestDay / worstDay / greenDaysPct / avgTradesPerDay)
+  - شريط KPI Strip (4 كروت): 🌟 أفضل يوم / 🛡️ أقصى تراجع / 📈 نسبة الأيام الرابحة / 🎯 متوسط الصفقات
+  - شارت أعمدة يومية (أخضر/وردي) بدل المنحنى التراكمي
+  - Tooltip متطور: تاريخ عربي كامل + الأسهم المغلقة + عوائدها
+
+### Fixed (CONSTITUTION — إزالة 6 انتهاكات)
+- Rule 73: 3 thresholds hardcoded → classifySignal (v2/unified/analyze + expert-analysis + expert-consensus)
+- Rule 27: Math.random() shuffle في live-data → deterministic hash sort
+- Rule 15/17: hardcoded localhost:8010 → PYTHON_BACKEND_URL (live/scan + live/analysis)
+
+### Flutter App (flutter_investment_App)
+- 5 إصلاحات FLUTTER-PROD (1-5):
+  * FLUTTER-PROD-1: إصلاحات جاهزية Google Store
+  * FLUTTER-PROD-4: إصلاح 5 endpoints الباقية من audit
+    - /api/ai/analyze-stock: 404 → 200 + analysis: null
+    - /api/unified-learning/intelligent: 503 → 200 + insights: []
+    - /api/portfolio/accounts/[id]/equity-curve: 502 → 200 + snapshots: []
+  * FLUTTER-PROD-5: /api/stocks + /api/screener/advanced → 200 بدل 500/503
+  * /api/mobile/recommendations + predictions → 200 بدل 500
+- flutter analyze: 0 errors ✅
+- Commits على flutter_investment_App: bb9983a + 332f522
+
+### Verified
+- ✅ lint: 0 errors
+- ✅ tsc: 0 new errors (1994 baseline)
+- ✅ server: 200 OK
+- ✅ TradingView iframe في #specialist-analysis + #trading-chart
+- ✅ شارة ★ للأسهم الجديدة في StockIcon
+- ✅ شارت الأداء اليومي بـ KPI strip في #recommendations
+
+Commits: `6b31cab6` (league) · `436af03b` (specialist-analysis) · `0a61cf33` (scraper) · `c878f497` (icons auto) · `21453829` (new-stock + daily-pnl)
+
+---
+
 ## [2026-10-10 — DEEP-QA — إصلاح 22 عطل حرج] — فريق QA العميق
 
 3 فرق QA فحصت المشروع بعمق رهيب (58 عطل مكتشفة، 22 حرج تم إصلاحها):

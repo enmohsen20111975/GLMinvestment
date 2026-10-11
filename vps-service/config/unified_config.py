@@ -154,6 +154,16 @@ class MarketProfile:
     price_db_table: str = "price_history"             # 'price_history' أو 'crypto_prices'
     is_continuous_24_7: bool = False                  # False للأسهم، True للكريبتو
 
+    # ─── P1-FIX (2026-10-11): US Market Profile fields ──────────────────────
+    # US profile بـ يستخدم timezone + trading_start/end/days + min/max price.
+    # دول optional fields بـ default values — ما بـ يكسروش الـ profiles القديمة.
+    timezone: str = "Africa/Cairo"                     # tz identifier (US = America/New_York)
+    trading_start: str = "10:00"                       # بداية جلسة التداول
+    trading_end: str = "14:30"                         # نهاية جلسة التداول
+    trading_days: tuple = (0, 1, 2, 3, 4)             # Mon-Fri (Python tuple مش list — dataclass-safe)
+    min_price: float = 0.5                             # الحد الأدنى للسعر (CRYPTO=0.0001)
+    max_price: float = 100000.0                        # الحد الأقصى للسعر
+
 
 # ============================================================================
 # PERSONA PROFILE
@@ -627,16 +637,17 @@ MARKET_PROFILES: Dict[str, MarketProfile] = {
     # كان ناقص — الكود كان بيرمي ValueError لما يجي يحلل أسهم US
     # =====================================================================
     "US": MarketProfile(
+        market_code="US",
         market_name="US Stocks",
         market_name_ar="الأسهم الأمريكية",
         timezone="America/New_York",
         trading_start="09:30",
         trading_end="16:00",
-        trading_days=[0, 1, 2, 3, 4],  # Mon-Fri
+        trading_days=(0, 1, 2, 3, 4),  # Mon-Fri (tuple مش list)
         currency="USD",
         min_price=1.0,
         max_price=10000.0,
-        min_volume=100_000,
+        min_volume_filter=100_000,  # FIX: كان min_volume (مش field في MarketProfile)
         min_turnover_local=500_000.0,
         atr_stop_min_pct=5.0,               # [5.0%, 15.0%]
         atr_stop_max_pct=15.0,
