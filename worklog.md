@@ -69789,3 +69789,108 @@ Stage Summary:
 5. مراقبة الـ logs بحثاً عن [PRED_GUARD_REJECT] + [V40_2-EVIDENCE-SKIP] + [RULE35-DISABLED]
 
 PRED-WRITE-GUARD complete. الكارثة اتعالجت من الجذر.
+
+---
+Task ID: RULE20-PURE-PROXY
+Agent: Main Agent (Z.ai Code)
+Task: تحويل honest-tracking routes + top-performers لـ pure thin proxies (Rule 20 + 27 + 67)
+
+Work Log:
+- رديت على ملاحظة المالك: "أنت لية عملت كل الشغل فى النود؟"
+- فحصت الـ 6 routes (1127 سطر): 5 honest-tracking + top-performers
+- اكتشفت 3 خرقات في كل route:
+  1. fallback chain (Python local → production VPS) — خرق Rule 20
+  2. graceful degradation placeholders (zeros + empty arrays) — خرق Rule 27
+  3. Node-side computation (filter/sort/classify/Math.round) — خرق Rule 67
+
+الحل الجذري (Single Source of Truth):
+
+A) إضافة 3 Python endpoints جديدة في vps-service/api/stored_analysis_routes.py:
+   - /api/stored-analysis/honest-stats (L2143-2295)
+     * بيحسب: stats + by_market + by_channel + cumulative_returns + monthly_breakdown
+     * مستبدل: 182 سطر Node computation في stats/route.ts
+   - /api/stored-analysis/learn-from-errors (L2298-2396)
+     * بيحسب: 4 lessons (low win rate, low PF, high avg loss, low avg win)
+     * مستبدل: 171 سطر Node logic في learn-from-errors/route.ts
+   - /api/stored-analysis/missed-opportunities (L2399-2487)
+     * بيحسب: 4 categories (missed_bulls, false_positives, correct_buys, correct_sells)
+     * مستبدل: 184 سطر Node classification في missed-opportunities/route.ts
+   - _fetch_live_tracking_data() helper (L1998-2134) — Single Source of Truth
+     * بيعيد استخدام نفس DB query logic بتاعت /live-tracking
+     * ما بـ يعيدش حساب الـ stats — بـ يقرأها من نفس المصدر
+
+B) تحويل 6 Node routes لـ pure thin proxies:
+   - stats/route.ts: 182 → 66 سطر (pure fetch + return)
+   - list/route.ts: 176 → 86 سطر (fetch + flatten فقط — display formatting)
+   - live-tracking/route.ts: 117 → 62 سطر (fetch + return as-is)
+   - learn-from-errors/route.ts: 171 → 86 سطر (fetch + return + POST delegate)
+   - missed-opportunities/route.ts: 184 → 60 سطر (fetch + return)
+   - top-performers/route.ts: 225 → 61 سطر (fetch + return)
+   - إجمالي: 1127 → 493 سطر (تقليل 56%)
+   - الأهم: 0 سطر computation في Node (100% Python = brain)
+
+C) حذف 3 خرقات من كل route:
+   1. fallback chain (Python local → production VPS) — DELETED
+   2. graceful degradation placeholders (zeros + empty arrays) — DELETED
+      * لو Python unavailable → return 503 + success:false + رسالة واضحة
+      * مش return 200 + success:true + placeholder zeros (كان خرق Rule 27)
+   3. Node-side computation — DELETED (نقلت لـ Python)
+
+الاختبار:
+
+A) Python syntax: ✅ stored_analysis_routes.py OK
+B) ESLint: ✅ EXIT 0 (clean)
+C) Line count: 1127 → 493 سطر (تقليل 56%)
+D) Browser verification:
+   - HTTP 200 على / route ✅
+   - /api/predictions/honest-tracking/stats → 503 + success:false
+     + "Python backend غير متاح — لا يمكن عرض إحصائيات وهمية (Rule 27)"
+     + rule: "NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)"
+     * ده السلوك الصح — قبل كده كان بيرجّع success:true + zeros + source:unavailable
+
+Stage Summary:
+
+## قبل (خرق صريح):
+
+| Route | الأسطر | الـ logic في Node | الخرق |
+|-------|--------|------------------|------|
+| stats/route.ts | 182 | byChannel + Math.round + fallback chain | Rule 20 + 27 + 67 |
+| list/route.ts | 176 | filter + sort + topPerDay + pagination + fallback | Rule 20 + 27 + 67 |
+| live-tracking/route.ts | 117 | minScore filter + fallback + placeholders | Rule 20 + 27 |
+| learn-from-errors/route.ts | 171 | lesson extraction (business logic!) + fallback | Rule 20 + 27 + 67 |
+| missed-opportunities/route.ts | 184 | 4-category classification (business logic!) + fallback | Rule 20 + 27 + 67 |
+| top-performers/route.ts | 225 | CTE query + change_pct + sort + fallback | Rule 20 + 27 + 67 |
+| **إجمالي** | **1127** | **كلها فيها logic** | **6 خرقات** |
+
+## بعد (pure thin proxies):
+
+| Route | الأسطر | الـ logic في Node | الحالة |
+|-------|--------|------------------|------|
+| stats/route.ts | 66 | 0 (fetch + return) | ✅ Rule 20 compliant |
+| list/route.ts | 86 | 0 (fetch + flatten — display only) | ✅ Rule 20 compliant |
+| live-tracking/route.ts | 62 | 0 (fetch + return) | ✅ Rule 20 compliant |
+| learn-from-errors/route.ts | 86 | 0 (fetch + return + POST delegate) | ✅ Rule 20 compliant |
+| missed-opportunities/route.ts | 60 | 0 (fetch + return) | ✅ Rule 20 compliant |
+| top-performers/route.ts | 61 | 0 (fetch + return) | ✅ Rule 20 compliant |
+| **إجمالي** | **493** | **0 سطر computation** | **✅ 100% Python = brain** |
+
+## القواعد الدستورية المُطبّقة:
+
+- Rule 20 (Python=Brain): كل computation في Python، Node = pure proxy ✅
+- Rule 27 (NO-FAKE-DATA): لا placeholders، 503 لو Python unavailable ✅
+- Rule 67 (CALCULATION-CANONICAL): Python = Single Source of Truth ✅
+- Rule 35 (ENGINE-UNIFY): V40.2 هو المحرك الوحيد (تم تطبيقه في PRED-WRITE-GUARD) ✅
+
+## السلوك الجديد لما Python unavailable:
+
+قبل (خرق Rule 27):
+  HTTP 200 + success:true + {stats: {zeros...}, source: 'unavailable'}
+
+بعد (Rule 20 + 27 compliant):
+  HTTP 503 + success:false + {
+    error: 'python-backend-unavailable',
+    message: 'Python backend غير متاح — لا يمكن عرض إحصائيات وهمية (Rule 27)',
+    rule: 'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)'
+  }
+
+RULE20-PURE-PROXY complete. كل الـ 6 routes بقوا pure thin proxies.

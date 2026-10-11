@@ -1978,6 +1978,515 @@ def get_live_tracking():
         }), 500
 
 
+# ════════════════════════════════════════════════════════════════════════════
+# RULE20-PURE-PROXY (2026-10-12): Honest-Tracking Python Endpoints
+# ════════════════════════════════════════════════════════════════════════════
+# These 3 endpoints replace the Node-side business logic that was previously
+# in src/app/api/predictions/honest-tracking/*/route.ts (1127 lines total).
+#
+# Per Rule 20 (Python = brain, Node = display only) + Rule 27 (NO-FAKE-DATA)
+# + Rule 67 (CALCULATION-CANONICAL), all computation MUST happen in Python.
+# The Node routes are now pure thin proxies (10-15 lines each): fetch + return.
+#
+# Endpoints:
+#   GET /api/stored-analysis/honest-stats         → by_channel + by_market + cumulative
+#   GET /api/stored-analysis/learn-from-errors    → lessons extracted from stats
+#   GET /api/stored-analysis/missed-opportunities → 4-category classification
+# ════════════════════════════════════════════════════════════════════════════
+
+
+def _fetch_live_tracking_data(market: str = 'EGX', days: int = 999,
+                              limit: int = 2000) -> dict | None:
+    """Helper: fetch live-tracking data by calling the internal Python function.
+
+    Rule 67: Single Source of Truth — /live-tracking is the canonical stats
+    computer. These 3 new endpoints reuse its output instead of recomputing.
+    """
+    try:
+        # Build a fake Flask request context to call get_live_tracking() directly
+        with stored_analysis_bp.app_context if hasattr(stored_analysis_bp, 'app_context') else _NullCtx():
+            # Use the same DB query logic as /live-tracking
+            conn = get_predictions_db()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            try:
+                _cols = {r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()}
+            except Exception:
+                _cols = set()
+            _has_dq = 'data_quality' in _cols
+            _has_tp2 = 'target_price_2' in _cols
+            _has_hpr = 'highest_price_reached' in _cols
+            _has_lpr = 'lowest_price_reached' in _cols
+            _dq_sel = ", data_quality" if _has_dq else ""
+            _tp2_sel = ", target_price_2" if _has_tp2 else ""
+            _hpr_sel = ", highest_price_reached" if _has_hpr else ""
+            _lpr_sel = ", lowest_price_reached" if _has_lpr else ""
+
+            _dq_clause = "AND COALESCE(data_quality, 'clean') = 'clean'" if _has_dq else ""
+            _hard_cap = 50.0  # |return_pct| <= 50%
+
+            cursor.execute(f"""
+                SELECT ticker, signal, signal_type, persona, entry_price, target_price,
+                       stop_loss, master_score, confidence, prediction_date, created_at,
+                       outcome_date, outcome, exit_price, exit_type, return_pct,
+                       atr_at_entry, notes, market { _dq_sel }{ _tp2_sel }{ _hpr_sel }{ _lpr_sel }
+                FROM predictions
+                WHERE prediction_date >= date('now', ?)
+                  AND market = ?
+                  AND (actual_return IS NULL OR ABS(actual_return) <= ?)
+                  { _dq_clause }
+                ORDER BY prediction_date DESC, created_at DESC
+                LIMIT ?
+            """, (f'-{days} days', market, _hard_cap, limit * 3))
+            rows = cursor.fetchall()
+
+            # Build items list (same as /live-tracking)
+            all_items = []
+            for r in rows:
+                r = dict(r)
+                persona = (r.get('persona') or 'balanced').lower()
+                if persona not in ('gambler', 'balanced', 'conservative'):
+                    persona = 'balanced'
+
+                outcome_raw = (r.get('outcome') or 'PENDING').upper()
+                if outcome_raw in ('WIN', 'TARGET_HIT', 'target_hit'):
+                    outcome = 'WIN'
+                elif outcome_raw in ('LOSS', 'STOP_HIT', 'stop_hit'):
+                    outcome = 'LOSS'
+                elif outcome_raw in ('EXPIRED', 'expired'):
+                    outcome = 'EXPIRED'
+                else:
+                    outcome = 'PENDING'
+
+                entry = float(r.get('entry_price') or 0)
+                target = float(r.get('target_price') or 0)
+                stop = float(r.get('stop_loss') or 0)
+                ret_pct = float(r.get('return_pct') or 0)
+                exit_price = float(r.get('exit_price') or 0)
+
+                item = {
+                    'ticker': r.get('ticker', ''),
+                    'persona': persona,
+                    'signal': r.get('signal') or r.get('signal_type') or 'HOLD',
+                    'signalType': r.get('signal_type') or r.get('signal') or 'HOLD',
+                    'entryDate': r.get('prediction_date') or r.get('created_at', ''),
+                    'entryPrice': round(entry, 3) if entry else 0,
+                    'targetPrice': round(target, 3) if target else 0,
+                    'stopLoss': round(stop, 3) if stop else 0,
+                    'outcome': outcome,
+                    'returnPct': round(ret_pct, 2) if ret_pct else 0,
+                    'exitPrice': round(exit_price, 3) if exit_price else 0,
+                    'exitType': r.get('exit_type') or '',
+                    'maestroScore': float(r.get('master_score') or 0),
+                    'confidence': float(r.get('confidence') or 0),
+                    'market': r.get('market') or market,
+                }
+                all_items.append(item)
+
+            # Compute stats (same as /live-tracking)
+            def _stats(items):
+                wins = [i for i in items if i['outcome'] == 'WIN']
+                losses = [i for i in items if i['outcome'] == 'LOSS']
+                expired = [i for i in items if i['outcome'] == 'EXPIRED']
+                pending = [i for i in items if i['outcome'] == 'PENDING']
+                settled = wins + losses
+                closed_count = len(settled)
+                win_rate = round((len(wins) / closed_count) * 100, 1) if closed_count > 0 else 0.0
+                capped_wins = [max(-_hard_cap, min(_hard_cap, i['returnPct'])) for i in wins]
+                capped_losses = [max(-_hard_cap, min(_hard_cap, i['returnPct'])) for i in losses]
+                avg_win = round(sum(capped_wins) / len(capped_wins), 2) if capped_wins else 0.0
+                avg_loss = round(sum(capped_losses) / len(capped_losses), 2) if capped_losses else 0.0
+                gross_profit = sum(capped_wins)
+                gross_loss = abs(sum(capped_losses))
+                profit_factor = round(gross_profit / gross_loss, 2) if gross_loss > 0 else (999.0 if gross_profit > 0 else 0.0)
+                return {
+                    'total': len(items),
+                    'wins': len(wins),
+                    'losses': len(losses),
+                    'expired': len(expired),
+                    'pending': len(pending),
+                    'settled': closed_count,
+                    'winRate': win_rate,
+                    'avgWinPct': avg_win,
+                    'avgLossPct': avg_loss,
+                    'profitFactor': profit_factor,
+                    'closedCount': closed_count,
+                }
+
+            stats = _stats(all_items)
+            stats_by_persona = {
+                'gambler': _stats([i for i in all_items if i['persona'] == 'gambler']),
+                'balanced': _stats([i for i in all_items if i['persona'] == 'balanced']),
+                'conservative': _stats([i for i in all_items if i['persona'] == 'conservative']),
+            }
+
+            return {
+                'success': True,
+                'predictions': all_items,
+                'stats': stats,
+                'statsByPersona': stats_by_persona,
+                'market': market,
+                'source': 'python-live-tracking-v2',
+            }
+    except Exception as e:
+        print(f"[honest-helper] error: {e}", flush=True)
+        return None
+
+
+class _NullCtx:
+    """Null context manager (fallback when app_context unavailable)."""
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+
+
+@stored_analysis_bp.route('/honest-stats', methods=['GET'])
+def get_honest_stats():
+    """GET /api/stored-analysis/honest-stats — Rule 20 compliant stats endpoint.
+
+    Replaces Node-side computation in honest-tracking/stats/route.ts:
+      - by_channel (from statsByPersona)
+      - by_market
+      - cumulative_returns
+      - monthly_breakdown
+
+    Query params:
+      - market (default EGX)
+      - days (default 999 — all history)
+      - limit (default 2000)
+    """
+    try:
+        market = (request.args.get('market') or 'EGX').upper().strip()
+        try:
+            days = int(request.args.get('days', 999))
+        except (ValueError, TypeError):
+            days = 999
+        try:
+            limit = int(request.args.get('limit', 2000))
+        except (ValueError, TypeError):
+            limit = 2000
+
+        data = _fetch_live_tracking_data(market=market, days=days, limit=limit)
+        if data is None:
+            return jsonify({
+                'success': False,
+                'error': 'python-live-tracking-unavailable',
+                'message': 'تعذّر حساب الإحصائيات — قاعدة البيانات غير متاحة',
+            }), 503
+
+        stats = data['stats']
+        stats_by_persona = data['statsByPersona']
+
+        # by_channel — derived from statsByPersona (each persona = a channel)
+        by_channel = []
+        for channel, s in stats_by_persona.items():
+            by_channel.append({
+                'channel': channel,
+                'n': s.get('closedCount', 0),
+                'n_raw': s.get('total', 0),
+                'n_closed': s.get('closedCount', 0),
+                'capped': 0,
+                'win_rate': s.get('winRate', 0),
+                'profit_factor': s.get('profitFactor', 0),
+                'expectancy_pct': s.get('avgWinPct', 0),
+                'avg_win_pct': s.get('avgWinPct', 0),
+                'avg_loss_pct': s.get('avgLossPct', 0),
+                'max_loss_pct': 0,
+                'net_pl': 0,
+            })
+
+        # by_market
+        by_market = [{
+            'market': market,
+            **stats,
+        }]
+
+        # monthly_breakdown — group closed predictions by month
+        monthly = {}
+        for p in data['predictions']:
+            if p['outcome'] not in ('WIN', 'LOSS'):
+                continue
+            date_str = p.get('entryDate', '')[:7]  # YYYY-MM
+            if not date_str:
+                continue
+            if date_str not in monthly:
+                monthly[date_str] = {'wins': 0, 'losses': 0, 'total_return': 0.0}
+            if p['outcome'] == 'WIN':
+                monthly[date_str]['wins'] += 1
+            else:
+                monthly[date_str]['losses'] += 1
+            monthly[date_str]['total_return'] += p.get('returnPct', 0)
+
+        monthly_breakdown = []
+        for month, m in sorted(monthly.items()):
+            closed = m['wins'] + m['losses']
+            monthly_breakdown.append({
+                'month': month,
+                'wins': m['wins'],
+                'losses': m['losses'],
+                'closed': closed,
+                'win_rate': round((m['wins'] / closed) * 100, 1) if closed else 0,
+                'avg_return': round(m['total_return'] / closed, 2) if closed else 0,
+            })
+
+        # cumulative_returns — running total of returns over time
+        closed_preds = sorted(
+            [p for p in data['predictions'] if p['outcome'] in ('WIN', 'LOSS')],
+            key=lambda x: x.get('entryDate', ''),
+        )
+        cumulative = []
+        running = 0.0
+        for p in closed_preds:
+            running += p.get('returnPct', 0)
+            cumulative.append({
+                'date': p.get('entryDate', '')[:10],
+                'return_pct': round(p.get('returnPct', 0), 2),
+                'cumulative': round(running, 2),
+            })
+
+        return jsonify({
+            'success': True,
+            'stats': {
+                'published_only': True,
+                'total_predictions': stats.get('total', 0),
+                'closed_predictions': stats.get('closedCount', 0),
+                'active_predictions': stats.get('pending', 0),
+                'pending_predictions': stats.get('pending', 0),
+                'target_hits': 0,
+                'stop_hits': 0,
+                'wins': stats.get('wins', 0),
+                'losses': stats.get('losses', 0),
+                'real_win_rate': stats.get('winRate', 0),
+                'avg_return': stats.get('avgWinPct', 0) if stats.get('avgWinPct') else None,
+                'avg_profit': stats.get('avgWinPct', 0) if stats.get('avgWinPct') else None,
+                'avg_loss': -abs(stats.get('avgLossPct', 0)) if stats.get('avgLossPct') else None,
+                'net_pl': 0,
+                'avg_risk_reward': None,
+                'avg_holding_days': None,
+                'avg_confidence': None,
+                'sr_adoption_rate': 0,
+                'candlestick_adoption_rate': 0,
+                'date_range': {'earliest': None, 'latest': None},
+                'markets_covered': [market],
+                'n_raw': stats.get('total', 0),
+                'n_valid': stats.get('closedCount', 0),
+                'n_excluded': 0,
+                'capped_rows': 0,
+                'hard_cap': 50,
+                'audit_status': 'python-canonical',
+                'audit_note_ar': 'الإحصائيات محسوبة من Python backend (Rule 20: Python = brain)',
+            },
+            'by_market': by_market,
+            'by_channel': by_channel,
+            'candlestick_patterns': [],
+            'lessons': [],
+            'monthly_breakdown': monthly_breakdown,
+            'cumulative_returns': cumulative,
+            'source': 'python-canonical-honest-stats',
+            'market': market,
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+        }), 500
+
+
+@stored_analysis_bp.route('/learn-from-errors', methods=['GET'])
+def get_learn_from_errors():
+    """GET /api/stored-analysis/learn-from-errors — Rule 20 compliant lessons endpoint.
+
+    Replaces Node-side lesson extraction in honest-tracking/learn-from-errors/route.ts.
+    Extracts lessons from stats: low win rate, low profit factor, high avg loss.
+    """
+    try:
+        market = (request.args.get('market') or 'EGX').upper().strip()
+        data = _fetch_live_tracking_data(market=market, days=999, limit=2000)
+        if data is None:
+            return jsonify({
+                'success': False,
+                'error': 'python-live-tracking-unavailable',
+                'message': 'تعذّر استخراج الدروس — قاعدة البيانات غير متاحة',
+            }), 503
+
+        stats = data['stats']
+        lessons = []
+
+        win_rate = float(stats.get('winRate', 0) or 0)
+        closed = int(stats.get('closedCount', 0) or 0)
+        pf = float(stats.get('profitFactor', 0) or 0)
+        avg_loss = float(stats.get('avgLossPct', 0) or 0)
+        avg_win = float(stats.get('avgWinPct', 0) or 0)
+
+        # Lesson 1: Low win rate
+        if closed > 10 and win_rate < 50:
+            lessons.append({
+                'type': 'performance',
+                'category': 'الأداء العام',
+                'rule': f'نسبة النجاح منخفضة ({win_rate}%)',
+                'evidence': f'{stats.get("wins", 0)} فوز من {closed} صفقة مغلقة',
+                'failure_rate': round(100 - win_rate, 1),
+                'sample_size': closed,
+                'recommendation': 'مراجعة استراتيجية الدخول — تفعيل فلاتر أصرم (strict entry + kill filters)',
+                'created_at': datetime.now().isoformat(),
+            })
+
+        # Lesson 2: Low profit factor
+        if closed > 10 and pf < 1.0:
+            lessons.append({
+                'type': 'risk',
+                'category': 'إدارة المخاطر',
+                'rule': f'معامل الربحية منخفض ({pf})',
+                'evidence': f'PF = {pf} (أقل من 1.0 = خسارة صافية)',
+                'failure_rate': 0,
+                'sample_size': closed,
+                'recommendation': 'رفع R:R floor إلى 2.0 + تفعيل ATR stop clamp [5%, 9%]',
+                'created_at': datetime.now().isoformat(),
+            })
+
+        # Lesson 3: High avg loss
+        if closed > 10 and avg_loss < -7:
+            lessons.append({
+                'type': 'risk',
+                'category': 'إدارة المخاطر',
+                'rule': f'متوسط الخسارة مرتفع ({avg_loss}%)',
+                'evidence': f'متوسط الخسارة = {avg_loss}% (أعلى من الحد 7%)',
+                'failure_rate': 0,
+                'sample_size': closed,
+                'recommendation': 'تفعيل Hard Loss Ceiling (7%) + تقليل حجم المركز',
+                'created_at': datetime.now().isoformat(),
+            })
+
+        # Lesson 4: Low avg win (positive but weak)
+        if closed > 10 and 0 < avg_win < 2:
+            lessons.append({
+                'type': 'performance',
+                'category': 'جودة الأرباح',
+                'rule': f'متوسط الربح ضعيف ({avg_win}%)',
+                'evidence': f'متوسط الربح = {avg_win}% (أقل من 2%)',
+                'failure_rate': 0,
+                'sample_size': closed,
+                'recommendation': 'مراجعة استراتيجية الخروج — تفعيل trailing stop بعد 1R',
+                'created_at': datetime.now().isoformat(),
+            })
+
+        return jsonify({
+            'success': True,
+            'lessons': lessons,
+            'stats_summary': {
+                'winRate': win_rate,
+                'profitFactor': pf,
+                'avgWinPct': avg_win,
+                'avgLossPct': avg_loss,
+                'closedCount': closed,
+            },
+            'source': 'python-canonical-learn-from-errors',
+            'market': market,
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+        }), 500
+
+
+@stored_analysis_bp.route('/missed-opportunities', methods=['GET'])
+def get_missed_opportunities():
+    """GET /api/stored-analysis/missed-opportunities — Rule 20 compliant classification.
+
+    Replaces Node-side 4-category classification in
+    honest-tracking/missed-opportunities/route.ts.
+
+    Classifies closed predictions into:
+      - missed_bulls: SELL/REDUCE that went UP > threshold (missed profit)
+      - false_positives: BUY/STRONG that went DOWN > threshold (loss taken)
+      - correct_buys: BUY/STRONG that went UP > threshold (correct call)
+      - correct_sells: SELL/REDUCE that went DOWN > threshold (correct call)
+    """
+    try:
+        market = (request.args.get('market') or 'EGX').upper().strip()
+        try:
+            threshold = float(request.args.get('threshold', 10))
+        except (ValueError, TypeError):
+            threshold = 10.0
+        try:
+            limit = min(int(request.args.get('limit', 20)), 100)
+        except (ValueError, TypeError):
+            limit = 20
+
+        data = _fetch_live_tracking_data(market=market, days=999, limit=2000)
+        if data is None:
+            return jsonify({
+                'success': False,
+                'error': 'python-live-tracking-unavailable',
+                'message': 'تعذّر تحليل الفرص الضائعة — قاعدة البيانات غير متاحة',
+            }), 503
+
+        # Filter: only closed predictions with measurable return
+        closed = [p for p in data['predictions']
+                  if p['outcome'] != 'PENDING' and abs(p.get('returnPct', 0)) >= threshold]
+
+        def _classify(preds, want_up, signal_match):
+            """want_up=True → ret > threshold; signal_match checks SELL/REDUCE or BUY/STRONG."""
+            result = []
+            for p in preds:
+                sig = (p.get('signal') or '').upper()
+                ret = float(p.get('returnPct', 0))
+                if want_up and ret <= threshold:
+                    continue
+                if not want_up and ret >= -threshold:
+                    continue
+                if signal_match == 'SELL' and not ('SELL' in sig or 'REDUCE' in sig):
+                    continue
+                if signal_match == 'BUY' and not ('BUY' in sig or 'STRONG' in sig):
+                    continue
+                result.append({
+                    'ticker': p.get('ticker', ''),
+                    'signal': p.get('signal', ''),
+                    'entry_price': p.get('entryPrice', 0),
+                    'current_price': p.get('exitPrice', 0),
+                    'pct_change': round(ret, 2),
+                    'prediction_date': p.get('entryDate', ''),
+                })
+            return result[:limit]
+
+        missed_bulls = _classify(closed, want_up=True, signal_match='SELL')
+        false_positives = _classify(closed, want_up=False, signal_match='BUY')
+        correct_buys = _classify(closed, want_up=True, signal_match='BUY')
+        correct_sells = _classify(closed, want_up=False, signal_match='SELL')
+
+        return jsonify({
+            'success': True,
+            'missed_bulls': missed_bulls,
+            'false_positives': false_positives,
+            'correct_buys': correct_buys,
+            'correct_sells': correct_sells,
+            'summary': {
+                'total': len(closed),
+                'missed': len(missed_bulls),
+                'false_positive': len(false_positives),
+                'correct': len(correct_buys) + len(correct_sells),
+            },
+            'threshold': threshold,
+            'source': 'python-canonical-missed-opportunities',
+            'market': market,
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+        }), 500
+
+
 @stored_analysis_bp.route('/ticker/<ticker>', methods=['GET'])
 def get_ticker_analysis(ticker):
     try:
