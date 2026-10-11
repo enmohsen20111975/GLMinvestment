@@ -136,9 +136,11 @@ def sync_persona_predictions(refresh_active: bool = True):
                 )
                 if expire_cur.rowcount > 0:
                     refreshed_count += 1
-                # 2) امسح بس توقعات النهاردة (علشان الـ rerun في نفس اليوم ما يعملش تكرار)
+                # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+                # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+                # 2) أرشف بس توقعات النهاردة (علشان الـ rerun في نفس اليوم ما يعملش تكرار)
                 del_cur = pcur.execute(
-                    "DELETE FROM predictions WHERE ticker = ? AND outcome_date IS NULL AND date(prediction_date) = date(?)",
+                    "UPDATE predictions SET status='ARCHIVED', notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE ticker = ? AND outcome_date IS NULL AND date(prediction_date) = date(?)",
                     (ticker, _today_date)
                 )
             except Exception:
