@@ -490,6 +490,49 @@ class PredictionTracker:
                 )
                 return None
 
+        # ── PREDICTION-WRITE-GUARD (Rule 35 + Rule 67 — Single Source of Truth) ──
+        # 2026-10-12: THE SINGLE GATE. Blocks rogue paths from writing placeholder
+        # predictions. Enforces that every prediction originates from V40.2 /
+        # V40.2-intraday / dual_track AND passes evidence requirements.
+        #
+        # Rogue paths blocked here:
+        #   B.1: sniper_routes.py::track_ticker() — evidence_count=0 + kf=''
+        #   B.2: daily_predictor.py CRYPTO path — fake master_score + no evidence
+        #   B.3: daily_predictor.py EGX path when V40.2 evidence engine fails
+        #
+        # References:
+        #   - Rule 35 (ENGINE-UNIFY): V40.2 is the only sanctioned writer
+        #   - Rule 21 (V40.2 evidence-based): BUY requires 6 evidences
+        #   - Rule 27 (NO-FAKE-DATA): master_score=50 placeholder forbidden
+        #   - Rule 67 (CALCULATION-CANONICAL + ROOT-CAUSE-FIRST)
+        try:
+            from core.prediction_write_guard import validate_prediction_evidence
+            _ok, _reason = validate_prediction_evidence(
+                signal=signal,
+                evidence_count=evidence_count,
+                kill_filter_result=kill_filter_result,
+                master_score=master_score,
+                notes=notes,
+                source='record_prediction',
+            )
+            if not _ok:
+                print(
+                    f"[PRED_GUARD_REJECT] ticker={ticker} signal={signal} "
+                    f"| {_reason}",
+                    flush=True,
+                )
+                return None
+        except ImportError:
+            # Guard module unavailable — fail-open with loud warning
+            # (do NOT block production if the guard module is missing,
+            # but make the gap visible in logs)
+            print(
+                f"[PRED_GUARD_WARN] prediction_write_guard module unavailable — "
+                f"fail-open for ticker={ticker} signal={signal} "
+                f"(Rule 35 enforcement disabled — install core/prediction_write_guard.py)",
+                flush=True,
+            )
+
         # ── RL-FIX-17 (OWNER-MANDATE): 5 توقعات بحد أقصى + dedup ───────────
         # المالك: "عدد الأسهم لا يزيد عن خمس توقعات بحد أقصى". قبل كده أي تحليل
         # كان بـ يـ INSERT مباشرة → تراكم 44 توقع معلق في DB → تشويش العميل.

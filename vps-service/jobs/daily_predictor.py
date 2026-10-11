@@ -3334,6 +3334,35 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             fit_tag = sig.get('persona_fit', 'balanced')
             fit_scores = sig.get('persona_fit_scores', {})
             fit_score = fit_scores.get(fit_tag, 0.0)
+
+            # ── V40.2 EVIDENCE GATE (2026-10-12 — PRED-WRITE-GUARD) ─────────
+            # B.3 FIX: When V40.2 evidence engine fails (e.g., stale
+            # egksco_price_history → institutional_decision_engine exception
+            # → fallback returns evidence=0), skip the prediction instead of
+            # writing a placeholder.
+            #
+            # This is the root-cause fix for the 2026-09-27 catastrophe:
+            # IMPROVEMENT-12 was converting WAIT→HOLD and writing placeholder
+            # predictions (evidence=0 + kill_filter=NULL). The PREDICTION-
+            # WRITE-GUARD in record_prediction() will block these anyway,
+            # but this early-skip prevents:
+            #   1. The DB write attempt (cleaner audit trail)
+            #   2. The notebook integration for placeholder predictions
+            #   3. Confusion in logs (explicit skip vs. silent guard reject)
+            #
+            # Threshold: evidence >= 3 (V40.2 minimum — Rule 21 lists 6
+            # evidences; 3 is the floor for "engine actually computed evidence")
+            _sig_signal = (sig.get('signal') or '').upper()
+            _sig_evidence = int(sig.get('evidence', 0) or 0)
+            if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _sig_evidence < 3:
+                print(
+                    f"[V40_2-EVIDENCE-SKIP] {sig['ticker']} {_sig_signal} "
+                    f"evidence={_sig_evidence}/6 < 3 → SKIP "
+                    f"(Rule 21 — placeholder prevention, B.3 fix)",
+                    flush=True,
+                )
+                continue
+
             try:
                 # Rule 54 BUG FIX: master_score كان = tech_score (نفس القيمة في العمودين)
                 # دلوقتي master_score = combined_score (يشمل تأثير الأخبار + كل التعديلات)
@@ -3904,21 +3933,42 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                         pass  # safe-by-design
 
                 # تخزين التوقع
+                # ── RULE 35 HARD DISABLE (2026-10-12 — PRED-WRITE-GUARD) ─────
+                # CRYPTO path was writing placeholder predictions:
+                #   - evidence_count=0 (default — V40.2 evidence engine not run)
+                #   - kill_filter_result='' (default — no V40.2 kill filters)
+                #   - master_score=60+(100-rsi) — FAKE formula, not from V40.2
+                #     evidence pipeline (Rule 27 NO-FAKE-DATA + Rule 67 breach)
+                #   - persona='crypto_balanced' — not in 3 canonical personas
+                #     (gambler/balanced/conservative) per Rule 23
+                #   - technical_score=rsi — RSI is NOT the technical_score
+                #
+                # This violates Rule 35 (V40.2 is the only writer) + Rule 21
+                # (BUY requires 6 evidences) + Rule 27 (no fake data) + Rule 67
+                # (CALCULATION-CANONICAL).
+                #
+                # The PREDICTION-WRITE-GUARD in record_prediction() will REJECT
+                # this call anyway, but we add this explicit early-skip so:
+                #   1. No DB write attempt is made (cleaner logs)
+                #   2. The CRYPTO path is documented as disabled pending a real
+                #      V40.2 CRYPTO evidence pipeline implementation
+                #   3. Rule 16 VERIFY-BEFORE-DELETE: code preserved for reference
+                #
+                # TODO: Implement V40.2 CRYPTO evidence pipeline (6 evidences
+                # adapted for crypto markets: Trend + Makers + DNA + On-chain
+                # + Sentiment + Benchmark). Until then, CRYPTO predictions are
+                # served by the live crypto_lab_scheduler.py + crypto_predictions
+                # table (separate from predictions.db).
                 if tracker and not dry_run:
-                    try:
-                        pred_id = tracker.record_prediction(
-                            ticker=ticker, signal=signal,
-                            entry_price=entry, target_price=target,
-                            stop_loss=stop, master_score=60 + (100 - rsi),
-                            technical_score=rsi, persona='crypto_balanced',
-                            prediction_date=scan_date,
-                        )
-                        if pred_id:
-                            total_generated += 1
-                            daily_picks += 1
-                            print(f"  ✓ {ticker} {signal} entry=${entry:.2f} target=${target:.2f} RSI={rsi:.0f}", flush=True)
-                    except Exception as e:
-                        print(f"  ⚠️ Store error {ticker}: {e}", flush=True)
+                    print(
+                        f"[RULE35-DISABLED] CRYPTO path for {ticker} {signal} "
+                        f"entry=${entry:.2f} RSI={rsi:.0f} — placeholder "
+                        f"prediction BLOCKED (Rule 35 ENGINE-UNIFY). CRYPTO "
+                        f"V40.2 evidence pipeline not yet implemented. "
+                        f"Use crypto_lab_scheduler.py for live crypto signals.",
+                        flush=True,
+                    )
+                    pred_id = None  # Rule 35: no INSERT
                 else:
                     print(f"  [DRY] {ticker} {signal} entry=${entry:.2f} RSI={rsi:.0f}", flush=True)
                     daily_picks += 1

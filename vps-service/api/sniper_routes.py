@@ -806,6 +806,40 @@ def track_ticker():
     #     morning_bell, kill_filter_result, signal_type, master_score, ...)
     # دلوقتي نفس مسار الـ Maestro: record_prediction بـ يكتب كل الأعمدة ويطبّق
     # كل الـ guards الـ write-time. لو رجع None → الـ guards رفضت التوقع.
+    #
+    # ── RULE 35 HARD GATE (2026-10-12 — PRED-WRITE-GUARD) ─────────────────
+    # Sniper routes are NOT a sanctioned prediction writer per Rule 35
+    # (ENGINE-UNIFY). Only V40.2 (daily_predictor.py EGX + intraday_scanner.py)
+    # and dual_track_generator.py (Rule 49) may write to predictions.
+    #
+    # The previous code (L812-833) called record_prediction with:
+    #   - evidence_count=0  (no V40.2 evidence pipeline)
+    #   - kill_filter_result=''  (no V40.2 kill filters)
+    #   - morning_bell=0  (hardcoded)
+    # → placeholder predictions polluted the DB (Rule 27 NO-FAKE-DATA breach).
+    #
+    # The PREDICTION-WRITE-GUARD in record_prediction() will now REJECT these
+    # calls anyway, but we add this explicit 422 here so:
+    #   1. The frontend gets a clear "Rule 35 violation" message
+    #   2. The DB never sees the rogue INSERT attempt
+    #   3. Logs are explicit about why the call was rejected
+    return jsonify({
+        'success': False,
+        'rejected': True,
+        'reason': 'Rule 35 violation: /api/sniper/track is no longer a '
+                  'sanctioned prediction writer. Predictions must originate '
+                  'from V40.2 (daily_predictor.py) or V40.2-intraday '
+                  '(intraday_scanner.py). Sniper engine output is for '
+                  'radar/screener display only, not for prediction INSERT.',
+        'rule': 'ENGINE-UNIFY (Rule 35)',
+        'reference': 'Documentation/00-CONSTITUTION.md §35 + §21 + §27',
+        'fix': 'If you need a prediction for this ticker, run V40.2 generator: '
+               'python3 vps-service/jobs/daily_predictor.py --today-only',
+    }), 422
+
+    #pylint: disable=unreachable
+    # The code below is preserved for historical reference (Rule 16 VERIFY-BEFORE-DELETE).
+    # It is now UNREACHABLE due to the Rule 35 hard gate above.
     try:
         from analyzers.prediction_tracker import PredictionTracker
         tracker = PredictionTracker(PREDICTIONS_DB)
