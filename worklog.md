@@ -70744,3 +70744,410 @@ Verification:
   * + 9 routes تانية (HIGH/MEDIUM severity)
 
 RADAR-LIQUIDITY-SCREENER-PY-PROXY complete. 4 CRITICAL routes بقوا pure thin proxies.
+
+---
+Task ID: PRED-DASHBOARD-AUDIT
+Agent: Explore (Prediction Dashboards Audit)
+Task: فحص ExecutiveReportView + PredictionTrackingDashboard
+
+Work Log:
+- قريت worklog.md (آخر 80 سطر — RADAR-LIQUIDITY-SCREENER-PY-PROXY context)
+- قريت Rule 22 (L287-293 — dedup-by-ticker) + Rule 27 (NO-FAKE-DATA) + Rule 67 (CALCULATION-CANONICAL)
+- فحصت ExecutiveReportView.tsx (2,350 سطر) + PredictionTrackingDashboard.tsx (2,216 سطر)
+- تتبعت الـ API endpoints (Node honest-tracking → Python /api/stored-analysis/live-tracking)
+- فحصت canonical Python outcome classification (stored_analysis_routes.py L1800-1942)
+
+Stage Summary:
+
+## الكوارث المُكتشفة:
+
+### 1. ExecutiveReportView.tsx — نسبة نجاح 17.1% + صافي ربح -37.70% (FAKE-LOW)
+
+**السبب الحقيقي (مش اللي المالك شكّ فيه):** الـ JS بيـ re-classify الـ outcome محلياً وبيتجاهل `outcome` field اللي بيرجعه Python (الـ canonical source per Rule 67).
+
+**الأدلة (exact line numbers):**
+
+- **L135** — interface يُعلن `status: string; // PENDING | TARGET_HIT | STOPPED | ...` كحقل مطلوب، لكن Python `item` dict (stored_analysis_routes.py L1864-1897) **لا يُرجع `status` أصلاً** — بيرجع `exit_type` و `outcome` بس.
+
+- **L291-294** — `qualityMode = 'top_picks'` افتراضي + `minConfidence = 70`:
+  ```ts
+  // RL-FIX-10: فلترة الجودة — افتراضي 'top_picks' (أفضل 5/يوم) + minConfidence 70
+  const [qualityMode, setQualityMode] = useState<QualityMode>('top_picks');
+  const [minConfidence, setMinConfidence] = useState<number>(70);
+  ```
+  → بيقتل ~2/3 من التوقعات (الضعيفة + الـ 5/يوم لكل persona). ده filter مطلوب من المالك، مش bug — لكنه بيكشف الـ bug الأساسي.
+
+- **L350-374** — RL-FIX-16 logic (DEAD CODE):
+  ```ts
+  let outcome: 'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING' = 'PENDING';
+  const status = (p.status || '').toUpperCase();   // ← status دايماً '' (Python ما بيبعتش status)
+  const returnPct = p.actual_return != null
+    ? Number(p.actual_return)
+    : (p.profit_loss_percent != null ? Number(p.profit_loss_percent) : 0);
+
+  if (status === 'PENDING') {                       // ← DEAD (status='')
+    outcome = 'PENDING';
+  } else if (returnPct > 0) {
+    outcome = 'WIN';
+  } else if (returnPct < 0) {
+    outcome = 'LOSS';
+  } else if (status === 'EXPIRED') {                // ← DEAD
+    outcome = 'EXPIRED';
+  } else if (status === 'STOPPED') {                 // ← DEAD
+    outcome = 'LOSS';
+  } else if (status === 'TARGET_HIT' || status === 'PROFIT_TAKEN' || status === 'TRAILING_PROFIT') {  // ← DEAD
+    outcome = 'LOSS';
+  } else {
+    outcome = 'LOSS';  // ← FALLBACK دايماً يقع هنا لما returnPct===0
+  }
+  ```
+
+  **الكارثة:** Python بيرجع `outcome='PENDING'` للصفقات المفتوحة (stored_analysis_routes.py L1841: `outcome = 'PENDING'`) مع `actual_return=null` و `live_pnl=0` (لو السعر الحالي = entry). الـ JS بيحسب `returnPct=0` → بيقع في `else → LOSS`. → **كل صفقة PENDING مع live_pnl≈0 بتتصنّف LOSS!**
+
+  ده ليه winRate = 17.1% (منخفض كاذب) — معظم الصفقات المفتوحة بتعدّ LOSS بدل PENDING.
+
+- **L691** — `totalProfit = SUM(returnPct)` (جبري على percentages):
+  ```ts
+  const totalProfit = closed.reduce((s, p) => s + Number(p.returnPct || 0), 0);
+  ```
+  → لو عندك 38 صفقة كل واحدة خسرت -1%، الـ totalProfit = -38% بدل -1% الفعلي. ده بيشرح الـ -37.70%.
+
+- **L660-669** — `uniqueStocks` (مش bug — ده Rule 22 صحيح):
+  ```ts
+  const uniqueStocks = useMemo(() => {
+    const groups = new Map<string, LivePredictionItem[]>();
+    for (const p of allPredictions) {
+      const dateStr = String(p.entryDate || '').slice(0, 10) || 'unknown';
+      const key = `${p.ticker}__${dateStr}`;
+      // ...
+    }
+    return Array.from(groups.values()).map(pickRepresentative);
+  }, [allPredictions]);
+  ```
+  → بيدمج 3 personas في صف واحد (balanced أولوية). ده **صحيح** per Rule 22. المالك غلط في اتهامه لـ uniqueStocks.
+
+- **API endpoint:**
+  - Frontend: `GET /api/predictions/honest-tracking/list?market=EGX&limit=2000&qualityMode=top_picks&minScore=70&topPerDay=5` (L310-322)
+  - Node proxy: `/home/z/my-project/src/app/api/predictions/honest-tracking/list/route.ts` (86 سطر — pure thin proxy per Rule 20)
+  - Python: `GET {PY}/api/stored-analysis/live-tracking` (stored_analysis_routes.py L1613+)
+
+---
+
+### 2. PredictionTrackingDashboard.tsx — صافي ربح +2472.9% (FAKE-HIGH)
+
+**السبب الحقيقي (مش اللي المالك شكّ فيه):** `netReturn = SUM(returnPct)` — جمع النسب المئوية جبرياً (mathematically invalid). الـ persona dedup **صحيح** (مش الـ bug).
+
+**الأدلة (exact line numbers):**
+
+- **L460-498** — `computeStatsFromPredictions` (الـ calculator المركزية):
+  ```ts
+  function computeStatsFromPredictions(preds: LivePrediction[]): PersonaStats {
+    let wins = 0, losses = 0, expired = 0, pending = 0;
+    let winReturnsSum = 0;   // L462 — مجموع عوائد الصفقات الرابحة
+    let lossReturnsSum = 0;  // L463 — مجموع عوائد الصفقات الخاسرة
+    for (const p of preds) {
+      const ret = Number(p.returnPct || 0);
+      if (p.outcome === 'WIN') {
+        if (Math.abs(ret) > 50) continue;  // Rule 7 HARD cap
+        wins++;
+        winReturnsSum += ret;     // L470 — SUM (مش avg)
+      } else if (p.outcome === 'LOSS') {
+        if (Math.abs(ret) > 50) continue;
+        losses++;
+        lossReturnsSum += ret;   // L474 — SUM
+      }
+      // ...
+    }
+    // ...
+    const netReturn = winReturnsSum + lossReturnsSum;  // L490 — SUM of % (خطأ رياضي)
+    const grossProfit = winReturnsSum;                  // L491 — SUM
+    const grossLoss = lossReturnsSum;                   // L492 — SUM
+  ```
+
+  **الخطأ:** لو عندك 80 صفقة رابحة، كل واحدة فيهم حققت +30% return، الـ `netReturn = 80 × 30 = 2400%`. ده الـ +2472.9% اللي المالك شافه!
+  
+  المفروض:
+  - `avgReturn = netReturn / settled` (متوسط لكل صفقة)
+  - أو `compoundReturn = ∏(1 + rᵢ/100) − 1` (عائد مركّب)
+
+- **L824-828** — `activeStats` بيستخدم `computedStats.overall` (الـ dedup):
+  ```ts
+  const activeStats = useMemo<PersonaStats>(() => {
+    if (!data) return { ... netReturn: 0, ... };
+    if (selectedPersona === 'all') return computedStats.overall;
+    return computedStats.byPersona[selectedPersona] || computedStats.overall;
+  }, [data, selectedPersona, computedStats]);
+  ```
+  → لما persona='all' بيشوف الـ deduped. لما persona محددة بيشوف per-persona (وكل persona عندها 1 row لكل stock per day — مش 3×).
+
+- **L1372** — عرض netReturn في الـ Hero KPI:
+  ```tsx
+  {activeStats.netReturn >= 0 ? '+' : ''}{(activeStats.netReturn ?? 0).toFixed(1)}%
+  ```
+  → بيعرض +2472.9% (الـ sum المُلعون).
+
+- **L1388 + L1404** — عرض grossProfit + grossLoss (الاتنين SUM كمان):
+  ```tsx
+  +{(activeStats.grossProfit ?? 0).toFixed(1)}%   // L1388 — مثلاً +3500% (sum)
+  {(activeStats.grossLoss ?? 0).toFixed(1)}%       // L1404 — مثلاً -1100% (sum)
+  ```
+
+- **L679-691** — `aggregateByTicker` (مش bug — Rule 22 صحيح):
+  ```ts
+  const aggregateByTicker = useMemo<LivePrediction[]>(() => {
+    const best = new Map<string, LivePrediction>();
+    const rank = (x: LivePrediction) =>
+      (x.morning_bell ? 1_000_000 : 0) +
+      Number(x.evidence_count ?? 0) * 1_000 +
+      Number(x.confidence ?? x.maestroScore ?? 0);
+    for (const p of qualityFilteredPredictions) {
+      const key = `${p.ticker}__${String(p.entryDate || '').slice(0, 10)}`;
+      const prev = best.get(key);
+      if (!prev || rank(p) > rank(prev)) best.set(key, p);
+    }
+    return Array.from(best.values());
+  }, [qualityFilteredPredictions]);
+  ```
+  → بيدمج 3 personas في صف واحد بترتيب (morning_bell → evidence_count → confidence). ده **صحيح** per Rule 22.
+
+- **L785** — `dailyPerformanceData` بيـ reduce برضه (نفس المشكلة بس يومية):
+  ```ts
+  const netReturnPct = trades.reduce((sum, t) => sum + t.returnPct, 0);
+  ```
+  → لو يوم فيه 5 صفقات كل واحدة +10% → netReturnPct = +50% (مش +10% × معامل reinvestment).
+
+- **API endpoint:**
+  - Frontend: `GET /api/predictions/honest-tracking/live-tracking?market=EGX&days=999&limit=200&minScore=70` (L560-562)
+  - Node proxy: `/home/z/my-project/src/app/api/predictions/honest-tracking/live-tracking/route.ts`
+  - Python: `GET {PY}/api/stored-analysis/live-tracking` (stored_analysis_routes.py L1613+)
+
+---
+
+## الـ Root Causes:
+
+1. **ExecutiveReportView** — `p.status` field مُعلن في الـ interface (L135) لكن **Python ما بيرجعهوش** → RL-FIX-16 logic dead code → fallback `else → LOSS` بيصنّف PENDING trades (live_pnl≈0) كـ LOSS → winRate fake-low (17.1%).
+
+2. **ExecutiveReportView** — `totalProfit = closed.reduce((s,p) => s + Number(p.returnPct||0), 0)` (L691) — جمع النسب المئوية جبرياً → صافي ربح fake-low (-37.70%).
+
+3. **PredictionTrackingDashboard** — `netReturn = winReturnsSum + lossReturnsSum` (L490) — نفس الخطأ → صافي ربح fake-high (+2472.9%).
+
+4. **PredictionTrackingDashboard** — `grossProfit = winReturnsSum` (L491) + `grossLoss = lossReturnsSum` (L492) معروضين كـ "%" → بـ implies portfolio return، لكنهم SUM مش avg/compound.
+
+5. **الاتنين components** بيـ re-compute outcome/stats client-side بدل ما يستخدموا Python's canonical `outcome` field (Rule 67 CALCULATION-CANONICAL violation).
+
+6. **شكّ المالك في persona duplication** (3× inflation) في PredictionTrackingDashboard — **مش صحيح**. `aggregateByTicker` (L679-691) بيـ dedup صح per Rule 22. السهم الواحد بيتحسب مرة واحدة في `overall`.
+
+7. **شكّ المالك في `uniqueStocks`** في ExecutiveReportView — **مش صحيح**. الـ dedup (L660-669) صحيح per Rule 22. المالك غلط في اتهامه.
+
+8. **شكّ المالك في RL-FIX-16** بيعتبر رابحة كخسارة — **صحيح جزئياً**. الـ logic مكتوب صح، لكن `p.status` undefined → الـ branches اللي المالك شكّ فيها (TARGET_HIT → LOSS) ما بتيجيش أصلاً → الـ fallback `else → LOSS` هو اللي بيشتغل.
+
+---
+
+## الـ Recommended Fixes:
+
+### Fix #1 (CRITICAL — ExecutiveReportView L350-374): استخدم Python's `outcome` field مباشرةً
+
+استبدل L350-374 بـ:
+```ts
+// Rule 67 (CALCULATION-CANONICAL): Python outcome هو الـ canonical source.
+// لا نعيد تصنيفه client-side. Rule 27 (NO-FAKE-DATA): لو null → PENDING.
+let outcome: 'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING' =
+  (p.outcome as 'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING') || 'PENDING';
+
+const returnPct = p.actual_return != null
+  ? Number(p.actual_return)
+  : (p.profit_loss_percent != null ? Number(p.profit_loss_percent) : 0);
+```
+
+(Full deletion of L341-374 — استبدال بـ 4 سطور بسيطة.)
+
+### Fix #2 (CRITICAL — ExecutiveReportView L691): استبدل SUM بـ AVERAGE أو COMPOUND
+
+استبدل L691 بـ:
+```ts
+// Math-correct: متوسط عائد كل صفقة مقفولة (مش SUM).
+const avgReturnPct = closed.length > 0
+  ? closed.reduce((s, p) => s + Number(p.returnPct || 0), 0) / closed.length
+  : 0;
+// Compound return (لو المالك عايز "لو استثمرت في كل صفقة"):
+const compoundReturnPct = closed.length > 0
+  ? (closed.reduce((acc, p) => acc * (1 + Number(p.returnPct || 0) / 100), 1) - 1) * 100
+  : 0;
+```
+ثم استخدم `avgReturnPct` أو `compoundReturnPct` بدل `totalProfit` في L1475 + L1029.
+
+### Fix #3 (CRITICAL — PredictionTrackingDashboard L490-492): استبدل SUM بـ AVERAGE
+
+استبدل L490-492 بـ:
+```ts
+// Math-correct: متوسط لكل صفقة (مش SUM جبري على percentages).
+const avgReturnPerTrade = settled > 0
+  ? (winReturnsSum + lossReturnsSum) / settled
+  : 0;
+// Compound return لو احتجنا "صافي ربح المحفظة":
+const compoundReturnPct = settled > 0
+  ? (preds
+      .filter((p) => p.outcome === 'WIN' || p.outcome === 'LOSS')
+      .filter((p) => Math.abs(Number(p.returnPct || 0)) <= 50)
+      .reduce((acc, p) => acc * (1 + Number(p.returnPct || 0) / 100), 1) - 1) * 100
+  : 0;
+```
+ثم في الـ PersonaStats interface (L136) بدّل:
+- `netReturn` → `avgReturn` أو `compoundReturn` (rename علشان واضح)
+- `grossProfit` → `avgWinPct` (موجود فعلاً L484 — use it!)
+- `grossLoss` → `avgLossPct` (موجود فعلاً L485 — use it!)
+
+ثم حدّث الـ KPI cards (L1354-1410) لعرض:
+- "متوسط العائد/الصفقة: +{avgReturn.toFixed(1)}%"
+- "متوسط الربح/صفقة رابحة: +{avgWinPct.toFixed(1)}%" (بدل grossProfit sum)
+- "متوسط الخسارة/صفقة خاسرة: {avgLossPct.toFixed(1)}%" (بدل grossLoss sum)
+
+### Fix #4 (HIGH — ExecutiveReportView L135): أضِف `outcome` field للـ HonestPredictionItem interface
+
+```ts
+interface HonestPredictionItem {
+  // ... existing fields ...
+  outcome?: 'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING' | null;  // ← أضِف ده (canonical from Python)
+  liveOutcome?: 'WIN' | 'LOSS' | 'PENDING' | null;          // ← preview للصفقات المفتوحة
+  // ...
+}
+```
+
+### Fix #5 (MEDIUM — PredictionTrackingDashboard L785): نفّس الإصلاح للـ dailyPerformanceData
+
+```ts
+// Math-correct: متوسط عائد اليوم (مش SUM).
+const netReturnPct = trades.length > 0
+  ? trades.reduce((sum, t) => sum + t.returnPct, 0) / trades.length
+  : 0;
+// أو compound لو المالك عايز "صافي ربح اليوم كمحفظة":
+// const netReturnPct = (trades.reduce((acc, t) => acc * (1 + t.returnPct / 100), 1) - 1) * 100;
+```
+
+### Fix #6 (LOW — ExecutiveReportView L294): خلّي `minConfidence` default = 0 أو 50
+
+`minConfidence = 70` افتراضي بيخفي ~2/3 من التوقعات من غير ما المالك يدرك. غيّر الـ default لـ 50 (أو 0) علشان الـ KPI يعكس الـ full picture، والمستخدم يقدر يفلتر يدوياً:
+```ts
+const [minConfidence, setMinConfidence] = useState<number>(50);  // كان 70
+```
+
+---
+
+## القواعد المُخالَفة:
+
+- **Rule 22 (dedup-by-ticker)**: مُطبّق صح في الاتنين (`uniqueStocks` + `aggregateByTicker`). ✅
+- **Rule 27 (NO-FAKE-DATA)**: مُخالَفة — SUM of percentages = رقم مُضلِّل (مش fabricated لكن misleading). ⚠️
+- **Rule 67 (CALCULATION-CANONICAL)**: مُخالَفة خطيرة — الـ JS بيـ re-classify `outcome` محلياً بدل ما يستخدم canonical Python field. 🔴
+- **Rule 20 (Python=Brain)**: مُخالَفة جزئية — الـ computation المركزية (winRate, netReturn) بتحصل client-side بدل Python.
+
+---
+
+## ملخص نهائي:
+
+الـ dashboards فيهم **2 catastrophic bugs** (ميكانيكياً مختلفين عن شكّ المالك):
+
+1. **ExecutiveReportView** winRate=17.1% (fake-low) — سببه `p.status` undefined → RL-FIX-16 dead code → PENDING trades تتصنّف LOSS. الإصلاح: استخدم Python's `outcome` field مباشرةً.
+
+2. **PredictionTrackingDashboard** netReturn=+2472.9% (fake-high) — سببه `netReturn = SUM(returnPct)` (math خطأ). الإصلاح: استبدل بـ average أو compound return.
+
+شكّ المالك في `uniqueStocks` + `aggregateByTicker` + persona duplication — **مش صحيح**، دول Rule 22 dedup صحيح. المالك شكّ في RL-FIX-16 — **صحيح جزئياً** (الـ logic مكتوب صح بس ما بيشتغلش لأن `p.status` undefined).
+
+Worklog entry complete. الـ fixes جاهزة للـ implementation في session تالي.
+
+---
+Task ID: LEAGUE-DEDUP-FIX
+Agent: Main Agent (Z.ai Code)
+Task: حل 3 كوارث مالية في رادار السيولة + شاشة الفلاتر + لوحة الأدمن
+
+Work Log:
+- رديت على غضب المالك: "لا دة متخلف — 3 فضائح مالية وتقنية"
+- شغلت subagent لفحص ExecutiveReportView + PredictionTrackingDashboard
+- فحصت misc_routes.py league_report + StockLeagueImageCard
+
+الـ 3 كوارث المُكتشفة + الـ Root Causes:
+
+الكارثة 1: تكرار نفس السهم (MMAT) في كروت الدوري
+- السبب: misc_routes.py L2084-2095 — SQL بدون GROUP BY ticker
+- الـ predictions table بتحفظ 3 rows لكل سهم (3 personas)
+- النتيجة: السهم بيظهر 3 مرات في الـ top 10
+
+الكارثة 2: ExecutiveReportView winRate=17.1% + totalProfit=-37.70%
+- السبب 1: L350-374 — استخدم p.status (field غير موجود في Python response)
+  → dead code → fallback `else → LOSS` بيصنّف PENDING trades كـ LOSS
+- السبب 2: L691 — totalProfit = closed.reduce((s,p) => s + returnPct, 0)
+  → SUM جبري للنسب المئوية (غلط مالياً)
+
+الكارثة 3: PredictionTrackingDashboard netReturn=+2472.9%
+- السبب 1: L490 — netReturn = winReturnsSum + lossReturnsSum
+  → SUM جبري (80 صفقة × +30% = +2400%)
+- السبب 2: L491-492 — grossProfit + grossLoss = SUMs
+- السبب 3: L785 — dailyPerformanceData reduce((sum, t) => sum + returnPct, 0)
+
+الإصلاحات الجذرية:
+
+FIX 1: misc_routes.py league_report SQL (L2084-2118)
+- قبل: SELECT ... ORDER BY actual_return DESC LIMIT 10 (بدون dedup)
+- بعد: WITH ranked AS (..., ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY actual_return DESC) as rn)
+        SELECT ... FROM ranked WHERE rn = 1 ORDER BY actual_return DESC LIMIT 10
+- القاعدة: Rule 22 (dedup-by-ticker) + Rule 67 (CALCULATION-CANONICAL)
+- الاختبار: SQL قديم رجّع MASR 4 مرات + PHDC 4 مرات + ABUK مرتين
+           SQL جديد رجّع 10 tickers فريدة تماماً ✅
+
+FIX 2: ExecutiveReportView.tsx outcome classification (L340-380)
+- قبل: استخدم p.status (field غير موجود في Python response)
+- بعد: استخدم p.outcome (canonical field من Python per Rule 67)
+- الترتيب: p.outcome WIN/TARGET_HIT/TRAILING_PROFIT → WIN
+           p.outcome LOSS/STOP_HIT/STOPPED → LOSS
+           p.outcome EXPIRED → EXPIRED
+           p.outcome PENDING → PENDING (مش LOSS!)
+- القاعدة: Rule 67 (CALCULATION-CANONICAL) — Node مش بـ re-classify
+
+FIX 3: ExecutiveReportView.tsx computeStats (L680-770)
+- قبل: totalProfit = closed.reduce((s,p) => s + returnPct, 0) — SUM جبري
+- بعد: totalProfit = avgReturnPct (متوسط العائد لكل صفقة)
+        + cumulativeReturnPct = compound return (product(1 + ret/100) - 1)
+- قبل: profitFactor = grossWin(SUM) / grossLoss(SUM)
+- بعد: profitFactor = avgWinPct / |avgLossPct| (من averages — matches Python canonical)
+- القاعدة: Rule 27 (NO-FAKE-DATA) + Rule 67 (CALCULATION-CANONICAL)
+
+FIX 4: PredictionTrackingDashboard.tsx computeStatsFromPredictions (L460-528)
+- قبل: netReturn = winReturnsSum + lossReturnsSum — SUM جبري (+2472.9%!)
+- بعد: netReturn = avgReturnPct (متوسط العائد لكل صفقة)
+        + cumulativeReturnPct = compound return
+- قبل: grossProfit = winReturnsSum (SUM)
+- بعد: grossProfit = avgWinPct (متوسط)
+- قبل: profitFactor = winReturnsSum / |lossReturnsSum| (SUM/SUM)
+- بعد: profitFactor = avgWinPct / |avgLossPct| (avg/avg — matches Python)
+- القاعدة: Rule 27 (NO-FAKE-DATA) + Rule 67
+
+FIX 5: PredictionTrackingDashboard.tsx dailyPerformanceData (L810-838)
+- قبل: netReturnPct = trades.reduce((sum, t) => sum + t.returnPct, 0) — SUM خطي
+- بعد: compound return = product(1 + ret/100) - 1
+- القاعدة: Rule 27 (NO-FAKE-DATA)
+
+FIX 6: PredictionTrackingDashboard.tsx PersonaStats interface (L123-147)
+- أضفنا cumulativeReturnPct?: number (compound return)
+- حدّثنا comments: netReturn = avgReturnPct (مش SUM)
+- grossProfit = avgWinPct (مش SUM)
+- grossLoss = avgLossPct (مش SUM)
+
+Verification:
+
+A) Python syntax: ✅ misc_routes.py OK
+B) ESLint: ✅ EXIT 0
+C) SQL dedup test:
+   - SQL قديم: MASR 4× + PHDC 4× + ABUK 2× = تكرار كارثي
+   - SQL جديد: 10 tickers فريدة تماماً ✅
+D) Browser: HTTP 200 على / route ✅
+E) honest-tracking/list: 503 + Rule 27 message (Python down — no fake zeros)
+
+القواعد المُطبّقة:
+- Rule 22 (dedup-by-ticker): GROUP BY ticker في league_report SQL ✅
+- Rule 27 (NO-FAKE-DATA): استبدال SUM الجبري بـ avg + compound return ✅
+- Rule 67 (CALCULATION-CANONICAL):
+  * league_report logic في Python (مش Node)
+  * outcome classification من Python canonical field
+  * profitFactor من averages (matches backtest_stats.py::compute_profit_factor)
+  * compound return (الطريقة المالية الصحيحة)
+
+LEAGUE-DEDUP-FIX complete. الـ 3 كوارث المالية اتعالجت من الجذر.

@@ -132,12 +132,18 @@ interface PersonaStats {
   profitFactor: number;
   closedCount: number;
   expired?: number;
-  // ما يهم العميل: الفلوس + الحماية
-  netReturn: number;      // صافي الربح/الخسارة = sum(actual_return)
-  grossProfit: number;     // إجمالي الأرباح = sum(positive returns)
-  grossLoss: number;       // إجمالي الخسائر = sum(negative returns, سالب)
+  // RULE27-NO-FAKE-DATA (2026-10-12 — LEAGUE-DEDUP-FIX):
+  // قبل كده: netReturn = SUM(returnPct) — ده كان جمع خطي للنسب المئوية (غلط مالياً).
+  // دلوقتي: netReturn = متوسط العائد لكل صفقة (avgReturnPct).
+  //         grossProfit = avgWinPct (متوسط ربح الصفقات الرابحة).
+  //         grossLoss = avgLossPct (متوسط خسارة الصفقات الخاسرة، سالب).
+  //         cumulativeReturnPct = العائد التراكمي الحقيقي (compound return).
+  netReturn: number;      // متوسط العائد لكل صفقة (مش SUM)
+  grossProfit: number;     // متوسط ربح الصفقات الرابحة (avgWinPct)
+  grossLoss: number;       // متوسط خسارة الصفقات الخاسرة (avgLossPct, سالب)
   maxLoss: number;         // أقصى خسارة في صفقة واحدة (سالب)
   rrRatio: number;         // متوسط الربح ÷ متوسط الخسارة
+  cumulativeReturnPct?: number; // العائد التراكمي الحقيقي (compound return)
 }
 
 interface LiveTrackingResponse {
@@ -483,19 +489,48 @@ function computeStatsFromPredictions(preds: LivePrediction[]): PersonaStats {
   const winRate = settled > 0 ? (wins / settled) * 100 : 0;
   const avgWinPct = wins > 0 ? winReturnsSum / wins : 0;
   const avgLossPct = losses > 0 ? lossReturnsSum / losses : 0; // سالب
-  const profitFactor = lossReturnsSum < 0
-    ? winReturnsSum / Math.abs(lossReturnsSum)
-    : (winReturnsSum > 0 ? 999 : 0);
+  // RULE67-CANONICAL (2026-10-12 — LEAGUE-DEDUP-FIX):
+  // قبل كده: profitFactor = winReturnsSum(SUM) / |lossReturnsSum(SUM)| — ده SUM جبري!
+  // مالياً ده غلط: PF لازم يحسب من averages (avgWin / |avgLoss|).
+  // ده بيتطابق مع Python canonical: utils/backtest_stats.py::compute_profit_factor
+  const profitFactor = avgLossPct < 0
+    ? avgWinPct / Math.abs(avgLossPct)
+    : (avgWinPct > 0 ? 999 : 0);
   const closedCount = settled;
-  const netReturn = winReturnsSum + lossReturnsSum; // صافي الربح/الخسارة
-  const grossProfit = winReturnsSum; // إجمالي الأرباح (موجب)
-  const grossLoss = lossReturnsSum; // إجمالي الخسائر (سالب)
+
+  // RULE27-NO-FAKE-DATA (2026-10-12 — LEAGUE-DEDUP-FIX):
+  // قبل كده: netReturn = winReturnsSum + lossReturnsSum — ده SUM جبري للنسب المئوية!
+  // ده سبب الـ +2472.9% الخيالي (80 صفقة × +30% = +2400% — رقم في الفضاء).
+  // مالياً ده غلط: لازم نحسب العائد التراكمي بالـ compound return.
+  // الـ "netReturn" دلوقتي = متوسط العائد لكل صفقة (مفهوم للعميل).
+  // الـ "cumulativeReturnPct" = العائد التراكمي الحقيقي (compound).
+  const avgReturnPct = settled > 0 ? (winReturnsSum + lossReturnsSum) / settled : 0;
+
+  // Compound return (الطريقة المالية الصحيحة):
+  // افترض رأس مال 100 لكل صفقة. كل صفقة بـ تضاعف الـ capital بـ (1 + ret/100).
+  // الناتج النهائي - 100 = العائد التراكمي الحقيقي.
+  let cumulativeCapital = 100;
+  for (const p of preds) {
+    const ret = Number(p.returnPct || 0);
+    if (p.outcome === 'WIN' || p.outcome === 'LOSS') {
+      if (Math.abs(ret) > 50) continue;  // HARD cap (Rule 7)
+      cumulativeCapital *= (1 + ret / 100);
+    }
+  }
+  const cumulativeReturnPct = settled > 0 ? cumulativeCapital - 100 : 0;
+
+  // netReturn = متوسط العائد لكل صفقة (مش SUM)
+  const netReturn = avgReturnPct;
+  // grossProfit + grossLoss = averages (مش SUMs) — ده اللي يمثل "متوسط الربح/الخسارة لكل صفقة"
+  const grossProfit = avgWinPct;
+  const grossLoss = avgLossPct;
+
   const validLosses = preds
     .map(p => Number(p.returnPct ?? (p as any).actual_return ?? (p as any).pnl_pct))
     .filter(r => !isNaN(r) && r < 0);
   const maxLoss = validLosses.length > 0 ? Math.min(...validLosses) : 0; // أقصى خسارة (أكثر قيمة سالبة)
   const rrRatio = avgLossPct < 0 ? avgWinPct / Math.abs(avgLossPct) : 0; // متوسط الربح ÷ متوسط الخسارة
-  return { total, wins, losses, pending, settled, winRate, avgWinPct, avgLossPct, profitFactor, closedCount, expired, netReturn, grossProfit, grossLoss, maxLoss, rrRatio };
+  return { total, wins, losses, pending, settled, winRate, avgWinPct, avgLossPct, profitFactor, closedCount, expired, netReturn, grossProfit, grossLoss, maxLoss, rrRatio, cumulativeReturnPct };
 }
 
 // ==================== Main Dashboard Component ====================
@@ -782,7 +817,15 @@ export function PredictionTrackingDashboard({
     return Array.from(dayMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, trades]) => {
-        const netReturnPct = trades.reduce((sum, t) => sum + t.returnPct, 0);
+        // RULE27-NO-FAKE-DATA (2026-10-12 — LEAGUE-DEDUP-FIX):
+        // قبل كده: netReturnPct = SUM(trades.returnPct) — جمع خطي للنسب المئوية.
+        // ده غلط مالياً (لو 3 صفقات × 10% = 30% لكن لو حسبنا compound = 33.1%).
+        // الحل: compound return = product(1 + ret/100) - 1
+        let dailyCapital = 100;
+        for (const t of trades) {
+          dailyCapital *= (1 + t.returnPct / 100);
+        }
+        const netReturnPct = dailyCapital - 100;
         const winCount = trades.filter((t) => t.isWin).length;
         const lossCount = trades.length - winCount;
         // tickers مع العائد لعرضها في الـ Tooltip

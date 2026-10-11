@@ -2081,15 +2081,38 @@ def league_report():
             league = []
 
             try:
+                # RULE22-DEDUP (2026-10-12 — LEAGUE-DEDUP-FIX):
+                # السبب الجذري لتكرار نفس السهم (MMAT) مرتين في الـ top 10:
+                # الـ predictions table بتحفظ 3 rows لكل سهم (3 personas: gambler/
+                # balanced/conservative). بدون GROUP BY ticker، السهم بـ يظهر 3 مرات.
+                #
+                # الحل: GROUP BY ticker + MAX(actual_return) — يرجّع أحسن نتيجة لكل سهم.
+                # Rule 22 (dedup-by-ticker): السهم الواحد = صفقة واحدة.
+                # Rule 67 (CALCULATION-CANONICAL): المنطق في Python، مش Node.
+                #
+                # CTE logic:
+                #   1. ranked = رتّب كل rows per ticker بـ actual_return DESC
+                #   2. top_per_ticker = خد row واحد لكل ticker (rn = 1)
+                #   3. رتّب الـ top_per_ticker بـ actual_return DESC واخد أعلى 10
                 rows = conn.execute("""
+                    WITH ranked AS (
+                        SELECT ticker, signal, signal_type, prediction_date,
+                               entry_price, target_price, stop_loss,
+                               outcome_date, exit_price, actual_return,
+                               hit_target, hit_stop, is_correct, holding_days,
+                               ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY actual_return DESC) as rn
+                        FROM predictions
+                        WHERE outcome_date IS NOT NULL
+                          AND date(outcome_date) >= date(?)
+                          AND date(outcome_date) <= date(?)
+                          AND actual_return IS NOT NULL
+                    )
                     SELECT ticker, signal, signal_type, prediction_date,
                            entry_price, target_price, stop_loss,
                            outcome_date, exit_price, actual_return,
                            hit_target, hit_stop, is_correct, holding_days
-                    FROM predictions
-                    WHERE outcome_date IS NOT NULL
-                      AND date(outcome_date) >= date(?)
-                      AND date(outcome_date) <= date(?)
+                    FROM ranked
+                    WHERE rn = 1
                     ORDER BY actual_return DESC
                     LIMIT 10
                 """, (start_str, end_str)).fetchall()

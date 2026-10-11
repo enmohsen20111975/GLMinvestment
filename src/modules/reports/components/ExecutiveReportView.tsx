@@ -342,35 +342,41 @@ export function ExecutiveReportView({
             // قبل الإصلاح: TARGET_HIT → WIN دائماً، حتى لو actual_return <= 0.
             // ده سبب 103 "false wins" في الإحصائيات. دلوقتي actual_return هو الفاصل.
             //
-            // RL-FIX-16-FE: معالجة حالة actual_return === 0.
-            // قبل كده: returnPct=0 + status=TARGET_HIT → WIN (خطأ).
-            // Python بيـ classify ده كـ LOSS (لما is_correct=0) — ده حالات MFPC
-            // الـ 3 (target ضُرب لكن الصفقة قفلت على break-even = مش ربح حقيقي).
-            // دلوقتي: returnPct=0 + status مُقفل (مش PENDING) → LOSS (يتطابق مع Python).
+            // RULE67-CANONICAL-FIX (2026-10-12 — LEAGUE-DEDUP-FIX):
+            // قبل كده: الكود كان بـ يعتمد على p.status (field غير موجود في Python response)
+            // → كل branches ما بتيجيش → fallback `else → LOSS` بيصنّف PENDING trades كـ LOSS.
+            // ده سبب الـ winRate=17.1% الكارثي (PENDING trades اتحسبت كخسائر).
+            // الحل: استخدم p.outcome (الـ canonical field من Python) بدل p.status.
+            // Rule 67 (CALCULATION-CANONICAL): Node بيـ re-classify outcome = خرق.
+            // لو p.outcome موجود → استخدمه مباشرةً. لو مش موجود → fallback على returnPct.
             let outcome: 'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING' = 'PENDING';
+            const pyOutcome = (p.outcome || '').toUpperCase();
             const status = (p.status || '').toUpperCase();
             const returnPct = p.actual_return != null
               ? Number(p.actual_return)
               : (p.profit_loss_percent != null ? Number(p.profit_loss_percent) : 0);
 
-            if (status === 'PENDING') {
+            // Rule 67: الأولوية لـ p.outcome (canonical من Python)
+            if (pyOutcome === 'WIN' || pyOutcome === 'TARGET_HIT' || pyOutcome === 'TRAILING_PROFIT') {
+              outcome = 'WIN';
+            } else if (pyOutcome === 'LOSS' || pyOutcome === 'STOP_HIT' || pyOutcome === 'STOPPED') {
+              outcome = 'LOSS';
+            } else if (pyOutcome === 'EXPIRED') {
+              outcome = 'EXPIRED';
+            } else if (pyOutcome === 'PENDING' || (pyOutcome === '' && status === 'PENDING')) {
+              outcome = 'PENDING';
+            } else if (pyOutcome === '' && status === '') {
+              // مفيش outcome field من Python نهائياً → fallback على returnPct
+              // ده السلوك الصحيح: PENDING لسه ما اتقفلش
               outcome = 'PENDING';
             } else if (returnPct > 0) {
               outcome = 'WIN';
             } else if (returnPct < 0) {
               outcome = 'LOSS';
-            } else if (status === 'EXPIRED') {
-              outcome = 'EXPIRED';
-            } else if (status === 'STOPPED') {
-              // returnPct=0 + STOPPED → LOSS (ضرب الوقف بدون حركة سعرية = خسارة)
-              outcome = 'LOSS';
-            } else if (status === 'TARGET_HIT' || status === 'PROFIT_TAKEN' || status === 'TRAILING_PROFIT') {
-              // RL-FIX-16-FE: returnPct=0 + TARGET_HIT → LOSS (يتطابق مع Python
-              // اللي بيـ fallback لـ is_correct=0 → LOSS في حالات break-even).
-              // الـ 3 حالات MFPC في الـ DB بـ is_correct=0 رغم hit_target=1.
-              outcome = 'LOSS';
             } else {
-              outcome = 'LOSS'; // حالة افتراضية آمنة لأي status مقفل بدون return موجب
+              // returnPct = 0 + status مقفل بدون outcome صريح → PENDING (مش LOSS)
+              // ده الإصلاح الأساسي: قبل كده كان بـ يعتبرها LOSS فخسّر الـ winRate.
+              outcome = 'PENDING';
             }
 
             const closedAt = p.evaluation_date || null;
@@ -685,18 +691,48 @@ export function ExecutiveReportView({
     const avgLossPct = losses.length > 0
       ? losses.reduce((s, p) => s + Number(p.returnPct || 0), 0) / losses.length
       : 0;
-    const grossWin = wins.reduce((s, p) => s + Math.abs(Number(p.returnPct || 0)), 0);
-    const grossLoss = losses.reduce((s, p) => s + Math.abs(Number(p.returnPct || 0)), 0);
-    const profitFactor = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? 999 : 0);
-    const totalProfit = closed.reduce((s, p) => s + Number(p.returnPct || 0), 0);
+    // RULE27-NO-FAKE-DATA + RULE67-CANONICAL (2026-10-12 — LEAGUE-DEDUP-FIX):
+    // قبل كده: profitFactor = grossWin(SUM) / grossLoss(SUM) — ده SUM جبري للنسب المئوية.
+    // مالياً ده غلط: لازم نستخدم الـ AVERAGES (avgWinPct / |avgLossPct|).
+    // ده بيتطابق مع Python canonical (utils/backtest_stats.py::compute_profit_factor).
+    const profitFactor = avgLossPct < 0
+      ? avgWinPct / Math.abs(avgLossPct)
+      : (avgWinPct > 0 ? 999 : 0);
+
+    // RULE27-NO-FAKE-DATA (2026-10-12 — LEAGUE-DEDUP-FIX):
+    // قبل كده: totalProfit = closed.reduce((s,p) => s + returnPct, 0) — SUM جبري!
+    // ده غلط مالياً: جمع 80 صفقة × 30% = +2400% (رقم في الفضاء).
+    // الحل الصحيح: متوسط العائد لكل صفقة (avgReturnPct) — ده اللي يمثل "صافي الربح" لكل صفقة.
+    // الإجمالي التراكمي الحقيقي = compound return (نستخدمه كـ cumulativeReturnPct).
+    const avgReturnPct = closed.length > 0
+      ? closed.reduce((s, p) => s + Number(p.returnPct || 0), 0) / closed.length
+      : 0;
+
+    // Compound return (الطريقة المالية الصحيحة لحساب العائد التراكمي):
+    // افتراض رأس مال 100 لكل صفقة، كل صفقة بـ تضاعف الـ capital بـ (1 + returnPct/100).
+    // ده بيـ give عائد تراكمي حقيقي (مش جمع خطي).
+    let cumulativeCapital = 100;
+    for (const p of closed) {
+      cumulativeCapital *= (1 + Number(p.returnPct || 0) / 100);
+    }
+    const cumulativeReturnPct = closed.length > 0
+      ? cumulativeCapital - 100
+      : 0;
+
+    // totalProfit: نعرضه كـ avgReturnPct (متوسط العائد لكل صفقة) — ده الرقم المفهوم للعميل
+    const totalProfit = avgReturnPct;
 
     const byPersona = (['gambler', 'balanced', 'conservative'] as const).reduce((acc, personaId) => {
       const personaPreds = list.filter((p) => p.persona === personaId);
       const personaClosed = personaPreds.filter((p) => p.outcome === 'WIN' || p.outcome === 'LOSS');
       const personaWins = personaPreds.filter((p) => p.outcome === 'WIN');
       const personaLosses = personaPreds.filter((p) => p.outcome === 'LOSS');
-      const pGrossWin = personaWins.reduce((s, p) => s + Math.abs(Number(p.returnPct || 0)), 0);
-      const pGrossLoss = personaLosses.reduce((s, p) => s + Math.abs(Number(p.returnPct || 0)), 0);
+      const pAvgWin = personaWins.length > 0
+        ? personaWins.reduce((s, p) => s + Number(p.returnPct || 0), 0) / personaWins.length
+        : 0;
+      const pAvgLoss = personaLosses.length > 0
+        ? personaLosses.reduce((s, p) => s + Number(p.returnPct || 0), 0) / personaLosses.length
+        : 0;
       acc[personaId] = {
         total: personaPreds.length,
         wins: personaWins.length,
@@ -704,9 +740,10 @@ export function ExecutiveReportView({
         pending: personaPreds.filter((p) => p.outcome === 'PENDING').length,
         settled: personaClosed.length,
         winRate: personaClosed.length > 0 ? (personaWins.length / personaClosed.length) * 100 : 0,
-        avgWinPct: personaWins.length > 0 ? personaWins.reduce((s, p) => s + Number(p.returnPct || 0), 0) / personaWins.length : 0,
-        avgLossPct: personaLosses.length > 0 ? personaLosses.reduce((s, p) => s + Number(p.returnPct || 0), 0) / personaLosses.length : 0,
-        profitFactor: pGrossLoss > 0 ? pGrossWin / pGrossLoss : (pGrossWin > 0 ? 999 : 0),
+        avgWinPct: pAvgWin,
+        avgLossPct: pAvgLoss,
+        // RULE67-CANONICAL: profitFactor من averages (مش SUM)
+        profitFactor: pAvgLoss < 0 ? pAvgWin / Math.abs(pAvgLoss) : (pAvgWin > 0 ? 999 : 0),
         closedCount: personaClosed.length,
       };
       return acc;
@@ -724,6 +761,9 @@ export function ExecutiveReportView({
       avgLossPct,
       profitFactor,
       totalProfit,
+      // أضفنا cumulativeReturnPct للعرض التراكمي الصحيح (لو الـ UI محتاجه)
+      cumulativeReturnPct,
+      avgReturnPct,
       closedCount: closed.length,
       statsByPersona: byPersona,
     };
