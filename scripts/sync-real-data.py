@@ -42,7 +42,7 @@ def main():
     log("📦 نقل prediction_logs...")
     
     # حذف البيانات القديمة
-    predictions_db.execute('DELETE FROM predictions')
+    predictions_db.execute('DELETE FROM predictions')  # DEV-06 verified-disabled (dead code — early-return at L21)
     
     # قراءة البيانات
     cursor = stocks_db.execute('''
