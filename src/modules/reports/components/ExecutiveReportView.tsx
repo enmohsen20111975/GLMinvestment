@@ -912,11 +912,11 @@ export function ExecutiveReportView({
     const pending = uniqueStocks.filter((p) => p.outcome === 'PENDING').length;
     const expired = uniqueStocks.filter((p) => p.outcome === 'EXPIRED').length;
     return [
-      { name: 'رابحة', value: wins, color: '#10b981' },
-      { name: '💰 خرجت بربح', value: trailingProfit, color: '#2dd4bf' },  // teal-400 — مميز عن emerald
-      { name: 'خاسرة', value: losses, color: '#f43f5e' },
-      { name: 'معلقة', value: pending, color: '#f59e0b' },
-      { name: 'منتهية', value: expired, color: '#64748b' },
+      { name: 'رابحة', value: wins, color: 'hsl(var(--success))' },
+      { name: '💰 خرجت بربح', value: trailingProfit, color: 'hsl(var(--chart-2))' },  // teal-400 — مميز عن emerald
+      { name: 'خاسرة', value: losses, color: 'hsl(var(--danger))' },
+      { name: 'معلقة', value: pending, color: 'hsl(var(--warning))' },
+      { name: 'منتهية', value: expired, color: 'hsl(var(--muted-foreground))' },
     ].filter((d) => d.value > 0);
   }, [uniqueStocks]);
 
@@ -1022,7 +1022,7 @@ export function ExecutiveReportView({
         cacheBust: true,
         quality: 0.98,
         pixelRatio: 2,
-        backgroundColor: '#0a0f1c',
+        backgroundColor: 'hsl(var(--background))',
       });
       const link = document.createElement('a');
       const timeLabel = TIMEFRAME_OPTIONS.find((t) => t.value === days)?.badge || `${days}d`;
@@ -1338,7 +1338,7 @@ export function ExecutiveReportView({
       {/* ════════════════ MAIN REPORT (PNG snapshot target) ════════════════ */}
       <div
         ref={reportContainerRef}
-        className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-[#0c1220] via-[#0a0f1c] to-[#0c1220] border-2 border-amber-500/25 text-white shadow-2xl overflow-hidden"
+        className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-[hsl(var(--card))] via-[hsl(var(--background))] to-[hsl(var(--card))] border-2 border-amber-500/25 text-white shadow-2xl overflow-hidden"
       >
         {/* Decorative background glows — subtle, not overwhelming */}
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-amber-500/8 blur-[140px] pointer-events-none rounded-full" />
@@ -1655,8 +1655,8 @@ export function ExecutiveReportView({
                             </Pie>
                             <RTooltip
                               contentStyle={{
-                                backgroundColor: '#0a0f1c',
-                                border: '1px solid rgba(255,255,255,0.1)',
+                                backgroundColor: 'hsl(var(--background))',
+                                border: '1px solid hsl(var(--foreground) / 0.1)',
                                 borderRadius: '12px',
                                 fontSize: '12px',
                               }}
@@ -1702,17 +1702,17 @@ export function ExecutiveReportView({
                         <AreaChart data={cumulativeProfitData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                           <defs>
                             <linearGradient id="cumProfitGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.5} />
-                              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                              <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.5} />
+                              <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                          <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} hide />
-                          <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={40} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.05)" />
+                          <XAxis dataKey="label" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} hide />
+                          <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} width={40} />
                           <RTooltip
                             contentStyle={{
-                              backgroundColor: '#0a0f1c',
-                              border: '1px solid rgba(255,255,255,0.1)',
+                              backgroundColor: 'hsl(var(--background))',
+                              border: '1px solid hsl(var(--foreground) / 0.1)',
                               borderRadius: '12px',
                               fontSize: '12px',
                             }}
@@ -1721,11 +1721,11 @@ export function ExecutiveReportView({
                               return [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'الصفقة'];
                             }}
                           />
-                          <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
+                          <ReferenceLine y={0} stroke="hsl(var(--foreground) / 0.2)" strokeDasharray="3 3" />
                           <Area
                             type="monotone"
                             dataKey="cumulative"
-                            stroke="#10b981"
+                            stroke="hsl(var(--success))"
                             strokeWidth={2.5}
                             fill="url(#cumProfitGrad)"
                           />
@@ -1752,22 +1752,22 @@ export function ExecutiveReportView({
                     <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={monthlyReturns} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                          <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                          <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={40} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--foreground) / 0.05)" />
+                          <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                          <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} width={40} />
                           <RTooltip
                             contentStyle={{
-                              backgroundColor: '#0a0f1c',
-                              border: '1px solid rgba(255,255,255,0.1)',
+                              backgroundColor: 'hsl(var(--background))',
+                              border: '1px solid hsl(var(--foreground) / 0.1)',
                               borderRadius: '12px',
                               fontSize: '12px',
                             }}
                             formatter={(value: number) => [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'العائد']}
                           />
-                          <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
+                          <ReferenceLine y={0} stroke="hsl(var(--foreground) / 0.2)" strokeDasharray="3 3" />
                           <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                             {monthlyReturns.map((entry, idx) => (
-                              <Cell key={`bar-${idx}`} fill={entry.total >= 0 ? '#10b981' : '#f43f5e'} />
+                              <Cell key={`bar-${idx}`} fill={entry.total >= 0 ? 'hsl(var(--success))' : 'hsl(var(--danger))'} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -1789,21 +1789,21 @@ export function ExecutiveReportView({
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={personaRadarData} outerRadius="75%">
-                        <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                        <PolarAngleAxis dataKey="axis" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                        <PolarGrid stroke="hsl(var(--foreground) / 0.1)" />
+                        <PolarAngleAxis dataKey="axis" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
                         <RTooltip
                           contentStyle={{
-                            backgroundColor: '#0a0f1c',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--foreground) / 0.1)',
                             borderRadius: '12px',
                             fontSize: '12px',
                           }}
                         />
-                        {/* <Radar name="المضارب" dataKey="gambler" stroke="#fb923c" fill="#fb923c" fillOpacity={0.3} /> */}
-                        <Radar name="المتوازن" dataKey="balanced" stroke="#2dd4bf" fill="#2dd4bf" fillOpacity={0.3} />
+                        {/* <Radar name="المضارب" dataKey="gambler" stroke="hsl(var(--chart-4))" fill="hsl(var(--chart-4))" fillOpacity={0.3} /> */}
+                        <Radar name="المتوازن" dataKey="balanced" stroke="hsl(var(--chart-2))" fill="hsl(var(--chart-2))" fillOpacity={0.3} />
                         <Legend
-                          wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }}
+                          wrapperStyle={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}
                           iconType="circle"
                         />
                       </RadarChart>
