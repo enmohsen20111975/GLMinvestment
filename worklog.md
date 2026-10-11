@@ -74995,3 +74995,58 @@ commit: e1fec17 (5 files — daily_closer.py missing from this commit)
 Verification: Python syntax ✅ + ESLint ✅ + Guard tests ✅ + dry-run ✅
 
 ⚠️ درس مستفاد: لازم git add كل ملف قبل commit — مش الـ git add -A بس
+
+---
+Task ID: AUDITOR-INDEPENDENT-2
+Agent: المدقق المستقل (المساعد) — المراجعة على الكود الفعلي (commit 0613556)
+Task: تدقيق مستقل كامل — AUDIT-06 إلى AUDIT-11
+
+## البيئة:
+- Clone جديد بـ token على /home/z/glm_fresh
+- Commit: 0613556918f15f27f64ba7dc76b99229f0ec5de1
+- Code: آخر تحديث من GitHub
+
+## النتائج: 10 PASS + 3 FAIL
+
+### ✅ PASS (10):
+
+| # | الاختبار | الدليل |
+|---|---------|--------|
+| 1 | delete_old_v40 معطل | early-return guard (L548) + call skipped (L725,730) |
+| 2 | كل DELETE نشط = 0 | CI check: 1 match بس (test cleanup في trigger script) |
+| 3 | targets-validator fabrication | DEFAULT_TARGET_PCT = 0 (fabrication اتمسحت) |
+| 4 | MakerRadarTab fabrication | mathStop = 0 (fabrication اتمسحت) |
+| 5 | daily_closer INVALID filter | 3 matches (WHERE status != 'INVALID') |
+| 6 | telegram INVALID filter | 2 matches (AND status != 'INVALID') |
+| 7 | prediction_write_guard.py | موجود + مستدعى في prediction_tracker:509-510 |
+| 8 | Guard price validation | entry_price=None → rejected (L114) + entry_price<=0 → rejected (L136) |
+| 9 | safe_insert_prediction.py | موجود + documented (defense-in-depth) |
+| 10 | SQLite TRIGGER | add_prediction_guard_trigger.py موجود (BEFORE INSERT) |
+
+### ❌ FAIL (3):
+
+| # | الاختبار | السبب | الخطورة |
+|---|---------|-------|---------|
+| 1 | CI check_no_hard_delete | 1 match: `DELETE FROM predictions WHERE ticker='__DEV07_TEST__'` في `add_prediction_guard_trigger.py` | 🟡 False positive — ده test cleanup مش كود إنتاج |
+| 2 | prediction_tracker bypasses safe_insert | `prediction_tracker.py` فيه 3 INSERTs مباشرة (L676, L703, L721) — مش بتمر بـ `safe_insert_prediction` | 🔴 HIGH — الـ canonical writer بـ يتخطى safe_insert |
+| 3 | 7 scripts bypass safe_insert | 7 scripts فيها INSERT مباشر: backtesting_engine, populate_history_fast, dual_track_generator, backfill_with_personas, backfill_to_predictions, generate_persona_predictions (×2) | 🔴 HIGH — كل scripts بـ تتخطى safe_insert |
+
+## توصية المدقق:
+
+### الإصلاحات اللي المنفذ الفني محتاج يعملها:
+
+1. **prediction_tracker.py**: تحويل الـ 3 INSERTs المباشرة لـ `safe_insert_prediction()` calls
+2. **7 scripts**: تحويل كل INSERTs لـ `safe_insert_prediction()` calls
+3. **CI check**: استثناء `add_prediction_guard_trigger.py` من check_no_hard_delete (false positive)
+
+### ما اشتغل صح (تأكيد مستقل):
+- كل fabrication اتمسحت (targets-validator + MakerRadarTab)
+- delete_old_v40_predictions معطل فعلاً
+- Guard موجود + مستدعى + بيرفض None/<=0
+- daily_closer + telegram بـ يفلتر INVALID
+- safe_insert_prediction.py موجود كـ defense-in-depth layer
+
+Stage Summary:
+- 10/13 PASS + 3/13 FAIL
+- المشاكل المتبقية: prediction_tracker + 7 scripts بـ يتخطوا safe_insert
+- الإصلاحات اللي اتعملت كلها متحقق منها بشكل مستقل ✅
