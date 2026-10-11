@@ -74633,3 +74633,33 @@ const DEFAULT_STOP_PCT = 0.05;     // 5% — تحت entry للـ BUY، فوقه 
 - Rule 76 (TEAM-WORK-REVIEW) — عملت git pull ذهنيًا عبر قراءة آخر worklog قبل ما أبدأ + قارنتُ نتائجي مع Manager بعد ما كوّنتُ conclusions مستقلة.
 
 ASSISTANT-INDEPENDENT-VERIFY complete. 12 CONFIRMED with Manager + 11 NEW findings + 2 minor disagreements + 4 unresolved.
+
+---
+Task ID: FIX-P0-1
+Agent: المدير العام (Z.ai Code) — فريق المدير
+Task: P0-1: إزالة fabrication من targets-validator.ts
+
+Work Log:
+- سيدي وافق على تنفيذ P0-1 (إزالة fabrication من targets-validator.ts)
+- آخر تحديث: commit e8ed54a3 (matched remote)
+- قرأت الملف كامل (279 سطر)
+- أزلت 3 constants: DEFAULT_TARGET_PCT=0.07, DEFAULT_TARGET2_PCT=0.14, DEFAULT_STOP_PCT=0.05
+- استبدلت 4 fabrication blocks بـ null propagation:
+  * stop_loss: لو invalid → null (مش entry×0.95)
+  * target1: لو invalid → null (مش entry×1.07)
+  * target2: لو invalid → null (مش entry×1.14)
+  * target3: لو invalid → null (مش entry×(1.14+0.05))
+  * RR: لو invalid → null (مش 1.5 default)
+- lint: 0 errors ✅
+- tsc: 0 errors في targets-validator ✅
+- AT-1: 0 matches DEFAULT_TARGET_PCT ✅
+- AT-8: 0 matches في src/ (comments بس) ✅
+- commit: a4b997c1
+- push: e8ed54a3..a4b997c1 ✅
+
+Stage Summary:
+- ✅ P0-1 مكتمل: targets-validator.ts مش بيـ fabricate أي قيم بعد كده
+- ✅ null propagation: لو target/stop/RR null → بتفضل null → UI بـ يعرض "—"
+- ✅ Rule 27 محترمة: NO-FAKE-DATA
+- ✅ Rule 75 محترمة: push فوري بعد الإصلاح
+- ⏳ P0-2 (MakerRadarTab resolveLevels) — منتظر موافقة سيدي
