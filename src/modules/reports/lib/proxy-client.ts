@@ -310,12 +310,40 @@ export async function fetchMonthlyReport(
 export interface ExportPngOptions {
   /** Multiplier for retina-quality export. Default 2 (2x retina). */
   pixelRatio?: number;
-  /** Background color for the exported PNG (defaults to dark navy #0a0e1a). */
+  /**
+   * Background color for the exported PNG. If omitted, the function resolves
+   * the `--background` CSS variable at runtime (so the export always matches
+   * the active theme — light or dark). Falls back to `transparent` if the
+   * variable cannot be resolved (e.g. SSR).
+   */
   backgroundColor?: string;
   /** Output filename (without extension). */
   filename: string;
   /** Skip elements with these CSS class names (e.g. 'no-export'). */
   filter?: (node: HTMLElement) => boolean;
+}
+
+/**
+ * Resolve a CSS variable to a concrete `hsl(...)` color string at runtime.
+ *
+ * DEV-19 (design-tokens): all PNG export colors now derive from the active
+ * theme's CSS variables (defined in `src/app/globals.css`) instead of being
+ * hardcoded to `#0a0e1a` / `#e5e7eb`. This keeps screen + PNG + PDF visually
+ * identical across light/dark themes — zero hardcoded colors in the reports
+ * module.
+ *
+ * Returns `undefined` on the server or if the variable is not defined, so
+ * callers can apply their own fallback.
+ */
+function resolveCssColor(varName: string): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const raw = window
+    .getComputedStyle(document.documentElement)
+    .getPropertyValue(varName)
+    .trim();
+  if (!raw) return undefined;
+  // --background is stored as `H S% L%` (no hsl() wrapper) — wrap it.
+  return `hsl(${raw})`;
 }
 
 /**
@@ -326,19 +354,31 @@ export interface ExportPngOptions {
  * installed and supports Tailwind v4 oklch colors out-of-the-box.
  *
  * Default pixelRatio=2 → retina-quality export.
+ *
+ * DEV-19: background + text colors are read from the active theme's CSS
+ * variables (`--background`, `--foreground`) when the caller does not
+ * override them — zero hardcoded hex/rgb/hsl literals.
  */
 export async function exportReportToPng(
   element: HTMLElement,
   opts: ExportPngOptions,
 ): Promise<void> {
+  const resolvedBg =
+    opts.backgroundColor ??
+    resolveCssColor('--background') ??
+    'transparent';
+  const resolvedColor =
+    resolveCssColor('--foreground') ?? 'inherit';
+
   const dataUrl = await toPng(element, {
     pixelRatio: opts.pixelRatio ?? 2,
-    backgroundColor: opts.backgroundColor ?? '#0a0e1a',
+    backgroundColor: resolvedBg,
     cacheBust: true,
     filter: opts.filter,
     style: {
-      // Ensure consistent export regardless of theme:
-      color: '#e5e7eb',
+      // Ensure consistent export regardless of theme — pulled from the
+      // active design-token palette, never hardcoded.
+      color: resolvedColor,
     },
   });
 
