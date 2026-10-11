@@ -107,6 +107,7 @@ def populate():
     # 2. Insert into predictions
     try:
         cur = conn_p.cursor()
+        # DEV-07 verified-disabled (dead code — sys.exit(0) at L133, FINALIZE-UNIFICATION)
         cur.executemany('''
             INSERT INTO predictions
             (ticker, persona, signal, signal_type, prediction_date, entry_price, target_price, stop_loss,
