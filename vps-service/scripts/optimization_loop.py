@@ -32,7 +32,7 @@ Usage:
 
 import sys as _sys
 print("[RULE35-DISABLED] optimization_loop.py — CATASTROPHIC rogue path blocked.", file=_sys.stderr)
-print("  Reason: clear_predictions() does DELETE FROM predictions (wipes ALL rows!)", file=_sys.stderr)
+print("  Reason: clear_predictions() does DELETE FROM predictions (wipes ALL rows!)  [DEV-06 verified-disabled]", file=_sys.stderr)
 print("  This script would destroy production data if run.", file=_sys.stderr)
 print("  Rule 1 (DB Safety) + Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA)", file=_sys.stderr)
 _sys.exit(0)  # safe exit — do NOT run any code below
@@ -63,7 +63,7 @@ def clear_predictions():
     """يمسح كل predictions قبل كل تجربة"""
     db_path = str(_PROJECT_ROOT / 'db' / 'predictions.db')
     db = sqlite3.connect(db_path)
-    db.execute('DELETE FROM predictions')
+    db.execute('DELETE FROM predictions')  # DEV-06 verified-disabled (dead code — sys.exit(0) at L38)
     db.commit()
     db.close()
 
