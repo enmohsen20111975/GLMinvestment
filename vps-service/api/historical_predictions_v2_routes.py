@@ -480,6 +480,7 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
         cur = conn.cursor()
         now_iso = datetime.now().isoformat()
         try:
+            # DEV-07 verified-disabled (dead code — early-return at L442, REAPPLY-CRITICAL-FIXES)
             cur.execute('''
                 INSERT INTO predictions (
                     ticker, signal, signal_type, prediction_date,
@@ -499,6 +500,7 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
             ))
         except Exception:
             # Fallback for older schema without T2/explosive fields
+            # DEV-07 verified-disabled (dead code — early-return at L442, REAPPLY-CRITICAL-FIXES)
             cur.execute('''
                 INSERT INTO predictions (
                     ticker, signal, signal_type, prediction_date,
