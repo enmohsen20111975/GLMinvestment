@@ -401,14 +401,14 @@ function CoverPageHeader({
     strong_buy: 'from-emerald-600 to-emerald-500 text-white',
     buy: 'from-emerald-500 to-teal-500 text-white',
     accumulate: 'from-teal-500 to-emerald-500 text-white',
-    hold: 'from-amber-500 to-amber-400 text-[#0a0e1a]',
+    hold: 'from-amber-500 to-amber-400 text-background',
     sell: 'from-red-500 to-rose-500 text-white',
     strong_sell: 'from-red-600 to-red-700 text-white',
   };
   const actionBg = actionColors[rec?.action ?? 'hold'] ?? 'from-slate-600 to-slate-500 text-white';
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
+      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-background via-card to-muted p-5 print:break-inside-avoid"
       dir="rtl"
     >
       <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-amber-500 via-amber-400 to-amber-500" />
@@ -508,7 +508,7 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
     { label: 'المخاطر', value: analysis.scores.risk, icon: TrendingDown },
   ];
   return (
-    <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+    <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
           <BarChart3 className="w-5 h-5" />
@@ -522,7 +522,7 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
             return (
               <div
                 key={card.label}
-                className="p-3 rounded-xl border border-slate-700/40 bg-[#0a0e1a]/60"
+                className="p-3 rounded-xl border border-slate-700/40 bg-background/60"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Icon className="w-4 h-4 text-slate-400" />
@@ -571,7 +571,7 @@ function TechnicalSection({ analysis }: { analysis: ProfessionalAnalysis }) {
   ];
 
   return (
-    <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+    <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
           <Activity className="w-5 h-5" />
@@ -669,7 +669,7 @@ function FundamentalSection({
   ];
 
   return (
-    <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+    <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
           <Scale className="w-5 h-5" />
@@ -683,7 +683,7 @@ function FundamentalSection({
             return (
               <div
                 key={it.label}
-                className="p-3 rounded-lg border border-slate-700/40 bg-[#0a0e1a]/60"
+                className="p-3 rounded-lg border border-slate-700/40 bg-background/60"
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <Icon className="w-3.5 h-3.5 text-slate-400" />
@@ -782,7 +782,7 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
     neutral: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
   };
   return (
-    <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+    <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
           <AlertTriangle className="w-5 h-5" />
@@ -813,7 +813,7 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
 function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis }) {
   const rec = analysis.recommendation;
   return (
-    <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-[#0d1320] to-[#10162a] print:break-inside-avoid">
+    <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-card to-muted print:break-inside-avoid">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
           <Shield className="w-5 h-5" />
@@ -894,7 +894,7 @@ function PriceLevelsCard({
   const maxVal = Math.max(...allValues, 1);
   const range = maxVal - minVal || 1;
   return (
-    <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+    <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
           <Target className="w-5 h-5" />
@@ -1070,7 +1070,8 @@ export function StockAnalysisReport() {
       await exportReportToPng(reportRef.current, {
         filename: `${ticker}_report_${new Date().toISOString().split('T')[0]}`,
         pixelRatio: 2,
-        backgroundColor: '#0a0e1a',
+        // DEV-19: omit backgroundColor — exportReportToPng resolves
+        // --background from the active theme at runtime (zero hardcoded).
         filter: (node) => {
           // Skip export-only buttons / search box.
           if (node instanceof HTMLElement) {
@@ -1101,14 +1102,14 @@ export function StockAnalysisReport() {
   return (
     <div
       id="stock-report-content"
-      className="space-y-5 print:space-y-3 bg-[#0a0e1a] print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
       dir="rtl"
     >
       {/* Header bar */}
       <div className="flex items-center justify-between flex-wrap gap-3 border-b border-slate-700/40 pb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-emerald-500 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-[#0a0e1a]" strokeWidth={2.5} />
+            <Activity className="w-5 h-5 text-background" strokeWidth={2.5} />
           </div>
           <div>
             <h1 className="text-base font-extrabold text-amber-300">تقرير تحليل السهم</h1>
@@ -1157,7 +1158,7 @@ export function StockAnalysisReport() {
               if (searchQuery.trim()) setShowDropdown(true);
             }}
             placeholder="ابحث عن سهم (الرمز أو الاسم)..."
-            className="pr-9 h-11 text-sm bg-[#0d1320] border-slate-700/50 text-slate-100 placeholder:text-slate-500"
+            className="pr-9 h-11 text-sm bg-card border-slate-700/50 text-slate-100 placeholder:text-slate-500"
             dir="rtl"
           />
           {loadingStocks && (
@@ -1165,7 +1166,7 @@ export function StockAnalysisReport() {
           )}
         </div>
         {showDropdown && (
-          <div className="absolute top-full mt-1 right-0 left-0 z-50 bg-[#0d1320] border border-slate-700/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
+          <div className="absolute top-full mt-1 right-0 left-0 z-50 bg-card border border-slate-700/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
             {filteredStocks.length > 0 ? (
               filteredStocks.map((stock) => (
                 <button
