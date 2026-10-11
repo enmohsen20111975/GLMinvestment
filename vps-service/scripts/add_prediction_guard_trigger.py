@@ -113,6 +113,8 @@ def verify_trigger(db_path: str = DEFAULT_DB_PATH) -> bool:
         conn = sqlite3.connect(db_path, timeout=10.0)
         cur = conn.cursor()
         # Try to insert a row with entry_price=0 — should ABORT
+        # DEV-07 verified-disabled (intentional test INSERT — expected to ABORT
+        # by the SQLite trigger; never succeeds at runtime)
         try:
             cur.execute(
                 "INSERT INTO predictions "
