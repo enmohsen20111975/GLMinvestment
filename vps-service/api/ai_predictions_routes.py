@@ -610,6 +610,8 @@ def generate_predictions_internal(
         # ... (rest of original body up to the INSERT INTO predictions + final return)
         # The original INSERT INTO predictions statement at ~line 860 is also
         # part of this preserved block. It is NOT executed due to the early-return.
+        # DEV-07 verified-disabled (dead code — early-return at L548, REAPPLY-CRITICAL-FIXES).
+        # To re-enable predictions writing, use vps-service/core/safe_insert_prediction.py.
         return True, predictions_created
     except Exception as e:
         print(f"[AI Generate Internal] Crash: {e}")
