@@ -12,124 +12,62 @@ import {
   TrendingDown,
   Minus,
   Target,
-  ShieldAlert,
   Lightbulb,
   AlertTriangle,
-  CheckCircle,
-  XCircle,
   AlertCircle,
   RefreshCw,
+  Wallet,
   DollarSign,
   BarChart3,
   Activity,
-  Wallet,
-  Landmark,
-  Gem,
   Info,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface StockAnalysis {
-  asset: {
-    id: number;
-    type: string;
-    name: string;
-    stock_ticker: string | null;
-    quantity: number | null;
-    avg_buy_price: number | null;
-    total_invested: number;
-  };
-  stockInfo: {
-    ticker: string;
-    name_ar: string;
-    current_price: number;
-    support: number;
-    resistance: number;
-    trend: string;
-    dividend_yield: number;
-  } | null;
-  currentValue: number;
-  profitLoss: number;
-  profitLossPercent: number;
-  profitLossPerShare: number;
-  recommendation: {
-    action: 'SELL' | 'HOLD' | 'BUY_MORE' | 'AVERAGE_DOWN';
-    confidence: number;
-    reasons: string[];
-    targetPrice?: number;
-    stopLoss?: number;
-    urgency: 'high' | 'medium' | 'low';
-  };
-  alerts: string[];
-  technicalSignals: {
-    nearSupport: boolean;
-    nearResistance: boolean;
-    aboveMA50: boolean | null;
-    aboveMA200: boolean | null;
-    rsiLevel: string;
-    trendDirection: string;
-  };
-}
-
-interface BankAnalysis {
+/**
+ * CONTRACT (2026-10-11): /api/finance/smart-analysis returns
+ *   { success, data: { assets: SmartAsset[], summary: { total, buy, sell, hold } } }
+ * The old contract (stocks/banks/gold + summary.totalInvested/...) was removed
+ * when the route was rewritten — rendering against it caused
+ * "Cannot read properties of undefined (reading 'toLocaleString')".
+ */
+interface SmartAsset {
   id: number;
-  type: string;
+  ticker: string;
   name: string;
-  total_invested: number;
-  bank_name: string | null;
-  interest_rate: number | null;
-  currentValue: number;
-  monthlyReturn: number;
-  yearlyReturn: number;
-  recommendation: {
-    action: string;
-    confidence: number;
-    reasons: string[];
-    urgency: string;
-  };
-  alerts: string[];
+  type: string;
+  invested: number;
+  current_value: number;
+  profit_loss: number;
+  profit_loss_percent: number;
+  action: 'SELL' | 'HOLD' | 'BUY_MORE' | 'AVERAGE_DOWN';
+  reason: string;
+  confidence: number;
 }
 
-interface GoldAnalysis {
-  id: number;
-  type: string;
-  name: string;
-  total_invested: number;
-  weight_grams: number | null;
-  karat: number | null;
-  currentValue: number;
-  profitLoss: number;
-  profitLossPercent: number;
-  currentPricePerGram: number;
-  recommendation: {
-    action: string;
-    confidence: number;
-    reasons: string[];
-    urgency: string;
-  };
-  alerts: string[];
-}
-
-interface PortfolioSummary {
-  totalInvested: number;
-  totalValue: number;
-  totalProfitLoss: number;
-  totalProfitLossPercent: number;
+interface SmartSummary {
+  total: number;
+  buy: number;
+  sell: number;
+  hold: number;
 }
 
 interface SmartAnalysisData {
-  stocks: StockAnalysis[];
-  banks: BankAnalysis[];
-  gold: GoldAnalysis[];
-  summary: PortfolioSummary;
+  assets: SmartAsset[];
+  summary: SmartSummary;
 }
+
+const num = (v: unknown): number => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
 
 export function SmartAssistantPanel() {
   const [data, setData] = useState<SmartAnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedStock, setExpandedStock] = useState<number | null>(null);
+  const [expandedAsset, setExpandedAsset] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -142,10 +80,13 @@ export function SmartAssistantPanel() {
       const json = await res.json();
       if (json.success) {
         setData({
-          ...json.data,
-          stocks: json.data.stocks || [],
-          banks: json.data.banks || [],
-          gold: json.data.gold || [],
+          assets: Array.isArray(json.data?.assets) ? json.data.assets : [],
+          summary: {
+            total: num(json.data?.summary?.total),
+            buy: num(json.data?.summary?.buy),
+            sell: num(json.data?.summary?.sell),
+            hold: num(json.data?.summary?.hold),
+          },
         });
       }
     } catch (e) {
@@ -165,14 +106,6 @@ export function SmartAssistantPanel() {
         return { color: 'bg-teal-500 text-white', icon: <Target className="h-3 w-3" />, text: 'متوسط' };
       default:
         return { color: 'bg-yellow-500 text-white', icon: <Minus className="h-3 w-3" />, text: 'احتفاظ' };
-    }
-  };
-
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'high': return 'text-red-600';
-      case 'medium': return 'text-yellow-600';
-      default: return 'text-emerald-500';
     }
   };
 
@@ -197,11 +130,107 @@ export function SmartAssistantPanel() {
     );
   }
 
-  const allAlerts = [
-    ...data.stocks.flatMap(s => s.alerts.map(a => ({ type: 'stock', ticker: s.asset.stock_ticker, alert: a }))),
-    ...data.banks.flatMap(b => b.alerts.map(a => ({ type: 'bank', name: b.name, alert: a }))),
-    ...data.gold.flatMap(g => g.alerts.map(a => ({ type: 'gold', name: g.name, alert: a })))
-  ];
+  const assets = data.assets;
+  const totalInvested = assets.reduce((s, a) => s + num(a.invested), 0);
+  const totalValue = assets.reduce((s, a) => s + num(a.current_value), 0);
+  const totalProfitLoss = totalValue - totalInvested;
+  const totalProfitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
+
+  const sellAlerts = assets.filter(a => a.action === 'SELL').slice(0, 5);
+  const stocks = assets.filter(a => a.type === 'stock');
+  const gold = assets.filter(a => a.type === 'gold');
+  const others = assets.filter(a => a.type !== 'stock' && a.type !== 'gold');
+
+  const renderAsset = (asset: SmartAsset, i: number) => {
+    const actionInfo = getActionBadge(asset.action);
+    const invested = num(asset.invested);
+    const currentValue = num(asset.current_value);
+    const profitLoss = num(asset.profit_loss);
+    const profitLossPercent = num(asset.profit_loss_percent);
+    const isExpanded = expandedAsset === asset.id;
+
+    return (
+      <Card
+        key={`${asset.id}-${i}`}
+        className={cn(
+          "cursor-pointer transition-all hover:shadow-md",
+          profitLossPercent > 10 && "border-green-300",
+          profitLossPercent < -10 && "border-red-300"
+        )}
+        onClick={() => setExpandedAsset(isExpanded ? null : asset.id)}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Badge className={actionInfo.color}>
+                {actionInfo.icon}
+                <span className="mr-1">{actionInfo.text}</span>
+              </Badge>
+              <div>
+                <div className="font-bold">{asset.ticker}</div>
+                <div className="text-sm text-muted-foreground">{asset.name}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-left">
+                <div className={cn(
+                  "font-bold",
+                  profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
+                )}>
+                  {profitLoss >= 0 ? '+' : ''}
+                  {profitLoss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
+                </div>
+                <div className={cn(
+                  "text-sm",
+                  profitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
+                )}>
+                  ({profitLossPercent >= 0 ? '+' : ''}{profitLossPercent.toFixed(1)}%)
+                </div>
+              </div>
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
+          </div>
+
+          {isExpanded && (
+            <div className="mt-4 pt-4 border-t space-y-4">
+              {/* Recommendation */}
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-yellow-600" />
+                    <span className="font-medium">التوقّع</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Progress value={num(asset.confidence)} className="w-16 h-2" />
+                    <span className="text-sm text-muted-foreground">{num(asset.confidence)}%</span>
+                  </div>
+                </div>
+                <p className="text-sm">{asset.reason}</p>
+              </div>
+
+              {/* Value Details */}
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="bg-muted/50 p-2 rounded">
+                  <div className="text-muted-foreground">المستثمر</div>
+                  <div className="font-medium">{invested.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
+                </div>
+                <div className="bg-muted/50 p-2 rounded">
+                  <div className="text-muted-foreground">القيمة الحالية</div>
+                  <div className="font-medium">{currentValue.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
+                </div>
+                <div className="bg-muted/50 p-2 rounded">
+                  <div className="text-muted-foreground">النوع</div>
+                  <div className="font-medium">
+                    {asset.type === 'stock' ? 'سهم' : asset.type === 'gold' ? 'ذهب' : asset.type === 'bank' ? 'شهادة بنكية' : 'أصل'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -225,7 +254,7 @@ export function SmartAssistantPanel() {
             <span className="text-sm text-muted-foreground">إجمالى الاستثمار</span>
           </div>
           <div className="text-xl font-bold text-teal-700 dark:text-teal-300">
-            {data.summary.totalInvested.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
+            {totalInvested.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
@@ -234,36 +263,36 @@ export function SmartAssistantPanel() {
             <span className="text-sm text-muted-foreground">القيمة الحالية</span>
           </div>
           <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
-            {data.summary.totalValue.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
+            {totalValue.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
         </Card>
         <Card className={cn(
           "p-4",
-          data.summary.totalProfitLoss >= 0 
+          totalProfitLoss >= 0
             ? "bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900"
             : "bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900"
         )}>
           <div className="flex items-center gap-2 mb-1">
             <BarChart3 className={cn(
               "h-4 w-4",
-              data.summary.totalProfitLoss >= 0 ? "text-emerald-500" : "text-red-600"
+              totalProfitLoss >= 0 ? "text-emerald-500" : "text-red-600"
             )} />
             <span className="text-sm text-muted-foreground">الربح/الخسارة</span>
           </div>
           <div className={cn(
             "text-xl font-bold",
-            data.summary.totalProfitLoss >= 0 
+            totalProfitLoss >= 0
               ? "text-emerald-500 dark:text-green-300"
               : "text-red-700 dark:text-red-300"
           )}>
-            {data.summary.totalProfitLoss >= 0 ? '+' : ''}
-            {data.summary.totalProfitLoss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
+            {totalProfitLoss >= 0 ? '+' : ''}
+            {totalProfitLoss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
           <div className={cn(
             "text-xs",
-            data.summary.totalProfitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
+            totalProfitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
           )}>
-            ({data.summary.totalProfitLossPercent >= 0 ? '+' : ''}{(data.summary.totalProfitLossPercent ?? 0).toFixed(2)}%)
+            ({totalProfitLossPercent >= 0 ? '+' : ''}{totalProfitLossPercent.toFixed(2)}%)
           </div>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
@@ -272,16 +301,29 @@ export function SmartAssistantPanel() {
             <span className="text-sm text-muted-foreground">عدد الأصول</span>
           </div>
           <div className="text-xl font-bold text-orange-700 dark:text-orange-300">
-            {data.stocks.length + data.banks.length + data.gold.length}
+            {num(data.summary.total) || assets.length}
           </div>
           <div className="text-xs text-muted-foreground">
-            {data.stocks.length} سهم • {data.banks.length} بنك • {data.gold.length} ذهب
+            {stocks.length} سهم • {gold.length} ذهب • {others.length} أخرى
           </div>
         </Card>
       </div>
 
-      {/* Alerts Section */}
-      {allAlerts.length > 0 && (
+      {/* Signal Summary */}
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-sm py-1 px-3">
+          إشارات شراء: {num(data.summary.buy)}
+        </Badge>
+        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-sm py-1 px-3">
+          إشارات بيع: {num(data.summary.sell)}
+        </Badge>
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-sm py-1 px-3">
+          احتفاظ: {num(data.summary.hold)}
+        </Badge>
+      </div>
+
+      {/* Sell Alerts */}
+      {sellAlerts.length > 0 && (
         <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
@@ -291,10 +333,10 @@ export function SmartAssistantPanel() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {allAlerts.slice(0, 5).map((item, i) => (
+              {sellAlerts.map((asset, i) => (
                 <div key={i} className="text-sm p-2 bg-white dark:bg-gray-900 rounded border">
-                  <span className="font-medium">{item.ticker || item.name}:</span>{' '}
-                  <span className="text-muted-foreground">{item.alert}</span>
+                  <span className="font-medium">{asset.ticker || asset.name}:</span>{' '}
+                  <span className="text-muted-foreground">{asset.reason}</span>
                 </div>
               ))}
             </div>
@@ -302,241 +344,24 @@ export function SmartAssistantPanel() {
         </Card>
       )}
 
-      {/* Stocks Analysis */}
-      {data.stocks.length > 0 && (
+      {/* Assets Analysis */}
+      {assets.length > 0 ? (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
-              تحليل الأسهم ({data.stocks.length})
+              تحليل الأصول ({assets.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {data.stocks.map((stock, i) => {
-              const actionInfo = getActionBadge(stock.recommendation.action);
-              const isExpanded = expandedStock === stock.asset.id;
-              
-              return (
-                <Card 
-                  key={i} 
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    stock.profitLossPercent > 10 && "border-green-300",
-                    stock.profitLossPercent < -10 && "border-red-300"
-                  )}
-                  onClick={() => setExpandedStock(isExpanded ? null : stock.asset.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge className={actionInfo.color}>
-                          {actionInfo.icon}
-                          <span className="mr-1">{actionInfo.text}</span>
-                        </Badge>
-                        <div>
-                          <div className="font-bold">{stock.asset.stock_ticker}</div>
-                          <div className="text-sm text-muted-foreground">{stock.asset.name}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-left">
-                          <div className={cn(
-                            "font-bold",
-                            stock.profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
-                          )}>
-                            {stock.profitLoss >= 0 ? '+' : ''}
-                            {stock.profitLoss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
-                          </div>
-                          <div className={cn(
-                            "text-sm",
-                            stock.profitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
-                          )}>
-                            ({stock.profitLossPercent >= 0 ? '+' : ''}{(stock.profitLossPercent ?? 0).toFixed(1)}%)
-                          </div>
-                        </div>
-                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </div>
-                    </div>
-                    
-                    {isExpanded && (
-                      <div className="mt-4 pt-4 border-t space-y-4">
-                        {/* Recommendation */}
-                        <div className="bg-muted/50 p-3 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Lightbulb className="h-4 w-4 text-yellow-600" />
-                              <span className="font-medium">التوقّع</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Progress value={stock.recommendation.confidence} className="w-16 h-2" />
-                              <span className="text-sm text-muted-foreground">{stock.recommendation.confidence}%</span>
-                            </div>
-                          </div>
-                          <ul className="space-y-1">
-                            {stock.recommendation.reasons.map((reason, idx) => (
-                              <li key={idx} className="text-sm flex items-start gap-2">
-                                <span className="text-primary">•</span>
-                                <span>{reason}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        {/* Price Details */}
-                        {stock.stockInfo && (
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                            <div className="bg-muted/50 p-2 rounded">
-                              <div className="text-muted-foreground">سعر الشراء</div>
-                              <div className="font-medium">{stock.asset.avg_buy_price?.toFixed(2)}</div>
-                            </div>
-                            <div className="bg-muted/50 p-2 rounded">
-                              <div className="text-muted-foreground">السعر الحالى</div>
-                              <div className="font-medium">{(stock.stockInfo.current_price ?? 0).toFixed(2)}</div>
-                            </div>
-                            <div className="bg-muted/50 p-2 rounded">
-                              <div className="text-muted-foreground">الدعم</div>
-                              <div className="font-medium text-emerald-500">{(stock.stockInfo.support ?? 0).toFixed(2)}</div>
-                            </div>
-                            <div className="bg-muted/50 p-2 rounded">
-                              <div className="text-muted-foreground">المقاومة</div>
-                              <div className="font-medium text-red-600">{(stock.stockInfo.resistance ?? 0).toFixed(2)}</div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Target & Stop Loss */}
-                        {(stock.recommendation.targetPrice || stock.recommendation.stopLoss) && (
-                          <div className="flex gap-4">
-                            {stock.recommendation.targetPrice && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Target className="h-4 w-4 text-emerald-500" />
-                                <span>الهدف: <strong>{(stock.recommendation.targetPrice ?? 0).toFixed(2)}</strong></span>
-                              </div>
-                            )}
-                            {stock.recommendation.stopLoss && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <ShieldAlert className="h-4 w-4 text-red-600" />
-                                <span>وقف الخسارة: <strong>{(stock.recommendation.stopLoss ?? 0).toFixed(2)}</strong></span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Technical Signals */}
-                        <div className="flex flex-wrap gap-2">
-                          {stock.technicalSignals.nearSupport && (
-                            <Badge variant="outline" className="bg-green-50 text-emerald-500 border-green-300">
-                              قريب من دعم
-                            </Badge>
-                          )}
-                          {stock.technicalSignals.nearResistance && (
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
-                              قريب من مقاومة
-                            </Badge>
-                          )}
-                          {stock.stockInfo?.dividend_yield && stock.stockInfo.dividend_yield > 4 && (
-                            <Badge variant="outline" className="bg-slate-50 text-teal-700 border-teal-300">
-                              يوزع {(stock.stockInfo.dividend_yield ?? 0).toFixed(1)}% أرباح
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {assets.map(renderAsset)}
           </CardContent>
         </Card>
-      )}
-
-      {/* Bank Deposits */}
-      {data.banks.length > 0 && (
+      ) : (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Landmark className="h-4 w-4 text-primary" />
-              الشهادات البنكية ({data.banks.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {data.banks.map((bank, i) => (
-              <Card key={i} className="bg-muted/30">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-bold">{bank.name}</div>
-                      <div className="text-sm text-muted-foreground">{bank.bank_name}</div>
-                    </div>
-                    <div className="text-left">
-                      <Badge className="bg-green-500 text-white">{bank.interest_rate}% سنوياً</Badge>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
-                    <div className="bg-muted/50 p-2 rounded">
-                      <div className="text-muted-foreground">المبلغ</div>
-                      <div className="font-medium">{bank.total_invested.toLocaleString('ar-EG')} ج.م</div>
-                    </div>
-                    <div className="bg-muted/50 p-2 rounded">
-                      <div className="text-muted-foreground">عائد شهرى</div>
-                      <div className="font-medium text-emerald-500">{bank.monthlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
-                    </div>
-                    <div className="bg-muted/50 p-2 rounded">
-                      <div className="text-muted-foreground">عائد سنوى</div>
-                      <div className="font-medium text-emerald-500">{bank.yearlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Gold */}
-      {data.gold.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Gem className="h-4 w-4 text-yellow-600" />
-              الذهب ({data.gold.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {data.gold.map((gold, i) => (
-              <Card key={i} className="bg-yellow-50 dark:bg-yellow-950/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-bold">{gold.name}</div>
-                      <div className="text-sm text-muted-foreground">{gold.weight_grams} جرام - {gold.karat} قراط</div>
-                    </div>
-                    <div className="text-left">
-                      <div className={cn(
-                        "font-bold",
-                        gold.profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
-                      )}>
-                        {gold.profitLoss >= 0 ? '+' : ''}{(gold.profitLossPercent ?? 0).toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
-                    <div className="bg-muted/50 p-2 rounded">
-                      <div className="text-muted-foreground">سعر الشراء/جرام</div>
-                      <div className="font-medium">{gold.purchase_price_per_gram?.toLocaleString('ar-EG')}</div>
-                    </div>
-                    <div className="bg-muted/50 p-2 rounded">
-                      <div className="text-muted-foreground">السعر الحالى/جرام</div>
-                      <div className="font-medium">{gold.currentPricePerGram.toLocaleString('ar-EG')}</div>
-                    </div>
-                    <div className="bg-muted/50 p-2 rounded">
-                      <div className="text-muted-foreground">القيمة الحالية</div>
-                      <div className="font-medium">{gold.currentValue.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">لا توجد أصول في المحفظة بعد</p>
           </CardContent>
         </Card>
       )}

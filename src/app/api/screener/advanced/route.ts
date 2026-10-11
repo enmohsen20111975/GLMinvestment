@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
   const targetUrl = `${PY}/api/screener/advanced${qs ? `?${qs}` : ''}`;
   try {
     const res = await fetch(targetUrl, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(25000),
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     });
