@@ -4915,3 +4915,890 @@ def get_radar_accuracy():
             'error': str(e),
             'traceback': _tb.format_exc().splitlines()[-5:],
         }), 500
+
+
+# ════════════════════════════════════════════════════════════════════════
+# RULE20-P1-FIX (2026-10-12): 4 NEW Python endpoints — replace Node-side
+# computation that was violating Rule 20 (Python=brain, Node=display only).
+#
+# Routes being proxied:
+#   1. /api/v4/stats                       ← v4/stats/route.ts (250 → ~55 lines proxy)
+#   2. /api/admin/platform-performance     ← admin/platform-performance/route.ts (646 → ~70 lines proxy)
+#   3. /api/predictions/performance-dashboard ← predictions/performance-dashboard/route.ts (334 → ~55 lines proxy)
+#
+# Note: /api/chart/<ticker> already exists in chart_routes.py (chart_bp).
+# Rule 27 (NO-FAKE-DATA): NO placeholder zeros when DB is missing — return
+# honest empty arrays/zero counts and explicit error notes only.
+# Rule 67 (CALCULATION-CANONICAL): All math (win_rate, profit_factor, etc.)
+# now lives in Python — Node just forwards.
+# ════════════════════════════════════════════════════════════════════════
+
+
+@misc_bp.route('/api/v4/stats', methods=['GET'])
+def v4_stats():
+    """GET /api/v4/stats — Rule 20 canonical endpoint.
+
+    Replaces Node-side SQLite fallback in v4/stats/route.ts (250 lines).
+    Reads from predictions.db.predictions and computes:
+      - overall stats (total_predictions, wins, losses, pending, win_rate, avg_return)
+      - by_signal breakdown
+      - by_persona breakdown (count + win_rate per persona)
+      - top_tickers (top 5 by prediction count, with win_rate)
+
+    Response shape (mirrors the legacy Node response):
+      {
+        "success": true,
+        "source": "python-canonical-v4-stats",
+        "data": {
+          "stats": {...},
+          "by_persona": [...],
+          "top_tickers": [...]
+        },
+        "generated_at": "..."
+      }
+    """
+    try:
+        from pathlib import Path as _Path
+        predictions_db = str(_Path(__file__).resolve().parent.parent.parent / 'db' / 'predictions.db')
+        if not os.path.exists(predictions_db):
+            return jsonify({
+                'success': False,
+                'error': 'predictions.db not found',
+                'source': 'python-canonical-v4-stats',
+            }), 500, {'Cache-Control': 'no-store, no-cache, must-revalidate'}
+
+        with _open_db('predictions', predictions_db) as conn:
+            # Overall aggregates
+            overall = conn.execute("""
+                SELECT
+                    COUNT(*) AS total_predictions,
+                    SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
+                    SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
+                    SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS pending,
+                    AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
+                FROM predictions
+            """).fetchone()
+            overall = dict(overall) if overall else {}
+
+            total = int(overall.get('total_predictions') or 0)
+            wins = int(overall.get('wins') or 0)
+            losses = int(overall.get('losses') or 0)
+            pending = int(overall.get('pending') or 0)
+            closed = wins + losses
+            win_rate = round((wins / closed) * 100, 2) if closed > 0 else 0
+            avg_return = round(float(overall.get('avg_return') or 0), 2) if overall.get('avg_return') is not None else 0
+
+            # by_signal
+            by_signal_rows = conn.execute("""
+                SELECT signal, COUNT(*) AS total
+                FROM predictions
+                GROUP BY signal
+                ORDER BY total DESC
+            """).fetchall()
+            by_signal = [
+                {'signal': str(r['signal'] or ''), 'total': int(r['total'])}
+                for r in by_signal_rows
+            ]
+
+            # by_persona
+            persona_rows = conn.execute("""
+                SELECT
+                    COALESCE(NULLIF(persona, ''), 'unspecified') AS persona,
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
+                    SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
+                    AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
+                FROM predictions
+                GROUP BY COALESCE(NULLIF(persona, ''), 'unspecified')
+                ORDER BY total DESC
+            """).fetchall()
+            by_persona = []
+            for r in persona_rows:
+                p_wins = int(r['wins'] or 0)
+                p_losses = int(r['losses'] or 0)
+                p_closed = p_wins + p_losses
+                by_persona.append({
+                    'persona': str(r['persona']),
+                    'total': int(r['total']),
+                    'wins': p_wins,
+                    'losses': p_losses,
+                    'win_rate': round((p_wins / p_closed) * 100, 2) if p_closed > 0 else 0,
+                    'avg_return': round(float(r['avg_return']), 2) if r['avg_return'] is not None else 0,
+                })
+
+            # top_tickers (top 5 by total)
+            ticker_rows = conn.execute("""
+                SELECT
+                    ticker,
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
+                    SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
+                    AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
+                FROM predictions
+                GROUP BY ticker
+                ORDER BY total DESC
+                LIMIT 5
+            """).fetchall()
+            top_tickers = []
+            for r in ticker_rows:
+                t_wins = int(r['wins'] or 0)
+                t_losses = int(r['losses'] or 0)
+                t_closed = t_wins + t_losses
+                top_tickers.append({
+                    'ticker': str(r['ticker']),
+                    'total': int(r['total']),
+                    'wins': t_wins,
+                    'losses': t_losses,
+                    'win_rate': round((t_wins / t_closed) * 100, 2) if t_closed > 0 else 0,
+                    'avg_return': round(float(r['avg_return']), 2) if r['avg_return'] is not None else 0,
+                })
+
+        return jsonify({
+            'success': True,
+            'source': 'python-canonical-v4-stats',
+            'data': {
+                'stats': {
+                    'total_predictions': total,
+                    'wins': wins,
+                    'losses': losses,
+                    'pending': pending,
+                    'win_rate': win_rate,
+                    'avg_return': avg_return,
+                    'by_signal': by_signal,
+                },
+                'by_persona': by_persona,
+                'top_tickers': top_tickers,
+            },
+            'generated_at': _dt.now().isoformat(),
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+            'source': 'python-canonical-v4-stats',
+        }), 500
+
+
+@misc_bp.route('/api/predictions/performance-dashboard', methods=['GET'])
+def predictions_performance_dashboard():
+    """GET /api/predictions/performance-dashboard — Rule 20 canonical endpoint.
+
+    Replaces Node-side computation in predictions/performance-dashboard/route.ts
+    (334 lines of SQLite + WIN_STATUSES classification + Math.round).
+
+    Reads from predictions.db.predictions and computes:
+      - overall stats (total, wins, losses, expired, pending, win_rate, avg_return)
+      - by_market breakdown
+      - by_signal breakdown
+      - top_tickers (top 10, filtered to total >= 3)
+      - timeseries (per-day for last N days)
+
+    Query params:
+      - days (default 30, max 365)
+      - market (default EGX; 'all' = all markets)
+    """
+    try:
+        from pathlib import Path as _Path
+        from datetime import datetime as _dt2, timedelta as _td2
+
+        days_raw = request.args.get('days', '30')
+        try:
+            days = max(1, min(365, int(days_raw)))
+        except (ValueError, TypeError):
+            days = 30
+        market = (request.args.get('market') or 'EGX').upper()
+
+        predictions_db = str(_Path(__file__).resolve().parent.parent.parent / 'db' / 'predictions.db')
+        if not os.path.exists(predictions_db):
+            return jsonify({
+                'success': False,
+                'error': 'predictions.db not found',
+                'source': 'python-canonical-performance-dashboard',
+                'stats': {
+                    'total': 0, 'resolved': 0, 'wins': 0, 'losses': 0,
+                    'expired': 0, 'pending': 0, 'win_rate': 0,
+                    'avg_return': 0, 'avg_holding_days': 0,
+                },
+                'by_market': [],
+                'by_signal': [],
+                'top_tickers': [],
+                'timeseries': [],
+            }), 500, {'Cache-Control': 'no-store, no-cache, must-revalidate'}
+
+        cutoff_date = _dt2.now() - _td2(days=days)
+        cutoff_str = cutoff_date.strftime('%Y-%m-%d')
+
+        with _open_db('predictions', predictions_db) as conn:
+            # Detect schema (signal vs signal_type column)
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()}
+            has_signal = 'signal' in cols
+            has_signal_type = 'signal_type' in cols
+            signal_col = 'signal' if has_signal else ('signal_type' if has_signal_type else "'unknown'")
+
+            if market == 'ALL' or not market:
+                rows = conn.execute(f"""
+                    SELECT ticker, {signal_col} AS signal, status, market,
+                           prediction_date, actual_return, entry_price, target_price, stop_loss
+                    FROM predictions
+                    WHERE prediction_date IS NOT NULL AND prediction_date >= ?
+                    ORDER BY prediction_date DESC
+                    LIMIT 5000
+                """, (cutoff_str,)).fetchall()
+            else:
+                rows = conn.execute(f"""
+                    SELECT ticker, {signal_col} AS signal, status, market,
+                           prediction_date, actual_return, entry_price, target_price, stop_loss
+                    FROM predictions
+                    WHERE (market = ? OR market IS NULL)
+                      AND prediction_date IS NOT NULL AND prediction_date >= ?
+                    ORDER BY prediction_date DESC
+                    LIMIT 5000
+                """, (market, cutoff_str)).fetchall()
+
+            # Status classification sets (mirror Node)
+            WIN_STATUSES = {'TARGET_HIT', 'closed_win', 'WIN', 'win'}
+            LOSS_STATUSES = {'closed_stop', 'STOPPED', 'LOSS', 'loss'}
+            EXPIRED_STATUSES = {'EXPIRED', 'expired', 'CLOSED'}
+
+            def classify(status):
+                s = (status or '').strip()
+                if s in WIN_STATUSES:
+                    return 'win'
+                if s in LOSS_STATUSES:
+                    return 'loss'
+                if s in EXPIRED_STATUSES:
+                    return 'expired'
+                return 'pending'
+
+            def safe_num(v):
+                try:
+                    n = float(v)
+                    import math as _m
+                    return n if _m.isfinite(n) else 0
+                except (ValueError, TypeError):
+                    return 0
+
+            # Aggregate stats
+            total = 0
+            wins = 0
+            losses = 0
+            expired = 0
+            pending = 0
+            returns_sum = 0.0
+            returns_count = 0
+            by_market_map = {}
+            by_signal_map = {}
+            top_ticker_map = {}
+            ts_map = {}
+
+            for r in rows:
+                r = dict(r)
+                total += 1
+                status = (r.get('status') or '').strip()
+                ret = safe_num(r.get('actual_return'))
+                if ret != 0:
+                    returns_sum += ret
+                    returns_count += 1
+
+                bucket = classify(status)
+                if bucket == 'win':
+                    wins += 1
+                elif bucket == 'loss':
+                    losses += 1
+                elif bucket == 'expired':
+                    expired += 1
+                else:
+                    pending += 1
+
+                # by_market
+                m_key = (r.get('market') or 'unknown').strip() or 'unknown'
+                bm = by_market_map.setdefault(m_key, {
+                    'total': 0, 'wins': 0, 'losses': 0, 'expired': 0,
+                    'returns_sum': 0.0, 'returns_count': 0,
+                })
+                bm['total'] += 1
+                if ret != 0:
+                    bm['returns_sum'] += ret
+                    bm['returns_count'] += 1
+                if bucket == 'win':
+                    bm['wins'] += 1
+                elif bucket == 'loss':
+                    bm['losses'] += 1
+                elif bucket == 'expired':
+                    bm['expired'] += 1
+
+                # by_signal
+                sig_key = (r.get('signal') or 'unknown').strip() or 'unknown'
+                bs = by_signal_map.setdefault(sig_key, {
+                    'total': 0, 'wins': 0, 'losses': 0, 'expired': 0,
+                    'returns_sum': 0.0, 'returns_count': 0,
+                })
+                bs['total'] += 1
+                if ret != 0:
+                    bs['returns_sum'] += ret
+                    bs['returns_count'] += 1
+                if bucket == 'win':
+                    bs['wins'] += 1
+                elif bucket == 'loss':
+                    bs['losses'] += 1
+                elif bucket == 'expired':
+                    bs['expired'] += 1
+
+                # top_tickers
+                tk = (r.get('ticker') or '').strip()
+                if tk:
+                    tt = top_ticker_map.setdefault(tk, {
+                        'total': 0, 'wins': 0, 'losses': 0,
+                        'returns_sum': 0.0, 'returns_count': 0,
+                    })
+                    tt['total'] += 1
+                    if ret != 0:
+                        tt['returns_sum'] += ret
+                        tt['returns_count'] += 1
+                    if bucket == 'win':
+                        tt['wins'] += 1
+                    elif bucket == 'loss':
+                        tt['losses'] += 1
+
+                # timeseries
+                pd = (r.get('prediction_date') or '')
+                if pd:
+                    d = str(pd)[:10]
+                    if d >= cutoff_str:
+                        ts = ts_map.setdefault(d, {'total': 0, 'wins': 0, 'losses': 0, 'expired': 0})
+                        ts['total'] += 1
+                        if bucket == 'win':
+                            ts['wins'] += 1
+                        elif bucket == 'loss':
+                            ts['losses'] += 1
+                        elif bucket == 'expired':
+                            ts['expired'] += 1
+
+        resolved = wins + losses
+        stats = {
+            'total': total,
+            'resolved': resolved,
+            'wins': wins,
+            'losses': losses,
+            'expired': expired,
+            'pending': pending,
+            'win_rate': round((wins / resolved) * 100, 2) if resolved > 0 else 0,
+            'avg_return': round(returns_sum / returns_count, 4) if returns_count > 0 else 0,
+            'avg_holding_days': 0,
+        }
+
+        by_market_list = []
+        for mk, e in by_market_map.items():
+            closed_m = e['wins'] + e['losses']
+            by_market_list.append({
+                'market': mk,
+                'total': e['total'],
+                'wins': e['wins'],
+                'losses': e['losses'],
+                'expired': e['expired'],
+                'win_rate': round((e['wins'] / closed_m) * 100, 2) if closed_m > 0 else 0,
+                'avg_return': round(e['returns_sum'] / e['returns_count'], 4) if e['returns_count'] > 0 else 0,
+            })
+
+        by_signal_list = []
+        for sk, e in by_signal_map.items():
+            closed_s = e['wins'] + e['losses']
+            by_signal_list.append({
+                'signal': sk,
+                'total': e['total'],
+                'wins': e['wins'],
+                'losses': e['losses'],
+                'expired': e['expired'],
+                'win_rate': round((e['wins'] / closed_s) * 100, 2) if closed_s > 0 else 0,
+                'avg_return': round(e['returns_sum'] / e['returns_count'], 4) if e['returns_count'] > 0 else 0,
+            })
+
+        top_tickers_list = []
+        for tk, e in top_ticker_map.items():
+            if e['total'] < 3:
+                continue
+            closed_t = e['wins'] + e['losses']
+            top_tickers_list.append({
+                'ticker': tk,
+                'total': e['total'],
+                'wins': e['wins'],
+                'losses': e['losses'],
+                'win_rate': round((e['wins'] / closed_t) * 100, 2) if closed_t > 0 else 0,
+                'avg_return': round(e['returns_sum'] / e['returns_count'], 4) if e['returns_count'] > 0 else 0,
+            })
+        top_tickers_list.sort(key=lambda x: (-x['wins'], -x['win_rate']))
+        top_tickers_list = top_tickers_list[:10]
+
+        timeseries_list = []
+        for d, e in ts_map.items():
+            closed_d = e['wins'] + e['losses']
+            timeseries_list.append({
+                'date': d,
+                'total': e['total'],
+                'wins': e['wins'],
+                'losses': e['losses'],
+                'expired': e['expired'],
+                'win_rate': round((e['wins'] / closed_d) * 100, 2) if closed_d > 0 else 0,
+            })
+        timeseries_list.sort(key=lambda x: x['date'])
+
+        return jsonify({
+            'success': True,
+            'source': 'python-canonical-performance-dashboard',
+            'market': market,
+            'days': days,
+            'filter': {
+                'days': days,
+                'market': market,
+                'cutoff_date': cutoff_str,
+            },
+            'stats': stats,
+            'by_market': by_market_list,
+            'by_signal': by_signal_list,
+            'top_tickers': top_tickers_list,
+            'timeseries': timeseries_list,
+            'generated_at': _dt.now().isoformat(),
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+            'source': 'python-canonical-performance-dashboard',
+            'stats': {
+                'total': 0, 'resolved': 0, 'wins': 0, 'losses': 0,
+                'expired': 0, 'pending': 0, 'win_rate': 0,
+                'avg_return': 0, 'avg_holding_days': 0,
+            },
+            'by_market': [],
+            'by_signal': [],
+            'top_tickers': [],
+            'timeseries': [],
+        }), 500
+
+
+@misc_bp.route('/api/admin/platform-performance', methods=['GET'])
+def admin_platform_performance():
+    """GET /api/admin/platform-performance — Rule 20 canonical endpoint.
+
+    Replaces Node-side computation in admin/platform-performance/route.ts
+    (646 lines with KPIs: Win Rate + Profit Factor + Expectancy + Max Loss +
+    TP1/Stop hit rates + by_channel + by_market + readiness box).
+
+    Reads from predictions.db.predictions and applies the same logic:
+      - HARD cap: ABS(actual_return) <= 50 (Constitution Rule 7)
+      - MAX_RETURN_RATIO = 5.0 (suspicious if |exit/entry| > 5x)
+      - Validation: entry_price > 0, ticker clean, dedup, market known
+      - KPIs computed on valid + measured trades only
+
+    Query params:
+      - period: today | 7d | 30d | all (default 30d)
+      - channel: all | balanced | morning_bell (default all)
+      - market: all | <market_name> (default all)
+      - min_return: threshold for "respectable trade" (default 8.0)
+
+    Note: Admin auth gate is preserved in the Node route (Rule 20 exception).
+    This Python endpoint does NOT re-check auth — Node is responsible for it.
+    """
+    try:
+        from pathlib import Path as _Path
+        from datetime import datetime as _dt2, timedelta as _td2
+        import math as _math
+
+        period = (request.args.get('period') or '30d').strip().lower()
+        channel = (request.args.get('channel') or 'all').strip().lower()
+        market_filter = (request.args.get('market') or 'all').strip()
+        try:
+            min_return = float(request.args.get('min_return') or '8.0')
+        except (ValueError, TypeError):
+            min_return = 8.0
+
+        # Compute date range
+        now = _dt2.now()
+        date_from = None
+        if period == 'today':
+            date_from = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == '7d':
+            date_from = now - _td2(days=7)
+        elif period == '30d':
+            date_from = now - _td2(days=30)
+        # 'all' → date_from = None
+
+        date_from_str = date_from.strftime('%Y-%m-%d') if date_from else None
+        date_to_str = now.strftime('%Y-%m-%d')
+
+        HARD_CAP = 50.0
+        MAX_RETURN_RATIO = 5.0
+
+        predictions_db = str(_Path(__file__).resolve().parent.parent.parent / 'db' / 'predictions.db')
+        if not os.path.exists(predictions_db):
+            return jsonify({
+                'success': False,
+                'error': 'predictions.db not found',
+                'source': 'python-canonical-platform-performance',
+                'generated_at': now.isoformat(),
+                'filters': {
+                    'period': period, 'channel': channel,
+                    'market': market_filter, 'min_return': min_return,
+                    'date_from': date_from_str, 'date_to': date_to_str,
+                },
+                'kpis': None,
+                'top_trades': [], 'worst_trades': [], 'target_hits': [],
+                'by_channel': [], 'by_market': [],
+                'excluded_examples': [], 'readiness': None,
+                'data_sources': [], 'data_missing': ['predictions_db_missing'],
+                'sample_note_ar': 'تعذر تحميل البيانات — predictions.db غير موجود',
+            }), 500, {'Cache-Control': 'no-store, no-cache, must-revalidate'}
+
+        with _open_db('predictions', predictions_db) as conn:
+            sql = """
+                SELECT id, ticker, persona, morning_bell, prediction_date, entry_price,
+                       target_price, target_price_2, stop_loss, exit_price, actual_exit_price,
+                       actual_return, hit_target, hit_stop, status, holding_days,
+                       outcome_date, closed_at, highest_price, lowest_price, signal, market
+                FROM predictions
+                WHERE 1=1
+            """
+            params = []
+            if date_from_str:
+                sql += " AND prediction_date >= ?"
+                params.append(date_from_str)
+            if period != 'all':
+                sql += " AND prediction_date <= ?"
+                params.append(date_to_str)
+            if channel == 'morning_bell':
+                sql += " AND morning_bell = 1"
+            elif channel == 'balanced':
+                sql += " AND (morning_bell = 0 OR morning_bell IS NULL)"
+            if market_filter != 'all':
+                sql += " AND UPPER(market) = ?"
+                params.append(market_filter.upper())
+            sql += " ORDER BY prediction_date DESC"
+
+            rows = conn.execute(sql, params).fetchall()
+
+        # Helpers (mirror Node logic exactly)
+        def safe_num(v):
+            if v is None:
+                return None
+            try:
+                n = float(v)
+                return n if _math.isfinite(n) else None
+            except (ValueError, TypeError):
+                return None
+
+        def compute_actual_return_raw(row):
+            entry = safe_num(row.get('entry_price'))
+            if not entry or entry <= 0:
+                return {'ret': None, 'capped': False, 'suspicious': False}
+            raw_ret = None
+            exit_used = None
+            ar = safe_num(row.get('actual_return'))
+            if ar is not None and _math.isfinite(ar):
+                raw_ret = ar
+                exit_used = entry * (1 + ar / 100)
+            if raw_ret is None:
+                exit_price = safe_num(row.get('exit_price'))
+                if exit_price is None:
+                    exit_price = safe_num(row.get('actual_exit_price'))
+                if exit_price is not None and exit_price > 0:
+                    raw_ret = ((exit_price - entry) / entry) * 100
+                    exit_used = exit_price
+            if raw_ret is None:
+                hit_target = int(row.get('hit_target') or 0)
+                target = safe_num(row.get('target_price'))
+                if hit_target == 1 and target is not None and target > 0:
+                    raw_ret = ((target - entry) / entry) * 100
+                    exit_used = target
+            if raw_ret is None:
+                hit_stop = int(row.get('hit_stop') or 0)
+                stop = safe_num(row.get('stop_loss'))
+                if hit_stop == 1 and stop is not None and stop > 0:
+                    raw_ret = ((stop - entry) / entry) * 100
+                    exit_used = stop
+            if raw_ret is None:
+                return {'ret': None, 'capped': False, 'suspicious': False}
+            ratio = abs(exit_used / entry) if exit_used else 1
+            suspicious = ratio > MAX_RETURN_RATIO
+            capped = abs(raw_ret) > HARD_CAP
+            ret = max(-HARD_CAP, min(HARD_CAP, raw_ret))
+            return {'ret': ret, 'capped': capped, 'suspicious': suspicious}
+
+        def validate_trade(row, seen_keys):
+            ticker = (str(row.get('ticker') or '')).strip().upper()
+            entry = safe_num(row.get('entry_price'))
+            if not entry or entry <= 0:
+                return {'valid': False, 'reason': 'entry_price_zero'}
+            if not ticker or ' ' in ticker or len(ticker) > 12:
+                return {'valid': False, 'reason': 'ticker_invalid'}
+            persona = str(row.get('persona') or 'balanced')
+            morning_bell = int(row.get('morning_bell') or 0)
+            ch = 'morning_bell' if morning_bell == 1 else 'balanced'
+            prediction_date = str(row.get('prediction_date') or '')
+            dedup_key = f"{ticker}|{prediction_date}|{ch}|{entry:.4f}"
+            if dedup_key in seen_keys:
+                return {'valid': False, 'reason': 'duplicate'}
+            seen_keys.add(dedup_key)
+            market = str(row.get('market') or '').upper()
+            if not market:
+                return {'valid': False, 'reason': 'market_unknown'}
+            return {'valid': True, 'reason': None}
+
+        def compute_holding_days(row):
+            hd = safe_num(row.get('holding_days'))
+            if hd is not None and hd > 0:
+                return int(round(hd))
+            pred_date = row.get('prediction_date')
+            outcome_date = row.get('outcome_date')
+            closed_at = row.get('closed_at')
+            end_date = outcome_date or closed_at
+            if pred_date and end_date:
+                try:
+                    start = _dt2.fromisoformat(str(pred_date).replace('Z', ''))
+                    end = _dt2.fromisoformat(str(end_date).replace('Z', ''))
+                    days = (end - start).days
+                    return days if days >= 0 else None
+                except Exception:
+                    return None
+            return None
+
+        # Build trades list
+        seen_keys = set()
+        trades = []
+        for r in rows:
+            r = dict(r)
+            ret_info = compute_actual_return_raw(r)
+            actual_return = ret_info['ret']
+            capped = ret_info['capped']
+            suspicious = ret_info['suspicious']
+            is_morning_bell = int(r.get('morning_bell') or 0) == 1
+            validation = validate_trade(r, seen_keys)
+            valid = validation['valid']
+            exclusion_reason = validation['reason']
+            if valid and suspicious:
+                valid = False
+                exclusion_reason = 'exit_price_unrealistic'
+
+            trades.append({
+                'id': int(r.get('id') or 0),
+                'ticker': str(r.get('ticker') or ''),
+                'persona': r.get('persona') or 'balanced',
+                'is_morning_bell': is_morning_bell,
+                'channel': 'morning_bell' if is_morning_bell else 'balanced',
+                'prediction_date': str(r.get('prediction_date') or ''),
+                'entry_price': safe_num(r.get('entry_price')) or 0,
+                'target_price': safe_num(r.get('target_price')),
+                'target_price_2': safe_num(r.get('target_price_2')),
+                'stop_loss': safe_num(r.get('stop_loss')),
+                'exit_price': safe_num(r.get('exit_price')) or safe_num(r.get('actual_exit_price')),
+                'actual_return': actual_return if actual_return is not None else 0,
+                'hit_target': int(r.get('hit_target') or 0),
+                'hit_stop': int(r.get('hit_stop') or 0),
+                'status': str(r.get('status') or ''),
+                'holding_days': compute_holding_days(r),
+                'outcome_date': r.get('outcome_date'),
+                'highest_price': safe_num(r.get('highest_price')),
+                'lowest_price': safe_num(r.get('lowest_price')),
+                'market': str(r.get('market') or 'UNKNOWN').upper(),
+                'capped': capped,
+                'valid': valid,
+                'exclusion_reason': exclusion_reason,
+            })
+
+        # KPI computation
+        def compute_kpis(all_trades):
+            n_raw = len(all_trades)
+            valid_trades = [t for t in all_trades if t['valid']]
+            measured = [t for t in valid_trades if t['actual_return'] is not None and t['actual_return'] != 0]
+            n_valid = len(measured)
+            excluded = [t for t in all_trades if not t['valid']]
+            n_open = sum(1 for t in all_trades if t['status'] in ('active', 'ACTIVE', 'PENDING'))
+
+            exclusion_breakdown = {}
+            for t in excluded:
+                reason = t['exclusion_reason'] or 'unknown'
+                exclusion_breakdown[reason] = exclusion_breakdown.get(reason, 0) + 1
+
+            if n_valid == 0:
+                return {
+                    'n_raw': n_raw, 'n_valid': 0, 'n_excluded': len(excluded), 'n_open': n_open,
+                    'win_rate': 0, 'profit_factor': 0, 'expectancy_pct': 0,
+                    'avg_win_pct': 0, 'avg_loss_pct': 0, 'max_loss_pct': 0, 'max_win_pct': 0,
+                    'tp1_hit_rate': 0, 'stop_hit_rate': 0, 'expired_rate': 0,
+                    'hard_capped_count': 0, 'exclusion_breakdown': exclusion_breakdown,
+                }
+
+            wins = [t for t in measured if t['actual_return'] > 0]
+            losses = [t for t in measured if t['actual_return'] < 0]
+            expired = [t for t in all_trades if t['status'] == 'EXPIRED' and t['hit_target'] == 0 and t['hit_stop'] == 0]
+            tp_hits = [t for t in valid_trades if t['hit_target'] == 1]
+            stop_hits = [t for t in valid_trades if t['hit_stop'] == 1]
+            hard_capped = [t for t in measured if t['capped']]
+
+            gross_profit = sum(t['actual_return'] for t in wins)
+            gross_loss_amount = sum(abs(t['actual_return']) for t in losses)
+            if gross_loss_amount > 0:
+                pf = gross_profit / gross_loss_amount
+            elif gross_profit > 0:
+                pf = 0  # Mirror Node: Infinity → 0 (avoid JSON serialization issues)
+            else:
+                pf = 0
+
+            avg_win = gross_profit / len(wins) if wins else 0
+            avg_loss = -(gross_loss_amount / len(losses)) if losses else 0
+            expectancy = sum(t['actual_return'] for t in measured) / n_valid
+            max_loss = min((t['actual_return'] for t in losses), default=0)
+            max_win = max((t['actual_return'] for t in wins), default=0)
+
+            return {
+                'n_raw': n_raw, 'n_valid': n_valid, 'n_excluded': len(excluded), 'n_open': n_open,
+                'win_rate': (len(wins) / n_valid) * 100,
+                'profit_factor': pf,
+                'expectancy_pct': expectancy,
+                'avg_win_pct': avg_win,
+                'avg_loss_pct': avg_loss,
+                'max_loss_pct': max_loss,
+                'max_win_pct': max_win,
+                'tp1_hit_rate': (len(tp_hits) / len(valid_trades)) * 100 if valid_trades else 0,
+                'stop_hit_rate': (len(stop_hits) / len(valid_trades)) * 100 if valid_trades else 0,
+                'expired_rate': (len(expired) / n_raw) * 100 if n_raw > 0 else 0,
+                'hard_capped_count': len(hard_capped),
+                'exclusion_breakdown': exclusion_breakdown,
+            }
+
+        kpis = compute_kpis(trades)
+
+        # by_channel
+        by_channel = []
+        for ch in ('balanced', 'morning_bell'):
+            ch_trades = [t for t in trades if t['channel'] == ch]
+            if not ch_trades:
+                continue
+            ch_kpis = compute_kpis(ch_trades)
+            by_channel.append({
+                'channel': ch,
+                'n': ch_kpis['n_valid'],
+                'win_rate': ch_kpis['win_rate'],
+                'profit_factor': ch_kpis['profit_factor'],
+                'expectancy_pct': ch_kpis['expectancy_pct'],
+                'max_loss_pct': ch_kpis['max_loss_pct'],
+            })
+
+        # by_market
+        by_market_list = []
+        markets_seen = []
+        for t in trades:
+            if t['market'] and t['market'] not in markets_seen:
+                markets_seen.append(t['market'])
+        for mk in markets_seen:
+            mk_trades = [t for t in trades if t['market'] == mk]
+            if not mk_trades:
+                continue
+            mk_kpis = compute_kpis(mk_trades)
+            by_market_list.append({
+                'market': mk,
+                'n_raw': mk_kpis['n_raw'],
+                'n_valid': mk_kpis['n_valid'],
+                'win_rate': mk_kpis['win_rate'],
+                'profit_factor': mk_kpis['profit_factor'],
+                'expectancy_pct': mk_kpis['expectancy_pct'],
+                'max_loss_pct': mk_kpis['max_loss_pct'],
+            })
+        by_market_list.sort(key=lambda x: -x['n_valid'])
+
+        # Readiness box
+        n_sufficient = kpis['n_valid'] >= 30
+        pf_passes = kpis['profit_factor'] >= 1.3
+        max_loss_reasonable = kpis['max_loss_pct'] >= -20
+        notes = []
+        if not n_sufficient:
+            notes.append(f"العينة صغيرة ({kpis['n_valid']} < 30) — النتائج غير حاسمة")
+        if not pf_passes:
+            notes.append(f"Profit Factor {round(kpis['profit_factor'], 2)} < 1.3 — الـ edge ضعيف")
+        if not max_loss_reasonable:
+            notes.append(f"Max Loss {round(kpis['max_loss_pct'], 1)}% خارج نطاق الوقف المعقول")
+        candidate = n_sufficient and pf_passes and max_loss_reasonable
+        readiness = {
+            'n_sufficient': n_sufficient,
+            'pf_passes': pf_passes,
+            'max_loss_reasonable': max_loss_reasonable,
+            'recommendation': 'candidate' if candidate else 'internal',
+            'recommendation_ar': 'مرشح لنسخة عميل لاحقاً' if candidate else 'يبقى داخلي',
+            'notes_ar': notes if notes else ['كل المؤشرات ضمن الحدود المعقولة'],
+        }
+
+        # Top/worst/target hits/excluded examples
+        valid_measured = [t for t in trades if t['valid'] and t['actual_return'] is not None and t['actual_return'] != 0]
+        top_trades = [t for t in valid_measured if t['actual_return'] >= min_return]
+        top_trades.sort(key=lambda x: -x['actual_return'])
+        top_trades = top_trades[:20]
+        worst_trades = [t for t in valid_measured if t['actual_return'] < 0]
+        worst_trades.sort(key=lambda x: x['actual_return'])
+        worst_trades = worst_trades[:10]
+        target_hits = [t for t in valid_measured if t['hit_target'] == 1]
+        target_hits.sort(key=lambda x: -x['actual_return'])
+        target_hits = target_hits[:20]
+        excluded_examples = [t for t in trades if not t['valid']][:10]
+
+        # Sample note
+        sample_note = f"بيانات بعد فلتر الجودة: n={kpis['n_valid']} من أصل {kpis['n_raw']}"
+        if kpis['n_excluded'] > 0:
+            reasons = '، '.join(f"{v} {k}" for k, v in kpis['exclusion_breakdown'].items())
+            sample_note += f" (مستبعد: {kpis['n_excluded']} — {reasons})"
+        if kpis['n_valid'] < 30:
+            sample_note += ". العينة أقل من 30 — النتائج إرشادية فقط."
+
+        data_sources = ['predictions.db.predictions']
+        data_missing = []
+        if not trades:
+            data_missing.append('no_predictions_in_period')
+
+        return jsonify({
+            'success': True,
+            'source': 'python-canonical-platform-performance',
+            'generated_at': now.isoformat(),
+            'filters': {
+                'period': period,
+                'channel': channel,
+                'market': market_filter,
+                'min_return': min_return,
+                'date_from': date_from_str,
+                'date_to': date_to_str,
+            },
+            'kpis': kpis,
+            'top_trades': top_trades,
+            'worst_trades': worst_trades,
+            'target_hits': target_hits,
+            'by_channel': by_channel,
+            'by_market': by_market_list,
+            'excluded_examples': excluded_examples,
+            'readiness': readiness,
+            'data_sources': data_sources,
+            'data_missing': data_missing,
+            'sample_note_ar': sample_note,
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': f'فشل تحميل البيانات: {e}',
+            'traceback': _tb.format_exc().splitlines()[-5:],
+            'source': 'python-canonical-platform-performance',
+            'generated_at': _dt.now().isoformat(),
+            'filters': {
+                'period': '30d', 'channel': 'all', 'market': 'all',
+                'min_return': 8.0, 'date_from': None, 'date_to': None,
+            },
+            'kpis': None,
+            'top_trades': [], 'worst_trades': [], 'target_hits': [],
+            'by_channel': [], 'by_market': [],
+            'excluded_examples': [], 'readiness': None,
+            'data_sources': [], 'data_missing': ['query_error'],
+            'sample_note_ar': 'تعذر تحميل البيانات',
+        }), 500

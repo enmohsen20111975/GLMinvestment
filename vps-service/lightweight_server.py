@@ -49,7 +49,17 @@ BLUEPRINTS = [
     ('api.screener_routes', 'screener_bp'),
     ('api.ai_predictions_routes', 'ai_pred_bp'),
     ('api.prediction_tracking_routes', 'prediction_tracking_bp'),
-    ('api.prediction_tracking_routes', 'tracking_bp'),
+    # RULE28-NO-DUPLICATION (2026-10-12 — FULL-AUDIT-3-QUESTIONS):
+    # tracking_bp (legacy) was a DUPLICATE blueprint with url_prefix='/api/predictions/tracking'
+    # — same as prediction_tracking_bp. Its endpoints (/legacy-stats, /history,
+    # /pending, /evaluate, /check/<id>, /export, /summary) are NOT used by any
+    # frontend component (verified via grep). The frontend only uses:
+    #   /api/predictions/tracking/verify (from prediction_tracking_bp)
+    #   /api/predictions/tracking/stats (from prediction_tracking_bp)
+    # Registration removed to eliminate the duplicate blueprint (Rule 28).
+    # The tracking_bp Blueprint definition stays in prediction_tracking_routes.py
+    # for reference (Rule 16 VERIFY-BEFORE-DELETE) but is no longer registered.
+    # ('api.prediction_tracking_routes', 'tracking_bp'),  # REMOVED — duplicate
     ('api.maestro_routes', 'maestro_bp'),
     ('api.sniper_routes', 'sniper_bp'),
     ('api.reports_routes', 'reports_bp'),

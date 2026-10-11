@@ -1,69 +1,61 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPredictionsFallback } from '@/lib/flutter-sqlite-fallback';
+/**
+ * GET /api/predictions/league-report — Rule 20 Pure Thin Proxy
+ * =============================================================
+ *
+ * RULE20-PURE-PROXY (2026-10-12): Pure thin proxy to Python.
+ *
+ * Rule 20 (Python = brain, Node = display only): ZERO computation in Node.
+ * Rule 27 (NO-FAKE-DATA): NO fallback chain, NO placeholder empty arrays.
+ * Rule 67 (CALCULATION-CANONICAL): Python is the Single Source of Truth.
+ *
+ * The previous route had 70 lines with a SQLite fallback chain that:
+ *   - Used `getPredictionsFallback` (Rule 20 violation — direct SQLite)
+ *   - Sorted + sliced in Node (computation in Node)
+ *   - Returned `source: 'sqlite_fallback'` (Rule 27 violation — placeholder)
+ *
+ * The Python endpoint `/api/predictions/league-report` already has the
+ * LEAGUE-DEDUP-FIX (ROW_NUMBER() OVER PARTITION BY ticker) applied.
+ * This route just forwards query params + returns Python's JSON.
+ */
 
-const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
+import { NextRequest, NextResponse } from 'next/server';
+
 export const dynamic = 'force-dynamic';
 
-// GET /api/predictions/league-report?period=monthly
-// ------------------------------------------------
-// Primary: Python backend /api/predictions/league-report.
-// Fallback (FLUTTER-FULL-AUDIT): predictions.db — compose a league table
-//   from closed predictions (top performers by pnl_percent).
+const PY = process.env.EGXPY_SERVICE_URL || process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const period = url.searchParams.get('period') || 'monthly';
   const qs = url.searchParams.toString();
-  const targetUrl = `${PY}/api/predictions/league-report${qs ? `?${qs}` : ''}`;
 
-  // 1. Try Python
+  const targetUrl = `${PY}/api/predictions/league-report${qs ? `?${qs}` : ''}`;
   try {
     const res = await fetch(targetUrl, {
-      signal: AbortSignal.timeout(5000),
-      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
       headers: { Accept: 'application/json' },
+      cache: 'no-store',
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success !== false) {
-        return NextResponse.json(data);
-      }
+    if (!res.ok) {
+      return NextResponse.json({
+        success: false,
+        error: `python-returned-${res.status}`,
+        message: 'تعذّر جلب تقرير الدوري — Python backend أرجع خطأ',
+      }, { status: 502 });
     }
-  } catch { // silent fallback (safe-by-design)
-    // fall through
+    const data = await res.json();
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Data-Source': data.source || 'python-canonical-league-report',
+      },
+    });
+  } catch (error) {
+    console.error('[predictions:league-report] Python backend unavailable:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'python-backend-unavailable',
+      message: 'Python backend غير متاح — لا يمكن عرض دوري وهمي (Rule 27)',
+      rule: 'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)',
+    }, { status: 503 });
   }
-
-  // 2. SQLite fallback — predictions.db closed predictions as league table
-  const closed = getPredictionsFallback(200, 'closed');
-  const league = closed
-    .filter((p) => p.pnl_percent != null)
-    .sort((a, b) => Number(b.pnl_percent) - Number(a.pnl_percent))
-    .slice(0, 50)
-    .map((p, idx) => ({
-      rank: idx + 1,
-      ticker: p.ticker,
-      signal: p.signal,
-      signal_ar: p.signal_ar,
-      entry_price: p.entry_price,
-      exit_price: p.actual_exit_price,
-      pnl_percent: Number(p.pnl_percent),
-      holding_days: p.closed_at,
-      prediction_date: p.prediction_date,
-      closed_at: p.closed_at,
-      master_score: p.master_score,
-      persona: p.persona,
-    }));
-
-  return NextResponse.json({
-    success: true,
-    source: 'sqlite_fallback',
-    period,
-    period_name: period,
-    start_date: '',
-    end_date: new Date().toISOString().slice(0, 10),
-    period_label: period,
-    league,
-    count: league.length,
-    timestamp: new Date().toISOString(),
-  });
 }
