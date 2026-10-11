@@ -139,6 +139,24 @@ interface LiveMonitorData {
 
 type MarketData = LiveMonitorData['data'];
 
+/**
+ * API-CONTRACT-FIX (2026-10-11): Python /api/live-monitor no longer returns
+ * `scheduler` (keys: cairo_time, data_sources, is_trading_day, is_trading_hours,
+ * market_status, portfolio, stocks, weekday_name). Guard against undefined so
+ * SystemHealthCards never crashes on `scheduler.last_runs`.
+ */
+const FALLBACK_SCHEDULER: NonNullable<MarketData['scheduler']> = {
+  running: false,
+  cairo_time: '',
+  market_open: false,
+  post_market: false,
+  is_friday: false,
+  trading_paused: true,
+  last_runs: {},
+  engines_loaded: {},
+  regime: null,
+};
+
 // ============================================================
 // Constants & Helpers
 // ============================================================
@@ -460,7 +478,8 @@ function MarketStatusBanner({
 // ------------------------------------------------------------
 
 function SystemHealthCards({ data }: { data: MarketData }) {
-  const { stocks, scheduler } = data;
+  const stocks = data.stocks;
+  const scheduler = data.scheduler ?? FALLBACK_SCHEDULER;
   const intradayLast =
     (scheduler.last_runs?.intraday_prices as string | null | undefined) ?? null;
   const regime = scheduler.regime;
@@ -995,8 +1014,8 @@ function MoversCard({
 function MarketMovers({ data }: { data: MarketData }) {
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-      <MoversCard title="أعلى الرابحين" type="gainer" stocks={data.gainers} />
-      <MoversCard title="أعلى الخاسرين" type="loser" stocks={data.losers} />
+      <MoversCard title="أعلى الرابحين" type="gainer" stocks={data.gainers ?? []} />
+      <MoversCard title="أعلى الخاسرين" type="loser" stocks={data.losers ?? []} />
     </div>
   );
 }
