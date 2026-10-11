@@ -2187,20 +2187,13 @@ function resolveLevels(
   const dbStop = (typeof supportRaw === 'number' && supportRaw > 0 && supportRaw < current) ? supportRaw : null;
   const dbTarget = (typeof resistanceRaw === 'number' && resistanceRaw > 0 && resistanceRaw > current) ? resistanceRaw : null;
 
-  // 3) Mathematical Volatility Model — احسب من range_10d_pct أو نسبة ثابتة
-  // Task DEEP-DIRECTIVE: ممنوع إرجاع source='none' — كل سهم لازم يكون له مستويات
-  const rangePctRaw = (stock as unknown as Record<string, unknown>).range_10d_pct;
-  const rangePct = (typeof rangePctRaw === 'number' && rangePctRaw > 0) ? rangePctRaw : 5.0; // default 5%
-  // stop = price × (1 - max(2.5%, rangePct × 0.75 / 100))
-  const stopPct = Math.max(2.5, rangePct * 0.75) / 100;
-  const mathStop = current * (1 - stopPct);
-  // target = entry + 2.0 × (entry - stop)  [R:R = 2.0 minimum]
-  const mathTarget = current + 2.0 * (current - mathStop);
-
-  // اختر الأفضل: DB levels لو متوفرة، وإلا mathematical
-  const stop = dbStop ?? mathStop;
-  const target = dbTarget ?? mathTarget;
-  const source = (dbStop != null || dbTarget != null) ? 'technical' : 'math';
+  // 3) P0-FIX (2026-10-12, Rule 27): شيلنا Mathematical Volatility Model fabrication.
+  // قبل كده: DEEP-DIRECTIVE كان بـ يفبرك stop=price×0.975, target=price×1.05.
+  // دلوقتي: لو مفيش DB support/resistance → source='none' + null (Rule 27).
+  // الـ UI بـ يعرض "—" بدل مستويات مصطنعة.
+  const stop = dbStop;
+  const target = dbTarget;
+  const source: 'ai' | 'technical' | 'none' = (dbStop != null || dbTarget != null) ? 'technical' : 'none';
 
   // R:R
   let rr: number | null = null;
