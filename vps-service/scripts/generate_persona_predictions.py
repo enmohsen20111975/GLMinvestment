@@ -246,6 +246,7 @@ def sync_persona_predictions(refresh_active: bool = True):
                 continue
 
             pcur.execute('''
+                -- DEV-07 verified-disabled (dead code — sys.exit(0) at L335, FINALIZE-UNIFICATION)
                 INSERT INTO predictions (
                     ticker, persona, signal, signal_type, prediction_date, created_at,
                     entry_price, target_price, target_price_2, stop_loss, master_score, confidence, market,
@@ -300,6 +301,7 @@ def sync_persona_predictions(refresh_active: bool = True):
                     actual_exit = sample['actual_exit_price'] or (entry * (1 + ret / 100))
 
                     pcur.execute('''
+                        -- DEV-07 verified-disabled (dead code — sys.exit(0) at L335, FINALIZE-UNIFICATION)
                         INSERT INTO predictions (
                             ticker, persona, signal, signal_type, prediction_date, created_at,
                             entry_price, target_price, target_price_2, stop_loss, master_score, confidence, market,
