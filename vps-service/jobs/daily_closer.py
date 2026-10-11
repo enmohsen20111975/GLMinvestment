@@ -3039,7 +3039,9 @@ class DailyCloser:
                     exit_type = ?,
                     highest_price_reached = ?,
                     lowest_price_reached = ?,
-                    status = ?
+                    status = ?,
+                    target_hit_at = CASE WHEN ? = 'TARGET_HIT' THEN ? ELSE target_hit_at END,
+                    stop_hit_at = CASE WHEN ? = 'STOPPED' THEN ? ELSE stop_hit_at END
                 WHERE id = ?
             """, (
                 close_date,
@@ -3056,6 +3058,13 @@ class DailyCloser:
                 round(highest_price_reached, 2),
                 round(lowest_price_reached, 2) if lowest_price_reached and lowest_price_reached > 0 else None,
                 status,
+                # target_hit_at + stop_hit_at (2026-10-12 — PRODUCTION-AUDIT):
+                # قبل كده: مفيش توقيت الضربة في أي سجل (NULL في كل الـ 506 TARGET_HIT + 83 STOPPED)
+                # دلوقتي: نكتب datetime.now().isoformat() وقت الإغلاق
+                status,  # CASE parameter (status for TARGET_HIT check)
+                datetime.now().isoformat(),  # target_hit_at value
+                status,  # CASE parameter (status for STOPPED check)
+                datetime.now().isoformat(),  # stop_hit_at value
                 pred_id
             ))
             conn.commit()

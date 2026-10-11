@@ -524,7 +524,30 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
 
     If start_date/end_date provided, only delete predictions in that range.
     Otherwise, delete ALL V40 predictions.
+
+    🔴 DISABLED (2026-10-12 — PRODUCTION-AUDIT):
+    This function DELETES legit V40.2 predictions (WHERE kill_filter_result
+    LIKE 'V40 evidence%') — the ONLY sanctioned predictions! It leaves rogue
+    predictions (evidence=0, kill_filter empty) untouched.
+
+    Production evidence: sanctioned=10 on production (was 38 in sample) →
+    28 legit V40.2 predictions were DELETED by this function.
+
+    Per Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA) + Rule 67
+    (ROOT-CAUSE-FIRST): this function is disabled. V40.2 predictions must
+    NEVER be deleted — they are the canonical truth.
+
+    To re-enable (NOT RECOMMENDED): remove the early-return below.
     """
+    print(
+        "[RULE35-DISABLED] delete_old_v40_predictions() — BLOCKED. "
+        "This function deletes legit V40.2 predictions (the only sanctioned ones). "
+        "Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA).",
+        flush=True,
+    )
+    return  # safe exit — do NOT delete anything
+
+    # ─── ORIGINAL CODE BELOW — preserved for reference (Rule 16 VERIFY-BEFORE-DELETE) ───
     # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
     _v402_dov_ctx = None
     try:
