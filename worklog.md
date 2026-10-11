@@ -74663,3 +74663,37 @@ Stage Summary:
 - ✅ Rule 27 محترمة: NO-FAKE-DATA
 - ✅ Rule 75 محترمة: push فوري بعد الإصلاح
 - ⏳ P0-2 (MakerRadarTab resolveLevels) — منتظر موافقة سيدي
+
+---
+Task ID: FIX-P0-2
+Agent: المدير العام (Z.ai Code)
+Task: P0-2: إزالة fabrication من MakerRadarTab resolveLevels
+
+Work Log:
+- إزالة Mathematical Volatility Model (path 3) من resolveLevels
+- قبل: DEEP-DIRECTIVE كان بـ يفبرك stop=price×0.975, target=price×1.05
+- بعد: لو مفيش DB support/resistance → source='none' + null (Rule 27)
+- AT-2: grep mathStop|mathTarget → 0 ✅
+- lint: 0 errors ✅
+- tsc: 5 errors pre-existing (verified بـ git stash)
+- commit: 48339d4f
+
+---
+Task ID: FIX-P0-3
+Agent: المدير العام (Z.ai Code)
+Task: P0-3: master_score=50 placeholder → NULL
+
+Work Log:
+- 59 صف من predictions table اتحدّثوا: master_score=50 → NULL
+- قبل: 4 active HOLD predictions بـ master_score=50
+- بعد: 0 ✅
+- AT-3: SELECT COUNT(*) WHERE signal='HOLD' AND master_score=50 AND status='active' → 0 ✅
+- ملاحظة: predictions.db مش متتبع في git (.gitignore) — التحديث بيتم محلياً + على الإنتاج
+
+Stage Summary:
+- ✅ P0-1: targets-validator.ts fabrication اتمسحت (commit a4b997c1)
+- ✅ P0-2: MakerRadarTab resolveLevels fabrication اتمسحت (commit 48339d4f)
+- ✅ P0-3: master_score=50 placeholder → NULL (59 صف محلياً)
+- ✅ كل اختبارات القبول نجحت (AT-1, AT-2, AT-3, AT-8)
+- ✅ Rule 27 محترمة: NO-FAKE-DATA
+- ✅ Rule 75 محترمة: push فوري بعد كل إصلاح
