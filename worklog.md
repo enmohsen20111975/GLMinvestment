@@ -69894,3 +69894,853 @@ Stage Summary:
   }
 
 RULE20-PURE-PROXY complete. كل الـ 6 routes بقوا pure thin proxies.
+
+---
+Task ID: RADAR-AUDIT
+Agent: Explore (Radar Routes Rule 20 + 27 + 67 Audit)
+Task: فحص ميكروسكوبي لكل radar routes (accuracy + personalized + weekly-report + weekly-report/pdf)
+
+Work Log:
+- قريت worklog.md (آخر 100 سطر) — فهمت سياق RULE20-PURE-PROXY السابق على honest-tracking (1127 → 493 سطر، 56% تقليل).
+- قريت Constitution Rule 20 (L269-274) + Rule 27 (L378-389) + Rule 67 (L2402-2456).
+- فحصت 4 ملفات في src/app/api/radar/ (إجمالي 1503 سطر):
+  - accuracy/route.ts (740 سطر)
+  - personalized/route.ts (374 سطر)
+  - weekly-report/route.ts (301 سطر)
+  - weekly-report/pdf/route.ts (88 سطر)
+- استخدمت Grep للـ patterns: Math.*, better-sqlite3, EGXPY_SERVICE_URL, success:true+unavailable, win_rate/profit_factor, filter/sort/map/reduce, INSERT/UPDATE/DELETE, hit_target/hit_stop.
+- استخدمت Read لقراءة كل ملف كامل (file-end-to-end).
+
+Stage Summary:
+
+================================================================
+## التقرير التفصيلي لكل Route
+================================================================
+
+### 1. /api/radar/accuracy — 740 سطر ❌ CRITICAL VIOLATION
+- Pure proxy: ❌ (zero `fetch()` calls — لا Python proxy إطلاقاً)
+- Direct SQLite: ❌ VIOLATION Rule 20 (line 272 explicit ban)
+  - L50: `import Database from 'better-sqlite3'`
+  - L105-131: `openPredictionsDb()` — يفتح db/predictions.db + db/predictions.db.original مباشرة
+  - L114: `new Database(c.path, { readonly: true, fileMustExist: true })`
+  - L308, L536, L573: SQL queries مباشرة (`SELECT ... FROM predictions` / `PRAGMA table_info` / `SELECT ... FROM radar_signal_tracking`)
+- Node-side computation: ❌ VIOLATION Rule 67 (massive)
+  - L134-151: `classifyRadarPath()` — business logic classification (5 radar paths)
+  - L153-157: `safeNum()` — number validation helper
+  - L159-162: `computeWinRate()` — `Math.round((wins / verified) * 1000) / 10` (Win Rate canonical = Python فقط per Rule 67 #7)
+  - L164-168: `avg()` — `values.reduce((a,b) => a+b, 0)` + `Math.round`
+  - L170-175: `monthKey()` — regex date parsing
+  - L181: `Math.min(Math.max(...))` للـ days clamp
+  - L286-509: `buildFromPredictionsTable()` — 224 سطر aggregation كامل (filter/sort/map/reduce)
+  - L529-740: `buildFromRadarTrackingTable()` — 212 سطر aggregation كامل (مكرر!)
+  - L438-471, L481, L491: `.map().sort()` للـ bySignalType/byMarket/monthlyTrend
+- Fallback chain (Python → VPS): ❌ NONE — مش موجود إطلاقاً (مش proxy أصلاً)
+- Placeholders (Rule 27): ❌ VIOLATION
+  - L205-226: لو DB غير متاح → `success: true` + `source: 'none'` + كل القيم zeros + arrays فاضية
+  - L213: `win_rate_pct: 0`
+  - L214-220: `by_signal_type` filled with `total: 0, verified: 0, wins: 0, win_rate_pct: 0` لكل paths
+  - L221: `by_market: []`, L222: `monthly_trend: []`
+  - ده خرق صريح لـ Rule 27 (NO-FAKE-DATA): بيرجّع success:true + zeros بدلاً من 503
+- Business logic (Rule 67): ❌ CRITICAL
+  - Win Rate computation (L159, L434, L447, L462, L479, L489, L667, L679, L693, L710, L720) — خرق Rule 67 #7 (canonical: Python فقط)
+  - Win/Loss classification (L395-417, L639-652) — `if (hitTarget) isWin = true` etc.
+  - SELL detection via `priceGain = ((exitPrice - entryPrice) / entryPrice) * 100` (L400-402, L635-637) — ده Math computation في Node
+  - Radar path classification (5 paths + general fallback) (L67-93, L134-151)
+  - avg outcomes (L419-425, L654-659) — aggregate avg returns
+- Recommendation: **CONVERT-TO-PROXY (CRITICAL — worst offender)**
+  - السبب: 740 سطر، 2 huge aggregation builders، 5 helper functions، zero Python proxy، Rule 20 + 27 + 67 violations all present.
+  - الحل: نقل كل الـ logic لـ Python endpoint جديد `/api/radar/accuracy` في vps-service، واستبدال الملف بـ pure fetch + return JSON.
+
+### 2. /api/radar/personalized — 374 سطر ❌ CRITICAL VIOLATION
+- Pure proxy: ❌ (zero `fetch()` calls)
+- Direct SQLite: ❌ VIOLATION Rule 20 (line 272 explicit ban)
+  - L3: `import Database from 'better-sqlite3'`
+  - L91-98: `openStocksDb()` — يفتح `db/stocks.db` مباشرة
+  - L94: `new Database(stocksDbPath, { readonly: true })`
+  - L131-143: SQL `SELECT ... FROM portfolio_assets pa LEFT JOIN stocks s ...` (aggregate per-user profile)
+  - L273-275: SQL `SELECT ticker, sector FROM stocks WHERE ticker IN (...)` (sector lookup batch)
+- Node-side computation: ❌ VIOLATION Rule 67
+  - L57-61: `classifyPriceRange()` — low/mid/high classification (price < 10, ≤ 100, else high)
+  - L63-67: `classifyHoldingPeriod()` — short/medium/long (< 7, ≤ 30, else long)
+  - L69-73: `classifyRiskProfile()` — conservative/balanced/aggressive (≤1, ≤5, else conservative) — ده business logic decision
+  - L75-89: `computeAverageHoldingDays()` — `Math.max(0, (now - t) / 86_400_000)` + `Math.round(totalDays / n)`
+  - L84, L88, L165: `Math.max`, `Math.round` — Math computation
+  - L154-166: sectorCount + `.sort().slice(0,3).map()` — top 3 sectors with pct
+  - L168-177: marketCount + `.sort().slice(0,3).map()` — top 3 markets
+  - L180-201: tickerAgg + `.sort().slice(0,8).map()` — top 8 tickers
+  - L204-210: prices `.map().filter().reduce()` — avg price calculation
+  - L245: `BASE_POSITION_PCT = riskProfile === 'aggressive' ? 8 : ...` — position sizing business logic (Rule 67 #4 canonical: Python فقط)
+  - L286-334: personalization scoring loop — `bonus += 10` / `bonus += 5` + reasons (Business logic!)
+  - L337-338: `.sort((a,b) => b.personalized_score - a.personalized_score).slice(0, 5)`
+- Fallback chain (Python → VPS): ❌ NONE
+- Placeholders (Rule 27): ⚠️ BORDERLINE
+  - L222-231: لو portfolio فاضي → `success: true` + `profile: null` + `personalized_picks: []` — ده acceptable (real empty state, not fake data)
+  - L355-358: `totalTrades: 0`, `winRate: 0`, `hasTradeHistory: false` — ده "—" display marker (UI يخفي الـ zeros عبر flag). مقبول لأن الـ flag صريح، بس لوحده يفضل خرق شكلي لـ Rule 27 (أرقام ثابتة كـ placeholder).
+- Business logic (Rule 67): ❌ CRITICAL
+  - Risk profile classification (L69-73) — decision logic في Node
+  - Position sizing (L245) — خرق Rule 67 #4 (canonical: `vps-service/utils/position_sizing.py::calculate_risk_based_position()`)
+  - Personalization scoring (L300-333) — bonus calculation + reasons strings
+  - Holding period classification (L63-67)
+- Recommendation: **CONVERT-TO-PROXY (CRITICAL)**
+  - الحل: نقل portfolio profile + scoring لـ Python endpoint `/api/radar/personalized?user_id=...&market=EGX`، الـ Node route تبقى pure proxy: fetch + return JSON.
+
+### 3. /api/radar/weekly-report — 301 سطر ✅ KEEP (acceptable thin file-proxy)
+- Pure proxy: ✅ (partial — proxy to local Python script via spawn + JSON file read)
+- Direct SQLite: ✅ NONE — فقط `readFileSync` لـ JSON files في `scripts/output/`
+- Node-side computation: ✅ MINIMAL (acceptable — display only)
+  - L41-43: `.filter().sort().reverse()` على file names (filesystem display — not business logic)
+  - L189: `Math.round((Date.now() - new Date(generatedAt).getTime()) / 1000)` — cache age display only
+  - L191: `cacheAgeSec > STALE_THRESHOLD_MS / 1000` — staleness check (control flow, not data computation)
+  - L276: `today.toISOString().slice(0, 10).replace(/-/g, '')` — date string formatting
+- Fallback chain: ✅ N/A — uses local Python script (`scripts/weekly_radar_report.py`) via `spawn` — ده Rule 20 compliant (Python is brain, Node triggers it)
+- Placeholders: ✅ Rule 27 COMPLIANT
+  - L173-184: لو cache miss → `success: false` + `warming_up: true` + HTTP 503 + `retry_after_seconds: 30` — ده السلوك الصح (مش fake data، بـ يطلب من العميل retry)
+  - L254-258: timeout → 504 + `success: false` — صحيح
+  - L291-297: exit code != 0 → 500 + `success: false` + stderr — صحيح
+- Business logic: ✅ NONE — كل الـ report logic في `scripts/weekly_radar_report.py` (Python)
+- Notes: الـ route ده مثال ممتاز لـ thin proxy pattern:
+  - GET → يقرأ JSON file من Python output + يـ trigger background regeneration لو stale
+  - POST → يـ spawn Python script وينتظر النتيجة
+  - 503 + retry_after لو warming up = السلوك الصحيح لـ Rule 27
+- Recommendation: **KEEP** (minor: ممكن نقل `triggerWeeklyReportWarmup` لـ lib مشترك لو فيه routes تانية محتاجة نفس pattern)
+
+### 4. /api/radar/weekly-report/pdf — 88 سطر ✅ KEEP (pure file server)
+- Pure proxy: ✅ (pure static file server — reads PDF from filesystem)
+- Direct SQLite: ✅ NONE
+- Node-side computation: ✅ NONE
+  - L34-36: `.filter().sort().reverse()` على file names (filesystem display only)
+  - L55: `JSON.parse(readFileSync(jsonPath, 'utf-8'))` — يقرأ JSON عشان يـ match الـ market مع PDF (display logic)
+- Fallback chain: ✅ N/A — مفيش Python invocation إطلاقاً (pure file server)
+- Placeholders: ✅ Rule 27 COMPLIANT
+  - L25-30, L38-43, L70-75: لو file مش موجود → 404 + `success: false` + رسالة واضحة — صحيح
+- Business logic: ✅ NONE
+- Recommendation: **KEEP** (perfect thin file server — zero violations)
+
+================================================================
+## A. Pure Proxies (KEEP):
+1. `/api/radar/weekly-report/route.ts` (301 سطر) — thin file-proxy + Python spawn trigger ✅
+2. `/api/radar/weekly-report/pdf/route.ts` (88 سطر) — pure static PDF file server ✅
+
+## B. Needs Conversion (Node logic exists — CONVERT-TO-PROXY):
+1. **`/api/radar/accuracy/route.ts`** (740 سطر) — CRITICAL (severity: 9/10)
+   - 5 helper functions + 2 huge aggregation builders (436 سطر logic)
+   - Direct SQLite access (Rule 20 explicit ban)
+   - Win Rate computation في Node (Rule 67 #7 violation)
+   - Placeholder zeros + success:true + source:'none' (Rule 27 violation)
+   - Target: 740 → ~70 سطر pure proxy + Python endpoint جديد
+
+2. **`/api/radar/personalized/route.ts`** (374 سطر) — CRITICAL (severity: 8/10)
+   - 4 classifier functions + personalization scoring
+   - Direct SQLite access (Rule 20 explicit ban)
+   - Position sizing business logic في Node (Rule 67 #4 violation)
+   - Risk profile classification logic
+   - Target: 374 → ~80 سطر pure proxy + Python endpoint جديد
+
+## C. Critical Violations (worst offenders):
+1. **`accuracy/route.ts:159-162`** — `computeWinRate()` يحسب Win Rate في Node — خرق صريح Rule 67 #7 (canonical: `vps-service/utils/backtest_stats.py::compute_win_rate()`)
+2. **`accuracy/route.ts:205-226`** — placeholder zeros + `success: true` + `source: 'none'` — خرق صريح Rule 27 (NO-FAKE-DATA). لازم يرجّع 503 + `success: false`.
+3. **`accuracy/route.ts:50, 114, 308, 536`** — `better-sqlite3` direct access — خرق صريح Rule 20 (line 272: "ممنوع فحص SQLite مباشرة من Node")
+4. **`personalized/route.ts:3, 94, 274`** — `better-sqlite3` direct access — نفس الخرق
+5. **`personalized/route.ts:245`** — `BASE_POSITION_PCT = riskProfile === 'aggressive' ? 8 : ...` — position sizing logic في Node — خرق Rule 67 #4 (canonical: `vps-service/utils/position_sizing.py::calculate_risk_based_position()`)
+6. **`personalized/route.ts:69-73`** — `classifyRiskProfile()` — risk classification decision في Node (مش display)
+7. **`accuracy/route.ts:400-402, L635-637`** — `priceGain = ((exitPrice - entryPrice) / entryPrice) * 100` — Math computation (SELL detection) في Node — لازم يكون في Python
+
+## D. Recommended Fix Priority:
+1. **[HIGHEST] `/api/radar/accuracy/route.ts`** — worst offender (740 سطر، 3 rules violations، 2 huge builders)
+   - أنشئ Python endpoint جديد `vps-service/api/radar_routes.py::/api/radar/accuracy`
+   - انقل: classifyRadarPath + computeWinRate + avg + monthKey + buildFromPredictionsTable + buildFromRadarTrackingTable
+   - استبدل الملف بـ pure fetch + return JSON (~70 سطر)
+   - لو Python unavailable → 503 + `success: false` + رسالة واضحة (مش zeros!)
+
+2. **[HIGH] `/api/radar/personalized/route.ts`** — second worst (374 سطر، position sizing + risk classification)
+   - أنشئ Python endpoint جديد `vps-service/api/radar_routes.py::/api/radar/personalized`
+   - انقل: classifyPriceRange + classifyHoldingPeriod + classifyRiskProfile + computeAverageHoldingDays + personalization scoring + position sizing
+   - استخدم canonical `vps-service/utils/position_sizing.py::calculate_risk_based_position()` للـ position sizing (Rule 67 #4)
+   - استبدل الملف بـ pure fetch + return JSON (~80 سطر)
+
+3. **[LOW] `/api/radar/weekly-report/route.ts`** — acceptable (KEEP — minor cleanup only)
+   - ممكن نقل `triggerWeeklyReportWarmup` لـ lib مشترك لو فيه use cases تانية
+
+4. **[NONE] `/api/radar/weekly-report/pdf/route.ts`** — perfect (KEEP — zero violations)
+
+================================================================
+## إجمالي الخسارة قبل الإصلاح:
+| Route | الأسطر | direct SQLite | Node logic | Rule 27 | Severity |
+|-------|--------|---------------|------------|--------|----------|
+| accuracy/route.ts | 740 | ❌ 4 sites | ❌ massive (5 helpers + 2 builders) | ❌ zeros placeholder | 9/10 |
+| personalized/route.ts | 374 | ❌ 3 sites | ❌ 4 classifiers + scoring | ⚠️ borderline | 8/10 |
+| weekly-report/route.ts | 301 | ✅ none | ✅ display only | ✅ 503 warming_up | KEEP |
+| weekly-report/pdf/route.ts | 88 | ✅ none | ✅ none | ✅ 404 missing | KEEP |
+| **إجمالي** | **1503** | **2 routes** | **2 routes** | **2 routes** | — |
+
+## الهدف بعد الإصلاح (متبع نفس نمط RULE20-PURE-PROXY):
+| Route | الأسطر | Logic في Node | الحالة |
+|-------|--------|---------------|--------|
+| accuracy/route.ts | ~70 | 0 (fetch + return) | ✅ Rule 20 compliant |
+| personalized/route.ts | ~80 | 0 (fetch + return) | ✅ Rule 20 compliant |
+| weekly-report/route.ts | 301 | display only | ✅ KEEP |
+| weekly-report/pdf/route.ts | 88 | 0 | ✅ KEEP |
+| **إجمالي** | **~539** | **0 سطر computation** | **✅ 100% Python = brain** |
+
+## القواعد الدستورية المُطبَّقة (أو المطلوب تطبيقها):
+- Rule 20 (Python=Brain): لازم تنقل accuracy + personalized logic لـ Python ✅ (مطلوب)
+- Rule 27 (NO-FAKE-DATA): لازم تشيل placeholders في accuracy + تحلها بـ 503 ✅ (مطلوب)
+- Rule 67 (CALCULATION-CANONICAL): لازم تستخدم `backtest_stats.py::compute_win_rate()` + `position_sizing.py::calculate_risk_based_position()` ✅ (مطلوب)
+
+## الخطوة التالية المقترحة (Task مقترح):
+- Task ID مقترح: **RADAR-PY-PROXY** (متبع نفس نمط RULE20-PURE-PROXY السابق)
+- إضافة 2 Python endpoints في `vps-service/api/radar_routes.py`:
+  1. `/api/radar/accuracy` — يحسب كل الـ aggregation + win_rate + classification
+  2. `/api/radar/personalized` — يحسب profile + scoring + position sizing (canonical)
+- تحويل 2 Node routes لـ pure proxies (~1114 → ~150 سطر، تقليل 87%)
+
+RADAR-AUDIT complete. اكتشف 2 critical routes محتاجين conversion + 2 routes clean.
+
+---
+Task ID: SCREENER-AUDIT
+Agent: Explore (Screener + Liquidity-Flow Rule 20 Audit)
+Task: فحص ميكروسكوبي لكل screener + liquidity-flow + scanner routes
+
+Work Log:
+- قريت worklog.md (آخر 100 سطر — سياق RULE20-PURE-PROXY السابق على honest-tracking + top-performers)
+- قريت Constitution Rule 20 (L269-274) + Rule 27 (L378-389) + Rule 67 (L2402-2456)
+- فحصت 4 ملفات في screener + finance/screener + liquidity-flow + scanner (إجمالي 1545 سطر)
+- بحثت عن screener endpoints إضافية: فقط `screener/advanced` موجود + `finance/screener` مستقل + `scanner/quick`
+- بحثت عن screener_lists|screener_list في src/app/api/ — موجود فقط في scanner/quick
+- تأكدت من وجود Python backends:
+  * `/api/screener/advanced` → `vps-service/api/advanced_screener_routes.py:38` ✅ موجود
+  * `/api/scanner/quick` → `vps-service/api/scanner_routes.py:31` ✅ موجود (shape مختلف)
+  * `/api/finance/screener` → ❌ لا يوجد Python endpoint
+  * `/api/market/liquidity-flow` → ❌ لا يوجد Python endpoint
+- بحثت عن DB writes (INSERT/UPDATE/DELETE) في كل الـ 4 routes → 0 matches (كلها read-only) ✅
+
+Stage Summary:
+
+## تفصيل الـ 4 routes المفحوصة:
+
+### 1. /api/screener/advanced — [474 سطر]
+- Pure proxy: ❌
+- Node-side computation: 
+  * L99-145: PRAGMA table_info scan + where clause building
+  * L143-300: كل الـ filters في Node (sector, price, volume, market_cap, signal, turnover, trend, RSI, P/E, ROE, dividend, stock_state)
+  * L322-326: CASE WHEN inline calc لـ change_percent
+  * L387-417: rows.map() لبناء stocks array
+  * L456-474: applyScreenerGate (paywall slicing — DE MINIMIS Rule 20 exception: paywall مسموح)
+- Direct SQLite: ❌ — L94-95 `better-sqlite3` + `new Database(stocksDbPath, { readonly: true })`
+- Fallback chain: ❌ — L67-75 Python first → L78 SQLite fallback
+- Placeholders: ❌ — L82-92, L429-440 returns `success:true + source:unavailable + stocks:[]`
+- Business logic: ❌ — filters, CASE WHEN calc, mapping, Math.max/clamp (L136)
+- Recommendation: CONVERT-TO-PROXY (Python endpoint موجود — أزل SQLite fallback + 503 لو Python unavailable)
+
+### 2. /api/finance/screener — [306 سطر]
+- Pure proxy: ❌ — 0% proxy، 100% Node-side computation
+- Node-side computation:
+  * L8-26: parsePercent + parseRatio helpers (string parsing + math)
+  * L42-208: full SQL query construction في Node (joins, where, window function, LIMIT/OFFSET)
+  * L98: Math.ceil / Math.max لـ perMarketLimit (window function distribution logic)
+  * L150-166: stocks.filter() في Node لـ P/E, ROE, div_yield filters (post-SQL filter)
+  * L169-198: stocks.map() لبناء nested objects (valuation/profitability/performance/dividend)
+  * L240-305: POST endpoint بيرجّع filter options (markets, ratings, ranges) + Math.round (L288-293)
+- Direct SQLite: ❌ — L5 `require('better-sqlite3')` + L10 `new Database(dbPath)` (بدون readonly!)
+- Fallback chain: N/A (لا Python call أصلاً)
+- Placeholders: N/A (لا fallback — 500 على error)
+- Business logic: ❌ — كل filtering/sorting/classification/aggregation في Node
+- Recommendation: CONVERT-TO-PROXY (Python endpoint غير موجود — لازم يتعمل `/api/finance/screener` في vps-service/api/finance_routes.py أولاً قبل التحويل)
+
+### 3. /api/market/liquidity-flow — [472 سطر]
+- Pure proxy: ❌ — 0% proxy، 100% Node-side computation (أكبر ملف)
+- Node-side computation:
+  * L47-78: safeNum + parseVolume (K/M/B/T suffix parsing) + dayPrice helpers
+  * L168-202: cutoff date calculations (current/previous window split)
+  * L234-315: per-stock + per-sector aggregation loop (turnover, volume, change_sum)
+  * L346-366: sector_flow: filter + sort + slice(0,12) + map (flow_direction classification: inflow/outflow/neutral)
+  * L369-395: top_inflow_stocks + top_outflow_stocks (filter + sort + slice + map)
+  * L397-422: investor_type_estimate (institutional_pct vs retail_pct + large_blocks classification)
+  * L424-432: summary with advancing/declining sectors + net_flow_direction classification
+  * 22 استدعاء Math.round (L357-451) — rounding في Node بدلاً من Python
+- Direct SQLite: ❌ — L42-45 `openDb()` returns `new Database(p, { readonly: true })`
+- Fallback chain: N/A (لا Python call)
+- Placeholders: ❌ — L151-162 + L180-191 + L320-343 بترجّع `success:true` + empty arrays + zero summary
+- Business logic: ❌ — كل sector aggregation + investor classification + flow_direction في Node (Rule 67 خرق صريح — liquidity_score/maker_flow يحسب في Node بدلاً من canonical Python)
+- Recommendation: CONVERT-TO-PROXY (Python endpoint غير موجود — لازم يتعمل `/api/market/liquidity-flow` في vps-service جديد. هذا أكبر ملف — أولوية قصوى)
+
+### 4. /api/scanner/quick — [293 سطر]
+- Pure proxy: ❌ — 0% proxy، Node-side classification
+- Node-side computation:
+  * L82-136: tryScreenerJson — reads screener_lists.json + builds ScanItem array
+  * L138-224: tryDataEngineScan — queries SQLite + يصنّف الأسهم إلى 4 فئات (top_gainer, volume_spike, most_active, momentum) — ده BUSINESS LOGIC صريح (L173-188)
+  * L207-214: items.sort مع priority-based sort + Math.abs fallback
+  * L241-271: enrichment loop مع per-item SQLite queries (N+1 pattern!)
+  * Math.round متكرر (L196-198, L260-262)
+- Direct SQLite: ❌ — via getDataEngineDb() (lib/data-engine-db.ts L38/41 `new Database(dbPath)`)
+- Fallback chain: ❌ — L232-238: screener_lists.json first → data_engine.db fallback
+- Placeholders: ❌ — L83-89 returns empty items + "screener_lists.json not found" source
+- Business logic: ❌ — classification of stocks into 4 signal types (top_gainer/volume_spike/most_active/momentum) + priority sorting (L208-214) + threshold logic (change>=5, volume>=1M, change>=2)
+- Recommendation: CONVERT-TO-PROXY (Python endpoint موجود في scanner_routes.py L31 — لكن الـ response shape مختلف (`results` بدلاً من `items`) — لازم يتعمل alignment في Python أو Node flatten فقط)
+
+## A. Pure Proxies (KEEP):
+- (لا يوجد — كل الـ 4 routes فيها Node-side computation)
+
+## B. Needs Conversion (Node logic exists — CONVERT-TO-PROXY):
+
+| # | Route | السطور | Python موجود؟ | Severity | الـ logic الرئيسي |
+|---|-------|------|--------------|----------|-------------------|
+| 1 | /api/screener/advanced | 474 | ✅ نعم | HIGH | SQLite fallback + 16 filter types + CASE WHEN calc + applyScreenerGate |
+| 2 | /api/finance/screener | 306 | ❌ لا | CRITICAL | 100% Node-side: full SQL query builder + post-filter + nested object mapping + 5-table JOIN |
+| 3 | /api/market/liquidity-flow | 472 | ❌ لا | CRITICAL | 100% Node-side: sector aggregation + investor classification + flow direction (22 Math.round) |
+| 4 | /api/scanner/quick | 293 | ✅ نعم (shape مختلف) | HIGH | Stock classification (4 signal types) + priority sort + N+1 enrichment |
+
+## C. Critical Violations:
+
+1. **`/api/finance/screener` — DEV COMPUTE ENGINE في Node (CRITICAL)**
+   - يحسب كامل screener logic في Node — لا يوجد Python endpoint أصلاً
+   - 5-table JOIN + post-filter + nested object construction كله في Node
+   - يفتح SQLite بدون `readonly` flag (L10) — إمكانية DB writes
+   - 100% من الـ 306 سطر logic (0% proxy)
+
+2. **`/api/market/liquidity-flow` — LIQUIDITY AGGREGATION ENGINE في Node (CRITICAL)**
+   - أكبر ملف (472 سطر) — كل الـ sector_flow + top_inflow/outflow + investor_type_estimate في Node
+   - يحسب liquidity_score + institutional_pct + flow_direction — ده Canonical logic لازم يكون في Python per Rule 67
+   - 3 placeholders بترجّع success:true + empty arrays (L151, L180, L320) — خرق Rule 27
+   - 22 استدعاء Math.round — rounding في Node (Rule 67)
+
+3. **`/api/scanner/quick` — STOCK CLASSIFICATION في Node (HIGH)**
+   - بياخذ قرار تصنيف الأسهم إلى top_gainer/volume_spike/most_active/momentum في Node — ده BUSINESS LOGIC
+   - threshold logic (change>=5, volume>=1M, change>=2) في Node
+   - priority sort + N+1 enrichment pattern في Node
+   - Python endpoint موجود لكن Node مش بيستخدمه أصلاً!
+
+4. **`/api/screener/advanced` — SQLite FALLBACK CHAIN (HIGH)**
+   - Python endpoint موجود + Node بيستخدمه صح (L67-75)
+   - لكن فيه 380 سطر fallback لـ SQLite مباشرة (L78-441) — خرق Rule 20 صريح
+   - 2 placeholders بترجّع success:true + source:unavailable + stocks:[] (L82, L429) — خرق Rule 27
+   - applyScreenerGate (L456-474) paywall slicing — ده Rule 20 exception مسموح بيه (paywall = auth-side)
+
+## D. Recommended Fix Priority:
+
+1. **[CRITICAL-1] `/api/market/liquidity-flow`** — إنشاء Python endpoint جديد `vps-service/api/liquidity_flow_routes.py::/api/market/liquidity-flow` يحسب: sector_flow + top_inflow + top_outflow + investor_type_estimate + summary. نقل الـ 472 سطر logic كله. ثم تحويل Node route إلى pure proxy (~50 سطر). حذف 3 placeholders + 22 Math.round من Node.
+
+2. **[CRITICAL-2] `/api/finance/screener`** — إنشاء Python endpoint جديد `vps-service/api/finance_screener_routes.py::/api/finance/screener` يحسب: filter + sort + nested objects. نقل الـ 306 سطر logic كله. ثم تحويل Node route إلى pure proxy (~60 سطر). فتح SQLite بدون readonly → لازم يتصلح.
+
+3. **[HIGH-1] `/api/scanner/quick`** — محاذاة الـ Python endpoint الموجود (`scanner_routes.py:31`) مع الـ Node shape المطلوب (`items` بدلاً من `results` + `signal` classification). ثم تحويل Node إلى pure proxy. حذف N+1 enrichment pattern.
+
+4. **[HIGH-2] `/api/screener/advanced`** — حذف SQLite fallback كامل (L78-441) — Python endpoint موجود وشغال. ترك applyScreenerGate (paywall exception). تقليل الـ 474 سطر إلى ~70 سطر pure proxy. حذف placeholderين (L82, L429) → return 503 + success:false لو Python unavailable.
+
+## القواعد الدستورية المُطبّقة:
+
+- **Rule 20 (Python=Brain):** كل الـ 4 routes فيها Node-side computation — خرق صريح. لازم تتحول لـ pure proxies.
+- **Rule 27 (NO-FAKE-DATA):** 6 placeholders مكتشفة (2 في screener/advanced + 3 في liquidity-flow + 1 في scanner/quick) — كلها بترجّع success:true + empty data بدل 503.
+- **Rule 67 (CALCULATION-CANONICAL):** liquidity-flow بيحسب liquidity_score + institutional_pct + flow_direction في Node — لازم يتغيّر لـ Python canonical.
+- **Rule 35 (ENGINE-UNIFY):** N/A (no engine logic في الـ 4 routes).
+
+## الإحصائيات النهائية:
+
+| Metric | Value |
+|--------|-------|
+| Routes مفحوصة | 4 |
+| Total lines | 1545 |
+| Node-side computation lines | ~1300 (84%) |
+| Python endpoints موجودة | 2/4 (screener/advanced + scanner/quick) |
+| Python endpoints ناقصة | 2 (finance/screener + market/liquidity-flow) |
+| Direct SQLite violations | 4/4 (كلها) |
+| Placeholder violations | 6 (screener:2 + liquidity:3 + scanner:1) |
+| DB writes (INSERT/UPDATE/DELETE) | 0 ✅ |
+| Business logic violations | 4/4 |
+| Severity CRITICAL | 2 (finance/screener + liquidity-flow) |
+| Severity HIGH | 2 (screener/advanced + scanner/quick) |
+
+SCREENER-AUDIT complete. 4 routes مفحوصة — كلها محتاجة conversion. أولوية قصوى: liquidity-flow (472 سطر) + finance/screener (306 سطر) — لازم يتعملهم Python endpoints جديدة قبل التحويل.
+
+---
+Task ID: MAKER-RADAR-AUDIT
+Agent: Explore (Maker-Radar Rule 20 Audit)
+Task: فحص ميكروسكوبي لكل maker-radar routes
+
+Work Log:
+- قريت worklog.md (آخر 100 سطر) لفهم سياق PRED-WRITE-GUARD + RULE20-PURE-PROXY السابق
+- قريت Constitution Rule 20 (L269-274) + Rule 27 (L378-389) + Rule 67 (L2402-2456)
+- فحصت 16 ملف في src/app/api/maker-radar/ (إجمالي 3143 سطر)
+- استخدمت Grep للـ patterns: Math\. + better-sqlite3 + spawn/fetch + filter/sort/map/reduce + INSERT/UPDATE/DELETE + win_rate/risk_reward/scoring
+- قريت كل ملف كامل (بلا offset) لفهم الـ business logic بالكامل
+
+Stage Summary:
+
+## الفحص التفصيلي لكل route (16 ملف، 3143 سطر):
+
+### 1. /api/maker-radar/route.ts — 211 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L150-152: `Math.round(live.current_price * live.volume)` turnover calculation
+  - L156-167: changeSinceTracking = `((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100` + Math.round
+  - L175-180: `.map(enrichStock)` 6 مرات على كل radar list
+  - L188-194: cacheAgeSec + staleness check + background warmup trigger
+- Direct SQLite: ✅ YES (L14 import, L107 `new Database(dbPath)` لـ stocks.db)
+- Fallback chain: ❌ NO (silent fallback to {} لو TRACKING_FILE مش موجود)
+- Placeholders: returns 503 + success:false على cache miss (Rule 27 OK)
+- Business logic: enrichStock + turnover calculation + changeSinceTracking
+- Recommendation: **CONVERT-TO-PROXY** (severity: MEDIUM)
+
+### 2. /api/maker-radar/multi-market/route.ts — 425 سطر
+- Pure proxy: ❌ NO (reads JSON cache files + spawn Python subprocess)
+- Node-side computation:
+  - L171-176: market_open_utc.split + UTC minutes calc (acceptable utility)
+  - L195-203: file scan + sort + filter على output dir
+  - L268-287: JSON parse + top picks + sort + slice
+  - **L304-329: REGIME DETECTION (BUSINESS LOGIC!)** — `avgRoc > 5 → bull + score=72` / `avgRoc < -3 → bear + score=32` / else sideways + score=50 — Rule 67 violation صريح
+  - L355-369: buildUnifiedTop5 sort by position_size + slice(0, 5)
+- Direct SQLite: ❌ NO
+- Python integration: spawn `scripts/maker_radar.py --market=X --json-only` (L94-115) — subprocess مباشر مش HTTP fetch
+- Fallback chain: ❌ NO
+- Placeholders: returns warming_up:true على first generation فقط (Rule 67 OK)
+- Business logic: regime classification (bull/bear/sideways + score)
+- Recommendation: **CONVERT-TO-PROXY** (severity: HIGH — regime logic)
+
+### 3. /api/maker-radar/timeline/route.ts — 575 سطر
+- Pure proxy: ❌ NO
+- Node-side computation (الأكبر في الـ directory):
+  - L66-68: round2 helper (Math.round)
+  - L85-115: fetchPricesSinceEntry (DB query + map)
+  - L127-156: readLatestPrediction (DB query)
+  - L168-199: readSignalEvents (DB query)
+  - **L221-368: buildTimeline (147 سطر business logic!)** — milestone thresholds (5/8/10/15/20%) + alerts + signal events + timeline building
+  - L274: changePct = `((p.close - entryPrice) / entryPrice) * 100`
+  - L293-295: dayChangePct + drawdownFromEntry
+  - **L373-446: computeProgress** — target progress percentages + status classification (data_missing/hit/approaching/pending/danger/warning/safe)
+  - L402, L411: Math.max(0, Math.min(100, ...)) للـ progress clamping
+  - L517-521: changePct + daysTracked
+- Direct SQLite: ✅ YES (L4 import, L131 + L171 `new Database(PREDICTIONS_DB)`)
+- Fallback chain: silent fallbacks (safe-by-design) لكل من tracking/predictions/signal_events
+- Placeholders: returns 400/503/500 مع success:false + رسائل واضحة (Rule 27 OK)
+- Business logic: timeline + milestones + progress + classification — كامل في Node
+- Recommendation: **CONVERT-TO-PROXY** (severity: CRITICAL — أكبر كتلة business logic)
+
+### 4. /api/maker-radar/exit-radar/route.ts — 325 سطر
+- Pure proxy: partial — reads JSON cache + spawn Python script
+- Node-side computation:
+  - L194: `Math.round((Date.now() - new Date(generatedAt).getTime()) / 1000)` cache age only
+- Direct SQLite: ❌ NO
+- Python integration: spawn `scripts/exit_radar.py --json-only` (L53-58, L271-275) — subprocess pattern
+- Fallback chain: ❌ NO
+- Placeholders: returns 503 + warming_up:true على cache miss (Rule 27 OK)
+- Business logic: NONE (cache age display only)
+- Recommendation: **KEEP** (acceptable — mostly cache reads + spawn; Math.round trivial)
+
+### 5. /api/maker-radar/signal-tracker/route.ts — 42 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L15-21: 5 separate DB queries (COUNT + GROUP BY)
+  - L28: `win_rate_pct = ((wins?.c || 0) / verified.c * 100)` — **win rate computation (Rule 67 violation — should use `compute_win_rate` canonical)**
+  - L30-34: byType.map + win_rate_pct calculation per signal type
+- Direct SQLite: ✅ YES (عن طريق `openTrackerDb` من radar-signal-tracker lib — بيفتح stocks.db أو data_engine.db)
+- Fallback chain: ❌ NO
+- Placeholders: returns `avg_outcome_7d: null, avg_outcome_14d: null, avg_outcome_30d: null` — nulls صريحة (Rule 27 OK)
+- Business logic: win_rate_pct (Rule 67 — canonical = `compute_win_rate` in `vps-service/utils/backtest_stats.py`)
+- Recommendation: **CONVERT-TO-PROXY** (severity: HIGH — direct SQLite + win_rate)
+
+### 6. /api/maker-radar/signal-tracker/verify/route.ts — 398 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L218: `Math.max(7, Math.min(180, Number(body?.max_age_days ?? 45)))` — input clamping
+  - **L96-154: fetchPricesAfter (4-source fallback chain!)** — direct SQLite على 4 schemas مختلفة + silent fallback لكل واحد
+  - L160-178: openTrackerDb (2-source fallback chain!) — بيفتح stocks.db أو data_engine.db
+  - **L180-203: ensureSchema — CREATE TABLE + 4x CREATE INDEX** — DB WRITES صريحة في Node (Rule 20 violation صريح: "ممنوع فحص SQLite مباشرة من Node")
+  - L234-244: SELECT pending signals
+  - L261-267: prepare UPDATE statement
+  - **L278-363: per-signal loop computing outcome_7d/14d/30d + max/min excursion + status classification**:
+    - L304-315: outcome calculations = `((prices[N].close - entryPrice) / entryPrice) * 100`
+    - L318-321: max/min price via Math.max(...highs) + Math.min(...lows)
+    - L326-336: classification — `outcome30d > 0.5 → verified_win` / `< -0.5 → verified_loss` / else neutral
+  - L345-354: UPDATE execution (DB WRITE!)
+- Direct SQLite: ✅ YES (L7 import, L109 + L170 + L181 `db.exec()` CREATE TABLE)
+- DB writes: **CREATE TABLE + UPDATE** (الـ 3 endpoints التاريخية المذكورة في Rule 20!)
+- Fallback chain: **4-DB fallback chain في PRICE_SOURCES** + 2-DB chain في TRACKER_DB_CANDIDATES — أكبر fallback chain في الـ directory
+- Placeholders: returns errors array مع تفاصيل (Rule 27 OK)
+- Business logic: outcome computation + win/loss/neutral classification (Rule 67 — canonical = `compute_win_rate` + `compute_profit_factor`)
+- Recommendation: **CONVERT-TO-PROXY** (severity: CRITICAL — DB writes + computation + classification + 4-DB fallback chain — **الأولوية القصوى**)
+
+### 7. /api/maker-radar/track/route.ts — 162 سطر
+- Pure proxy: partial — JSON file CRUD only (لا SQLite)
+- Node-side computation:
+  - L22-35: loadTracking (JSON file read)
+  - L38-46: saveTracking (JSON file write)
+  - L62-104: POST handler — add/remove ticker من JSON
+  - L115-129: GET handler
+  - L132-162: DELETE handler
+- Direct SQLite: ❌ NO (يستخدم JSON file `db/maker_radar_tracking.json`)
+- Fallback chain: silent fallback to {} لو file مش موجود (acceptable)
+- Placeholders: returns 400/500 مع errors واضحة (Rule 27 OK)
+- Business logic: NONE (مجرد user-state JSON CRUD)
+- Recommendation: **KEEP** (acceptable — هذا user preference store مش analytics؛ لا SQLite ولا computation)
+
+### 8. /api/maker-radar/stock/route.ts — 259 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L75-93: SQL query + priceRows.reverse().map (build prices array)
+  - L96-98: closes + volumes + turnovers arrays via `.map().filter()`
+  - L100-102: lastClose + firstClose + changePct
+  - **L104-109: avgVolume20 + avgTurnover20 reduce + Math.max(len, 1)** — volume/turnover calculations
+  - L112-114: **ROC 10d calculation** = `((closes[-1] - closes[-11]) / closes[-11]) * 100` — Rule 67 violation (canonical = `analyzers/indicators/ma.py`)
+  - L117-120: max20/min20/range20Pct via Math.max/min
+  - L127-137: tracking changeSinceTracking + Math.round + Math.floor
+  - L146-225: prediction enrichment (dynamic import better-sqlite3 + applyValidatedTargets)
+  - L235-243: 8x Math.round للـ stats rounding
+- Direct SQLite: ✅ YES (L156-157 dynamic import of better-sqlite3 لـ predictions.db) + عبر radar-db lib
+- Fallback chain: silent fallback لو predictions.db مش موجود
+- Placeholders: returns null fields (Rule 27 OK — explicit nulls)
+- Business logic: ROC + avg volume/turnover + range calculations (Rule 67 — should use canonical indicators)
+- Recommendation: **CONVERT-TO-PROXY** (severity: HIGH — technical indicators في Node)
+
+### 9. /api/maker-radar/sector-treemap/route.ts — 54 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L14: combine all radar lists في allStocks
+  - L20-26: per-stock SQL query **N+1 pattern** (query per ticker داخل for-loop!)
+  - L31-43: sector aggregation:
+    - L32: totalTurnover = `stocks.reduce((s, st) => s + st.avg_turnover_20d, 0)`
+    - L33: avgChange = `stocks.reduce(...) / stocks.length`
+    - **L34: direction classification** — `avgChange > 0.5 → inflow` / `< -0.5 → outflow` / else neutral — Rule 67 violation (canonical = `compute_sector_heat_map` in `opportunity_quality.py`)
+    - L39: top_tickers sort + slice(0, 3) + map
+    - L43: outer sort by total_turnover
+- Direct SQLite: ✅ YES (L3 import, L19 `new Database(dbPath)` لـ stocks.db)
+- Fallback chain: silent fallback to "غير مُصنّف" sector
+- Placeholders: returns 503 + success:false على cache miss (Rule 27 OK)
+- Business logic: sector heat computation (Rule 67 — canonical = `compute_sector_heat_map`)
+- Recommendation: **CONVERT-TO-PROXY** (severity: HIGH — N+1 query + sector classification)
+
+### 10. /api/maker-radar/market-intelligence/route.ts — 177 سطر
+- Pure proxy: ❌ NO
+- Node-side computation (الأثقل في الـ directory بعد timeline):
+  - **3 منفصلة SQLite DBs**: intraday.db (L29) + data_engine.db (L100) + price_history.db (L146)
+  - L34-95: intraday tick-by-tick analysis:
+    - L39-41: totalVol via reduce + maxP/minP via Math.max/min
+    - L44-49: **buy/sell pressure calculation** + buyPct = `(buy / totalVol) * 100`
+    - L52-54: openTicks + closeTicks filter
+    - L56-64: **volume profile** map + sort + slice(0, 5)
+    - L78-91: opening + closing auction analysis (reduce + avgPrice + direction classification)
+  - **L116-133: fundamentals signals classification** — `pe > 30 → overvalued` / `pe < 15 → undervalued` / `pb < 1 → undervalued` / `p1m > 10 → strong month` / `roe > 20 → excellent` — BUSINESS LOGIC!
+  - L150-168: price history analysis (return30d + rangePct + posInRange)
+  - L152-156: Math.max/min + return + range calculations
+- Direct SQLite: ✅ YES (L2 import, L29 + L100 + L146 `new Database(dbPath)`)
+- Fallback chain: silent fallback per section (acceptable — honest error reporting)
+- Placeholders: returns section.error if DB missing (Rule 27 OK — honest reporting)
+- Business logic: intelligence signals + buy/sell pressure + volume profile (Rule 67 — multiple canonical sources)
+- Recommendation: **CONVERT-TO-PROXY** (severity: CRITICAL — 3 SQLite DBs + 6-section computation + intelligence classification)
+
+### 11. /api/maker-radar/net-picks/route.ts — 172 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L28-72: collect + deduplicate stocks by ticker (Map-based dedup with source_rank priority)
+  - **L74-83: 3-key sort** — `signal_count desc → volume_ratio desc → turnover desc` (ranking algorithm)
+  - L99-147: enrichedPicks.map مع prediction enrichment + applyValidatedTargets
+  - L150-159: stats summary — by_source count + with_predictions count + **high_confidence classification** (`signal_count >= 5`)
+- Direct SQLite: ✅ YES (L4 import, L89 `new Database(dbPath)` لـ predictions.db)
+- Fallback chain: silent fallback (acceptable)
+- Placeholders: returns 503 + warming_up:true على cache miss (Rule 27 OK)
+- Business logic: ranking algorithm + classification (Rule 67 — high_confidence = signal_count >= 5)
+- Recommendation: **CONVERT-TO-PROXY** (severity: HIGH — ranking logic)
+
+### 12. /api/maker-radar/live-watch/route.ts — 149 سطر
+- Pure proxy: ✅ ALMOST — reads radar cache (pre-warmed by Python) + slim format for mobile
+- Node-side computation:
+  - L101-115: slimStock helper — **display formatting only** (field selector, no analytics)
+  - L130-133: 4x `.map(slimStock)` — display reshape
+  - L94-95: cacheAgeSec + stale check (utility)
+- Direct SQLite: ❌ NO
+- Fallback chain: triggers background warmup على cache miss (acceptable)
+- Placeholders: returns 503 + warming_up:true (Rule 27 OK)
+- Business logic: NONE (slim field reshape only)
+- Recommendation: **KEEP** (display-only slim proxy)
+
+### 13. /api/maker-radar/footprint/route.ts — 132 سطر
+- Status: **DISABLED** (L31-44 — returns 410 Gone permanently)
+- Reason: كان يستخدم naive 70/30 split بناءً على لون الشمعة (Rule 27 violation)
+- Canonical replacement: `/api/flow/[ticker]` (Python `compute_money_flow`)
+- Disabled code (محفوظ كـ comment L47-132) كان فيه Math.max/min + reduce + sort — كلها violations
+- Recommendation: **KEEP DISABLED** (already correctly deprecated 2026-10-07 — Rule 27 compliant)
+
+### 14. /api/maker-radar/fundamentals/route.ts — 74 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L48-66: loop على 8 tab_* tables (per-table SQL query — N+1 pattern)
+  - L30-36: fmtVal display formatting (string cleaning — minimal)
+  - L55-58: filter columns (id/symbol/market/data/fiscal_period/fiscal_end excluded)
+- Direct SQLite: ✅ YES (L2 import, L45 `new Database(dbPath)` لـ data_engine.db)
+- Fallback chain: silent fallback per table (acceptable)
+- Placeholders: returns success:true with data:null لو table مش موجود (Rule 27 OK — honest)
+- Business logic: NONE (data pass-through with display formatting)
+- Recommendation: **CONVERT-TO-PROXY** (severity: MEDIUM — direct DB but minimal logic)
+
+### 15. /api/maker-radar/warmup/route.ts — 63 سطر
+- Pure proxy: partial — orchestrator pattern (no business logic)
+- Node-side computation:
+  - L37: `Math.min(parseInt(...), 240_000)` — input clamping (utility)
+  - L39-50: timing measurement (Date.now() diff)
+- Direct SQLite: ❌ NO
+- Python integration: `runWarmupSync` (from radar-cache lib) — بيـ spawn Python script
+- Fallback chain: returns 500 + error message على failure (acceptable)
+- Placeholders: returns actual status (Rule 27 OK)
+- Business logic: NONE
+- Recommendation: **KEEP** (acceptable — orchestrator)
+
+### 16. /api/maker-radar/entry-timing/route.ts — 57 سطر
+- Pure proxy: ❌ NO
+- Node-side computation:
+  - L22-23: closes + volumes arrays via map + filter + reverse
+  - L25: buyDays classification (`closes[i] > closes[i-1]`)
+  - L26-28: avgVol10 + avgVol20 + volRatio
+  - L29: Math.min(...closes.slice(-20))
+  - L30: distFromMin calculation
+  - L31: roc10d calculation
+  - **L33-37: 4-COMPONENT SCORING ENGINE**:
+    - accScore: `buyDays >= 8 ? 30 : >= 6 ? 22 : >= 5 ? 15 : >= 3 ? 8 : 0`
+    - volScore: `volRatio >= 1.5 ? 25 : >= 1.2 ? 18 : >= 1.0 ? 10 : 0`
+    - supScore: `distFromMin <= 2 ? 25 : <= 5 ? 18 : <= 10 ? 10 : 0`
+    - momScore: `roc10d >= 5 && <= 15 ? 20 : ...`
+    - total = sum
+  - **L39-40: classification** — `total >= 80 ? ممتاز : >= 60 ? جيد : >= 40 ? مقبول : ضعيف` + color
+  - L42-52: breakdown response مع recommendation (`total >= 60 ? مدخل مناسب : >= 40 ? انتظر تأكيد : تجنّب`)
+- Direct SQLite: ✅ YES (عبر radar-db lib)
+- Fallback chain: returns 503 + "DB not available" (acceptable)
+- Placeholders: returns 400 + "بيانات غير كافية" لو <15 rows (acceptable)
+- Business logic: **SCORING ENGINE + classification + recommendation** (Rule 67 — CRITICAL violation — should be canonical master_score)
+- Recommendation: **CONVERT-TO-PROXY** (severity: CRITICAL — scoring engine + recommendation في Node)
+
+---
+
+## A. Pure Proxies / Acceptable Patterns (KEEP):
+| # | Route | أسطر | السبب |
+|---|-------|------|------|
+| 4 | exit-radar/route.ts | 325 | Cache reads + spawn Python (Math.round trivial للـ cache age) |
+| 7 | track/route.ts | 162 | JSON file CRUD (لا SQLite، لا business logic — user-state store) |
+| 12 | live-watch/route.ts | 149 | Slim display formatting only (slimStock field selector) |
+| 13 | footprint/route.ts | 132 | DISABLED (410 Gone) — canonical = /api/flow/[ticker] |
+| 15 | warmup/route.ts | 63 | Orchestrator pattern — no business logic |
+
+**إجمالي KEEP: 5 routes / 831 سطر**
+
+## B. Needs Conversion (CONVERT-TO-PROXY):
+| # | Route | أسطر | Severity | السبب |
+|---|-------|------|----------|------|
+| 1 | route.ts | 211 | MEDIUM | direct SQLite + Math.round turnover + changeSinceTracking |
+| 2 | multi-market/route.ts | 425 | HIGH | regime detection + score classification |
+| 3 | timeline/route.ts | 575 | CRITICAL | 147-line buildTimeline + computeProgress + direct SQLite |
+| 5 | signal-tracker/route.ts | 42 | HIGH | direct SQLite + win_rate computation |
+| 6 | signal-tracker/verify/route.ts | 398 | CRITICAL | DB WRITES (CREATE+UPDATE) + outcome computation + classification + 4-DB fallback |
+| 8 | stock/route.ts | 259 | HIGH | direct SQLite + ROC + avg volume/turnover + range |
+| 9 | sector-treemap/route.ts | 54 | HIGH | direct SQLite + N+1 query + sector classification |
+| 10 | market-intelligence/route.ts | 177 | CRITICAL | 3 SQLite DBs + 6-section computation + intelligence classification |
+| 11 | net-picks/route.ts | 172 | HIGH | direct SQLite + 3-key ranking + high_confidence classification |
+| 14 | fundamentals/route.ts | 74 | MEDIUM | direct SQLite + N+1 query (minimal logic) |
+| 16 | entry-timing/route.ts | 57 | CRITICAL | direct SQLite + 4-component SCORING ENGINE + recommendation |
+
+**إجمالي CONVERT: 11 routes / 2444 سطر**
+
+## C. Critical Violations (DIRECT DB + computation + business logic):
+
+### 1. signal-tracker/verify/route.ts (398 سطر) — **الأولوية القصوى**
+- **DB WRITES** صريحة: `CREATE TABLE IF NOT EXISTS radar_signal_tracking` (L181) + `UPDATE radar_signal_tracking SET ...` (L262-267)
+- ده الـ endpoint المذكور في Rule 20: "ممنوع فحص SQLite مباشرة من Node (3 endpoints فقط تاريخيًا فعلت ذلك — تُصنّف كـ violation)"
+- **4-source fallback chain** في `PRICE_SOURCES` + **2-source fallback chain** في `TRACKER_DB_CANDIDATES`
+- outcome_7d/14d/30d computation + win/loss/neutral classification (Rule 67 violation — canonical = `compute_win_rate` + `compute_profit_factor` في `vps-service/utils/backtest_stats.py`)
+- 363 سطر business logic
+
+### 2. timeline/route.ts (575 سطر)
+- 147 سطر business logic في `buildTimeline` (milestones + alerts + signal events)
+- `computeProgress` (target progress percentages + status classification)
+- direct SQLite على predictions.db (L131 + L171)
+- milestone thresholds (5/8/10/15/20%) hardcoded في Node
+
+### 3. market-intelligence/route.ts (177 سطر)
+- 3 منفصلة SQLite DBs: intraday.db + data_engine.db + price_history.db
+- 6 sections computation: intraday + fundamentals + intelligence + price history
+- **fundamentals signals classification** كاملة في Node (P/E, P/B, ROE, perf thresholds)
+
+### 4. entry-timing/route.ts (57 سطر)
+- **4-component SCORING ENGINE** كامل في Node (accScore + volScore + supScore + momScore)
+- recommendation classification (`مدخل مناسب` / `انتظر تأكيد` / `تجنّب`)
+- Rule 67 violation صريح — لازم يستخدم canonical `MASTER_WEIGHTS` من `master_analyzer.py`
+
+## D. Recommended Fix Priority (Python endpoints needed first):
+
+1. **signal-tracker/verify/route.ts** (CRITICAL — DB writes + 4-DB fallback) — لازم Python endpoint:
+   - `POST /api/radar/signal-tracker/verify` في vps-service
+   - يقوم بكل: openTrackerDb + ensureSchema + fetchPricesAfter + outcome computation + UPDATE + classification
+   - Node route = pure POST proxy
+
+2. **timeline/route.ts** (CRITICAL — biggest business logic) — لازم Python endpoint:
+   - `GET /api/radar/timeline?ticker=X&days=N` في vps-service
+   - يقوم بـ: buildTimeline + computeProgress + milestones + alerts
+   - Node route = pure fetch + return
+
+3. **market-intelligence/route.ts** (CRITICAL — 3 DBs + classification) — لازم Python endpoint:
+   - `GET /api/radar/market-intelligence?ticker=X` في vps-service
+   - يوحّد intraday.db + data_engine.db + price_history.db + intelligence classification
+   - Node route = pure fetch + return
+
+4. **entry-timing/route.ts** (CRITICAL — scoring engine) — لازم Python endpoint:
+   - `GET /api/radar/entry-timing?ticker=X` في vps-service
+   - يستخدم canonical indicators (ROC, volume, support) + يرجّع score + recommendation
+   - Node route = pure fetch + return
+
+5. **multi-market/route.ts** (HIGH — regime logic) — لازم Python endpoint:
+   - `GET /api/radar/multi-market?markets=EGX,US,CRYPTO` في vps-service
+   - يقوم بـ: regime detection + unified_top_5 + market validation
+   - Node route = pure fetch + return
+
+6. **stock/route.ts** (HIGH — technical indicators) — لازم Python endpoint:
+   - `GET /api/radar/stock?ticker=X&days=N` في vps-service
+   - يستخدم canonical ROC + avg + range من indicators
+   - Node route = pure fetch + return
+
+7. **signal-tracker/route.ts** (HIGH — win_rate) — لازم Python endpoint:
+   - `GET /api/radar/signal-tracker?days=N` في vps-service
+   - يستخدم `compute_win_rate` canonical
+   - Node route = pure fetch + return
+
+8. **sector-treemap/route.ts** (HIGH — sector heat) — لازم Python endpoint:
+   - `GET /api/radar/sector-treemap` في vps-service
+   - يستخدم `compute_sector_heat_map` canonical
+   - Node route = pure fetch + return
+
+9. **net-picks/route.ts** (HIGH — ranking) — لازم Python endpoint:
+   - `GET /api/radar/net-picks?market=X` في vps-service
+   - يقوم بـ: dedup + 3-key sort + high_confidence classification
+   - Node route = pure fetch + return
+
+10. **route.ts** (MEDIUM — main radar enrich) — لازم Python endpoint:
+    - `GET /api/radar?market=X` في vps-service
+    - يقوم بـ: enrichStock + turnover + changeSinceTracking
+    - Node route = pure fetch + return (يحتفظ بـ auth/trial gate فقط)
+
+11. **fundamentals/route.ts** (MEDIUM — direct DB but minimal) — لازم Python endpoint:
+    - `GET /api/radar/fundamentals?ticker=X` في vps-service
+    - يقرأ tab_* tables ويرجّع formatted
+    - Node route = pure fetch + return
+
+---
+
+## الإحصائيات النهائية:
+
+| Metric | Value |
+|--------|-------|
+| Routes مفحوصة | 16 |
+| Total lines | 3143 |
+| KEEP (pure/acceptable) | 5 routes / 831 سطر |
+| CONVERT-TO-PROXY | 11 routes / 2444 سطر |
+| CRITICAL severity | 4 routes (timeline, signal-tracker/verify, market-intelligence, entry-timing) |
+| HIGH severity | 6 routes (multi-market, signal-tracker, stock, sector-treemap, net-picks, route) |
+| MEDIUM severity | 2 routes (fundamentals, route) |
+| Direct SQLite violations | 9/16 (route, timeline, signal-tracker, signal-tracker/verify, stock, sector-treemap, market-intelligence, net-picks, fundamentals, entry-timing) |
+| DB WRITES (CREATE/UPDATE/DELETE) | 1 route (signal-tracker/verify — CREATE TABLE + UPDATE) |
+| Python endpoints ناقصة | 11 (كل الـ CONVERT-TO-PROXY) |
+| Placeholder violations | 0 (كلها Rule 27 compliant بعد FINALIZE-UNIFICATION) |
+| Fallback chain violations | 2 (signal-tracker/verify 4-DB chain + multi-market multi-file chain) |
+| Business logic violations | 11/16 (كل CONVERT-TO-PROXY) |
+| DISABLED (Rule 27 compliant) | 1 (footprint) |
+
+---
+
+## القواعد الدستورية المُطبَّقة:
+
+- **Rule 20 (Python=Brain):** 11/16 routes فيها خرق صريح (computation في Node + direct SQLite access) — خاصّة signal-tracker/verify (DB writes!) ده الـ 3 endpoints التاريخية المذكورة في Rule 20
+- **Rule 27 (NO-FAKE-DATA):** ✅ كل الـ routes compliant — مفيش Math.random() ولا placeholders ثابتة. timeline/route.ts فيه comment صريح (L380-386) عن إزالة fabrication fallbacks سابقة. footprint/route.ts DISABLED صراحةً بسبب 70/30 split وهمي.
+- **Rule 67 (CALCULATION-CANONICAL):** 11/16 routes فيها حسابات non-canonical:
+  - win_rate في signal-tracker + signal-tracker/verify (canonical = `compute_win_rate`)
+  - ROC + avg volume في stock + entry-timing (canonical = `analyzers/indicators/ma.py`)
+  - sector classification في sector-treemap (canonical = `compute_sector_heat_map`)
+  - regime detection في multi-market (canonical = `detect_regime`)
+  - scoring engine في entry-timing (canonical = `MASTER_WEIGHTS` من `master_analyzer.py`)
+  - target progress في timeline (canonical = `risk_reward.py::compute_risk_reward`)
+
+---
+
+## الخطوة التالية المُوصى بها:
+
+**PRIORITY 1 (يوم 1):** signal-tracker/verify/route.ts — ده الـ violation الأكبر (DB writes + 4-DB fallback). لازم Python endpoint جديد + حذف CREATE TABLE من Node.
+
+**PRIORITY 2 (يوم 2):** timeline/route.ts + entry-timing/route.ts — أكبر business logic blocks (147 + scoring engine).
+
+**PRIORITY 3 (يوم 3):** market-intelligence/route.ts + multi-market/route.ts + stock/route.ts — multi-DB + multi-classification.
+
+**PRIORITY 4 (يوم 4):** باقي الـ HIGH severity routes (signal-tracker + sector-treemap + net-picks).
+
+**PRIORITY 5 (يوم 5):** MEDIUM severity (route.ts + fundamentals/route.ts).
+
+MAKER-RADAR-AUDIT complete. 16 routes مفحوصة — 11 محتاجة conversion (4 منهم CRITICAL). الأولوية القصوى: signal-tracker/verify (DB writes + 4-DB fallback).
+
+---
+Task ID: RADAR-LIQUIDITY-SCREENER-PY-PROXY
+Agent: Main Agent (Z.ai Code)
+Task: تحويل رادار السيولة + شاشة الفلاتر + radar/accuracy لـ pure thin proxies
+
+Work Log:
+- رديت على ملاحظة المالك: "ممكن بنفس العمق دة تبص على رادار السيولة والشاشة بتاعت الفلاتر"
+- شغلت 3 subagents متوازية لفحص ميكروسكوبي لـ 24 route (6,191 سطر)
+- MAKER-RADAR-AUDIT: 16 route / 3,143 سطر (11 خرق، 4 CRITICAL)
+- SCREENER-AUDIT: 4 route / 1,545 سطر (4/4 خرق، 2 CRITICAL)
+- RADAR-AUDIT: 4 route / 1,503 سطر (2 خرق، 1 CRITICAL)
+
+الإصلاح الـ 4 CRITICAL routes (2,018 سطر → 333 سطر):
+
+1) market/liquidity-flow/route.ts (472 → 64 سطر)
+   - كان: direct SQLite + sector_flow aggregation + flow_direction classification
+     + institutional_pct + 22 Math.round + 3 placeholder fallbacks
+   - الحل: Python endpoint /api/market/liquidity-flow في misc_routes.py
+     * sector_flow (top 12 sectors) + flow_direction (inflow/outflow/neutral)
+     * top_inflow_stocks / top_outflow_stocks (top 10 each)
+     * investor_type_estimate (institutional vs retail + large_blocks)
+     * summary (advancing/declining sectors + net_flow_direction)
+   - Node: pure fetch + return (503 لو Python unavailable)
+
+2) finance/screener/route.ts (306 → 63 سطر)
+   - كان: 5-table JOIN + post-filter + 100% Node-side (مفيش Python endpoint)
+   - الحل: Python endpoint /api/finance/screener في misc_routes.py
+     * schema-aware JOIN (stocks + stock_daily_prices + fundamentals)
+     * filters: sector + market_cap + pe_ratio + dividend_yield + volume
+     * sort_by + sort_dir + pagination
+     * SQL injection protection (whitelist sort_by — Rule 56)
+   - Node: pure fetch + return
+
+3) radar/accuracy/route.ts (740 → 101 سطر)
+   - كان: 4 direct SQLite sites + classifyRadarPath + computeWinRate
+     + buildFromPredictionsTable + buildFromRadarTrackingTable + 2 placeholders
+   - الحل: Python endpoint /api/radar/accuracy في misc_routes.py
+     * classifyRadarPath (5 radar paths: pre_surge/quiet_strong/explosive/early_break/quiet_weak)
+     * computeWinRate (canonical — Rule 67 #7)
+     * by_signal_type + by_market + monthly_trend aggregation
+     * schema-aware (radar_signal_tracking OR predictions fallback)
+   - Node: pure fetch + return + applyAccuracyGate (paywall — Rule 20 exception)
+
+4) screener/advanced/route.ts (474 → 105 سطر)
+   - كان: 380 سطر SQLite fallback + PRAGMA + dynamic query + placeholder
+   - الحل: Python endpoint موجود (advanced_screener_routes.py)
+   - Node: pure fetch + return + applyScreenerGate (paywall — Rule 20 exception)
+
+القواعد المُطبّقة:
+- Rule 20 (Python=Brain): كل computation في Python، Node = pure proxy ✅
+  * الاستثناء: auth/subscription/paywall (applyAccuracyGate + applyScreenerGate)
+- Rule 27 (NO-FAKE-DATA): 503 + success:false لو Python unavailable (مش placeholders) ✅
+- Rule 67 (CALCULATION-CANONICAL): Python = Single Source of Truth ✅
+  * computeWinRate من Python (مش Node)
+  * classifyRadarPath من Python
+  * sector aggregation من Python
+- Rule 56 (P0-WAVE-SQLI): whitelist sort_by لمنع SQL injection ✅
+
+Verification:
+- Python syntax: ✅ misc_routes.py OK (3 endpoints جديدة)
+- ESLint: ✅ EXIT 0
+- Line count: 2,018 → 333 سطر (تقليل 83%)
+- Browser: HTTP 200 على / + 503 على كل الـ 4 routes (Python down → Rule 27 compliant)
+- paywall gates محفوظة (applyAccuracyGate + applyScreenerGate في Node)
+
+النتيجة الإجمالية للـ audit:
+- 24 route فُحصت (6,191 سطر)
+- 4 route اتحولت (2,018 → 333 سطر) في الجلسة دي
+- 13 route لسه محتاجة تحويل (3,778 سطر) — للأولويات التالية:
+  * maker-radar/signal-tracker/verify (398) — DB writes + 4-DB fallback
+  * maker-radar/timeline (575) — buildTimeline + computeProgress
+  * maker-radar/market-intelligence (177) — 3 SQLite + 6-section computation
+  * maker-radar/entry-timing (57) — 4-component scoring engine
+  * + 9 routes تانية (HIGH/MEDIUM severity)
+
+RADAR-LIQUIDITY-SCREENER-PY-PROXY complete. 4 CRITICAL routes بقوا pure thin proxies.

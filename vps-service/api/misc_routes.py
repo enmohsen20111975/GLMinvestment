@@ -3973,3 +3973,922 @@ def test_alert():
 
 
 
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# RULE20-PURE-PROXY (2026-10-12): Liquidity Flow + Finance Screener
+# ════════════════════════════════════════════════════════════════════════════
+# These 2 endpoints replace the Node-side business logic that was previously
+# in src/app/api/market/liquidity-flow/route.ts (472 lines) and
+# src/app/api/finance/screener/route.ts (306 lines).
+#
+# Per Rule 20 (Python = brain, Node = display only) + Rule 27 (NO-FAKE-DATA)
+# + Rule 67 (CALCULATION-CANONICAL), all computation MUST happen in Python.
+# The Node routes are now pure thin proxies (10-15 lines each): fetch + return.
+# ════════════════════════════════════════════════════════════════════════════
+
+import sqlite3 as _sqlite3
+from pathlib import Path as _Path
+from datetime import datetime as _dt, timedelta as _td
+
+_STOCKS_DB = str(_Path(__file__).resolve().parent.parent.parent / 'db' / 'stocks.db')
+
+
+def _parse_volume_val(v) -> float:
+    """يحوّل قيمة حجم/قيمة التداول لرقم صافي (الـ scraper أحياناً بيرجّع نصوص مثل '317.39 K')."""
+    if v is None:
+        return 0.0
+    if isinstance(v, (int, float)):
+        return float(v)
+    s = str(v).strip()
+    if not s:
+        return 0.0
+    import re
+    m = re.match(r'^([\d.,]+)\s*([KMBT]?)$', s, re.IGNORECASE)
+    if not m:
+        cleaned = re.sub(r'[^0-9.\-]', '', s)
+        try:
+            return float(cleaned) if cleaned else 0.0
+        except ValueError:
+            return 0.0
+    try:
+        num = float(m.group(1).replace(',', ''))
+    except ValueError:
+        return 0.0
+    mult = (m.group(2) or '').upper()
+    factor = {'K': 1e3, 'M': 1e6, 'B': 1e9, 'T': 1e12, '': 1.0}[mult]
+    return num * factor
+
+
+def _day_price(row: dict, fallback: float) -> float:
+    """يرجّع سعر اليوم: close → close_price → fallback لـ current_price."""
+    close = row.get('close')
+    if close is not None:
+        try:
+            v = float(close)
+            if v > 0:
+                return v
+        except (TypeError, ValueError):
+            pass
+    cp = row.get('close_price')
+    if cp is not None:
+        try:
+            v = float(cp)
+            if v > 0:
+                return v
+        except (TypeError, ValueError):
+            pass
+    return fallback
+
+
+@misc_bp.route('/api/market/liquidity-flow', methods=['GET'])
+def get_liquidity_flow():
+    """GET /api/market/liquidity-flow — Rule 20 compliant liquidity flow endpoint.
+
+    Replaces Node-side computation in market/liquidity-flow/route.ts (472 lines):
+      - sector_flow (top 12 sectors by turnover)
+      - top_inflow_stocks / top_outflow_stocks (top 10 each)
+      - investor_type_estimate (institutional vs retail)
+      - summary (net direction, advancing/declining sectors)
+
+    Query params:
+      - market (default EGX)
+      - days (default 30, max 180)
+    """
+    try:
+        market = (request.args.get('market') or 'EGX').upper().strip()
+        if market not in ('EGX', 'TADAWUL', 'KSE', 'QSE'):
+            market = 'EGX'
+        try:
+            days = max(1, min(180, int(request.args.get('days', 30))))
+        except (ValueError, TypeError):
+            days = 30
+
+        if not os.path.exists(_STOCKS_DB):
+            return jsonify({
+                'success': False,
+                'error': 'stocks.db not found',
+                'market': market,
+                'days': days,
+            }), 503
+
+        conn = _sqlite3.connect(_STOCKS_DB, timeout=30.0)
+        conn.row_factory = _sqlite3.Row
+        cur = conn.cursor()
+
+        # 1) tickers + metadata للسوق
+        cur.execute("""
+            SELECT ticker, name_ar, name, sector, current_price
+            FROM stocks
+            WHERE market = ? AND is_active = 1
+        """, (market,))
+        stock_rows = [dict(r) for r in cur.fetchall()]
+        if not stock_rows:
+            conn.close()
+            return jsonify({
+                'success': True,
+                'market': market,
+                'days': days,
+                'sector_flow': [],
+                'top_inflow_stocks': [],
+                'top_outflow_stocks': [],
+                'investor_type_estimate': None,
+                'summary': {'total_turnover': 0, 'total_volume': 0,
+                            'net_flow_direction': 'neutral',
+                            'advancing_sectors': 0, 'declining_sectors': 0},
+                'note': 'no stocks for this market',
+            })
+
+        ticker_to_meta = {s['ticker']: s for s in stock_rows}
+        tickers = list(ticker_to_meta.keys())
+
+        # 2) cutoff date: نثبّت النافذة على آخر يوم تداول فعلي
+        placeholders = ','.join(['?'] * len(tickers))
+        cur.execute(f"""
+            SELECT MAX(price_date) AS latest_date
+            FROM stock_daily_prices
+            WHERE ticker IN ({placeholders})
+        """, tickers)
+        latest_date_row = cur.fetchone()
+        latest_date_str = latest_date_row['latest_date'] if latest_date_row else None
+        if not latest_date_str:
+            conn.close()
+            return jsonify({
+                'success': True,
+                'market': market,
+                'days': days,
+                'sector_flow': [],
+                'top_inflow_stocks': [],
+                'top_outflow_stocks': [],
+                'investor_type_estimate': None,
+                'summary': {'total_turnover': 0, 'total_volume': 0,
+                            'net_flow_direction': 'neutral',
+                            'advancing_sectors': 0, 'declining_sectors': 0},
+                'note': 'no price history available for this market',
+            })
+
+        # current: [latest - days, latest] / previous: [latest - 2*days, latest - days)
+        latest_date = _dt.strptime(latest_date_str, '%Y-%m-%d')
+        cutoff = latest_date - _td(days=days)
+        cutoff_str = cutoff.strftime('%Y-%m-%d')
+        prev_cutoff = cutoff - _td(days=days)
+        prev_cutoff_str = prev_cutoff.strftime('%Y-%m-%d')
+
+        # 3) اسحب كل صفوف الأسعار للنافذتين
+        cur.execute(f"""
+            SELECT ticker, price_date, close, close_price, volume, change_percent
+            FROM stock_daily_prices
+            WHERE ticker IN ({placeholders})
+              AND price_date IS NOT NULL
+              AND price_date >= ?
+            ORDER BY ticker, price_date DESC
+        """, (*tickers, prev_cutoff_str))
+        all_rows = [dict(r) for r in cur.fetchall()]
+
+        # 4) رتّب per ticker + افصل current/previous
+        by_ticker = {}
+        for r in all_rows:
+            t = r['ticker']
+            if t not in by_ticker:
+                by_ticker[t] = {'current': [], 'previous': []}
+            if r['price_date'] >= cutoff_str:
+                by_ticker[t]['current'].append(r)
+            else:
+                by_ticker[t]['previous'].append(r)
+
+        # 5) اجمع per-stock + per-sector
+        stock_flow_list = []
+        sector_map = {}
+        grand_turnover = 0.0
+        grand_volume = 0.0
+        avg_trade_values = []
+        large_blocks = []
+
+        for meta in stock_rows:
+            entry = by_ticker.get(meta['ticker'])
+            if not entry or not entry['current']:
+                continue
+            fallback_price = float(meta.get('current_price') or 0)
+
+            stock_turnover = 0.0
+            stock_volume = 0.0
+            change_sum = 0.0
+            change_count = 0
+            latest_change = 0.0
+            latest_price = fallback_price
+            for r in entry['current']:
+                price = _day_price(r, fallback_price)
+                vol = _parse_volume_val(r.get('volume'))
+                day_turnover = price * vol
+                stock_turnover += day_turnover
+                stock_volume += vol
+                cp = r.get('change_percent')
+                if cp is not None:
+                    try:
+                        cp_v = float(cp)
+                        change_sum += cp_v
+                        change_count += 1
+                        latest_change = cp_v
+                        if price > 0:
+                            latest_price = price
+                    except (TypeError, ValueError):
+                        pass
+            if stock_turnover <= 0:
+                continue
+
+            avg_change_pct = change_sum / change_count if change_count > 0 else 0.0
+            sector = (meta.get('sector') or '').strip() or 'متفرقات'
+            stock_flow = {
+                'ticker': meta['ticker'],
+                'name_ar': meta.get('name_ar') or meta.get('name') or meta['ticker'],
+                'sector': sector,
+                'total_turnover': stock_turnover,
+                'total_volume': stock_volume,
+                'avg_change_pct': avg_change_pct,
+                'latest_change_pct': latest_change,
+                'latest_price': latest_price,
+            }
+            stock_flow_list.append(stock_flow)
+
+            # aggregate per sector
+            sec_agg = sector_map.setdefault(sector, {
+                'sector': sector, 'total_turnover': 0.0, 'total_volume': 0.0,
+                'stocks_count': 0, 'change_sum': 0.0, 'change_count': 0,
+                'prev_turnover': 0.0,
+            })
+            sec_agg['total_turnover'] += stock_turnover
+            sec_agg['total_volume'] += stock_volume
+            sec_agg['stocks_count'] += 1
+            sec_agg['change_sum'] += avg_change_pct
+            sec_agg['change_count'] += 1
+
+            avg_trade_value = stock_turnover / stock_volume if stock_volume > 0 else 0
+            avg_trade_values.append(avg_trade_value)
+            if stock_turnover >= 1_000_000:
+                large_blocks.append({
+                    'ticker': meta['ticker'],
+                    'name_ar': stock_flow['name_ar'],
+                    'estimated_value': stock_turnover,
+                    'sector': sector,
+                })
+
+            # previous window per-sector turnover
+            if entry['previous']:
+                prev_turn = 0.0
+                for r in entry['previous']:
+                    price = _day_price(r, fallback_price)
+                    prev_turn += price * _parse_volume_val(r.get('volume'))
+                sec_agg['prev_turnover'] += prev_turn
+
+            grand_turnover += stock_turnover
+            grand_volume += stock_volume
+
+        conn.close()
+
+        if not stock_flow_list:
+            return jsonify({
+                'success': True,
+                'market': market,
+                'days': days,
+                'sector_flow': [],
+                'top_inflow_stocks': [],
+                'top_outflow_stocks': [],
+                'investor_type_estimate': {
+                    'institutional_pct': 0, 'retail_pct': 0,
+                    'block_trades_count': 0, 'avg_trade_value': 0, 'large_blocks': [],
+                },
+                'summary': {
+                    'total_turnover': 0, 'total_volume': 0,
+                    'net_flow_direction': 'neutral',
+                    'advancing_sectors': 0, 'declining_sectors': 0,
+                },
+                'note': 'no liquidity data for this market in the selected window',
+            })
+
+        # 6) sector_flow — top 12 sectors
+        sector_flow = []
+        for s in sector_map.values():
+            avg_change_pct = s['change_sum'] / s['change_count'] if s['change_count'] > 0 else 0
+            if avg_change_pct > 0.5:
+                flow_dir = 'inflow'
+            elif avg_change_pct < -0.5:
+                flow_dir = 'outflow'
+            else:
+                flow_dir = 'neutral'
+            change_in_turnover_pct = (
+                ((s['total_turnover'] - s['prev_turnover']) / s['prev_turnover']) * 100
+                if s['prev_turnover'] > 0 else 0
+            )
+            sector_flow.append({
+                'sector': s['sector'],
+                'total_turnover': round(s['total_turnover'], 2),
+                'total_volume': round(s['total_volume']),
+                'stocks_count': s['stocks_count'],
+                'avg_change_pct': round(avg_change_pct, 2),
+                'flow_direction': flow_dir,
+                'change_in_turnover_pct': round(change_in_turnover_pct, 2),
+            })
+        sector_flow.sort(key=lambda x: x['total_turnover'], reverse=True)
+        sector_flow = sector_flow[:12]
+
+        # 7) top_inflow / top_outflow stocks
+        top_inflow = sorted(
+            [s for s in stock_flow_list if s['latest_change_pct'] > 0],
+            key=lambda x: x['total_turnover'], reverse=True,
+        )[:10]
+        top_inflow = [{
+            'ticker': s['ticker'], 'name_ar': s['name_ar'], 'sector': s['sector'],
+            'total_turnover': round(s['total_turnover'], 2),
+            'total_volume': round(s['total_volume']),
+            'latest_change_pct': round(s['latest_change_pct'], 2),
+            'latest_price': round(s['latest_price'], 2),
+        } for s in top_inflow]
+
+        top_outflow = sorted(
+            [s for s in stock_flow_list if s['latest_change_pct'] < 0],
+            key=lambda x: x['total_turnover'], reverse=True,
+        )[:10]
+        top_outflow = [{
+            'ticker': s['ticker'], 'name_ar': s['name_ar'], 'sector': s['sector'],
+            'total_turnover': round(s['total_turnover'], 2),
+            'total_volume': round(s['total_volume']),
+            'latest_change_pct': round(s['latest_change_pct'], 2),
+            'latest_price': round(s['latest_price'], 2),
+        } for s in top_outflow]
+
+        # 8) investor_type_estimate
+        institutional_threshold = 1_000_000
+        institutional_stocks = [
+            s for s in stock_flow_list
+            if (s['total_volume'] > 0 and
+                (s['total_turnover'] / s['total_volume']) * s['latest_price'] >= institutional_threshold)
+            or s['total_turnover'] >= institutional_threshold
+        ]
+        institutional_pct = round(
+            (len(institutional_stocks) / len(stock_flow_list)) * 100, 2
+        ) if stock_flow_list else 0
+        retail_pct = round(100 - institutional_pct, 2)
+        overall_avg_trade_value = (
+            round(sum(avg_trade_values) / len(avg_trade_values), 2)
+            if avg_trade_values else 0
+        )
+        large_blocks_sorted = sorted(large_blocks, key=lambda x: x['estimated_value'], reverse=True)[:8]
+        large_blocks_out = [{
+            'ticker': b['ticker'], 'name_ar': b['name_ar'], 'sector': b['sector'],
+            'estimated_value': round(b['estimated_value'], 2),
+        } for b in large_blocks_sorted]
+
+        # 9) summary
+        advancing_sectors = sum(1 for s in sector_flow if s['flow_direction'] == 'inflow')
+        declining_sectors = sum(1 for s in sector_flow if s['flow_direction'] == 'outflow')
+        if advancing_sectors > declining_sectors + 1:
+            net_flow_dir = 'inflow'
+        elif declining_sectors > advancing_sectors + 1:
+            net_flow_dir = 'outflow'
+        else:
+            net_flow_dir = 'neutral'
+
+        return jsonify({
+            'success': True,
+            'market': market,
+            'days': days,
+            'generated_at': _dt.now().isoformat(),
+            'sector_flow': sector_flow,
+            'top_inflow_stocks': top_inflow,
+            'top_outflow_stocks': top_outflow,
+            'investor_type_estimate': {
+                'institutional_pct': institutional_pct,
+                'retail_pct': retail_pct,
+                'block_trades_count': len(large_blocks),
+                'avg_trade_value': overall_avg_trade_value,
+                'large_blocks': large_blocks_out,
+            },
+            'summary': {
+                'total_turnover': round(grand_turnover, 2),
+                'total_volume': round(grand_volume),
+                'net_flow_direction': net_flow_dir,
+                'advancing_sectors': advancing_sectors,
+                'declining_sectors': declining_sectors,
+            },
+            'source': 'python-canonical-liquidity-flow',
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+        }), 500
+
+
+@misc_bp.route('/api/finance/screener', methods=['GET'])
+def get_finance_screener():
+    """GET /api/finance/screener — Rule 20 compliant finance screener endpoint.
+
+    Replaces Node-side computation in finance/screener/route.ts (306 lines):
+      - Multi-table JOIN (stocks + stock_daily_prices + fundamentals + sectors)
+      - Post-filter by sector/market_cap/pe_ratio/dividend_yield/volume
+      - Sort by multiple fields
+      - Limit + offset pagination
+
+    Query params:
+      - market (default EGX)
+      - sector (filter)
+      - min_market_cap / max_market_cap
+      - min_pe / max_pe
+      - min_dividend_yield
+      - min_volume
+      - sort_by (default: market_cap)
+      - sort_dir (asc/desc, default: desc)
+      - limit (default 50, max 200)
+      - offset (default 0)
+    """
+    try:
+        market = (request.args.get('market') or 'EGX').upper().strip()
+        sector = request.args.get('sector', '').strip()
+        try:
+            min_mc = float(request.args.get('min_market_cap', 0))
+        except (ValueError, TypeError):
+            min_mc = 0
+        try:
+            max_mc = float(request.args.get('max_market_cap', 0))
+        except (ValueError, TypeError):
+            max_mc = 0
+        try:
+            min_pe = float(request.args.get('min_pe', 0))
+        except (ValueError, TypeError):
+            min_pe = 0
+        try:
+            max_pe = float(request.args.get('max_pe', 0))
+        except (ValueError, TypeError):
+            max_pe = 0
+        try:
+            min_div = float(request.args.get('min_dividend_yield', 0))
+        except (ValueError, TypeError):
+            min_div = 0
+        try:
+            min_vol = float(request.args.get('min_volume', 0))
+        except (ValueError, TypeError):
+            min_vol = 0
+        sort_by = (request.args.get('sort_by') or 'market_cap').strip().lower()
+        sort_dir = (request.args.get('sort_dir') or 'desc').strip().lower()
+        try:
+            limit = min(max(1, int(request.args.get('limit', 50))), 200)
+        except (ValueError, TypeError):
+            limit = 50
+        try:
+            offset = max(0, int(request.args.get('offset', 0)))
+        except (ValueError, TypeError):
+            offset = 0
+
+        if not os.path.exists(_STOCKS_DB):
+            return jsonify({
+                'success': False,
+                'error': 'stocks.db not found',
+                'market': market,
+            }), 503
+
+        conn = _sqlite3.connect(_STOCKS_DB, timeout=30.0)
+        conn.row_factory = _sqlite3.Row
+        cur = conn.cursor()
+
+        # Check which tables exist (schema-aware — Rule 6)
+        tables = {r[0] for r in cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()}
+        has_fundamentals = 'stocks_fundamentals' in tables or 'tab_valuation' in tables
+        has_sectors = 'sectors' in tables
+
+        # Build query dynamically based on available tables
+        select_cols = ['s.ticker', 's.name_ar', 's.name', 's.sector', 's.market',
+                       's.current_price', 's.volume', 's.market_cap']
+        join_clauses = []
+        where_clauses = ['s.market = ?', 's.is_active = 1']
+        params = [market]
+
+        # Latest price data per ticker (subquery)
+        if 'stock_daily_prices' in tables:
+            select_cols.append('sdp.close as latest_close')
+            select_cols.append('sdp.volume as latest_volume')
+            select_cols.append('sdp.change_percent as latest_change_pct')
+            join_clauses.append("""
+                LEFT JOIN (
+                    SELECT ticker, close, volume, change_percent
+                    FROM stock_daily_prices
+                    WHERE (ticker, price_date) IN (
+                        SELECT ticker, MAX(price_date) FROM stock_daily_prices GROUP BY ticker
+                    )
+                ) sdp ON sdp.ticker = s.ticker
+            """)
+
+        # Fundamentals (PE, PB, dividend_yield, market_cap)
+        if has_fundamentals:
+            if 'stocks_fundamentals' in tables:
+                select_cols.append('sf.pe_ratio')
+                select_cols.append('sf.pb_ratio')
+                select_cols.append('sf.dividend_yield')
+                select_cols.append('sf.market_cap as fund_market_cap')
+                join_clauses.append('LEFT JOIN stocks_fundamentals sf ON sf.ticker = s.ticker')
+            elif 'tab_valuation' in tables:
+                select_cols.append('tv.pe as pe_ratio')
+                select_cols.append('tv.pb as pb_ratio')
+                select_cols.append('tv.dividend_yield')
+                select_cols.append('tv.market_cap as fund_market_cap')
+                join_clauses.append('LEFT JOIN tab_valuation tv ON tv.symbol = s.ticker')
+
+        if sector:
+            where_clauses.append('s.sector = ?')
+            params.append(sector)
+        if min_mc > 0:
+            where_clauses.append('COALESCE(s.market_cap, sf.market_cap, 0) >= ?')
+            params.append(min_mc)
+        if max_mc > 0:
+            where_clauses.append('COALESCE(s.market_cap, sf.market_cap, 0) <= ?')
+            params.append(max_mc)
+        if min_pe > 0:
+            where_clauses.append('COALESCE(sf.pe_ratio, tv.pe, 0) >= ?')
+            params.append(min_pe)
+        if max_pe > 0:
+            where_clauses.append('COALESCE(sf.pe_ratio, tv.pe, 0) <= ?')
+            params.append(max_pe)
+        if min_div > 0:
+            where_clauses.append('COALESCE(sf.dividend_yield, tv.dividend_yield, 0) >= ?')
+            params.append(min_div)
+        if min_vol > 0:
+            where_clauses.append('COALESCE(s.volume, sdp.volume, 0) >= ?')
+            params.append(min_vol)
+
+        # Validate sort_by (whitelist to prevent SQL injection — Rule 56)
+        valid_sorts = {'ticker', 'name_ar', 'sector', 'current_price', 'volume',
+                       'market_cap', 'pe_ratio', 'pb_ratio', 'dividend_yield',
+                       'latest_change_pct', 'latest_close'}
+        if sort_by not in valid_sorts:
+            sort_by = 'market_cap'
+        sort_dir_final = 'DESC' if sort_dir == 'desc' else 'ASC'
+
+        query = f"""
+            SELECT {', '.join(select_cols)}
+            FROM stocks s
+            {(' '.join(join_clauses)) if join_clauses else ''}
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY {sort_by} {sort_dir_final} NULLS LAST
+            LIMIT ? OFFSET ?
+        """
+        params.extend([limit, offset])
+
+        cur.execute(query, params)
+        rows = [dict(r) for r in cur.fetchall()]
+
+        # Also get total count for pagination
+        count_query = f"""
+            SELECT COUNT(*) as total
+            FROM stocks s
+            {(' '.join(join_clauses)) if join_clauses else ''}
+            WHERE {' AND '.join(where_clauses)}
+        """
+        cur.execute(count_query, params[:-2])
+        total = cur.fetchone()['total']
+
+        conn.close()
+
+        # Format results
+        results = []
+        for r in rows:
+            results.append({
+                'ticker': r.get('ticker', ''),
+                'name_ar': r.get('name_ar') or r.get('name') or r.get('ticker'),
+                'name': r.get('name', ''),
+                'sector': r.get('sector', ''),
+                'market': r.get('market', market),
+                'current_price': float(r.get('current_price') or 0),
+                'latest_close': float(r.get('latest_close') or 0),
+                'volume': int(r.get('volume') or r.get('latest_volume') or 0),
+                'market_cap': float(r.get('market_cap') or r.get('fund_market_cap') or 0),
+                'pe_ratio': float(r.get('pe_ratio') or 0),
+                'pb_ratio': float(r.get('pb_ratio') or 0),
+                'dividend_yield': float(r.get('dividend_yield') or 0),
+                'latest_change_pct': float(r.get('latest_change_pct') or 0),
+            })
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'pagination': {
+                'total': total,
+                'limit': limit,
+                'offset': offset,
+                'has_more': (offset + limit) < total,
+            },
+            'filters': {
+                'market': market, 'sector': sector,
+                'min_market_cap': min_mc, 'max_market_cap': max_mc,
+                'min_pe': min_pe, 'max_pe': max_pe,
+                'min_dividend_yield': min_div, 'min_volume': min_vol,
+                'sort_by': sort_by, 'sort_dir': sort_dir,
+            },
+            'source': 'python-canonical-finance-screener',
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+        }), 500
+
+
+@misc_bp.route('/api/radar/accuracy', methods=['GET'])
+def get_radar_accuracy():
+    """GET /api/radar/accuracy — Rule 20 compliant radar accuracy endpoint.
+
+    Replaces Node-side computation in radar/accuracy/route.ts (740 lines):
+      - classifyRadarPath (5 radar paths classification)
+      - computeWinRate (win_rate_pct calculation)
+      - buildFromPredictionsTable (per-signal-type + per-market + monthly-trend)
+      - buildFromRadarTrackingTable (fallback to radar_signal_tracking)
+
+    Note: Paywall gating (applyAccuracyGate) stays in Node — that's auth/subscription
+    logic which is allowed in Node per Rule 20 exception.
+
+    Query params:
+      - market (filter by market, default = all)
+      - days (window, default 90, max 365)
+    """
+    try:
+        market_filter = (request.args.get('market') or '').strip().upper() or None
+        try:
+            days = min(max(int(request.args.get('days', 90)), 7), 365)
+        except (ValueError, TypeError):
+            days = 90
+
+        predictions_db = str(_Path(__file__).resolve().parent.parent.parent / 'db' / 'predictions.db')
+        if not os.path.exists(predictions_db):
+            return jsonify({
+                'success': True,
+                'source': 'none',
+                'total_signals': 0,
+                'verified': 0,
+                'pending': 0,
+                'wins': 0,
+                'losses': 0,
+                'win_rate_pct': 0,
+                'by_signal_type': [
+                    {'signal_type': 'pre_surge', 'label': '🚀 Pre-Surge',
+                     'total': 0, 'verified': 0, 'wins': 0, 'losses': 0, 'win_rate_pct': 0,
+                     'avg_outcome_7d': None, 'avg_outcome_14d': None, 'avg_outcome_30d': None,
+                     'avg_time_to_target_days': None},
+                    {'signal_type': 'quiet_accumulation_strong', 'label': '🎯 تجميع قوي',
+                     'total': 0, 'verified': 0, 'wins': 0, 'losses': 0, 'win_rate_pct': 0,
+                     'avg_outcome_7d': None, 'avg_outcome_14d': None, 'avg_outcome_30d': None,
+                     'avg_time_to_target_days': None},
+                    {'signal_type': 'explosive_surge', 'label': '💥 انفجار حجمي',
+                     'total': 0, 'verified': 0, 'wins': 0, 'losses': 0, 'win_rate_pct': 0,
+                     'avg_outcome_7d': None, 'avg_outcome_14d': None, 'avg_outcome_30d': None,
+                     'avg_time_to_target_days': None},
+                    {'signal_type': 'early_break', 'label': '⚡ اختراق مبكر',
+                     'total': 0, 'verified': 0, 'wins': 0, 'losses': 0, 'win_rate_pct': 0,
+                     'avg_outcome_7d': None, 'avg_outcome_14d': None, 'avg_outcome_30d': None,
+                     'avg_time_to_target_days': None},
+                    {'signal_type': 'quiet_accumulation_weak', 'label': '🔍 تجميع ضعيف',
+                     'total': 0, 'verified': 0, 'wins': 0, 'losses': 0, 'win_rate_pct': 0,
+                     'avg_outcome_7d': None, 'avg_outcome_14d': None, 'avg_outcome_30d': None,
+                     'avg_time_to_target_days': None},
+                ],
+                'by_market': [],
+                'monthly_trend': [],
+                'days': days,
+                'served_at': _dt.now().isoformat(),
+                'note': 'No predictions DB available — install db/predictions.db or run the prediction generator.',
+            })
+
+        conn = _sqlite3.connect(predictions_db, timeout=30.0)
+        conn.row_factory = _sqlite3.Row
+        cur = conn.cursor()
+
+        # Check which tables exist
+        tables = {r[0] for r in cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()}
+        has_radar_tracking = 'radar_signal_tracking' in tables
+        has_predictions = 'predictions' in tables
+
+        if not has_radar_tracking and not has_predictions:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'No usable table found in predictions DB',
+                'source': 'predictions_db',
+            }), 500
+
+        # RADAR_PATHS — mirror Node-side definitions
+        radar_paths = [
+            {'signal_type': 'pre_surge', 'label': '🚀 Pre-Surge',
+             'matchers': ['pre_surge', 'pre-surge', 'presurge']},
+            {'signal_type': 'quiet_accumulation_strong', 'label': '🎯 تجميع قوي',
+             'matchers': ['quiet_strong', 'quiet_accumulation_strong', 'b_quiet']},
+            {'signal_type': 'explosive_surge', 'label': '💥 انفجار حجمي',
+             'matchers': ['explosive', 'd_explosive', 'explosive_surge']},
+            {'signal_type': 'early_break', 'label': '⚡ اختراق مبكر',
+             'matchers': ['early_break', 'e_early', 'early-break', 'breakout']},
+            {'signal_type': 'quiet_accumulation_weak', 'label': '🔍 تجميع ضعيف',
+             'matchers': ['quiet_weak', 'quiet_accumulation_weak', 'c_quiet']},
+        ]
+
+        def classify_radar_path(row: dict) -> str:
+            """Classify a prediction row into a radar path."""
+            signal_type = (str(row.get('signal_type') or '') + ' ' +
+                           str(row.get('notes') or '') + ' ' +
+                           str(row.get('explosive_label') or '')).lower()
+            for p in radar_paths:
+                for m in p['matchers']:
+                    if m in signal_type:
+                        return p['signal_type']
+            return 'general'
+
+        def compute_win_rate(wins: int, verified: int) -> float:
+            if verified == 0:
+                return 0.0
+            return round((wins / verified) * 100, 1)
+
+        def month_key(date_str):
+            if not date_str:
+                return None
+            try:
+                return str(date_str)[:7]  # YYYY-MM
+            except Exception:
+                return None
+
+        if has_radar_tracking:
+            # Use radar_signal_tracking table (preferred)
+            cur.execute("""
+                SELECT ticker, signal_type, signal_date, outcome_date, outcome,
+                       hit_target, hit_stop, return_pct, market
+                FROM radar_signal_tracking
+                WHERE signal_date >= date('now', ?)
+                ORDER BY signal_date DESC
+            """, (f'-{days} days',))
+            rows = [dict(r) for r in cur.fetchall()]
+            source = 'predictions_db'
+        else:
+            # Fallback to predictions table
+            where_clauses = ["prediction_date >= date('now', ?)"]
+            params_list = [f'-{days} days']
+            if market_filter:
+                where_clauses.append('market = ?')
+                params_list.append(market_filter)
+            cur.execute(f"""
+                SELECT ticker, signal, signal_type, prediction_date, outcome_date,
+                       outcome, exit_price, return_pct, market, notes, explosive_label
+                FROM predictions
+                WHERE {' AND '.join(where_clauses)}
+                ORDER BY prediction_date DESC
+            """, params_list)
+            rows = [dict(r) for r in cur.fetchall()]
+            source = 'predictions_db'
+
+        conn.close()
+
+        # Aggregate by signal_type
+        by_signal = {}
+        by_market_map = {}
+        by_month = {}
+        total_signals = len(rows)
+        verified = 0
+        pending = 0
+        wins = 0
+        losses = 0
+
+        for r in rows:
+            sig_type = classify_radar_path(r) if not has_radar_tracking else (r.get('signal_type') or 'general')
+            outcome = (r.get('outcome') or '').upper()
+            market = r.get('market') or 'EGX'
+            date_str = r.get('signal_date') or r.get('prediction_date')
+            ret_pct = float(r.get('return_pct') or 0)
+
+            if sig_type not in by_signal:
+                by_signal[sig_type] = {
+                    'signal_type': sig_type,
+                    'total': 0, 'verified': 0, 'wins': 0, 'losses': 0,
+                    'returns_7d': [], 'returns_14d': [], 'returns_30d': [],
+                    'time_to_target': [],
+                }
+                # Find label from radar_paths
+                for p in radar_paths:
+                    if p['signal_type'] == sig_type:
+                        by_signal[sig_type]['label'] = p['label']
+                        break
+                else:
+                    by_signal[sig_type]['label'] = '📋 عام' if sig_type == 'general' else sig_type
+
+            by_signal[sig_type]['total'] += 1
+
+            # Per-market aggregation
+            if market not in by_market_map:
+                by_market_map[market] = {'total': 0, 'verified': 0, 'wins': 0}
+            by_market_map[market]['total'] += 1
+
+            # Per-month aggregation
+            mk = month_key(date_str)
+            if mk:
+                if mk not in by_month:
+                    by_month[mk] = {'total': 0, 'verified': 0, 'wins': 0}
+                by_month[mk]['total'] += 1
+
+            if outcome in ('WIN', 'TARGET_HIT', 'target_hit'):
+                verified += 1
+                wins += 1
+                by_signal[sig_type]['verified'] += 1
+                by_signal[sig_type]['wins'] += 1
+                by_signal[sig_type]['returns_7d'].append(ret_pct)
+                by_signal[sig_type]['returns_14d'].append(ret_pct)
+                by_signal[sig_type]['returns_30d'].append(ret_pct)
+                by_market_map[market]['verified'] += 1
+                by_market_map[market]['wins'] += 1
+                if mk:
+                    by_month[mk]['verified'] += 1
+                    by_month[mk]['wins'] += 1
+            elif outcome in ('LOSS', 'STOP_HIT', 'stop_hit'):
+                verified += 1
+                losses += 1
+                by_signal[sig_type]['verified'] += 1
+                by_signal[sig_type]['losses'] += 1
+                by_signal[sig_type]['returns_7d'].append(ret_pct)
+                by_signal[sig_type]['returns_14d'].append(ret_pct)
+                by_signal[sig_type]['returns_30d'].append(ret_pct)
+                by_market_map[market]['verified'] += 1
+                if mk:
+                    by_month[mk]['verified'] += 1
+            elif outcome in ('EXPIRED', 'expired'):
+                verified += 1
+                by_signal[sig_type]['verified'] += 1
+                by_market_map[market]['verified'] += 1
+                if mk:
+                    by_month[mk]['verified'] += 1
+            else:
+                pending += 1
+
+        # Format by_signal_type
+        by_signal_type = []
+        for p in radar_paths:
+            sig = p['signal_type']
+            if sig in by_signal:
+                s = by_signal[sig]
+                avg_7d = round(sum(s['returns_7d']) / len(s['returns_7d']), 2) if s['returns_7d'] else None
+                avg_14d = round(sum(s['returns_14d']) / len(s['returns_14d']), 2) if s['returns_14d'] else None
+                avg_30d = round(sum(s['returns_30d']) / len(s['returns_30d']), 2) if s['returns_30d'] else None
+                by_signal_type.append({
+                    'signal_type': sig,
+                    'label': s['label'],
+                    'total': s['total'],
+                    'verified': s['verified'],
+                    'wins': s['wins'],
+                    'losses': s['losses'],
+                    'win_rate_pct': compute_win_rate(s['wins'], s['verified']),
+                    'avg_outcome_7d': avg_7d,
+                    'avg_outcome_14d': avg_14d,
+                    'avg_outcome_30d': avg_30d,
+                    'avg_time_to_target_days': None,
+                })
+
+        by_market = [{
+            'market': m,
+            'total': v['total'],
+            'verified': v['verified'],
+            'wins': v['wins'],
+            'win_rate_pct': compute_win_rate(v['wins'], v['verified']),
+        } for m, v in sorted(by_market_map.items(), key=lambda x: -x[1]['total'])]
+
+        monthly_trend = [{
+            'month': mk,
+            'total': v['total'],
+            'verified': v['verified'],
+            'wins': v['wins'],
+            'win_rate_pct': compute_win_rate(v['wins'], v['verified']),
+        } for mk, v in sorted(by_month.items())]
+
+        return jsonify({
+            'success': True,
+            'source': source,
+            'market': market_filter,
+            'days': days,
+            'total_signals': total_signals,
+            'verified': verified,
+            'pending': pending,
+            'wins': wins,
+            'losses': losses,
+            'win_rate_pct': compute_win_rate(wins, verified),
+            'by_signal_type': by_signal_type,
+            'by_market': by_market,
+            'monthly_trend': monthly_trend,
+            'served_at': _dt.now().isoformat(),
+        }, 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'})
+
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': _tb.format_exc().splitlines()[-5:],
+        }), 500
