@@ -562,12 +562,12 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
     cur = conn.cursor()
     if start_date and end_date:
         cur.execute(
-            "DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%' "
+            "DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%' "  # DEV-06 verified-disabled (dead code — early-return at L548)
             "AND prediction_date >= ? AND prediction_date <= ?",
             (start_date, end_date),
         )
     else:
-        cur.execute("DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%'")
+        cur.execute("DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%'")  # DEV-06 verified-disabled (dead code — early-return at L548)
     deleted = cur.rowcount
     conn.commit()
     conn.close()
