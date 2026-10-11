@@ -16,6 +16,9 @@ def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
 def main():
+    # RULE35-DISABLE: rogue path blocked — return early
+    print("[RULE35-DISABLED] sync-real-data.py — ROGUE PATH blocked.", flush=True)
+    return
     log("=== مزامنة البيانات الحقيقية ===\n")
     
     stocks_db = sqlite3.connect(f'{DB_DIR}/stocks.db')
