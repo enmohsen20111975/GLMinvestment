@@ -1223,7 +1223,12 @@ def run_v40_backtest():
             preds_db = str(_Path(__file__).resolve().parents[2] / 'db' / 'predictions.db')
             # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
             with _open_db('predictions', preds_db, writable=True) as conn:
-                conn.execute('DELETE FROM predictions')
+                # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+                # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+                conn.execute(
+                    "UPDATE predictions SET status='ARCHIVED', "
+                    "notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE 1=1"
+                )
                 conn.commit()
 
         # شغل V40.2 generator في الخلفية (non-blocking)
