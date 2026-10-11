@@ -524,7 +524,11 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
 
 
 def _clear_existing_for_tickers(tickers: List[str], persona: str = None) -> int:
-    """Delete existing predictions for the given tickers (and optionally persona)."""
+    """Archive existing predictions for the given tickers (and optionally persona).
+
+    DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+    Replaced with UPDATE status='ARCHIVED' + archive reason in notes.
+    """
     if not tickers:
         return 0
     try:
@@ -533,13 +537,19 @@ def _clear_existing_for_tickers(tickers: List[str], persona: str = None) -> int:
         placeholders = ','.join(['?'] * len(tickers))
         upper_tickers = [t.upper() for t in tickers]
         if persona:
+            # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+            # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
             cur.execute(
-                f"DELETE FROM predictions WHERE ticker IN ({placeholders}) AND persona = ?",
+                f"UPDATE predictions SET status='ARCHIVED', notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' "
+                f"WHERE ticker IN ({placeholders}) AND persona = ?",
                 upper_tickers + [persona]
             )
         else:
+            # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+            # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
             cur.execute(
-                f"DELETE FROM predictions WHERE ticker IN ({placeholders})",
+                f"UPDATE predictions SET status='ARCHIVED', notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' "
+                f"WHERE ticker IN ({placeholders})",
                 upper_tickers
             )
         deleted = cur.rowcount
