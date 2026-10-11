@@ -69382,3 +69382,54 @@ Stage Summary:
 - JSON parsing defensive في كل الرادارات
 - كل الـ endpoints موجودة على السيرفر
 - التطبيق جاهز للـ build
+
+---
+Task ID: PREDICTION-INTEGRITY
+Agent: Main Agent (Z.ai Code)
+Task: إصلاح 4 مشاكل منطقية في محرك التوقعات (تحليل كمي)
+
+Work Log:
+- قريت الدستور كامل (76 قاعدة + 2002 سطر) قبل أي عمل
+- استخرجت الـ DBs من data/*.zip (predictions.db 225MB + stocks.db 11MB)
+- عملت تحليل كمي شامل لـ 10 أسهم (CPME/ETEL/FWRY/DOMT/ENGC/LCSW/CERA/ETRS/CRST/MPCO)
+- اكتشفت 4 مشاكل منطقية حقيقية + 1 crash
+
+الإصلاحات:
+
+1) DOMT stop > entry (كسر منطقي):
+   - daily_predictor.py ما كانش بيستدعي validate_target_stop_direction
+   - أضفت استدعاء validate_target_stop_direction بعد enforce_atr_based_stop
+   - لو stop > entry للـ BUY → بـ يتـ fix لـ entry*0.97
+   - لو target < entry للـ BUY → بـ يتـ fix لـ entry*1.03
+   - إعادة حساب R:R بعد الـ fix
+   - Rule 8 + 18 + 67
+
+2) سيولة "1.0M ج.م" hardcoded (بيانات مضللة):
+   - stored_analysis_routes.py:825 كان fallback لـ vol_ratio_val
+   - لو turnover_egp = 0 → كان بـ يعرض "سيولة ممتازة (1.0M ج.م)" لكل الأسهم
+   - FIX: لو turnover_egp = 0 → اعرض "بيانات السيولة غير متاحة"
+   - Rule 27 (NO-FAKE-DATA)
+
+3) avg_volume مكسور (23.5% من الأسهم):
+   - analyses.py:445 كان بـ يحسب vr = volume/avg_vol بدون validation
+   - 241/1025 سهم فيها avg_volume < 100 (2.8، 6.0، 22.5)
+   - FIX: لو avg_volume < 100 → تجاهله + vr = null
+   - Rule 65 (DATA-VALIDATION-LAYER) + Rule 27
+
+4) S/R = 0.0 في 87% من التوقعات:
+   - daily_predictor.py ما كانش بـ تمرر support_level/resistance_level لـ record_prediction
+   - أضفت support_level + resistance_level كـ kwargs في record_prediction
+   - أضفت الـ columns في INSERT INTO predictions SQL
+   - prediction_tracker.py: أضفت parameters + INSERT
+
+5) unified_config.py US profile crash:
+   - MarketProfile.__init__() كان بـ يرفض timezone/trading_start/trading_days/min_price/max_price
+   - أضفت 7 fields جديدة لـ MarketProfile dataclass
+   - FIX: min_volume → min_volume_filter + trading_days list → tuple
+
+التحقق:
+- Python syntax: 6/6 ملفات OK ✅
+- ESLint: نجح ✅
+- tsc --noEmit: exit 0 ✅
+- 5/5 APIs HTTP 200 ✅
+- commit aca6a2a على origin/main ✅
