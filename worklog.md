@@ -75097,3 +75097,100 @@ Verification:
 
 [المنفذ الفني - Lead Technical Implementer (Z.ai Code)]
 DEV-06-10-EXECUTION complete.
+
+---
+Task ID: AUDITOR-INDEPENDENT-3
+Agent: المدقق المستقل (المساعد) — الجولة 3 على commit b5adbe3
+Task: AUDIT-12 إلى AUDIT-17 — مراجعة G1-G8 + Red Team + CI bypass
+
+## AUDIT-12: مراجعة G1-G8 من المدير العام
+
+| G | الادعاء | الحكم | الدليل |
+|---|---------|------|-------|
+| G1 | المسح المقنّع (WHERE 1=1) | ✅ مؤكد | admin_routes.py:1230 + misc_routes.py:1908: `UPDATE predictions SET status='ARCHIVED' WHERE 1=1` — مسح جماعي بدون معايير |
+| G2 | prev_status مش موجود | ✅ مؤكد | grep "prev_status" = 0 matches — مفيش حفظ الحالة الأصلية قبل الأرشفة |
+| G3 | prediction_tracker بـ يتخطى safe_insert | ✅ مؤكد | prediction_tracker.py فيه 3 INSERTs مباشرة (L676, L703, L721) — 0 calls لـ safe_insert_prediction |
+| G4 | TRIGGER BEFORE INSERT فقط | ✅ مؤكد | BEFORE INSERT = 2, BEFORE UPDATE = 0, direction check = 0 — مفيش حماية على UPDATE + مفيش فحص اتجاه |
+| G5 | fail-open | ✅ مؤكد | prediction_tracker.py:528-530: ImportError → "fail-open for ticker" — بـ يسمح الكتابة بدون Guard لو الـ module مش متحمّل |
+| G6 | CI comments workaround | ✅ مؤكد | 5+ matches: "dead code", "DEV-06", "verified-disabled" — markers الكومنتات بتخلي CI يعدّي |
+| G7 | daily_closer datetime.now | ⚠️ جزئي | DEV-08 استبدل بـ `datetime.now(timezone.utc)` (L3065) — بس ده UTC وقت تشغيل الـ cron مش وقت الضربة الفعلي. الـ comment بيعترف بده صراحةً (L3063: "مش نقدر نعرفه بـ daily OHLC") |
+| G8 | recover_legit_predictions.py | ✅ موجود | script موجود + daily_predictor.py:534 يوثّق 28 legit محذوفين |
+
+## AUDIT-13: Red Team على المسح المقنّع
+
+### النتيجة: 🔴 FAIL — 5 مسارات مسح مقنّع نشطة
+
+| # | الملف | السطر | الخطر |
+|---|------|------|------|
+| 1 | admin_routes.py | 1229-1231 | UPDATE SET status='ARCHIVED' WHERE 1=1 — مسح كل التوقعات! |
+| 2 | misc_routes.py | 1907-1908 | UPDATE SET status='ARCHIVED' WHERE 1=1 — مسح كل التوقعات! |
+| 3 | ai_predictions_routes.py | 597-599 | UPDATE SET status='ARCHIVED' WHERE prediction_date < ? — مسح جماعي بدون id/ticker |
+| 4 | historical_predictions_v2_routes.py | 545,553 | UPDATE SET status='ARCHIVED' WHERE ticker IN (...) — مسح جماعي |
+| 5 | misc_routes.py | 5471 | WHERE 1=1 (مسار تاني) |
+
+### ما كان سيفوتني لو كنت سطحياً:
+لو اكتفت بـ grep "DELETE FROM predictions" = 0، كنت هعتبر إن المشكلة اتحلت. بس المسح المقنّع (UPDATE WHERE 1=1) أخطر لأنه بـ يحول كل التوقعات لـ ARCHIVED بدون معايير — ده فعلياً مسح كامل لكن بطريقة مخفية.
+
+## AUDIT-14: Red Team على TRIGGER
+
+### النتيجة: 🔴 FAIL — 3 ثغرات
+
+| # | الثغرة | الخطر |
+|---|--------|------|
+| 1 | مفيش BEFORE UPDATE trigger | ممكن UPDATE entry_price=0 بعد INSERT والـ TRIGGER ما بيلمسش UPDATE |
+| 2 | مفيش direction check | BUY بـ target < entry بـ يعدّي — TRIGGER بـ يفحص بس > 0 مش الاتجاه |
+| 3 | fail-open في prediction_tracker | لو Guard module مش متحمّل → بـ يكتب بدون حماية |
+
+## AUDIT-15: daily_closer timestamp
+
+### النتيجة: ⚠️ PARTIAL PASS
+
+- DEV-08 استبدل `datetime.now()` بـ `datetime.now(timezone.utc)` ✅
+- بس ده "وقت تشغيل الـ cron" مش "وقت الضربة الفعلي" — الـ comment بيعترف (L3063)
+- backfill_hit_timestamps.py موجود بس محتاج فحص على بيانات الإنتاج
+
+## AUDIT-16: CI bypass
+
+### النتيجة: 🔴 FAIL — CI ممكن يتحايل عليه
+
+check_no_hard_delete.py بـ يستثني:
+- `# ` comments
+- `DISABLE` markers
+- `RULE35` markers
+- `DEV-06` markers
+
+ده معناه إن أي ملف يكتب `# DEV-06 disabled` فوق `DELETE FROM predictions` بـ يعدّي!
+
+check_no_raw_insert.py: **مش موجود** (فشل الـ cat)
+
+## AUDIT-17: DEPLOY-ROUND3.md
+
+### النتيجة: ❌ NOT FOUND — مفيش خطة نشر
+
+## ملخص الجولة 3: 3 PASS + 5 FAIL
+
+| AUDIT | النتيجة |
+|-------|---------|
+| AUDIT-12 (G1-G8) | ✅ كلها مؤكدة |
+| AUDIT-13 (مسح مقنّع) | ❌ FAIL — 5 مسارات نشطة |
+| AUDIT-14 (TRIGGER) | ❌ FAIL — 3 ثغرات |
+| AUDIT-15 (timestamp) | ⚠️ PARTIAL — UTC بس مش وقت الضربة |
+| AUDIT-16 (CI bypass) | ❌ FAIL — markers بتخلي CI يعدّي |
+| AUDIT-17 (deploy doc) | ❌ NOT FOUND |
+
+### ما كان سيفوتني لو كنت سطحياً:
+1. **المسح المقنّع** — لو اكتفيت بـ "DELETE=0" ما كنتش لاحظت إن UPDATE WHERE 1=1 أخطر
+2. **fail-open** — لو قرأت بس إن "Guard موجود" ما كنتش لاحظت إنه fail-open مش fail-closed
+3. **CI markers** — لو ما فحصتش الـ filtering logic ما كنتش لاحظت إن markers الكومنتات بتخلي CI يعدّي
+4. **TRIGGER BEFORE UPDATE** — لو قرأت بس "TRIGGER موجود" ما كنتش لاحظت إنه INSERT بس
+
+Stage Summary:
+- 3 PASS + 5 FAIL
+- G1 (مسح مقنّع): مؤكد + خطير — 5 مسارات نشطة
+- G3 (prediction_tracker bypass): مؤكد — 3 INSERTs مباشرة
+- G4 (TRIGGER): BEFORE INSERT بس — مفيش BEFORE UPDATE + مفيش direction check
+- G5 (fail-open): مؤكد — Guard بـ يفشل بصمت
+- G6 (CI): markers بتخلي CI يعدّي
+- G7 (timestamp): UTC بس مش وقت الضربة الفعلي
+- G8 (recover script): موجود
+- DEPLOY-ROUND3.md: مش موجود
