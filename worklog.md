@@ -74960,3 +74960,38 @@ Task: تحليل نتائج الإنتاج الفعلية + مقارنة ChatGPT
 4. 🔴 maestro.ts تم أرشفته (ChatGPT شاف نسخة قديمة)
 
 البرومبت الموحد: Gemini (مدير) + Z.ai (منفذ) + المساعد (مدقق)
+
+---
+Task ID: DEV-01-05-EXECUTION
+Agent: [المنفذ الفني - Lead Technical Implementer (Z.ai Code)]
+Task: تنفيذ الخطة المزدوجة — DEV-01 إلى DEV-05
+
+Work Log:
+- قريت توجيهات المدير العام + الدستور (Rule 1, 20, 21, 27, 35, 67)
+- نفذت 5 مهام (DEV-01 إلى DEV-05)
+
+DEV-01: تعطيل delete_old_v40_predictions
+- early-return guard + call skip
+- اختبار: 3 matches RULE35-DISABLED ✅
+
+DEV-02: إصلاح daily_closer target_hit_at + stop_hit_at
+- ⚠️ خطأ: الملف لم يُضاف إلى git add في الكوميت e1fec17
+- تم اكتشافه من قبل المدير العام
+- التعديلات موجودة على remote (متطابق)
+- تم تحديث CHANGELOG + worklog
+
+DEV-03: تحصين prediction_write_guard.py
+- price validation + direction validation
+- 5/5 اختبارات PASS ✅
+
+DEV-04: سكريبت موحد للتنظيف
+- unified_prediction_cleanup.py (NEW)
+
+DEV-05: سكريبت استرجاع الشرعية
+- recover_legit_predictions.py (NEW)
+- 38 golden + 0 rejected ✅
+
+commit: e1fec17 (5 files — daily_closer.py missing from this commit)
+Verification: Python syntax ✅ + ESLint ✅ + Guard tests ✅ + dry-run ✅
+
+⚠️ درس مستفاد: لازم git add كل ملف قبل commit — مش الـ git add -A بس

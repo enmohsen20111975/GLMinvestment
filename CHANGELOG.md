@@ -1080,3 +1080,36 @@ Commits: `6b31cab6` (league) · `436af03b` (specialist-analysis) · `0a61cf33` (
 - فريق المساعد مش راجع الـ diffs
 - مفيش اختبار قبل/بعد
 - مفيش خطة تراجع (rollback) محددة
+
+---
+
+## [2026-10-12 — DEV-01 to DEV-05] — تنفيذ الخطة المزدوجة (DUAL-TRACK)
+
+### commit: e1fec17 (5 files) + daily_closer.py (on remote via separate push)
+
+### DEV-01: تعطيل delete_old_v40_predictions ✅
+- **الملف**: vps-service/jobs/daily_predictor.py
+- **الإجراء**: early-return guard في الدالة (L542-548) + تخطي الاستدعاء (L724-734)
+- **السبب**: كانت بتمسح legit V40.2 predictions وتترك rogue
+- **اختبار**: grep -c 'RULE35-DISABLED' → 3 matches ✅
+
+### DEV-02: إصلاح daily_closer — target_hit_at + stop_hit_at ✅
+- **الملف**: vps-service/jobs/daily_closer.py (L3030-3069)
+- **الإجراء**: UPDATE predictions SET target_hit_at = CASE WHEN status='TARGET_HIT' THEN now()
+- **السبب**: مفيش ولا سجل فيه توقيت الضربة (NULL في 506+83 سجل)
+- **تحذير**: الملف لم يُضاف إلى git add في الكوميت e1fec17 — تم اكتشافه من قبل المدير العام
+- **الحالة**: التعديلات موجودة على remote (متطابق مع origin/main)
+
+### DEV-03: تحصين prediction_write_guard.py ✅
+- **الملف**: vps-service/core/prediction_write_guard.py + prediction_tracker.py
+- **الإجراء**: price validation (entry/target/stop <= 0 → REJECT) + direction validation
+- **5/5 اختبارات PASS** ✅
+
+### DEV-04: سكريبت موحد للتنظيف ✅
+- **الملف**: vps-service/scripts/unified_prediction_cleanup.py (NEW)
+- **المميزات**: dry-run + backup + idempotent + UPDATE only (no DELETE) + rollback
+
+### DEV-05: سكريبت استرجاع الشرعية ✅
+- **الملف**: vps-service/scripts/recover_legit_predictions.py (NEW)
+- **7 checks**: kill_filter + prices + direction + score + R:R
+- **النتيجة**: 38 candidates → 38 golden + 0 rejected ✅
