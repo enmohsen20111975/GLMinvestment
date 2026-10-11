@@ -15,6 +15,32 @@ Usage:
     python3 scripts/optimization_loop.py
 """
 
+# ============================================================================
+# RULE35-DISABLE (2026-10-12 — HIDDEN-WRITERS-AUDIT):
+# ============================================================================
+# This script was a CATASTROPHIC rogue path:
+#   - clear_predictions() does `DELETE FROM predictions` (wipes ALL rows!)
+#   - imports run_backtest from disabled backtesting_engine.py
+#   - if anyone runs it, ALL production predictions are destroyed
+#
+# Rule 1 (DB Safety): NEVER wipe production DBs.
+# Rule 35 (ENGINE-UNIFY): V40.2 is the only writer.
+# Rule 27 (NO-FAKE-DATA): optimization_loop fabricates backtest predictions.
+#
+# Per owner directive: "بدون ماتموت المشروع" — this script MUST stay disabled.
+# ============================================================================
+
+import sys as _sys
+print("[RULE35-DISABLED] optimization_loop.py — CATASTROPHIC rogue path blocked.", file=_sys.stderr)
+print("  Reason: clear_predictions() does DELETE FROM predictions (wipes ALL rows!)", file=_sys.stderr)
+print("  This script would destroy production data if run.", file=_sys.stderr)
+print("  Rule 1 (DB Safety) + Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA)", file=_sys.stderr)
+_sys.exit(0)  # safe exit — do NOT run any code below
+
+# ─── ORIGINAL CODE BELOW — preserved for reference (Rule 16 VERIFY-BEFORE-DELETE) ───
+# The original 186-line implementation with clear_predictions() is preserved
+# below but UNREACHABLE due to the sys.exit(0) above.
+
 import os
 import sys
 import sqlite3

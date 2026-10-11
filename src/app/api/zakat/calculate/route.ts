@@ -25,8 +25,14 @@ export const dynamic = 'force-dynamic';
 const ZAKAT_RATE = 0.025; // 2.5% — ربع العشر
 const NISAB_GOLD_GRAMS = 85;
 const NISAB_SILVER_GRAMS = 595;
-const PLACEHOLDER_GOLD_24K = 4850; // EGP per gram — fallback when no live data
-const PLACEHOLDER_SILVER = 56; // EGP per gram
+// RULE27-NO-FAKE-DATA (2026-10-12 — FAKE-DATA-HUNT):
+// قبل كده: PLACEHOLDER_GOLD_24K = 4850 + PLACEHOLDER_SILVER = 56 — hardcoded!
+// ده خرق صريح لـ Rule 27 + Rule 50 (MONEY-AS-CUSTOMER-LIFE) — Zakat حساب ديني
+// محتاج سعر ذهب حقيقي، مش placeholder. لو سعر الذهب مش متاح، لازم نرجّع
+// success: false + رسالة واضحة (مش نحسب Zakat بسعر وهمي).
+// الأن: مفيش placeholder — لو Python / data_engine.db مش متاح، بـ نرجّع 503.
+// const PLACEHOLDER_GOLD_24K = 4850;  // REMOVED — Rule 27 violation
+// const PLACEHOLDER_SILVER = 56;     // REMOVED — Rule 27 violation
 
 function num(v: unknown): number {
   if (typeof v === 'number' && isFinite(v)) return v;
@@ -37,7 +43,9 @@ function num(v: unknown): number {
   return 0;
 }
 
-async function fetchGold24Price(): Promise<{ price: number; source: string }> {
+async function fetchGold24Price(): Promise<{ price: number; source: string } | null> {
+  // RULE27-NO-FAKE-DATA: لو مفيش سعر ذهب حقيقي، بـ نرجّع null (مش placeholder).
+  // الـ caller بـ يتعامل مع الـ null بـ إنه بـ يرجّع 503 + رسالة واضحة.
   try {
     const { getLatestGoldPrices } = await import('@/lib/data-engine-db');
     const rows = getLatestGoldPrices();
@@ -48,9 +56,26 @@ async function fetchGold24Price(): Promise<{ price: number; source: string }> {
       return { price: eg.price_per_gram, source: 'data_engine.db' };
     }
   } catch { // silent fallback (safe-by-design)
+    /* ignore — will return null */
+  }
+  return null;  // RULE27: لا placeholder
+}
+
+async function fetchSilverPrice(): Promise<{ price: number; source: string } | null> {
+  // RULE27-NO-FAKE-DATA: نفس المنطق — لو مفيش سعر فضة حقيقي، بـ نرجّع null.
+  try {
+    const { getLatestGoldPrices } = await import('@/lib/data-engine-db');
+    const rows = getLatestGoldPrices();
+    const eg = (rows || []).find(
+      (g: any) => g.country === 'مصر' && (g.karat || '').includes('silver')
+    );
+    if (eg && eg.price_per_gram) {
+      return { price: eg.price_per_gram, source: 'data_engine.db' };
+    }
+  } catch { // silent fallback (safe-by-design)
     /* ignore */
   }
-  return { price: PLACEHOLDER_GOLD_24K, source: 'placeholder' };
+  return null;  // RULE27: لا placeholder
 }
 
 export async function POST(req: NextRequest) {
@@ -78,9 +103,24 @@ export async function POST(req: NextRequest) {
     const totalAssets = cash + goldSilver + stocks + receivables + otherAssets;
     const netZakatable = Math.max(0, totalAssets - debts);
 
-    const { price: gold24Price, source: goldSource } = await fetchGold24Price();
+    const { price: gold24Price, source: goldSource } = await fetchGold24Price() ?? { price: 0, source: 'unavailable' };
+    const silverData = await fetchSilverPrice();
+
+    // RULE27-NO-FAKE-DATA (2026-10-12 — FAKE-DATA-HUNT):
+    // لو سعر الذهب مش متاح، ممنوع نحسب Zakat بسعر وهمي — ده خرق ديني + Rule 27.
+    // بـ نرجّع 503 + رسالة واضحة بدل ما نـ fabricate سعر.
+    if (gold24Price === 0 || goldSource === 'unavailable') {
+      return NextResponse.json({
+        success: false,
+        error: 'gold_price_unavailable',
+        message: 'سعر الذهب غير متاح حالياً — لا يمكن حساب الزكاة بسعر وهمي (Rule 27)',
+        rule: 'NO-FAKE-DATA (Rule 27) + MONEY-AS-CUSTOMER-LIFE (Rule 50)',
+        note: 'Zakat محتاج سعر ذهب حقيقي من data_engine.db. لو الـ DB مش متاح، يبقى مفيش حساب.',
+      }, { status: 503 });
+    }
+
     const nisab = NISAB_GOLD_GRAMS * gold24Price; // 85g × gold_24k price
-    const silverNisab = NISAB_SILVER_GRAMS * PLACEHOLDER_SILVER;
+    const silverNisab = silverData ? NISAB_SILVER_GRAMS * silverData.price : 0;
     const isAboveNisab = netZakatable >= nisab;
     const zakatDue = isAboveNisab ? netZakatable * ZAKAT_RATE : 0;
 
@@ -132,8 +172,9 @@ export async function POST(req: NextRequest) {
         gold_24k_price: gold24Price,
         gold_nisab: nisab,
         silver_grams: NISAB_SILVER_GRAMS,
-        silver_price: PLACEHOLDER_SILVER,
+        silver_price: silverData ? silverData.price : null,  // RULE27: null لو مش متاح
         silver_nisab: silverNisab,
+        silver_source: silverData ? silverData.source : 'unavailable',
         source: goldSource,
       },
 

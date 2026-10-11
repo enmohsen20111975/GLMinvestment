@@ -1,124 +1,55 @@
 /**
- * POST /api/walk-forward/run
+ * POST /api/walk-forward/run — Rule 27 HARD GATE
+ * ===============================================
  *
- * تشغيل Walk-Forward Analysis لاستراتيجية وسهم معين.
+ * RULE27-DISABLED (2026-10-12 — FAKE-DATA-HUNT):
  *
- * - لو Python backend شغّال، يحوّل الطلب لـ `/api/walk-forward/run`
- * - fallback: رجّع stub بنتائج افتراضية
+ * This route had a `buildStubPeriods` fallback that returned fabricated
+ * periods with return: 0, sharpe: 0, drawdown: 0 + `success: true`.
+ *
+ * Rule 27 (NO-FAKE-DATA): ممنوع أي بيانات وهمية في production.
+ *
+ * Now: pure thin proxy to Python /api/walk-forward/run.
+ * If Python unavailable → 503 (no stub fallback).
  */
+
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010';
-
-interface WalkForwardBody {
-  strategy?: string;
-  ticker?: string;
-  start_date?: string;
-  end_date?: string;
-  [key: string]: unknown;
-}
-
-function buildStubPeriods(start: string | undefined, end: string | undefined) {
-  const periods: { name: string; return: number; sharpe: number; drawdown: number }[] = [];
-  const startDt = start ? new Date(start) : new Date();
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(startDt);
-    d.setMonth(d.getMonth() + i);
-    periods.push({
-      name: `فترة ${i + 1}`,
-      return: 0,
-      sharpe: 0,
-      drawdown: 0,
-    });
-  }
-  return periods;
-}
+const PY = process.env.EGXPY_SERVICE_URL || process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010';
 
 export async function POST(request: NextRequest) {
+  const targetUrl = `${PY}/api/walk-forward/run`;
   try {
-    const body = (await request.json().catch(() => ({}))) as WalkForwardBody;
-
-    // محاولة الاتصال بالـ Python backend
-    try {
-      const pythonResponse = await fetch(`${PYTHON_BACKEND_URL}/api/walk-forward/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          strategy: body.strategy ?? 'default',
-          ticker: body.ticker ?? '',
-          start_date: body.start_date,
-          end_date: body.end_date,
-        }),
-        signal: AbortSignal.timeout(10000),
-      });
-
-      if (pythonResponse.ok) {
-        const contentType = pythonResponse.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await pythonResponse.json();
-          const results = data?.results ?? data ?? {};
-          return NextResponse.json({
-            success: true,
-            results: {
-              periods: Array.isArray(results.periods) ? results.periods : buildStubPeriods(body.start_date, body.end_date),
-              avg_return: Number(results.avg_return ?? results.avgReturn ?? 0),
-              sharpe_ratio: Number(results.sharpe_ratio ?? results.sharpeRatio ?? 0),
-              max_drawdown: Number(results.max_drawdown ?? results.maxDrawdown ?? 0),
-              strategy: String(body.strategy ?? results.strategy ?? 'default'),
-              ticker: String(body.ticker ?? results.ticker ?? ''),
-            },
-            source: 'python',
-          });
-        }
-      }
-    } catch (err) {
-      console.warn('[walk-forward/run] Python backend unavailable, using stub:', err);
-    }
-
-    // Fallback: stub
-    return NextResponse.json({
-      success: true,
-      results: {
-        periods: buildStubPeriods(body.start_date, body.end_date),
-        avg_return: 0,
-        sharpe_ratio: 0,
-        max_drawdown: 0,
-        strategy: String(body.strategy ?? 'default'),
-        ticker: String(body.ticker ?? ''),
-      },
-      source: 'stub',
-      message: 'تم استخدام ردود افتراضية لأن خدمة Walk-Forward غير متاحة',
+    const body = await request.json().catch(() => ({}));
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
+      cache: 'no-store',
     });
-  } catch (err) {
-    console.error('[walk-forward/run] Error:', err);
-    return NextResponse.json(
-      {
-        success: true,
-        results: {
-          periods: buildStubPeriods(undefined, undefined),
-          avg_return: 0,
-          sharpe_ratio: 0,
-          max_drawdown: 0,
-        },
-        source: 'stub',
-        error: 'حدث خطأ غير متوقع، تم إرجاع رد افتراضي',
-      },
-      { status: 200 }
-    );
+    if (!res.ok) {
+      return NextResponse.json({
+        success: false,
+        error: `python-returned-${res.status}`,
+        message: 'تعذّر تشغيل walk-forward — Python backend أرجع خطأ',
+      }, { status: 502 });
+    }
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('[walk-forward:run] Python backend unavailable:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'python-backend-unavailable',
+      message: 'Python backend غير متاح — لا يمكن عرض walk-forward وهمي (Rule 27)',
+      rule: 'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)',
+    }, { status: 503 });
   }
 }
 
-export async function GET() {
-  return NextResponse.json({
-    success: true,
-    message: 'هذا endpoint يستقبل POST فقط. الرجاء تمرير body يحتوي strategy, ticker, start_date, end_date',
-    stub_results: {
-      periods: buildStubPeriods(undefined, undefined),
-      avg_return: 0,
-      sharpe_ratio: 0,
-      max_drawdown: 0,
-    },
-  });
-}
+// ─── ORIGINAL IMPLEMENTATION REMOVED (Rule 16 VERIFY-BEFORE-DELETE) ────────
+// The original buildStubPeriods + fabricated return:0 fallback is preserved
+// in git history for reference.

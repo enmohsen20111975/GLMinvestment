@@ -479,10 +479,35 @@ def get_clean_signals():
 @confluence_bp.route('/generate-predictions', methods=['POST'])
 def generate_predictions():
     """
-    Generate predictions using FULL confluence analysis.
-    
-    This saves predictions to aiPrediction table with proper scoring.
+    RULE35-DISABLED (2026-10-12 — HIDDEN-WRITERS-AUDIT):
+
+    This route was a ROGUE PATH that bypassed PREDICTION-WRITE-GUARD + Rule 35.
+    It directly INSERTed into `aiPrediction` table using confluence V3 analysis
+    with fabricated `source='CONFLUENCE_V3'` — NO evidence_count, NO kill_filter_result,
+    NO R:R ≥ 1.5 gate, NO ATR clamp.
+
+    Rule 35 (ENGINE-UNIFY): V40.2 is the ONLY sanctioned prediction writer.
+    Rule 27 (NO-FAKE-DATA): confluence predictions bypass evidence pipeline.
+    Rule 67 (CALCULATION-CANONICAL): confluence_engine_v3 is NOT canonical
+      for prediction writing — only V40.2 (daily_predictor.py) is.
+
+    Returns 410 Gone with redirect to V40.2 canonical generator.
     """
+    return jsonify({
+        'success': False,
+        'deprecated': True,
+        'error': 'endpoint_deprecated',
+        'error_ar': 'تم إيقاف هذا الـ endpoint نهائياً. توليد التوقعات انتقل بالكامل لـ V40.2.',
+        'deprecated_at': '2026-10-12',
+        'rule': 'Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA) + Rule 67 (CALCULATION-CANONICAL)',
+        'canonical_writer': 'vps-service/jobs/daily_predictor.py (V40.2)',
+        'canonical_command': 'python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5',
+        'reason': 'This route bypassed PREDICTION-WRITE-GUARD and INSERTed fabricated predictions with source=CONFLUENCE_V3 (no evidence_count, no kill_filter_result).',
+    }), 410
+
+    # ─── ORIGINAL CODE BELOW — preserved for reference (Rule 16 VERIFY-BEFORE-DELETE) ───
+    # The original implementation that INSERTed into aiPrediction is preserved
+    # below but UNREACHABLE due to the return statement above.
     try:
         data = request.get_json() or {}
         min_score = data.get('min_score', 65)

@@ -342,8 +342,15 @@ export function adaptAiInsights(raw: Record<string, unknown>): AiInsights {
   const stock_statuses: StockStatusItem[] = [
     ...gainers.map((s) => {
       const chg = parseNum(s.change_percent || s.price_change || 0);
-      const score = Math.min(95, Math.max(5, 50 + chg * 1.5));
-      const status: StockStatusItem['status'] = score >= 60 ? 'positive' : score >= 40 ? 'neutral' : 'weak';
+      // RULE27-NO-FAKE-DATA (2026-10-12 — FAKE-DATA-HUNT):
+      // قبل كده: score = Math.min(95, Math.max(5, 50 + chg * 1.5)) — synthetic equation!
+      // + components: { liquidity: 50, valuation: 50, income: 50, traded_value: 50 } — hardcoded!
+      // + verdict: 'undervalued' as const — كل سهم بـ يتصنف "undervalued"!
+      // ده كان خرق صريح لـ Rule 27 + Rule 67 (CALCULATION-CANONICAL).
+      // الحل: لازم الـ score + verdict ييجوا من Python backend (canonical).
+      // لحد ما Python endpoints تتعمل، بنعرض الـ score = null + verdict = null
+      // (مش synthetic) — ده "honest empty state" حسب Rule 27.
+      const status: StockStatusItem['status'] = chg > 0 ? 'positive' : chg < 0 ? 'weak' : 'neutral';
       return {
         ticker: (s.ticker as string) || '',
         name: (s.name as string) || '',
@@ -353,19 +360,20 @@ export function adaptAiInsights(raw: Record<string, unknown>): AiInsights {
         price_change: chg,
         volume: parseNum(s.volume),
         value_traded: 0,
-        score,
+        score: null as number | null,  // RULE27: لا synthetic score
         status,
-        components: { momentum: score, liquidity: 50, valuation: 50, income: 50, traded_value: 50 },
-        fair_value: parseNum(s.current_price || 0),
-        upside_to_fair: 0,
-        verdict: 'undervalued' as const,
-        verdict_ar: 'مقيم بأقل من قيمته',
+        components: { momentum: null as number | null, liquidity: null as number | null, valuation: null as number | null, income: null as number | null, traded_value: null as number | null },
+        fair_value: null as number | null,  // RULE27: لا synthetic fair_value
+        upside_to_fair: null as number | null,
+        verdict: null as string | null,  // RULE27: لا 'undervalued' hardcoded
+        verdict_ar: null as string | null,
       };
     }),
     ...losers.map((s) => {
       const chg = parseNum(s.change_percent || s.price_change || 0);
-      const score = Math.min(45, Math.max(5, 50 + chg * 1.5));
-      const status: StockStatusItem['status'] = score >= 60 ? 'positive' : score >= 40 ? 'neutral' : 'weak';
+      // RULE27-NO-FAKE-DATA (2026-10-12 — FAKE-DATA-HUNT):
+      // نفس الإصلاح: لا synthetic score، لا hardcoded verdict
+      const status: StockStatusItem['status'] = chg > 0 ? 'positive' : chg < 0 ? 'weak' : 'neutral';
       return {
         ticker: (s.ticker as string) || '',
         name: (s.name as string) || '',
@@ -375,13 +383,13 @@ export function adaptAiInsights(raw: Record<string, unknown>): AiInsights {
         price_change: chg,
         volume: parseNum(s.volume),
         value_traded: 0,
-        score,
+        score: null as number | null,  // RULE27: لا synthetic score
         status,
-        components: { momentum: score, liquidity: 50, valuation: 50, income: 50, traded_value: 50 },
-        fair_value: parseNum(s.current_price || 0),
-        upside_to_fair: 0,
-        verdict: 'overvalued' as const,
-        verdict_ar: 'مقيم بأعلى من قيمته',
+        components: { momentum: null as number | null, liquidity: null as number | null, valuation: null as number | null, income: null as number | null, traded_value: null as number | null },
+        fair_value: null as number | null,  // RULE27: لا synthetic fair_value
+        upside_to_fair: null as number | null,
+        verdict: null as string | null,  // RULE27: لا 'overvalued' hardcoded
+        verdict_ar: null as string | null,
       };
     }),
   ];

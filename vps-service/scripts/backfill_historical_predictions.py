@@ -40,6 +40,33 @@ PREDICTIONS_DB = str(_PROJECT_ROOT / 'db' / 'predictions.db')
 from analyzers.persona_gambler import analyze_gambler
 from analyzers.persona_investor import analyze_investor
 
+# ============================================================================
+# RULE35-DISABLE (2026-10-12 — HIDDEN-WRITERS-AUDIT):
+# ============================================================================
+# This script was a ROGUE PATH that bypassed PREDICTION-WRITE-GUARD + Rule 35.
+# It directly INSERTed into `persona_predictions` table using persona engines
+# (gambler/investor) instead of V40.2 (daily_predictor.py).
+#
+# Rule 35 (ENGINE-UNIFY): V40.2 is the ONLY sanctioned prediction writer.
+# Rule 27 (NO-FAKE-DATA): persona engines don't go through kill_filters +
+#   6 evidences + R:R ≥ 1.5 + ATR clamp — they fabricate predictions.
+# Rule 67 (CALCULATION-CANONICAL): persona_gambler + persona_investor are
+#   NOT canonical — V40.2 is the canonical evidence-based engine.
+#
+# Was invoked on every deploy via deploy_vps.sh (now removed).
+# ============================================================================
+
+import sys as _sys
+print("[RULE35-DISABLED] backfill_historical_predictions.py — ROGUE PATH blocked.", file=_sys.stderr)
+print("  Reason: bypasses PREDICTION-WRITE-GUARD + uses persona engines (not V40.2).", file=_sys.stderr)
+print("  Canonical: python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5", file=_sys.stderr)
+print("  Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA) + Rule 67 (CALCULATION-CANONICAL)", file=_sys.stderr)
+_sys.exit(0)  # safe exit — do NOT run any code below
+
+# ─── ORIGINAL CODE BELOW — preserved for reference (Rule 16 VERIFY-BEFORE-DELETE) ───
+# The original 340-line implementation that INSERTed into persona_predictions
+# is preserved below but UNREACHABLE due to the sys.exit(0) above.
+# To re-enable: remove this guard block (NOT RECOMMENDED — violates Rule 35).
 
 # ============================================================================
 # PRICE HISTORY HELPERS
