@@ -1727,6 +1727,7 @@ def get_live_tracking():
                 f"exit_type, holding_days{_dq_sel}{_tp2_sel}{_hpr_sel}{_lpr_sel} "
                 "FROM predictions "
                 f"WHERE {_m_sql} "
+                "  AND status != 'INVALID' "  # P0-C: exclude placeholder predictions (Rule 27)
                 "  AND ( "
                 "        (outcome_date IS NOT NULL AND substr(outcome_date, 1, 10) >= ?"
                 f"{_dq_where}{_cap_where}) "
@@ -1746,6 +1747,7 @@ def get_live_tracking():
                 f"exit_type, holding_days{_dq_sel}{_tp2_sel}{_hpr_sel}{_lpr_sel} "
                 "FROM predictions "
                 f"WHERE {_m_sql} "
+                "  AND status != 'INVALID' "  # P0-C: exclude placeholder predictions (Rule 27)
                 "  AND ( "
                 "        (outcome_date IS NOT NULL"
                 f"{_dq_where}{_cap_where}) "

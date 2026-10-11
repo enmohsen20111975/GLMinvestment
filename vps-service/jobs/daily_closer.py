@@ -320,12 +320,15 @@ class DailyCloser:
             # Use outcome_date IS NULL to find pending predictions.
             # FIX (Aug 2026): لو market_filter محدد، بـ يـ filter على market column
             # عشان نمنع ghost closures لتوقعات CRYPTO من مصادر أس EGX.
+            # P1-A (2026-10-12): Skip placeholder predictions (status='INVALID')
+            # so we don't update rogue placeholders with real outcomes.
             if market_filter:
                 cursor.execute("""
                     SELECT *
                     FROM predictions
                     WHERE outcome_date IS NULL
                       AND market = ?
+                      AND status != 'INVALID'  /* P1-A: skip placeholders (Rule 27) */
                     ORDER BY created_at ASC
                 """, (market_filter,))
             else:
@@ -333,6 +336,7 @@ class DailyCloser:
                     SELECT *
                     FROM predictions
                     WHERE outcome_date IS NULL
+                      AND status != 'INVALID'  /* P1-A: skip placeholders (Rule 27) */
                     ORDER BY created_at ASC
                 """)
             rows = cursor.fetchall()

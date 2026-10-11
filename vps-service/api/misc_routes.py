@@ -2106,6 +2106,7 @@ def league_report():
                           AND date(outcome_date) >= date(?)
                           AND date(outcome_date) <= date(?)
                           AND actual_return IS NOT NULL
+                          AND status != 'INVALID'  /* P0-C: exclude placeholder predictions (Rule 27) */
                     )
                     SELECT ticker, signal, signal_type, prediction_date,
                            entry_price, target_price, stop_loss,

@@ -910,10 +910,13 @@ def record_target_hit_in_db(item: Dict) -> bool:
         cursor = conn.cursor()
 
         # فحص إذا كان هناك توقع نشط مسجل لهذا السهم
+        # P1-B (2026-10-12): Skip placeholder predictions (status='INVALID')
+        # so we don't UPDATE rogue placeholders with "صفقة رابحة مرصودة" notes.
         cursor.execute("""
             SELECT id, entry_price, prediction_date, notes
             FROM predictions
             WHERE ticker = ? AND status IN ('active', 'ACTIVE', 'PENDING') AND outcome_date IS NULL
+              AND status != 'INVALID'  /* P1-B: skip placeholders (Rule 27) */
             ORDER BY id DESC LIMIT 1
         """, (tk,))
         row = cursor.fetchone()
