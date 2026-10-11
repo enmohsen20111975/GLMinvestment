@@ -75194,3 +75194,215 @@ Stage Summary:
 - G7 (timestamp): UTC بس مش وقت الضربة الفعلي
 - G8 (recover script): موجود
 - DEPLOY-ROUND3.md: مش موجود
+
+---
+Task ID: AUDITOR-INDEPENDENT-3-REVISED
+Agent: المدقق المستقل (المساعد) — مراجعة منقحة على commit b5adbe3
+Task: إعادة مراجعة AUDIT-12 إلى AUDIT-17 (المدير العام: "تراجع تاني عشان فيه تحجيمات كتير")
+
+## سبب المراجعة المنقحة
+تقريري السابق (AUDITOR-INDEPENDENT-3) كان فيه تحجيمات (inflated counts) و false positives.
+المدير العام حذّرني سابقًا: "ركّز على المخاطر الحقيقية وليس مجرد عد العلامات عبر grep".
+هذه المراجعة تصحّح كل ادعاء بدليل مباشر (قراءة الكود + رقم السطر + السياق).
+
+---
+
+## AUDIT-12 المنقح: مراجعة G1-G8
+
+### G1: المسح المقنّع (covert wipe) — ✅ مؤكد لكن بعدد أقل (2 مش 5)
+
+**تقريري السابق ادعى 5 مسارات. التحقيق الدقيق أثبت أن 2 فقط نشطة:**
+
+| # | الملف:السطر | النمط | الحكم | الدليل |
+|---|------------|-------|------|-------|
+| 1 | `admin_routes.py:1228-1231` | `UPDATE predictions SET status='ARCHIVED', notes=... WHERE 1=1` | ✅ نشط | داخل `/backtest/v40/run` endpoint؛ `clear_existing` يفترض True (L1218) → مسح كامل للجدول |
+| 2 | `misc_routes.py:1906-1909` | `UPDATE predictions SET status='ARCHIVED', notes=... WHERE 1=1` | ✅ نشط | داخل `/rebuild` endpoint؛ نفس النمط — مسح كامل |
+| 3 | `ai_predictions_routes.py:596-600` | `UPDATE predictions SET status='ARCHIVED' ... WHERE prediction_date < ?` | ❌ FALSE POSITIVE — DEAD CODE | السطور 558-621 كلها داخل triple-quoted string (`"""`). الدالة ترجع `return False` في L548 قبل الوصول لهذا الكود. تعليق صريح L613: "DEV-07 verified-disabled (dead code)" |
+| 4 | `historical_predictions_v2_routes.py:544-556` | `UPDATE predictions SET status='ARCHIVED' ... WHERE ticker IN (...)` | ⚠️ نشط لكن scoped | مسح محدد بـ tickers مش `WHERE 1=1`. خطر أقل — مسح شرعي للـ tickers المعاد توليدها |
+| 5 | `misc_routes.py:5471` | `WHERE 1=1` | ❌ FALSE POSITIVE — SELECT مش UPDATE | السطور 5465-5472: `SELECT id, ticker, ... FROM predictions WHERE 1=1` — نمط SQL ديناميكي طبيعي لإضافة `AND` clauses |
+
+**الخلاصة:** مسارّان نشطان فقط (`WHERE 1=1` full-table archive) + مسار scoped واحد. تقريري السابق ضخّم العدد من 2→5 بإدراج dead code و SELECT statements.
+
+### G2: prev_status غير محفوظ — ✅ مؤكد
+```
+grep -rn "prev_status" vps-service/ → 0 matches
+grep -rn "original_status|status_before|prev_prediction" vps-service/ → 0 matches
+```
+لا يوجد أي عمود/متغير يحفظ الحالة الأصلية قبل الأرشفة. عند `status='ARCHIVED'`، الحالة الأصلية (PENDING/OPEN/CLOSED) تُفقد نهائيًا — لا يمكن الاسترداد.
+
+### G3: prediction_tracker يتخطى safe_insert — ⚠️ mischaracterized (تم التصحيح)
+**تقريري السابق قال "بypass" — هذا غير دقيق.**
+- prediction_tracker.py L509-527: الـ Guard (`validate_prediction_evidence`) **يُستدعى** قبل الـ INSERTs
+- L676, L703, L721: 3 INSERTs مباشرة بعد الـ Guard (مش قبله)
+- الـ INSERTs لا "تتجاوز" الـ Guard — الـ Guard يعمل أولاً
+- **الخطر الحقيقي هو G5 (fail-open)**، مش "bypass"
+
+المنفذ الفني محق: الـ INSERTs بعد الـ Guard. تصحيح: ليست bypass بل defense-in-depth incompleteness (الـ DEV-07 hard None/≤0 gate لا يُطبّق على الـ direct path).
+
+### G4: TRIGGER BEFORE INSERT فقط — ✅ مؤكد
+`vps-service/scripts/add_prediction_guard_trigger.py` L41-50:
+```sql
+CREATE TRIGGER IF NOT EXISTS trg_prevent_invalid_prices
+BEFORE INSERT ON predictions          -- ← INSERT فقط!
+FOR EACH ROW
+WHEN NEW.entry_price <= 0 OR NEW.target_price <= 0 OR NEW.stop_loss <= 0
+   OR NEW.entry_price IS NULL OR NEW.target_price IS NULL OR NEW.stop_loss IS NULL
+BEGIN
+    SELECT RAISE(ABORT, '...');
+END;
+```
+**ثغرتان:**
+1. لا يوجد `BEFORE UPDATE` trigger — `UPDATE predictions SET entry_price=0` بـ يعدّي
+2. لا يوجد فحص اتجاه — BUY بـ target < entry بـ يعدّي (الـ trigger بـ يفحص > 0 بس)
+
+### G5: fail-open — ✅ مؤكد (الأخطر)
+`prediction_tracker.py` L528-537:
+```python
+except ImportError:
+    # Guard module unavailable — fail-open with loud warning
+    print(f"[PRED_GUARD_WARN] ... fail-open for ticker={ticker} ...")
+    # ← لا return! الكود بـ يكمل لـ INSERT بدون Guard
+```
+**مقارنة بـ safe_insert_prediction.py L183-190 (fail-CLOSED):**
+```python
+except ImportError as _imp:
+    print(f"[DEV-07-FAIL-CLOSED] ... REFUSING to insert ...")
+    return None   # ← يرجع None، مش بـ يكمل
+```
+**هذا هو التناقض الجوهري:** الكاتب المركزي (safe_insert) fail-closed، لكن الكاتب الفعلي (prediction_tracker) fail-open. لو الـ guard module اختفى، safe_insert بـ يرفض لكن prediction_tracker بـ يكتب بدون حماية.
+
+### G6: CI bypass — ✅ مؤكد + demonstrated عمليًا
+**check_no_hard_delete.py L28-30** بـ يفلتر الأسطر اللي فيها:
+- `'DEV-06'` / `'RULE35'` / `'DISABLE'`
+**check_no_raw_insert.py L71-82** عنده 10 disable markers مع lookback 5 أسطر:
+- `DEV-07 verified-disabled`, `FINALIZE-UNIFICATION`, `RULE35-DISABLED`, `REAPPLY-CRITICAL-FIXES`, `DISABLE-SCRIPTS`, `DEV-06`, `PRESERVED BLOCK`, `preserved for rollback`, `DO NOT EXECUTE`, `dead code`
+
+**تم إثبات التجاوز عمليًا (انظر AUDIT-16).**
+
+### G7: daily_closer timestamp — ⚠️ PARTIAL
+- DEV-08 غيّر `datetime.now()` → `datetime.now(timezone.utc)` (L3069, L3071) ✅
+- بس التعليق نفسه (L3063-3067) بيعترف صراحةً: "وقت تشغيل الـ cron مش وقت الضربة الفعلي — التوقيت الحقيقي للضربة مش نقدر نعرفه بـ daily OHLC (محتاج intraday tick data)"
+- الحكم: UTC صحيح ✅، لكن ليس وقت الضربة الفعلي ⚠️
+
+### G8: recover_legit_predictions.py — ✅ موجود
+- 162 سطر، read-only validation script (L16: "does NOT modify the database")
+- يتحقق من: evidence_count≥3, kill_filter non-empty, prices>0, BUY target>entry, master_score≠50.0
+
+---
+
+## AUDIT-13 المنقح: Red Team على المسح المقنّع
+
+**الخطر الحقيقي = مساران (مش 5):**
+
+### Path 1: admin_routes.py:1228-1231 (`/backtest/v40/run`)
+- `clear_existing` يفترض True (L1218: `data.get('clear_existing', True)`)
+- أي admin بـ يستدعي endpoint بصورة افتراضية → مسح كامل للجدول
+- جميع التوقعات تصبح ARCHIVED → تختفي من كل views/queries اللي بـ تفلتر status
+- الحالة الأصلية تُفقد (G2) → لا يمكن الاسترداد
+
+### Path 2: misc_routes.py:1906-1909 (`/rebuild`)
+- نفس النمط بالضبط
+- `clear_existing` + `WHERE 1=1` → مسح كامل
+
+**سيناريو الهجوم:** admin بـ يشغّل backtest بـ default settings → كل التوقعات النشطة تختفي → stats بـ تتكسر → Telegram notifications بـ تقف → recovery مستحيل (لا يوجد prev_status).
+
+---
+
+## AUDIT-14: Red Team على مسارات الكتابة
+
+**لا يوجد DB للإنتاج متاح** للإختبار الديناميكي. تحليل static للثغرات:
+
+| # | السيناريو | الحماية | الحكم |
+|---|----------|---------|------|
+| 1 | entry_price=None | safe_insert L120-126 يرفض | ✅ safe_insert يحمي |
+| 2 | entry_price=None في prediction_tracker | Guard L509 بـ يفحص، بس لو فشل (G5) → INSERT بـ NULL → TRIGGER بـ يرفض | ⚠️ TRIGGER يحمي |
+| 3 | entry_price=0 | safe_insert L156-162 + TRIGGER | ✅ |
+| 4 | entry_price=-10 | safe_insert L156-176 + TRIGGER | ✅ |
+| 5 | entry_price="abc" | safe_insert L143-154 cast fail | ✅ safe_insert يحمي؛ prediction_tracker مش محمي |
+| 6 | NaN/Inf | **لا حماية!** float('nan') بـ يعدّي | 🔴 gap |
+| 7 | BUY target < entry (اتجاه معكوس) | **لا حماية!** TRIGGER بـ يفحص > 0 بس | 🔴 gap (G4) |
+| 8 | sqlite3 CLI direct INSERT | TRIGGER بـ يحمي | ✅ |
+| 9 | UPDATE entry_price=0 بعد INSERT | **لا حماية!** مفيش BEFORE UPDATE trigger | 🔴 gap (G4) |
+| 10 | حذف Guard module (rm prediction_write_guard.py) | prediction_tracker fail-open → INSERT بـ يكمل | 🔴 gap (G5) |
+| 11 | INSERT بـ DEV-06 comment bypass | CI بـ يعدّي | 🔴 gap (G6 — demonstrated) |
+| 12-20 | باقي السيناريوهات | تتطلب DB اختبار | ⏸️ غير قابل للإختبار |
+
+**3 ثغرات حرجة static:** NaN/Inf, اتجاه معكوس, UPDATE bypass + fail-open.
+
+---
+
+## AUDIT-15: التحقق اليدوي من DEV-15 (25 سجل)
+**❌ غير قابل للتنفيذ** — لا يوجد `db/predictions.db` في الـ repo.
+- `find . -name "predictions.db"` → 0 نتائج
+- الـ DBs تم سحبها من commit سابق (3ef131f2) حسب الـ worklog
+- لا يمكن مطابقة target_hit_at مع جدول الأسعار بدون DB
+
+---
+
+## AUDIT-16: تجاوز CI — ✅ demonstrated عمليًا
+
+### Test 1: check_no_raw_insert.py bypass (نجح الهجوم)
+أنشأت `vps-service/test_bypass_auditor.py`:
+```python
+import sqlite3
+# DEV-06 disabled
+conn = sqlite3.connect("db/predictions.db")
+conn.execute("INSERT INTO predictions (ticker, signal, entry_price, ...) VALUES ('EVIL', 'BUY', 10, 12, 9)")
+conn.commit()
+```
+**النتيجة:** `check_no_raw_insert.py` → `✅ PASS: 0 active INSERT` (exit 0)
+**السبب:** `# DEV-06 disabled` في السطر السابق → within 5-line lookback → filtered as "dead code"
+**🔴 CI BYPASS CONFIRMED** — INSERT خبيث بـ يعدّي لو فيه marker في الـ 5 أسطر السابقة.
+
+### Test 2: check_no_hard_delete.py same-line bypass (نجح الهجوم)
+أنشأت ملف بـ `DELETE FROM predictions WHERE 1=1  # DEV-06 disabled` على نفس السطر:
+- الـ grep output line بـ تحتوي "DEV-06" → filtered
+- **لكن** CI لسه بـ FAIL بسبب false positive موجود: `add_prediction_guard_trigger.py:130` (test cleanup: `DELETE FROM predictions WHERE ticker='__DEV07_TEST__'`)
+- هذا false positive معروف (test code مش production code)
+
+**الخلاصة:** كلا CI checks قابل للتجاوز:
+- check_no_raw_insert.py: 5-line lookback markers
+- check_no_hard_delete.py: same-line markers
+
+---
+
+## AUDIT-17: DEPLOY-ROUND3.md
+**❌ غير موجود**
+```
+find . -name "DEPLOY-ROUND3*" → 0 results
+find . -name "DEPLOY*" → ./news-agent/doc/DEPLOYMENT_NOTES.md (مش الهدف)
+```
+لا توجد خطة نشر للجولة 3 — لا rollback steps، لا ترتيب آمن.
+
+---
+
+## ملخص الجولة 3 المنقح
+
+| AUDIT | النتيجة المنقحة | النتيجة السابقة |
+|-------|----------------|----------------|
+| AUDIT-12 (G1-G8) | G1✅(2 مش 5) G2✅ G3⚠️(مش bypass) G4✅ G5✅ G6✅ G7⚠️ G8✅ | كان فيه 3 false positives |
+| AUDIT-13 (مسح مقنّع) | 2 مسار نشط (مش 5) | ضخّمت العدد |
+| AUDIT-14 (كتابة) | 3 ثغرات static + 8 سيناريوهات غير قابلة للإختبار | — |
+| AUDIT-15 (DB) | ❌ غير قابل — لا يوجد DB | — |
+| AUDIT-16 (CI bypass) | 🔴 demonstrated عمليًا | قال إن check_no_raw_insert مش موجود (خطأ) |
+| AUDIT-17 (deploy) | ❌ غير موجود | نفس النتيجة |
+
+### التصحيحات الرئيسية عن تقريري السابق:
+1. **G1:** 5→2 مسارات نشطة. Path 3 (ai_predictions_routes) dead code داخل triple-quote. Path 5 (misc_routes:5471) SELECT مش UPDATE.
+2. **G3:** مش "bypass" — الـ Guard يُستدعى قبل الـ INSERTs. الخطر الحقيقي هو G5 (fail-open).
+3. **AUDIT-16:** قلت إن check_no_raw_insert.py "مش موجود" — ده خطأ. موجود (8988 bytes) و قابل للتجاوز.
+
+### ما بقي ثابتًا:
+- G1: مسح مقنّع `WHERE 1=1` نشط في 2 مسار ✅
+- G2: لا يوجد prev_status ✅
+- G4: TRIGGER INSERT فقط، لا UPDATE، لا direction ✅
+- G5: fail-open في prediction_tracker (الأخطر) ✅
+- G6: CI bypass — demonstrated ✅
+- G7: UTC لكن مش وقت الضربة ✅
+- G8: recover script موجود ✅
+
+Stage Summary:
+- المراجعة المنقحة صحّحت 3 أخطاء رئيسية في تقريري السابق
+- المخاطر الحقيقية المؤكدة: G1 (2 مسار WHERE 1=1), G5 (fail-open), G6 (CI bypass demonstrated)
+- لا يمكن تنفيذ AUDIT-15 (لا يوجد DB) ولا AUDIT-17 (لا يوجد DEPLOY-ROUND3.md)
+- التوصية: المنفذ الفني لازم يصلح G1 (إزالة WHERE 1=1 أو إضافة WHERE محدد), G4 (إضافة BEFORE UPDATE trigger + direction check), G5 (تحويل fail-open→fail-closed), G6 (إزالة marker filters من CI)
