@@ -75,11 +75,15 @@ def main():
     else:
         try:
             conn = sqlite3.connect(PREDICTIONS_DB)
-            # امسح predictions (التوقعات المغلقة + المفتوحة) — سجل الـ backtest
-            conn.execute("DELETE FROM predictions WHERE 1=1")
+            # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+            # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+            conn.execute(
+                "UPDATE predictions SET status='ARCHIVED', "
+                "notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE 1=1"
+            )
             deleted = conn.total_changes
             conn.commit()
-            log(f"  ✓ مسح {deleted} صف من predictions")
+            log(f"  ✓ تأرشفة {deleted} صف من predictions (ARCHIVED بدلاً من المسح)")
 
             # FIX (Aug 2026): لا نمسح aiPrediction ولا stored_analyses.
             # السبب: لما السوق يقفل يوم الخميس والـ script يمسح الجداول،
