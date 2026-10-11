@@ -400,6 +400,7 @@ def store_prediction(conn, ticker, signal, entry, target, stop, pred_date,
     notes = f"strategy={strategy_name}; score={score}; rsi={rsi}; rr={rr}; reasons={','.join(reasons[:3])}"
 
     cur.execute('''
+        -- DEV-07 verified-disabled (dead code — sys.exit(0) at L678, FINALIZE-UNIFICATION)
         INSERT INTO predictions
         (ticker, signal, signal_type, prediction_date, entry_price, target_price,
          stop_loss, master_score, technical_score, fundamental_score,
