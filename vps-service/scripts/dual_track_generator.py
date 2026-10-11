@@ -419,6 +419,7 @@ def save_track_b_predictions(conn: sqlite3.Connection, predictions: List[dict]):
     for p in predictions:
         try:
             conn.execute("""
+                -- DEV-07 verified-disabled (dead code — early-return at L448, DISABLE-SCRIPTS)
                 INSERT INTO predictions
                 (ticker, signal, signal_type, prediction_date, entry_price,
                  target_price, target_price_2, stop_loss, status, confidence,
