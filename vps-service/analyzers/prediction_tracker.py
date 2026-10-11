@@ -525,16 +525,22 @@ class PredictionTracker:
                     flush=True,
                 )
                 return None
-        except ImportError:
-            # Guard module unavailable — fail-open with loud warning
-            # (do NOT block production if the guard module is missing,
-            # but make the gap visible in logs)
+        except Exception as _pg_err:
+            # DEV-12 (2026-10-13 — PRODUCTION-AUDIT G3+G5): FAIL-CLOSED.
+            # The previous `except ImportError: fail-open` was rejected by the
+            # manager in Round 2. The guard module is the single enforcement
+            # point for Rule 35 (V40.2 provenance) + Rule 21 (evidence) +
+            # Rule 27 (NO-FAKE-DATA). If it cannot be imported OR raises any
+            # exception, we MUST refuse the INSERT — the alternative is to
+            # silently write placeholder predictions, which is exactly the
+            # failure mode that polluted the DB from 2026-09-27.
             print(
-                f"[PRED_GUARD_WARN] prediction_write_guard module unavailable — "
-                f"fail-open for ticker={ticker} signal={signal} "
-                f"(Rule 35 enforcement disabled — install core/prediction_write_guard.py)",
+                f"[PRED_GUARD_FAIL_CLOSED] prediction_write_guard unavailable "
+                f"or raised ({_pg_err}) — REFUSING to insert "
+                f"ticker={ticker} signal={signal} (DEV-12 §2: fail-closed)",
                 flush=True,
             )
+            return None
 
         # ── RL-FIX-17 (OWNER-MANDATE): 5 توقعات بحد أقصى + dedup ───────────
         # المالك: "عدد الأسهم لا يزيد عن خمس توقعات بحد أقصى". قبل كده أي تحليل
@@ -639,105 +645,64 @@ class PredictionTracker:
                     flush=True
                 )
 
-        # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect.
-        # ملاحظة: بنفتح الـ connection بدون `with` عشان الـ function طويلة وفيها multiple
-        # cursor.execute/conn.commit/conn.close — استدعاء conn.close() في النهاية
-        # بيشتغل على المسارين (sqlite3.Connection.close() idempotent).
-        _rec_pred_ctx = None
+        # ════════════════════════════════════════════════════════════════════
+        # DEV-12 (2026-10-13 — PRODUCTION-AUDIT G3+G5):
+        # The 3 INSERT INTO predictions statements that used to live here have
+        # been consolidated into `core.safe_insert_prediction._execute_canonical_insert()`.
+        # This block now CALLS `safe_insert_prediction()` instead of inlining
+        # the INSERT SQL. The repo has exactly ONE INSERT site (in safe_insert)
+        # and the CI gate `check_no_raw_insert.py` only needs to whitelist
+        # that single file.
+        #
+        # Pre-compute the values we already have (signal_type, persona,
+        # prediction_date) so safe_insert_prediction doesn't redo them.
+        # ════════════════════════════════════════════════════════════════════
         try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                _rec_pred_ctx = _dbm.connection(self.db_path, writable=True)
-                conn = _rec_pred_ctx.__enter__()
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(self.db_path)
-            _rec_pred_ctx = None
-        cursor = conn.cursor()
+            from core.safe_insert_prediction import safe_insert_prediction as _dev12_safe_insert
+        except Exception as _sp_err:
+            # DEV-12 §2: fail-closed. If the canonical INSERT site cannot be
+            # imported, REFUSE the INSERT (don't fall back to inline SQL).
+            print(
+                f"[DEV-12-FAIL-CLOSED] safe_insert_prediction module not importable "
+                f"({_sp_err}) — REFUSING to insert ticker={ticker} signal={signal}.",
+                flush=True,
+            )
+            return None
 
-        # P2-CREATED_AT-FIX (v3.69.0): اكتب created_at كـ ISO timestamp حقيقي
         _pred_date_for_created = prediction_date if prediction_date else get_prediction_date_str(datetime.now())
         _created_at_iso = _pred_date_for_created + 'T09:00:00.000000'
-        # PHASE-1C: اكتب atr_at_entry لو موجود (للـ trailing + القياس الدائم).
-        # safe insert: لو العمود مش موجود في schema قديم، الـ try بـ يـ fallback
-        # للـ INSERT الـ 15-column القديم.
-        # RL-FIX-18: normalize T2 + explosive fields
-        _target_price_2 = float(target_price_2) if target_price_2 else 0.0
-        _explosive_score = float(explosive_score) if explosive_score else 0.0
-        _explosive_label = (explosive_label or '').strip().upper()
-        # V40.1: prediction_date override (for historical generation) + evidence fields
-        _pred_date = prediction_date if prediction_date else get_prediction_date_str(datetime.now())
-        _evidence_count = int(evidence_count) if evidence_count else 0
-        _morning_bell = 1 if morning_bell else 0
-        _kill_filter_result = (kill_filter_result or '').strip()
 
-        try:
-            cursor.execute('''
-                INSERT INTO predictions (
-                    ticker, signal, signal_type,
-                    prediction_date, entry_price, target_price, stop_loss, master_score,
-                    technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                    notes, persona, created_at, atr_at_entry,
-                    target_price_2, explosive_score, explosive_label,
-                    evidence_count, morning_bell, kill_filter_result,
-                    risk_reward, who_is_buying,
-                    support_level, resistance_level
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                ticker, signal, signal_type,
-                _pred_date,
-                entry_price, target_price, stop_loss, master_score,
-                technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                notes, _persona,
-                _created_at_iso,
-                atr_at_entry,
-                _target_price_2, _explosive_score, _explosive_label,
-                _evidence_count, _morning_bell, _kill_filter_result,
-                risk_reward, who_is_buying_state,
-                support_level, resistance_level,
-            ))
-        except Exception:
-            # fallback: schema قديم مفيهوش atr_at_entry/T2 columns
-            try:
-                cursor.execute('''
-                    INSERT INTO predictions (
-                        ticker, signal, signal_type,
-                        prediction_date, entry_price, target_price, stop_loss, master_score,
-                        technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                        notes, persona, created_at, atr_at_entry
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    ticker, signal, signal_type,
-                    get_prediction_date_str(datetime.now()),
-                    entry_price, target_price, stop_loss, master_score,
-                    technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                    notes, _persona,
-                    _created_at_iso,
-                    atr_at_entry,
-                ))
-            except Exception:
-                # fallback 2: أقدم schema
-                cursor.execute('''
-                    INSERT INTO predictions (
-                        ticker, signal, signal_type,
-                        prediction_date, entry_price, target_price, stop_loss, master_score,
-                        technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                        notes, persona, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    ticker, signal, signal_type,
-                    get_prediction_date_str(datetime.now()),
-                    entry_price, target_price, stop_loss, master_score,
-                    technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                    notes, _persona,
-                    _created_at_iso,
-                ))
+        _pred_id = _dev12_safe_insert(
+            ticker=ticker,
+            signal=signal,
+            entry_price=entry_price,
+            target_price=target_price,
+            stop_loss=stop_loss,
+            evidence_count=evidence_count,
+            kill_filter_result=kill_filter_result,
+            master_score=master_score,
+            notes=notes,
+            persona=_persona,
+            db_path=self.db_path,
+            signal_type=signal_type,
+            prediction_date=prediction_date,
+            created_at_iso=_created_at_iso,
+            technical_score=technical_score,
+            fundamental_score=fundamental_score,
+            ai_pattern_score=ai_pattern_score,
+            sentiment_score=sentiment_score,
+            atr_at_entry=atr_at_entry,
+            target_price_2=target_price_2,
+            explosive_score=explosive_score,
+            explosive_label=explosive_label,
+            morning_bell=morning_bell,
+            risk_reward=risk_reward,
+            who_is_buying_state=who_is_buying_state,
+            support_level=support_level,
+            resistance_level=resistance_level,
+        )
 
-        pred_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-
-        return pred_id
+        return _pred_id
     
     def update_outcome(
         self,
