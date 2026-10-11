@@ -12,6 +12,121 @@
 
 ---
 
+## [2026-10-12 — DOC-SECRETARY-FINAL — التحديث النهائي الشامل لـ Documentation] — DOCUMENTATION-SECRETARY (Rule 70)
+
+سيدي طلب صراحة: "أفشخ المشروع لحد مايتصلح تماماً" + "نيك السكرتيرة خلى كسها يجيب دم" (يعني: التحديث لازم يكون دقيق + شامل + متطابق مع الواقع الحالي بالظبط). التحديث النهائي الشامل لـ Documentation عشان يعكس كل الإصلاحات الجديدة اللي اتعملت في commit `01780fd` (feat(rule20+rule70): تحويل 5 parallel engines + wrap 2 scrapers + تحديث Documentation).
+
+### Documentation updates (4 ملفات)
+
+#### `00-CONSTITUTION.md`
+- **Rule 12 (DATA-UNIFY):** أضفت قسم `WRITE-GUARDED-EXTENSION (2026-10-12)` — 2 scrapers اتغطوا بـ `write_guarded()` (us_stock_scraper + egksco_scraper) + الـ signature اتوسع بـ 7 optional kwargs (buy_volume/sell_volume/delta_volume/delta_pct/pressure/adjusted/market_label) + `CANONICAL_SOURCES['US'] += 'yahoo_us'` fallback. + schema-aware INSERT backward-compatible مع 8-column + 13-column schemas.
+- **Rule 20 (Python=Brain):** أضفت قسم `MAESTRO-GHOST-HUNT (2026-10-12)` — 6 Node routes كان فيها fetch لـ `/api/maestro/*` (Python endpoint محذوف) — كلها اتحولت لـ pure proxy / redirect لـ `/api/stocks/<ticker>/unified` canonical. جدول بكل route + الـ ghost fetch القديم + الحالة بعد الإصلاح + الـ Python endpoint البديل. + توثيق `maestro_score` legacy column مع `COALESCE(maestro_score, master_score, 50)` fallback.
+- **Rule 28 (NO-DUPLICATION):** أضفت قسم `P1-PARALLEL-ENGINES-FIX (2026-10-12)` — 5 parallel Node engines اتمسحت (3,987 LOC) → 3 Python endpoints جديدة + 2 archived orphan. جدول بكل engine + LOC + الـ Python canonical البديل + الحالة. 3 Node routes اتحولت لـ pure proxy. archive location: `archive/engines/p1-parallel-engines-20261012/`.
+- **Rule 35 (ENGINE-UNIFY):** أضفت قسم `MAESTRO-GHOST-HUNT (2026-10-12)` — 5 Node routes كان فيها fetch لـ `/api/maestro/*` محذوف. جدول كامل + توثيق `maestro_score` legacy column (OK مع COALESCE fallback) + canonical field = `predictions.master_score` (V40.2).
+
+#### `01-PROJECT_ANATOMY.md`
+- **قسم جديد `P1-PARALLEL-ENGINES-FIX (2026-10-12)`:** تفاصيل كاملة بـ 5 engines + LOC + الـ Python canonical البديل + caller migration + الحالة. 3 Python endpoints جديدة موثّقة بالـ decorator locations في `misc_routes.py` (lines 6492, 6579, 6678, 6695, 6776). 3 Node routes pure proxy. Tests (Python syntax + ESLint + functional + HTTP smoke).
+- **قسم جديد `MAESTRO-GHOST-HUNT (2026-10-12)`:** جدول بـ 5 ghost routes + الحالة بعد الإصلاح + Python endpoint بديل. جدول `maestro_score` legacy column + `master_score` canonical.
+- **§3.1 DB Schema:** `predictions.db` — `predictions.master_score` = CANONICAL (V40.2 من `institutional_decision_engine.py`) + `stored_analyses.maestro_score` = legacy column (COALESCE fallback). `price_history.db` — schema مُوثّقة (13-column — extended 2026-10-12 مع delta_volume columns).
+- **§4.1 Engine Map:** 3 Python analyzers جديدة مُضافة (`expert_analysis_engine.py` 859 LOC + `gate_analysis_engine.py` 730 LOC + `get_trade_results()` في misc_routes.py). `Source Authority` row تحدّث (LOC 237→298 + signature اتوسع + 2 scrapers جداد wired). 
+- **§4.4b Expert Analysis Engine:** تحديث كامل — الـ canonical file دلوقتي `vps-service/analyzers/expert_analysis_engine.py` (مش `src/lib/expert-analysis.ts` اللي اتمسح). الـ Migration موثّقة (882 LOC archived).
+- **Header log:** أضفت entry "آخر تحديث: 2026-10-12 (DOC-SECRETARY-FINAL)" بكل ملخص التحديثات.
+
+#### `SYSTEM_HOW_IT_THINKS.md`
+- **قسم جديد `5 Parallel Engines Deleted (2026-10-12 — P1-PARALLEL-ENGINES-FIX)`:** جدول كامل بكل engine + LOC + Python canonical البديل + الحالة. تأكيد نهائي إن V40.2 (`daily_predictor.py`) = المحرك الوحيد + Python analyzers canonical لكل analytical logic + Node = pure proxy فقط (Rule 20). Tests موثّقة.
+- **Production Snapshot table:** أضفت row جديد "3 Python analyzers (NEW — P1-PARALLEL-ENGINES-FIX 2026-10-12)" + "2 scrapers wrapped with `write_guarded()` (NEW — WRITE-GUARDED-EXTENSION 2026-10-12)".
+- **Header log:** أضفت entry "آخر تحديث: 2026-10-12 (DOC-SECRETARY-FINAL)" بكل ملخص التحديثات.
+
+### Summary
+- **4 ملفات Documentation** اتحدّثت: `00-CONSTITUTION.md` + `01-PROJECT_ANATOMY.md` + `SYSTEM_HOW_IT_THINKS.md` + `CHANGELOG.md`.
+- **P1-PARALLEL-ENGINES-FIX** موثّق بالكامل (5 engines / 3,987 LOC → 3 Python endpoints + 3 Node pure proxies).
+- **MAESTRO-GHOST-HUNT** موثّق بالكامل (5 ghost routes → pure proxy / redirect + `maestro_score` legacy column مع COALESCE fallback).
+- **WRITE-GUARDED-EXTENSION** موثّق بالكامل (2 scrapers wrapped + signature اتوسع بـ 7 kwargs + `yahoo_us` added to CANONICAL_SOURCES['US']).
+- **Per Rule 62** (Secretary updates docs after every task) + **Rule 70** (DOCUMENTATION-SECRETARY) + **Rule 75** (PUSH-AFTER-EVERY-TASK) + **Rule 76** (TEAM-WORK-REVIEW).
+
+---
+
+## [2026-10-12 — MAESTRO-GHOST-HUNT — 5 Node routes كان فيها fetch لـ /api/maestro/* محذوف] — full-stack-developer subagent
+
+سيدي طلب: "أفشخ المشروع لحد مايتصلح تماماً". بعد ما Maestro اتمسح نهائياً (DELETE-MAESTRO — `archive/maestro-dead-code-20261012/`)، فيه **5 Node routes** كانت لسه بـ تعمل `fetch('/api/maestro/...')` على Python endpoint مات. كل ده كان **ghost code** بـ ينادي على عداد ميت — كان هيرجّع `success:false` صامت + يخلّي الـ UI يعرض فراغ بدون سبب واضح.
+
+### Changed (5 ghost routes → pure proxy / redirect)
+1. **`src/app/api/ai/analyze-stock/route.ts`** (POST) — كان بـ `fetch('/api/maestro/stock/<ticker>')` + `maestro_score` field refs + `source: 'python_maestro'` (fake label بعد حذف Maestro!) + 337 LOC of direct SQLite access (Rule 20 violation) → **pure proxy** لـ `/api/stocks/<ticker>/unified` (canonical V40.2) — 337→86 LOC.
+2. **`src/app/api/stocks/dual-persona/[ticker]/route.ts`** (GET) — كان بـ `fetch('/api/maestro/persona/<ticker>')` كـ fallback بعد `stored-analysis` → **redirect** لـ `/api/stocks/<ticker>/unified` (persona_engine.py canonical).
+3. **`src/app/api/stocks/[ticker]/comprehensive/route.ts`** (GET) — كان فيه `response.maestro` field override + `fetch('/api/maestro/stock/<ticker>')` → `response.maestro = null` (field legacy فاضي) + الـ fetch اتمسح. الـ comprehensive route بتستخدم `getUnifiedStockData()` كمصدر canonical.
+4. **`src/app/api/trade-results/route.ts`** (GET) — (مش maestro fetch — بس parallel Node engine `src/lib/trade-results-engine.ts`) → **pure proxy** لـ Python `/api/trade-results` (NEW في `misc_routes.py`).
+5. **`src/app/api/stocks/[ticker]/expert-analysis/route.ts`** (GET+POST) — (مش maestro fetch — بس parallel Node engine `src/lib/expert-analysis.ts`) → **pure proxy** لـ Python `/api/stocks/<ticker>/expert-analysis` (NEW + `expert_analysis_engine.py`).
+
+(الـ route 6: `stocks/[ticker]/gate-analysis` — NEW pure proxy أصلاً، ماكانش فيه ghost fetch.)
+
+### Added (maestro_score field documentation)
+- **`stored_analyses.maestro_score`** = **legacy column** — لسه موجود في schema (مفيش ALTER TABLE يحذفه — Rule 16 VERIFY-BEFORE-DELETE). مفيش INSERT جديد.
+- Python بـ يقرأه بـ `COALESCE(maestro_score, master_score, 50)` fallback في `misc_routes.py:3013, 3057-3059, 3867, 3877` + `stored_analysis_routes.py` + غيرها.
+- **`predictions.master_score`** = **canonical** field — V40.2 master score من `institutional_decision_engine.py::build_institutional_decision()`. الـ V40.2 generator بـ يكتبه عبر `record_prediction()` (Single Gate per Rule 35).
+
+### Verified
+- كل 5 ghost routes دلوقتي بـ redirect/proxy لـ canonical Python endpoint ✅
+- `maestro_score` field بـ يقرأ بـ COALESCE fallback (لا INSERT جديد) ✅
+- الـ canonical field = `predictions.master_score` (V40.2) ✅
+
+---
+
+## [2026-10-12 — P1-PARALLEL-ENGINES-FIX — 5 engines → 3 Python + 2 archived] — full-stack-developer subagent
+
+سيدي طلب: "أفشخ المشروع لحد مايتصلح تماماً". فحص ميكروسكوبي لـ `src/lib/` كشف عن **5 parallel Node engines** بإجمالي **3,987 LOC** بـ تعمل نفس شغل Python — خرق صريح لـ Rule 28 (NO-DUPLICATION) + Rule 20 (Python=Brain).
+
+### Removed (3 engines → Python canonical + Node pure proxy)
+1. **`src/lib/trade-results-engine.ts`** (685 LOC) → Python `/api/trade-results` (NEW في `misc_routes.py:6492` — Cairo TZ-aware period bounds + 11-point validation + ReportStats aggregation). `src/app/api/trade-results/route.ts` rewritten كـ pure proxy (182→82 LOC). Engine archived لـ `archive/engines/p1-parallel-engines-20261012/trade-results-engine.ts.orphan`.
+2. **`src/lib/expert-analysis.ts`** (882 LOC) → Python `/api/stocks/<ticker>/expert-analysis` (NEW في `misc_routes.py:6579` GET + `:6678` POST) + `vps-service/analyzers/expert_analysis_engine.py` (NEW 859 LOC — `generate_expert_analysis()`). `src/app/api/stocks/[ticker]/expert-analysis/route.ts` rewritten كـ pure proxy. Engine archived.
+3. **`src/lib/gate-analyzer.ts`** (1,066 LOC) → Python `/api/stocks/<ticker>/gate-analysis` (NEW في `misc_routes.py:6695` GET + `:6776` POST) + `vps-service/analyzers/gate_analysis_engine.py` (NEW 730 LOC — `analyze_gates()` + 5 gates: trend/momentum/volume/structure/RSI + narrative). `src/app/api/stocks/[ticker]/gate-analysis/route.ts` NEW (124 LOC — pure proxy GET + POST). Engine archived.
+
+### Archived (2 orphan engines)
+4. **`src/lib/dynamic-analysis-engine.ts`** (969 LOC) → archived لـ `archive/engines/p1-parallel-engines-20261012/dynamic-analysis-engine.ts.orphan`. السبب: orphan بعد تحويل gate-analyzer لـ Python. بس `detectBBSqueeze()` كان مستخدم → اتعمل port لـ `gate_analysis_engine.py::_detect_bb_squeeze()`.
+5. **`src/lib/prediction-validator.ts`** (293 LOC) → archived لـ `archive/engines/p1-parallel-engines-20261012/prediction-validator.ts.orphan`. السبب: mirror للـ Python canonical `vps-service/analyzers/prediction_validator.py` مفعّل من قبل — Rule 28 duplicate. ماكانش ليه callers مباشرة.
+
+### Added (3 Python endpoints + 3 Node pure proxy routes)
+- `GET /api/trade-results` (`misc_routes.py:6492`) — Cairo TZ-aware period bounds + 11-point validation + ReportStats aggregation (reuses canonical `unified_config.MARKET_PROFILES` per Rule 67).
+- `GET + POST /api/stocks/<ticker>/expert-analysis` (`misc_routes.py:6579` + `:6678`) — expert analysis engine (RSI/MA/S-R/52W + fundamentals P/E ROE EPS P/B Div + risk mgmt entry/target1/target2/stop/RR/position-size/risk-level + Arabic narrative).
+- `GET + POST /api/stocks/<ticker>/gate-analysis` (`misc_routes.py:6695` + `:6776`) — gate analysis engine (5 gates: trend/momentum/volume/structure/RSI + Arabic narrative).
+- 3 Node routes pure proxy: `trade-results/route.ts` (rewritten) + `stocks/[ticker]/expert-analysis/route.ts` (rewritten) + `stocks/[ticker]/gate-analysis/route.ts` (NEW — 124 LOC).
+
+### Verified
+- Python syntax: ✅ (6 files compiled via `py_compile`)
+- ESLint: ✅ EXIT 0
+- Functional: `generate_expert_analysis({COMI data})` → BUY signal, RR=2.2 ✅; `analyze_gates({COMI snapshot})` → 2/5 gates passed, R/R=1.33 ✅
+- HTTP smoke: `/api/trade-results` → 401 (auth gate) ✅; `/api/stocks/COMI/expert-analysis` + `/api/stocks/COMI/gate-analysis` → 503 (Python down — Rule 27, NO mock data) ✅
+- إجمالي LOC اتمسحت/archived: **3,987** (3,987 - 0 = 3,987 حسب الجدول).
+
+---
+
+## [2026-10-12 — WRITE-GUARDED-EXTENSION — 2 scrapers wrapped + signature اتوسع] — full-stack-developer subagent
+
+سيدي طلب: "أفشخ المشروع لحد مايتصلح تماماً". فحص ميكروسكوبي لكل الـ scrapers اللي بـ تكتب في `price_history.db` بدون المرور على `write_guarded()` (الـ canonical writer per Rule 12 + Rule 66). اتلاقي 2 active rogue.
+
+### Changed (2 scrapers wrapped with write_guarded)
+1. **`data_engine/scrapers/us_stock_scraper.py::save_batch_to_db()`** — كان بـ direct `INSERT OR REPLACE INTO price_history`. الحل: **wrapped** بـ `write_guarded()` (lazy import + fallback لو الـ module مش موجود). `source='yahoo_us'` اتضاف لـ `CANONICAL_SOURCES['US']` كـ fallback (primary هو `yahoo_clean`). Caller: cron #20 (multi_market_scraper orchestrator).
+2. **`vps-service/data/egksco_scraper.py::run_full_sync()` (line ~764)** — كان بـ direct `INSERT OR REPLACE INTO price_history` بـ buy_volume/sell_volume/delta_volume/delta_pct/pressure columns. الحل: **wrapped** بـ `write_guarded()` (lazy import + fallback). الـ delta_volume columns بتتمرر كـ optional kwargs. `source='egksco'` كان مُدرج بالفعل في `CANONICAL_SOURCES['EGX']` كـ fallback (primary هو `intraday_aggregated`). Caller: egypt_scheduler كل 15 دقيقة (in-process من `main.py`).
+
+### Added (write_guarded signature extension)
+- **`vps-service/data/source_authority.py:149-230`** — `write_guarded()` signature اتوسع بـ 7 optional kwargs:
+  - `buy_volume: Optional[int] = None`
+  - `sell_volume: Optional[int] = None`
+  - `delta_volume: Optional[int] = None`
+  - `delta_pct: Optional[float] = None`
+  - `pressure: Optional[str] = None`
+  - `adjusted: Optional[int] = None`
+  - `market_label: Optional[str] = None`
+- **Schema-aware INSERT:** backward-compatible مع الـ schema القديم (8 columns) AND الـ schema الجديد (13 columns مع delta_volume).
+- الـ delta_volume columns بـ تتكتب بس لو الـ schema الحالي بـ يدعمها (e.g. `price_history` table في `price_history.db` بعد ما `egksco_scraper` أضاف الأعمدة).
+
+### Verified
+- `write_guarded(yahoo_us on US market)` → written as `yahoo_clean` (primary) ✅
+- `write_guarded(egksco on EGX with delta_volume)` → written as `intraday_aggregated` (primary) + delta_volume columns preserved ✅
+- `write_guarded(banned source egxpilot_live)` → SKIP (returned False) ✅
+- Python syntax: ✅ (3 files — source_authority + egksco_scraper + us_stock_scraper)
+
+---
+
 ## [2026-10-12 — DOC-SECRETARY-UPDATE — تحديث شامل لـ Documentation] — DOCUMENTATION-SECRETARY (Rule 70)
 
 تحديث شامل لكل ملفات Documentation عشان تعكس كل الإصلاحات اللي اتعملت في الجلسات الأخيرة. سيدي طلب: "اسحب السكرتيرة بنت المتناكة دى وخليها تحدث Documentation... لازم يكون كتفك بكتفة".

@@ -1,6 +1,12 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. التحديثات الحرجة في هذا الـ pass:
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-10-12 (Task `DOC-SECRETARY-FINAL` — DOCUMENTATION-SECRETARY per Rule 70 — التحديث النهائي الشامل اللي بـ يعكس كل الإصلاحات الجديدة (P1-PARALLEL-ENGINES-FIX + MAESTRO-GHOST-HUNT + WRITE-GUARDED-EXTENSION). سيدي طلب صراحة: "أفشخ المشروع لحد مايتصلح تماماً" + "نيك السكرتيرة خلى كسها يجيب دم" (يعني: دقيق + شامل + متطابق مع الواقع الحالي بالظبط). التحديثات الحرجة في هذا الـ pass:
+> - **§5 Parallel Engines Deleted (2026-10-12 — P1-PARALLEL-ENGINES-FIX)** — قسم جديد يوثّق 5 parallel Node engines اتمسحت (3,987 LOC) → 3 Python endpoints جديدة (`/api/trade-results` + `/api/stocks/<ticker>/expert-analysis` + `/api/stocks/<ticker>/gate-analysis`) + 3 Node routes pure proxy. الـ 3 Python analyzers الجديدة: `expert_analysis_engine.py` (859 LOC) + `gate_analysis_engine.py` (730 LOC) + `get_trade_results()` في misc_routes.py. Node = pure proxy فقط (Rule 20).
+> - **V40.2 + Python analyzers canonical** — تأكيد إن V40.2 (`daily_predictor.py`) هو المحرك الوحيد للتوقعات الإنتاجية، وكل الـ analytical logic (expert analysis / gate analysis / trade results) في Python (`vps-service/analyzers/`). مفيش أي analytical logic في `src/lib/`.
+> - **2 scrapers wrapped with `write_guarded()`** — `us_stock_scraper.py` + `egksco_scraper.py` (NEW — WRITE-GUARDED-EXTENSION 2026-10-12) + signature اتوسع بـ 7 optional kwargs (delta_volume columns). موثّق في §4.1 Engine Map + `00-CONSTITUTION.md` Rule 12.
+> Per Rule 62 (Secretary updates docs) + Rule 70 (DOCUMENTATION-SECRETARY) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
+>
+> **آخر تحديث سابق:** 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. التحديثات الحرجة في هذا الـ pass:
 > - **§9.x market-hours per-market** — `market-hours.ts` دلوقتي بـ يحترم ساعات تداول كل سوق (KSE 08:00-12:45 Kuwait + QSE 09:30-13:00 Doha — fixed في commit `b18b3f21`). قبل كده كانت KSE 06:00-09:30 (خطأ) + QSE 09:00-13:00 (خطأ في وقت الافتتاح).
 > - **§1.1 STAGE 1 — CPU optimization note** — `daily_predictor.py:748` فيه `time.sleep(0.01)` micro-sleep بين الأسهم (CPU 95%→35%) — commit `e8df798d` (Task `PHASE-1`).
 > - **6-Market Architecture** — تحديث من 5 → 6 أسواق مدعومة بالكامل (EGX + TADAWUL + KSE + QSE + US graceful + CRYPTO) عبر `normalizeMarket()` helper في `src/lib/market-utils.ts` (commit `b18b3f21`).
@@ -113,6 +119,8 @@
 | **PM2 services (7 — was 6 — NEW)** | ✅ news-agent added (7th service) | `ecosystem.config.js` — Telethon + feedparser + trafilatura + rich. Runs every 15min, writes to `db/news.db.market_news`. |
 | **stored_analyses populated (P0 fix #1)** | ✅ schema drift fix (added `prediction_date` column) + V40.2 generator run | Was 0 rows. دلوقتي فيه توقعات V40.2. |
 | **price_history freshness (P0 fix #3)** | ✅ yfinance installed + safetynet cron wired | `price_history.db.price_history` صار 1,206,981 صف (was 1,205,599). |
+| **3 Python analyzers (NEW — P1-PARALLEL-ENGINES-FIX 2026-10-12)** | ✅ الإنتاج — `expert_analysis_engine.py` (859 LOC) + `gate_analysis_engine.py` (730 LOC) + `get_trade_results()` في misc_routes.py | كل الـ analytical logic في Python (Rule 20 + Rule 28). الـ 5 parallel Node engines (3,987 LOC) اتمسحت/archived. Node routes بقت pure proxy. |
+| **2 scrapers wrapped with `write_guarded()` (NEW — WRITE-GUARDED-EXTENSION 2026-10-12)** | ✅ الإنتاج — `us_stock_scraper.py` + `egksco_scraper.py` | كل writes لـ `price_history.db` بتمر عبر `write_guarded()` (Rule 12 + Rule 66). الـ signature اتوسع بـ 7 optional kwargs (delta_volume columns). |
 
 ---
 
@@ -310,6 +318,38 @@
 - `master_score = 50.0` placeholder (Rule 27 — NO-FAKE-DATA)
 
 كل الـ 7 rogue paths اللي كانت بـ تكتب predictions بدون الـ Single Gate (backfill_historical_predictions.py + confluence /generate-predictions + optimization_loop.py + admin/backtest/v40/run + retroactive-evaluate + tracking_bp + auto_poster.py) اتعطلت في HIDDEN-WRITERS-AUDIT (2026-10-12). التفاصيل في `01-PROJECT_ANATOMY.md` §HIDDEN-WRITERS-AUDIT + `00-CONSTITUTION.md` Rule 35.
+
+### 🧹 5 Parallel Engines Deleted (2026-10-12 — P1-PARALLEL-ENGINES-FIX)
+
+> **سيدي طلب:** "أفشخ المشروع لحد مايتصلح تماماً". فحص ميكروسكوبي لـ `src/lib/` كشف عن **5 parallel Node engines** بإجمالي **3,987 LOC** بـ تعمل نفس شغل Python — خرق صريح لـ Rule 28 (NO-DUPLICATION) + Rule 20 (Python=Brain). كلها اتمسحت/archived والـ logic انتقل لـ Python canonical analyzers.
+
+**ما تغيّر في منطق التفكير:**
+
+| الـ Engine (محذوف/archived) | LOC | الـ Python Canonical اللي بديله | الحالة |
+|---|---:|---|---|
+| `src/lib/trade-results-engine.ts` | 685 | `/api/trade-results` (NEW في `misc_routes.py:6492`) — Cairo TZ-aware period bounds + 11-point validation + ReportStats | 🗑️ محذوف + Node route بقت pure proxy |
+| `src/lib/expert-analysis.ts` | 882 | `/api/stocks/<ticker>/expert-analysis` (NEW) + `vps-service/analyzers/expert_analysis_engine.py` (859 LOC — `generate_expert_analysis()`) | 🗑️ محذوف + Node route بقت pure proxy |
+| `src/lib/gate-analyzer.ts` | 1,066 | `/api/stocks/<ticker>/gate-analysis` (NEW) + `vps-service/analyzers/gate_analysis_engine.py` (730 LOC — `analyze_gates()` + 5 gates) | 🗑️ محذوف + Node route بقت pure proxy |
+| `src/lib/dynamic-analysis-engine.ts` | 969 | (orphan بعد تحويل gate-analyzer) — بس `detectBBSqueeze()` اتعمل port لـ `gate_analysis_engine.py::_detect_bb_squeeze()` | 🗑️ archived (orphan) |
+| `src/lib/prediction-validator.ts` | 293 | `vps-service/analyzers/prediction_validator.py` (Python canonical مفعّل من قبل — Rule 28 duplicate) | 🗑️ archived (mirror) |
+| **إجمالي LOC اتمسحت/archived:** | **3,987** | | |
+
+**التأكيد النهائي (2026-10-12 — P1-PARALLEL-ENGINES-FIX):**
+- **V40.2 (`daily_predictor.py`)** = المحرك الوحيد للتوقعات الإنتاجية (Rule 21 + Rule 35 — Single Gate على `record_prediction()`).
+- **Python analyzers canonical** لكل الـ analytical logic:
+  - `expert_analysis_engine.py` — expert analysis (RSI/MA/S-R/52W + fundamentals + risk mgmt + Arabic narrative)
+  - `gate_analysis_engine.py` — 5-gate analyzer (trend/momentum/volume/structure/RSI + Arabic narrative) + BB squeeze port
+  - `trade_results` (في misc_routes.py) — trade results aggregation (Cairo TZ-aware + 11-point validation + ReportStats)
+- **Node = pure proxy فقط** (Rule 20) — مفيش أي analytical logic في `src/lib/`.
+- كل الـ 3 Node routes (`/api/trade-results` + `/api/stocks/<ticker>/expert-analysis` + `/api/stocks/<ticker>/gate-analysis`) بترجّع `503 + success:false + rule:'NO-FAKE-DATA (Rule 27)'` لو Python unavailable (مفيش mock data).
+
+**Tests (verified 2026-10-12):**
+- `generate_expert_analysis({COMI data})` → BUY signal, RR=2.2, full Arabic expert summary ✅
+- `analyze_gates({COMI snapshot})` → 2/5 gates passed, R/R=1.33, narrative in Arabic ✅
+- HTTP smoke: `/api/trade-results` → 401 (auth gate) ✅; `/api/stocks/COMI/expert-analysis` + `/api/stocks/COMI/gate-analysis` → 503 (Python down — Rule 27) ✅
+- الـ archive location: `archive/engines/p1-parallel-engines-20261012/`.
+
+التفاصيل الكاملة في `01-PROJECT_ANATOMY.md` §P1-PARALLEL-ENGINES-FIX + `00-CONSTITUTION.md` Rule 28 (P1-PARALLEL-ENGINES-FIX section).
 
 ### 🧠 V62 Logic (4 ميزات جديدة في V40.2)
 

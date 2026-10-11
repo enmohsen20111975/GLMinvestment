@@ -498,9 +498,17 @@ export async function POST(request: NextRequest) {
           const insertMany = stocksDb.transaction((items: Record<string, any>[]) => {
             for (const a of items) {
               try {
-                const score = a.maestro_score || 50;
-                const conf = a.confidence || 50;
-                const riskLevel = conf >= 70 ? 'low' : conf >= 50 ? 'medium' : conf >= 30 ? 'high' : 'very_high';
+                // MAESTRO-GHOST-HUNT (2026-10-12 — Rule 27 NO-FAKE-DATA):
+                // قبل كده: `const score = a.maestro_score || 50` — كان بـ يـ fabricate
+                // placeholder `50` كل ما maestro_score = NULL (ودلوقتي كل القيم NULL
+                // بعد MAESTRO-KILL). ده نفس الـ pattern الـ Python side بـ blockه
+                // في prediction_write_guard.py.
+                // الحل: لو مفيش score حقيقي، نخليه NULL (مش 50 placeholder).
+                const score = a.maestro_score != null ? a.maestro_score : null;
+                const conf = a.confidence != null ? a.confidence : null;
+                const riskLevel = conf != null
+                  ? (conf >= 70 ? 'low' : conf >= 50 ? 'medium' : conf >= 30 ? 'high' : 'very_high')
+                  : 'unknown';
                 const signal = (a.recommendation || 'hold').toUpperCase();
 
                 upsert.run(

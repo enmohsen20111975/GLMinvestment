@@ -16,7 +16,14 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from analyzers.maestro_orchestrator import MaestroOrchestrator
+# MAESTRO-KILL (2026-10-12 — MAESTRO-GHOST-HUNT):
+# maestro_orchestrator archived — wrap in try/except (top-level import was crashing)
+try:
+    from analyzers.maestro_orchestrator import MaestroOrchestrator  # type: ignore
+except ImportError:
+    MaestroOrchestrator = None  # type: ignore
+    print("[MAESTRO-KILL] maestro_orchestrator archived — MaestroOrchestrator = None", flush=True)
+
 from analyzers.expert_memory import ExpertMemoryEngineV3, MemoryInsight
 from pathlib import Path  # added by patch_db_paths.py
 

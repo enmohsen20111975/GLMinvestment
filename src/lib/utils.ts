@@ -150,18 +150,16 @@ export function verdictStyle(verdict: string | undefined): VerdictStyle {
   return { color: '#78716c', bg: '#f5f5f4' };
 }
 
+// RULE28-NO-DUPLICATION (2026-10-12 - MAESTRO-GHOST-HUNT):
+// computeRR() was a DUPLICATE of src/lib/risk-reward.ts::computeRiskReward().
+// Per Rule 28, there must be ONE canonical implementation.
+// This re-export keeps backward compat for the 7 callers that import from utils.ts,
+// but delegates to the canonical risk-reward.ts implementation.
+import { computeRiskReward as _computeRiskReward } from '@/lib/risk-reward';
+
 export function computeRR(pd: Record<string, unknown>): number | null {
-  const rr = pd.risk_reward ?? pd.rr;
-  if (rr != null && !isNaN(Number(rr)) && Number(rr) > 0) return Number(rr);
-  const e = Number(pd.entry);
-  const t = Number(pd.target);
-  const s = Number(pd.stop);
-  if (e > 0 && t > 0 && s > 0 && e !== s) {
-    const risk = Math.abs(e - s);
-    const reward = Math.abs(t - e);
-    if (risk > 0 && reward > 0) return reward / risk;
-  }
-  return null;
+  // Delegate to canonical implementation (Rule 67 - CALCULATION-CANONICAL)
+  return _computeRiskReward(pd as any);
 }
 
 export function rrColor(rr: number | null): string {

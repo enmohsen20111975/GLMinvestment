@@ -193,6 +193,33 @@
 - `source_authority.py` بيحدد المصدر القانوني لكل سوق (Rule 66) — `CANONICAL_SOURCES` لكل سوق + `BANNED_SOURCES` ممنوعة.
 - `validation.py` بيتأكد إن البيانات منطقية قبل الاستخدام (Rule 65) — أي field غير منطقي → `INVALID` (بتتصفّر، مش fake).
 
+> **WRITE-GUARDED-EXTENSION (2026-10-12) — 2 scrapers اتغطوا بـ `write_guarded()` + الـ signature اتوسع:**
+>
+> سيدي طلب: "أفشخ المشروع لحد مايتصلح تماماً". فحص ميكروسكوبي لكل الـ scrapers اللي بـ تكتب في `price_history.db` بدون المرور على `write_guarded()` (الـ canonical writer per Rule 12 + Rule 66). اتلاقي 2 active rogue:
+>
+> | # | الـ Scraper | الـ Caller | الـ LOC القديم | الحالة بعد الإصلاح |
+> |---|---|---|---|---|
+> | 1 | `data_engine/scrapers/us_stock_scraper.py::save_batch_to_db()` | cron #20 (multi_market_scraper orchestrator) | direct `INSERT OR REPLACE INTO price_history` | **wrapped** بـ `write_guarded()` (lazy import + fallback لو الـ module مش موجود). `source='yahoo_us'` اتضاف لـ `CANONICAL_SOURCES['US']` كـ fallback (primary هو `yahoo_clean`). |
+> | 2 | `vps-service/data/egksco_scraper.py::run_full_sync()` (line ~764) | egypt_scheduler كل 15 دقيقة (in-process من `main.py`) | direct `INSERT OR REPLACE INTO price_history` بـ buy_volume/sell_volume/delta_volume/delta_pct/pressure columns | **wrapped** بـ `write_guarded()` (lazy import + fallback). الـ delta_volume columns بتتمرر كـ optional kwargs. `source='egksco'` كان مُدرج بالفعل في `CANONICAL_SOURCES['EGX']` كـ fallback (primary هو `intraday_aggregated`). |
+>
+> **write_guarded() signature اتوسع** (`vps-service/data/source_authority.py:149-230`):
+> ```python
+> def write_guarded(db_path, ticker, market, date, open_price, high_price,
+>                   low_price, close_price, volume, source,
+>                   # NEW optional kwargs (2026-10-12):
+>                   buy_volume: Optional[int] = None,
+>                   sell_volume: Optional[int] = None,
+>                   delta_volume: Optional[int] = None,
+>                   delta_pct: Optional[float] = None,
+>                   pressure: Optional[str] = None,
+>                   adjusted: Optional[int] = None,
+>                   market_label: Optional[str] = None) -> bool:
+> ```
+> - **Schema-aware INSERT:** backward-compatible مع الـ schema القديم (8 columns) AND الـ schema الجديد (13 columns مع delta_volume).
+> - الـ delta_volume columns بـ تتكتب بس لو الـ schema الحالي بـ يدعمها (e.g. `price_history` table في `price_history.db` بعد ما `egksco_scraper` أضاف الأعمدة).
+>
+> **الـ Verifier:** لو لقيت أي scraper بـ يعمل `INSERT OR REPLACE INTO price_history` بدون ما يمرّ على `write_guarded()` → ده Rule 12 + Rule 66 violation. Canonical writer هو `vps-service/data/source_authority.py::write_guarded()`.
+
 ### القاعدة 13 — فلتر السيولة الصارم
 - `MIN_TURNOVER_EGP = 500_000` (في `background_analyzer.py`).
 - أي سهم turnover يومي < 500K EGP → **يُسقط** من `stored_analyses` نهائيًا.
@@ -300,6 +327,21 @@
 > **السلوك الجديد لما Python unavailable:** `HTTP 503 + success:false + {error: 'python-backend-unavailable', message: '...Rule 27...'}` — **ممنوع** إرجاع `success:true` + zeros (كان خرق Rule 27).
 >
 > **الـ Verifier:** لو لقيت `if/for/compute/aggregate/SQLite direct/Math.round` في أي route من دول → ده REGRESSION violation. الـ canonical pattern موجود في `predictions/honest-tracking/stats/route.ts` (66 سطر).
+
+> **MAESTRO-GHOST-HUNT (2026-10-12) — 6 Node routes كان فيها fetch لـ `/api/maestro/*` (Python endpoint محذوف):**
+>
+> سيدي طلب: "أفشخ المشروع لحد مايتصلح تماماً". فحص ميكروسكوبي لكل Node routes اللي كانت بـ تعمل `fetch('/api/maestro/...')` بعد ما Maestro اتمسح نهائياً (DELETE-MAESTRO). كل ده كان **ghost code** بـ ينادي على endpoint مات — كان هيرجّع `success:false` صامت + يخلّي الـ UI يعرض فراغ بدون سبب واضح. كل الـ routes دي اتعملها redirect للـ canonical Python endpoint `/api/stocks/<ticker>/unified` (V40.2 + persona_engine).
+>
+> | # | الـ Node Route | الـ Ghost fetch القديم | الحالة بعد الإصلاح | Python Endpoint |
+> |---|---|---|---|---|
+> | 1 | `ai/analyze-stock` (POST) | `fetch('/api/maestro/stock/<ticker>')` + `maestro_score` field refs + `source: 'python_maestro'` (fake label) | **pure proxy** لـ `/api/stocks/<ticker>/unified` (canonical V40.2) | `/api/stocks/<ticker>/unified` |
+> | 2 | `stocks/dual-persona/[ticker]` (GET) | `fetch('/api/maestro/persona/<ticker>')` كـ fallback بعد `stored-analysis` | **redirect** لـ `/api/stocks/<ticker>/unified` (canonical — persona_engine.py) | `/api/stocks/<ticker>/unified` |
+> | 3 | `stocks/[ticker]/comprehensive` (GET) | `response.maestro` field override + `fetch('/api/maestro/stock/<ticker>')` | `response.maestro = null` (field موجودة legacy بس فاضية) + الـ fetch اتمسح | `/api/stocks/<ticker>/unified` |
+> | 4 | `trade-results` (GET) | (Node engine — لا maestro fetch بس parallel engine) | **pure proxy** لـ Python `/api/trade-results` (Cairo TZ-aware period bounds + 11-point validation + ReportStats) | `/api/trade-results` (NEW في `misc_routes.py`) |
+> | 5 | `stocks/[ticker]/expert-analysis` (GET+POST) | (Node engine — `src/lib/expert-analysis.ts` parallel logic) | **pure proxy** لـ Python `/api/stocks/<ticker>/expert-analysis` | `/api/stocks/<ticker>/expert-analysis` (NEW + `expert_analysis_engine.py`) |
+> | 6 | `stocks/[ticker]/gate-analysis` (GET+POST) | (Node engine — `src/lib/gate-analyzer.ts` parallel logic) | **pure proxy** لـ Python `/api/stocks/<ticker>/gate-analysis` | `/api/stocks/<ticker>/gate-analysis` (NEW + `gate_analysis_engine.py`) |
+>
+> **maestro_score field** (legacy DB column): لسه موجود في `stored_analyses.maestro_score` كـ **legacy column** — Python بـ يقرأه بـ `COALESCE(maestro_score, master_score, 50)` fallback. الـ canonical field دلوقتي هو `predictions.master_score` (الـ V40.2 master score). مفيش INSERT جديد لـ `maestro_score` — القراءة فقط بـ fallback. موثّق في `01-PROJECT_ANATOMY.md` §3.1.
 
 ### القاعدة 21 — V40.2 هو مصدر التوقعات الإنتاجي الوحيد (evidence-based)
 - **`jobs/daily_predictor.py`** هو مولّد التوقعات الإنتاجي.
@@ -465,6 +507,30 @@
   3. 4 catch-all proxies (`/api/[...slug]` + `/api/proxy/*` + `/api/python/*` + `/api/telegram/*`) → توحيد على `/api/proxy/[...path]`.
 - **قبل أي ميزة جديدة:** اسأل "هل فيه شاشة/endpoint موجود بـ يعمل ده؟" (Grep في `src/` + `vps-service/`). لو نعم → وسّع. لو لا → اطلب موافقة المالك.
 - **المرجع:** تقرير `CONSTITUTION-VIOLATIONS-AUDIT` (worklog.md) — 8 حالات تكرار بـ ~12,000 LOC.
+
+> **P1-PARALLEL-ENGINES-FIX (2026-10-12) — 5 parallel Node engines اتمسحت → 3 Python endpoints + 2 archived orphan:**
+>
+> سيدي طلب: "أفشخ المشروع لحد مايتصلح تماماً". فحص ميكروسكوبي لكل الـ Node-side parallel engines اللي كانت بـ تعمل نفس الـ logic اللي موجود في Python (خرق Rule 28 NO-DUPLICATION + Rule 20 Python=Brain). اتلاقي **5 parallel engines** بإجمالي **3,987 LOC** بـ تعمل نفس شغل Python بس في Node:
+>
+> | # | الـ Node Engine (محذوف) | LOC | الـ Python Canonical اللي بديله | الحالة |
+> |---|---|---:|---|---|
+> | 1 | `src/lib/trade-results-engine.ts` | 685 | `/api/trade-results` (NEW في `vps-service/api/misc_routes.py`) — Cairo TZ-aware period bounds + 11-point validation + ReportStats | **محذوف** + Node route بقت pure proxy |
+> | 2 | `src/lib/expert-analysis.ts` | 882 | `/api/stocks/<ticker>/expert-analysis` (NEW) + `vps-service/analyzers/expert_analysis_engine.py` (NEW 859 LOC — generate_expert_analysis) | **محذوف** + Node route بقت pure proxy |
+> | 3 | `src/lib/gate-analyzer.ts` | 1,066 | `/api/stocks/<ticker>/gate-analysis` (NEW) + `vps-service/analyzers/gate_analysis_engine.py` (NEW 730 LOC — analyze_gates) | **محذوف** + Node route بقت pure proxy |
+> | 4 | `src/lib/dynamic-analysis-engine.ts` | 969 | (orphan بعد تحويل gate-analyzer) — بس `detectBBSqueeze()` كان مستخدم → اتعمل port لـ `gate_analysis_engine.py::_detect_bb_squeeze()` | **archived** لـ `archive/engines/p1-parallel-engines-20261012/` (orphan بعد ما اتحوّل gate-analyzer لـ Python) |
+> | 5 | `src/lib/prediction-validator.ts` | 293 | `vps-service/analyzers/prediction_validator.py` (Python canonical مفعّل من قبل) | **archived** لـ `archive/engines/p1-parallel-engines-20261012/` (mirror للـ Python canonical — ماكانش ليه callers) |
+>
+> **3 Python endpoints جديدة** في `vps-service/api/misc_routes.py` (decorated بـ `@misc_bp.route`):
+> - `GET /api/trade-results` — period bounds Cairo TZ-aware + 11-point validation + ReportStats aggregation
+> - `GET + POST /api/stocks/<ticker>/expert-analysis` — expert analysis engine (RSI/MA/S-R/52W + fundamentals P/E ROE EPS P/B Div + risk mgmt entry/target1/target2/stop/RR/position-size/risk-level)
+> - `GET + POST /api/stocks/<ticker>/gate-analysis` — gate analysis engine (5 gates: trend/momentum/volume/structure/RSI + narrative)
+>
+> **3 Node routes اتحولت لـ pure proxy** (zero computation in Node):
+> - `src/app/api/trade-results/route.ts` (rewritten)
+> - `src/app/api/stocks/[ticker]/expert-analysis/route.ts` (rewritten)
+> - `src/app/api/stocks/[ticker]/gate-analysis/route.ts` (NEW — pure proxy GET + POST)
+>
+> **الـ Verifier:** لو لقيت أي ملف في `src/lib/` بـ يحسب RSI/ATR/gate-score/expert-analysis/trade-results → ده REGRESSION violation. كل الـ analytical logic لازم يكون في Python (`vps-service/analyzers/`). الـ archive location: `archive/engines/p1-parallel-engines-20261012/`.
 
 ### القاعدة 29 — نظام متكامل واحد (UNIFIED-SYSTEM — 2026-08-29)
 > **سبب الإضافة:** توجيه صريح من المالك (2026-08-29): "احنا مش بنعمل موديولات منفصلة ولاأكواد فوق بعض مش مرتببطة ببعضها احنا بنعمل نظام كامل متكامل".
@@ -1300,6 +1366,29 @@ curl -s http://localhost:8010/health
 > `backtesting_engine.py` + `maestro_backfill_phase3.py` + `maestro_backfill_v2.py` + `generate_persona_predictions.py` + `populate_history_fast.py` + `dual_track_generator.py` + `backfill_with_personas.py` + `backfill_to_predictions.py` + `volume_surge_hunter_test.py` + `backfill_history.py` + `sync-real-data.py`.
 >
 > **الـ Verifier:** لو لقيت أي `INSERT INTO predictions` / `UPDATE predictions SET` / `DELETE FROM predictions` بـ يتخطّى `record_prediction()` → ده Rule 35 violation. الـ Single Gate هو `analyzers/prediction_tracker.py:493-534` (`record_prediction()`) + الـ guard في `core/prediction_write_guard.py:14-194` (`validate_prediction_evidence()`).
+
+> **MAESTRO-GHOST-HUNT (2026-10-12) — 5 Node routes كان فيها fetch لـ `/api/maestro/*` (Python endpoint محذوف):**
+>
+> سيدي طلب: "أفشخ المشروع لحد مايتصلح تماماً" + "نيك السكرتيرة خلى كسها يجيب دم" (يعني: التحديث لازم يكون دقيق + شامل + متطابق مع الواقع). بعد ما Maestro اتمسح نهائياً (DELETE-MAESTRO — `archive/maestro-dead-code-20261012/`)، فيه **5 Node routes** كانت لسه بـ تعمل `fetch('/api/maestro/...')` على endpoint مات — كل ده كان **ghost code** بـ ينادي على عداد ميت. فحص ميكروسكوبي على كل ملفات `src/app/api/`:
+>
+> | # | الـ Node Route | الـ Ghost fetch القديم | الـ Python Endpoint البديل (canonical) | الحالة |
+> |---|---|---|---|---|
+> | 1 | `src/app/api/ai/analyze-stock/route.ts` | `fetch('/api/maestro/stock/<ticker>')` + `maestro_score` field refs + `source: 'python_maestro'` (fake label بعد حذف Maestro!) | `/api/stocks/<ticker>/unified` (canonical V40.2) | pure proxy (337→86 LOC) |
+> | 2 | `src/app/api/stocks/dual-persona/[ticker]/route.ts` | `fetch('/api/maestro/persona/<ticker>')` كـ fallback بعد `stored-analysis` | `/api/stocks/<ticker>/unified` (persona_engine.py) | redirect لـ canonical |
+> | 3 | `src/app/api/stocks/[ticker]/comprehensive/route.ts` | `response.maestro` field override + `fetch('/api/maestro/stock/<ticker>')` | `response.maestro = null` (field legacy فاضي) + الـ fetch اتمسح | field override اتمسح |
+> | 4 | `src/app/api/trade-results/route.ts` | (مش maestro fetch — بس parallel Node engine) | `/api/trade-results` (NEW في `misc_routes.py`) | pure proxy |
+> | 5 | `src/app/api/stocks/[ticker]/expert-analysis/route.ts` | (مش maestro fetch — بس parallel Node engine `src/lib/expert-analysis.ts`) | `/api/stocks/<ticker>/expert-analysis` (NEW + `expert_analysis_engine.py`) | pure proxy |
+>
+> (الـ route 6: `stocks/[ticker]/gate-analysis` — NEW pure proxy أصلاً، ماكانش فيه ghost fetch.)
+>
+> **maestro_score field (legacy DB column — OK مع COALESCE fallback):**
+> - `stored_analyses.maestro_score` — لسه موجود كـ **legacy column** في schema (مفيش ALTER TABLE يحذفه — Rule 16 VERIFY-BEFORE-DELETE).
+> - Python بـ يقرأه بـ `COALESCE(maestro_score, master_score, 50)` fallback (e.g. `misc_routes.py:3013, 3057-3059, 3867, 3877` + غيرها).
+> - الـ canonical field دلوقتي هو `predictions.master_score` (V40.2 master score من `institutional_decision_engine.py`).
+> - **ممنوع** INSERT جديد لـ `maestro_score` — القراءة فقط بـ fallback. أي INSERT جديد لازم يستخدم `master_score`.
+> - موثّق بالتفصيل في `01-PROJECT_ANATOMY.md` §3.1.
+>
+> **الـ Verifier:** لو لقيت أي `fetch('/api/maestro/` في `src/app/api/` → ده REGRESSION violation (Python endpoint محذوف). لو لقيت أي INSERT جديد لـ `maestro_score` field → ده Rule 35 violation (canonical هو `master_score`).
 
 ---
 

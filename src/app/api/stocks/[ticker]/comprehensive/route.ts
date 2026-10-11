@@ -226,10 +226,11 @@ export async function GET(
       (response.board as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
       (response.board as any).recommendation_ar = unified.canonical.signal_ar;
     }
-    if (response.maestro && typeof response.maestro === 'object') {
-      (response.maestro as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
-      (response.maestro as any).recommendation_ar = unified.canonical.signal_ar;
-      (response.maestro as any).master_score = unified.canonical.master_score;
+    // MAESTRO-KILL (2026-10-12): maestro section override removed — Maestro deleted.
+    // response.maestro is no longer populated (the fetch was already disabled above).
+    // We just null out the field so no client tries to use stale Maestro data.
+    if ('maestro' in response) {
+      response.maestro = null;
     }
     if (response.professional && typeof response.professional === 'object') {
       (response.professional as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;

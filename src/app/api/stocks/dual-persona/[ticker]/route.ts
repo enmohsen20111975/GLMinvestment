@@ -139,13 +139,15 @@ export async function GET(
   }
 
   // ----------------------------------------------------------------
-  // Path 2: live analysis via /api/maestro/persona/<ticker> (تحليل فوري)
+  // Path 2: live analysis via /api/stocks/<ticker>/unified (canonical V40.2)
+  // MAESTRO-KILL (2026-10-12): /api/maestro/persona/<ticker> was DELETED.
+  // The canonical unified analysis endpoint is /api/stocks/<ticker>/unified.
   // ----------------------------------------------------------------
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
 
-    const liveUrl = `${PYTHON_BACKEND.replace(/\/$/, '')}/api/maestro/persona/${ticker}?persona=all`;
+    const liveUrl = `${PYTHON_BACKEND.replace(/\/$/, '')}/api/stocks/${ticker}/unified`;
     const resp = await fetch(liveUrl, {
       method: 'GET',
       headers: { Accept: 'application/json' },
@@ -156,16 +158,16 @@ export async function GET(
     if (resp.ok) {
       const data = await resp.json();
 
-      // الـ persona endpoint بيرجع gambler + investor + narrative + price + stock_info
+      // الـ unified endpoint بيرجع canonical signal + analysis
       const responseBody: DualPersonaResponse = {
         success: true,
         ticker,
         price: data.price || data.stock_info?.current_price,
         market: data.stock_info?.market || 'EGX',
         updated_at: new Date().toISOString(),
-        story: undefined, // الـ live path ما بيبنيش story_arc (بيتعمل في background_analyzer بس)
-        gambler: data.gambler,
-        investor: data.investor,
+        story: undefined,
+        gambler: data.gambler || data.personas?.gambler,
+        investor: data.investor || data.personas?.investor,
         narrative: data.narrative,
         source: 'live',
       };

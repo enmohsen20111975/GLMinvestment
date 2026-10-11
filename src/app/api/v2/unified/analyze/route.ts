@@ -151,10 +151,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2) Compose locally from confluence + dual-persona
-    const [confluence, dualPersona] = await Promise.all([
+    // 2) Compose locally from confluence + unified stock data
+    // MAESTRO-GHOST-HUNT (2026-10-12): /api/maestro/persona/<ticker> was DELETED
+    // (Maestro orchestrator archived). Replaced with /api/stocks/<ticker>/unified
+    // which returns canonical V40.2 analysis (gambler + investor + narrative).
+    const [confluence, unifiedStock] = await Promise.all([
       getPython(`/api/confluence/analyze/${encodeURIComponent(ticker)}`),
-      getPython(`/api/maestro/persona/${encodeURIComponent(ticker)}?persona=all`).catch(() => null),
+      getPython(`/api/stocks/${encodeURIComponent(ticker)}/unified`).catch(() => null),
     ]);
 
     // ---- Build the unified analysis object ----
@@ -164,17 +167,16 @@ export async function POST(request: NextRequest) {
     // Master score from confluence (0..100) → use as a baseline
     let score = num(boardConsensus?.master_score, 50);
 
-    // Persona overlay from /api/maestro/persona/<ticker>
-    const personaBlock: any = dualPersona?.[persona] || dualPersona?.persona_block || null;
+    // Persona overlay from /api/stocks/<ticker>/unified (canonical V40.2)
+    const personaBlock: any = unifiedStock?.personas?.[persona] || unifiedStock?.[persona] || null;
     if (personaBlock) {
       const pScore = signalToScore(personaBlock.signal, score);
       // Blend persona score (60%) with confluence master score (40%)
       score = Math.round(pScore * 0.6 + score * 0.4);
-    } else {
-      // No persona overlay — nudge score based on persona weights alone
-      if (persona === 'gambler')  score = Math.min(100, score + 5);
-      if (persona === 'investor') score = Math.max(0,  score - 5);
     }
+    // MAESTRO-GHOST-HUNT: removed the `else` branch that nudged score by ±5
+    // based on persona alone (fabricated heuristic — Rule 27 violation).
+    // If no persona overlay, keep the confluence master_score as-is.
 
     score = Math.max(0, Math.min(100, Math.round(score)));
     const rec = scoreToRecommendation(score);

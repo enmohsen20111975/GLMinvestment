@@ -50,7 +50,12 @@ STOCKS_DB = VPS_REAL_DIR / "stocks.db" if VPS_REAL_DIR.exists() else PROJECT_ROO
 OUTPUT_DIR = SCRIPT_DIR / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# ─── P0-v12 Persona thresholds (mirror maestro_orchestrator.py after port) ───
+# ─── P0-v12 Persona thresholds ────────────────────────────────────────────
+# MAESTRO-GHOST-HUNT (2026-10-12 — Rule 67 violation):
+# قبل كده: comment بيقول "mirror maestro_orchestrator.py after port" — بس
+# maestro_orchestrator.py اتمسح (MAESTRO-KILL)! الـ thresholds دي بقت orphan.
+# الحل: غيرنا الـ comment + أضفنا note إن دول standalone thresholds (مش mirror).
+# لو محتاج canonical thresholds، لازم تيجي من engine_settings.py (Rule 11).
 PERSONA_THRESHOLDS = {
     'gambler': {
         'bull':  (45, 28, 18, 12),
@@ -68,6 +73,7 @@ PERSONA_THRESHOLDS = {
         'range': (58, 48, 36, 26),
     },
 }
+# TODO (Rule 11): Move these to engine_settings.py as the canonical source.
 
 
 def log(msg: str):
