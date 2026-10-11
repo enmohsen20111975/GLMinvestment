@@ -1901,7 +1901,12 @@ def rebuild_predictions():
                 # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
                 with _open_db('predictions', _pred_db, writable=True) as conn:
                     try:
-                        conn.execute("DELETE FROM predictions WHERE 1=1")
+                        # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+                        # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+                        conn.execute(
+                            "UPDATE predictions SET status='ARCHIVED', "
+                            "notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE 1=1"
+                        )
                         deleted_count += conn.total_changes
                     except Exception:
                         pass
