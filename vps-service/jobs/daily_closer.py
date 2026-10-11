@@ -72,6 +72,19 @@ def _is_egx_market_hours_now() -> bool:
 
 # Apply SQLite WAL and timeout patches globally to prevent DB locks
 import sqlite3
+
+# DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2): canonical active-prediction filter.
+# Replaces every inline `status != 'INVALID'` (which excluded only one masked
+# status) with the centralized filter that also excludes ARCHIVED + REJECTED_BAD_RR.
+try:
+    _DEV11_VPS_ROOT = Path(__file__).resolve().parent.parent
+    if str(_DEV11_VPS_ROOT) not in sys.path:
+        sys.path.insert(0, str(_DEV11_VPS_ROOT))
+    from core.query_helpers import ACTIVE_PREDICTION_FILTER as _DEV11_ACTIVE_FILTER
+except ImportError as _dev11_err:
+    print(f"[daily_closer] core.query_helpers not available: {_dev11_err} — using inline filter", flush=True)
+    _DEV11_ACTIVE_FILTER = "status NOT IN ('INVALID', 'ARCHIVED', 'REJECTED_BAD_RR')"
+
 _original_connect = sqlite3.connect
 def _patched_connect(*args, **kwargs):
     if len(args) > 1:
@@ -323,20 +336,20 @@ class DailyCloser:
             # P1-A (2026-10-12): Skip placeholder predictions (status='INVALID')
             # so we don't update rogue placeholders with real outcomes.
             if market_filter:
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT *
                     FROM predictions
                     WHERE outcome_date IS NULL
                       AND market = ?
-                      AND status != 'INVALID'  /* P1-A: skip placeholders (Rule 27) */
+                      AND {_DEV11_ACTIVE_FILTER}  /* DEV-11: skip placeholders + archived + rejected (Rule 27) */
                     ORDER BY created_at ASC
                 """, (market_filter,))
             else:
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT *
                     FROM predictions
                     WHERE outcome_date IS NULL
-                      AND status != 'INVALID'  /* P1-A: skip placeholders (Rule 27) */
+                      AND {_DEV11_ACTIVE_FILTER}  /* DEV-11: skip placeholders + archived + rejected (Rule 27) */
                     ORDER BY created_at ASC
                 """)
             rows = cursor.fetchall()

@@ -46,6 +46,17 @@ except ImportError as _c1_err:
     print(f"[stored_analysis_routes] ⚠️ opportunity_quality not available: {_c1_err}")
     C1_OPPORTUNITY_AVAILABLE = False
 
+# DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2): canonical active-prediction filter.
+# Replaces every inline `status != 'INVALID'` (which excluded only one masked
+# status) with the centralized filter that also excludes ARCHIVED + REJECTED_BAD_RR.
+try:
+    import sys as _sys_dev11
+    _sys_dev11.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from core.query_helpers import ACTIVE_PREDICTION_FILTER as _DEV11_ACTIVE_FILTER
+except ImportError as _dev11_err:
+    print(f"[stored_analysis_routes] ⚠️ core.query_helpers not available: {_dev11_err} — falling back to inline filter")
+    _DEV11_ACTIVE_FILTER = "status NOT IN ('INVALID', 'ARCHIVED', 'REJECTED_BAD_RR')"
+
 # Base directory dynamically resolved
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PREDICTIONS_DB = str(BASE_DIR / 'db' / 'predictions.db')
@@ -1727,7 +1738,7 @@ def get_live_tracking():
                 f"exit_type, holding_days{_dq_sel}{_tp2_sel}{_hpr_sel}{_lpr_sel} "
                 "FROM predictions "
                 f"WHERE {_m_sql} "
-                "  AND status != 'INVALID' "  # P0-C: exclude placeholder predictions (Rule 27)
+                f"  AND {_DEV11_ACTIVE_FILTER} "  # DEV-11: exclude INVALID + ARCHIVED + REJECTED_BAD_RR
                 "  AND ( "
                 "        (outcome_date IS NOT NULL AND substr(outcome_date, 1, 10) >= ?"
                 f"{_dq_where}{_cap_where}) "
@@ -1747,7 +1758,7 @@ def get_live_tracking():
                 f"exit_type, holding_days{_dq_sel}{_tp2_sel}{_hpr_sel}{_lpr_sel} "
                 "FROM predictions "
                 f"WHERE {_m_sql} "
-                "  AND status != 'INVALID' "  # P0-C: exclude placeholder predictions (Rule 27)
+                f"  AND {_DEV11_ACTIVE_FILTER} "  # DEV-11: exclude INVALID + ARCHIVED + REJECTED_BAD_RR
                 "  AND ( "
                 "        (outcome_date IS NOT NULL"
                 f"{_dq_where}{_cap_where}) "

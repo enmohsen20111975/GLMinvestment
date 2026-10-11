@@ -35,6 +35,15 @@ VPS_SERVICE_DIR = Path(__file__).resolve().parent.parent
 if str(VPS_SERVICE_DIR) not in sys.path:
     sys.path.insert(0, str(VPS_SERVICE_DIR))
 
+# DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2): canonical active-prediction filter.
+# Replaces every inline `status != 'INVALID'` (which excluded only one masked
+# status) with the centralized filter that also excludes ARCHIVED + REJECTED_BAD_RR.
+try:
+    from core.query_helpers import ACTIVE_PREDICTION_FILTER as _DEV11_ACTIVE_FILTER
+except ImportError as _dev11_err:
+    print(f"[telegram_target_hit_tracker] core.query_helpers not available: {_dev11_err} — using inline filter", flush=True)
+    _DEV11_ACTIVE_FILTER = "status NOT IN ('INVALID', 'ARCHIVED', 'REJECTED_BAD_RR')"
+
 TELEGRAM_DIR = Path(__file__).resolve().parent
 if str(TELEGRAM_DIR) not in sys.path:
     sys.path.insert(0, str(TELEGRAM_DIR))
@@ -912,11 +921,13 @@ def record_target_hit_in_db(item: Dict) -> bool:
         # فحص إذا كان هناك توقع نشط مسجل لهذا السهم
         # P1-B (2026-10-12): Skip placeholder predictions (status='INVALID')
         # so we don't UPDATE rogue placeholders with "صفقة رابحة مرصودة" notes.
-        cursor.execute("""
+        # DEV-11 (2026-10-13): Use canonical filter — also excludes ARCHIVED +
+        # REJECTED_BAD_RR (masked-wipe victims + geometry-guard rejections).
+        cursor.execute(f"""
             SELECT id, entry_price, prediction_date, notes
             FROM predictions
             WHERE ticker = ? AND status IN ('active', 'ACTIVE', 'PENDING') AND outcome_date IS NULL
-              AND status != 'INVALID'  /* P1-B: skip placeholders (Rule 27) */
+              AND {_DEV11_ACTIVE_FILTER}  /* DEV-11: skip placeholders + archived + rejected (Rule 27) */
             ORDER BY id DESC LIMIT 1
         """, (tk,))
         row = cursor.fetchone()
