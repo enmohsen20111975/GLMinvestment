@@ -75050,3 +75050,50 @@ Stage Summary:
 - 10/13 PASS + 3/13 FAIL
 - المشاكل المتبقية: prediction_tracker + 7 scripts بـ يتخطوا safe_insert
 - الإصلاحات اللي اتعملت كلها متحقق منها بشكل مستقل ✅
+
+---
+Task ID: DEV-06-10-EXECUTION
+Agent: [المنفذ الفني - Lead Technical Implementer (Z.ai Code)]
+Task: الجولة 2 — DEV-06 إلى DEV-10
+
+Work Log:
+- قريت توجيهات المدير العام + القواعد (1, 20, 21, 27, 35, 67)
+- نفذت 5 مهام (DEV-06 إلى DEV-10)
+
+DEV-06: إلغاء كل الحذف الصلب
+- 19 commits
+- 11 مسار نشط + 3 معطل + 3 إضافي = 17 مسار
+- استبدال: DELETE → UPDATE status='ARCHIVED'
+- CI check: check_no_hard_delete.py → PASS ✅
+
+DEV-07: Guard مركزي إجباري
+- 17 commits
+- 4 طبقات: safe_insert_prediction + None check + SQLite TRIGGER + CI check
+- 6/6 اختبارات PASS ✅
+
+DEV-08: إعادة بناء daily_closer
+- 3 commits
+- UTC: datetime.now(timezone.utc)
+- backfill script: backfill_hit_timestamps.py
+- تصحيح: DEV-02 في 52c3521 + UTC fix في 2f196a7
+
+DEV-09: توحيد أرقام الشرعية
+- الإنتاج: 10 legit (معتمد)
+- العينة: 38 legit (قبل delete_old_v40)
+- الفرق: 28 اتمسحت → DEV-01 عطل delete_old_v40
+
+DEV-10: تصحيح السجل
+- CHANGELOG + worklog محدّثة
+- تصحيح: DEV-02 في 52c3521 (مش ac110bf)
+- درس: git add بالاسم + commit message وصفية
+
+Verification:
+- Python syntax: ✅
+- ESLint: ✅ EXIT 0
+- CI checks: ✅ check_no_hard_delete + check_no_raw_insert
+- Guard: ✅ None/0/-10 rejected
+- UTC: ✅ timezone.utc
+- dry-run: ✅ backfill idempotent
+
+[المنفذ الفني - Lead Technical Implementer (Z.ai Code)]
+DEV-06-10-EXECUTION complete.

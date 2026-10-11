@@ -1113,3 +1113,48 @@ Commits: `6b31cab6` (league) · `436af03b` (specialist-analysis) · `0a61cf33` (
 - **الملف**: vps-service/scripts/recover_legit_predictions.py (NEW)
 - **7 checks**: kill_filter + prices + direction + score + R:R
 - **النتيجة**: 38 candidates → 38 golden + 0 rejected ✅
+
+---
+
+## [2026-10-12 — DEV-06 to DEV-10] — الجولة 2 (DUAL-TRACK)
+
+### DEV-06: إلغاء كل الحذف الصلب (Hard DELETE) ✅
+- **19 commits** — كل DELETE FROM predictions في المستودع اتعطلت
+- استبدال: `DELETE FROM predictions` → `UPDATE predictions SET status='ARCHIVED'`
+- CI check: `scripts/check_no_hard_delete.py` → ✅ PASS (0 active DELETEs)
+- المسارات: admin_routes + ai_predictions + historical_v2 + misc + cleanup_catastrophic + rebuild + 6 test scripts
+
+### DEV-07: Guard مركزي إجباري (Full Input Guard) ✅
+- **17 commits** — 4 طبقات دفاع (Defense-in-Depth)
+- Layer 1: `safe_insert_prediction.py` (نقطة كتابة موحّدة)
+- Layer 2: `validate_prediction_evidence()` — سد ثغرة None
+- Layer 3: SQLite TRIGGER `trg_prevent_invalid_prices` (BEFORE INSERT)
+- Layer 4: CI check `check_no_raw_insert.py` → ✅ PASS
+- اختبارات: None → reject ✅ | 0 → reject ✅ | -10 → reject ✅ | valid → pass ✅
+
+### DEV-08: إعادة بناء daily_closer (UTC + backfill) ✅
+- **3 commits**
+- إصلاح: `datetime.now()` → `datetime.now(timezone.utc)` في _mark_closed
+- سكريبت backfill: `backfill_hit_timestamps.py` (dry-run + backup + idempotent)
+- يملأ target_hit_at + stop_hit_at + exit_price للسجلات القديمة
+- تصحيح: DEV-02 الأصلي كان في 52c3521 (UUID message) + UTC fix في 2f196a7
+
+### DEV-09: توحيد أرقام الشرعية ✅
+- **الرقم المعتمد للإنتاج**: 10 legit (من فحص سيدي المباشر)
+- **الرقم في العينة المحلية**: 38 legit (backup قبل delete_old_v40_predictions)
+- **الفرق**: 38 - 10 = 28 سجل legit اتمسحت بـ delete_old_v40_predictions
+- **تم تعطيل delete_old_v40_predictions في DEV-01**
+- **الاستعلام المعتمد**:
+  ```sql
+  SELECT COUNT(*) FROM predictions
+  WHERE evidence_count >= 3
+    AND kill_filter_result IS NOT NULL AND kill_filter_result != ''
+    AND (kill_filter_result LIKE 'V40 evidence%' OR kill_filter_result LIKE 'INTRADAY-5M%')
+    AND status != 'INVALID'
+  ```
+
+### DEV-10: تصحيح السجل ✅
+- تصحيح: DEV-02 الأصلي في 52c3521 (مش ac110bf زي ما قيل قبل كده)
+- 52c3521: UUID message بلا وصف (خطأ — تم توثيقه)
+- 2f196a7: UTC fix لـ DEV-02 (الصحيح)
+- درس مستفاد: git add <file> بالاسم + commit message وصفية
