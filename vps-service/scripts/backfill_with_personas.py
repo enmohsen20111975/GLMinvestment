@@ -426,6 +426,7 @@ def store_prediction(conn, ticker, signal, entry, target, stop, pred_date,
     _target_price_2 = float(entry or 0) * _target2_mult if entry else None
 
     cur.execute('''
+        -- DEV-07 verified-disabled (dead code — sys.exit(0) at L667, FINALIZE-UNIFICATION)
         INSERT INTO predictions
         (ticker, persona, signal, signal_type, prediction_date, entry_price, target_price, target_price_2,
          stop_loss, master_score, technical_score, fundamental_score,
