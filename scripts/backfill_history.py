@@ -162,4 +162,19 @@ def backfill_predictions():
     conn_pred.close()
 
 if __name__ == '__main__':
+    # DEV-07 (2026-10-12 — FULL INPUT GUARD): non-canonical writer disabled.
+    # Rule 35: V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY writer
+    # to predictions.db. This script INSERTs historical predictions directly
+    # — bypassing safe_insert_prediction() / record_prediction() guards —
+    # so it must remain disabled until redirected to the canonical path.
+    # To re-enable: replace the raw INSERT in backfill_predictions() with
+    # safe_insert_prediction() calls. Do NOT delete (Rule 16 VERIFY-BEFORE-DELETE).
+    import sys as _sys
+    print(
+        '[DEV-07] GUARD: backfill_history.py disabled (Rule 35 — V40.2 is the '
+        'only writer to predictions.db). To re-enable, redirect the INSERT '
+        'to vps-service/core/safe_insert_prediction.py.',
+        flush=True,
+    )
+    _sys.exit(0)
     backfill_predictions()
