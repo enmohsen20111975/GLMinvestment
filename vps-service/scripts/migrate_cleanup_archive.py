@@ -115,9 +115,14 @@ def archive_old_predictions(dry_run=False):
             WHERE prediction_date < date('now', '-6 months')
         """)
 
-        # حذف من الجدول الأساسي
+        # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+        # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+        # (Data already copied to predictions_archive above — original rows are
+        # now marked ARCHIVED instead of being destroyed.)
         db.execute("""
-            DELETE FROM predictions
+            UPDATE predictions
+            SET status='ARCHIVED',
+                notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED'
             WHERE prediction_date < date('now', '-6 months')
         """)
 
