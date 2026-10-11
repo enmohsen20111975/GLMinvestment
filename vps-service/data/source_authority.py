@@ -33,10 +33,13 @@ CANONICAL_SOURCES = {
 
     # TADAWUL/KSE/QSE/US: yahoo_clean is the primary (long history)
     #       → egx_investment_migration (legacy fallback for EGX-adjacent)
+    # P1-PARALLEL-ENGINES-FIX (2026-10-12): 'yahoo_us' is the US scraper's
+    # source label. It is allowed as a fallback so the daily cron can write
+    # rows even when the primary 'yahoo_clean' pipeline is stale.
     'TADAWUL':   ['yahoo_clean', 'egx_investment_migration'],
     'KSE':       ['yahoo_clean'],
     'QSE':       ['yahoo_clean'],
-    'US':        ['yahoo_clean'],
+    'US':        ['yahoo_clean', 'yahoo_us'],
 
     # CRYPTO: crypto_fetcher (API — has 198K rows) → tradingview_live (if available)
     # QA-22 found: tradingview_live has 0 crypto rows — demoted to fallback
@@ -142,6 +145,16 @@ def write_guarded(
     close_price: float,
     volume: int,
     source: str,
+    # ── Optional columns (P1-PARALLEL-ENGINES-FIX 2026-10-12) ──────────────
+    # egksco_scraper writes these delta_volume columns to price_history.
+    # Other callers don't pass them — they remain NULL in the row.
+    buy_volume: Optional[int] = None,
+    sell_volume: Optional[int] = None,
+    delta_volume: Optional[int] = None,
+    delta_pct: Optional[float] = None,
+    pressure: Optional[str] = None,
+    adjusted: Optional[int] = None,
+    market_label: Optional[str] = None,
 ) -> bool:
     """
     GUARDED WRITE: only writes if the source is allowed for this market.
@@ -153,6 +166,11 @@ def write_guarded(
     - If source is FALLBACK:
       - If primary is FRESH (< 7 days) → skip write (primary wins)
       - If primary is STALE → write with PRIMARY source name (not fallback name)
+
+    Optional delta_volume columns are written only if provided AND the
+    `price_history` table has the corresponding columns. If the columns
+    don't exist (older schema), they're silently skipped — callers should
+    not have to migrate the schema before using write_guarded().
 
     Returns True if written, False if skipped.
     """
@@ -186,11 +204,42 @@ def write_guarded(
     # Execute the write
     try:
         conn = sqlite3.connect(db_path)
-        conn.execute("""
-            INSERT OR REPLACE INTO price_history
-            (ticker, date, open_price, high_price, low_price, close_price, volume, source)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (ticker, date, open_price, high_price, low_price, close_price, volume, write_source))
+        # ── Schema-aware INSERT (P1-PARALLEL-ENGINES-FIX 2026-10-12) ──────
+        # Detect which optional columns exist in price_history so we can
+        # include them in the INSERT only when they're present. This keeps
+        # the function backward-compatible with both the original schema
+        # (8 columns) and the extended schema (13 columns with delta_volume).
+        try:
+            cols_in_table = {r[1] for r in conn.execute("PRAGMA table_info(price_history)").fetchall()}
+        except Exception:
+            cols_in_table = set()
+
+        base_cols = ['ticker', 'date', 'open_price', 'high_price', 'low_price',
+                     'close_price', 'volume', 'source']
+        base_vals: list = [ticker, date, open_price, high_price, low_price,
+                           close_price, volume, write_source]
+
+        # Optional delta_volume columns
+        optional_pairs: List[tuple] = [
+            ('buy_volume',    buy_volume),
+            ('sell_volume',   sell_volume),
+            ('delta_volume',  delta_volume),
+            ('delta_pct',     delta_pct),
+            ('pressure',      pressure),
+            ('adjusted',      adjusted),
+            ('market',        market_label),
+        ]
+        for col_name, col_val in optional_pairs:
+            if col_name in cols_in_table and col_val is not None:
+                base_cols.append(col_name)
+                base_vals.append(col_val)
+
+        placeholders = ', '.join(['?'] * len(base_cols))
+        col_list = ', '.join(base_cols)
+        conn.execute(
+            f"INSERT OR REPLACE INTO price_history ({col_list}) VALUES ({placeholders})",
+            base_vals,
+        )
         conn.commit()
         conn.close()
         return True

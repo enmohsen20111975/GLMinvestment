@@ -6136,3 +6136,644 @@ def market_recommendations_ai_insights():
             'count': 0,
             'timestamp': datetime.now().isoformat(),
         }), 500
+
+# ============================================================================
+# P1-PARALLEL-ENGINES-FIX (2026-10-12) — Rule 20 compliant endpoints
+# Replaces 5 Node-side parallel engines with Python canonical proxies.
+# ============================================================================
+
+# ── TRADE-RESULTS-ENGINE PORT ────────────────────────────────────────────────
+# Replaces: src/lib/trade-results-engine.ts (685 LOC) + src/app/api/trade-results/route.ts
+# Owner spec (32-section) preserved 1:1 — see archive for original TS source.
+
+from datetime import datetime, timedelta, timezone
+import sqlite3 as _tr_sqlite3
+
+# Egypt is UTC+2 (winter) / UTC+3 (summer DST).
+# We rely on Python datetime + zoneinfo for correct DST-aware conversions.
+try:
+    from zoneinfo import ZoneInfo
+    _CAIRO_TZ = ZoneInfo("Africa/Cairo")
+except Exception:
+    _CAIRO_TZ = timezone(timedelta(hours=2))  # safe fallback
+
+_VALID_PERIODS_TR = ("daily", "weekly", "monthly")
+_NO_QUALIFIED_MSG_TR = "لا توجد نتائج مؤهلة لهذه الفترة"
+
+
+def _cairo_today_tr(now: datetime = None) -> str:
+    """Return today's date in Cairo as YYYY-MM-DD."""
+    n = now or datetime.now(_CAIRO_TZ)
+    return n.strftime("%Y-%m-%d")
+
+
+def _get_period_range_tr(period: str, now: datetime = None) -> dict:
+    """
+    Compute Cairo-local period bounds + their UTC equivalents.
+
+    - daily:  today (Cairo) 00:00:00 → 23:59:59.999
+    - weekly: Sunday → Saturday (Egypt work week starts Sunday)
+    - monthly: 1st → last day of current month (Cairo)
+    """
+    n = now or datetime.now(_CAIRO_TZ)
+    cairo_today = _cairo_today_tr(n)
+    y, m, d = (int(x) for x in cairo_today.split("-"))
+
+    if period == "daily":
+        start_ymd = cairo_today
+        end_ymd = cairo_today
+    elif period == "weekly":
+        # Sunday=0, Saturday=6 — Python weekday(): Mon=0..Sun=6.
+        # Convert to Sun=0..Sat=6.
+        py_dow = n.weekday()
+        sun_dow = (py_dow + 1) % 7
+        sunday = n - timedelta(days=sun_dow)
+        saturday = sunday + timedelta(days=6)
+        start_ymd = sunday.strftime("%Y-%m-%d")
+        end_ymd = saturday.strftime("%Y-%m-%d")
+    elif period == "monthly":
+        start_ymd = f"{y:04d}-{m:02d}-01"
+        # Last day of month: day 0 of next month
+        if m == 12:
+            nxt = datetime(y + 1, 1, 1, tzinfo=_CAIRO_TZ)
+        else:
+            nxt = datetime(y, m + 1, 1, tzinfo=_CAIRO_TZ)
+        last_day = (nxt - timedelta(days=1)).day
+        end_ymd = f"{y:04d}-{m:02d}-{last_day:02d}"
+    else:
+        raise ValueError(f"Invalid period: {period}")
+
+    # Build Cairo-local datetime bounds then convert to UTC ISO strings.
+    sy, sm, sd = (int(x) for x in start_ymd.split("-"))
+    ey, em, ed = (int(x) for x in end_ymd.split("-"))
+    start_local = datetime(sy, sm, sd, 0, 0, 0, 0, tzinfo=_CAIRO_TZ)
+    end_local = datetime(ey, em, ed, 23, 59, 59, 999000, tzinfo=_CAIRO_TZ)
+    return {
+        "period": period,
+        "period_start": start_ymd,
+        "period_end": end_ymd,
+        "utc_start": start_local.astimezone(timezone.utc).isoformat(),
+        "utc_end": end_local.astimezone(timezone.utc).isoformat(),
+    }
+
+
+def _infer_market_tr(ticker: str, market_col) -> str:
+    if market_col and str(market_col).strip():
+        return str(market_col).strip()
+    if not ticker:
+        return "EGX"
+    if ticker.isdigit():
+        return "TADAWUL"
+    return "EGX"
+
+
+def _map_row_to_trade_result(row: dict) -> dict:
+    """Map a raw predictions row to the spec's TradeResult shape."""
+    ticker = str(row.get("ticker") or "").strip()
+    market = _infer_market_tr(ticker, row.get("market"))
+    signal = str(row.get("signal") or "").strip().upper()
+    is_sell = signal in ("SELL", "STRONG_SELL", "SHORT")
+
+    try:
+        entry_price = float(row.get("entry_price") or 0)
+    except (TypeError, ValueError):
+        entry_price = 0.0
+    try:
+        exit_price = float(row.get("exit_price") or 0)
+    except (TypeError, ValueError):
+        exit_price = 0.0
+
+    target_price_raw = row.get("target_price")
+    target_price = float(target_price_raw) if target_price_raw is not None else None
+    stop_loss_raw = row.get("stop_loss")
+    stop_loss = float(stop_loss_raw) if stop_loss_raw is not None else None
+
+    # realized_return_percent — prefer actual_return, then pnl_pct, then calc.
+    actual_return = row.get("actual_return")
+    pnl_pct = row.get("pnl_pct")
+    if actual_return is not None and _is_float(actual_return):
+        realized = float(actual_return)
+    elif pnl_pct is not None and _is_float(pnl_pct):
+        realized = float(pnl_pct)
+    elif entry_price > 0 and exit_price > 0:
+        if is_sell:
+            realized = ((entry_price - exit_price) / entry_price) * 100
+        else:
+            realized = ((exit_price - entry_price) / entry_price) * 100
+    else:
+        # Rule 67 §2: no fabricated data — 0 keeps the row but lands it in losers.
+        realized = 0.0
+
+    realized = round(realized, 2)
+
+    target_hit = int(row.get("hit_target") or 0) == 1
+    stop_hit = int(row.get("hit_stop") or 0) == 1
+    profitable = realized > 0
+
+    exceeded_target = False
+    if target_price is not None and target_price > 0 and exit_price > 0:
+        exceeded_target = (exit_price < target_price) if is_sell else (exit_price > target_price)
+
+    # Stock name (canonical from stocks.db / data_engine.db)
+    try:
+        name_info = _get_stock_name(ticker)
+        stock_name = name_info.get("name_ar") or name_info.get("name") or ticker
+    except Exception:
+        stock_name = ticker
+
+    try:
+        holding_days = int(row.get("holding_days") or 0)
+    except (TypeError, ValueError):
+        holding_days = 0
+
+    return {
+        "ticker": ticker,
+        "stock_name": stock_name,
+        "market": market,
+        "recommendation_date": row.get("prediction_date") or "",
+        "close_date": row.get("closed_at") or "",
+        "recommendation_price": entry_price,
+        "target_price": target_price if target_price is not None else 0,
+        "stop_loss": stop_loss,
+        "actual_close_price": exit_price,
+        "realized_return_percent": realized,
+        "target_hit": target_hit,
+        "stop_hit": stop_hit,
+        "profitable": profitable,
+        "status": "CLOSED",
+        "holding_days": holding_days,
+        "exceeded_target": exceeded_target,
+    }
+
+
+def _is_float(v) -> bool:
+    try:
+        float(v)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def _fetch_closed_trades_tr(period: str, market: str, now: datetime) -> list:
+    """Fetch all CLOSED trades for the given period (UTC bounds from get_period_range)."""
+    range_ = _get_period_range_tr(period, now)
+    from pathlib import Path as _P
+    _root = _P(__file__).resolve().parent.parent.parent
+    db_path = str(_root / "db" / "predictions.db")
+    if not os.path.exists(db_path):
+        return []
+    conn = _tr_sqlite3.connect(db_path)
+    conn.row_factory = _tr_sqlite3.Row
+    try:
+        # Guard: predictions table existence
+        try:
+            cur = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type=? AND name=?",
+                ("table", "predictions"),
+            )
+            if cur.fetchone() is None:
+                return []
+        except Exception:
+            return []
+
+        sql = """
+            SELECT ticker, market, signal, prediction_date, closed_at,
+                   entry_price, exit_price, target_price, stop_loss,
+                   actual_return, pnl_pct, hit_target, hit_stop,
+                   holding_days, status
+            FROM predictions
+            WHERE UPPER(TRIM(COALESCE(status, ))) = CLOSED
+              AND closed_at IS NOT NULL
+              AND exit_price IS NOT NULL
+              AND entry_price IS NOT NULL
+              AND datetime(closed_at) >= datetime(?)
+              AND datetime(closed_at) <= datetime(?)
+        """
+        params = [range_["utc_start"], range_["utc_end"]]
+        if market and market.strip():
+            sql += " AND UPPER(TRIM(COALESCE(market, ))) = ?"
+            params.append(market.strip().upper())
+        sql += " ORDER BY datetime(closed_at) DESC"
+        rows = conn.execute(sql, params).fetchall()
+        return [_map_row_to_trade_result(dict(r)) for r in rows]
+    finally:
+        conn.close()
+
+
+def _calculate_report_stats_tr(trades: list):
+    """Returns None if no qualified trades (Rule 67 §2)."""
+    if not trades:
+        return None
+    total_closed = len(trades)
+    winners = [t for t in trades if t["profitable"]]
+    losers = [t for t in trades if not t["profitable"]]
+    winning_closed = len(winners)
+    losing_closed = len(losers)
+
+    success_rate = round((winning_closed / total_closed) * 100, 1) if total_closed > 0 else 0
+    winner_returns = [w["realized_return_percent"] for w in winners]
+    total_price_movement = round(sum(winner_returns), 2)
+    average_return = round(sum(winner_returns) / len(winner_returns), 2) if winner_returns else 0
+
+    top_trades = sorted(winners, key=lambda t: t["realized_return_percent"], reverse=True)[:10]
+
+    return {
+        "total_closed": total_closed,
+        "winning_closed": winning_closed,
+        "losing_closed": losing_closed,
+        "success_rate": success_rate,
+        "average_return": average_return,
+        "total_price_movement": total_price_movement,
+        "top_trades": top_trades,
+    }
+
+
+def _validate_report_tr(stats, trades, period, now) -> dict:
+    """11-point validation checklist (spec section 25)."""
+    errors = []
+
+    if period not in _VALID_PERIODS_TR:
+        errors.append(f"Invalid period: \"{period}\" (must be daily, weekly, or monthly)")
+
+    if trades:
+        range_ = _get_period_range_tr(period, now)
+        start_ms = _iso_to_ms(range_["utc_start"])
+        end_ms = _iso_to_ms(range_["utc_end"])
+        out_of_range = 0
+        for t in trades:
+            d = _iso_to_ms(t["close_date"])
+            if d is None or d < start_ms or d > end_ms:
+                out_of_range += 1
+        if out_of_range > 0:
+            errors.append(f"{out_of_range} trade(s) have close_date outside period {range_[period_start]} → {range_[period_end]}")
+
+    not_closed = sum(1 for t in trades if t["status"] != "CLOSED")
+    if not_closed > 0:
+        errors.append(f"{not_closed} trade(s) are not CLOSED")
+
+    no_exit_price = sum(1 for t in trades if not t["actual_close_price"] or t["actual_close_price"] <= 0)
+    if no_exit_price > 0:
+        errors.append(f"{no_exit_price} trade(s) missing actual_close_price")
+
+    no_entry_price = sum(1 for t in trades if not t["recommendation_price"] or t["recommendation_price"] <= 0)
+    if no_entry_price > 0:
+        errors.append(f"{no_entry_price} trade(s) missing recommendation_price")
+
+    no_return = sum(1 for t in trades if t["realized_return_percent"] is None)
+    if no_return > 0:
+        errors.append(f"{no_return} trade(s) have non-calculable realized_return_percent")
+
+    # Point 7: No duplicates (ticker + close_date)
+    seen = set()
+    dupes_7 = 0
+    for t in trades:
+        k = f"{t[ticker]}|{t[close_date]}"
+        if k in seen:
+            dupes_7 += 1
+        else:
+            seen.add(k)
+    if dupes_7 > 0:
+        errors.append(f"{dupes_7} duplicate trade(s) by (ticker, close_date)")
+
+    # Point 8: full-row identity check
+    seen_rows = set()
+    dupes_8 = 0
+    for t in trades:
+        k = f"{t[ticker]}|{t[close_date]}|{t[recommendation_price]}|{t[actual_close_price]}|{t[realized_return_percent]}"
+        if k in seen_rows:
+            dupes_8 += 1
+        else:
+            seen_rows.add(k)
+    if dupes_8 > 0:
+        errors.append(f"{dupes_8} exact-duplicate trade row(s) found")
+
+    # Point 9: Success rate consistency
+    if stats is not None:
+        expected_winners = sum(1 for t in trades if t["profitable"])
+        if expected_winners != stats["winning_closed"]:
+            errors.append(f"Success rate mismatch: stats.winning_closed={stats[winning_closed]} but trades have {expected_winners} profitable")
+        expected_rate = round((expected_winners / stats["total_closed"]) * 100, 1) if stats["total_closed"] > 0 else 0
+        if abs(expected_rate - stats["success_rate"]) > 0.2:
+            errors.append(f"success_rate mismatch: stats={stats[success_rate]}% vs recomputed={expected_rate}%")
+
+    # Point 10: no open trades
+    open_statuses = {"PENDING", "ACTIVE", "OPEN", ""}
+    open_trades = sum(1 for t in trades if t["status"].upper() in open_statuses or not t["status"])
+    if open_trades > 0:
+        errors.append(f"{open_trades} open/pending trade(s) leaked into results")
+
+    # Point 11: totals match
+    if stats is not None:
+        if stats["total_closed"] != len(trades):
+            errors.append(f"total_closed mismatch: stats={stats[total_closed]} vs trades.length={len(trades)}")
+        expected_winners_2 = sum(1 for t in trades if t["profitable"])
+        recomputed_losers = len(trades) - expected_winners_2
+        if recomputed_losers != stats["losing_closed"]:
+            errors.append(f"losing_closed mismatch: stats={stats[losing_closed]} vs recomputed={recomputed_losers}")
+
+    return {"valid": len(errors) == 0, "errors": errors}
+
+
+def _iso_to_ms(iso_str: str):
+    """Parse ISO datetime to milliseconds. Returns None on parse failure."""
+    if not iso_str:
+        return None
+    try:
+        # Strip Z and microseconds-aware variants
+        s = iso_str.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.timestamp() * 1000
+    except Exception:
+        return None
+
+
+@misc_bp.route("/api/trade-results", methods=["GET"])
+def get_trade_results():
+    """Rule 20 compliant endpoint — replaces Node-side trade-results-engine.
+
+    Spec: 32-section brief (archive/p1-parallel-engines-20261012/).
+    Returns CLOSED trade results + 11-point validation + aggregated stats
+    for the requested period (daily/weekly/monthly) and optional market.
+    """
+    try:
+        # Auth check (mirror of Node getSessionUserId): rely on the calling
+        # Node proxy to enforce auth (it does — see route.ts). If direct
+        # browser access is desired, the proxy pattern is still the SOT.
+        period_param = (request.args.get("period") or "daily").lower()
+        if period_param not in _VALID_PERIODS_TR:
+            return jsonify({
+                "success": False,
+                "error": f"Invalid period \"{period_param}\". Must be one of: daily, weekly, monthly",
+            }), 400
+        market_param = request.args.get("market") or None
+
+        now = datetime.now(_CAIRO_TZ)
+        range_ = _get_period_range_tr(period_param, now)
+
+        try:
+            trades = _fetch_closed_trades_tr(period_param, market_param, now)
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "error": "Database unavailable",
+                "detail": str(e) if os.environ.get("NODE_ENV") == "development" else None,
+                "period": period_param,
+                "period_start": range_["period_start"],
+                "period_end": range_["period_end"],
+                "generated_at": now.isoformat(),
+                "source": "python-canonical-trade-results",
+            }), 500, {"Cache-Control": "no-store, no-cache, must-revalidate"}
+
+        stats = _calculate_report_stats_tr(trades)
+        validation = _validate_report_tr(stats, trades, period_param, now)
+
+        if stats is None:
+            return jsonify({
+                "success": True,
+                "source": "python-canonical-trade-results",
+                "period": period_param,
+                "period_start": range_["period_start"],
+                "period_end": range_["period_end"],
+                "has_qualified_trades": False,
+                "message": _NO_QUALIFIED_MSG_TR,
+                "stats": None,
+                "trades": [],
+                "validation": validation,
+                "generated_at": now.isoformat(),
+            }), 200, {"Cache-Control": "no-store, no-cache, must-revalidate"}
+
+        return jsonify({
+            "success": True,
+            "source": "python-canonical-trade-results",
+            "period": period_param,
+            "period_start": range_["period_start"],
+            "period_end": range_["period_end"],
+            "has_qualified_trades": True,
+            "stats": stats,
+            "trades": trades,
+            "validation": validation,
+            "generated_at": now.isoformat(),
+        }), 200, {"Cache-Control": "no-store, no-cache, must-revalidate"}
+
+    except Exception as e:
+        _logger.error(f"[trade-results] ERROR: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"python-trade-results-internal-error: {e}",
+            "source": "python-canonical-trade-results",
+        }), 500
+
+
+
+# ── EXPERT-ANALYSIS endpoint (P1-PARALLEL-ENGINES-FIX 2026-10-12) ──────────
+# Replaces: src/lib/expert-analysis.ts (882 LOC) + the heavy computation in
+# src/app/api/stocks/[ticker]/expert-analysis/route.ts.
+#
+# Per Rule 20 (Python=Brain): the canonical engine lives in
+# `vps-service/analyzers/expert_analysis_engine.py`. This endpoint receives
+# the unified stock data via POST body (Node proxy assembles it from
+# /api/stocks/[ticker]/unified) and returns the analysis JSON.
+
+@misc_bp.route("/api/stocks/<string:ticker>/expert-analysis", methods=["GET"])
+def get_expert_analysis(ticker: str):
+    """Rule 20 compliant endpoint — replaces Node-side expert-analysis engine.
+
+    Accepts the stock's unified data via query params OR JSON body (the Node
+    proxy sends it as a JSON POST under the hood, but we accept GET for
+    ad-hoc browser testing with simple params).
+    """
+    try:
+        # Lazy import so misc_routes.py doesn't pull the heavy module on boot.
+        from analyzers.expert_analysis_engine import generate_expert_analysis
+
+        ticker = (ticker or "").strip().upper()
+        if not ticker:
+            return jsonify({"success": False, "error": "missing_ticker"}), 400
+
+        # The Node proxy forwards the full StockDataForAnalysis shape via the
+        # request body OR via query params. We prefer body, then fall back to
+        # query params for direct browser testing.
+        data = {}
+        if request.method == "POST" or request.is_json:
+            try:
+                data = request.get_json(silent=True) or {}
+            except Exception:
+                data = {}
+        if not data:
+            # Fall back to query params — convert numeric strings to floats.
+            def _qnum(key: str):
+                v = request.args.get(key)
+                if v is None or v == "":
+                    return None
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    return v
+            data = {
+                "ticker": ticker,
+                "name": request.args.get("name"),
+                "name_ar": request.args.get("name_ar"),
+                "sector": request.args.get("sector"),
+                "market": request.args.get("market") or "EGX",
+                "current_price": _qnum("current_price"),
+                "previous_close": _qnum("previous_close"),
+                "change_percent": _qnum("change_percent"),
+                "volume": _qnum("volume"),
+                "market_cap": _qnum("market_cap"),
+                "rsi": _qnum("rsi"),
+                "ma_50": _qnum("ma_50"),
+                "ma_200": _qnum("ma_200"),
+                "support": _qnum("support"),
+                "resistance": _qnum("resistance"),
+                "high_52w": _qnum("high_52w"),
+                "low_52w": _qnum("low_52w"),
+                "trend": request.args.get("trend"),
+                "beta": _qnum("beta"),
+                "pe_ratio": _qnum("pe_ratio"),
+                "pb_ratio": _qnum("pb_ratio"),
+                "ps_ratio": _qnum("ps_ratio"),
+                "eps": _qnum("eps"),
+                "roe": _qnum("roe"),
+                "roa": _qnum("roa"),
+                "debt_to_equity": _qnum("debt_to_equity"),
+                "current_ratio": _qnum("current_ratio"),
+                "dividend_yield": _qnum("dividend_yield"),
+                "profit_margin": _qnum("profit_margin"),
+                "signal": request.args.get("signal"),
+                "master_score": _qnum("master_score"),
+                "entry_price": _qnum("entry_price"),
+                "target_price": _qnum("target_price"),
+                "target_price_2": _qnum("target_price_2"),
+                "stop_loss": _qnum("stop_loss"),
+                "risk_reward": _qnum("risk_reward"),
+                "confidence": _qnum("confidence"),
+            }
+        else:
+            # Ensure ticker is set from URL path
+            data.setdefault("ticker", ticker)
+
+        analysis = generate_expert_analysis(data)
+        return jsonify({
+            "success": True,
+            "source": "python-canonical-expert-analysis",
+            "ticker": ticker,
+            "analysis": analysis,
+            "generated_at": datetime.now().isoformat(),
+        }), 200, {"Cache-Control": "no-store, no-cache, must-revalidate"}
+    except Exception as e:
+        import traceback as _tb
+        _logger.error(f"[expert-analysis] ERROR for {ticker}: {e}\n{_tb.format_exc()}")
+        return jsonify({
+            "success": False,
+            "error": f"python-expert-analysis-internal-error: {e}",
+            "source": "python-canonical-expert-analysis",
+            "ticker": ticker,
+        }), 500
+
+
+# Allow POST on the same path so the Node proxy can send the full data dict
+# (GET URL length limits are too tight for the entire StockDataForAnalysis).
+@misc_bp.route("/api/stocks/<string:ticker>/expert-analysis", methods=["POST"])
+def post_expert_analysis(ticker: str):
+    """POST variant — same handler as GET. The Node proxy uses this to
+    forward the full StockDataForAnalysis payload (avoids URL-length limits).
+    """
+    return get_expert_analysis(ticker)
+
+
+# ── GATE-ANALYSIS endpoint (P1-PARALLEL-ENGINES-FIX 2026-10-12) ────────────
+# Replaces: src/lib/gate-analyzer.ts (1066 LOC) + src/lib/dynamic-analysis-engine.ts
+# (969 LOC, depended on by gate-analyzer for BB squeeze + dynamic params).
+#
+# Per Rule 67 (CALCULATION-CANONICAL): the canonical gate-analysis logic
+# lives in `vps-service/analyzers/`. This endpoint receives the indicator
+# snapshot via POST body (Node proxy assembles it from /api/stocks/<ticker>/unified)
+# and returns the 5-gate analysis JSON.
+
+@misc_bp.route("/api/stocks/<string:ticker>/gate-analysis", methods=["GET"])
+def get_gate_analysis(ticker: str):
+    """Rule 20 compliant endpoint — replaces Node-side gate-analyzer engine.
+
+    Accepts the indicator snapshot via query params OR JSON body. Returns
+    the same GateAnalysisOutput shape the TS engine returned — callers
+    (GateAnalysisView.tsx) don't need to change.
+    """
+    try:
+        from analyzers.gate_analysis_engine import analyze_gates, GateAnalysisInput
+
+        ticker = (ticker or "").strip().upper()
+        if not ticker:
+            return jsonify({"success": False, "error": "missing_ticker"}), 400
+
+        # Read params: JSON body if POST, else query string.
+        data = {}
+        if request.method == "POST" or request.is_json:
+            try:
+                data = request.get_json(silent=True) or {}
+            except Exception:
+                data = {}
+        if not data:
+            def _qnum(key: str, default=None):
+                v = request.args.get(key)
+                if v is None or v == "":
+                    return default
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    return v
+            data = {
+                "close": _qnum("close", 0),
+                "open": _qnum("open", 0),
+                "high": _qnum("high", 0),
+                "low": _qnum("low", 0),
+                "volume": _qnum("volume", 0),
+                "avgVolume20": _qnum("avgVolume20", 0),
+                "rsi": _qnum("rsi", 50),
+                "macdLine": _qnum("macdLine", 0),
+                "signalLine": _qnum("signalLine", 0),
+                "macdHist": _qnum("macdHist", 0),
+                "atr": _qnum("atr", 0),
+                "sma20": _qnum("sma20", 0),
+                "sma50": _qnum("sma50", 0),
+                "sma200": _qnum("sma200", 0),
+                "support1": _qnum("support1", 0),
+                "support2": _qnum("support2", 0),
+                "resistance1": _qnum("resistance1", 0),
+                "resistance2": _qnum("resistance2", 0),
+                "sectorPerformance": _qnum("sectorPerformance"),
+                "bollingerWidthPct": _qnum("bollingerWidthPct"),
+                "market": request.args.get("market"),
+            }
+        else:
+            data.setdefault("close", 0)
+
+        persona = request.args.get("persona", "gambler")
+        if persona not in ("gambler", "investor"):
+            persona = "gambler"
+
+        result = analyze_gates(data, persona)
+        return jsonify({
+            "success": True,
+            "source": "python-canonical-gate-analysis",
+            "ticker": ticker,
+            "persona": persona,
+            "result": result,
+            "generated_at": datetime.now().isoformat(),
+        }), 200, {"Cache-Control": "no-store, no-cache, must-revalidate"}
+    except Exception as e:
+        import traceback as _tb
+        _logger.error(f"[gate-analysis] ERROR for {ticker}: {e}\n{_tb.format_exc()}")
+        return jsonify({
+            "success": False,
+            "error": f"python-gate-analysis-internal-error: {e}",
+            "source": "python-canonical-gate-analysis",
+            "ticker": ticker,
+        }), 500
+
+
+@misc_bp.route("/api/stocks/<string:ticker>/gate-analysis", methods=["POST"])
+def post_gate_analysis(ticker: str):
+    """POST variant — same handler as GET."""
+    return get_gate_analysis(ticker)

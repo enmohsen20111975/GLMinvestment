@@ -12,6 +12,206 @@
 
 ---
 
+## [2026-10-12 — DOC-SECRETARY-UPDATE — تحديث شامل لـ Documentation] — DOCUMENTATION-SECRETARY (Rule 70)
+
+تحديث شامل لكل ملفات Documentation عشان تعكس كل الإصلاحات اللي اتعملت في الجلسات الأخيرة. سيدي طلب: "اسحب السكرتيرة بنت المتناكة دى وخليها تحدث Documentation... لازم يكون كتفك بكتفة".
+
+### Documentation updates (5 ملفات)
+
+#### `00-CONSTITUTION.md`
+- **Rule 20 (Python=Brain):** أضفت قسم `RULE20-PURE-PROXY (2026-10-12)` بكل الـ 17 routes اللي اتحولت لـ pure thin proxies: honest-tracking (7) + dashboards (5) + screener/market (4) + chart (1) + fallback-chain removal (4). إجمالي ~3,300 سطر Node logic اتمسحت.
+- **Rule 27 (NO-FAKE-DATA):** أضفت قسم `MAESTRO-KILL (2026-10-12)` (3 fabricated data paths اتمسحت) + قسم `FAKE-DATA-HUNT (2026-10-12)` بكل الـ 5 إصلاحات P0 (3 fake backtest + store.ts synthetic + Zakat hardcoded gold + +2472.9% SUM bug + persona/crypto placeholders).
+- **Rule 35 (ENGINE-UNIFY):** وسّعت قسم `PREDICTION-WRITE-GUARD` لـ يوضح كل الـ conditions (engine provenance + kill_filter signature + evidence_count + master_score placeholder + HOLD pattern + BYPASS env). أضفت قسم `HIDDEN-WRITERS-AUDIT (2026-10-12)` بـ 7 rogue paths اتعطلت + 3 orphan tables اتمسحت + 9 orphan scripts معطّلة.
+- **Rename:** كل references لـ `v40_2_daily_generator.py` اتغيرت لـ `daily_predictor.py` (الاسم الإنتاجي الحالي).
+
+#### `01-PROJECT_ANATOMY.md`
+- **KILL-MAESTRO → DELETE-MAESTRO (2026-10-12):** تحديث الـ section كامل (كان موجود من الجلسة السابقة + تأكيد إن Maestro محذوف نهائياً مش معطل).
+- **قسم جديد `RULE20-PURE-PROXY (2026-10-12)`:** جدول كامل بكل الـ 17 routes مع before → after LOC + Python endpoint. الأقسام: A. honest-tracking (7) + B. dashboards (5) + C. screener/market (4) + D. chart (1) + E. fallback-chain removal (4).
+- **قسم جديد `FAKE-DATA-HUNT (2026-10-12)`:** 5 إصلاحات P0 مفصّلة + Tier 2-5 pending.
+- **قسم جديد `HIDDEN-WRITERS-AUDIT (2026-10-12)`:** جدول بـ 7 rogue paths + جدول بـ 3 orphan tables + قائمة 9 orphan scripts معطّلة.
+- **DB Schema (§3.1):** تحديث counts: `predictions.db` 53→50 table, `stocks.db` 57→54 table, `ExpertRecommendation` 104→48 (CANONICAL), `data_engine.db.gold_prices` = CANONICAL.
+- **§4.1 Engine Map:** Maestro Orchestrator → 🗑️ محذوف نهائياً (كان DISABLED، بقى DELETED).
+- **§5.2.8 API Map:** كل `/api/maestro/*` endpoints = محذوفة (404)، `/api/confluence/generate-predictions` = 410 Gone.
+- **§6 Data Flow:** maestro_orchestrator.py → 🗑️ محذوف.
+- **Header log:** أضفت entry جديد "آخر تحديث: 2026-10-12" بكل ملخص التحديثات.
+
+#### `02-SCREENS_AND_COMPONENTS.md`
+- `MaestroWidget.tsx` → 🗑️ محذوف نهائياً (DELETE-MAESTRO 2026-10-12) — كان Maestro KILLed (KILL-MAESTRO 2026-08-31 → early-return null) بعدها اتمسح نهائياً.
+- `/maestro` page (124 LOC) + `/admin/maestro` (747 LOC) → محذوف نهائياً.
+- `admin/MaestroDashboard.tsx` (2,750 LOC) + `admin/MaestroCommandCenter.tsx` (3,748 LOC) + `admin/MaestroPage.tsx` (297 LOC) + `admin/CryptoMaestroPage.tsx` (821 LOC) → كلها محذوفة نهائياً.
+- `#dashboard` widgets list: `~~MaestroWidget~~ 🗑️ محذوف`.
+- `src/lib/honest-tracking/maestro.ts` (1862 LOC — BUG: RSI + ATR SMA-based) → محذوف نهائياً + الـ 5 routes اللي كانوا بيستخدموه كلها اتحولت لـ pure proxy.
+- `/admin/generate-historical-predictions` → 🗑️ 410 Gone (MAESTRO-KILL 2026-10-12) — redirect لـ V40.2 daily_predictor.py.
+- `02-SCREENS_AND_COMPONENTS.md:1500+` Maestro references كلها اتحدّثت.
+
+#### `03-API_REFERENCE.md`
+- `/admin/generate-historical-predictions` → 🗑️ 410 Gone (MAESTRO-KILL 2026-10-12).
+
+#### `SYSTEM_HOW_IT_THINKS.md`
+- **§ KILL-MAESTRO → DELETE-MAESTRO (2026-10-12):** تحديث الـ section + جدول الفارق الجوهري. Maestro محذوف نهائياً (مش معطل).
+- **§ Maestro orchestrator row:** 🗑️ محذوف نهائياً (DELETE-MAESTRO 2026-10-12) — كان معطل (KILL-MAESTRO 2026-08-31: signal_id = None)، بعدها اتسجل كـ dead code.
+- **§ 4.2 PERSONA_CONFIGS:** انتقل من `maestro_orchestrator.py` لـ `persona_engine.py`.
+- **§ 7.6 معمارية مسارَي التوليد:** "Maestro persona" path = محذوف نهائياً.
+- **§ 9.1 Closed-Loop Chain (4 ملفات):** Maestro Orchestrator row → محذوف نهائياً (logic انتقل لـ V40.2 + learning_engine + persona_engine).
+- **§ 9.3 code snippet:** historical reference only — logic انتقل لـ daily_predictor.py per Rule 35.
+- **Discovery Fallback Chain:** `daily_predictor.py` (Maestro 🗑️ محذوف نهائياً — DELETE-MAESTRO 2026-10-12).
+- **Crontab contradiction:** `vps-service/crontab.txt` claim محذوفة — V40.2 هو المحرك الوحيد.
+
+### Summary
+- **5 ملفات Documentation** اتحدّثت: `00-CONSTITUTION.md` + `01-PROJECT_ANATOMY.md` + `02-SCREENS_AND_COMPONENTS.md` + `03-API_REFERENCE.md` + `SYSTEM_HOW_IT_THINKS.md`.
+- **Rename:** كل references لـ `v40_2_daily_generator.py` اتغيرت لـ `daily_predictor.py` (الاسم الإنتاجي الحالي).
+- **Maestro status:** كل references بـ تقول "محذوف نهائياً" (مش "معطل" بس) — كتفاً مع كتف المبرمج التاني (commit `1e06df5`).
+- **Per Rule 62** (Secretary updates docs after every task) + **Rule 70** (DOCUMENTATION-SECRETARY) + **Rule 75** (PUSH-AFTER-EVERY-TASK) + **Rule 76** (TEAM-WORK-REVIEW).
+
+---
+
+## [2026-10-12 — DEEP-AUDIT-FIXES — تعطيل 7 rogue paths + fake data (deep audit)] — Main Agent + 4 subagents
+
+سيدي طلب: "بعبص فى كل حتة عالشان نعرف أدق أدق المشاكل بدون ماتموت المشروع". تم تشغيل 4 subagents متوازية للفحص الميكروسكوبي العميق. اكتشفت 80+ كارثة خفية تحت الشاشات الجميلة.
+
+### Added (HIDDEN-WRITERS-AUDIT — 24 rogue DB writers + 27 Node-side writes اتعطلت)
+- `scripts/backfill_historical_predictions.py` → **معطل** بـ `RULE35-DISABLE` guard + `sys.exit(0)`. اتمسح من `deploy_vps.sh`. كان بـ INSERT في `persona_predictions` بـ persona engines (مش V40.2) على كل deploy.
+- `api/confluence_routes.py /generate-predictions` → **410 Gone** + redirect لـ V40.2 `daily_predictor.py`. كان بـ INSERT INTO aiPrediction بـ `source='CONFLUENCE_V3'` بدون evidence.
+- `scripts/optimization_loop.py` → **معطل** بـ `RULE35-DISABLE` guard + `sys.exit(0)`. كان `clear_predictions()` بـ يعمل `DELETE FROM predictions` (wipes ALL!) قبل كل strategy iteration — كارثة Rule 1 (DB Safety).
+- `api/admin/backtest/v40/run` (Node) → **410 Gone** + redirect لـ `daily_predictor.py` (auth gate 403 محفوظ). كان Node-side `DELETE FROM predictions` على كل backtest run.
+- `api/recommendations/retroactive-evaluate` (Node) → **410 Gone** + redirect لـ `daily_closer.py` (Rule 28 — duplicate). كان Node-side `UPDATE real_predictions` (duplicate of `daily_closer.py`).
+- `api/prediction_tracking_routes` (legacy `tracking_bp`) → blueprint registration اتشال من `lightweight_server.py` (Rule 28 — duplicate).
+- `telegram/auto_poster.py:299-306` SQL syntax bug موثّق. الـ path معطّل.
+
+### Added (FAKE-DATA-HUNT — 5 إصلاحات P0 fabricated data اتمسحت)
+- **3 fake backtest endpoints** — `backtesting/unified` (mulberry32 RNG + `STRATEGY_PROFILES` hardcoded winRate 0.62/0.54/0.49/0.78/0.62) → 410 Gone; `kimi/backtest/run` + `walk-forward/run` (buildStubEquityCurve/buildStubPeriods) → pure proxies (503 لو Python down).
+- **`src/lib/store.ts` client-side scoring** — synthetic `score = Math.min(95, Math.max(5, 50 + chg * 1.5))` + hardcoded `components: { liquidity: 50, valuation: 50, income: 50 }` + `verdict: 'undervalued' as const` (كل سهم = "undervalued"!) → استبدل بـ `null` (honest empty state per Rule 27).
+- **Zakat hardcoded gold price** — `PLACEHOLDER_GOLD_24K = 4850` + `PLACEHOLDER_SILVER = 56` → `fetchGold24Price()` بترجّع null → 503 + رسالة واضحة (خرق ديني Rule 50).
+- **`+2472.9%` SUM bug pattern** — `ExecutiveReportView.tsx:680-755` + `PredictionTrackingDashboard.tsx:460-528, 810-838` كانوا بيعملوا `reduce((s,p) => s + returnPct, 0)` (SUM جبري للنسب المئوية — 80 صفقة × +30% = +2400%!) → استبدل بـ `avgReturnPct` + `cumulativeReturnPct = product(1 + ret/100) - 1` (compound return per Rule 67).
+- **persona/analyze + crypto placeholders** — `persona/analyze/[ticker]` + `crypto/route.ts` + `mobile/crypto/route.ts` + `finance/smart-watchlist` كانوا بـ يرجّعوا `score=50, signal='HOLD', confidence=0, source:'placeholder', success:true` فوق الأسعار الحقيقية → استبدل بـ null + 503.
+
+### Verified
+- Python syntax: ✅ (confluence_routes + backfill + optimization_loop + misc_routes)
+- ESLint: ✅ EXIT 0
+- Browser: HTTP 200 على / route ✅
+- backtesting/unified: HTTP 410 (disabled) ✅
+- retroactive-evaluate: HTTP 410 (disabled) ✅
+- admin/backtest/v40/run: HTTP 403 (auth gate) ✅
+- optimization_loop.py + backfill_historical_predictions.py: disabled message ✅
+- Zakat: nisab=600581.95 من DB الحقيقي (مش placeholder 4850!) ✅
+
+---
+
+## [2026-10-12 — MAESTRO-KILL — حذف Maestro نهائياً + إزالة fallback chains] — Main Agent + full-stack-developer subagent
+
+سيدي طلب: "Maestro ده ماضي أسود — ممكن تشيلة. كمل باقى الشغل + حدث الجت هب + Documentation".
+
+### Removed (DELETE-MAESTRO — 556 KB dead code)
+- **Node-side (5 ملفات):** `src/app/api/maestro/route.ts` + `src/app/api/maestro/overview/route.ts` + `src/app/api/maestro/stock/[ticker]/route.ts` + `src/modules/dashboard/components/MaestroWidget.tsx` + `src/lib/honest-tracking/maestro.ts` (76KB parallel Node stack — rogue path)
+- **Python-side (5 ملفات):** `vps-service/analyzers/maestro_orchestrator.py` (4414 سطر) + `vps-service/analyzers/crypto_maestro.py` (466 سطر) + `vps-service/analyzers/unified_maestro.py` (606 سطر) + `vps-service/api/maestro_routes.py` (1094 سطر) + `vps-service/test_maestro_direct.py` (954 bytes)
+- **Scripts (5 ملفات):** `vps-service/scripts/maestro_backfill_phase3.py` + `maestro_backfill_v2.py` + `scripts/patch_clean_maestro.py` + `scripts/populate_real_maestro_closed_history.py` + `scripts/backfill_maestro_history.py`
+- **Blueprint registration:** `lightweight_server.py: ('api.maestro_routes', 'maestro_bp')` → REMOVED.
+- **Caller safe-guards:** `daily_predictor.py:3513` + `background_analyzer.py` + `hunting_engine.py` + `real_backtester.py` + `telegram/auto_post_scheduler.py` — كل imports في try/except (safe).
+- **`recorder.py`:** `record_crypto_signals` + `record_egx_signals` → no-op (return early).
+- **Rogue path neutralization:** `src/app/api/admin/generate-historical-predictions/route.ts` → 410 Gone + redirect لـ V40.2 daily_predictor.py.
+
+### Changed (P2-FALLBACK-REMOVAL — 4 routes اتحولت لـ pure proxies)
+- `market/exit-status/route.ts` (98 → 80 سطر) — Python endpoint موجود
+- `unified/predictions/route.ts` (94 → 152 سطر) — Python endpoint موجود + POST handler
+- `fomo/missed-opportunities/route.ts` (117 → 133 سطر) — `/api/fomo/missed-opportunities` NEW (paywall gate محفوظ)
+- `market/recommendations/ai-insights/route.ts` (66 → 80 سطر) — `/api/market/recommendations/ai-insights` NEW
+
+### Added (2 Python endpoints جديدة في `misc_routes.py`)
+- `/api/fomo/missed-opportunities` — top 5 winning closed predictions + FOMO message (Rule 20 canonical)
+- `/api/market/recommendations/ai-insights` — top 20 active predictions sorted by master_score (Rule 20 canonical)
+
+### Verified
+- Python syntax: ✅ (lightweight_server + misc_routes + recorder + daily_predictor)
+- ESLint: ✅ EXIT 0
+- Browser: HTTP 200 على / route ✅
+- `/api/maestro`: HTTP 404 (deleted) ✅
+- `/api/admin/generate-historical-predictions`: HTTP 403 (auth gate) → 410 for admin ✅
+- Live Maestro imports: 11 (كلها في try/except — safe)
+
+---
+
+## [2026-10-12 — LEAGUE-DEDUP-FIX — حل 3 كوارث مالية] — Main Agent
+
+سيدي طلب: "لا دة متخلف — 3 فضائح مالية وتقنية".
+
+### Fixed (LEAGUE-DEDUP-FIX — 3 كوارث مالية)
+1. **تكرار نفس السهم (MMAT) في كروت الدوري** — `misc_routes.py` L2084-2118: قبل `SELECT ... ORDER BY actual_return DESC LIMIT 10` (بدون dedup). بعد: `WITH ranked AS (..., ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY actual_return DESC) as rn) SELECT ... FROM ranked WHERE rn = 1` (dedup-by-ticker per Rule 22 + Rule 67).
+2. **ExecutiveReportView winRate=17.1% + totalProfit=-37.70%** — `ExecutiveReportView.tsx:340-380` كان بـ يستخدم `p.status` (field غير موجود في Python response → dead code → fallback `else → LOSS` بيصنّف PENDING trades كـ LOSS). استُبدل بـ `p.outcome` (canonical field من Python per Rule 67). + `:680-770` كان `totalProfit = closed.reduce((s,p) => s + returnPct, 0)` (SUM جبري). استُبدل بـ `avgReturnPct` + `cumulativeReturnPct` (compound return per Rule 27).
+3. **PredictionTrackingDashboard netReturn=+2472.9%** — `PredictionTrackingDashboard.tsx:460-528` كان `netReturn = winReturnsSum + lossReturnsSum` (SUM جبري — 80 صفقة × +30% = +2400%!). استُبدل بـ `avgReturnPct` + compound return. + `:810-838` dailyPerformanceData بنفس الـ pattern.
+
+### Verified
+- Python syntax: ✅ misc_routes.py OK
+- ESLint: ✅ EXIT 0
+- SQL dedup test: SQL جديد رجّع 10 tickers فريدة تماماً ✅ (القديم رجّع MASR 4× + PHDC 4× + ABUK 2×)
+- Browser: HTTP 200 على / route ✅
+- honest-tracking/list: 503 + Rule 27 message (Python down — no fake zeros) ✅
+
+---
+
+## [2026-10-12 — PRED-WRITE-GUARD — الحل الجذري الموحّد لكارثة placeholder predictions] — Main Agent
+
+سيدي طلب: الحل الجذري لكارثة placeholder predictions (153 placeholder = 94% pollution).
+
+### Added (PRED-WRITE-GUARD — Single Gate على record_prediction())
+- **NEW file** `vps-service/core/prediction_write_guard.py` (240 سطر) — `validate_prediction_evidence()` الـ Single Gate:
+  - يفحص engine provenance (notes engine=v40_2 OR kill_filter signature per Rule 35)
+  - يفحص `evidence_count >= 3` للـ BUY/STRONG_BUY/ACCUMULATE (Rule 21)
+  - يفحص `master_score != 50.0` placeholder (Rule 27)
+  - يفحص HOLD placeholder pattern (IMPROVEMENT-12 WAIT→HOLD)
+  - `audit_predictions_db()` — read-only audit function
+  - `BYPASS_PREDICTION_WRITE_GUARD=1` env للـ migrations (Rule 25)
+
+### Changed (PRED-WRITE-GUARD — 4 ملفات)
+1. `vps-service/analyzers/prediction_tracker.py:493-534` — hook الـ Guard بعد W-quality rules + قبل cap/dedup. لو Guard رفض → print `[PRED_GUARD_REJECT]` + return None. Fail-open مع warning لو الـ module مش موجود (safe-by-design).
+2. `vps-service/api/sniper_routes.py:798-842` — HARD 422 gate قبل record_prediction call. يرجّع: "Rule 35 violation: /api/sniper/track is no longer sanctioned". الكود القديم محفوظ كـ unreachable للـ Rule 16 VERIFY-BEFORE-DELETE.
+3. `vps-service/jobs/daily_predictor.py:3906-3945` — B.2 FIX: CRYPTO path معطل بالكامل (كان بيكتب `master_score=60+(100-rsi)` وهمي + `persona='crypto_balanced'`). دلوقتي `[RULE35-DISABLED]` log + `pred_id=None`.
+4. `vps-service/jobs/daily_predictor.py:3338-3364` — B.3 FIX: EGX evidence gate قبل record_prediction. لو BUY/STRONG_BUY/ACCUMULATE و evidence < 3 → SKIP. `[V40_2-EVIDENCE-SKIP]` log بدل placeholder INSERT.
+
+### Added (cleanup_placeholder_predictions.py — NEW 230 سطر)
+- `vps-service/scripts/cleanup_placeholder_predictions.py` — بيعمل `UPDATE predictions SET status='INVALID'` للـ placeholders. Criteria: `evidence=0 + kill_filter=NULL/empty + date >= '2026-09-27'`. بيعمل backup table قبل الـ UPDATE (Rule 1 DB safety). dry-run + execute modes.
+
+### Verified
+- Guard unit tests: 9/9 PASSED (V40.2 EGX/CRYPTO/intraday/HOLD/BYPASS + sniper/placeholder rejects)
+- Python syntax (5/5): prediction_write_guard.py + prediction_tracker.py + sniper_routes.py + daily_predictor.py + cleanup_placeholder_predictions.py
+- ESLint: EXIT 0 ✅
+- DB cleanup executed: 153 placeholder predictions → status='INVALID'. backup table: `predictions_placeholder_backup_20261012` (153 rows). Valid predictions since 2026-09-27: 10 (sanctioned only). Placeholder breakdown: BUY=129, HOLD=24. Placeholder_pct: 93.87% → 0%.
+- Browser: HTTP 200 على / route + /api/predictions/honest-tracking/stats → JSON success:true ✅ + /api/sniper/track POST → 410 Gone ✅
+
+---
+
+## [2026-10-12 — RULE20-PURE-PROXY — 17 Node routes اتحولت لـ pure thin proxies] — Main Agent + full-stack-developer subagent
+
+سيدي طلب: "أنت لية عملت كل الشغل فى النود؟" — كل الـ logic لازم يكون في Python (Single Source of Truth per Rule 67). تم تحويل 17 Node routes في 5 جلسات متتالية: RULE20-PURE-PROXY + RULE20-P1-FIX + FULL-AUDIT-FIXES + P2-FALLBACK-REMOVAL + MAESTRO-KILL.
+
+### Changed (RULE20-PURE-PROXY — honest-tracking family + top-performers)
+- 6 routes اتحولت لـ pure proxy (1127 → 493 سطر، تقليل 56%): `stats` (182→66) + `list` (176→86) + `live-tracking` (117→62) + `learn-from-errors` (171→86) + `missed-opportunities` (184→60) + `top-performers` (225→61).
+- 3 Python endpoints جديدة في `stored_analysis_routes.py`: `/api/stored-analysis/honest-stats` + `/api/stored-analysis/learn-from-errors` + `/api/stored-analysis/missed-opportunities` + `_fetch_live_tracking_data()` helper.
+- 0 سطر computation في Node (100% Python = brain per Rule 20).
+
+### Changed (RULE20-P1-FIX — 4 routes كبيرة)
+- 4 routes اتحولت لـ pure proxy (2199 → 296 سطر، تقليل 86.5%): `v4/stats` (250→73) + `admin/platform-performance` (646→72) + `chart/[ticker]` (969→82) + `predictions/performance-dashboard` (334→69).
+- 3 Python endpoints جديدة في `misc_routes.py`: `/api/v4/stats` + `/api/admin/platform-performance` + `/api/predictions/performance-dashboard`. الـ `/api/chart/<ticker>` كان موجود بالفعل في `chart_routes.py`.
+- `requireAdminAsync` auth gate محفوظ في `admin/platform-performance` (Rule 20 exception).
+- `handleV4Stats` alias محفوظ في `v4/stats/route.ts` عشان `/api/python/[...path]` يفضل شغّال.
+
+### Changed (FULL-AUDIT-FIXES — 9 إصلاحات)
+- P0-1: `honest-tracking/ROOT` (64→73 سطر) → pure proxy.
+- P0-2: `predictions/league-report` (70→63 سطر) → pure proxy (LEAGUE-DEDUP-FIX in Python).
+- P0-3: 3 orphan duplicate tables dropped: `predictions.db.portfolios` (4 rows) + `predictions.db.ExpertRecommendation` (17 rows) + `stocks.db.gold_prices` (3 legacy rows). Backups: `predictions.20261011_101047.bak` + `stocks.20261011_101047.bak`. VACUUM اتعمل.
+- P0-4: duplicate blueprint registration removed: `lightweight_server.py L52: ('api.prediction_tracking_routes', 'tracking_bp')` (Rule 28).
+- P1-1..P1-4: الـ 4 routes الكبيرة (انظر أعلاه).
+
+### Verified
+- Python syntax: ✅ misc_routes.py + stored_analysis_routes.py + lightweight_server.py
+- ESLint: ✅ EXIT 0
+- Line count: 3325 → 789 سطر (تقليل 76%)
+- Browser: HTTP 200 على / route ✅
+- Route tests: 503 على Python-down routes (Rule 27 compliant) ✅
+- Admin auth: HTTP 403 على admin/platform-performance (auth gate شغال) ✅
+- Duplicate tables: DROPPED ✅ (اتأكدت بـ SELECT)
+
+---
+
 ## [2026-10-10 — CHART-ENRICH + ICONS-AUTO + DAILY-PNL + NEW-STOCK-DETECTION] — Main Agent (Z.ai Code)
 
 سيدي طلبات متعددة في نفس اليوم — كلها منفذة:

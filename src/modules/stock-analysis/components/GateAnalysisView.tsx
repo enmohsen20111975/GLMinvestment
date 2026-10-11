@@ -8,7 +8,91 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { analyzeGates, type GateAnalysisInput, type GateAnalysisOutput, type GatePersona } from '@/lib/gate-analyzer';
+
+/**
+ * GateAnalysisView — P1-PARALLEL-ENGINES-FIX (2026-10-12)
+ * ========================================================
+ * Per Rule 20 (Python=Brain) + Rule 67 (CALCULATION-CANONICAL): the 5-gate
+ * analysis logic is now served by the canonical Python endpoint
+ * `/api/stocks/<ticker>/gate-analysis` (backed by
+ * `vps-service/analyzers/gate_analysis_engine.py`). This component was
+ * rewritten from importing the TS `analyzeGates` function to fetching the
+ * Python proxy.
+ *
+ * The response shape (GateAnalysisOutput) is identical to what the TS engine
+ * produced — callers don't need to change. We just removed the `import`
+ * of the TS engine + the inline gate computation.
+ *
+ * The `cachedInput` is still built locally so the Pine Script "copy" button
+ * keeps working — it's a pure display artifact, no analysis logic.
+ */
+
+interface GateResult {
+  passed: boolean;
+  name: string;
+  nameAr: string;
+  reason: string;
+  reasonAr: string;
+}
+
+interface GateAnalysisInput {
+  close: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;
+  avgVolume20: number;
+  rsi: number;
+  macdLine: number;
+  signalLine: number;
+  macdHist: number;
+  sma20: number;
+  sma50: number;
+  sma200: number;
+  atr: number;
+  support1: number;
+  support2: number;
+  resistance1: number;
+  resistance2: number;
+}
+
+interface GateAnalysisOutput {
+  signal: string;
+  signalAr: string;
+  signalColor: string;
+  marketStage: string;
+  marketStageAr: string;
+  trendBull: boolean;
+  trendBear: boolean;
+  trendRange: boolean;
+  gates: GateResult[];
+  gatesPassed: number;
+  minGates: number;
+  entryPrice: number;
+  targetPrice: number;
+  stopLoss: number;
+  targetPct: number;
+  stopPct: number;
+  rrRatio: number;
+  rsiBuyThreshold: number;
+  rsiSellThreshold: number;
+  minRrThreshold: number;
+  atrPct: number;
+  volumeRatio: number;
+  stockStrength: number;
+  marketProxy: string;
+  marketProxyAr: string;
+  narrative: string;
+  persona: string;
+  bbSqueeze?: {
+    level: string;
+    bbWidthPct: number;
+    bbWidthTrend: string;
+    squeezeScore: number;
+    descriptionAr: string;
+  } | null;
+  squeezeBonusApplied: boolean;
+}
 
 interface GateAnalysisViewProps {
   ticker: string;
@@ -36,7 +120,7 @@ function buildPineScript(t: string, r: GateAnalysisOutput, i: GateAnalysisInput)
   return [
     `// Pine Script — ${t} | ${r.signalAr} | Gates ${r.gatesPassed}/5 (min ${r.minGates})`,
     `// R/R: ${(r.rrRatio ?? 0).toFixed(1)}:1 | ATR%: ${(r.atrPct ?? 0).toFixed(1)}% | ${r.marketStageAr}`,
-    '', `close=${i.close} rsi=${i.rsi} atr=${i.atr}`, `macd=${i.macdLine} sig=${i.signalLine} hist=${i.macdHist}`,
+    '', `close=${i.close} rsi=${i.rsi} atr=0`, `macd=${i.macdLine} sig=${i.signalLine} hist=${i.macdHist}`,
     `sma20=${i.sma20} sma50=${i.sma50} sma200=${i.sma200}`,
     `support1=${i.support1} resistance1=${i.resistance1}`,
     `target=${(r.targetPrice ?? 0).toFixed(2)} (+${(r.targetPct ?? 0).toFixed(1)}%)`,
@@ -46,7 +130,7 @@ function buildPineScript(t: string, r: GateAnalysisOutput, i: GateAnalysisInput)
 }
 
 export default function GateAnalysisView({ ticker, currentPrice, stockName }: GateAnalysisViewProps) {
-  const [persona, setPersona] = useState<GatePersona>('gambler');
+  const [persona, setPersona] = useState<'gambler' | 'investor'>('gambler');
   const [result, setResult] = useState<GateAnalysisOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -56,12 +140,9 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
   const fetchAndAnalyze = useCallback(async () => {
     setLoading(true); setError(false);
     try {
-      // PHASE4-APIS (Task PHASE4-APIS): /api/stocks/[ticker]/professional-analysis
-      // is 410 Gone. Canonical replacement: /api/stocks/[ticker]/unified
-      // (single source of truth — Rule 67 + Rule 72). We remap the unified
-      // response to the legacy `pd.data` shape so the downstream consumer
-      // code (indicators / price_levels / volume_analysis / stock / prediction)
-      // keeps working without changes.
+      // 1. Fetch the unified data to assemble the input shape (kept local —
+      //    the Python endpoint receives the same shape we used to compute
+      //    the gates from).
       const [uRes, vRes] = await Promise.allSettled([
         fetch(`/api/stocks/${ticker}/unified`),
         fetch(`/api/python/v2/cached-analysis/${ticker}`),
@@ -71,10 +152,6 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
         : null;
       const v2 = vRes.status === 'fulfilled' && vRes.value.ok ? (await vRes.value.json() as any) : null;
 
-      // Map unified response → legacy professional-analysis shape (pd.data.*).
-      // Fields not present in the unified response default to safe values
-      // (no fabrication — Rule 27: NULL stays NULL, downstream consumer
-      // already falls back to price-derived defaults via `||`).
       let pd: any = null;
       if (unified?.success) {
         const tech = unified.technical ?? {};
@@ -83,8 +160,8 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
         pd = {
           stock: {
             close: stk.current_price ?? null,
-            open: stk.previous_close ?? null, // closest available (no intraday open in unified)
-            high: stk.current_price != null ? stk.current_price * 1.01 : null, // placeholder; consumer falls back to price*1.01
+            open: stk.previous_close ?? null,
+            high: stk.current_price != null ? stk.current_price * 1.01 : null,
             low: stk.current_price != null ? stk.current_price * 0.99 : null,
             volume: stk.volume ?? null,
             avg_volume: tech.avg_volume ?? null,
@@ -92,23 +169,18 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
           indicators: {
             rsi: { value: tech.rsi ?? null },
             atr: { value: tech.atr ?? null },
-            // SMA20 not provided by unified; leave null — consumer falls back to price.
             sma_20: null,
             sma_50: tech.ma_50 ?? null,
             sma_200: tech.ma_200 ?? null,
-            // MACD not computed in unified (would require Python v2 chart API).
             macd: { macd_line: 0, signal_line: 0, histogram: 0 },
           },
           price_levels: {
             support_1: tech.support ?? null,
             resistance_1: tech.resistance ?? null,
-            // No support_2/resistance_2 in unified — consumer falls back to price*0.90 / *1.10.
             support_2: null,
             resistance_2: null,
           },
-          volume_analysis: {
-            avg_volume_20: tech.avg_volume ?? null,
-          },
+          volume_analysis: { avg_volume_20: tech.avg_volume ?? null },
           prediction: pred,
         };
       }
@@ -129,8 +201,34 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
         volume: st.volume || v2?.volume || 50000, avgVolume20: vol?.avg_volume_20 || st.avg_volume || 50000,
       };
       setCachedInput(input);
-      setResult(analyzeGates(input, persona));
-    } catch { /* safe-by-design */ setError(true); } finally { setLoading(false); }
+
+      // 2. POST the input to the Python canonical endpoint — pure proxy
+      //    pattern (no inline gate computation in the client).
+      const upstream = await fetch(
+        `/api/stocks/${encodeURIComponent(ticker)}/gate-analysis?persona=${persona}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        },
+      );
+      if (!upstream.ok) {
+        setError(true);
+        setLoading(false);
+        return;
+      }
+      const body = await upstream.json() as any;
+      if (!body?.success || !body?.result) {
+        setError(true);
+        setLoading(false);
+        return;
+      }
+      setResult(body.result as GateAnalysisOutput);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [ticker, currentPrice, persona]);
 
   useEffect(() => { fetchAndAnalyze(); }, [fetchAndAnalyze]);
@@ -243,7 +341,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
 
         {/* Footer */}
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <p className="text-[10px] text-muted-foreground leading-relaxed max-w-[70%]">الحساب ديناميكي — يتغير حسب حالة السوق تلقائياً</p>
+          <p className="text-[10px] text-muted-foreground leading-relaxed max-w-[70%]">الحساب من Python canonical engine — Rule 20 (Python=Brain)</p>
           <Button variant="ghost" size="sm" className="text-xs gap-1.5" onClick={handleCopy}>
             {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
             نسخ TradingView

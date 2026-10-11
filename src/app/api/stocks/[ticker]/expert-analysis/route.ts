@@ -1,21 +1,29 @@
 /**
- * GET /api/stocks/[ticker]/expert-analysis
- * =================================================
- * تحليل خبير احترافي شامل للسهم.
+ * GET /api/stocks/[ticker]/expert-analysis — pure proxy
+ * =====================================================
+ * Per Rule 20 (Python=Brain) + Rule 67 (CALCULATION-CANONICAL):
+ *   The 882-LOC Node-side `expert-analysis.ts` engine was a parallel engine
+ *   duplicating Python logic (RSI/MA/S-R/fundamentals analysis + bilingual
+ *   expert summary). It also re-implemented the canonical-signal thresholds.
  *
- * ARCH-OPTION-2 (2026-10-10): MarketProfile-aware
- *   - بيجيب MarketProfile من Python (best-effort) قبل ما يشغل المحرك
- *   - المحرك يستخدم profile.rsi_overbought/oversold و stop/target من profile
- *   - Currency label ديناميكي (جنيه/ريال/دولار/...)
- *   - Fundamental analysis بـ skip للكريبتو
+ *   P1-PARALLEL-ENGINES-FIX (2026-10-12): the engine is now ported to Python
+ *   (`vps-service/analyzers/expert_analysis_engine.py`). This route is a
+ *   pure proxy: it assembles the StockDataForAnalysis shape from
+ *   /api/stocks/[ticker]/unified + MarketProfile, POSTs it to Python,
+ *   and returns the JSON as-is. NO computation, NO SQLite access.
+ *
+ * Per Rule 67 §2 (no synthetic approximation): if Python is unreachable,
+ * returns 503 with a clear error. NO mock data.
  */
+
 import { NextRequest, NextResponse } from 'next/server';
+import { getUnifiedStockData } from '@/lib/unified-stock-data';
+import { refreshMarketProfileFromPython } from '@/lib/market-profile';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { getUnifiedStockData } from '@/lib/unified-stock-data';
-import { generateExpertAnalysis, StockDataForAnalysis } from '@/lib/expert-analysis';
-import { refreshMarketProfileFromPython } from '@/lib/market-profile';
+const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
 export async function GET(
   _req: NextRequest,
@@ -30,6 +38,8 @@ export async function GET(
   }
 
   try {
+    // ── Assemble StockDataForAnalysis from the unified endpoint ─────────
+    // (was done inline in the old route — preserved 1:1).
     const unified = getUnifiedStockData(ticker) as any;
     if (!unified || !unified.success) {
       return NextResponse.json(
@@ -38,7 +48,6 @@ export async function GET(
       );
     }
 
-    // Flatten nested structure
     const stock = unified.stock || {};
     const fundamentals = unified.fundamentals || {};
     const technical = unified.technical || {};
@@ -46,11 +55,10 @@ export async function GET(
     const canonical = unified.canonical || {};
 
     // ARCH-OPTION-2: best-effort refresh MarketProfile from Python before analysis
-    // (لو Python معطّل → TS يستخدم defaults — مفيش كسر)
     const marketCode = String(stock.market || 'EGX');
     await refreshMarketProfileFromPython(marketCode).catch(() => {});
 
-    const dataForAnalysis: StockDataForAnalysis = {
+    const dataForAnalysis = {
       ticker,
       name: stock.name,
       name_ar: stock.name_ar,
@@ -61,7 +69,6 @@ export async function GET(
       change_percent: stock.change_percent,
       volume: stock.volume,
       market_cap: stock.market_cap,
-      // Technical
       rsi: technical.rsi,
       ma_50: technical.ma_50,
       ma_200: technical.ma_200,
@@ -71,7 +78,6 @@ export async function GET(
       low_52w: technical.low_52w,
       trend: technical.trend,
       beta: fundamentals.beta,
-      // Fundamental
       pe_ratio: fundamentals.pe_ratio,
       pb_ratio: fundamentals.pb_ratio,
       ps_ratio: fundamentals.ps_ratio,
@@ -82,7 +88,6 @@ export async function GET(
       current_ratio: fundamentals.current_ratio,
       dividend_yield: fundamentals.dividend_yield,
       profit_margin: fundamentals.profit_margin,
-      // Prediction
       signal: canonical.signal || prediction.signal,
       master_score: canonical.master_score || prediction.master_score,
       entry_price: prediction.entry_price,
@@ -93,19 +98,35 @@ export async function GET(
       confidence: prediction.confidence,
     };
 
-    const analysis = generateExpertAnalysis(dataForAnalysis);
+    // ── Forward to Python canonical endpoint via POST (URL-length safe) ─
+    const upstream = await fetch(
+      `${PY}/api/stocks/${encodeURIComponent(ticker)}/expert-analysis`,
+      {
+        method: 'POST',
+        signal: AbortSignal.timeout(20_000),
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        body: JSON.stringify(dataForAnalysis),
+      },
+    );
 
-    return NextResponse.json({
-      success: true,
-      ticker,
-      analysis,
-      generated_at: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[expert-analysis] Error:', error);
+    // Pass-through JSON + HTTP status (200/400/500).
+    const body = await upstream.json().catch(() => ({
+      success: false,
+      error: 'python-returned-non-json',
+    }));
+    return NextResponse.json(body, { status: upstream.status });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[expert-analysis] proxy error:', msg);
     return NextResponse.json(
-      { success: false, error: 'internal_error', ticker },
-      { status: 500 }
+      {
+        success: false,
+        error: 'python-expert-analysis-unavailable',
+        detail: process.env.NODE_ENV === 'development' ? msg : undefined,
+        ticker,
+        source: 'node-proxy',
+      },
+      { status: 503 }
     );
   }
 }

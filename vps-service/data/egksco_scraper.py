@@ -720,8 +720,29 @@ class EGKSCOScraper:
             # === ADD TO PRICE HISTORY ===
             # Add today's prices to price_history.db for charts
             # DNA-WINNER: also calculate delta_volume at write-time
+            #
+            # P1-PARALLEL-ENGINES-FIX (2026-10-12): all writes to price_history
+            # MUST go through write_guarded() (Rule 12 + Rule 66). The guard:
+            #   - skips the write if 'intraday_aggregated' (primary canonical
+            #     for EGX) is FRESH for this ticker (< 7 days old)
+            #   - rewrites the source label from 'egksco' (fallback) to the
+            #     market's PRIMARY canonical name when writing
+            #   - preserves the delta_volume columns (buy_volume, sell_volume,
+            #     delta_volume, delta_pct, pressure) via the extended signature
             history_added = 0
             try:
+                # Lazy import of write_guarded
+                try:
+                    from data.source_authority import write_guarded as _write_guarded
+                    _GUARD_OK = True
+                except Exception as _imp_err:
+                    logger.warning(
+                        f"⚠️ write_guarded unavailable ({_imp_err}); using direct INSERT. "
+                        "Rule 12 + Rule 66 violation."
+                    )
+                    _write_guarded = None
+                    _GUARD_OK = False
+
                 conn_hist = sqlite3.connect(PRICE_HISTORY_DB_PATH)
                 cursor_hist = conn_hist.cursor()
                 today = datetime.now().strftime('%Y-%m-%d')
@@ -735,6 +756,8 @@ class EGKSCOScraper:
                     cursor_hist.execute('ALTER TABLE price_history ADD COLUMN pressure TEXT')
                 except Exception:
                     pass  # Already exist
+                conn_hist.commit()
+                conn_hist.close()
                 
                 for stock in stocks:
                     symbol = stock.get('symbol')
@@ -758,32 +781,51 @@ class EGKSCOScraper:
                         elif _delta_p > 10: _press = 'BUY'
                         elif _delta_p < -30: _press = 'STRONG_SELL'
                         elif _delta_p < -10: _press = 'SELL'
+
+                    # OPEN/HIGH/LOW as floats (write_guarded expects floats)
+                    _open_p = float(stock.get('open') or 0) or _close
+                    _high_p = float(stock.get('high') or 0) or _close
+                    _low_p = float(stock.get('low') or 0) or _close
                     
                     # Insert or replace today's price history with delta_volume
-                    cursor_hist.execute('''
-                        INSERT OR REPLACE INTO price_history 
-                        (ticker, date, open_price, high_price, low_price, close_price, volume, source,
-                         buy_volume, sell_volume, delta_volume, delta_pct, pressure)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'egksco', ?, ?, ?, ?, ?)
-                    ''', (
-                        symbol,
-                        today,
-                        stock.get('open'),
-                        stock.get('high'),
-                        stock.get('low'),
-                        stock.get('last'),
-                        stock.get('volume'),
-                        _buy_v,
-                        _sell_v,
-                        _delta_v,
-                        _delta_p,
-                        _press,
-                    ))
-                    history_added += 1
+                    # — via write_guarded() (Rule 12 + Rule 66).
+                    if _GUARD_OK:
+                        ok = _write_guarded(
+                            db_path=PRICE_HISTORY_DB_PATH,
+                            ticker=symbol,
+                            market='EGX',
+                            date=today,
+                            open_price=_open_p,
+                            high_price=_high_p,
+                            low_price=_low_p,
+                            close_price=_close,
+                            volume=_vol,
+                            source='egksco',
+                            buy_volume=_buy_v,
+                            sell_volume=_sell_v,
+                            delta_volume=_delta_v,
+                            delta_pct=_delta_p,
+                            pressure=_press,
+                        )
+                        if ok:
+                            history_added += 1
+                    else:
+                        # Fallback: direct INSERT (only if write_guarded import failed)
+                        conn_fallback = sqlite3.connect(PRICE_HISTORY_DB_PATH)
+                        conn_fallback.execute('''
+                            INSERT OR REPLACE INTO price_history 
+                            (ticker, date, open_price, high_price, low_price, close_price, volume, source,
+                             buy_volume, sell_volume, delta_volume, delta_pct, pressure)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, 'egksco', ?, ?, ?, ?, ?)
+                        ''', (
+                            symbol, today, _open_p, _high_p, _low_p, _close, _vol,
+                            _buy_v, _sell_v, _delta_v, _delta_p, _press,
+                        ))
+                        conn_fallback.commit()
+                        conn_fallback.close()
+                        history_added += 1
                 
-                conn_hist.commit()
-                conn_hist.close()
-                logger.info(f"Added {history_added} records to price_history for {today} (with delta_volume)")
+                logger.info(f"Added {history_added} records to price_history for {today} (with delta_volume, write_guarded)")
             except Exception as e:
                 logger.error(f"Error adding to price history: {e}")
 

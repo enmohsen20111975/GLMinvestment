@@ -1,92 +1,46 @@
 /**
- * GET /api/trade-results — Task 38-A
- * ==================================
- * بيانات نتائج الصفقات لـ "بومية احترافية لنتائج الصفقات الناجحة".
+ * GET /api/trade-results — pure proxy to Python canonical endpoint
+ * ===============================================================
+ * Per Rule 20 (Python=Brain) + Rule 67 (CALCULATION-CANONICAL):
+ *   The 685-LOC Node-side `trade-results-engine.ts` was a parallel engine
+ *   duplicating Python logic (success_rate, SUM(realized_return_percent),
+ *   11-point validation, Cairo TZ-aware period bounds). It read predictions.db
+ *   directly via better-sqlite3 — Rule 20 violation.
  *
- * Owner directive (EXACT QUOTE — 32-section spec):
- *   «نريد إنشاء نظام تلقائي داخل منصة دليل الاستثمار يقوم بتوليد بوستات
- *    احترافية لنتائج الصفقات الناجحة، اعتمادًا على بيانات الصفقات الفعلية
- *    الموجودة في قاعدة البيانات فقط.»
+ *   P1-PARALLEL-ENGINES-FIX (2026-10-12): the engine is now ported to Python
+ *   (`vps-service/api/misc_routes.py::/api/trade-results`). This route is a
+ *   pure proxy: it forwards the query string to Python and returns the JSON
+ *   as-is. NO computation, NO SQLite access, NO fallback to fabricated data.
  *
- * Translation: Build an automatic system that generates professional social
- * media posts for SUCCESSFUL trade results, using ONLY real data from the DB.
- *
- * ─── ENDPOINT CONTRACT ───
+ * ─── ENDPOINT CONTRACT (unchanged — preserved 1:1 by the Python port) ───
  *   GET /api/trade-results?period=daily|weekly|monthly&market=EGX
+ *   Headers: Authorization: Bearer <token> (or NextAuth session cookie)
  *
- *   Headers: Authorization: Bearer <token>  (or NextAuth session cookie)
+ *   See archive/p1-parallel-engines-20261012/ for the original spec.
  *
- *   Response (200 — has qualified trades):
- *     {
- *       "success": true,
- *       "period": "daily",
- *       "period_start": "2026-10-04",
- *       "period_end": "2026-10-04",
- *       "has_qualified_trades": true,
- *       "stats": { ... ReportStats ... },
- *       "trades": [ ... TradeResult[] ... ],
- *       "validation": { "valid": true, "errors": [] },
- *       "generated_at": "2026-10-04T..."
- *     }
+ *   Response shapes (success, has_qualified_trades, stats, trades, validation)
+ *   are identical to the previous Node-side implementation — callers don't
+ *   need to change.
  *
- *   Response (200 — no qualified trades, Rule 67 §2):
- *     {
- *       "success": true,
- *       "period": "daily",
- *       "period_start": "2026-10-04",
- *       "period_end": "2026-10-04",
- *       "has_qualified_trades": false,
- *       "message": "لا توجد نتائج مؤهلة لهذه الفترة",
- *       "stats": null,
- *       "trades": [],
- *       "validation": { "valid": true, "errors": [] },
- *       "generated_at": "2026-10-04T..."
- *     }
- *
- *   Response (400 — bad request):
- *     { "success": false, "error": "Invalid period. Must be daily|weekly|monthly" }
- *
- *   Response (401 — unauthenticated):
- *     { "error": "Authentication required" }
- *
- *   Response (500 — DB open failure, Rule 67 — no fabricated data):
- *     { "success": false, "error": "Database unavailable" }
- *
- * Per Rule 67 §2 (Synthetic Approximation Ban): if no qualified closed
- * trades exist for the requested period, the endpoint returns
- * `has_qualified_trades: false` + `stats: null` + Arabic message
- * "لا توجد نتائج مؤهلة لهذه الفترة". The caller (post generator) MUST
- * NOT generate a post in this case.
- *
- * Per Rule 67 §4 (No claim "تم الحل" without proof): the validation
- * block is always included in the response — the caller can inspect
- * `validation.errors` even on success.
+ * Per Rule 67 §2 (no synthetic approximation): if Python is unreachable,
+ * returns 503 with a clear error. NO mock data.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
-import {
-  fetchClosedTrades,
-  calculateReportStats,
-  validateReport,
-  getPeriodRange,
-  type Period,
-} from '@/lib/trade-results-engine';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const VALID_PERIODS: Period[] = ['daily', 'weekly', 'monthly'];
-const NO_QUALIFIED_TRADES_MESSAGE = 'لا توجد نتائج مؤهلة لهذه الفترة';
+const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
 /**
- * GET handler — see file header for contract.
+ * GET handler — pure proxy to Python /api/trade-results.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  // ── Auth ────────────────────────────────────────────────────────────────
-  // Per spec section "Auth: required (getSessionUserId)". Any authenticated
-  // user can call — this is not admin-only (the post generator can be
-  // triggered by editors/admins but the route itself just checks login).
+  // ── Auth (kept on the proxy side — same as before) ─────────────────────
+  // Per spec section "Auth: required (getSessionUserId)". The Python side
+  // doesn't need to know about NextAuth — auth stays in the Node layer.
   const { userId } = await getSessionUserId();
   if (!userId) {
     return NextResponse.json(
@@ -95,86 +49,34 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // ── Parse query params ──────────────────────────────────────────────────
-  const url = new URL(request.url);
-  const periodParam = (url.searchParams.get('period') || 'daily').toLowerCase();
-  const marketParam = url.searchParams.get('market') || undefined;
+  // ── Forward query string + fetch from Python ───────────────────────────
+  const qs = request.url.split('?')[1] || '';
+  const url = `${PY}/api/trade-results${qs ? `?${qs}` : ''}`;
 
-  if (!VALID_PERIODS.includes(periodParam as Period)) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Invalid period "${periodParam}". Must be one of: daily, weekly, monthly`,
-      },
-      { status: 400 },
-    );
-  }
-  const period = periodParam as Period;
-
-  // ── Compute period bounds (Cairo TZ-aware) ───────────────────────────────
-  const now = new Date();
-  const range = getPeriodRange(period, now);
-
-  // ── Fetch closed trades from DB ──────────────────────────────────────────
-  // Per Rule 67 §2: if the DB is unavailable, return 500 with a clear error.
-  // We do NOT fall back to mock data — fabricated data is forbidden.
-  let trades;
   try {
-    trades = fetchClosedTrades(period, marketParam, now);
+    const upstream = await fetch(url, {
+      method: 'GET',
+      signal: AbortSignal.timeout(20_000),
+      headers: { 'Cache-Control': 'no-store' },
+    });
+
+    const body = await upstream.json().catch(() => ({
+      success: false,
+      error: 'python-returned-non-json',
+    }));
+
+    // Pass-through the HTTP status code from Python (200/400/500).
+    return NextResponse.json(body, { status: upstream.status });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
       {
         success: false,
-        error: 'Database unavailable',
+        error: 'python-trade-results-unavailable',
         detail: process.env.NODE_ENV === 'development' ? msg : undefined,
-        period,
-        period_start: range.period_start,
-        period_end: range.period_end,
-        generated_at: now.toISOString(),
+        source: 'node-proxy',
       },
-      { status: 500 },
+      { status: 503 },
     );
   }
-
-  // ── Compute stats (null if no qualified trades — Rule 67 §2) ─────────────
-  const stats = calculateReportStats(trades);
-
-  // ── Validate (11-point checklist — spec section 25) ──────────────────────
-  // Per spec section 25: "Validation before generation — if validation fails,
-  // the API must NOT generate the post."
-  // The API returns the validation result so the caller can decide.
-  // We still return 200 (with validation.valid=false) so the caller can show
-  // a helpful error message — generation is blocked by the caller, not by
-  // HTTP status.
-  const validation = validateReport(stats, trades, period, now);
-
-  // ── Build response ───────────────────────────────────────────────────────
-  if (stats === null) {
-    // Rule 67 §2 + §4 — no fabricated data. Honest empty response.
-    return NextResponse.json({
-      success: true,
-      period,
-      period_start: range.period_start,
-      period_end: range.period_end,
-      has_qualified_trades: false,
-      message: NO_QUALIFIED_TRADES_MESSAGE,
-      stats: null,
-      trades: [],
-      validation,
-      generated_at: now.toISOString(),
-    });
-  }
-
-  return NextResponse.json({
-    success: true,
-    period,
-    period_start: range.period_start,
-    period_end: range.period_end,
-    has_qualified_trades: true,
-    stats,
-    trades,
-    validation,
-    generated_at: now.toISOString(),
-  });
 }

@@ -111,7 +111,7 @@
 
 | Phase | الوصف | التفاصيل الفنية | الحالة |
 |---|---|---|---|
-| **A — Multi-Market Support** | V40.2 يدعم `market_code` parameter لكل الأسواق الخمسة | `market_code ∈ {EGX, KSA, KSE, QSE, CRYPTO}` — يُمرَّر في `analyze_single_day_v393()` + `v40_2_daily_generator.py`. كل سوق يقرأ من DB المناسب له (§1.6 في `01-PROJECT_ANATOMY.md`). | ✅ منفّذ |
+| **A — Multi-Market Support** | V40.2 يدعم `market_code` parameter لكل الأسواق الخمسة | `market_code ∈ {EGX, KSA, KSE, QSE, CRYPTO}` — يُمرَّر في `analyze_single_day_v393()` + `daily_predictor.py`. كل سوق يقرأ من DB المناسب له (§1.6 في `01-PROJECT_ANATOMY.md`). | ✅ منفّذ |
 | **B — Liquidity Primary Gate** | فلتر السيولة أصبح **البوابة الرئيسية** قبل التحليل | `liquidity_filter.py` يشتغل **قبل** `analyze_single_day_v393()` — أي سهم لا يجتاز السيولة لا يدخل التحليل أصلاً (توفير compute + تحسين جودة الـ predictions). | ✅ منفّذ |
 | **C — Dynamic Thresholds** | 20+ hardcoded thresholds أصبحت ديناميكية | استبدال كل `if x > 0.05` بـ `get_setting('threshold_name', default)` من `engine_settings` table — كلها قابلة للتعديل من Admin UI بدون redeploy. القائمة الكاملة في `SYSTEM_HOW_IT_THINKS.md`. | ✅ منفّذ |
 | **D — A/B Backtest Harness** | نظام A/B backtest لقياس الأثر الفعلي لكل تغيير | `vps-service/backtest_results/` يحتوي على `ab_backtest_baseline_*.json` (saved baseline) + diff runs قبل/بعد أي phase. يستخدم للتحقق من عدم كسر feature قائمة عند ترحيل UnifiedTable أو أي phase من A/B/C. | ✅ منفّذ |
@@ -183,7 +183,7 @@
 | `#reports` | `modules/reports/` | ReportsView + DataManager + StockAnalysisReport + DailyMarketReport + ExecutiveReportView |
 | `#simulation` | `modules/simulation/` | SimulationView |
 | `#academy` (single canonical) | `modules/education/` | AcademyView + AcademyEncyclopedia + CandlestickSimulator + StrategySandbox + PaperTradingWorkstation + LessonPDFExporter + MathRenderer + LearningVisuals (8 components — `#learning` archived 2026-10-01 to `archive/education-duplicate-2026-10-01/`) |
-| `#dashboard` | `modules/dashboard/` | DashboardView + 21 widgets (LiquidityFlowPanel + IntradayPressurePanel + InvestorsFlowPanel + LiveMonitor + TopMovers + MaestroWidget + ...) |
+| `#dashboard` | `modules/dashboard/` | DashboardView + 21 widgets (LiquidityFlowPanel + IntradayPressurePanel + InvestorsFlowPanel + LiveMonitor + TopMovers + ~~MaestroWidget~~ 🗑️ محذوف + ...) |
 | `#news` | `modules/news/` | NewsFeedView |
 | `#admin` | `modules/admin/` | AdminView + 34 components (DatabaseManagerFull + SystemTopologyTab + SystemTopologyGraph + WealthCharts + NotebookAdminTab + BacktestTab + ...) + live-chart/ + platform-performance/ subdirs |
 | `#specialist-analysis` | `modules/stock-analysis/` (StockAdvancedAnalysisView) + `modules/market-analysis/` (UnifiedAnalysisView) | Hybrid view |
@@ -419,7 +419,7 @@ Plus 6 more P0 admin features pending in Task 27-B (paywall pricing editor + con
 | 2 | `LearningView.tsx` | ~1,200 | تم استبداله بـ AcademyView في Wave 3 |
 | 3 | `LegacyStocksTable.tsx` | ~890 | تم استبداله بـ UnifiedTable (expandable + filterable) |
 | 4 | `OldPredictionCard.tsx` | ~340 | تم استبداله بـ CanonicalPredictionCard |
-| 5 | `MaestroWidget.tsx` | ~2,750 | Maestro KILLed (2026-08-31) → early-return null |
+| 5 | `MaestroWidget.tsx` | ~2,750 | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — أرشيف في `archive/maestro-dead-code-20261012/`. كان معطل (KILL-MAESTRO 2026-08-31 → early-return null) ثم اتمسح. سيدي طلب: "Maestro ده ماضي أسود". |
 | 6 | `V68OracleWidget.tsx` | ~1,100 | V68 A/B-test انتهى — deprecated |
 | 7 | `V72OracleWidget.tsx` | ~980 | V72 A/B-test انتهى — deprecated |
 | 8 | `OldRadarPanel.tsx` | ~1,540 | تم استبداله بـ MakerRadarTab + 5 sub-tabs |
@@ -557,7 +557,7 @@ const MarketAnalysisView = dynamic(() => import('@/components/analysis/MarketAna
 | 1 | `/admin/educational-cards` | `src/app/admin/educational-cards/page.tsx` | 1702 | Admin UI للـ educational cards (CRUD + نشر Telegram) — يُحمّل داخل AdminView iframe |
 | 2 | `/admin/honest-predictions` | `src/app/admin/honest-predictions/page.tsx` | 1919 | Admin historical-predictions generator — iframe داخل AdminView |
 | 3 | `/admin/reports` | `src/app/admin/reports/page.tsx` | 118 | Trading Reports Hub (Stock League image cards) |
-| 4 | `/maestro` | `src/app/maestro/page.tsx` | 124 | Standalone Maestro page (admin-gated) |
+| 4 | ~~`/maestro`~~ | ~~`src/app/maestro/page.tsx`~~ | ~~124~~ | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان standalone Maestro page (admin-gated). سيدي طلب حذفه: "Maestro ده ماضي أسود". |
 | 5 | `/stock/[ticker]` | `src/app/stock/[ticker]/page.tsx` | 1233 | صفحة تفاصيل السهم (price/technicals/fundamentals/news/charts) |
 | 6 | `/legal/disclaimer` | `src/app/legal/disclaimer/page.tsx` | 207 | إخلاء المسؤولية (عربي) — من Footer |
 | 7 | `/legal/privacy` | `src/app/legal/privacy/page.tsx` | 195 | سياسة الخصوصية (عربي) |
@@ -756,7 +756,7 @@ const MarketAnalysisView = dynamic(() => import('@/components/analysis/MarketAna
 
 ### 5.5 سياسة PERSONA-UNIFY-A (2026-08-17)
 
-> **الخيار الآمن:** `compute_persona_fit()` في `v40_2_daily_generator.py` بـ derive 4 category scores من V40.2 proofs وبـ weightها بـ `PERSONA_INPUT_WEIGHTS`. الـ `kill_filter_result` بـ يُannotated بـ `| fit:<persona>(score)`.
+> **الخيار الآمن:** `compute_persona_fit()` في `daily_predictor.py` بـ derive 4 category scores من V40.2 proofs وبـ weightها بـ `PERSONA_INPUT_WEIGHTS`. الـ `kill_filter_result` بـ يُannotated بـ `| fit:<persona>(score)`.
 >
 > **حماية الـ baseline:** `persona='balanced'` في `predictions` **لم يُلمس** — أرقام 22/1/3 و 69.2% WR و 81.8% balanced لا تتغير. لا reclassify بدون موافقة المالك.
 
@@ -989,16 +989,17 @@ AdminView (1,913 LOC)
 | `/admin/educational-cards` | 1702 | CRUD للـ educational cards + نشر Telegram |
 | `/admin/honest-predictions` | 1919 | مولّد التوقعات التاريخية |
 | `/admin/reports` | 118 | Trading Reports Hub (Stock League image cards) |
-| `/maestro` | 124 | Standalone Maestro page (admin-gated) |
+| `/maestro` | 124 | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان standalone Maestro page (admin-gated). أرشيف في `archive/maestro-dead-code-20261012/`. سيدي طلب: "Maestro ده ماضي أسود — شيله". |
 
 ### 9.3 مكوّنات admin إضافية (active + orphan)
 
 | المكوّن | LOC | Status | الوظيفة |
 |---------|----:|--------|---------|
 | `admin/AdminView.tsx` | 1,913 | ✅ active | Main admin shell |
-| `admin/MaestroDashboard.tsx` | 2,750 | ✅ active | Maestro control panel |
-| `admin/MaestroCommandCenter.tsx` | 3,748 | ✅ active | React Flow pipeline UI |
-| `admin/MaestroPage.tsx` | 297 | active(1) | Maestro top-level page |
+| `admin/MaestroDashboard.tsx` | 2,750 | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) | ~~/Maestro control panel~~ — أرشيف في `archive/maestro-dead-code-20261012/`. كان معطل KILL-MAESTRO 2026-08-31. |
+| `admin/MaestroCommandCenter.tsx` | 3,748 | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) | ~~/React Flow pipeline UI~~ — أرشيف في `archive/maestro-dead-code-20261012/`. |
+| `admin/MaestroPage.tsx` | 297 | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) | ~~/Maestro top-level page~~ — أرشيف. |
+| `admin/CryptoMaestroPage.tsx` | 821 | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) | كان ❌ DEAD duplicate، بعدها اتمسح نهائياً. |
 | `admin/DatabaseManagerFull.tsx` | 3,259 | active(1) | الـ DB manager النشط |
 | `admin/DatabaseManager.tsx` | 971 | ❌ DEAD | superseded by DatabaseManagerFull |
 | `admin/SuperLearningSystem.tsx` | 2,403 | active(1) | نظام التعلّم الموحّد |
@@ -1018,7 +1019,7 @@ AdminView (1,913 LOC)
 | `admin/PredictionClosingEngine.tsx` | 264 | ❌ DEAD | duplicate |
 | `admin/RetroactivePredictionsAdmin.tsx` | 320 | ❌ DEAD | duplicate |
 | `admin/CryptoLearningAdmin.tsx` | 939 | ❌ DEAD | removed from imports |
-| `admin/CryptoMaestroPage.tsx` | 821 | ❌ DEAD | duplicate |
+| `admin/CryptoMaestroPage.tsx` | 821 | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان ❌ DEAD duplicate، بعدها اتمسح نهائياً. |
 | `admin/TelegramAdmin.tsx` | 615 | ❌ DEAD | duplicate of TelegramTab |
 | `admin/IterativeLearningAdmin.tsx` | 504 | ❌ DEAD | removed from imports |
 | `admin/StockImportCard.tsx` | 296 | ❌ DEAD | removed |
@@ -1070,7 +1071,7 @@ AdminView (1,913 LOC)
 | # | Route | LOC | سبب الموت |
 |---|-------|----:|-----------|
 | 1 | `/admin/expert-recommendations` | 1079 | لا inbound link |
-| 2 | `/admin/maestro` | 747 | functionality في `/#admin` + `/maestro` |
+| 2 | ~~`/admin/maestro`~~ | ~~747~~ | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان functionality في `/#admin` + `/maestro`. أرشيف في `archive/maestro-dead-code-20261012/`. |
 | 3 | `/admin/prediction-performance` | 823 | sidebar شال الـ link |
 | 4 | `/community` | 324 | sidebar مفيهاش community + CommunityView orphan |
 | 5 | `/education/analysis-types` | 469 | orphan |
@@ -1378,10 +1379,10 @@ AdminView (1,913 LOC)
 | LOC | File | الإجراء |
 |----:|------|---------|
 | 6,450 | `analysis/MarketAnalysisView.tsx` | تقسيم → 8-10 ملفات (tabs/forms/modals) [P2.7] |
-| 3,748 | `admin/MaestroCommandCenter.tsx` | (يخضع للـ React Flow — صعب التقسيم) |
+| ~~3,748~~ | ~~`admin/MaestroCommandCenter.tsx`~~ | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان (يخضع للـ React Flow — صعب التقسيم). أرشيف في `archive/maestro-dead-code-20261012/`. |
 | 3,259 | `admin/DatabaseManagerFull.tsx` | تقسيم per-tab |
 | 3,069 | `portfolio/EnhancedPortfolioView.tsx` | تقسيم per-section |
-| 2,750 | `admin/MaestroDashboard.tsx` | lazy tabs (أغلبها dynamic) |
+| ~~2,750~~ | ~~`admin/MaestroDashboard.tsx`~~ | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان lazy tabs (أغلبها dynamic). أرشيف في `archive/maestro-dead-code-20261012/`. |
 | 2,403 | `admin/SuperLearningSystem.tsx` | lazy tabs |
 | 2,200 | `admin/TelegramTab.tsx` | lazy sub-tabs |
 | 2,188 | `academy/StrategySandbox.tsx` | تقسيم |
@@ -1419,7 +1420,7 @@ AdminView (1,913 LOC)
 | R:R ratio | 1.5/3.0 | 2.0/1.5 | dynamic 1.5/2.0 (outperform path) |
 | TP1 | entry + risk × RR | DNA target لو بصمة طالعة | re-derive من clamped sl |
 
-> **الـ V34 Pine Script هو artifact تاريخي.** المنطق الفعلي للنظام في Python (`institutional_decision_engine.py` + `v38_backtest_engine.py` + `v40_2_daily_generator.py`) ومُوثّق في `SYSTEM_HOW_IT_THINKS.md`. لا يتم تعديل الـ Pine Script — أي تطوير يحدث في Python ثم يُلهم نسخة Pine مستقبلية (إن لزم).
+> **الـ V34 Pine Script هو artifact تاريخي.** المنطق الفعلي للنظام في Python (`institutional_decision_engine.py` + `v38_backtest_engine.py` + `daily_predictor.py`) ومُوثّق في `SYSTEM_HOW_IT_THINKS.md`. لا يتم تعديل الـ Pine Script — أي تطوير يحدث في Python ثم يُلهم نسخة Pine مستقبلية (إن لزم).
 
 ---
 
@@ -1492,7 +1493,7 @@ User clicks /#stocks
 
 ```
 Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
-  → jobs/v40_2_daily_generator.py --today-only
+  → jobs/daily_predictor.py --today-only
     → imports V38BacktestEngine from engines.v38_backtest_engine
     → set_strict_kill_filters(True) from liquidity_filter
     → for scan_date in get_scan_dates(start, end):
@@ -1641,7 +1642,7 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 |--------|---------|-------|
 | `eb587486` AUDIT-FIX | 2026-08-30 | 13 مشكلة حرجة (footer, news, توقعات, DBs) |
 | `56a1f01c` AUDIT-FIX-2 | 2026-08-30 | 17 مشكلة (7 Python endpoints, dark mode, ألوان) |
-| `d729ae11` AUDIT-FIX-3 | 2026-08-30 | دعم CRYPTO في v40_2_daily_generator |
+| `d729ae11` AUDIT-FIX-3 | 2026-08-30 | دعم CRYPTO في daily_predictor |
 | `c350a4f9` LEGAL-AUDIT | 2026-08-30 | حماية قانونية شاملة (إزالة "توصية" + "مضمون") |
 
 ---
@@ -1744,8 +1745,8 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 **المشكلة:** OOM risk على 5000+ توقع
 **الحل:** ضفت `LIMIT 500` في الـ SQL
 
-### 25. دعم CRYPTO في v40_2_daily_generator
-**الملف:** `vps-service/jobs/v40_2_daily_generator.py`
+### 25. دعم CRYPTO في daily_predictor
+**الملف:** `vps-service/jobs/daily_predictor.py`
 **المشكلة:** معندوش أي دعم CRYPTO (0 matches لـ crypto/BTC)
 **الحل:** ضفت `--market CRYPTO` flag + `get_crypto_tickers()` + `run_crypto_generator()`
 
@@ -1889,7 +1890,7 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 - `utils/stock_state.py` — RSI thresholds + NEAR_BREAKOUT + INSUFFICIENT_DATA
 - `api/advanced_screener_routes.py` — default min_price/volume/turnover
 - `jobs/daily_closer.py` — market_filter
-- `jobs/v40_2_daily_generator.py` — --market CRYPTO
+- `jobs/daily_predictor.py` — --market CRYPTO
 
 ### DBs:
 - `db/price_history.db` — schema صحيحة
@@ -1915,7 +1916,7 @@ bun run build && pm2 restart all
 pm2 restart python-backend
 
 # لتوليد توقعات كريبتو:
-python vps-service/jobs/v40_2_daily_generator.py --market CRYPTO --today-only
+python vps-service/jobs/daily_predictor.py --market CRYPTO --today-only
 ```
 
 ---
@@ -1950,7 +1951,7 @@ python vps-service/jobs/v40_2_daily_generator.py --market CRYPTO --today-only
 
 ### النتيجة
 
-- ✅ كل الموديولات موجودة ومرتبطة بالـ V40.2 generator (`grep` أكّد الاستدعاءات في `v40_2_daily_generator.py`).
+- ✅ كل الموديولات موجودة ومرتبطة بالـ V40.2 generator (`grep` أكّد الاستدعاءات في `daily_predictor.py`).
 - ✅ كل الـ feature flags العشرة default OFF — الإنتاج الحالي مش متأثر.
 - ✅ `decision_logger.py` بـ يسجل كل رفض/خروج في `db/decision_log.db` للمراقبة.
 - ✅ `notebook_routes.py` مسجّل blueprint في `lightweight_server.py`.
@@ -1994,7 +1995,7 @@ python vps-service/jobs/v40_2_daily_generator.py --market CRYPTO --today-only
 
 | # | المكوّن | المكوّن الموازي (مخالف) | المكوّن الموجود (canonical) | القواعد المخالفة |
 |---|---|---|---|---|
-| **A** | مولّد التوقعات | `tomorrow_predictions_generator.py` (896 LOC) | `v40_2_daily_generator.py` (1466 LOC) | Rule 4, 21, 28, 29 |
+| **A** | مولّد التوقعات | `tomorrow_predictions_generator.py` (896 LOC) | `daily_predictor.py` (1466 LOC) | Rule 4, 21, 28, 29 |
 | **B** | جدول التوقعات | `tomorrow_predictions` table (3 صفوف) | `predictions` table | Rule 28, 29 |
 | **C** | حالة الأسهم النشطة | `tomorrow_active_status` table (0 صفوف) | `predictions WHERE outcome_date IS NULL` | Rule 28, 29 |
 | **D** | أسهم تحت المراقبة | `tomorrow_watchlist` table (15 صف) | `stocks` table + `advanced_screener_routes.py` | Rule 28, 29 |
@@ -2203,7 +2204,7 @@ python vps-service/jobs/v40_2_daily_generator.py --market CRYPTO --today-only
 
 ## ✅ القواعد اللي اتنفذت صح (نماذج تحتذى بها)
 
-1. **V40.2 canonical pipeline** (`v40_2_daily_generator.py` + `institutional_decision_engine.py` + `liquidity_filter.py`) — 6 proofs + R:R floor + ATR clamp + closed-loop. ده المرجع.
+1. **V40.2 canonical pipeline** (`daily_predictor.py` + `institutional_decision_engine.py` + `liquidity_filter.py`) — 6 proofs + R:R floor + ATR clamp + closed-loop. ده المرجع.
 2. **`/api/stored-analysis/live-tracking`** — Node pure proxy + Python blueprint. نموذج للـ Rule 20.
 3. **`/api/screener/advanced`** — Node pure proxy + Python blueprint. نموذج للـ Rule 20.
 4. **`TelegramNotifier.notify_target_hit()`** في `daily_closer.py:2769` — Python closed-loop بيستدعي TelegramNotifier مباشرة. نموذج للترابط.
@@ -2316,7 +2317,7 @@ python vps-service/jobs/v40_2_daily_generator.py --market CRYPTO --today-only
 
 ### المشكلة
 اتبنى نظام موازي كامل لتوقعات الغد بـ ~1,400 LOC:
-- `tomorrow_predictions_generator.py` (896 LOC) — مكرر لـ `v40_2_daily_generator.py`
+- `tomorrow_predictions_generator.py` (896 LOC) — مكرر لـ `daily_predictor.py`
 - 3 جداول DB مكررة (`tomorrow_predictions` + `tomorrow_active_status` + `tomorrow_watchlist`)
 - 3 Node routes فيها logic (SQLite مباشرة + بناء رسالة Telegram)
 - بيستخدم `simple_analysis()` fallback (RSI-only) بدون V40.2 evidence → مخالف Rule 21
@@ -2740,7 +2741,7 @@ git revert 77176d93..3124bee7
 
 | # | File | LOC | Functions | Recommended fix | Severity |
 |---|------|-----|-----------|------------------|----------|
-| 10 | `src/lib/honest-tracking/maestro.ts` | 1862 | `sma`/`rsi`/`atr`/`bollingerWidth`/`detectCandlestick`. **BUG: RSI + ATR SMA-based.** بيـ re-compute indicators من price history عشان يتحقق من past predictions. | **DELEGATE-TO-PYTHON** — استبدل local calcs بـ Python canonical (subprocess أو HTTP). الـ buggy calcs بتأثر على الـ verification نفسه (win/loss stats ممكن تكون خاطئة). Used by 5 routes (`/api/admin/generate-historical-predictions` + `/api/predictions/honest-tracking/{list,stats,learn-from-errors,live-tracking}`). | HIGH (backtest verification) |
+| 10 | ~~`src/lib/honest-tracking/maestro.ts`~~ | ~~1862~~ | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان `sma`/`rsi`/`atr`/`bollingerWidth`/`detectCandlestick` (parallel Node stack — 76KB). كان فيه BUG: RSI + ATR SMA-based. بيـ re-compute indicators من price history عشان يتحقق من past predictions. أرشيف في `archive/maestro-dead-code-20261012/`.Used by 5 routes (`/api/admin/generate-historical-predictions` [410 Gone] + `/api/predictions/honest-tracking/{list,stats,learn-from-errors,live-tracking}` [all converted لـ pure proxy في RULE20-PURE-PROXY]). الـ routes كلها بـ تستخدم Python canonical دلوقتي. | ✅ **RESOLVED** (محذوف نهائياً + الـ routes اتحولت لـ pure proxy) |
 
 ### 15.5 Cross-cutting recommendation
 

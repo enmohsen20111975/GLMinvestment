@@ -787,7 +787,7 @@ ocr_text, raw_analysis, published_at}`. الـ route بيعمل `INSERT OR IGNOR
 | `POST` | `/admin/historical-backfill/run` | تشغيل backfill |
 | `GET` | `/admin/historical-backfill/status` | حالة backfill |
 | `POST` | `/admin/generate-predictions` | توليد توقعات |
-| `POST/GET` | `/admin/generate-historical-predictions` | توقعات تاريخية |
+| `POST/GET` | ~~`/admin/generate-historical-predictions`~~ | 🗑️ **410 Gone** (MAESTRO-KILL 2026-10-12) — كان بـ INSERT fabricated predictions من Maestro stack (Rule 35 violation). الآن بيرجّع 410 + redirect لـ V40.2 `daily_predictor.py`. |
 | `POST` | `/admin/retroactive-predictions` | توقعات بأثر رجعي |
 | `POST/GET` | `/admin/fix-dates` | إصلاح تواريخ |
 | `POST/GET` | `/admin/refresh-historical-data` | تحديث بيانات تاريخية |

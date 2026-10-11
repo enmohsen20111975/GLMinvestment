@@ -400,43 +400,96 @@ def save_batch_to_db(
     """
     Write rows for one ticker to price_history.db.
 
-    Uses INSERT OR REPLACE on UNIQUE(ticker, date) so the latest fetch
-    always wins. Each row gets:
-      - source = 'yahoo_us'
+    Per Rule 12 + Rule 66 (P1-PARALLEL-ENGINES-FIX 2026-10-12):
+      All writes to `price_history` MUST go through `write_guarded()` from
+      `vps-service/data/source_authority.py`. The guard:
+        - rejects BANNED sources (egxpilot_live, yahoo_safetynet, ...)
+        - rejects sources not in the market's CANONICAL_SOURCES list
+        - skips the write if a higher-priority source already has FRESH data
+          for this ticker (< 7 days old)
+      The guard transparently rewrites the source label to the market's
+      PRIMARY canonical name when writing from a FALLBACK source.
+
+    Each row gets:
+      - source = 'yahoo_us'  (declared as US fallback in CANONICAL_SOURCES)
       - market = 'US'
       - adjusted = 0
 
-    Returns: number of rows written.
+    Returns: number of rows actually written (after guard filtering).
     """
     if not rows:
         return 0
 
+    # ── Lazy import of write_guarded ──────────────────────────────────────
+    # The scraper may be invoked from contexts where vps-service isn't on
+    # the path (e.g., a standalone cron). Fall back to a direct INSERT
+    # only if the import fails — and warn loudly.
+    try:
+        import sys as _sys
+        _vps_dir = str(_THIS_DIR.parent.parent / 'vps-service')
+        if _vps_dir not in _sys.path:
+            _sys.path.insert(0, _vps_dir)
+        from data.source_authority import write_guarded as _write_guarded
+        _GUARD_AVAILABLE = True
+    except Exception as _e:
+        logger.warning(
+            f"⚠️ write_guarded unavailable ({_e}); falling back to direct INSERT. "
+            "Rule 12 + Rule 66 violation — please fix the import path."
+        )
+        _write_guarded = None
+        _GUARD_AVAILABLE = False
+
     written = 0
     ticker = _normalize_ticker(ticker)
+    db_path_str = str(PRICE_HISTORY_DB)
     for row in rows:
         try:
-            conn.execute("""
-                INSERT OR REPLACE INTO price_history
-                (ticker, date, open_price, high_price, low_price,
-                 close_price, volume, source, adjusted, market)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                ticker,
-                row['date'],
-                row.get('open_price'),
-                row.get('high_price'),
-                row.get('low_price'),
-                row.get('close_price'),
-                row.get('volume', 0),
-                SOURCE,         # 'yahoo_us'
-                0,              # adjusted = raw prices
-                MARKET,         # 'US'
-            ))
-            written += 1
+            if _GUARD_AVAILABLE:
+                ok = _write_guarded(
+                    db_path=db_path_str,
+                    ticker=ticker,
+                    market=MARKET,
+                    date=row['date'],
+                    open_price=row.get('open_price') or 0.0,
+                    high_price=row.get('high_price') or 0.0,
+                    low_price=row.get('low_price') or 0.0,
+                    close_price=row.get('close_price') or 0.0,
+                    volume=int(row.get('volume', 0) or 0),
+                    source=SOURCE,          # 'yahoo_us'
+                    adjusted=0,             # raw prices
+                    market_label=MARKET,   # 'US'
+                )
+                if ok:
+                    written += 1
+            else:
+                # Fallback path — only used if write_guarded import failed.
+                conn.execute("""
+                    INSERT OR REPLACE INTO price_history
+                    (ticker, date, open_price, high_price, low_price,
+                     close_price, volume, source, adjusted, market)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    ticker,
+                    row['date'],
+                    row.get('open_price'),
+                    row.get('high_price'),
+                    row.get('low_price'),
+                    row.get('close_price'),
+                    row.get('volume', 0),
+                    SOURCE,         # 'yahoo_us'
+                    0,              # adjusted = raw prices
+                    MARKET,         # 'US'
+                ))
+                written += 1
         except Exception as e:
             logger.debug(f"INSERT error {ticker} {row.get('date')}: {e}")
 
-    conn.commit()
+    if _GUARD_AVAILABLE:
+        # The guard opens its own connection per row; commit on the caller's
+        # connection is a no-op but harmless. Skip it to avoid confusion.
+        pass
+    else:
+        conn.commit()
     return written
 
 

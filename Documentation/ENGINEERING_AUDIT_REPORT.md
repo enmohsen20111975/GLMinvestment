@@ -73,7 +73,7 @@
 #### 3️⃣ master_score — مكتوب بـ 3 صيغ مختلفة
 - `master_analyzer.py:2258` — 10-component weighted sum (MASTER_WEIGHTS dict)
 - `core_scoring_engine.py:1811` — 6-component weighted sum (config.weights dict)
-- `v40_2_daily_generator.py:2355-2356` — `master_score = technical_score` (نفس القيمة في العمودين!)
+- `daily_predictor.py:2355-2356` — `master_score = technical_score` (نفس القيمة في العمودين!)
 - **النتيجة:** عمود `predictions.master_score` مش معناه واحد — BUY≥65 threshold مختلف حسب الـ generator
 
 #### 4️⃣ Win Rate / Profit Factor — fallback مختلف
@@ -96,7 +96,7 @@
 2. `v38_backtest_engine.py:1500-1501` — `calc_ema(closes, 200)` متسند لـ `sma200` (mislabeled)
 3. `core_scoring_engine.py:43` — RSI يستخدم SMA بدل Wilder
 4. `precomputed-cache.ts:414` — ATR يستخدم SMA بدل Wilder
-5. `v40_2_daily_generator.py:2355-2356` — `master_score = technical_score` بيلغي الـ 10-component weighted sum
+5. `daily_predictor.py:2355-2356` — `master_score = technical_score` بيلغي الـ 10-component weighted sum
 
 ---
 

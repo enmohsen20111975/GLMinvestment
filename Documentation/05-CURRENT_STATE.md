@@ -560,7 +560,7 @@ Multi-market endpoint: `/api/maker-radar/multi-market?markets=EGX,US,CRYPTO,TADA
 
 ## 5. Prediction System
 
-> **Source of truth:** `vps-service/jobs/v40_2_daily_generator.py` +
+> **Source of truth:** `vps-service/jobs/daily_predictor.py` +
 > `vps-service/jobs/daily_closer.py` + `vps-service/jobs/learning_engine.py` +
 > `vps-service/engines/market_regime.py` +
 > `vps-service/analyzers/market_regime_engine.py` +
@@ -587,7 +587,7 @@ Multi-market endpoint: `/api/maker-radar/multi-market?markets=EGX,US,CRYPTO,TADA
 │                  V40.2 Daily Prediction Pipeline                     │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
-│  1. v40_2_daily_generator.py  (03:00 + 13:30 UTC daily)              │
+│  1. daily_predictor.py  (03:00 + 13:30 UTC daily)              │
 │     ├── Liquidity Filter (Phase B — primary gate)                   │
 │     ├── analyze_single_day_v393() with market_code (Phase A)        │
 │     ├── engine_settings thresholds (Phase C — get_setting())        │
@@ -666,7 +666,7 @@ Multi-market endpoint: `/api/maker-radar/multi-market?markets=EGX,US,CRYPTO,TADA
 6. `drawdown` (from recent high)
 
 **Read by:**
-- `v40_2_daily_generator.py` (override MIN_RR + MIN_SCORE + MAX_PICKS)
+- `daily_predictor.py` (override MIN_RR + MIN_SCORE + MAX_PICKS)
 - `liquidity_filter.py` (raise/lower MIN_TURNOVER)
 - `position_sizing.py` (scale position_size_multiplier)
 - `/api/market/regime` (Next.js — display only)
@@ -1112,8 +1112,8 @@ CLI:
 #### V40.2 Pipeline (5 entries)
 | Schedule | Job | Log |
 |---|---|---|
-| `0 3 * * 0-4` | `v40_2_daily_generator.py --today-only --max-picks 5` | `/tmp/v40_2_morning.log` |
-| `30 13 * * 0-4` | `v40_2_daily_generator.py --yesterday-only --max-picks 5` | `/tmp/v40_2_evening.log` |
+| `0 3 * * 0-4` | `daily_predictor.py --today-only --max-picks 5` | `/tmp/v40_2_morning.log` |
+| `30 13 * * 0-4` | `daily_predictor.py --yesterday-only --max-picks 5` | `/tmp/v40_2_evening.log` |
 | `*/5 8-12 * * 0-4` | `v40_2_intraday_scanner.py --limit 5` | `/tmp/v40_2_intraday.log` |
 | `0 14 * * 0-4` | `daily_closer.py` | `/tmp/daily_closer.log` |
 | `0 15 * * 0-4` | `learning_engine.py` | `/tmp/learning_engine.log` |

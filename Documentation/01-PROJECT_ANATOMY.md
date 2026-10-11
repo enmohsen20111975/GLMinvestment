@@ -5,7 +5,16 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-10-09** (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. ملخص التحديثات في هذا الـ pass:
+> **آخر تحديث: 2026-10-12** (Task `DOC-SECRETARY-UPDATE` — DOCUMENTATION-SECRETARY per Rule 70 — تحديث شامل لـ Documentation عشان يعكس كل الإصلاحات اللي اتعملت في الجلسات الأخيرة (MAESTRO-KILL + PRED-WRITE-GUARD + LEAGUE-DEDUP-FIX + RULE20-PURE-PROXY + FAKE-DATA-HUNT + HIDDEN-WRITERS-AUDIT + DEEP-AUDIT-FIXES). ملخص التحديثات في هذا الـ pass:
+> 1. **KILL-MAESTRO → DELETE-MAESTRO (2026-10-12)** — تأكيد إن Maestro محذوف نهائياً (مش معطل) في §4.1 Engine Map + §5.2.8 API Map + §6 Data Flow.
+> 2. **RULE20-PURE-PROXY (2026-10-12)** — قسم جديد يوثّق 17 Node routes اللي اتحولت لـ pure thin proxies (zero computation in Node) في 5 جلسات متتالية: honest-tracking (7) + dashboards (5) + screener/market (4) + chart (1) + fallback-chain removal (4).
+> 3. **FAKE-DATA-HUNT (2026-10-12)** — قسم جديد يوثّق 25 قطعة بيانات وهمية اتمسحت: 3 fake backtest endpoints + store.ts synthetic score + Zakat hardcoded gold + +2472.9% SUM bug pattern + persona/crypto placeholders.
+> 4. **HIDDEN-WRITERS-AUDIT (2026-10-12)** — قسم جديد يوثّق 7 rogue DB writers اتعطلت + 3 orphan duplicate tables اتمسحت (portfolios + ExpertRecommendation + gold_prices) + 9 orphan scripts معطّلة.
+> 5. **DB Schema (§3.1)** — تحديث counts لـ reflect الـ dropped tables. `predictions.db`: 53 → 50 table. `stocks.db`: 57 → 54 table. ExpertRecommendation 104 → 48 (CANONICAL). `data_engine.db.gold_prices` = CANONICAL.
+> 6. **Rename** — كل references لـ `v40_2_daily_generator.py` اتغيرت لـ `daily_predictor.py` (الاسم الإنتاجي الحالي).
+> Per Rule 62 (Secretary updates docs after every task) + Rule 70 (DOCUMENTATION-SECRETARY) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
+>
+> **آخر تحديث سابق: 2026-10-09** (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. ملخص التحديثات في هذا الـ pass:
 > 1. **§1.6 multi-market section** — تحديث من 5 → **6 أسواق مدعومة بالكامل** (EGX + TADAWUL + KSE + QSE + US + CRYPTO) + إضافة `normalizeMarket()` canonical helper (`src/lib/market-utils.ts` — 200 LOC). commit `b18b3f21` (Task `PHASE-3`).
 > 2. **§1.6 file map** — إضافة `src/lib/market-utils.ts` + `src/lib/market-pulse-proxy.ts` للـ file inventory.
 > 3. **§4 engine map** — `daily_predictor.py:748` فيه `time.sleep(0.01)` micro-sleep بين الأسهم (CPU 95%→35%) — commit `e8df798d` (Task `PHASE-1`).
@@ -150,7 +159,7 @@
 |---|---|
 | **`EVENT_TYPES`** | 14 نوع حدث (IPO_SUBSCRIPTION, DIVIDEND_EX_DATE, DIVIDEND_ANNOUNCE, EARNINGS_BEAT, EARNINGS_MISS, MA_ACQUISITION, REGULATORY_APPROVAL, STOCK_SPLIT, MANAGEMENT_CHANGE, CONTRACT_AWARD, EXPANSION, INVESTIGATION_FRAUD, TRADING_HALT, CBE_DECISION). |
 | **impact_score** | كل event له score من -25 لـ +20 + verdict (BOOST/REDUCE/VETO). |
-| **التكامل** | يُستخدم في `v40_2_daily_generator.py` كـ proof #9 + hard veto / boost (لو score < 30 → رفض). |
+| **التكامل** | يُستخدم في `daily_predictor.py` كـ proof #9 + hard veto / boost (لو score < 30 → رفض). |
 
 ### 🏛️ EGX Disclosure Engine (12 disclosure types)
 
@@ -225,6 +234,110 @@
 | **background_analyzer** | Maestro imports في try/except — بـ fail silently لو استدعيت |
 | **recorder.py** | `record_crypto_signals` + `record_egx_signals` — no-op (return early) |
 | **ai_predictions_routes** | يقرأ من `predictions` (V40.2) مش `stored_analyses` (Maestro) |
+
+---
+
+### 🔁 RULE20-PURE-PROXY (2026-10-12): 17 Node routes اتحولت لـ pure thin proxies
+
+> **سيدي طلب:** "أنت لية عملت كل الشغل فى النود؟" — كل الـ logic لازم يكون في Python (Single Source of Truth per Rule 67).
+> تم تحويل **17 Node routes** في 5 جلسات متتالية: **RULE20-PURE-PROXY** + **RULE20-P1-FIX** + **FULL-AUDIT-FIXES (P0-1, P0-2, P1-1..P1-4)** + **P2-FALLBACK-REMOVAL** + **MAESTRO-KILL**.
+
+#### A. honest-tracking family (7 routes)
+| Route | Before → After | Python Endpoint |
+|---|---|---|
+| `predictions/honest-tracking/stats` | 182 → 66 سطر | `/api/stored-analysis/honest-stats` (NEW) |
+| `predictions/honest-tracking/list` | 176 → 86 سطر | `/api/stored-analysis/live-tracking` (re-used + flatten) |
+| `predictions/honest-tracking/live-tracking` | 117 → 62 سطر | `/api/stored-analysis/live-tracking` |
+| `predictions/honest-tracking/missed-opportunities` | 184 → 60 سطر | `/api/stored-analysis/missed-opportunities` (NEW) |
+| `predictions/honest-tracking/learn-from-errors` | 171 → 86 سطر | `/api/stored-analysis/learn-from-errors` (NEW) |
+| `predictions/honest-tracking/verify-pending` | — → 72 سطر | (POST delegate) |
+| `predictions/honest-tracking/ROOT` | 64 → 73 سطر (P0-1) | `/api/stored-analysis/live-tracking` |
+
+#### B. dashboards & reports (5 routes)
+| Route | Before → After | Python Endpoint |
+|---|---|---|
+| `predictions/league-report` | 70 → 63 سطر (P0-2) | `/api/predictions/league-report` (LEAGUE-DEDUP-FIX) |
+| `stocks/top-performers` | 225 → 61 سطر | `/api/stored-analysis/missed-opportunities` (re-used) |
+| `v4/stats` | 250 → 73 سطر (P1-1) | `/api/v4/stats` (NEW في `misc_routes.py`) |
+| `admin/platform-performance` | 646 → 72 سطر (P1-2) | `/api/admin/platform-performance` (NEW — auth gate محفوظ) |
+| `predictions/performance-dashboard` | 334 → 69 سطر (P1-4) | `/api/predictions/performance-dashboard` (NEW) |
+
+#### C. screener + market (4 routes)
+| Route | Before → After | Python Endpoint |
+|---|---|---|
+| `finance/screener` | 63 سطر | `/api/finance/screener` |
+| `screener/advanced` | 106 سطر | `/api/screener/advanced` (paywall gate محفوظ) |
+| `market/liquidity-flow` | 64 سطر | `/api/market/liquidity-flow` |
+| `radar/accuracy` | 102 سطر | `/api/radar/accuracy` (paywall gate محفوظ) |
+
+#### D. chart + tracking (1 route)
+| Route | Before → After | Python Endpoint |
+|---|---|---|
+| `chart/[ticker]` | 969 → 82 سطر (تقليل 91.5% — P1-3) | `/api/chart/<ticker>` (موجود في `chart_routes.py`) |
+
+#### E. fallback-chain removal (4 routes)
+| Route | Before → After | Python Endpoint |
+|---|---|---|
+| `market/exit-status` | 98 → 80 سطر | (Python endpoint موجود) |
+| `unified/predictions` | 94 → 152 سطر | (Python endpoint موجود + POST handler) |
+| `fomo/missed-opportunities` | 117 → 133 سطر | `/api/fomo/missed-opportunities` (NEW — paywall gate محفوظ) |
+| `market/recommendations/ai-insights` | 66 → 80 سطر | `/api/market/recommendations/ai-insights` (NEW) |
+
+**إجمالي:** 1127 + 2199 + 375 + 4 routes صغيرة = **~3,300 سطر Node logic اتمسحت** (zero computation في Node). كل routes بترجّع `503 + success:false + rule:'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)'` لو Python unavailable (مفيش placeholder zeros).
+
+---
+
+### 🧹 FAKE-DATA-HUNT (2026-10-12): 25 قطعة بيانات وهمية اتمسحت
+
+> **سيدي طلب:** فحص ميكروسكوبي لـ `src/` + `vps-service/` على الـ patterns:
+> - `Math.random()` في production financial data
+> - `random.randint/choice/uniform` في Python
+> - `confidence/master_score/score = 50` placeholders
+> - `source: 'unavailable'/'error-fallback'/'sqlite_fallback'/'stub'/'placeholder'/'deterministic_stub'`
+> - synthetic equations (`entry * 1.05`, `low * 0.9`, etc.)
+> - fallback chains (`getPredictionsFallback` etc.)
+
+#### الـ 5 إصلاحات P0 ( fabricated data اتمسحت):
+1. **3 fake backtest endpoints** — `backtesting/unified` (mulberry32 RNG + STRATEGY_PROFILES hardcoded) → 410 Gone; `kimi/backtest/run` + `walk-forward/run` (buildStubEquityCurve/buildStubPeriods) → pure proxies (503 لو Python down).
+2. **`src/lib/store.ts` client-side scoring** — synthetic `score = Math.min(95, Math.max(5, 50 + chg * 1.5))` + hardcoded `components: { liquidity: 50, valuation: 50, income: 50 }` + `verdict: 'undervalued' as const` (كل سهم = "undervalued"!) → استبدل بـ `null` (honest empty state).
+3. **Zakat hardcoded gold price** — `PLACEHOLDER_GOLD_24K = 4850` + `PLACEHOLDER_SILVER = 56` → `fetchGold24Price()` بترجّع null → 503 (خرق ديني Rule 50).
+4. **`+2472.9%` SUM bug pattern** — `ExecutiveReportView.tsx:680-755` + `PredictionTrackingDashboard.tsx:460-528, 810-838` كانوا بيعملوا `reduce((s,p) => s + returnPct, 0)` (SUM جبري للنسب المئوية — 80 صفقة × +30% = +2400%!) → استبدل بـ `avgReturnPct` + `cumulativeReturnPct = product(1 + ret/100) - 1` (compound return).
+5. **persona/analyze + crypto placeholders** — `persona/analyze/[ticker]` + `crypto/route.ts` + `mobile/crypto/route.ts` + `finance/smart-watchlist` كانوا بـ يرجّعوا `score=50, signal='HOLD', confidence=0, source:'placeholder', success:true` فوق الأسعار الحقيقية → استبدل بـ null + 503.
+
+#### Tier 2-5 (متبقية — pending future sessions):
+- **7+ synthetic equations** (`entry * 1.05/0.95`, `current * 0.97/1.03` fallbacks) في `dynamic-analysis-engine.ts` + `helpers.ts` + `StockDetail.tsx` + `ComprehensiveStockAnalysis.tsx` + `GateAnalysisView.tsx` + `SpecialistAnalysisView.tsx` + `StockScreenerAdvanced.tsx` — Pending (P1).
+- **3 hardcoded demo arrays** — `AcademyView.tsx FALLBACK_STOCKS` (18 stocks with fabricated prices) + `ContentStudioHub.tsx SAMPLE_TRADES` + `AdvancedPortfolioManager.tsx demo positions` — Pending (P1).
+- **8 fallback functions** في `flutter-sqlite-fallback.ts` لسه بـ تـ fabricate analytical scores في crypto routes — Pending (P2).
+
+---
+
+### 🚫 HIDDEN-WRITERS-AUDIT (2026-10-12): كل الـ rogue DB writers اللي اتعطلت
+
+> **سيدي طلب:** "بعبص فى كل حتة عالشان نعرف أدق أدق المشاكل بدون ماتموت المشروع". تم فحص ميكروسكوبي عميق + تعطيل **7 rogue paths** بـ تكتب في `predictions` / `persona_predictions` / `real_predictions` بدون مرور عبر `record_prediction()` (الـ Single Gate per Rule 35):
+
+| # | الـ Rogue Path | كان بيعمل إيه | الحالة بعد الإصلاح |
+|---|---|---|---|
+| 1 | `scripts/backfill_historical_predictions.py` | INSERT في `persona_predictions` بـ persona engines (مش V40.2) على كل deploy عبر `deploy_vps.sh` | **معطل** بـ `RULE35-DISABLE` guard + `sys.exit(0)`. اتمسح من `deploy_vps.sh`. |
+| 2 | `api/confluence_routes.py /generate-predictions` | INSERT INTO aiPrediction بـ `source='CONFLUENCE_V3'` بدون evidence | **410 Gone** + redirect لـ V40.2 `daily_predictor.py` |
+| 3 | `scripts/optimization_loop.py` | `clear_predictions()` بـ يعمل **`DELETE FROM predictions`** (wipes ALL!) قبل كل strategy iteration | **معطل** بـ `RULE35-DISABLE` guard + `sys.exit(0)` — كارثة Rule 1 (DB Safety) |
+| 4 | `api/admin/backtest/v40/run` (Node) | Node-side **`DELETE FROM predictions`** على كل backtest run | **410 Gone** + redirect لـ `daily_predictor.py` (auth gate 403 محفوظ) |
+| 5 | `api/recommendations/retroactive-evaluate` (Node) | Node-side `UPDATE real_predictions` (duplicate of `daily_closer.py`) | **410 Gone** + redirect لـ `daily_closer.py` (Rule 28 — duplicate) |
+| 6 | `api/prediction_tracking_routes` (legacy `tracking_bp`) | duplicate blueprint بـ url_prefix=`/api/predictions/tracking` — endpoints مش بـ تستخدم | blueprint registration اتشال من `lightweight_server.py` (Rule 28) |
+| 7 | `telegram/auto_poster.py:299-306` | `UPDATE predictions SET ... WHERE ticker = ? ORDER BY ... LIMIT 1` (SQL syntax bug — SQLite مش بـ يدعم ORDER BY/LIMIT في UPDATE) — silent swallowed exception | الـ SQL syntax bug موثّق. الـ path معطّل. |
+
+**3 orphan duplicate tables اتمسحت** من الـ DBs (FULL-AUDIT-FIXES P0-3):
+| DB.Table | Rows | السبب | Canonical Alternative |
+|---|---|---|---|
+| `predictions.db.portfolios` | 4 | duplicate | `stocks.db.portfolios` (9 rows — canonical) |
+| `predictions.db.ExpertRecommendation` | 17 | duplicate | `stocks.db.ExpertRecommendation` (48+ rows — canonical) |
+| `stocks.db.gold_prices` | 3 (legacy) | duplicate | `data_engine.db.gold_prices` (163,143 rows — canonical) |
+
+Backups محفوظة: `predictions.20261011_101047.bak` + `stocks.20261011_101047.bak` (Rule 16 — VERIFY-BEFORE-DELETE). VACUUM اتعمل.
+
+**9 orphan scripts معطّلة بـ early-return guards (defense-in-depth)** — per Task `DISABLE-SCRIPTS` (commit `38665fd1`) + DEEP-AUDIT-FIXES P1:
+`backtesting_engine.py` + `maestro_backfill_phase3.py` + `maestro_backfill_v2.py` + `generate_persona_predictions.py` + `populate_history_fast.py` + `dual_track_generator.py` + `backfill_with_personas.py` + `backfill_to_predictions.py` + `volume_surge_hunter_test.py` + `backfill_history.py` + `sync-real-data.py`.
+
+**الـ Single Gate الحالي:** `analyzers/prediction_tracker.py:493-534` (`record_prediction()`) + الـ guard في `core/prediction_write_guard.py:14-194` (`validate_prediction_evidence()`). الـ guard بيـ block أي توقع مش من V40.2 / بدون evidence / بـ master_score=50 placeholder.
 
 ### 🧠 V62 Logic (4 ميزات من Pine Script)
 
@@ -892,7 +1005,7 @@ GLMinvestment/                              # ← PROJECT ROOT
 │   ├── tools/                               # developer tools
 │   ├── config/                              # JSON configs + threshold defaults
 │   ├── models/                              # Pydantic models + DTOs
-│   ├── jobs/                                # background jobs (price_history_safetynet, intraday_aggregator, daily_closer, v40_2_daily_generator)
+│   ├── jobs/                                # background jobs (price_history_safetynet, intraday_aggregator, daily_closer, daily_predictor)
 │   ├── core/                                # auth_middleware, db_manager, settings_resolver
 │   ├── ws-service/                          # ⭐ mini-service (Bun, port 3005, socket.io, 248 LOC)
 │   ├── crontab.txt                          # ✅ egx_fundamental_fetcher مُجدوَل (السبت 14:00 UTC)
@@ -937,7 +1050,7 @@ GLMinvestment/                              # ← PROJECT ROOT
 │   └── ... (more mini-services pattern)
 │
 ├── scratch/                                 # 🧪 sandbox scripts (not in production)
-│   └── v40_2_historical_generator.py        # ORIGINAL V40.2 sandbox (pre v40_2_daily_generator.py)
+│   └── v40_2_historical_generator.py        # ORIGINAL V40.2 sandbox (pre daily_predictor.py)
 │
 ├── garage/                                  # 🗑️ DEAD CODE (~8,247 LOC — orphan candidates, انظر §8.4)
 │
@@ -974,16 +1087,23 @@ GLMinvestment/                              # ← PROJECT ROOT
 > **القاعدة:** كل قواعد البيانات SQLite + WAL mode + `busy_timeout=30000`. لا PostgreSQL، لا Redis، لا message queue.
 > Production archive: `active_databases_20260817_full.zip` (77,021,220 bytes، MD5 `0947bdf6c2eff1a75ff8af6c3e576ed8`، 17 DBs).
 
-### 3.1 قواعد البيانات الرئيسية (db/) — مُحدّث 2026-09-25
+### 3.1 قواعد البيانات الرئيسية (db/) — مُحدّث 2026-10-12 (post HIDDEN-WRITERS-AUDIT cleanup)
 
 > ملاحظة: الـ archive `db/vps_real/` القديم تم استبداله بالعمل المباشر في `db/` بعد DB-CLEANUP-WAVE-1+2+3 (القاعدة 46). الـ canonical path دلوقتي هو `db/` (sandbox) و `/root/GLMinvestment/db/` (production).
+>
+> **2026-10-12 (HIDDEN-WRITERS-AUDIT cleanup):** 3 orphan duplicate tables اتمسحت من الـ DBs (per Rule 28 + Rule 29):
+> - `predictions.db.portfolios` (4 rows) → **DROPPED** — canonical هو `stocks.db.portfolios`
+> - `predictions.db.ExpertRecommendation` (17 rows) → **DROPPED** — canonical هو `stocks.db.ExpertRecommendation`
+> - `stocks.db.gold_prices` (3 legacy rows) → **DROPPED** — canonical هو `data_engine.db.gold_prices` (163,143 rows)
+>
+> Backups محفوظة: `predictions.20261011_101047.bak` + `stocks.20261011_101047.bak` (Rule 16 — VERIFY-BEFORE-DELETE). VACUUM اتعمل.
 
-| DB | الدور | Key tables + counts (2026-09-25) | ملاحظات |
+| DB | الدور | Key tables + counts (2026-10-12) | ملاحظات |
 |---|---|---|---|
-| **`predictions.db`** | V40.2 prediction store | `predictions`=**306** · `aiPrediction`=2,459 · `persona_predictions`=946 · `historical_trades`=550 · `outcome_logs`=8,544 · `live_ai_signals`=945 · `morning_bell_signals`=82 · `learned_lessons`=8,644 · `exit_notifications`=3,773 (53 table إجماليًا) | `fundamental_score` بقى real (بعد FUNDAMENTALS-ACTIVATION commit `04354a5`) — لا placeholder 50. |
-| **`data_engine.db`** | Market + fundamentals + metals + crypto | `stocks`=**1,585** · `historical_data`=99,076 · `stock_prices`=2,444 · `crypto_prices`=198,476 · `btc_local_prices`=76,877 · `gold_prices`=163,143 · `gold_prices_clean`=27,440 · `silver_prices`=82,608 · `exchange_rates`=45,597 · `screener_lists`=**1,505** · `tab_balance_sheet`=866 · `tab_income_statement`=866 · `tab_cash_flow`=866 · `tab_valuation`=858 · `tab_profitability`=858 · `tab_dividends`=858 · `tab_performance`=858 · `tab_technical_analysis`=863 · `egksco_price_history`=0 (هاجر لـ data_engine.db) · `egx_fundamentals`=0 (يُجمَع عبر `egx_fundamental_fetcher.py`) | الـ canonical price source بعد WAVE-2 migration: `data_engine.db.egksco_price_history`. `price_history.db` محتفظ بيه كـ safety net. |
+| **`predictions.db`** | V40.2 prediction store | `predictions`=**306** · `aiPrediction`=2,459 · `persona_predictions`=946 · `historical_trades`=550 · `outcome_logs`=8,544 · `live_ai_signals`=945 · `morning_bell_signals`=82 · `learned_lessons`=8,644 · `exit_notifications`=3,773 (50 table — بعد حذف `portfolios` + `ExpertRecommendation` duplicates) | `fundamental_score` بقى real (بعد FUNDAMENTALS-ACTIVATION commit `04354a5`) — لا placeholder 50. 153 placeholder predictions اتمسحت (status='INVALID') في PRED-WRITE-GUARD cleanup. |
+| **`data_engine.db`** | Market + fundamentals + metals + crypto | `stocks`=**1,585** · `historical_data`=99,076 · `stock_prices`=2,444 · `crypto_prices`=198,476 · `btc_local_prices`=76,877 · `gold_prices`=**163,143** (CANONICAL — `stocks.db.gold_prices` duplicate اتمسح) · `gold_prices_clean`=27,440 · `silver_prices`=82,608 · `exchange_rates`=45,597 · `screener_lists`=**1,505** · `tab_balance_sheet`=866 · `tab_income_statement`=866 · `tab_cash_flow`=866 · `tab_valuation`=858 · `tab_profitability`=858 · `tab_dividends`=858 · `tab_performance`=858 · `tab_technical_analysis`=863 · `egksco_price_history`=0 (هاجر لـ data_engine.db) · `egx_fundamentals`=0 (يُجمَع عبر `egx_fundamental_fetcher.py`) | الـ canonical price source بعد WAVE-2 migration: `data_engine.db.egksco_price_history`. `price_history.db` محتفظ بيه كـ safety net. الـ canonical gold prices source. |
 | **`price_history.db`** | EGX OHLC (primary price source) | `price_history`=**1,205,599** rows، 1,260 tickers (EGX focus)، 2025-01-09 → 2026-09-25 | المصدر الرئيسي للـ `load_merged_history()` |
-| **`stocks.db`** | Ticker metadata (5-market) | `stocks`=**956** (EGX=360 · TADAWUL=413 · KSE=128 · QSE=55) · `egksco_stocks`=250 · `ExpertRecommendation`=104 · `cached_analysis`=111 · `market_pulse_cache`=2,132 · `market_indices`=5 · `investors_data`=7 · `egksco_sync_status`=451 · `gold_prices`=3 (legacy) · `indicator_trust_scores`=10 (57 table إجماليًا) · `ticker_registry` (NEW — Wave 8 — by other programmer via `scripts/unify_tickers_and_names.py` — canonical ticker mappings + collision guards + restored Arabic names + `idx_tr_market` + `idx_tr_sharia` indexes) | mixed: Saudi (numeric) + EGX (concatenated) + Kuwait + Qatar — CRYPTO منفصل في `data_engine.db.crypto_prices` |
+| **`stocks.db`** | Ticker metadata (5-market) | `stocks`=**956** (EGX=360 · TADAWUL=413 · KSE=128 · QSE=55) · `egksco_stocks`=250 · `ExpertRecommendation`=**48** (CANONICAL — `predictions.db.ExpertRecommendation` duplicate اتمسح) · `cached_analysis`=111 · `market_pulse_cache`=2,132 · `market_indices`=5 · `investors_data`=7 · `egksco_sync_status`=451 · `portfolios`=**9** (CANONICAL — `predictions.db.portfolios` duplicate اتمسح) · `indicator_trust_scores`=10 (54 table — بعد حذف `gold_prices` duplicate) · `ticker_registry` (NEW — Wave 8 — by other programmer via `scripts/unify_tickers_and_names.py` — canonical ticker mappings + collision guards + restored Arabic names + `idx_tr_market` + `idx_tr_sharia` indexes) | mixed: Saudi (numeric) + EGX (concatenated) + Kuwait + Qatar — CRYPTO منفصل في `data_engine.db.crypto_prices` |
 | **`data_engine.db`** (NEW — Wave 8 — Rule 64 — Task 23-A) | Sharia compliance tables | `sharia_sources` (8 sources) + `sharia_source_status` + `sharia_metrics` (per-stock compliance) + `sharia_purification_rates` (per-stock rate per method) + `sharia_history` (audit log) — all written by `data_engine/scrapers/sharia_compliance_scraper.py` (cron Sat 15:30 UTC) | AAOIFI excluded. S&P Shariah primary + Musaffa/Kashif/Osoul supplementary. `consensus_min=6`. Read by `/api/sharia` GET + `/api/sharia/purification` POST. |
 | **`auth.db`** | Prisma-managed (auth) | User, Session, Account, VerificationToken | الوحيدة اللي Node.js بـ يكتب فيها مباشرة (Prisma) |
 | **`analytics.db`** | Persona + scoring cache | 86 KB | تُقرأ من Python |
@@ -1066,7 +1186,7 @@ Actual:    symbol=السعودية | market=2025-Q3 | fiscal_period=2025-12-31 |
 | **V38 Backtest Engine** | `engines/v38_backtest_engine.py` | 1,817 | walk-forward backtest — NOW reads canonical `sl`/`tp1`/`tp2` + ATR clamp **`[5%, 9%]`** (commit `65a748f` baseline; commit `38665fd1` — Task `REAPPLY-CRITICAL-FIXES` — رفع min 3.0→5.0 + V40_2_STOP_MAX_PCT default 7.0→9.0) | ✅ ACTIVE |
 | **V39/V40.2 Institutional Decision Engine** | `analyzers/institutional_decision_engine.py` | ~520 | 6 proofs + Tech Score (base 25, max 100) + portfolio_advice + dynamic R:R (1.8/2.0 — `unified_config.py` EGX profile fixed 1.5→1.8 في commit `38665fd1` — Task `REAPPLY-CRITICAL-FIXES`) — returns `sl`/`tp1`/`tp2` keys | ✅ ACTIVE — THE ONLY ENGINE |
 | **MasterAnalyzer** (تحديث 2026-10-08 — Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`) | `analyzers/master_analyzer.py` | ~5,400+ | **`THRESHOLDS` dict صار canonical:** 78/65/55/40/25 (was drift REDUCE=35, SELL=20, STRONG_SELL=10 — fixed). `_get_signal_from_score` (L5343-5363) يفوّض لـ `canonical_signal.classify_signal` (single source of truth per Rule 72 + Rule 73). `_get_signal_arabic` (L5361-5387) يفوّض لـ `canonical_signal.signal_ar`. removed `HOLD_LOW`/`HOLD_HIGH` brackets. | ✅ ACTIVE |
-| **Maestro Orchestrator** | `engines/maestro_orchestrator.py` = `analyzers/maestro_orchestrator.py` | 3,545 | 8-layer confluence (138 pts max، BUY threshold 68) + 15+ modifier بعد الفازات | ❌ DISABLED (KILL-MAESTRO 2026-08-31) — signal_id = None، مش بيكتب توقعات |
+| **Maestro Orchestrator** | ~~`engines/maestro_orchestrator.py`~~ = ~~`analyzers/maestro_orchestrator.py`~~ | ~~3,545~~ | ~~8-layer confluence (138 pts max، BUY threshold 68) + 15+ modifier بعد الفازات~~ | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كل الـ files في `archive/maestro-dead-code-20261012/`. كان معطل (KILL-MAESTRO 2026-08-31 — signal_id = None)، بعدها اتسجل كـ dead code. سيدي طلب: "Maestro ده ماضي أسود — شيله". |
 | **Stock Fundamentals** | `analyzers/stock_fundamentals.py` | — | reads `tab_balance_sheet` (with `symbol ≠ ticker` gap resolver — Arabic prefix match) | ✅ ACTIVE (with gap) |
 | **EGX Fundamental Fetcher** | `vps-service/data/egx_fundamental_fetcher.py` | 573 | fetches from **EGXPilot FREE API** — writes to `egx_fundamentals` table. HARDENED (4cde9f0): ticker guard + no-args cron fix + `verify` integrity check | ✅ SCHEDULED (a268957) |
 | **Persona Engine** | `analyzers/persona_engine.py` | — | 4 personas (gambler/balanced/conservative/expert) + `PERSONA_CONFIGS` + `_ADAPTIVE_RR_TABLE` + `PERSONA_INPUT_WEIGHTS` | ✅ ACTIVE |
@@ -1090,7 +1210,7 @@ Actual:    symbol=السعودية | market=2025-Q3 | fiscal_period=2025-12-31 |
 
 ### 4.2 V40.2 Daily Generator (post R:R fix — commit 65a748f + commit 38665fd1)
 
-> `vps-service/jobs/v40_2_daily_generator.py` (lines ~314-326) — **R:R floor gate** مُفعّل:
+> `vps-service/jobs/daily_predictor.py` (lines ~314-326) — **R:R floor gate** مُفعّل:
 
 ```python
 if r_mult < get_setting('dynamic_rr_normal', default=1.8):
@@ -1117,7 +1237,7 @@ if r_mult < get_setting('dynamic_rr_normal', default=1.8):
 ```
 1. live_price.py            ← يجمع سعر الإغلاق اليومي
    ↓
-2. v40_2_daily_generator.py ← يولّد التوصيات (V40.2 هو العقل الوحيد — KILL-MAESTRO)
+2. daily_predictor.py ← يولّد التوصيات (V40.2 هو العقل الوحيد — KILL-MAESTRO)
    ↓
 3. daily_closer.py          ← يقفل الصفقات + يحسب profit_loss (SELL sign-flip fix + -20% cap)
    ↓
@@ -1278,8 +1398,11 @@ return NextResponse.json(await r.json());
 - `GET /api/telegram/*` (proxy للـ mini-service port 3003)
 
 #### 5.2.8 Maestro / Confluence (Python + proxy)
-- `GET /api/maestro/analyze?ticker=...` · `/score` · `/layers`
-- `GET /api/confluence/*`
+> 🗑️ **DELETE-MAESTRO (2026-10-12):** كل `/api/maestro/*` endpoints اتمسحت نهائياً (3 Node routes + `api/maestro_routes.py` Python blueprint). الـ blueprint registration اتشال من `lightweight_server.py`. كل الـ files في `archive/maestro-dead-code-20261012/`.
+> 
+> **Confluence / generate-predictions:** معطل (410 Gone) — كان بيعمل INSERT بدون evidence. الـ redirect بيرسل لـ V40.2 `daily_predictor.py`.
+- ~~`GET /api/maestro/analyze?ticker=...` · `/score` · `/layers`~~ → 🗑️ **محذوف** (404 Not Found)
+- `GET /api/confluence/*` — (utilizes maestro logic) → بعض endpoints لسه شغّالة للقراءة فقط، لكن `/generate-predictions` معطل (410 Gone per Rule 35)
 
 #### 5.2.9 Sniper / Hunter / Fomo (Python + proxy)
 - `GET /api/sniper/scan` · `/hunter/scan` · `/fomo/list`
@@ -1365,7 +1488,7 @@ return NextResponse.json(await r.json());
 │ 3. ENGINES (vps-service/engines/ + analyzers/)                          │
 │    • load_merged_history()  ← unified price path (single source)        │
 │    • institutional_decision_engine.py → sl/tp1/tp2 + ATR-percentile     │
-│    • maestro_orchestrator.py → 8-layer confluence (138 pts max)         │
+│    • maestro_orchestrator.py → 🗑️ محذوف (DELETE-MAESTRO 2026-10-12)    │
 │    • fundamental_data_provider.py → fundamental_score (40/30/15/15)     │
 │    • persona_engine.py → 4 personas + R:R overrides                     │
 │    • v38_backtest_engine.py → simulate_trade() (canonical sl/tp1/tp2     │
@@ -1373,7 +1496,7 @@ return NextResponse.json(await r.json());
 │      Task REAPPLY-CRITICAL-FIXES رفع min 3.0→5.0 + max default 7→9)        │
 │    ↓ writes                                                             │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ 4. KILL FILTERS + R:R FLOOR GATE (v40_2_daily_generator.py L314-326)    │
+│ 4. KILL FILTERS + R:R FLOOR GATE (daily_predictor.py L314-326)    │
 │    • if r_mult < get_setting('dynamic_rr_normal', default=1.8): continue│
 │      (Task REAPPLY-CRITICAL-FIXES — commit 38665fd1 — رفع من 1.5→1.8)    │
 │    • set_strict_kill_filters(True) — liquidity + turnover               │
@@ -1422,7 +1545,7 @@ return NextResponse.json(await r.json());
 ### 6.4 مثال: تدفق توقع V40.2 من الإنتاج
 
 ```
-1. v40_2_daily_generator.py يبدأ (cron يومي بعد إغلاق السوق)
+1. daily_predictor.py يبدأ (cron يومي بعد إغلاق السوق)
    ↓
 2. لكل ticker في قائمة المراقبة (22 ticker):
    - load_merged_history(ticker) → df daily OHLC
@@ -1534,7 +1657,7 @@ invist.m2y.net {
 **الموجود (typical):**
 ```cron
 # Daily after market close (15:30 Cairo)
-30 15 * * 1-5 cd /root/GLMinvestment && python3 vps-service/jobs/v40_2_daily_generator.py >> logs/v40_2.log 2>&1
+30 15 * * 1-5 cd /root/GLMinvestment && python3 vps-service/jobs/daily_predictor.py >> logs/v40_2.log 2>&1
 0  16 * * 1-5 cd /root/GLMinvestment && python3 vps-service/jobs/daily_closer.py >> logs/closer.log 2>&1
 */15 * * * * cd /root/GLMinvestment && python3 vps-service/jobs/intraday_aggregator.py >> logs/intraday.log 2>&1
 0  * * * * cd /root/GLMinvestment && python3 vps-service/jobs/price_history_safetynet.py >> logs/safetynet.log 2>&1
@@ -1924,7 +2047,7 @@ News Agent يبحث (DuckDuckGo) عن أخبار السهم
 لو score < 30 (سلبي جداً) → ارفض الإشارة
 ```
 
-**التكامل مع V40.2:** `v40_2_daily_generator.py` (سطر 1159-1185)
+**التكامل مع V40.2:** `daily_predictor.py` (سطر 1159-1185)
 - بعد بناء كل signal → شغل News Agent
 - خزّن `news_sentiment` + `news_score` + `news_summary` في signal
 - لو `score < 30 AND confidence > 0.5` → ارفض الإشارة
@@ -1980,7 +2103,7 @@ COMI (CIB):          neutral, score=50/100, لا توجد أخبار (DuckDuckGo
 
 #### المرحلة 4: دمج Corporate Actions في V40.2
 ```
-في v40_2_daily_generator.py، بعد Entry Gate:
+في daily_predictor.py، بعد Entry Gate:
   1. فحص Dividend Calendar → warning/reject
   2. فحص IPO News → warning
   3. فحص General Assembly → warning/reject
@@ -2263,7 +2386,7 @@ Telegram بيرجّع `BotMethodInvalidError: The API access for bot users is re
 ```
 */5 8-12 * * 0-4   tradingview_scraper  (كل 5 دقائق، 08:00-12:00 UTC)
 0 7,13 * * 0-4     daily_price_updater  (مرتين يومياً)
-5 13 * * 0-4       v40_2_daily_generator (يومي 13:05 UTC)
+5 13 * * 0-4       daily_predictor (يومي 13:05 UTC)
 30 13 * * 0-4      daily_closer          (يومي 13:30 UTC)
 40 13 * * 6        learning_engine       (سبتي أسبوعي)
 0 14 * * 6         egx_fundamental_fetcher (سبتي أسبوعي)
@@ -2277,7 +2400,7 @@ Telegram بيرجّع `BotMethodInvalidError: The API access for bot users is re
 
 ## 🔄 Layer 2: Analytics Engine (Python backend)
 
-### 2.1 — V40.2 Generator (`vps-service/jobs/v40_2_daily_generator.py`)
+### 2.1 — V40.2 Generator (`vps-service/jobs/daily_predictor.py`)
 
 | العملية | المصدر | الـ destination |
 |---|---|---|
@@ -2693,7 +2816,7 @@ External News Agent (local)
 vps-service/ai/news_signals_reader.py
    ↓ get_news_bias(ticker) → يقرأ من news.db
    ↓ apply_news_bias_to_score(score, ticker) — يطبّق bias على القرار في V40.2
-   ↓ يُستدعى من v40_2_daily_generator.py + v40_2_intraday_scanner.py
+   ↓ يُستدعى من daily_predictor.py + v40_2_intraday_scanner.py
 ```
 
 ### 📝 Decision Logger Flow

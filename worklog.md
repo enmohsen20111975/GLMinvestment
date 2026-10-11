@@ -73282,3 +73282,143 @@ Verification:
 - Rule 67 (CALCULATION-CANONICAL): store.ts synthetic score اتشال
 
 DEEP-AUDIT-FIXES complete. 7 P0 rogue paths اتعطلت من الجذر.
+
+---
+Task ID: DOC-SECRETARY-UPDATE
+Agent: DOCUMENTATION-SECRETARY (Rule 70)
+Task: تحديث شامل لكل ملفات Documentation
+
+Work Log:
+- قريت worklog.md (آخر 300 سطر) + Documentation/00-CONSTITUTION.md (Rules 1-76) + 01-PROJECT_ANATOMY.md (DB schema + KILL-MAESTRO section).
+- قريت آخر 10 commits لفهم الإصلاحات (آخرها: af1ec05 security(rule27+rule35): تعطيل 7 rogue paths + fake data + 1e06df5 feat(maestro-kill): حذف Maestro نهائياً + إزالة fallback chains + تحديث Documentation).
+- قريت كل جلسات الإصلاح في worklog (PRED-WRITE-GUARD + RULE20-PURE-PROXY + LEAGUE-DEDUP-FIX + MAESTRO-KILL + DEEP-AUDIT-FIXES + FULL-AUDIT-FIXES + P2-FALLBACK-REMOVAL + HIDDEN-WRITERS-AUDIT + FAKE-DATA-HUNT).
+- حدّثت 5 ملفات Documentation.
+
+Stage Summary:
+- 00-CONSTITUTION.md:
+  * Rule 20 (Python=Brain): أضفت قسم `RULE20-PURE-PROXY (2026-10-12)` بكل الـ 17 routes اللي اتحولت لـ pure thin proxies: honest-tracking (7) + dashboards (5) + screener/market (4) + chart (1) + fallback-chain removal (4). إجمالي ~3,300 سطر Node logic اتمسحت.
+  * Rule 27 (NO-FAKE-DATA): أضفت قسم `MAESTRO-KILL (2026-10-12)` (3 fabricated data paths اتمسحت) + قسم `FAKE-DATA-HUNT (2026-10-12)` بكل الـ 5 إصلاحات P0 (3 fake backtest + store.ts synthetic + Zakat hardcoded gold + +2472.9% SUM bug + persona/crypto placeholders).
+  * Rule 35 (ENGINE-UNIFY): وسّعت قسم `PREDICTION-WRITE-GUARD` لـ يوضح كل الـ conditions (engine provenance + kill_filter signature + evidence_count + master_score placeholder + HOLD pattern + BYPASS env). أضفت قسم `HIDDEN-WRITERS-AUDIT (2026-10-12)` بـ 7 rogue paths اتعطلت + 3 orphan tables اتمسحت + 9 orphan scripts معطّلة.
+  * Rename: كل references لـ `v40_2_daily_generator.py` اتغيرت لـ `daily_predictor.py` (الاسم الإنتاجي الحالي).
+
+- 01-PROJECT_ANATOMY.md:
+  * KILL-MAESTRO → DELETE-MAESTRO (2026-10-12): تأكيد إن Maestro محذوف نهائياً (مش معطل) في §4.1 Engine Map + §5.2.8 API Map + §6 Data Flow.
+  * قسم جديد `RULE20-PURE-PROXY (2026-10-12)`: جدول كامل بكل الـ 17 routes مع before → after LOC + Python endpoint.
+  * قسم جديد `FAKE-DATA-HUNT (2026-10-12)`: 5 إصلاحات P0 مفصّلة + Tier 2-5 pending.
+  * قسم جديد `HIDDEN-WRITERS-AUDIT (2026-10-12)`: جدول بـ 7 rogue paths + جدول بـ 3 orphan tables + قائمة 9 orphan scripts معطّلة.
+  * DB Schema (§3.1): تحديث counts: `predictions.db` 53→50 table, `stocks.db` 57→54 table, `ExpertRecommendation` 104→48 (CANONICAL), `data_engine.db.gold_prices` = CANONICAL.
+  * Header log: أضفت entry جديد "آخر تحديث: 2026-10-12" بكل ملخص التحديثات.
+
+- 02-SCREENS_AND_COMPONENTS.md:
+  * `MaestroWidget.tsx` → 🗑️ محذوف نهائياً (DELETE-MAESTRO 2026-10-12) — كان KILLed (early-return null) بعدها اتمسح نهائياً.
+  * `/maestro` page (124 LOC) + `/admin/maestro` (747 LOC) → محذوف نهائياً.
+  * `admin/MaestroDashboard.tsx` (2,750 LOC) + `admin/MaestroCommandCenter.tsx` (3,748 LOC) + `admin/MaestroPage.tsx` (297 LOC) + `admin/CryptoMaestroPage.tsx` (821 LOC) → كلها محذوفة نهائياً.
+  * `#dashboard` widgets list: `~~MaestroWidget~~ 🗑️ محذوف`.
+  * `src/lib/honest-tracking/maestro.ts` (1862 LOC — BUG: RSI + ATR SMA-based) → محذوف نهائياً + الـ 5 routes اللي كانوا بيستخدموه كلها اتحولت لـ pure proxy.
+
+- 03-API_REFERENCE.md:
+  * `/admin/generate-historical-predictions` → 🗑️ 410 Gone (MAESTRO-KILL 2026-10-12).
+
+- SYSTEM_HOW_IT_THINKS.md:
+  * § KILL-MAESTRO → DELETE-MAESTRO (2026-10-12): تحديث الـ section + جدول الفارق الجوهري. Maestro محذوف نهائياً (مش معطل).
+  * § Maestro orchestrator row: 🗑️ محذوف نهائياً (DELETE-MAESTRO 2026-10-12) — كان معطل (KILL-MAESTRO 2026-08-31: signal_id = None)، بعدها اتسجل كـ dead code.
+  * § 4.2 PERSONA_CONFIGS: انتقل من `maestro_orchestrator.py` لـ `persona_engine.py`.
+  * § 7.6 معمارية مسارَي التوليد: "Maestro persona" path = محذوف نهائياً.
+  * § 9.1 Closed-Loop Chain (4 ملفات): Maestro Orchestrator row → محذوف نهائياً (logic انتقل لـ V40.2 + learning_engine + persona_engine).
+  * § 9.3 code snippet: historical reference only — logic انتقل لـ daily_predictor.py per Rule 35.
+  * Discovery Fallback Chain: `daily_predictor.py` (Maestro 🗑️ محذوف نهائياً — DELETE-MAESTRO 2026-10-12).
+  * Crontab contradiction: `vps-service/crontab.txt` claim محذوفة — V40.2 هو المحرك الوحيد.
+
+- CHANGELOG.md:
+  * أضفت 5 entries جديدة بكل الإصلاحات الكبيرة:
+    - [2026-10-12 — DOC-SECRETARY-UPDATE — تحديث شامل لـ Documentation]
+    - [2026-10-12 — DEEP-AUDIT-FIXES — تعطيل 7 rogue paths + fake data (deep audit)]
+    - [2026-10-12 — MAESTRO-KILL — حذف Maestro نهائياً + إزالة fallback chains]
+    - [2026-10-12 — LEAGUE-DEDUP-FIX — حل 3 كوارث مالية]
+    - [2026-10-12 — PRED-WRITE-GUARD — الحل الجذري الموحّد لكارثة placeholder predictions]
+    - [2026-10-12 — RULE20-PURE-PROXY — 17 Node routes اتحولت لـ pure thin proxies]
+
+Verification:
+- كل Maestro references في 5 ملفات Documentation بتقول "محذوف نهائياً" (مش "معطل" بس) — كتفاً مع كتف المبرمج التاني (commit `1e06df5`).
+- كل references لـ `v40_2_daily_generator.py` اتغيرت لـ `daily_predictor.py` (الاسم الإنتاجي الحالي) في 8 ملفات (00, 01, 02, 03, 05, SYSTEM_HOW_IT_THINKS, ENGINEERING_AUDIT_REPORT).
+- `/admin/generate-historical-predictions` موثّق كـ 410 Gone في CHANGELOG + 03-API_REFERENCE + 02-SCREENS.
+- PREDICTION-WRITE-GUARD موثّق بشكل مفصّل في 00-CONSTITUTION Rule 35 + 01-PROJECT_ANATOMY §HIDDEN-WRITERS-AUDIT + SYSTEM_HOW_IT_THINKS §9.1 + CHANGELOG.
+- الـ 7 rogue paths + 3 orphan tables موثّقين في CHANGELOG + 00-CONSTITUTION Rule 35 + 01-PROJECT_ANATOMY.
+
+القواعد المُطبّقة:
+- Rule 16 (VERIFY-BEFORE-DELETE): كل Maestro references بـ توثّق الـ archive location (`archive/maestro-dead-code-20261012/`).
+- Rule 20 (Python=Brain): توثيق 17 pure-proxy routes + Maestro محذوف (مش V40.2 brain).
+- Rule 25 (refactoring-gated): كل Maestro imports في try/except (safe).
+- Rule 27 (NO-FAKE-DATA): توثيق 25 قطعة fabricated data اتمسحت + سياسة الفراغ default.
+- Rule 28 (NO-DUPLICATION): توثيق 3 orphan tables اتمسحت + tracking_bp duplicate blueprint.
+- Rule 35 (ENGINE-UNIFY): توثيق PREDICTION-WRITE-GUARD Single Gate + 7 rogue paths معطّلة + V40.2 = المحرك الوحيد.
+- Rule 62 (Secretary updates docs after every task).
+- Rule 67 (CALCULATION-CANONICAL): توثيق +2472.9% SUM bug pattern + compound return fix.
+- Rule 70 (DOCUMENTATION-SECRETARY).
+- Rule 75 (PUSH-AFTER-EVERY-TASK).
+- Rule 76 (TEAM-WORK-REVIEW): اقرأت آخر commits قبل التعديل عشان مايحصلش تعارض مع شغل المبرمج التاني.
+
+DOC-SECRETARY-UPDATE complete. 5 ملفات Documentation اتحدّثت بشكل شامل.
+
+---
+Task ID: P1-PARALLEL-ENGINES-FIX
+Agent: full-stack-developer (Parallel Engines + Scrapers Fix)
+Task: تحويل 5 parallel engines + wrap 2 scrapers
+
+Work Log:
+- قريت worklog.md + Constitution Rule 12/20/28/66/67
+- فحصت 5 parallel engines في Node (3987 LOC) + 2 scrapers
+- لكل engine حددت الـ callers بـ Grep في src/
+- لكل scraper حددت الـ INSERT statements
+
+Stage Summary:
+- Parallel engines converted to Python proxy (3):
+  - trade-results-engine.ts (685 LOC) → Python misc_routes.py::/api/trade-results + Node pure proxy
+  - expert-analysis.ts (882 LOC) → Python analyzers/expert_analysis_engine.py + Node pure proxy
+  - gate-analyzer.ts (1066 LOC) → Python analyzers/gate_analysis_engine.py + Node pure proxy
+- Parallel engines archived (5):
+  - prediction-validator.ts (293 LOC) — orphan (no callers, mirrors vps-service/analyzers/prediction_validator.py)
+  - trade-results-engine.ts (685 LOC) — replaced by Python
+  - expert-analysis.ts (882 LOC) — replaced by Python
+  - gate-analyzer.ts (1066 LOC) — replaced by Python
+  - dynamic-analysis-engine.ts (969 LOC) — orphaned after gate-analyzer conversion; only its detectBBSqueeze() was used, now ported to gate_analysis_engine.py::_detect_bb_squeeze()
+- Python endpoints created (3):
+  - /api/trade-results (GET) — vps-service/api/misc_routes.py (Cairo TZ-aware period bounds + 11-point validation + ReportStats)
+  - /api/stocks/<ticker>/expert-analysis (GET+POST) — vps-service/api/misc_routes.py + vps-service/analyzers/expert_analysis_engine.py
+  - /api/stocks/<ticker>/gate-analysis (GET+POST) — vps-service/api/misc_routes.py + vps-service/analyzers/gate_analysis_engine.py
+- Node pure proxies created/updated (3):
+  - src/app/api/trade-results/route.ts (rewritten as pure proxy)
+  - src/app/api/stocks/[ticker]/expert-analysis/route.ts (rewritten as pure proxy)
+  - src/app/api/stocks/[ticker]/gate-analysis/route.ts (NEW — pure proxy, GET + POST)
+- Scrapers wrapped with write_guarded (2):
+  - data_engine/scrapers/us_stock_scraper.py::save_batch_to_db() — wrapped + 'yahoo_us' added to CANONICAL_SOURCES['US'] as fallback
+  - vps-service/data/egksco_scraper.py::run_full_sync() (line ~764) — wrapped with extended signature (delta_volume columns)
+- write_guarded extension (vps-service/data/source_authority.py):
+  - Optional kwargs added: buy_volume, sell_volume, delta_volume, delta_pct, pressure, adjusted, market_label
+  - Schema-aware INSERT — backward-compatible with old 8-column schema AND new 13-column schema with delta_volume
+
+Verification:
+- Python syntax: ✅ (6 files compiled via py_compile — source_authority + egksco_scraper + us_stock_scraper + misc_routes + expert_analysis_engine + gate_analysis_engine)
+- ESLint: ✅ EXIT 0
+- TypeScript: 0 new errors in my files (pre-existing errors in StocksView/TreasuryBondsView/ws-service are NOT caused by this task)
+- Functional tests: ✅
+  - generate_expert_analysis({COMI data}) → BUY signal, RR=2.2, full Arabic expert summary
+  - analyze_gates({COMI snapshot}) → 2/5 gates passed, R/R=1.33, narrative in Arabic
+  - write_guarded(yahoo_us on US market) → written as 'yahoo_clean' (primary)
+  - write_guarded(egksco on EGX with delta_volume) → written as 'intraday_aggregated' (primary) + delta_volume columns preserved
+  - write_guarded(banned source egxpilot_live) → SKIP (returned False)
+- HTTP smoke tests (dev server on :3000):
+  - /api/trade-results → 401 ✅ (auth gate working — route reachable)
+  - /api/stocks/COMI/expert-analysis → 503 ✅ (Python down — proxy returns 503, NO mock data)
+  - /api/stocks/COMI/gate-analysis (GET + POST) → 503 ✅ (Python down — proxy returns 503, NO mock data)
+
+القواعد المُطبّقة:
+- Rule 12 (DATA-UNIFY — write_guarded هو canonical writer لـ price_history)
+- Rule 16 (VERIFY-BEFORE-DELETE — الأرشفة مش الحذف)
+- Rule 20 (Python=Brain — كل logic في Python، Node بـ proxy فقط)
+- Rule 28 (NO-DUPLICATION — prediction-validator.ts كان mirror للـ Python canonical، اتعمله archive)
+- Rule 66 (SOURCE-AUTHORITY — CANONICAL_SOURCES['US'] اتوسع + كل scrapers بتمر على write_guarded)
+- Rule 67 (CALCULATION-CANONICAL — المحركات الجديدة بستخدم MARKET_PROFILES الكنسي من unified_config.py)
+- Rule 27 (NO-FAKE-DATA — كل proxies بترجع 503 لو Python معطّل، NO mock data)
+
+P1-PARALLEL-ENGINES-FIX complete.

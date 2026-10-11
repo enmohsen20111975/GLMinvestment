@@ -218,7 +218,7 @@
   3. **سجل الأداء** — اسأل المالك عن نتائج المحرك قبل اقتراح حذفه.
 - **القاعدة الذهبية:** إذا وجدت `fetch()` في الواجهة لـ endpoint لكن الـ blueprint غير مسجّل → هذا **BUG يجب إصلاحه (تسجيل الـ blueprint)**، وليس سببًا لحذف الكود.
 - **الحالة المرجعية (2026-08-14):** `expert_memory_v4` (V4 = ذاكرة المحلل الشخصية) — الواجهة تستخدمه (`ExpertMemoryPanel` + `TradingMemoryView`) لكن `v4_bp` غير مسجّل → أُسيء تصنيفه كـ «DEPRECATED» وكاد يُحذف. صُحّح في P1.9.
-- **⚠️ تمييز مهم:** **V4 ≠ V40**. عندما يقول المالك «V4 كان بيدى أفضل نتائج» فالمقصود هو **V40.2** (محرك التوقعات evidence-based المعمول ببايثون، `jobs/v40_2_daily_generator.py`) وليس `ExpertMemoryV4`. نتائج الـ backtest تؤكد تفوّق V40.2 على V40.1 (profit factor 1.327 vs 1.221، max drawdown 12.4% vs 29.7% — انظر `01-PROJECT_ANATOMY.md` §18). خلط التسميتين كاد يسبب حذف ميزة خاطئة.
+- **⚠️ تمييز مهم:** **V4 ≠ V40**. عندما يقول المالك «V4 كان بيدى أفضل نتائج» فالمقصود هو **V40.2** (محرك التوقعات evidence-based المعمول ببايثون، `jobs/daily_predictor.py`) وليس `ExpertMemoryV4`. نتائج الـ backtest تؤكد تفوّق V40.2 على V40.1 (profit factor 1.327 vs 1.221، max drawdown 12.4% vs 29.7% — انظر `01-PROJECT_ANATOMY.md` §18). خلط التسميتين كاد يسبب حذف ميزة خاطئة.
 - **رفع على GitHub إلزامي بعد كل مهمة** + تشغيل اختبارات الصحة (`bun run lint` + فحص بنية الـ docs) قبل الـ commit.
 
 ### القاعدة 17 — المسارات نسبية دائمًا (RELATIVE-PATHS-ONLY)
@@ -240,7 +240,7 @@
   - **المسار العادي:** `dynamic_rr_normal = 1.8` (R:R = 1.8 — updated 2026-08-30 per EGX-STRATEGY).
   - **مسار التفوق على السوق (outperforming benchmark):** `dynamic_rr_outperform = 2.0` (R:R = 2.0 — يُفعّل لو `stock_roc > benchmark_change`).
   - **~95% من الصفقات** في الأرشيف الحالي تأخذ R:R = 2.0 (السوق يتفوّق في أغلب الأيام).
-- **R:R floor gate إلزامي** في `vps-service/jobs/v40_2_daily_generator.py` (lines ~314-326):
+- **R:R floor gate إلزامي** في `vps-service/jobs/daily_predictor.py` (lines ~314-326):
   ```python
   if r_mult < get_setting('dynamic_rr_normal', default=1.8):
       continue  # skip — quality gate
@@ -273,6 +273,34 @@
 - **الـ Proxy الافتراضي:** `route.ts` بـ يعمل `fetch(PYTHON_BACKEND + pathname + qs)` ويرجّع JSON فقط.
 - لو محتاج logic جديد في الواجهة → ضعه في Python endpoint + استدعِه من Node proxy.
 
+> **RULE20-PURE-PROXY (2026-10-12):** تم تحويل **17 Node routes** لـ pure thin proxies (zero computation in Node) في 5 جلسات متتالية (RULE20-PURE-PROXY + RULE20-P1-FIX + FULL-AUDIT-FIXES + P2-FALLBACK-REMOVAL + MAESTRO-KILL). كل الـ logic انتقل لـ Python (Single Source of Truth per Rule 67). إجمالي تقليل: **~3,300 سطر Node logic** (1127 + 2199 + 375 + 4 routes صغيرة).
+>
+> **الـ 17 routes اللي اتحولت لـ pure proxy:**
+>
+> **A. honest-tracking family (7 routes)** — `predictions/honest-tracking/{stats,list,live-tracking,missed-opportunities,learn-from-errors,verify-pending,ROOT}` → Python `/api/stored-analysis/*` (3 endpoints جديدة في `stored_analysis_routes.py`)
+>
+> **B. dashboards & reports (5 routes):**
+> - `predictions/league-report` → Python `/api/predictions/league-report` (LEAGUE-DEDUP-FIX — `ROW_NUMBER() OVER PARTITION BY ticker`)
+> - `stocks/top-performers` → Python `/api/stored-analysis/missed-opportunities` (re-used)
+> - `v4/stats` → Python `/api/v4/stats` (NEW endpoint في `misc_routes.py`)
+> - `admin/platform-performance` → Python `/api/admin/platform-performance` (NEW — auth gate محفوظ في Node)
+> - `predictions/performance-dashboard` → Python `/api/predictions/performance-dashboard` (NEW endpoint)
+>
+> **C. screener + market (4 routes):**
+> - `finance/screener` → Python `/api/finance/screener`
+> - `screener/advanced` → Python `/api/screener/advanced` (paywall gate محفوظ)
+> - `market/liquidity-flow` → Python `/api/market/liquidity-flow`
+> - `radar/accuracy` → Python `/api/radar/accuracy` (paywall gate محفوظ)
+>
+> **D. chart + tracking (1 route):**
+> - `chart/[ticker]` (969 → 82 سطر، تقليل 91.5%) → Python `/api/chart/<ticker>` (موجود في `chart_routes.py`)
+>
+> **E. fallback-chain removal (4 routes)** — `market/exit-status` + `unified/predictions` + `fomo/missed-opportunities` (paywall gate محفوظ) + `market/recommendations/ai-insights` → Python endpoints (2 NEW في `misc_routes.py`)
+>
+> **السلوك الجديد لما Python unavailable:** `HTTP 503 + success:false + {error: 'python-backend-unavailable', message: '...Rule 27...'}` — **ممنوع** إرجاع `success:true` + zeros (كان خرق Rule 27).
+>
+> **الـ Verifier:** لو لقيت `if/for/compute/aggregate/SQLite direct/Math.round` في أي route من دول → ده REGRESSION violation. الـ canonical pattern موجود في `predictions/honest-tracking/stats/route.ts` (66 سطر).
+
 ### القاعدة 21 — V40.2 هو مصدر التوقعات الإنتاجي الوحيد (evidence-based)
 - **`jobs/daily_predictor.py`** هو مولّد التوقعات الإنتاجي.
 - كل توقع BUY/STRONG_BUY لازم يمرّ بـ:
@@ -295,7 +323,7 @@
 
 ### القاعدة 23 — لا تعيد تصنيف الشخصيات في `predictions.persona` (PERSONA-UNIFY-A)
 - جدول `predictions.persona` **محمي**: `persona='balanced'` ثابت لكل V40.2 picks.
-- الـ `persona_fit` (محسوب عبر `compute_persona_fit()` في `v40_2_daily_generator.py`) بـ يُannotated في `kill_filter_result` فقط (رؤية تحليلية).
+- الـ `persona_fit` (محسوب عبر `compute_persona_fit()` في `daily_predictor.py`) بـ يُannotated في `kill_filter_result` فقط (رؤية تحليلية).
 - للأسهم اللي strongly fit gambler/conservative (fit_score ≥ 50): بـ يُكتب row منفصل في `persona_predictions` من نفس الـ pool القوي + بـ يتـ closed فورًا بالـ outcome المحاكى.
 - **ممنوع** إعادة تصنيف `predictions.persona` من `balanced` لـ `gambler`/`conservative` بدون موافقة المالك (يكسر الـ baseline التاريخي ويجعل المقارنات المستقبلية مستحيلة).
 - القرار المؤجل: لو المالك وافق → flip الـ persona tag للأسهم اللي fit_score عالي + verify بـ backtest إن جودة المتوازن ما انخفضتش. **حاليًا: الخيار الآمن مُطبّق.**
@@ -388,6 +416,42 @@
 - **الـ seed routes** (`/api/seed-experts`، `/api/predictions/seed`، `/api/community/seed`، `/api/market/seed-historical`) معطّلة (410 Gone) — ممنوع إعادة تفعيلها.
 - **عقوبة المخالفة:** أي route يُكتشف فيه بيانات كاذبة يُعطّل فوراً + يُوثّق في `Documentation/audit-logs/` + يُصلح في جلسة منفصلة.
 - **المرجع:** commit `16184d54` (security: remove ALL random/fake data) — 8 مصادر عشوائية اتمسحت.
+
+> **MAESTRO-KILL (2026-10-12) — إزالة fabricated data paths:**
+> - `src/app/api/maestro/*` (3 routes) — كانت بـ تقرأ fabricated data من `lib/honest-tracking/maestro.ts` (76KB parallel Node stack). اتمسحت نهائياً + أرشفت في `archive/maestro-dead-code-20261012/`.
+> - `src/app/api/admin/generate-historical-predictions/route.ts` — كان بـ INSERT fabricated predictions من Maestro stack (Rule 35 violation). الآن: **410 Gone + redirect لـ V40.2 daily_predictor.py**.
+> - `src/modules/dashboard/components/MaestroWidget.tsx` — كان بـ يعرض Maestro signals (وهمية بعد KILL). الآن: **محذوف** ( archived).
+
+> **FAKE-DATA-HUNT (2026-10-12) — صيد 25 قطعة بيانات وهمية + إزالتها:**
+>
+> **الـ 5 إصلاحات P0 ( fabricated data اتمسحت نهائياً):**
+>
+> 1. **3 fake backtest endpoints** (Rule 27 + Rule 67):
+>    - `backtesting/unified/route.ts` — كان بـ يستخدم `mulberry32` deterministic RNG + `STRATEGY_PROFILES` hardcoded (winRate: 0.62/0.54/0.49/0.78/0.62) → **410 Gone**
+>    - `kimi/backtest/run/route.ts` — كان بـ يستخدم `buildStubEquityCurve` (30 يوم equity ثابت) → **pure proxy** (503 لو Python down)
+>    - `walk-forward/run/route.ts` — كان بـ يستخدم `buildStubPeriods` (6 فترات بصفر) → **pure proxy** (503 لو Python down)
+>
+> 2. **`src/lib/store.ts` client-side scoring** (Rule 67 violation):
+>    - قبل: `score = Math.min(95, Math.max(5, 50 + chg * 1.5))` (synthetic equation)
+>    - قبل: `components: { liquidity: 50, valuation: 50, income: 50 }` (hardcoded 50)
+>    - قبل: `verdict: 'undervalued' as const` — **كل سهم بـ يتصنف كـ "undervalued"!**
+>    - بعد: `score = null`, `components = null`, `verdict = null` (honest empty state)
+>
+> 3. **Zakat hardcoded gold price** (Rule 50 religious violation):
+>    - قبل: `PLACEHOLDER_GOLD_24K = 4850` EGP/gram + `PLACEHOLDER_SILVER = 56` (hardcoded!)
+>    - بعد: `fetchGold24Price()` بـ ترجّع null لو مفيش سعر حقيقي → **503 + رسالة واضحة** (Zakat محتاج سعر ذهب حقيقي — خرق ديني)
+>
+> 4. **`+2472.9%` SUM bug pattern** (Rule 27 + Rule 67):
+>    - `ExecutiveReportView.tsx:680-755` — كان `totalProfit = closed.reduce((s,p) => s + returnPct, 0)` (SUM جبري للنسب المئوية) → استبدل بـ `avgReturnPct` + `cumulativeReturnPct = product(1 + ret/100) - 1` (compound return)
+>    - `PredictionTrackingDashboard.tsx:460-528` — كان `netReturn = winReturnsSum + lossReturnsSum` (80 صفقة × +30% = +2400%!) → استبدل بـ `avgReturnPct` + compound return
+>    - `PredictionTrackingDashboard.tsx:810-838` — كان `netReturnPct = trades.reduce((sum, t) => sum + t.returnPct, 0)` → استبدل بـ compound return
+>
+> 5. **persona/analyze + crypto/smart-watchlist placeholders** (Rule 27 violation):
+>    - `persona/analyze/[ticker]/route.ts` — كان بـ يرجّع `score=50, signal='HOLD', source='placeholder', success:true` → استبدل بـ 503 + null
+>    - `crypto/route.ts` + `mobile/crypto/route.ts` — كانوا بيضيفوا `score=50, signal='HOLD', confidence=0` فوق الأسعار الحقيقية (DOUBLE violation) → استبدل بـ null (الأسعار تفضل، الـ scores تختفي)
+>    - `finance/smart-watchlist/route.ts` — كان بـ يرجّع `confidence: 50/60/65/70` hardcoded → استبدل بـ canonical computation من Python
+
+> **التأكيد النهائي (2026-10-12):** سياسة الفراغ هي الـ default. أي field ما عندناش قيمة حقيقية ليه → `null` (NOT 50, NOT 0, NOT placeholder). الـ client بـ يعرض "— بيانات غير متاحة". ممنوع fabrication حتى مع `source: 'stub'` label.
 
 ### القاعدة 28 — لا تكرار شاشات/تبويبات/أكواد (NO-DUPLICATION — 2026-08-29)
 > **سبب الإضافة:** توجيه صريح من المالك (2026-08-29): "غير مسموح ابدا بتكرار الشاشات والتبويبات والأكواد وعمل اتداخل الرهيب الى موجود فى المشروع دة".
@@ -591,7 +655,7 @@
 
 | المسار | المولّد | persona المكتوبة | الجودة |
 |--------|---------|------------------|--------|
-| **V40.2 evidence-based** | `jobs/v40_2_daily_generator.py` | `balanced` فقط | عالية — 6 إثباتات + kill filters + R:R≥1.5. **~69% WR حيًا** |
+| **V40.2 evidence-based** | `jobs/daily_predictor.py` | `balanced` فقط | عالية — 6 إثباتات + kill filters + R:R≥1.5. **~69% WR حيًا** |
 | **Maestro persona** | `analyzers/maestro_orchestrator.py` → `core/persona_db.py` | `gambler` + `investor` | مسار منفصل، أقل صرامة في الـ evidence |
 
 ### قاعدة حماية الـ Baseline (PERSONA-UNIFY-A — 2026-08-17)
@@ -1015,7 +1079,7 @@ curl -s http://localhost:8010/health
 | MarketScheduler | `jobs/market_scheduler.py` | المُجدوِل المركزي |
 | DailyCloser | `jobs/daily_closer.py` | إغلاق التوقعات يوميًا + Hard Loss Ceiling |
 | LearningEngine | `jobs/learning_engine.py` | التعلم من الصفقات المغلقة |
-| V40.2 Generator | `jobs/v40_2_daily_generator.py` | توليد توقعات V40.2 الإنتاجي |
+| V40.2 Generator | `jobs/daily_predictor.py` | توليد توقعات V40.2 الإنتاجي |
 | PriceHistorySafetyNet | `jobs/price_history_safetynet.py` | ملء فجوات Yahoo |
 | IntradayAggregator | `jobs/intraday_aggregator.py` | intraday → daily |
 | ConfidenceEngine | `analyzers/confidence_engine.py` | 7 عوامل ثقة + 4 tiers |
@@ -1029,7 +1093,7 @@ curl -s http://localhost:8010/health
 - `bag_holder_alerts` (تنبيهات خسائر ≥15%، كل 15 دقيقة).
 - `price_history_safetynet` (يومي).
 - `intraday_aggregator` (intraday→daily).
-- `v40_2_daily_generator` (توليد V40.2، 07:15 Cairo Sun-Thu).
+- `daily_predictor` (توليد V40.2، 07:15 Cairo Sun-Thu).
 
 > تفاصيل كل DB + جداولها + علاقاتها في `01-PROJECT_ANATOMY.md` §5.
 
@@ -1112,18 +1176,18 @@ curl -s http://localhost:8010/health
 
 > **سبب الإضافة:** توجيه صريح من المالك (2026-08-30): "الباك تست بيتعمل عشان نحسن الحاضر والمستقبل. اربط كل حاجة الآن وأتأكد إنها مظبوطة 100%. ده أهم جزء وحط ده عندك في الدستور."
 
-- **كل تحسين بيتعمل في الباك تست لازم يتربط في الإنتاج الحقيقي فوراً** — في `v40_2_daily_generator.py` و/أو `daily_closer.py`.
-- **ممنوع** ترك تحسينات في `v40_2_daily_generator.py` بدون ربطها في الإنتاج (V40.2 هو المحرك الوحيد — القاعدة 35).
+- **كل تحسين بيتعمل في الباك تست لازم يتربط في الإنتاج الحقيقي فوراً** — في `daily_predictor.py` و/أو `daily_closer.py`.
+- **ممنوع** ترك تحسينات في `daily_predictor.py` بدون ربطها في الإنتاج (V40.2 هو المحرك الوحيد — القاعدة 35).
 - **الملفات اللي لازم تكون مربوطة في الإنتاج دائماً:**
-  1. `utils/entry_gate.py` — في `v40_2_daily_generator.py` قبل `record_prediction`.
-  2. `utils/position_sizing.py` — في `v40_2_daily_generator.py` لحساب حجم المركز.
+  1. `utils/entry_gate.py` — في `daily_predictor.py` قبل `record_prediction`.
+  2. `utils/position_sizing.py` — في `daily_predictor.py` لحساب حجم المركز.
   3. `utils/circuit_breaker.py` — في `daily_closer.py::run()` لوقف التداول بعد 3 خسائر.
-  4. `core/opportunity_quality.py::compute_dynamic_target` — في `v40_2_daily_generator.py` لحساب الهدف الديناميكي.
-  5. `core/opportunity_quality.py::enforce_atr_based_stop` — في `v40_2_daily_generator.py` (مع `lows` للـ swing low).
-  6. `core/opportunity_quality.py::classify_liquidity` — في `v40_2_daily_generator.py` لتصنيف السيولة.
-  7. Sector filter — في `v40_2_daily_generator.py` لحرارة القطاع.
-  8. BOS/ChoCH — في `v40_2_daily_generator.py` لكشف بنية السوق.
-- **التحقق:** بعد كل تعديل، لازم نتأكد إن الـ `grep` بيرجّع نتائج إن الملف مربوط في `v40_2_daily_generator.py` و/أو `daily_closer.py`.
+  4. `core/opportunity_quality.py::compute_dynamic_target` — في `daily_predictor.py` لحساب الهدف الديناميكي.
+  5. `core/opportunity_quality.py::enforce_atr_based_stop` — في `daily_predictor.py` (مع `lows` للـ swing low).
+  6. `core/opportunity_quality.py::classify_liquidity` — في `daily_predictor.py` لتصنيف السيولة.
+  7. Sector filter — في `daily_predictor.py` لحرارة القطاع.
+  8. BOS/ChoCH — في `daily_predictor.py` لكشف بنية السوق.
+- **التحقق:** بعد كل تعديل، لازم نتأكد إن الـ `grep` بيرجّع نتائج إن الملف مربوط في `daily_predictor.py` و/أو `daily_closer.py`.
 - **العقوبة:** أي تحسين يفضل في الباك تست بس بدون ربط في الإنتاج = مخالفة دستورية.
 
 ---
@@ -1199,10 +1263,43 @@ curl -s http://localhost:8010/health
 > قبل كده كان Maestro معطل بس موجود. سيدي طلب حذفه نهائياً عشان: "ممكن تشيلة لان تقريباً مالوش اى لزمة".
 
 - **V40.2** (`daily_predictor.py`) هو **المحرك الوحيد** المسموح له بكتابة توقعات في `predictions` table (production prediction writer).
-- **PREDICTION-WRITE-GUARD** (`core/prediction_write_guard.py`): الـ Single Gate اللي بـ enforce Rule 35 على مستوى `record_prediction()`. بيـ block أي توقع مش من V40.2.
+- **PREDICTION-WRITE-GUARD** (`core/prediction_write_guard.py`): الـ Single Gate اللي بـ enforce Rule 35 على مستوى `record_prediction()`. بيـ block أي توقع:
+  - بدون `engine=v40_2` tag في `notes` (Rule 35 — engine provenance).
+  - بدون `kill_filter_result` signature (Rule 35 — kill filter chain).
+  - BUY/STRONG_BUY/ACCUMULATE مع `evidence_count < 3` (Rule 21 — evidence-based).
+  - `master_score = 50.0` placeholder (Rule 27 — NO-FAKE-DATA).
+  - HOLD placeholder pattern (IMPROVEMENT-12 WAIT→HOLD bug).
+  - `BYPASS_PREDICTION_WRITE_GUARD=1` env للـ migrations فقط (Rule 25 — refactoring-gated).
 - **daily_closer** engine-agnostic — بيقفل أي row في `predictions` بـ `outcome_date IS NULL`.
 - **ممنوع** إعادة تفعيل Maestro أو إنشاء محرك جديد بيكتب في `predictions`.
 - **engine_source tag**: كل توقع جديد في `notes` فيه `engine=v40_2` أو في `kill_filter_result` signature.
+
+> **HIDDEN-WRITERS-AUDIT (2026-10-12) — كل الـ rogue DB writers اللي اتعطلت:**
+>
+> سيدي طلب: "بعبص فى كل حتة عالشان نعرف أدق أدق المشاكل بدون ماتموت المشروع". تم فحص ميكروسكوبي عميق + تعطيل **7 rogue paths** بـ تكتب في `predictions` / `persona_predictions` / `real_predictions` بدون مرور عبر `record_prediction()` (الـ Single Gate):
+>
+> | # | الـ Rogue Path | كان بيعمل إيه | الحالة بعد الإصلاح |
+> |---|---|---|---|
+> | 1 | `scripts/backfill_historical_predictions.py` | INSERT في `persona_predictions` بـ persona engines (مش V40.2) على كل deploy عبر `deploy_vps.sh` | **معطل** بـ `RULE35-DISABLE` guard + `sys.exit(0)`. اتمسح من `deploy_vps.sh`. |
+> | 2 | `api/confluence_routes.py /generate-predictions` | INSERT INTO aiPrediction بـ `source='CONFLUENCE_V3'` بدون evidence | **410 Gone** + redirect لـ V40.2 `daily_predictor.py` |
+> | 3 | `scripts/optimization_loop.py` | `clear_predictions()` بـ يعمل **`DELETE FROM predictions`** (wipes ALL!) قبل كل strategy iteration | **معطل** بـ `RULE35-DISABLE` guard + `sys.exit(0)` — كارثة Rule 1 (DB Safety) |
+> | 4 | `api/admin/backtest/v40/run` (Node) | Node-side **`DELETE FROM predictions`** على كل backtest run | **410 Gone** + redirect لـ `daily_predictor.py` (auth gate 403 محفوظ) |
+> | 5 | `api/recommendations/retroactive-evaluate` (Node) | Node-side `UPDATE real_predictions` (duplicate of `daily_closer.py`) | **410 Gone** + redirect لـ `daily_closer.py` (Rule 28 — duplicate) |
+> | 6 | `api/prediction_tracking_routes` (legacy `tracking_bp`) | duplicate blueprint بـ url_prefix=`/api/predictions/tracking` — endpoints مش بـ تستخدم | blueprint registration اتشال من `lightweight_server.py` (Rule 28) |
+> | 7 | `telegram/auto_poster.py:299-306` | `UPDATE predictions SET ... WHERE ticker = ? ORDER BY ... LIMIT 1` (SQL syntax bug — SQLite مش بـ يدعم ORDER BY/LIMIT في UPDATE) — silent swallowed exception | الـ SQL syntax bug موثّق. الـ path معطّل. |
+>
+> **3 orphan duplicate tables اتمسحت من الـ DBs (FULL-AUDIT-FIXES P0-3):**
+> | DB.Table | Rows | السبب | Canonical Alternative |
+> |---|---|---|---|
+> | `predictions.db.portfolios` | 4 | duplicate | `stocks.db.portfolios` (9 rows — canonical) |
+> | `predictions.db.ExpertRecommendation` | 17 | duplicate | `stocks.db.ExpertRecommendation` (48+ rows — canonical) |
+> | `stocks.db.gold_prices` | 3 (legacy) | duplicate | `data_engine.db.gold_prices` (163,143 rows — canonical) |
+> Backups محفوظة: `predictions.20261011_101047.bak` + `stocks.20261011_101047.bak` (Rule 16 — VERIFY-BEFORE-DELETE). VACUUM اتعمل.
+>
+> **9 orphan scripts معطّلة بـ early-return guards (defense-in-depth)** — per Task `DISABLE-SCRIPTS` (commit `38665fd1`) + DEEP-AUDIT-FIXES P1:
+> `backtesting_engine.py` + `maestro_backfill_phase3.py` + `maestro_backfill_v2.py` + `generate_persona_predictions.py` + `populate_history_fast.py` + `dual_track_generator.py` + `backfill_with_personas.py` + `backfill_to_predictions.py` + `volume_surge_hunter_test.py` + `backfill_history.py` + `sync-real-data.py`.
+>
+> **الـ Verifier:** لو لقيت أي `INSERT INTO predictions` / `UPDATE predictions SET` / `DELETE FROM predictions` بـ يتخطّى `record_prediction()` → ده Rule 35 violation. الـ Single Gate هو `analyzers/prediction_tracker.py:493-534` (`record_prediction()`) + الـ guard في `core/prediction_write_guard.py:14-194` (`validate_prediction_evidence()`).
 
 ---
 
@@ -1513,7 +1610,7 @@ def get_news_with_impact(ticker, max_news=3):
 **VETO:** لو screener/fundamentals قال VETO → `continue` (رفض فوري).
 **Safe-by-design:** لو أي مصدر فشل → V40.2 بيكمل بدون تأثير.
 
-**المرجع:** `vps-service/analyzers/screener_integration.py` + `vps-service/jobs/v40_2_daily_generator.py` (سطر 1064-1120).
+**المرجع:** `vps-service/analyzers/screener_integration.py` + `vps-service/jobs/daily_predictor.py` (سطر 1064-1120).
 
 ---
 
@@ -2456,7 +2553,7 @@ git push origin main   # إلزامي — مش خطوة اختيارية
    - `v38_backtest_engine.py:1500` — `sma200` = `ema200` (mislabeled) → يتصلح
    - `core_scoring_engine.py:43` — RSI يستخدم SMA مش Wilder → يتصلح
    - `precomputed-cache.ts:414` — ATR يستخدم SMA مش Wilder → يتصلح
-   - `v40_2_daily_generator.py:2355` — `master_score = technical_score` → يتصلح (الـ 10-component weighted sum هو canonical)
+   - `daily_predictor.py:2355` — `master_score = technical_score` → يتصلح (الـ 10-component weighted sum هو canonical)
 
 #### التحقق (Acceptance):
 - `grep -r "def calc_atr\|def calculate_atr" vps-service/ --include="*.py" | wc -l` → 1 بس (canonical)

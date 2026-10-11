@@ -87,12 +87,12 @@
 
 | المكوّن | الحالة | المصدر |
 |---|---|---|
-| **V40.2 daily generator** | ✅ الإنتاج — **Phase A: multi-market `market_code` (EGX/KSA/KSE/QSE/CRYPTO)** | `vps-service/jobs/v40_2_daily_generator.py` يكتب في `predictions.db` — tracker مفعّل. `market_code` يُمرَّر في `analyze_single_day_v393()`. |
+| **V40.2 daily generator** | ✅ الإنتاج — **Phase A: multi-market `market_code` (EGX/KSA/KSE/QSE/CRYPTO)** | `vps-service/jobs/daily_predictor.py` يكتب في `predictions.db` — tracker مفعّل. `market_code` يُمرَّر في `analyze_single_day_v393()`. |
 | **Liquidity Filter (Phase B — primary gate)** | ✅ الإنتاج — **يشتغل قبل `analyze_single_day_v393()`** | `vps-service/analyzers/liquidity_filter.py` — البوابة الرئيسية؛ أي سهم لا يجتاز السيولة لا يدخل التحليل أصلاً (توفير compute + تحسين جودة الـ predictions). |
 | **Dynamic Thresholds (Phase C)** | ✅ الإنتاج — **20+ hardcoded thresholds → `get_setting()`** | `vps-service/core/engine_settings.py` — كل threshold أصبح قابلاً للتعديل من Admin UI بدون redeploy. القائمة الكاملة في §3 (Thresholds). |
 | **A/B Backtest Harness (Phase D)** | ✅ الإنتاج — **baseline محفوظ `ab_backtest_baseline_*.json`** | `vps-service/backtest_results/` — diff runs قبل/بعد أي phase. WR baseline = 67.4% (recorded) / ~50–55% (actual بعد HELI-CLEANUP-2) / PF = 12.84 / Max Loss Streak = 7. |
 | **daily_closer.py (HELI bug fixed — 2026-09-27)** | ✅ الإنتاج — **4 sites fixed + write-time assertion** | `vps-service/jobs/daily_closer.py` lines 2087/2140/2175/2199 — `status='TARGET_HIT' if actual_return>0` استُبدلت بـ `if highest_price_reached >= target_price`. Assertion في `_mark_closed()` (lines 2979-3008) — راجع §16. |
-| **Maestro orchestrator** | 🚫 معطّل (KILL-MAESTRO 2026-08-31) | `maestro_orchestrator.py` signal_id = None |
+| **Maestro orchestrator** | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان معطل (KILL-MAESTRO 2026-08-31: signal_id = None)، بعدها اتسجل كـ dead code. كل الـ files في `archive/maestro-dead-code-20261012/`. سيدي طلب: "Maestro ده ماضي أسود — شيله". V40.2 هو المحرك الوحيد. |
 | **Closed-Loop (5-state)** | ✅ مفعّل | `00-CONSTITUTION.md` §6 + §7 (Closed-Loop) |
 | **Personas في الإنتاج** | `balanced` فقط (baseline) | `compute_persona_fit()` يشتق conservative + gambler من نفس V40.2 score (Rule 23) |
 | **Daily picks (Top 5)** | ✅ الإنتاج + **`hunter_pick_tracking` populated (P0 fix #2)** | `predictions/daily-picks` من V40.2 + `scripts/sync_hunter_pick_tracking.py` (NEW) |
@@ -134,7 +134,7 @@
 ### 💰 الكنوز المدفونة (المحور ب — 3 modules مربوطين في V40.2)
 
 #### الكنز #1: Screener Integration (`vps-service/analyzers/screener_integration.py`)
-- مربوط في `v40_2_daily_generator.py` (line 1036-1120)
+- مربوط في `daily_predictor.py` (line 1036-1120)
 - بيقرأ من `data_engine.db.screener_lists` (1,459 entries في 5 فئات)
 - 3 functions:
   - `get_screener_tags(ticker)` → screener tags (most_active, unusual_volume, ...)
@@ -284,26 +284,36 @@
 
 ## ⚡ تغييرات جوهرية (2026-08-31)
 
-### 🔥 KILL-MAESTRO: V40.2 هو العقل الوحيد
+### 🔥 KILL-MAESTRO → DELETE-MAESTRO (2026-10-12): V40.2 هو العقل الوحيد
 
-**Maestro مات بالكامل.** V40.2 هو مولّد التوقعات الأساسي والوحيد.
+**Maestro محذوف نهائياً.** V40.2 هو مولّد التوقعات الأساسي والوحيد.
 
 **ما تغيّر في منطق التفكير:**
 - قبل: Maestro (8-layer confluence, 138 pts) → predictions.db
 - بعد: V40.2 (6 proofs + evidence-based) → predictions.db
-- Maestro لسه موجود في الكود (للـ UI/queries) بس مش بيكتب توقعات
+- ~~Maestro لسه موجود في الكود (للـ UI/queries) بس مش بيكتب توقعات~~ → 🗑️ **محذوف نهائياً** (2026-10-12)
+
+**2026-10-12 (DELETE-MAESTRO):** سيدي طلب: "Maestro ده ماضي أسود — شيله". تم حذف كل ملفات Maestro نهائياً (مش بس تعطيل) وأرشفت في `archive/maestro-dead-code-20261012/` (556 KB dead code). الـ blueprint registration اتشال من `lightweight_server.py`. كل Maestro imports في try/except — بـ fail silently لو استدعيت.
 
 **الفارق الجوهري:**
-| المقياس | Maestro (مات) | V40.2 (العقل الوحيد) |
+| المقياس | Maestro (🗑️ محذوف نهائياً) | V40.2 (العقل الوحيد) |
 |---|---|---|
-| المنطق | 8-layer confluence (138 pts) | 6 proofs + evidence-based (82-91 pts) |
-| البقاء | معطل (signal_id = None) | مفعّل (tracker = PredictionTracker) |
-| التوقعات | مش بيكتب | يكتب في predictions.db |
-| الـ UI | للتحليل فقط | المصدر الوحيد للتوقعات |
+| المنطق | ~~8-layer confluence (138 pts)~~ — محذوف | 6 proofs + evidence-based (82-91 pts) |
+| البقاء | 🗑️ محذوف نهائياً (كان معطل — signal_id = None) | مفعّل (tracker = PredictionTracker + PREDICTION-WRITE-GUARD) |
+| التوقعات | مش بيكتب (وكان بيـ block على Single Gate) | يكتب في predictions.db (المحرك الوحيد) |
+| الـ UI | ~~للتحليل فقط~~ — محذوف | المصدر الوحيد للتوقعات |
+
+**الـ Single Gate (PREDICTION-WRITE-GUARD):** `core/prediction_write_guard.py` بـ enforce Rule 35 على مستوى `record_prediction()`. بيـ block أي توقع:
+- بدون `engine=v40_2` tag في `notes`
+- بدون `kill_filter_result` signature
+- BUY/STRONG_BUY/ACCUMULATE مع `evidence_count < 3` (Rule 21)
+- `master_score = 50.0` placeholder (Rule 27 — NO-FAKE-DATA)
+
+كل الـ 7 rogue paths اللي كانت بـ تكتب predictions بدون الـ Single Gate (backfill_historical_predictions.py + confluence /generate-predictions + optimization_loop.py + admin/backtest/v40/run + retroactive-evaluate + tracking_bp + auto_poster.py) اتعطلت في HIDDEN-WRITERS-AUDIT (2026-10-12). التفاصيل في `01-PROJECT_ANATOMY.md` §HIDDEN-WRITERS-AUDIT + `00-CONSTITUTION.md` Rule 35.
 
 ### 🧠 V62 Logic (4 ميزات جديدة في V40.2)
 
-أضفنا 4 ميزات من Pine Script V62 لـ V40.2 (سطر 979-1048 في v40_2_daily_generator.py):
+أضفنا 4 ميزات من Pine Script V62 لـ V40.2 (سطر 979-1048 في daily_predictor.py):
 
 1. **fake_pump** (رفض): طلع +3% بس حجم < MA → فخ الميكرز
 2. **is_dist** (رفض): توزيع (شمعة حمراء + ظهر >50% + حجم >2× MA)
@@ -500,7 +510,7 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  STAGE 4: PERSONA R:R OVERRIDES (تُعدّل الأهداف والوقف حسب الشخصية)            │
 │  ─────────────────────────────────────────────────────────────────            │
-│  PERSONA_CONFIGS (maestro_orchestrator.py):                                   │
+│  PERSONA_CONFIGS (persona_engine.py — was in maestro_orchestrator.py 🗑️ محذوف):   │
 │   ├─ gambler:      min_score=42, target_mult=2.0x, stop_mult=1.2x            │
 │   ├─ balanced:     min_score=50, target_mult=2.2x, stop_mult=1.0x (default)  │
 │   ├─ conservative: min_score=55, target_mult=2.5x, stop_mult=1.0x            │
@@ -512,7 +522,7 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  STAGE 5: KILL FILTERS + R:R FLOOR GATE (يطرح المرشحين الضعفاء)              │
 │  ─────────────────────────────────────────────────────────────────            │
-│  v40_2_daily_generator.py:                                                    │
+│  daily_predictor.py:                                                    │
 │   ├─ liquidity_filter.set_strict_kill_filters(True) (turnover ≥ 3M EGP)      │
 │   ├─ R:R ≥ dynamic_rr_normal (**1.8** — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — commit `38665fd1` — رفع من 1.5) floor gate (L314-326) │
 │   ├─ ATR stop clamp **[5%, 9%]** (was [3%,9%] — Task `REAPPLY-CRITICAL-FIXES` — رفع min 3.0→5.0 + V40_2_STOP_MAX_PCT default 7.0→9.0) │
@@ -562,7 +572,8 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 │   ├─ TARGET_HIT_OK (الهدف اتحقق → keeps config)                              │
 │   ├─ LATE_MOMENTUM (تحرك متأخر → extend hold_days)                           │
 │   └─ MISSED_BREAKOUT (كسر فات → lower entry threshold)                       │
-│  continuous_learning.py: يقرأ الدروس → maestro_orchestrator.run_expert_memory_phase() │
+│  continuous_learning.py: يقرأ الدروس → daily_predictor.run_expert_memory_phase() │
+│   (was: maestro_orchestrator.run_expert_memory_phase() 🗑️ محذوف DELETE-MAESTRO) │
 │   → applied_lesson (توسيع وقف مسقوف +0.15×ATR لكل تكرار، حد أقصى 0.5×ATR)    │
 │   → السلسلة تتراكم: كل صفقة جديدة بـ تـ inherits الدروس السابقة                │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -1069,7 +1080,9 @@ if market_regime and market_regime.get('trend') in ('bear', 'bear_trend'):
 | `conservative` | **محافظ** 🛡️ | `swing_medium_long` (متوسط-طويل) | 10 | smc_engine, fundamental_engine, volume_profile |
 | `expert` | **خبير** 🧠 | persona_fit annotation فقط | — | (لا كتابة منفصلة — خيار آمن) |
 
-### 4.2 PERSONA_CONFIGS (maestro_orchestrator.py)
+### 4.2 PERSONA_CONFIGS (~~maestro_orchestrator.py~~ 🗑️ محذوف —转移到 `persona_engine.py`)
+
+> 🗑️ **DELETE-MAESTRO (2026-10-12):** `maestro_orchestrator.py` محذوف نهائياً. الـ `PERSONA_CONFIGS` + `compute_persona_fit()` الـ canonical دلوقتي في `analyzers/persona_engine.py`. كل references لـ `maestro_orchestrator.run_expert_memory_phase()` محفوظة كـ historical context فقط (الكود محذوف — الـ logic انتقل لـ V40.2 + persona_engine).
 
 | Persona | min_score | target_mult | stop_mult | الإصلاح (vs V34 القديم) |
 |---------|----------:|------------:|----------:|--------------------------|
@@ -1107,7 +1120,7 @@ if market_regime and market_regime.get('trend') in ('bear', 'bear_trend'):
 
 ### 4.5 persona_fit computation (PERSONA-UNIFY-A — Phase 2)
 
-`compute_persona_fit(proofs)` في `v40_2_daily_generator.py` بـ derive 4 category scores من V40.2 proofs:
+`compute_persona_fit(proofs)` في `daily_predictor.py` بـ derive 4 category scores من V40.2 proofs:
 
 | V40.2 proof | Category score | الشرط |
 |-------------|----------------|-------|
@@ -1205,7 +1218,7 @@ SELECT COUNT(*) FROM predictions WHERE risk_reward = 0.0 AND signal IN ('BUY','S
 - إضافة ATR stop clamp **`[5%, 9%]`** (was `[3%, 9%]` — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 رفع min من 3.0→5.0) باستخدام `get_setting('atr_stop_min_pct')` / `get_setting('atr_stop_max_pct')` — يحترم CONSTITUTION Rule 8
 - إعادة اشتقاق `tp1`/`tp2` من الـ clamped stop للحفاظ على R:R ratio من `rr_ratio_tp1` / `rr_ratio_tp2`
 
-**Change 2 — `vps-service/jobs/v40_2_daily_generator.py` (lines ~314-326):**
+**Change 2 — `vps-service/jobs/daily_predictor.py` (lines ~314-326):**
 - R:R floor gate: `if r_mult < get_setting('dynamic_rr_normal', default=1.8): continue` (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 رفع من 1.5→1.8)
 - يرفض setups أقل من العتبة **قبل** ما تدخل `predictions.db`
 - مع الـ key-mismatch fix، `dynamic_rr_outperform=2.0` بـ يُحترم للأسهم اللي بتفوق على السوق → الـ gate نادرًا بـ يفعل
@@ -1248,7 +1261,7 @@ SELECT COUNT(*) FROM predictions WHERE risk_reward = 0.0 AND signal IN ('BUY','S
 
 | Key | القيمة | الوصف |
 |-----|------|------|
-| `dynamic_rr_normal` | **1.8** (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08) | R:R floor للأسهم العادية (يتح بها floor gate في `v40_2_daily_generator.py` L314-326) |
+| `dynamic_rr_normal` | **1.8** (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08) | R:R floor للأسهم العادية (يتح بها floor gate في `daily_predictor.py` L314-326) |
 | `dynamic_rr_outperform` | **2.0** | R:R target للأسهم اللي بتفوق على الـ benchmark (EGX30ETF) |
 | `atr_stop_min_pct` | **5.0** (was 3.0 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — Rule 8) | ATR stop clamp الحد الأدنى — رفع من 3.0 لمواءمة حماية رأس المال |
 | `atr_stop_max_pct` | **9.0** (V40_2_STOP_MAX_PCT default رفع من 7.0 — Task `REAPPLY-CRITICAL-FIXES`) | ATR stop clamp الحد الأقصى |
@@ -1262,7 +1275,7 @@ SELECT COUNT(*) FROM predictions WHERE risk_reward = 0.0 AND signal IN ('BUY','S
 | File | Lines | Change |
 |------|-------|--------|
 | `vps-service/engines/v38_backtest_engine.py` | ~1356-1396 | Read canonical keys `sl`/`tp1`/`tp2` + ATR stop clamp **[5%, 9%]** (was [3%,9%] — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — رفع min 3.0→5.0 + V40_2_STOP_MAX_PCT default 7.0→9.0) + re-derive tp from clamped sl |
-| `vps-service/jobs/v40_2_daily_generator.py` | ~314-326 | R:R ≥ **1.8** floor gate (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` — rejects sub-threshold setups before DB insert) |
+| `vps-service/jobs/daily_predictor.py` | ~314-326 | R:R ≥ **1.8** floor gate (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` — rejects sub-threshold setups before DB insert) |
 | `institutional_decision_engine.py` | — | unchanged (was already correct) |
 | `vps-service/config/unified_config.py` (NEW — Task `REAPPLY`) | L147-150 defaults + L377-380 EGX profile | EGX profile: ATR 3.0→5.0 + R:R 1.5→1.8 (KSA/KSE/QSE/DFM/CRYPTO غير ملموسة) |
 | `vps-service/core/opportunity_quality.py` (NEW — Task `REAPPLY`) | L580 | `ATR_STOP_MIN_PCT` 3.0→5.0 |
@@ -1289,7 +1302,7 @@ cd /root/GLMinvestment && git pull origin main
 git log --oneline -3   # verify 65a748f is present
 
 # (optional dry-run) Re-run today's generator with the fix
-/root/GLMinvestment/.venv/bin/python vps-service/jobs/v40_2_daily_generator.py --today-only
+/root/GLMinvestment/.venv/bin/python vps-service/jobs/daily_predictor.py --today-only
 
 # Verify R:R is now dynamic on today's prediction
 sqlite3 /root/GLMinvestment/db/predictions.db \
@@ -1334,7 +1347,7 @@ SELECT fundamental_score, COUNT(*) FROM predictions GROUP BY fundamental_score;
 # v38_backtest_engine.py L1292 (pre-fix)
 fundamental_score = fundamentals.score * 100 if fundamentals.available else 0.0
 
-# v40_2_daily_generator.py (pre-fix)
+# daily_predictor.py (pre-fix)
 fundamental_score = 50.0 if not fundamentals.available else fundamentals.score * 100
 ```
 
@@ -1643,10 +1656,10 @@ WHERE (actual_return IS NULL OR ABS(actual_return) <= 50)
 
 | المسار | المولّد | الـ persona المكتوبة | الجودة |
 |--------|---------|---------------------|--------|
-| **V40.2 evidence-based** | `jobs/v40_2_daily_generator.py` | `balanced` فقط (سطر 327) | عالية — 6 إثباتات + kill filters + R/R≥1.5. **69% WR حيًا** |
-| **Maestro persona** | `analyzers/maestro_orchestrator.py` → `core/persona_db.py` | `gambler` + `investor` (منفصلة) | مسار منفصل، أقل صرامة في الـ evidence |
+| **V40.2 evidence-based** | `jobs/daily_predictor.py` | `balanced` فقط (سطر 327) | عالية — 6 إثباتات + kill filters + R/R≥1.5. **69% WR حيًا** |
+| ~~**Maestro persona**~~ 🗑️ | ~~`analyzers/maestro_orchestrator.py` → `core/persona_db.py`~~ | ~~`gambler` + `investor` (منفصلة)~~ | 🗑️ **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12) — كان مسار منفصل، أقل صرامة في الـ evidence |
 
-> **التشخيص:** المضارب/المستثمر الضعيف حيًا (1 و 3 توصيات) ليس لأن الشخصية نفسها ضعيفة، بل لأن توقعاتها تأتي من مسار maestro الذي **لم يمرّ بنفس الـ evidence-based pipeline** الصارم. جعل V40.2 يولّد per-persona = قرار تصميمي كبير يحتاج موافقة المالك (يخاطر بالـ baseline المحمي).
+> 🗑️ **DELETE-MAESTRO (2026-10-12):** الـ "Maestro persona" path محذوف نهائياً. الـ persona data (`gambler` + `conservative`) دلوقتي بـ derive من V40.2 score عبر `compute_persona_fit()` في `persona_engine.py` (Rule 23 — `persona='balanced'` protected baseline). سيدي طلب: "Maestro ده ماضي أسود — شيله".
 
 ### 7.7 Backtest Results (V40.2 — 2026-01-01 → 2026-08-16)
 
@@ -1796,16 +1809,16 @@ LIMIT 500  -- كان 80
 ## 9. Learning loop (continuous_learning + applied_lesson chain)
 
 > **المرجع (مُدمج):** محتوى `CLOSED_LOOP_FINAL.md` (120 سطر، CL4) دُمج في هذا القسم §9 (توحيد التوثيق 2026-08-17).
-> **الكود:** `vps-service/utils/lesson_store.py` + `vps-service/analyzers/maestro_orchestrator.py::run_expert_memory_phase` + `vps-service/utils/live_price.py`.
+> **الكود:** `vps-service/utils/lesson_store.py` + ~~`vps-service/analyzers/maestro_orchestrator.py::run_expert_memory_phase`~~ 🗑️ (محذوف — انتقل لـ V40.2 `daily_predictor.py` + `learning_engine.py` per Rule 35) + `vps-service/utils/live_price.py`.
 
 ### 9.1 الـ Closed-Loop Chain (4 ملفات)
 
 | # | الملف | الدور |
 |---|------|------|
 | 1 | `vps-service/utils/live_price.py` | مصدر السعر الموحّد: `get_live_price` (intraday → data_engine → fallback). يُستخدم في كتابة التوقع، الإغلاق، ومعاينة التتبع. |
-| 2 | `vps-service/analyzers/maestro_orchestrator.py` | العقل: `run_expert_memory_phase` يقرأ الدروس → `applied_lesson` (توسيع وقف مسقوف) → `record_prediction` يكتب التوقع بـ persona حقيقية. |
+| 2 | ~~`vps-service/analyzers/maestro_orchestrator.py`~~ 🗑️ | ~~العقل: `run_expert_memory_phase` يقرأ الدروس → `applied_lesson` (توسيع وقف مسقوف) → `record_prediction` يكتب التوقع بـ persona حقيقية.~~ — **محذوف نهائياً** (DELETE-MAESTRO 2026-10-12). الـ logic انتقل لـ V40.2 `daily_predictor.py` + `learning_engine.py` + `persona_engine.py`. الـ `record_prediction()` دلوقتي بيتم عبر الـ Single Gate (`PREDICTION-WRITE-GUARD`). |
 | 3 | `vps-service/jobs/daily_closer.py` | الإغلاق الآلي: يقفل على سعر التفعيل (target/stop) + `is_correct` من `exit_type` + `record_lesson_from_close` + `detect_and_record_missed_opportunities`. |
-| 4 | `vps-service/utils/lesson_store.py` | ذاكرة الدروس: `record_lesson_from_close` يصنّف (STOP_TOO_TIGHT / TARGET_HIT_OK / LATE_MOMENTUM / MISSED_BREAKOUT) → `get_persona_lesson_summary` / `get_ticker_lesson_summary` يقرأها المايسترو. |
+| 4 | `vps-service/utils/lesson_store.py` | ذاكرة الدروس: `record_lesson_from_close` يصنّف (STOP_TOO_TIGHT / TARGET_HIT_OK / LATE_MOMENTUM / MISSED_BREAKOUT) → `get_persona_lesson_summary` / `get_ticker_lesson_summary` يقرأها V40.2 (مش Maestro). |
 
 > **قاعدة ثابتة:** Python = العقل · Node = عرض فقط. لا WIN/LOSS نهائي بدون `outcome_date`.
 
@@ -1820,8 +1833,10 @@ LIMIT 500  -- كان 80
 
 ### 9.3 applied_lesson — التعلّم الفعّال المسقوف
 
+> 🗑️ **DELETE-MAESTRO (2026-10-12):** الـ code snippet التالي كان أصلاً في `maestro_orchestrator.py` (محذوف). الـ logic دلوقتي موجود في `daily_predictor.py::run_expert_memory_phase()` (الاسم محفوظ بس الملف مختلف) + `learning_engine.py`. حافظنا على الـ snippet كـ historical reference للـ algorithm logic.
+
 ```python
-# maestro_orchestrator.py::run_expert_memory_phase
+# (Historical — was in maestro_orchestrator.py — now in daily_predictor.py per Rule 35 ENGINE-UNIFY)
 def run_expert_memory_phase(ticker, persona):
     # 1. حمّل الدروس السابقة
     ticker_lessons = get_ticker_lesson_summary(ticker)
@@ -1840,7 +1855,7 @@ def run_expert_memory_phase(ticker, persona):
         applied_lesson=f"widen_stop +{stop_widen_atr:.2f}ATR" if stop_widen_atr > 0 else None,
     )
 
-# maestro_orchestrator.py::analyze (يستخدم النتيجة)
+# (Historical — was in maestro_orchestrator.py::analyze — now in daily_predictor.py per Rule 35)
 def analyze(ticker, ...):
     expert_memory = run_expert_memory_phase(ticker, persona)
 
@@ -2099,7 +2114,7 @@ effective_highest = max(highest_close_since_entry, intraday_high)
 | **G-RR-1** | `egx_fundamental_fetcher.py` NOT in crontab | ✅ DONE (a268957+4cde9f0) | cron مُفعّل السبت 14:00 UTC + fetcher مُحصّن (ticker guard + no-args bug fix + verify subcommand) |
 | **G-FUND-1** | `tab_balance_sheet` / `tab_income_statement` / `tab_cash_flow` column-shift bug | ✅ DONE (a73b1a1) | migrate_fundamentals_schema.py: 24 صف فاسد اتمسح، 858 سليم لكل جدول. verify_tab_integrity يؤكد 0 shifted |
 | **G-FUND-2** | Production sync of commit `04354a5` not yet applied to VPS | ⏳ NEXT | `fundamental_score=50.0` placeholder ما زال في `predictions.db` على الـ production (sandbox فقط فيه الـ real score) |
-| **G-FUND-3** | Hard veto score<30 | ✅ DONE (81244f0) | veto مُفعّل downstream في v40_2_daily_generator: persona≠gambler AND fund<30 → reject. Safe-by-design عند unavailable |
+| **G-FUND-3** | Hard veto score<30 | ✅ DONE (81244f0) | veto مُفعّل downstream في daily_predictor: persona≠gambler AND fund<30 → reject. Safe-by-design عند unavailable |
 | **G-FUND-4** | Conservative persona gate not testable | ⏳ Phase 3 | لا توجد صفقات `persona=conservative` في الـ archive (كلها `balanced` per PERSONA-UNIFY-A) |
 | **G-FUND-5** | 4 tickers unmapped (EG23X, MTEZ, OCIC, TAO) | ⏳ NEXT | `fundamental_score = None` (لا 50 ولا real) — confidence=0 |
 | **G-PERSONA-1** | Market label bug in `predictions.db` | 📋 documented | كل الـ 22 tickers labeled `market=EGX` لكن 11 سعودية + 4 EGX + 3 كويت + 4 unknown — الصفقات حقيقية بس الـ label غلط |
@@ -2242,7 +2257,7 @@ effective_highest = max(highest_close_since_entry, intraday_high)
 
 > **أُضيف:** 2026-08-28 (بعد اكتشاف إن V40.2 فات كل الأسهم الانفجارية السبعة).
 > **المرجع:** `vps-service/analyzers/core_scoring_engine.py::detect_volume_surge_rocket`
-> **المستدعى من:** `vps-service/jobs/v40_2_daily_generator.py` (في الـ generation loop).
+> **المستدعى من:** `vps-service/jobs/daily_predictor.py` (في الـ generation loop).
 
 ### 13.1 المشكلة التي حلّها
 
@@ -2297,7 +2312,7 @@ effective_highest = max(highest_close_since_entry, intraday_high)
 
 ### 13.4 التكامل مع V40.2
 
-في `v40_2_daily_generator.py`، الـ flow:
+في `daily_predictor.py`، الـ flow:
 1. `analyze_single_day_v393()` بيرجع signal
 2. لو signal = WAIT/HOLD → بيشغل `detect_volume_surge_rocket()`
 3. لو `is_surge_rocket=True` → بيحوّل الـ signal لـ STRONG_BUY ويستخدم entry/target/stop من الـ hunter
@@ -2399,7 +2414,7 @@ if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
 - **k = 1.5** (balanced ATR multiplier — ثابت لكل personas).
 
 #### المحور 4: سلسلة الاكتشاف (Discovery Fallback Chain)
-**الملف:** `v40_2_daily_generator.py` (Maestro معطّل — KILL-MAESTRO 2026-08-31)
+**الملف:** `daily_predictor.py` (Maestro 🗑️ محذوف نهائياً — DELETE-MAESTRO 2026-10-12)
 
 لو المحرك الأساسي (V40.2) ما طلعش BUY/STRONG_BUY → افحص بالترتيب:
 1. `detect_volume_surge_rocket` (Layer 1: Volume Surge Hunter).
@@ -2663,10 +2678,10 @@ MIN_ACCUM_RATIO = 1.2           # Filter E boost threshold
 | # | الفلتر | الملف | المنطق |
 |---|--------|------|--------|
 | 1 | **EGX Gate** | utils/egx_gate.py | سهم مصري فقط (289 canonical) |
-| 2 | **Evidence Gate** | v40_2_daily_generator | evidence ≥ 3/6 |
+| 2 | **Evidence Gate** | daily_predictor | evidence ≥ 3/6 |
 | 3 | **Entry Gate** (8 شروط) | utils/entry_gate.py | evidence + R:R + SMA50 + RS + Deep Correction + Don't Chase + سيولة + سياق |
-| 4 | **Sector Liquidity** | v40_2_daily_generator | القطاع dead → رفض |
-| 5 | **BOS/ChoCH** | v40_2_daily_generator | كسر دعم (ChoCH bear) → رفض |
+| 4 | **Sector Liquidity** | daily_predictor | القطاع dead → رفض |
+| 5 | **BOS/ChoCH** | daily_predictor | كسر دعم (ChoCH bear) → رفض |
 | 6 | **Dynamic Stop/Target** | core/opportunity_quality | swing low + ATR + clamp [5%, 9%] |
 | 7 | **Geometry Guard** | analyzers/prediction_tracker | target > entry×1.05 + stop < entry×0.95 + R:R ≥ 1.8 |
 | 8 | **Position Sizing** | utils/position_sizing | risk 1.2% × liquidity_pos_mult |
@@ -2755,7 +2770,7 @@ V40.2 بـ يبحث عن **3 أنماط دخول**:
 
 #### النمط 1: Surge (اندفاع حجمي)
 ```python
-# v40_2_daily_generator.py line ~558
+# daily_predictor.py line ~558
 result['stop_loss'] = surge_result['stop']
 ```
 - شمعة خضرا + حجم > 2× MA + breakout
@@ -2763,7 +2778,7 @@ result['stop_loss'] = surge_result['stop']
 
 #### النمط 2: Accumulation (تراكم)
 ```python
-# v40_2_daily_generator.py line ~586
+# daily_predictor.py line ~586
 result['stop_loss'] = accum_result['stop']
 ```
 - ضغط في BB + حجم ضعيف → استنى الانفجار
@@ -2771,7 +2786,7 @@ result['stop_loss'] = accum_result['stop']
 
 #### النمط 3: Recovery (تعافي)
 ```python
-# v40_2_daily_generator.py line ~610
+# daily_predictor.py line ~610
 result['stop_loss'] = recovery_result['stop']
 ```
 - بعد تصحيح، ارتداد من الدعم
@@ -3648,7 +3663,7 @@ if holding_days <= 3 and actual_return <= -5:
 |---|---|---|---|---|
 | 1 | تقليل مدة الاحتفاظ (7 أيام max) | ✅ **فلسفة هيكلية** بدل زمنية — `max_holding_7d` ملغي كسبب وحيد، `typical_correction_pct` من النوتبوك بـ يفرّق تصحيح/انهيار + `is_breakdown_not_correction()` | `short_holding_exit.py` / `V40_2_SHORT_HOLDING` | ✅ تم |
 | 2 | فلتر حرارة القطاع | ⏳ معالجة جزئية — `decision_logger.py` بـ يسجل السبب للمراقبة + Sector filter موجود من قبل في V40.2 (المرحلة 4 — §15.2 filter #4) | `decision_logger.py` | ⏳ جزئي |
-| 3 | إلغاء WATCH | ✅ موجود من قبل — V40.2 ما بـ يكتبش WATCH (فقط BUY/STRONG_BUY/SELL) | `v40_2_daily_generator.py` | ✅ تم (سابقًا) |
+| 3 | إلغاء WATCH | ✅ موجود من قبل — V40.2 ما بـ يكتبش WATCH (فقط BUY/STRONG_BUY/SELL) | `daily_predictor.py` | ✅ تم (سابقًا) |
 | 4 | إشارات SELL | ✅ `egx_disclosure_engine.py` (VETO -2) + `news_fetcher_analyzer.py` (sentiment -2) + `short_holding_exit.py::detect_distribution()` (شمعة توزيع) | `V40_2_DISCLOSURE_IMPACT` + `V40_2_NEWS_IMPACT` + `V40_2_DISTRIBUTION_EXIT` | ✅ تم |
 | 5 | تجميع مبكر (volume + trend) | ✅ `strict_entry_filters.py::is_in_accumulation()` — نطاق ضيق + حجم هادي + مفيش قفزة + بعيد عن قمة 20 يوم | `V40_2_STRICT_ENTRY` | ✅ تم |
 | 6 | تجميع مؤسسي (P/E + ROE) | ✅ موجود من قبل — `fundamental_data_provider.py` (Stage A-H منتهية) + `news_impact_scorer.py` (14 event types) | `fundamental_data_provider.py` + `news_impact_scorer.py` | ✅ تم (سابقًا) |
@@ -4718,7 +4733,7 @@ GET /api/maker-radar/footprint?ticker=COMI&days=30
 
 ### §15.4 ربط الرادار بـ V40.2 Pipeline 🧠
 
-**المسار:** داخل `vps-service/jobs/v40_2_daily_generator.py` (lines 2200-2246)
+**المسار:** داخل `vps-service/jobs/daily_predictor.py` (lines 2200-2246)
 
 > ⚠️ **ملاحظة مهمة:** هذه الميزة **كانت موجودة فعلاً ومُتوصِّلة وشغّالة** قبل الترقية الحالية (منذ 2026-09-05). تم توثيقها هنا لاستكمال الـ 6 ميزات.
 
@@ -4786,7 +4801,7 @@ if _radar_boost != 0:
 #### ملفات الـ source code المعنية
 | الملف | السطور | الدور |
 |---|---|---|
-| `vps-service/jobs/v40_2_daily_generator.py` | (2200-2246) | الـ integration point |
+| `vps-service/jobs/daily_predictor.py` | (2200-2246) | الـ integration point |
 | `vps-service/utils/shared_liquidity.py` | — | `check_kill_switch` + `compute_money_flow` (المصدر) |
 
 #### مثال على الاستخدام العملي
@@ -5448,7 +5463,7 @@ Other consumers of radar_alerts:
 | 17 | `db/radar_alerts_state.json` | — | ملف snapshot بيُكتب تلقائياً |
 | 18 | `db/maker_radar_tracking.json` | — | ملف tracking (موجود قبل الترقية) |
 | 19 | `scripts/output/maker_radar_*.json` | — | ملف الـ radar cache اليومي |
-| 20 | `vps-service/jobs/v40_2_daily_generator.py` | 2963 | محرك V40.2 — فيه integration lines 2200-2246 (موجود قبل الترقية) |
+| 20 | `vps-service/jobs/daily_predictor.py` | 2963 | محرك V40.2 — فيه integration lines 2200-2246 (موجود قبل الترقية) |
 | 21 | `vps-service/utils/shared_liquidity.py` | — | `check_kill_switch()` + `compute_money_flow()` |
 
 #### §15.10.5 الإجمالي
@@ -5465,7 +5480,7 @@ Other consumers of radar_alerts:
 
 #### §15.11.1 تكامل الرادار مع V40.2 daily generator
 
-**الموقع:** `vps-service/jobs/v40_2_daily_generator.py` lines **2200-2246**
+**الموقع:** `vps-service/jobs/daily_predictor.py` lines **2200-2246**
 
 **نوع التكامل:** Python → Python (sync call within the same process)
 
@@ -5804,7 +5819,7 @@ if (roc10 >= 4 && roc10 <= 18) { momScore = 22; momLabel = 'زخم مثالي'; 
 |---|---|---|
 | Radar warmup | كل 15 دقيقة | `curl -X POST http://localhost:3000/api/maker-radar/warmup` |
 | Signal verify | يومياً 03:00 AM | `curl -X POST http://localhost:3000/api/maker-radar/signal-tracker/verify -H 'Content-Type: application/json' -d '{"max_age_days":45}'` |
-| V40.2 daily | يومياً 06:00 AM | `cd /home/z/my-project/vps-service && python3 jobs/v40_2_daily_generator.py --today-only` |
+| V40.2 daily | يومياً 06:00 AM | `cd /home/z/my-project/vps-service && python3 jobs/daily_predictor.py --today-only` |
 
 ---
 
@@ -5824,7 +5839,7 @@ if (roc10 >= 4 && roc10 <= 18) { momScore = 22; momLabel = 'زخم مثالي'; 
 - `src/components/predictions/radar/RadarStatsCards.tsx` (793 LOC)
 - `src/lib/schedulers/alert-engine.ts` (659 LOC, modified)
 - `src/lib/radar-cache.ts` (438 LOC, modified)
-- `vps-service/jobs/v40_2_daily_generator.py` (lines 2200-2246)
+- `vps-service/jobs/daily_predictor.py` (lines 2200-2246)
 
 **القواعد المُتَّبَعَة:**
 - ✅ Rule 39 (DOCS-FIRST-LAST) — توثيق شامل قبل/بعد كل ترقية كبيرة.
@@ -6629,7 +6644,7 @@ files that contradicted each other:
 | File | Claim |
 |---|---|
 | `crontab.txt` (root) | "V40.2 هو العقل الوحيد — Maestro مات" ✅ canonical |
-| `vps-service/crontab.txt` | "Maestro هو المصدر الوحيد — V40.2 معطّل" ❌ wrong |
+| `vps-service/crontab.txt` | ~~"Maestro هو المصدر الوحيد — V40.2 معطّل"~~ ❌ ~~wrong~~ — 🗑️ Maestro محذوف نهائياً (DELETE-MAESTRO 2026-10-12). V40.2 هو المحرك الوحيد. |
 
 **Action (commit 3db8b8b):**
 - Root `crontab.txt` marked CANONICAL per Rule 21 + Rule 35.
@@ -6740,7 +6755,7 @@ don't re-attempt these moves.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 1: V40.2 daily generator (v40_2_daily_generator.py)        │
+│ Step 1: V40.2 daily generator (daily_predictor.py)        │
 │   - Reads stocks.db.stocks + price_history.db                   │
 │   - Computes master_score (0-100) via 6 proofs + Tech Score     │
 │   - Writes prediction to predictions.db.predictions             │
