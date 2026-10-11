@@ -112,6 +112,20 @@ BEGIN
 END;
 """
 
+# ════════════════════════════════════════════════════════════════════════════
+# DEV-20 — Trigger SQL: reject SELL with target >= entry
+# ════════════════════════════════════════════════════════════════════════════
+TRIGGER_WRONG_DIRECTION_SELL_SQL = """
+CREATE TRIGGER IF NOT EXISTS trg_prevent_wrong_direction_sell
+BEFORE INSERT ON predictions
+FOR EACH ROW
+WHEN NEW.signal IN ('SELL', 'STRONG_SELL', 'REDUCE')
+    AND NEW.target_price >= NEW.entry_price
+BEGIN
+    SELECT RAISE(ABORT, 'DEV-20: SELL requires target < entry');
+END;
+"""
+
 
 # All triggers as (name, sql, description) tuples for iteration
 ALL_TRIGGERS = (
@@ -121,6 +135,8 @@ ALL_TRIGGERS = (
      'Reject NULL/<=0 prices on UPDATE of price columns (DEV-13 §1)'),
     ('trg_prevent_wrong_direction', TRIGGER_WRONG_DIRECTION_SQL,
      'Reject BUY with target <= entry on INSERT (DEV-13 §2)'),
+    ('trg_prevent_wrong_direction_sell', TRIGGER_WRONG_DIRECTION_SELL_SQL,
+     'Reject SELL with target >= entry on INSERT (DEV-20)'),
 )
 
 

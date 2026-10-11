@@ -35,8 +35,34 @@ def _safe_float(val, default=None):
         return default
 
 
+# DEV-18 (2026-10-12 — DUAL-TRACK): Simple in-memory cache (60s TTL)
+# Rule 27: cache stores real data, not fabricated. If data changes, cache expires.
+import time as _time
+
+_screener_cache = {}
+_CACHE_TTL = 60  # seconds
+
+def _get_cache(key):
+    """Get cached result if not expired."""
+    entry = _screener_cache.get(key)
+    if entry and (_time.time() - entry['ts']) < _CACHE_TTL:
+        return entry['data']
+    return None
+
+def _set_cache(key, data):
+    """Store result in cache."""
+    _screener_cache[key] = {'data': data, 'ts': _time.time()}
+
+
 @advanced_screener_bp.route('/api/screener/advanced', methods=['GET'])
 def advanced_screener():
+    # DEV-18: Check cache first (60s TTL)
+    _cache_key = f"screener:{request.query_string.decode() if request.query_string else 'default'}"
+    _cached = _get_cache(_cache_key)
+    if _cached is not None:
+        _cached['_cached'] = True
+        _cached['_cache_age'] = int(_time.time() - _screener_cache[_cache_key]['ts'])
+        return jsonify(_cached)
     """
     شاشة فلترة الأسهم الموحدة — TradingView-style screener.
 
