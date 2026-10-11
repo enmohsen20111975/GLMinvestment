@@ -16,6 +16,7 @@
     "test:frontend": "vitest run",
     "test:backend": "cd vps-service && python3 -m pytest tests/ -v",
     "test:smoke": "python3 scripts/smoke_load_test.py",
+    "check:guards": "python3 scripts/check_no_hard_delete.py && python3 scripts/check_no_raw_insert.py",
     "data:fill-missing": "python3 scripts/fill-missing-data-from-engine.py",
     "db:generate": "prisma generate && prisma generate --schema=prisma/auth-schema.prisma && prisma generate --schema=prisma/predictions-schema.prisma",
     "db:push": "prisma db push",
