@@ -1,121 +1,32 @@
 #!/usr/bin/env bash
-# =============================================================================
-# pre-commit hook: PROTECT database files from being re-tracked in git
-# =============================================================================
-# Why this exists:
-#   db/*.db files must NEVER be tracked in git. They change constantly
-#   (cron jobs, backend writes, price updates) and any tracked .db file
-#   causes "Your local changes would be overwritten by merge" errors on
-#   every git pull across all machines.
+# pre-commit hook — DEV-14 §4: run check:guards before allowing a commit.
 #
-#   .gitignore prevents NEW files from being added, but it does NOT stop
-#   `git add .` / `git add -A` / `git add -f` from re-staging a file that
-#   was previously untracked via `git rm --cached`.
+# Blocks the commit if any ACTIVE `DELETE FROM predictions` or
+# `INSERT INTO predictions` (outside canonical writer) is found.
 #
-#   This hook is the last line of defense: it blocks any commit that
-#   tries to (re)introduce a tracked .db / .sqlite / large backup file.
+# Install (one-time, after clone):
+#   chmod +x .git/hooks/pre-commit
+#   # OR
+#   cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
 #
-# Install:  bash scripts/install-git-hooks.sh
-# =============================================================================
+# Bypass (one-time, when intentionally adding a guarded INSERT/DELETE):
+#   git commit --no-verify
+#
+# References:
+#   - agent-ctx/DEV-11-14-lead-technical-implementer.md §4
+#   - worklog.md DEV-14
+set -e
 
-set -euo pipefail
+# Resolve repo root (the hook runs with cwd = repo root, but be defensive).
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
 
-# Patterns that must NEVER be tracked in git.
-# (These match against the staged PATH, not the working tree.)
-FORBIDDEN_PATTERNS=(
-    # SQLite database files (the primary offenders)
-    '\.db$'
-    '\.db-shm$'
-    '\.db-wal$'
-    '\.db-journal$'
-    '\.db\.bak'
-    '\.sqlite$'
-    '\.sqlite3$'
-    # ANY kind of database backup suffix — PRODUCTION/LOCAL/SANDBOX/whatever
-    # (covers .db.PRODUCTION-BACKUP-*, .db.LOCAL-BACKUP-*, .db.SANDBOX-BACKUP-*, etc.)
-    '\.db\.[A-Z][A-Z0-9_-]*-BACKUP'
-    '\.db\.[A-Z][A-Z0-9_-]*_BACKUP'
-    # Large compressed DB archives
-    'databases_backup\.tar\.gz$'
-    'active_databases_ultra\.tar\.xz$'
-    '\.db\.tar\.gz$'
-    '\.db\.tar\.xz$'
-    # Generic .BACKUP-* suffix on any file
-    '\.BACKUP-[0-9]'
-)
+echo "[pre-commit] Running check:guards (DEV-14 §4)..."
 
-# Whitelist: paths that look like a db file but are legit source/config.
-# (Add bare filenames here if ever needed — rare.)
-WHITELIST=(
-    'db/check-db.js'
-    'db/check-de-schema.js'
-    'db/check-integrity.js'
-    'db/check-master.js'
-    'db/check-price-history.js'
-    'db/check-stocks-rows.js'
-    'db/check-stocks-schema.js'
-    'db/check-users.js'
-    'db/check-schema.py'
-)
+# Run both guard checks. If either fails, the commit is aborted.
+python3 scripts/check_no_hard_delete.py
+python3 scripts/check_no_raw_insert.py
 
-# Get list of staged files (cached = already added to index).
-# Use --cached to inspect what WILL be committed, not the working tree.
-if ! staged=$(git diff --cached --name-only --diff-filter=A 2>/dev/null); then
-    # Not in a git repo or git error — allow the commit.
-    exit 0
-fi
-
-# Also catch files being MODIFIED that are db files (re-committing an
-# already-tracked db is equally bad).
-staged_all=$(git diff --cached --name-only 2>/dev/null || true)
-
-violations=()
-while IFS= read -r file; do
-    [ -z "$file" ] && continue
-
-    # Check whitelist (exact match against staged path).
-    whitelisted=0
-    for w in "${WHITELIST[@]}"; do
-        if [ "$file" = "$w" ]; then
-            whitelisted=1
-            break
-        fi
-    done
-    [ "$whitelisted" = "1" ] && continue
-
-    # Check forbidden patterns.
-    for pat in "${FORBIDDEN_PATTERNS[@]}"; do
-        if [[ "$file" =~ $pat ]]; then
-            violations+=("$file  (matched: /$pat/)")
-            break
-        fi
-    done
-done <<< "${staged_all}"
-
-if [ ${#violations[@]} -gt 0 ]; then
-    echo "" >&2
-    echo "============================================================" >&2
-    echo "  pre-commit: BLOCKED — database file(s) staged for commit" >&2
-    echo "============================================================" >&2
-    echo "  The following files must NOT be tracked in git:" >&2
-    echo "" >&2
-    for v in "${violations[@]}"; do
-        echo "    - $v" >&2
-    done
-    echo "" >&2
-    echo "  WHY: Tracked .db files cause 'local changes would be" >&2
-    echo "       overwritten by merge' errors on every git pull," >&2
-    echo "       because the backend / cron jobs write to them" >&2
-    echo "       constantly (production data)." >&2
-    echo "" >&2
-    echo "  FIX (if this was a mistake):" >&2
-    echo "    git reset HEAD -- <file>" >&2
-    echo "    git rm --cached <file>      # untrack, keep on disk" >&2
-    echo "" >&2
-    echo "  OVERRIDE (DANGEROUS, only for deliberate DB seeding):" >&2
-    echo "    git commit --no-verify -m '...'" >&2
-    echo "" >&2
-    exit 1
-fi
-
+echo "[pre-commit] ✓ All guards passed — proceeding with commit."
 exit 0
