@@ -102,9 +102,37 @@ def validate_prediction_evidence(
     except (TypeError, ValueError):
         ev = 0
 
-    # ─── DEV-03 (2026-10-12 — DUAL-TRACK): Price validation ───────────
+    # ─── DEV-07 (2026-10-12 — FULL INPUT GUARD): None-price hard reject ──
+    # The previous guard accepted None for prices (treated as "field not set"),
+    # which let rogue callers INSERT rows with NULL prices — a regression
+    # source for downstream analytics. DEV-07 closes that gap: all three
+    # price columns MUST be present and > 0 before any further validation.
+    #
+    # References:
+    #   - DEV-07 §3 (sada' thughrat None — None hole closure)
+    #   - Acceptance: validate_prediction_evidence(entry_price=None) → False ✅
+    if entry_price is None:
+        return False, (
+            f'DEV-07: entry_price is None — rejected '
+            f'(source={source}) — prices are required, not optional'
+        )
+    if target_price is None:
+        return False, (
+            f'DEV-07: target_price is None — rejected '
+            f'(source={source}) — prices are required, not optional'
+        )
+    if stop_loss is None:
+        return False, (
+            f'DEV-07: stop_loss is None — rejected '
+            f'(source={source}) — prices are required, not optional'
+        )
+
+    # ─── DEV-03 (2026-10-12 — DUAL-TRACK): Price positivity validation ───
     # All prices must be strictly positive. Zero or negative = invalid data
     # (stock not trading, delisted, or data corruption).
+    # NOTE: None is already rejected above (DEV-07), so `is not None` here is
+    # always True — kept for backward-compat with callers that may bypass
+    # DEV-07 (e.g., legacy direct invocation of validate_prediction_evidence).
     if entry_price is not None and float(entry_price) <= 0:
         return False, (
             f'DEV-03 violation: entry_price must be > 0, got {entry_price} '
