@@ -74115,3 +74115,133 @@ Verification:
 ($ticker literal). الاتنين اتعالجوا في Flutter commit 4fd7530.
 
 FLUTTER-COMPAT-AUDIT + FLUTTER-FIXES complete.
+
+---
+Task ID: MANAGER-FULL-AUDIT
+Agent: Manager Team — Full Investigation
+Task: Multi-track audit: data engine + DB map + predictions lifecycle + UI
+
+Work Log:
+- قرأتُ Documentation/00-CONSTITUTION.md (Rules 20, 27, 67, 72, 73) + آخر 200 سطر من worklog.md
+- Track A: قرأت data_engine/sync.py:370-442 (DEST_UPSERT_SQL + CANDLE_UPSERT_SQL) + data_engine/intraday_storage.py:1-200 + vps-service/utils/live_price.py:1-320 + crontab.txt كامل + headers لكل scrapers.
+- Track B: استخدمت better-sqlite3 لفحص schema + counts + distributions لكل DBs (stocks.db/predictions.db/intraday.db/price_history.db).
+- Track C: قرأت vps-service/jobs/daily_predictor.py:3320-3409 + vps-service/analyzers/prediction_tracker.py:370-540 + vps-service/jobs/daily_closer.py:2290-2349 + 3015-3074 + vps-service/telegram/telegram_target_hit_tracker.py:915-982 + scripts/verify_radar_signals.py كامل + scripts/radar_accuracy_report.py:270-369 + src/lib/targets-validator.ts كامل + src/modules/predictions/components/MakerRadarTab.tsx:2150-2224 + src/app/api/sniper/track/route.ts كامل + src/modules/radar/lib/radar-signal-tracker.ts كامل.
+- Track D: grep على FROM predictions|FROM aiPrediction في كل *.ts/*.tsx + FROM aiPrediction في كل *.py + grep على INSERT/UPDATE radar_signal_tracking + التحقق من reach targets-validator.ts و resolveLevels عبر شجرة الاستدعاءات.
+- Flutter: مش متاح في الساندبوكس (/tmp/flutter_investment_App غير موجود) — اعتمدت على audits السابقة في worklog.
+- أجريت 5 جولات DB queries عبر better-sqlite3 لـ: schema، counts، market distribution، status distribution، close vs close_price، A_/B_/D_ prefix attribution، path/data_date population.
+
+Stage Summary:
+
+═══════════════════════════════════════════════════════════════════════
+ TRACK A — Data Engine (محرك البيانات) — 8 CONFIRMED findings
+═══════════════════════════════════════════════════════════════════════
+- A1. CONFIRMED: sync.py DEST_UPSERT_SQL (L386-412) يحدّث current_price/previous_close/open_price/high_price/low_price في stocks — **لا يحدّث close**. الـ stocks.close column (cid=37) يتيم (orphan) — لا يكتبه أي production scraper. فقط `scripts/test_runbook_execution.py:25` (سكربت اختبار) و `download/SERVER_FIX_COMMANDS.sh:180` (سكربت يدوي) يحدّثونه.
+- A2. CONFIRMED: sync.py CANDLE_UPSERT_SQL (L418-442) يحدّث BOTH close و close_price في stock_daily_prices (نفس القيمة).
+- A3. CONFIRMED: daily_price_updater.py:154 يكتب إلى stock_daily_prices.close فقط (لا close_price). ده السبب في 20,972 صف عندهم close=NULL و close_price NOT NULL.
+- A4. CONFIRMED: intraday_storage.py:64-135 بيخلق 4 جداول: stock_intraday, crypto_intraday, commodity_intraday, intraday_meta. لا يخلق intraday_prices.
+- A5. CONFIRMED: live_price.py:148 يقرأ من intraday_prices (جدول فاضي 0 صفوف — مفيش writer إنتاجي). الكود comment صراحةً في L131-133: "actual table is intraday_prices (not stock_intraday)". المصدر ده بـ يفشل دايماً silently → fallback لـ data_engine.db.
+- A6. CONFIRMED: 7 EGX scrapers (tradingview + egksco + yahoo + egxpilot + multi_market + technical_fetcher + sharia) + 1 US (yahoo) + 1 crypto (coingecko) + 1 metals/forex. كل EGX scrapers تكتب لـ data_engine.db.egksco_stocks (mirror في stocks.db.egksco_stocks).
+- A7. CONFIRMED: crontab.txt فيه 26 cron jobs. EGX: */5 08-12 UTC (tradingview) + 2× daily (price updater). US: daily 22:00 UTC. Multi-market: hourly 09-22 UTC. Crypto/GOLD: */5 24/7. Maker Radar: 6 markets × */5. التغطية الكاملة لكل الأسواق مع fallback chains.
+- A8. UNRESOLVED: ما اتحققش من الـ fallback chain فعلياً (TradingView → Yahoo → EGKSCO) لأن الـ VPS غير متاح. الـ fallback_chain.py موجود بس ما عندناش logs إنتاجية تثبت تشغيله.
+
+═══════════════════════════════════════════════════════════════════════
+ TRACK B — Database Map (قواعد البيانات) — 11 CONFIRMED findings
+═══════════════════════════════════════════════════════════════════════
+- B1. CONFIRMED: stocks.db.predictions = 0 صف. predictions.db.predictions = 1551 صف. الجدولين اسمهم "predictions" بس في DBs مختلفة. مفيش أي writer شغّال يكتب في stocks.db.predictions (التوهمات تتكتب في predictions.db فقط).
+- B2. CONFIRMED — DISJOINT MARKETS:
+  * predictions.db.predictions (V40.2): EGX=1474 + US=76 + CRYPTO=1 (لا TADAWUL/KSE/QSE)
+  * predictions.db.aiPrediction (legacy): EGX=1713 + KSE=554 + QSE=346 (لا US/CRYPTO/TADAWUL)
+  * التطبيقين مختلفين في تغطية الأسواق. aiPrediction فيه 2574 EXPIRED و 4 PENDING — ده historical backfill مش live data. signal_source_id = NULL لكل 2613 صف.
+- B3. CONFIRMED: target_price NULL = 0 في predictions. entry_price = 0 or NULL = 0. كل التوقعات عندها entry_price > 0.
+- B4. CONFIRMED — master_score placeholder leak: 4 active predictions (AJWA/EXPA/EGCH/EGBE) لسه عندها master_score=50 + signal='HOLD'. ده placeholder لم يمنعه PREDICTION-WRITE-GUARD لأنه بـ يسمح HOLD بـ score=50. خرق Rule 27 جزئي.
+- B5. CONFIRMED: predictions status distribution: EXPIRED=958, TARGET_HIT=506, STOPPED=83, active=4. 506+83 = 589 closed بـ outcome محسوب. الـ 958 EXPIRED ممكن يكونوا انتهوا بدون target/stop hit.
+- B6. CONFIRMED: stocks.close vs current_price: 508 متطابقين، 732 مختلفين. close محفوظ (1205/1240)، بس الـ 732 مختلفين بـ يثبتوا إن `close` عمود متيم (orphan) مش بـ يتحدث يومياً. **الفرق current_price vs close مش bug — كل عمود ليها معنى مختلف (current=intraday live, close=session close).** لكن المشكلة الحقيقية: مفيش production writer بيحدث `close` بانتظام.
+- B7. CONFIRMED: stock_daily_prices.close vs close_price — الاتنين موجودين بـ نفس القيمة في الـ rows الحديثة، بس 20,972 صف (21%) عندهم close=NULL و close_price NOT NULL. ده من daily_price_updater.py (يكتب close_price بس مش close) + sync.py CANDLE_UPSERT (يكتب الاتنين). Schema مكرر.
+- B8. CONFIRMED: price_history.db: 1,317,942 صف، US=1,309,962 (99.4%) + EGX=7,980 (0.6%). 12 sources مختلفة، canonical: yahoo_clean (1M) + egx_investment_migration (206k). أحدث تاريخ 2026-10-11.
+- B9. CONFIRMED: intraday_prices table EXISTS (intraday.db) لكن 0 صفوف._created by vps-service/core/migrator.py:628. لا يوجد production INSERT. live_price.py بيقرأ منه → silent failure.
+- B10. CONFIRMED: stock_intraday = 0 صفوف في sandbox (cron #7 ما اشتغلش). crypto_intraday = 632k صف (24/7). commodity_intraday = 75k صف.
+- B11. CONFIRMED: radar_signal_tracking = 1102 صف. WRITERS:
+  * radar-signal-tracker.ts:152 (Node): 910 صف بـ signal_types عادية (pre_surge=382, quiet_accumulation_strong=523, explosive_surge=5) — path مكتوب
+  * scripts/maker_radar.py:723 (Python): 192 صف بـ signal_types بادئة A_/B_/D_ (A_pre_surge=123, B_quiet_accumulation_strong=68, D_explosive_surge=1)
+  * ATTENTION: signal_type "early_break" و "quiet_accumulation_weak" موجودة في VALID_SIGNAL_TYPES بتاعة TS بس 0 صفوف ليهم في الـ DB.
+
+═══════════════════════════════════════════════════════════════════════
+ TRACK C — Prediction Engine — 9 CONFIRMED findings
+═══════════════════════════════════════════════════════════════════════
+- C1. CONFIRMED — daily_predictor.py:3372: الكاتب الكنوني عبر `tracker.record_prediction()` في vps-service/analyzers/prediction_tracker.py:377. بيمر بـ 3 guards: geometry guard (L454), data-quality W1-W9 (L480), PREDICTION-WRITE-GUARD (L508).
+- C2. CONFIRMED — daily_closer.py: UPDATE predictions في 4 مواقع (L2300 partial_exit_price, L3027 outcome + exit, L3115 data_quality='toxic', L3153 data_quality='toxic'). HELI-INVESTIGATION-GUARD (L3015-3024) بـ downgrade TARGET_HIT→closed_win لو highest_price < target.
+- C3. CONFIRMED — telegram_target_hit_tracker.py L927-957: UPDATE فقط لـ status='TARGET_HIT' + exit_price + actual_return + notes. L959-975: INSERT path اتشال (explicit comment: "تخطّي INSERT الصفقة المُ fabrication (Rule 27)"). **الـ worklog القديم (L65228) بيقول "INSERT INTO predictions (L968)" — ده OUTDATED**. الكود الحالي Rule 27-compliant.
+- C4. CONFIRMED — verify_radar_signals.py:174: UPDATE radar_signal_tracking SET outcome_7d/14d/30d + status (verified_win/loss/neutral) + verified_at. لا يكتب entry_price. **NOTE**: status distribution في الـ DB بـ يوضح إن الـ script ده ما اشتغلش بنجاح (مفيش verified_win/loss/neutral في الـ 1102 صف — بس pending + stale_data). يعني إما الـ cron بتاعه مش شغال، أو الـ API endpoint اللي بيتستدعى في cron #14 بـ logic مختلف.
+- C5. CONFIRMED — radar_accuracy_report.py:307-319 (--write flag): UPDATE outcome_7d/14d/30d + status = CASE WHEN outcome_30d > 0.5 THEN 'verified_win' WHEN < -0.5 THEN 'verified_loss' ELSE 'verified_neutral'. **لا يكتب entry_price**. الإشاعة في التاسك بـ تقول "overwrites entry_price" — **FALSE**.
+- C6. CONFIRMED — targets-validator.ts VIOLATION Rule 27 + 72 + 73: DEFAULT_TARGET_PCT=0.07 (L50), DEFAULT_TARGET2_PCT=0.14 (L51), DEFAULT_STOP_PCT=0.05 (L52). لما target1/2/3 أو stop_loss null أو invalid geometry → بـ fabricates entry_price × (1±%). RR fallback = 1.5 لو calculation فشل.
+- C7. CONFIRMED — targets-validator.ts REACHES USER: imported في 7 API routes نشطة:
+  * src/app/api/predictions/route.ts:12 (189, 422)
+  * src/app/api/predictions/daily-picks/route.ts:16 (69)
+  * src/app/api/maker-radar/net-picks/route.ts:3 (126)
+  * src/app/api/maker-radar/stock/route.ts:10 (172)
+  * src/app/api/ads/successful-trades/route.ts:3 (47)
+  * src/app/api/mobile/predictions/route.ts:9 (34, 117)
+  * + 1 في archive.
+- C8. CONFIRMED — MakerRadarTab.tsx resolveLevels (L2155): comment في L2152 بيقول "لا fabrication" بس الكود بـ fabricates في path 3 (L2190-2198): mathStop = current × (1 - max(2.5%, rangePct×0.75)/100), mathTarget = current + 2×(current - mathStop). Default rangePct=5.0. comment صريح في L2191: "Task DEEP-DIRECTIVE: ممنوع إرجاع source='none' — كل سهم لازم يكون له مستويات" — ده fabrication إلزامي واضح. خرق Rule 27.
+- C9. CONFIRMED — sniper/track/route.ts:50 (TS writer): DISABLED. Returns 410 Gone (L25-32). الـ INSERT INTO predictions الأصلي محفوظ كـ comment (L34-106). Rule 35-compliant. **Fixed**.
+
+═══════════════════════════════════════════════════════════════════════
+ TRACK D — UI + Radar + Flutter — 7 CONFIRMED findings
+═══════════════════════════════════════════════════════════════════════
+- D1. CONFIRMED — 16+ API routes بـ تقرأ predictions مباشرة (better-sqlite3 — Rule 20 violation flagged):
+  predictions/{route,daily-picks,expert-consensus,performance,dual-track/list,dual-track/stats,backtest-list,active-management}, maker-radar/{net-picks,stock,timeline}, stocks/[ticker]/publish-data, lib/{flutter-sqlite-fallback,new-db,schedulers/radar-alerts,unified-stock-data}. أغلبهم documented كـ "legacy passthrough" في worklog L63784.
+- D2. CONFIRMED — aiPrediction readers في Python: vps-service/api/ai_predictions_routes.py (25+ queries) + vps-service/api/stock_analysis_routes.py:395. الـ Node ما بيقرأ من aiPrediction بـ SQL مباشر إلا في scripts/verify-migration.ts (script مش API).
+- D3. CONFIRMED — targets-validator.ts output بيوصل المستخدم: كل predictions API routes بـ تـ apply validation قبل الـ return. UI بـ يعرض الـ fabricated target1/2/3/stop. الـ adjusted=true flag موجود بس الـ components بـ تـ propagate القيمة المصطنعة بدون check صريح على الـ `adjusted` flag.
+- D4. CONFIRMED — MakerRadarTab.tsx resolveLevels output بيوصل المستخدم: memoized في levelsByTicker (L2222) وبيستخدم في الـ render + sortValue. الـ source field ('ai'|'technical'|'math'|'none') بـ يـ propagate للـ UI.
+- D5. CONFIRMED — radar-signal-tracker.ts:152: INSERT INTO radar_signal_tracking من Node (Rule 20 violation — Node يكتب في DB). بيـ create schema في L62-85 + dedup على (ticker, signal_date, signal_type). INSERTs 910 rows. Rule 20 بـ تقول NO SQLite writes من Node بس الاستثناء المعلن: "auth + subscription logic". radar tracking مش مستثنى.
+- D6. CONFIRMED — radar-signal-tracker.ts CREATE TABLE (L62-84) بـ يخلق 14 عمود بس. الـ schema الحقيقي في الـ DB عنده 20 عمود (الـ 6 زيادة: data_date, data_quality, staleness_days, price_source, live_price, daily_price — كلها من maker_radar.py). الـ CREATE TABLE IF NOT EXISTS في الـ TS ما بـ يـ alter الـ schema لو موجودة — فلو الـ DB اتعملها migration يدوي، الـ TS بـ skip.
+- D7. UNRESOLVED — Flutter app (/tmp/flutter_investment_App) غير متاح في الساندبوكس. اعتمدت على Flutter audit السابق في worklog (commit 4fd7530). آخر تحليل: Flutter بـ يقرأ من API routes، مش من DBs مباشرة. الـ Maestro section بـ يعرض fallback values وهمية (اتصلحت في FLUTTER-COMPAT-AUDIT).
+
+═══════════════════════════════════════════════════════════════════════
+ CROSS-MARKET COMPARISON (الأسواق المتأثرة)
+═══════════════════════════════════════════════════════════════════════
+| السوق | V40.2 predictions | aiPrediction (legacy) | Maker Radar cron | مشاكل مؤكدة |
+|-------|-------|-------|-------|-------|
+| EGX   | 1474 ✅ | 1713 (stale) | كل 5 دقائق | close orphan + daily_price_updater يكتب close بس |
+| US    | 76 ✅ | — (مفيش) | كل 5 دقائق | تغطية V40.2 قليلة (76 بس) |
+| CRYPTO| 1 ✅ | — | كل 5 دقائق 24/7 | 1 توقع بس — شبه معدوم |
+| TADAWUL | — (مفيش) | — (مفيش) | كل 5 دقائق | **مفيش توقعات نهائياً مع إن cron شغّال!** |
+| KSE   | — (مفيش) | 554 (stale) | كل 5 دقائق | V40.2 ما بـ يغطي KSE — الـ aiPrediction backfill قديم |
+| QSE   | — (مفيش) | 346 (stale) | كل 5 دقائق | نفس KSE |
+| GOLD  | — | — | كل 5 دقائق 24/7 | مفيش توقعات |
+
+═══════════════════════════════════════════════════════════════════════
+ P0 / P1 / P2 FIX PRIORITIES
+═══════════════════════════════════════════════════════════════════════
+P0 (Critical — بيانات وهمية بتوصل المستخدم):
+1. targets-validator.ts: إزالة DEFAULT_TARGET_PCT=0.07/DEFAULT_STOP_PCT=0.05/DEFAULT_TARGET2_PCT=0.14. return null بدل fabricate. (Rule 27 + 72 + 73 violation).
+2. MakerRadarTab.tsx resolveLevels L2190-2198: إزالة path 3 (Mathematical Volatility Model). return source='none' بدل fabricate. الـ comment "ممنوع إرجاع source='none'" مخالف لـ Rule 27.
+3. V40.2 master_score=50 placeholder leak للـ HOLD signals (4 active rows) — الـ PREDICTION-WRITE-GUARD لازم يـ reject HOLD بـ master_score=50.
+
+P1 (High — schema/architecture violations):
+4. stocks.close orphan column: لازم يتحدّث من daily_price_updater.py أو sync.py DEST_UPSERT (إضافة close = excluded.current_price في UPSERT) أو يتشال تماماً.
+5. stock_daily_prices.close vs close_price: توحيد على عمود واحد. 20,972 صف فيهم تباين — migration script موحّد.
+6. intraday_prices table (0 rows): إما تتشال (live_price.py بـ يـ fallback صحيح) أو يتعملها writer (intraday_storage.py لازم يكتب فيها بدل stock_intraday).
+7. radar-signal-tracker.ts:152 INSERT: تحويل لـ Python endpoint (Rule 20 violation).
+8. 16+ API routes بتقرأ predictions مباشرة من Node: تحويل لـ Python proxy (Rule 20).
+
+P2 (Medium — operational):
+9. aiPrediction table (2613 rows, signal_source_id=NULL): تقرير هل لسه needed؟ لو لأ، تتشال بعد migration لـ V40.2.
+10. V40.2 ما بيغطّيش TADAWUL — تأكيد إن cron شغّال بس الـ predictor ما بـ يـ generate picks (مفيش data source أو kill filters بـ ترفض الكل).
+11. verify_radar_signals.py و radar_accuracy_report.py --write: التأكد إن الـ verify بـ يـ update status فعلاً (الـ DB عندها بس pending + stale_data).
+12. HELI-INVESTIGATION-GUARD في daily_closer.py (L3015-3024): توثيق واختبار — مش واضح هل اشتغل قبل كده.
+
+═══════════════════════════════════════════════════════════════════════
+ ACCEPTANCE + REGRESSION TESTS
+═══════════════════════════════════════════════════════════════════════
+AT-1 (targets-validator): `grep -n "DEFAULT_TARGET_PCT\|DEFAULT_STOP_PCT\|DEFAULT_TARGET2_PCT" src/lib/targets-validator.ts` لازم 0 matches بعد الإصلاح.
+AT-2 (resolveLevels): `grep -n "mathStop\|mathTarget\|rangePct" src/modules/predictions/components/MakerRadarTab.tsx` لازم 0 matches.
+AT-3 (stocks.close writer): `grep -nE "UPDATE stocks SET[^;]{0,200}close\s*=" vps-service/ data_engine/ -r --include="*.py"` لازم 1+ production writer (مش بس test script).
+AT-4 (radar-signal-tracker TS writer): `grep -n "INSERT INTO radar_signal_tracking" src/modules/radar/lib/radar-signal-tracker.ts` لازم 0 matches بعد التحويل لـ Python.
+AT-5 (intraday_prices): `node -e "const db=require('better-sqlite3')('db/intraday.db',{readonly:true}); console.log(db.prepare('SELECT COUNT(*) as n FROM intraday_prices').get())"` — لازم 0 (لو اتقرر إزالة الجدول) أو >0 (لو اتضاف writer).
+AT-6 (predictions market coverage): `node -e "const db=require('better-sqlite3')('db/predictions.db',{readonly:true}); console.log(db.prepare('SELECT market, COUNT(*) FROM predictions GROUP BY market').all())"` — لازم يشمل كل الأسواق بعد تشغيل الـ V40.2 لهم.
+AT-7 (master_score=50 HOLD leak): `SELECT COUNT(*) FROM predictions WHERE signal IN ('HOLD','WAIT') AND master_score = 50 AND status = 'active'` — لازم 0.
+AT-8 (stock_daily_prices.close NULL with close_price NOT NULL): `SELECT COUNT(*) FROM stock_daily_prices WHERE close IS NULL AND close_price IS NOT NULL` — لازم 0 بعد migration.
+AT-9 (radar_signal_tracking verified_* status): `SELECT status, COUNT(*) FROM radar_signal_tracking GROUP BY status` — لازم يبقى فيه verified_win/loss/neutral بعد تشغيل verify.
+
+MANAGER-FULL-AUDIT complete. 35 CONFIRMED + 2 UNRESOLVED + 0 PROBABLE.
