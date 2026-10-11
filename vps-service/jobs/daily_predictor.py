@@ -721,8 +721,15 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         except Exception:
             _regime_cfg = None
 
+    # DEV-01 (2026-10-12 — PRODUCTION-AUDIT / DUAL-TRACK):
+    # delete_old_v40_predictions() is DISABLED — it deletes legit V40.2 predictions.
+    # The function itself has an early-return guard, so calling it is safe (no-op),
+    # but we skip the call entirely for clarity + to avoid the print noise.
+    # Per Rule 35 (ENGINE-UNIFY): V40.2 predictions must NEVER be deleted.
     if not dry_run and not keep_old:
-        delete_old_v40_predictions(start_date, end_date)
+        # OLD: delete_old_v40_predictions(start_date, end_date)
+        # NEW: no-op (function is disabled internally too — defense in depth)
+        print("[DEV-01] delete_old_v40_predictions() call skipped — function is DISABLED (Rule 35)", flush=True)
     elif keep_old:
         print("ℹ️  --keep-old: skipping deletion of old V40 predictions", flush=True)
 

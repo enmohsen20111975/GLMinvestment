@@ -514,6 +514,9 @@ class PredictionTracker:
                 master_score=master_score,
                 notes=notes,
                 source='record_prediction',
+                entry_price=entry_price,      # DEV-03: price validation
+                target_price=target_price,    # DEV-03: price validation
+                stop_loss=stop_loss,          # DEV-03: price validation
             )
             if not _ok:
                 print(

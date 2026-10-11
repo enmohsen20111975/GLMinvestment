@@ -68,6 +68,9 @@ def validate_prediction_evidence(
     master_score,
     notes: str = '',
     source: str = 'unknown',
+    entry_price: float = None,
+    target_price: float = None,
+    stop_loss: float = None,
 ) -> Tuple[bool, str]:
     """
     Validate that a prediction meets Rule 35 + Rule 21 + Rule 27 before INSERT.
@@ -79,6 +82,9 @@ def validate_prediction_evidence(
         master_score: computed master_score (must not be 50.0 placeholder)
         notes: prediction notes (may contain engine=v40_2 tag per Rule 35)
         source: caller identifier for logging
+        entry_price: entry price (must be > 0 — DEV-03)
+        target_price: target price (must be > 0 — DEV-03)
+        stop_loss: stop loss price (must be > 0 — DEV-03)
 
     Returns:
         (is_valid, reason) — if is_valid=False, reason explains the violation.
@@ -95,6 +101,58 @@ def validate_prediction_evidence(
         ev = int(evidence_count or 0)
     except (TypeError, ValueError):
         ev = 0
+
+    # ─── DEV-03 (2026-10-12 — DUAL-TRACK): Price validation ───────────
+    # All prices must be strictly positive. Zero or negative = invalid data
+    # (stock not trading, delisted, or data corruption).
+    if entry_price is not None and float(entry_price) <= 0:
+        return False, (
+            f'DEV-03 violation: entry_price must be > 0, got {entry_price} '
+            f'(source={source}) — stock may be delisted or price=0'
+        )
+    if target_price is not None and float(target_price) <= 0:
+        return False, (
+            f'DEV-03 violation: target_price must be > 0, got {target_price} '
+            f'(source={source})'
+        )
+    if stop_loss is not None and float(stop_loss) <= 0:
+        return False, (
+            f'DEV-03 violation: stop_loss must be > 0, got {stop_loss} '
+            f'(source={source})'
+        )
+
+    # ─── DEV-03 (continued): Direction validation ─────────────────────
+    # BUY: target > entry, stop < entry
+    # SELL: target < entry, stop > entry
+    if (entry_price is not None and target_price is not None
+            and float(entry_price) > 0 and float(target_price) > 0):
+        if sig in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
+            if float(target_price) <= float(entry_price):
+                return False, (
+                    f'DEV-03 violation: {sig} requires target_price > entry_price, '
+                    f'got target={target_price} <= entry={entry_price} (source={source})'
+                )
+        elif sig in ('SELL', 'STRONG_SELL', 'REDUCE'):
+            if float(target_price) >= float(entry_price):
+                return False, (
+                    f'DEV-03 violation: {sig} requires target_price < entry_price, '
+                    f'got target={target_price} >= entry={entry_price} (source={source})'
+                )
+
+    if (entry_price is not None and stop_loss is not None
+            and float(entry_price) > 0 and float(stop_loss) > 0):
+        if sig in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
+            if float(stop_loss) >= float(entry_price):
+                return False, (
+                    f'DEV-03 violation: {sig} requires stop_loss < entry_price, '
+                    f'got stop={stop_loss} >= entry={entry_price} (source={source})'
+                )
+        elif sig in ('SELL', 'STRONG_SELL', 'REDUCE'):
+            if float(stop_loss) <= float(entry_price):
+                return False, (
+                    f'DEV-03 violation: {sig} requires stop_loss > entry_price, '
+                    f'got stop={stop_loss} <= entry={entry_price} (source={source})'
+                )
 
     # ─── Rule 35: engine_source provenance check ─────────────────────────
     engine_proven = False
