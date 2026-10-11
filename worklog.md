@@ -74245,3 +74245,145 @@ AT-8 (stock_daily_prices.close NULL with close_price NOT NULL): `SELECT COUNT(*)
 AT-9 (radar_signal_tracking verified_* status): `SELECT status, COUNT(*) FROM radar_signal_tracking GROUP BY status` — لازم يبقى فيه verified_win/loss/neutral بعد تشغيل verify.
 
 MANAGER-FULL-AUDIT complete. 35 CONFIRMED + 2 UNRESOLVED + 0 PROBABLE.
+
+---
+Task ID: MANAGER-FULL-AUDIT-FINAL
+Agent: المدير العام (Z.ai Code) — فريق المدير
+Task: فحص شامل متعدد الأسواق + تثبيت الأدلة + خطة إصلاح
+
+## المرحلة 0: تثبيت الأدلة (مكتملة ✅)
+
+- Code commit: 5d28714a7af6e1f90454517b59ea533114141462 (main, matches remote ✅)
+- DBs من commit 3ef131f2 — كلها مستخرجة + integrity_check = ok
+- 8 قواعد بيانات سليمة:
+  * stocks.db: 28.6MB, 68 tables, stocks=1240, stock_daily_prices=100,619, close>0=1205
+  * predictions.db: 267.5MB, 46 tables, predictions=1551, aiPrediction=2613, latest=2026-10-11, target_price NULL=0
+  * price_history.db: 329.7MB, 1,317,942 rows, MAX(date)=2026-10-11
+  * intraday.db: 427.5MB, 6 tables
+  * historical.db: 18.9MB, 3 tables
+  * crypto.db: 5 tables
+  * news.db: 4 tables
+  * auth.db: 23 tables
+
+## المسار A: محرك البيانات
+
+### تدفق البيانات لكل سوق:
+```
+TradingView/Egksco/Yahoo → data_engine.db → sync.py (DEST_UPSERT) → stocks.db.stocks
+  * DEST_UPSERT: يحدّث current_price بس (مش close) ← CONFIRMED
+  * CANDLE_UPSERT: يحدّث close + close_price في stock_daily_prices ← CONFIRMED
+CoinGecko → data_engine.db.crypto_prices → crypto.db
+intraday_storage.py → intraday.db.{stock,crypto,commodity}_intraday
+live_price.py → يقرأ من intraday_prices (0 rows!) → fallback لـ stocks.db.stocks.current_price
+```
+
+### Cron schedule (من crontab.txt):
+- TradingView scraper: كل 5 دقايق (8-12) أيام الأحد-الخميس
+- daily_predictor: 3:00 صباحاً + 1:30 مساءً
+- daily_closer: 2:00 مساءً
+- maker_radar: كل 5 دقايق (8-14) لـ EGX/TADAWUL/KSE/QSE/US + كل 5 دقايق 24/7 لـ CRYPTO/GOLD
+- US scraper: 10:00 مساءً (الإثنين-الجمعة)
+- multi_market_scraper: كل ساعة (9-22) يومياً
+
+### مشاكل مؤكدة:
+1. stocks.close عمود orphan — لا production writer يحدّثه (CONFIRMED)
+2. intraday_prices = 0 صفوف — live_price.py بـ fallback دائماً (CONFIRMED)
+3. stock_daily_prices فيها close + close_price (مكرر) — 20,972 صف فيها تباين (CONFIRMED)
+
+## المسار B: قواعد البيانات
+
+### predictions table (1551 صف):
+- Writer: daily_predictor.py::record_prediction() (canonical)
+- Reader: 16+ API routes في src/app/api/ (better-sqlite3 مباشر — Rule 20 violation)
+- target_price NULL = 0 ✅ (كلهم عندهم targets)
+- status: EXPIRED=958, TARGET_HIT=506, STOPPED=83, active=4
+
+### aiPrediction table (2613 صف):
+- Writer: غير معروف بدقة (likely daily_predictor.py أو backfill script)
+- Reader: مفيش Node.js routes بـ تقرأ منه مباشرة
+- signal_source_id = NULL لكل الصفوف (no provenance)
+- العلاقة مع predictions: غير واضحة (ممكن يكون snapshot تاريخي)
+
+### price_history.db:
+- MAX(date) = 2026-10-11 ✅ (طازج)
+- 1,317,942 صف
+- Readers: chart/[ticker]/route.ts, sparkline/route.ts, maestro.ts, market-intelligence/route.ts
+
+## المسار C: محرك التوقعات
+
+### دورة حياة التوقع:
+1. daily_predictor.py::record_prediction() → predictions table (canonical writer)
+2. daily_closer.py → يحدث status (TARGET_HIT/STOPPED/EXPIRED)
+3. telegram_target_hit_tracker.py → UPDATE بس (مش INSERT — تم تصحيح الادعاء السابق)
+4. verify_radar_signals.py → يقرأ من price_history.db + يحدث outcome_7d/14d/30d
+5. radar_accuracy_report.py --write → يحدث outcome + status (مش entry_price — تم تصحيح الادعاء السابق)
+
+### مشاكل مؤكدة:
+1. targets-validator.ts بـ يفبرك targets (DEFAULT_TARGET_PCT=0.07, DEFAULT_STOP_PCT=0.05) — CONFIRMED P0
+2. MakerRadarTab.tsx resolveLevels path 3 بـ يفبرك (price×0.975, price×1.05) — CONFIRMED P0
+3. 4 active predictions بـ master_score=50 placeholder — CONFIRMED P0
+4. radar-signal-tracker.ts Node.js بـ يكتب في radar_signal_tracking — CONFIRMED P1 (Rule 20)
+
+## المسار D: الواجهات
+
+### targets-validator.ts → المستخدم:
+```
+DB (predictions — target_price/stop_loss)
+  → applyValidatedTargets() في 7 API routes
+  → validateTargets() — لو null → entry×1.07 (target) / entry×0.95 (stop) / 1.5 (RR)
+  → API response: { target1: 133.38, stop_loss: 118.42, risk_reward: 1.5 }
+  → المستخدم بيشوف توصية كاملة بأهداف مفبركة
+```
+Routes متأثرة: predictions/route.ts, daily-picks/route.ts, mobile/predictions/route.ts, maker-radar/net-picks/route.ts, maker-radar/stock/route.ts, ads/successful-trades/route.ts
+
+### MakerRadarTab.tsx → المستخدم:
+```
+resolveLevels(stock, predictionForTicker)
+  → لو مفيش AI prediction + مفيش DB support/resistance
+  → DEEP-DIRECTIVE (line 2191): "ممنوع إرجاع source='none'"
+  → mathStop = current × 0.975, mathTarget = current × 1.05
+  → levelsByTicker → table columns → المستخدم بيشوف مستويات في جدول الرادار
+```
+
+### نتائج سابقة ثبت خطؤها:
+1. "telegram_target_hit_tracker.py بـ يعمل INSERT" — ❌ غلط (الكود بيـ skip بصراحة)
+2. "radar_accuracy_report.py --write overwrites entry_price" — ❌ غلط (بيكتب outcome/status بس)
+3. "current_price ≠ close = bug" — ❌ غلط (كل عمود له معنى مختلف)
+
+## خطة الإصلاح (مرتبة بالأولوية)
+
+### 🔴 P0 (بيانات وهمية بتوصل المستخدم):
+1. targets-validator.ts:50-52 — إزالة DEFAULT_TARGET_PCT/STOP_PCT/TARGET2_PCT → return null
+2. MakerRadarTab.tsx:2190-2198 — إزالة path 3 (math model) → source='none'
+3. predictions.db — تحديث 4 active HOLD predictions بـ master_score=50 → NULL
+
+### 🟠 P1 (schema/architecture):
+4. stocks.close — إضافة close = excluded.current_price لـ DEST_UPSERT أو حذف العمود
+5. stock_daily_prices — توحيد على close_price فقط + migration لـ 20,972 صف
+6. intraday_prices — حذف الجدول (live_price.py بـ fallback صحيح) أو إضافة writer
+7. radar-signal-tracker.ts — تحويل INSERT لـ Python endpoint
+8. V40.2 لـ TADAWUL — فحص ليه ما بـ يولّد picks
+
+### 🟡 P2 (operational):
+9. 16+ API routes — تحويل لـ Python proxy (Rule 20)
+10. aiPrediction — تحديد هل لسه needed
+11. verify_radar_signals.py — تأكيد التشغيل الفعلي
+12. radar_signal_tracking — توحيد schemas (Node vs Python)
+
+## اختبارات القبول (8 اختبارات):
+- AT-1: grep "DEFAULT_TARGET_PCT" src/lib/targets-validator.ts → 0 matches
+- AT-2: grep "mathStop|mathTarget" MakerRadarTab.tsx → 0 matches
+- AT-3: SELECT COUNT(*) FROM predictions WHERE signal='HOLD' AND master_score=50 AND status='active' → 0
+- AT-4: SELECT COUNT(*) FROM stock_daily_prices WHERE close IS NULL AND close_price IS NOT NULL → 0
+- AT-5: SELECT status, COUNT(*) FROM radar_signal_tracking GROUP BY status → يشمل verified_*
+- AT-6: SELECT market, COUNT(*) FROM predictions GROUP BY market → يشمل TADAWUL
+- AT-7: grep "INSERT INTO radar_signal_tracking" radar-signal-tracker.ts → 0 matches
+- AT-8: grep -rn "DEFAULT_TARGET_PCT" src/ → 0 matches
+
+Stage Summary:
+- ✅ المرحلة 0 مكتملة: كل DBs سليمة + بيانات حقيقية (مش قديمة)
+- ✅ 4 مسارات تدقيق مكتملة (Data Engine + DB Map + Predictions + UI)
+- ✅ 35 CONFIRMED + 2 UNRESOLVED
+- ✅ 3 P0 (بيانات وهمية) + 5 P1 (schema) + 4 P2 (operational)
+- ✅ 3 نتائج سابقة ثبت خطؤها + 8 اختبارات قبول
+- ⏳ منتظر موافقة سيدي على بدء الإصلاح
