@@ -126,8 +126,12 @@ def verify_trigger(db_path: str = DEFAULT_DB_PATH) -> bool:
             conn.commit()
             # If we get here → trigger did NOT fire. BAD.
             # Clean up the bad row (shouldn't be there if trigger is healthy)
+            # DEV-14 (2026-10-13 — CI cleanup): use UPDATE→ARCHIVED instead of
+            # DELETE so check_no_hard_delete.py CI gate stays clean.
             cur.execute(
-                "DELETE FROM predictions WHERE ticker='__DEV07_TEST__'"
+                "UPDATE predictions SET status='ARCHIVED', "
+                "notes=COALESCE(notes,'') || ' | DEV-07-VERIFY-TEST' "
+                "WHERE ticker='__DEV07_TEST__'"
             )
             conn.commit()
             conn.close()

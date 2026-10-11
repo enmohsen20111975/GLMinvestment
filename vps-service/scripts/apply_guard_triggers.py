@@ -299,8 +299,12 @@ def verify_triggers(db_path: str) -> bool:
                 )
                 conn.commit()
                 # If we get here → trigger did NOT fire. BAD.
+                # DEV-14 (2026-10-13 — CI cleanup): use UPDATE→ARCHIVED instead of
+                # DELETE so check_no_hard_delete.py CI gate stays clean.
                 conn.execute(
-                    "DELETE FROM predictions WHERE ticker='__DEV13_TEST__'"
+                    "UPDATE predictions SET status='ARCHIVED', "
+                    "notes=COALESCE(notes,'') || ' | DEV-13-VERIFY-TEST' "
+                    "WHERE ticker='__DEV13_TEST__'"
                 )
                 conn.commit()
                 log("  ✗ trg_prevent_invalid_prices_insert BYPASS: bad INSERT succeeded")
@@ -330,9 +334,11 @@ def verify_triggers(db_path: str) -> bool:
                     )
                     conn.commit()
                     log("  ✗ trg_prevent_invalid_prices_update BYPASS: bad UPDATE succeeded")
-                    # Cleanup
+                    # Cleanup — DEV-14: UPDATE→ARCHIVED instead of DELETE.
                     conn.execute(
-                        "DELETE FROM predictions WHERE ticker='__DEV13_TEST__'"
+                        "UPDATE predictions SET status='ARCHIVED', "
+                        "notes=COALESCE(notes,'') || ' | DEV-13-VERIFY-TEST' "
+                        "WHERE ticker='__DEV13_TEST__'"
                     )
                     conn.commit()
                     return False
@@ -342,10 +348,12 @@ def verify_triggers(db_path: str) -> bool:
                     else:
                         log(f"  ? trg_prevent_invalid_prices_update fired with unexpected message: {e}")
             finally:
-                # Cleanup the test row
+                # Cleanup the test row — DEV-14: UPDATE→ARCHIVED instead of DELETE.
                 try:
                     conn.execute(
-                        "DELETE FROM predictions WHERE ticker='__DEV13_TEST__'"
+                        "UPDATE predictions SET status='ARCHIVED', "
+                        "notes=COALESCE(notes,'') || ' | DEV-13-VERIFY-TEST' "
+                        "WHERE ticker='__DEV13_TEST__' AND status != 'ARCHIVED'"
                     )
                     conn.commit()
                 except Exception:
@@ -363,8 +371,11 @@ def verify_triggers(db_path: str) -> bool:
                 )
                 conn.commit()
                 # If we get here → trigger did NOT fire. BAD.
+                # DEV-14: UPDATE→ARCHIVED instead of DELETE.
                 conn.execute(
-                    "DELETE FROM predictions WHERE ticker='__DEV13_TEST__'"
+                    "UPDATE predictions SET status='ARCHIVED', "
+                    "notes=COALESCE(notes,'') || ' | DEV-13-VERIFY-TEST' "
+                    "WHERE ticker='__DEV13_TEST__'"
                 )
                 conn.commit()
                 log("  ✗ trg_prevent_wrong_direction BYPASS: bad INSERT succeeded")
@@ -377,10 +388,12 @@ def verify_triggers(db_path: str) -> bool:
 
             return True
         finally:
-            # Final cleanup
+            # Final cleanup — DEV-14: UPDATE→ARCHIVED instead of DELETE.
             try:
                 conn.execute(
-                    "DELETE FROM predictions WHERE ticker='__DEV13_TEST__'"
+                    "UPDATE predictions SET status='ARCHIVED', "
+                    "notes=COALESCE(notes,'') || ' | DEV-13-VERIFY-TEST' "
+                    "WHERE ticker='__DEV13_TEST__' AND status != 'ARCHIVED'"
                 )
                 conn.commit()
             except Exception:
