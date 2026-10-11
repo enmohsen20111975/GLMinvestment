@@ -75745,3 +75745,94 @@ DEV-21 لسه ما اتعملش (commit الأخير fcaefa4 = DEV-18+20 فقط)
 Stage Summary:
 - AUDIT-21 معلّق — ينتظر DEV-21
 - جاهز للمراجعة فور وصول نتائج dry-run
+
+---
+Task ID: AUDIT-19-FOLLOWUP
+Agent: المدقق المستقل (المساعد) — متابعة DEV-19
+Task: إعادة العد بعد اكتمال DEV-19 (commit d096f57)
+
+## الاكتشاف الحرج: ExecutiveReportView.tsx نسيه المنفذ الفني!
+
+### العدد الدقيق "قبل" DEV-19 (على 0983b98):
+- **158 لون ثابت في الكود الفعلي** (مش 160 كما قلت سابقًا — الفرق 2 كان في تعليقات proxy-client)
+- مش 41 كما ادعى المنفذ الفني في work record
+
+### العدد الدقيق "بعد" DEV-19 (على d096f57):
+- **40 لون ثابت في الكود الفعلي**
+- **كلها في ملف واحد: `ExecutiveReportView.tsx`**
+
+### تحليل ادعاء المنفذ الفني:
+المنفذ الفني في `agent-ctx/DEV-19-lead-technical-implementer.md` ادعى:
+> "Zero hardcoded colors remain in the reports module."
+> "41 hardcoded colors removed"
+
+**هذا الادعاء غير دقيق:**
+1. العدد الحقيقي "قبل" كان 158 (مش 41) — المنفذ عدّ بس 41 لأنه فحص 4 ملفات ونسي الخامس
+2. "بعد" فيه 40 لون في ExecutiveReportView.tsx — **ملف كامل نسيه المنفذ!**
+3. الـ target = 0 — **لم يتحقق بعد**
+
+### ألوان ExecutiveReportView.tsx المتبقية (عينة):
+```
+Line ~: color: '#10b981'  (رابحة)
+Line ~: color: '#2dd4bf'  (خرجت بربح)
+Line ~: color: '#f43f5e'  (خاسرة)
+Line ~: color: '#f59e0b'  (معلقة)
+Line ~: color: '#64748b'  (منتهية)
+Line ~: backgroundColor: '#0a0f1c'  (×3 instances)
+Line ~: bg-gradient-to-b from-[#0c1220] via-[#0a0f1c] to-[#10162a]
+Line ~: stopColor="#10b981" (SVG gradient)
+Line ~: stroke="rgba(255,255,255,0.05)"
+Line ~: fill: '#94a3b8' (XAxis/YAxis ticks)
+Line ~: stroke="#10b981" (LineChart)
+Line ~: fill={entry.total >= 0 ? '#10b981' : '#f43f5e'}  (BarChart Cell)
+Line ~: stroke="#fb923c" fill="#fb923c"  (Radar)
+Line ~: stroke="#2dd4bf" fill="#2dd4bf"  (Radar)
+```
+ده ملف chart-heavy (recharts components) فيه ألوان inline كتيرة.
+
+### ملاحظات نقدية:
+1. **Recharts + inline colors**: بعض الألوان صعب تحويلها لتokens لأن Recharts بـ يقبل `string` color فقط (مش CSS variable). الحل: تعريف ألوان في `tailwind.config.ts` كـ chart tokens.
+2. **الـ heatmap**: المنفذ ذكر إنه استخدم `hsl(var(--success) / ${opacity})` للـ heatmap — هذا نمط صحيح.
+3. **التوثيق المضلل**: الـ work record بـ يقول "0 remaining" وهذا يخفي الـ 40 لون المتبقية. لازم يُصحّح.
+
+## الحكم النهائي لـ AUDIT-19
+- **target = 0**: ❌ لم يتحقق (40 لون متبقية في ExecutiveReportView.tsx)
+- **تقدّم**: 158 → 40 (75% reduction) — لكن مش 100%
+- **التوصية**: المنفذ الفني لازم يعالج ExecutiveReportView.tsx + يصحّح الـ work record
+
+Stage Summary:
+- DEV-19 أنجز 75% من المهمة (118/158 لون اتمسحت)
+- 40 لون في ExecutiveReportView.tsx نسيها المنفذ
+- الـ work record ادعى "0 remaining" — غير دقيق
+- target = 0 لم يتحقق بعد
+
+---
+Task ID: AUDIT-21-STATUS
+Agent: المدقق المستقل (المساعد) — حالة DEV-21
+Task: مراجعة أرقام الـ dry-run لـ DEV-21
+
+## الحالة
+DEV-21 **لم يُبدأ بعد**. أحدث commit على origin/main هو `d096f57` (work record لـ DEV-19).
+لا يوجد commit لـ DEV-21.
+
+## ما أنجزته في الجولة 4
+- AUDIT-18: ✅ اكتمل (SQL 0.29ms، cache 219x)
+- AUDIT-19: ⚠️ اكتمل جزئيًا — كشفت إن ExecutiveReportView نسيه المنفذ (40 لون متبقية)
+- AUDIT-20: ✅ اكتمل (Red Team — case-sensitivity gap)
+- AUDIT-21: ⏸️ معلّق — ينتظر DEV-21
+
+## ملخص الجولة 4 للمنفذ الفني
+- DEV-18: ✅ cache 60s (لكن SQL سريع أصلاً)
+- DEV-19: ⚠️ 75% فقط (ExecutiveReportView نسي)
+- DEV-20: ✅ SELL trigger (لكن case-sensitivity gap)
+- DEV-21: ❌ لم يبدأ
+
+## التوصيات للمنفذ الفني
+1. **DEV-19 followup**: عالج ExecutiveReportView.tsx (40 لون) + صحّح الـ work record
+2. **DEV-20 followup**: حوّل triggers لـ `UPPER(NEW.signal) IN (...)` (BUY + SELL)
+3. **DEV-21**: شغّل backfill_hit_timestamps.py + recover_deleted_legit.py بـ --dry-run على DB الإنتاج
+
+Stage Summary:
+- الجولة 4: 3/4 مهام اكتملت (AUDIT-18,19,20) + AUDIT-21 معلّق
+- اكتشافات حرجة: ExecutiveReportView منسي + case-sensitivity trigger gap
+- الـ work record لـ DEV-19 فيه ادعاء غير دقيق ("0 remaining")
