@@ -81,6 +81,19 @@ _logger = _logging.getLogger('misc_routes')
 # يستخدم row['column'] / dict(row) يفضل شغّال بدون تعديل.
 from contextlib import contextmanager as _ctxmgr
 
+# DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2): canonical active-prediction filter.
+# Replaces every inline `status != 'INVALID'` (which excluded only one masked
+# status) with the centralized filter that also excludes ARCHIVED + REJECTED_BAD_RR.
+try:
+    from pathlib import Path as _DEV11_PATH
+    _DEV11_VPS_ROOT = _DEV11_PATH(__file__).resolve().parent.parent
+    if str(_DEV11_VPS_ROOT) not in sys.path:
+        sys.path.insert(0, str(_DEV11_VPS_ROOT))
+    from core.query_helpers import ACTIVE_PREDICTION_FILTER as _DEV11_ACTIVE_FILTER
+except ImportError as _dev11_err:
+    _logger.warning(f"core.query_helpers not available: {_dev11_err} — falling back to inline filter")
+    _DEV11_ACTIVE_FILTER = "status NOT IN ('INVALID', 'ARCHIVED', 'REJECTED_BAD_RR')"
+
 
 @_ctxmgr
 def _open_db(db_alias: str, db_path: str, writable: bool = False):
@@ -1895,26 +1908,29 @@ def rebuild_predictions():
         # بتفضل ظاهرة لحد ما تتولد توقعات جديدة تحل محلها.
         # بنمسح جدول predictions بس (سجل الـ backtest التاريخي) لأنه بيتعمله
         # regenerate كامل في كل rebuild.
+        #
+        # DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2):
+        # Masked-wipe disabled. The previous branch did:
+        #     UPDATE predictions SET status='ARCHIVED', notes=... WHERE 1=1
+        # That `WHERE 1=1` is a DELETE in disguise — it archives EVERY row,
+        # including historically-closed outcomes. The manager rejected this
+        # in Round 2 (Round-2-PARTIAL-REJECT).
+        #
+        # Replacement: 422 — reject the POST. Callers must use per-ticker
+        # UPSERT or scripts/restore_archived.py to revert a prior archive.
         deleted_count = 0
         if clear_existing:
-            try:
-                # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
-                with _open_db('predictions', _pred_db, writable=True) as conn:
-                    try:
-                        # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
-                        # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
-                        conn.execute(
-                            "UPDATE predictions SET status='ARCHIVED', "
-                            "notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE 1=1"
-                        )
-                        deleted_count += conn.total_changes
-                    except Exception:
-                        pass
-                    # لا تمسح stored_analyses — الـ UPSERT بيستبدل تلقائياً
-                    # لا تمسح aiPrediction — بتفضل ظاهرة كأرشيف
-                    conn.commit()
-            except Exception:
-                pass
+            return jsonify({
+                'success': False,
+                'error': 'clear_existing is no longer supported',
+                'reason': (
+                    'DEV-11: bulk archive of all predictions (UPDATE ... '
+                    'WHERE 1=1) is disabled — it was a DELETE in disguise '
+                    'and erased historical outcome rows. Use per-ticker '
+                    'UPSERT or scripts/restore_archived.py to revert.'
+                ),
+                'code': 'DEV-11_MASKED_WIPE_DISABLED',
+            }), 422
 
         # 2. تشغيل RealBacktester (الـ backtest engine الموجود)
         # RealBacktester(db_path=stocks.db, history_db_path=price_history.db)
@@ -2111,7 +2127,7 @@ def league_report():
                           AND date(outcome_date) >= date(?)
                           AND date(outcome_date) <= date(?)
                           AND actual_return IS NOT NULL
-                          AND status != 'INVALID'  /* P0-C: exclude placeholder predictions (Rule 27) */
+                          AND """ + _DEV11_ACTIVE_FILTER + """  /* DEV-11: skip placeholders + archived + rejected (Rule 27) */
                     )
                     SELECT ticker, signal, signal_type, prediction_date,
                            entry_price, target_price, stop_loss,
