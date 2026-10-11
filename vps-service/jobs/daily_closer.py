@@ -2900,6 +2900,112 @@ class DailyCloser:
 
         return None  # Still pending — not enough data yet
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # DEV-15 §1 — Price-aware hit-timestamp lookup (replaces datetime.now()).
+    #
+    # The hit timestamp is the date of the first daily candle whose
+    # ``high >= target_price`` (for TARGET_HIT) or ``low <= stop_loss``
+    # (for STOPPED), between ``prediction_date`` and ``close_date``.
+    #
+    # If no price data is available OR no candle crossed the level, fall
+    # back to ``<close_date>T00:00:00+00:00 | DEV-15-FALLBACK`` so the
+    # row is visible in audits and the retroactive backfill can re-derive
+    # the hit date later (or flag the row as fake).
+    #
+    # Args:
+    #     pred_id: prediction row id (for logging only)
+    #     ticker: stock symbol (may have .CA / .SR suffix — stripped)
+    #     current_status: the status being written (used to gate which
+    #         direction we look up)
+    #     target_status: 'TARGET_HIT' or 'STOPPED' — only returns a
+    #         non-None value when ``current_status == target_status``
+    #     close_date: outcome_date (upper bound of the candle search)
+    #     prediction_date: lower bound of the candle search (may be None
+    #         on legacy rows — falls back to close_date)
+    #     level_price: target_price (for TARGET_HIT) or stop_loss (for
+    #         STOPPED). If None or <= 0, fall back to close_date.
+    #
+    # Returns:
+    #     ISO 8601 UTC timestamp string. Format:
+    #         '<candle_date>T00:00:00+00:00' on confirmed hit
+    #         '<close_date>T00:00:00+00:00 | DEV-15-FALLBACK: <reason>' on fallback
+    # ──────────────────────────────────────────────────────────────────────────
+    def _compute_hit_timestamp(
+        self,
+        pred_id: int,
+        ticker: str,
+        current_status: str,
+        target_status: str,
+        close_date: str,
+        prediction_date: Optional[str],
+        level_price: Optional[float],
+    ) -> Optional[str]:
+        # CASE clause only fires when current_status == target_status —
+        # if not, return None (the CASE falls through to "ELSE target_hit_at").
+        if current_status != target_status:
+            return None
+
+        # Normalize inputs
+        if not close_date:
+            return None
+        if level_price is None or level_price <= 0:
+            # No level to compare against — fall back to close_date.
+            return f"{close_date}T00:00:00+00:00 | DEV-15-FALLBACK: level_price missing"
+        if not prediction_date:
+            prediction_date = close_date  # narrow window, but still attempt
+
+        norm_ticker = (ticker or '').upper().strip().split('.')[0]
+        if not norm_ticker:
+            return f"{close_date}T00:00:00+00:00 | DEV-15-FALLBACK: ticker empty"
+
+        try:
+            conn = sqlite3.connect(self.stocks_db, timeout=5.0)
+            try:
+                if target_status == 'TARGET_HIT':
+                    cur = conn.execute(
+                        "SELECT price_date, COALESCE(open, open_price) AS o, "
+                        "COALESCE(high, high_price) AS h "
+                        "FROM stock_daily_prices "
+                        "WHERE ticker = ? AND price_date >= ? AND price_date <= ? "
+                        "  AND COALESCE(high, high_price) IS NOT NULL "
+                        "ORDER BY price_date ASC",
+                        (norm_ticker, prediction_date, close_date),
+                    )
+                    for d, o, h in cur.fetchall():
+                        if h is None or float(h) <= 0:
+                            continue
+                        if float(h) >= float(level_price):
+                            return f"{d}T00:00:00+00:00"
+                elif target_status == 'STOPPED':
+                    cur = conn.execute(
+                        "SELECT price_date, COALESCE(open, open_price) AS o, "
+                        "COALESCE(low, low_price) AS l "
+                        "FROM stock_daily_prices "
+                        "WHERE ticker = ? AND price_date >= ? AND price_date <= ? "
+                        "  AND COALESCE(low, low_price) IS NOT NULL "
+                        "ORDER BY price_date ASC",
+                        (norm_ticker, prediction_date, close_date),
+                    )
+                    for d, o, l in cur.fetchall():
+                        if l is None or float(l) <= 0:
+                            continue
+                        if float(l) <= float(level_price):
+                            return f"{d}T00:00:00+00:00"
+            finally:
+                conn.close()
+        except Exception as _lookup_err:
+            logger.warning(
+                f"[DEV-15] #{pred_id} {ticker}: hit-timestamp lookup failed "
+                f"({_lookup_err}) — falling back to close_date."
+            )
+            return f"{close_date}T00:00:00+00:00 | DEV-15-FALLBACK: lookup error"
+
+        # No candle crossed the level between prediction_date and close_date.
+        # The daily_closer may have used a different data source (intraday.db
+        # or a Yahoo feed). Fall back to close_date with a clear marker so
+        # the backfill script can re-check and (if needed) flag as fake.
+        return f"{close_date}T00:00:00+00:00 | DEV-15-FALLBACK: no candle crossed level"
+
     def _mark_closed(self, pred_id, ticker, status, actual_return, highest, lowest, days, close_date,
                      exit_type='', highest_price_reached=0.0, lowest_price_reached=0.0, holding_days=0, exit_close_price=0.0):
         """Mark a prediction as closed in the database.
@@ -2945,14 +3051,29 @@ class DailyCloser:
         # ──────────────────────────────────────────────────────────────────────
         _split_excluded = False
         _capped_loss = False
+        # DEV-15 §1: fetch prediction_date + target_price too — needed for the
+        # price-aware hit-timestamp lookup (replaces datetime.now(timezone.utc)).
+        _prediction_date_db = None
+        _target_price_db = None
         try:
             _ep_conn = self._conn(self.predictions_db)
             _ep_cur = _ep_conn.cursor()
-            _ep_cur.execute("SELECT entry_price, stop_loss FROM predictions WHERE id = ?", (pred_id,))
+            _ep_cur.execute(
+                "SELECT entry_price, stop_loss, target_price, prediction_date "
+                "FROM predictions WHERE id = ?",
+                (pred_id,),
+            )
             _ep_row = _ep_cur.fetchone()
             _ep_conn.close()
             _entry_price_db = float(_ep_row[0]) if _ep_row and _ep_row[0] else 0.0
             _stop_loss_db = float(_ep_row[1]) if _ep_row and len(_ep_row) > 1 and _ep_row[1] else 0.0
+            if _ep_row and len(_ep_row) > 2 and _ep_row[2]:
+                try:
+                    _target_price_db = float(_ep_row[2])
+                except (TypeError, ValueError):
+                    _target_price_db = None
+            if _ep_row and len(_ep_row) > 3 and _ep_row[3]:
+                _prediction_date_db = str(_ep_row[3])
 
             if _entry_price_db > 0:
                 # ── SPLIT GUARD: drop > 35% from entry without progressive stop ──
@@ -3071,17 +3192,34 @@ class DailyCloser:
                 round(highest_price_reached, 2),
                 round(lowest_price_reached, 2) if lowest_price_reached and lowest_price_reached > 0 else None,
                 status,
-                # target_hit_at + stop_hit_at (2026-10-12 — PRODUCTION-AUDIT / DEV-08):
-                # قبل كده: مفيش توقيت الضربة في أي سجل (NULL في كل الـ 506 TARGET_HIT + 83 STOPPED)
-                # DEV-02 السابق كان بيكتب `datetime.now().isoformat()` (توقيت محلي + وقت تشغيل
-                # الـ cron مش وقت الضربة الفعلي). DEV-08:
-                #   1.UTc timestamp موثّق (`datetime.now(timezone.utc)`)
-                #   2.وضّح إنه "وقت الإغلاق" مش "وقت الضربة" — التوقيت الحقيقي للضربة
-                #     مش نقدر نعرفه بـ daily OHLC (محتاج intraday tick data).
+                # ════════════════════════════════════════════════════════════════
+                # DEV-15 §1 (2026-10-13 — PRODUCTION-AUDIT G7):
+                # Replaced `datetime.now(timezone.utc).isoformat()` (which
+                # gave the cron run-time, NOT the actual hit time) with a
+                # price-history lookup. The hit timestamp is the date of the
+                # first daily candle whose high >= target_price (for
+                # TARGET_HIT) or low <= stop_loss (for STOPPED), between
+                # prediction_date and close_date.
+                #
+                # If the price data is unavailable OR no candle crossed the
+                # level (the daily_closer hit-detection may have used a
+                # different data source), fall back to `close_date` with a
+                # clear comment marker so the row is visible in audits.
+                #
+                # See backfill_hit_timestamps.py (DEV-15 §2) for the
+                # retroactive equivalent that re-derives hit_at for legacy
+                # rows and 🚨 flags fake TARGET_HIT/STOPPED.
+                # ════════════════════════════════════════════════════════════════
                 status,  # CASE parameter (status for TARGET_HIT check)
-                datetime.now(timezone.utc).isoformat(),  # target_hit_at value — UTC close-time
+                self._compute_hit_timestamp(
+                    pred_id, ticker, status, 'TARGET_HIT',
+                    close_date, _prediction_date_db, _target_price_db,
+                ),
                 status,  # CASE parameter (status for STOPPED check)
-                datetime.now(timezone.utc).isoformat(),  # stop_hit_at value — UTC close-time
+                self._compute_hit_timestamp(
+                    pred_id, ticker, status, 'STOPPED',
+                    close_date, _prediction_date_db, _stop_loss_db,
+                ),
                 pred_id
             ))
             conn.commit()
