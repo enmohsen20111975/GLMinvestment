@@ -25,9 +25,14 @@ for (const dup of dups) {
   console.log(`\n${dup.ticker} @ ${dup.prediction_date} (${dup.persona}): keep id=${keepId} (${rows[0].status}), delete ids=${deleteIds.join(',')}`);
   if (deleteIds.length > 0) {
     const placeholders = deleteIds.map(() => '?').join(',');
-    const result = db.prepare(`DELETE FROM predictions WHERE id IN (${placeholders})`).run(...deleteIds);
+    // DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+    // Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+    // (NOTE: this script is a one-off deduplication helper. Archiving the
+    // duplicate rows instead of deleting them means the UNIQUE index below
+    // may fail to create if duplicates still exist. Run manually with care.)
+    const result = db.prepare(`UPDATE predictions SET status='ARCHIVED', notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE id IN (${placeholders})`).run(...deleteIds);
     totalDeleted += result.changes;
-    console.log(`  → deleted ${result.changes} rows`);
+    console.log(`  → archived ${result.changes} rows (DEV-06)`);
   }
 }
 
