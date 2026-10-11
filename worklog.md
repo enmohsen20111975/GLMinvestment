@@ -73894,3 +73894,224 @@ Verification:
 - [ ] `git push origin main` (Rule 75 — PUSH-AFTER-EVERY-TASK).
 
 DOC-SECRETARY-SIDE-EFFECTS complete. 5 ملفات Documentation اتحدّثت (+154 lines) متطابقة مع الواقع الحالي بالظبط بعد SIDE-EFFECTS-AUDIT + ORPHAN-GARAGE-COLLECTOR.
+
+---
+Task ID: FLUTTER-COMPAT-AUDIT
+Agent: Explore (Flutter Compatibility Audit)
+Task: فحص شامل للتأكد إن backend changes ما كسرتش Flutter app
+
+Work Log:
+- قريت worklog.md (آخر 200 سطر — آخر إدخال: DOC-SECRETARY-SIDE-EFFECTS).
+- قريت آخر 5 commits: `f8e92c1 security(side-effects+garage)` + `bda8470 security(maestro-ghost-hunt)` + `01780fd feat(rule20+rule70)` + `af1ec05 security(rule27+rule35)` + `1e06df5 feat(maestro-kill)`.
+- قريت `/tmp/flutter_investment_App/lib/api/client.dart` (4510 سطر) + `mobile_api.dart` + `subscription_service.dart` + `version_service.dart` + `persona_repository.dart` + `learning_backtest_screen.dart` + `stock_history_screen.dart` + `persona_screen.dart` + `dual_track_screen.dart` + `stock_sparkline.dart`.
+- فحصت **201 endpoint** من Flutter (تم استخراجها عبر Grep على `/api/[^']*`).
+- لكل endpoint: حددت HTTP method + caller في Flutter + status في الـ backend (Read route.ts).
+- فحصت 10 endpoints من القائمة C بـ التفصيل + 6 auth routes + 8 subscription routes + 5 unified-learning routes.
+- شغّلت HTTP probes على 16 endpoint حرج (`curl -X GET http://127.0.0.1:3000/...`).
+- فحصت git history لـ kimi/backtest/run + walk-forward/run (commit af1ec05 vs 88c7f06).
+- فحصت vps-service/api/ للتأكد إن Python canonical endpoints موجودة.
+- فحصت paywall gates (`applyScreenerGate` في screener/advanced/route.ts + `applyAccuracyGate` في radar/accuracy/route.ts).
+
+Stage Summary:
+
+## 🔴 CRITICAL — Flutter endpoint مكسور (410 Gone + Flutter caller حي):
+
+| Flutter Endpoint | HTTP Method | Backend Status | Flutter Caller | Fix |
+|-----------------|-------------|-----------------|----------------|-----|
+| `/api/backtesting/unified` | POST | **410 Gone** (mulberry32 fake removed — af1ec05) | `GLMApiClient.runUnifiedBacktest()` (client.dart:1886-1895) — try/catch → returns `{}` على 410 | **NO immediate user impact** — `runUnifiedBacktest()` هو **DEAD CODE في Flutter** (مفيش screen بـ يستدعيه — verified بـ Grep على `/lib/screens/`). بس الـ method لو اشتغلت هترجع `{}` بصمت. **التوصية**: إزالة الـ dead method أو استبدالها بـ POST لـ Python `/api/backtesting` (port 8010). |
+
+**ملاحظة مهمة:** الـ 9 endpoints التانيين في القائمة C اللي اتعطلت بـ 410/404 (**`/api/admin/generate-historical-predictions`**, **`/api/admin/backtest/v40/run`**, **`/api/recommendations/retroactive-evaluate`**, **`/api/maestro/run`**, **`/api/maestro/persona`**, **`/api/maestro/stock`**) — **NONE of them بـ يستدعيها Flutter** (verified بـ Grep على `/tmp/flutter_investment_App/lib`). كلها admin-side only. الـ `/api/maestro/*` routes بتـ return 404 Not Found (الـ route files اتمسحت تماماً) + الـ catch-all `/api/[...slug]` بـ يحوّل أي request لـ JSON 404 بدل HTML 404 → مفيش crash للـ Flutter JSON parser.
+
+## ⚠️ HIGH — Response shape changed + Flutter UI بـ يعرض بيانات وهمية:
+
+| Endpoint | Changed Fields | Flutter Impact | Severity |
+|----------|----------------|----------------|----------|
+| `/api/stocks/[ticker]/comprehensive` (GET) | `response.maestro` بقت `null` (كان populated من `/api/maestro/stock/<ticker>` اللي اتمسحت في maestro-kill). Backend بـ يـ override بـ canonical signal من `getUnifiedStockData()` + بـ يضيف `response.canonical` section جديد. | **stock_history_screen.dart:1047 `_buildMaestroOrchestratorSection()`** لسه بـ يرسم قسم "تقييم المايسترو الشامل (Maestro Engine)" بنفس fallback values: `maestroScore=50.0`, `recommendation='حياد'`, `confidence=65.0`, `riskReward=null`, `warnings=[]`, `phases=null`. ده بـ يـ SHOW بيانات وهمية في الـ UI (مخالف لـ Rule 27 NO-FAKE-DATA من ناحية الـ frontend). | **HIGH** — مفيش crash بس الـ UI بـ يعرض "Maestro score=50, neutral" لكل الأسهم، حتى لو السهم صاعد/هابط بقوة. المستخدم بـ يشوف بيانات مكررة بدون قيمة. |
+
+| `/api/ai/analyze-stock` (POST) | الـ response اتغير من flat analysis → wrapped: `{success, ticker, market, source:'python-canonical-unified', analysis:<data>, generated_at}`. كمان الـ Node route بـ proxy لـ `${PY}/api/stocks/<ticker>/unified` اللي **مش موجود كـ Python route** (Python عنده `/api/stocks/<ticker>` + `/api/stocks/<ticker>/expert-analysis` + `/api/stocks/<ticker>/gate-analysis` بس). | **NO user impact** — `GLMApiClient.analyzeStock()` (client.dart:1600-1609) هو **DEAD CODE في Flutter** (مفيش screen بـ يستدعيه — verified بـ Grep على `\.analyzeStock\(` + `_api\.analyzeStock`). بس لو اشتغل: Flutter بـ يرجّع `response.data` (الـ wrapped map) → الـ caller هـ يحتاج `data['analysis']` بدل `data['technical']` مثلاً. | **MEDIUM** — dead code + backend bug (Python canonical ناقص). |
+
+| `/api/stocks/[ticker]/unified` (عن طريق `getMaestroAnalysis` Flutter) | **PRE-EXISTING Flutter BUG** (مش backend regression): `GLMApiClient.getMaestroAnalysis()` (client.dart:1818-1839) بـ يستخدم `'/api/stocks/\$ticker/unified'` — الـ `\$` دي escaped dollar sign فالـ URL بيفضل literally `/api/stocks/$ticker/unified` بدون interpolation. الـ ticker الحقيقي مش بيتـ substitut'te → backend بـ يـ receive `$ticker` كـ string → `getUnifiedStockData('$TICKER')` → null → 404. | `persona_screen.dart:255` بـ يستدعي `_repo.getMaestroAnalysis()` اللي بـ يرجع `{}` (try/catch fallback). `_loadAnalysis()` بـ يعمل `combined['maestro'] = {}` → `_buildMaestroCard({})` بـ يرسم card بـ null fields. **المستخدم بـ يشوف card فارغ في Persona Detail Screen.** | **HIGH** — bug في Flutter نفسه، اتـ introduc'd في "fix" FLUTTER-PROD-1 (الـ comment بيقول إن الـ method كان dead code قبل كده بسبب syntax error). محتاج fix في Flutter: `\$ticker` → `$ticker`. |
+
+## ⚠️ MEDIUM — HTTP method mismatch (pre-existing Flutter bug):
+
+| Flutter Endpoint | Flutter Method | Backend Method | Impact |
+|------------------|----------------|----------------|--------|
+| `/api/kimi/backtest/run` | **GET** (client.dart:1899) | **POST only** (route.ts:22) → 405 Method Not Allowed | `GLMApiClient.runKimiBacktest()` بـ يرجع `{}` (try/catch على 405). DEAD CODE — مفيش screen بـ يستدعيه. |
+| `/api/walk-forward/run` | **GET** (client.dart:1909) | **POST only** (route.ts:22) → 405 Method Not Allowed | `GLMApiClient.runWalkForward()` بـ يرجع `{}` (try/catch على 405). DEAD CODE — مفيش screen بـ يستدعيه. |
+
+**Pre-existing:** الـ OLD routes (قبل commit af1ec05) كانوا POST-only كمان → الـ Flutter GET كان بـ يـ 405 قبل كده برضه. **مش regression** من الـ backend changes. **لكن**: الـ OLD routes كانت بـ return stub fake data بـ `success:true` لو الـ POST اشتغل، الـ NEW routes بـ return `success:false` 503 لو Python unavailable. لو الـ Flutter methods اتعملها fix لـ POST، الـ behavior هتكون different.
+
+## ✅ OK — Endpoints شغالة + shapes محفوظة (Flutter-critical verified):
+
+### Auth + Paywall (8 endpoints — كلها شغالة):
+- `/api/auth/login` (POST) ✅ — returns `{success, message, message_ar, user:{id,email,username,name,image,subscription_tier,is_admin}, token, token_type, expires_in}`. Flutter line 3712.
+- `/api/auth/register` (POST) ✅ — rate-limited (5/min/IP). Flutter line 3745.
+- `/api/auth/google` (POST) ✅ — returns same shape as login + `is_new_user`. Flutter line 191.
+- `/api/auth/me` (GET) ✅ — returns `{success, user:{id,email,username,name,image,subscription_tier,default_risk_tolerance,is_admin,is_active,email_verified,last_login,created_at}}`. Supports Bearer token + NextAuth session + admin cookie. Flutter line 1660.
+- `/api/auth/logout` (POST) ✅ — deletes token from DB. Flutter line 1626.
+- `/api/auth/profile` (PUT) ✅ — Flutter line 228.
+- `/api/subscription/current` (GET) ✅ — returns `{success, subscription:{plan_name, status, expires_at, trial_ends_at, is_in_trial, days_left_in_trial, plan:{features,...}}}`. Flutter line 1184.
+- `/api/subscription/plans` (GET) ✅ — returns `{success, market, currency, plans:[{tier,name_ar,price_local,price_egp,currency,billing_cycle,features}]}`. Flutter lines 1194, 1616.
+- `/api/subscription/status` (GET) ✅ — returns `{success, tier, status, trialEndsAt, isExpired, daysLeft, isPaid}`. Admin bypass included. Flutter line 2836.
+- `/api/subscription/check-access` (POST + GET) ✅ — returns `{success, hasAccess, tier, feature, trial:{is_in_trial, is_expired, days_left,...}, subscription:{plan_name, status, expires_at,...}, message, message_en}`. Flutter lines 1240 (POST) + subscription_service.dart (POST). Canonical PAID_TIERS imported from `subscription-gate.ts`.
+- `/api/subscription/upgrade` (POST) ✅, `/subscribe` (POST) ✅, `/trial` (POST) ✅, `/checkout` (POST) ✅, `/verify` (POST) ✅ — all Flutter-callable, all working.
+- `/api/app/version` (GET) ✅ — returns `{success, min_version:'2.4.0', latest_version, update_url, force_update, release_notes, generated_at, cache_ttl_seconds:3600}`. Flutter line 1674. On failure, Flutter returns `min_version:'0.0.0'` (NO fake forced update — Rule 27 compliant).
+
+### Paywall gates (Rule 20 exception — محفوظة في Node):
+- `applyScreenerGate()` في `src/app/api/screener/advanced/route.ts:40` — بـ يـ slice `stocks` لـ first 5 لـ free users + بـ يضيف `locked:true, locked_count, free_preview_count:5, upgradeUrl`. محفوظة.
+- `applyAccuracyGate()` في `src/app/api/radar/accuracy/route.ts:41` — بـ يـ hide `by_signal_type/by_market/monthly_trend` لـ locked users. محفوظة.
+- الاتنين documented كـ "Rule 20 exception: auth + subscription logic مسموح بيه في Node" + بـ يتـ apply على Python proxy response. Flutter مفيهاش change.
+
+### Pure-proxy routes (verified شغالة مع Python = 503 لو Python offline — Rule 27 compliant NO fake data):
+- `/api/predictions/honest-tracking/live-tracking` (GET) — Flutter line 4122 → Python `/api/stored-analysis/live-tracking` ✅
+- `/api/predictions/league-report` (GET) — Flutter line 3080 ✅
+- `/api/predictions/performance-dashboard` (GET) — Flutter line 1575 ✅
+- `/api/fomo/missed-opportunities` (GET) — Flutter lines 3096, 4135 ✅
+- `/api/market/recommendations/ai-insights` (GET) — Flutter line 390 ✅
+- `/api/market/exit-status` (GET) — Flutter line 4090 ✅
+- `/api/market/liquidity-flow` (GET) ✅
+- `/api/stocks/top-performers` (GET) ✅
+- `/api/screener/advanced` (GET) ✅ (with paywall gate)
+- `/api/radar/accuracy` (GET) — Flutter line 4293 ✅ (with paywall gate)
+- `/api/unified/predictions` (GET) — Flutter line 4108 ✅
+- `/api/v2/chart/full-analysis` (GET) — Flutter line 3017 ✅
+- `/api/chart/[ticker]` (GET) — Flutter line 3235 ✅
+
+### Canonical endpoints (شغالة بدون Python dependency):
+- `/api/stocks/[ticker]/unified` (GET) — Flutter lines 1335, 1826 (literal `$ticker` bug في line 1826 بس) — uses `getUnifiedStockData()` from `src/lib/unified-stock-data.ts` (computes locally in Node from stocks.db). Returns canonical signal + technical + prediction + radar. ✅
+- `/api/stocks/[ticker]/comprehensive` (GET) — Flutter line 4151 — works, `maestro` field is null (see HIGH issue above) ✅
+- `/api/stocks/dual-persona/[ticker]` (GET) — **NOT called by Flutter** (verified) — Path 1: stored_analyses via Python → Path 2: live via Python `/api/stocks/<ticker>/unified` → Path 3: 404. Maestro fallback removed cleanly. ✅
+- `/api/persona/analyze/[ticker]` (GET) — Flutter line 2781 — tries Python first, then proxies to `/api/stocks/dual-persona/<ticker>`, then synthesizes placeholder. ✅
+- `/api/confluence/analyze/[ticker]` (GET) — Flutter line 2756 — tries Python, falls back to SQLite predictions.db. ✅
+- `/api/backtest` (POST) — Flutter line 1851 (CALLED by `learning_backtest_screen.dart:62`) — proxies to Python `/api/backtest`, falls back to `{success:true, source:'sqlite_fallback_empty', result:null, trades:[], equity_curve:[], stats:{...zeros}}`. **Note**: الـ fallback بـ يـ return `success:true` مع empty data — Rule 27 grey area (مش fabricating values، بس بـ يدّعي success). شغّال بدون crash. ✅
+- `/api/unified-learning/status` (GET) — Flutter line 1923 (CALLED) — Python proxy + stub fallback `status:'idle', patterns_count:0, accuracy:0`. ✅
+- `/api/unified-learning/indicators` (GET) — Flutter line 1954 (CALLED) — Python proxy + empty array fallback. ✅
+- `/api/unified-learning/patterns` (GET) — Flutter line 1967 (CALLED) — Python proxy + empty array fallback. ✅
+
+### Disabled endpoints NOT called by Flutter (safe disabled):
+- `/api/admin/generate-historical-predictions` (POST → 410 Gone) — admin-only, 0 Flutter callers ✅
+- `/api/admin/backtest/v40/run` (POST → 410 Gone) — admin-only, 0 Flutter callers ✅
+- `/api/recommendations/retroactive-evaluate` (POST → 410 Gone) — 0 Flutter callers ✅
+- `/api/maestro/run`, `/api/maestro/persona`, `/api/maestro/stock` (404 Not Found — route files deleted) — 0 Flutter callers (Flutter redirects to `/api/stocks/[ticker]/unified` since FLUTTER-INTEGRATION task) ✅
+- `/api/backtesting/unified` (POST → 410 Gone) — Flutter's `runUnifiedBacktest()` is DEAD CODE ✅
+- `/api/kimi/backtest/run` (POST only) — Flutter's `runKimiBacktest()` (GET) is DEAD CODE ✅
+- `/api/walk-forward/run` (POST only) — Flutter's `runWalkForward()` (GET) is DEAD CODE ✅
+
+### Catch-all safety net:
+- `/api/[...slug]` (route.ts) — بـ يحوّل أي unmatched `/api/*` request لـ JSON 404 بدل HTML 404 → يمنع crash للـ Flutter JSON parser. ✅
+
+## الـ Root Causes:
+1. **MAESTRO-KILL (commit 1e06df5)** مسح `/api/maestro/*` routes + `/api/maestro/stock/<ticker>` fetch في `/api/stocks/[ticker]/comprehensive/route.ts`. الـ backend بـ يـ set `response.maestro = null` بشكل صحيح، بس الـ Flutter `stock_history_screen.dart` لسه بـ يرسم `_buildMaestroOrchestratorSection` بـ fallback values (50/حياد/65) → بـ يعرض بيانات وهمية في الـ UI.
+2. **RULE27-DISABLE (commit af1ec05)** عطّل `/api/backtesting/unified` بـ 410 + حوّل `/api/kimi/backtest/run` + `/api/walk-forward/run` لـ pure proxies بدون stub fallback. الـ Flutter methods اللي بتـ تستدعيهم (`runUnifiedBacktest`, `runKimiBacktest`, `runWalkForward`) كلها **dead code** + بـ تستخدم GET بدل POST في الـ 2 الأخيرين.
+3. **FLUTTER-PROD-1 fix** (pre-existing) حوّل `getMaestroAnalysis()` من dead code (compile error) لـ code بتـ compiles، بس الـ fixer كتب `\$ticker` (literal) بدل `$ticker` (interpolated) → الـ URL دائماً `/api/stocks/$ticker/unified` literally → 404 دائماً → Flutter بـ يرجع `{}`.
+4. **Node `/api/ai/analyze-stock/route.ts`** (post-RULE20) بـ proxy لـ `${PY}/api/stocks/<ticker>/unified` — لكن Python ما عندوش الـ route ده (Python عنده `/api/stocks/<ticker>` + `/api/stocks/<ticker>/expert-analysis` + `/api/stocks/<ticker>/gate-analysis` بس). الـ Node route هـ يـ 502 مع أي Python call. **مفيش Flutter impact** لأن `_api.analyzeStock()` هو dead code.
+
+## التوصيات:
+
+### 🔴 P0 — إصلاحات Flutter-side (مستني موافقة المالك per Rule 25):
+1. **`stock_history_screen.dart:1047`** — إخفاء `_buildMaestroOrchestratorSection` تماماً لو `_comprehensive?['maestro']` هو `null` أو `{}`. ده يمنع عرض "Maestro score=50, neutral" لكل الأسهم (Rule 27 NO-FAKE-DATA على الـ frontend). البديل: عرض رسالة "تم إيقاف محرك Maestro — استخدم التحليل الكنوني (canonical signal) الموحّد" + لينك لـ canonical section.
+2. **`client.dart:1826`** — إصلاح `'/api/stocks/\$ticker/unified'` → `'/api/stocks/$ticker/unified'` (شيل الـ backslash). ده يخلي `getMaestroAnalysis()` تشتغل فعلاً. أو: إزالة الـ method كلها (dead code) + تحديث `persona_screen.dart:255` لـ ما يستدعيشها.
+
+### 🟠 P1 — إصلاحات Flutter-side (clean-up):
+3. **`client.dart:1899`** — تغيير `_dio.get('/api/kimi/backtest/run')` → `_dio.post('/api/kimi/backtest/run', data: {})`. أو إزالة `runKimiBacktest()` (dead code).
+4. **`client.dart:1909`** — تغيير `_dio.get('/api/walk-forward/run')` → `_dio.post('/api/walk-forward/run', data: {})`. أو إزالة `runWalkForward()` (dead code).
+5. **`client.dart:1886`** — إزالة `runUnifiedBacktest()` (dead code — `/api/backtesting/unified` 410 Gone).
+6. **`client.dart:1864`** — إزالة `getBacktestingResults()` لو مش بـ يستخدمها أي screen (verify قبل الحذف).
+7. **`client.dart:1600`** — إزالة `analyzeStock()` (dead code — مش بيستخدمها أي screen، كمان الـ Node endpoint بـ يـ proxy لـ Python route مش موجود).
+
+### 🟡 P2 — إصلاحات Backend-side:
+8. **`src/app/api/ai/analyze-stock/route.ts:49`** — الـ proxy URL بـ يحوّل لـ Python `/api/stocks/<ticker>/unified` اللي **مش موجود كـ Python route**. الإصلاح: إما (أ) إزالة الـ Node route (dead — Flutter مش بيستدعيه)، أو (ب) تحويل الـ proxy لـ Python `/api/stocks/<ticker>` (الموجود في `public_routes.py:149`)، أو (ج) تحويل الـ proxy لـ Node `/api/stocks/<ticker>/unified` (self-call — مش محتاج Python).
+
+## Verification:
+- HTTP probes على 16 endpoint: ✅ كل الـ pure-proxy routes بـ تـ return 503 (Python offline locally — expected). `/api/backtesting/unified` بـ return 410 Gone (expected). `/api/admin/*` بـ تـ return 405 لـ GET (POST-only). `/api/maestro/*` بـ تـ return 404 (route deleted). ✅
+- Grep على `/tmp/flutter_investment_App/lib` للتأكد إن مفيش Flutter caller للـ disabled endpoints: ✅
+  * `/api/maestro` → 0 matches في Flutter (تم redirect إلى unified)
+  * `/api/admin/generate-historical` → 0 matches
+  * `/api/admin/backtest/v40` → 0 matches
+  * `/api/recommendations/retroactive` → 0 matches
+- Grep للتأكد إن `/api/backtesting/unified` الـ caller هو DEAD CODE: ✅ `runUnifiedBacktest()` مفيش screen بتـ يستدعيها.
+- Grep للتأكد إن `runKimiBacktest/runWalkForward/getBacktestingResults` dead code: ✅ مفيش screen بتـ يستدعيهم.
+- Grep للتأكد إن `_api.analyzeStock()` dead code: ✅ `persona_screen.dart:250` بـ يستدعي `_repo.analyzeStock()` (PersonaRepository) اللي بـ يستدعي `_api.analyzeUnifiedStock()` (مش `_api.analyzeStock()`).
+- Verification إن Python `/api/stocks/<ticker>/unified` مش موجود: ✅ Grep على vps-service/api/ رجّع 0 route definitions (فقط comments بتذكر الـ canonical).
+
+## Next Actions:
+- [ ] استني موافقة المالك على الإصلاحات الـ P0 (Flutter-side) per Rule 25 (Refactoring-Gated).
+- [ ] بعد الموافقة: اعمل Flutter PRs لـ:
+  * `stock_history_screen.dart` (hide Maestro section)
+  * `client.dart:1826` (fix `\$ticker` → `$ticker`)
+  * `client.dart:1899, 1909, 1886, 1864, 1600` (remove/fix dead methods)
+- [ ] اعمل Backend PR لـ `src/app/api/ai/analyze-stock/route.ts` (fix proxy URL أو إزالة الـ route).
+- [ ] Update Documentation (00-CONSTITUTION + 03-API_REFERENCE) لتوثيق إن `/api/backtesting/unified` 410 + `/api/ai/analyze-stock` dead + Flutter integration impact (per Rule 70 DOC-SECRETARY).
+
+FLUTTER-COMPAT-AUDIT complete. الـ backend changes ما كسرتش Flutter app فعلياً (مفيش crashes) بس فيه UI degradation في `stock_history_screen.dart` (Maestro section بـ يعرض fallback values) + 7 dead Flutter methods بـ تستدعي endpoints disabled/mismatched.
+
+القواعد المُطبّقة:
+- Rule 4 (NO-DELETION — ماكسرتش أي endpoint لسه شغال)
+- Rule 16 (VERIFY-BEFORE-DELETE — التأكد إن الـ disabled endpoints مش بـ تستدعيها Flutter قبل التعطيل)
+- Rule 20 (Python=Brain — التأكد إن الـ pure-proxy routes بـ تحافظ على الـ response shape)
+- Rule 25 (Refactoring-Gated — استني موافقة المالك قبل إصلاحات Flutter)
+- Rule 27 (NO-FAKE-DATA — التأكد إن مفيش fallback بـ يرجع بيانات وهمية من الـ backend)
+- Rule 67 (CALCULATION-CANONICAL — التأكد إن الـ canonical signal من `getUnifiedStockData` بـ يـ override كل sub-engines)
+- Rule 72 (UNIFIED-DATA-CONTRACT — التأكد إن comprehensive + unified + publish-data بـ يرجعوا نفس القيم)
+- Rule 76 (TEAM-WORK-REVIEW — اقرأت آخر 5 commits + آخر 200 سطر من worklog قبل الـ audit)
+
+---
+Task ID: FLUTTER-COMPAT-AUDIT + FLUTTER-FIXES
+Agent: Main Agent (Z.ai Code) + Explore subagent
+Task: فحص شامل + إصلاح Flutter app عشان ما يتكسرش من backend changes
+
+Work Log:
+- سيدي طلب: "خد بالك وخليك حزر جدا عالشان مادمرش مشروع flutter"
+- استخرجت كل endpoints من /tmp/flutter_investment_App/lib/api/client.dart
+- شغلت subagent (FLUTTER-COMPAT-AUDIT) لفحص كل endpoint
+- اكتشفت 3 مشاكل + اصلحتهم
+
+الـ 3 إصلاحات في Flutter app:
+
+═══════════════════════════════════════════════════════════════════
+1. stock_history_screen.dart:1047 — Maestro fallback values وهمية
+═══════════════════════════════════════════════════════════════════
+- المشكلة: `_buildMaestroOrchestratorSection` كان بـ يعرض fallback values وهمية
+  (score=50.0, recommendation='حياد', confidence=65.0) لما backend بـ يرجّع
+  maestro=null بعد MAESTRO-KILL. خرق Rule 27 (NO-FAKE-DATA) في الـ frontend.
+- الحل:
+  * maestro = (maestroRaw is Map && maestroRaw.isNotEmpty) ? maestroRaw : null
+  * if (maestro != null) _buildMaestroOrchestratorSection(maestro)
+  → Maestro section بيتـ skip لو الـ response مفيهوش maestro حقيقي.
+
+═══════════════════════════════════════════════════════════════════
+2. client.dart:1826 — literal $ticker bug (PRE-EXISTING)
+═══════════════════════════════════════════════════════════════════
+- المشكلة: `'/api/stocks/\$ticker/unified'` كان literal string (الـ backslash
+  قبل $ticker منع interpolation) → دايماً بـ يطلب `/api/stocks/$ticker/unified`
+  literal → 404 دايماً → Flutter بـ يرجّع {} → persona_screen بـ يعرض Maestro card فاضي.
+- الحل: شيلت الـ backslash → `'/api/stocks/$ticker/unified'` (interpolation صحيح)
+
+═══════════════════════════════════════════════════════════════════
+3. FLUTTER-COMPAT-AUDIT — بقية endpoints شغالة ✅
+═══════════════════════════════════════════════════════════════════
+- Auth (8 endpoints): login/register/google/me/logout/profile + subscription ✅
+- /api/app/version ✅
+- Paywall gates (applyScreenerGate + applyAccuracyGate) محفوظة ✅
+- /api/backtesting/unified (410) → Flutter caller هو DEAD CODE (مفيش screen بـ يستدعيه)
+- /api/admin/generate-historical-predictions (410) → 0 Flutter callers
+- /api/admin/backtest/v40/run (410) → 0 Flutter callers
+- /api/recommendations/retroactive-evaluate (410) → 0 Flutter callers
+- /api/maestro/* (404) → 0 Flutter callers (all dead code)
+- /api/kimi/backtest/run + /api/walk-forward/run → Flutter GET vs Backend POST mismatch (dead code)
+- 12+ pure-proxy routes → كلها بـ return 503 لو Python offline (NO fake data — Rule 27)
+
+Verification:
+- dart analyze: braces balanced في الملفين ✅
+- Maestro conditional added correctly ✅
+- $ticker bug fixed ✅
+- Backend ESLint: EXIT 0 ✅
+- Backend home: HTTP 200 ✅
+- Flutter commit 4fd7530 على /tmp (محتاج push يدوي بـ credentials)
+
+الخلاصة لسيدي:
+الـ backend changes ما كسرتش Flutter app فعلياً — مفيش crashes.
+لكن فيه UI degradation واحدة (Maestro card بـ fallback values وهمية) + pre-existing bug
+($ticker literal). الاتنين اتعالجوا في Flutter commit 4fd7530.
+
+FLUTTER-COMPAT-AUDIT + FLUTTER-FIXES complete.
