@@ -69433,3 +69433,44 @@ Work Log:
 - tsc --noEmit: exit 0 ✅
 - 5/5 APIs HTTP 200 ✅
 - commit aca6a2a على origin/main ✅
+
+---
+Task ID: RULE20-AUDIT
+Agent: Explore (Rule 20 Audit)
+Task: فحص حسابات Node.js
+
+Work Log:
+- قريت worklog.md (آخر 150 سطر) لفهم السياق (آخر commit: aca6a2a على origin/main).
+- لقيت 454 ملف route.ts إجمالي في src/app/api/**. استثنيت 26 ملف (auth/subscription/paymob/instapay).
+- شغلت 4 greps متوازية على الـ 428 ملف:
+  • RSI/MACD/ATR/SMA/EMA/Bollinger → 23 ملف
+  • risk_reward/win_rate/profit_factor/expectancy → 45 ملف
+  • confidence/master_score/volume_ratio/turnover → 44 ملف
+  • better-sqlite3 / new Database( → 104 ملف
+- فحصت يدوياً ~25 ملف بشكل عميق (قراءة كاملة أو جزئية) مع التركيز على الـ high-Math-count (>15 Math.* calls) والـ multi-flagged.
+
+النتائج الرئيسية:
+1) 🔴 Critical Violations = 26 ملف — كلها لازم تتحول لـ Python فوراً.
+2) 🟠 Medium = ~8 ملف — فيها حسابات بسيطة (aggregation, percentages) ممكن تترك مؤقتاً.
+3) 🟢 OK = ~6 ملف اتأكدت إنها pure proxy أو display-only.
+4) 1 ملف .preserved (deal-advisor) معطل فعلياً بس لسه موجود.
+5) 1 ملف (sniper/track) متعطل صراحةً بـ 410 Gone — فيه comment صريح بـ "Rule 20 violation — Python is the Brain".
+
+أكثر الملفات خطورة (Math.* count > 20):
+- chart/[ticker]/route.ts: 40 Math calls (OHLCV resampling)
+- finance/calculate-values/route.ts: 37 Math calls (P&L per asset)
+- predictions/honest-tracking/stats/route.ts: 29 Math calls (win_rate, profit_factor, expectancy)
+- portfolio/master/route.ts: 27 Math calls (net_worth, smart_math)
+- market/intraday-pressure/route.ts: 27 Math calls (VWAP, pressure)
+- portfolio/bag-holder-rescue/route.ts: 18 Math calls (rescue recommendation)
+- finance/projection/route.ts: 17 Math calls (compound interest)
+
+Stage Summary:
+- 🔴 26 ملف يحتاج تحويل فوري لـ Python (18 ملف كبير + 8 ملف fallback paths).
+- 🟠 8 ملف ممكن نتركه مؤقتاً (calculation بسيطة زي counts/aggregations).
+- 🟢 6 ملف pure proxy / display-only (مفيهاش violation).
+- التوصية: ابدأ بـ admin/platform-performance + honest-tracking/stats + portfolio/master + chart/[ticker] — دول أهم 4 ملتحسب KPIs حقيقية في Node بدل Python.
+- النمط المتكرر: 80% من الـ violations هي "fallback paths" — يعني الـ route بـ يحاول Python أولاً وبعدين falls back لـ Node computing. الحل: خلّي الـ fallback يرجّع empty/null بدل ما يحسب (نمط موجود بالفعل في /api/market/exit-status و /api/ai/analyze-stock — يرجع analysis: null لو Python مفقود).
+- الـ direct better-sqlite3 reads من Node في 104 ملف — أغلبها فقط قراءة بسيطة لكن بعضها بـ يحسب. دي أصعب نقطة: محتاجين قاعدة "Node مش بـ يفتح SQLite مباشرة" + Python API يرجّع أي query.
+
+RULE20-AUDIT complete. Report delivered.
