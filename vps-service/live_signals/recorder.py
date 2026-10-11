@@ -36,13 +36,15 @@ CRYPTO_COINS = ["bitcoin", "ethereum", "solana", "binancecoin", "cardano"]
 
 def record_crypto_signals():
     """تسجيل إشارات الكريبتو"""
-    from analyzers.crypto_maestro import CryptoMaestroOrchestrator
-    
+    # MAESTRO-KILL (2026-10-12): crypto_maestro archived to archive/maestro-dead-code-20261012/
+    # Per Rule 35 (ENGINE-UNIFY) + owner directive. This function is now a no-op.
+    # Crypto predictions are handled by V40.2 CRYPTO path (currently disabled
+    # per Rule 35 — see daily_predictor.py L3906 RULE35-DISABLED).
     print("=" * 60)
-    print("🚀 CRYPTO SIGNALS RECORDER")
+    print("⚠️  CRYPTO SIGNALS RECORDER — DISABLED (MAESTRO-KILL 2026-10-12)")
     print("=" * 60)
-    
-    maestro = CryptoMaestroOrchestrator()
+    print("CryptoMaestroOrchestrator archived. V40.2 is the canonical writer.")
+    return
     
     # Get market regime
     regime = maestro.regime_detector.detect_regime()
@@ -113,11 +115,16 @@ def record_crypto_signals():
 
 def record_egx_signals():
     """تسجيل إشارات EGX"""
-    from analyzers.maestro_orchestrator import MaestroOrchestrator
+    # MAESTRO-KILL (2026-10-12): maestro_orchestrator archived to archive/maestro-dead-code-20261012/
+    # Per Rule 35 (ENGINE-UNIFY) + owner directive. This function is now a no-op.
+    # EGX predictions are handled by V40.2 (daily_predictor.py) — the canonical writer.
     from core.database import DatabaseManager
     
     print("=" * 60)
-    print("🇪🇬 EGX SIGNALS RECORDER")
+    print("⚠️  EGX SIGNALS RECORDER — DISABLED (MAESTRO-KILL 2026-10-12)")
+    print("=" * 60)
+    print("MaestroOrchestrator archived. V40.2 (daily_predictor.py) is the canonical writer.")
+    return
     print("=" * 60)
     
     db = DatabaseManager()

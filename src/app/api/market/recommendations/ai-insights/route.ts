@@ -1,65 +1,80 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPredictionsFallback } from '@/lib/flutter-sqlite-fallback';
+/**
+ * GET /api/market/recommendations/ai-insights — Rule 20 Pure Thin Proxy
+ * =======================================================================
+ *
+ * RULE20-PURE-PROXY (P2-FALLBACK-REMOVAL): Pure thin proxy to Python.
+ *
+ * Rule 20 (Python = brain, Node = display only): ZERO computation in Node.
+ * Rule 27 (NO-FAKE-DATA): NO fallback chain, NO placeholder empty arrays
+ *   returned when Python is unavailable.
+ * Rule 67 (CALCULATION-CANONICAL): Python is the Single Source of Truth for
+ *   the AI Insights feed (top active predictions by master_score).
+ *
+ * The previous route had a 65-line fallback chain that:
+ *   - Tried Python `/api/market-pulse` first (which returns a DIFFERENT
+ *     response shape — market overview, not AI insights — so the success
+ *     branch was effectively never used by the frontend)
+ *   - On Python failure: fell through to `getPredictionsFallback` (Rule 20
+ *     violation — direct SQLite reads from Node)
+ *   - Filtered + sorted + sliced in Node (computation in Node)
+ *   - Returned `source: 'sqlite_fallback'` (Rule 27 violation — placeholder
+ *     data masquerading as a real response)
+ *
+ * Python endpoint `/api/market/recommendations/ai-insights` (misc_routes.py,
+ * P2-FALLBACK-REMOVAL) returns the canonical structure:
+ *   { success, ai_insights, insights, recommendations, count, timestamp }
+ *
+ * This route just forwards query params + returns Python's JSON.
+ */
 
-const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
+import { NextRequest, NextResponse } from 'next/server';
+
 export const dynamic = 'force-dynamic';
 
-// GET /api/market/recommendations/ai-insights
-// -------------------------------------------
-// Primary: Python backend /api/market-pulse.
-// Fallback (FLUTTER-FULL-AUDIT): predictions.db — top recommendations by
-//   master_score. Previously returned 503.
+const PY =
+  process.env.EGXPY_SERVICE_URL ||
+  process.env.PYTHON_BACKEND_URL ||
+  'http://127.0.0.1:8010';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const qs = url.searchParams.toString();
-  const targetUrl = `${PY}/api/market-pulse${qs ? `?${qs}` : ''}`;
+  const targetUrl = `${PY}/api/market/recommendations/ai-insights${qs ? `?${qs}` : ''}`;
 
-  // 1. Try Python
   try {
     const res = await fetch(targetUrl, {
-      signal: AbortSignal.timeout(5000),
-      cache: 'no-store',
+      signal: AbortSignal.timeout(10000),
       headers: { Accept: 'application/json' },
+      cache: 'no-store',
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.success !== false) {
-        return NextResponse.json(data);
-      }
+    if (!res.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `python-returned-${res.status}`,
+          message: 'تعذّر جلب رؤى الذكاء الاصطناعي — Python backend أرجع خطأ',
+        },
+        { status: 502 }
+      );
     }
-  } catch { // silent fallback (safe-by-design)
-    // fall through
+    const data = await res.json();
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Data-Source': data.source || 'python-canonical-ai-insights',
+      },
+    });
+  } catch (error) {
+    console.error('[market:recommendations:ai-insights] Python backend unavailable:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'python-backend-unavailable',
+        message:
+          'Python backend غير متاح — لا يمكن عرض رؤى وهمية (Rule 27)',
+        rule: 'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)',
+      },
+      { status: 503 }
+    );
   }
-
-  // 2. SQLite fallback — predictions.db top recommendations
-  const preds = getPredictionsFallback(50, 'active');
-  const insights = preds
-    .filter((p) => p.master_score != null)
-    .sort((a, b) => Number(b.master_score) - Number(a.master_score))
-    .slice(0, 20)
-    .map((p) => ({
-      ticker: p.ticker,
-      signal: p.signal,
-      signal_ar: p.signal_ar,
-      entry_price: p.entry_price,
-      target_price: p.target_price,
-      stop_loss: p.stop_loss,
-      risk_reward: p.risk_reward,
-      master_score: p.master_score,
-      confidence: p.confidence,
-      persona: p.persona,
-      status: p.status,
-      prediction_date: p.prediction_date,
-    }));
-
-  return NextResponse.json({
-    success: true,
-    source: 'sqlite_fallback',
-    ai_insights: insights,
-    insights: insights,
-    recommendations: insights,
-    count: insights.length,
-    timestamp: new Date().toISOString(),
-  });
 }

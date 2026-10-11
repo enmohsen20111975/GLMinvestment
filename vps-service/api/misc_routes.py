@@ -5802,3 +5802,337 @@ def admin_platform_performance():
             'data_sources': [], 'data_missing': ['query_error'],
             'sample_note_ar': 'تعذر تحميل البيانات',
         }), 500
+
+
+# ============================================================================
+# P2-FALLBACK-REMOVAL — New canonical Python endpoints
+# ----------------------------------------------------------------------------
+# Two new endpoints created to replace Node-side fallback chains that violated
+# Rule 20 (Python = brain, Node = display only) + Rule 27 (NO-FAKE-DATA).
+#
+# 1. /api/fomo/missed-opportunities — top 5 winning closed predictions (FOMO)
+# 2. /api/market/recommendations/ai-insights — top 20 active predictions
+#    sorted by master_score (AI Insights panel)
+#
+# Both endpoints replicate the EXACT response shape the previous Node fallback
+# returned so the Flutter frontend continues to work unchanged.
+# ============================================================================
+
+
+@misc_bp.route('/api/fomo/missed-opportunities', methods=['GET'])
+def fomo_missed_opportunities():
+    """GET /api/fomo/missed-opportunities — Rule 20 canonical endpoint.
+
+    PAYWALL-043: FOMO Engine — الأرباح الفائتة.
+
+    Replaces Node-side computation in fomo/missed-opportunities/route.ts
+    (117 lines with direct SQLite reads via getPredictionsFallback + filtering
+    + sorting + ticker obscuring + Arabic FOMO message construction).
+
+    Reads from predictions.db.predictions and applies the same logic:
+      - Filter: closed winning predictions (status='successful' OR
+        hit_target=1 OR pnl_percent > 0 OR actual_return > 0)
+      - Sort: by pnl_percent / actual_return DESC
+      - Limit: top 5
+      - Build FOMO message: "🔥 كان فيه N فرص بنسبة نجاح 100% بمكاسب تصل لـ X%..."
+
+    The Node route applies the paywall gate (premium users see empty array)
+    + obscures tickers (🔒) for non-premium users. This Python endpoint returns
+    the RAW missed opportunities (with REAL tickers) — paywall enforcement is
+    the Node route's responsibility (Rule 20 exception: auth/paywall gates).
+    """
+    try:
+        from pathlib import Path as _P
+        _root = _P(__file__).resolve().parent.parent.parent
+        _db = str(_root / 'db' / 'predictions.db')
+
+        today_str = datetime.now().strftime('%Y-%m-%d')
+
+        # Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect
+        with _open_db('predictions', _db) as conn:
+            # Schema-aware: detect which columns exist (resilient to schema drift)
+            try:
+                _cols = {r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()}
+            except Exception:
+                _cols = set()
+
+            # Build the SELECT with COALESCE for forward-compatibility
+            _pnl_expr = 'COALESCE(pnl_percent, actual_return, 0)' if (
+                'pnl_percent' in _cols and 'actual_return' in _cols
+            ) else (
+                'pnl_percent' if 'pnl_percent' in _cols else (
+                    'actual_return' if 'actual_return' in _cols else '0'
+                )
+            )
+            _outcome_expr = 'COALESCE(outcome_date, closed_at, prediction_date, created_at, "")'
+            _master_expr = 'COALESCE(master_score, maestro_score, score, 0)' if (
+                'maestro_score' in _cols and 'score' in _cols
+            ) else (
+                'COALESCE(master_score, maestro_score, 0)'
+            )
+            _holding_expr = 'COALESCE(holding_days, days_to_close, 0)' if (
+                'days_to_close' in _cols
+            ) else 'COALESCE(holding_days, 0)'
+
+            # Filter: closed winning predictions
+            # (status='successful' OR hit_target=1 OR pnl/actual_return > 0)
+            _where_parts = []
+            _where_args = []
+            if 'status' in _cols:
+                _where_parts.append("status = 'successful'")
+            if 'hit_target' in _cols:
+                _where_parts.append("hit_target = 1")
+            _where_parts.append(f"CAST({_pnl_expr} AS REAL) > 0")
+            _where_clause = ' OR '.join(f"({p})" for p in _where_parts)
+
+            # Optional today filter: prefer today's wins, fall back to recent
+            # (mirror the Node route's behavior: today's wins OR recent wins)
+            _outcome_today_clause = ''
+            if 'outcome_date' in _cols:
+                _outcome_today_clause = f"AND (date(outcome_date) = date('now') OR outcome_date IS NOT NULL)"
+            elif 'closed_at' in _cols:
+                _outcome_today_clause = f"AND (date(closed_at) = date('now') OR closed_at IS NOT NULL)"
+
+            sql = f"""
+                SELECT ticker,
+                       signal,
+                       signal_ar,
+                       signal_type,
+                       prediction_date,
+                       entry_price,
+                       target_price,
+                       stop_loss,
+                       {_master_expr} AS master_score,
+                       risk_reward,
+                       persona,
+                       status,
+                       market,
+                       confidence,
+                       {_pnl_expr} AS profit_pct,
+                       {_outcome_expr} AS outcome_date,
+                       {_holding_expr} AS holding_days
+                FROM predictions
+                WHERE ({_where_clause})
+                  {_outcome_today_clause}
+                ORDER BY CAST({_pnl_expr} AS REAL) DESC
+                LIMIT ?
+            """
+            _where_args.append(5)
+            try:
+                rows = conn.execute(sql, tuple(_where_args)).fetchall()
+            except Exception as _qe:
+                _logger.warning(f"[fomo:missed-opportunities] primary query failed: {_qe} — falling back to simpler query")
+                # Fallback simpler query (no COALESCE chaining)
+                _simple_sql = f"""
+                    SELECT ticker, signal, signal_ar, signal_type, prediction_date,
+                           entry_price, target_price, stop_loss, master_score,
+                           risk_reward, persona, status, market, confidence,
+                           COALESCE(pnl_percent, actual_return, 0) AS profit_pct,
+                           COALESCE(outcome_date, closed_at, prediction_date, '') AS outcome_date,
+                           COALESCE(holding_days, 0) AS holding_days
+                    FROM predictions
+                    WHERE (status = 'successful' OR hit_target = 1
+                           OR COALESCE(pnl_percent, actual_return, 0) > 0)
+                    ORDER BY COALESCE(pnl_percent, actual_return, 0) DESC
+                    LIMIT ?
+                """
+                try:
+                    rows = conn.execute(_simple_sql, (5,)).fetchall()
+                except Exception as _qe2:
+                    _logger.error(f"[fomo:missed-opportunities] fallback query also failed: {_qe2}")
+                    rows = []
+
+            missed = []
+            for r in rows:
+                d = dict(r)
+                profit = float(d.get('profit_pct') or 0)
+                missed.append({
+                    'ticker': d.get('ticker') or '',
+                    'signal': d.get('signal') or 'BUY',
+                    'signal_ar': d.get('signal_ar') or '',
+                    'entry_price': float(d.get('entry_price') or 0),
+                    'target_price': float(d.get('target_price') or 0),
+                    'stop_loss': float(d.get('stop_loss') or 0),
+                    'risk_reward': float(d.get('risk_reward') or 0),
+                    'master_score': float(d.get('master_score') or 0),
+                    'confidence': float(d.get('confidence') or 0),
+                    'persona': d.get('persona') or 'balanced',
+                    'status': d.get('status') or 'successful',
+                    'market': d.get('market') or 'EGX',
+                    'prediction_date': d.get('prediction_date') or '',
+                    'outcome_date': d.get('outcome_date') or '',
+                    'profit_pct': round(profit, 2),
+                    'holding_days': int(d.get('holding_days') or 0),
+                })
+
+        # Compute max_gain_pct
+        max_gain = max((m['profit_pct'] for m in missed), default=0.0)
+
+        # Build FOMO message (Arabic)
+        if missed:
+            message = (
+                f"🔥 كان فيه {len(missed)} فرص بنسبة نجاح 100% "
+                f"بمكاسب تصل لـ {max_gain:.1f}%. "
+                f"اشترك الآن لتلقي فرص قادمة."
+            )
+        else:
+            message = ''
+
+        return jsonify({
+            'success': True,
+            'source': 'python-canonical-fomo-missed-opportunities',
+            'is_premium': False,  # Node route will overwrite after paywall check
+            'missed_count': len(missed),
+            'missed_opportunities': missed,
+            'max_gain_pct': round(max_gain, 1),
+            'message': message,
+            'generated_at': datetime.now().isoformat(),
+        }), 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'}
+
+    except Exception as e:
+        import traceback as _tb
+        _logger.error(f"[fomo:missed-opportunities] ERROR: {e}\n{_tb.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': f'python-fomo-internal-error: {e}',
+            'source': 'python-canonical-fomo-missed-opportunities',
+            'is_premium': False,
+            'missed_count': 0,
+            'missed_opportunities': [],
+            'max_gain_pct': 0,
+            'message': '',
+        }), 500
+
+
+@misc_bp.route('/api/market/recommendations/ai-insights', methods=['GET'])
+def market_recommendations_ai_insights():
+    """GET /api/market/recommendations/ai-insights — Rule 20 canonical endpoint.
+
+    Replaces Node-side computation in market/recommendations/ai-insights/route.ts
+    (65 lines with direct SQLite reads via getPredictionsFallback + filtering
+    + sorting by master_score DESC + mapping into ai_insights shape).
+
+    Reads from predictions.db.predictions (active predictions) and applies
+    the same logic:
+      - Filter: status='active' (or PENDING for legacy schema) + master_score NOT NULL
+      - Sort: by master_score DESC
+      - Limit: top 20
+
+    Returns the SAME response shape the Node route returned:
+      {
+        success: bool,
+        source: 'python-canonical-ai-insights',
+        ai_insights: [...],     # primary key (Flutter expects this)
+        insights: [...],        # alias for compatibility
+        recommendations: [...], # alias for compatibility
+        count: int,
+        timestamp: ISO8601
+      }
+    """
+    try:
+        from pathlib import Path as _P
+        _root = _P(__file__).resolve().parent.parent.parent
+        _db = str(_root / 'db' / 'predictions.db')
+
+        with _open_db('predictions', _db) as conn:
+            # Schema-aware: detect which columns exist
+            try:
+                _cols = {r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()}
+            except Exception:
+                _cols = set()
+
+            _master_expr = 'COALESCE(master_score, maestro_score, score, 0)' if (
+                'maestro_score' in _cols and 'score' in _cols
+            ) else 'COALESCE(master_score, maestro_score, 0)'
+
+            # Active predictions filter: status='active' OR status='PENDING'
+            # (predictions.db uses 'active' in newer rows + 'PENDING' in legacy)
+            _status_filter = "status IN ('active', 'PENDING', 'Active')"
+            if 'status' not in _cols:
+                # No status column → fall back to outcome_date IS NULL (active)
+                _status_filter = "(outcome_date IS NULL OR outcome_date = '')" if 'outcome_date' in _cols else "1=1"
+
+            sql = f"""
+                SELECT ticker,
+                       signal,
+                       signal_ar,
+                       signal_type,
+                       prediction_date,
+                       entry_price,
+                       target_price,
+                       stop_loss,
+                       {_master_expr} AS master_score,
+                       risk_reward,
+                       persona,
+                       status,
+                       market,
+                       confidence
+                FROM predictions
+                WHERE {_status_filter}
+                  AND {_master_expr} IS NOT NULL
+                  AND CAST({_master_expr} AS REAL) > 0
+                ORDER BY CAST({_master_expr} AS REAL) DESC
+                LIMIT ?
+            """
+            try:
+                rows = conn.execute(sql, (20,)).fetchall()
+            except Exception as _qe:
+                _logger.warning(f"[ai-insights] primary query failed: {_qe}")
+                # Simpler fallback
+                _simple_sql = """
+                    SELECT ticker, signal, signal_ar, signal_type, prediction_date,
+                           entry_price, target_price, stop_loss, master_score,
+                           risk_reward, persona, status, market, confidence
+                    FROM predictions
+                    WHERE status IN ('active', 'PENDING', 'Active')
+                      AND master_score IS NOT NULL
+                    ORDER BY master_score DESC
+                    LIMIT ?
+                """
+                try:
+                    rows = conn.execute(_simple_sql, (20,)).fetchall()
+                except Exception as _qe2:
+                    _logger.error(f"[ai-insights] fallback query failed: {_qe2}")
+                    rows = []
+
+            insights = []
+            for r in rows:
+                d = dict(r)
+                insights.append({
+                    'ticker': d.get('ticker') or '',
+                    'signal': d.get('signal') or 'BUY',
+                    'signal_ar': d.get('signal_ar') or '',
+                    'entry_price': float(d.get('entry_price') or 0),
+                    'target_price': float(d.get('target_price') or 0),
+                    'stop_loss': float(d.get('stop_loss') or 0),
+                    'risk_reward': float(d.get('risk_reward') or 0),
+                    'master_score': float(d.get('master_score') or 0),
+                    'confidence': float(d.get('confidence') or 0),
+                    'persona': d.get('persona') or 'balanced',
+                    'status': d.get('status') or 'active',
+                    'prediction_date': d.get('prediction_date') or '',
+                })
+
+        return jsonify({
+            'success': True,
+            'source': 'python-canonical-ai-insights',
+            'ai_insights': insights,
+            'insights': insights,
+            'recommendations': insights,
+            'count': len(insights),
+            'timestamp': datetime.now().isoformat(),
+        }), 200, {'Cache-Control': 'no-store, no-cache, must-revalidate'}
+
+    except Exception as e:
+        import traceback as _tb
+        _logger.error(f"[ai-insights] ERROR: {e}\n{_tb.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': f'python-ai-insights-internal-error: {e}',
+            'source': 'python-canonical-ai-insights',
+            'ai_insights': [],
+            'insights': [],
+            'recommendations': [],
+            'count': 0,
+            'timestamp': datetime.now().isoformat(),
+        }), 500

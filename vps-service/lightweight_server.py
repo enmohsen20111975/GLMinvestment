@@ -60,7 +60,17 @@ BLUEPRINTS = [
     # The tracking_bp Blueprint definition stays in prediction_tracking_routes.py
     # for reference (Rule 16 VERIFY-BEFORE-DELETE) but is no longer registered.
     # ('api.prediction_tracking_routes', 'tracking_bp'),  # REMOVED — duplicate
-    ('api.maestro_routes', 'maestro_bp'),
+    # MAESTRO-KILL (2026-10-12): maestro_bp registration removed.
+    # Per Rule 35 (ENGINE-UNIFY) + owner directive ("Maestro ده ماضي أسود"):
+    #   - maestro_orchestrator.py: signal_id=None in 10 sites (already dead)
+    #   - maestro_routes.py: archived to archive/maestro-dead-code-20261012/
+    #   - crypto_maestro.py + unified_maestro.py: archived
+    #   - Node routes (/api/maestro/*): 410 Gone (already disabled)
+    #   - src/lib/honest-tracking/maestro.ts: archived (was 76KB parallel Node stack)
+    #   - MaestroWidget.tsx: archived (was disabled in dashboard/index.ts)
+    # All Maestro thresholds (55/42/30/20) conflicted with V40.2 canonical.
+    # V40.2 (daily_predictor.py) is the ONLY sanctioned prediction writer.
+    # ('api.maestro_routes', 'maestro_bp'),  # REMOVED — Maestro dead code
     ('api.sniper_routes', 'sniper_bp'),
     ('api.reports_routes', 'reports_bp'),
     ('api.risk_routes', 'risk_bp'),

@@ -274,15 +274,16 @@
 - لو محتاج logic جديد في الواجهة → ضعه في Python endpoint + استدعِه من Node proxy.
 
 ### القاعدة 21 — V40.2 هو مصدر التوقعات الإنتاجي الوحيد (evidence-based)
-- **`jobs/v40_2_daily_generator.py`** هو مولّد التوقعات الإنتاجي.
+- **`jobs/daily_predictor.py`** هو مولّد التوقعات الإنتاجي.
 - كل توقع BUY/STRONG_BUY لازم يمرّ بـ:
   1. **Kill Filters** (5 فلاتر استبعاد: سيولة/سعر/تذبذب حجم/بيانات/قوة نسبية) — `liquidity_filter.py::evaluate_kill_filters`.
   2. **6 إثباتات موزونة** (Trend 8 + Makers 26 + DNA 8 + Fundamentals 8 + Sector 8 + Benchmark 24 = 82 وزن كلي) — `institutional_decision_engine.py::build_institutional_decision`.
   3. **R:R ≥ 1.5 floor gate** (القاعدة 18).
   4. **ATR stop clamp [3%, 9%]** (القاعدة 8).
   5. **`morning_bell=1`** لأعلى توقع في اليوم (sort by evidence_count → score).
-- **`maestro_orchestrator.py`** مسار منفصل للـ persona_predictions (gambler/investor) — أقل صرامة في الـ evidence. لا يُعتمد عليه للـ overall KPI.
-- **ممنوع** توليد توقعات من `MarketScheduler.tick` مباشرة (الطريق القديم `generate_predictions_internal` INSERT خام 15 عمود — لا يمرّ بـ V40.2 evidence).
+- **MAESTRO-KILL (2026-10-12):** MaestroOrchestrator + crypto_maestro + unified_maestro + maestro_routes + MaestroWidget + lib/honest-tracking/maestro.ts — **كلها اتمسحت نهائياً** وأرشفت في `archive/maestro-dead-code-20261012/`. الـ blueprint registration اتشال من `lightweight_server.py`. سيدي طلب: "Maestro ده ماضي أسود". مفيش أي كود Maestro لسه في المشروع.
+- **PREDICTION-WRITE-GUARD** (`core/prediction_write_guard.py`): الـ Single Gate اللي بـ يـ enforce Rule 35. كل توقع لازم يمرّ عبره قبل INSERT. بيـ block أي توقع بدون `engine=v40_2` tag أو `evidence_count < 3` أو `master_score=50` placeholder.
+- **ممنوع** توليد توقعات من أي مسار تاني غير V40.2 (Rule 35).
 
 ### القاعدة 22 — KPIs تُحسب بـ dedup-by-ticker (PERSONA-BALANCE)
 - **القاعدة الذهبية (المالك):** السهم الواحد = صفقة واحدة حتى لو تكرر بين الثلاث شخصيات.
@@ -1183,13 +1184,25 @@ curl -s http://localhost:8010/health
 
 > **سبب الإضافة:** كان فيه محركين بيكتبوا في نفس جدول `predictions` = توقعات مكررة + متضاربة. تم التوحيد على `V40.2` كمصدر وحيد (KILL-MAESTRO — 2026-08-31).
 
-- **V40.2** (`v40_2_daily_generator.py`) هو **المحرك الوحيد** المسموح له بكتابة توقعات في `predictions` table (production prediction writer).
-- **MaestroOrchestrator معطّل** (`signal_id=None`) — مش بيكتب أي توقعات في DB. لسه موجود في الكود للـ UI/queries فقط.
-- **Maestro cron معطّل** — Maestro بلا جدولة.
-- **V40.2 tracker مفعّل** (`PredictionTracker`) — بيكتب التوقعات في `predictions.db`.
+> **MAESTRO-KILL (2026-10-12):** سيدي طلب: "Maestro ده ماضي أسود — شيله". تم حذف كل ملفات Maestro نهائياً (مش بس تعطيل):
+> - `analyzers/maestro_orchestrator.py` (4414 سطر) → archived
+> - `analyzers/crypto_maestro.py` (466 سطر) → archived
+> - `analyzers/unified_maestro.py` (606 سطر) → archived
+> - `api/maestro_routes.py` (1094 سطر) → archived
+> - `src/app/api/maestro/*` (3 routes) → archived
+> - `src/modules/dashboard/components/MaestroWidget.tsx` → archived
+> - `src/lib/honest-tracking/maestro.ts` (76KB parallel Node stack) → archived
+> - 5 backfill scripts → archived
+> - blueprint registration اتشال من `lightweight_server.py`
+> - إجمالي: **556 KB dead code** اتشال + أرشف في `archive/maestro-dead-code-20261012/`
+>
+> قبل كده كان Maestro معطل بس موجود. سيدي طلب حذفه نهائياً عشان: "ممكن تشيلة لان تقريباً مالوش اى لزمة".
+
+- **V40.2** (`daily_predictor.py`) هو **المحرك الوحيد** المسموح له بكتابة توقعات في `predictions` table (production prediction writer).
+- **PREDICTION-WRITE-GUARD** (`core/prediction_write_guard.py`): الـ Single Gate اللي بـ enforce Rule 35 على مستوى `record_prediction()`. بيـ block أي توقع مش من V40.2.
 - **daily_closer** engine-agnostic — بيقفل أي row في `predictions` بـ `outcome_date IS NULL`.
-- **ممنوع** إعادة تفعيل Maestro/Maestro cron أو إنشاء محرك جديد بيكتب في `predictions`.
-- **engine_source tag**: كل توقع جديد في `notes` فيه `engine=v40_2`.
+- **ممنوع** إعادة تفعيل Maestro أو إنشاء محرك جديد بيكتب في `predictions`.
+- **engine_source tag**: كل توقع جديد في `notes` فيه `engine=v40_2` أو في `kill_filter_result` signature.
 
 ---
 

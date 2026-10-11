@@ -1,97 +1,80 @@
 /**
- * GET /api/market/exit-status?limit=20&ticker=COMI
+ * GET /api/market/exit-status?limit=20&ticker=COMI — Rule 20 Pure Thin Proxy
+ * ========================================================================
  *
- * P41 Exit Engine — حالة الخروج اللحظي للتوقاعات النشطة.
- * Primary: Python /api/market/exit-status.
- * Fallback (FLUTTER-FULL-AUDIT): predictions.db — return active predictions
- *   with their current exit_status derived from DB columns. Previously
- *   returned 503 when Python was unreachable.
+ * RULE20-PURE-PROXY (P2-FALLBACK-REMOVAL): Pure thin proxy to Python.
+ *
+ * Rule 20 (Python = brain, Node = display only): ZERO computation in Node.
+ * Rule 27 (NO-FAKE-DATA): NO fallback chain, NO placeholder exit_status=null
+ *   arrays returned when Python is unavailable.
+ * Rule 67 (CALCULATION-CANONICAL): Python is the Single Source of Truth for
+ *   the P41 Exit Engine decisions (TAKE_PROFIT / REDUCE / EXIT / HOLD).
+ *
+ * The previous route had a 96-line SQLite fallback chain that:
+ *   - Used `getPredictionsFallback` (Rule 20 violation — direct SQLite reads)
+ *   - Mapped predictions rows into synthetic exit-status objects with
+ *     `exit_status: null` + `exit_reason: null` + a fabricated
+ *     `exit_note: 'حالة الخروج اللحظي غير متاحة...'` (Rule 27 violation —
+ *     placeholder data masquerading as a real response)
+ *   - Used `computeRiskReward` in Node (Rule 20 violation — computation
+ *     in Node)
+ *
+ * Python endpoint `/api/market/exit-status` (stored_analysis_routes.py L3145)
+ * already returns the canonical structure with the SmartExitEngine decision
+ * per active prediction. This route just forwards query params + returns
+ * Python's JSON.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getPredictionsFallback } from '@/lib/flutter-sqlite-fallback';
-import { computeRiskReward } from '@/lib/risk-reward';
 
 export const dynamic = 'force-dynamic';
 
-const PYTHON_BACKEND =
+const PY =
+  process.env.EGXPY_SERVICE_URL ||
   process.env.PYTHON_BACKEND_URL ||
   process.env.VPS_API_URL ||
-  process.env.EGXPY_SERVICE_URL ||
   'http://127.0.0.1:8010';
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const params = new URLSearchParams();
-  const limit = searchParams.get('limit') || '20';
-  const ticker = searchParams.get('ticker');
-  params.set('limit', limit);
-  if (ticker) params.set('ticker', ticker.toUpperCase());
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const qs = url.searchParams.toString();
 
-  const backendUrl = `${PYTHON_BACKEND.replace(/\/$/, '')}/api/market/exit-status?${params.toString()}`;
-
-  // 1. Try Python
+  const targetUrl = `${PY}/api/market/exit-status${qs ? `?${qs}` : ''}`;
   try {
-    const response = await fetch(backendUrl, {
-      method: 'GET',
+    const res = await fetch(targetUrl, {
+      signal: AbortSignal.timeout(10000),
       headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(5000),
       cache: 'no-store',
     });
-
-    if (response.ok) {
-      const data = await response.json();
-      return NextResponse.json(data, {
-        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
-      });
+    if (!res.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `python-returned-${res.status}`,
+          message:
+            'تعذّر جلب حالة الخروج اللحظي — Python backend أرجع خطأ',
+        },
+        { status: 502 }
+      );
     }
-  } catch { // silent fallback (safe-by-design)
-    // fall through
+    const data = await res.json();
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Data-Source': data.source || 'python-canonical-exit-status',
+      },
+    });
+  } catch (error) {
+    console.error('[market:exit-status] Python backend unavailable:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'python-backend-unavailable',
+        message:
+          'Python backend غير متاح — لا يمكن عرض بيانات خروج وهمية (Rule 27)',
+        rule: 'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)',
+      },
+      { status: 503 }
+    );
   }
-
-  // 2. SQLite fallback — predictions.db active predictions
-  const preds = getPredictionsFallback(parseInt(limit, 10), 'active');
-  const filtered = ticker
-    ? preds.filter(
-        (p) => String(p.ticker).toUpperCase() === ticker.toUpperCase()
-      )
-    : preds;
-
-  const exitStatuses = filtered.map((p) => {
-    const entry = Number(p.entry_price) || 0;
-    const target = Number(p.target_price) || 0;
-    const stop = Number(p.stop_loss) || 0;
-    const direction = String(p.direction || p.signal || '').toUpperCase();
-    const isLong = direction.includes('BUY') || direction.includes('LONG') || direction.includes('UP');
-    return {
-      ticker: p.ticker,
-      signal: p.signal,
-      signal_ar: p.signal_ar,
-      direction: p.direction || (isLong ? 'LONG' : 'SHORT'),
-      entry_price: entry,
-      target_price: target,
-      stop_loss: stop,
-      risk_reward: p.risk_reward || computeRiskReward(entry, target, stop),
-      status: p.status || 'active',
-      // P0-6 FIX (RADAR-AUDIT-TS B24): لا نخترع 'HOLD' (Rule 27 NO-FAKE-DATA).
-      // exit_status اللحظي يحتاج Python backend لحساب hit_target/trailing/stop
-      // بدقة. عند فشل Python، نرجع null + ملاحظة واضحة بدل fabrication.
-      exit_status: null,
-      exit_reason: null,
-      exit_note: 'حالة الخروج اللحظي غير متاحة — Python backend غير متاح. القيم الأساسية (دخول/هدف/وقف) صحيحة من predictions.db.',
-      prediction_date: p.prediction_date,
-      persona: p.persona,
-      master_score: p.master_score,
-    };
-  });
-
-  return NextResponse.json({
-    success: true,
-    source: 'sqlite_fallback',
-    fallback_mode: true, // مؤشر للواجهة أن exit_status غير محسوب
-    exits: exitStatuses,
-    data: exitStatuses,
-    count: exitStatuses.length,
-    timestamp: new Date().toISOString(),
-  });
 }

@@ -9,7 +9,7 @@
  * Rule 67 (CALCULATION-CANONICAL): Python is the Single Source of Truth.
  *
  * The previous route had 70 lines with a SQLite fallback chain that:
- *   - Used `getPredictionsFallback` (Rule 20 violation — direct SQLite)
+ *   - Used direct SQLite reads via flutter-sqlite-fallback (Rule 20 violation)
  *   - Sorted + sliced in Node (computation in Node)
  *   - Returned `source: 'sqlite_fallback'` (Rule 27 violation — placeholder)
  *

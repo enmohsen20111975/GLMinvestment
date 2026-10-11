@@ -200,18 +200,30 @@
 
 ## ⚡ تغييرات جوهرية (2026-08-31) — اقرأ هذا أولاً
 
-### 🔥 KILL-MAESTRO: V40.2 هو العقل الوحيد
+### 🔥 KILL-MAESTRO → DELETE-MAESTRO (2026-10-12): V40.2 هو العقل الوحيد
 
-**Maestro مات بالكامل.** V40.2 هو مولّد التوقعات الأساسي والوحيد.
+**Maestro اتمسح نهائياً.** V40.2 هو مولّد التوقعات الأساسي والوحيد.
+
+> **2026-10-12 (DELETE-MAESTRO):** سيدي طلب: "Maestro ده ماضي أسود — ممكن تشيلة لان تقريباً مالوش اى لزمة".
+> تم حذف كل ملفات Maestro نهائياً (مش بس تعطيل) وأرشفت في `archive/maestro-dead-code-20261012/`:
+> - `analyzers/maestro_orchestrator.py` (4414 سطر)
+> - `analyzers/crypto_maestro.py` (466 سطر)
+> - `analyzers/unified_maestro.py` (606 سطر)
+> - `api/maestro_routes.py` (1094 سطر)
+> - `src/app/api/maestro/*` (3 Node routes)
+> - `src/modules/dashboard/components/MaestroWidget.tsx`
+> - `src/lib/honest-tracking/maestro.ts` (76KB parallel Node stack)
+> - 5 backfill scripts
+> - blueprint registration اتشال من `lightweight_server.py`
+> - إجمالي: **556 KB dead code** اتشال
 
 | التغيير | التفاصيل |
 |---|---|
-| **V40.2 = المصدر الوحيد** | `v40_2_daily_generator.py` يكتب في `predictions.db` — tracker مفعّل |
-| **Maestro = معطل** | `maestro_orchestrator.py` signal_id = None — مش بيكتب أي توقعات |
-| **background_analyzer** | `self.orchestrator = None` — مش بـ init Maestro |
-| **maestro_routes** | `orchestrator = None` — مش بـ analyze |
-| **analysis_runner** | `run_analysis_batch` returns immediately — Maestro init DISABLED |
-| **day_trading_scanner** | `self.orchestrator = None` — skip |
+| **V40.2 = المصدر الوحيد** | `daily_predictor.py` يكتب في `predictions.db` عبر `record_prediction()` (Single Gate) |
+| **Maestro = محذوف نهائياً** | كل الـ files في `archive/maestro-dead-code-20261012/` — مش معطل بس، محذوف |
+| **PREDICTION-WRITE-GUARD** | `core/prediction_write_guard.py` — الـ Single Gate اللي بـ enforce Rule 35 |
+| **background_analyzer** | Maestro imports في try/except — بـ fail silently لو استدعيت |
+| **recorder.py** | `record_crypto_signals` + `record_egx_signals` — no-op (return early) |
 | **ai_predictions_routes** | يقرأ من `predictions` (V40.2) مش `stored_analyses` (Maestro) |
 
 ### 🧠 V62 Logic (4 ميزات من Pine Script)

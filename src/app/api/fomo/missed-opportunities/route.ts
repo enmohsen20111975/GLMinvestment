@@ -1,117 +1,133 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPaywallUser } from '@/lib/paywall';
-import { getPredictionsFallback } from '@/lib/flutter-sqlite-fallback';
-
 /**
- * PAYWALL-043: FOMO Engine — الأرباح الفائتة
+ * GET /api/fomo/missed-opportunities — Rule 20 Pure Thin Proxy (paywall-gated)
+ * ==============================================================================
  *
- * GET /api/fomo/missed-opportunities
- * Primary: Python /api/daily/rebuild-predictions (closed-predictions feed).
- * Fallback (FLUTTER-FULL-AUDIT): predictions.db — return top-N closed winning
- *   predictions as "missed opportunities". Tickers are obscured (🔒) for
- *   non-premium users per the paywall design.
+ * RULE20-PURE-PROXY (P2-FALLBACK-REMOVAL): Pure thin proxy to Python
+ * with a paywall gate (Rule 20 exception — auth/paywall allowed in Node).
+ *
+ * Rule 20 (Python = brain, Node = display only): ZERO computation in Node.
+ *   The paywall gate (premium check + ticker obscuring) is the ONLY logic
+ *   kept in Node — it's an explicit Rule 20 exception ("auth/subscription/
+ *   paywall"). All data fetching + filtering + sorting + FOMO message
+ *   construction now lives in the Python endpoint
+ *   `/api/fomo/missed-opportunities` (misc_routes.py).
+ *
+ * Rule 27 (NO-FAKE-DATA): NO fallback chain, NO placeholder empty arrays
+ *   returned when Python is unavailable. If Python is down → 503.
+ *
+ * Rule 67 (CALCULATION-CANONICAL): Python is the Single Source of Truth for
+ *   the closed-predictions feed + the FOMO opportunity selection.
+ *
+ * The previous route had a 117-line SQLite fallback chain that:
+ *   - Used `getPredictionsFallback` (Rule 20 violation — direct SQLite reads)
+ *   - Filtered + sorted + sliced in Node (computation in Node)
+ *   - Returned `source: 'sqlite_fallback'` / `source: 'sqlite_fallback_empty'`
+ *     (Rule 27 violation — placeholder data masquerading as a real response)
+ *   - Had a `try/catch` returning `source: 'sqlite_fallback_empty'` on ANY
+ *     internal error (silent failure — masked real bugs)
+ *
+ * Flow:
+ *   1. Check paywall (premium users see no FOMO — empty array, no Python call)
+ *   2. Non-premium → proxy to Python `/api/fomo/missed-opportunities`
+ *   3. Non-premium → obscure tickers (🔒 + _locked=true) in the response
+ *      (paywall display transformation — Rule 20 exception)
  */
 
-const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
+import { NextRequest, NextResponse } from 'next/server';
+import { getPaywallUser } from '@/lib/paywall';
+
 export const dynamic = 'force-dynamic';
 
-function round(val: number, decimals: number = 2): number {
-  const factor = Math.pow(10, decimals);
-  return Math.round(val * factor) / factor;
-}
+const PY =
+  process.env.EGXPY_SERVICE_URL ||
+  process.env.PYTHON_BACKEND_URL ||
+  'http://127.0.0.1:8010';
 
 export async function GET(req: NextRequest) {
+  // 1. Paywall gate — premium users never see FOMO prompts
+  let user: { is_premium: boolean; subscription_tier: string } = {
+    is_premium: false,
+    subscription_tier: 'free',
+  };
   try {
-    const user = await getPaywallUser(req);
-
-    // Premium users don't see FOMO prompts
-    if (user.is_premium) {
-      return NextResponse.json({
-        success: true,
-        is_premium: true,
-        missed_count: 0,
-        missed_opportunities: [],
-        message: '',
-      });
-    }
-
-    // 1. Try Python — closed-predictions feed
-    let closedPredictions: any[] = [];
-    try {
-      const res = await fetch(`${PY}/api/daily/rebuild-predictions`, {
-        signal: AbortSignal.timeout(5000),
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        closedPredictions = data.closedPredictions || data.closed_predictions || [];
-      }
-    } catch { // silent fallback (safe-by-design)
-      // fall through to SQLite
-    }
-
-    // 2. SQLite fallback — predictions.db closed predictions
-    if (closedPredictions.length === 0) {
-      closedPredictions = getPredictionsFallback(200, 'closed') as any[];
-    }
-
-    // Filter: closed winning predictions (hit_target or positive pnl)
-    const today = new Date().toISOString().split('T')[0];
-    const todayWins = closedPredictions.filter((p: any) => {
-      const outcomeDate = (p.outcome_date || p.closed_at || '').split('T')[0];
-      const isToday = outcomeDate === today;
-      const isWin =
-        p.status === 'successful' ||
-        p.hit_target === 1 ||
-        p.hit_target === true ||
-        Number(p.pnl_percent) > 0;
-      // Accept today's wins OR recent wins (within last 3 days) if today's empty
-      return isWin && (isToday || true);
-    });
-
-    // Apply paywall (hide ticker names)
-    const missedOpportunities = todayWins
-      .sort((a, b) => Number(b.pnl_percent || b.actual_return || 0) - Number(a.pnl_percent || a.actual_return || 0))
-      .slice(0, 5)
-      .map((p: any) => ({
-        ticker: '🔒',
-        _locked: true,
-        profit_pct: Number(p.pnl_percent || p.actual_return || 0),
-        signal: p.signal || 'BUY',
-        score: p.master_score || p.maestro_score || 0,
-        holding_days: p.holding_days || p.days_to_close || 0,
-      }));
-
-    const maxGain = missedOpportunities.length > 0
-      ? Math.max(...missedOpportunities.map((m: any) => m.profit_pct))
-      : 0;
-
-    const message = missedOpportunities.length > 0
-      ? `🔥 كان فيه ${missedOpportunities.length} فرص بنسبة نجاح 100% بمكاسب تصل لـ ${maxGain.toFixed(1)}%. اشترك الآن لتلقي فرص قادمة.`
-      : '';
-
-    return NextResponse.json({
-      success: true,
-      source: closedPredictions.length > 0 && !closedPredictions[0]?._sqlite
-        ? 'python_backend'
-        : 'sqlite_fallback',
-      is_premium: false,
-      missed_count: missedOpportunities.length,
-      missed_opportunities: missedOpportunities,
-      max_gain_pct: round(maxGain, 1),
-      message: message,
-    });
+    user = await getPaywallUser(req);
   } catch (e) {
-    console.error('[fomo:missed-opportunities]', e);
+    console.error('[fomo:missed-opportunities] paywall check failed:', e);
+    // safe default: treat as free user (will see FOMO prompt)
+  }
+
+  if (user.is_premium) {
     return NextResponse.json({
       success: true,
-      source: 'sqlite_fallback_empty',
-      is_premium: false,
+      is_premium: true,
       missed_count: 0,
       missed_opportunities: [],
       message: '',
-      error: 'internal_error',
     });
+  }
+
+  // 2. Non-premium → proxy to Python (the canonical missed-opportunities feed)
+  const url = new URL(req.url);
+  const qs = url.searchParams.toString();
+  const targetUrl = `${PY}/api/fomo/missed-opportunities${qs ? `?${qs}` : ''}`;
+
+  try {
+    const res = await fetch(targetUrl, {
+      signal: AbortSignal.timeout(10000),
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!res.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `python-returned-${res.status}`,
+          message:
+            'تعذّر جلب الفرص الفائتة — Python backend أرجع خطأ',
+        },
+        { status: 502 }
+      );
+    }
+
+    const data = await res.json();
+
+    // 3. Paywall display transformation: obscure tickers for non-premium users
+    //    (Rule 20 exception — auth/paywall display transformation only)
+    if (data && Array.isArray(data.missed_opportunities)) {
+      data.missed_opportunities = data.missed_opportunities.map(
+        (p: Record<string, unknown>) => ({
+          ...p,
+          ticker: '🔒',
+          _locked: true,
+        })
+      );
+    }
+
+    // Mark as non-premium (the Python endpoint defaults is_premium=false,
+    // but we override here so the Flutter client trusts the Node-side gate)
+    data.is_premium = false;
+
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Data-Source':
+          data.source || 'python-canonical-fomo-missed-opportunities',
+      },
+    });
+  } catch (error) {
+    console.error(
+      '[fomo:missed-opportunities] Python backend unavailable:',
+      error
+    );
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'python-backend-unavailable',
+        message:
+          'Python backend غير متاح — لا يمكن عرض فرص وهمية (Rule 27)',
+        rule: 'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)',
+      },
+      { status: 503 }
+    );
   }
 }
