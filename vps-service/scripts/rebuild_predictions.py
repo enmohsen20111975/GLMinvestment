@@ -42,8 +42,38 @@ def main():
     log("🔄 Rebuild Historical Predictions")
     log("=" * 60)
 
-    # 1. Count current predictions
-    log("\n--- 1. Current predictions count ---")
+    # DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2): SCRIPT DISABLED.
+    # The previous step 2 of this script did:
+    #     UPDATE predictions SET status='ARCHIVED', notes=... WHERE 1=1
+    # That `WHERE 1=1` is a DELETE in disguise — it archives EVERY row,
+    # including historically-closed TARGET_HIT / STOPPED outcomes, polluting
+    # every honest-tracking + league-report query downstream. The manager
+    # rejected this in Round 2 (Round-2-PARTIAL-REJECT).
+    #
+    # Replacement: hard disable. The V40.2 generator now uses per-ticker
+    # UPSERT (UNIQUE(ticker, prediction_date, persona)) to replace a single
+    # prediction without touching historical outcomes. To revert a prior
+    # bulk-archive, run scripts/restore_archived.py.
+    #
+    # References:
+    #   - Rule 27 (NO-FAKE-DATA)
+    #   - Rule 21 (V40.2 evidence-based)
+    #   - worklog.md DEV-11
+    log("")
+    log("❌ DEV-11: rebuild_predictions.py is disabled.")
+    log("   Reason: step 2 used `UPDATE ... WHERE 1=1` which is a masked")
+    log("   DELETE — it archived every prediction including closed outcomes.")
+    log("")
+    log("   To regenerate predictions for a specific ticker, use the")
+    log("   per-ticker UPSERT path in the V40.2 generator (Rule 35).")
+    log("")
+    log("   To revert a prior bulk-archive, run:")
+    log("     python3 vps-service/scripts/restore_archived.py --execute")
+    sys.exit(0)
+
+    # ── DEV-11 dead code below (sys.exit(0) above ensures this never runs) ──
+    # Preserved for rollback reference. The masked-wipe (UPDATE ... WHERE 1=1)
+    # at the old step 2 has been removed. Do NOT re-enable this code path.
     try:
         conn = sqlite3.connect(PREDICTIONS_DB)
         conn.row_factory = sqlite3.Row
@@ -75,15 +105,20 @@ def main():
     else:
         try:
             conn = sqlite3.connect(PREDICTIONS_DB)
-            # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
-            # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
-            conn.execute(
-                "UPDATE predictions SET status='ARCHIVED', "
-                "notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE 1=1"
-            )
-            deleted = conn.total_changes
-            conn.commit()
-            log(f"  ✓ تأرشفة {deleted} صف من predictions (ARCHIVED بدلاً من المسح)")
+            # DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2): Masked-wipe disabled.
+            # The previous `UPDATE predictions SET status='ARCHIVED', notes=...
+            # WHERE 1=1` was a DELETE in disguise — it archived EVERY row,
+            # including closed TARGET_HIT / STOPPED outcomes. The manager
+            # rejected this in Round 2 (Round-2-PARTIAL-REJECT).
+            #
+            # Replacement: per-ticker archive only (where ticker=? explicitly),
+            # OR run scripts/restore_archived.py to revert a prior bulk-archive.
+            log("  ⚠️ DEV-11: bulk archive (UPDATE WHERE 1=1) is disabled.")
+            log("     To archive specific tickers, use a per-ticker UPDATE")
+            log("     with WHERE ticker = ? (not WHERE 1=1).")
+            log("     To revert a prior bulk-archive, run:")
+            log("       python3 vps-service/scripts/restore_archived.py --execute")
+            conn.close()
 
             # FIX (Aug 2026): لا نمسح aiPrediction ولا stored_analyses.
             # السبب: لما السوق يقفل يوم الخميس والـ script يمسح الجداول،
