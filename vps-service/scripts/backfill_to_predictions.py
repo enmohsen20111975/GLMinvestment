@@ -192,6 +192,7 @@ def store_prediction(conn, ticker, signal, entry, target, stop, pred_date,
 
     pred_id = str(uuid.uuid4())
     cur.execute('''
+        -- DEV-07 verified-disabled (dead code — sys.exit(0) at L392, FINALIZE-UNIFICATION)
         INSERT INTO predictions
         (ticker, signal, signal_type, prediction_date, entry_price, target_price,
          stop_loss, master_score, technical_score, fundamental_score,
