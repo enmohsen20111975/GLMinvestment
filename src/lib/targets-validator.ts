@@ -12,7 +12,11 @@
  *   BUY  (LONG):  stop_loss < entry_price, target1 > entry_price, target2 > target1
  *   SELL (SHORT): stop_loss > entry_price, target1 < entry_price, target2 < target1
  *   RR > 0 (direction-aware: |target - entry| / |stop - entry|)
- *   لو أي قيمة NaN/null/<=0 → fallback لقيمة افتراضية
+ *   لو أي قيمة NaN/null/<=0 → بترجّع null (Rule 27: NO-FAKE-DATA)
+ *
+ * P0-FIX (2026-10-12): شيلنا DEFAULT_TARGET_PCT/STOP_PCT/TARGET2_PCT fabrication.
+ * قبل كده: لو target/stop null → entry×1.07 / entry×0.95 (مصطنع بيظهر للمستخدم)
+ * دلوقتي: null بتفضل null — الـ UI بـ يعرض "— بيانات غير متاحة".
  *
  * FIX-P4 (?? leak): applyValidatedTargets ما بـ يرجّعش للقيمة الأصلية المكسورة لو
  *   الـ validator رجّع null. الـ null بـ ينتقل زي ما هو علشان الـ consumer يـ يعرف.
@@ -47,9 +51,9 @@ export interface ValidatedTargets {
   adjustments: string[];
 }
 
-const DEFAULT_TARGET_PCT = 0.07;   // 7% — فوق entry للـ BUY، تحته للـ SELL
-const DEFAULT_TARGET2_PCT = 0.14;  // 14% — فوق entry للـ BUY، تحته للـ SELL
-const DEFAULT_STOP_PCT = 0.05;     // 5% — تحت entry للـ BUY، فوقه للـ SELL
+// P0-FIX (2026-10-12): DEFAULT_TARGET_PCT/STOP_PCT/TARGET2_PCT اتمسحت (Rule 27 violation).
+// قبل كده: لو target/stop null → entry×1.07 / entry×0.95 = fabrication بتوصل المستخدم.
+// دلوقتي: null بتفضل null — الـ consumer بـ يعرض "—" بدل قيمة مصطنعة.
 
 function num(v: unknown): number | null {
   if (v == null) return null;
@@ -119,16 +123,15 @@ export function validateTargets(input: TradeTargets): ValidatedTargets {
     ? (stop_loss == null || stop_loss <= basePrice)
     : (stop_loss == null || stop_loss >= basePrice);
   if (stopInvalid) {
-    const stopOffset = isSell ? DEFAULT_STOP_PCT : -DEFAULT_STOP_PCT;
-    const fallback = Number((basePrice * (1 + stopOffset)).toFixed(2));
+    // P0-FIX (Rule 27): null بتفضل null — لا fabrication.
     if (stop_loss != null) {
       adjustments.push(
-        `stop_loss ${stop_loss} ${isSell ? '<=' : '>='} entry ${basePrice} → ${fallback} (signal=${signal})`,
+        `stop_loss ${stop_loss} ${isSell ? '<=' : '>='} entry ${basePrice} → null (invalid, signal=${signal})`,
       );
     } else {
-      adjustments.push(`stop_loss null → ${fallback} (signal=${signal})`);
+      adjustments.push(`stop_loss null (signal=${signal})`);
     }
-    stop_loss = fallback;
+    stop_loss = null;
     adjusted = true;
   }
 
@@ -140,16 +143,15 @@ export function validateTargets(input: TradeTargets): ValidatedTargets {
     ? (target1 == null || target1 >= basePrice)
     : (target1 == null || target1 <= basePrice);
   if (target1Invalid) {
-    const targetOffset = isSell ? -DEFAULT_TARGET_PCT : DEFAULT_TARGET_PCT;
-    const fallback = Number((basePrice * (1 + targetOffset)).toFixed(2));
+    // P0-FIX (Rule 27): null بتفضل null — لا fabrication.
     if (target1 != null) {
       adjustments.push(
-        `target1 ${target1} ${isSell ? '>=' : '<='} entry ${basePrice} → ${fallback} (signal=${signal})`,
+        `target1 ${target1} ${isSell ? '>=' : '<='} entry ${basePrice} → null (invalid, signal=${signal})`,
       );
     } else {
-      adjustments.push(`target1 null → ${fallback} (signal=${signal})`);
+      adjustments.push(`target1 null (signal=${signal})`);
     }
-    target1 = fallback;
+    target1 = null;
     adjusted = true;
   }
 
@@ -163,16 +165,15 @@ export function validateTargets(input: TradeTargets): ValidatedTargets {
     ? (target2 == null || target2 >= target1!)
     : (target2 == null || target2 <= target1!);
   if (target2Invalid) {
-    const target2Offset = isSell ? -DEFAULT_TARGET2_PCT : DEFAULT_TARGET2_PCT;
-    const fallback = Number((basePrice * (1 + target2Offset)).toFixed(2));
+    // P0-FIX (Rule 27): null بتفضل null — لا fabrication.
     if (target2 != null) {
       adjustments.push(
-        `target2 ${target2} ${isSell ? '>=' : '<='} target1 ${target1} → ${fallback} (signal=${signal})`,
+        `target2 ${target2} ${isSell ? '>=' : '<='} target1 ${target1} → null (invalid, signal=${signal})`,
       );
     } else {
-      adjustments.push(`target2 null → ${fallback} (signal=${signal})`);
+      adjustments.push(`target2 null (signal=${signal})`);
     }
-    target2 = fallback;
+    target2 = null;
     adjusted = true;
   }
 
@@ -184,14 +185,11 @@ export function validateTargets(input: TradeTargets): ValidatedTargets {
   if (target3 != null) {
     const target3Invalid = isSell ? (target3 >= target2!) : (target3 <= target2!);
     if (target3Invalid) {
-      const target3Offset = isSell
-        ? -(DEFAULT_TARGET2_PCT + 0.05)
-        : (DEFAULT_TARGET2_PCT + 0.05);
-      const fallback = Number((basePrice * (1 + target3Offset)).toFixed(2));
+      // P0-FIX (Rule 27): null بتفضل null — لا fabrication.
       adjustments.push(
-        `target3 ${target3} ${isSell ? '>=' : '<='} target2 ${target2} → ${fallback} (signal=${signal})`,
+        `target3 ${target3} ${isSell ? '>=' : '<='} target2 ${target2} → null (invalid, signal=${signal})`,
       );
-      target3 = fallback;
+      target3 = null;
       adjusted = true;
     }
   }
@@ -209,13 +207,15 @@ export function validateTargets(input: TradeTargets): ValidatedTargets {
   const rewardDist = Math.abs(target1! - basePrice);
   const calculatedRR = riskDist > 0 ? rewardDist / riskDist : NaN;
   if (!isFinite(calculatedRR) || calculatedRR <= 0 || rr == null || rr <= 0) {
+    // P0-FIX (Rule 27): null بتفضل null — لا fabrication بـ 1.5.
+    // لو target1 أو stop_loss null (من الـ fix فوق) → calculatedRR NaN → rr = null.
     const fallback = isFinite(calculatedRR) && calculatedRR > 0
       ? Number(calculatedRR.toFixed(2))
-      : 1.5; // default 1:1.5 لو الحساب فشل
+      : null;
     if (rr != null) {
-      adjustments.push(`RR ${rr} invalid → ${fallback} (signal=${signal})`);
+      adjustments.push(`RR ${rr} invalid → ${fallback ?? 'null'} (signal=${signal})`);
     } else {
-      adjustments.push(`RR null → ${fallback} (signal=${signal})`);
+      adjustments.push(`RR null → ${fallback ?? 'null'} (signal=${signal})`);
     }
     rr = fallback;
     adjusted = true;
