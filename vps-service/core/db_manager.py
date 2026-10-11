@@ -26,6 +26,9 @@ db_manager.py — البوابة المركزية الموحّدة للوصول 
     rows = db_manager.query('stocks', "SELECT ticker, name FROM stocks WHERE is_active=1")
 
     # كتابة (WAL + busy_timeout + auto-checkpoint)
+    # DEV-07: in production, INSERT into predictions must go through
+    # vps-service/core/safe_insert_prediction.py — the example below shows
+    # db_manager.execute() usage and is NOT the sanctioned predictions writer.
     db_manager.execute('predictions',
         "INSERT INTO predictions (ticker, signal) VALUES (?, ?)",
         ('COMI', 'BUY'))
@@ -345,6 +348,9 @@ class DBManager:
         افتح transaction صريح (BEGIN/COMMIT/ROLLBACK تلقائي).
 
         Example:
+            # DEV-07: for predictions, use vps-service/core/safe_insert_prediction.py
+            # instead of raw execute(). The example below illustrates transaction()
+            # usage on a generic table — do NOT use this pattern for predictions.
             with db_manager.transaction('predictions') as conn:
                 conn.execute("INSERT INTO predictions (...) VALUES (...)", (...))
                 conn.execute("UPDATE prediction_logs SET ... WHERE ...", (...))
