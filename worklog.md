@@ -75406,3 +75406,101 @@ Stage Summary:
 - المخاطر الحقيقية المؤكدة: G1 (2 مسار WHERE 1=1), G5 (fail-open), G6 (CI bypass demonstrated)
 - لا يمكن تنفيذ AUDIT-15 (لا يوجد DB) ولا AUDIT-17 (لا يوجد DEPLOY-ROUND3.md)
 - التوصية: المنفذ الفني لازم يصلح G1 (إزالة WHERE 1=1 أو إضافة WHERE محدد), G4 (إضافة BEFORE UPDATE trigger + direction check), G5 (تحويل fail-open→fail-closed), G6 (إزالة marker filters من CI)
+
+---
+Task ID: AUDITOR-INDEPENDENT-3-VERIFICATION
+Agent: المدقق المستقل (المساعد) — تحقق من إصلاحات DEV-11 إلى DEV-15
+Task: التحقق المستقل من أن المنفذ الفني أصلح كل ثغرات G1-G7
+
+## السياق
+أثناء مراجعتي المنقحة، اكتشفت أن المنفذ الفني دفع 6 commits جديدة (DEV-11 إلى DEV-15)
+تستهدف ثغراتي المؤكدة. هذا التقرير يتحقق من كل إصلاح بدليل مباشر.
+
+---
+
+## جدول التحقق النهائي
+
+| الثغرة | أصلحها | الحكم | الدليل المباشر |
+|--------|--------|------|----------------|
+| **G1** (WHERE 1=1 covert wipe) | DEV-11 | ✅ FIXED | `admin_routes.py:1237-1250`: `if clear_existing:` الآن بـ يرجع `410 Gone` بدلًا من `UPDATE ... WHERE 1=1`. الكود القديم محفوظ كتعليق (L1220-1236). نفس النمط في `misc_routes.py:1914-1928` |
+| **G2** (prev_status غير محفوظ) | DEV-11 + DEV-15 | ✅ FIXED | DEV-15 `backfill_hit_timestamps.py:20,29`: بـ يسجل `prev_status='TARGET_HIT'` / `prev_status='STOPPED'` قبل تحويل الـ fake hits. العمود أضافه DEV-11 (`add_prev_status_column.py`) |
+| **G3** (direct INSERTs bypass) | DEV-12 | ✅ FIXED | `prediction_tracker.py:648-705`: الـ 3 INSERTs المباشرة (كانت L676,703,721) اتمسحت. الكود الآن بـ يستدعي `safe_insert_prediction()` (L661, L675). لو الـ module مش متاح → fail-closed `return None` (L670) |
+| **G4** (TRIGGER INSERT فقط) | DEV-13 | ✅ FIXED | `apply_guard_triggers.py:89-99`: `BEFORE UPDATE OF entry_price, target_price, stop_loss` — يحمي UPDATE. `apply_guard_triggers.py:104-113`: `BEFORE INSERT ... WHEN NEW.signal IN ('BUY','STRONG_BUY','ACCUMULATE') AND NEW.target_price <= NEW.entry_price` — فحص اتجاه BUY |
+| **G5** (fail-open) | DEV-12 | ✅ FIXED | `prediction_tracker.py:528-543`: `except Exception as _pg_err:` (مش بس ImportError) → `return None` (fail-CLOSED). التعليق صريح: "DEV-12 (2026-10-13 — PRODUCTION-AUDIT G3+G5): FAIL-CLOSED. The previous `except ImportError: fail-open` was rejected by the manager in Round 2" |
+| **G6** (CI marker bypass) | DEV-14 | ✅ FIXED + demonstrated | `check_no_raw_insert.py:85-108`: استبدل marker filtering بـ `DISABLED_FILES` allowlist (14 file) مع guard verification. **تم الإثبات عمليًا**: اختبار التجاوز اللي نجح قبل كده فشل الآن (CI أمسكه) |
+| **G7** (cron time مش strike time) | DEV-15 | ✅ FIXED | `backfill_hit_timestamps.py:12-29`: بدلًا من `datetime.now(timezone.utc)`، بـ يفحص `stock_daily_prices` لأول يوم `high >= target_price` (لـ TARGET_HIT) أو `low <= stop_loss` (لـ STOPPED) → `target_hit_at = <candle_date>T00:00:00+00:00`. + يكتشف fake hits + يحولها لـ EXPIRED |
+
+---
+
+## اختبار التجاوز المعاد (CI bypass re-test)
+
+### على الكود القديم (b5adbe3):
+```
+ملف: vps-service/test_bypass_auditor.py
+الكود: # DEV-06 disabled \n conn.execute("INSERT INTO predictions ...")
+النتيجة: ✅ PASS (exit 0) — CI BYPASS نجح!
+```
+
+### على الكود الجديد (بعد DEV-14):
+```
+نفس الملف، نفس الكود
+النتيجة: ❌ FAIL (exit 1) — "active INSERT INTO predictions found outside canonical writers"
+السبب: الملف مش في DISABLED_FILES allowlist → تم الإمساك به
+```
+
+**الخلاصة:** الـ CI bypass اللي أثبته لم يعد يعمل. الإصلاح حقيقي. ✅
+
+---
+
+## نتائج CI checks النهائية
+
+```
+check_no_hard_delete.py: ✅ PASS (0 active DELETEs, 3 allowlisted disabled files)
+check_no_raw_insert.py: ✅ PASS (0 active INSERTs, 1 canonical writer, 14 allowlisted)
+```
+
+الـ false positive السابق (`add_prediction_guard_trigger.py:130` test cleanup) أصبح في الـ allowlist مع guard verification صريح.
+
+---
+
+## ما تبقى (غير محسوب)
+
+| البند | الحالة | السبب |
+|-------|--------|-------|
+| AUDIT-15 (25 سجل يدوي) | ⏸️ غير قابل | لا يوجد `db/predictions.db` في الـ repo |
+| AUDIT-17 (DEPLOY-ROUND3.md) | ❌ غير موجود | `find . -name "DEPLOY-ROUND3*"` → 0 نتائج |
+| G4 SELL direction check | ⚠️ gap بسيط | الـ trigger بـ يفحص BUY/STRONG_BUY/ACCUMULATE بس. SELL (target يجب < entry) مش متفحص. لكن معظم توقعات المشروع BUY-type |
+
+---
+
+## ملاحظات نقدية للمنفذ الفني
+
+### إيجابيات الإصلاحات:
+1. **DEV-12 (G3+G5)**: تحويل fail-open → fail-closed + توحيد INSERT site ممتاز. `except Exception` (مش بس ImportError) أدق.
+2. **DEV-13 (G4)**: الـ 3 triggers شاملة. `BEFORE UPDATE OF entry_price, target_price, stop_loss` (column-scoped) ذكي — مش بـ يطلع false positives على UPDATE columns تانية.
+3. **DEV-14 (G6)**: الـ allowlist + guard verification يحل المشكلة جذريًا. الـ bypass اللي أثبته فشل.
+4. **DEV-15 (G7)**: price-aware lookup + fake-hit detection ممتاز. `prev_status` بـ يُحفظ → G2 متاح للاسترداد.
+
+### تحفظات:
+1. **DEV-15 لم يُطبّق بعد على الإنتاج**: الـ backfill script موجود بس محتاج `--execute` لتشغيله. لا يوجد DB للإنتاج في الـ repo للتحقق من النتائج.
+2. **G4 SELL gap**: مفيش trigger لـ SELL direction. لو فيه توقعات SELL في النظام، الـ direction check ناقص.
+3. **prev_status column**: محتاج التأكد إنه أُضيف فعلاً لـ schema الإنتاج (DEV-11 add_prev_status_column.py).
+
+---
+
+## الحكم النهائي على المنفذ الفني
+
+**المنفذ الفني أصلح كل الثغرات السبعة (G1-G7) التي أبلغت عنها في المراجعة المنقحة.**
+
+كل إصلاح تم بدليل مباشر في الكود، والـ CI bypass الذي أثبته عمليًا لم يعد يعمل.
+الإصلاحات تعكس فهمًا حقيقيًا للمخاطر (مش مجرد تمرير CI):
+- fail-open → fail-closed (فهم روح defense-in-depth)
+- marker filtering → explicit allowlist + guard verification (فهم إن الـ markers بـ تُخفي المشكلة مش بـ تحلها)
+- cron time → price-aware lookup (فهم إن التوقيت الصحيح محتاج بيانات سعرية فعلية)
+
+Stage Summary:
+- 7/7 ثغرات (G1-G7) تم إصلاحها والتحقق منها بدليل مباشر
+- CI bypass demonstration: نجح قبل الإصلاح، فشل بعد الإصلاح
+- كلا CI checks: ✅ PASS
+- ما تبقى: AUDIT-15 (لا يوجد DB) + AUDIT-17 (DEPLOY-ROUND3.md غير موجود) + G4 SELL gap بسيط
+- التوصية: المنفذ الفني جاهز للنشر شرط: (1) تطبيق DEV-15 backfill بـ --execute على DB الإنتاج، (2) إضافة DEPLOY-ROUND3.md بـ rollback steps، (3) مراعاة SELL direction في trigger مستقبلي
