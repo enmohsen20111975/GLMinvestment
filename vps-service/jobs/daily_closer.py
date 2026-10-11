@@ -20,7 +20,7 @@ Author: دليل الاستثمار
 import os
 import logging
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -3058,13 +3058,17 @@ class DailyCloser:
                 round(highest_price_reached, 2),
                 round(lowest_price_reached, 2) if lowest_price_reached and lowest_price_reached > 0 else None,
                 status,
-                # target_hit_at + stop_hit_at (2026-10-12 — PRODUCTION-AUDIT):
+                # target_hit_at + stop_hit_at (2026-10-12 — PRODUCTION-AUDIT / DEV-08):
                 # قبل كده: مفيش توقيت الضربة في أي سجل (NULL في كل الـ 506 TARGET_HIT + 83 STOPPED)
-                # دلوقتي: نكتب datetime.now().isoformat() وقت الإغلاق
+                # DEV-02 السابق كان بيكتب `datetime.now().isoformat()` (توقيت محلي + وقت تشغيل
+                # الـ cron مش وقت الضربة الفعلي). DEV-08:
+                #   1.UTc timestamp موثّق (`datetime.now(timezone.utc)`)
+                #   2.وضّح إنه "وقت الإغلاق" مش "وقت الضربة" — التوقيت الحقيقي للضربة
+                #     مش نقدر نعرفه بـ daily OHLC (محتاج intraday tick data).
                 status,  # CASE parameter (status for TARGET_HIT check)
-                datetime.now().isoformat(),  # target_hit_at value
+                datetime.now(timezone.utc).isoformat(),  # target_hit_at value — UTC close-time
                 status,  # CASE parameter (status for STOPPED check)
-                datetime.now().isoformat(),  # stop_hit_at value
+                datetime.now(timezone.utc).isoformat(),  # stop_hit_at value — UTC close-time
                 pred_id
             ))
             conn.commit()
