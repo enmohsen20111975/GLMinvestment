@@ -16,7 +16,7 @@
  *   (generate_daily_summary). Node.js is display-only (Rule 20 — Python=Brain).
  *
  * Professional design (Bloomberg / Reuters style):
- *   - Dark navy background (#0a0e1a) for screen + print
+ *   - Theme-aware background via `bg-background` design token (light/dark)
  *   - Emerald for gains, red for losses, amber for warnings, gold for highlights
  *   - RTL Arabic throughout
  *   - KPI tiles for market summary (advancers/decliners/unchanged/volume)
@@ -24,6 +24,9 @@
  *   - Sector heatmap (color-coded)
  *   - AI summary text (from Python — never fabricated in Node)
  *   - Export as PNG (html-to-image, 2x retina) + Print (window.print → PDF)
+ *
+ * DEV-19: zero hardcoded colors — every visual value resolves from the
+ * design-token palette (CSS variables / Tailwind classes).
  *
  * Rule 67 honesty:
  *   When Python is offline (proxy returns 502/504), we render a typed
@@ -111,7 +114,7 @@ function ReportHeader({
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:border-amber-500/40"
+      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-background via-card to-muted p-5 print:border-amber-500/40"
       dir="rtl"
     >
       {/* Top gold accent line */}
@@ -119,7 +122,7 @@ function ReportHeader({
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 via-amber-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-            <BarChart3 className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
+            <BarChart3 className="w-7 h-7 text-background" strokeWidth={2.5} />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
@@ -288,9 +291,10 @@ function SectorHeatmap({ sectors }: { sectors: SectorRow[] }) {
       {sectors.map((s, i) => {
         const change = Number(s.avg_change_percent ?? 0);
         const intensity = Math.min(Math.abs(change) / 5, 1);
-        const bg = change >= 0
-          ? `rgba(16, 185, 129, ${0.15 + intensity * 0.45})`
-          : `rgba(239, 68, 68, ${0.15 + intensity * 0.45})`;
+        // DEV-19: heatmap colors resolved from design tokens (--success / --danger)
+        // so the report stays theme-aware — no hardcoded rgba() literals.
+        const heatVar = change >= 0 ? '--success' : '--danger';
+        const bg = `hsl(var(${heatVar}) / ${0.15 + intensity * 0.45})`;
         const border = change >= 0 ? 'border-emerald-500/40' : 'border-red-500/40';
         return (
           <div
@@ -385,7 +389,8 @@ export function DailyMarketReport({ printMode = false, market }: DailyMarketRepo
       await exportReportToPng(reportRef.current, {
         filename: `daily_market_report_${new Date().toISOString().split('T')[0]}`,
         pixelRatio: 2,
-        backgroundColor: '#0a0e1a',
+        // DEV-19: omit backgroundColor — exportReportToPng resolves
+        // --background from the active theme at runtime (zero hardcoded).
       });
       toast.success('تم تصدير صورة التقرير (دقة عالية)');
     } catch (err) {
@@ -425,7 +430,7 @@ export function DailyMarketReport({ printMode = false, market }: DailyMarketRepo
     <div
       id="daily-market-report-content"
       ref={reportRef}
-      className="space-y-5 print:space-y-3 bg-[#0a0e1a] print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
       dir="rtl"
     >
       {/* Header */}
@@ -538,7 +543,7 @@ export function DailyMarketReport({ printMode = false, market }: DailyMarketRepo
       <section aria-label="أكثر الأسهم تحركاً">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Gainers */}
-          <Card className="overflow-hidden border-emerald-500/30 bg-[#0d1320]">
+          <Card className="overflow-hidden border-emerald-500/30 bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-bold flex items-center gap-2 text-emerald-400">
                 <TrendingUp className="w-5 h-5" />
@@ -567,7 +572,7 @@ export function DailyMarketReport({ printMode = false, market }: DailyMarketRepo
           </Card>
 
           {/* Losers */}
-          <Card className="overflow-hidden border-red-500/30 bg-[#0d1320]">
+          <Card className="overflow-hidden border-red-500/30 bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-bold flex items-center gap-2 text-red-400">
                 <TrendingDown className="w-5 h-5" />
@@ -599,7 +604,7 @@ export function DailyMarketReport({ printMode = false, market }: DailyMarketRepo
 
       {/* Sector Heatmap */}
       <section aria-label="خريطة القطاعات">
-        <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320]">
+        <Card className="overflow-hidden border-slate-700/50 bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
               <Layers className="w-5 h-5" />
@@ -618,7 +623,7 @@ export function DailyMarketReport({ printMode = false, market }: DailyMarketRepo
       {/* AI Summary (Python-generated text) */}
       {report.content && (
         <section aria-label="الملخص الذكي">
-          <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+          <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-card to-muted">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
                 <Activity className="w-5 h-5" />
