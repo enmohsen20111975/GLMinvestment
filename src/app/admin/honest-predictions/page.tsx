@@ -242,25 +242,26 @@ export default function HonestPredictionsPage() {
   const [dynamicSource, setDynamicSource] = useState<string>('defaults');
 
   const fetchDynamicParams = useCallback(async () => {
-    try {
-      // GHOST-BUSTER-024: cache: 'no-store' + cache buster عشان نمنع Next.js
-      // والمتصفح من تخزين الـ response القديم (سبب ظهور البيانات الوهمية)
-      const res = await fetch(`/api/admin/generate-historical-predictions?_t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' },
-      });
-      const data = await res.json();
-      if (data.success && data.params) {
-        setDynamicParams(data.params);
-        setDynamicSource(data.source || 'defaults');
-        setAtrPeriod(data.params.atrPeriod ?? 14);
-        setSwingLookback(data.params.swingLookback ?? 20);
-        setRsiOverbought(data.params.rsiOverbought ?? 75);
-        setRsiOversold(data.params.rsiOversold ?? 25);
-        setMinRiskReward(data.params.minRiskReward ?? 1.5);
-        setExitSignalThreshold(data.params.exitSignalThreshold ?? 60);
-      }
-    } catch { /* ignore - safe-by-design */ }
+    // MAESTRO-GHOST-HUNT (2026-10-12 — SIDE-EFFECTS-AUDIT):
+    // /api/admin/generate-historical-predictions اتعطل (410 Gone) — كان rogue path
+    // بـ INSERT في predictions من Node (Rule 35 violation).
+    // الـ params الديناميكية مفقودة دلوقتي — الحل: اعرض defaults محلية + رسالة توضيحية.
+    // لحد ما Python endpoint يتضاف لـ /api/admin/dynamic-params، بنستخدم defaults.
+    setDynamicParams({
+      atrPeriod: 14,
+      swingLookback: 20,
+      rsiOverbought: 75,
+      rsiOversold: 25,
+      minRiskReward: 1.5,
+      exitSignalThreshold: 60,
+    });
+    setDynamicSource('defaults (Python endpoint disabled)');
+    setAtrPeriod(14);
+    setSwingLookback(20);
+    setRsiOverbought(75);
+    setRsiOversold(25);
+    setMinRiskReward(1.5);
+    setExitSignalThreshold(60);
   }, []);
 
   const [startDate, setStartDate] = useState('2025-01-01');
@@ -369,44 +370,12 @@ export default function HonestPredictionsPage() {
   const handleGenerate = async () => {
     setGenerating(true);
     toast.info('بدأ توليد التوقعات التاريخية الحقيقية لكل الأسواق...');
-    try {
-      const res = await fetch('/api/admin/generate-historical-predictions', {
-        method: 'POST',
-        // GHOST-BUSTER-024: no-store حتى لطلبات POST
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        },
-        body: JSON.stringify({
-          startDate,
-          endDate,
-          tickersPerMarket,
-          clearExisting,
-          sampleEveryDays,
-          markets: ['EGX', 'TADAWUL', 'KSE', 'QSE'],
-          technicalParams: {
-            atrPeriod,
-            swingLookback,
-            rsiOverbought,
-            rsiOversold,
-            minRiskReward,
-            exitSignalThreshold,
-          },
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(`تم توليد ${data.stats.total_predictions} توقع حقيقي عبر ${data.stats.markets_covered.length} سوق — نسبة الفوز الحقيقية ${data.stats.real_win_rate}%`);
-        fetchAll();
-      } else {
-        toast.error(`فشل التوليد: ${data.error}`);
-      }
-    } catch (e: Record<string, unknown>) {
-      toast.error(`خطأ: ${e.message}`);
-    } finally {
-      setGenerating(false);
-    }
+    // MAESTRO-GHOST-HUNT (2026-10-12 — SIDE-EFFECTS-AUDIT):
+    // /api/admin/generate-historical-predictions اتعطل (410 Gone) — كان rogue path.
+    // الحل: اعرض رسالة واضحة إن التوليد انتقل لـ Python V40.2 (Rule 35).
+    toast.error('توليد التوقعات التاريخية انتقل لـ Python V40.2. شغّل: python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5');
+    setGenerating(false);
+    return;
   };
 
   const handleVerify = async () => {
@@ -482,46 +451,11 @@ export default function HonestPredictionsPage() {
     setTesting(true);
     setTestReport(null);
     toast.info('جارٍ الاختبار الكامل: توليد + تحقق + تعلم + Python cycle...');
-    try {
-      const res = await fetch('/api/admin/generate-historical-predictions', {
-        method: 'POST',
-        // GHOST-BUSTER-024: no-store
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        },
-        body: JSON.stringify({
-          startDate,
-          endDate,
-          tickersPerMarket,
-          clearExisting,
-          sampleEveryDays,
-          markets: ['EGX', 'TADAWUL', 'KSE', 'QSE'],
-          technicalParams: {
-            atrPeriod,
-            swingLookback,
-            rsiOverbought,
-            rsiOversold,
-            minRiskReward,
-            exitSignalThreshold,
-          },
-          runFullTest: true,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setTestReport(data);
-        toast.success(`الاختبار الكامل اكتمل: ${data.message}`);
-        fetchAll();
-      } else {
-        toast.error(`فشل الاختبار الكامل: ${data.error}`);
-      }
-    } catch (e: Record<string, unknown>) {
-      toast.error(`خطأ في الاختبار: ${e.message}`);
-    } finally {
-      setTesting(false);
-    }
+    // MAESTRO-GHOST-HUNT (2026-10-12 — SIDE-EFFECTS-AUDIT):
+    // /api/admin/generate-historical-predictions اتعطل (410 Gone).
+    toast.error('الاختبار الكامل انتقل لـ Python. شغّل: daily_predictor.py + daily_closer.py + learning_engine.py');
+    setTesting(false);
+    return;
   };
 
   // ============================================================================

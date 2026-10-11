@@ -300,7 +300,7 @@
 | 19 | `OpportunityCard.tsx` | sniper/ |
 | 20 | `V82DecisionPanel.tsx` | v82/ |
 | 21 | `DeepAnalysis.tsx` | stocks/ |
-| 22 | `PredictionsBacktestTable.tsx` | dashboard/ |
+| 22 | ~~`PredictionsBacktestTable.tsx`~~ 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/dashboard/`) | dashboard/ |
 
 ### 2. Chart Components — 7 مكونات (3,813 LOC مكررة)
 
@@ -309,7 +309,7 @@
 | `TradingViewChart.tsx` | 1,821 | lightweight-charts |
 | `InteractiveChart.tsx` | 1,677 | lightweight-charts |
 | `TradingChartView.tsx` | 315 | wrapper |
-| `CryptoTradingChartView.tsx` | 275 | lightweight-charts (crypto) |
+| ~~`CryptoTradingChartView.tsx`~~ 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12) | 275 | lightweight-charts (crypto) — archived لـ `archive/dead-components-20261012/crypto/` |
 | `ChartCard.tsx` | ? | screener |
 | `ComparisonChartCard.tsx` | ? | screener |
 | `admin/live-chart/index.tsx` | ? | admin |

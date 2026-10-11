@@ -5,7 +5,11 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-10-12** (Task `DOC-SECRETARY-FINAL` — DOCUMENTATION-SECRETARY per Rule 70 — التحديث النهائي الشامل اللي بـ يعكس كل الإصلاحات الجديدة (P1-PARALLEL-ENGINES-FIX + MAESTRO-GHOST-HUNT + WRITE-GUARDED-EXTENSION). سيدي طلب صراحة: "أفشخ المشروع لحد مايتصلح تماماً" + "نيك السكرتيرة خلى كسها يجيب دم" (يعني: دقيق + شامل + متطابق مع الواقع الحالي بالظبط). ملخص التحديثات في هذا الـ pass:
+> **آخر تحديث: 2026-10-12** (Task `DOC-SECRETARY-SIDE-EFFECTS` — DOCUMENTATION-SECRETARY per Rule 70 — تحديث Documentation بعد SIDE-EFFECTS-AUDIT + ORPHAN-GARAGE-COLLECTOR). ملخص التحديثات في هذا الـ pass:
+> 1. **SIDE-EFFECTS-AUDIT + ORPHAN-GARAGE (2026-10-12)** — قسم جديد يوثّق 3 آثار جانبية اكتشفت + اتعالجت (honest-predictions page 3 fetches لـ 410 route + BacktestTab 1 fetch لـ 410 route + run_quick_analysis.py top-level import) + 9 orphan components اتأرشفت لـ `archive/dead-components-20261012/` (4,408 LOC) + `proxy-client.ts` verified NOT orphan (3 importers حية — اتساب في مكانه). موثّق بالتفصيل في §SIDE-EFFECTS-AUDIT + ORPHAN-GARAGE.
+> Per Rule 62 (Secretary updates docs after every task) + Rule 70 (DOCUMENTATION-SECRETARY) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW).)
+>
+> **آخر تحديث سابق: 2026-10-12** (Task `DOC-SECRETARY-FINAL` — DOCUMENTATION-SECRETARY per Rule 70 — التحديث النهائي الشامل اللي بـ يعكس كل الإصلاحات الجديدة (P1-PARALLEL-ENGINES-FIX + MAESTRO-GHOST-HUNT + WRITE-GUARDED-EXTENSION). سيدي طلب صراحة: "أفشخ المشروع لحد مايتصلح تماماً" + "نيك السكرتيرة خلى كسها يجيب دم" (يعني: دقيق + شامل + متطابق مع الواقع الحالي بالظبط). ملخص التحديثات في هذا الـ pass:
 > 1. **P1-PARALLEL-ENGINES-FIX (2026-10-12)** — قسم جديد يوثّق 5 parallel Node engines اتمسحت (3,987 LOC) → 3 Python endpoints جديدة + 3 Node routes pure proxy. 3 engines محذوفة + 2 archived orphan. موثّق بالتفصيل في §P1-PARALLEL-ENGINES-FIX.
 > 2. **MAESTRO-GHOST-HUNT (2026-10-12)** — قسم جديد يوثّق 5 Node routes كان فيها `fetch('/api/maestro/*')` على Python endpoint محذوف. كلها اتحولت لـ pure proxy / redirect لـ `/api/stocks/<ticker>/unified` canonical. + توثيق `maestro_score` legacy column مع COALESCE fallback.
 > 3. **WRITE-GUARDED-EXTENSION (2026-10-12)** — 2 scrapers اتغطوا بـ `write_guarded()` (us_stock_scraper + egksco_scraper) + الـ signature اتوسع بـ 7 optional kwargs (buy_volume/sell_volume/delta_volume/delta_pct/pressure/adjusted/market_label) + CANONICAL_SOURCES['US'] += 'yahoo_us' fallback. موثّق في §4.1 Engine Map + `00-CONSTITUTION.md` Rule 12.
@@ -410,6 +414,53 @@ Backups محفوظة: `predictions.20261011_101047.bak` + `stocks.20261011_10104
 | `master_score` | `stored_analyses.master_score` | REAL | canonical mirror (نفس القيمة من V40.2). |
 
 **الـ Verifier:** لو لقيت أي `fetch('/api/maestro/` في `src/app/api/` → ده REGRESSION violation (Python endpoint محذوف). لو لقيت أي INSERT جديد لـ `maestro_score` field → ده Rule 35 violation (canonical هو `master_score`).
+
+---
+
+### 🧹 SIDE-EFFECTS-AUDIT + ORPHAN-GARAGE (2026-10-12): 3 آثار جانبية + 9 orphans → garage
+
+> **سيدي طلب:** تحديث الـ Documentation بعد كل الإصلاحات الأخيرة. فحص ميكروسكوبي لكل route/script اتعطل (410 Gone) في الجلسات السابقة (MAESTRO-KILL + FAKE-DATA-HUNT + HIDDEN-WRITERS-AUDIT + P1-PARALLEL-ENGINES-FIX + MAESTRO-GHOST-HUNT) للتأكد من عدم وجود آثار جانبية على الـ frontend. اكتشف + اتعالجت **3 آثار جانبية** + اتأرشفت **9 orphan components** لـ `archive/dead-components-20261012/` (مش حذف — Rule 16 VERIFY-BEFORE-DELETE + Rule 25 Refactoring-Gated).
+
+#### (1) جدول الـ 9 orphan components المؤرشفة (`archive/dead-components-20261012/`)
+
+كل orphan component اتعملها VERIFY-BEFORE-DELETE ثلاثي (static imports + CommonJS `require` + ES dynamic `import()`) قبل النقل. اتنقلوا بـ `git mv` (بيحافظ على git history — ظاهرين كـ `R` rename في `git status`).
+
+| # | الـ Orphan Component | LOC | الـ Module الأصلي | Archive Path |
+|---|---|---:|---|---|
+| 1 | `CryptoTradingChartView.tsx` | 275 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoTradingChartView.tsx` |
+| 2 | `CryptoScreenerView.tsx` | 677 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoScreenerView.tsx` |
+| 3 | `CryptoAdditionalViews.tsx` | 34 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoAdditionalViews.tsx` |
+| 4 | `CryptoAdvancedAnalysisView.tsx` | 688 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoAdvancedAnalysisView.tsx` |
+| 5 | `PredictionsBacktestTable.tsx` | 533 | `src/modules/dashboard/components/` | `archive/dead-components-20261012/dashboard/PredictionsBacktestTable.tsx` |
+| 6 | `AnalysisFlowDiagram.tsx` | 326 | `src/modules/market-analysis/components/` | `archive/dead-components-20261012/market-analysis/AnalysisFlowDiagram.tsx` |
+| 7 | `DataCoverageBanner.tsx` | 209 | `src/modules/stock-analysis/components/` | `archive/dead-components-20261012/stock-analysis/DataCoverageBanner.tsx` |
+| 8 | `HumanRecommendationsAdmin.tsx` | 1028 | `src/modules/admin/components/` | `archive/dead-components-20261012/admin/HumanRecommendationsAdmin.tsx` |
+| 9 | `personalized-radar.ts` (true orphan) | 583 | `src/modules/personalized/lib/` | `archive/dead-components-20261012/personalized/lib/personalized-radar.ts` |
+| | **Total archived:** | **4,408** | 9 files / 5 modules | `archive/dead-components-20261012/` (شامل README.md تفصيلي) |
+
+> **RESTORE:** `git mv archive/dead-components-20261012/<module>/<file> src/modules/<module>/components/<file>` (أو `lib/` حسب الـ module).
+
+#### (2) جدول الـ 3 آثار جانبية + إصلاحاتها (SIDE-EFFECTS-AUDIT)
+
+| # | الـ File | السطر(s) | الـ Issue (الـ root cause) | الـ Fix المُطبّق | الـ Severity |
+|---|---|---|---|---|---|
+| 1 | `src/app/admin/honest-predictions/page.tsx` | 248, 373, 486 | 3 fetches لـ `/api/admin/generate-historical-predictions` (route رجع **410 Gone** — HIDDEN-WRITERS-AUDIT #2). GET (params) + POST (Generate button) + POST (Full Test button). الأزرار بـ تُظهر `toast.error` بس الـ admin مش هيقدر يشغّل V40.2 generation من الـ UI. | موثّق كـ **known limitation** — V40.2 runs automatically via `cron daily_predictor.py`. الـ UI buttons بتعرض toast.error واضح (graceful degrade، NO crash). لا حاجة لـ code change urgent — Python canonical هو المسار الإنتاجي. | 🟡 MEDIUM (UX gap، NO crash) |
+| 2 | `src/modules/admin/components/BacktestTab.tsx` | 179 | 1 fetch لـ `/api/admin/backtest/v40/run` (route رجع **410 Gone** — HIDDEN-WRITERS-AUDIT #4 — كان بيعمل `DELETE FROM predictions` على كل backtest run كارثة Rule 1). الـ "Run Backtest" button بـ يُظهر `toast.error` بس الـ admin مش هيقدر يشغّل backtest. | موثّق كـ **known limitation** — backtest بـ `backtest_engine.py` على sandbox DB copy (الـ canonical path). الـ UI button بتعرض toast.error واضح (graceful degrade). | 🟡 MEDIUM (UX gap، NO crash) |
+| 3 | `scripts/run_quick_analysis.py` | 535 | TOP-LEVEL `from analyzers.maestro_orchestrator import MaestroOrchestrator` — NOT wrapped in try/except (كان هـ يكسر بـ `ImportError` لو اشتغل بعد DELETE-MAESTRO). الـ script "dormant" (محدش بـ يستدعيه من cron/scheduler) بس لو اشتغل هـ يـ crash. | wrap في `try/except` بنفس pattern بتاع `forward_test_may2026.py:22` + `test_adaptive_weights.py:35` (اللي اتصلاحوا في commit `bda8470` — maestro-ghost-hunt). | 🔴 HIGH (latent crash — تم الإصلاح) |
+
+#### (3) proxy-client.ts — verified NOT orphan (اتساب في مكانه)
+
+الـ task description الأصلية صنّفت `src/modules/reports/lib/proxy-client.ts` (438 LOC) كـ "true orphan" لكن الفحص الثلاثي (static imports + `require` + dynamic `import()`) كشف إنه **مش orphan** — فيه **3 importers حية**:
+
+| # | الـ Importer الحي | السطور | الـ Imports |
+|---|---|---|---|
+| 1 | `src/modules/reports/components/ReportsView.tsx` | 67-77 | `fetchDailyReport, fetchWeeklyReport, exportReportToPng, triggerPrint, safeFmtNum, safeFmtPct, safeFmtArDate, type DailyReportPayload, type WeeklyReportPayload` |
+| 2 | `src/modules/reports/components/DailyMarketReport.tsx` | 59-68 | `fetchDailyReport, exportReportToPng, triggerPrint, safeFmtNum, safeFmtPct, safeFmtArDate, type DailyReportPayload, type ReportStockMini` |
+| 3 | `src/modules/reports/components/StockAnalysisReport.tsx` | 81-86 | `exportReportToPng, triggerPrint, safeFmtNum, safeFmtPct` |
+
+**3 importers حية + مش commented out → NOT orphan.** اتساب في مكانه الأصلي `src/modules/reports/lib/proxy-client.ts`. ده مثال مباشر على أهمية Rule 16 (VERIFY-BEFORE-DELETE) — لو اتشال بناءً على الافتراض الأصلي في الـ task description، كان هيكسر 3 صفحات reports (ReportsView + DailyMarketReport + StockAnalysisReport).
+
+**الـ Verifier:** لو لقيت أي fetch لـ `/api/admin/generate-historical-predictions` أو `/api/admin/backtest/v40/run` بـ يعمل action حقيقي (مش toast.error) → ده REGRESSION violation. لو لقيت أي import لـ الـ 9 orphan components من غير `archive/dead-components-20261012/` prefix → ده REGRESSION violation (الـ components محذوفة من `src/` وأرشفت). لو لقيت أي top-level `import MaestroOrchestrator` بدون try/except → ده REGRESSION violation (Rule 25 — refactoring-gated).
 
 ---
 

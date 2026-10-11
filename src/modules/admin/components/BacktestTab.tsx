@@ -175,38 +175,14 @@ export function BacktestTab() {
   const runBacktest = async () => {
     setRunning(true);
     setJobStatus('running');
-    try {
-      const res = await fetch('/api/admin/backtest/v40/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          start_date: startDate,
-          end_date: endDate,
-          max_picks: maxPicks,
-          clear_existing: true,
-          market,
-          strategy,
-          persona: persona === 'all' ? 'balanced' : persona,
-        }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setJobId(json.data.job_id);
-        const extra: string[] = [];
-        if (market !== 'ALL') extra.push(`سوق=${market}`);
-        if (persona !== 'all') extra.push(`persona=${persona}`);
-        const extraStr = extra.length ? ` — ${extra.join(' / ')}` : '';
-        toast.info(`الباك تست بدأ (job ${json.data.job_id})${extraStr}. ممكن ياخد 5-10 دقايق.`);
-      } else {
-        toast.error(json.error || 'فشل بدء الباك تست');
-        setJobStatus('failed');
-        setRunning(false);
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'خطأ');
-      setJobStatus('failed');
-      setRunning(false);
-    }
+    // MAESTRO-GHOST-HUNT (2026-10-12 — SIDE-EFFECTS-AUDIT):
+    // /api/admin/backtest/v40/run اتعطل (410 Gone) — كان بـ يعمل DELETE FROM predictions
+    // على كل backtest (Rule 1 + Rule 35 violation). الحل: اعرض رسالة واضحة إن الـ backtest
+    // لازم يشتغل على sandbox DB copy (مش production) + اعرض الـ command.
+    toast.error('Backtest endpoint معطل. شغّل على sandbox DB copy: python3 vps-service/jobs/daily_predictor.py --start <date> --end <date> --max-picks 5');
+    setRunning(false);
+    setJobStatus('idle');
+    return;
   };
 
   const summary = data?.summary;

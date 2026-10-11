@@ -179,7 +179,7 @@
 | `#picks-management` | `modules/predictions/` | PicksManagementView — `hunter_pick_tracking` populated (P0 fix #2) |
 | `#portfolio` | `modules/portfolio/` | EnhancedPortfolioView + RoboAdvisorPanel + AdvancedPortfolioManager + BagHolderRescuePanel + RiskProfilerQuiz + ... (15 components) |
 | `#watchlist` | `modules/portfolio/` | Shares module with portfolio — multi-portfolio selector |
-| `#crypto` (8 sub-views) | `modules/crypto/` | CryptoTradingChartView + CryptoAdditionalViews + CryptoPredictionTrackingView + CryptoAdvancedAnalysisView + CryptoSimulationView + CryptoScreenerView + CryptoLearningView + CryptoPortfolioView |
+| `#crypto` (8 sub-views → 4 live بعد ORPHAN-GARAGE-COLLECTOR 2026-10-12) | `modules/crypto/` | ~~`CryptoTradingChartView`~~ 🗑️ **محذوف/أرشيف** (archive/dead-components-20261012/) + ~~`CryptoAdditionalViews`~~ 🗑️ **محذوف/أرشيف** + ~~`CryptoAdvancedAnalysisView`~~ 🗑️ **محذوف/أرشيف** + ~~`CryptoScreenerView`~~ 🗑️ **محذوف/أرشيف** + `CryptoPredictionTrackingView` (live) + `CryptoSimulationView` (live) + `CryptoLearningView` (live) + `CryptoPortfolioView` (live) |
 | `#reports` | `modules/reports/` | ReportsView + DataManager + StockAnalysisReport + DailyMarketReport + ExecutiveReportView |
 | `#simulation` | `modules/simulation/` | SimulationView |
 | `#academy` (single canonical) | `modules/education/` | AcademyView + AcademyEncyclopedia + CandlestickSimulator + StrategySandbox + PaperTradingWorkstation + LessonPDFExporter + MathRenderer + LearningVisuals (8 components — `#learning` archived 2026-10-01 to `archive/education-duplicate-2026-10-01/`) |
@@ -963,7 +963,7 @@ AdminView (1,913 LOC)
 ├── <RegimeDetectionWidget />     # 126 LOC
 ├── <SystemProblemsTab />         # 488 LOC
 ├── <PromoCodesAdmin />           # 592 LOC
-├── <HumanRecommendationsAdmin /> # 964 LOC
+├── ~~<HumanRecommendationsAdmin />~~ 🗑️ **محذوف/أرشيف** (archive/dead-components-20261012/admin/ — 1,028 LOC — ORPHAN-GARAGE-COLLECTOR 2026-10-12)
 ├── <UsersManagement />           # 1,086 LOC
 ├── <DatabaseManagerFull />       # 3,259 LOC — بديل DatabaseManager
 ├── <NotebookAdminTab />          # 524 LOC — (جديد 2026-09-01) إدارة Stock Notebooks
@@ -1008,7 +1008,7 @@ AdminView (1,913 LOC)
 | `admin/SystemProblemsTab.tsx` | 488 | active | مشاكل النظام |
 | `admin/UsersManagement.tsx` | 1,086 | active | إدارة المستخدمين |
 | `admin/PromoCodesAdmin.tsx` | 592 | active | أكواد الخصم |
-| `admin/HumanRecommendationsAdmin.tsx` | 964 | active | توصيات يدوية |
+| ~~`admin/HumanRecommendationsAdmin.tsx`~~ | ~~1,028~~ | 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/admin/`) | توصيات يدوية — 0 importers حية |
 | `admin/SectorClassificationAdmin.tsx` | 274 | active | تصنيف القطاعات |
 | `admin/UnifiedCommandCenter.tsx` | 1,344 | ❌ DEAD | duplicate cmd center |
 | `admin/UnifiedControlTab.tsx` | 883 | ❌ DEAD | duplicate |
@@ -1784,7 +1784,7 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 > ⚠️ إخلاء مسؤولية قانوني: هذه المنصة تقدم رأيًا شخصيًا آليًا لأغراض تعليمية وتحليلية فقط، وليست توصية استثمارية أو نصيحة مالية. القرار النهائي مسؤولية العميل وحده. لا يوجد أي ضمان للنتائج. السوق يحتوي على مخاطر، والخسارة ممكنة. استشر مستشارًا ماليًا مرخصًا قبل أي قرار استثماري.
 
 **4. LegalDisclaimerFooter في كل شاشات:**
-- CryptoScreenerView, CryptoPredictionTrackingView, CryptoAdvancedAnalysisView, CryptoTradingChartView
+- ~~`CryptoScreenerView`~~ 🗑️ **محذوف/أرشيف** + ~~`CryptoAdvancedAnalysisView`~~ 🗑️ **محذوف/أرشيف** + ~~`CryptoTradingChartView`~~ 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/crypto/`) + `CryptoPredictionTrackingView` (live)
 - StockScreenerAdvanced
 - Footer.tsx (كل الصفحات)
 
@@ -1796,7 +1796,7 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 1. ✅ ألوان indigo/blue في StockScreenerAdvanced → teal/cyan
 2. ✅ dark mode في TradingChartView + SingleStockAnalysisView
 3. ✅ جداول الكريبتو overflow-auto على الموبايل
-4. ✅ Labels عربية في CryptoScreenerView
+4. ✅ Labels عربية في CryptoScreenerView (الآن 🗑️ **محذوف/أرشيف** — ORPHAN-GARAGE-COLLECTOR 2026-10-12)
 5. ✅ resetFilters بـ reset لـ initialMarket
 6. ✅ 12 مكون shadcn dead اتمسحوا
 7. ✅ currencyLabel يدعم كل الأسواق
@@ -1810,7 +1810,7 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 15. ✅ NEAR_PEAK state جديد (65 ≤ RSI < 70)
 16. ✅ default min_price=0.50 + min_volume=1000 + min_turnover=50K
 17. ✅ crypto-screener مستقل تماماً
-18. ✅ crypto-analysis مستقل (CryptoAdvancedAnalysisView)
+18. ✅ crypto-analysis مستقل (CryptoAdvancedAnalysisView) (الآن 🗑️ **محذوف/أرشيف** — ORPHAN-GARAGE-COLLECTOR 2026-10-12)
 19. ✅ #crypto مفيهاش أخبار أس EGX
 20. ✅ news-feed-widget reactive لتغيرات الـ market
 21. ✅ /api/news-feed?market=crypto filter
@@ -1861,7 +1861,7 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 - `news-feed-widget.tsx` — useAppStore بدل window.__currentMarket
 - `analysis/MarketAnalysisView.tsx`, `TradingChartView.tsx`, `SingleStockAnalysisView.tsx`, `ExpertRecommendationsPanel.tsx`
 - `screener/StockScreenerAdvanced.tsx` — ألوان + resetFilters + currencyLabel
-- `crypto/CryptoScreenerView.tsx`, `CryptoPredictionTrackingView.tsx`, `CryptoAdvancedAnalysisView.tsx`, `CryptoTradingChartView.tsx`
+- `crypto/CryptoScreenerView.tsx` 🗑️ (محذوف/أرشيف — ORPHAN-GARAGE-COLLECTOR 2026-10-12), `CryptoPredictionTrackingView.tsx` (live), `CryptoAdvancedAnalysisView.tsx` 🗑️ (محذوف/أرشيف), `CryptoTradingChartView.tsx` 🗑️ (محذوف/أرشيف)
 - `predictions/PredictionTrackingView.tsx`, `PicksManagementView.tsx`, `PredictionTrackingDashboard.tsx`
 - `stocks/StockDetail.tsx`, `ComprehensiveStockAnalysis.tsx`
 - `academy/AcademyEncyclopedia.tsx`, `StrategySandbox.tsx`
@@ -2152,7 +2152,7 @@ python vps-service/jobs/daily_predictor.py --market CRYPTO --today-only
 | P1-9 | توحيد `StatCard` في مكون واحد | استبدال 10 نسخ |
 | P1-10 | توحيد `formatPrice`/`formatNumber`/`formatPct` في `src/lib/format.ts` | استبدال 20+ نسخة |
 | P1-11 | نقل `adaptStock`/`adaptCryptoToStock` من store لـ `src/lib/adapters/` | فصل الـ adapters |
-| P1-12 | نقل RSI/MA calculation من `CryptoAdvancedAnalysisView` لـ Python | Rule 20 |
+| P1-12 | نقل RSI/MA calculation من ~~`CryptoAdvancedAnalysisView`~~ لـ Python | Rule 20 — 🗑️ **CryptoAdvancedAnalysisView محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 — `archive/dead-components-20261012/crypto/`) |
 | P1-13 | دمج قسم "العملات الرقمية" في Sidebar مع تبديل عبر ExchangeSelector | إزالة التكرار |
 | P1-14 | توحيد آلية التنبيهات (إزالة `RoboNotifierToggle` العائم) | دمج في NotificationCenter |
 | P1-15 | تقليل polling (دمج 6 mechanisms في واحد) | useVisibilityAwarePolling موحد |
@@ -2432,8 +2432,8 @@ python vps-service/jobs/daily_predictor.py --market CRYPTO --today-only
 
 #### P1-B.3: حذف 6 StatCard functions محلية
 - CryptoPredictionTrackingView
-- CryptoAdvancedAnalysisView
-- CryptoScreenerView
+- ~~CryptoAdvancedAnalysisView~~ 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/crypto/`)
+- ~~CryptoScreenerView~~ 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/crypto/`)
 - PredictionTrackingView
 - PicksManagementView
 - DailyMarketReport
@@ -2731,7 +2731,7 @@ git revert 77176d93..3124bee7
 | # | File | LOC | Functions | Recommended fix | Severity |
 |---|------|-----|-----------|------------------|----------|
 | 4 | `src/app/api/crypto/full-analysis/route.ts` | 374 | `sma`/`ema`/`rsi`/`atr`/`bollinger` (lines 47–95). **BUG: RSI + ATR SMA-based مش Wilder's.** | **STRIP-CALCS** — return `null` لكل indicator fields. Pre-requisite: إضافة `/api/indicators/compute` endpoint في Python يقبل OHLC array. | HIGH (feeds crypto charts) |
-| 5 | `src/modules/crypto/components/CryptoAdvancedAnalysisView.tsx` | 705 | `computeRSI` (line 682). Wilder's ✅. | **REFACTOR** — استخدم `indicators.rsi` الموجود أصلاً في response الـ `/api/crypto/full-analysis`. لو orphaned (no imports) → DELETE. | MEDIUM |
+| 5 | ~~`src/modules/crypto/components/CryptoAdvancedAnalysisView.tsx`~~ | ~~705~~ | 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/crypto/`). كان `computeRSI` (line 682). Wilder's ✅. | ✅ **RESOLVED** (محذوف/أرشيف — 0 importers حية) | ~~MEDIUM~~ ✅ |
 | 6 | `src/modules/stock-analysis/components/TradingViewChart.tsx` | 2112 | `calcSMA`/`calcEMA`/`calcBollingerBands`/`calcRSI`/`calcMACD`/`calcStochastic`/`calcATR`/`calcOBV`. **BUG: RSI + ATR SMA-based.** | **DELETE** if orphaned (لا imports) — likely dead code تم استبداله بـ `InteractiveChart`. | MEDIUM (orphan?) |
 | 7 | `src/modules/market-analysis/components/InteractiveChart.tsx` | 1695 | `calcEMA`/`calcMACD`/`calcOBV`/`calcFibLevels`. MACD بـ Python-first (good model). | **PARTIAL** — غيّر MACD fallback لـ "render no MACD pane" بدلاً من local calc. EMA9/EMA21/VolMA20 overlays → ضع comment "UX overlay — not used in trading signals". | LOW (mostly Python-first) |
 | 8 | `src/modules/education/components/EntryTimingSimulator.tsx` | 968 | `sma` + `rsi2` (RSI(2) Connors variant). | **EXCEPTION-EDUCATIONAL** — استنى مع comment صريح: "Educational simulator — RSI(2) Connors variant، not for production signals. Production RSI(14) Wilder's comes from Python canonical `analyzers/indicators/`." لو orphaned → DELETE. | LOW (educational) |
@@ -3161,6 +3161,8 @@ Type: `StockInfographicCardProps['data']` (see `StockInfographicCard.tsx:32-107`
 #### 17.4F `#liquidity-radar` (MakerRadarTab.tsx) — 5 internal sub-tabs
 
 `exit-radar` · `weekly-report` · `multi-market-radar` · `radar-accuracy` · `personalized-radar` (انتقلت من `#recommendations` per Task 9-B Step 2) + internal filter `all/quiet/pre_surge/early_break/explosive`.
+
+> **ملاحظة ORPHAN-GARAGE-COLLECTOR (2026-10-12):** الـ tab name `personalized-radar` لسه مستخدم كـ tab identifier في `MakerRadarTab.tsx` (UI label). بس lib utility file `src/modules/personalized/lib/personalized-radar.ts` (583 LOC) **محذوف/أرشيف** → `archive/dead-components-20261012/personalized/lib/personalized-radar.ts` (0 importers حية — الـ matches كانت strings للـ tab values + testids, مش imports).
 
 ### 17.5 الإحصائيات الإجمالية (2026-10-05)
 

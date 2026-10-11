@@ -532,11 +532,18 @@ def main():
     print()
 
     # Lazy import (heavy)
-    from analyzers.maestro_orchestrator import MaestroOrchestrator
-
-    maestro = MaestroOrchestrator(db_path=STOCKS_DB)
-    if not maestro:
-        print('❌ MaestroOrchestrator failed to initialize — abort.')
+    # MAESTRO-GHOST-HUNT (2026-10-12 — SIDE-EFFECTS-AUDIT):
+    # maestro_orchestrator archived — wrap in try/except (top-level import was crashing)
+    try:
+        from analyzers.maestro_orchestrator import MaestroOrchestrator
+        maestro = MaestroOrchestrator(db_path=STOCKS_DB)
+        if not maestro:
+            print('❌ MaestroOrchestrator failed to initialize — abort.')
+            sys.exit(2)
+    except ImportError:
+        print('[MAESTRO-KILL] maestro_orchestrator archived — cannot run quick analysis.')
+        print('  V40.2 (daily_predictor.py) is the canonical engine now.')
+        print('  Run: python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5')
         sys.exit(2)
 
     if args.ticker:

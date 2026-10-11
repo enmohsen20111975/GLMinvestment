@@ -248,6 +248,46 @@
 - **⚠️ تمييز مهم:** **V4 ≠ V40**. عندما يقول المالك «V4 كان بيدى أفضل نتائج» فالمقصود هو **V40.2** (محرك التوقعات evidence-based المعمول ببايثون، `jobs/daily_predictor.py`) وليس `ExpertMemoryV4`. نتائج الـ backtest تؤكد تفوّق V40.2 على V40.1 (profit factor 1.327 vs 1.221، max drawdown 12.4% vs 29.7% — انظر `01-PROJECT_ANATOMY.md` §18). خلط التسميتين كاد يسبب حذف ميزة خاطئة.
 - **رفع على GitHub إلزامي بعد كل مهمة** + تشغيل اختبارات الصحة (`bun run lint` + فحص بنية الـ docs) قبل الـ commit.
 
+> **SIDE-EFFECTS-AUDIT + ORPHAN-GARAGE-COLLECTOR (2026-10-12) — تنفيذ مباشر لـ Rule 16 (VERIFY-BEFORE-DELETE) + Rule 25 (Refactoring-Gated):**
+>
+> سيدي طلب: تحديث الـ Documentation بعد الجلسات الأخيرة (MAESTRO-KILL + FAKE-DATA-HUNT + HIDDEN-WRITERS-AUDIT + P1-PARALLEL-ENGINES-FIX + MAESTRO-GHOST-HUNT). فحص ميكروسكوبي لكل route/script اتعطل (410 Gone) + التأكد إن مفيش آثار جانبية على الـ frontend. اكتشف + اتعالجت **3 آثار جانبية** + اتأرشفت **9 orphan components** لـ `archive/dead-components-20261012/` (مش حذف — Rule 16).
+>
+> **(أ) 3 آثار جانبية اكتشفت + اتعالجت (SIDE-EFFECTS-AUDIT):**
+>
+> | # | الـ File | الـ Issue | الـ Fix |
+> |---|---|---|---|
+> | 1 | `src/app/admin/honest-predictions/page.tsx` (lines 248, 373, 486) | 3 fetches لـ `/api/admin/generate-historical-predictions` (route رجع 410 Gone — HIDDEN-WRITERS-AUDIT #2): GET (params) + POST (Generate button) + POST (Full Test button). الأزرار بـ تُظهر `toast.error` بس الـ admin مش هيقدر يشغّل V40.2 generation من الـ UI. | موثّق كـ known limitation: V40.2 runs automatically via `cron daily_predictor.py` — الـ UI buttons بتعرض toast.error واضح (graceful degrade، NO crash). |
+> | 2 | `src/modules/admin/components/BacktestTab.tsx` (line 179) | 1 fetch لـ `/api/admin/backtest/v40/run` (route رجع 410 Gone — HIDDEN-WRITERS-AUDIT #4 — كان بيعمل `DELETE FROM predictions` على كل backtest run!). الـ "Run Backtest" button بـ يُظهر `toast.error` بس الـ admin مش هيقدر يشغّل backtest. | موثّق كـ known limitation: backtest بـ `backtest_engine.py` على sandbox DB copy. الـ UI button بتعرض toast.error واضح (graceful degrade). |
+> | 3 | `scripts/run_quick_analysis.py` (line 535) | TOP-LEVEL `from analyzers.maestro_orchestrator import MaestroOrchestrator` — NOT wrapped in try/except (كان هـ يكسر بـ ImportError لو اشتغل بعد DELETE-MAESTRO). الـ script "dormant" (محدش بـ يستدعيه من cron/scheduler) بس لو اشتغل هـ يـ crash. | wrap في try/except بنفس pattern بتاع `forward_test_may2026.py:22` + `test_adaptive_weights.py:35` (اللي اتصلاحوا في commit `bda8470`). |
+>
+> **(ب) 9 orphan components اتأرشفت لـ `archive/dead-components-20261012/` (مش حذف — Rule 16 + Rule 25):**
+>
+> كل orphan component اتعملها VERIFY-BEFORE-DELETE ثلاثي (static imports + CommonJS `require` + ES dynamic `import()`) قبل النقل. اتنقلوا بـ `git mv` (بيحافظ على git history — ظاهرين كـ `R` rename في `git status`).
+>
+> | # | الـ Orphan Component | LOC | الـ Reason | Archive Path |
+> |---|---|---:|---|---|
+> | 1 | `CryptoTradingChartView.tsx` | 275 | 0 importers حية (`page.tsx:272 = const X = null` stub, مش import) | `archive/dead-components-20261012/crypto/CryptoTradingChartView.tsx` |
+> | 2 | `CryptoScreenerView.tsx` | 677 | 0 importers حية (`page.tsx:271 = const X = null` stub) | `archive/dead-components-20261012/crypto/CryptoScreenerView.tsx` |
+> | 3 | `CryptoAdditionalViews.tsx` | 34 | 0 matches في كل الـ codebase (orphan كامل) | `archive/dead-components-20261012/crypto/CryptoAdditionalViews.tsx` |
+> | 4 | `CryptoAdvancedAnalysisView.tsx` | 688 | 0 importers حية (`page.tsx:273 = const X = null` stub) | `archive/dead-components-20261012/crypto/CryptoAdvancedAnalysisView.tsx` |
+> | 5 | `PredictionsBacktestTable.tsx` | 533 | 0 importers (في `src/modules/dashboard/components/`) | `archive/dead-components-20261012/dashboard/PredictionsBacktestTable.tsx` |
+> | 6 | `AnalysisFlowDiagram.tsx` | 326 | 0 importers (في `src/modules/market-analysis/components/`) | `archive/dead-components-20261012/market-analysis/AnalysisFlowDiagram.tsx` |
+> | 7 | `DataCoverageBanner.tsx` | 209 | 0 importers (في `src/modules/stock-analysis/components/`) | `archive/dead-components-20261012/stock-analysis/DataCoverageBanner.tsx` |
+> | 8 | `HumanRecommendationsAdmin.tsx` | 1028 | 0 importers | `archive/dead-components-20261012/admin/HumanRecommendationsAdmin.tsx` |
+> | 9 | `personalized-radar.ts` (true orphan) | 583 | 0 importers (الـ "matches" كلها كانت strings للـ tab values + testids, مش imports) | `archive/dead-components-20261012/personalized/lib/personalized-radar.ts` |
+> | | **Total archived:** | **4,408** | 9 files | `archive/dead-components-20261012/` (شامل README.md تفصيلي) |
+>
+> **(ج) proxy-client.ts — اتكشف إنه مش orphan (verified safe — اتساب في مكانه):**
+>
+> الـ task description الأصلية صنّفت `src/modules/reports/lib/proxy-client.ts` (438 LOC) كـ "true orphan" لكن الفحص الثلاثي كشف إنه **مش orphan** — فيه 3 importers حية:
+> - `src/modules/reports/components/ReportsView.tsx:67-77`
+> - `src/modules/reports/components/DailyMarketReport.tsx:59-68`
+> - `src/modules/reports/components/StockAnalysisReport.tsx:81-86`
+>
+> 3 importers حية + مش commented out → **NOT orphan**. اتساب في مكانه. ده مثال مباشر على أهمية Rule 16 (VERIFY-BEFORE-DELETE) — لو اتشال بناءً على افتراض، كان هيكسر 3 صفحات reports.
+>
+> **الـ Verifier:** لو لقيت أي fetch لـ `/api/admin/generate-historical-predictions` أو `/api/admin/backtest/v40/run` بـ يعمل action حقيقي (مش toast.error) → ده REGRESSION violation. لو لقيت أي import لـ الـ 9 orphan components دي من غير `archive/dead-components-20261012/` prefix → ده REGRESSION violation (الـ components محذوفة من `src/` وأرشفت — Rule 16 + Rule 25).
+
 ### القاعدة 17 — المسارات نسبية دائمًا (RELATIVE-PATHS-ONLY)
 - **كل المسارات في الكود لازم تكون نسبية** (`db/price_history.db`, `vps-service/data/...`, `src/lib/...`) — **ممنوع** كتابة مسار مطلق مثل `/root/GLMinvestment/...` أو `/home/meme/my_apps/...` أو `C:\Users\...`.
 - **السبب:** المشروع يعمل بنفس الأكواد على **ثلاث بيئات**:
@@ -3223,10 +3263,10 @@ git diff origin/main..HEAD --stat          # تعديلاتي vs الفريق
 
 | الشاشة | الملف | الحالة |
 |--------|------|--------|
-| فلتر العملات الرقمية | `CryptoScreenerView.tsx` | ✅ |
-| تتبع توقعات الكريبتو | `CryptoPredictionTrackingView.tsx` | ✅ |
-| التحليل المتقدم للعملات | `CryptoAdvancedAnalysisView.tsx` | ✅ |
-| شارت العملات | `CryptoTradingChartView.tsx` | ✅ |
+| فلتر العملات الرقمية | ~~`CryptoScreenerView.tsx`~~ | 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/crypto/`) |
+| تتبع توقعات الكريبتو | `CryptoPredictionTrackingView.tsx` | ✅ (live) |
+| التحليل المتقدم للعملات | ~~`CryptoAdvancedAnalysisView.tsx`~~ | 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/crypto/`) |
+| شارت العملات | ~~`CryptoTradingChartView.tsx`~~ | 🗑️ **محذوف/أرشيف** (ORPHAN-GARAGE-COLLECTOR 2026-10-12 → `archive/dead-components-20261012/crypto/`) |
 | فلتر الأسهم المتقدمة | `StockScreenerAdvanced.tsx` | ✅ |
 | كل الصفحات (Footer) | `Footer.tsx` | ✅ |
 

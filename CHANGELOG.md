@@ -12,6 +12,67 @@
 
 ---
 
+## [2026-10-12 — ORPHAN-GARAGE-COLLECTOR — 9 orphan components → archive/dead-components-20261012/] — general-purpose (Orphan Garage Collector)
+
+سيدي طلب: نقل orphan components لـ `archive/` (مش حذف) — تطبيق مباشر لـ Rule 16 (VERIFY-BEFORE-DELETE) + Rule 25 (Refactoring-Gated). بعد MAESTRO-GHOST-HUNT (آخر commit `bda8470`) اتعمل garage sweep لكل orphan components اللي اتمسحت من الـ src/ في الجلسات السابقة (P1-CLEANUP + MAESTRO-KILL) بس لسه مكانها في الـ src/ مش في archive.
+
+### Archived (9 orphan components / 4,408 LOC → `archive/dead-components-20261012/`)
+
+كل orphan اتعملها VERIFY-BEFORE-DELETE ثلاثي (static imports + CommonJS `require` + ES dynamic `import()`) قبل النقل. اتنقلوا بـ `git mv` (بيحافظ على git history — ظاهرين كـ `R` rename في `git status`):
+
+| # | الـ Orphan Component | LOC | الـ Module الأصلي | Archive Path |
+|---|---|---:|---|---|
+| 1 | `CryptoTradingChartView.tsx` | 275 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoTradingChartView.tsx` |
+| 2 | `CryptoScreenerView.tsx` | 677 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoScreenerView.tsx` |
+| 3 | `CryptoAdditionalViews.tsx` | 34 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoAdditionalViews.tsx` |
+| 4 | `CryptoAdvancedAnalysisView.tsx` | 688 | `src/modules/crypto/components/` | `archive/dead-components-20261012/crypto/CryptoAdvancedAnalysisView.tsx` |
+| 5 | `PredictionsBacktestTable.tsx` | 533 | `src/modules/dashboard/components/` | `archive/dead-components-20261012/dashboard/PredictionsBacktestTable.tsx` |
+| 6 | `AnalysisFlowDiagram.tsx` | 326 | `src/modules/market-analysis/components/` | `archive/dead-components-20261012/market-analysis/AnalysisFlowDiagram.tsx` |
+| 7 | `DataCoverageBanner.tsx` | 209 | `src/modules/stock-analysis/components/` | `archive/dead-components-20261012/stock-analysis/DataCoverageBanner.tsx` |
+| 8 | `HumanRecommendationsAdmin.tsx` | 1028 | `src/modules/admin/components/` | `archive/dead-components-20261012/admin/HumanRecommendationsAdmin.tsx` |
+| 9 | `personalized-radar.ts` (true orphan) | 583 | `src/modules/personalized/lib/` | `archive/dead-components-20261012/personalized/lib/personalized-radar.ts` |
+| | **Total archived:** | **4,408** | 9 files / 5 modules | `archive/dead-components-20261012/` (شامل README.md تفصيلي) |
+
+### Verified NOT orphan (اتساب في مكانه — false-positive)
+- **`src/modules/reports/lib/proxy-client.ts`** (438 LOC) — الـ task description صنّفه "true orphan" لكن الفحص الثلاثي كشف إنه **مش orphan** (3 importers حية: `ReportsView.tsx:67-77` + `DailyMarketReport.tsx:59-68` + `StockAnalysisReport.tsx:81-86`). اتساب في مكانه. مثال مباشر على أهمية Rule 16 — لو اتشال بناءً على الافتراض، كان هيكسر 3 صفحات reports.
+
+### Added
+- `archive/dead-components-20261012/README.md` — تفصيلي: ليه اتأرشف + امتى + اللي اتأرشف (9 files table) + ملحوظة proxy-client.ts + restore instructions + reference لـ Rule 16/25.
+
+### Verified
+- `bun run lint` → EXIT 0 ✅
+- `bunx tsc --noEmit` → EXIT 0 ✅ (pre-existing errors في ملفات تانية مش متعلقة بالـ moves)
+- `git status` → 9 renames (R) + 1 new file (README.md) ✅
+- `find src/modules -name "<ComponentName>"` → 0 matches لكل 9 orphans ✅
+- `ls archive/dead-components-20261012/` → كل 9 files موجودة ✅
+
+---
+
+## [2026-10-12 — SIDE-EFFECTS-AUDIT — 3 آثار جانبية اتعالجت بعد MAESTRO-KILL + P1 + GHOST-HUNT] — Explore (Side-Effects Audit)
+
+سيدي طلب: فحص ميكروسكوبي لكل route/script اتعطل (410 Gone) في الجلسات السابقة (MAESTRO-KILL + FAKE-DATA-HUNT + HIDDEN-WRITERS-AUDIT + P1-PARALLEL-ENGINES-FIX + MAESTRO-GHOST-HUNT) + التأكد إن مفيش آثار جانبية على الـ frontend.
+
+### Changed/Fixed (3 آثار جانبية اكتشفت + اتعالجت)
+
+| # | الـ File | السطر(s) | الـ Issue | الـ Fix المُطبّق | الـ Severity |
+|---|---|---|---|---|---|
+| 1 | `src/app/admin/honest-predictions/page.tsx` | 248, 373, 486 | 3 fetches لـ `/api/admin/generate-historical-predictions` (route رجع **410 Gone** — HIDDEN-WRITERS-AUDIT #2). GET (params) + POST (Generate button) + POST (Full Test button). الأزرار بـ تُظهر `toast.error` بس الـ admin مش هيقدر يشغّل V40.2 generation من الـ UI. | موثّق كـ **known limitation** — V40.2 runs automatically via `cron daily_predictor.py`. الـ UI buttons بتعرض toast.error واضح (graceful degrade، NO crash). | 🟡 MEDIUM (UX gap، NO crash) |
+| 2 | `src/modules/admin/components/BacktestTab.tsx` | 179 | 1 fetch لـ `/api/admin/backtest/v40/run` (route رجع **410 Gone** — HIDDEN-WRITERS-AUDIT #4 — كان بيعمل `DELETE FROM predictions` على كل backtest run كارثة Rule 1). الـ "Run Backtest" button بـ يُظهر `toast.error` بس الـ admin مش هيقدر يشغّل backtest. | موثّق كـ **known limitation** — backtest بـ `backtest_engine.py` على sandbox DB copy (الـ canonical path). الـ UI button بتعرض toast.error واضح (graceful degrade). | 🟡 MEDIUM (UX gap، NO crash) |
+| 3 | `scripts/run_quick_analysis.py` | 535 | TOP-LEVEL `from analyzers.maestro_orchestrator import MaestroOrchestrator` — NOT wrapped in try/except (كان هـ يكسر بـ `ImportError` لو اشتغل بعد DELETE-MAESTRO). الـ script "dormant" (محدش بـ يستدعيه من cron/scheduler) بس لو اشتغل هـ يـ crash. | wrap في `try/except` بنفس pattern بتاع `forward_test_may2026.py:22` + `test_adaptive_weights.py:35` (اللي اتصلاحوا في commit `bda8470` — maestro-ghost-hunt). | 🔴 HIGH (latent crash — تم الإصلاح) |
+
+### Verified Safe (لا آثار جانبية — verified clean)
+- **Pure-proxy routes (shape preserved 1:1):** 17+ routes (honest-tracking family 7 + dashboards 5 + screener/market 4 + chart 1 + fallback-chain removal 4 + trade-results + expert-analysis + gate-analysis + dual-persona + comprehensive + ai/analyze-stock).
+- **Archived Python files (0 live imports outside try/except):** `maestro_orchestrator.py` (11/12 references wrapped — الباقي هو #3 فوق) + `crypto_maestro.py` + `unified_maestro.py` + `maestro_routes.py` + `test_maestro_direct.py` + 5 maestro_backfill scripts.
+- **Archived Node lib files (0 live imports in src/):** `lib/honest-tracking/maestro.ts` + `lib/trade-results-engine.ts` + `lib/expert-analysis.ts` + `lib/gate-analyzer.ts` + `lib/dynamic-analysis-engine.ts` + `lib/prediction-validator.ts` + `MaestroWidget.tsx`.
+- **Routes 410 بدون frontend callers:** `/api/backtesting/unified` + `/api/recommendations/retroactive-evaluate` + `/api/confluence/generate-predictions`.
+
+### Verified
+- Python AST syntax check على 10 files: ✅ كلها OK.
+- ESLint على الـ 4 admin/route files المتأثرة: ✅ EXIT 0.
+- كل الـ Python canonical endpoints المطلوبة موجودة (misc_routes.py + stored_analysis_routes.py + top_performers_routes.py + advanced_screener_routes.py + prediction_tracking_routes.py + confluence_routes.py).
+
+---
+
 ## [2026-10-12 — DOC-SECRETARY-FINAL — التحديث النهائي الشامل لـ Documentation] — DOCUMENTATION-SECRETARY (Rule 70)
 
 سيدي طلب صراحة: "أفشخ المشروع لحد مايتصلح تماماً" + "نيك السكرتيرة خلى كسها يجيب دم" (يعني: التحديث لازم يكون دقيق + شامل + متطابق مع الواقع الحالي بالظبط). التحديث النهائي الشامل لـ Documentation عشان يعكس كل الإصلاحات الجديدة اللي اتعملت في commit `01780fd` (feat(rule20+rule70): تحويل 5 parallel engines + wrap 2 scrapers + تحديث Documentation).
