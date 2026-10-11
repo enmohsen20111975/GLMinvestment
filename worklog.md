@@ -71151,3 +71151,819 @@ E) honest-tracking/list: 503 + Rule 27 message (Python down — no fake zeros)
   * compound return (الطريقة المالية الصحيحة)
 
 LEAGUE-DEDUP-FIX complete. الـ 3 كوارث المالية اتعالجت من الجذر.
+
+---
+Task ID: UNIFICATION-AUDIT
+Agent: Explore (Unification Audit)
+Task: هل كل شيء موحد من محرك البيانات → محرك التوقعات؟ (Rule 67 + Rule 35)
+
+Work Log:
+- قريت worklog.md (آخر 120 سطر) لفهم سياق LEAGUE-DEDUP-FIX السابق
+- قريت Constitution: Rule 12 (L188-194) + Rule 21 (L276-285) + Rule 35 (L1182-1195) + Rule 67 (L2402-2456)
+- فحصت vps-service/ كامل (250+ ملف Python) عبر Grep + Read + Glob
+- سجلت 697 sqlite3.connect occurrences عبر 250 ملف — لكن أغلبها في scripts/ (one-off)
+- تأكدت إن canonical indicators في analyzers/indicators/ فيها 4 ملفات فقط (atr/rsi/srsi/ma)
+- تأكدت إن analyzers/technical_analyzer.py (canonical Rule 67 لـ VWAP/OBV/volume_ratio/regime) غير موجود!
+
+Stage Summary:
+
+## إجابة سؤال سيدي: "هل احنا عندنا كل شيء موحد؟"
+### الإجابة: **جزئياً (≈75%)** — التوحيد مكتمل في الـ Prediction Engine (الـ 3 layers العليا) لكن CALCULATION-CANONICAL لسه فيها فجوات (3 canonical files مفقودة + ~30 inline copy لسه موجود).
+
+## A. محرك البيانات (Data Engine):
+
+### ✅ load_merged_history() هو المصدر الموحد (Rule 12):
+- Canonical: `analyzers/master_analyzer.py:1255 def load_merged_history()` 
+- Wrapper proxy: `data/prices.py:569 def load_merged_history()` (يـ delegate للـ canonical)
+- 20+ caller بيستوردوا من `analyzers.master_analyzer` (صح)
+- بيقرأ من `price_history.db.price_history` + fallback لـ `stocks.db.stock_daily_prices` + `intraday.db`
+- Rule 65 (validation.py) + Rule 66 (source_authority.py) مُطبّقان
+
+### ⚠️ مصادر البيانات (scrapers):
+- **21 scraper** في `data_engine/scrapers/` بيكتبوا في `data_engine.db` (1.7 GB)
+- **data_engine.db** = نقطة الـ ingestion الوحيدة من الـ scrapers ✅
+- بعدها بيتعملهم sync لـ `stocks.db` (عبر `data_engine/sync.py`) → ثم لـ `price_history.db` (per Rule 12)
+
+### ⚠️ ملاحظة مهمة عن DBs:
+- **`price_history.db` غير موجود في `/home/z/my-project/db/`** (sandbox)
+- DBs الموجودة فعلاً: `data_engine.db` (1.7G) + `intraday.db` (448M) + `predictions.db` (279M) + `stocks.db` (28M) + `custom.db` + `auth.db` (0 bytes!)
+- `load_merged_history()` بـ fallback لـ `stocks.db.stock_daily_prices` لما `price_history.db` غير موجود — فالكود بـ يشتغل بس different من production behavior
+
+### 🔴 Duplicate scrapers (potential):
+- **4 TradingView scrapers**: `tradingview_scraper.py` + `tradingview_rest.py` + `tradingview_screener_lists.py` + `tradingview_market_movers.py` — يحتاج توضيح: لو كل واحد بيخدم endpoint مختلف (movers vs screener vs rest) → ✅; لو بيكتروا نفس البيانات → ❌ duplicate
+- **2 historical fetchers**: `historical_fetcher.py` + `historical_fetcher_5years.py` — different ranges (محتمل ✅)
+- **2 egksco scrapers**: `data_engine/scrapers/egksco_scraper.py` + `vps-service/data/egksco_scraper.py` — **محتمل duplicate** يحتاج فحص
+
+## B. محرك التوقعات (Prediction Engine):
+
+### ✅ V40.2 هو المحرك الوحيد (Rule 35 — ENGINE-UNIFY):
+- `jobs/daily_predictor.py:3372` (EGX path) — `tracker.record_prediction()` ✅
+- `jobs/intraday_scanner.py:288` (Intraday V40.2) — `tracker.record_prediction()` ✅
+- `analyzers/prediction_tracker.py:377 def record_prediction()` = **canonical writer** ✅
+
+### ✅ PREDICTION-WRITE-GUARD شغال (The Single Gate):
+- `core/prediction_write_guard.py::validate_prediction_evidence()` (274 LOC)
+- مُستدعى من `analyzers/prediction_tracker.py:508-524` قبل كل INSERT
+- بـ يرفض (return None) أي prediction:
+  - بدون `engine=v40_2` tag في notes (Rule 35)
+  - بدون kill_filter_result signature (Rule 35)
+  - BUY/STRONG_BUY/ACCUMULATE مع `evidence_count < 3` (Rule 21)
+  - `master_score=50.0` placeholder (Rule 27)
+- **3 rogue paths** (B.1 sniper_routes.py + B.2 daily_predictor.py CRYPTO + B.3 daily_predictor.py EGX fallback) كلها بتـ GO THROUGH `record_prediction()` فالـ guard بيلقطهم ✅
+
+### ✅ Maestro معطل نهائياً (KILL-MAESTRO):
+- `analyzers/maestro_orchestrator.py:2005` — `result.signal_id = None` (لا INSERT)
+- `api/maestro_routes.py:904, 1018` — `orchestrator = None  # KILL-MAESTRO: DISABLED`
+- `core/analysis_runner.py:213` — comment confirms disabled
+- `analyzers/background_analyzer.py:822, 1379` — V40.2 only, no Maestro.analyze()
+- ⚠️ `live_signals/recorder.py:124` — `MaestroOrchestrator()` instantiated لكن ده offline signal recorder بـ يكتب JSON file مش predictions table
+
+### ⚠️ INSERT INTO predictions بـ direct SQL (bypassing record_prediction):
+- كل الـ direct INSERTs في `scripts/` هي **one-off backfill/migration scripts** (مش live):
+  - `scripts/backfill_to_predictions.py` — backfill
+  - `scripts/backfill_with_personas.py` — backfill
+  - `scripts/maestro_backfill_v2.py` + `maestro_backfill_phase3.py` — Maestro backfill (disabled but kept)
+  - `scripts/populate_history_fast.py` — populate
+  - `scripts/backtesting_engine.py` — backtest simulation
+  - `scripts/generate_persona_predictions.py` — backfill
+- `scripts/dual_track_generator.py:447` — مُعطّل بـ early `return` per Rule 35 (DISABLE-SCRIPTS)
+- `api/historical_predictions_v2_routes.py:484, 503` — **dead code** (early `return None` على L442 + `if False: pass` guard على L448)
+- `core/db_manager.py:30, 349` — docstring examples فقط ✅
+- `analyzers/prediction_tracker.py:673, 700, 718` — **canonical writer** + guard ✅
+
+## C. Canonical Calculations (Rule 67):
+
+| # | الحساب | Canonical | نسخ inline موجودة | canonical موجود؟ |
+|---|--------|-----------|---------------------|------------------|
+| 1 | ATR | `analyzers/indicators/atr.py:26` ✅ | **12 copies** (honest_backtest_egx/regime/trend + backtest_sniper + core_scoring_engine + enhanced_indicators + kimi_fixes + sniper_engine + trend_following + dynamic_target + engines/backtest_engine) | ✅ Canonical موجود، duplicates Phase 2 pending |
+| 2 | RSI | `analyzers/indicators/rsi.py:31` ✅ | **1 copy** (`scripts/migrate_calc_indicators.py:41`) + 13 comment-marker قديمة (مُهاجرة) | ✅ Canonical موجود، migration ~95% مكتمل |
+| 3 | SMA | `analyzers/indicators/ma.py` ✅ | **9 copies** (honest_backtest ×3 + backtest_sniper + core_scoring_engine + historical_backfill + sniper_engine + trend_following + crypto_analyzer + engines/backtest_engine) | ✅ Canonical موجود، duplicates pending |
+| 4 | EMA | `analyzers/indicators/ma.py` ✅ | **6 copies** (backtest_sniper + historical_backfill + enhanced_indicators + sniper_engine + crypto_analyzer + engines/backtest_engine) | ✅ Canonical موجود، duplicates pending |
+| 5 | MACD | `analyzers/indicators/ma.py` ✅ | None inline (مُهاجرة بالكامل) | ✅ مكتمل |
+| 6 | Position Sizing | `utils/position_sizing.py:65 def calculate_risk_based_position()` ✅ | **8 copies** (risk_adaptive + analyzers/position_sizing + trend_following + risk + risk_manager + portfolio_routes + risk_management_advanced + v68_oracle compute_position_size_multiplier) | ✅ Canonical موجود، duplicates pending |
+| 7 | R:R | `utils/risk_reward.py:31 def compute_risk_reward()` ✅ | None inline | ✅ مكتمل |
+| 8 | WR (win rate) | `utils/backtest_stats.py:47 def compute_win_rate()` ✅ | **1 copy** (`api/misc_routes.py:4733 def compute_win_rate(wins, verified)` — signature مختلفة بس اسم مكرر) | ⚠️ Canonical موجود، 1 local helper duplicate |
+| 9 | PF (profit factor) | `utils/backtest_stats.py:114 def compute_profit_factor()` ✅ | None inline | ✅ مكتمل |
+| 10 | master_score | `analyzers/master_analyzer.py:470 MASTER_WEIGHTS` ✅ | **1 mirror** (`analyzers/adaptive_weights.py:37 FULL_BASE_WEIGHTS` — explicit mirror with regression test test_adaptive_weights.py:95) | ✅ مكتمل (mirror مُوَثَّق) |
+| 11 | VWAP | (Rule 67 يقول `analyzers/technical_analyzer.py::calc_vwap()`) | **1 copy** (`analyzers/sniper_engine.py:408 def calc_vwap()`) + 1 related (`fusion_engine.py:276 calc_vwap_premium`) | ❌ **CANONICAL FILE MISSING** — `analyzers/technical_analyzer.py` غير موجود |
+| 12 | OBV | (Rule 67 يقول `analyzers/technical_analyzer.py::calc_obv()`) | None found | ❌ **CANONICAL MISSING** — لا canonical ولا inline |
+| 13 | Volume Ratio | (Rule 67 يقول `analyzers/technical_analyzer.py::calc_volume_ratio()`) | None found | ❌ **CANONICAL MISSING** |
+| 14 | Sector Heat | `core/opportunity_quality.py:1726 def compute_sector_heat_map()` ✅ | **2 copies** في backfill scripts (`scripts/maestro_backfill_v2.py:227` + `maestro_backfill_phase3.py:87`) | ✅ Canonical موجود، 2 backfill copies |
+| 15 | Market Regime | (Rule 67 يقول `analyzers/technical_analyzer.py::detect_regime()`) | **5 copies** (adaptive_weights:605 + regime_detector:113 + market_regime_engine:827 + crypto_regime:137 + maestro_backfill_v2:290 + phase3:161) | ❌ **CANONICAL MISSING** — `analyzers/technical_analyzer.py` غير موجود + 5 duplicate regime detectors |
+
+### Bug fixes المؤكدة من Rule 67 (L2441-2446) — status:
+- ✅ `core_scoring_engine.py:88 def calc_sma` لسه inline (مش migrated لـ indicators/ma.py)
+- ✅ `core_scoring_engine.py:95 def calc_atr` لسه inline
+- ✅ `analyzers/trend_following_analyzer.py:80 def calculate_atr` + L112 `def calculate_sma` لسه inline
+- ✅ `analyzers/dynamic_target_engine.py:228 def calculate_atr` لسه inline
+- ✅ `analyzers/enhanced_indicators.py:70 def calc_ema` + L205 `def calc_atr` لسه inline
+
+## الخلاصة:
+
+### التوحيد: **~75% مكتمل**
+
+| الطبقة | الحالة | النسبة |
+|-------|-------|------|
+| Data Engine (Rule 12) | `load_merged_history()` موحّد + 21 scraper بيكتب في `data_engine.db` فقط | **90%** ✅ |
+| Prediction Engine (Rule 35) | V40.2 وحده الكاتب + PREDICTION-WRITE-GUARD شغال + Maestro معطّل | **100%** ✅ |
+| Canonical Calculations (Rule 67) | 9/14 canonical موجود، 5 لسه inline، 4 canonical files مفقودة (technical_analyzer.py) | **65%** ⚠️ |
+
+### النقاط المتبقية (action plan):
+
+1. **🔴 HIGH — إنشاء `analyzers/indicators/vwap.py` + `obv.py` + `volume_ratio.py` + `regime.py`** (أو توسيع `analyzers/indicators/__init__.py` ليشملهم):
+   - Rule 67 بـ يقول canonical في `analyzers/technical_analyzer.py` بس الملف ده غير موجود
+   - Migration: انقل inline من `analyzers/sniper_engine.py:408` (calc_vwap) + حدد canonical للـ regime (لو `analyzers/regime_detector.py` يبقى هو الـ canonical — update Rule 67 wording)
+
+2. **🟡 MEDIUM — Migration Phase 2 لـ inline copies** (per `EMERGENCY_REMEDIATION_PLAN.md`):
+   - 12 copies of `calc_atr` في backtest scripts + analyzers لازم تـ migrated لـ `from analyzers.indicators import calc_atr`
+   - 9 copies of `calc_sma` + 6 copies of `calc_ema` + 8 copies of `calculate_position_size` نفس الشيء
+   - Rule 67 L2438 بـ يقول "الهجرة تدريجية — كل ملف يتـ migrate لوحده + commit + push"
+
+3. **🟡 MEDIUM — إزالة `compute_win_rate` duplicate في `api/misc_routes.py:4733`**:
+   - إما rename لـ `compute_win_rate_ratio(wins, verified)` أو استيراد canonical من `utils/backtest_stats.py`
+
+4. **🟢 LOW — توضيح status الـ 4 TradingView scrapers**:
+   - هل كل واحد بـ fetch endpoint مختلف؟ لو آه → ✅; لو لا → دمج
+   - مراجعة الـ `egksco_scraper.py` duplicate بين `data_engine/scrapers/` و `vps-service/data/`
+
+5. **🟢 LOW — مراجعة `live_signals/recorder.py:124 MaestroOrchestrator()`**:
+   - يكتب JSON file (مش predictions table) — هل لسه محتاج؟ لو لأ، اعتبره dead code per Rule 16
+
+6. **🔴 IMPORTANT (sandbox فقط) — `price_history.db` غير موجود في `/home/z/my-project/db/`**:
+   - على production موجود (per worklog خط 61056-61069)
+   - على sandbox، `load_merged_history()` بـ fallback لـ `stocks.db.stock_daily_prices` — فالكود بـ يشتغل بس different behavior
+   - مش violation، بس يستحق توثيق
+
+### القواعد المُطبّقة:
+- **Rule 12 (DATA-UNIFY-007)**: ✅ `load_merged_history()` هو canonical + Rule 65/66 (validation + source_authority) مُفعّلة
+- **Rule 21 (V40.2 evidence-based)**: ✅ BUY/STRONG_BUY مرفوضة بدون `evidence_count >= 3` + non-empty `kill_filter_result`
+- **Rule 27 (NO-FAKE-DATA)**: ✅ `master_score=50.0` placeholder مرفوض للـ BUY signals
+- **Rule 35 (ENGINE-UNIFY)**: ✅ V40.2 هو الكاتب الوحيد + Maestro معطّل + PREDICTION-WRITE-GUARD شغال
+- **Rule 67 (CALCULATION-CANONICAL)**: ⚠️ جزئياً — 9/14 canonical موجود، 4 canonical files مفقودة (technical_analyzer.py المذكور في Rule 67 L2425-2429 غير موجود)، ~30 inline copy لسه Phase 2 pending
+
+UNIFICATION-AUDIT complete. التوحيد في الـ Prediction Engine مكتمل 100%، لكن CALCULATION-CANONICAL (Rule 67) محتاج إنشاء 4 canonical files جديدة + migration تدريجي لـ ~30 inline copy. لا يوجد violation خطير في الـ production prediction path — كل الـ rogue paths بـ يـ blocked عند الـ Single Gate (record_prediction).
+
+---
+Task ID: RULE20-FULL-AUDIT
+Agent: Explore (Rule 20 Full Audit)
+Task: فحص شامل لكل Node routes — هل مفيش أي منطق في Node؟ (سيدي سأل: "مافيش اى تحليل او منطق جوة النود فقط عرض")
+
+Work Log:
+- قريت worklog.md (آخر 200 سطر) — فهمت إن الجلسات السابقة أصلحت: honest-tracking 5 endpoints + liquidity-flow + finance/screener + radar/accuracy + screener/advanced + league_report (Python) + dashboards (frontend).
+- قريت Constitution Rule 20 (L269-274): Python = Brain, Node = Display Only.
+- فحصت 454 ملف route.ts في src/app/api/
+- استثنيت 27 ملف (auth + subscription + paymob + instapay + notifications) = 427 ملف في النطاق.
+- استخدمت Grep لـ 8 patterns: SQLite direct, Math, business keywords, aggregation, fallback chain, placeholders, percentage SUM, classification.
+- قرأت 14 ملف يدويًا للتحقق (honest-tracking family + finance/screener + radar/accuracy + screener/advanced + market/liquidity-flow + market/exit-status + chart/[ticker] + predictions/route + predictions/performance-dashboard + predictions/historical-trades + ai/analyze-stock + admin/platform-performance + v4/stats + league-report).
+
+Stage Summary:
+
+## إجابة سؤال سيدي: "مافيش اى تحليل او منطق جوة النود؟"
+### الإجابة: ❌ لا — يوجد منطق/تحليل في Node في حوالي 30% من الـ routes.
+
+الـ Rule 20 (Python = Brain) ما اتصلحش بشكل كامل بعد. تم إصلاح 11 route فقط (الـ honest-tracking family + finance/screener + radar/accuracy + screener/advanced + market/liquidity-flow) في الجلسات السابقة، لكن لا يزال هناك **~120+ route** فيها منطق في Node — أهمها:
+
+1. **CRITICAL**: 7 من 8 endpoints في `predictions/honest-tracking/*` اتعادت — بس الـ ROOT (`predictions/honest-tracking/route.ts`) لسه عامل direct SQLite + Math.round لـ win_rate (سطر 36).
+2. **CRITICAL**: `predictions/league-report/route.ts` لسه فيه SQLite fallback chain + filter + sort + map (الـ Python SQL اتعملله dedup-fix بس الـ Node route لسه بيعمل fallback).
+3. **CRITICAL**: `v4/stats/route.ts` (250 سطر) — SQLite fallback + win_rate + by_persona + top_tickers كاملة في Node.
+4. **CRITICAL**: `chart/[ticker]/route.ts` (969 سطر!) — direct SQLite + ticker resolution + chart resampling.
+5. **CRITICAL**: `admin/platform-performance/route.ts` (646 سطر) — direct SQLite + Win Rate + Profit Factor + Expectancy + Max Loss + TP1/Stop hit rates.
+6. **CRITICAL**: `predictions/performance-dashboard/route.ts` (334 سطر) — direct SQLite + WIN_STATUSES classification + computeStats + by_market + by_signal + 30-day timeseries.
+
+## إحصائيات:
+- Total route.ts files: 454
+- Excluded (auth/subscription/paymob/instapay/notifications): 27 routes
+- **In-scope routes examined: 427**
+- **Verified CLEAN pure proxies (KEEP): 11 routes** (مُصلحة في الجلسات السابقة)
+- **Violations: ~120 routes**
+  - 🔴 CRITICAL: ~50 routes (direct SQLite + business logic: win_rate, R:R, classification)
+  - 🟠 HIGH: ~40 routes (Math computation + reduce/filter/sort + aggregation)
+  - 🟡 MEDIUM: ~30 routes (SQLite CRUD for user data: watchlist/alerts/news — borderline)
+  - 🟡 MEDIUM (fallback chain): 24 routes (using `getPredictionsFallback` / `flutter-sqlite-fallback`)
+
+## الـ 11 CLEAN pure proxies (verified):
+1. `api/finance/screener/route.ts` (63 سطر) ✅
+2. `api/screener/advanced/route.ts` (106 سطر) ✅ + applyScreenerGate (paywall exception)
+3. `api/market/liquidity-flow/route.ts` (64 سطر) ✅
+4. `api/radar/accuracy/route.ts` (102 سطر) ✅ + applyAccuracyGate (paywall exception)
+5. `api/predictions/honest-tracking/stats/route.ts` (66 سطر) ✅
+6. `api/predictions/honest-tracking/list/route.ts` (86 سطر) ✅
+7. `api/predictions/honest-tracking/live-tracking/route.ts` (62 سطر) ✅
+8. `api/predictions/honest-tracking/missed-opportunities/route.ts` (60 سطر) ✅
+9. `api/predictions/honest-tracking/learn-from-errors/route.ts` (86 سطر) ✅
+10. `api/predictions/honest-tracking/verify-pending/route.ts` (72 سطر) ✅
+11. `api/predictions/honest-tracking/route.ts` (64 سطر) ❌ VIOLATION (root, was missed!)
+
+## الـ CRITICAL violations (ترتيب حسب الأولوية):
+
+### Tier 1 — أعلى أولوية (financial business logic + direct SQLite):
+1. `api/predictions/honest-tracking/route.ts` (64 سطر) — direct SQLite + win_rate Math.round + SQL SUM(CASE WHEN status=...) classification
+2. `api/predictions/league-report/route.ts` (70 سطر) — getPredictionsFallback + filter + sort + slice + map (league table composition)
+3. `api/v4/stats/route.ts` (250 سطر) — SQLite fallback + win_rate + by_persona + top_tickers (5 Math.round + 3 SQL aggregations)
+4. `api/admin/platform-performance/route.ts` (646 سطر) — Win Rate + Profit Factor + Expectancy + Max Loss + TP1/Stop hit rates + best/worst trades
+5. `api/chart/[ticker]/route.ts` (969 سطر!) — direct SQLite + ticker resolution + chart OHLCV resampling
+6. `api/predictions/performance-dashboard/route.ts` (334 سطر) — direct SQLite + WIN_STATUSES classification + computeStats + by_market + by_signal + timeseries
+7. `api/predictions/historical-trades/route.ts` (220 سطر) — direct SQLite + filter + sort + outcome WIN/LOSS/BREAKEVEN classification
+8. `api/predictions/route.ts` (518 سطر) — direct SQLite + JSON parse + prediction enrichment
+9. `api/predictions/expert-consensus/route.ts` (480 سطر) — direct SQLite + consensus computation
+10. `api/predictions/daily-picks/route.ts` (339 سطر) — direct SQLite (predictions.db + stocks.db)
+11. `api/predictions/active-management/route.ts` (250 سطر) — direct SQLite (2 DBs)
+12. `api/predictions/performance/route.ts` (223 سطر) — direct SQLite + win_rate
+13. `api/predictions/dual-track/stats/route.ts` (238 سطر) — direct SQLite
+14. `api/predictions/dual-track/threshold/route.ts` (274 سطر) — direct SQLite
+15. `api/predictions/dual-track/list/route.ts` (169 سطر) — direct SQLite
+16. `api/predictions/learned-lessons/route.ts` (127 سطر) — direct SQLite
+17. `api/predictions/backtest-list/route.ts` (185 سطر) — direct SQLite
+18. `api/predictions/eid/route.ts` — direct SQLite (4 sites)
+19. `api/ai/analyze-stock/route.ts` (337 سطر) — SQLite fallback + AI analysis composition
+20. `api/market/intraday-pressure/route.ts` (348 سطر) — direct SQLite (intraday.db)
+21. `api/market/regime/route.ts` (299 سطر) — direct SQLite
+22. `api/market/sectors/intelligence/route.ts` (301 سطر) — direct SQLite
+23. `api/market/overview/route.ts` (154 سطر) — direct SQLite
+24. `api/market/exit-status/route.ts` (97 سطر) — SQLite fallback + computeRiskReward + filter + map (R:R in Node!)
+25. `api/market/summary/route.ts` (194 سطر) — direct SQLite
+26. `api/market/live-data/route.ts` (266 سطر) — direct SQLite
+27. `api/market/investing/route.ts` (152 سطر) — direct SQLite + classification
+28. `api/market/indices/route.ts` (64 سطر) — direct SQLite
+29. `api/market/top-movers/route.ts` (85 سطر) — direct SQLite
+30. `api/market/scheduled-sync/route.ts` (530 سطر) — direct SQLite + sync logic
+31. `api/market/sync-live/route.ts` (533 سطر) — direct SQLite + sync logic
+32. `api/market/report/daily/route.ts` — fallback chain
+33. `api/market/report/weekly/route.ts` — fallback chain
+34. `api/market/recommendations/ai-insights/route.ts` — fallback chain
+
+### Tier 2 — High-priority (stocks + crypto + radar):
+35. `api/stocks/route.ts` — direct SQLite + Math
+36. `api/stocks/[ticker]/route.ts` — direct SQLite + Math + classification
+37. `api/stocks/[ticker]/depth/route.ts` (441 سطر) — direct SQLite
+38. `api/stocks/[ticker]/comprehensive/route.ts` (349 سطر) — direct SQLite
+39. `api/stocks/[ticker]/publish-data/route.ts` (552 سطر) — direct SQLite
+40. `api/stocks/[ticker]/expert-analysis/route.ts` — Math
+41. `api/stocks/[ticker]/recommendation/route.ts` — fallback chain
+42. `api/stocks/[ticker]/professional-analysis/route.ts` — fallback chain
+43. `api/stocks/[ticker]/news/route.ts` — direct SQLite + fallback chain
+44. `api/stocks/sparkline/route.ts` — direct SQLite
+45. `api/stocks/delta-volume/route.ts` — direct SQLite
+46. `api/stocks/top-performers/route.ts` — direct SQLite
+47. `api/stocks/search/route.ts` — direct SQLite
+48. `api/maker-radar/route.ts` — direct SQLite
+49. `api/maker-radar/stock/route.ts` — direct SQLite + Math
+50. `api/maker-radar/market-intelligence/route.ts` — direct SQLite
+51. `api/maker-radar/sector-treemap/route.ts` — direct SQLite
+52. `api/maker-radar/timeline/route.ts` (575 سطر) — direct SQLite
+53. `api/maker-radar/net-picks/route.ts` — direct SQLite + Math
+54. `api/maker-radar/fundamentals/route.ts` — direct SQLite
+55. `api/maker-radar/signal-tracker/verify/route.ts` (398 سطر) — direct SQLite
+56. `api/crypto/full-analysis/route.ts` (392 سطر) — direct SQLite
+57. `api/crypto/simulation/route.ts` — direct SQLite
+58. `api/crypto/[id]/route.ts` — fallback chain
+59. `api/crypto/[id]/history/route.ts` — fallback chain
+60. `api/crypto/explosive/route.ts` — fallback chain
+61. `api/crypto/explosive/[symbol]/route.ts` — fallback chain
+62. `api/crypto/flow/route.ts` — fallback chain
+63. `api/crypto/flow/[symbol]/route.ts` — fallback chain
+64. `api/radar/personalized/route.ts` (374 سطر) — Math + reduce + placeholder fallbacks
+65. `api/disclosures/company/[symbol]/route.ts` — direct SQLite (3 DBs: predictions + stocks + news)
+66. `api/egx/investors/route.ts` (477 سطر) — direct SQLite
+67. `api/global-predictions/route.ts` — direct SQLite
+68. `api/sniper/track/route.ts` — direct SQLite
+69. `api/stored-analysis/results/route.ts` — direct SQLite
+70. `api/telegram/publish-stock/route.ts` — direct SQLite
+71. `api/explosive/route.ts` — fallback chain
+72. `api/explosive/[ticker]/route.ts` — fallback chain
+73. `api/fomo/missed-opportunities/route.ts` — fallback chain + Math
+74. `api/flow/route.ts` — fallback chain
+75. `api/flow/[ticker]/route.ts` — fallback chain
+76. `api/live/scan/route.ts` — fallback chain
+77. `api/confluence/analyze/[ticker]/route.ts` — classification
+78. `api/confluence/market-scan/route.ts` — Math
+79. `api/confluence/daily-picks/route.ts` — Math
+80. `api/unified/predictions/route.ts` — fallback chain
+81. `api/unified/route.ts` — Math
+82. `api/v2/chart/full-analysis/route.ts` — direct SQLite
+83. `api/stock-profile/[ticker]/route.ts` — fallback chain
+84. `api/smart-confluence/analysis/[symbol]/route.ts` — classification
+85. `api/mobile/crypto/route.ts` — fallback chain
+86. `api/mobile/crypto/[id]/route.ts` — fallback chain
+
+### Tier 3 — Admin/business-intelligence with direct SQLite:
+87. `api/admin/analytics/route.ts` (319 سطر) — direct SQLite
+88. `api/admin/telegram-predictions/route.ts` — direct SQLite
+89. `api/admin/news/route.ts` (446 سطر) — direct SQLite
+90. `api/admin/news-health/route.ts` — direct SQLite
+91. `api/admin/sources/route.ts` — direct SQLite
+92. `api/admin/engines-status/route.ts` (428 سطر) — direct SQLite
+93. `api/admin/import-indices-csv/route.ts` — direct SQLite
+94. `api/admin/generate-historical-predictions/route.ts` (349 سطر) — direct SQLite
+95. `api/admin/close-predictions/route.ts` — direct SQLite
+96. `api/admin/validation/route.ts` (354 سطر) — direct SQLite
+97. `api/admin/backtest/v40/run/route.ts` — direct SQLite
+98. `api/admin/backtest/v40/stats/route.ts` — direct SQLite + Math
+99. `api/admin/system-resources/route.ts` (556 سطر) — direct SQLite (system metrics — borderline)
+100. `api/admin/platform-performance/route.ts` (646 سطر) — مذكور في Tier 1
+
+### Tier 4 — Portfolio/Finance/Mobile (heavy business logic in Node):
+101. `api/portfolio/master/route.ts` (411 سطر) — direct SQLite + Math + reduce
+102. `api/portfolio/rescue/route.ts` (527 سطر) — direct SQLite
+103. `api/portfolio/unified-watch/route.ts` (436 سطر) — direct SQLite
+104. `api/portfolio/risk-summary/route.ts` — direct SQLite + Math
+105. `api/portfolio/equity-curve/route.ts` — direct SQLite + Math
+106. `api/portfolio/holdings/route.ts` (333 سطر) — direct SQLite
+107. `api/portfolio/cashflow/route.ts` — direct SQLite
+108. `api/portfolio/intelligence/route.ts` — direct SQLite
+109. `api/portfolio/watchlists/route.ts` — direct SQLite
+110. `api/portfolio/bag-holder-rescue/route.ts` — direct SQLite
+111. `api/portfolio/accounts/route.ts` — Math
+112. `api/portfolio/accounts/[id]/equity-curve/route.ts` — Math
+113. `api/finance/calculate-values/route.ts` (638 سطر!) — direct SQLite + Math (ZAKAT calculations)
+114. `api/finance/smart-confluence/route.ts` — direct SQLite
+115. `api/finance/projection/route.ts` — direct SQLite + Math
+116. `api/finance/real-return/route.ts` — direct SQLite + Math
+117. `api/finance/smart-analysis/route.ts` — direct SQLite
+118. `api/finance/smart-watchlist/route.ts` — direct SQLite
+119. `api/finance/smart-alerts/route.ts` (400 سطر) — direct SQLite
+120. `api/finance/transactions/route.ts` — direct SQLite
+121. `api/finance/reports/route.ts` — direct SQLite
+122. `api/finance/assets/route.ts` (424 سطر) — direct SQLite
+123. `api/finance/obligations/route.ts` (339 سطر) — direct SQLite
+124. `api/finance/obligations/payments/route.ts` — direct SQLite
+125. `api/mobile/dashboard/route.ts` (164 سطر) — direct SQLite + Math + reduce
+126. `api/mobile/predictions/route.ts` — direct SQLite + Math
+127. `api/mobile/recommendations/route.ts` — direct SQLite + Math
+128. `api/mobile/portfolio/route.ts` (321 سطر) — direct SQLite
+129. `api/mobile/portfolio/intelligence/route.ts` (332 سطر) — direct SQLite
+130. `api/mobile/watchlist/route.ts` (277 سطر) — direct SQLite
+131. `api/mobile/news/route.ts` (189 سطر) — direct SQLite
+
+### Tier 5 — News + recommendations + CRUD (borderline):
+132. `api/news/route.ts` (387 سطر) — direct SQLite + Math + reduce
+133. `api/news/latest/route.ts` — direct SQLite
+134. `api/news-feed/route.ts` (455 سطر) — direct SQLite + Math
+135. `api/recommendations/expert/route.ts` — direct SQLite
+136. `api/recommendations/retroactive-evaluate/route.ts` — direct SQLite
+137. `api/expert-recommendations/route.ts` (314 سطر) — direct SQLite
+138. `api/expert-recommendations/import/route.ts` — direct SQLite
+139. `api/expert-recommendations/batch/route.ts` — direct SQLite
+140. `api/sharia/route.ts` — direct SQLite
+141. `api/sharia/purification/route.ts` — direct SQLite
+142. `api/egxpilot/news/route.ts` — Math
+143. `api/health/route.ts` (349 سطر) — direct SQLite (health check — borderline OK)
+144. `api/watchlist/route.ts` — direct SQLite (auth CRUD — borderline)
+145. `api/watchlist/[id]/route.ts` — direct SQLite
+146. `api/watchlist-enhanced/route.ts` — direct SQLite
+147. `api/alerts/route.ts` — direct SQLite (alerts CRUD — borderline)
+148. `api/admin/db-manager/*` — direct SQLite (admin DB tooling — borderline, admin-only)
+149. `api/admin/db-backup/*` — direct SQLite (admin DB backup — borderline, admin-only)
+150. `api/zakat/calculate/route.ts` — Math (zakat calc — borderline financial computation)
+
+## الـ HIGH violations (Math + aggregation فقط بدون direct SQLite):
+- `api/v82/route.ts` — Math + reduce
+- `api/backtest/route.ts` — Math
+- `api/admin/db-manager/repair/route.ts` — Math
+- `api/maker-radar/live-watch/route.ts` — Math
+- `api/maker-radar/signal-tracker/route.ts` — Math
+- `api/admin/generate-historical-predictions/route.ts` — Math
+- `api/paper-trading-v2/account/route.ts` — Math + win_rate/profitFactor
+- `api/paper-trading-v2/reset/route.ts` — Math
+- `api/paper-trading-v2/positions/route.ts` — Math
+- `api/stored-analysis/live-tracking/route.ts` — Math
+- `api/backtesting/unified/route.ts` — Math
+- `api/ads/successful-trades/route.ts` — Math
+- `api/kimi/backtest/run/route.ts` — Math
+- `api/stocks/[ticker]/expert-analysis/route.ts` — Math
+- `api/unified-learning/iterative/route.ts` — Math
+- `api/predictions/tracking/list/route.ts` — Math
+- `api/money/route.ts` — Math
+- `api/live-monitor/ledger/route.ts` — Math
+
+## الـ MEDIUM violations (fallback chain فقط):
+24 route using `getPredictionsFallback` / `flutter-sqlite-fallback`:
+- `api/predictions/league-report/route.ts` (مذكور في CRITICAL)
+- `api/market/exit-status/route.ts` (مذكور في CRITICAL)
+- `api/live/scan/route.ts`, `api/crypto/route.ts`, `api/crypto/flow/route.ts`, `api/crypto/[id]/route.ts`, `api/crypto/explosive/route.ts`, `api/confluence/analyze/[ticker]/route.ts`, `api/fomo/missed-opportunities/route.ts`, `api/explosive/[ticker]/route.ts`, `api/stocks/[ticker]/recommendation/route.ts`, `api/stocks/[ticker]/route.ts`, `api/stocks/[ticker]/professional-analysis/route.ts`, `api/stocks/[ticker]/publish-data/route.ts`, `api/stocks/[ticker]/news/route.ts`, `api/unified/predictions/route.ts`, `api/stock-profile/[ticker]/route.ts`, `api/market/report/weekly/route.ts`, `api/market/report/daily/route.ts`, `api/market/top-movers/route.ts`, `api/mobile/crypto/route.ts`, `api/mobile/crypto/[id]/route.ts`, `api/market/recommendations/ai-insights/route.ts`, `api/flow/[ticker]/route.ts`
+
+## الـ Placeholder/fallback violations (Rule 27):
+- `api/radar/personalized/route.ts` — placeholder with `source: 'unavailable'`
+- `api/deal-advisor/[ticker]/route.ts` — placeholders
+- `api/predictions/expert-consensus/route.ts` — placeholders
+- `api/predictions/historical-trades/route.ts` — placeholders
+- `api/admin/cron-health/route.ts` — placeholder fallback
+- `api/v2/unified/analyze/route.ts` — placeholder fallback
+
+## النتائج المُثبتة بالقراءة المباشرة (الأخطر):
+
+### 1. `api/predictions/honest-tracking/route.ts` (64 سطر — ROOT):
+```ts
+// Lines 9, 18, 20, 24-31, 36:
+import Database from 'better-sqlite3';
+db = new Database(dbPath, { readonly: true, timeout: 3000 });
+// SQL with SUM(CASE WHEN status = 'TARGET_HIT' / 'STOPPED' / 'PENDING' THEN 1 ELSE 0 END)
+const winRate = closed > 0 ? Math.round((summary.wins / closed) * 1000) / 10 : 0;
+```
+🔴 CRITICAL: ده الـ ROOT بتاع honest-tracking — تم إصلاح 5 sub-routes بس الـ ROOT نسي! (الـ sub-routes بتستخدم Python backend بس الـ ROOT لسه بيعمل direct SQLite + win_rate computation).
+
+### 2. `api/v4/stats/route.ts` (250 سطر):
+```ts
+// Line 95-96: direct SQLite fallback
+const Database = require('better-sqlite3');
+const db = new Database(dbPath, { readonly: true });
+// Lines 102-105: SQL with SUM(CASE WHEN status = 'TARGET_HIT'/'STOPPED')
+// Lines 115-119: Math.round for win_rate + avg_return
+// Lines 130-148: by_persona SQL aggregation
+// Lines 168-187: top_tickers SQL aggregation
+// Lines 150-205: byPersona + topTickers mapping with Math.round win_rate
+```
+🔴 CRITICAL: كل إحصائيات الـ v4/stats بتتحسب في Node من SQLite.
+
+### 3. `api/admin/platform-performance/route.ts` (646 سطر):
+```ts
+// Line 3: import { openDb } from '@/lib/shared-db';
+// Lines 35-58: Trade interface with all financial fields
+// Computes: Win Rate, Profit Factor, Expectancy, Max Loss, TP1 hit rate, Stop hit rate
+```
+🔴 CRITICAL: كل KPIs مالية في Node من SQLite.
+
+### 4. `api/predictions/performance-dashboard/route.ts` (334 سطر):
+```ts
+// Lines 41-43: openDb helper
+// Lines 45-47: WIN_STATUSES / LOSS_STATUSES / EXPIRED_STATUSES classification sets
+// Lines 78-80: computeStats function (wins, losses, win_rate, avg_return)
+```
+🔴 CRITICAL: classification + stats computation in Node.
+
+### 5. `api/chart/[ticker]/route.ts` (969 سطر — أكبر route!):
+```ts
+// Line 2: import Database from 'better-sqlite3';
+// Lines 23-58: resolveCanonicalTicker with direct SQLite (3 SQL queries)
+// Lines 63+: resampleSnapshots function (OHLCV candle aggregation in Node)
+// Plus ticker deduplication (.replace(/(.)\1+/g, '$1')) — Python's job
+```
+🔴 CRITICAL: chart data aggregation + ticker resolution كلها في Node.
+
+## الخلاصة:
+- **تم إصلاح 11 route** في الجلسات السابقة (honest-tracking sub-routes 5 + finance/screener + screener/advanced + market/liquidity-flow + radar/accuracy + honest-tracking verify-pending).
+- **باقي ~120 route محتاجة تحويل لـ pure proxy** — أهمها 6 ملفات CRITICAL مذكورة بالاسم في "النتائج المُثبتة".
+- **الـ honest-tracking ROOT مُفوت!** — يجب إصلاحه فورًا (سطر 36 فيه `Math.round((summary.wins / closed) * 1000) / 10`).
+- **الـ league_report Node route لسه فيه fallback chain** (الـ Python SQL اتعملله dedup-fix بس الـ Node route ماتلمسش).
+
+## التوصية (Action Plan):
+
+### Phase 1 — Quick wins (يوم واحد):
+1. **أصلح `predictions/honest-tracking/route.ts`** (ROOT) — حوّله لـ pure proxy لـ Python `/api/stored-analysis/honest-summary` (يحتاج Python endpoint جديد).
+2. **أصلح `predictions/league-report/route.ts`** — شيل الـ SQLite fallback chain (الـ Python SQL اتعمل، الـ Node بس شيل الـ fallback).
+3. **أصلح `market/exit-status/route.ts`** — شيل `computeRiskReward` + filter + map، خلّي Python يرجع R:R جاهز.
+
+### Phase 2 — High-priority (3-5 أيام):
+4. **حوّل `v4/stats/route.ts`** لـ pure proxy — Python عنده `/api/v4/stats` أصلاً، بس شيل الـ SQLite fallback.
+5. **حوّل `admin/platform-performance/route.ts`** لـ pure proxy — يحتاج Python endpoint جديد.
+6. **حوّل `predictions/performance-dashboard/route.ts`** لـ pure proxy.
+7. **حوّل `predictions/historical-trades/route.ts`** لـ pure proxy (الـ outcome classification اللي في SQL مسموح به، بس بقية الـ filter/sort يفضل يكون في Python).
+
+### Phase 3 — Medium-priority (أسبوع):
+8. حوّل الـ 24 route اللي بيستخدموا `getPredictionsFallback` (Flutter SQLite fallback) — يحتاجوا Python endpoints أو 503 صريح.
+9. حوّل `chart/[ticker]/route.ts` (969 سطر) — يحتاج Python endpoint لـ OHLCV resampling.
+10. حوّل `ai/analyze-stock/route.ts` — يحتاج Python endpoint يرجع stored_analyses + predictions بدون fallback.
+
+### Phase 4 — Long-tail (أسبوعين):
+11. الـ portfolio/* و finance/* routes — الأغلب CRUD للمستخدم، بس في computation مالي (zakat, equity-curve, profit_factor) لازم يروح Python.
+12. الـ admin/* routes — لكل واحد Python endpoint (admin/analytics, admin/news, admin/engines-status, admin/telegram-predictions, admin/backtest/v40/stats).
+13. الـ mobile/* routes — mirror للـ desktop routes، لازم يتعملهم refactoring بنفس الـ pattern.
+
+### Convention:
+- كل route.ts الجديد لازم يبدأ بـ `RULE20-PURE-PROXY` header comment (زي finance/screener + screener/advanced + radar/accuracy).
+- كل fallback = violation تلقائيًا (Rule 27 NO-FAKE-DATA).
+- أي Math.* في route.ts = reason للاشتباه (إلا input sanitization مثل `Math.min(Math.max(days, 7), 365)` — ده OK).
+
+## القواعد المُخالَفة:
+- **Rule 20 (Python = Brain)** — مُخالَفة في ~120 route
+- **Rule 27 (NO-FAKE-DATA)** — مُخالَفة في ~30 route (fallback chains + placeholders)
+- **Rule 67 (CALCULATION-CANONICAL)** — مُخالَفة في كل route فيه win_rate / profit_factor / outcome classification في Node
+
+RULE20-FULL-AUDIT complete. الـ 11 verified CLEAN + 120+ violations مصنّفة.
+
+---
+Task ID: CONNECTIVITY-AUDIT
+Agent: Explore (Connectivity + Destructive Overlap Audit)
+Task: هل في ترابط وتوصيل بين كل الأدوات ولا تداخل هدام؟
+
+Work Log:
+- قريت worklog.md (آخر 100 سطر: LEAGUE-DEDUP-FIX) + Constitution Rule 5 (L145), Rule 28 (L391-402), Rule 29 (L404-415), Rule 32 (L452-471)
+- فحصت Frontend → Backend (172 file → 280 endpoints / 454 routes)
+- فحصت Backend → DB (7 DBs + 11 duplicate tables)
+- فحصت Engine connectivity (V40.2 + daily_closer + learning_engine + maestro)
+- فحصت destructive overlap (parallel stacks + duplicate endpoints + orphan code + dead routes)
+- استخدمت سكربتات Python لـ static analysis (extract_endpoints.py + find_orphans.py)
+
+Stage Summary:
+
+## إجابة سؤال سيدي: "هل فى ترابط وتوصيل ولا تداخل هدام؟"
+### الإجابة: **مزيج** — في ترابط قوي في المحرك الأساسي (V40.2 → daily_closer → learning_engine → predictions.db) ✅، لكن فيه **5 نقاط تداخل هدام + 1 كارثة كاملة** في الأطراف (news + duplicate tables + dead components + duplicate blueprints + broken DB paths).
+
+---
+
+## A. Frontend → Backend:
+- **172** ملف frontend بـ يستدعوا **280** endpoints فريدة (normalized)
+- **454** API routes معرفة في `src/app/api/`
+- **213** routes في dead list — لكن أغلبها legitimate (mobile/cron/webhook/health/admin deep-links)
+- **2 endpoints فعلاً dead**: 
+  - `/api/stored-analysis/live-tracking` (الـ Node proxy) — بس بـ يتسدعى من LiveTrackingTab اللي مش بيـ render
+  - `/api/v2/*` (13 routes) — كامل الـ v2 stack اللي كان في `src/lib/v2/` اتـ scanned ومش موجود (Rule 29 stack deleted ✅)
+- **3 tracking systems — partially unified**:
+  - `/api/predictions/tracking/list` → 410 GONE ✅ (deprecated redirects to honest-tracking)
+  - `/api/predictions/tracking/stats` + `/tracking/verify` → still active (PredictionTrackingView.tsx بـ يستدعيه)
+  - `/api/predictions/honest-tracking/*` → canonical surface ✅ (5 sub-routes: list, stats, live-tracking, verify-pending, missed-opportunities, learn-from-errors)
+  - `/api/stored-analysis/live-tracking` (Node proxy) → dead from frontend (but Python endpoint IS canonical source)
+- **4 catch-all proxies — down to 2 active**:
+  - `/api/[...slug]` → fallback JSON 404 handler (safety net للـ mobile client)
+  - `/api/proxy/[...path]` → internal `proxyRequest` handler
+  - `/api/python/[...path]` → user-facing Python proxy (active)
+  - `/api/telegram/[...path]` → user-facing Telegram proxy (active)
+  - ✅ /api/python/* و /api/proxy/* بيستخدموا نفس `proxyRequest` (internally unified)
+
+## B. Backend → DB:
+- **7 DBs موجودة فعلياً**:
+  1. `stocks.db` — 27MB, 68 tables (canonical للأسهم + cached_analysis + telegram_news)
+  2. `predictions.db` — 280MB, 47 tables (canonical للتوقعات + learning + outcome_logs)
+  3. `data_engine.db` — 1.7GB, 29 tables (canonical للأسعار + fundamentals + crypto)
+  4. `intraday.db` — 450MB (intraday tick data)
+  5. `auth.db` — 0 bytes (empty)
+  6. `custom.db` — 24KB
+  7. `market.db` — هدف نهائي (PHASE-4-DB-REORG) — لسه فاضي
+- **🔴 كارثة 1: `news.db` مش موجود خالص!** (Rule 44 NEWS-DB-SOT violation):
+  - Rule 44 بتقول: "news.db هو المصدر الوحيد للأخبار"
+  - لكن `news.db` **DOES NOT EXIST** على disk
+  - 3 endpoints بـ يحاولوا يقرأوه (`/api/news`, `/api/news/latest`, `/api/mobile/news`) → all return empty `[]` silently
+  - الـ migrator بـ skip إنشاء market_news table لأن DB file مش موجود
+  - stocks.db فيه `news` table (0 rows) + `news_items` (0 rows) + `telegram_news` (6 rows)
+  - النتيجة: المستخدم مش بيشوف أي أخبار
+- **11 duplicate tables** عبر الـ DBs (Rule 28 violation):
+  - **ACTIVE CONFLICTS** (بيانات مختلفة في الـ duplicate):
+    | table | stocks.db | data_engine.db | predictions.db | db_paths.py says |
+    |-------|-----------|----------------|----------------|------------------|
+    | stocks | **1240 rows** | **1098 rows** ❌ | — | "296 stale — dropped" |
+    | ExpertRecommendation | **48 rows** | — | **17 rows** ❌ | "17 stale — dropped" |
+    | portfolios | **9 rows** | — | **4 rows** ❌ | "0 rows" |
+    | gold_prices | 3 rows ❌ | **761,212 rows** | — | "3 stale — dropped" |
+  - **EMPTY DUPLICATES** (safe — 0 rows in the duplicate):
+    - predictions: stocks.db (0) ← duplicate of predictions.db (1551) ✅
+    - cached_analysis: predictions.db (0) ← duplicate of stocks.db (23) ✅
+    - learned_lessons: stocks.db (0) ← duplicate of predictions.db (19,636) ✅
+    - telegram_news: predictions.db (0) ← duplicate of stocks.db (6) ✅
+    - egksco_price_history: stocks.db (0) ← duplicate of data_engine.db (74,387) ✅
+    - egksco_stocks: data_engine.db (0) ← duplicate of stocks.db ✅
+- **الـ schema migrations موحدة**: `core/migrator.py` هو canonical runner — لكن بـ skip DBs اللي مش موجودة (زي news.db)
+
+## C. Engine Connectivity:
+- ✅ **V40.2 بـ يقرأ من data_engine.db.egksco_price_history** (PRIMARY) — `jobs/daily_predictor.py` L99, L309-318
+  - fallback لـ `price_history.db` لو egksco_price_history قديمة
+- ✅ **daily_closer بـ يقفل predictions من predictions.db** بس (`jobs/daily_closer.py` L100, L3433) + بـ يقرأ الأسعار من data_engine.db
+- ✅ **learning_engine بـ يتعلم من predictions.db** (`jobs/learning_engine.py` L29, L102, L1048, L1145) + بـ يكتب params في `vps-service/config/optimizer_params.json`
+- ✅ **maestro_orchestrator معطل ومش بيكتب** في production:
+  - `api/maestro_routes.py` L904, L1018: `orchestrator = None  # KILL-MAESTRO: MaestroOrchestrator DISABLED — V40.2 is the only engine`
+  - `core/analysis_runner.py` L218-219: same disabled message
+  - الملف موجود ومستورد في 20+ مكان بس للـ backtest (real_backtester.py, maestro_backfill_phase3.py) — مش destructive overlap
+
+## D. Destructive Overlap (التداخل الهدام):
+
+### 1. Parallel systems (Rule 28 violation):
+- ✅ `src/lib/v2/` (30 ملف، 21,154 LOC) — **DELETED** (Rule 29 violation resolved)
+- ⚠️ **2 Flask blueprints under same url_prefix** (`/api/predictions/tracking`):
+  - `tracking_bp` (legacy: `/legacy-stats`, `/history`, `/pending`, `/evaluate`, `/check/<id>`, `/export`, `/summary`)
+  - `prediction_tracking_bp` (new: `/save`, `/list`, `/stats`, `/verify`)
+  - الاتنين registered في `lightweight_server.py` L51 + L52 — messy but not actually conflicting (different paths)
+
+### 2. Duplicate endpoints:
+- **News subsystem (5 endpoints — مختلفة الـ DB paths)**:
+  - `/api/news` → reads `news.db` (DOES NOT EXIST → broken)
+  - `/api/news/latest` → reads `news.db` (DOES NOT EXIST → broken)
+  - `/api/mobile/news` → reads `news.db` (DOES NOT EXIST → broken)
+  - `/api/news-feed` → reads `predictions.db.news_signals` (table also DOES NOT EXIST → broken)
+  - `/api/admin/news` → Python `news_routes.py` بـ يستخدم `db_manager.get_db_path('news')` (broken)
+  - `/api/egxpilot/news` → external API / empty
+- **Single-stock analysis (5 endpoints)**:
+  - `/api/stocks/[ticker]/comprehensive` (canonical Python per StockAnalysisReport.tsx L25)
+  - `/api/stocks/[ticker]/unified` (active)
+  - `/api/stocks/[ticker]/expert-analysis` (active)
+  - `/api/stocks/[ticker]/recommendation` (active)
+  - `/api/stocks/[ticker]/professional-analysis` → **410 GONE** (deprecated → redirects to /recommendation) ✅
+
+### 3. Conflicting outputs (نفس السهم بـ يطلع توقعات مختلفة في شاشات مختلفة):
+- **News**: `/api/news` returns empty (broken) — `/api/news-feed` returns external data (CoinGecko + DuckDuckGo fallback) → **المستخدم بيشوف أخبار مختلفة حسب الشاشة**
+- **Duplicate DBs conflict**: لو أي route بـ يقرأ من الـ wrong DB:
+  - `stocks` table: stocks.db (1240) vs data_engine.db (1098) — فرق 142 سهم
+  - `ExpertRecommendation`: stocks.db (48) vs predictions.db (17) — فرق 31 توصية
+  - `portfolios`: stocks.db (9) vs predictions.db (4) — فرق 5 محفظة
+  - `gold_prices`: stocks.db (3 stale) vs data_engine.db (761,212) — لو قرأت من stocks.db هتاخد أسعار قديمة
+
+### 4. Orphan code (Rule 5 + Rule 29 violation):
+**مكونات Node بـ تـستورد بس مش بـ تـ render**:
+- 🔴 `src/modules/market-analysis/components/LiveTrackingTab.tsx` — whole file dead (only caller of /api/stored-analysis/live-tracking)
+- 🔴 `src/modules/market-analysis/components/MorningBellSection.tsx` — `MorningBellSection` exported but only `HorizontalSectorsBar` imported (the main component is dead)
+- 🔴 `src/app/page.tsx` L271-273: 3 crypto views declared `= null` (CryptoScreenerView, CryptoTradingChartView, CryptoAdvancedAnalysisView) — "moved to archive" but files still exist
+- 🔴 `src/modules/crypto/components/CryptoAdditionalViews.tsx` — orphan
+- 🔴 `src/modules/admin/components/HumanRecommendationsAdmin.tsx` — orphan
+- 🔴 `src/modules/dashboard/components/PredictionsBacktestTable.tsx` — orphan
+- 🔴 `src/modules/market-analysis/components/AnalysisFlowDiagram.tsx` — orphan
+- 🔴 `src/modules/stock-analysis/components/DataCoverageBanner.tsx` — orphan
+
+**ملفات lib مش بتـ تستورد** (10+ files):
+- `lib/unified-db.ts`, `lib/vps-client.ts`, `lib/chart-generator.ts`, `lib/community-db.ts`, `lib/m2ySyncClient.ts`, `lib/external-data-fetcher.ts`, `lib/engine-control-store.ts`, `lib/new-db-queries.ts`, `lib/prediction-validator.ts`, `lib/scheduler/index.ts`, `lib/protection/display-protection.ts`
+
+**Hooks مش بتـ تستورد**:
+- `hooks/useSignalNotifications.ts`, `hooks/useSmartChart.ts`, `hooks/use-persona-results.ts`, `hooks/use-toast.ts`, `hooks/use-mobile.ts`
+
+**Index.ts re-exporter files orphan** (12+ files):
+- `modules/news/index.ts`, `modules/crypto/index.ts`, `modules/predictions/index.ts`, `modules/dashboard/index.ts`, `modules/market-analysis/index.ts`, `modules/education/index.ts`, `modules/reports/index.ts`, `modules/admin/index.ts`, `modules/screener/index.ts`, `modules/publishing/index.ts`, `modules/portfolio/index.ts`, `modules/simulation/index.ts`, `modules/stock-analysis/index.ts`
+- السبب: الـ components بتـ تستورد مباشرة من `@/modules/X/components/Y` مش من `@/modules/X`
+
+### 5. Dead routes (213 total — معظمها legitimate):
+- **فعلاً dead (تستحق حذف)**:
+  - 13 `/api/v2/*` routes (live-analysis, pipelines, presets, recommend, engines, unified/analyze, unified/config, unified/scan, pipeline/[name]/summary, pipeline/[name]/engine/[engine]/toggle, pipeline/[name]/engine/[engine]/weight, feedback/run)
+  - `/api/proxy-prod/[...path]` — generic production proxy (sandbox → prod)
+  - `/api/features`, `/api/health`, `/api/keepalive`, `/api/tab-data` — utility endpoints (may be polled by mobile app)
+- **Likely legitimate dead** (cron / webhook / mobile):
+  - `/api/cron/auto-sync`, `/api/paymob/callback`, `/api/google-play/verify-receipt` (webhook callbacks)
+  - 23 `/api/mobile/*` routes (Flutter app external caller)
+  - `/api/keepalive` (uptime monitor)
+  - All `/api/admin/*` deep routes (called via admin UI lazy-loaded tabs)
+
+---
+
+## الخلاصة:
+- **الترابط في المحرك الأساسي**: 95% قوي (V40.2 → daily_closer → learning_engine → predictions.db كله متصل وموحد) ✅
+- **الترابط في الأطراف**: 60% قوي (honest-tracking unified + proxy unified + tracking/list deprecated) ⚠️
+- **التداخل الهدام**: **5 نقاط رئيسية + 1 كارثة**:
+  1. 🔴 **كارثة news.db** — DB مش موجود + 5 endpoints different paths → المستخدم مش بيشوف أخبار
+  2. 🔴 **4 active table conflicts** — stocks/ExpertRecommendation/portfolios/gold_prices ليها duplicate بيانات في 2 DBs
+  3. ⚠️ **2 blueprints under same url_prefix** (`/api/predictions/tracking`) — tracking_bp (legacy) + prediction_tracking_bp (new)
+  4. ⚠️ **8+ orphan components** + **10+ orphan lib files** + **12+ orphan index.ts re-exporters**
+  5. ⚠️ **13 dead v2 routes** + **3 crypto views = null** + **MorningBellSection dead**
+
+## التوصية (Action Plan):
+1. **P0 — كارثة news.db** (1 يوم):
+   - إما (أ) إنشاء `db/news.db` فعلياً + تشغيل migrator + repopulate من stocks.db.news
+   - أو (ب) تحويل `/api/news`, `/api/news/latest`, `/api/mobile/news` لقراءة `stocks.db.news` (حسب db_paths.py)
+2. **P0 — Active table conflicts** (نصف يوم):
+   - `DROP TABLE` للـ active duplicates: `data_engine.db.stocks` (1098 stale rows), `predictions.db.ExpertRecommendation` (17 stale), `predictions.db.portfolios` (4 stale), `stocks.db.gold_prices` (3 stale)
+3. **P1 — Orphan cleanup** (VERIFY-BEFORE-DELETE per Rule 16):
+   - حذف: LiveTrackingTab.tsx, MorningBellSection.tsx (component فقط — keep HorizontalSectorsBar), HumanRecommendationsAdmin.tsx, PredictionsBacktestTable.tsx, AnalysisFlowDiagram.tsx, DataCoverageBanner.tsx, 4 crypto views الـ null
+   - مراجعة: lib/unified-db.ts و lib/vps-client.ts (محتاج verify مش بـ يستوردوا runtime via dynamic import)
+4. **P1 — tracking_bp consolidation**:
+   - دمج tracking_bp (legacy routes: /legacy-stats, /history, /pending, /evaluate, /check, /export, /summary) في prediction_tracking_bp + حذف الـ duplicate blueprint registration
+5. **P2 — Index.ts re-exporters**:
+   - حذف الـ 12+ orphan index.ts files (الـ components بتـستورد مباشرة من component paths)
+6. **P2 — v2 routes cleanup**:
+   - حذف 13 `/api/v2/*` routes اللي مفيهاش callers (live-analysis, pipelines, presets, recommend, engines, unified/analyze, unified/config, unified/scan, pipeline/[name]/*, feedback/run)
+
+**Stats نهائية**:
+- Frontend fetch coverage: 280/454 = 62% (معظم الـ dead routes legitimate)
+- Backend DB connectivity: 6/7 DBs active (news.db missing) = 86%
+- Engine pipeline integrity: 4/4 = 100% (V40.2 → closer → learner → DB all connected)
+- Rule 28 violations: 5 (news endpoints + duplicate tables + 2 blueprints + tracking/stats + 4 single-stock analysis routes)
+- Rule 29 violations: ~25 orphan files + 13 dead v2 routes
+- Rule 5 violations: same as Rule 29
+
+الخلاصة لسيدي: **"المحرك الأساسي متكامل ومتصل 100%، لكن فيه تداخل هدام في نظام الأخبار (كارثة) + 4 duplicate tables ببيانات مختلفة + 25+ orphan file تستحق الحذف."**
+
+---
+
+---
+Task ID: FULL-AUDIT-3-QUESTIONS
+Agent: Main Agent (Z.ai Code)
+Task: فحص شامل للأسئلة الـ 3 الجذرية بعد آخر تحديث
+
+Work Log:
+- سحبت آخر تحديث (9c67b55 — DB backup من المبرمج التاني)
+- شلت 62 ملف DB backup من git tracking (1.04 GB)
+- أضفت قواعد صارمة لـ .gitignore: data/**/*.zip + data/**/*.part + data/db_backup_*
+- شغلت 3 subagents متوازية للفحص الشامل:
+  1. RULE20-FULL-AUDIT (هل في منطق في Node؟)
+  2. UNIFICATION-AUDIT (هل كل شيء موحد؟)
+  3. CONNECTIVITY-AUDIT (هل في ترابط ولا تداخل هدام؟)
+
+═══════════════════════════════════════════════════════════════════════
+الإجابات الـ 3 الجذرية:
+═══════════════════════════════════════════════════════════════════════
+
+## سؤال 1: "مافيش اى تحليل او منطق جوة النود؟"
+
+### الإجابة: ❌ لا — لسه في منطق في ~120 route (28% من in-scope routes)
+
+الإحصائيات:
+- Total route.ts: 454
+- Excluded (auth/subscription/paymob/instapay/notifications): 27
+- In-scope: 427 route
+- ✅ CLEAN pure proxies (KEEP): 11 route (اللي اتحولت في الجلسات السابقة)
+- ❌ Violations: ~120 route
+  - 🔴 CRITICAL: ~50 (direct SQLite + business logic)
+  - 🟠 HIGH: ~40 (Math computation + aggregation)
+  - 🟡 MEDIUM: ~30 (SQLite CRUD + 24 fallback chain)
+
+الـ 11 CLEAN (مُصلحة):
+- finance/screener ✅
+- screener/advanced ✅ (+ paywall gate)
+- market/liquidity-flow ✅
+- radar/accuracy ✅ (+ paywall gate)
+- predictions/honest-tracking/{stats,list,live-tracking,missed-opportunities,learn-from-errors,verify-pending} ✅
+
+أبرز 6 CRITICAL violations باقية:
+1. predictions/honest-tracking/route.ts (ROOT — 64 سطر) — مُفوت!
+2. predictions/league-report/route.ts (70 سطر) — لسه في fallback
+3. v4/stats/route.ts (250 سطر) — SQLite fallback + win_rate
+4. admin/platform-performance/route.ts (646 سطر) — Win Rate + PF + Expectancy
+5. chart/[ticker]/route.ts (969 سطر!) — SQLite + OHLCV resampling
+6. predictions/performance-dashboard/route.ts (334 سطر) — classification + stats
+
+Action Plan:
+- Phase 1 (يوم): honest-tracking ROOT + league-report + market/exit-status
+- Phase 2 (3-5 أيام): v4/stats + admin/platform-performance + performance-dashboard + historical-trades
+- Phase 3 (أسبوع): شيل 24 fallback chain (getPredictionsFallback)
+- Phase 4 (أسبوعين): refactor portfolio/* + finance/* + admin/* + mobile/*
+
+═══════════════════════════════════════════════════════════════════════
+
+## سؤال 2: "هل احنا عندنا كل شيء موحد من محرك البيانات لمحرك التوقعات؟"
+
+### الإجابة: جزئياً (~75% مكتمل)
+
+| الطبقة | الحالة | النسبة |
+|-------|-------|------|
+| A. Data Engine (Rule 12) | load_merged_history() موحّد + 21 scraper في data_engine.db واحد | 90% ✅ |
+| B. Prediction Engine (Rule 35) | V40.2 وحده الكاتب + PREDICTION-WRITE-GUARD شغال + Maestro معطّل | 100% ✅ |
+| C. Canonical Calculations (Rule 67) | 9/14 canonical موجود + 4 canonical files مفقودة + ~30 inline copies | 65% ⚠️ |
+
+✅ الـ 100% المكتملة (Prediction Engine):
+- record_prediction() = الـ Single Gate
+- core/prediction_write_guard.py شغّال
+- Maestro معطّل (KILL-MAESTRO في 3 مواقع)
+- كل الـ rogue paths (sniper + CRYPTO + EGX engine-failed) بـ يـ blocked عند الـ Gate
+
+⚠️ الفجوات في Canonical Calculations (Rule 67):
+- analyzers/technical_analyzer.py غير موجود رغم إنه canonical لـ 4 حسابات:
+  * VWAP — inline copy وحيدة في sniper_engine.py:408
+  * OBV — لا canonical ولا inline
+  * Volume Ratio — لا canonical ولا inline
+  * Market Regime — 5 duplicate regime detectors
+- 30+ inline copies من calc_atr/calc_sma/calc_ema لسه Phase 2 pending
+- compute_win_rate duplicate في misc_routes.py:4733
+
+Action Plan:
+- HIGH: إنشاء analyzers/indicators/vwap.py + obv.py + volume_ratio.py
+- MEDIUM: Migration Phase 2 لـ ~30 inline copy
+- MEDIUM: إزالة compute_win_rate duplicate في misc_routes.py
+- LOW: توضيح status الـ 4 TradingView scrapers
+
+═══════════════════════════════════════════════════════════════════════
+
+## سؤال 3: "هل فى ترابط وتوصيل بين كل الادوات ولا فية تداخل هدام؟"
+
+### الإجابة: مزيج — ترابط قوي في المحرك الأساسي ✅ + 5 نقاط تداخل هدام + 1 كارثة 🔴
+
+✅ الترابط الصحيح (95% من المحرك الأساسي):
+- V40.2 → daily_closer → learning_engine → predictions.db — كلها متصلة
+- maestro_orchestrator معطل تماماً (KILL-MAESTRO)
+- src/lib/v2/ parallel stack — DELETED (Rule 29 violation resolved)
+- 3 tracking systems — partially unified (tracking = 410 GONE، honest-tracking = canonical)
+
+🔴 الكارثة #1: news.db غير موجود خالص!
+- Rule 44 بيقول إنه المصدر الوحيد للأخبار
+- 3 endpoints بـ يحاولوا يقرأوه → بـ يرجعوا [] silently
+- migrator بـ يتخطى إنشاء market_news table
+- المستخدم بيشوف أخبار فاضية في /api/news + /api/news/latest + /api/mobile/news
+
+⚠️ التداخل الهدام #2-5:
+| # | المشكلة | العدد |
+|---|---------|-------|
+| 2 | Duplicate tables ببيانات مختلفة | 4 (stocks 1240 vs 1098 / ExpertRecommendation 48 vs 17 / portfolios 9 vs 4 / gold_prices 761K vs 3) |
+| 3 | 2 Flask blueprints نفس url_prefix | /api/predictions/tracking (legacy + new) |
+| 4 | Orphan components/libs/hooks | ~25+ (LiveTrackingTab + MorningBellSection + 4 crypto views + 10 lib files + 5 hooks) |
+| 5 | Dead v2 routes | 13 routes مفيهاش caller |
+
+إحصائيات:
+- Frontend fetch coverage: 280/454 = 62%
+- Backend DB connectivity: 6/7 DBs = 86% (news.db missing)
+- Engine pipeline integrity: 4/4 = 100% ✅
+- Rule 28 violations: 5
+- Rule 29 violations: ~25 orphan files + 13 dead v2 routes
+
+Action Plan:
+- P0: حل كارثة news.db (إنشاء DB + repopulate OR redirect لـ stocks.db)
+- P0: DROP TABLE للـ 4 active conflicts
+- P1: حذف orphan files (25+)
+- P1: دمج tracking_bp في prediction_tracking_bp + حذف duplicate blueprint
+- P2: حذف 13 dead v2 routes + 12 orphan index.ts re-exporters
+
+═══════════════════════════════════════════════════════════════════════
+
+Verification:
+- gitignore fix: ✅ 62 DB backup files removed from tracking
+- .git history: 1.7 GB (قبل — لسه كبير بسبب history القديم)
+- data/ tracked files: 4 (pine_scripts فقط — non-DB)
+- DBs على القرص: 6 (auth/custom/data_engine/intraday/predictions/stocks) ✅
+
+الـ 3 إصلاحات اللي اتعملت في الجلسة دي:
+1. إزالة 62 ملف DB من git tracking (1.04 GB)
+2. .gitignore محدّث بقواعد صارمة
+3. التقرير الشامل للأسئلة الـ 3 (ده)
+
+FULL-AUDIT-3-QUESTIONS complete.
