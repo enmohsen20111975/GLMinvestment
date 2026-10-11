@@ -25,7 +25,8 @@
  * Phase 3 export (Rule 67 + Rule 30):
  *   - PNG: html-to-image.toPng (2x retina) via exportReportToPng()
  *   - PDF: window.print() via triggerPrint()
- *   - Professional palette: dark navy #0a0e1a + emerald + amber + red + gold
+ *   - Professional palette: theme-aware design tokens (--background,
+ *     --card, --primary) + emerald + amber + red + gold accents
  *
  * Verification (Rule 68):
  *   - forbidden endpoints (apiClient + legacy routes): ≤2
@@ -128,7 +129,7 @@ function ExportToolbar({
         onClick={onPng}
         disabled={exporting}
         variant="outline"
-        className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 bg-[#0d1320]"
+        className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 bg-card"
       >
         <Download className="w-4 h-4" />
         {exporting ? 'جارٍ التصدير...' : pngLabel}
@@ -136,7 +137,7 @@ function ExportToolbar({
       <Button
         onClick={onPrint}
         variant="outline"
-        className="gap-2 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 bg-[#0d1320]"
+        className="gap-2 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 bg-card"
       >
         <Printer className="w-4 h-4" />
         طباعة / PDF
@@ -161,14 +162,14 @@ function ProfessionalHeader({
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
+      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-background via-card to-muted p-5 print:break-inside-avoid"
       dir="rtl"
     >
       <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-amber-500 via-amber-400 to-amber-500" />
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 via-amber-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-            <FileBarChart className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
+            <FileBarChart className="w-7 h-7 text-background" strokeWidth={2.5} />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
@@ -267,7 +268,8 @@ function SectorReport() {
       await exportReportToPng(reportRef.current, {
         filename: `sector_report_${new Date().toISOString().split('T')[0]}`,
         pixelRatio: 2,
-        backgroundColor: '#0a0e1a',
+        // DEV-19: omit backgroundColor — exportReportToPng resolves
+        // --background from the active theme at runtime (zero hardcoded).
         filter: (node) => {
           if (node instanceof HTMLElement) {
             if (node.dataset?.noExport === 'true') return false;
@@ -308,7 +310,7 @@ function SectorReport() {
   return (
     <div
       ref={reportRef}
-      className="space-y-5 print:space-y-3 bg-[#0a0e1a] print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
       dir="rtl"
     >
       <ProfessionalHeader
@@ -388,7 +390,7 @@ function SectorReport() {
       )}
 
       {/* Sector Heatmap */}
-      <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+      <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
             <Layers className="w-5 h-5" />
@@ -408,9 +410,10 @@ function SectorReport() {
               {sectors.map((sector, i) => {
                 const change = Number(sector.avg_change_percent ?? 0);
                 const intensity = Math.min(Math.abs(change) / 5, 1);
-                const bg = change >= 0
-                  ? `rgba(16, 185, 129, ${0.15 + intensity * 0.45})`
-                  : `rgba(239, 68, 68, ${0.15 + intensity * 0.45})`;
+                // DEV-19: heatmap colors resolved from design tokens (--success / --danger)
+                // so the report stays theme-aware — no hardcoded rgba() literals.
+                const heatVar = change >= 0 ? '--success' : '--danger';
+                const bg = `hsl(var(${heatVar}) / ${0.15 + intensity * 0.45})`;
                 const border = change >= 0 ? 'border-emerald-500/40' : 'border-red-500/40';
                 return (
                   <div
@@ -442,7 +445,7 @@ function SectorReport() {
 
       {/* Sector Comparison Table */}
       {sectors.length > 0 && (
-        <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+        <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
               <BarChart3 className="w-5 h-5" />
@@ -451,7 +454,7 @@ function SectorReport() {
           </CardHeader>
           <CardContent className="p-0">
             <table className="w-full text-sm">
-              <thead className="bg-[#0a0e1a]/60 text-[11px] text-slate-400 uppercase">
+              <thead className="bg-background/60 text-[11px] text-slate-400 uppercase">
                 <tr>
                   <th className="text-right py-2 px-3 font-medium">#</th>
                   <th className="text-right py-2 px-3 font-medium">القطاع</th>
@@ -543,7 +546,8 @@ function PredictionsReport() {
       await exportReportToPng(reportRef.current, {
         filename: `predictions_report_${new Date().toISOString().split('T')[0]}`,
         pixelRatio: 2,
-        backgroundColor: '#0a0e1a',
+        // DEV-19: omit backgroundColor — exportReportToPng resolves
+        // --background from the active theme at runtime (zero hardcoded).
         filter: (node) => {
           if (node instanceof HTMLElement) {
             if (node.dataset?.noExport === 'true') return false;
@@ -583,7 +587,7 @@ function PredictionsReport() {
   return (
     <div
       ref={reportRef}
-      className="space-y-5 print:space-y-3 bg-[#0a0e1a] print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
       dir="rtl"
     >
       <ProfessionalHeader
@@ -673,7 +677,7 @@ function PredictionsReport() {
 
       {/* Top 5 Successful Predictions */}
       {topPerformers.length > 0 && (
-        <Card className="overflow-hidden border-emerald-500/30 bg-[#0d1320] print:break-inside-avoid">
+        <Card className="overflow-hidden border-emerald-500/30 bg-card print:break-inside-avoid">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-emerald-400">
               <TrendingUp className="w-5 h-5" />
@@ -711,7 +715,7 @@ function PredictionsReport() {
 
       {/* Honest Failure Display (Rule 67 — never hide losses) */}
       {worstStock && (
-        <Card className="overflow-hidden border-red-500/30 bg-[#0d1320] print:break-inside-avoid">
+        <Card className="overflow-hidden border-red-500/30 bg-card print:break-inside-avoid">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-red-400">
               <TrendingDown className="w-5 h-5" />
@@ -746,7 +750,7 @@ function PredictionsReport() {
       {(lessons.length > 0 || watchlist.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {lessons.length > 0 && (
-            <Card className="overflow-hidden border-amber-500/30 bg-[#0d1320]">
+            <Card className="overflow-hidden border-amber-500/30 bg-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-300">
                   <Sparkles className="w-4 h-4" />
@@ -763,7 +767,7 @@ function PredictionsReport() {
             </Card>
           )}
           {watchlist.length > 0 && (
-            <Card className="overflow-hidden border-emerald-500/30 bg-[#0d1320]">
+            <Card className="overflow-hidden border-emerald-500/30 bg-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-emerald-300">
                   <Shield className="w-4 h-4" />
@@ -790,7 +794,7 @@ function PredictionsReport() {
 
       {/* AI Summary text (Python-generated) */}
       {report.content && (
-        <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+        <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-card to-muted">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
               <Activity className="w-5 h-5" />
@@ -842,7 +846,16 @@ function Sparkline({
   const points = values
     .map((v, i) => `${(i * step).toFixed(2)},${(h - ((v - min) / range) * h).toFixed(2)}`)
     .join(' ');
-  const color = tone === 'positive' ? '#10b981' : tone === 'negative' ? '#ef4444' : '#f59e0b';
+  // DEV-19: sparkline stroke/fill colors resolved via Tailwind classes (no
+  // hardcoded #hex). emerald-500 = gains, red-500 = losses, amber-500 = neutral.
+  const strokeClass =
+    tone === 'positive' ? 'stroke-emerald-500'
+    : tone === 'negative' ? 'stroke-red-500'
+    : 'stroke-amber-500';
+  const fillClass =
+    tone === 'positive' ? 'fill-emerald-500'
+    : tone === 'negative' ? 'fill-red-500'
+    : 'fill-amber-500';
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
@@ -853,7 +866,7 @@ function Sparkline({
       <polyline
         points={points}
         fill="none"
-        stroke={color}
+        className={strokeClass}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -862,7 +875,7 @@ function Sparkline({
         cx={((values.length - 1) * step).toFixed(2)}
         cy={(h - ((values[values.length - 1] - min) / range) * h).toFixed(2)}
         r="2"
-        fill={color}
+        className={fillClass}
       />
     </svg>
   );
@@ -874,11 +887,11 @@ function Sparkline({
 export function ReportsView() {
   const t = useTranslation();
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0e1a] text-slate-100">
-      <header className="sticky top-0 z-30 bg-[#0a0e1a]/95 backdrop-blur-sm border-b border-slate-700/50 print:hidden">
+    <div className="min-h-screen flex flex-col bg-background text-slate-100">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-slate-700/50 print:hidden">
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-emerald-500 flex items-center justify-center">
-            <FileBarChart className="w-5 h-5 text-[#0a0e1a]" strokeWidth={2.5} />
+            <FileBarChart className="w-5 h-5 text-slate-950" strokeWidth={2.5} />
           </div>
           <div className="min-w-0 mr-auto">
             <h1 className="text-lg font-extrabold text-amber-300 flex items-center gap-2">
@@ -897,31 +910,31 @@ export function ReportsView() {
       <main className="flex-1 print:p-0">
         <div className="p-4 md:p-6">
           <Tabs defaultValue="daily" dir="rtl" className="w-full">
-            <TabsList className="mb-6 w-full flex h-auto flex-wrap gap-1 bg-[#0d1320] border border-slate-700/40 p-1 rounded-xl print:hidden">
+            <TabsList className="mb-6 w-full flex h-auto flex-wrap gap-1 bg-card border border-slate-700/40 p-1 rounded-xl print:hidden">
               <TabsTrigger
                 value="daily"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
               >
                 <BarChart3 className="w-3.5 h-3.5" />
                 التقرير اليومي
               </TabsTrigger>
               <TabsTrigger
                 value="stock"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
               >
                 <Activity className="w-3.5 h-3.5" />
                 تقرير السهم
               </TabsTrigger>
               <TabsTrigger
                 value="sector"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
               >
                 <Layers className="w-3.5 h-3.5" />
                 تقرير القطاعات
               </TabsTrigger>
               <TabsTrigger
                 value="predictions"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
               >
                 <Shield className="w-3.5 h-3.5" />
                 تقرير التوقعات
