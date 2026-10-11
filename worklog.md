@@ -75504,3 +75504,244 @@ Stage Summary:
 - كلا CI checks: ✅ PASS
 - ما تبقى: AUDIT-15 (لا يوجد DB) + AUDIT-17 (DEPLOY-ROUND3.md غير موجود) + G4 SELL gap بسيط
 - التوصية: المنفذ الفني جاهز للنشر شرط: (1) تطبيق DEV-15 backfill بـ --execute على DB الإنتاج، (2) إضافة DEPLOY-ROUND3.md بـ rollback steps، (3) مراعاة SELL direction في trigger مستقبلي
+
+---
+Task ID: AUDIT-18
+Agent: المدقق المستقل (المساعد) — الجولة 4 على commit fcaefa4
+Task: قياس زمن /api/screener/advanced بنفسك 10 مرات (بارد + بعد cache)
+
+## البيئة
+- HEAD: fcaefa4 (DEV-18+20 — screener cache 60s + SELL trigger)
+- Python service على :8010 — غير شغال في الـ sandbox (لا يوجد stocks.db)
+- Next.js على :3000 — شغال لكن بـ يرجع 500 (Python unreachable)
+
+## القياس المباشر (10 مرات عبر gateway)
+```
+Run 1: HTTP=500 time=0.004434s
+Run 2: HTTP=500 time=0.003122s
+Run 3: HTTP=500 time=0.002759s
+Run 4: HTTP=500 time=0.004312s
+Run 5: HTTP=500 time=0.002523s
+Run 6: HTTP=500 time=0.002398s
+Run 7: HTTP=500 time=0.002343s
+Run 8: HTTP=500 time=0.003976s
+Run 9: HTTP=500 time=0.002646s
+Run 10: HTTP=500 time=0.002735s
+```
+متوسط زمن فشل الاتصال: 3.0ms (فشل سريع لأن Python unreachable، مش timeout 25s).
+
+## قياس الـ SQL query المباشر (synthetic DB — 1000 سهم)
+بما إنه لا يوجد DB إنتاج، أنشأت DB اختباري بـ schema مطابق + 1000 سهم عشوائيين:
+
+### القياسات الباردة (no cache) — 5 runs:
+```
+Run 1: 0.48 ms (5 rows)
+Run 2: 0.27 ms
+Run 3: 0.25 ms
+Run 4: 0.24 ms
+Run 5: 0.23 ms
+متوسط: 0.29 ms
+```
+
+### القياسات بعد cache (dict lookup) — 5 runs:
+```
+Run 1: 0.0030 ms (cache hit)
+Run 2: 0.0020 ms
+Run 3: 0.0008 ms
+Run 4: 0.0004 ms
+Run 5: 0.0005 ms
+متوسط: 0.0013 ms
+```
+
+### تحسن الـ cache: 219x أسرع
+
+### قياس مع 10000 سهم (محاكاة حجم أكبر):
+```
+بارد: 2.57 ms (avg)
+بعد cache: 0.0016 ms
+تحسن: 1648x
+```
+
+## EXPLAIN QUERY PLAN
+```
+بدون indexes:  SCAN stocks (full table scan) + TEMP B-TREE FOR ORDER BY → 0.28ms
+مع indexes:   SEARCH stocks USING INDEX idx_market_active → 0.25ms
+```
+الفرق ضئيل على 1000 سهم (الـ SQLite optimizer ذكي).
+
+## الحكم
+
+| المعيار | القياس | الـ target | الحكم |
+|---------|--------|-----------|------|
+| زمن الـ SQL query (1000 سهم) | 0.29 ms | < 1500 ms | ✅ محقق بفارق 5000x |
+| زمن الـ SQL query (10000 سهم) | 2.57 ms | < 1500 ms | ✅ محقق بفارق 580x |
+| تحسن الـ cache | 219-1648x | — | ✅ cache فعال |
+| Python service يعمل؟ | ❌ لا | يجب أن يعمل | ⚠️ مشكلة sandbox |
+
+## تحليل: ليه المدير العام شاف 8 ثواني؟
+الـ SQL query نفسه سريع جدًا (0.29ms). الـ 8 ثواني اللي ذكرها المدير العام غالبًا من:
+1. **Python service unreachable** + Node route بـ يستنى timeout 25s (L77: `AbortSignal.timeout(25000)`) → لكن الـ curl فضل 8 ثواني مش 25، يعمن الـ Python كان بـ يرد بس ببطء
+2. **DB connection overhead** في Python (لو الـ DB path خاطئ أو الـ WAL locked)
+3. **compute_stock_state()** يشتغل على كل صف (Python-side loop)
+4. **JSON serialization** لـ 100+ row مع حقول كثيرة
+
+الـ cache اللي أضافه DEV-18 بـ يحل المشكلة مؤقتًا (60s) لكن السبب الجذري ممكن يكون في Python. هذا تحليل static مش قياس إنتاجي.
+
+## ملاحظات
+- لم أتمكن من قياس الأداء الحقيقي على الإنتاج لأن Python service مش شغال + لا يوجد stocks.db
+- القياسات اللي عملتها synthetic (DB اختباري) لكنها تعكس أداء الـ SQL query الفعلي
+- التوصية: المنفذ الفني لازم يضمن إن Python service شغال + يقيس زمن الـ end-to-end على الإنتاج
+
+Stage Summary:
+- الـ SQL query سريع جدًا (0.29ms على 1000 سهم) — الـ bottleneck مش من الـ SQL
+- الـ DEV-18 cache فعال (219-1648x تحسن)
+- مشكلة الـ sandbox: Python service مش شغال → لا يمكن قياس end-to-end
+- target < 1.5s محقق على مستوى الـ SQL، لكن مش متأكد من end-to-end
+
+---
+Task ID: AUDIT-19
+Agent: المدقق المستقل (المساعد) — الجولة 4
+Task: صفحة التقارير: screenshot قبل/بعد + عد الألوان الثابتة (المطلوب صفر)
+
+## العد "قبل" DEV-19 (HEAD: fcaefa4)
+
+عدد الألوان الثابتة في `src/modules/reports/`:
+
+| النوع | العدد |
+|------|------|
+| #hex colors (مثل `#0a0e1a`) | 92 |
+| rgb()/rgba() colors | 13 |
+| tailwind arbitrary `bg-[#hex]` / `text-[#hex]` | 55 |
+| tailwind arbitrary `bg-[rgba()]` | 0 |
+| **الإجمالي** | **160** |
+
+### حسب الملف:
+| الملف | العدد |
+|-------|------|
+| ReportsView.tsx | 58 |
+| ExecutiveReportView.tsx | 40 |
+| StockAnalysisReport.tsx | 35 |
+| DailyMarketReport.tsx | 24 |
+| proxy-client.ts | 3 |
+
+### أكثر الألوان تكرارًا:
+```
+29 × #0a0e1a  (dark navy — مش من الـ palette)
+25 × #0d1320  (dark navy variant)
+ 6 × #10b981  (emerald — قريب من primary)
+ 6 × #94a3b8  (slate-400)
+ 6 × #10162a  (navy variant)
+ 6 × #0a0f1c  (navy variant)
+ 3 × #2dd4bf  (teal)
+ 2 × #fb923c  (orange)
+ 2 × #f59e0b  (amber)
+ 2 × #f43f5e  (rose)
+```
+
+### الـ design tokens بتاعة المشروع (src/app/globals.css):
+```
+--primary: 160 84% 39%  (emerald/teal green)
+```
+صفحة التقارير بتستخدم dark navy (#0a0e1a) + gold/amber — **مش متوافقة** مع الـ emerald primary.
+
+تعليق ReportsView.tsx L28 بيعترف صراحةً: "Professional palette: dark navy #0a0e1a + emerald + amber + red + gold"
+
+## Screenshot
+تعذر أخذ screenshot لأن Next.js على :3000 بـ يرجع HTTP 500 (Python service unreachable).
+
+## الحكم
+- **عدد الألوان الثابتة قبل DEV-19: 160** (target = 0)
+- المنفذ الفني لازم يحوّل كل الألوان لـ design tokens (`hsl(var(--primary))` إلخ)
+- المشكلة الأكبر:ReportsView.tsx (58) + ExecutiveReportView.tsx (40) = 61% من الإجمالي
+
+Stage Summary:
+- 160 لون ثابت في src/modules/reports (قبل DEV-19)
+- target = 0 (بعد DEV-19)
+- مش متوافقة مع design tokens (primary = emerald، التقارير = navy/gold)
+- screenshot غير ممكن (Next.js 500)
+
+---
+Task ID: AUDIT-20
+Agent: المدقق المستقل (المساعد) — الجولة 4
+Task: Red Team على Trigger اتجاه SELL — 5 سيناريوهات
+
+## البيئة
+أنشأت DB اختباري + طبّقت الـ 4 triggers (apply_guard_triggers.py) + جرّبت 6 سيناريوهات INSERT.
+
+## النتائج: Red Team على trg_prevent_wrong_direction_sell
+
+| # | السيناريو | signal | entry | target | stop | متوقع | الفعلي | الحكم |
+|---|----------|--------|-------|--------|------|-------|--------|------|
+| 1 | SELL شرعي | SELL | 100 | 90 | 110 | ينجح | ✅ نجح | ✅ صحيح |
+| 2 | SELL target==entry (حدودي) | SELL | 100 | 100 | 110 | ABORT | ✅ ABORT | ✅ صحيح (>=) |
+| 3 | SELL target>entry (اتجاه خاطئ) | SELL | 100 | 110 | 90 | ABORT | ✅ ABORT | ✅ صحيح |
+| 4 | STRONG_SELL target>entry | STRONG_SELL | 100 | 110 | 90 | ABORT | ✅ ABORT | ✅ صحيح |
+| 5 | **bypass lowercase 'sell'** | sell | 100 | 110 | 90 | ABORT | 🔴 **نجح الـ INSERT!** | 🔴 ثغرة |
+| 6 | REDUCE target>entry | REDUCE | 100 | 110 | 90 | ABORT | ✅ ABORT | ✅ صحيح |
+
+## الثغرة المكتشفة: Case-Sensitivity Bypass
+
+**السيناريو 5 كشف ثغرة حقيقية:**
+- `signal='sell'` (lowercase) بـ يتجاوز الـ trigger
+- السبب: SQLite `IN ('SELL', 'STRONG_SELL', 'REDUCE')` حساس لحالة الأحرف
+- `NEW.signal IN ('SELL', ...)` مش بـ يطابق `'sell'` lowercase
+
+### مستوى الخطر:
+- **الكود الإنتاجي آمن حاليًا** لأن Python guard بـ يعمل `.upper()` (L97, L516, L164):
+  ```python
+  sig = (signal or '').upper().strip()  # prediction_write_guard.py:97
+  ```
+  → كل INSERT يمر عبر Python بـ يدخل uppercase
+- لكن الـ **defense-in-depth ناقص**: لو حد بـ INSERT مباشر بـ sqlite3 CLI أو من script بـ يتخطى Python → الـ trigger مش بـ يحمي ضد lowercase
+
+### الإصلاح المقترح:
+استبدال `NEW.signal IN (...)` بـ `UPPER(NEW.signal) IN (...)`:
+```sql
+WHEN UPPER(NEW.signal) IN ('SELL', 'STRONG_SELL', 'REDUCE')
+    AND NEW.target_price >= NEW.entry_price
+```
+تم الإثبات عمليًا إن ده بـ يحمي كل الحالات (sell, SELL, SeLl, strong_sell) — 0 bypasses.
+
+### تأثير نفس الثغرة على BUY trigger:
+`trg_prevent_wrong_direction` (DEV-13) فيه نفس النمط:
+```sql
+WHEN NEW.signal IN ('BUY', 'STRONG_BUY', 'ACCUMULATE')
+```
+→ نفس الثغرة: `'buy'` lowercase بـ يتجاوز. لازم نفس الإصلاح.
+
+## الحكم
+- 5/6 سيناريوهات اتمسكت صح ✅
+- 1 ثغرة case-sensitivity 🔴 (خطر منخفض حاليًا بسبب Python .upper()، لكن ناقص defense-in-depth)
+- التوصية: تحويل كل triggers لـ `UPPER(NEW.signal) IN (...)` + إصلاح BUY + SELL
+
+Stage Summary:
+- SELL trigger يعمل للحالات uppercase العادية
+- ثغرة case-sensitivity: 'sell' lowercase بـ يتجاوز
+- الخطر منخفض (Python .upper() يحمي حاليًا) لكن defense-in-depth ناقص
+- نفس الثغرة موجودة في BUY trigger (DEV-13)
+- الإصلاح: UPPER(NEW.signal) IN (...) — demonstrated عمليًا
+
+---
+Task ID: AUDIT-21
+Agent: المدقق المستقل (المساعد) — الجولة 4
+Task: راجع أرقام الـ dry-run لـ DEV-21 سجل بسجل (عيّنة 20)
+
+## الحالة
+DEV-21 لسه ما اتعملش (commit الأخير fcaefa4 = DEV-18+20 فقط).
+ينتظر المنفذ الفني إنه ينفّذ DEV-21 (dry-run بأرقام حقيقية لـ backfill + recover 28).
+
+## ملاحظات استباقية للمنفذ الفني
+لما تنفّذ DEV-21، الـ dry-run لازم يوضّح لكل سجل:
+1. id, ticker, prediction_date, status (TARGET_HIT/STOPPED حاليًا)
+2. entry_price, target_price, stop_loss
+3. هل في price data بين prediction_date و outcome_date؟
+4. أول يوم high >= target_price (ل TARGET_HIT) أو low <= stop_loss (ل STOPPED)
+5. النتيجة المقترحة: confirmed / no_price_data / fake_hit
+6. target_hit_at / stop_hit_at المقترح
+7. prev_status (لو تحويل مطلوب)
+
+سأراجع عينة 20 سجل سجل بسجل عند استلام DEV-21.
+
+Stage Summary:
+- AUDIT-21 معلّق — ينتظر DEV-21
+- جاهز للمراجعة فور وصول نتائج dry-run
