@@ -822,16 +822,26 @@ def _derive_persona_action(persona: str, row: dict, fund: dict = None) -> dict:
         vol_ratio_val = 1.0
 
     turnover_egp = float(row.get('turnover_egp') or 0.0)
-    turnover_m = turnover_egp / 1_000_000.0 if turnover_egp > 0 else vol_ratio_val
+    # FIX (PREDICTION-INTEGRITY 2026-10-11): لو turnover_egp = 0 → لا نعرض "سيولة ممتازة"
+    # السبب: fallback لـ vol_ratio_val كان بيخلي "1.0M ج.م" يتعرض لكل الأسهم (بيانات مضللة).
+    # Rule 27 (NO-FAKE-DATA): لو مفيش بيانات سيولة حقيقية → اعرض "بيانات السيولة غير متاحة".
+    turnover_m = turnover_egp / 1_000_000.0 if turnover_egp > 0 else 0.0
 
     def _smc_reason() -> str:
         parts = []
-        if turnover_m >= 1.0:
-            parts.append(f"سيولة ممتازة ({turnover_m:.1f}M ج.م)")
+        if turnover_m > 0:
+            if turnover_m >= 1.0:
+                parts.append(f"سيولة ممتازة ({turnover_m:.1f}M ج.م)")
+            elif turnover_m >= 0.5:
+                parts.append(f"سيولة جيدة ({turnover_m:.1f}M ج.م)")
+            else:
+                parts.append(f"سيولة محدودة ({turnover_m:.2f}M ج.م)")
         elif vol_ratio_val >= 1.5:
             parts.append(f"حجم تداول مرتفع ({vol_ratio_val:.1f}x)")
+        elif vol_ratio_val > 0:
+            parts.append(f"سيولة اعتيادية (حجم {vol_ratio_val:.1f}x)")
         else:
-            parts.append("سيولة اعتيادية")
+            parts.append("بيانات السيولة غير متاحة")
 
         if persona == 'gambler':
             parts.append(f"هدف أول 1.5x ({tp1:.2f}) | هدف ثانٍ 3x ({tp2:.2f})")

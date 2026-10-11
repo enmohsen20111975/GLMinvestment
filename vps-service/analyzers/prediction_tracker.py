@@ -398,6 +398,8 @@ class PredictionTracker:
         kill_filter_result: str = '',
         risk_reward: Optional[float] = None,           # P0 FIX (V402-DIAGNOSIS R5)
         who_is_buying_state: str = '',                 # P0 FIX (V402-DIAGNOSIS R6)
+        support_level: float = 0.0,                    # FIX (PREDICTION-INTEGRITY 2026-10-11)
+        resistance_level: float = 0.0,                 # FIX (PREDICTION-INTEGRITY 2026-10-11)
     ) -> int:
         """
         Record a new prediction.
@@ -632,8 +634,9 @@ class PredictionTracker:
                     notes, persona, created_at, atr_at_entry,
                     target_price_2, explosive_score, explosive_label,
                     evidence_count, morning_bell, kill_filter_result,
-                    risk_reward, who_is_buying
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    risk_reward, who_is_buying,
+                    support_level, resistance_level
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 ticker, signal, signal_type,
                 _pred_date,
@@ -645,6 +648,7 @@ class PredictionTracker:
                 _target_price_2, _explosive_score, _explosive_label,
                 _evidence_count, _morning_bell, _kill_filter_result,
                 risk_reward, who_is_buying_state,
+                support_level, resistance_level,
             ))
         except Exception:
             # fallback: schema قديم مفيهوش atr_at_entry/T2 columns

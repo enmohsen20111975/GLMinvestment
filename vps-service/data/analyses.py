@@ -442,7 +442,19 @@ def _load_stocks_fundamentals_for_persona() -> dict:
             except (ValueError, TypeError):
                 rsi = 0.0
 
-            vr = round(volume / avg_vol, 2) if (avg_vol > 0 and volume > 0) else 1.0
+            # FIX (PREDICTION-INTEGRITY 2026-10-11): validation على avg_volume
+            # السبب: 23.5% من الأسهم فيها avg_volume < 100 (2.8، 6.0، 22.5)
+            # دي قيم غير منطقية لمتوسط حجم يومي — على الأرجح من scraper غلط.
+            # Rule 65 (DATA-VALIDATION-LAYER): لو avg_volume غير منطقي → ارفض الـ volume_ratio.
+            # Rule 27 (NO-FAKE-DATA): لو avg_volume مكسور → vr = null (مش 1.0 fabricated).
+            if avg_vol > 0 and avg_vol < 100:
+                # avg_volume غير منطقي (أقل من 100 سهم يومياً) → تجاهله
+                avg_vol = 0
+                vr = None  # Rule 27: null مش 1.0
+            elif avg_vol > 0 and volume > 0:
+                vr = round(volume / avg_vol, 2)
+            else:
+                vr = None  # Rule 27: null مش 1.0
 
             # حساب fair_value_upside:
             # Method 1: من fair_value column

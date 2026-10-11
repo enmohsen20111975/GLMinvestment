@@ -2147,6 +2147,34 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _dyn_err:
                 pass  # safe-by-design: لو فشل، سيب الـ stop/target القديم
 
+            # ─── PREDICTION-INTEGRITY (2026-10-11): validate stop/target direction ───
+            # FIX: daily_predictor.py ما كانش بيستدعي validate_target_stop_direction.
+            # ده السبب الجذري لـ DOMT (stop=25.91 > entry=24.90 مع signal=HOLD).
+            # validate_target_stop_direction بتـ fix تلقائياً: stop > entry للـ BUY → entry*0.97.
+            # القاعدة 8 (ATR stop [5%,9%]) + القاعدة 18 (R:R ≥ 1.8) + Rule 67 (canonical).
+            try:
+                from core.opportunity_quality import validate_target_stop_direction
+                _dir_check = validate_target_stop_direction(
+                    signal, entry, target, stop
+                )
+                if not _dir_check['valid'] and _dir_check['action'] == 'fix_target' and _dir_check['fixed']:
+                    if 'stop_loss' in _dir_check['fixed']:
+                        _old_stop = stop
+                        stop = _dir_check['fixed']['stop_loss']
+                        print(f"[DIR-FIX] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"stop {_old_stop:.2f}→{stop:.2f} ({_dir_check['reason']})", flush=True)
+                    if 'target_price' in _dir_check['fixed']:
+                        _old_target = target
+                        target = _dir_check['fixed']['target_price']
+                        print(f"[DIR-FIX] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"target {_old_target:.2f}→{target:.2f} ({_dir_check['reason']})", flush=True)
+                    # إعادة حساب R:R بعد الـ fix
+                    risk = abs(entry - stop)
+                    reward = abs(target - entry)
+                    r_mult = round(reward / risk, 2) if risk > 0 else 0
+            except Exception as _dir_err:
+                print(f"[DIR-FIX-WARN] {ticker}: validate_target_stop_direction failed: {_dir_err}", flush=True)
+
             # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
             # Owner directive: replace flat dynamic_rr_normal with get_dynamic_min_rr(regime).
             #   bull  → 2.0  (نطمع أكتر)
@@ -3323,6 +3351,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     morning_bell=sig['morning_bell'],
                     risk_reward=sig.get('r_multiple'),  # P0 FIX (V402-DIAGNOSIS R5): كان محسوب لكن غير مكتوب
                     who_is_buying_state=sig.get('who_is_buying_state', ''),  # P0 FIX (V402-DIAGNOSIS R6)
+                    # FIX (PREDICTION-INTEGRITY 2026-10-11): S/R levels من الـ analysis result
+                    # السبب: كانت 0.0 في 87% من التوقعات لأنها ما كانتش بتـ تمرر لـ record_prediction.
+                    support_level=sig.get('support_level', 0.0),
+                    resistance_level=sig.get('resistance_level', 0.0),
                     kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}" + f" | V68:prob={sig.get('v68_probability', 0)}/100 dir={sig.get('v68_future_direction', 'flat')}" + (" | A+GRAB" if sig.get('v68_liquidity_grab') else "") + (" | QUIET-ACC" if sig.get('v68_quiet_accumulation') else ""),
                 ) if tracker else None
                 if pred_id and tracker:
