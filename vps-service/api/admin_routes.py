@@ -1217,19 +1217,37 @@ def run_v40_backtest():
         max_picks = data.get('max_picks', 5)
         clear_existing = data.get('clear_existing', True)
 
-        # امسح predictions القديمة لو طلب
+        # DEV-11 (2026-10-13 — PRODUCTION-AUDIT G1+G2):
+        # "Masked wipe" disabled. Previously this branch did:
+        #     UPDATE predictions SET status='ARCHIVED', notes=... WHERE 1=1
+        # That `WHERE 1=1` is a DELETE in disguise — it archives EVERY row
+        # in the predictions table, including historically-closed TARGET_HIT
+        # / STOPPED outcomes, polluting every honest-tracking + league-report
+        # query downstream. The manager rejected this in Round 2.
+        #
+        # Replacement: 410 Gone. The V40.2 backtest no longer wipes the
+        # predictions table; callers must use the per-ticker UPSERT path
+        # (UNIQUE(ticker, prediction_date, persona)) to replace a single
+        # prediction, or use restore_archived.py to reverse a prior archive.
+        #
+        # References:
+        #   - Rule 27 (NO-FAKE-DATA)
+        #   - Rule 21 (V40.2 evidence-based)
+        #   - worklog.md DEV-11
         if clear_existing:
-            from pathlib import Path as _Path
-            preds_db = str(_Path(__file__).resolve().parents[2] / 'db' / 'predictions.db')
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            with _open_db('predictions', preds_db, writable=True) as conn:
-                # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
-                # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
-                conn.execute(
-                    "UPDATE predictions SET status='ARCHIVED', "
-                    "notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' WHERE 1=1"
-                )
-                conn.commit()
+            log_admin_action('v40_backtest_clear_existing_rejected', {
+                'reason': 'DEV-11: masked-wipe (UPDATE WHERE 1=1) disabled',
+            })
+            return jsonify(admin_response(False, {
+                'error': 'clear_existing is no longer supported',
+                'reason': (
+                    'DEV-11: bulk archive of all predictions (UPDATE ... '
+                    'WHERE 1=1) is disabled — it was a DELETE in disguise '
+                    'and erased historical outcome rows. Use per-ticker '
+                    'UPSERT or scripts/restore_archived.py to revert.'
+                ),
+                'code': 'DEV-11_MASKED_WIPE_DISABLED',
+            })), 410
 
         # شغل V40.2 generator في الخلفية (non-blocking)
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
