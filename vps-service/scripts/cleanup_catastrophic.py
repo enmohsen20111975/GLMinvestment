@@ -179,10 +179,17 @@ def main():
         conn.commit()
         print(f"[ARCHIVE] تم تأرشفة {affected} توقع كـ rejected/toxic")
     else:
-        cur.execute(f"DELETE FROM predictions WHERE id IN ({placeholders})", cat_ids)
+        # DEV-06 (2026-10-12 — DUAL-TRACK): Hard DELETE disabled per Rule 21/35.
+        # Replace with UPDATE status='ARCHIVED' + archive reason in notes.
+        cur.execute(
+            f"UPDATE predictions SET status='ARCHIVED', "
+            f"notes=COALESCE(notes,'') || ' | DEV-06-ARCHIVED' "
+            f"WHERE id IN ({placeholders})",
+            cat_ids
+        )
         affected = cur.rowcount
         conn.commit()
-        print(f"[DELETE] تم مسح {affected} توقع كارثي")
+        print(f"[ARCHIVE-DEV06] تم تأرشفة {affected} توقع كارثي (بدلاً من المسح)")
 
     # Post-counts
     total_post = conn.execute("SELECT COUNT(*) FROM predictions").fetchone()[0]
