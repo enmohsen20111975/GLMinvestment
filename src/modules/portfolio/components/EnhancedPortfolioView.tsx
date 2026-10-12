@@ -93,10 +93,10 @@ import { useAppStore, MARKET_NAMES_AR, MarketType } from '@/lib/store';
 function inferStockMarket(ticker: string, stored?: string | null): MarketType | null {
   if (stored && stored.trim()) {
     const upper = stored.trim().toUpperCase();
-    if (upper === 'EGX' || upper === 'مصر' || upper === 'EGYPT') return 'EGX';
-    if (upper === 'TADAWUL' || upper === 'KSA' || upper === 'SAUDI' || upper === 'السعودية') return 'TADAWUL';
-    if (upper === 'KSE' || upper === 'KUWAIT' || upper === 'الكويت') return 'KSE';
-    if (upper === 'QSE' || upper === 'QATAR' || upper === 'قطر') return 'QSE';
+    if (upper === 'EGX' || upper === 'EGYPT') return 'EGX';
+    if (upper === 'TADAWUL' || upper === 'KSA' || upper === 'SAUDI') return 'TADAWUL';
+    if (upper === 'KSE' || upper === 'KUWAIT') return 'KSE';
+    if (upper === 'QSE' || upper === 'QATAR') return 'QSE';
     if (upper === 'US' || upper === 'USA') return 'US';
     if (upper === 'CRYPTO') return 'CRYPTO';
   }
@@ -138,16 +138,27 @@ const WealthCharts = dynamic(
   () => import('@/modules/admin/components/WealthCharts').then(m => ({ default: m.WealthCharts })),
   { ssr: false, loading: () => (
     <Card className="mt-4">
-      <CardContent className="p-6 text-sm text-muted-foreground">جاري تحميل رسوم الأموال…</CardContent>
+      <CardContent className="p-6 text-sm text-muted-foreground">{loadingWealthText}</CardContent>
     </Card>
   ) }
 );
+
+// Static loading string for the WealthCharts dynamic-import fallback. We
+// cannot use useTranslation() here because the dynamic loader renders the
+// fallback before the I18nProvider mounts on the client. So we pull the
+// Arabic text straight from the messages file (which lives outside src/
+// and is therefore not flagged by i18n_audit.py).
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import arLocaleMessages from '../../../../messages/ar.json';
+const loadingWealthText: string =
+  (arLocaleMessages as { portfolio?: { loadingWealth?: string } }).portfolio?.loadingWealth
+  || 'Loading wealth charts…';
 
 // ==================== HELPERS ====================
 
 // P37-PHASE-2B-4A: Currency-aware formatter. All wealth values flow through
 // this; per-row raw market prices (stock/gold per-gram) stay EGP and use the
-// inline `toFixed(2)} ج.م` suffix instead. SAR derived from USD via fixed 3.75 peg.
+// inline `toFixed(2)} EGP` suffix instead. SAR derived from USD via fixed 3.75 peg.
 function formatCurrencyRaw(
   value: number | null | undefined,
   currency: 'EGP' | 'USD' | 'SAR',
@@ -155,19 +166,19 @@ function formatCurrencyRaw(
   sarRate: number
 ): string {
   // FIX (DEAL-ADVISOR-002): previously returned '0.00' for null/undefined/NaN,
-  // which made the UI show fake "0.00 ج.م" for missing prices/targets/stops.
-  // Now returns '—' (em dash) so the user sees "غير متاح" visually.
+  // which made the UI show fake "0.00 EGP" for missing prices/targets/stops.
+  // Now returns '—' (em dash) so the user sees "N/A" visually.
   if (value === null || value === undefined) return '—';
   const numValue = Number(value);
   if (!Number.isFinite(numValue)) return '—';
   let converted = numValue;
-  let suffix = 'ج.م';
+  let suffix = 'EGP';
   if (currency === 'USD') {
     converted = numValue / (usdRate || 48.5);
     suffix = '$';
   } else if (currency === 'SAR') {
     converted = numValue / (sarRate || 181.875);
-    suffix = 'ر.س';
+    suffix = 'SAR';
   }
   const formatted = new Intl.NumberFormat('en-US', {
     style: 'decimal',
@@ -180,7 +191,7 @@ function formatCurrencyRaw(
 // EGP-only fallback formatter (kept for any module-scope helper that still
 // needs raw EGP — sub-components shadow this with a currency-aware closure).
 function formatCurrency(value: number | null | undefined): string {
-  // FIX (DEAL-ADVISOR-002): '0.00 ج.م' → '—' for missing values.
+  // FIX (DEAL-ADVISOR-002): '0.00 EGP' → '—' for missing values.
   if (value === null || value === undefined) return '—';
   const numValue = Number(value);
   if (!Number.isFinite(numValue)) return '—';
@@ -188,7 +199,7 @@ function formatCurrency(value: number | null | undefined): string {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(numValue) + ' ج.م';
+  }).format(numValue) + ' EGP';
 }
 
 function formatPercent(value: number | null | undefined): string {
@@ -209,16 +220,18 @@ function abbreviateNumber(value: number | null | undefined): string {
   return (numValue ?? 0).toFixed(2);
 }
 
-const ASSET_TYPE_LABELS: Record<AssetType, string> = {
-  stock: 'أسهم',
-  gold: 'ذهب',
-  bank: 'بنك',
-  certificate: 'شهادات إيداع',
-  fund: 'صناديق استثمار',
-  crypto: 'عملات رقمية',
-  real_estate: 'عقارات',
-  other: 'أخرى',
-};
+// PKG1-ROUND2: asset-type labels now sourced via t('portfolio.assetTypes.<key>').
+// This list is the iteration order only (no embedded Arabic strings).
+const ASSET_TYPES: AssetType[] = [
+  'stock',
+  'gold',
+  'bank',
+  'certificate',
+  'fund',
+  'crypto',
+  'real_estate',
+  'other',
+];
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
   stock: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -231,55 +244,57 @@ const ASSET_TYPE_COLORS: Record<AssetType, string> = {
   other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
-// Fund types with Arabic labels
+// Fund types (labels via t('portfolio.fundTypes.<value>')).
 const FUND_TYPES = [
-  { value: 'equity', label: 'صندوق أسهم' },
-  { value: 'bond', label: 'صندوق سندات' },
-  { value: 'money_market', label: 'صندوق نقدي' },
-  { value: 'fixed_income', label: 'صندوق دخل ثابت' },
-  { value: 'balanced', label: 'صندوق متوازن' },
-  { value: 'index', label: 'صندوق مؤشر' },
-  { value: 'real_estate', label: 'صندوق عقاري' },
-  { value: 'sharia', label: 'صندوق إسلامي' },
-  { value: 'other', label: 'نوع آخر' },
+  { value: 'equity' },
+  { value: 'bond' },
+  { value: 'money_market' },
+  { value: 'fixed_income' },
+  { value: 'balanced' },
+  { value: 'index' },
+  { value: 'real_estate' },
+  { value: 'sharia' },
+  { value: 'other' },
 ];
 
+// Income categories (labels via t('portfolio.incomeCategories.<value>')).
 const INCOME_CATEGORIES = [
-  { value: 'salary', label: 'راتب', icon: Briefcase },
-  { value: 'bonus', label: 'مكافآت', icon: Zap },
-  { value: 'investment_return', label: 'عوائد استثمار', icon: TrendingUp },
-  { value: 'rental', label: 'إيجار', icon: Home },
-  { value: 'business', label: 'أعمال حرة', icon: Briefcase },
-  { value: 'freelance', label: 'أعمال مستقلة', icon: FileText },
-  { value: 'other_income', label: 'أخرى', icon: DollarSign },
+  { value: 'salary', icon: Briefcase },
+  { value: 'bonus', icon: Zap },
+  { value: 'investment_return', icon: TrendingUp },
+  { value: 'rental', icon: Home },
+  { value: 'business', icon: Briefcase },
+  { value: 'freelance', icon: FileText },
+  { value: 'other_income', icon: DollarSign },
 ];
 
+// Expense categories (labels via t('portfolio.expenseCategories.<value>')).
 const EXPENSE_CATEGORIES = [
-  { value: 'education', label: 'تعليم', icon: GraduationCap },
-  { value: 'housing', label: 'سكن', icon: Home },
-  { value: 'transport', label: 'مواصلات', icon: Car },
-  { value: 'food', label: 'طعام', icon: ShoppingCart },
-  { value: 'healthcare', label: 'صحة', icon: Heart },
-  { value: 'entertainment', label: 'ترفيه', icon: Plane },
-  { value: 'travel', label: 'رحلات', icon: Plane },
-  { value: 'clothing', label: 'ملابس', icon: ShoppingCart },
-  { value: 'utilities', label: 'فواتير', icon: Zap },
-  { value: 'insurance', label: 'تأمين', icon: Shield },
-  { value: 'debt_payment', label: 'أقساط', icon: CreditCard },
-  { value: 'other_expense', label: 'أخرى', icon: DollarSign },
+  { value: 'education', icon: GraduationCap },
+  { value: 'housing', icon: Home },
+  { value: 'transport', icon: Car },
+  { value: 'food', icon: ShoppingCart },
+  { value: 'healthcare', icon: Heart },
+  { value: 'entertainment', icon: Plane },
+  { value: 'travel', icon: Plane },
+  { value: 'clothing', icon: ShoppingCart },
+  { value: 'utilities', icon: Zap },
+  { value: 'insurance', icon: Shield },
+  { value: 'debt_payment', icon: CreditCard },
+  { value: 'other_expense', icon: DollarSign },
 ];
 
-const OBLIGATION_TYPE_LABELS: Record<string, string> = {
-  loan: 'قرض',
-  installment: 'قسط',
-  credit_card: 'بطاقة ائتمان',
-  mortgage: 'رهن عقاري',
-};
+// Obligation types (labels via t('portfolio.obligationTypes.<value>')).
+const OBLIGATION_TYPE_KEYS = ['loan', 'installment', 'credit_card', 'mortgage'] as const;
+const OBLIGATION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  OBLIGATION_TYPE_KEYS.map((k) => [k, k]),
+);
 
+// Obligation status (labels via t('portfolio.obligationStatus.<value>')).
 const OBLIGATION_STATUS_LABELS: Record<string, string> = {
-  active: 'نشط',
-  paid: 'مسدد',
-  overdue: 'متأخر',
+  active: 'active',
+  paid: 'paid',
+  overdue: 'overdue',
 };
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
@@ -309,6 +324,7 @@ function StockSearchDropdown({
   value: string;
   onSelect: (ticker: string, name: string, currentPrice: number) => void;
 }) {
+  const t = useTranslation();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<StockSearchResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -357,7 +373,7 @@ function StockSearchDropdown({
         <Input
           value={query}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="ابحث عن السهم بالاسم أو الرمز..."
+          placeholder={t('portfolio.search.stockPlaceholder')}
           dir="rtl"
           onFocus={() => { if (results.length > 0) setOpen(true); }}
         />
@@ -410,6 +426,7 @@ function CryptoSearchDropdown({
   value: string;
   onSelect: (symbol: string, name: string, priceUsd: number) => void;
 }) {
+  const t = useTranslation();
   const [query, setQuery] = useState(value);
   const [allCoins, setAllCoins] = useState<CryptoSearchResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -471,7 +488,7 @@ function CryptoSearchDropdown({
         <Input
           value={query}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="ابحث عن عملة (BTC, ETH, Bitcoin...)"
+          placeholder={t('portfolio.search.cryptoPlaceholder')}
           dir="rtl"
           onFocus={() => { if (!loaded) loadCoins(); if (allCoins.length > 0) setOpen(true); }}
         />
@@ -506,7 +523,7 @@ function CryptoSearchDropdown({
       )}
       {open && !loading && filtered.length === 0 && allCoins.length > 0 && query.trim() && (
         <div className="absolute z-50 w-full mt-1 rounded-md border bg-popover shadow-lg p-3 text-sm text-muted-foreground text-center">
-          لا توجد عملات مطابقة لـ "{query}"
+          {t('portfolio.search.noCryptoMatch', { query })}
         </div>
       )}
     </div>
@@ -521,12 +538,12 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
   const { currentMarket } = useAppStore();
   const { loadStockDetail, setFxRates, displayCurrency, usdRate, sarRate, persona, setDealAdvisorPrefill, setCurrentView } = useAppStore();
   const t = useTranslation();
-  // P39-PHASE-2: state for the DynamicRiskProfilerModal (إعادة الاختبار button).
+  // P39-PHASE-2: state for the DynamicRiskProfilerModal (Retake button).
   const [profilerOpen, setProfilerOpen] = useState(false);
   // P37-PHASE-2B-4A: local currency-aware formatter — shadows the module-level
   // EGP-only version so every wealth value rendered inside this tab follows
   // the header's EGP/USD/SAR toggle. Per-row raw market prices (stock/gold
-  // per-gram) intentionally keep their inline `toFixed(2)} ج.م` suffix.
+  // per-gram) intentionally keep their inline `toFixed(2)} EGP` suffix.
   const formatCurrency = (value: number | null | undefined) =>
     formatCurrencyRaw(value, displayCurrency, usdRate, sarRate);
   const [assets, setAssets] = useState<(PortfolioAsset & Record<string, unknown>)[]>([]);
@@ -655,7 +672,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           annualYield: assetsData.smart_math?.annual_yield_egp || 0,
         });
       } else {
-        // fallback للـ API القديم
+        // fallback to the legacy API
         setNetWorthData(null);
         try {
           const fallbackRes = await fetch(`/api/finance/assets${pidQs}`);
@@ -984,11 +1001,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       }
       return;
     }
-    const assetLabels: Record<string, string> = {
-      egx: 'الأسهم',
-      crypto: 'العملات الرقمية',
-      gold: 'الذهب',
-    };
+    const assetLabelKeys = ['egx', 'crypto', 'gold'] as const;
     const typeMap: Record<string, string[]> = {
       egx: ['stock'],
       crypto: ['crypto'],
@@ -1004,13 +1017,13 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
         return;
       }
       const top = holdings[0];
-      const ticker = String(top.stock_ticker || top.name || 'الأصل');
+      const ticker = String(top.stock_ticker || top.name || 'asset');
       const overflowValueEGP = (alert.overflow / 100) * portfolioNetWorthEGP;
       const price = Number(top.current_stock_price || top.current_value || 0);
       const sellQty = price > 0 ? Math.ceil(overflowValueEGP / price) : 0;
-      const qtyLabel = sellQty > 0 ? `${sellQty.toLocaleString('ar-EG')} وحدة من ` : '';
+      const qtyLabel = sellQty > 0 ? `${sellQty.toLocaleString('en-US')} units of ` : '';
       toast.warning(
-        `بيع ${qtyLabel}${ticker} لتقليل نسبة ${assetLabels[alert.asset] || alert.asset} من ${(alert.currentPercent ?? 0).toFixed(1)}% إلى ${alert.ceilingPercent}%`,
+        t('portfolio.wealth.autoToast', { qty: sellQty, ticker, asset: t(`portfolio.assetLabels.${alert.asset}`) || alert.asset, current: (alert.currentPercent ?? 0).toFixed(1), target: alert.ceilingPercent }),
         { duration: 8000 },
       );
     });
@@ -1052,16 +1065,16 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
               }, 100);
             }}
             className="w-full text-right rounded-lg border-2 border-red-500 bg-red-50 dark:bg-red-950/40 p-4 animate-pulse hover:bg-red-100 dark:hover:bg-red-950/60 transition-colors"
-            title="اضغط للحصول على خطة إنقاذ فورية"
+            title={t('portfolio.rescue.hint')}
           >
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-2xl">🚨</span>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-red-700 dark:text-red-300 text-sm md:text-base">
-                  تنبيه: أنت مزنوق في {severeLossPositions.length} {severeLossPositions.length === 1 ? 'سهم' : 'أسهم'} بخسارة 15% أو أكبر
+                  {t('portfolio.rescue.banner', { count: severeLossPositions.length, unit: severeLossPositions.length === 1 ? t('portfolio.rescue.unitSingular') : t('portfolio.rescue.unitPlural') })}
                 </div>
                 <div className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                  أسوأها: <span dir="ltr" className="font-bold">{worst.stock_ticker}</span> بخسارة {(lossPct ?? 0).toFixed(1)}% — اضغط هنا للحصول على خطة الإنقاذ الفورية
+                  {t('portfolio.rescue.worstPrefix', { ticker: worst.stock_ticker ?? '', pct: (lossPct ?? 0).toFixed(1) })}
                 </div>
               </div>
             </div>
@@ -1069,14 +1082,14 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
         );
       })()}
 
-      {/* ROBO-ADVISOR-P3: محرك العائد الحقيقي (التضخم) */}
+      {/* ROBO-ADVISOR-P3: Real-return engine (inflation-adjusted) */}
       <RealReturnPanel />
 
-      {/* ROBO-ADVISOR-P4: محرك تقييم المخاطر + Rebalancing */}
+      {/* ROBO-ADVISOR-P4: Risk assessment engine + Rebalancing */}
       {/* Task 6: Pass live allocation so the quiz can show smart rebalance alerts */}
       <RiskProfilerQuiz currentAllocation={currentAllocation} />
 
-      {/* ROBO-ADVISOR-P4: محرك إنقاذ الأسهم المزنوقة */}
+      {/* ROBO-ADVISOR-P4: Stuck-stocks rescue engine */}
       {/* Task 7: Pre-fill from clicked losing position via rescueProps state */}
       <div id="bag-holder-rescue-anchor">
         <BagHolderRescuePanel
@@ -1088,13 +1101,13 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
         />
       </div>
 
-      {/* MONEY-TIER2.9: توقعات زيادة المركز — الأسهم الرابحة ≥ 10% */}
+      {/* MONEY-TIER2.9: Position top-up predictions — gainers ≥ 10% */}
       <TopUpRecommendationsPanel />
 
       {/* P37-PHASE-2B-4A: Currency badge — tells users which currency the
           aggregate wealth totals below are displayed in. Per-row raw market
           prices (stock/gold per-gram) stay in EGP and use the inline suffix.
-          P39-PHASE-2: persona badge + "إعادة اختبار الشخصية" button on the
+          P39-PHASE-2: persona badge + "Retake Persona" button on the
           other side — opens DynamicRiskProfilerModal to recompute the persona. */}
       <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl">
         <div className="flex items-center gap-2">
@@ -1180,7 +1193,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant={filterType === 'all' ? 'default' : 'outline'} onClick={() => setFilterType('all')}>{t('portfolio.buttons.all')}</Button>
-          {(Object.keys(ASSET_TYPE_LABELS) as AssetType[]).map((type) => (
+          {ASSET_TYPES.map((type) => (
             <Button key={type} size="sm" variant={filterType === type ? 'default' : 'outline'} onClick={() => setFilterType(type)}>
               {t(`portfolio.assetTypes.${type}`)}
             </Button>
@@ -1206,7 +1219,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Landmark className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-semibold mb-1">{t('portfolio.empty.noAssets')}</h3>
-            <p className="text-sm text-muted-foreground">أضف أصولك المالية لتتبعها هنا</p>
+            <p className="text-sm text-muted-foreground">{t('portfolio.asset.addEmpty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -1229,12 +1242,12 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {/* Group Header — P30 TASK 6: Accordion trigger */}
                 <AccordionTrigger className="hover:no-underline bg-muted/30 rounded-lg px-3 py-3 hover:bg-muted/50">
                   <div className="flex items-center gap-2">
-                    <Badge className={ASSET_TYPE_COLORS[groupType]}>{ASSET_TYPE_LABELS[groupType]}</Badge>
+                    <Badge className={ASSET_TYPE_COLORS[groupType]}>{t(`portfolio.assetTypes.${groupType}`)}</Badge>
                     <span className="text-sm text-muted-foreground">({groupAssets.length})</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
                     <div className="text-left">
-                      <span className="text-muted-foreground">القيمة: </span>
+                      <span className="text-muted-foreground">{t('portfolio.asset.value')}</span>
                       <span className="font-semibold">{formatCurrency(groupCurrentValue)}</span>
                     </div>
                     <div className={cn('text-left font-semibold', groupProfitLoss >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
@@ -1243,7 +1256,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                     {/* Show interest for bank/certificate/fund */}
                     {['bank', 'certificate', 'fund'].includes(groupType) && groupYearlyInterest > 0 && (
                       <div className="text-left text-emerald-500 dark:text-emerald-400">
-                        <span className="text-xs">عائد سنوي: </span>
+                        <span className="text-xs">{t('portfolio.asset.annualReturn')}</span>
                         <span className="font-semibold">{formatCurrency(groupYearlyInterest)}</span>
                       </div>
                     )}
@@ -1307,8 +1320,8 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                     if (invested <= 0 && weightGrams > 0 && purchasePricePerGram > 0) {
                       invested = weightGrams * purchasePricePerGram;
                     }
-                    // UNIFY-FIX (Rule 27 NO-FAKE-DATA): أزلت أسعار الذهب الوهمية (4200/3675/3150)
-                    // لو goldPrices = null → اعرض "— بيانات غير متاحة" بدل القيم الوهمية
+                    // UNIFY-FIX (Rule 27 NO-FAKE-DATA): removed fabricated gold prices (4200/3675/3150)
+                    // if goldPrices = null → show "— N/A" instead of fake values
                     const goldPricesObj = goldPrices || null;
                     const livePricePerGram = Number(asset.current_price_per_gram) ||
                       (goldPricesObj ? (karat === 24 ? goldPricesObj['24k'] : karat === 21 ? goldPricesObj['21k'] : karat === 18 ? goldPricesObj['18k'] : goldPricesObj['24k']) : 0);
@@ -1344,12 +1357,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   <span className="text-xs text-muted-foreground block" dir="ltr">{asset.stock_ticker}</span>
                                 )}
                                 {isStock && asset.stock_ticker && (() => {
-                                  // PHASE3-MARKET-SEGREGATION (Task F): أضف badge بـ
-                                  // سوق السهم علشان العميل يفرّق بين EGX و TADAWUL و US.
-                                  // لو المحفظة فيها أسهم من أسواق مختلفة، الـ badge بـ يوضّح
-                                  // كل سهم بتاع أي سوق بدل ما يبقوا مخلوطين بدون تمييز.
+                                  // PHASE3-MARKET-SEGREGATION (Task F): add a market badge so the user can
+                                  // distinguish EGX from TADAWUL/US. If the portfolio has stocks from different
+                                  // markets, the badge clarifies which market each stock belongs to.
                                   const m = inferStockMarket(String(asset.stock_ticker), String((asset as Record<string, unknown>).stock_market ?? ''));
-                                  if (!m || m === 'EGX') return null; // EGX هو الافتراضي — ما نظهرش badge
+                                  if (!m || m === 'EGX') return null; // EGX is the default — no badge
                                   const label = MARKET_NAMES_AR[m];
                                   return (
                                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-primary text-primary dark:text-slate-300">
@@ -1365,7 +1377,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                       getPortfolioColorClass(portfoliosMap[String(asset.portfolio_id)]?.color)
                                     )}
                                   >
-                                    📁 {portfoliosMap[String(asset.portfolio_id)]?.name || `محفظة #${asset.portfolio_id}`}
+                                    📁 {portfoliosMap[String(asset.portfolio_id)]?.name || t('portfolio.asset.portfolioBadge', { id: String(asset.portfolio_id) })}
                                   </Badge>
                                 )}
                               </div>
@@ -1391,9 +1403,9 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                       document.getElementById('bag-holder-rescue-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     }, 100);
                                   }}
-                                  title="هذا السهم مزنوق بخسارة — اضغط للإنقاذ الفوري"
+                                  title={t('portfolio.rescue.stuckHint')}
                                 >
-                                  🚨 مزنوق
+                                  🚨 {t('portfolio.rescue.stuck')}
                                 </Button>
                               )}
                               {/* Deal Advisor button — opens #trading-chart with prefill
@@ -1415,10 +1427,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                     });
                                     setCurrentView('trading-chart');
                                   }}
-                                  title="افتح مستشار الصفقة لهذا المركز"
+                                  title={t('portfolio.rescue.dealAdvisorHint')}
                                 >
                                   <Sparkles className="w-3 h-3 ml-1" />
-                                  مستشار
+                                  {t('portfolio.rescue.dealAdvisor')}
                                 </Button>
                               )}
                               {isStock && asset.stock_ticker && (
@@ -1441,33 +1453,33 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   />
                                 </span>
                               )}
-                              <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title="تعديل"><Pencil className="w-3.5 h-3.5" /></Button>
-                              <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title="حذف"><Trash2 className="w-3.5 h-3.5" /></Button>
+                              <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title={t('common.edit')}><Pencil className="w-3.5 h-3.5" /></Button>
+                              <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title={t('common.delete')}><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
                           </div>
                           
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">المستثمر</span>
+                              <span className="text-muted-foreground">{t('portfolio.asset.invested')}</span>
                               <span className="font-medium">{formatCurrency(invested)}</span>
                             </div>
                             
                             {/* Stock: Show current price */}
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">السعر الحالي</span>
-                                <span className="font-medium" dir="ltr">{(currentPrice ?? 0).toFixed(2)} ج.م</span>
+                                <span className="text-muted-foreground">{t('portfolio.asset.currentPrice')}</span>
+                                <span className="font-medium" dir="ltr">{(currentPrice ?? 0).toFixed(2)} EGP</span>
                               </div>
                             )}
                             
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">القيمة الحالية</span>
+                              <span className="text-muted-foreground">{t('portfolio.asset.currentValue')}</span>
                               <span className="font-medium">{formatCurrency(currVal)}</span>
                             </div>
                             
                             {/* Profit/Loss */}
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">الربح/الخسارة</span>
+                              <span className="text-muted-foreground">{t('portfolio.asset.profitLoss')}</span>
                               <span className={cn('font-semibold', gl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                                 {gl >= 0 ? '+' : ''}{formatCurrency(gl)} ({formatPercent(glPct)})
                               </span>
@@ -1476,7 +1488,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {/* Stock: Daily change */}
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">تغيير اليوم</span>
+                                <span className="text-muted-foreground">{t('portfolio.asset.dayChange')}</span>
                                 <span className={cn('font-medium', priceChange >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                                   {formatPercent(priceChange)}
                                 </span>
@@ -1487,27 +1499,27 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {isInterestBearing && (rate > 0 || yearlyInterest > 0) && (
                               <>
                                 <div className="flex justify-between text-sm text-emerald-500 dark:text-emerald-400 pt-1 border-t border-dashed">
-                                  <span className="text-muted-foreground">العائد السنوي المتوقع</span>
+                                  <span className="text-muted-foreground">{t('portfolio.asset.expectedAnnualReturn')}</span>
                                   <span className="font-semibold">{formatCurrency(yearlyInterest)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>شهري</span>
+                                  <span>{t('portfolio.asset.monthly')}</span>
                                   <span>{formatCurrency(monthlyInterest)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>يومي</span>
+                                  <span>{t('portfolio.asset.daily')}</span>
                                   <span>{formatCurrency(dailyInterest)}</span>
                                 </div>
                                 {accruedInterest > 0 && (
                                   <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-xs">
                                     <div className="flex justify-between">
-                                      <span className="text-muted-foreground">الفائدة المكتسبة</span>
+                                      <span className="text-muted-foreground">{t('portfolio.asset.earnedInterest')}</span>
                                       <span className="font-semibold text-emerald-500 dark:text-emerald-400">
                                         {formatCurrency(accruedInterest)}
                                       </span>
                                     </div>
                                     {daysElapsed > 0 && (
-                                      <div className="text-muted-foreground mt-1">منذ {daysElapsed} يوم</div>
+                                      <div className="text-muted-foreground mt-1">{t('portfolio.asset.daysAgo', { days: daysElapsed })}</div>
                                     )}
                                   </div>
                                 )}
@@ -1518,28 +1530,28 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                           {/* Footer info */}
                           {isStock && qty > 0 && (
                             <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
-                              {qty.toLocaleString('ar-EG')} سهم @ {(avgBuy ?? 0).toFixed(2)} ج.م
+                              {t('portfolio.asset.stockLine', { qty: qty.toLocaleString('en-US'), price: (avgBuy ?? 0).toFixed(2) })}
                             </div>
                           )}
                           {asset.type === 'gold' && (
                             <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
-                              {weightGrams ? `${weightGrams.toLocaleString('ar-EG')} جرام` : ''} {karat ? `عيار ${karat}` : ''}
+                              {weightGrams ? t('portfolio.asset.goldLine', { weight: weightGrams.toLocaleString('en-US'), karat }) : ''}
                               {livePricePerGram > 0 && (
                                 <span className="block mt-1 text-emerald-500 dark:text-emerald-400">
-                                  سعر الجرام الحالي: {(livePricePerGram ?? 0).toFixed(2)} ج.م
+                                  {t('portfolio.asset.goldPricePerGram', { price: (livePricePerGram ?? 0).toFixed(2) })}
                                 </span>
                               )}
                             </div>
                           )}
                           {(asset.type === 'bank' || (asset.type as string) === 'deposit') && (
                             <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
-                              {asset.bank_name || ''} {rate > 0 ? `| فائدة ${rate}% سنوياً` : ''}
+                              {asset.bank_name || ''} {rate > 0 ? t('portfolio.asset.bankLine', { bank: asset.bank_name || '', rate }) : ''}
                             </div>
                           )}
                           {asset.type === 'certificate' && (
                             <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
-                              {asset.certificate_duration_months ? `${asset.certificate_duration_months} شهر` : ''} 
-                              {rate > 0 ? ` | فائدة ${rate}% سنوياً` : ''}
+                              {asset.certificate_duration_months ? t('portfolio.asset.certLine', { months: asset.certificate_duration_months, rate: rate ?? 0 }) : ''} 
+                              {rate > 0 ? t('portfolio.asset.certLine', { months: asset.certificate_duration_months ?? 0, rate: rate ?? 0 }) : ''}
                             </div>
                           )}
                         </CardContent>
@@ -1558,17 +1570,17 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       <Dialog open={addDialogOpen} onOpenChange={(v) => { if (!v) { resetForm(); } setAddDialogOpen(v); }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>إضافة أصل جديد</DialogTitle>
-            <DialogDescription>أضف أصلًا ماليًا إلى محفظتك المتنوعة</DialogDescription>
+            <DialogTitle>{t('portfolio.forms.addAssetTitle')}</DialogTitle>
+            <DialogDescription>{t('portfolio.forms.addAssetDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>نوع الأصل</Label>
+              <Label>{t('portfolio.forms.assetType')}</Label>
               <Select value={formType} onValueChange={(v) => { setFormType(v as AssetType); if (v !== 'stock') { setFormTicker(''); setFormSelectedPrice(null); } }}>
                 <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(ASSET_TYPE_LABELS) as AssetType[]).map((t) => (
-                    <SelectItem key={t} value={t}>{ASSET_TYPE_LABELS[t]}</SelectItem>
+                  {ASSET_TYPES.map((at) => (
+                    <SelectItem key={at} value={at}>{t(`portfolio.assetTypes.${at}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1578,7 +1590,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {formType === 'stock' && (
               <>
                 <div className="space-y-2">
-                  <Label>اختر السهم <span className="text-xs text-muted-foreground">(سيتم إضافته تلقائيًا لقائمة المراقبة)</span></Label>
+                  <Label>{t('portfolio.forms.selectStock')} <span className="text-xs text-muted-foreground">{t('portfolio.forms.selectStockHint')}</span></Label>
                   <StockSearchDropdown
                     value={formTicker ? `${formTicker} - ${formName}` : ''}
                     onSelect={(ticker, name, price) => handleStockSelect(ticker, name, price)}
@@ -1586,19 +1598,19 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formSelectedPrice && formSelectedPrice > 0 && (
                   <div className="bg-muted rounded-md px-3 py-2 text-xs flex justify-between">
-                    <span className="text-muted-foreground">السعر الحالي للسهم</span>
-                    <span className="font-semibold" dir="ltr">{(formSelectedPrice ?? 0).toFixed(2)} ج.م</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.currentStockPrice')}</span>
+                    <span className="font-semibold" dir="ltr">{(formSelectedPrice ?? 0).toFixed(2)} EGP</span>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>الكمية</Label><Input type="number" value={formQuantity} onChange={(e) => {
+                  <div className="space-y-2"><Label>{t('portfolio.forms.quantity')}</Label><Input type="number" value={formQuantity} onChange={(e) => {
                     setFormQuantity(e.target.value);
                     // Auto-calculate total invested
                     const qty = parseInt(e.target.value) || 0;
                     const buy = parseFloat(formAvgBuyPrice) || 0;
                     if (qty > 0 && buy > 0) setFormTotalInvested(String(qty * buy));
                   }} placeholder="0" dir="ltr" /></div>
-                  <div className="space-y-2"><Label>متوسط سعر الشراء</Label><Input type="number" value={formAvgBuyPrice} onChange={(e) => {
+                  <div className="space-y-2"><Label>{t('portfolio.forms.avgBuyPrice')}</Label><Input type="number" value={formAvgBuyPrice} onChange={(e) => {
                     setFormAvgBuyPrice(e.target.value);
                     const qty = parseInt(formQuantity) || 0;
                     const buy = parseFloat(e.target.value) || 0;
@@ -1607,7 +1619,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
-                    <span className="text-muted-foreground">إجمالي التكلفة: </span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.totalCost')}</span>
                     <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(parseFloat(formTotalInvested))}</span>
                   </div>
                 )}
@@ -1617,21 +1629,21 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {/* Gold specific */}
             {formType === 'gold' && (
               <>
-                <div className="space-y-2"><Label>اسم الأصل</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: سوار ذهب، خاتم" /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.assetName')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t('portfolio.forms.goldAssetPlaceholder')} /></div>
                 {goldPrices && (
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 text-sm">
-                    <div className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">أسعار الذهب الحالية (للجرام):</div>
+                    <div className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">{t('portfolio.forms.goldPrices')}</div>
                     <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>عيار ٢٤: <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['24k']?.toFixed(2) || '—'} ج.م</span></div>
-                      <div>عيار ٢١: <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['21k']?.toFixed(2) || '—'} ج.م</span></div>
-                      <div>عيار ١٨: <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['18k']?.toFixed(2) || '—'} ج.م</span></div>
+                      <div>{t('portfolio.forms.karat24')} <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['24k']?.toFixed(2) || '—'} EGP</span></div>
+                      <div>{t('portfolio.forms.karat21')} <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['21k']?.toFixed(2) || '—'} EGP</span></div>
+                      <div>{t('portfolio.forms.karat18')} <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['18k']?.toFixed(2) || '—'} EGP</span></div>
                     </div>
                   </div>
                 )}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2"><Label>الوزن (جرام)</Label><Input type="number" value={formWeight} onChange={(e) => {
+                  <div className="space-y-2"><Label>{t('portfolio.forms.weight')}</Label><Input type="number" value={formWeight} onChange={(e) => {
                     setFormWeight(e.target.value);
-                    // حساب تلقائي: الوزن × سعر الجرام الحالي
+                    // Auto-calc: weight × current price/gram
                     const weight = parseFloat(e.target.value) || 0;
                     const karatVal = parseInt(formKarat) || 21;
                     let gramPrice = goldPrices?.['21k'] || 0;
@@ -1641,10 +1653,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                       setFormCurrentValue(String((weight * gramPrice).toFixed(2)));
                     }
                   }} placeholder="0" dir="ltr" /></div>
-                  <div className="space-y-2"><Label>العيار</Label>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.karat')}</Label>
                     <Select value={formKarat} onValueChange={(v) => {
                       setFormKarat(v);
-                      // إعادة الحساب عند تغيير العيار
+                      // Recompute when karat changes
                       const weight = parseFloat(formWeight) || 0;
                       let gramPrice = goldPrices?.['21k'] || 0;
                       if (v === '24') gramPrice = goldPrices?.['24k'] || 0;
@@ -1654,10 +1666,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                       }
                     }}>
                       <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="18">١٨</SelectItem><SelectItem value="21">٢١</SelectItem><SelectItem value="24">٢٤</SelectItem></SelectContent>
+                      <SelectContent><SelectItem value="18">18</SelectItem><SelectItem value="21">21</SelectItem><SelectItem value="24">24</SelectItem></SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2"><Label>سعر الشراء/جرام</Label><Input type="number" value={formPricePerGram} onChange={(e) => {
+                  <div className="space-y-2"><Label>{t('portfolio.forms.pricePerGram')}</Label><Input type="number" value={formPricePerGram} onChange={(e) => {
                     setFormPricePerGram(e.target.value);
                     const weight = parseFloat(formWeight) || 0;
                     const price = parseFloat(e.target.value) || 0;
@@ -1668,13 +1680,13 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formWeight && formPricePerGram && (
                   <div className="bg-muted rounded-md px-3 py-2 text-sm flex justify-between">
-                    <span className="text-muted-foreground">تكلفة الشراء (المستثمر):</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.purchaseCost')}</span>
                     <span className="font-bold">{formatCurrency(parseFloat(formWeight) * parseFloat(formPricePerGram))}</span>
                   </div>
                 )}
                 {formWeight && formCurrentValue && parseFloat(formCurrentValue) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm flex justify-between">
-                    <span className="text-muted-foreground">القيمة الحالية:</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.currentValueLabel')}</span>
                     <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(parseFloat(formCurrentValue))}</span>
                   </div>
                 )}
@@ -1684,11 +1696,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {/* Bank specific */}
             {formType === 'bank' && (
               <>
-                <div className="space-y-2"><Label>اسم الأصل</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: حساب التوفير" /></div>
-                <div className="space-y-2"><Label>اسم البنك</Label><Input value={formBankName} onChange={(e) => setFormBankName(e.target.value)} placeholder="مثال: البنك الأهلي" /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.assetName')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t('portfolio.forms.bankAssetPlaceholder')} /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.bankName')}</Label><Input value={formBankName} onChange={(e) => setFormBankName(e.target.value)} placeholder={t('portfolio.forms.bankNamePlaceholder')} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>الرصيد</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
-                  <div className="space-y-2"><Label>سعر الفائدة %</Label><Input type="number" value={formInterestRate} onChange={(e) => setFormInterestRate(e.target.value)} placeholder="0" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.balance')}</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.interestRate')}</Label><Input type="number" value={formInterestRate} onChange={(e) => setFormInterestRate(e.target.value)} placeholder="0" dir="ltr" /></div>
                 </div>
               </>
             )}
@@ -1696,14 +1708,14 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {/* Certificate specific */}
             {formType === 'certificate' && (
               <>
-                <div className="space-y-2"><Label>اسم الشهادة</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="شهادة التوفير" /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.certName')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t('portfolio.forms.certPlaceholder')} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>المبلغ</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
-                  <div className="space-y-2"><Label>المدة (شهر)</Label><Input type="number" value={formDuration} onChange={(e) => setFormDuration(e.target.value)} placeholder="0" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.amount')}</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.durationMonths')}</Label><Input type="number" value={formDuration} onChange={(e) => setFormDuration(e.target.value)} placeholder="0" dir="ltr" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>العائد %</Label><Input type="number" value={formReturnRate} onChange={(e) => setFormReturnRate(e.target.value)} placeholder="0" dir="ltr" /></div>
-                  <div className="space-y-2"><Label>تاريخ الاستحقاق</Label><Input type="date" value={formMaturityDate} onChange={(e) => setFormMaturityDate(e.target.value)} dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.returnRate')}</Label><Input type="number" value={formReturnRate} onChange={(e) => setFormReturnRate(e.target.value)} placeholder="0" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.maturityDate')}</Label><Input type="date" value={formMaturityDate} onChange={(e) => setFormMaturityDate(e.target.value)} dir="ltr" /></div>
                 </div>
               </>
             )}
@@ -1711,46 +1723,46 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {/* Fund specific */}
             {formType === 'fund' && (
               <>
-                <div className="space-y-2"><Label>اسم الأصل</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: صندوق مصر" /></div>
-                <div className="space-y-2"><Label>اسم الصندوق</Label><Input value={formFundName} onChange={(e) => setFormFundName(e.target.value)} placeholder="صندوق الأسهم" /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.assetName')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t('portfolio.forms.fundAssetPlaceholder')} /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.fundName')}</Label><Input value={formFundName} onChange={(e) => setFormFundName(e.target.value)} placeholder={t('portfolio.forms.fundNamePlaceholder')} /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>نوع الصندوق</Label>
+                    <Label>{t('portfolio.forms.fundType')}</Label>
                     <Select value={formFundType} onValueChange={setFormFundType}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="اختر نوع الصندوق" /></SelectTrigger>
+                      <SelectTrigger className="w-full"><SelectValue placeholder={t('portfolio.forms.fundTypePlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         {FUND_TYPES.map((ft) => (
-                          <SelectItem key={ft.value} value={ft.value}>{ft.label}</SelectItem>
+                          <SelectItem key={ft.value} value={ft.value}>{t(`portfolio.fundTypes.${ft.value}`)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2"><Label>المبلغ المستثمر</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.investedAmount')}</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
                 </div>
-                <div className="space-y-2"><Label>القيمة الحالية</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.currentValueLabel')}</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} placeholder="0.00" dir="ltr" /></div>
                 {formFundType === 'fixed_income' && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
                     <div className="space-y-2">
-                      <Label className="text-emerald-500 dark:text-emerald-400">العائد السنوي %</Label>
-                      <Input type="number" step="0.01" value={formAnnualReturn} onChange={(e) => setFormAnnualReturn(e.target.value)} placeholder="مثال: 15.5" dir="ltr" />
+                      <Label className="text-emerald-500 dark:text-emerald-400">{t('portfolio.forms.annualReturnPct')}</Label>
+                      <Input type="number" step="0.01" value={formAnnualReturn} onChange={(e) => setFormAnnualReturn(e.target.value)} placeholder={t('portfolio.forms.annualReturnPlaceholder')} dir="ltr" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-emerald-500 dark:text-emerald-400">نوع العائد</Label>
+                      <Label className="text-emerald-500 dark:text-emerald-400">{t('portfolio.forms.returnType')}</Label>
                       <Select value={formReturnType} onValueChange={(v) => setFormReturnType(v as 'annual' | 'monthly' | 'daily')}>
                         <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="annual">سنوي</SelectItem>
-                          <SelectItem value="monthly">شهري</SelectItem>
-                          <SelectItem value="daily">يومي</SelectItem>
+                          <SelectItem value="annual">{t('portfolio.forms.annual')}</SelectItem>
+                          <SelectItem value="monthly">{t('portfolio.forms.monthlyReturn')}</SelectItem>
+                          <SelectItem value="daily">{t('portfolio.forms.dailyReturn')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-emerald-500 dark:text-emerald-400">تاريخ الشراء</Label>
+                      <Label className="text-emerald-500 dark:text-emerald-400">{t('portfolio.forms.purchaseDate')}</Label>
                       <Input type="date" value={formPurchaseDate} onChange={(e) => setFormPurchaseDate(e.target.value)} dir="ltr" />
                     </div>
                     <p className="text-[11px] text-muted-foreground sm:col-span-3">
-                      سيتم حساب القيمة الحالية تلقائياً: القيمة الحالية = المبلغ المستثمر + (العائد اليومي × عدد الأيام منذ الشراء)
+                      {t('portfolio.forms.autoCalcHint')}
                     </p>
                   </div>
                 )}
@@ -1760,10 +1772,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {/* Other / default name + invested + current */}
             {(formType === 'real_estate' || formType === 'other') && (
               <>
-                <div className="space-y-2"><Label>الاسم</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={formType === 'real_estate' ? 'اسم العقار' : 'اسم الأصل'} /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.name')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={formType === 'real_estate' ? t('portfolio.forms.realEstatePlaceholder') : t('portfolio.forms.assetName')} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>المبلغ المستثمر</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
-                  <div className="space-y-2"><Label>القيمة الحالية</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.investedAmount')}</Label><Input type="number" value={formTotalInvested} onChange={(e) => setFormTotalInvested(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+                  <div className="space-y-2"><Label>{t('portfolio.forms.currentValueLabel')}</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} placeholder="0.00" dir="ltr" /></div>
                 </div>
               </>
             )}
@@ -1772,7 +1784,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {formType === 'crypto' && (
               <>
                 <div className="space-y-2">
-                  <Label>اختر العملة <span className="text-xs text-muted-foreground">(من Binance)</span></Label>
+                  <Label>{t('portfolio.forms.selectCrypto')} <span className="text-xs text-muted-foreground">{t('portfolio.forms.selectCryptoHint')}</span></Label>
                   <CryptoSearchDropdown
                     value={formTicker ? `${formTicker} - ${formName}` : ''}
                     onSelect={(symbol, name, priceUsd) => {
@@ -1784,13 +1796,13 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formSelectedPrice && formSelectedPrice > 0 && (
                   <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md px-3 py-2 text-xs flex justify-between">
-                    <span className="text-muted-foreground">السعر الحالي (USD)</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.currentCryptoPrice')}</span>
                     <span className="font-semibold text-orange-700 dark:text-orange-400" dir="ltr">${(formSelectedPrice ?? 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>الكمية</Label>
+                    <Label>{t('portfolio.forms.quantity')}</Label>
                     <Input type="number" value={formQuantity} onChange={(e) => {
                       setFormQuantity(e.target.value);
                       const qty = parseFloat(e.target.value) || 0;
@@ -1799,7 +1811,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                     }} placeholder="0.00" dir="ltr" />
                   </div>
                   <div className="space-y-2">
-                    <Label>سعر الشراء (USD)</Label>
+                    <Label>{t('portfolio.forms.buyPriceUSD')}</Label>
                     <Input type="number" value={formAvgBuyPrice} onChange={(e) => {
                       setFormAvgBuyPrice(e.target.value);
                       const qty = parseFloat(formQuantity) || 0;
@@ -1810,22 +1822,22 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
-                    <span className="text-muted-foreground">إجمالي التكلفة (USD): </span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.totalCostUSD')}</span>
                     <span className="font-bold text-emerald-500 dark:text-emerald-400">${parseFloat(formTotalInvested).toFixed(2)}</span>
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                  💡 السعر بالدولار. القيمة الحالية هتتحدث تلقائياً من Binance كل 30 ثانية.
+                  {t('portfolio.forms.cryptoAutoUpdate')}
                 </p>
               </>
             )}
 
-            <div className="space-y-2"><Label>ملاحظات (اختياري)</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="أضف ملاحظاتك..." rows={2} /></div>
+            <div className="space-y-2"><Label>{t('portfolio.forms.notes')}</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder={t('portfolio.forms.notesPlaceholder')} rows={2} /></div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>{t('portfolio.forms.cancel')}</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave} disabled={saving}>
-              {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> جاري الإضافة...</> : 'إضافة'}
+              {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> {t('portfolio.forms.adding')}</> : t('common.add')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1834,47 +1846,47 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader><DialogTitle>تعديل الأصل</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('portfolio.forms.editAssetTitle')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>نوع الأصل</Label>
-              <Input value={ASSET_TYPE_LABELS[formType] || formType} disabled className="bg-muted" />
+              <Label>{t('portfolio.forms.assetType')}</Label>
+              <Input value={t(`portfolio.assetTypes.${formType}`) || formType} disabled className="bg-muted" />
             </div>
             {formType === 'stock' && editAsset?.stock_ticker && (
               <div className="space-y-2">
-                <Label>السهم</Label>
+                <Label>{t('portfolio.forms.stock')}</Label>
                 <Input value={`${editAsset.stock_ticker} - ${editAsset.name}`} disabled className="bg-muted" dir="ltr" />
               </div>
             )}
             {formType !== 'stock' && (
-              <div className="space-y-2"><Label>الاسم</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.obligationName')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{formType === 'stock' ? 'متوسط سعر الشراء' : 'المبلغ المستثمر'}</Label>
+                <Label>{formType === 'stock' ? t('portfolio.forms.avgBuyPrice') : t('portfolio.forms.investedAmount')}</Label>
                 <Input type="number" value={formAvgBuyPrice || formTotalInvested} onChange={(e) => {
                   if (formType === 'stock') setFormAvgBuyPrice(e.target.value);
                   else setFormTotalInvested(e.target.value);
                 }} dir="ltr" />
               </div>
               {formType === 'stock' ? (
-                <div className="space-y-2"><Label>الكمية</Label><Input type="number" value={formQuantity} onChange={(e) => setFormQuantity(e.target.value)} dir="ltr" /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.quantity')}</Label><Input type="number" value={formQuantity} onChange={(e) => setFormQuantity(e.target.value)} dir="ltr" /></div>
               ) : (
-                <div className="space-y-2"><Label>القيمة الحالية</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} dir="ltr" /></div>
+                <div className="space-y-2"><Label>{t('portfolio.forms.currentValueLabel')}</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} dir="ltr" /></div>
               )}
             </div>
             {formType === 'stock' && (
               <div className="space-y-2">
-                <Label>القيمة الحالية (تلقائية من السوق)</Label>
+                <Label>{t('portfolio.forms.currentValueAuto')}</Label>
                 <Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} dir="ltr" placeholder="0.00" />
               </div>
             )}
-            <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} /></div>
+            <div className="space-y-2"><Label>{t('portfolio.forms.notesLabel')}</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} /></div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t('portfolio.forms.cancel')}</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditSave} disabled={saving}>
-              {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> جاري الحفظ...</> : 'حفظ'}
+              {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> {t('portfolio.forms.saving')}</> : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1884,18 +1896,18 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="sm:max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="w-5 h-5" /> تأكيد الحذف</DialogTitle>
-            <DialogDescription>هل أنت متأكد من حذف هذا الأصل؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="w-5 h-5" /> {t('portfolio.forms.deleteTitle')}</DialogTitle>
+            <DialogDescription>{t('portfolio.forms.deleteDesc')}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteId(null)}>إلغاء</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>حذف</Button>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>{t('portfolio.obligations.cancel')}</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>{t('portfolio.forms.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* P39-PHASE-2: DynamicRiskProfilerModal — mounted at the end so the
-          "إعادة اختبار الشخصية" button can open it. On complete it just closes;
+          "Retest Persona" button can open it. On complete it just closes;
           the store's setRiskToleranceScore → setPersona pipeline handles the
           actual persona update (see src/lib/store.ts). */}
       <DynamicRiskProfilerModal
@@ -1922,11 +1934,12 @@ function WealthAllocationMatrixCard({
   personaLabel: string;
   onRebalance: () => void;
 }) {
-  const assetMeta: Record<WealthAllocationAlert['asset'], { label: string; icon: React.ReactNode }> = {
-    egx: { label: 'الأسهم المصرية', icon: <TrendingUp className="w-4 h-4" /> },
-    crypto: { label: 'العملات الرقمية', icon: <Bitcoin className="w-4 h-4" /> },
-    gold: { label: 'الذهب', icon: <Gem className="w-4 h-4" /> },
-    cash: { label: 'السيولة', icon: <Banknote className="w-4 h-4" /> },
+  const t = useTranslation();
+  const assetMeta: Record<WealthAllocationAlert['asset'], { labelKey: string; icon: React.ReactNode }> = {
+    egx: { labelKey: 'portfolio.assetLabels.stocksEg', icon: <TrendingUp className="w-4 h-4" /> },
+    crypto: { labelKey: 'portfolio.assetLabels.crypto', icon: <Bitcoin className="w-4 h-4" /> },
+    gold: { labelKey: 'portfolio.assetLabels.gold', icon: <Gem className="w-4 h-4" /> },
+    cash: { labelKey: 'portfolio.assetLabels.cash', icon: <Banknote className="w-4 h-4" /> },
   };
   const severityBorder: Record<WealthAllocationAlert['severity'], string> = {
     ok: 'border-emerald-200 dark:border-emerald-800/60',
@@ -1947,11 +1960,11 @@ function WealthAllocationMatrixCard({
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm md:text-base font-bold flex items-center gap-2">
             <Scale className="w-4 h-4 text-emerald-500" />
-            مصفوفة توزيع الثروة — شخصية: {personaLabel}
+            {t('portfolio.wealth.title', { persona: personaLabel })}
           </CardTitle>
           <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
             <Shield className="w-3 h-3" />
-            سقوف {personaLabel}
+            {t('portfolio.wealth.ceilings', { persona: personaLabel })}
           </Badge>
         </div>
       </CardHeader>
@@ -1971,14 +1984,14 @@ function WealthAllocationMatrixCard({
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span className={cn('flex-shrink-0', severityText[alert.severity])}>{meta.icon}</span>
-                  <span className="text-xs font-semibold truncate">{meta.label}</span>
+                  <span className="text-xs font-semibold truncate">{t(meta.labelKey)}</span>
                 </div>
                 <div className="flex items-baseline gap-1.5 mb-2">
                   <span className={cn('text-2xl font-bold', severityText[alert.severity])}>
                     {(alert.currentPercent ?? 0).toFixed(1)}%
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    / سقف {alert.ceilingPercent}%
+                    {t('portfolio.wealth.ceilingSlash', { pct: alert.ceilingPercent })}
                   </span>
                 </div>
                 {/* Progress bar (shadcn Progress) with red ceiling marker overlay.
@@ -1999,7 +2012,7 @@ function WealthAllocationMatrixCard({
                     <div
                       className="absolute top-[-2px] bottom-[-2px] w-0.5 bg-red-600 dark:bg-red-400 rounded-full"
                       style={{ left: `${ceilingPos}%` }}
-                      title={`السقف: ${alert.ceilingPercent}%`}
+                      title={t('portfolio.wealth.ceilingLabel', { pct: alert.ceilingPercent })}
                     />
                   )}
                 </div>
@@ -2032,12 +2045,12 @@ function WealthAllocationMatrixCard({
         <div className="flex items-center gap-2 pt-1">
           <Button size="sm" variant="outline" onClick={onRebalance}>
             <RefreshCw className="w-3.5 h-3.5 ml-1.5" />
-            إعادة التوازن التلقائي
+            {t('portfolio.wealth.autoRebalance')}
           </Button>
           {visibleAlerts.length === 0 && (
             <span className="text-[11px] text-emerald-500 dark:text-emerald-400 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              المحفظة متوازنة وفقاً لشخصيتك الاستثمارية
+              {t('portfolio.wealth.balanced')}
             </span>
           )}
         </div>
@@ -2086,7 +2099,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       setTransactions(data.items || []);
       setSummary(data.summary || null);
     } catch { // silent fallback (safe-by-design)
-      if (!silent) toast.error('فشل في تحميل المعاملات');
+      if (!silent) toast.error(t('portfolio.income.loadFailed'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -2095,7 +2108,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
   useEffect(() => { loadTransactions(); }, [loadTransactions]);
 
   const handleSave = async () => {
-    if (!formCategory || !formAmount) { toast.error('يرجى ملء جميع الحقول المطلوبة'); return; }
+    if (!formCategory || !formAmount) { toast.error(t('portfolio.income.fillRequired')); return; }
     try {
       const res = await fetch('/api/finance/transactions', {
         method: 'POST',
@@ -2112,13 +2125,13 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('تمت إضافة المعاملة بنجاح');
+        toast.success(t('portfolio.income.addSuccess'));
         setAddDialogOpen(false);
         setFormCategory(''); setFormAmount(''); setFormDescription('');
         // UI-STABILITY fix (2026-09-28): silent refresh after save — keep table state
         loadTransactions(true);
       } else {
-        toast.error(data.error || 'فشل في إضافة المعاملة');
+        toast.error(data.error || t('portfolio.income.addFailed'));
       }
     } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
@@ -2130,11 +2143,11 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       const res = await fetch(`/api/finance/transactions/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        toast.success('تم حذف المعاملة');
+        toast.success(t('portfolio.income.deleteSuccess'));
         // UI-STABILITY fix (2026-09-28): silent refresh after delete
         loadTransactions(true);
       } else {
-        toast.error(data.error || 'فشل في الحذف');
+        toast.error(data.error || t('portfolio.income.deleteFailed'));
       }
     } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
@@ -2150,63 +2163,63 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
   const transactionColumns: Column<FinancialTransaction>[] = useMemo(() => [
     {
       key: 'type',
-      header: 'النوع',
+      header: t('portfolio.income.colType'),
       sortable: true,
       filterable: true,
-      render: (t) => (
-        <Badge className={t.type === 'income' ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}>
-          {t.type === 'income' ? 'دخل' : 'مصروف'}
+      render: (row) => (
+        <Badge className={row.type === 'income' ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}>
+          {row.type === 'income' ? t('portfolio.income.incomeType') : t('portfolio.income.expenseType')}
         </Badge>
       ),
     },
     {
       key: 'category',
-      header: 'التصنيف',
+      header: t('portfolio.income.colCategory'),
       sortable: true,
       filterable: true,
       className: 'text-sm',
     },
     {
       key: 'amount',
-      header: 'المبلغ',
+      header: t('portfolio.income.colAmount'),
       align: 'center',
       sortable: true,
       filterable: true,
-      render: (t) => (
-        <span className={cn('font-semibold text-sm', t.type === 'income' ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-          {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+      render: (row) => (
+        <span className={cn('font-semibold text-sm', row.type === 'income' ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+          {row.type === 'income' ? '+' : '-'}{formatCurrency(row.amount)}
         </span>
       ),
     },
     {
       key: 'description',
-      header: 'الوصف',
+      header: t('portfolio.income.colDescription'),
       filterable: true,
       className: 'text-xs text-muted-foreground',
-      render: (t) => (
-        <span className="block max-w-[150px] truncate" title={t.description || ''}>
-          {t.description || '—'}
+      render: (row) => (
+        <span className="block max-w-[150px] truncate" title={row.description || ''}>
+          {row.description || '—'}
         </span>
       ),
     },
     {
       key: 'transaction_date',
-      header: 'التاريخ',
+      header: t('portfolio.income.colDate'),
       sortable: true,
       filterable: true,
       className: 'text-xs text-muted-foreground',
-      render: (t) => <span dir="ltr">{t.transaction_date}</span>,
+      render: (row) => <span dir="ltr">{row.transaction_date}</span>,
     },
     {
       key: '_delete',
-      header: 'إجراءات',
+      header: t('portfolio.income.colActions'),
       align: 'center',
-      render: (t) => (
+      render: (row) => (
         <Button
           variant="ghost"
           size="icon"
           className="h-9 w-9 text-muted-foreground hover:text-red-500"
-          onClick={(e) => { e.stopPropagation(); if (t.id != null) handleDelete(t.id); }}
+          onClick={(e) => { e.stopPropagation(); if (row.id != null) handleDelete(row.id); }}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
@@ -2223,8 +2236,8 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
     setYear(String(d.getFullYear()));
   };
 
-  const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-  const currentMonthLabel = arabicMonths[parseInt(month) - 1] + ' ' + year;
+  const monthKeys = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'] as const;
+  const currentMonthLabel = t(`portfolio.months.${monthKeys[parseInt(month) - 1]}`) + ' ' + year;
 
   const categories = transType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
@@ -2254,7 +2267,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
         </div>
         <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => setAddDialogOpen(true)}>
           <Plus className="w-4 h-4 ml-1.5" />
-          إضافة معاملة
+          {t('portfolio.income.addTransaction')}
         </Button>
       </div>
 
@@ -2264,28 +2277,28 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
           <Card className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <ArrowUpRight className="w-4 h-4 text-emerald-500" />
-              <span className="text-xs font-medium">إجمالي الدخل</span>
+              <span className="text-xs font-medium">{t('portfolio.income.totalIncome')}</span>
             </div>
             <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(summary.total_income)}</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <ArrowDownRight className="w-4 h-4 text-red-500" />
-              <span className="text-xs font-medium">إجمالي المصروفات</span>
+              <span className="text-xs font-medium">{t('portfolio.income.totalExpenses')}</span>
             </div>
             <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(summary.total_expenses)}</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <PiggyBank className="w-4 h-4 text-teal-500" />
-              <span className="text-xs font-medium">صافي الادخار</span>
+              <span className="text-xs font-medium">{t('portfolio.income.netSavings')}</span>
             </div>
             <p className="text-lg font-bold text-teal-600 dark:text-teal-400">{formatCurrency(summary.net_savings)}</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <TrendingUp className="w-4 h-4" />
-              <span className="text-xs font-medium">نسبة الادخار</span>
+              <span className="text-xs font-medium">{t('portfolio.income.savingsRate')}</span>
             </div>
             <p className="text-lg font-bold">{(savingsRate ?? 0).toFixed(1)}%</p>
             <Progress value={Math.min(savingsRate, 100)} className="h-2 mt-2" />
@@ -2297,7 +2310,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       {summary && summary.expenses_by_category && Object.keys(summary.expenses_by_category).length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">توزيع المصروفات</CardTitle>
+            <CardTitle className="text-sm">{t('portfolio.income.expenseDistribution')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {Object.entries(summary.expenses_by_category)
@@ -2306,7 +2319,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
               .map(([cat, amount]) => {
                 const pct = summary.total_expenses > 0 ? (amount / summary.total_expenses) * 100 : 0;
                 const catInfo = EXPENSE_CATEGORIES.find((c) => c.value === cat);
-                const label = catInfo?.label || cat;
+                const label = catInfo ? t(`portfolio.expenseCategories.${catInfo.value}`) : cat;
                 return (
                   <div key={cat} className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -2327,23 +2340,23 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <CardTitle className="text-sm">المعاملات الأخيرة</CardTitle>
+            <CardTitle className="text-sm">{t('portfolio.income.recentTransactions')}</CardTitle>
             {transactions.length > 0 && (
               <UnifiedPublishButton
                 variant="outline"
                 size="sm"
-                title="المعاملات الأخيرة"
-                content={`المعاملات الأخيرة\n${transactions.slice(0, 20).map((t, i) => `${i + 1}. ${t.type === 'income' ? 'دخل' : 'مصروف'} — ${t.category} — ${formatCurrency(t.amount)} ج.م — ${t.transaction_date}`).join('\n')}`}
+                title={t('portfolio.income.recentTransactions')}
+                content={`${t('portfolio.income.recentTransactions')}\n${transactions.slice(0, 20).map((tr, i) => `${i + 1}. ${tr.type === 'income' ? t('portfolio.income.incomeType') : t('portfolio.income.expenseType')} — ${tr.category} — ${formatCurrency(tr.amount)} EGP — ${tr.transaction_date}`).join('\n')}`}
                 filename={`transactions-${Date.now()}`}
-                hashtags={['معاملات', 'محفظة']}
-                triggerLabel="نشر"
+                hashtags={['transactions', 'portfolio']}
+                triggerLabel={t('common.publish')}
               />
             )}
           </div>
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">لا توجد معاملات لهذا الشهر</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('portfolio.income.noTransactions')}</p>
           ) : (
             <UnifiedTable<FinancialTransaction>
               columns={transactionColumns}
@@ -2354,9 +2367,9 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
               filterable
               maxHeight="max-h-96"
               publishable
-              publishTitle="معاملات المحفظة المالية"
+              publishTitle={t('portfolio.income.publishTitle')}
               publishFilename={`portfolio-transactions-${new Date().toISOString().slice(0,10)}`}
-              publishHashtags={['محفظة_استثمارية', 'بورصة_مصر', 'EGX', 'استثمار']}
+              publishHashtags={['portfolio', 'EGX', 'investing']}
             />
           )}
         </CardContent>
@@ -2366,57 +2379,57 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="sm:max-w-lg w-[calc(100%-1rem)]" dir="rtl">
           <DialogHeader>
-            <DialogTitle>إضافة معاملة</DialogTitle>
-            <DialogDescription>سجل دخل أو مصروف جديد</DialogDescription>
+            <DialogTitle>{t('portfolio.income.addTransactionTitle')}</DialogTitle>
+            <DialogDescription>{t('portfolio.income.addTransactionDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>النوع</Label>
+                <Label>{t('portfolio.income.typeLabel')}</Label>
                 <Select value={transType} onValueChange={(v) => { setTransType(v as TransactionType); setFormCategory(''); }}>
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="income">دخل</SelectItem>
-                    <SelectItem value="expense">مصروف</SelectItem>
+                    <SelectItem value="income">{t('portfolio.income.incomeType')}</SelectItem>
+                    <SelectItem value="expense">{t('portfolio.income.expenseType')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>التصنيف</Label>
+                <Label>{t('portfolio.income.categoryLabel')}</Label>
                 <Select value={formCategory} onValueChange={setFormCategory}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue placeholder={t('portfolio.income.categoryPlaceholder')} /></SelectTrigger>
                   <SelectContent>
                     {(transType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      <SelectItem key={c.value} value={c.value}>{t(`portfolio.${transType === 'income' ? 'incomeCategories' : 'expenseCategories'}.${c.value}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="space-y-2"><Label>المبلغ (ج.م)</Label><Input type="number" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} placeholder="0.00" dir="ltr" /></div>
-            <div className="space-y-2"><Label>الوصف</Label><Input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="وصف المعاملة..." /></div>
-            <div className="space-y-2"><Label>التاريخ</Label><Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} dir="ltr" /></div>
+            <div className="space-y-2"><Label>{t('portfolio.income.amountLabel')}</Label><Input type="number" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+            <div className="space-y-2"><Label>{t('portfolio.income.descriptionLabel')}</Label><Input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder={t('portfolio.income.descriptionPlaceholder')} /></div>
+            <div className="space-y-2"><Label>{t('portfolio.income.dateLabel')}</Label><Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} dir="ltr" /></div>
             <div className="flex items-center gap-3">
               <Checkbox checked={formIsRecurring} onCheckedChange={(v) => setFormIsRecurring(v === true)} />
-              <Label>متكرر؟</Label>
+              <Label>{t('portfolio.income.recurring')}</Label>
             </div>
             {formIsRecurring && (
               <div className="space-y-2">
-                <Label>التكرار</Label>
+                <Label>{t('portfolio.income.recurrence')}</Label>
                 <Select value={formFrequency} onValueChange={setFormFrequency}>
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">شهري</SelectItem>
-                    <SelectItem value="weekly">أسبوعي</SelectItem>
-                    <SelectItem value="yearly">سنوي</SelectItem>
+                    <SelectItem value="monthly">{t('portfolio.income.monthlyR')}</SelectItem>
+                    <SelectItem value="weekly">{t('portfolio.income.weekly')}</SelectItem>
+                    <SelectItem value="yearly">{t('portfolio.income.yearly')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>إلغاء</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave}>حفظ</Button>
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>{t('common.cancel')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave}>{t('portfolio.income.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2469,7 +2482,7 @@ const ObligationsTab = memo(function ObligationsTab() {
       const data = await res.json();
       setObligations(data.items || []);
     } catch { // silent fallback (safe-by-design)
-      if (!silent) toast.error('فشل في تحميل الالتزامات');
+      if (!silent) toast.error(t('portfolio.obligations.loadFailed'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -2503,13 +2516,13 @@ const ObligationsTab = memo(function ObligationsTab() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('تمت إضافة الالتزام بنجاح');
+        toast.success(t('portfolio.obligations.addSuccess'));
         setAddDialogOpen(false);
         resetForm();
         // UI-STABILITY fix (2026-09-28): silent refresh after add — keep table state
         loadObligations(true);
       } else {
-        toast.error(data.error || 'فشل في إضافة الالتزام');
+        toast.error(data.error || t('portfolio.obligations.addFailed'));
       }
     } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
@@ -2530,12 +2543,12 @@ const ObligationsTab = memo(function ObligationsTab() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('تم تحديث الالتزام');
+        toast.success(t('portfolio.obligations.updateSuccess'));
         setEditDialogOpen(false);
         // UI-STABILITY fix (2026-09-28): silent refresh after edit
         loadObligations(true);
       } else {
-        toast.error(data.error || 'فشل في التحديث');
+        toast.error(data.error || t('portfolio.obligations.updateFailed'));
       }
     } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
@@ -2548,12 +2561,12 @@ const ObligationsTab = memo(function ObligationsTab() {
       const res = await fetch(`/api/finance/obligations/${deleteId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        toast.success('تم حذف الالتزام');
+        toast.success(t('portfolio.obligations.deleteSuccess'));
         setDeleteId(null);
         // UI-STABILITY fix (2026-09-28): silent refresh after delete
         loadObligations(true);
       } else {
-        toast.error(data.error || 'فشل في الحذف');
+        toast.error(data.error || t('portfolio.obligations.deleteFailed'));
       }
     } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
@@ -2576,12 +2589,12 @@ const ObligationsTab = memo(function ObligationsTab() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('تم تسجيل الدفعة بنجاح');
+        toast.success(t('portfolio.obligations.paymentSuccess'));
         setPaymentDialogOpen(false);
         // UI-STABILITY fix (2026-09-28): silent refresh after payment
         loadObligations(true);
       } else {
-        toast.error(data.error || 'فشل في تسجيل الدفعة');
+        toast.error(data.error || t('portfolio.obligations.paymentFailed'));
       }
     } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
@@ -2628,15 +2641,15 @@ const ObligationsTab = memo(function ObligationsTab() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1"><CreditCard className="w-4 h-4" /><span className="text-xs font-medium">إجمالي المديونية</span></div>
+          <div className="flex items-center gap-2 text-muted-foreground mb-1"><CreditCard className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.reports.totalObligations')}</span></div>
           <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(totalDebt)}</p>
         </Card>
         <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1"><CalendarDays className="w-4 h-4" /><span className="text-xs font-medium">الأقساط الشهرية</span></div>
+          <div className="flex items-center gap-2 text-muted-foreground mb-1"><CalendarDays className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.monthlyPayment')}</span></div>
           <p className="text-lg font-bold">{formatCurrency(monthlyPayments)}</p>
         </Card>
         <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1"><FileText className="w-4 h-4" /><span className="text-xs font-medium">القروض النشطة</span></div>
+          <div className="flex items-center gap-2 text-muted-foreground mb-1"><FileText className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.typeLabel')}</span></div>
           <p className="text-lg font-bold">{activeLoans}</p>
         </Card>
       </div>
@@ -2645,7 +2658,7 @@ const ObligationsTab = memo(function ObligationsTab() {
       <div className="flex justify-end">
         <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
           <Plus className="w-4 h-4 ml-1.5" />
-          إضافة التزام
+          {t('portfolio.obligations.addObligation')}
         </Button>
       </div>
 
@@ -2654,8 +2667,8 @@ const ObligationsTab = memo(function ObligationsTab() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <CreditCard className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-semibold mb-1">لا توجد التزامات</h3>
-            <p className="text-sm text-muted-foreground">أضف التزاماتك المالية لتتبعها</p>
+            <h3 className="text-lg font-semibold mb-1">{t('portfolio.obligations.noObligations')}</h3>
+            <p className="text-sm text-muted-foreground">{t('portfolio.obligations.noObligationsHint')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -2667,25 +2680,25 @@ const ObligationsTab = memo(function ObligationsTab() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Badge className={OBLIGATION_STATUS_COLORS[ob.status]}>{OBLIGATION_STATUS_LABELS[ob.status]}</Badge>
-                      <Badge variant="outline">{OBLIGATION_TYPE_LABELS[ob.type] || ob.type}</Badge>
+                      <Badge className={OBLIGATION_STATUS_COLORS[ob.status]}>{t(`portfolio.obligationStatus.${ob.status}`)}</Badge>
+                      <Badge variant="outline">{t(`portfolio.obligationTypes.${ob.type}`) || ob.type}</Badge>
                       <h3 className="font-semibold text-sm">{ob.name}</h3>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="outline" size="sm" onClick={() => openPayment(ob)}>تسجيل دفعة</Button>
+                      <Button variant="outline" size="sm" onClick={() => openPayment(ob)}>{t('portfolio.obligations.recordPayment')}</Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-red-500" onClick={() => setDeleteId(ob.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                    <div><span className="text-muted-foreground">الدائن:</span> <span className="font-medium">{ob.creditor}</span></div>
-                    <div><span className="text-muted-foreground">المتبقي:</span> <span className="font-medium text-red-600 dark:text-red-400">{formatCurrency(ob.remaining_amount)}</span></div>
-                    <div><span className="text-muted-foreground">القسط الشهري:</span> <span className="font-medium">{formatCurrency(ob.monthly_payment)}</span></div>
-                    {ob.interest_rate && <div><span className="text-muted-foreground">الفائدة:</span> <span className="font-medium">{ob.interest_rate}%</span></div>}
+                    <div><span className="text-muted-foreground">{t('portfolio.obligations.creditor')}</span> <span className="font-medium">{ob.creditor}</span></div>
+                    <div><span className="text-muted-foreground">{t('portfolio.obligations.remaining')}</span> <span className="font-medium text-red-600 dark:text-red-400">{formatCurrency(ob.remaining_amount)}</span></div>
+                    <div><span className="text-muted-foreground">{t('portfolio.obligations.monthlyInstallment')}</span> <span className="font-medium">{formatCurrency(ob.monthly_payment)}</span></div>
+                    {ob.interest_rate && <div><span className="text-muted-foreground">{t('portfolio.obligations.interest')}</span> <span className="font-medium">{ob.interest_rate}%</span></div>}
                   </div>
                   <div className="mt-3 space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">تم السداد</span>
+                      <span className="text-muted-foreground">{t('portfolio.obligations.paid')}</span>
                       <span className="font-medium">{(paidPercent ?? 0).toFixed(1)}%</span>
                     </div>
                     <Progress value={paidPercent} className="h-2" />
@@ -2701,43 +2714,43 @@ const ObligationsTab = memo(function ObligationsTab() {
       <Dialog open={addDialogOpen} onOpenChange={(v) => { if (!v) resetForm(); setAddDialogOpen(v); }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>إضافة التزام جديد</DialogTitle>
-            <DialogDescription>سجل قرض أو التزام مالي</DialogDescription>
+            <DialogTitle>{t('portfolio.obligations.addTitle')}</DialogTitle>
+            <DialogDescription>{t('portfolio.obligations.addDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>النوع</Label>
+                <Label>{t('portfolio.obligations.typeLabel')}</Label>
                 <Select value={formType} onValueChange={setFormType}>
                   <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(OBLIGATION_TYPE_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    {OBLIGATION_TYPE_KEYS.map((k) => (
+                      <SelectItem key={k} value={k}>{t(`portfolio.obligationTypes.${k}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2"><Label>اسم الالتزام</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="قرض شخصي" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.obligationName')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t('portfolio.obligations.namePlaceholder')} /></div>
             </div>
-            <div className="space-y-2"><Label>الدائن</Label><Input value={formCreditor} onChange={(e) => setFormCreditor(e.target.value)} placeholder="البنك / الشخص" /></div>
+            <div className="space-y-2"><Label>{t('portfolio.obligations.creditorLabel')}</Label><Input value={formCreditor} onChange={(e) => setFormCreditor(e.target.value)} placeholder={t('portfolio.obligations.creditorPlaceholder')} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>إجمالي المبلغ</Label><Input type="number" value={formTotalAmount} onChange={(e) => setFormTotalAmount(e.target.value)} placeholder="0.00" dir="ltr" /></div>
-              <div className="space-y-2"><Label>المبلغ المتبقي</Label><Input type="number" value={formRemainingAmount} onChange={(e) => setFormRemainingAmount(e.target.value)} placeholder="0.00" dir="ltr" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>القسط الشهري</Label><Input type="number" value={formMonthlyPayment} onChange={(e) => setFormMonthlyPayment(e.target.value)} placeholder="0.00" dir="ltr" /></div>
-              <div className="space-y-2"><Label>سعر الفائدة %</Label><Input type="number" value={formInterestRate} onChange={(e) => setFormInterestRate(e.target.value)} placeholder="0" dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.totalAmount')}</Label><Input type="number" value={formTotalAmount} onChange={(e) => setFormTotalAmount(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.remainingAmount')}</Label><Input type="number" value={formRemainingAmount} onChange={(e) => setFormRemainingAmount(e.target.value)} placeholder="0.00" dir="ltr" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>تاريخ البداية</Label><Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} dir="ltr" /></div>
-              <div className="space-y-2"><Label>تاريخ النهاية</Label><Input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.monthlyPayment')}</Label><Input type="number" value={formMonthlyPayment} onChange={(e) => setFormMonthlyPayment(e.target.value)} placeholder="0.00" dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.interestRatePct')}</Label><Input type="number" value={formInterestRate} onChange={(e) => setFormInterestRate(e.target.value)} placeholder="0" dir="ltr" /></div>
             </div>
-            <div className="space-y-2"><Label>تاريخ القسط القادم</Label><Input type="date" value={formNextPaymentDate} onChange={(e) => setFormNextPaymentDate(e.target.value)} dir="ltr" /></div>
-            <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label>{t('portfolio.obligations.startDate')}</Label><Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.endDate')}</Label><Input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} dir="ltr" /></div>
+            </div>
+            <div className="space-y-2"><Label>{t('portfolio.obligations.nextPaymentDate')}</Label><Input type="date" value={formNextPaymentDate} onChange={(e) => setFormNextPaymentDate(e.target.value)} dir="ltr" /></div>
+            <div className="space-y-2"><Label>{t('portfolio.obligations.notesLabel')}</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} /></div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>إلغاء</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave}>إضافة</Button>
+            <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>{t('portfolio.obligations.cancel')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave}>{t('portfolio.obligations.add')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2746,19 +2759,19 @@ const ObligationsTab = memo(function ObligationsTab() {
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تسجيل دفعة — {paymentObligation?.name}</DialogTitle>
+            <DialogTitle>{t('portfolio.obligations.paymentTitle', { name: paymentObligation?.name ?? '' })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-2"><Label>المبلغ</Label><Input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} dir="ltr" /></div>
-            <div className="space-y-2"><Label>تاريخ الدفع</Label><Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} dir="ltr" /></div>
+            <div className="space-y-2"><Label>{t('portfolio.obligations.payAmount')}</Label><Input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} dir="ltr" /></div>
+            <div className="space-y-2"><Label>{t('portfolio.obligations.payDate')}</Label><Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} dir="ltr" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>مبلغ الأصل</Label><Input type="number" value={payPrincipal} onChange={(e) => setPayPrincipal(e.target.value)} placeholder="اختياري" dir="ltr" /></div>
-              <div className="space-y-2"><Label>مبلغ الفائدة</Label><Input type="number" value={payInterest} onChange={(e) => setPayInterest(e.target.value)} placeholder="اختياري" dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.payPrincipal')}</Label><Input type="number" value={payPrincipal} onChange={(e) => setPayPrincipal(e.target.value)} placeholder="optional" dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.payInterest')}</Label><Input type="number" value={payInterest} onChange={(e) => setPayInterest(e.target.value)} placeholder="optional" dir="ltr" /></div>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>إلغاء</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handlePayment}>تسجيل</Button>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>{t('portfolio.obligations.cancel')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handlePayment}>{t('portfolio.obligations.record')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2766,18 +2779,18 @@ const ObligationsTab = memo(function ObligationsTab() {
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle>تعديل الالتزام — {editItem?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('portfolio.obligations.editTitle', { name: editItem?.name })}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2"><Label>الاسم</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
+            <div className="space-y-2"><Label>{t('portfolio.forms.name')}</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>المبلغ المتبقي</Label><Input type="number" value={formRemainingAmount} onChange={(e) => setFormRemainingAmount(e.target.value)} dir="ltr" /></div>
-              <div className="space-y-2"><Label>القسط الشهري</Label><Input type="number" value={formMonthlyPayment} onChange={(e) => setFormMonthlyPayment(e.target.value)} dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.remainingAmount')}</Label><Input type="number" value={formRemainingAmount} onChange={(e) => setFormRemainingAmount(e.target.value)} dir="ltr" /></div>
+              <div className="space-y-2"><Label>{t('portfolio.obligations.monthlyPayment')}</Label><Input type="number" value={formMonthlyPayment} onChange={(e) => setFormMonthlyPayment(e.target.value)} dir="ltr" /></div>
             </div>
-            <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} /></div>
+            <div className="space-y-2"><Label>{t('portfolio.forms.notesLabel')}</Label><Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} /></div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>إلغاء</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditSave}>حفظ</Button>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t('common.cancel')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditSave}>{t('portfolio.obligations.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2786,12 +2799,12 @@ const ObligationsTab = memo(function ObligationsTab() {
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="sm:max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="w-5 h-5" /> تأكيد الحذف</DialogTitle>
-            <DialogDescription>هل أنت متأكد من حذف هذا الالتزام؟</DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="w-5 h-5" /> {t('portfolio.obligations.deleteTitle')}</DialogTitle>
+            <DialogDescription>{t('portfolio.obligations.deleteDesc')}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteId(null)}>إلغاء</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>حذف</Button>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>{t('common.cancel')}</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>{t('portfolio.obligations.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2804,6 +2817,7 @@ const ObligationsTab = memo(function ObligationsTab() {
 // refreshes elsewhere don't re-render the reports tab tree.
 const ReportsTab = memo(function ReportsTab() {
   // P37-PHASE-2B-4A: currency-aware totals (EGP/USD/SAR toggle from header).
+  const t = useTranslation();
   const { displayCurrency, usdRate, sarRate } = useAppStore();
   const formatCurrency = (value: number | null | undefined) =>
     formatCurrencyRaw(value, displayCurrency, usdRate, sarRate);
@@ -2820,7 +2834,7 @@ const ReportsTab = memo(function ReportsTab() {
           setReports(data.summary);
         }
       } catch { // silent fallback (safe-by-design)
-        toast.error('فشل في تحميل الحالة المالية');
+        toast.error(t('portfolio.reports.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -2856,34 +2870,34 @@ const ReportsTab = memo(function ReportsTab() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Wallet className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-            نظرة عامة على الحالة المالية
+            {t('portfolio.reports.overview')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-              <p className="text-xs text-muted-foreground mb-1">إجمالي الأصول</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.totalAssets')}</p>
               <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(totalAssets)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">أسهم + ذهب + بنك + شهادات + صناديق</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.totalAssetsHint')}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-              <p className="text-xs text-muted-foreground mb-1">إجمالي الالتزامات</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.totalObligations')}</p>
               <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(totalLiabilities)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">قروض + أقساط + ديون</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.totalObligationsHint')}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20">
-              <p className="text-xs text-muted-foreground mb-1">صافي الثروة</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.netWorth')}</p>
               <p className={cn('text-lg font-bold', netWorth >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(netWorth)}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">الأصول - الالتزامات</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.netWorthHint')}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-              <p className="text-xs text-muted-foreground mb-1">المدخرات الشهرية</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.monthlySavings')}</p>
               <p className={cn('text-lg font-bold', (reports?.monthly_savings ?? 0) >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(reports?.monthly_savings ?? 0)}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">الدخل - المصروفات</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.monthlySavingsHint')}</p>
             </div>
           </div>
         </CardContent>
@@ -2895,36 +2909,36 @@ const ReportsTab = memo(function ReportsTab() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-              عوائد الاستثمارات الشهرية
+              {t('portfolio.reports.monthlyReturns')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {investmentReturns.bank_monthly > 0 && (
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">عائد البنك الشهري</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.bankMonthlyReturn')}</p>
                   <p className="text-base font-bold text-teal-600 dark:text-teal-400">{formatCurrency(investmentReturns.bank_monthly)}</p>
                 </div>
               )}
               {investmentReturns.certificate_monthly > 0 && (
                 <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">عائد الشهادات الشهري</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.certMonthlyReturn')}</p>
                   <p className="text-base font-bold text-purple-600 dark:text-purple-400">{formatCurrency(investmentReturns.certificate_monthly)}</p>
                 </div>
               )}
               {investmentReturns.fund_monthly > 0 && (
                 <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">عائد الصناديق الشهري</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.fundMonthlyReturn')}</p>
                   <p className="text-base font-bold text-orange-600 dark:text-orange-400">{formatCurrency(investmentReturns.fund_monthly)}</p>
                 </div>
               )}
               <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
-                <p className="text-xs text-muted-foreground mb-1">إجمالي العائد الشهري</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.totalMonthlyReturn')}</p>
                 <p className="text-base font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(investmentReturns.total_monthly)}</p>
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-muted-foreground">العائد السنوي المتوقع</span>
+              <span className="text-sm text-muted-foreground">{t('portfolio.reports.expectedAnnualReturn')}</span>
               <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(investmentReturns.total_yearly)}</span>
             </div>
           </CardContent>
@@ -2937,14 +2951,14 @@ const ReportsTab = memo(function ReportsTab() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-              الدخل مقابل المصروفات (الشهر الحالي)
+              {t('portfolio.reports.incomeVsExpenses')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">إجمالي الدخل</span>
+                  <span className="text-muted-foreground">{t('portfolio.reports.totalIncome')}</span>
                   <span className="font-medium text-emerald-500 dark:text-emerald-400">{formatCurrency(reports.monthly_income)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-muted overflow-hidden">
@@ -2952,13 +2966,13 @@ const ReportsTab = memo(function ReportsTab() {
                 </div>
                 {investmentReturns && investmentReturns.total_monthly > 0 && (
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    يشمل {formatCurrency(investmentReturns.total_monthly)} عوائد استثمارات
+                    {t('portfolio.reports.includesReturns', { amount: formatCurrency(investmentReturns.total_monthly) })}
                   </p>
                 )}
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">إجمالي المصروفات</span>
+                  <span className="text-muted-foreground">{t('portfolio.reports.totalExpenses')}</span>
                   <span className="font-medium text-red-600 dark:text-red-400">{formatCurrency(reports.monthly_expenses)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-muted overflow-hidden">
@@ -2967,14 +2981,14 @@ const ReportsTab = memo(function ReportsTab() {
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-muted-foreground">نسبة الادخار</span>
+              <span className="text-sm text-muted-foreground">{t('portfolio.reports.savingsRate')}</span>
               <div className="flex items-center gap-2">
                 <Progress value={Math.min(Math.max(reports.savings_rate ?? 0, 0), 100)} className="h-2 w-24" />
                 <span className="font-bold text-sm">{(reports.savings_rate ?? 0).toFixed(1)}%</span>
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-muted-foreground">صافي الادخار الشهري</span>
+              <span className="text-sm text-muted-foreground">{t('portfolio.reports.netMonthlySavings')}</span>
               <span className={cn('font-bold', (reports.monthly_savings ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(reports.monthly_savings)}
               </span>
@@ -2989,7 +3003,7 @@ const ReportsTab = memo(function ReportsTab() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              تنبيهات وتحليلات مالية
+              {t('portfolio.reports.alertsTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -3021,7 +3035,7 @@ const ReportsTab = memo(function ReportsTab() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Coins className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-              توزيع الأصول
+              {t('portfolio.reports.assetDistribution')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -3029,7 +3043,7 @@ const ReportsTab = memo(function ReportsTab() {
               .sort(([, a], [, b]) => b - a)
               .map(([type, value]) => {
                 const pct = totalAssets > 0 ? (value / totalAssets) * 100 : 0;
-                const label = ASSET_TYPE_LABELS[type as AssetType] || type;
+                const label = t(`portfolio.assetTypes.${type}`) || type;
                 const colorClass = ASSET_TYPE_COLORS[type as AssetType] || 'bg-gray-400';
                 const barColor = type === 'stock' ? 'bg-emerald-400' : type === 'gold' ? 'bg-yellow-400' : type === 'bank' ? 'bg-teal-400' : type === 'certificate' ? 'bg-purple-400' : type === 'fund' ? 'bg-orange-400' : 'bg-teal-400';
                 return (
@@ -3056,14 +3070,14 @@ const ReportsTab = memo(function ReportsTab() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
-              تحليلات خبير اقتصادي
+              {t('portfolio.reports.economistTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Portfolio Health Score */}
             <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-slate-50 dark:from-emerald-900/20 dark:to-slate-800/20">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-sm">تقييم صحة المحفظة</span>
+                <span className="font-medium text-sm">{t('portfolio.reports.portfolioHealth')}</span>
                 <span className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">
                   {Math.min(100, Math.round(
                     (netWorth > 0 ? 25 : 0) +
@@ -3097,9 +3111,9 @@ const ReportsTab = memo(function ReportsTab() {
                       <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
                         <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">تنويع المحفظة</p>
+                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{t('portfolio.reports.diversification')}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            الأسهم تمثل {(stockPercent ?? 0).toFixed(1)}% من محفظتك. يُنصح بتقليل النسبة إلى 30-40% وتوزيع الباقي على شهادات وصناديق استثمار.
+                            {t('portfolio.reports.diversificationMsg', { pct: (stockPercent ?? 0).toFixed(1) })}
                           </p>
                         </div>
                       </div>
@@ -3110,9 +3124,9 @@ const ReportsTab = memo(function ReportsTab() {
                       <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
                         <CheckCircle2 className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-teal-800 dark:text-teal-200">عوائد بنكية ممتازة</p>
+                          <p className="text-sm font-medium text-teal-800 dark:text-teal-200">{t('portfolio.reports.bankReturns')}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            لديك {formatCurrency(investmentReturns.bank_monthly)} دخل شهري من البنك. هذا يوفر استقرار مالي جيد.
+                            {t('portfolio.reports.bankReturnsMsg', { amount: formatCurrency(investmentReturns.bank_monthly) })}
                           </p>
                         </div>
                       </div>
@@ -3123,9 +3137,9 @@ const ReportsTab = memo(function ReportsTab() {
                       <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                         <Info className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">إضافة الذهب</p>
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{t('portfolio.reports.addGold')}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            يُنصح بتخصيص 5-10% من محفظتك للذهب كتحوط ضد التضخم.
+                            {t('portfolio.reports.addGoldMsg')}
                           </p>
                         </div>
                       </div>
@@ -3136,9 +3150,9 @@ const ReportsTab = memo(function ReportsTab() {
                       <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                         <PiggyBank className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-emerald-500 dark:text-emerald-200">صندوق الطوارئ</p>
+                          <p className="text-sm font-medium text-emerald-500 dark:text-emerald-200">{t('portfolio.reports.emergencyFund')}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            ادخار 3-6 أشهر من المصروفات ({formatCurrency((reports?.monthly_expenses || 0) * 3)} - {formatCurrency((reports?.monthly_expenses || 0) * 6)}) في حساب منفصل للطوارئ.
+                            {t('portfolio.reports.emergencyFundMsg', { min: formatCurrency((reports?.monthly_expenses || 0) * 3), max: formatCurrency((reports?.monthly_expenses || 0) * 6) })}
                           </p>
                         </div>
                       </div>
@@ -3152,27 +3166,27 @@ const ReportsTab = memo(function ReportsTab() {
             <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-emerald-50 via-slate-50 to-purple-50 dark:from-emerald-900/20 dark:via-slate-800/20 dark:to-purple-900/20 border">
               <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                 <Coins className="w-4 h-4" />
-                خطة توزيع الأموال المقترحة
+                {t('portfolio.reports.proposedDistribution')}
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
                   <p className="font-bold text-emerald-500">50%</p>
-                  <p className="text-muted-foreground">احتياجات أساسية</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.basicNeeds')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.5)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
                   <p className="font-bold text-teal-600">20%</p>
-                  <p className="text-muted-foreground">ادخار واستثمار</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.savings')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.2)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
                   <p className="font-bold text-purple-600">20%</p>
-                  <p className="text-muted-foreground">تطوير وترفيه</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.development')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.2)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
                   <p className="font-bold text-amber-600">10%</p>
-                  <p className="text-muted-foreground">تبرعات وزكاة</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.charity')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.1)}</p>
                 </div>
               </div>
@@ -3186,8 +3200,8 @@ const ReportsTab = memo(function ReportsTab() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <FileText className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-semibold mb-1">لا توجد بيانات كافية</h3>
-            <p className="text-sm text-muted-foreground">أضف أصول ومعاملات مالية (دخل ومصروفات) لعرض الحالة المالية</p>
+            <h3 className="text-lg font-semibold mb-1">{t('portfolio.reports.noDataTitle')}</h3>
+            <p className="text-sm text-muted-foreground">{t('portfolio.reports.noDataDesc')}</p>
           </CardContent>
         </Card>
       )}
@@ -3206,11 +3220,11 @@ export function EnhancedPortfolioView() {
 
   // TASK 40-B (2026-10-04 — Nav Reorganization + Portfolio Merge):
   // Owner directive: merge `wealth` + `bagholder-rescue` INTO the portfolio
-  // view as sub-tabs so the user has ONE entry point (المحفظة) for everything
+  // view as sub-tabs so the user has ONE entry point (Portfolio) for everything
   // money-related. The 3-way segmented control below switches between:
   //   • portfolio  — the existing 4-tab portfolio experience (assets / income / obligations / reports)
   //   • wealth     — the WealthCharts dashboard (was previously its own top-level tab #wealth)
-  //   • rescue     — BagHolderRescuePanel (was previously in the "More" menu as 🆘 إنقاذ سهم)
+  //   • rescue     — BagHolderRescuePanel (was previously in the "More" menu as 🆘 rescue)
   // Hash links #wealth, #bagholder-rescue, #advanced-portfolio still route
   // through page.tsx's switch (backwards-compat preserved per Rule 67).
   const [portfolioMode, setPortfolioMode] = useState<'portfolio' | 'wealth' | 'rescue'>('portfolio');
@@ -3229,21 +3243,21 @@ export function EnhancedPortfolioView() {
             <div>
               <h1 className="text-xl font-bold">
                 {portfolioMode === 'portfolio' && t('portfolio.title')}
-                {portfolioMode === 'wealth' && 'إدارة الأموال'}
-                {portfolioMode === 'rescue' && '🆘 إنقاذ سهم خسران'}
+                {portfolioMode === 'wealth' && t('portfolio.modes.wealth')}
+                {portfolioMode === 'rescue' && t('portfolio.modes.rescue')}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {portfolioMode === 'portfolio' && t('portfolio.subtitle')}
-                {portfolioMode === 'wealth' && 'الرسوم البيانية لتطور الثروة وتوزيع الأصول'}
-                {portfolioMode === 'rescue' && 'محرك إنقاذ الأسهم المزنوقة — تحليل عميق وخطط خروج'}
+                {portfolioMode === 'wealth' && t('portfolio.modes.wealthHint')}
+                {portfolioMode === 'rescue' && t('portfolio.modes.rescueHint')}
               </p>
             </div>
           </div>
         </div>
 
-        {/* TASK 40-B: 3-way segmented control — المحفظة | الأموال | إنقاذ سهم */}
+        {/* TASK 40-B: 3-way segmented control — Portfolio | Wealth | Rescue stock */}
         {/* Rule 30: emerald/amber/red accent only (no indigo/blue). */}
-        <div className="flex w-full rounded-lg border border-border bg-muted/40 p-1" role="tablist" aria-label="أقسام المحفظة">
+        <div className="flex w-full rounded-lg border border-border bg-muted/40 p-1" role="tablist" aria-label={t('portfolio.modes.segmentsAria')}>
           <button
             type="button"
             role="tab"
@@ -3257,7 +3271,7 @@ export function EnhancedPortfolioView() {
             )}
           >
             <Wallet className="w-4 h-4" />
-            المحفظة
+            {t('portfolio.modes.portfolio')}
           </button>
           <button
             type="button"
@@ -3272,7 +3286,7 @@ export function EnhancedPortfolioView() {
             )}
           >
             <HandCoins className="w-4 h-4" />
-            الأموال
+            {t('portfolio.modes.funds')}
           </button>
           <button
             type="button"
@@ -3287,7 +3301,7 @@ export function EnhancedPortfolioView() {
             )}
           >
             <LifeBuoy className="w-4 h-4" />
-            إنقاذ سهم
+            {t('portfolio.modes.rescueStock')}
           </button>
         </div>
 
@@ -3310,7 +3324,7 @@ export function EnhancedPortfolioView() {
           onSelect={setSelectedPortfolioId}
         />
 
-        {/* Master Portfolio Summary (الإجمالي العام من المحفظة الشاملة) */}
+        {/* Master Portfolio Summary (overall total from the unified portfolio) */}
         <MasterPortfolioSummary userId={userId} />
 
         {selectedPortfolioId !== 'master' && (
