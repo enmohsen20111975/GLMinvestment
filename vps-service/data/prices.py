@@ -187,20 +187,124 @@ def _parse_price(p: Any) -> Optional[float]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Canonical egksco reader (FIX-1: data_engine.db.egksco_price_history)
 # ─────────────────────────────────────────────────────────────────────────────
+# BRAVO-CO-DEPLOYMENT (B1): egksco is tried in BOTH data_engine.db AND
+# stocks.db (some deployments keep the table in stocks.db with column `date`
+# instead of `price_date`). We probe both files transparently so the caller
+# doesn't care which physical DB the canonical source lives in.
+_EGKSCO_DB_CANDIDATES: Tuple[str, ...] = (DATA_ENGINE_DB, STOCKS_DB)
+
+
+def _try_egksco_in_db(db_path: str, ticker: str, limit: int) -> List[Dict[str, Any]]:
+    """Probe one DB file for egksco_price_history and return rows for `ticker`.
+
+    Used internally by load_egksco_history to scan multiple candidate DBs.
+    Returns [] on any failure (file missing, table missing, malformed, etc.).
+    """
+    import sqlite3
+    import os
+
+    if not db_path or not os.path.exists(db_path):
+        return []
+
+    base_ticker = ticker.upper().strip().split(".")[0]
+    base_limit = max(1, min(int(limit), 2000))
+
+    conn = None
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=3)
+        cur = conn.cursor()
+
+        cur.execute("PRAGMA table_info(egksco_price_history)")
+        cols = [r[1] for r in cur.fetchall()]
+        if not cols:
+            return []  # table not in this DB — try next candidate
+
+        # Detect column names (canonical schema uses `price_date` +
+        # `*_price`; legacy egksco_scraper uses `date` + `*_price`).
+        date_col = "price_date" if "price_date" in cols else (
+            "date" if "date" in cols else None
+        )
+        if date_col is None:
+            return []
+
+        open_col = "open_price" if "open_price" in cols else (
+            "open" if "open" in cols else None
+        )
+        high_col = "high_price" if "high_price" in cols else (
+            "high" if "high" in cols else None
+        )
+        low_col = "low_price" if "low_price" in cols else (
+            "low" if "low" in cols else None
+        )
+        close_col = "close_price" if "close_price" in cols else (
+            "close" if "close" in cols else None
+        )
+        vol_col = "volume" if "volume" in cols else None
+
+        if close_col is None:
+            return []
+
+        sym_col = "symbol" if "symbol" in cols else (
+            "ticker" if "ticker" in cols else None
+        )
+        if sym_col is None:
+            return []
+
+        sel = (
+            f"SELECT {date_col}, {open_col}, {high_col}, {low_col}, {close_col}"
+            + (f", {vol_col}" if vol_col else ", NULL")
+            + f" FROM egksco_price_history WHERE {sym_col} = ?"
+            + f" ORDER BY {date_col} DESC LIMIT ?"
+        )
+        cur.execute(sel, (base_ticker, base_limit))
+        rows = cur.fetchall()
+
+        if not rows:
+            return []
+
+        result: List[Dict[str, Any]] = []
+        for row in reversed(rows):
+            d = row[0]
+            o = _parse_price(row[1])
+            h = _parse_price(row[2])
+            l = _parse_price(row[3])
+            c = _parse_price(row[4])
+            v = _parse_volume(row[5]) if len(row) > 5 else 0
+            if c is None or c <= 0:
+                continue  # skip corrupt rows
+            result.append({
+                "date": d,
+                "open": o if o is not None else c,
+                "high": h if h is not None else c,
+                "low": l if l is not None else c,
+                "close": c,
+                "volume": v,
+            })
+        return result
+    except sqlite3.DatabaseError as e:
+        print(f"[data.prices] egksco read error in {db_path}: {e} "
+              f"— trying next source (no placeholder per Rule 24)")
+        return []
+    except Exception as e:
+        print(f"[data.prices] egksco probe error in {db_path}: {e}")
+        return []
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
 def load_egksco_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
-    """Load daily price history from data_engine.db.egksco_price_history.
+    """Load daily price history from egksco_price_history.
 
     THE canonical EGX price source per Rule 46 (DB-CLEANUP-WAVE-3, 2026-09-03)
-    which migrated price_history.db → data_engine.db.egksco_price_history.
-    Reference: engines/backtest_engine.py:1289-1308 (already correct).
+    which migrated price_history.db → egksco_price_history.
 
-    Schema (canonical — per core/migrator.py:488-500 + Rule 46):
-        egksco_price_history(
-            symbol TEXT, price_date TEXT,
-            open_price, high_price, low_price, close_price,
-            volume INTEGER, turnover REAL,
-            UNIQUE(symbol, price_date)
-        )
+    BRAVO-CO-DEPLOYMENT (B1): probes BOTH data_engine.db AND stocks.db
+    transparently — different deployments keep the table in different files.
+    Returns the first non-empty result.
 
     Args:
         ticker: Stock symbol (e.g. "COMI"). Suffixes (.CA, .SR) stripped.
@@ -218,75 +322,164 @@ def load_egksco_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
     Per owner directive + Rule 24:
         "مانستعملش بيانات وهمية خالص تحت اى ظرف" — return empty + log honestly.
     """
-    import sqlite3
-    import os
-
     if not ticker:
         return []
 
-    if not os.path.exists(DATA_ENGINE_DB):
-        # REAL DATA ONLY — no placeholder (per owner directive + Rule 24)
-        print(f"[data.prices] data_engine.db not found — returning empty "
-              f"(no placeholder data per Rule 24)")
-        return []
-
     base_ticker = ticker.upper().strip().split(".")[0]
-    limit = max(1, min(int(limit), 2000))
+    base_limit = max(1, min(int(limit), 2000))
+
+    for db_path in _EGKSCO_DB_CANDIDATES:
+        rows = _try_egksco_in_db(db_path, base_ticker, base_limit)
+        if rows:
+            return rows
+    return []  # all candidates empty — honest empty (Rule 24)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# price_history.db reader — with PRAGMA integrity_check (BRAVO-CO-DEPLOYMENT B1)
+# ─────────────────────────────────────────────────────────────────────────────
+def _price_history_db_is_healthy() -> bool:
+    """Return True iff price_history.db is openable and passes integrity_check.
+
+    BRAVO-CO-DEPLOYMENT (B1): the production price_history.db was found
+    malformed on 2026-10-12 (`PRAGMA integrity_check` returned
+    'database disk image is malformed'). Any caller that silently reads
+    from it gets `sqlite3.DatabaseError` and falls back to placeholder
+    data — which violates Rule 24.
+
+    This helper runs `PRAGMA integrity_check` (read-only, safe on prod)
+    before any SELECT. Result is cached for the process lifetime — the
+    DB doesn't heal itself mid-run.
+    """
+    import sqlite3
+    import os
+
+    global _price_history_db_health_cache
+    if _price_history_db_health_cache is not None:
+        return _price_history_db_health_cache
+
+    if not os.path.exists(PRICE_HISTORY_DB):
+        _price_history_db_health_cache = False
+        return False
 
     conn = None
     try:
-        conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True, timeout=3)
+        conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True, timeout=3)
         cur = conn.cursor()
+        # PRAGMA integrity_check returns 'ok' for healthy DBs, or a multi-line
+        # error message describing the corruption.
+        row = cur.execute("PRAGMA integrity_check(1)").fetchone()
+        healthy = bool(row) and str(row[0]).strip().lower() == "ok"
+        if not healthy:
+            print(f"[data.prices] ⚠️ price_history.db integrity_check FAILED: "
+                  f"{row[0] if row else 'no result'} — using fallback sources")
+        _price_history_db_health_cache = healthy
+        return healthy
+    except sqlite3.DatabaseError as e:
+        print(f"[data.prices] ⚠️ price_history.db integrity_check raised: {e} "
+              f"— using fallback sources")
+        _price_history_db_health_cache = False
+        return False
+    except Exception as e:
+        print(f"[data.prices] ⚠️ price_history.db integrity probe error: {e}")
+        _price_history_db_health_cache = False
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
-        # Detect column name (canonical schema: price_date; legacy egksco_scraper: date)
-        cur.execute("PRAGMA table_info(egksco_price_history)")
+
+_price_history_db_health_cache: Optional[bool] = None
+
+
+def load_price_history_db_rows(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
+    """Read rows from price_history.db (with integrity check).
+
+    Returns [] if the DB is missing, malformed, or has no rows for the ticker.
+    Schema expected: price_history(ticker TEXT, date TEXT, open, high, low,
+    close, volume) — same as backtest_engine.py uses.
+    """
+    import sqlite3
+
+    if not _price_history_db_is_healthy():
+        return []
+
+    base_ticker = ticker.upper().strip().split(".")[0]
+    base_limit = max(1, min(int(limit), 2000))
+
+    conn = None
+    try:
+        conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True, timeout=3)
+        cur = conn.cursor()
+        # Detect schema (some deployments use `price_date`, others `date`)
+        cur.execute("PRAGMA table_info(price_history)")
         cols = [r[1] for r in cur.fetchall()]
         if not cols:
-            print(f"[data.prices] egksco_price_history table not found in "
-                  f"data_engine.db — returning empty (no placeholder per Rule 24)")
             return []
-
-        date_col = "price_date" if "price_date" in cols else "date"
-
-        cur.execute(
-            f"SELECT {date_col}, open_price, high_price, low_price, close_price, volume "
-            f"FROM egksco_price_history "
-            f"WHERE symbol = ? "
-            f"ORDER BY {date_col} DESC LIMIT ?",
-            (base_ticker, limit),
+        date_col = "date" if "date" in cols else (
+            "price_date" if "price_date" in cols else None
         )
+        if date_col is None:
+            return []
+        ticker_col = "ticker" if "ticker" in cols else (
+            "symbol" if "symbol" in cols else None
+        )
+        if ticker_col is None:
+            return []
+        # Pick OHLC column names
+        open_col = "open" if "open" in cols else (
+            "open_price" if "open_price" in cols else None
+        )
+        high_col = "high" if "high" in cols else (
+            "high_price" if "high_price" in cols else None
+        )
+        low_col = "low" if "low" in cols else (
+            "low_price" if "low_price" in cols else None
+        )
+        close_col = "close" if "close" in cols else (
+            "close_price" if "close_price" in cols else None
+        )
+        vol_col = "volume" if "volume" in cols else None
+        if close_col is None:
+            return []
+        sel = (
+            f"SELECT {date_col}, {open_col}, {high_col}, {low_col}, {close_col}"
+            + (f", {vol_col}" if vol_col else ", NULL")
+            + f" FROM price_history WHERE {ticker_col} = ?"
+            + f" ORDER BY {date_col} DESC LIMIT ?"
+        )
+        cur.execute(sel, (base_ticker, base_limit))
         rows = cur.fetchall()
-
         if not rows:
-            return []  # No rows — honest empty (NO placeholder per Rule 24)
-
-        # Convert to list of dicts, OLDEST first
-        # REAL DATA ONLY — no placeholder (per owner directive + Rule 24)
+            return []
         result: List[Dict[str, Any]] = []
         for row in reversed(rows):
-            d, o, h, l, c, v = row
-            close_val = _parse_price(c)
-            if close_val is None or close_val <= 0:
-                continue  # skip corrupt rows
-            open_val = _parse_price(o)
-            high_val = _parse_price(h)
-            low_val = _parse_price(l)
+            d = row[0]
+            o = _parse_price(row[1])
+            h = _parse_price(row[2])
+            l = _parse_price(row[3])
+            c = _parse_price(row[4])
+            v = _parse_volume(row[5]) if len(row) > 5 else 0
+            if c is None or c <= 0:
+                continue
             result.append({
                 "date": d,
-                "open": open_val if open_val is not None else close_val,
-                "high": high_val if high_val is not None else close_val,
-                "low": low_val if low_val is not None else close_val,
-                "close": close_val,
-                "volume": _parse_volume(v),
+                "open": o if o is not None else c,
+                "high": h if h is not None else c,
+                "low": l if l is not None else c,
+                "close": c,
+                "volume": v,
             })
         return result
     except sqlite3.DatabaseError as e:
-        print(f"[data.prices] data_engine.db read error: {e} — returning empty "
-              f"(no placeholder per Rule 24)")
+        print(f"[data.prices] price_history.db read error: {e} "
+              f"— using fallback (no placeholder per Rule 24)")
         return []
     except Exception as e:
-        print(f"[data.prices] load_egksco_history error: {e} — returning empty "
-              f"(no placeholder per Rule 24)")
+        print(f"[data.prices] load_price_history_db_rows error: {e}")
         return []
     finally:
         if conn is not None:
@@ -294,6 +487,228 @@ def load_egksco_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
                 conn.close()
             except Exception:
                 pass
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# stock_daily_prices reader (stocks.db) — BRAVO-CO-DEPLOYMENT (B1)
+# ─────────────────────────────────────────────────────────────────────────────
+def load_stock_daily_prices(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
+    """Read daily candles from stocks.db.stock_daily_prices.
+
+    This table has TWO pairs of OHLC columns: legacy (open/high/low/close)
+    and canonical (open_price/high_price/low_price/close_price). The legacy
+    pair is sometimes populated when the canonical pair is NULL (e.g. for
+    PORT in the 2026-10-12 deployment). We prefer canonical but fall back
+    to legacy per-column to maximise coverage without fabrication.
+
+    Schema (stocks.db):
+        stock_daily_prices(
+            id, ticker, price_date,
+            open, high, low, close,           -- legacy OHLC
+            volume, change_percent, fetch_time,
+            open_price, high_price, low_price, close_price,  -- canonical OHLC
+            turnover, market
+        )
+
+    Returns candles oldest-first. Honest empty list when no real rows.
+    """
+    import sqlite3
+    import os
+
+    if not ticker or not os.path.exists(STOCKS_DB):
+        return []
+
+    base_ticker = ticker.upper().strip().split(".")[0]
+    base_limit = max(1, min(int(limit), 2000))
+
+    conn = None
+    try:
+        conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True, timeout=3)
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(stock_daily_prices)")
+        cols = [r[1] for r in cur.fetchall()]
+        if not cols:
+            return []
+
+        date_col = "price_date" if "price_date" in cols else "date"
+        # Per-column preference: canonical first, legacy second
+        open_col = "open_price" if "open_price" in cols else (
+            "open" if "open" in cols else None
+        )
+        high_col = "high_price" if "high_price" in cols else (
+            "high" if "high" in cols else None
+        )
+        low_col = "low_price" if "low_price" in cols else (
+            "low" if "low" in cols else None
+        )
+        # For close we need a robust pick — try canonical; on NULL rows we'll
+        # also try legacy in Python (per-row) below.
+        close_canon = "close_price" if "close_price" in cols else None
+        close_legacy = "close" if "close" in cols else None
+        vol_col = "volume" if "volume" in cols else None
+        turn_col = "turnover" if "turnover" in cols else None
+
+        # Build SELECT with COALESCE(canonical, legacy) for resilience
+        def _col_expr(canon: Optional[str], legacy: Optional[str]) -> str:
+            if canon and legacy:
+                return f"COALESCE({canon}, {legacy})"
+            return canon or legacy or "NULL"
+
+        ohlc = ", ".join([
+            _col_expr(open_col, None),
+            _col_expr(high_col, None),
+            _col_expr(low_col, None),
+            _col_expr(close_canon, close_legacy),
+        ])
+        vol_expr = vol_col if vol_col else "NULL"
+        turn_expr = turn_col if turn_col else "NULL"
+
+        sel = (
+            f"SELECT {date_col}, {ohlc}, {vol_expr}, {turn_expr} "
+            f"FROM stock_daily_prices WHERE ticker = ? "
+            f"ORDER BY {date_col} DESC LIMIT ?"
+        )
+        cur.execute(sel, (base_ticker, base_limit))
+        rows = cur.fetchall()
+        if not rows:
+            return []
+
+        result: List[Dict[str, Any]] = []
+        for row in reversed(rows):
+            d = row[0]
+            o = _parse_price(row[1])
+            h = _parse_price(row[2])
+            l = _parse_price(row[3])
+            c = _parse_price(row[4])
+            v = _parse_volume(row[5]) if len(row) > 5 else 0
+            turn = _parse_price(row[6]) if len(row) > 6 else None
+            if c is None or c <= 0:
+                continue  # skip corrupt / NULL rows
+            result.append({
+                "date": d,
+                "open": o if o is not None else c,
+                "high": h if h is not None else c,
+                "low": l if l is not None else c,
+                "close": c,
+                "volume": v,
+                "turnover": float(turn) if turn else None,
+            })
+        return result
+    except sqlite3.DatabaseError as e:
+        print(f"[data.prices] stock_daily_prices read error: {e}")
+        return []
+    except Exception as e:
+        print(f"[data.prices] load_stock_daily_prices error: {e}")
+        return []
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def load_stocks_table_snapshot(ticker: str) -> Optional[Dict[str, Any]]:
+    """Read the current snapshot row from stocks.db.stocks (single-row fallback).
+
+    BRAVO-CO-DEPLOYMENT (B1): when stock_daily_prices has very few rows
+    (e.g. PORT had 37 rows but all stamped with the same current_price —
+    effectively 1 candle), we read the `stocks` table snapshot to obtain
+    at least one honest candle with the latest open/high/low/close.
+
+    Returns None if no row found. The returned dict has the standard
+    {date, open, high, low, close, volume} shape plus a `_source` marker.
+    """
+    import sqlite3
+    import os
+
+    if not ticker or not os.path.exists(STOCKS_DB):
+        return None
+
+    base_ticker = ticker.upper().strip().split(".")[0]
+
+    conn = None
+    try:
+        conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True, timeout=3)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        row = cur.execute(
+            "SELECT ticker, current_price, previous_close, open_price, "
+            "high_price, low_price, close, volume, turnover_egp, "
+            "last_updated, updated_at, last_update "
+            "FROM stocks WHERE ticker = ? LIMIT 1",
+            (base_ticker,),
+        ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        cp = _parse_price(d.get("current_price"))
+        if cp is None or cp <= 0:
+            # Try `close` column as a fallback
+            cp = _parse_price(d.get("close"))
+            if cp is None or cp <= 0:
+                return None
+        op = _parse_price(d.get("open_price")) or cp
+        hp = _parse_price(d.get("high_price")) or cp
+        lp = _parse_price(d.get("low_price")) or cp
+        vol = _parse_volume(d.get("volume")) or 0
+        # Use last_updated (ISO datetime) → strip to date
+        date_str = ""
+        for k in ("last_updated", "updated_at", "last_update"):
+            v = d.get(k)
+            if v:
+                date_str = str(v)[:10]
+                break
+        if not date_str:
+            date_str = datetime.now().strftime("%Y-%m-%d")
+        return {
+            "date": date_str,
+            "open": op,
+            "high": hp,
+            "low": lp,
+            "close": cp,
+            "volume": vol,
+            "turnover": _parse_price(d.get("turnover_egp")),
+            "_source": "stocks_snapshot",
+        }
+    except sqlite3.DatabaseError as e:
+        print(f"[data.prices] stocks snapshot read error: {e}")
+        return None
+    except Exception as e:
+        print(f"[data.prices] load_stocks_table_snapshot error: {e}")
+        return None
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _merge_candle_lists(*sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Merge multiple candle lists, deduping by date (most recent sources win).
+
+    Each source is a list of {date, open, high, low, close, volume} dicts.
+    Sources listed first take precedence (canonical > fallback). Returns a
+    single list sorted oldest-first with unique dates.
+    """
+    by_date: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+    for src in sources:
+        if not src:
+            continue
+        for candle in src:
+            d = candle.get("date")
+            if not d:
+                continue
+            # Normalize date to YYYY-MM-DD
+            d_str = str(d)[:10]
+            if d_str not in by_date:
+                # Don't mutate the original dict
+                merged = dict(candle)
+                merged["date"] = d_str
+                by_date[d_str] = merged
+            # If date already present, keep the first (higher-priority source)
+    return list(by_date.values())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -337,6 +752,21 @@ def _canonical_load(ticker: str, limit: int) -> List[Dict]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
+# BRAVO-CO-DEPLOYMENT (B1) — Multi-source merge strategy:
+# 1) egksco_price_history (PRIMARY — Rule 46) — probed in BOTH data_engine.db
+#    and stocks.db transparently.
+# 2) price_history.db — used only if `PRAGMA integrity_check` passes. Malformed
+#    DB is logged once + skipped (no placeholder data, per Rule 24).
+# 3) stock_daily_prices in stocks.db — legacy OHLC + canonical OHLC columns
+#    via COALESCE for resilience.
+# 4) stocks table snapshot (1 row) — appended only if total < 30 candles so
+#    the caller sees at least the latest honest price; warning is logged.
+# All sources are merged by date (egksco wins on conflicts). If after merging
+# the caller asked for limit=90 and got <30 candles, we still return what we
+# have — NO fabrication (Rule 27).
+_MIN_CANDLES_BEFORE_SNAPSHOT_FALLBACK = 30
+
+
 def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
     """Load daily price history for a ticker — THE single source of truth.
 
@@ -354,13 +784,16 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
         Results are cached per (ticker, limit) for 5 minutes. Same ticker in
         the same analysis run = 1 DB hit. Call clear_cache() to reset.
 
-    Source priority (FIX-1 — egksco is now PRIMARY per Rule 46):
-        1. data_engine.db.egksco_price_history (PRIMARY — 162K+ rows, fresh)
-           → via load_egksco_history()
-        2. master_analyzer.load_merged_history (tries price_history.db,
-           then data_engine.db via Step-3 fallback, then stock_daily_prices)
-           → via _canonical_load()
-        3. EMPTY list [] (per owner directive: NO placeholder data — Rule 24)
+    BRAVO-CO-DEPLOYMENT (B1) — Source priority + merge strategy:
+        1. egksco_price_history (PRIMARY — Rule 46) — probed in both
+           data_engine.db AND stocks.db transparently.
+        2. price_history.db — used only after `PRAGMA integrity_check` passes.
+           Malformed DB is logged + skipped (no placeholder, Rule 24).
+        3. stock_daily_prices (stocks.db) — canonical OHLC via COALESCE with
+           legacy OHLC columns.
+        4. stocks table snapshot (1 row) — appended ONLY if total < 30
+           candles so the caller sees at least the latest honest price.
+        5. EMPTY list [] is the last resort — NO placeholder data (Rule 24/27).
     """
     if not ticker:
         return []
@@ -390,35 +823,77 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
     if cached is not None:
         return cached
 
-    # ── FIX-1 (Step 2): egksco is now PRIMARY source per Rule 46 ──
-    # REAL DATA ONLY — no placeholder (per owner directive + Rule 24).
-    # 1) PRIMARY: data_engine.db.egksco_price_history (162K+ rows, fresh)
+    # ── 1) PRIMARY: egksco_price_history (probes both data_engine.db + stocks.db) ──
     egksco_data = load_egksco_history(ticker_norm, limit)
 
-    # 2) FALLBACK: master_analyzer.load_merged_history (tries price_history.db +
-    #    data_engine.db.egksco_price_history via Step-3 fallback + stock_daily_prices)
-    if not egksco_data:
-        canonical_data = _canonical_load(ticker_norm, limit)
-        if not canonical_data and ticker_norm != raw_norm:
-            canonical_data = _canonical_load(raw_norm, limit)
-    else:
-        canonical_data = []
+    # ── 2) price_history.db (with PRAGMA integrity_check) ──
+    #     Skip silently if malformed — we already logged the integrity failure.
+    ph_data = load_price_history_db_rows(ticker_norm, limit) if not egksco_data else []
+    # Even if egksco has data, we still want to fill gaps from price_history.db
+    # (some tickers have sparse egksco rows + full price_history rows). But
+    # only attempt this if integrity check passed AND egksco returned < limit.
+    if egksco_data and len(egksco_data) < limit:
+        extra_ph = load_price_history_db_rows(ticker_norm, limit)
+        # Merge: egksco takes precedence; ph fills in dates egksco is missing.
+        if extra_ph:
+            ph_data = extra_ph
 
-    # 3) Log which source was used (per owner directive: be honest about data source)
+    # ── 3) stock_daily_prices (stocks.db) — fallback + gap-filler ──
+    #     Used when egksco AND price_history.db are both empty/sparse.
+    need_sdp_fallback = (
+        (not egksco_data and not ph_data)
+        or (len(egksco_data) + len(ph_data) < limit)
+    )
+    sdp_data = load_stock_daily_prices(ticker_norm, limit) if need_sdp_fallback else []
+    # Also try the raw_norm ticker variant (alias lookups sometimes fail)
+    if not sdp_data and ticker_norm != raw_norm:
+        sdp_data = load_stock_daily_prices(raw_norm, limit)
+
+    # ── 4) Merge sources (egksco > price_history.db > stock_daily_prices) ──
+    merged = _merge_candle_lists(egksco_data, ph_data, sdp_data)
+
+    # ── 5) Last-resort: stocks table snapshot (single candle) ──
+    #     If after all sources we have < 30 unique candles, append the
+    #     latest snapshot row so the caller sees at least one honest candle.
+    snapshot_used = False
+    if len(merged) < _MIN_CANDLES_BEFORE_SNAPSHOT_FALLBACK:
+        snapshot = load_stocks_table_snapshot(ticker_norm)
+        if snapshot is None and ticker_norm != raw_norm:
+            snapshot = load_stocks_table_snapshot(raw_norm)
+        if snapshot is not None:
+            # Merge — but only if the snapshot's date is not already present.
+            existing_dates = {c["date"] for c in merged}
+            if snapshot["date"] not in existing_dates:
+                merged.append(snapshot)
+                snapshot_used = True
+            print(
+                f"[data.prices] ⚠️ {ticker_norm}: only {len(merged)} unique "
+                f"candle(s) across all sources — appended stocks-table snapshot "
+                f"(current_price={snapshot.get('close')}, date={snapshot.get('date')}). "
+                f"Rule 27: NO fabrication — returning honest data only. "
+                f"Run the egksco scraper to backfill history.",
+            )
+
+    # ── 6) Honest logging ──
     n_egksco = len(egksco_data)
-    n_canonical = len(canonical_data)
+    n_ph = len(ph_data)
+    n_sdp = len(sdp_data)
+    n_total = len(merged)
     if n_egksco > 0:
-        print(f"[data.prices] {ticker_norm}: egksco={n_egksco} rows | "
-              f"stock_daily_prices=0 rows (egksco PRIMARY — Rule 46)")
-    elif n_canonical > 0:
-        print(f"[data.prices] {ticker_norm}: egksco=0 rows | "
-              f"stock_daily_prices(fallback)={n_canonical} rows")
+        print(f"[data.prices] {ticker_norm}: egksco={n_egksco} | "
+              f"price_history.db={n_ph} | stock_daily_prices={n_sdp} | "
+              f"merged={n_total} (egksco PRIMARY — Rule 46)")
+    elif n_total > 0:
+        print(f"[data.prices] {ticker_norm}: egksco=0 | "
+              f"price_history.db={n_ph} | stock_daily_prices={n_sdp} | "
+              f"merged={n_total}"
+              + (" (+ stocks snapshot)" if snapshot_used else ""))
     else:
-        print(f"[data.prices] {ticker_norm}: egksco=0 rows | "
-              f"stock_daily_prices=0 rows — NO DATA (empty per Rule 24)")
+        print(f"[data.prices] {ticker_norm}: egksco=0 | price_history.db=0 | "
+              f"stock_daily_prices=0 | merged=0 — NO DATA (empty per Rule 24)")
 
     # Pick the source — egksco first (PRIMARY), fallback to canonical
-    data = egksco_data if egksco_data else canonical_data
+    data = merged
 
     # Ensure consistent key names (canonical returns date/open/high/low/close/volume)
     # but be defensive: some callers expect close_price/high_price. We standardize here.
@@ -440,6 +915,9 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
                 "volume": int(v) if v else 0,
                 "change_percent": 0.0,  # computed in post-processing below
             })
+
+    # Sort by date ascending (oldest first) — merge may not preserve order
+    normalized.sort(key=lambda x: x["date"] or "")
 
     # Compute change_percent for each candle (oldest first)
     # FIXED: moved OUTSIDE the row loop (was O(N²) + recomputed each iteration)
@@ -489,30 +967,73 @@ def get_tickers_with_history(min_bars: int = 10) -> List[str]:
 
     For analysis batch jobs that need to skip illiquid stocks.
     Reads directly from price_history.db (not cached — too large).
+
+    BRAVO-CO-DEPLOYMENT (B1): honours `PRAGMA integrity_check` on
+    price_history.db — if the DB is malformed, we skip silently and fall
+    back to stock_daily_prices in stocks.db.
     """
     import sqlite3
     tickers: List[str] = []
-    try:
-        conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
-        rows = conn.execute(
-            "SELECT ticker FROM price_history "
-            "GROUP BY ticker HAVING COUNT(*) >= ? "
-            "ORDER BY ticker",
-            (min_bars,),
-        ).fetchall()
-        tickers = [r[0] for r in rows]
-        conn.close()
-    except sqlite3.DatabaseError:
-        # price_history.db missing/empty — fall back to stocks.db
+
+    # 1) price_history.db — only if integrity_check passes
+    if _price_history_db_is_healthy():
+        try:
+            conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+            # Detect ticker column name
+            cur = conn.cursor()
+            cur.execute("PRAGMA table_info(price_history)")
+            cols = [r[1] for r in cur.fetchall()]
+            tkr_col = "ticker" if "ticker" in cols else (
+                "symbol" if "symbol" in cols else None
+            )
+            if tkr_col:
+                rows = conn.execute(
+                    f"SELECT {tkr_col} FROM price_history "
+                    f"GROUP BY {tkr_col} HAVING COUNT(*) >= ? "
+                    f"ORDER BY {tkr_col}",
+                    (min_bars,),
+                ).fetchall()
+                tickers = [r[0] for r in rows]
+            conn.close()
+        except sqlite3.DatabaseError:
+            tickers = []
+
+    # 2) Fallback: stocks.db.stock_daily_prices (and egksco if present)
+    if not tickers:
         try:
             conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
-            rows = conn.execute(
-                "SELECT ticker FROM stock_daily_prices "
-                "GROUP BY ticker HAVING COUNT(*) >= ? "
-                "ORDER BY ticker",
-                (min_bars,),
-            ).fetchall()
-            tickers = [r[0] for r in rows]
+            # stock_daily_prices uses `ticker`
+            try:
+                rows = conn.execute(
+                    "SELECT ticker FROM stock_daily_prices "
+                    "GROUP BY ticker HAVING COUNT(*) >= ? "
+                    "ORDER BY ticker",
+                    (min_bars,),
+                ).fetchall()
+                tickers = [r[0] for r in rows]
+            except sqlite3.DatabaseError:
+                pass
+            # Also include egksco_price_history tickers if present
+            try:
+                cur = conn.cursor()
+                cur.execute("PRAGMA table_info(egksco_price_history)")
+                cols = [r[1] for r in cur.fetchall()]
+                sym_col = "symbol" if "symbol" in cols else (
+                    "ticker" if "ticker" in cols else None
+                )
+                if sym_col:
+                    rows = conn.execute(
+                        f"SELECT {sym_col} FROM egksco_price_history "
+                        f"GROUP BY {sym_col} HAVING COUNT(*) >= ? "
+                        f"ORDER BY {sym_col}",
+                        (min_bars,),
+                    ).fetchall()
+                    extra = {r[0] for r in rows}
+                    merged = list(set(tickers) | extra)
+                    merged.sort()
+                    tickers = merged
+            except sqlite3.DatabaseError:
+                pass
             conn.close()
         except sqlite3.DatabaseError:
             pass
@@ -579,6 +1100,9 @@ __all__ = [
     "load_egksco_history",
     "load_closes",
     "load_price_history_until",
+    "load_price_history_db_rows",
+    "load_stock_daily_prices",
+    "load_stocks_table_snapshot",
     "get_latest_price",
     "get_tickers_with_history",
     "filter_tickers_by_history_depth",
