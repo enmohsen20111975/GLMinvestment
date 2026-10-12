@@ -77845,7 +77845,9 @@ Stage Summary:
 - Whale blocks (notional > 100K EGP): **75 rows** (9.26% ≈ 10% target) — exactly 5 / ticker, uniformly distributed across all price levels.
 
 ### Commit
-`feat(intraday-seeder): synthetic session seeder for dev UI activation (Rule 27 disclaimer)`
+- Hash: **167fee48**
+- Message: `feat(intraday-seeder): synthetic session seeder for dev UI activation (Rule 27 disclaimer)`
+- Files: `scripts/seed_live_intraday_session.py` (new, 559 LOC) + `worklog.md` (appended)
 
 ### Stage Summary
 - `scripts/seed_live_intraday_session.py` created (idempotent, deterministic, --date/--execute options, auto-backup, Rule 27 disclaimer).
