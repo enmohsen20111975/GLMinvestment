@@ -196,37 +196,17 @@ export function BacktestTab() {
   const runBacktest = async () => {
     setRunning(true);
     setJobStatus('running');
-<<<<<<< HEAD
-    try {
-      const res = await fetch('/api/admin/backtest/v40/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          startDate,
-          endDate,
-          market,
-          strategy,
-          persona,
-          maxPicks,
-        }),
-      });
-      const json = await res.json();
-      if (json.success && json.jobId) {
-        setJobId(json.jobId);
-        toast.success(json.message || 'تم إطلاق الباك-تست المؤسسي الآمن في الخلفية.');
-      } else {
-        toast.error(json.error || 'فشل تشغيل الباك-تست');
-=======
     setLogTail([]);
     setProgress(0);
     try {
-      // GLM5.2-A: call the run API. Note: this endpoint was disabled (410 Gone)
-      // because it did DELETE FROM predictions. We still call it — if the
-      // backend re-enables it (on a sandbox DB), the polling will pick up.
       const body: Record<string, unknown> = {
         start_date: startDate,
         end_date: endDate,
         max_picks: maxPicks,
+        startDate,
+        endDate,
+        strategy,
+        persona,
       };
       if (market !== 'ALL') body.market = market;
       const res = await fetch('/api/admin/backtest/v40/run', {
@@ -235,35 +215,17 @@ export function BacktestTab() {
         body: JSON.stringify(body),
       });
       const json = await res.json();
-      if (res.status === 410 || json.deprecated) {
-        // Endpoint disabled — show honest message (Rule 27: no fake job).
-        toast.error(json.error_ar || json.error || 'الـ endpoint معطل. شغّل على sandbox DB copy.');
-        setLogTail([
-          `[410 Gone] ${json.error_ar || json.error || 'endpoint deprecated'}`,
-          `[reason] ${json.reason || 'was doing DELETE FROM predictions'}`,
-          `[canonical] ${json.canonical_command || 'python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5'}`,
-          '',
-          'شغّل الباك تست على sandbox DB copy (مش production) ثم تابع اللوج هنا.',
-        ]);
-        setRunning(false);
-        setJobStatus('idle');
-        return;
-      }
-      if (json.success && json.job_id) {
-        setJobId(json.job_id);
-        toast.success(`الباك تست بدأ (job ${json.job_id.slice(0, 8)})`);
+      const returnedJobId = json.jobId || json.job_id;
+      if (json.success && returnedJobId) {
+        setJobId(returnedJobId);
+        toast.success(json.message || `الباك تست بدأ (job ${returnedJobId.slice(0, 8)})`);
       } else {
-        toast.error(json.error || 'فشل تشغيل الباك تست');
->>>>>>> 4dbad695 (feat(admin+portfolio): Log Terminal Viewer + Commission Settings)
+        toast.error(json.error || 'فشل تشغيل الباك-تست');
         setRunning(false);
         setJobStatus('idle');
       }
     } catch (e) {
-<<<<<<< HEAD
       toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال بالخادم');
-=======
-      toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال');
->>>>>>> 4dbad695 (feat(admin+portfolio): Log Terminal Viewer + Commission Settings)
       setRunning(false);
       setJobStatus('idle');
     }

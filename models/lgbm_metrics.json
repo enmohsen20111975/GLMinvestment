@@ -1,0 +1,57 @@
+{
+  "baseline_win_rate_pct": 18.09,
+  "total_test_samples": 619,
+  "threshold_evaluations": [
+    {
+      "threshold": 0.4,
+      "accepted_signals": 162,
+      "wins": 84,
+      "win_rate_pct": 51.85,
+      "improvement_pp": 33.76
+    },
+    {
+      "threshold": 0.5,
+      "accepted_signals": 110,
+      "wins": 73,
+      "win_rate_pct": 66.36,
+      "improvement_pp": 48.27
+    },
+    {
+      "threshold": 0.55,
+      "accepted_signals": 87,
+      "wins": 64,
+      "win_rate_pct": 73.56,
+      "improvement_pp": 55.47
+    },
+    {
+      "threshold": 0.6,
+      "accepted_signals": 75,
+      "wins": 58,
+      "win_rate_pct": 77.33,
+      "improvement_pp": 59.24
+    },
+    {
+      "threshold": 0.65,
+      "accepted_signals": 57,
+      "wins": 45,
+      "win_rate_pct": 78.95,
+      "improvement_pp": 60.85
+    },
+    {
+      "threshold": 0.7,
+      "accepted_signals": 43,
+      "wins": 37,
+      "win_rate_pct": 86.05,
+      "improvement_pp": 67.95
+    }
+  ],
+  "feature_importances": {
+    "price_to_sma20": 263,
+    "bollinger_bandwidth": 247,
+    "high_low_spread_pct": 231,
+    "rvol_20d": 208,
+    "price_to_sma50": 184,
+    "avg_turnover_20d_log": 166,
+    "rsi_14": 157
+  }
+}

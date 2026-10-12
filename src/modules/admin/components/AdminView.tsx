@@ -132,6 +132,7 @@ import { SystemHealthCard } from './SystemHealthCard';
 // Task 31-B (Engine Monitor Battalion) — unified engine control room.
 import { EngineControlRoomTab } from './EngineControlRoomTab';
 import { InstapayAdminTab } from './InstapayAdminTab';
+import { AIGatekeeperTab } from './AIGatekeeperTab';
 
 // ============================================================================
 // Phase 3 — Next.js Bundle Diet (Lazy Loading Heavy Components)
@@ -426,7 +427,8 @@ type AdminTab =
   // Task 28-B (Fix 7) — Fix Battalion: Telegram published predictions audit.
   | 'telegram-predictions'
   // Task 31-B (Engine Monitor Battalion) — unified engine control room.
-  | 'engine-control-room';
+  | 'engine-control-room'
+  | 'ai-gatekeeper';
 
 // Stream C: 6 Core Admin Hubs — consolidates the flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -1036,6 +1038,7 @@ export function AdminView() {
         { id: 'engine-settings', label: 'إعدادات المحرك', icon: <Settings className="w-3.5 h-3.5" />, desc: 'أوزان + بارامترات' },
         { id: 'learning', label: 'التعلم الذكي', icon: <Brain className="w-3.5 h-3.5" />, desc: 'تعلّم + توقعات' },
         { id: 'backtest', label: 'الباك تست', icon: <Activity className="w-3.5 h-3.5" />, desc: 'اختبار الاستراتيجيات' },
+        { id: 'ai-gatekeeper', label: '🤖 حارس الذكاء الاصطناعي', icon: <Brain className="w-3.5 h-3.5" />, desc: 'مراقبة وتحكم LightGBM' },
         // Task ADMIN-CLEANUP: أخفينا 'engine-control-room' (🎮 حشو) + 'general' (مكرر) + 'platform-performance' (عرضي)
       ],
     },
@@ -1698,6 +1701,11 @@ export function AdminView() {
       {/* ==================== BACKTEST TAB (V40.2 Engine) ==================== */}
       {activeTab === 'backtest' && (
         <BacktestTab />
+      )}
+
+      {/* ==================== AI GATEKEEPER TAB (LightGBM ML Engine) ==================== */}
+      {activeTab === 'ai-gatekeeper' && (
+        <AIGatekeeperTab />
       )}
 
       {/* ==================== PLATFORM PERFORMANCE TAB (Admin Only) ==================== */}

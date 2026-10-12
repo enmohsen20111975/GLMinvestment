@@ -1,0 +1,7 @@
+{
+  "min_confidence_threshold": 0.65,
+  "gatekeeper_enforced": true,
+  "high_conviction_threshold": 0.70,
+  "last_updated": "2026-10-12T19:53:00Z",
+  "model_version": "LightGBM-Gatekeeper-v1.0"
+}
