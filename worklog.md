@@ -78740,6 +78740,7 @@ Stage Summary:
 - الشرطات (—) اتمسحت من P/E و EPS — بقت "غير منطبق (خسائر مرحلية)"
 - P/B highlighted كبديل تقييمي رسمي
 - 0 أخطاء TypeScript جديدة
+
 ---
 Task ID: DOC-UNIFY-3-LOGIC-STATE (file 1 of 2: 03-HOW_IT_THINKS.md)
 Agent: وكيل توحيد توثيقات — DOCUMENTATION-SECRETARY per Rule 70
@@ -79116,3 +79117,64 @@ Stage Summary:
 - ✅ Rule 75 (GIT DISCIPLINE) محترمة — commit + push.
 - 📊 الأرقام النهائية: 5 canonical + README + MASTER_STRATEGIC_PLAN = 7 ملفات markdown في Documentation/ + 29 مؤرشف.
 - 🔗 Push: 5cdb7e7 + 0afc2dc على origin/main.
+
+
+---
+Task ID: P0-ALPHA-LIQUIDITY-TIERS-UI
+Agent: الفريق المسؤول الأول (GLM5.2-A)
+Task: فلاتر نطاق السيولة وشارات الجودة بالواجهة
+
+## ملخص التنفيذ
+
+### 1. شارات جودة السيولة في جدول الرادار — ✅
+أضفت `getLiquidityTier()` helper + badge بجوار اسم كل سهم:
+- 💎 **مؤسسي عالي السيولة**: turnover ≥ 5M EGP (emerald)
+- 🔷 **نشط متوسط السيولة**: 2M-5M EGP (primary)
+- ⚠️ **منخفض السيولة / خطر**: < 2M EGP (amber) + tooltip "انزلاق سعري ومخاطرة تسييل"
+
+الـ badge بـ يستخدم `avg_turnover_20d` (fallback لـ current_price × avg_volume_20d).
+
+### 2. أزرار فلترة فورية — ✅
+3 أزرار بعد أزرار Wyckoff:
+- **💎 مؤسسي فقط (≥2M)**: يفلتر لـ turnover ≥ 2,000,000 EGP
+- **EGX30**: يفلتر لـ is_egx30=1
+- **EGX70**: يفلتر لـ is_egx70=1
+
+الـ filter logic مُطبّق على كل 4 radar lists (pre_surge, quiet, explosive, early_break).
+
+### 3. تحديث ProofSection — ✅
+أضفت قسمين جداد بعد الـ Signal distribution:
+
+**أ. الأسهم الذهبية (Top Performers)**:
+- قائمة بـ top 8 performers من الـ API
+- كل سهم: ticker + signals count + win rate bar + avg return
+- amber gradient background
+
+**ب. مقارنة صادقة: المؤسسية vs السوق**:
+- **السوق بدون فلترة**: 46.80% win rate (muted)
+- **💎 المؤسسية المؤهلة**: 100% avg (top performers) (emerald)
+- توضيح: "المؤسسية = turnover ≥ 2M EGP — أقل انزلاق سعري وأعلى انضباط"
+
+## التحقق
+- `npx tsc --noEmit`: 0 أخطاء جديدة (1 pre-existing في TradingPlanSection L4106) ✅
+- dev server: HTTP 200 على :3000 ✅
+- API: overall_win_rate=46.8%, top_performers=15 (avg WR=100%) ✅
+- pre-commit hook: PASS ✅
+- Rule 27: كل البيانات من الـ API، مفيش اختلاق ✅
+- design tokens فقط (emerald + amber + primary + muted) ✅
+
+## التغييرات
+- `RadarStock` interface: أضفت is_egx30, is_egx70, is_egx100, liquidity_state, turnover_egp (optional)
+- `getLiquidityTier()` helper + `formatMillion()` helper
+- badge في عمود ticker (💎/🔷/⚠️)
+- 3 filter buttons (institutional + EGX30 + EGX70)
+- `applyLiquidityAndIndexFilters()` function مُطبّقة على 4 radar lists
+- `top_performers` field في ProofSection type
+- Top Performers card + Institutional vs Market comparison card
+
+Stage Summary:
+- شارات السيولة (💎/🔷/⚠️) بجوار كل سهم في الجدول
+- 3 أزرار فلترة فورية (مؤسسي + EGX30 + EGX70)
+- ProofSection: الأسهم الذهبية + مقارنة صادقة (46.8% vs 100%)
+- 0 أخطاء TypeScript جديدة
+

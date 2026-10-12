@@ -178,6 +178,13 @@ interface RadarStock {
   live_last_update?: string | null;      // ISO timestamp آخر تحديث لـ stocks
   price_source?: 'live' | 'daily' | null; // مصدر current_price
   data_date?: string | null;             // التاريخ الفعلي للسعر المعروض
+  // GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI): index membership + live liquidity.
+  // Optional — backend may omit them; the filters fall back gracefully.
+  is_egx30?: number | boolean | null;
+  is_egx70?: number | boolean | null;
+  is_egx100?: number | boolean | null;
+  liquidity_state?: string | null;
+  turnover_egp?: number | null;
 }
 
 interface MakerRadarResponse {
@@ -896,6 +903,12 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [wyckoffFilter, setWyckoffFilter] = useState<WyckoffPhase | null>(null);
   const [wyckoffData, setWyckoffData] = useState<Record<string, WyckoffStockEntry> | null>(null);
   const [wyckoffError, setWyckoffError] = useState<boolean>(false);
+  // ─── GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI) — liquidity tier filter ────
+  // null = show all tiers. 'institutional' = only ≥ 2M EGP turnover (the
+  // quick-filter button the manager asked for — isolates quality stocks).
+  const [liquidityTierFilter, setLiquidityTierFilter] = useState<'institutional' | null>(null);
+  // EGX30 / EGX70 index filter (the manager's second quick-filter button).
+  const [indexFilter, setIndexFilter] = useState<'EGX30' | 'EGX70' | null>(null);
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('7d');
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
 
@@ -1389,41 +1402,64 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
     return new Set(Object.keys(wyckoffData));
   }, [wyckoffFilter, wyckoffData]);
 
+  // GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI): apply liquidity + index filters
+  // to every radar list. Both filters use fields already on RadarStock.
+  // Rule 67: avg_turnover_20d + is_egx30/is_egx70 are backend-computed SSOT.
+  function applyLiquidityAndIndexFilters(list: RadarStock[]): RadarStock[] {
+    let filtered = list;
+    if (liquidityTierFilter === 'institutional') {
+      filtered = filtered.filter((s) => {
+        const t = s.avg_turnover_20d ?? (s.current_price && s.avg_volume_20d ? s.current_price * s.avg_volume_20d : 0);
+        return Number(t) >= 2_000_000;
+      });
+    }
+    if (indexFilter === 'EGX30') {
+      filtered = filtered.filter((s) => s.is_egx30 === 1 || s.is_egx30 === true);
+    } else if (indexFilter === 'EGX70') {
+      filtered = filtered.filter((s) => s.is_egx70 === 1 || s.is_egx70 === true);
+    }
+    return filtered;
+  }
+
   const filteredPreSurge = useMemo(() => {
     let list = (data?.pre_surge_list || []).filter(s => dedupSet.allow(s, 'pre_surge'));
     if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
+    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'pre_surge') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
 
   const filteredQuiet = useMemo(() => {
     let list = (data?.quiet_list || []).filter(s => dedupSet.allow(s, 'quiet'));
     if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
+    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'quiet') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
 
   const filteredExplosive = useMemo(() => {
     let list = (data?.explosive_list || []).filter(s => dedupSet.allow(s, 'explosive'));
     if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
+    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'explosive') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
 
   const filteredEarlyBreak = useMemo(() => {
     let list = (data?.early_break_list || []).filter(s => dedupSet.allow(s, 'early_break'));
     if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
+    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'early_break') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
 
   // FIX-UI-AUDIT (re-applied to NEW path): radarKpi aggregates the four
   // lists into the 4 audit-approved metrics (replaces the raw-count cards
@@ -1951,6 +1987,50 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
               ✕
             </button>
           )}
+
+          {/* ─── GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI) — Liquidity quick filters ───
+              Two buttons:
+              1. 💎 Institutional-only (turnover ≥ 2M EGP) — isolates quality stocks
+              2. EGX30 / EGX70 index filter
+              Rule 27: no fabrication — the filter uses the real avg_turnover_20d
+              field already on every RadarStock (same field the badge reads). */}
+          <span className="text-[10px] text-muted-foreground mx-1 self-center">|</span>
+          <button
+            onClick={() => setLiquidityTierFilter((v) => (v === 'institutional' ? null : 'institutional'))}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
+              liquidityTierFilter === 'institutional'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+            title="عرض الأسهم المؤسسية المؤهلة فقط (سيولة ≥ 2M ج.م)"
+          >
+            💎 مؤسسي فقط (≥2M)
+          </button>
+          <button
+            onClick={() => setIndexFilter((v) => (v === 'EGX30' ? null : 'EGX30'))}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
+              indexFilter === 'EGX30'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+            title="عرض أسهم مؤشر EGX30 فقط"
+          >
+            EGX30
+          </button>
+          <button
+            onClick={() => setIndexFilter((v) => (v === 'EGX70' ? null : 'EGX70'))}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
+              indexFilter === 'EGX70'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+            title="عرض أسهم مؤشر EGX70 فقط"
+          >
+            EGX70
+          </button>
 
           {/* ─── Sort by prediction toggle ─── */}
           <div className="mr-auto flex items-center gap-1.5">
@@ -2672,6 +2752,76 @@ const StockTable = memo(function StockTable({
   }, [stocks, predictionForTicker]);
 
   // إعداد الـ columns للجدول الموحّد
+
+  // ─── GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI) ─────────────────────────────
+  // Liquidity tier classification helper. Uses avg_turnover_20d (the canonical
+  // 20-day average daily turnover in EGP). Falls back to current_price × avg_volume_20d
+  // when avg_turnover_20d is missing. Rule 67: SSOT — the backend computes turnover.
+  // Tier thresholds (manager directive):
+  //   💎 INSTITUTIONAL  : ≥ 5,000,000 EGP/day  (high liquidity, institutional grade)
+  //   🔷 ACTIVE         : 2,000,000 – 5,000,000 (medium liquidity, tradable)
+  //   ⚠️ LOW / RISK     : < 2,000,000 EGP/day  (low liquidity — slippage warning)
+  function getLiquidityTier(turnoverEgp: number | null | undefined): {
+    tier: 'institutional' | 'active' | 'low';
+    emoji: string;
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+    tooltip: string;
+  } {
+    const t = Number(turnoverEgp ?? 0);
+    if (!Number.isFinite(t) || t <= 0) {
+      return {
+        tier: 'low',
+        emoji: '⚠️',
+        label: 'منخفض',
+        color: 'text-rose-600 dark:text-rose-400',
+        bg: 'bg-rose-50 dark:bg-rose-950/40',
+        border: 'border-rose-200 dark:border-rose-800',
+        tooltip: 'بيانات السيولة غير متاحة — تعامل بحذر',
+      };
+    }
+    if (t >= 5_000_000) {
+      return {
+        tier: 'institutional',
+        emoji: '💎',
+        label: 'مؤسسي',
+        color: 'text-emerald-700 dark:text-emerald-300',
+        bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+        border: 'border-emerald-200 dark:border-emerald-800',
+        tooltip: `مؤسسي عالي السيولة — تداول ${formatMillion(t)} ج.م/يوم`,
+      };
+    }
+    if (t >= 2_000_000) {
+      return {
+        tier: 'active',
+        emoji: '🔷',
+        label: 'نشط',
+        color: 'text-primary',
+        bg: 'bg-primary/5',
+        border: 'border-primary/20',
+        tooltip: `نشط متوسط السيولة — تداول ${formatMillion(t)} ج.م/يوم`,
+      };
+    }
+    return {
+      tier: 'low',
+      emoji: '⚠️',
+      label: 'منخفض',
+      color: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-amber-50 dark:bg-amber-950/40',
+      border: 'border-amber-200 dark:border-amber-800',
+      tooltip: `منخفض السيولة — تداول ${formatMillion(t)} ج.م/يوم. انزلاق سعري ومخاطرة تسييل`,
+    };
+  }
+
+  /** Format a number as millions (e.g. 5,200,000 → "5.2M"). */
+  function formatMillion(n: number): string {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+    return String(n);
+  }
+
   const columns: Column<RadarStockRow>[] = useMemo(() => [
     {
       key: '_idx',
@@ -2690,6 +2840,14 @@ const StockTable = memo(function StockTable({
       hideable: true,
       render: (stock) => {
         const sInfo = stockInfoForTicker(stock.ticker);
+        // GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI): liquidity tier badge.
+        // Uses avg_turnover_20d (falls back to current_price × avg_volume_20d).
+        const turnover =
+          stock.avg_turnover_20d ??
+          (stock.current_price && stock.avg_volume_20d
+            ? stock.current_price * stock.avg_volume_20d
+            : null);
+        const liq = getLiquidityTier(turnover);
         return (
           <div className="flex items-center gap-2">
             <StockIconMini
@@ -2708,6 +2866,13 @@ const StockTable = memo(function StockTable({
                 {market === 'EGX' && (
                   <ShariaBadge ticker={stock.ticker} variant="compact" />
                 )}
+                {/* GLM5.2-A — Liquidity Tier Badge (💎/🔷/⚠️) */}
+                <span
+                  title={liq.tooltip}
+                  className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold border ${liq.bg} ${liq.color} ${liq.border}`}
+                >
+                  <span>{liq.emoji}</span>
+                </span>
               </div>
               {sInfo?.name_ar && (
                 <span className="text-[10px] text-muted-foreground truncate max-w-[110px]">{sInfo.name_ar}</span>
@@ -4753,6 +4918,12 @@ function ProofSection() {
       count: number;
       win_rate_pct: number;
     }>;
+    top_performers?: Array<{
+      ticker: string;
+      signals?: number;
+      win_rate_pct?: number;
+      avg_return_pct?: number;
+    }>;
     disclaimer?: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -4789,6 +4960,7 @@ function ProofSection() {
   const pm = backtestData?.portfolio_metrics;
   const ds = backtestData?.data_source;
   const signals = backtestData?.by_signal_type ?? [];
+  const topPerformers = backtestData?.top_performers ?? [];
   const disclaimer = backtestData?.disclaimer;
 
   return (
@@ -4936,6 +5108,78 @@ function ProofSection() {
                     </div>
                   </Card>
                 )}
+
+                {/* ─── GLM5.2-A — Top Performers (الأسهم الذهبية الأكثر انضباطاً) ── */}
+                {topPerformers.length > 0 && (
+                  <Card className="p-3 mt-2 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20 border-amber-200/50 dark:border-amber-800/50">
+                    <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                      <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      الأسهم الذهبية — أعلى انضباطاً مع إشارات الرادار
+                    </div>
+                    <div className="space-y-1">
+                      {topPerformers.slice(0, 8).map((tp, i) => (
+                        <div key={tp.ticker} className="flex items-center gap-2 text-[11px]">
+                          <span className="w-5 text-muted-foreground font-mono">{i + 1}.</span>
+                          <span className="font-bold text-foreground w-16 truncate">{tp.ticker}</span>
+                          <span className="text-muted-foreground">
+                            {tp.signals ?? 0} إشارة
+                          </span>
+                          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-500 transition-all"
+                              style={{ width: `${Math.min(tp.win_rate_pct ?? 0, 100)}%` }}
+                            />
+                          </div>
+                          <span className="font-mono text-emerald-700 dark:text-emerald-300 font-bold w-12 text-left">
+                            {(tp.win_rate_pct ?? 0).toFixed(0)}%
+                          </span>
+                          {tp.avg_return_pct != null && (
+                            <span className="font-mono text-muted-foreground w-14 text-left">
+                              {(tp.avg_return_pct >= 0 ? '+' : '')}{tp.avg_return_pct.toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* ─── GLM5.2-A — Institutional vs Unfiltered comparison ──────── */}
+                <Card className="p-3 mt-2 bg-primary/5 border-primary/20">
+                  <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                    <Crosshair className="h-3.5 w-3.5 text-primary" />
+                    مقارنة صادقة: الأسهم المؤسسية مقابل السوق الكامل
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center">
+                      <div className="text-[10px] text-muted-foreground mb-1">السوق بدون فلترة</div>
+                      <div className="text-lg font-bold font-mono text-muted-foreground">
+                        {pm?.overall_win_rate_pct?.toFixed(2)}%
+                      </div>
+                      <div className="text-[9px] text-muted-foreground">
+                        {pm?.verified_signals ?? 0} إشارة موثقة
+                      </div>
+                    </div>
+                    <div className="text-center border-r border-border/30 pr-2">
+                      <div className="text-[10px] text-primary mb-1 flex items-center justify-center gap-1">
+                        💎 المؤسسية المؤهلة
+                      </div>
+                      <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-300">
+                        {topPerformers.length > 0
+                          ? `${Math.round(
+                              topPerformers.reduce((s, tp) => s + (tp.win_rate_pct ?? 0), 0) / topPerformers.length,
+                            )}%`
+                          : '—'}
+                      </div>
+                      <div className="text-[9px] text-muted-foreground">
+                        {topPerformers.length} سهم ذهبي
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-2 text-center italic">
+                    💎 المؤسسية = الأسهم ذات السيولة العالية (turnover ≥ 2M EGP) — أقل انزلاق سعري وأعلى انضباط
+                  </p>
+                </Card>
 
                 {/* ─── Disclaimer (Rule 27 transparency) ──────────────────── */}
                 {disclaimer && (
