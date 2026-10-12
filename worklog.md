@@ -77474,3 +77474,32 @@ Stage Summary:
 - زر نسخ التحليل الاحترافي موجود + شغال
 - المنصة تعمل (HTTP 200) + pre-commit hooks مثبتة وتعمل
 - Rule 27 + Rule 67 + Rule 75 محترمة في كل commit
+
+---
+
+Task ID: GLM5.2-RADAR-S1-API-FIX
+Agent: Signal Tracker API Fix Agent
+
+Work Log:
+- قرأ `src/app/api/maker-radar/signal-tracker/route.ts` + `src/modules/radar/lib/radar-signal-tracker.ts` لرصد الفضيحة.
+- فحص مستقل على `db/stocks.db`: 1102 إشارة = 670 pending + 432 stale_data + 0 verified (تحت الـ bug القديم كان `verified=432` بسبب `status != 'pending'`).
+- فحص rows_with_outcomes: 311 صف عنده outcome_7d فعلية (AVG=-2.74%) — لكن الـ API كان بيرجّع `null` هاردكود!
+- التعديلات (commit `81802880`):
+  1. `route.ts` L17: استبدل `WHERE status != 'pending'` بـ
+     `WHERE status IN ('verified_win','verified_loss','verified_neutral')` — يستثني `pending` و `stale_data`.
+  2. `route.ts` L29: استبدل `avg_outcome_7d: null, avg_outcome_14d: null, avg_outcome_30d: null` (hardcoded)
+     باستعلام `AVG()` حقيقي على `WHERE outcome_* IS NOT NULL` (null فقط لو مفيش بيانات فعلية).
+  3. `route.ts` L20/L30: جدول `by_signal_type` صار يرجّع `verified_count` + `avg_outcome_7d/14d/30d` لكل نوع (مش hardcoded null).
+  4. `route.ts` L31: `label: translateSignalType(t.signal_type)` بدل `label: t.signal_type` الخام.
+  5. `radar-signal-tracker.ts`: أضيف `SIGNAL_TYPE_AR` + `export function translateSignalType(code)` (مع fallback للكود الأصلي).
+  6. تعريب الأكواد المُتقدّمة (A_pre_surge, B_quiet_accumulation_strong, D_explosive_surge) + البسيطة (pre_surge, explosive_surge, ...).
+- Rule 27 (NO-FAKE-DATA): مفيش null هاردكود لما فيه بيانات حقيقية.
+- Rule 75 (PUSH-AFTER-EVERY-TASK): commit `81802880` + push لـ `main` ✅.
+
+Stage Summary:
+- verified query fixed (excludes stale_data + pending): verified=0 صحيح بدل 432 مضلل.
+- avg_outcome_7d = -2.74% (حقيقي) بدل null; avg_outcome_14d/30d = null صحيح (مفيش بيانات 14d/30d بعد).
+- by_signal_type[].label عربي (⚡ اختراق مبكر / 🎯 تجميع قوي / 💥 انفجار حجمي ...).
+- npx tsc --noEmit --skipLibCheck | grep signal-tracker → 0 أخطاء جديدة.
+- pre-commit hook: PASS (check:guards + ticker-registry).
+- التحقق النهائي via curl: verified=0, win_rate=0 (مش مضلل), avg_outcome_7d=-2.74%, كل labels عربي.
