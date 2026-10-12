@@ -25,6 +25,7 @@ import {
   Waves, Banknote, Radio, LineChart as LineChartIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -855,6 +856,18 @@ interface MakerRadarTabProps {
 
 type FilterKey = 'all' | 'pre_surge' | 'quiet' | 'explosive' | 'early_break' | 'tracked';
 
+// ─── GLM5.2-A — Wyckoff Phase Filter ────────────────────────────────────
+// Two phases surfaced to the user (C_SPRING / D_SOS). The Wyckoff screener
+// runs server-side (Python detect_wyckoff_accumulation) and the Node route
+// is a transparent proxy (Rule 20). UI never fabricates — Rule 27.
+type WyckoffPhase = 'C_SPRING' | 'D_SOS';
+interface WyckoffStockEntry {
+  ticker: string;
+  phase: string;
+  confidence: number;
+  whale_flow_egp: number;
+}
+
 /** Lightweight prediction entry stitched from predictions.db active rows */
 interface PredictionEntry {
   signal: string;          // e.g. 'BUY', 'SELL', 'NEUTRAL'
@@ -877,6 +890,12 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [warmupMsg, setWarmupMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('all');
+  // ─── GLM5.2-A — Wyckoff phase filter (C_SPRING / D_SOS / null) ─────────
+  // null = inactive. When active, the radar is intersected with the screener
+  // results so only stocks matching the chosen Wyckoff phase are shown.
+  const [wyckoffFilter, setWyckoffFilter] = useState<WyckoffPhase | null>(null);
+  const [wyckoffData, setWyckoffData] = useState<Record<string, WyckoffStockEntry> | null>(null);
+  const [wyckoffError, setWyckoffError] = useState<boolean>(false);
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('7d');
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
 
@@ -1033,6 +1052,52 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchStockMap(); }, [fetchStockMap]);
   useEffect(() => { fetchPredictions(); }, [fetchPredictions]);
+
+  // ─── GLM5.2-A — Wyckoff Screener fetch (Python via Node proxy) ────────
+  // Calls /api/maker-radar/wyckoff-screener every 60s while the user has a
+  // Wyckoff filter active. On failure we surface a flag (Rule 27: NO fake
+  // data) — the filter just shows an empty state with a clear explanation.
+  useEffect(() => {
+    if (!wyckoffFilter) {
+      setWyckoffData(null);
+      setWyckoffError(false);
+      return;
+    }
+    let cancelled = false;
+    const fetchWyckoff = async () => {
+      try {
+        const url = `/api/maker-radar/wyckoff-screener?market=${encodeURIComponent(market)}&phase_filter=${wyckoffFilter}&limit=20`;
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (cancelled) return;
+        if (json.success && Array.isArray(json.stocks)) {
+          const map: Record<string, WyckoffStockEntry> = {};
+          for (const s of json.stocks) {
+            if (s && s.ticker) map[String(s.ticker).toUpperCase()] = s as WyckoffStockEntry;
+          }
+          setWyckoffData(map);
+          setWyckoffError(false);
+        } else {
+          // Server reported failure (Python error / DB empty / no matches).
+          // Rule 27: surface the empty state — never fabricate entries.
+          setWyckoffData({});
+          setWyckoffError(!json.success && !!json.error);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        console.warn('[wyckoff] fetch failed', e);
+        setWyckoffData({});
+        setWyckoffError(true);
+      }
+    };
+    fetchWyckoff();
+    const id = setInterval(fetchWyckoff, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [wyckoffFilter, market]);
 
   // Live real-time polling: refresh both stock quotes (for live prices & flashes) and radar data
   useVisibilityAwarePolling(
@@ -1316,37 +1381,49 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
     return { allow };
   }, [filter]);
 
+  // ─── GLM5.2-A — Wyckoff intersection set ───────────────────────────────
+  // When the user picks a Wyckoff phase (C_SPRING / D_SOS), every radar
+  // section is intersected with the screener results. `null` = inactive.
+  const wyckoffTickers = useMemo(() => {
+    if (!wyckoffFilter || !wyckoffData) return null;
+    return new Set(Object.keys(wyckoffData));
+  }, [wyckoffFilter, wyckoffData]);
+
   const filteredPreSurge = useMemo(() => {
     let list = (data?.pre_surge_list || []).filter(s => dedupSet.allow(s, 'pre_surge'));
+    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
     if (filter !== 'all' && filter !== 'pre_surge') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
 
   const filteredQuiet = useMemo(() => {
     let list = (data?.quiet_list || []).filter(s => dedupSet.allow(s, 'quiet'));
+    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
     if (filter !== 'all' && filter !== 'quiet') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
 
   const filteredExplosive = useMemo(() => {
     let list = (data?.explosive_list || []).filter(s => dedupSet.allow(s, 'explosive'));
+    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
     if (filter !== 'all' && filter !== 'explosive') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
 
   const filteredEarlyBreak = useMemo(() => {
     let list = (data?.early_break_list || []).filter(s => dedupSet.allow(s, 'early_break'));
+    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
     if (filter !== 'all' && filter !== 'early_break') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers]);
 
   // FIX-UI-AUDIT (re-applied to NEW path): radarKpi aggregates the four
   // lists into the 4 audit-approved metrics (replaces the raw-count cards
@@ -1834,6 +1911,47 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
               ) : null}
             </Button>
           ))}
+
+          {/* ─── GLM5.2-A — Wyckoff Phase Filters (C_SPRING + D_SOS) ──── */}
+          {/* Mobile: flex-wrap on the parent keeps these from overflowing. */}
+          <span className="text-[10px] text-muted-foreground mx-1 self-center">|</span>
+          <button
+            onClick={() => setWyckoffFilter('C_SPRING')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
+              wyckoffFilter === 'C_SPRING'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+            title="الأسهم في Phase C — هز الشجرة قبل الانفجار"
+          >
+            🎯 صيد قيعان وايكوف (Spring Phase C)
+          </button>
+          <button
+            onClick={() => setWyckoffFilter('D_SOS')}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
+              wyckoffFilter === 'D_SOS'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+            title="الأسهم في Phase D — علامة القوة (اختراق حقيقي)"
+          >
+            ⚡ علامة القوة (SOS Phase D)
+          </button>
+
+          {/* Clear Wyckoff filter — only shown when a phase is active. */}
+          {wyckoffFilter && (
+            <button
+              onClick={() => setWyckoffFilter(null)}
+              className="px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="إلغاء فلتر وايكوف"
+              aria-label="إلغاء فلتر وايكوف"
+            >
+              ✕
+            </button>
+          )}
+
           {/* ─── Sort by prediction toggle ─── */}
           <div className="mr-auto flex items-center gap-1.5">
             {predMap.size > 0 && (
@@ -1944,7 +2062,27 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {totalCardsShown === 0 && (
         <Card className="p-8 text-center border-dashed border-muted-foreground/30 bg-muted/10">
           <Radar className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-          {filter === 'all' ? (
+
+          {/* GLM5.2-A — Wyckoff filter empty state (Rule 27: never fabricate). */}
+          {wyckoffFilter && wyckoffError ? (
+            <>
+              <p className="text-sm font-semibold text-foreground">تعذّر تشغيل مُفرّز وايكوف</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                فشل الاتصال بخدمة وايكوف. حاول إلغاء الفلتر أو أعد المحاولة بعد دقيقة.
+              </p>
+            </>
+          ) : wyckoffFilter ? (
+            <>
+              <p className="text-sm font-semibold text-foreground">
+                لا توجد أسهم حالياً في مرحلة وايكوف المختارة
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {wyckoffFilter === 'C_SPRING'
+                  ? 'مرحلة Spring (C) — هزّ الشجرة. الرادار بيفحص الأسهم بشكل دوري.'
+                  : 'مرحلة SOS (D) — علامة القوة. الرادار بيفحص الأسهم بشكل دوري.'}
+              </p>
+            </>
+          ) : filter === 'all' ? (
             <>
               <p className="text-sm font-semibold text-foreground">لا توجد فرص حالياً — الرادار بيفحص الأسهم</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -1957,9 +2095,14 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
               <p className="text-xs text-muted-foreground mt-1">جرّب فلتراً آخر أو أعد العرض للكل</p>
             </>
           )}
-          {filter !== 'all' && (
+          {filter !== 'all' && !wyckoffFilter && (
             <Button size="sm" variant="outline" className="mt-3" onClick={() => setFilter('all')}>
               عرض الكل
+            </Button>
+          )}
+          {wyckoffFilter && (
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => setWyckoffFilter(null)}>
+              إلغاء فلتر وايكوف
             </Button>
           )}
         </Card>
@@ -2017,6 +2160,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
               }}
               onClose={() => { setSelectedTicker(null); setSelectedStock(null); }}
               onTrackToggle={handleTrackToggle}
+              wyckoffData={wyckoffData}
             />
           )}
         </DialogContent>
@@ -3199,10 +3343,15 @@ interface StockDetailDrawerProps {
   sectorChangeForTicker: (ticker: string) => number | null;
   onClose: () => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
+  /** GLM5.2-A — Wyckoff screener map (ticker → phase/confidence). Optional:
+   *  when present and the drawer's ticker is in the map, the Wyckoff
+   *  Phase Tracker renders below IntradayCvdFlow. */
+  wyckoffData?: Record<string, WyckoffStockEntry> | null;
 }
 
 function StockDetailDrawer({
   ticker, radarStock, sectorForTicker, sectorChangeForTicker, onClose, onTrackToggle,
+  wyckoffData,
 }: StockDetailDrawerProps) {
   const t = useTranslation();
   const [detail, setDetail] = useState<StockDetail | null>(null);
@@ -3639,6 +3788,17 @@ function StockDetailDrawer({
                 SVG sparkline (price + CVD + POC line). If no data (market
                 closed / DB empty): graceful fallback card. Rule 27 respected. */}
             <IntradayCvdFlow ticker={ticker} />
+
+            {/* === GLM5.2-A — Wyckoff Phase Tracker ===
+                Renders only when the screener has detected a Wyckoff phase for
+                this ticker (via wyckoffData). Shows the 5-phase horizontal
+                curve with the active phase highlighted. Rule 27: when no entry
+                exists, the tracker is omitted (no fabricated phase). */}
+            {(() => {
+              const wd = wyckoffData?.[ticker.toUpperCase()] ?? wyckoffData?.[ticker];
+              if (!wd) return null;
+              return <WyckoffPhaseTracker phase={wd.phase} confidence={wd.confidence} />;
+            })()}
 
             {/* === Entry Timing Signal — توقيت الدخول الذكي (0-100) === */}
             <EntryTimingCard ticker={ticker} />
@@ -4118,6 +4278,79 @@ interface IntradayFlowData {
   };
   source: 'stock_intraday' | 'intraday_prices';
   computed_at: string;
+}
+
+// ============================================================================
+// GLM5.2-A — Wyckoff Phase Tracker (drawer widget)
+// ============================================================================
+// Renders a horizontal 5-phase curve (A_SC → B_CAUSE → C_SPRING → D_SOS → EXIT)
+// with the active phase highlighted. Confidence is shown as a Badge.
+// Design tokens only (bg-primary / bg-card / bg-muted) — no hex colors.
+// Responsive: the 5 phase nodes flex equally and shrink gracefully on mobile.
+// ============================================================================
+const WYCKOFF_PHASES: ReadonlyArray<{ key: string; label: string; label_ar: string; emoji: string }> = [
+  { key: 'A_SC', label: 'A', label_ar: 'ذروة بيع', emoji: '📉' },
+  { key: 'B_CAUSE', label: 'B', label_ar: 'بناء القاع', emoji: '🏗️' },
+  { key: 'C_SPRING', label: 'C', label_ar: 'هز الشجرة', emoji: '🎯' },
+  { key: 'D_SOS', label: 'D', label_ar: 'علامة القوة', emoji: '⚡' },
+  { key: 'EXIT', label: 'E', label_ar: 'خروج', emoji: '🚀' },
+];
+
+function WyckoffPhaseTracker({ phase, confidence }: { phase: string; confidence: number }) {
+  const activeIdx = WYCKOFF_PHASES.findIndex(p => p.key === phase);
+  const safeIdx = activeIdx < 0 ? -1 : activeIdx;
+  const progressPct = safeIdx >= 0 ? ((safeIdx + 1) / WYCKOFF_PHASES.length) * 100 : 0;
+
+  return (
+    <Card className="p-3">
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          <Activity className="h-3.5 w-3.5 text-primary" />
+          مخطط وايكوف — مراحل التجميع
+        </span>
+        <Badge variant="outline" className="text-[10px] tabular-nums">
+          ثقة: {Math.round(confidence)}%
+        </Badge>
+      </div>
+      {/* Phase curve */}
+      <div className="relative flex items-end justify-between h-16 px-1 gap-1">
+        {WYCKOFF_PHASES.map((p, i) => {
+          const isActive = i === safeIdx;
+          const isPast = safeIdx >= 0 && i < safeIdx;
+          return (
+            <div key={p.key} className="flex flex-col items-center gap-1 flex-1 min-w-0">
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+                  isActive && 'bg-primary text-primary-foreground scale-125 shadow-lg',
+                  !isActive && isPast && 'bg-primary/20 text-primary',
+                  !isActive && !isPast && 'bg-muted text-muted-foreground'
+                )}
+                aria-label={`Phase ${p.label}: ${p.label_ar}`}
+              >
+                {p.emoji}
+              </div>
+              <span
+                className={cn(
+                  'text-[9px] leading-tight text-center',
+                  isActive ? 'font-bold text-foreground' : 'text-muted-foreground'
+                )}
+              >
+                {p.label_ar}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {/* Connecting progress bar */}
+      <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
+        <div
+          className="h-full bg-primary transition-all"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+    </Card>
+  );
 }
 
 function IntradayCvdFlow({ ticker }: { ticker: string }) {
