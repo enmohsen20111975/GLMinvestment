@@ -2,7 +2,7 @@ import sqlite3
 import os
 
 print("--- Checking Arabic Names Across All DBs ---")
-dbs = ['db/market.db', 'db/stocks.db', 'db/data_engine.db']
+dbs = ['db/stocks.db', 'db/data_engine.db']
 for db in dbs:
     if not os.path.exists(db): continue
     conn = sqlite3.connect(db)

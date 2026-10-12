@@ -41,7 +41,7 @@ TRADES_FILE = PROJECT_ROOT / "data" / "closed_predictions_export.txt"
 
 def find_price_db():
     """يكتشف الـ DB اللي فيه egksco_price_history."""
-    for db_path in [DB_DIR / "data_engine.db", DB_DIR / "price_history.db", DB_DIR / "market.db"]:
+    for db_path in [DB_DIR / "data_engine.db", DB_DIR / "price_history.db"]:
         if not db_path.exists(): continue
         try:
             conn = sqlite3.connect(str(db_path))

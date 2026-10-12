@@ -23,7 +23,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = PROJECT_ROOT / "Documentation" / "المؤشرات"
 STOCKS_DB = PROJECT_ROOT / "db" / "stocks.db"
-MARKET_DB = PROJECT_ROOT / "db" / "market.db"
 DATA_ENGINE_DB = PROJECT_ROOT / "db" / "data_engine.db"
 
 
@@ -244,64 +243,7 @@ def sync():
         conn.close()
         print("✓ تم تحديث stocks.db (market_indices & index_daily_prices)")
 
-    # 3. تحديث market.db
-    if MARKET_DB.exists():
-        conn_m = sqlite3.connect(str(MARKET_DB))
-        cur_m = conn_m.cursor()
-        cur_m.execute("""
-            CREATE TABLE IF NOT EXISTS market_indices (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                symbol TEXT UNIQUE NOT NULL,
-                name TEXT,
-                name_ar TEXT,
-                current_value REAL,
-                previous_close REAL,
-                change REAL,
-                change_percent REAL,
-                is_shariah INTEGER DEFAULT 0,
-                last_update TEXT
-            )
-        """)
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if egx30_rows:
-            cur_m.execute("""
-                INSERT INTO market_indices (symbol, name, name_ar, current_value, previous_close, change, change_percent, last_update)
-                VALUES ('EGX30', 'EGX 30 Index', 'مؤشر إيجي إكس 30', ?, ?, ?, ?, ?)
-                ON CONFLICT(symbol) DO UPDATE SET
-                    current_value = excluded.current_value,
-                    previous_close = excluded.previous_close,
-                    change = excluded.change,
-                    change_percent = excluded.change_percent,
-                    last_update = excluded.last_update
-            """, (latest30["close"], prev30["close"], chg30, latest30["change_percent"], now_str))
 
-        if egx70_rows:
-            cur_m.execute("""
-                INSERT INTO market_indices (symbol, name, name_ar, current_value, previous_close, change, change_percent, last_update)
-                VALUES ('EGX70', 'EGX 70 Index', 'مؤشر إيجي إكس 70', ?, ?, ?, ?, ?)
-                ON CONFLICT(symbol) DO UPDATE SET
-                    current_value = excluded.current_value,
-                    previous_close = excluded.previous_close,
-                    change = excluded.change,
-                    change_percent = excluded.change_percent,
-                    last_update = excluded.last_update
-            """, (latest70["close"], prev70["close"], chg70, latest70["change_percent"], now_str))
-
-        if egx30_rows and egx70_rows:
-            cur_m.execute("""
-                INSERT INTO market_indices (symbol, name, name_ar, current_value, previous_close, change, change_percent, last_update)
-                VALUES ('EGX100', 'EGX 100 Index', 'مؤشر إيجي إكس 100', ?, ?, ?, ?, ?)
-                ON CONFLICT(symbol) DO UPDATE SET
-                    current_value = excluded.current_value,
-                    previous_close = excluded.previous_close,
-                    change = excluded.change,
-                    change_percent = excluded.change_percent,
-                    last_update = excluded.last_update
-            """, (egx100_val, egx100_prev, round(egx100_val - egx100_prev, 2), egx100_chg_pct, now_str))
-
-        conn_m.commit()
-        conn_m.close()
-        print("✓ تم تحديث market.db (market_indices)")
 
     # 4. تحديث data_engine.db -> historical_data
     if DATA_ENGINE_DB.exists():

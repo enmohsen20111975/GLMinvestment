@@ -27,7 +27,6 @@ const PROTECTED_DBS = new Set([
   // ── IMPORTANT: بيانات قابلة للتجديد بس مهمة ──
   'historical.db',          // بيانات تاريخية — 9 مراجع
   'gold_prices.db',         // أسعار الذهب — 8 مراجع
-  'market.db',              // بيانات السوق — 6 مراجع
   'learned.db',             // دروس التعلم الآلي — 5 مراجع
   'egypt_stocks.db',        // أسهم مصرية — 4 مراجع
   'production_snapshot.db', // snapshot الإنتاج — 3 مراجع

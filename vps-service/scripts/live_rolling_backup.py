@@ -37,7 +37,6 @@ WATCH_DBS = [
     'intraday.db',
     'crypto.db',
     'news.db',
-    'market.db',
 ]
 
 def log(msg: str, level: str = 'INFO'):

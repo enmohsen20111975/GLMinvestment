@@ -51,11 +51,8 @@ class DBPaths:
     # الـ 4 قواعد المعتمدة (PHASE-4-DB-REORG)
     # ═══════════════════════════════════════════════════════════════
 
-    # 1. market.db — بيانات السوق والأسعار والميتاداتا والأساسيات
-    #    يحتوي على: egksco_price_history, stock_daily_prices, stock_intraday,
-    #    crypto_intraday, crypto_prices, gold_prices, exchange_rates, stocks,
-    #    tab_* (fundamentals), screener_*, market_indices, macro_indicators, etc.
-    MARKET_DB: str = _resolve("MARKET_DB", "market.db")
+    # 1. stocks.db — بيانات السوق والأسعار والميتاداتا والأساسيات (المصدر المعتمد)
+    MARKET_DB: str = _resolve("STOCKS_DB", "stocks.db")
 
     # 2. predictions.db — التوقعات والتعلم والنتائج
     #    يحتوي على: predictions, persona_predictions, outcome_logs,
@@ -109,8 +106,8 @@ class DBPaths:
     # crypto.db: crypto-specific tables (legacy)
     CRYPTO_DB: str = _resolve("CRYPTO_DB", "crypto.db")
 
-    # market.db: هدف نهائي (PHASE-4-DB-REORG) — لسه فاضي على الإنتاج
-    MARKET_DB: str = _resolve("MARKET_DB", "market.db")
+    # market.db: ملغية ومحذوفة لتوفير المساحة — يتم التوجيه تلقائياً إلى stocks.db
+    MARKET_DB: str = _resolve("STOCKS_DB", "stocks.db")
 
     # Aliases for legacy code (توجّه للـ canonical source — updated P0-8-DB-UNIFY 2026-09-27)
     GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices — canonical: data_engine.db (187K rows). Dropped: stocks.db (3 stale rows).
@@ -234,5 +231,7 @@ def get_db_path(name: str) -> str:
     name = name.lower().strip()
     if name.endswith(".db"):
         name = name[:-3]
+    if name == "market":
+        return _resolve("STOCKS_DB", "stocks.db")
     env_key = f"{name.upper()}_DB"
     return _resolve(env_key, f"{name}.db")

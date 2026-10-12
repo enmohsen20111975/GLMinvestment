@@ -44,7 +44,6 @@ const CORE_DATABASES = new Set([
   'price_history.db',
   'data_engine.db',
   'predictions.db',
-  'market.db',
   'intraday.db',
 ]);
 
