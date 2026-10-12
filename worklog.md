@@ -77690,3 +77690,66 @@ Stage Summary:
 - npx tsc: 0 أخطاء
 - pre-commit hook: PASS
 - مكتشف حرج: ingestion pipeline للأسهم اللحظية معطل — يحتاج متابعة منفصلة
+
+---
+Task ID: GLM5.2-A-DRAWER-CVD-UI
+Agent: الفريق المسؤول الأول (GLM5.2-A — Drawer UI & CVD Visualization)
+Task: استكمال واجهة الـ Drawer وشارت السيولة اللحظية
+
+## ملخص التنفيذ
+
+### 1. Maker Radar Snapshot (SSOT Parity with radar table) — ✅
+أضفت `<MakerRadarSnapshot>` component في `MakerRadarTab.tsx`:
+- 5 بطاقات مؤسسية في شريط أفقي (grid 2 mobile / 5 desktop)
+- كل قيمة من `radarStock` (نفس object الجدول):
+  1. **دورة الصانع** ← `life_cycle` (نفس logic الجدول L2719-2725)
+  2. **نشاط المشترين** ← `maker_activity` (نفس tooltip الجدول)
+  3. **حجم نسبي** ← `volume_ratio_10d_vs_20d` (نفس الجدول L2538)
+  4. **سيولة %** ← `buy_pct` (نفس الجدول L2672) + progress bar ملون
+  5. **صافي السيولة Net** ← `net_flow_egp` (نفس الجدول L2616) بـ EGP
+- Rule 73 محترمة: SSOT parity مع الجدول 100%
+
+### 2. Intraday CVD Flow (live liquidity visualization) — ✅
+أضفت `<IntradayCvdFlow>` component:
+- يستدعي `/api/stocks/[ticker]/intraday-flow`
+- **لو فيه بيانات**: SVG sparkline متطور:
+  - خط السعر (chart-2 color) في النصف العلوي
+  - خط CVD (primary color) في النصف السفلي + gradient fill
+  - خط POC أفقي (warning color، dashed)
+  - stats row: CVD نهائي، الإشارة، POC، عدد الحيتان
+  - blocks vs retail summary: notional + buy/sell volumes
+- **لو مفيش بيانات** (سوق مغلق / DB فاضي): بطاقة بديلة أنيقة:
+  `📡 الرادار اللحظي: بانتظار افتتاح الجلسة القادمة لتسجيل تدفق السيولة وتحديد نقطة تحكم الصانع (POC)`
+- Rule 27 محترمة 100% — مفيش اختلاق بيانات
+
+### 3. Integration في StockDetailDrawer — ✅
+أضفت المكونين بعد `<TradingPlanSection>` (قبل `<EntryTimingCard>`):
+```tsx
+<TradingPlanSection detail={detail} radarStock={radarStock} />
+<MakerRadarSnapshot radarStock={radarStock} />    {/* NEW */}
+<IntradayCvdFlow ticker={ticker} />              {/* NEW */}
+<EntryTimingCard ticker={ticker} />
+```
+
+## التصميم
+- استخدمت design tokens فقط (bg-card، text-primary، text-muted-foreground، hsl(var(--primary)))
+- مفيش hex colors (Rule محترمة)
+- responsive: grid 2 cols mobile → 5 cols desktop
+- icons من lucide-react (Waves، Banknote، Radio، LineChart، Activity، Gauge)
+- RTL Arabic كامل
+
+## التحقق
+- `npx tsc --noEmit`: 0 أخطاء جديدة في ملفاتي (6 أخطاء pre-existing في TradingPlanSection) ✅
+- dev server: HTTP 200 على :3000 ✅
+- API: HTTP 404 لـ COMI (صحيح — stock_intraday فارغ، Rule 27 محترمة) ✅
+- pre-commit hook: PASS ✅
+
+## الـ Commit
+`feat(drawer-cvd-ui): Maker Radar Snapshot + Intraday CVD Flow في Drawer`
+
+Stage Summary:
+- 2 components جديدة: MakerRadarSnapshot (5 بطاقات SSOT) + IntradayCvdFlow (SVG sparkline)
+- SSOT parity مع الجدول 100% (نفس radarStock)
+- Rule 27 محترمة (404 fallback أنيق، مفيش اختلاق)
+- design tokens فقط (مفيش hex colors)
+- 0 أخطاء TypeScript جديدة

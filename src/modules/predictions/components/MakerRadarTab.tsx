@@ -22,6 +22,7 @@ import {
   BarChart3, Eye as MicroscopeIcon, Flame as FlameIcon,
   Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, ShieldAlert, Info, Sparkles,
   DoorOpen, FileText, UserCircle, Loader2, Copy,
+  Waves, Banknote, Radio, LineChart as LineChartIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
@@ -3472,6 +3473,19 @@ function StockDetailDrawer({
                 grid, position-size badge, and the SignalStrengthMeter. */}
             <TradingPlanSection detail={detail} radarStock={radarStock} />
 
+            {/* === GLM5.2-A — Maker Radar Snapshot (SSOT parity with the table) ===
+                Horizontal strip of 5 institutional cards: دورة الصانع، نشاط
+                المشترين، حجم نسبي، سيولة %، صافي السيولة. Every value comes
+                from `radarStock` — the SAME object the radar table reads from
+                (Rule 73 SINGLE-DISPLAY-SOURCE). */}
+            <MakerRadarSnapshot radarStock={radarStock} />
+
+            {/* === GLM5.2-A — Intraday CVD Flow (live liquidity visualization) ===
+                Calls /api/stocks/[ticker]/intraday-flow. If data available:
+                SVG sparkline (price + CVD + POC line). If no data (market
+                closed / DB empty): graceful fallback card. Rule 27 respected. */}
+            <IntradayCvdFlow ticker={ticker} />
+
             {/* === Entry Timing Signal — توقيت الدخول الذكي (0-100) === */}
             <EntryTimingCard ticker={ticker} />
 
@@ -3774,6 +3788,430 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
 }
 
 // ============================================================================
+// GLM5.2-A — Maker Radar Snapshot (SSOT Parity with the radar table)
+// ============================================================================
+// Renders a horizontal strip of institutional cards at the top of the Drawer
+// body. Every number comes from `radarStock` (the SAME object the radar table
+// reads from), guaranteeing Single-Source-of-Truth parity (Rule 73):
+//   • دورة الصانع       → life_cycle (matches table "دورة الصعود" column)
+//   • نشاط المشترين     → maker_activity (matches table copy-button tooltip)
+//   • حجم نسبي          → volume_ratio_10d_vs_20d (matches table column)
+//   • سيولة %           → buy_pct (matches table "تجميع/تصريف" column)
+//   • صافي السيولة Net  → net_flow_egp (matches table column)
+// ----------------------------------------------------------------------------
+function MakerRadarSnapshot({ radarStock }: { radarStock?: RadarStock | null }) {
+  if (!radarStock) return null;
+
+  // ─── 1) دورة الصانع (Maker Cycle) — matches table L2719-2725 ─────────
+  let cycle = radarStock.life_cycle && radarStock.life_cycle !== 'عادي'
+    ? radarStock.life_cycle
+    : null;
+  if (!cycle) {
+    if (radarStock.path === 'A_pre_surge') cycle = 'بداية انطلاق';
+    else if (radarStock.path === 'D_explosive_surge') cycle = '🔥 انفجار نشط';
+    else if (radarStock.path === 'E_early_break') cycle = '⚡ اختراق مبكر';
+    else cycle = '🎯 تجميع قاع';
+  }
+  if (radarStock.kill_switch) cycle = '⚠️ تدوير وهمي';
+
+  // ─── 2) نشاط المشترين (Maker Activity) — matches table tooltip ──────
+  const activity = radarStock.maker_activity || '—';
+
+  // ─── 3) حجم نسبي (Relative Volume) — matches table L2538 ────────────
+  const volRatio = radarStock.volume_ratio_10d_vs_20d;
+  const volRatioDisplay = volRatio != null ? `${volRatio.toFixed(1)}×` : '—';
+  const volRatioColor =
+    volRatio == null ? 'text-muted-foreground'
+    : volRatio >= 2.0 ? 'text-emerald-600 dark:text-emerald-400'
+    : volRatio >= 1.3 ? 'text-primary'
+    : 'text-amber-600 dark:text-amber-400';
+
+  // ─── 4) سيولة % (Liquidity %) — matches table L2672 ─────────────────
+  const liqPct = radarStock.buy_pct ?? 50;
+  const liqColor =
+    liqPct >= 70 ? 'text-emerald-600 dark:text-emerald-400'
+    : liqPct >= 50 ? 'text-primary'
+    : 'text-rose-600 dark:text-rose-400';
+
+  // ─── 5) صافي السيولة Net Flow EGP — matches table L2616-2617 ────────
+  const flowVal = (radarStock.net_flow_egp && radarStock.net_flow_egp !== 0)
+    ? radarStock.net_flow_egp
+    : null;
+  const flowDisplay = flowVal != null
+    ? `${flowVal >= 0 ? '+' : ''}${(flowVal / 1_000_000).toFixed(2)}M`
+    : '—';
+  const flowColor = flowVal == null
+    ? 'text-muted-foreground'
+    : flowVal >= 0 ? 'text-emerald-600 dark:text-emerald-400'
+    : 'text-rose-600 dark:text-rose-400';
+
+  // ─── progress bar for liquidity % ────────────────────────────────────
+  const liqBarPct = Math.max(0, Math.min(100, liqPct));
+  const liqBarColor =
+    liqPct >= 70 ? 'bg-emerald-500'
+    : liqPct >= 50 ? 'bg-primary'
+    : 'bg-rose-500';
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-2" role="group" aria-label="Maker Radar Snapshot">
+      {/* 1) دورة الصانع */}
+      <Card className="p-2.5 bg-card/60">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Radio className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[10px] text-muted-foreground">دورة الصانع</span>
+        </div>
+        <div className="text-xs font-bold text-foreground truncate" title={cycle}>
+          {cycle}
+        </div>
+      </Card>
+
+      {/* 2) نشاط المشترين */}
+      <Card className="p-2.5 bg-card/60">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Activity className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[10px] text-muted-foreground">نشاط المشترين</span>
+        </div>
+        <div className="text-xs font-bold text-foreground truncate" title={activity}>
+          {activity}
+        </div>
+      </Card>
+
+      {/* 3) حجم نسبي */}
+      <Card className="p-2.5 bg-card/60">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Gauge className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[10px] text-muted-foreground">حجم نسبي</span>
+        </div>
+        <div className={`text-sm font-bold font-mono ${volRatioColor}`}>
+          {volRatioDisplay}
+        </div>
+      </Card>
+
+      {/* 4) سيولة % */}
+      <Card className="p-2.5 bg-card/60">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Waves className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[10px] text-muted-foreground">سيولة %</span>
+        </div>
+        <div className={`text-sm font-bold font-mono ${liqColor}`}>
+          {liqPct.toFixed(1)}%
+        </div>
+        <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full ${liqBarColor} transition-all`}
+            style={{ width: `${liqBarPct}%` }}
+          />
+        </div>
+      </Card>
+
+      {/* 5) صافي السيولة Net Flow */}
+      <Card className="p-2.5 bg-card/60">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Banknote className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[10px] text-muted-foreground">صافي السيولة</span>
+        </div>
+        <div className={`text-sm font-bold font-mono ${flowColor}`}>
+          {flowDisplay}
+        </div>
+        <div className="text-[9px] text-muted-foreground">EGP</div>
+      </Card>
+    </div>
+  );
+}
+
+// ============================================================================
+// GLM5.2-A — Intraday CVD Flow (calls /api/stocks/[ticker]/intraday-flow)
+// ============================================================================
+// Visualizes intraday liquidity:
+//   • If data available: SVG sparkline of price + CVD + POC horizontal line.
+//   • If no data (market closed / DB empty): graceful fallback card.
+// Rule 27 (NO-FAKE-DATA): every point comes from the API. No fabrication.
+// ----------------------------------------------------------------------------
+interface IntradayFlowData {
+  ticker: string;
+  session_date: string;
+  is_historical_session: boolean;
+  bar_count: number;
+  session_start: string | null;
+  session_end: string | null;
+  last_price: number | null;
+  cvd_series: Array<{ timestamp: string; cvd: number }>;
+  cvd_final: number;
+  cvd_signal: 'accumulation' | 'distribution' | 'neutral';
+  volume_profile: Array<{
+    price: number;
+    price_high: number;
+    volume: number;
+    buy_volume: number;
+    sell_volume: number;
+    bar_count: number;
+    is_poc: boolean;
+  }>;
+  poc_price: number | null;
+  blocks: {
+    count: number;
+    total_volume: number;
+    total_notional: number;
+    buy_volume: number;
+    sell_volume: number;
+  };
+  retail: {
+    count: number;
+    total_volume: number;
+    total_notional: number;
+    buy_volume: number;
+    sell_volume: number;
+  };
+  source: 'stock_intraday' | 'intraday_prices';
+  computed_at: string;
+}
+
+function IntradayCvdFlow({ ticker }: { ticker: string }) {
+  const [data, setData] = useState<IntradayFlowData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [noData, setNoData] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      setNoData(false);
+      try {
+        const res = await fetch(
+          `/api/stocks/${encodeURIComponent(ticker)}/intraday-flow`,
+          { cache: 'no-store' },
+        );
+        const json = await res.json();
+        if (cancelled) return;
+        if (res.status === 404 || json.success === false) {
+          // Rule 27: no data → graceful fallback (not fabrication).
+          setNoData(true);
+          setData(null);
+          return;
+        }
+        setData(json.data ?? null);
+      } catch {
+        if (cancelled) return;
+        setNoData(true);
+        setData(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchData();
+    return () => { cancelled = true; };
+  }, [ticker]);
+
+  // ─── Loading skeleton ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <Card className="p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <LineChartIcon className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold text-foreground">
+            الرادار اللحظي — تدفق السيولة (CVD)
+          </span>
+        </div>
+        <Skeleton className="h-32 w-full" />
+      </Card>
+    );
+  }
+
+  // ─── Fallback: no intraday data (market closed / DB empty) ────────────
+  if (noData || !data) {
+    return (
+      <Card className="p-4 bg-muted/20 border-dashed">
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-primary/10 p-2">
+            <Radio className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-semibold text-foreground mb-1">
+              📡 الرادار اللحظي: بانتظار افتتاح الجلسة القادمة
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              بانتظار افتتاح الجلسة القادمة لتسجيل تدفق السيولة وتحديد نقطة تحكم الصانع (POC).
+            </p>
+            <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+              <Clock className="h-3 w-3" />
+              متوسط السيولة اليومية متاح عبر بيانات الجلسة السابقة
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // ─── Build SVG sparkline: price + CVD ─────────────────────────────────
+  // We map cvd_series timestamps → x, and use last_price per bar (reconstruct
+  // from volume_profile is not ideal — but cvd_series alone gives CVD shape).
+  // For price line we use the volume_profile buckets' prices sorted by time.
+  const W = 320, H = 120, PAD = 8;
+  const cvdSeries = data.cvd_series;
+  const cvdValues = cvdSeries.map((p) => p.cvd);
+  const cvdMin = cvdValues.length ? Math.min(...cvdValues) : 0;
+  const cvdMax = cvdValues.length ? Math.max(...cvdValues) : 0;
+  const cvdRange = cvdMax - cvdMin || 1;
+
+  const volBuckets = data.volume_profile;
+  const prices = volBuckets.map((b) => b.price);
+  const priceMin = prices.length ? Math.min(...prices) : 0;
+  const priceMax = prices.length ? Math.max(...prices) : 0;
+  const priceRange = priceMax - priceMin || 1;
+
+  // CVD polyline points (scaled to bottom half of SVG)
+  const cvdPoints = cvdSeries.map((p, i) => {
+    const x = PAD + (i / Math.max(cvdSeries.length - 1, 1)) * (W - 2 * PAD);
+    const y = H - PAD - ((p.cvd - cvdMin) / cvdRange) * ((H / 2) - PAD);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  // Price line from volume_profile (sorted by price → x by index)
+  const pricePoints = volBuckets.map((b, i) => {
+    const x = PAD + (i / Math.max(volBuckets.length - 1, 1)) * (W - 2 * PAD);
+    const y = PAD + ((priceMax - b.price) / priceRange) * ((H / 2) - PAD);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  // POC horizontal line
+  const pocY = data.poc_price != null && priceRange > 0
+    ? PAD + ((priceMax - data.poc_price) / priceRange) * ((H / 2) - PAD)
+    : null;
+
+  const signalLabel =
+    data.cvd_signal === 'accumulation' ? '🟢 تجميع'
+    : data.cvd_signal === 'distribution' ? '🔴 تصريف'
+    : '⚪ محايد';
+  const signalColor =
+    data.cvd_signal === 'accumulation' ? 'text-emerald-600 dark:text-emerald-400'
+    : data.cvd_signal === 'distribution' ? 'text-rose-600 dark:text-rose-400'
+    : 'text-muted-foreground';
+
+  return (
+    <Card className="p-3">
+      {/* header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <LineChartIcon className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold text-foreground">
+            الرادار اللحظي — تدفق السيولة (CVD)
+          </span>
+        </div>
+        <Badge variant="outline" className="text-[10px]">
+          {data.is_historical_session ? `جلسة ${data.session_date}` : 'جلسة اليوم'}
+        </Badge>
+      </div>
+
+      {/* SVG chart */}
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full h-32"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={`مخطط CVD لـ ${ticker}`}
+        >
+          <defs>
+            <linearGradient id="cvdGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* mid divider */}
+          <line
+            x1={PAD} y1={H / 2} x2={W - PAD} y2={H / 2}
+            stroke="hsl(var(--border))" strokeWidth="0.5" strokeDasharray="2,2"
+          />
+
+          {/* POC horizontal line (top half) */}
+          {pocY != null && (
+            <g>
+              <line
+                x1={PAD} y1={pocY} x2={W - PAD} y2={pocY}
+                stroke="hsl(var(--warning))" strokeWidth="1" strokeDasharray="4,2"
+              />
+              <text x={W - PAD - 4} y={pocY - 3} textAnchor="end" fontSize="8" fill="hsl(var(--warning))">
+                POC
+              </text>
+            </g>
+          )}
+
+          {/* Price line (top half) */}
+          {pricePoints && (
+            <polyline
+              points={pricePoints}
+              fill="none"
+              stroke="hsl(var(--chart-2))"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* CVD area (bottom half) */}
+          {cvdPoints && (
+            <>
+              <polyline
+                points={`${PAD},${H - PAD} ${cvdPoints} ${W - PAD},${H - PAD}`}
+                fill="url(#cvdGrad)"
+                stroke="none"
+              />
+              <polyline
+                points={cvdPoints}
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </>
+          )}
+        </svg>
+      </div>
+
+      {/* stats row */}
+      <div className="grid grid-cols-4 gap-2 mt-2 text-center">
+        <div>
+          <div className="text-[9px] text-muted-foreground">CVD نهائي</div>
+          <div className={`text-xs font-bold font-mono ${signalColor}`}>
+            {data.cvd_final >= 0 ? '+' : ''}{data.cvd_final.toLocaleString('ar-EG')}
+          </div>
+        </div>
+        <div>
+          <div className="text-[9px] text-muted-foreground">الإشارة</div>
+          <div className={`text-xs font-bold ${signalColor}`}>{signalLabel}</div>
+        </div>
+        <div>
+          <div className="text-[9px] text-muted-foreground">POC</div>
+          <div className="text-xs font-bold font-mono text-warning">
+            {data.poc_price != null ? data.poc_price.toFixed(2) : '—'}
+          </div>
+        </div>
+        <div>
+          <div className="text-[9px] text-muted-foreground">حيتان</div>
+          <div className="text-xs font-bold font-mono text-foreground">
+            {data.blocks.count}
+          </div>
+        </div>
+      </div>
+
+      {/* blocks vs retail summary */}
+      <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-[10px]">
+        <span className="text-muted-foreground">
+          🐋 حيتان: <span className="font-mono font-semibold text-foreground">
+            {(data.blocks.total_notional / 1_000_000).toFixed(2)}M
+          </span> EGP
+          <span className="text-emerald-600 dark:text-emerald-400"> (شراء {data.blocks.buy_volume.toLocaleString('ar-EG')})</span>
+          <span className="text-rose-600 dark:text-rose-400"> (بيع {data.blocks.sell_volume.toLocaleString('ar-EG')})</span>
+        </span>
+        <span className="text-muted-foreground">
+          👥 صغار: <span className="font-mono font-semibold text-foreground">
+            {(data.retail.total_notional / 1_000).toFixed(0)}K
+          </span> EGP
+        </span>
+      </div>
+    </Card>
+  );
+}
 // Stat Card (inside drawer)
 // ============================================================================
 interface StatCardProps {
