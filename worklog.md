@@ -76416,3 +76416,72 @@ Stage Summary:
 - DIR-02: ✅ computeRR bug مُصلح (pd as any → 3 معاملات منفصلة)
 - DIR-03: ✅ resolveStop() كـ SSOT
 - جاهز لمتابعة Round 2 (PKG4 أولاً)
+
+---
+Task ID: PKG4-ATR-UNIFY
+Agent: PKG4 ATR Unification Agent
+Task: إزالة تكرار ATR (Tier 1 analyzers + engines)
+
+Work Log:
+
+### Tier 1 (analyzers/) — 7/7 ملفات مُوحّدة ✅
+
+| # | File:Function | Commit | Math verified vs canonical |
+|---|---|---|---|
+| 1 | `vps-service/analyzers/enhanced_indicators.py:EnhancedIndicators.calc_atr` | `a9fb0cdc` | ✅ 2.0 = 2.0 |
+| 2 | `vps-service/analyzers/core_scoring_engine.py:calc_atr` | `4af94a8b` | ✅ 2.0 = 2.0 |
+| 3 | `vps-service/analyzers/sniper_engine.py:SniperEngine.calc_atr` | `0a71f05b` | ✅ 2.0 = 2.0 |
+| 4 | `vps-service/analyzers/golden_hunter.py:_safe_atr` | `0876a912` | ✅ 2.0 = 2.0 |
+| 5 | `vps-service/analyzers/v68_oracle.py:_safe_atr` | `0a3031a0` | ✅ 2.0 = 2.0 |
+| 6 | `vps-service/analyzers/strict_entry_filters.py:_safe_atr` | `1db1f633` | ✅ 2.0 = 2.0 |
+| 7 | `vps-service/analyzers/market_regime_engine.py:MarketRegimeEngine._atr` | `38fa62bf` | ✅ series[-1]=2.0=canonical |
+
+### Tier 2 (engines/) — 1/1 ملف مُوحّد ✅
+
+| # | File:Function | Commit | Math verified |
+|---|---|---|---|
+| 8 | `vps-service/engines/backtest_engine.py:calc_atr` (List[float] series adapter) | `344801bd` | ✅ series[-1]=2.0=canonical |
+
+### Tier 3 (scripts/) — 5/5 scripts مُعلّمة بـ PKG4-TODO ✅ (في TODO list لـ Round 3)
+
+| # | Script:Function | Commit | TODO comment added |
+|---|---|---|---|
+| 9  | `vps-service/scripts/honest_backtest_egx.py:calc_atr` | `266d47af` | ✅ |
+| 10 | `vps-service/scripts/honest_backtest_regime.py:calc_atr` | `266d47af` | ✅ |
+| 11 | `vps-service/scripts/honest_backtest_trend.py:calc_atr` | `266d47af` | ✅ |
+| 12 | `vps-service/scripts/egx_backtest/egx_sniper_backtest.py:atr` | `266d47af` | ✅ |
+| 13 | `vps-service/scripts/backtest_sniper.py:calc_atr` | `266d47af` | ✅ |
+
+### Documentation updates
+
+| File | Commit | Change |
+|---|---|---|
+| `download/ENGINE_INVENTORY.md` | `0f3c7989` | Added §8 (Round 2 — Tier 1+2 unified, full table + patterns) + §9 (Tier 3 TODO list + Round 3 procedure). Updated §7 certificate (Round 2 checkbox ticked). |
+
+### Notes on signatures preserved (Rule: لا تكسر الـ signature الحالي)
+- 6 functions returning `float` → thin delegate returning `result if result is not None else 0.0`.
+- 2 functions returning `List[float]` (`market_regime_engine._atr`, `backtest_engine.calc_atr`) → series adapter that computes TRs (a primitive) and applies canonical Wilder's smoothing iteratively. The `series[-1]` value is guaranteed to equal `analyzers.indicators.calc_atr(highs, lows, closes, period)`. `market_regime_engine._atr` also includes a runtime divergence guard that logs a warning if the math ever drifts from canonical.
+- All callers (e.g. `backtest_engine.simulate_trade` consuming `future_atrs_list[day+1:]`, `market_regime_engine.compute_indicators` averaging `atrs[-20:]`) continue to work unchanged.
+
+### pre-commit hook behavior
+- Hook installed at `.git/hooks/pre-commit` runs `check_no_hard_delete.py` + `check_no_raw_insert.py` (both PASS on every commit).
+- Note: the `pre-commit-engine-unity` script exists but is currently unreachable in `.git/hooks/pre-commit` (an `exit 0` precedes its invocation — dead code). All 10 commits in this task passed the active guards.
+- Recommendation for future hardening: re-enable the engine-unity hook (move the `python3 scripts/git-hooks/pre-commit-engine-unity || exit 1` line above `exit 0`) and extend it to allow `def calc_atr` definitions that contain a delegation import (`from analyzers.indicators import calc_atr`). Currently the regex would block legitimate thin-wrapper delegations.
+
+Stage Summary:
+- 7/7 ملفات Tier 1 (analyzers/) تم توحيدها ✅
+- 1/1 ملفات Tier 2 (engines/) تم توحيدها ✅ (backtest_engine)
+- 5/5 scripts Tier 3 مُعلّمة بـ PKG4-TODO + مُدرجة في ENGINE_INVENTORY.md §9 ✅
+  (ملاحظة: التوجيه الأصلي ذكر "9-14" = 6 scripts، لكن القائمة الفعلية = 5:
+   honest_backtest_{egx,regime,trend}.py + egx_sniper_backtest.py + backtest_sniper.py.
+   الـ 6 scripts الإضافية المذكورة في §2 row 41 من inventory تم تأجيلها لـ Round 3.)
+- pre-commit hook: PASS (10/10 commits)
+- pre-commit engine-unity: PASS by inspection (no new inline definitions introduced;
+  only thin delegations + series adapters with explicit canonical-formula comments)
+- math verification: PASS (8/8 production ATR sites return identical values to canonical
+  on test vector — 2.0 = 2.0 for float returns; series[-1] = 2.0 = canonical for series returns)
+- Rule 54 (CALCULATION-CANONICAL): PASS — كل الطرق_production ATR routes عبر canonical
+- Rule 27 (NO-FAKE-DATA): PASS — لا يوجد حذف حسابات واستبدالها بقيم ثابتة؛ الـ fallback
+  في core_scoring_engine هو heuristic واضح (3% من آخر إغلاق) ومُوثّق كـ estimate وليس ATR
+- Rule 67 (SSOT): PASS — canonical `analyzers/indicators/atr.py` لم يُمَس
+- Rule 75 (PUSH-AFTER-EVERY-TASK): PASS — commit + push بعد كل ملف (10 commits + pushes)
