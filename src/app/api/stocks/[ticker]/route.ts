@@ -8,6 +8,22 @@ import { checkTrialNotExpired } from '@/lib/subscription-gate';
 // النتيجة: CANA بـ يطلع RSI=56.8 هنا لكن RSI=79.6 في شاشة comprehensive.
 // الحل: نـ inject canonical values من getUnifiedStockData() في الـ response.
 import { getUnifiedStockData } from '@/lib/unified-stock-data';
+// ─── PKG3-ROUND2 (Rule 67: SSOT — canonical-price) ─────────────────────
+// Before: route emitted `current_price` straight from the Python response
+//         OR the SQLite-fallback lib row (which reads stocks.db directly).
+//         Both paths bypassed the canonical resolution chain.
+// After: a final `applyCanonicalPriceOverride()` post-step overrides the
+//        response's `current_price` + `previous_close` with values from
+//        `getCanonicalPrice()` (Rule 67 SSOT) wrapped in
+//        `cache.getOrCompute()` (TTL=60s, LRU=512). Resolution chain:
+//          1. stocks.db.stocks.current_price  (canonical primary)
+//          2. data_engine.egksco_price_history (historical clean close)
+//          3. vps_api.live                     (live, opt-in)
+//        Rule 27 (NO-FAKE-DATA): if canonical adapter returns null → keep
+//        the existing value (already a real Python or stocks.db number,
+//        never fabricated). If BOTH paths return null → null → UI "—".
+import { getCanonicalPrice, type CanonicalPrice } from '@/lib/canonical-price';
+import { cache } from '@/lib/cache-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,7 +87,12 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
         const data = await res.json();
         // UNIFIED-DATA-CONTRACT: inject canonical values BEFORE paywall gate
         const unifiedData = injectUnifiedData(data, ticker);
-        return NextResponse.json(applyFairValueGate(unifiedData, fairValueLocked));
+        // PKG3-ROUND2 (Rule 67 SSOT): override current_price + previous_close
+        // with values from the canonical adapter (stocks.db → data_engine →
+        // vps_api). Falls back to the injected value if the canonical adapter
+        // returns null (Rule 27 NO-FAKE-DATA — keep real data, never fabricate).
+        const canonicalData = await applyCanonicalPriceOverride(unifiedData, ticker);
+        return NextResponse.json(applyFairValueGate(canonicalData, fairValueLocked));
       }
     } catch (_err) {
       // Try next fallback
@@ -83,7 +104,10 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
   if (fallback) {
     // UNIFIED-DATA-CONTRACT: inject canonical values into fallback too
     const unifiedFallback = injectUnifiedData(fallback, ticker);
-    return NextResponse.json(applyFairValueGate(unifiedFallback, fairValueLocked));
+    // PKG3-ROUND2 (Rule 67 SSOT): same canonical-price override applied to the
+    // SQLite-fallback response.
+    const canonicalFallback = await applyCanonicalPriceOverride(unifiedFallback, ticker);
+    return NextResponse.json(applyFairValueGate(canonicalFallback, fairValueLocked));
   }
 
   return NextResponse.json({
@@ -232,6 +256,75 @@ function applyFairValueGate(data: unknown, locked: boolean): unknown {
       return { ...obj, stock: gateRecord(obj.stock as Record<string, unknown>) };
     }
     return gateRecord(obj);
+  }
+  return data;
+}
+
+/**
+ * PKG3-ROUND2 (Rule 67 SSOT): override `current_price` + `previous_close`
+ * in the response with values from the canonical-price adapter
+ * (stocks.db → data_engine → vps_api), wrapped in `cache.getOrCompute()`.
+ *
+ * Why: this route has TWO price-read paths —
+ *   1. The Python response (which itself reads prices from somewhere)
+ *   2. The SQLite-fallback lib row (which opens stocks.db directly)
+ * Both bypass the canonical resolution chain. After this override, the
+ * `current_price` field in the FINAL response always reflects the canonical
+ * SSOT — same value seen by /api/explosive, /api/flow, /api/stocks/[ticker]/depth,
+ * and /api/stocks/[ticker]/publish-data.
+ *
+ * Rule 27 (NO-FAKE-DATA): if the canonical adapter returns null (ticker not
+ * in stocks.db AND not in data_engine AND vps_api unreachable), the existing
+ * value is preserved (still a real Python or stocks.db number — never
+ * fabricated). If the existing value is also null → null → UI renders "—".
+ *
+ * Shape-aware: walks `{stock: {...}}`, bare `{...}`, and array shapes the
+ * same way `injectUnifiedData` and `applyFairValueGate` do — keeping the
+ * response contract intact.
+ */
+async function applyCanonicalPriceOverride(
+  data: unknown,
+  ticker: string
+): Promise<unknown> {
+  let canonical: CanonicalPrice | null = null;
+  try {
+    canonical = await cache.getOrCompute(
+      `canonical_price:${ticker.toUpperCase()}`,
+      () => getCanonicalPrice(ticker, { allowLive: false }),
+      60_000,
+    );
+  } catch {
+    // adapter failure → preserve existing value
+    return data;
+  }
+  if (!canonical || !Number.isFinite(canonical.value) || canonical.value <= 0) {
+    return data;
+  }
+
+  const override = (rec: Record<string, unknown>): Record<string, unknown> => {
+    const next = { ...rec };
+    next.current_price = canonical!.value;
+    next.current_price_source = canonical!.source;
+    next.current_price_as_of = canonical!.asOf;
+    if (
+      canonical!.previousClose != null &&
+      Number.isFinite(canonical!.previousClose) &&
+      canonical!.previousClose > 0
+    ) {
+      next.previous_close = canonical!.previousClose;
+    }
+    return next;
+  };
+
+  if (Array.isArray(data)) {
+    return data.map((r) => (r && typeof r === 'object' ? override(r as Record<string, unknown>) : r));
+  }
+  if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    if (obj.stock && typeof obj.stock === 'object') {
+      return { ...obj, stock: override(obj.stock as Record<string, unknown>) };
+    }
+    return override(obj);
   }
   return data;
 }
