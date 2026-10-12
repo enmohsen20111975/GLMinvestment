@@ -21,8 +21,9 @@ import {
   Layers, Target, Zap, Gauge, Award, Crosshair, Clock,
   BarChart3, Eye as MicroscopeIcon, Flame as FlameIcon,
   Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, ShieldAlert, Info, Sparkles,
-  DoorOpen, FileText, UserCircle, Loader2,
+  DoorOpen, FileText, UserCircle, Loader2, Copy,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -466,6 +467,157 @@ const shortSignal = (s: string): string => {
   }
   return s;
 };
+
+// ============================================================================
+// GLM5.3-S2-COPY-ANALYSIS — Copy Professional Analysis button helpers
+// ============================================================================
+// formatProfessionalAnalysis() builds the canonical Arabic share-ready text
+// shown in the spec. It NEVER fabricates fields (Rule 27 NO-FAKE-DATA):
+// missing values (e.g. MFI) are rendered as "—" instead of fake numbers.
+// copyToClipboardWithFallback() prefers navigator.clipboard.writeText, then
+// falls back to document.execCommand('copy') for HTTP dev + legacy browsers.
+// ============================================================================
+
+/** Resolve a human-readable Arabic status from the radar path. */
+function pathToStockStatus(path: RadarPath | null | undefined): string {
+  if (!path) return '—';
+  if (path === 'A_pre_surge') return 'انطلاق وشيك';
+  if (path === 'B_quiet_accumulation_strong') return 'تجميع هادئ قوي';
+  if (path === 'C_quiet_accumulation_weak') return 'تجميع هادئ';
+  if (path === 'D_explosive_surge') return 'تصريف ذكي';
+  if (path === 'E_early_break') return 'انطلاق وشيك';
+  return '—';
+}
+
+/** Resolve a human-readable Arabic Wyckoff phase label from the radar path. */
+function pathToWyckoffPhase(path: RadarPath | null | undefined): string {
+  if (!path) return '—';
+  if (path === 'A_pre_surge') return 'مرحلة التجميع';
+  if (path === 'B_quiet_accumulation_strong' || path === 'C_quiet_accumulation_weak') {
+    return 'امتصاص العروض / اختبار القاع';
+  }
+  if (path === 'D_explosive_surge') return 'اختبار القمة / توزيع';
+  if (path === 'E_early_break') return 'اختراق التجميع';
+  return '—';
+}
+
+/** Resolve a human-readable Arabic liquidity-flow label from turnover + ROC. */
+function liquidityFlowLabel(stats: StockStats | undefined): string {
+  if (!stats) return '—';
+  // MFI is NOT available in StockDetail API (no fabrication per Rule 27).
+  // We surface avgTurnover20 + ROC10d as a real liquidity proxy instead.
+  const turnover = stats.avgTurnover20;
+  const roc = stats.roc10d;
+  if (turnover == null && roc == null) return '—';
+  const rocNum = roc ?? 0;
+  const flow = rocNum >= 0 ? 'تدفق إيجابي' : 'تدفق سلبي';
+  return `${flow}`;
+}
+
+/**
+ * Build the canonical "Professional Analysis" share text for a stock drawer.
+ * Rule 27 (NO-FAKE-DATA): missing fields render as "—" instead of fake values.
+ * Sources:
+ *   • stock name → detail.stock_info?.name_ar || .name
+ *   • price → detail.stats.lastClose
+ *   • status / Wyckoff → radarStock.path
+ *   • entry / target1 / target2 / stop_loss → detail.prediction
+ *   • MFI → NOT in StockDetail API → shown as "—" (no fabrication)
+ */
+export function formatProfessionalAnalysis(
+  ticker: string,
+  stockInfo: StockInfoRow | null | undefined,
+  detail: StockDetail | null,
+  radarStock: RadarStock | null | undefined,
+): string {
+  const name = stockInfo?.name_ar || stockInfo?.name || '';
+  const headerName = name ? `${name} (${ticker})` : ticker;
+
+  const lastClose = detail?.stats?.lastClose;
+  const status = pathToStockStatus(radarStock?.path);
+  const wyckoff = pathToWyckoffPhase(radarStock?.path);
+  const flow = liquidityFlowLabel(detail?.stats);
+  // MFI is not part of the StockDetail API contract — never fabricate (Rule 27)
+  const mfiLabel = '—';
+
+  const pred = detail?.prediction;
+  const entryLow =
+    pred?.entry_price_min ?? pred?.entry_price ?? null;
+  const entryHigh =
+    pred?.entry_price_max ?? pred?.entry_price ?? null;
+  const target1 = pred?.target_price ?? null;
+  const target2 = pred?.target_price_2 ?? null;
+  const stopLoss = pred?.stop_loss ?? null;
+
+  // Recommendation: prefer prediction.signal; fall back to "—" if missing
+  const recommendation = pred?.signal || '—';
+
+  const fmtPrice = (n: number | null | undefined): string =>
+    n == null || isNaN(n as number) ? '—' : (Number(n)).toFixed(2);
+
+  const lines: string[] = [];
+  lines.push(`📊 تقرير رادار السيولة وصانع السوق | ${headerName}`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`🔹 السعر الحالي: ${fmtPrice(lastClose)} ج.م`);
+  lines.push(`🔹 حالة السهم: ${status}`);
+  lines.push(`🔹 سلوك صانع السوق (Wyckoff): ${wyckoff}`);
+  lines.push(`🔹 سيولة السهم ومؤشر MFI: ${mfiLabel} - ${flow}`);
+  lines.push(`🔹 نطاق الدخول الآمن: من ${fmtPrice(entryLow)} إلى ${fmtPrice(entryHigh)} ج.م`);
+  lines.push(`🔹 مستهدفات الحركة: هدف أول ${fmtPrice(target1)} ج.م | هدف ثانٍ ${fmtPrice(target2)} ج.م`);
+  lines.push(`🔹 وقف الخسارة الفولاذي: ${fmtPrice(stopLoss)} ج.م (كسر بإغلاق)`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`💡 رؤية المحلل: ${recommendation}`);
+  lines.push('📌 منصة GLM Investment — نظام كشف السيولة الذكية');
+
+  return lines.join('\n');
+}
+
+/**
+ * Copy text to clipboard with a legacy execCommand fallback.
+ * Handles HTTP dev environments where navigator.clipboard is unavailable
+ * (it requires a secure context / HTTPS) and old browsers that lack it.
+ * Returns true on success, false on failure.
+ */
+export async function copyToClipboardWithFallback(text: string): Promise<boolean> {
+  // 1) Modern API — only available in secure contexts (HTTPS / localhost)
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === 'function' &&
+    (typeof window === 'undefined' || window.isSecureContext)
+  ) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('[copyToClipboard] navigator.clipboard failed, falling back to execCommand:', err);
+    }
+  }
+
+  // 2) Legacy fallback — works on HTTP dev + older browsers
+  if (typeof document !== 'undefined') {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      textarea.style.left = '-9999px';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return ok;
+    } catch (err) {
+      console.error('[copyToClipboard] execCommand fallback failed:', err);
+      return false;
+    }
+  }
+
+  return false;
+}
 
 // ============================================================================
 // RADAR-QUICK-WINS (Priority 1): Smart Entry Card — Path descriptions
@@ -2926,11 +3078,39 @@ function StockDetailDrawer({
 
   useEffect(() => { fetchDetail(); }, [fetchDetail]);
 
+  // stockInfo must be resolved BEFORE handleCopyProfessionalAnalysis so the
+  // useCallback deps array can reference it without TDZ errors.
+  const stockInfo = detail?.stock_info;
+
   const handleTrack = async () => {
     if (!detail?.stats?.lastClose) return;
     await onTrackToggle(ticker, detail.stats.lastClose, !!detail?.tracking?.isTracked);
     fetchDetail();
   };
+
+  // ─── GLM5.3-S2-COPY-ANALYSIS — "Copy Professional Analysis" button ────────
+  // Builds the canonical share-ready Arabic text via formatProfessionalAnalysis()
+  // then writes to clipboard (with execCommand fallback for HTTP dev / legacy
+  // browsers). Shows a sonner toast on success or failure.
+  const [copyingAnalysis, setCopyingAnalysis] = useState(false);
+  const handleCopyProfessionalAnalysis = useCallback(async () => {
+    if (!detail) return;
+    setCopyingAnalysis(true);
+    try {
+      const text = formatProfessionalAnalysis(ticker, stockInfo, detail, radarStock);
+      const ok = await copyToClipboardWithFallback(text);
+      if (ok) {
+        toast.success('تم نسخ التحليل بنجاح!');
+      } else {
+        toast.error('تعذّر نسخ التحليل — حاول مرة أخرى');
+      }
+    } catch (err) {
+      console.error('[StockDetailDrawer] copy professional analysis failed:', err);
+      toast.error('حدث خطأ غير متوقع أثناء النسخ');
+    } finally {
+      setCopyingAnalysis(false);
+    }
+  }, [detail, ticker, stockInfo, radarStock]);
 
   // sparkline geometry
   const sparkline = useMemo(() => {
@@ -2956,7 +3136,7 @@ function StockDetailDrawer({
 
   const sector = sectorForTicker(ticker);
   const sectorChange = sectorChangeForTicker(ticker);
-  const stockInfo = detail?.stock_info;
+  // (stockInfo is declared earlier — before handleCopyProfessionalAnalysis)
 
   return (
     <>
@@ -2999,6 +3179,25 @@ function StockDetailDrawer({
           })()}
         </div>
         <div className="flex items-center gap-1">
+          {/* GLM5.3-S2-COPY-ANALYSIS — Copy Professional Analysis (prominent) */}
+          {detail && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleCopyProfessionalAnalysis}
+              disabled={copyingAnalysis || loading}
+              className="h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm font-semibold"
+              title="نسخ تقرير الرادار الاحترافي إلى الحافظة"
+            >
+              {copyingAnalysis ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">نسخ التحليل الاحترافي</span>
+              <span className="sm:hidden">نسخ</span>
+            </Button>
+          )}
           {detail && (
             <UnifiedPublishButton
               content={buildStockDetailShareText(
