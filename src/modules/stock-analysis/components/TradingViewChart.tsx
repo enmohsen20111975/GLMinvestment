@@ -491,17 +491,24 @@ function parseBarSeconds(date: unknown): number | null {
   return secs;
 }
 
-function barTime(b: OhlcvBar): Time {
-  return (parseBarSeconds(b.date as unknown) ?? Math.floor(Date.now() / 1000)) as Time;
+// Robust extractor for candle timestamp/date from any backend payload (date, timestamp, time, etc.)
+function extractBarSeconds(bar: any): number | null {
+  if (!bar) return null;
+  const raw = bar.date ?? bar.timestamp ?? bar.time ?? bar.datetime ?? bar.dt;
+  return parseBarSeconds(raw);
 }
 
-function sanitizeOhlcBar(bar: OhlcvBar): OhlcvBar | null {
-  const seconds = parseBarSeconds(bar.date as unknown);
+function barTime(b: OhlcvBar | any): Time {
+  return (extractBarSeconds(b) ?? Math.floor(Date.now() / 1000)) as Time;
+}
+
+function sanitizeOhlcBar(bar: any): OhlcvBar | null {
+  const seconds = extractBarSeconds(bar);
   if (seconds === null) return null;
-  let open = Number(bar.open);
-  let high = Number(bar.high);
-  let low = Number(bar.low);
-  let close = Number(bar.close);
+  let open = Number(bar.open ?? bar.open_price ?? bar.price);
+  let high = Number(bar.high ?? bar.high_price ?? bar.price);
+  let low = Number(bar.low ?? bar.low_price ?? bar.price);
+  let close = Number(bar.close ?? bar.close_price ?? bar.price);
   if ([open, high, low, close].some((v) => !Number.isFinite(v))) return null;
   if (close <= 0) return null;
   if (open <= 0) open = close;
@@ -522,7 +529,7 @@ function sanitizeOhlcBar(bar: OhlcvBar): OhlcvBar | null {
   }
 
   return {
-    ...bar,
+    date: seconds,
     open: Math.round(open * 1000) / 1000,
     high: Math.round(high * 1000) / 1000,
     low: Math.round(low * 1000) / 1000,
@@ -537,14 +544,14 @@ function sanitizeOhlcBar(bar: OhlcvBar): OhlcvBar | null {
 // CHART-FIX (2026-10-01, 2nd pass): also sorts ascending and de-duplicates by
 // timestamp. lightweight-charts throws on unsorted or repeated time values,
 // which previously surfaced as a blank canvas.
-function sanitizeCandles(candles: OhlcvBar[]): OhlcvBar[] {
+function sanitizeCandles(candles: any[]): OhlcvBar[] {
   const seen = new Set<number>();
-  return candles
+  return (candles || [])
     .map(sanitizeOhlcBar)
     .filter((bar): bar is OhlcvBar => bar !== null)
-    .sort((a, b) => (parseBarSeconds(a.date as unknown) ?? 0) - (parseBarSeconds(b.date as unknown) ?? 0))
+    .sort((a, b) => (extractBarSeconds(a) ?? 0) - (extractBarSeconds(b) ?? 0))
     .filter((bar) => {
-      const t = parseBarSeconds(bar.date as unknown);
+      const t = extractBarSeconds(bar);
       if (t === null || seen.has(t)) return false;
       seen.add(t);
       return true;
@@ -947,8 +954,14 @@ export function TradingViewChart({
     if ((currentMarket as string) === 'CRYPTO' || ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'].includes(t)) {
       return `BINANCE:${t}USDT`;
     }
-    if ((currentMarket as string) === 'SAUDI' || currentMarket === 'TADAWUL' || /^\d{4}$/.test(t)) {
+    if ((currentMarket as string) === 'SAUDI' || (currentMarket as string) === 'TADAWUL' || /^\d{4}$/.test(t)) {
       return `TADAWUL:${t}`;
+    }
+    if ((currentMarket as string) === 'KUWAIT' || currentMarket === 'KSE') {
+      return `KSE:${t}`;
+    }
+    if ((currentMarket as string) === 'QATAR' || currentMarket === 'QSE') {
+      return `QSE:${t}`;
     }
     if (currentMarket === 'US') {
       return `NASDAQ:${t}`;
@@ -1040,27 +1053,43 @@ export function TradingViewChart({
         }
 
         if (!cancelled) {
-          const rawData = json?.data || [];
-          if (rawData.length > 0) {
+          const rawData = json?.data || json?.ohlcv || json?.candles || json?.history || [];
+          if (Array.isArray(rawData) && rawData.length > 0) {
             // CHART-FIX (2026-10-01): sanitizeCandles now sorts strictly by the
-            // parsed timestamp and drops duplicates/unparseable dates, so the
-            // old locale-dependent pre-sort is gone.
-            const sortedData = sanitizeCandles(rawData as OhlcvBar[]);
+            // parsed timestamp and drops duplicates/unparseable dates.
+            const sortedData = sanitizeCandles(rawData);
             if (sortedData.length === 0) {
-              throw new Error('لا توجد بيانات صالحة للعرض لهذا الرمز');
+              // If sanitization returned empty, check if we have any raw entries with price/close
+              const fallback = rawData
+                .filter((r: any) => r && (r.close || r.price || r.close_price))
+                .map((r: any, idx: number) => ({
+                  date: Math.floor(Date.now() / 1000) - (rawData.length - idx) * 86400,
+                  open: Number(r.open ?? r.close ?? r.price),
+                  high: Number(r.high ?? r.close ?? r.price),
+                  low: Number(r.low ?? r.close ?? r.price),
+                  close: Number(r.close ?? r.price),
+                  volume: Number(r.volume || 0),
+                }));
+              if (fallback.length > 0) {
+                setAllData(fallback as OhlcvBar[]);
+              } else {
+                throw new Error('لا توجد بيانات صالحة للعرض لهذا الرمز');
+              }
+            } else {
+              setAllData(sortedData);
             }
-            setAllData(sortedData);
 
             if (usedMarketClosedFallback || !getEGXMarketStatus().isOpen) {
               setMarketClosed(true);
             }
 
             // Calculate price change
-            if (sortedData.length >= 2) {
-              const last = sortedData[sortedData.length - 1];
-              const prev = sortedData[sortedData.length - 2];
+            const workingData = sortedData.length > 0 ? sortedData : (allData || []);
+            if (workingData.length >= 2) {
+              const last = workingData[workingData.length - 1];
+              const prev = workingData[workingData.length - 2];
               const change = last.close - prev.close;
-              const changePercent = (change / prev.close) * 100;
+              const changePercent = prev.close > 0 ? (change / prev.close) * 100 : 0;
               setLastPrice({
                 price: last.close,
                 change,
@@ -1717,34 +1746,50 @@ export function TradingViewChart({
     );
   }
 
-  // ─── Error State ───────────────────────────────────────────────────────────
+  // ─── Error State (Only blocks if NOT using TradingView official widget) ───
 
-  if (error) {
+  if (error && chartEngine !== 'tradingview_widget') {
     return (
       <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center justify-center min-h-[400px]">
         <RotateCcw className="size-10 text-muted-foreground mb-4" />
-        <p className="text-sm font-medium text-destructive mb-2">خطأ في تحميل الشارت</p>
+        <p className="text-sm font-medium text-destructive mb-2">خطأ في تحميل الشارت المحلي</p>
         <p className="text-xs text-muted-foreground mb-4">{error}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => window.location.reload()}
-        >
-          <RotateCcw className="size-3.5 mr-1.5" />
-          إعادة المحاولة
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.reload()}
+          >
+            <RotateCcw className="size-3.5 mr-1.5" />
+            إعادة المحاولة
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setChartEngine('tradingview_widget')}
+          >
+            عرض TradingView الأصلي ⚡
+          </Button>
+        </div>
       </div>
     );
   }
 
   // ─── No Data State ─────────────────────────────────────────────────────────
 
-  if (data.length === 0) {
+  if (data.length === 0 && chartEngine !== 'tradingview_widget') {
     return (
       <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center justify-center min-h-[400px]">
-        <p className="text-sm font-medium text-muted-foreground">
-          بانتظار تحديث بيانات الشارت — يتم التحميل تلقائيًا
+        <p className="text-sm font-medium text-muted-foreground mb-4">
+          بانتظار تحديث بيانات الشارت — أو يمكنك الانتقال مباشرة لـ TradingView الأصلي
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setChartEngine('tradingview_widget')}
+        >
+          عرض TradingView الأصلي بدلاً من ذلك
+        </Button>
       </div>
     );
   }

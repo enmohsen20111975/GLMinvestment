@@ -279,6 +279,14 @@ export function useCrossTickerAlerts(): void {
         transports: ['polling', 'websocket'],
         forceNew: true,
         timeout: 5000,
+        reconnectionAttempts: 1,
+      });
+
+      socket.on('connect_error', () => {
+        // ws-service on 3005 is optional — stop retrying if unreachable to avoid console spam
+        try {
+          socket.disconnect();
+        } catch {}
       });
 
       socket.on('stock:alert', (data: { ticker: string; name_ar?: string; price?: number; change?: number; direction?: 'up' | 'down'; message?: string; timestamp: string }) => {
