@@ -25,20 +25,18 @@ from typing import List, Optional, Dict, Any, Tuple
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════
 
-def _safe_atr(highs: List[float], lows: List[float], closes: List[float], 
+def _safe_atr(highs: List[float], lows: List[float], closes: List[float],
               period: int = 14) -> float:
-    """ATR(14)."""
-    if len(closes) < 2:
-        return 0
-    trs = []
-    for i in range(max(1, len(closes) - period), len(closes)):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i - 1]),
-            abs(lows[i] - closes[i - 1])
-        )
-        trs.append(tr)
-    return sum(trs) / len(trs) if trs else 0
+    """ATR(14) — canonical Wilder's smoothing (Rule 54).
+
+    PKG4-ATR-UNIFY: delegates to analyzers.indicators.calc_atr.
+    Pre-PKG4 this inlined a TR-mean over a window subset; the canonical
+    Wilder's smoothing is the project SSOT. Returns 0.0 when canonical
+    returns None (insufficient data).
+    """
+    from analyzers.indicators import calc_atr as _canonical_calc_atr
+    result = _canonical_calc_atr(highs, lows, closes, period)
+    return result if result is not None else 0.0
 
 
 def _median(values: List[float]) -> float:
