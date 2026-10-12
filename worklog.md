@@ -76158,3 +76158,70 @@ Stage Summary:
 - إصلاح خلل ATR الرياضي الحرج (Wilder's) — مُتحقَّق رياضياً
 - المنصة تعمل وتتفاعل وتتبدّل لغوياً
 - المتبقي (Round 2): ترحيل 670 ملف نصوص ثابتة، 452 مسار API، 15 نسخة ATR inline — موثّق في ENGINE_INVENTORY.md
+
+---
+Task ID: AUDITOR-DIR-BASELINE
+Agent: المدقق المستقل (المساعد) — Review Agent (DIR-05)
+Task: Baseline audit للمشاكل المذكورة في توجيهات DIR-01 إلى DIR-05
+
+## السياق
+المدير العام أصدر DIR-01 إلى DIR-05 لمشكلة "تضارب الجدول والنص" في PersonaTab.
+هذا التقرير يثبت وجود المشاكل في الكود الحالي (HEAD: 7e3b0b70) قبل تنفيذ المنفذ الفني.
+
+## المشاكل الثلاث المذكورة — Baseline
+
+### مشكلة 1 (DIR-01): تضارب isMismatch — ✅ مؤكدة
+
+**الجدول (PersonaTab.tsx) — 8 references لـ isMismatch:**
+- L847: `const isMismatch = Boolean(it.priceTargetMismatch);`
+- L874: يعرض بادج "منتهية" لو isMismatch=true
+- L849: `rowOpacity = isMismatch ? 'opacity-50'`
+
+**النص (helpers.ts formatSinglePersonaPickText L332-368) — 0 references لـ isMismatch:**
+- لا يفحص `isMismatch` ولا `isStale` إطلاقًا
+- L352: يطبع `🟢 ${ticker} - شراء قوي` بصرف النظر عن حالة السهم
+- L356: يطبع `💰 سعر الدخول` حتى لو السهم منتهي
+
+**نفس المشكلة في formatAllPersonaPicksText (L370-419).**
+
+**التضارب:** العميل يقرأ "شراء قوي + سعر دخول" بينما الجدول يقول "منتهية". ← مخالفة Rule 73.
+
+### مشكلة 2 (DIR-02): computeRR bug — ⚠️ الكود الحالي مختلف
+
+المدير العام ذكر: `computeRR(pd)` يستدعي `_computeRiskReward(pd as any)` → NaN → 0.00:1.
+
+**الكود الحالي (utils.ts L153-165):**
+- مش بـ يستدعي `_computeRiskReward` — بيعمل inline calc
+- يرجع `null` (مش 0) لما البيانات ناقصة
+
+**ملاحظة:** يبدو إن المشكلة دي اتحلت في كود سابق، أو إن المدير العام بيراجع نسخة قديمة. لازم المنفذ يتأكد إن `computeRR` بـ يرجع `null` مش 0.
+
+### مشكلة 3 (DIR-03): تضارب قيم الوقف — ✅ مؤكدة (5 مصادر مختلفة)
+
+1. `helpers.ts L98`: `stop = Number(p.stop_loss) || 0` — من predictions table
+2. `helpers.ts L110-111, 118-119`: fallback لـ `entryPrice * 1.08/0.93`
+3. `helpers.ts L343, 392`: `stop: item.entry?.stopLoss ?? null` — من analysisJson
+4. `PersonaTab.tsx L908`: `fmtPrice(pd.stop)` — من pd.stop
+5. `PersonaTab.tsx L1660`: `stop: p.stop_loss !== null ? Number(p.stop_loss) : null`
+
+**التضارب:** الجدول بـ يقرأ من مصدر، النص بـ يقرأ من مصدر تاني → قيم مختلفة (4.92 vs 4.97).
+
+## خطة المراجعة لـ DIR-05
+
+عند اكتمال DIR-01 إلى DIR-04 من المنفذ الفني، سأقوم بـ:
+
+1. **Zero Conflict Check**: grep على `isMismatch` في helpers.ts — لازم يظهر في formatSinglePersonaPickText
+2. **computeRR verification**: اختبار بـ pd={entry:10, target:15, stop:8} → لازم يرجع 2.5 (مش 0)
+3. **Stop loss unification**: مقارنة قيمة stop في الجدول vs النص لنفس السهم — لازم متطابقة
+4. **Fallback audit**: grep على `|| 0` و `?? null` — لازم مفيش fallback وهمي
+5. **Cross-screen consistency**: فحص كل شاشات المنصة للـ same stock
+
+## الحالة الحالية
+- HEAD: 7e3b0b70 (pkg1-4 enterprise architecture — مش متعلق بـ DIR)
+- المنفذ الفني **لم يبدأ** في توجيهات DIR
+- أنتظر تنفيذ DIR-01 إلى DIR-04 للبدء في مراجعة DIR-05
+
+Stage Summary:
+- Baseline مؤكد للمشاكل 1 و 3 (isMismatch + stop loss تضارب)
+- مشكلة 2 (computeRR) يبدو إنها اتحلت — محتاج تأكيد
+- جاهز للمراجعة الشاملة (DIR-05) بمجرد اكتمال المنفذ الفني
