@@ -325,6 +325,9 @@ class RegimeResult:
     indicators: RegimeIndicators
     confidence: float                    # 0..1 — how sure we are of this regime
     reasons: List[str] = field(default_factory=list)  # human-readable bullet list
+    # ALPHA-1 (Chief Systems Architect directive): professional Arabic reasons
+    # for client-facing display. Never leaks English debug text to the UI.
+    reasons_ar: List[str] = field(default_factory=list)
     computed_at: str = ""
     market: str = ""
     # Hysteresis bookkeeping (exposed for transparency)
@@ -347,11 +350,81 @@ class RegimeResult:
             "previous_effective_regime": self.previous_effective_regime.value,
             "confidence": round(self.confidence, 3),
             "reasons": self.reasons,
+            "reasons_ar": self.reasons_ar,
             "market": self.market,
             "computed_at": self.computed_at,
             "indicators": self.indicators.to_dict(),
             "thresholds": REGIME_CONFIG[self.regime],
         }
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# ALPHA-1 (Chief Systems Architect directive): Professional Arabic regime
+# reasons. Translates technical English debug strings into investment-grade
+# Arabic suitable for client-facing display. NEVER leaks English to the UI.
+# ──────────────────────────────────────────────────────────────────────────
+
+def _format_reasons_ar(regime: Regime, reasons_en: List[str], indicators: 'RegimeIndicators') -> List[str]:
+    """Translate English regime reasons into professional investment Arabic."""
+    if regime == Regime.DEFENSIVE:
+        header = "السوق في وضع دفاعي — أسباب التحول:"
+        ar_reasons = [header]
+        for r in reasons_en:
+            r_lower = r.lower()
+            if "sma20" in r_lower and "sma50" in r_lower:
+                ar_reasons.append(
+                    f"• المؤشر ({indicators.index_current:.2f}) يتداول أسفل المتوسطات "
+                    f"المتحركة (SMA20: {indicators.index_sma20:.2f}، SMA50: {indicators.index_sma50:.2f})"
+                )
+            elif "index down" in r_lower or "index_daily_decline" in r_lower:
+                ar_reasons.append(
+                    f"• هبوط المؤشر اليومي ({indicators.index_daily_change_pct:.2f}%) "
+                    f"يتجاوز عتبة الخطر"
+                )
+            elif "breadth" in r_lower:
+                ar_reasons.append(
+                    f"• اتساع السوق ضعيف — {indicators.breadth_pct*100:.1f}% فقط من الأسهم "
+                    f"صاعدة ({indicators.breadth_advances} من {indicators.breadth_total})"
+                )
+            elif "atr ratio" in r_lower:
+                ar_reasons.append(
+                    f"• تذبذب مرتفع — نسبة ATR ({indicators.atr_ratio:.2f}) تشير لارتفاع التقلبات"
+                )
+            elif "turnover" in r_lower:
+                ar_reasons.append(
+                    f"• انخفاض سيولة — نسبة التداول ({indicators.turnover_ratio:.2f}) أقل من المتوسط"
+                )
+            elif "loss streak" in r_lower or "consecutive" in r_lower:
+                ar_reasons.append(
+                    f"• {indicators.loss_streak_days} أيام هبوط متتالية"
+                )
+            elif "drawdown" in r_lower:
+                ar_reasons.append(
+                    f"• تراجع قصير المدى ({indicators.short_term_drawdown_pct*100:.1f}%)"
+                )
+            else:
+                ar_reasons.append(f"• {r}")
+        ar_reasons.append("— يُنصح بتقليل حجم المراكز والتركيز على الأسهم الدفاعية")
+        return ar_reasons
+
+    if regime == Regime.AGGRESSIVE:
+        header = "السوق في وضع هجومي — كل المؤشرات إيجابية:"
+        ar_reasons = [header]
+        ar_reasons.append(f"• المؤشر ({indicators.index_current:.2f}) أعلى من المتوسطات")
+        ar_reasons.append(f"• اتساع السوق قوي — {indicators.breadth_pct*100:.1f}% من الأسهم صاعدة")
+        ar_reasons.append(f"• سيولة مرتفعة — نسبة التداول {indicators.turnover_ratio:.2f}")
+        ar_reasons.append("— يمكن زيادة حجم المراكز والاستفادة من الزخم الصاعد")
+        return ar_reasons
+
+    # NORMAL
+    header = "السوق في وضع طبيعي — متوازن:"
+    ar_reasons = [header]
+    ar_reasons.append(f"• تغير المؤشر اليومي: {indicators.index_daily_change_pct:+.2f}%")
+    ar_reasons.append(f"• اتساع السوق: {indicators.breadth_pct*100:.1f}% صاعدة")
+    ar_reasons.append(f"• التذبذب: {indicators.atr_ratio:.2f}")
+    ar_reasons.append(f"• سيولة التداول: {indicators.turnover_ratio:.2f}")
+    ar_reasons.append("— استراتيجية متوازنة مناسبة لهذا الوضع")
+    return ar_reasons
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -973,6 +1046,7 @@ class MarketRegimeEngine:
             )
 
         # ── Decide raw regime ──
+        # ALPHA-1: build reasons_ar (professional Arabic) alongside English reasons
         if reasons_defensive:
             raw_regime = Regime.DEFENSIVE
             confidence = min(1.0, len(reasons_defensive) / 3.0)  # 3+ reasons → high confidence
@@ -994,11 +1068,15 @@ class MarketRegimeEngine:
                 f"  • Drawdown: {indicators.short_term_drawdown_pct*100:.1f}%",
             ]
 
+        # ALPHA-1: build the professional Arabic version for client-facing display
+        reasons_ar = _format_reasons_ar(raw_regime, reasons, indicators)
+
         return RegimeResult(
             regime=raw_regime,                # raw — hysteresis applies next
             indicators=indicators,
             confidence=confidence,
             reasons=reasons,
+            reasons_ar=reasons_ar,
             computed_at=datetime.now(timezone.utc).isoformat(),
             market=self.market,
             raw_regime=raw_regime,
