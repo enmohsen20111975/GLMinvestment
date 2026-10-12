@@ -1,0 +1,47 @@
+{
+  "task_id": "GLM5.2-S3-SPLIT-GUARD-PURGE",
+  "timestamp": "2026-10-12T11:17:58.664385",
+  "mode": "EXECUTE",
+  "db_path": "/home/z/my-project/db/predictions.db",
+  "backup_path": "/home/z/my-project/db/backups/predictions_sanity_purge_20261012_111758.db",
+  "pre_state": {
+    "total_predictions": 1551,
+    "fantasy_targets_gt_30pct": 1009,
+    "targets_above_cap": 1227,
+    "returns_below_minus_35": 2,
+    "split_excluded_marked": 0,
+    "split_NOT_marked": 2,
+    "status_active": 4,
+    "status_archived": 0,
+    "status_rejected_bad_rr": 0
+  },
+  "post_state": {
+    "total_predictions": 1551,
+    "fantasy_targets_gt_30pct": 1007,
+    "targets_above_cap": 1225,
+    "returns_below_minus_35": 0,
+    "split_excluded_marked": 0,
+    "split_NOT_marked": 0,
+    "status_active": 0,
+    "status_archived": 2,
+    "status_rejected_bad_rr": 2
+  },
+  "results": {
+    "phase1_fantasy_targets": {
+      "scanned": 4,
+      "capped_targets_count": 1,
+      "rejected_rr_count": 2
+    },
+    "phase2_hold_cleanup": {
+      "scanned": 2,
+      "archived_count": 2
+    },
+    "phase3_split_records_fix": {
+      "scanned": 2,
+      "fixed_count": 2
+    },
+    "phase4_reac_specific": {
+      "fixes_count": 1
+    }
+  }
+}
