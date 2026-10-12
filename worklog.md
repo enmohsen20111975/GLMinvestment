@@ -77541,3 +77541,64 @@ Stage Summary:
 - pre-commit hook: PASS
 - Rule 27 (NO-FAKE-DATA): respected — only real stock_daily_prices prices used
 - Rule 75 (PUSH-AFTER-EVERY-TASK): commit f9690616 + pushed to origin/main
+
+---
+Task ID: FINAL-REPORT-RADAR-STATS-REPAIR
+Agent: الفريق المسؤول الأول (المنفذ الفني + المدقق)
+Task: التقرير النهائي — علاج فضيحة الأصفار في مصير إشارات الرادار
+
+## ملخص ما تم إنجازه (2 وكلاء فرعيين بالتوازي)
+
+### S1: إصلاح منطق الحسابات في Signal Tracker API — ✅
+- تصحيح استعلام `verified`: `WHERE status IN ('verified_win','verified_loss','verified_neutral')` (يستثني stale_data)
+- حساب متوسطات العوائد الحقيقية: `AVG(outcome_7d/14d/30d)` بدل hardcoded null
+- تعريب مسميات الإشارات: `translateSignalType()` (A_pre_surge → ⚡ اختراق مبكر)
+- 2 commits (`81802880`, `516d6b58`)
+
+### S2: ربط stock_daily_prices + Verify Engine — ✅
+- اكتشاف: `price_history.db` malformed (تالف) — البديل `stock_daily_prices` في stocks.db (100,619 شمعة)
+- منطق التقييم: 7d (+2.5%), 14d (+4.0%), 30d (final), stop loss (-5%)
+- `scripts/verify_all_radar_signals.py` created + executed (idempotent)
+- 2 commits (`f9690616`, `17a39100`)
+
+## الأرقام النهائية (مُتحقق منها بشكل مستقل)
+
+| المقياس | قبل | بعد | التحقق |
+|---------|-----|------|--------|
+| verified signals | 0 | **281** (100 win + 181 loss) | ✅ |
+| win_rate_pct | 0.0% (مضلل) | **35.6%** (حقيقي) | ✅ |
+| avg_outcome_7d | null (hardcoded) | **+13.6%** (حقيقي، 381 signal) | ✅ |
+| avg_outcome_14d | null (hardcoded) | **+73.1%** (حقيقي، 83 signal) | ✅ |
+| avg_outcome_30d | null (hardcoded) | null (صحيح — مفيش 30d بعد) | ✅ |
+| by_signal_type labels | A_pre_surge (أكواد) | ⚡ اختراق مبكر (عربي) | ✅ |
+| pending signals | 670 | 308 (−362 تم تقييمها) | ✅ |
+| stale_data | 432 | 513 (+81 معلومة بصراحة) | ✅ |
+
+## التحقق من API
+```
+curl 'http://localhost:3000/api/maker-radar/signal-tracker?days=30'
+→ verified: 281, win_rate_pct: 35.6%, avg_outcome_7d: +13.6%
+→ by_signal_type[].label: "🎯 تجميع قوي", "⚡ اختراق مبكر" (عربي)
+```
+
+## التحقق النهائي
+- dev server: HTTP 200 على :3000 ✅
+- pre-commit hook: PASS على كل commit ✅
+- npx tsc: 0 أخطاء جديدة ✅
+- Idempotent: 2nd `--execute` → 0 changes ✅
+- Rule 27: مفيش hardcoded null لما فيه بيانات حقيقية ✅
+- Rule 75: كل commits مدفوعة ✅
+
+## الـ Commits (4 commits)
+- `81802880` fix(GLM5.2-RADAR-S1-API-FIX): verified query + real avg + AR labels
+- `516d6b58` docs(GLM5.2-RADAR-S1-API-FIX): worklog
+- `f9690616` feat(GLM5.2-RADAR-S2-VERIFY-ENGINE): price source + win/loss eval + script
+- `17a39100` docs(GLM5.2-RADAR-S2-VERIFY-ENGINE): worklog
+
+Stage Summary:
+- الفضيحة مُصلحة بالكامل: 0.0% → 35.6% win rate حقيقي
+- hardcoded null → real averages (+13.6%, +73.1%)
+- أكواد خام → تسميات عربية احترافية
+- price_history.db malformed → stock_daily_prices (100K شمعة)
+- 281 signal تم تقييمها فعليًا (100 win + 181 loss)
+- المنصة تعمل + pre-commit hooks شغّالة
