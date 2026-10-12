@@ -1812,7 +1812,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
     const headline = loading
       ? 'جاري تحليل الفرص — سيتم التحديث خلال دقائق'
       : isDefensive
-        ? 'السوق في وضع دفاعي — لا توجد فرص آمنة حالياً'
+        ? 'السوق في وضع دفاعي وقائي — لحماية رأس المال'
         : hasRegimeData
           ? 'لا توجد فرص متاحة حالياً'
           : 'جاري تحليل الفرص — سيتم التحديث خلال دقائق';
@@ -1823,7 +1823,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
             ? 'محرك المتوازن يبحث عن فرص متوسطة المدى (2-6 أسابيع). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
             : 'محرك المضارب يبحث عن فرص زخم قصيرة المدى (يومي-أسبوعي). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.')
       : isDefensive
-        ? 'محرك التحليل فحص كل أسهم EGX ولم يجد فرصة واحدة تجتاز معايير السوق الدفاعي. هذا الإجراء لحماية رأس مالك — السوق هابط والـ engine يرفع شروط الدخول تلقائياً. ستعود الفرص عند تحسن السوق (تجاوز المؤشر للمتوسطات + ارتفاع breadth فوق 25%).'
+        ? 'يعمل محرك التوقعات حالياً بنظام الحماية الدفاعية الصارمة نظراً لظروف وضغوط السوق العام. يتم تشديد فلاتر الدخول تلقائياً وتجنب المخاطرة العالية لتفادي المصائد السعرية، وتعود إشارات الدخول تدريجياً فور تأكيد استقرار مؤشرات السيولة وعودة الزخم المؤسسي.'
         : hasRegimeData
           ? 'محرك التحليل فحص كل الأسهم ولم يجد فرصة واحدة تستوفي معايير الدخول الصارمة. هذا طبيعي — النظام ينتظر ظهور سهم قوي بزخم مؤسسي. تحدّث البيانات كل 15 دقيقة تلقائياً.'
           : (isLongTerm
@@ -1837,21 +1837,47 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
       : hasRegimeData && !loading
         ? 'text-muted-foreground'
         : '';
+
+    // تعريب وتحسين أسباب الوضع الدفاعي لمنع ظهور نصوص برمجية إنجليزية للمستخدم
+    const formatRegimeReasonAr = (reason: string): string => {
+      const r = (reason || '').trim();
+      if (r.startsWith('DEFENSIVE') || r.startsWith('AGGRESSIVE') || r.startsWith('NORMAL')) return '';
+      const clean = r.replace(/^[•\s\-\*]+/, '').trim().toLowerCase();
+      if (clean.includes('sma20') || clean.includes('sma50')) return 'المؤشر العام يتداول أسفل المتوسطات المتحركة الرئيسية (20 و 50 يوماً)';
+      if (clean.includes('index down') || clean.includes('daily decline') || clean.includes('decline')) return 'تراجع ملحوظ في أداء المؤشر العام يفرض التحفظ';
+      if (clean.includes('breadth')) return 'اتساع السوق محدود مع تراجع نسبة الأسهم الصاعدة عن المعدل الآمن';
+      if (clean.includes('atr') || clean.includes('volatility')) return 'ارتفاع وتيرة التذبذب والمخاطرة السعرية في السوق';
+      if (clean.includes('turnover') || clean.includes('volume')) return 'انخفاض في أحجام وقيم التداول عن المتوسط المعتاد';
+      if (clean.includes('consecutive') || clean.includes('down days') || clean.includes('loss streak')) return 'توالي جلسات الهبوط المتتالية دون ارتداد إيجابي مؤكد';
+      if (clean.includes('drawdown')) return 'تراجع سعري عن القمم القريبة يستوجب الحذر وإدارة المخاطر';
+      if (/[\u0600-\u06FF]/.test(r)) return r.replace(/^[•\s\-\*]+/, '').trim();
+      return '';
+    };
+
+    const arabicReasons = isDefensive && marketRegime?.reasons
+      ? marketRegime.reasons.map(formatRegimeReasonAr).filter(Boolean)
+      : [];
+
     return (
       <Card className={isDefensive ? 'border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-950/10' : 'border-dashed'}>
-        <CardContent className="p-8 text-center">
+        <CardContent className="p-8 text-center" dir="rtl">
           <span className="text-4xl mb-3 block">{emoji}</span>
-          <p className={`text-lg font-semibold mb-1 ${headlineColor}`}>{headline}</p>
-          <p className="text-sm text-muted-foreground mb-4 whitespace-pre-line">{subtext}</p>
-          {isDefensive && marketRegime?.reasons && marketRegime.reasons.length > 0 && (
-            <ul className="text-xs text-muted-foreground mb-4 max-w-md mx-auto text-right space-y-1">
-              {marketRegime.reasons.slice(0, 4).map((r, i) => (
-                <li key={i} className="flex items-start gap-1 justify-end">
-                  <span className="text-amber-500 mt-0.5">•</span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
+          <p className={`text-lg font-semibold mb-2 ${headlineColor}`}>{headline}</p>
+          <p className="text-sm text-muted-foreground mb-4 max-w-xl mx-auto leading-relaxed">{subtext}</p>
+          {arabicReasons.length > 0 && (
+            <div className="bg-background/80 dark:bg-background/40 border border-amber-200/60 dark:border-amber-900/60 rounded-xl p-3.5 max-w-md mx-auto mb-5 text-right">
+              <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mb-2">
+                مؤشرات التحفظ الفني الحالية:
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1.5">
+                {arabicReasons.slice(0, 4).map((r, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={fetchPersona}>

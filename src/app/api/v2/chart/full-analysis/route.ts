@@ -35,28 +35,53 @@ function _toUnix(raw: unknown): number {
 
 function readStockOHLC(ticker: string, limit: number): Record<string, unknown>[] {
   const stocksDbPath = join(process.cwd(), 'db', 'stocks.db');
-  if (!existsSync(stocksDbPath)) return [];
-  try {
-    const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
-    const rows = db
-      .prepare(
-        `SELECT price_date as date,
-                COALESCE(open, open_price) as open,
-                COALESCE(high, high_price) as high,
-                COALESCE(low, low_price) as low,
-                COALESCE(close, close_price) as close,
-                COALESCE(volume, 0) as volume
-         FROM stock_daily_prices
-         WHERE ticker = ? COLLATE NOCASE
-         ORDER BY price_date DESC
-         LIMIT ?`
-      )
-      .all(ticker.toUpperCase(), limit) as Record<string, unknown>[];
-    db.close();
-    return rows.reverse();
-  } catch { // silent fallback (safe-by-design)
-    return [];
+  const priceHistoryDbPath = join(process.cwd(), 'db', 'price_history.db');
+
+  // 1. Try stocks.db stock_daily_prices
+  if (existsSync(stocksDbPath)) {
+    try {
+      const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
+      const rows = db
+        .prepare(
+          `SELECT price_date as date,
+                  COALESCE(open, open_price) as open,
+                  COALESCE(high, high_price) as high,
+                  COALESCE(low, low_price) as low,
+                  COALESCE(close, close_price) as close,
+                  COALESCE(volume, 0) as volume
+           FROM stock_daily_prices
+           WHERE ticker = ? COLLATE NOCASE
+           ORDER BY price_date DESC
+           LIMIT ?`
+        )
+        .all(ticker.toUpperCase(), limit) as Record<string, unknown>[];
+      db.close();
+      if (rows && rows.length > 0) return rows.reverse();
+    } catch { // silent fallback (safe-by-design)
+    }
   }
+
+  // 2. Fallback to price_history.db price_history (6000+ daily candles per ticker)
+  if (existsSync(priceHistoryDbPath)) {
+    try {
+      const db = new Database(priceHistoryDbPath, { readonly: true, timeout: 3000 });
+      const rows = db
+        .prepare(
+          `SELECT date,
+                  open, high, low, close, volume
+           FROM price_history
+           WHERE ticker = ? COLLATE NOCASE
+           ORDER BY date DESC
+           LIMIT ?`
+        )
+        .all(ticker.toUpperCase(), limit) as Record<string, unknown>[];
+      db.close();
+      if (rows && rows.length > 0) return rows.reverse();
+    } catch { // silent fallback (safe-by-design)
+    }
+  }
+
+  return [];
 }
 
 export async function GET(request: NextRequest) {

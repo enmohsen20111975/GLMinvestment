@@ -23,6 +23,7 @@ import { db } from '@/lib/db';
 // للـ RSI/support/resistance/signal. أي قيمة من Python backend بتـ override
 // بس لو unified مش متاح.
 import { getUnifiedStockData } from '@/lib/unified-stock-data';
+import { getPriceHistory } from '@/lib/egx-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -186,6 +187,19 @@ export async function GET(
       }
     } catch { // silent fallback (safe-by-design)
       // db might not have stocks table — ignore
+    }
+  }
+
+  // ─── PRICE-HISTORY-FALLBACK (Rule 67 & Rule 72) ─────────────────────────
+  // If Python backend or deep-analysis failed or returned empty price history,
+  // load the real chronological daily prices directly from local price_history.db.
+  if (!response.priceHistory || response.priceHistory.length === 0) {
+    try {
+      const localHistory = getPriceHistory(tickerUpper, 180);
+      if (localHistory && localHistory.length > 0) {
+        response.priceHistory = [...localHistory].reverse();
+      }
+    } catch { // safe-by-design
     }
   }
 
