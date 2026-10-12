@@ -160,6 +160,27 @@ SCAN_INTERVAL = int(get_setting('v402_scan_interval', default=1))
 MAX_PICKS_PER_DAY = int(get_setting('v402_max_picks_per_day', default=5))
 MIN_TICKER_DAYS = int(get_setting('v402_min_ticker_days', default=30))
 
+# ============================================================================
+# STABLECOINS BLACKLIST (Task CRYPTO-1 — Owner Directive 2026-10-12)
+# ============================================================================
+# العملات المستقرة والرموز المغلفة ممنوعة من التوقعات لأن ثبات سعرها
+# (≈1.00$) يخدع محركات التجميع ويسجل إشارات وهمية. WBTC/WETH رموز مغلفة.
+STABLECOINS = frozenset({
+    'USDT', 'USDC', 'FDUSD', 'DAI', 'USDD', 'TUSD', 'BUSD',
+    'PYUSD', 'EURC', 'WBTC', 'WETH', 'U',
+})
+
+
+def is_stablecoin(ticker: str) -> bool:
+    """فحص: هل هذا الـ ticker عملة مستقرة أو رمز مغلّف؟ (ممنوع من التوقعات)."""
+    if not ticker:
+        return False
+    t = str(ticker).strip().upper()
+    if t in STABLECOINS:
+        return True
+    base = t.split('-')[0].split('.')[0].split('/')[0].split('_')[0]
+    return base in STABLECOINS
+
 # ── V68 ORACLE FEATURE TOGGLES (A/B testing — 2026-08-31) ──
 # كل ميزة V68 ممكن تتعطل/تتفعل عبر env var عشان نعمل A/B backtest.
 # القاعدة: النتائج هي اللي تقرر - بـ نـ keep الكويس ونمسيح الوحش.
@@ -3833,7 +3854,13 @@ def get_crypto_tickers(min_days=30):
         """, (min_days,))
         tickers = [row[0] for row in cur.fetchall()]
         conn.close()
-        print(f"[V40.2-CRYPTO] crypto_prices — {len(tickers)} coins with >= {min_days} snapshots", flush=True)
+        # Task CRYPTO-1: استبعاد العملات المستقرة والرموز المغلفة
+        pre_stablecoin_count = len(tickers)
+        tickers = [t for t in tickers if not is_stablecoin(t)]
+        stablecoin_filtered = pre_stablecoin_count - len(tickers)
+        if stablecoin_filtered > 0:
+            print(f"[V40.2-CRYPTO] 🚫 STABLECOINS blacklist: {stablecoin_filtered} عملة مستقرة/مغلّفة مستبعدة", flush=True)
+        print(f"[V40.2-CRYPTO] crypto_prices — {len(tickers)} coins with >= {min_days} snapshots (after stablecoin filter)", flush=True)
     except Exception as e:
         print(f"[V40.2-CRYPTO] ⚠️ Failed to load crypto tickers: {e}", flush=True)
     return tickers

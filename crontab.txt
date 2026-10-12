@@ -199,5 +199,8 @@
 # CRYPTO + GOLD — 24/7 (بتتداول كل أيام الأسبوع + كل ساعة)
 */5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market CRYPTO --json-only >> /tmp/maker_radar_crypto.log 2>&1
 */5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market GOLD --json-only >> /tmp/maker_radar_gold.log 2>&1
+# Task CRYPTO-3: توقعات الكريبتو كل 4 ساعات (24/7 — الكريبتو لا ينام)
+# ينتج توقعات حقيقية مع LGBM Gatekeeper + STABLECOINS blacklist
+0 */4 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --market CRYPTO --today-only --max-picks 5 >> /tmp/crypto_predictions_4h.log 2>&1
 # Smart Recalculation: تحديث ذكي لـ support/resistance كل ساعة (50 سهم/ساعة = 1200/يوم)
 0 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/smart_recalc.py --rolling 50 >> /tmp/smart_recalc.log 2>&1

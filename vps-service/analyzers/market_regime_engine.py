@@ -168,11 +168,14 @@ MARKET_CONFIG: Dict[str, Dict[str, Any]] = {
         "price_table": "crypto_prices",
         "ticker_col": "symbol",
         "date_col": "timestamp",       # crypto_prices uses timestamp (ISO date)
-        "open_col": "open_price",
-        "high_col": "high_price",
-        "low_col": "low_price",
-        "close_col": "close_price",
-        "volume_col": "volume",
+        # Task CRYPTO-2: crypto_prices قد يستخدم open_price/high_price/low_price/close_price
+        # (schema A) أو price_usd/total_volume (schema B). الـ _fetch_ticker_ohlcv
+        # يستخدم COALESCE + fallback ديناميكي لتدعيم كلا الـ schemas.
+        "open_col": "open_price",       # primary (schema A) — fallback لـ price_usd
+        "high_col": "high_price",       # primary — fallback لـ price_usd
+        "low_col": "low_price",         # primary — fallback لـ price_usd
+        "close_col": "close_price",     # primary — fallback لـ price_usd
+        "volume_col": "total_volume",   # schema B (crypto_prices يستخدم total_volume لا volume)
         "turnover_col": "quote_volume",
         "stocks_db": DATA_ENGINE_DB,
         "stocks_table": "crypto_prices",   # same table — different "universe"
@@ -547,50 +550,77 @@ class MarketRegimeEngine:
     # Index OHLCV: either real index ticker or basket of top stocks
     # ════════════════════════════════════════════════════════════════════
     def _fetch_ticker_ohlcv(self, conn: sqlite3.Connection, ticker: str) -> List[Dict[str, Any]]:
-        """Fetch OHLCV rows for one ticker, sorted oldest → newest."""
+        """Fetch OHLCV rows for one ticker, sorted oldest → newest.
+
+        Task CRYPTO-2: يدعم schema مزدوج لـ crypto_prices:
+        - Schema A (egksco-style): open_price, high_price, low_price, close_price, volume
+        - Schema B (coinmarketcap-style): price_usd, total_volume (open=high=low=close=price_usd)
+        يستخدم COALESCE في SQL لتفادي OperationalError عند غياب عمود.
+        """
         cfg = self.config
         cols = self._table_columns(conn, cfg["price_table"])
         if not cols:
             return []
-        # Choose close column (close_price preferred, else close)
-        close_col = cfg["close_col"] if cfg["close_col"] in cols else (
-            "close" if "close" in cols else cfg["close_col"]
-        )
-        high_col = cfg["high_col"] if cfg["high_col"] in cols else (
-            "high" if "high" in cols else cfg["high_col"]
-        )
-        low_col = cfg["low_col"] if cfg["low_col"] in cols else (
-            "low" if "low" in cols else cfg["low_col"]
-        )
-        open_col = cfg["open_col"] if cfg["open_col"] in cols else (
-            "open" if "open" in cols else cfg["open_col"]
-        )
-        volume_col = cfg["volume_col"] if cfg["volume_col"] in cols else "volume"
-        turnover_col = cfg["turnover_col"] if cfg["turnover_col"] in cols else None
 
-        select_cols = [
-            cfg["date_col"],
-            open_col, high_col, low_col, close_col, volume_col,
-        ]
-        if turnover_col:
-            select_cols.append(turnover_col)
-        select_sql = ", ".join(select_cols)
-        cur = conn.cursor()
-        cur.execute(
-            f"SELECT {select_sql} FROM {cfg['price_table']} "
-            f"WHERE {cfg['ticker_col']} = ? "
-            f"ORDER BY {cfg['date_col']} ASC",
-            (ticker,),
+        # ── Build column selection with COALESCE fallbacks (Task CRYPTO-2) ──
+        # close: close_price → close → price_usd (crypto schema B)
+        close_expr = (
+            "COALESCE(close_price, close, price_usd)" if "price_usd" in cols else
+            (cfg["close_col"] if cfg["close_col"] in cols else
+             ("close" if "close" in cols else cfg["close_col"]))
         )
-        rows = cur.fetchall()
+        # high: high_price → high → price_usd (crypto: high = price_usd)
+        high_expr = (
+            "COALESCE(high_price, high, price_usd)" if "price_usd" in cols else
+            (cfg["high_col"] if cfg["high_col"] in cols else
+             ("high" if "high" in cols else cfg["high_col"]))
+        )
+        # low: low_price → low → price_usd (crypto: low = price_usd)
+        low_expr = (
+            "COALESCE(low_price, low, price_usd)" if "price_usd" in cols else
+            (cfg["low_col"] if cfg["low_col"] in cols else
+             ("low" if "low" in cols else cfg["low_col"]))
+        )
+        # open: open_price → open → price_usd (crypto: open = price_usd)
+        open_expr = (
+            "COALESCE(open_price, open, price_usd)" if "price_usd" in cols else
+            (cfg["open_col"] if cfg["open_col"] in cols else
+             ("open" if "open" in cols else cfg["open_col"]))
+        )
+        # volume: total_volume → volume → NULL (crypto schema B uses total_volume)
+        volume_expr = (
+            "COALESCE(total_volume, volume, 0)" if "total_volume" in cols else
+            (cfg["volume_col"] if cfg["volume_col"] in cols else "volume")
+        )
+        # turnover (optional)
+        turnover_expr = cfg["turnover_col"] if (cfg.get("turnover_col") and cfg["turnover_col"] in cols) else "NULL as turnover"
+
+        select_sql = f"{cfg['date_col']}, {open_expr} as open_val, {high_expr} as high_val, {low_expr} as low_val, {close_expr} as close_val, {volume_expr} as volume_val, {turnover_expr} as turnover_val"
+
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                f"SELECT {select_sql} FROM {cfg['price_table']} "
+                f"WHERE {cfg['ticker_col']} = ? "
+                f"ORDER BY {cfg['date_col']} ASC",
+                (ticker,),
+            )
+            rows = cur.fetchall()
+        except sqlite3.OperationalError as e:
+            # لو فشل الاستعلام (عمود مفقود)، ارجع قائمة فارغة بدل الانهيار
+            print(f"[market_regime] ⚠️ _fetch_ticker_ohlcv error for {ticker} "
+                  f"on {cfg['price_table']}: {e}", flush=True)
+            return []
+
         out: List[Dict[str, Any]] = []
         for r in rows:
             row = dict(r)
-            # normalize column aliases
-            row["close"] = row.get(close_col) or row.get("close")
-            row["high"] = row.get(high_col) or row.get("high")
-            row["low"] = row.get(low_col) or row.get("low")
-            row["open"] = row.get(open_col) or row.get("open")
+            # normalize column aliases (الآن كلها *_val من COALESCE)
+            row["close"] = row.get("close_val")
+            row["high"] = row.get("high_val")
+            row["low"] = row.get("low_val")
+            row["open"] = row.get("open_val")
+            row["volume"] = row.get("volume_val")
             row["date"] = row.get(cfg["date_col"])
             out.append(row)
         return out

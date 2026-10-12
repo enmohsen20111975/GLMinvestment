@@ -101,6 +101,30 @@ RVOL_SURGE_STATUS = 'rvol_surge_breakout'  # status في radar_signal_tracking
 # عدد الأيام لمتوسط التداول (متوسط 20 يوم — نفس المعيار السابق)
 LIQUIDITY_LOOKBACK_DAYS = 20
 
+# ============================================================================
+# STABLECOINS BLACKLIST (Task CRYPTO-1 — Owner Directive 2026-10-12)
+# ============================================================================
+# العملات المستقرة والرموز المغلفة ممنوعة من الرادار والتوقعات لأن
+# ثبات سعرها (≈1.00$) يخدع محركات التجميع (quiet_accumulation) ويسجل
+# إشارات وهمية. كذلك WBTC/WETH رموز مغلفة (wrapped) لا فائدة في تحليلها.
+STABLECOINS = frozenset({
+    'USDT', 'USDC', 'FDUSD', 'DAI', 'USDD', 'TUSD', 'BUSD',
+    'PYUSD', 'EURC', 'WBTC', 'WETH', 'U',
+})
+
+
+def is_stablecoin(ticker: str) -> bool:
+    """فحص: هل هذا الـ ticker عملة مستقرة أو رمز مغلّف؟ (ممنوع من الرادار)."""
+    if not ticker:
+        return False
+    t = str(ticker).strip().upper()
+    # مطابقة دقيقة + مطابقة البادئة (USDT, USDTUSD, USDT-USD, إلخ)
+    if t in STABLECOINS:
+        return True
+    # strip common suffixes: .CA, -USD, _USD, /USDT
+    base = t.split('-')[0].split('.')[0].split('/')[0].split('_')[0]
+    return base in STABLECOINS
+
 
 # ============================================================================
 # PORTABLE + MARKET-AWARE DB DETECTION — يشتغل في sandbox + laptop + production
@@ -1629,6 +1653,18 @@ def main():
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
             """).fetchall()]
+
+    # ─── STABLECOINS BLACKLIST (Task CRYPTO-1 — Owner Directive) ─────────
+    # استبعاد العملات المستقرة والرموز المغلفة من قائمة الرادار.
+    # ثبات سعرها (≈1.00$) يخدع محركات التجميع. ينطبق على كل الأسواق لكن
+    # حرج خصوصًا للكريبتو.
+    pre_stablecoin_count = len(tickers)
+    tickers = [t for t in tickers if not is_stablecoin(t)]
+    stablecoin_filtered = pre_stablecoin_count - len(tickers)
+    if stablecoin_filtered > 0:
+        log(f"  🚫 STABLECOINS blacklist: {stablecoin_filtered} عملة مستقرة/مغلّفة مستبعدة "
+            f"(قائمة: {', '.join(sorted(STABLECOINS))})")
+
     # ─── DYNAMIC LIQUIDITY ENGINE: حساب الـ Market Percentile Rank ──────
     # (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY §1.2)
     # قبل ما نبدأ الـ scan، نحسب الـ percentile rank لكل سهم في السوق.

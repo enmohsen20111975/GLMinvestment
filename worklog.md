@@ -80483,3 +80483,27 @@ Stage Summary:
 - ⚠️ ملاحظة للمدير: price_history.db malformed في sandbox — يحتاج backup + restore
   من production (مهمة DBA منفصلة). الـ code يتعامل مع الموقف بـ fail-safe لكن
   الأداء أفضل بكثير مع DB صحيح.
+
+---
+Task ID: BRAVO-CRYPTO-LIBERATION
+Agent: مهندس الرياضيات والأنظمة الكمية (فريق GLM 5.2-Bravo)
+Task: تحرير سوق الكريبتو 24/7 + STABLECOINS blacklist + crypto_prices schema fix
+
+Work Log:
+- أضفت STABLECOINS blacklist (12 عملة) في maker_radar.py + daily_predictor.py.
+- أضفت is_stablecoin() helper function (تدعم suffixes: .CA, -USD, /USDT).
+- أضفت فلتر في maker_radar.py main() بعد بناء قائمة tickers.
+- أضفت فلتر في daily_predictor.py get_crypto_tickers() بعد استعلام crypto_prices.
+- أصلحت _fetch_ticker_ohlcv في market_regime_engine.py:
+  * يدعم Schema A (open_price/high_price/low_price/close_price) و Schema B (price_usd/total_volume).
+  * يستخدم COALESCE في SQL لتفادي OperationalError عند غياب عمود.
+  * try/except sqlite3.OperationalError → return [] بدل الانهيار.
+- أضفت مدخل crontab.txt: توقعات الكريبتو كل 4 ساعات (24/7).
+
+Stage Summary:
+- ✅ المهمة 1: STABLECOINS blacklist — 12 عملة مستقرة/مغلّفة ممنوعة (USDT, USDC, FDUSD, DAI, USDD, TUSD, BUSD, PYUSD, EURC, WBTC, WETH, U).
+- ✅ المهمة 2: market_regime_engine _fetch_ticker_ohlcv — COALESCE fallback لـ price_usd/total_volume + try/except.
+- ✅ المهمة 3: crontab.txt — توقعات الكريبتو كل 4 ساعات (0 */4 * * *).
+- ✅ Syntax check: 3/3 files OK (maker_radar + daily_predictor + market_regime_engine).
+- ✅ STABLECOINS filter test: 7 blocked + 6 allowed (BTC/ETH/SOL/BNB/LINK/AVAX pass).
+- ✅ COALESCE logic test: Schema A (close_price) + Schema B (COALESCE→price_usd).
