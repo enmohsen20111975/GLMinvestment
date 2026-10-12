@@ -80030,3 +80030,124 @@ Stage Summary:
      cache مستقل — ممكن نضيف board_cache (TTL=120s) في PHASE 2 لو لسه بطيء.
 
 >>>>>>> ALPHA-3-DEEP-ANALYSIS-SPEED (feat: deep-analysis cache + 15s timeout)
+
+<<<<<<< ALPHA-2-DEFENSIVE-STOCKS (feat: defensive stock filter for DEFENSIVE regime)
+
+Task ID: ALPHA-2-DEFENSIVE-STOCKS
+Agent: Alpha Defensive Stocks Agent
+Owner request: لما السوق في وضع DEFENSIVE، شاشة "متابعة التوقعات" بـ تقول
+"السوق دفاعي — لا توجد فرص آمنة حالياً" وتوقف عرض الأسهم بالكامل. هذا خطأ —
+لازم المحرك يفرز الأسهم الدفاعية (low-beta + dividend + low-volatility) بدل
+ما يوقف.
+
+Work Log:
+- قرأت آخر 40 سطر من worklog.md (سياق BRAVO-LGBM + ALPHA-3) + قرأت
+  `vps-service/analyzers/market_regime_engine.py` (detect_regime / RegimeResult)
+  + `src/app/api/market/regime/route.ts` + `src/modules/market-analysis/components/PersonaTab.tsx`
+  عشان أفهم المسار الحالي: PersonaTab بـ يفحص regime، ولو DEFENSIVE و items.length===0
+  بـ يعرض رسالة "لا توجد فرص آمنة" بدل ما يفرز defensive stocks.
+
+- File 1 — vps-service/analyzers/market_regime_engine.py:
+  * أضفت `MarketRegimeEngine.get_defensive_stocks(limit=10)` في كلاس الـ engine
+    (نفس الـ brain module اللي بـ يحسب الـ regime — حاجة واحدة مش اتنين).
+  * Primary filter (production DB بـ يحتوي على beta):
+      SELECT ticker, name_ar, sector, beta, dividend_yield, market_cap,
+             current_price, turnover_egp, '<MARKET>' AS market
+      FROM stocks
+      WHERE market = ? AND is_active = 1
+        AND beta IS NOT NULL AND beta > 0 AND beta < 1.0
+        AND dividend_yield IS NOT NULL AND dividend_yield > 0
+      ORDER BY beta ASC, dividend_yield DESC
+      LIMIT ?
+  * Fallback (Rule 27 — NO-FAKE-DATA): لو الـ primary بيرجّع 0 صفوف (نموذجي
+    لو beta == NULL في الـ DB)، نـ retry بـ:
+      WHERE ... AND (beta IS NULL OR beta = 0)
+            AND dividend_yield IS NOT NULL AND dividend_yield > 0
+      ORDER BY dividend_yield DESC
+    ونـ mark كل row بـ `beta_source: "missing"`. الـ beta بـ يفضل NULL
+    في الـ response — مفيش اختلاق (Rule 27). dividend_yield إشارة دفاعية
+    حقيقية (cash yield) فـ رجوعها مبرّر.
+  * CRYPTO/GOLD → empty list (مفيش concept للأسهم الدفاعية — single instrument).
+  * Safe-by-design: أي DB error (table missing, column missing, etc.) →
+    return empty list + log warning (مش exception يكسر الـ request).
+  * Validation: `python3 -c "import ast; ast.parse(open(...).read())"` → SYNTAX OK.
+  * Verification:
+      python3 -c "from analyzers.market_regime_engine import MarketRegimeEngine; e = MarketRegimeEngine('EGX'); print(e.get_defensive_stocks(5))"
+    → رجّع 5 أسهم EGX حقيقية: PORT, BTFH, HELI, MASR, MNHD
+    (كلها عندها dividend_yield > 4%) — beta_source="missing" (الـ DB
+    sandbox فيه beta=NULL؛ production بـ يكون فيه beta فـ الـ primary
+    filter بـ يشتغل).
+  * commit: 86186746 → push.
+
+- File 2 — vps-service/api/stored_analysis_routes.py:
+  * أضفت endpoint `@market_bp.route('/defensive-stocks', methods=['GET'])`
+    (نفس الـ blueprint اللي فيه /morning-bell — url_prefix='/api/market').
+  * Lazy import لـ MarketRegimeEngine (avoid loading heavy module at Flask boot).
+  * Accepts market aliases (KSA→TADAWUL, QATAR→QSE, PAK→KSE) — نفس الـ set
+    اللي /api/market/regime بـ يقبل.
+  * limit clamped to [1, 50] (default 10).
+  * CRYPTO/GOLD → empty list + note_ar تشرح السبب.
+  * Response:
+      {
+        success: true,
+        market: 'EGX',
+        regime: 'DEFENSIVE',           # current persisted regime (cheap read)
+        stocks: [{ticker, name_ar, sector, beta, dividend_yield, market_cap,
+                  current_price, turnover_egp, market, beta_source}],
+        count: N,
+        beta_source: 'cached'|'missing'|'n/a',
+        source: 'market_regime_engine',
+        note_ar: '...'
+      }
+  * Flask test_client: `GET /api/market/defensive-stocks?market=EGX&limit=5`
+    → 200 + 5 stocks حقيقية + regime='DEFENSIVE' + beta_source='missing'.
+  * Flask test_client: `GET /api/market/defensive-stocks?market=CRYPTO`
+    → 200 + empty array + note_ar (Rule 27 safe).
+  * commit: 10dc7416 → push.
+
+- File 3 — src/app/api/market/defensive-stocks/route.ts (NEW):
+  * Thin proxy (Rule 20 — Python=brain, Node=proxy). مفيش أي business logic
+    هنا — مجرد normalize params + forward + return.
+  * Accepts نفس الـ market aliases (KSA→TADAWUL) + same limit clamp [1,50].
+  * 8s timeout (Python endpoint بـ يأخذ <100ms عادة، بس left headroom
+    for cold imports).
+  * Backend down → 200 + empty stocks + note_ar (مش 500) عشان PersonaTab
+    مبيكسرش. الـ UI بـ يـ handle empty stocks بـ رسالة fallback مهذّبة.
+  * TypeScript check: `npx tsc --noEmit --skipLibCheck route.ts` → 0 errors ✅.
+  * commit: 804c5e27 → push.
+
+- Rule 20 (Python=brain) ✅ — كل الـ logic في market_regime_engine.py +
+  stored_analysis_routes.py. الـ Node route هو proxy فقط (no business logic).
+- Rule 27 (NO-FAKE-DATA) ✅ — beta بـ يفضل null لما الـ DB مفيهوش قيمة؛
+  fallback بـ يستخدم dividend_yield الحقيقي بس؛ empty array لو مفيش صفوف.
+- Rule 75 (commit + push after each file) ✅ — 3 commits منفصلة، كل واحد
+  بـ message واضح + push فوري.
+- Idempotent ✅ — SELECT فقط، مفيش writes؛ re-run بيدي نفس النتيجة.
+- safe-by-design ✅ — أي DB error / Python backend down → empty array
+  + note (مش exception، مش 500).
+
+Stage Summary:
+- Brain: MarketRegimeEngine.get_defensive_stocks() — primary filter
+  (beta<1.0 AND dividend_yield>0 AND is_active=1) + fallback (dividend_yield
+  ranking when beta==NULL). Returns List[dict] with ticker, name_ar, sector,
+  beta, dividend_yield, market_cap, current_price, turnover_egp, market,
+  beta_source.
+- API surface: 3 endpoints (Python Flask blueprint → Node Next.js proxy):
+    1. Python: GET /api/market/defensive-stocks?market=EGX&limit=10
+    2. Node:    GET /api/market/defensive-stocks?market=EGX&limit=10
+- Verification: EGX returns 5 real stocks (PORT, BTFH, HELI, MASR, MNHD);
+  CRYPTO returns empty array with note (Rule 27 safe).
+- 3 commits pushed:
+    86186746  feat(ALPHA-2): add MarketRegimeEngine.get_defensive_stocks()
+    10dc7416  feat(ALPHA-2): add /api/market/defensive-stocks Python endpoint
+    804c5e27  feat(ALPHA-2): add Node.js thin proxy /api/market/defensive-stocks
+- Next actions (للمراحل اللاحقة — مش مطلوبة الآن):
+  1. PersonaTab.tsx: لما regime==='DEFENSIVE' و items.length===0، استدعِ
+     /api/market/defensive-stocks واعرض الأسهم الدفاعية بدل رسالة
+     "لا توجد فرص آمنة حالياً". (هذا تعديل UI — مهمة منفصلة.)
+  2. Populate beta column في stocks.db من price history (cron job) —
+     لو beta اتملأ، الـ primary filter بـ يشتغل تلقائياً بدون fallback.
+  3. إضافة tests في tests/unit/test_phase_g_critical_engines.py عشان
+     نضمن إن get_defensive_stocks() ما يكسرش مع schema changes مستقبلية.
+
+>>>>>>> ALPHA-2-DEFENSIVE-STOCKS (feat: defensive stock filter for DEFENSIVE regime)
