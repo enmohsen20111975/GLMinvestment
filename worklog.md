@@ -77602,3 +77602,91 @@ Stage Summary:
 - price_history.db malformed → stock_daily_prices (100K شمعة)
 - 281 signal تم تقييمها فعليًا (100 win + 181 loss)
 - المنصة تعمل + pre-commit hooks شغّالة
+
+---
+Task ID: INTRADAY-FLOW-ENGINE
+Agent: الفريق المسؤول الأول (المنفذ الفني + المدقق)
+Task: بناء محرك رادار تدفق السيولة اللحظي التراكمي (Intraday Liquidity & CVD Engine)
+
+## الاستطلاع الميداني (مكتشف حرج)
+فحصت `db/intraday.db` (427.5MB) بالكامل:
+- `stock_intraday`: **0 rows** (فارغ تمامًاً)
+- `intraday_prices`: **0 rows** (فارغ تمامًاً)
+- `crypto_intraday`: 632,233 rows (بيانات كريبتو فقط)
+- `commodity_intraday`: 75,659 rows (ذهب فقط)
+- `intraday_meta`: retention_days=7 (الـ pipeline مفروض يخزن 7 أيام لكنه معطل)
+
+**النتيجة**: الـ ingestion pipeline للأسهم اللحظية معطل بالكامل. الـ GM افترض وجود "بيانات حية غنية جداً" لكنها غير موجودة للأسهم.
+
+## الإصلاح المُنفّذ
+
+### 1. `src/lib/intraday-flow.ts` (helper library)
+- `computeIntradayFlow(ticker)` — نقطة دخول موحدة
+- 3 analytics:
+  - **CVD (Cumulative Volume Delta)**: classify each bar buy (close≥open) / sell (close<open), CVD = Σ(buy_vol) - Σ(sell_vol) + signal (accumulation/distribution/neutral)
+  - **Volume Profile POC**: bucket prices (0.5% step), aggregate volume, mark POC = max vol bucket
+  - **Large Blocks vs Retail**: notional = price × volume, threshold 100K EGP, aggregate buy/sell per class
+- Data sources (priority): stock_intraday → intraday_prices → 404 (NO fabrication)
+- Rule 27 محترمة: لو فاضي → return null (caller surfaces 404)
+
+### 2. `src/app/api/stocks/[ticker]/intraday-flow/route.ts`
+- GET endpoint مع params.ticker
+- يطبع `is_historical_session: true` + `session_date` لو الجلسة مش اليوم
+- 404 صريح لو مفيش بيانات: `error: 'no_intraday_data'` + `hint: 'intraday_data_ingestion_may_be_broken'`
+- 0 hardcoded values (Rule 27)
+
+## التحقق العملي (synthetic data test)
+
+حقنت 6 bars تجريبية في stock_intraday (COMI, prices 49.5-51.0)، شغلت الـ API، ثم حذفت البيانات:
+
+### CVD verification:
+```
+Bar 1: buy  (close 50.0 ≥ open 49.5) → +1000 → CVD=1000 ✅
+Bar 2: buy  (close 50.5 ≥ open 50.0) → +1500 → CVD=2500 ✅
+Bar 3: sell (close 50.2 < open 50.5)  → -2000 → CVD=500  ✅
+Bar 4: buy  (close 50.8 ≥ open 50.2) → +3000 → CVD=3500 ✅
+Bar 5: sell (close 50.5 < open 50.8) → -500  → CVD=3000 ✅
+Bar 6: sell (close 50.0 < open 50.5) → -2500 → CVD=500  ✅
+Final CVD = 500, signal = neutral ✅
+```
+
+### Large blocks (notional > 100K EGP):
+- Bar 3: 50.2×2000=100,400 → block (sell) ✅
+- Bar 4: 50.8×3000=152,400 → block (buy) ✅
+- Bar 6: 50.0×2500=125,000 → block (sell) ✅
+- Total: 3 blocks, vol=7500, notional=377,800, buy_vol=3000, sell_vol=4500 (net sell) ✅
+
+### Retail (notional ≤ 100K):
+- Bar 1: 50.0×1000=50,000 → retail (buy)
+- Bar 2: 50.5×1500=75,750 → retail (buy)
+- Bar 5: 50.5×500=25,250 → retail (sell)
+- Total: 3 retail, vol=3000, notional=151,000, buy_vol=2500, sell_vol=500 (net buy) ✅
+
+### Volume Profile POC:
+- Bucket 50.0-50.25: vol=5500 (3 bars) → **POC** ✅
+- Bucket 50.5-50.75: vol=2000 (2 bars)
+- Bucket 50.75-51.0: vol=3000 (1 bar)
+- poc_price = 50.0 ✅
+
+## التحقق النهائي
+- `npx tsc --noEmit --skipLibCheck`: 0 أخطاء في ملفاتي ✅
+- API 404 لما DB فاضي: `{"error":"no_intraday_data","hint":"intraday_data_ingestion_may_be_broken"}` ✅
+- API 200 لما فيه بيانات: كل الحسابات صحيحة ✅
+- البيانات التجريبية اتمسحت، DB رجع لـ 0 rows ✅
+- pre-commit hook: PASS ✅
+
+## توصية للـ ingestion pipeline (متابعة منفصلة)
+الـ `stock_intraday` + `intraday_prices` فاضيين. الـ ingestion pipeline (محتمل يكون في `vps-service/` أو `mini-services/`) يحتاج:
+1. التحقق من الـ websocket/live feed collector
+2. التأكد من كتابة البيانات للـ table الصحيح
+3. فحص الـ retention (7 أيام حسب intraday_meta)
+
+هذا خارج نطاق هذا التكليف لكنه مهم لتفعيل الـ API بالكامل.
+
+Stage Summary:
+- API جاهز ومختبر بـ curl (synthetic data + cleanup)
+- 3 analytics مُنفّذة: CVD + Volume Profile POC + Large Blocks vs Retail
+- Rule 27 محترمة 100% (404 صريح لما DB فاضي، مفيش اختلاق)
+- npx tsc: 0 أخطاء
+- pre-commit hook: PASS
+- مكتشف حرج: ingestion pipeline للأسهم اللحظية معطل — يحتاج متابعة منفصلة
