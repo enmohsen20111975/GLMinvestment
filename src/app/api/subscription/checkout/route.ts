@@ -65,6 +65,9 @@ export async function POST(req: NextRequest) {
       developer: 'b2b_starter',
     };
     const tier = TIER_ALIASES[rawTier] || rawTier;
+    // تحقق من دورة الفاتورة
+    const rawBilling = String(body.billingCycle || body.billing_period || 'monthly').toLowerCase().trim();
+    const billingCycle = rawBilling === 'yearly' || rawBilling === 'annual' ? 'yearly' : 'monthly';
 
     // تحقق من الباقة
     const validTiers = ['premium', 'pro', 'vip_pass', 'b2b_starter', 'b2b_pro', 'b2b_enterprise'];
