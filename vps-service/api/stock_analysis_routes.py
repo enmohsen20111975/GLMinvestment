@@ -147,6 +147,7 @@ def _row_to_dict(row) -> Dict[str, Any]:
         return {}
 
 
+
 def _get_data_engine_scraped_info(ticker: str) -> Dict[str, Any]:
     """Reads scraped TradingView indicators & prices from data_engine.db table stocks."""
     data_engine_db = str(_vps_root.parent / 'db' / 'data_engine.db')
