@@ -1362,6 +1362,147 @@ class MarketRegimeEngine:
         finally:
             conn.close()
 
+    # ════════════════════════════════════════════════════════════════════
+    # ALPHA-2-DEFENSIVE-STOCKS: Safe-haven universe for DEFENSIVE regime
+    # ════════════════════════════════════════════════════════════════════
+    def get_defensive_stocks(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """في وضع DEFENSIVE، رجّع الأسهم الدفاعية (safe haven):
+
+        المعايير الأساسية (production DB بـ يحتوي على beta):
+          - beta IS NOT NULL AND beta > 0 AND beta < 1.0  → low volatility
+          - dividend_yield IS NOT NULL AND dividend_yield > 0  → توزيعات أرباح
+          - is_active = 1                                  → سهم نشط (مش موقوف)
+          - market = self.market                           → فلتر السوق
+          - مرتبة بـ beta ASC ثم dividend_yield DESC
+
+        Fallback (لو beta == NULL لكل الصفوف — sandbox/fresh DB):
+          نرجّع الأسهم اللي عندها dividend_yield > 0 + is_active = 1 مرتبين
+          بـ dividend_yield DESC، ونـ mark كل row بـ `beta_source: "missing"`.
+          ده مش اختلاق — beta بـ يفضل NULL في الـ response. الـ dividend_yield
+          إشارة دفاعية حقيقية (cash yield) فـ رجوعها مبرّر.
+
+        Rule 27 (NO-FAKE-DATA):
+          - مفيش beta بـ يتاخترع — لو الـ DB فيه NULL، نرجّع null.
+          - CRYPTO/GOLD → مفيش concept للأسهم الدفاعية → empty list.
+          - لو مفيش بيانات نهائياً (no dividend_yield > 0) → empty list.
+
+        Args:
+            limit: max number of stocks to return (capped at 50).
+
+        Returns:
+            List[dict] — كل dict فيه:
+              ticker, name_ar, sector, beta, dividend_yield, market_cap,
+              current_price, turnover_egp, market, beta_source
+            beta_source ∈ {"cached", "missing"}:
+              "cached"  → beta من الـ DB اتستخدم في الـ filter.
+              "missing" → beta NULL في الـ DB؛ fallback بـ dividend_yield فقط.
+        """
+        # CRYPTO / GOLD → مفيش "أسهم دفاعية" — single instrument
+        if self.config.get("stocks_market_col") is None:
+            return []
+
+        cfg = self.config
+        stocks_db = cfg["stocks_db"]
+        stocks_table = cfg["stocks_table"]
+        market_col = cfg["stocks_market_col"]
+        market_val = cfg["stocks_market_val"]
+        active_col = cfg["stocks_active_col"]
+
+        try:
+            conn = self._connect(stocks_db)
+        except Exception as e:
+            logger.warning(f"[defensive-stocks] DB connect failed: {e}")
+            return []
+        try:
+            if not self._table_exists(conn, stocks_table):
+                logger.warning(f"[defensive-stocks] table {stocks_table} not found")
+                return []
+            cols = set(self._table_columns(conn, stocks_table))
+            # Required columns — if missing, we can't compute the filter (Rule 27)
+            required = {"ticker", "beta", "dividend_yield", active_col}
+            if not required.issubset(cols):
+                missing = required - cols
+                logger.warning(
+                    f"[defensive-stocks] missing required columns {missing} "
+                    f"in {stocks_table}"
+                )
+                return []
+            safe_limit = max(1, min(int(limit), 50))
+
+            # Build SELECT — graceful fallback for optional columns
+            def _col(name: str, alias: Optional[str] = None) -> str:
+                if name in cols:
+                    return f"{name}" + (f" AS {alias}" if alias and alias != name else "")
+                return f"NULL AS {alias or name}"
+
+            select_cols = ", ".join([
+                "ticker",
+                _col("name_ar"),
+                _col("sector"),
+                "beta",
+                "dividend_yield",
+                _col("market_cap"),
+                _col("current_price"),
+                _col("turnover_egp"),
+                f"'{self.market}' AS market",
+            ])
+
+            cur = conn.cursor()
+
+            # ── Primary filter: beta < 1.0 AND dividend_yield > 0 ──
+            primary_sql = (
+                f"SELECT {select_cols} FROM {stocks_table} "
+                f"WHERE {market_col} = ? "
+                f"AND {active_col} = 1 "
+                f"AND beta IS NOT NULL AND beta > 0 AND beta < 1.0 "
+                f"AND dividend_yield IS NOT NULL AND dividend_yield > 0 "
+                f"ORDER BY beta ASC, dividend_yield DESC "
+                f"LIMIT ?"
+            )
+            cur.execute(primary_sql, (market_val, safe_limit))
+            rows = [dict(r) for r in cur.fetchall()]
+
+            beta_source = "cached"
+
+            # ── Fallback: beta NULL في الـ DB → رجّع أعلى dividend_yield ──
+            # (Rule 27 — مفيش اختلاق؛ beta بـ يفضل NULL في الـ response.)
+            if not rows:
+                fallback_sql = (
+                    f"SELECT {select_cols} FROM {stocks_table} "
+                    f"WHERE {market_col} = ? "
+                    f"AND {active_col} = 1 "
+                    f"AND (beta IS NULL OR beta = 0) "
+                    f"AND dividend_yield IS NOT NULL AND dividend_yield > 0 "
+                    f"ORDER BY dividend_yield DESC "
+                    f"LIMIT ?"
+                )
+                cur.execute(fallback_sql, (market_val, safe_limit))
+                rows = [dict(r) for r in cur.fetchall()]
+                beta_source = "missing"
+                if rows:
+                    logger.info(
+                        f"[defensive-stocks] beta column NULL for {self.market} — "
+                        f"fallback to dividend_yield ranking ({len(rows)} rows)"
+                    )
+
+            # Cleanup: round numerics + ensure ticker is uppercase string
+            for r in rows:
+                r["ticker"] = str(r.get("ticker") or "").upper()
+                r["beta_source"] = beta_source
+                for k in ("beta", "dividend_yield", "market_cap",
+                          "current_price", "turnover_egp"):
+                    if r.get(k) is not None:
+                        try:
+                            r[k] = round(float(r[k]), 4)
+                        except (TypeError, ValueError):
+                            pass
+            return rows
+        except Exception as e:
+            logger.exception(f"[defensive-stocks] query failed: {e}")
+            return []
+        finally:
+            conn.close()
+
 
 # ──────────────────────────────────────────────────────────────────────────
 # Module-level convenience (for cron one-liners)
