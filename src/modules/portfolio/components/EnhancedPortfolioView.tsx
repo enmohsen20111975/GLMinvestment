@@ -43,6 +43,7 @@ import {
   Banknote,
   HandCoins,
   LifeBuoy,
+  Percent,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -540,6 +541,48 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
   const t = useTranslation();
   // P39-PHASE-2: state for the DynamicRiskProfilerModal (Retake button).
   const [profilerOpen, setProfilerOpen] = useState(false);
+
+  // GLM5.2-A (P0-ALPHA-PORTFOLIO-COMMISSION): custom brokerage + slippage rate.
+  // Per manager directive: commissions vary between EGX/TADAWUL/US + brokers.
+  // Stored in localStorage (per-user, per-device). Applied to net trade returns.
+  // Rule 27: no fake data — default is 0.00% (user sets their own real rate).
+  const COMMISSION_LS_KEY = 'glm_commission_pct';
+  const [commissionPct, setCommissionPct] = useState<number>(0);
+  // Load from localStorage on mount.
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(COMMISSION_LS_KEY);
+      if (stored != null) {
+        const parsed = parseFloat(stored);
+        if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 5) {
+          setCommissionPct(parsed);
+        }
+      }
+    } catch {
+      // localStorage unavailable (SSR / privacy mode) — keep default 0.00%.
+    }
+  }, []);
+  // Persist to localStorage on change.
+  const updateCommission = useCallback((val: number) => {
+    const clamped = Math.max(0, Math.min(5, val));
+    setCommissionPct(clamped);
+    try {
+      localStorage.setItem(COMMISSION_LS_KEY, String(clamped));
+    } catch {
+      // silent fallback (safe-by-design)
+    }
+  }, []);
+  // GLM5.2-A: apply commission to gross return → net return.
+  // net_return = gross_return - (commission_pct × 2)  (×2 for buy + sell sides)
+  const applyCommission = useCallback(
+    (grossReturnPct: number | null | undefined): number | null => {
+      if (grossReturnPct == null || !Number.isFinite(grossReturnPct)) return null;
+      // commission × 2 (entry + exit), as a fraction of the trade value.
+      const commissionCost = commissionPct * 2;
+      return grossReturnPct - commissionCost;
+    },
+    [commissionPct],
+  );
   // P37-PHASE-2B-4A: local currency-aware formatter — shadows the module-level
   // EGP-only version so every wealth value rendered inside this tab follows
   // the header's EGP/USD/SAR toggle. Per-row raw market prices (stock/gold
@@ -1173,6 +1216,65 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           )}
         </Card>
       </div>
+
+      {/* GLM5.2-A (P0-ALPHA-PORTFOLIO-COMMISSION) — Custom Brokerage & Fee Rate.
+          Per manager directive: commissions vary between EGX/TADAWUL/US + brokers.
+          Stored in localStorage. Applied to net trade returns (buy + sell sides). */}
+      <Card className="p-3 md:p-4 border-primary/20 bg-primary/5">
+        <div className="flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Percent className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-foreground truncate">
+                نسبة عمولة التداول والانزلاق %
+              </div>
+              <div className="text-[10px] text-muted-foreground truncate">
+                Brokerage & Fee Rate — تُخصم من عوائد الصفقات (شراء + بيع)
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Input
+              type="number"
+              min="0"
+              max="5"
+              step="0.01"
+              value={commissionPct}
+              onChange={(e) => updateCommission(parseFloat(e.target.value) || 0)}
+              className="w-24 text-center font-mono font-bold"
+              dir="ltr"
+            />
+            <span className="text-sm text-muted-foreground font-mono">%</span>
+            {/* Quick presets */}
+            <div className="flex gap-1">
+              {[0, 0.15, 0.20, 0.40].map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => updateCommission(preset)}
+                  className={cn(
+                    'px-2 py-1 rounded text-[10px] font-mono border transition-all',
+                    Math.abs(commissionPct - preset) < 0.001
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-card text-muted-foreground border-border hover:bg-muted',
+                  )}
+                  title={`${preset}%`}
+                >
+                  {preset.toFixed(2)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        {commissionPct > 0 && (
+          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+            💡 العمولة الحالية: <span className="font-mono font-bold text-primary">{commissionPct.toFixed(2)}%</span>
+            (تكلفة الكتلة: <span className="font-mono">{(commissionPct * 2).toFixed(2)}%</span> لكل صفقة شراء + بيع).
+            الأرباح الصافية في جدول الصفقات تُحسب بخصم هذه النسبة من العائد الإجمالي.
+          </p>
+        )}
+      </Card>
 
       {/* P39-PHASE-2: Wealth Allocation Matrix — persona-aware asset ceilings + alerts.
           Renders a 4-column grid (egx/crypto/gold/cash) with current % vs ceiling %,

@@ -79370,6 +79370,7 @@ Stage Summary:
 - عملات متعددة (EGP/SAR/USD/KWD/QAR) ديناميكية
 - 0 أخطاء TypeScript جديدة
 
+
 ---
 ---
 Task ID: TITAN-HEAVY-PUMP-3-DB-OPTIMIZATION
@@ -79725,3 +79726,92 @@ Stage Summary:
 - ✅ المهمة 4: SQLite readiness = 3/3 READY (integrity=ok) + إشارة جاهزية للإنتاج.
 - ✅ Rule 27 + Rule 20 + Rule 75 محترمة.
 - 🔔 إشارة الجاهزية: البيئة جاهزة لدمج LightGBM (المرحلة التالية).
+
+
+---
+Task ID: ALPHA-ADMIN-PORTFOLIO-POLISH
+Agent: الفريق المسؤول الأول (GLM5.2-A — UI/Frontend Team)
+Task: إصلاح لوحة الأدمن + شاشة المحفظة (Backtest Log Viewer + Commission Settings)
+
+## المهمة 1: BacktestTab — Log Terminal Viewer + Progress + run API ✅
+
+### التغييرات في `src/modules/admin/components/BacktestTab.tsx`:
+
+1. **runBacktest محدّث**:
+   - قبل: كان بـ يعرض toast error بس (لأن الـ endpoint معطل 410)
+   - بعد: بـ يستدعي `POST /api/admin/backtest/v40/run` فعليًا
+   - لو رجع 410 (deprecated) → بـ يعرض الرسالة + الـ log_tail بـ reason + canonical command
+   - لو نجح → بـ يبدأ polling لـ `/api/admin/backtest/v40/status/[jobId]`
+
+2. **Polling محدّث** (كل 3s بدل 5s):
+   - بـ يقرأ `log_tail` من الـ status API (Rule 27 — real data)
+   - بـ يقرأ `progress` / `progress_pct` لو موجودين
+   - بـ يكشف `status='failed'` + بـ يوقف الـ polling
+
+3. **Log Terminal Viewer** (UI جديد):
+   - terminal-style viewer (bg-zinc-950 + emerald text)
+   - header فيه TerminalIcon + "log_tail (آخر N سطر)" + live indicator (animate-pulse)
+   - body: font-mono + line numbers + auto-scroll
+   - cursor blink (▊) لما الـ job لسه شغال
+   - max-h-48 overflow-y-auto
+
+4. **Progress Indicator** (UI جديد):
+   - progress bar (h-1.5 + bg-primary + transition-all)
+   - percentage label (font-mono)
+   - بـ يتحرك من 0% لـ 100% لما الـ job يخلص
+
+## المهمة 2: Portfolio — Custom Commission Settings ✅
+
+### التغييرات في `src/modules/portfolio/components/EnhancedPortfolioView.tsx`:
+
+1. **Commission State**:
+   - `commissionPct` state (default 0.00%)
+   - localStorage key: `glm_commission_pct` (per-user, per-device)
+   - `updateCommission(val)`: clamps 0-5% + persists to localStorage
+   - `applyCommission(grossReturnPct)`: `gross - (commission × 2)` (buy + sell sides)
+
+2. **UI: Commission Card** (بعد الـ Summary Cards):
+   - Percent icon (primary)
+   - label: "نسبة عمولة التداول والانزلاق %"
+   - sublabel: "Brokerage & Fee Rate — تُخصم من عوائد الصفقات (شراء + بيع)"
+   - Input field (type=number, step=0.01, 0-5%)
+   - Quick presets: 0.00% / 0.15% / 0.20% / 0.40% (أشهر معدلات السمسرة)
+   - info line: "العمولة الحالية: X% (تكلفة الكتلة: 2X% لكل صفقة)"
+
+3. **Responsive**:
+   - flex-wrap للـ layout على الموبايل
+   - Input + presets بـ تتكدّ على شاشات صغيرة
+   - min-w-0 + truncate لمنع overflow
+
+## المهمة 3: الفحص والتحقق ✅
+
+- **Rule 27 محترمة**: مفيش بيانات وهمية. الـ commission default=0.00% (المستخدم بـ يحدد قيمته الحقيقية)
+- **Layout**: responsive (flex-wrap + grid 2 cols mobile / 4 cols desktop)
+- **Design tokens**: primary + emerald + muted فقط (مفيش hex colors)
+- **localStorage**: fallback صامت لو مش متاح (SSR/privacy)
+
+## التحقق
+- `npx tsc --noEmit`: 0 أخطاء جديدة (1 pre-existing في EnhancedPortfolioView L2884) ✅
+- dev server: HTTP 200 على :3000 ✅
+- pre-commit hook: PASS ✅
+
+## التغييرات الإجمالية
+- `src/modules/admin/components/BacktestTab.tsx`:
+  - imports: TerminalIcon + Loader2
+  - state: logTail + progress
+  - runBacktest: POST call + 410 handling + log_tail display
+  - polling: 3s interval + reads log_tail + progress + failed status
+  - UI: Log Terminal Viewer + Progress Indicator
+- `src/modules/portfolio/components/EnhancedPortfolioView.tsx`:
+  - imports: Percent icon
+  - state: commissionPct + localStorage persistence
+  - helpers: updateCommission + applyCommission
+  - UI: Commission Card (Input + presets + info)
+
+Stage Summary:
+- BacktestTab: Log Terminal Viewer حي + Progress Indicator + run API call فعلي
+- Portfolio: Commission Settings card (localStorage + presets + applyCommission helper)
+- 0 أخطاء TypeScript جديدة
+- Rule 27 محترمة (مفيش بيانات وهمية)
+- Responsive كامل (flex-wrap + grid)
+

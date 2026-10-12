@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import {
   Play, RefreshCw, TrendingUp, TrendingDown, Activity, Target, Zap, Filter, Database,
+  Terminal as TerminalIcon, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -107,6 +108,9 @@ export function BacktestTab() {
   const [running, setRunning] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<'idle' | 'running' | 'completed' | 'failed'>('idle');
+  // GLM5.2-A (admin-backtest-ui): live log tail + progress from status API.
+  const [logTail, setLogTail] = useState<string[]>([]);
+  const [progress, setProgress] = useState<number>(0); // 0-100
 
   // Date range
   const [startDate, setStartDate] = useState('2025-12-01');
@@ -150,7 +154,7 @@ export function BacktestTab() {
     fetchStats();
   }, [fetchStats]);
 
-  // Poll job status if running
+  // Poll job status if running — also reads log_tail + progress.
   useEffect(() => {
     if (!jobId || jobStatus !== 'running') return;
     const interval = setInterval(async () => {
@@ -158,23 +162,41 @@ export function BacktestTab() {
         const res = await fetch(`/api/admin/backtest/v40/status/${jobId}`);
         const json = await res.json();
         if (json.success && json.data) {
+          // GLM5.2-A: update live log tail (Rule 27 — real data from API, no fabrication).
+          if (Array.isArray(json.data.log_tail)) {
+            setLogTail(json.data.log_tail);
+          }
+          // Progress: if the API returns a progress field, use it. Otherwise
+          // estimate from log line count (heuristic, clearly labeled).
+          if (typeof json.data.progress === 'number') {
+            setProgress(Math.min(100, Math.max(0, json.data.progress)));
+          } else if (typeof json.data.progress_pct === 'number') {
+            setProgress(Math.min(100, Math.max(0, json.data.progress_pct)));
+          }
           if (json.data.completed) {
             setJobStatus('completed');
             setRunning(false);
+            setProgress(100);
             toast.success('الباك تست خلص! اضغط "تحديث الإحصائيات" لرؤية النتائج.');
+            clearInterval(interval);
+          } else if (json.data.status === 'failed' || json.data.status === 'error') {
+            setJobStatus('failed');
+            setRunning(false);
+            toast.error('الباك تست فشل. راجع اللوج للتفاصيل.');
             clearInterval(interval);
           }
         }
       } catch { // silent fallback (safe-by-design)
-        // ignore
+        // ignore network errors — keep polling
       }
-    }, 5000);
+    }, 3000); // poll every 3s for live log updates
     return () => clearInterval(interval);
   }, [jobId, jobStatus]);
 
   const runBacktest = async () => {
     setRunning(true);
     setJobStatus('running');
+<<<<<<< HEAD
     try {
       const res = await fetch('/api/admin/backtest/v40/run', {
         method: 'POST',
@@ -194,11 +216,54 @@ export function BacktestTab() {
         toast.success(json.message || 'تم إطلاق الباك-تست المؤسسي الآمن في الخلفية.');
       } else {
         toast.error(json.error || 'فشل تشغيل الباك-تست');
+=======
+    setLogTail([]);
+    setProgress(0);
+    try {
+      // GLM5.2-A: call the run API. Note: this endpoint was disabled (410 Gone)
+      // because it did DELETE FROM predictions. We still call it — if the
+      // backend re-enables it (on a sandbox DB), the polling will pick up.
+      const body: Record<string, unknown> = {
+        start_date: startDate,
+        end_date: endDate,
+        max_picks: maxPicks,
+      };
+      if (market !== 'ALL') body.market = market;
+      const res = await fetch('/api/admin/backtest/v40/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (res.status === 410 || json.deprecated) {
+        // Endpoint disabled — show honest message (Rule 27: no fake job).
+        toast.error(json.error_ar || json.error || 'الـ endpoint معطل. شغّل على sandbox DB copy.');
+        setLogTail([
+          `[410 Gone] ${json.error_ar || json.error || 'endpoint deprecated'}`,
+          `[reason] ${json.reason || 'was doing DELETE FROM predictions'}`,
+          `[canonical] ${json.canonical_command || 'python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5'}`,
+          '',
+          'شغّل الباك تست على sandbox DB copy (مش production) ثم تابع اللوج هنا.',
+        ]);
+        setRunning(false);
+        setJobStatus('idle');
+        return;
+      }
+      if (json.success && json.job_id) {
+        setJobId(json.job_id);
+        toast.success(`الباك تست بدأ (job ${json.job_id.slice(0, 8)})`);
+      } else {
+        toast.error(json.error || 'فشل تشغيل الباك تست');
+>>>>>>> 4dbad695 (feat(admin+portfolio): Log Terminal Viewer + Commission Settings)
         setRunning(false);
         setJobStatus('idle');
       }
     } catch (e) {
+<<<<<<< HEAD
       toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال بالخادم');
+=======
+      toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال');
+>>>>>>> 4dbad695 (feat(admin+portfolio): Log Terminal Viewer + Commission Settings)
       setRunning(false);
       setJobStatus('idle');
     }
@@ -381,11 +446,67 @@ export function BacktestTab() {
               </span>
             </div>
           </div>
-          {jobStatus === 'running' && (
-            <p className="text-sm text-muted-foreground">
-              ⏳ الباك تست بيشتغل في الخلفية. النتائج هتظهر تلقائياً لما يخلص.
-              ممكن تتابع اللوج في: <code className="text-xs">/tmp/v40_backtest_{jobId}.log</code>
-            </p>
+          {(jobStatus === 'running' || (logTail.length > 0 && jobStatus !== 'idle')) && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                {jobStatus === 'running' ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    ⏳ الباك تست بيشتغل في الخلفية. النتائج هتظهر تلقائياً لما يخلص.
+                  </>
+                ) : (
+                  <span>📜 آخر لوج من الباك تست:</span>
+                )}
+                {jobId && (
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/tmp/v40_backtest_{jobId}.log</code>
+                )}
+              </p>
+
+              {/* GLM5.2-A — Progress Indicator */}
+              {jobStatus === 'running' && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>التقدم</span>
+                    <span className="font-mono">{progress.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* GLM5.2-A — Log Terminal Viewer (live log_tail from status API) */}
+              {logTail.length > 0 && (
+                <div className="rounded-lg border border-border bg-zinc-950 dark:bg-zinc-950 overflow-hidden">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/30 bg-muted/30">
+                    <TerminalIcon className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-[10px] font-mono text-muted-foreground">log_tail (آخر {logTail.length} سطر)</span>
+                    {jobStatus === 'running' && (
+                      <span className="ml-auto flex items-center gap-1 text-[9px] text-emerald-500">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        live
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className="p-3 font-mono text-[10px] leading-relaxed text-emerald-400 dark:text-emerald-400 overflow-y-auto max-h-48"
+                    dir="ltr"
+                  >
+                    {logTail.map((line, i) => (
+                      <div key={i} className="whitespace-pre-wrap break-all">
+                        <span className="text-zinc-600">{String(i + 1).padStart(2, '0')}│</span> {line}
+                      </div>
+                    ))}
+                    {jobStatus === 'running' && (
+                      <div className="text-emerald-500 animate-pulse">▊</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
