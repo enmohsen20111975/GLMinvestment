@@ -220,11 +220,11 @@ export async function GET(
     // الـ sub-engines لسه بـ return بياناتها (composite scores, reasoning, etc.)
     // بس الـ signal النهائي = canonical signal.
     if (response.board && typeof response.board === 'object') {
-      (response.board as any).signal = unified.canonical.signal;
-      (response.board as any).signal_ar = unified.canonical.signal_ar;
-      (response.board as any).master_score = unified.canonical.master_score;
-      (response.board as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
-      (response.board as any).recommendation_ar = unified.canonical.signal_ar;
+      response.board.signal = unified.canonical.signal;
+      response.board.signal_ar = unified.canonical.signal_ar;
+      response.board.master_score = unified.canonical.master_score;
+      response.board.recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
+      response.board.recommendation_ar = unified.canonical.signal_ar;
     }
     // MAESTRO-KILL (2026-10-12): maestro section override removed — Maestro deleted.
     // response.maestro is no longer populated (the fetch was already disabled above).
@@ -233,16 +233,16 @@ export async function GET(
       response.maestro = null;
     }
     if (response.professional && typeof response.professional === 'object') {
-      (response.professional as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
-      (response.professional as any).recommendation_ar = unified.canonical.signal_ar;
-      (response.professional as any).score = unified.canonical.master_score;
+      response.professional.recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
+      response.professional.recommendation_ar = unified.canonical.signal_ar;
+      response.professional.score = unified.canonical.master_score;
     }
     if (response.hunter && typeof response.hunter === 'object') {
-      (response.hunter as any).signal = unified.canonical.signal;
-      (response.hunter as any).signal_ar = unified.canonical.signal_ar;
+      response.hunter.signal = unified.canonical.signal;
+      response.hunter.signal_ar = unified.canonical.signal_ar;
     }
     if (Array.isArray(response.predictions)) {
-      response.predictions = response.predictions.map((p: any) => ({
+      response.predictions = response.predictions.map((p: Record<string, unknown>) => ({
         ...p,
         signal: unified.canonical.signal,
         signal_ar: unified.canonical.signal_ar,
@@ -279,7 +279,7 @@ export async function GET(
       prediction_is_fresh: unified.canonical.prediction_is_fresh,
       buy_pct: unified.canonical.buy_pct,
       sell_pct: unified.canonical.sell_pct,
-    } as any;
+    };
 
     // Add prediction section if available
     if (unified.prediction) {
@@ -295,7 +295,7 @@ export async function GET(
         analysis_reason: unified.prediction.analysis_reason,
         who_is_buying: unified.prediction.who_is_buying,
         hmm_regime: unified.prediction.hmm_regime,
-      } as any;
+      };
     }
 
     // Add radar section if available
@@ -312,7 +312,7 @@ export async function GET(
         staleness_days: unified.radar.staleness_days,
         live_price: unified.radar.live_price,
         price_source: unified.radar.price_source,
-      } as any;
+      };
     }
 
     return NextResponse.json(response);
@@ -328,8 +328,8 @@ export async function GET(
       let h52: number | null = response.technical.high_52w != null ? Number(response.technical.high_52w) : null;
       let l52: number | null = response.technical.low_52w != null ? Number(response.technical.low_52w) : null;
 
-      response.technical.support = sup > 0 && sup < cp ? sup : null as any;
-      response.technical.resistance = res > cp ? res : null as any;
+      response.technical.support = sup > 0 && sup < cp ? sup : null;
+      response.technical.resistance = res > cp ? res : null;
       if (h52 != null && !isNaN(h52) && h52 > 0) {
         h52 = Math.max(h52, cp);
       } else {
