@@ -1,11 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { apiErr } from '@/lib/api-response';
 import Database from 'better-sqlite3';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { readExitRadarCache } from '@/modules/radar/lib/radar-cache';
 
 export const dynamic = 'force-dynamic';
+
+// Loose JSON record — SQLite / JSON-file rows don't have a strict schema (Rule 20).
+type LooseRecord = Record<string, unknown>;
+
+interface StockAdvice {
+  type: string;
+  reason: string;
+  action: string;
+  pnl_pct?: number;
+  to_target_pct?: number;
+  to_stop_pct?: number;
+  confidence?: number | null;
+  signal?: string | null;
+  severity?: 'critical' | 'warning' | 'caution';
+}
+
+interface ExitRadarEntry extends LooseRecord {
+  path: string;
+  reason?: string;
+  volume_ratio_today?: number;
+  all_paths?: string[];
+  current_price?: number;
+}
+
+interface StockEnriched {
+  ticker: string;
+  sources: string[];
+  entry_price: number | null;
+  shares: number | null;
+  alert_above: number | null;
+  alert_below: number | null;
+  current_price: number | null;
+  change_percent: number | null;
+  sector: string | null;
+  name_ar?: string;
+  previous_close?: number | null;
+  price_source: string | null;
+  radar_tracked: boolean;
+  derived_price?: number | null;
+  prediction?: LooseRecord | null;
+  advice?: StockAdvice | null;
+  exit_radar_signal?: {
+    path: string;
+    label_ar: string;
+    reason: string;
+    severity: 'critical' | 'warning' | 'caution';
+    volume_ratio_today: number | null;
+    all_paths: string[];
+    current_price_from_radar: number | null;
+    generated_at: string | null;
+  } | null;
+}
 
 // Exit Radar path labels (Arabic) + actionable advice per path.
 // Used to override the stock's advice when an exit signal is detected on a
@@ -48,7 +101,7 @@ const EXIT_RADAR_PATH_INFO: Record<string, { label_ar: string; advice_action_ar:
 // portfolio stocks. Single API call gives the widget everything it needs.
 export async function GET(req: NextRequest) {
   const { userId } = await getSessionUserId();
-  if (!userId) return NextResponse.json({ success: false, error: 'auth_required' }, { status: 401 });
+  if (!userId) return apiErr('auth_required', 'Authentication required', 401);
 
   // Hoisted so `finally` can close them on the failure path too — a leaked
   // readonly handle per request accumulates under dashboard polling.
@@ -83,9 +136,9 @@ export async function GET(req: NextRequest) {
     // map so we can attach exit_radar_signal to each portfolio stock in O(1).
     // readExitRadarCache returns null if cache missing — we just skip the join.
     const exitRadarCache = readExitRadarCache();
-    const exitRadarByTicker: Map<string, any> = new Map();
+    const exitRadarByTicker: Map<string, ExitRadarEntry> = new Map();
     if (exitRadarCache?.data?.exit_list && Array.isArray(exitRadarCache.data.exit_list)) {
-      for (const entry of exitRadarCache.data.exit_list) {
+      for (const entry of exitRadarCache.data.exit_list as ExitRadarEntry[]) {
         if (entry?.ticker) {
           exitRadarByTicker.set(String(entry.ticker).toUpperCase(), entry);
         }
@@ -102,7 +155,7 @@ export async function GET(req: NextRequest) {
     // columns widens the failure surface — `market`/`currency`/`is_active` are
     // not created by every DDL variant in this repo, and one missing column
     // makes the whole read fail.
-    let portfolioItems: any[] = [];
+    let portfolioItems: LooseRecord[] = [];
     if (stocksDb) {
       try {
         portfolioItems = stocksDb.prepare(
@@ -111,7 +164,7 @@ export async function GET(req: NextRequest) {
              FROM portfolio_assets
             WHERE user_id = ?
               AND stock_ticker IS NOT NULL AND stock_ticker != ''`
-        ).all(userId) as any[];
+        ).all(userId) as LooseRecord[];
         portfolioItems = portfolioItems.map((p) => ({
           ...p,
           // `current_value` is a stored snapshot (updated_at is routinely weeks
@@ -119,7 +172,7 @@ export async function GET(req: NextRequest) {
           // price aside and only use it as a last resort below, once the live
           // stocks.db quote has had its chance to fill current_price.
           derived_price:
-            p.current_value != null && p.shares ? p.current_value / p.shares : null,
+            p.current_value != null && p.shares ? Number(p.current_value) / Number(p.shares) : null,
           current_price: null as number | null,
         }));
       } catch (e) {
@@ -132,7 +185,7 @@ export async function GET(req: NextRequest) {
     // 2. Get watchlist — stocks.db `user_stock_watchlists` joined to `stocks`.
     // LEFT JOIN (not INNER) so entries whose stock_id no longer resolves to a
     // `stocks` row are still surfaced; matches /api/portfolio/watchlists.
-    let watchlistItems: any[] = [];
+    let watchlistItems: LooseRecord[] = [];
     if (stocksDb) {
       try {
         watchlistItems = stocksDb.prepare(
@@ -141,7 +194,7 @@ export async function GET(req: NextRequest) {
              FROM user_stock_watchlists w
              LEFT JOIN stocks s ON s.id = w.stock_id
             WHERE w.user_id = ?`
-        ).all(userId) as any[];
+        ).all(userId) as LooseRecord[];
       } catch (e) {
         console.error('[portfolio:unified-watch] user_stock_watchlists read failed:', e);
         throw e;
@@ -149,11 +202,11 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Get radar tracking
-    let radarTracked: any[] = [];
+    let radarTracked: LooseRecord[] = [];
     if (existsSync(trackingFile)) {
       try {
-        const tracking = JSON.parse(readFileSync(trackingFile, 'utf-8'));
-        radarTracked = Object.entries(tracking).map(([ticker, data]: [string, any]) => ({
+        const tracking = JSON.parse(readFileSync(trackingFile, 'utf-8')) as Record<string, LooseRecord>;
+        radarTracked = Object.entries(tracking).map(([ticker, data]) => ({
           ticker,
           entry_price: data.entryPrice,
           entry_date: data.entryDate,
@@ -164,38 +217,41 @@ export async function GET(req: NextRequest) {
 
     // 4. Merge all tickers
     const allTickers = new Set<string>();
-    portfolioItems.forEach(p => allTickers.add(p.ticker?.toUpperCase()));
-    watchlistItems.forEach(w => allTickers.add(w.ticker?.toUpperCase()));
-    radarTracked.forEach(r => allTickers.add(r.ticker?.toUpperCase()));
+    const addTicker = (t: unknown) => {
+      if (typeof t === 'string') allTickers.add(t.toUpperCase());
+    };
+    portfolioItems.forEach(p => addTicker(p.ticker));
+    watchlistItems.forEach(w => addTicker(w.ticker));
+    radarTracked.forEach(r => addTicker(r.ticker));
 
     // 5. Enrich each ticker with live data
-    const enrichedStocks: any[] = [];
+    const enrichedStocks: StockEnriched[] = [];
     for (const ticker of allTickers) {
       if (!ticker) continue;
 
-      const stock: any = {
+      const stock: StockEnriched = {
         ticker,
-        sources: [] as string[],
-        entry_price: null as number | null,
-        shares: null as number | null,
-        alert_above: null as number | null,
-        alert_below: null as number | null,
-        current_price: null as number | null,
-        change_percent: null as number | null,
-        sector: null as string | null,
-        prediction: null as any,
-        advice: null as any,
-        price_source: null as string | null,
+        sources: [],
+        entry_price: null,
+        shares: null,
+        alert_above: null,
+        alert_below: null,
+        current_price: null,
+        change_percent: null,
+        sector: null,
+        price_source: null,
         radar_tracked: false,
+        prediction: null,
+        advice: null,
       };
 
       // From portfolio
-      const portfolioItem = portfolioItems.find(p => p.ticker?.toUpperCase() === ticker);
+      const portfolioItem = portfolioItems.find(p => String(p.ticker || '').toUpperCase() === ticker);
       let derivedPrice: number | null = null;
       if (portfolioItem) {
         stock.sources.push('portfolio');
-        stock.entry_price = portfolioItem.entry_price;
-        stock.shares = portfolioItem.shares;
+        stock.entry_price = Number(portfolioItem.entry_price) || null;
+        stock.shares = Number(portfolioItem.shares) || null;
         // FOCUS-5-TASKS-AUDIT-FIX (AUDIT-DEEP-1 #2):
         // Previously: `portfolioItem.current_price || portfolioItem.entry_price`
         // BUG: when current_price is NULL (true for ALL virtual user items),
@@ -204,36 +260,36 @@ export async function GET(req: NextRequest) {
         // FIX: never seed current_price from the portfolio row. The live quote
         // from stocks.db below always wins; the derived snapshot price is only
         // a last resort for tickers that have no `stocks` row at all.
-        derivedPrice = portfolioItem.derived_price;
+        derivedPrice = portfolioItem.derived_price != null ? Number(portfolioItem.derived_price) : null;
       }
 
       // From watchlist
-      const watchlistItem = watchlistItems.find(w => w.ticker?.toUpperCase() === ticker);
+      const watchlistItem = watchlistItems.find(w => String(w.ticker || '').toUpperCase() === ticker);
       if (watchlistItem) {
         stock.sources.push('watchlist');
-        stock.alert_above = watchlistItem.alert_price_above;
-        stock.alert_below = watchlistItem.alert_price_below;
-        if (!stock.current_price) stock.current_price = watchlistItem.current_price;
+        stock.alert_above = watchlistItem.alert_price_above != null ? Number(watchlistItem.alert_price_above) : null;
+        stock.alert_below = watchlistItem.alert_price_below != null ? Number(watchlistItem.alert_price_below) : null;
+        if (!stock.current_price && watchlistItem.current_price != null) stock.current_price = Number(watchlistItem.current_price);
       }
 
       // From radar tracking
-      const radarItem = radarTracked.find(r => r.ticker?.toUpperCase() === ticker);
+      const radarItem = radarTracked.find(r => String(r.ticker || '').toUpperCase() === ticker);
       if (radarItem) {
         stock.sources.push('radar');
         stock.radar_tracked = true;
-        if (!stock.entry_price) stock.entry_price = radarItem.entry_price;
+        if (!stock.entry_price && radarItem.entry_price != null) stock.entry_price = Number(radarItem.entry_price);
       }
 
       // Enrich with stocks.db data — this is the authoritative live quote.
       if (stocksDb) {
         try {
-          const stockInfo = stocksDb.prepare('SELECT name_ar, sector, current_price, change_percent, previous_close FROM stocks WHERE ticker = ? COLLATE NOCASE').get(ticker) as any;
+          const stockInfo = stocksDb.prepare('SELECT name_ar, sector, current_price, change_percent, previous_close FROM stocks WHERE ticker = ? COLLATE NOCASE').get(ticker) as LooseRecord | undefined;
           if (stockInfo) {
-            stock.sector = stockInfo.sector;
-            stock.name_ar = stockInfo.name_ar;
-            if (!stock.current_price) stock.current_price = stockInfo.current_price;
-            stock.change_percent = stockInfo.change_percent;
-            stock.previous_close = stockInfo.previous_close;
+            stock.sector = stockInfo.sector != null ? String(stockInfo.sector) : null;
+            stock.name_ar = stockInfo.name_ar != null ? String(stockInfo.name_ar) : undefined;
+            if (!stock.current_price && stockInfo.current_price != null) stock.current_price = Number(stockInfo.current_price);
+            if (stockInfo.change_percent != null) stock.change_percent = Number(stockInfo.change_percent);
+            if (stockInfo.previous_close != null) stock.previous_close = Number(stockInfo.previous_close);
           }
         } catch { /* safe-by-design */ }
       }
@@ -252,14 +308,14 @@ export async function GET(req: NextRequest) {
         try {
           const pred = predDb.prepare(
             'SELECT entry_price, target_price, target_price_2, stop_loss, signal, confidence, risk_reward, prediction_date, status FROM predictions WHERE ticker = ? ORDER BY id DESC LIMIT 1'
-          ).get(ticker) as any;
+          ).get(ticker) as LooseRecord | undefined;
           if (pred) {
             stock.prediction = pred;
             // Generate advice based on prediction + current price
-            if (stock.current_price && pred.target_price && pred.stop_loss) {
+            if (stock.current_price && pred.target_price != null && pred.stop_loss != null) {
               const current = stock.current_price;
-              const target = pred.target_price;
-              const stop = pred.stop_loss;
+              const target = Number(pred.target_price);
+              const stop = Number(pred.stop_loss);
               // FOCUS-5-TASKS-AUDIT-FIX (AUDIT-DEEP-1 #3 + #4):
               // Previously: `pred.entry_price || stock.entry_price || current`
               // BUG #3: NaN/Infinity risk — `(target-current)/current` produces Infinity
@@ -271,7 +327,7 @@ export async function GET(req: NextRequest) {
               //        (e.g. ABUK: pred.entry=88.63, user bought at 58 → shows -34.6%
               //        STOP_LOSS, but user actually has +58.6% gain → should be TAKE_PROFIT).
               // FIX #4: Use stock.entry_price (user's actual purchase price) FIRST.
-              const entry = stock.entry_price || pred.entry_price || current;
+              const entry = stock.entry_price || (pred.entry_price != null ? Number(pred.entry_price) : null) || current;
               const pnl_pct = entry > 0 ? ((current - entry) / entry) * 100 : 0;
               // NaN/Infinity guards — only compute if both sides > 0
               const to_target_pct = (target > 0 && current > 0) ? ((target - current) / current) * 100 : 0;
@@ -310,8 +366,8 @@ export async function GET(req: NextRequest) {
                 pnl_pct: Math.round(pnl_pct * 10) / 10,
                 to_target_pct: Math.round(to_target_pct * 10) / 10,
                 to_stop_pct: Math.round(to_stop_pct * 10) / 10,
-                confidence: pred.confidence,
-                signal: pred.signal,
+                confidence: pred.confidence != null ? Number(pred.confidence) : null,
+                signal: pred.signal != null ? String(pred.signal) : null,
               };
             }
           }
@@ -368,7 +424,6 @@ export async function GET(req: NextRequest) {
     enrichedStocks.forEach(s => {
       if (s.sector) sectorDist[s.sector] = (sectorDist[s.sector] || 0) + 1;
     });
-
     // ─── FOCUS-5-TASKS: Alerts summary (for the dashboard widget badge count).
     // Counts actionable alerts by type so the widget can show a quick "X alerts"
     // chip without scanning the whole stocks array.
@@ -427,7 +482,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('[portfolio:unified-watch]', error);
-    return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
+    return apiErr('internal_error', 'فشل في جلب البيانات', 500, {
+      cause: error instanceof Error ? error.message : String(error),
+    });
   } finally {
     // Close on every path, including the throws above.
     if (stocksDb) stocksDb.close();
