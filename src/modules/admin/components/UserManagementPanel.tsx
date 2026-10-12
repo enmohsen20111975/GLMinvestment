@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -144,6 +144,31 @@ function timeAgo(iso: string | null | undefined): string {
   return `منذ ${Math.floor(diffMs / 86_400_000)} يوم`;
 }
 
+// GLM5.2-A (ADMIN-USER-MGMT): Member tenure — "مشترك منذ X شهر/يوم"
+function memberTenure(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const diffMs = Date.now() - d.getTime();
+  const days = Math.floor(diffMs / 86_400_000);
+  if (days < 1) return 'مشترك منذ اليوم';
+  if (days < 30) return `مشترك منذ ${days} يوم`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `مشترك منذ ${months} ${months === 1 ? 'شهر' : months === 2 ? 'شهرين' : 'أشهر'}`;
+  const years = Math.floor(months / 12);
+  return `مشترك منذ ${years} ${years === 1 ? 'سنة' : 'سنوات'}`;
+}
+
+// Format exact Gregorian date for tooltip
+function formatGregorian(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+type SortKey = 'newest' | 'oldest' | 'lastActive' | 'role' | 'name';
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
@@ -158,6 +183,8 @@ export function UserManagementPanel() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<'delete' | null>(null);
   const [updating, setUpdating] = useState(false);
+  // GLM5.2-A (ADMIN-USER-MGMT): sorting state
+  const [sortKey, setSortKey] = useState<SortKey>('newest');
   // Task 28-B (Fix 8) — Fix Battalion: cleanup-expired dialog wired into the
   // new UserManagementPanel (was only in legacy UsersManagement.tsx before).
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
@@ -287,6 +314,36 @@ export function UserManagementPanel() {
       setSelected(new Set(users.map(u => u.id)));
     }
   };
+
+  // GLM5.2-A (ADMIN-USER-MGMT): Sorted users memo — applies the selected sort
+  const sortedUsers = useMemo(() => {
+    const arr = [...users];
+    switch (sortKey) {
+      case 'newest':
+        return arr.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case 'oldest':
+        return arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case 'lastActive':
+        return arr.sort((a, b) => {
+          const aT = new Date(a.lastLoginAt || a.lastActive || 0).getTime();
+          const bT = new Date(b.lastLoginAt || b.lastActive || 0).getTime();
+          return bT - aT;
+        });
+      case 'role':
+        return arr.sort((a, b) => {
+          const order: Record<string, number> = { admin: 0, premium: 1, user: 2 };
+          return (order[a.role] ?? 3) - (order[b.role] ?? 3);
+        });
+      case 'name':
+        return arr.sort((a, b) => {
+          const aName = (a.name || a.username || a.email || '').toLowerCase();
+          const bName = (b.name || b.username || b.email || '').toLowerCase();
+          return aName.localeCompare(bName);
+        });
+      default:
+        return arr;
+    }
+  }, [users, sortKey]);
 
   // ---- Single user mutations ----
 
@@ -659,6 +716,32 @@ export function UserManagementPanel() {
       {/* Users table */}
       <Card>
         <CardContent className="p-0">
+          {/* GLM5.2-A: Sorting bar */}
+          {!loading && users.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap p-3 border-b border-border bg-muted/20">
+              <span className="text-[11px] font-bold text-muted-foreground ml-1">ترتيب حسب:</span>
+              {[
+                { key: 'newest' as SortKey, label: 'الأحدث انضماماً' },
+                { key: 'oldest' as SortKey, label: 'الأقدم انضماماً' },
+                { key: 'lastActive' as SortKey, label: 'آخر نشاط' },
+                { key: 'role' as SortKey, label: 'الدور' },
+                { key: 'name' as SortKey, label: 'أبجدياً' },
+              ].map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => setSortKey(opt.key)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all',
+                    sortKey === opt.key
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-card text-muted-foreground border-border hover:bg-muted',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
           {loading && users.length === 0 ? (
             <div className="p-4 space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -690,8 +773,9 @@ export function UserManagementPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(u => {
+                  {sortedUsers.map(u => {
                     const isSelected = selected.has(u.id);
+                    const roleValue: Role = u.role === 'admin' ? 'admin' : u.role === 'premium' ? 'premium' : 'free';
                     return (
                       <tr key={u.id} className={cn(
                         'border-b hover:bg-muted/30',
@@ -706,7 +790,9 @@ export function UserManagementPanel() {
                         </td>
                         <td className="p-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <Avatar className="w-8 h-8">
+                            {/* GLM5.2-A (Task 1): AvatarImage — صورة Google الحقيقية */}
+                            <Avatar className="w-8 h-8 ring-1 ring-border/50">
+                              <AvatarImage src={u.image || undefined} alt={u.name || u.username} />
                               <AvatarFallback className="text-xs">
                                 {(u.username || u.email || '?').slice(0, 2).toUpperCase()}
                               </AvatarFallback>
@@ -717,10 +803,35 @@ export function UserManagementPanel() {
                                 <Mail className="w-3 h-3" />
                                 {u.email}
                               </div>
+                              {/* GLM5.2-A (Task 2): Member tenure */}
+                              <div
+                                className="text-[9px] text-muted-foreground mt-0.5 cursor-help"
+                                title={`تاريخ التسجيل: ${formatGregorian(u.createdAt)}`}
+                              >
+                                {memberTenure(u.createdAt)}
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-2 whitespace-nowrap">{roleBadge(u.role)}</td>
+                        {/* GLM5.2-A (Task 3): Quick Role Changer — Select dropdown مباشر */}
+                        <td className="p-2 whitespace-nowrap">
+                          <Select
+                            value={roleValue}
+                            onValueChange={(val) => {
+                              updateUser(u.id, { role: val as Role });
+                            }}
+                            disabled={updating}
+                          >
+                            <SelectTrigger className="h-7 w-[100px] text-[11px] font-semibold">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="free" className="text-xs">👤 مجاني</SelectItem>
+                              <SelectItem value="premium" className="text-xs">🛡️ مميز</SelectItem>
+                              <SelectItem value="admin" className="text-xs">👑 أدمن</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
                         <td className="p-2 whitespace-nowrap">{promoBadge(u.promoCode)}</td>
                         <td className="p-2 whitespace-nowrap">{statusBadge(u.status)}</td>
                         <td className="p-2 text-xs text-muted-foreground whitespace-nowrap">
