@@ -100,6 +100,39 @@ export const VALID_SIGNAL_TYPES = new Set([
   'early_break',
 ]);
 
+/**
+ * SIGNAL_TYPE_AR — خريطة تعريب أكواد الإشارات إلى عناوين عربية مقروءة.
+ * يدعم كل من الأكواد المُتقدّمة (A_pre_surge, B_quiet_accumulation_strong, D_explosive_surge)
+ * والأكواد البسيطة (pre_surge, quiet_accumulation_strong, explosive_surge, early_break, ...).
+ *
+ * Rule 27 (NO-FAKE-DATA): لا نُخترع ترجمات وهمية — كل كود غير معروف يبقى كما هو (fallback).
+ */
+const SIGNAL_TYPE_AR: Record<string, string> = {
+  // Pre-surge / early breakout
+  'A_pre_surge': '⚡ اختراق مبكر',
+  'pre_surge': '⚡ اختراق مبكر',
+  'early_break': '⚡ اختراق مبكر',
+  // Quiet accumulation strong
+  'B_quiet_accumulation_strong': '🎯 تجميع قوي',
+  'quiet_accumulation_strong': '🎯 تجميع قوي',
+  // Quiet accumulation weak
+  'quiet_accumulation_weak': '🌱 تجميع ضعيف',
+  // Explosive surge
+  'D_explosive_surge': '💥 انفجار حجمي',
+  'explosive_surge': '💥 انفجار حجمي',
+};
+
+/**
+ * translateSignalType — يرجّع الاسم العربي للإشارة أو الكود الأصلي كـ fallback.
+ *
+ * @param code - كود الإشارة الخام (مثل `A_pre_surge`)
+ * @returns العنوان العربي المعروض للمستخدم
+ */
+export function translateSignalType(code: string): string {
+  if (!code) return code;
+  return SIGNAL_TYPE_AR[code] || code;
+}
+
 export interface RecordSignalInput {
   ticker: string;
   signal_type: string;
