@@ -79815,3 +79815,58 @@ Stage Summary:
 - Rule 27 محترمة (مفيش بيانات وهمية)
 - Responsive كامل (flex-wrap + grid)
 
+
+---
+Task ID: ALPHA-AI-CONFIDENCE-UI
+Agent: فريق ألفا (UI/Frontend Team)
+Task: عرض احتمالية الذكاء الاصطناعي (AI Confidence Score) في الواجهة
+
+## ملخص التنفيذ (3 مهام)
+
+### Task 1: شارة AI Confidence في جدول الرادار ✅
+أضفت `getAiConfidenceBadge(confidence, masterScore)` helper بـ 3 tiers:
+- 🤖 **ثقة عالية** (>= 70%): emerald + shadow-sm براق
+- 🤖 **ثقة متوسطة** (55-69%): blue
+- ⚠️ **محايد / عالي المخاطر** (< 55%): muted gray
+- fallback: لو confidence + master_score null → neutral badge
+
+الشارة بتعرض في عمود ticker بجوار شارة السيولة:
+- emoji (🤖/⚠️) + percentage (font-mono)
+- title بـ full_label: "🤖 ذكاء اصطناعي: ثقة عالية (75%)"
+- uses prediction.confidence → master_score fallback (Rule 67 SSOT)
+
+### Task 2: زر فلترة High Conviction AI ✅
+أضفت زر: **✨ توصيات الذكاء الاصطناعي فائقة الثقة (AI ≥ 65%)**
+- emerald active state + shadow-sm
+- filter logic: prediction.confidence >= 65% (أو master_score fallback)
+- مُطبّق على كل 4 radar lists (pre_surge, quiet, explosive, early_break)
+- useMemo deps محدّثة بـ aiConfidenceFilter + predictionForTicker
+
+### Task 3: التصميم والأناقة ✅
+- الثيم المظلم الفاخر: emerald + blue + muted (design tokens)
+- shadow-sm براق للـ high confidence badge (shadow-emerald-500/20)
+- أيقونات: 🤖 للـ AI + ⚠️ للـ محايد
+- Responsive: flex-wrap للـ badges + الأزرار
+- font-mono للنسب المئوية
+
+## التحقق
+- `npx tsc --noEmit`: 0 أخطاء جديدة ✅
+- pre-commit hook: PASS ✅
+- Rule 27: لو confidence + master_score null → neutral badge (مفيش اختلاق) ✅
+- design tokens فقط (emerald + blue + muted + fuchsia) ✅
+- Responsive: flex-wrap على الموبايل ✅
+
+## التغييرات
+- `getAiConfidenceBadge()` helper: 3 tiers + none fallback
+- شارة AI في عمود ticker (بجوار liquidity badge)
+- state: `aiConfidenceFilter` (boolean)
+- filter logic في `applyLiquidityAndIndexFilters`: confidence >= 65%
+- زر فلترة: "✨ توصيات الذكاء الاصطناعي فائقة الثقة (AI ≥ 65%)"
+- useMemo deps: aiConfidenceFilter + predictionForTicker
+
+Stage Summary:
+- شارة AI Confidence (🤖/⚠️) بجوار كل سهم في الجدول
+- زر فلترة High Conviction AI (>= 65%)
+- 3 tiers: ثقة عالية (emerald) + متوسطة (blue) + محايد (muted)
+- Rule 27 محترمة (fallback neutral لو مفيش data)
+- 0 أخطاء TypeScript جديدة
