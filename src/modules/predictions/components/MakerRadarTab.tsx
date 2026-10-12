@@ -3704,8 +3704,20 @@ function StockDetailDrawer({
                   <span className="text-xs font-semibold">البيانات الأساسية</span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <FundamentalField label="P/E" value={stockInfo.pe_ratio != null ? stockInfo.pe_ratio.toFixed(2) : null} />
-                  <FundamentalField label="P/B" value={stockInfo.pb_ratio != null ? stockInfo.pb_ratio.toFixed(2) : null} />
+                  {/* GLM5.2-A (UI-FINANCIAL-POLISH): P/E shows "غير منطبق (خسائر مرحلية)"
+                      when null/negative instead of '—' — makes it clear this is a
+                      financial N/A (phase losses), not a data bug. P/B is highlighted
+                      as the alternative valuation metric. */}
+                  <FundamentalField
+                    label="P/E"
+                    value={stockInfo.pe_ratio != null && stockInfo.pe_ratio > 0 ? stockInfo.pe_ratio.toFixed(2) : null}
+                    naLabel="غير منطبق (خسائر مرحلية)"
+                  />
+                  <FundamentalField
+                    label="P/B"
+                    value={stockInfo.pb_ratio != null ? stockInfo.pb_ratio.toFixed(2) : null}
+                    highlight
+                  />
                   <FundamentalField label="P/S" value={stockInfo.ps_ratio != null ? stockInfo.ps_ratio.toFixed(2) : null} />
                   <FundamentalField label="ROE" value={stockInfo.roe != null ? `${stockInfo.roe.toFixed(1)}%` : null} />
                   <FundamentalField label="ROA" value={stockInfo.roa != null ? `${stockInfo.roa.toFixed(1)}%` : null} />
@@ -4674,11 +4686,36 @@ function StatCard({ label, value, sub, valueClass, icon }: StatCardProps) {
   );
 }
 
-function FundamentalField({ label, value }: { label: string; value: string | null }) {
+function FundamentalField({
+  label,
+  value,
+  naLabel = '—',
+  highlight = false,
+}: {
+  label: string;
+  value: string | null;
+  /** Custom label to display when value is null/empty (replaces the default '—').
+   *  GLM5.2-A (UI-FINANCIAL-POLISH): used for P/E when companies have phase losses
+   *  (negative or null EPS) — shows "غير منطبق (خسائر مرحلية)" instead of '—'
+   *  to make it clear this is a financial N/A, not a data bug. */
+  naLabel?: string;
+  /** Highlight the field as an alternative valuation metric (P/B, market_cap)
+   *  when P/E is N/A. Renders with a subtle primary accent. */
+  highlight?: boolean;
+}) {
   return (
-    <div className="bg-background/50 rounded-md px-2 py-1.5 border border-border/30">
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className="font-mono font-semibold">{value ?? '—'}</div>
+    <div className={`bg-background/50 rounded-md px-2 py-1.5 border ${highlight ? 'border-primary/40 bg-primary/5' : 'border-border/30'}`}>
+      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+        {highlight && <span className="text-primary text-[8px]">★</span>}
+        {label}
+      </div>
+      <div
+        className={`font-mono font-semibold ${
+          value == null ? 'text-muted-foreground italic text-xs font-normal' : (highlight ? 'text-primary' : '')
+        }`}
+      >
+        {value ?? naLabel}
+      </div>
     </div>
   );
 }
@@ -4688,11 +4725,71 @@ function FundamentalField({ label, value }: { label: string; value: string | nul
 // ============================================================================
 function ProofSection() {
   const [open, setOpen] = useState(false);
+  // GLM5.2-A (UI-FINANCIAL-POLISH): live institutional backtest metrics.
+  // Replaces the old placeholder with real numbers from
+  // GET /api/maker-radar/institutional-backtest (team Bravo's API).
+  // Rule 27: every number comes from the API — no fabrication.
+  const [backtestData, setBacktestData] = useState<{
+    portfolio_metrics?: {
+      total_signals?: number;
+      verified_signals?: number;
+      verified_win?: number;
+      verified_loss?: number;
+      overall_win_rate_pct?: number;
+      max_drawdown_pct?: number;
+      avg_return_per_trade_pct?: number;
+      profit_factor?: number;
+      total_return_pct?: number;
+      final_equity_egp?: number;
+      n_trades_used?: number;
+    };
+    data_source?: {
+      total_candles?: number;
+      total_tickers?: number;
+      date_range?: { start?: string; end?: string };
+    };
+    by_signal_type?: Array<{
+      signal_type: string;
+      count: number;
+      win_rate_pct: number;
+    }>;
+    disclaimer?: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // P0-3 FIX (RADAR-AUDIT-UI): PROOF_METRICS كانت قيم ثابتة (precision=24.20%،
-  // recall=21.08%، avg_rr=0.014) تُعرَض كأنها live. هذا fabrication مخالف لـ
-  // Rule 27 (NO-FAKE-DATA). القيم الحقيقية متاحة عبر /api/radar/accuracy.
-  // تم استبدال القسم الثابت بـ placeholder يحيل للـ API الكنسي.
+  useEffect(() => {
+    if (!open || backtestData) return;
+    let cancelled = false;
+    const fetchBacktest = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/maker-radar/institutional-backtest', {
+          cache: 'no-store',
+        });
+        const json = await res.json();
+        if (cancelled) return;
+        if (json.success) {
+          setBacktestData(json.data ?? null);
+        } else {
+          setError(json.error || 'فشل تحميل بيانات الباك-تست');
+        }
+      } catch {
+        if (cancelled) return;
+        setError('فشل الاتصال بـ API الباك-تست');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchBacktest();
+    return () => { cancelled = true; };
+  }, [open, backtestData]);
+
+  const pm = backtestData?.portfolio_metrics;
+  const ds = backtestData?.data_source;
+  const signals = backtestData?.by_signal_type ?? [];
+  const disclaimer = backtestData?.disclaimer;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -4705,13 +4802,15 @@ function ProofSection() {
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold">إثباتات دقة الرادار</div>
-                <div className="text-xs text-muted-foreground">القيم الحقيقية متاحة عبر API الدقة</div>
+                <div className="text-xs text-muted-foreground">
+                  {pm ? `نسبة النجاح: ${pm.overall_win_rate_pct?.toFixed(2)}%` : 'بيانات مؤسسية حية'}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-amber-50 text-amber-700 border-amber-300">
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300">
                 <Award className="h-3 w-3 ml-1" />
-                بيانات حقيقية مطلوبة
+                {pm ? `${pm.verified_signals ?? 0} إشارة موثقة` : 'باك-تست حقيقي'}
               </Badge>
               <ChevronLeft className={`h-4 w-4 text-muted-foreground transition-transform ${open ? '-rotate-90' : ''}`} />
             </div>
@@ -4720,26 +4819,154 @@ function ProofSection() {
 
         <CollapsibleContent>
           <div className="p-3 md:p-4 pt-0 space-y-3 border-t border-border/50">
-            {/* P0-3: placeholder بدل القيم الثابتة الوهمية */}
-            <div className="mt-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-                <span className="text-sm font-bold text-amber-800 dark:text-amber-300">
-                  القيم الحقيقية متاحة عبر API الدقة
-                </span>
+            {loading && (
+              <div className="mt-3 space-y-2">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-24 w-full" />
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-                كانت تُعرَض هنا قيم ثابتة (precision=24.20%، recall=21.08%، avg_rr=0.014)
-                كأنها نتائج حية — وهذا مخالف لقاعدة &quot;لا بيانات وهمية&quot;.
-                القيم الحقيقية تُحسَب من predictions.db عبر:
-              </p>
-              <code className="block text-[10px] font-mono bg-card border border-border rounded p-2 text-emerald-700 dark:text-emerald-400 mb-2" dir="ltr">
-                GET /api/radar/accuracy?market=EGX&amp;days=90
-              </code>
-              <p className="text-[10px] text-muted-foreground">
-                (P0-3 RADAR-AUDIT-UI — Rule 27 NO-FAKE-DATA + Rule 73 SINGLE-DISPLAY-SOURCE)
-              </p>
-            </div>
+            )}
+
+            {error && !loading && (
+              <div className="mt-3 p-4 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 text-center">
+                <AlertTriangle className="h-5 w-5 text-rose-600 mx-auto mb-2" />
+                <p className="text-xs text-rose-700 dark:text-rose-300">{error}</p>
+              </div>
+            )}
+
+            {pm && !loading && !error && (
+              <>
+                {/* ─── Core metrics grid ───────────────────────────────────── */}
+                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {/* Win Rate */}
+                  <Card className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Award className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-[10px] text-muted-foreground">نسبة النجاح</span>
+                    </div>
+                    <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-300">
+                      {pm.overall_win_rate_pct?.toFixed(2)}%
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      {pm.verified_win ?? 0} رابحة / {pm.verified_signals ?? 0} موثقة
+                    </div>
+                  </Card>
+
+                  {/* Max Drawdown */}
+                  <Card className="p-3 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      <span className="text-[10px] text-muted-foreground">أقصى تراجع</span>
+                    </div>
+                    <div className="text-lg font-bold font-mono text-amber-700 dark:text-amber-300">
+                      -{pm.max_drawdown_pct?.toFixed(2)}%
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      Max Drawdown
+                    </div>
+                  </Card>
+
+                  {/* Sample Size */}
+                  <Card className="p-3 bg-primary/5 border-primary/20">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-[10px] text-muted-foreground">حجم العينة</span>
+                    </div>
+                    <div className="text-lg font-bold font-mono text-primary">
+                      {(ds?.total_candles ?? 0).toLocaleString('ar-EG')}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      شمعة / {ds?.total_tickers ?? 0} سهم
+                    </div>
+                  </Card>
+
+                  {/* Profit Factor */}
+                  <Card className="p-3 bg-card border-border">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">عامل الربح</span>
+                    </div>
+                    <div className="text-lg font-bold font-mono text-foreground">
+                      {pm.profit_factor?.toFixed(3)}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      Profit Factor
+                    </div>
+                  </Card>
+                </div>
+
+                {/* ─── Signal distribution ─────────────────────────────────── */}
+                {signals.length > 0 && (
+                  <Card className="p-3 mt-2">
+                    <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                      <Activity className="h-3.5 w-3.5 text-primary" />
+                      توزيع الإشارات حسب النوع
+                    </div>
+                    <div className="space-y-1.5">
+                      {signals.slice(0, 5).map((sig) => {
+                        const maxCount = Math.max(...signals.map((s) => s.count));
+                        const pct = maxCount > 0 ? (sig.count / maxCount) * 100 : 0;
+                        const labelAr =
+                          sig.signal_type === 'quiet_accumulation_strong' || sig.signal_type === 'B_quiet_accumulation_strong'
+                            ? '🎯 تجميع قوي'
+                            : sig.signal_type === 'pre_surge' || sig.signal_type === 'A_pre_surge'
+                            ? '⚡ اختراق مبكر'
+                            : sig.signal_type === 'D_explosive_surge' || sig.signal_type === 'explosive_surge'
+                            ? '💥 انفجار حجمي'
+                            : sig.signal_type;
+                        return (
+                          <div key={sig.signal_type} className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted-foreground w-28 truncate" title={sig.signal_type}>
+                              {labelAr}
+                            </span>
+                            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full bg-primary transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-foreground w-12 text-left">
+                              {sig.count}
+                            </span>
+                            <span className="text-[10px] font-mono text-muted-foreground w-12 text-left">
+                              {sig.win_rate_pct.toFixed(1)}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+
+                {/* ─── Disclaimer (Rule 27 transparency) ──────────────────── */}
+                {disclaimer && (
+                  <div className="mt-2 p-2 rounded-lg bg-muted/40 border border-border/50">
+                    <div className="flex items-start gap-1.5">
+                      <Info className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                      <p className="text-[9px] text-muted-foreground leading-relaxed">
+                        {disclaimer}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── Date range + verified breakdown ────────────────────── */}
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {ds?.date_range?.start} ← {ds?.date_range?.end}
+                  </span>
+                  <span>
+                    {pm.verified_win ?? 0}W / {pm.verified_loss ?? 0}L من {pm.n_trades_used ?? 0} صفقة
+                  </span>
+                </div>
+              </>
+            )}
+
+            {!pm && !loading && !error && (
+              <div className="mt-3 p-4 rounded-lg bg-muted/30 border border-border/50 text-center">
+                <p className="text-xs text-muted-foreground">لا توجد بيانات باك-تست متاحة</p>
+              </div>
+            )}
           </div>
         </CollapsibleContent>
       </Card>

@@ -62,6 +62,9 @@ export interface StockInfographicCardProps {
       market_cap: string;
       eps: number | string;
       p_e: number | string;
+      // GLM5.2-A (UI-FINANCIAL-POLISH): P/B surfaced as the alternative
+      // valuation metric when P/E is N/A (phase losses).
+      p_b?: number | string;
       dividend_yield?: string;
       yearly_high: number;
       yearly_low: number;

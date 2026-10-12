@@ -466,8 +466,24 @@ export function UnifiedPublishButton({
         },
         fundamentals: {
           market_cap: stock.market_cap ? `${(Number(stock.market_cap) / 1e9).toFixed(2)}B` : (pData.marketCap ? `${(Number(pData.marketCap) / 1e9).toFixed(2)}B` : '—'),
-          eps: stock.eps || '—',
-          p_e: stock.pe_ratio || pData.peRatio || '—',
+          // GLM5.2-A (UI-FINANCIAL-POLISH): P/E + EPS now show a proper financial
+          // N/A label instead of '—' when the company has phase losses (negative
+          // or null EPS). This makes it clear the metric is not applicable, not
+          // a data bug. P/B is highlighted as the alternative valuation metric.
+          eps: (() => {
+            const epsVal = stock.eps ?? null;
+            if (epsVal == null) return 'غير منطبق (خسائر مرحلية)';
+            if (Number(epsVal) < 0) return 'غير منطبق (خسائر مرحلية)';
+            return String(epsVal);
+          })(),
+          p_e: (() => {
+            const peVal = stock.pe_ratio ?? pData.peRatio ?? null;
+            if (peVal == null) return 'غير منطبق (خسائر مرحلية)';
+            if (Number(peVal) <= 0) return 'غير منطبق (خسائر مرحلية)';
+            return String(peVal);
+          })(),
+          // P/B surfaced as the alternative valuation metric (always shown when available).
+          p_b: stock.pb_ratio != null && Number(stock.pb_ratio) > 0 ? String(stock.pb_ratio) : undefined,
           dividend_yield: stock.dividend_yield ? `${stock.dividend_yield}%` : undefined,
           yearly_high: Number(stock.high_52w && Number(stock.high_52w) >= current ? stock.high_52w : Math.max(high, current)),
           yearly_low: Number(stock.low_52w && Number(stock.low_52w) <= current && Number(stock.low_52w) > 0 ? stock.low_52w : Math.min(low, current)),
