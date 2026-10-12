@@ -46,7 +46,7 @@ import {
 } from '@/components/ui/collapsible';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { useRealtimeUpdates } from '@/lib/ws-client';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, MARKET_CURRENCY_LABEL } from '@/lib/store';
 import { getMarketStatus } from '@/lib/market-hours';
 import { getRadarAccess, getTrialStatus } from '@/lib/subscription-gate';
 import { useTranslation } from '@/lib/i18n-context';
@@ -906,7 +906,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   // ─── GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI) — liquidity tier filter ────
   // null = show all tiers. 'institutional' = only ≥ 2M EGP turnover (the
   // quick-filter button the manager asked for — isolates quality stocks).
-  const [liquidityTierFilter, setLiquidityTierFilter] = useState<'institutional' | null>(null);
+  // 'surge' = only stocks with volume_ratio >= 2.5 (sudden liquidity spikes).
+  const [liquidityTierFilter, setLiquidityTierFilter] = useState<'institutional' | 'surge' | null>(null);
   // EGX30 / EGX70 index filter (the manager's second quick-filter button).
   const [indexFilter, setIndexFilter] = useState<'EGX30' | 'EGX70' | null>(null);
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('7d');
@@ -1412,6 +1413,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         const t = s.avg_turnover_20d ?? (s.current_price && s.avg_volume_20d ? s.current_price * s.avg_volume_20d : 0);
         return Number(t) >= 2_000_000;
       });
+    } else if (liquidityTierFilter === 'surge') {
+      // 🚀 RVol surge: volume_ratio >= 2.5x — sudden liquidity spike
+      filtered = filtered.filter((s) => Number(s.volume_ratio_10d_vs_20d ?? 0) >= 2.5);
     }
     if (indexFilter === 'EGX30') {
       filtered = filtered.filter((s) => s.is_egx30 === 1 || s.is_egx30 === true);
@@ -2007,6 +2011,19 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           >
             💎 مؤسسي فقط (≥2M)
           </button>
+          {/* GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP) — RVol Surge filter */}
+          <button
+            onClick={() => setLiquidityTierFilter((v) => (v === 'surge' ? null : 'surge'))}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
+              liquidityTierFilter === 'surge'
+                ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+            title="عرض أسهم طفرات السيولة فقط (volume_ratio ≥ 2.5× المتوسط)"
+          >
+            🚀 طفرات السيولة RVol
+          </button>
           <button
             onClick={() => setIndexFilter((v) => (v === 'EGX30' ? null : 'EGX30'))}
             className={cn(
@@ -2189,7 +2206,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       )}
 
       {/* ===== PROOF SECTION (collapsible) ===== */}
-      <ProofSection />
+      <ProofSection onSelectTicker={setSelectedTicker} />
 
         </TabsContent>
 
@@ -2753,16 +2770,28 @@ const StockTable = memo(function StockTable({
 
   // إعداد الـ columns للجدول الموحّد
 
-  // ─── GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI) ─────────────────────────────
-  // Liquidity tier classification helper. Uses avg_turnover_20d (the canonical
-  // 20-day average daily turnover in EGP). Falls back to current_price × avg_volume_20d
-  // when avg_turnover_20d is missing. Rule 67: SSOT — the backend computes turnover.
-  // Tier thresholds (manager directive):
-  //   💎 INSTITUTIONAL  : ≥ 5,000,000 EGP/day  (high liquidity, institutional grade)
+  // ─── GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP) — Dynamic Liquidity Tiers ──────
+  // 4-tier classification with SURGE detection. Uses avg_turnover_20d (the
+  // canonical 20-day average daily turnover) + volume_ratio_10d_vs_20d
+  // (the Relative Volume — RVol — comparing today's volume vs the 20d average).
+  // Falls back to current_price × avg_volume_20d when avg_turnover_20d is missing.
+  // Rule 67: SSOT — the backend computes turnover + volume_ratio.
+  //
+  // GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP §4): currency symbol is now dynamic
+  // (EGP for EGX, SAR for TADAWUL, USD for US/CRYPTO, etc.) via
+  // MARKET_CURRENCY_LABEL — no hardcoded "ج.م" in tooltips.
+  //
+  // Tier priority (manager directive P0-ALPHA-TITAN-HEAVY-PUMP):
+  //   🚀 SURGE          : volume_ratio >= 2.5  (sudden liquidity spike — highest priority)
+  //   💎 INSTITUTIONAL  : turnover ≥ 5,000,000 /day  (top 25% by turnover)
   //   🔷 ACTIVE         : 2,000,000 – 5,000,000 (medium liquidity, tradable)
-  //   ⚠️ LOW / RISK     : < 2,000,000 EGP/day  (low liquidity — slippage warning)
-  function getLiquidityTier(turnoverEgp: number | null | undefined): {
-    tier: 'institutional' | 'active' | 'low';
+  //   ⚠️ LOW / RISK     : < 2,000,000 /day  (low liquidity — slippage warning)
+  const currencyLabel = MARKET_CURRENCY_LABEL[market] || 'ج.م';
+  function getLiquidityTier(
+    turnoverEgp: number | null | undefined,
+    volumeRatio?: number | null | undefined,
+  ): {
+    tier: 'surge' | 'institutional' | 'active' | 'low';
     emoji: string;
     label: string;
     color: string;
@@ -2771,6 +2800,22 @@ const StockTable = memo(function StockTable({
     tooltip: string;
   } {
     const t = Number(turnoverEgp ?? 0);
+    const vr = Number(volumeRatio ?? 0);
+
+    // 🚀 SURGE: volume_ratio >= 2.5x — takes priority over everything else.
+    // This is the "sudden liquidity spike" badge — the most actionable signal.
+    if (Number.isFinite(vr) && vr >= 2.5) {
+      return {
+        tier: 'surge',
+        emoji: '🚀',
+        label: 'طفرة سيولة',
+        color: 'text-fuchsia-700 dark:text-fuchsia-300',
+        bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40',
+        border: 'border-fuchsia-200 dark:border-fuchsia-800',
+        tooltip: `طفرة سيولة مفاجئة — حجم التداول ${vr.toFixed(1)}× المتوسط (RVol). تداول ${formatMillion(t)} ${currencyLabel}/يوم`,
+      };
+    }
+
     if (!Number.isFinite(t) || t <= 0) {
       return {
         tier: 'low',
@@ -2790,7 +2835,7 @@ const StockTable = memo(function StockTable({
         color: 'text-emerald-700 dark:text-emerald-300',
         bg: 'bg-emerald-50 dark:bg-emerald-950/40',
         border: 'border-emerald-200 dark:border-emerald-800',
-        tooltip: `مؤسسي عالي السيولة — تداول ${formatMillion(t)} ج.م/يوم`,
+        tooltip: `مؤسسي عالي السيولة (أعلى 25% تداولاً) — ${formatMillion(t)} ${currencyLabel}/يوم${vr > 1 ? ` · RVol ${vr.toFixed(1)}×` : ''}`,
       };
     }
     if (t >= 2_000_000) {
@@ -2801,7 +2846,7 @@ const StockTable = memo(function StockTable({
         color: 'text-primary',
         bg: 'bg-primary/5',
         border: 'border-primary/20',
-        tooltip: `نشط متوسط السيولة — تداول ${formatMillion(t)} ج.م/يوم`,
+        tooltip: `نشط متوسط السيولة — ${formatMillion(t)} ${currencyLabel}/يوم${vr > 1 ? ` · RVol ${vr.toFixed(1)}×` : ''}`,
       };
     }
     return {
@@ -2811,7 +2856,7 @@ const StockTable = memo(function StockTable({
       color: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-amber-50 dark:bg-amber-950/40',
       border: 'border-amber-200 dark:border-amber-800',
-      tooltip: `منخفض السيولة — تداول ${formatMillion(t)} ج.م/يوم. انزلاق سعري ومخاطرة تسييل`,
+      tooltip: `سيولة خفيفة — ${formatMillion(t)} ${currencyLabel}/يوم. انزلاق سعري ومخاطرة تسييل`,
     };
   }
 
@@ -2847,7 +2892,7 @@ const StockTable = memo(function StockTable({
           (stock.current_price && stock.avg_volume_20d
             ? stock.current_price * stock.avg_volume_20d
             : null);
-        const liq = getLiquidityTier(turnover);
+        const liq = getLiquidityTier(turnover, stock.volume_ratio_10d_vs_20d);
         return (
           <div className="flex items-center gap-2">
             <StockIconMini
@@ -4681,6 +4726,17 @@ function IntradayCvdFlow({ ticker }: { ticker: string }) {
 
   return (
     <Card className="p-3">
+      {/* GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP) — Rule 27 Transparency Badge.
+          Honest disclosure that the intraday data is estimated/synthetic for
+          EGX30 sessions (seeder pipeline) — institutional integrity in front
+          of the client. Always shown, not just when data is synthetic. */}
+      <div className="mb-2 px-2.5 py-1 rounded-md bg-primary/5 border border-primary/20 flex items-center gap-1.5">
+        <Info className="h-3 w-3 text-primary shrink-0" />
+        <span className="text-[10px] text-primary/90 font-medium leading-tight">
+          📊 تدفق لحظي تقديري (جلسات مؤشر EGX30)
+        </span>
+      </div>
+
       {/* header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -4888,7 +4944,7 @@ function FundamentalField({
 // ============================================================================
 // Proof Section (collapsible)
 // ============================================================================
-function ProofSection() {
+function ProofSection({ onSelectTicker }: { onSelectTicker?: (ticker: string) => void }) {
   const [open, setOpen] = useState(false);
   // GLM5.2-A (UI-FINANCIAL-POLISH): live institutional backtest metrics.
   // Replaces the old placeholder with real numbers from
@@ -5115,12 +5171,25 @@ function ProofSection() {
                     <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
                       <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                       الأسهم الذهبية — أعلى انضباطاً مع إشارات الرادار
+                      {onSelectTicker && (
+                        <span className="text-[9px] text-muted-foreground mr-auto font-normal">
+                          (اضغط على السهم لعرض التفاصيل)
+                        </span>
+                      )}
                     </div>
                     <div className="space-y-1">
                       {topPerformers.slice(0, 8).map((tp, i) => (
-                        <div key={tp.ticker} className="flex items-center gap-2 text-[11px]">
+                        <button
+                          key={tp.ticker}
+                          onClick={() => onSelectTicker?.(tp.ticker)}
+                          disabled={!onSelectTicker}
+                          className="flex items-center gap-2 text-[11px] w-full text-right rounded-md px-1.5 py-1 hover:bg-amber-50/80 dark:hover:bg-amber-950/30 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+                          title={onSelectTicker ? `عرض تفاصيل ${tp.ticker} — الشارت اللحظي ومراحل وايكوف` : undefined}
+                        >
                           <span className="w-5 text-muted-foreground font-mono">{i + 1}.</span>
-                          <span className="font-bold text-foreground w-16 truncate">{tp.ticker}</span>
+                          <span className="font-bold text-foreground w-16 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300">
+                            {tp.ticker}
+                          </span>
                           <span className="text-muted-foreground">
                             {tp.signals ?? 0} إشارة
                           </span>
@@ -5138,7 +5207,7 @@ function ProofSection() {
                               {(tp.avg_return_pct >= 0 ? '+' : '')}{tp.avg_return_pct.toFixed(1)}%
                             </span>
                           )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </Card>

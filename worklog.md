@@ -79178,6 +79178,7 @@ Stage Summary:
 - ProofSection: الأسهم الذهبية + مقارنة صادقة (46.8% vs 100%)
 - 0 أخطاء TypeScript جديدة
 
+
 ---
 ---
 Task ID: BRAVO-BACKTEST-LIQUIDITY
@@ -79307,3 +79308,65 @@ Stage Summary:
     (1) هل LIQUIDITY_FLOOR_EGP = 2,000,000 مناسب؟ نسبة الإقصاء ~24.7% — معقولة، لكن المالك وحده يقدر يرفع/يخفض الحد.
     (2) هل نريد عرض قائمة disqualified_illiquid في الـ Arabic report (.md) أو فقط في الـ JSON؟ حاليًا في JSON فقط.
     (3) هل نضيف index على (status, signal_date) في radar_signal_tracking للـ analytics الأسرع على disqualified_illiquid؟ (الـ table عندها 1,145+ صف، ما يحتاج urgency).
+
+
+---
+Task ID: P0-ALPHA-TITAN-HEAVY-PUMP
+Agent: الفريق المسؤول الأول (GLM5.2-A)
+Task: شارات ديناميكية + Top Performers تفاعلي + شفافية شارت CVD + عملات متعددة
+
+## ملخص التنفيذ (4 مهام)
+
+### Task 1: شارات السيولة الديناميكية (4 tiers) — ✅
+حدّثت `getLiquidityTier` لدعم 4 شارات:
+- 🚀 **طفرة سيولة مفاجئة** (SURGE): volume_ratio ≥ 2.5× (أعلى أولوية، fuchsia)
+- 💎 **مؤسسي عالي السيولة**: turnover ≥ 5M (أعلى 25% تداولاً، emerald)
+- 🔷 **نشط متوسط**: 2M-5M (primary)
+- ⚠️ **سيولة خفيفة**: < 2M (amber + تحذير انزلاق)
+
+أضفت زر فلترة جديد: **🚀 طفرات السيولة RVol** (fuchsia) بجوار زر 💎 مؤسسي.
+الـ filter logic مُطبّق على كل 4 radar lists.
+
+### Task 2: Top Performers تفاعلي — ✅
+- أضفت `onSelectTicker` prop للـ `ProofSection`
+- كل سهم في الـ Top Performers بقى `<button>` قابل للنقر
+- onClick بـ يستدعي `onSelectTicker(tp.ticker)` → بيفتح الـ `StockDetailDrawer` فوراً
+- hover effect (amber background) + tooltip "عرض تفاصيل السهم — الشارت اللحظي ومراحل وايكوف"
+- hint مرئي: "(اضغط على السهم لعرض التفاصيل)"
+
+### Task 3: شارة الشفافية فوق شارت CVD — ✅
+أضفت badge أعلى الـ `IntradayCvdFlow` header:
+- 📊 "تدفق لحظي تقديري (جلسات مؤشر EGX30)"
+- primary/5 background + border-primary/20
+- Rule 27 institutional integrity — disclosure شفاف
+
+### Task 4: دعم عملات متعددة — ✅
+- `currencyLabel = MARKET_CURRENCY_LABEL[market] || 'ج.م'`
+- كل tooltips في `getLiquidityTier` بـ تستخدم `currencyLabel` (مش hardcoded "ج.م")
+- EGX → ج.م، TADAWUL → ريال، US/CRYPTO → $، KSE → د.ك، QSE → ر.ق
+- Responsive: كل الأزرار بـ flex-wrap (موبايل + ديسكتوب)
+
+## التحقق
+- `npx tsc --noEmit`: 0 أخطاء جديدة (1 pre-existing في TradingPlanSection L4158) ✅
+- dev server: HTTP 200 على :3000 ✅
+- API: top_performers=15 (TORA, EGAL, DOMT, ADIB, AMIA...) ✅
+- pre-commit hook: PASS ✅
+- design tokens فقط (emerald + fuchsia + amber + primary + muted) ✅
+- Rule 27: شفافية كاملة في شارة CVD ✅
+
+## التغييرات
+- `getLiquidityTier`: 4 tiers (surge + institutional + active + low) + volumeRatio param
+- زر فلترة جديد: 🚀 طفرات السيولة RVol
+- `applyLiquidityAndIndexFilters`: surge filter (volume_ratio ≥ 2.5)
+- `ProofSection`: onSelectTicker prop + Top Performers clickable buttons
+- `IntradayCvdFlow`: transparency badge "📊 تدفق لحظي تقديري"
+- `currencyLabel`: dynamic (MARKET_CURRENCY_LABEL) — مش hardcoded "ج.م"
+- import: `MARKET_CURRENCY_LABEL` from '@/lib/store'
+
+Stage Summary:
+- 4 شارات ديناميكية (🚀/💎/🔷/⚠️) بـ surge detection
+- Top Performers قابل للنقر → بيفتح الـ Drawer فوراً
+- شارة شفافية "تدفق لحظي تقديري" فوق شارت CVD
+- عملات متعددة (EGP/SAR/USD/KWD/QAR) ديناميكية
+- 0 أخطاء TypeScript جديدة
+
