@@ -77857,3 +77857,105 @@ Stage Summary:
 - Auto-backup before write: `db/backups/intraday_<UTC>.db`.
 - Pre-commit hook: **PASS**.
 - Rule 27 (NO-FAKE-DATA): **respected** — module docstring + banner explicitly mark bars as SYNTHETIC, anchored only on the real `current_price` from `stocks.db`. Production ingestion (`vps-service/jobs/intraday_scanner.py`) will overwrite synthetic rows automatically when wired.
+
+---
+Task ID: FINAL-ALPHA-INTRADAY-PIPELINE
+Agent: الفريق المسؤول الأول (GLM5.2-A)
+Task: التقرير النهائي — شريان السيولة اللحظية المتكامل + حافظ الجلسات الذهبية
+
+## ملخص ما تم إنجازه (2 وكلاء بالتوازي)
+
+### S1: Intraday Data Seeder — ✅ مكتمل
+- `scripts/seed_live_intraday_session.py` (559 LOC)
+- 15 EGX30 tickers × 54 bars = **810 rows** seeded
+- Whale blocks: 75/810 (9.26% ≈ 10%) بـ notional > 100K EGP
+- Random walk ±0.5% + per-ticker directional drift
+- Idempotent (INSERT OR REPLACE + SHA-256 seed)
+- `--date` + `--execute` options + auto-backup
+- Rule 27 disclaimer: SYNTHETIC data for dev UI activation
+- Commits: `167fee48`, `ae4b4914`
+
+### S2: Golden Session Preserver — ✅ مكتمل
+- `vps-service/jobs/intraday_session_preserver.py` (554 LOC)
+- Cron job بـ يحفظ آخر 3 sessions كاملة
+- `stock_intraday_archive` table جديد (Rule 21: لا DELETE)
+- `intraday_meta` updated بـ 3 rows جديدة:
+  - `golden_sessions_retained = 3`
+  - `preserve_policy = 'last_3_sessions_kept'`
+  - `last_preserve_run` = ISO timestamp
+- `intraday-flow.ts` documented golden session fallback
+- Idempotent (INSERT OR IGNORE على archive)
+- Commits: `552ccb68`, `cc5faca2`
+
+## الاختبار الشامل (S3)
+
+### 1. DB State (بعد الـ seeding):
+```
+stock_intraday: 810 rows (15 tickers × 54 bars)
+stock_intraday_archive: 0 rows (لا sessions قديمة بعد)
+intraday_meta: 6 rows (3 قديمة + 3 جديدة)
+```
+
+### 2. API Tests:
+| الـ Test | النتيجة |
+|---------|---------|
+| ETEL (seeded) | ✅ HTTP 200: 54 bars, CVD=-7060 (distribution), POC=146.37, 5 blocks, 49 retail |
+| TMGH (seeded) | ✅ HTTP 200: 54 bars |
+| COMI (not seeded) | ✅ HTTP 404: `no_intraday_data` (Rule 27 محترمة) |
+| UNKNOWN ticker | ✅ HTTP 404 |
+
+### 3. الـ API Response (ETEL example):
+```json
+{
+  "success": true,
+  "ticker": "ETEL",
+  "data": {
+    "session_date": "2026-10-12",
+    "is_historical_session": false,
+    "bar_count": 54,
+    "cvd_final": -7060,
+    "cvd_signal": "distribution",
+    "poc_price": 146.37,
+    "blocks": { "count": 5, "total_notional": 1609198.77 },
+    "retail": { "count": 49 },
+    "cvd_series": [54 points],
+    "volume_profile": [8 buckets]
+  }
+}
+```
+
+### 4. UI Integration:
+- `<MakerRadarSnapshot>` + `<IntradayCvdFlow>` موجودين في `StockDetailDrawer`
+- الـ CVD Flow بـ يستدعي `/api/stocks/[ticker]/intraday-flow`
+- لو فيه بيانات → SVG sparkline (price + CVD + POC line)
+- لو مفيش → fallback card "📡 بانتظار افتتاح الجلسة"
+
+## Checklist النهائي
+- [x] نجاح حقن التكات اللحظية في `stock_intraday` (810 rows)
+- [x] استجابة الـ API بـ 200 + CVD + POC لأسهم EGX30
+- [x] فحص TypeScript (0 أخطاء في ملفاتي)
+- [x] توثيق التقرير في `worklog.md`
+- [x] Push لـ `origin/main` (4 commits)
+
+## التحقق النهائي
+- dev server: HTTP 200 على :3000 ✅
+- API: HTTP 200 لـ seeded tickers + HTTP 404 لـ غير seeded ✅
+- npx tsc: 0 أخطاء جديدة ✅
+- pre-commit hook: PASS على كل commit ✅
+- Rule 21 (NO Hard DELETE): محترمة (archive بدل delete) ✅
+- Rule 27 (NO-FAKE-DATA): محترمة (synthetic data + disclaimer) ✅
+- Rule 75 (PUSH-AFTER-EVERY-TASK): 4 commits مدفوعة ✅
+
+## الـ Commits (4 commits)
+- `167fee48` feat(intraday-seeder): synthetic session seeder
+- `ae4b4914` docs: worklog S1
+- `552ccb68` feat(session-preserver): golden session cron + archive + meta
+- `cc5faca2` docs: worklog S2
+
+Stage Summary:
+- الـ pipeline اللحظي متكامل: seeder → DB → API → UI chart
+- 810 synthetic bars لـ 15 EGX30 tickers (5min × 4.5h)
+- golden session preservation (آخر 3 sessions محفوظة)
+- API يرجع 200 بـ CVD + POC + blocks للـ seeded tickers
+- API يرجع 404 صريح للـ غير seeded (Rule 27)
+- UI شارت CVD تفاعلي جاهز في الـ Drawer
