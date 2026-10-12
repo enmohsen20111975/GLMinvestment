@@ -77959,3 +77959,289 @@ Stage Summary:
 - API يرجع 200 بـ CVD + POC + blocks للـ seeded tickers
 - API يرجع 404 صريح للـ غير seeded (Rule 27)
 - UI شارت CVD تفاعلي جاهز في الـ Drawer
+---
+Task ID: BRAVO-2-MFI-SECTORS
+Agent: مهندس الواجهات + مهندس البيانات (فريق GLM 5.2-Bravo)
+Task: تفعيل MFI الحقيقي + تعريب قطاعات البورصة المصرية
+
+Work Log:
+
+### 1. الاستطلاع المبدئي
+- قرأت آخر 150 سطر من worklog.md (Alpha team يعمل على Drawer UI & CVD visualization — لم ألمس ملفاتهم).
+- قرأت `/home/z/my-project/src/app/api/maker-radar/stock/route.ts` بالكامل (259 سطرًا، الآن 351 سطرًا بعد إضافاتي).
+- تحققت من بنية جدول `stocks` في `db/stocks.db`: 57 عمود، لا يوجد `sector_ar` (قبل عملي).
+- تحققت من `industry` column: فارغ تمامًا لكل الصفوف (NULL/"") — لذا اعتمدت على `sector + name + name_ar` فقط.
+- تحققت من جدول `stock_daily_prices` (المصدر الفعلي للأسعار في route.ts عبر `getRadarDbConfig`): 100,619 صف، 43 يوم تداول لكل من COMI/SWDY/ETEL.
+
+### 2. المطلوب 1 — تفعيل MFI الحقيقي في stock/route.ts
+
+**الملف**: `/home/z/my-project/src/app/api/maker-radar/stock/route.ts`
+
+**الإضافات**:
+- أضفت `interface PriceRow` (الأسطر 25-34) لتوحيد شكل صف السعر في الدوال المساعدة.
+- أضفت دالة `computeMFI(prices: PriceRow[], period = 14): number | null` (الأسطر 36-109) تنفّذ الصيغة القياسية لـ Money Flow Index:
+  1. Typical Price (TP) = (high + low + close) / 3
+  2. Raw Money Flow (RMF) = TP × volume
+  3. لكل انتقال (i ≥ 1): TP>prev → Positive MF += RMF; TP<prev → Negative MF += RMF; تساوي → صفر.
+  4. Money Flow Ratio = Σ Positive MF / Σ Negative MF
+  5. MFI = 100 - (100 / (1 + Ratio))
+- **قواعد البيانات (Rule 27)**:
+  - يتخطى الأيام بـ volume ≤ 0 أو null/NaN أو أسعار غير صالحة.
+  - إذا الأيام الصالحة < period+1 (أي < 15) → `null`.
+  - إذا Negative MF = 0 و Positive MF > 0 → `100` (Ratio = ∞).
+  - إذا Positive MF = 0 و Negative MF > 0 → `0` (Ratio = 0).
+  - إذا كلاهما = 0 (لا تذبذب) → `null` (غير معرّف).
+  - النتيجة تُقرّب لمنزلتين عشريتين.
+- أضفت `const mfi14 = computeMFI(prices as PriceRow[], 14);` قبل `db.close()` (السطر 315).
+- أضفت `mfi: mfi14` إلى `stats` object في الـ response (السطر 334).
+
+**TypeScript syntax check**: استخدمت `bun build src/app/api/maker-radar/stock/route.ts --no-bundle` — تم الـ transpile بنجاح في 3ms بلا أخطاء. (تعذّر `npx tsc --noEmit` لأن `bun install` لم يكتمل — الـ log `/tmp/bun-install.log` يحوي سطرًا واحدًا فقط و`node_modules` غير مثبت. الـ process غير نشط حاليًا — يبدو أنه توقف دون إكمال).
+
+### 3. المطلوب 2 — تعريب قطاعات البورصة في stocks.db
+
+**السكريبت**: `/home/z/my-project/scripts/align_stock_sectors_ar.py` (جديد، idempotent).
+
+**المنطق (Smart Mapping)**:
+- يجمع `sector + industry + name + name_ar` في نص واحد للبحث الموحد.
+- 13 خطوة فحص بترتيب الأخص أولًا:
+  1. بنوك (بنك/البنك/mصرف/المصرف/Bank/Banque — مفرد فقط)
+  2. تأمين (تأمين/Insurance/Takaful) → خدمات مالية غير مصرفية
+  3. رعاية صحية وأدوية (Pharma/أدوية/مستشفى/Hospital/Medical)
+  4. سياحة وترفيه (Tourism/سياح/Hotels/فنادق/Resorts)
+  5. اتصالات وتكنولوجيا (Telecom/اتصالات/Technology/Satellite/Digital)
+  6. مواد بناء (Cement/أسمنت/Steel/حديد/Ceramic/خزف/Glass/زجاج + Building Materials/مواد بناء)
+  7. أغذية ومشروبات (Food/أغذية/Mills/مطاحن/Sugar/Poultry/Dairy — بدون `Oils` عام لأن "Mineral Oils" ليست أغذية)
+  8. مقاولات وإنشاءات (Construction/مقاولات/Contracting/الإنشاءات)
+  9. عقارات (Real Estate/عقار/Housing/للإسكان/Properties/REIT)
+  10. موارد أساسية وكيماويات (Minerals/معادن/Fertilizers/أسمدة/Chemicals/Petrochemicals/Aluminum)
+  11a. Holding/قابضة (بغض النظر عن sector) → خدمات مالية غير مصرفية
+  11b. باقي الكلمات المالية (Investment/Capital/Securities/Brokerage/Leasing) — فقط لو القطاع الأصلي مالي
+  12. القطاعات عالية الوضوح مباشرة (Real Estate → عقارات؛ Energy/Non-Energy Minerals → موارد؛ Health Tech/Services → رعاية؛ Tech Services/Communications → اتصالات)
+  13. القطاعات الافتراضية (Process Industries/الصناعات التحويلية → موارد، per directive)
+  14. **Rule 27**: إذا تعذّر التحديد بثقة → `NULL`
+
+**القرارات الحرجة أثناء التنفيذ** (لتحسين الدقة):
+- **FWRY (Fawry)**: أزلت `r'\bbanking\b'` من KW_BANK و`البنوك`/`البنكية`/`المصارف` (صيغ الجمع) لأن "فوري لتكنولوجيا البنوك" هي شركة fintech وليست بنكًا. النتيجة: FWRY → اتصالات وتكنولوجيا ✓
+- **APRI (Alexandria Mineral Oils)**: أزلت `r'\boils?\b'` و`الزيوت` من KW_FOOD لأن "Mineral Oils" زيوت معدنية صناعية وليست أغذية. النتيجة: APRI → موارد أساسية وكيماويات ✓
+- **BLDG (Building Materials)**: أضفت `r'\bbuilding materials\b'` و`مواد بناء`/`مواد البناء` إلى KW_BUILDING. النتيجة: BLDG → مواد بناء ✓
+- **EKHO (Egypt Kuwait Holding)**: أضفت الخطوة 11a لتفعيل "Holding"/"قابضة" بغض النظر عن sector (sector فارغ لهذه الشركة). النتيجة: EKHO → خدمات مالية غير مصرفية ✓
+
+**التنفيذ**:
+1. `ALTER TABLE stocks ADD COLUMN sector_ar TEXT` (idempotent — يتحقق من وجود العمود أولًا).
+2. قراءة كل الأسهم النشطة (is_active = 1) — 1205 سهم.
+3. تصنيف كل سهم وتحديث `sector_ar`.
+4. طباعة تقرير BEFORE/AFTER + عينة من غير المصنّف + عينة من كل قطاع.
+
+### 4. التحقق النهائي — sector_ar distribution
+
+- **إجمالي الأسهم النشطة**: 1205
+- **مصنّفة في قطاع معتمد**: 647 (53.7%)
+- **NULL (Rule 27 — لا يمكن التأكد)**: 558 (46.3%)
+
+**التوزيع النهائي**:
+| القطاع | العدد |
+|--------|-------|
+| خدمات مالية غير مصرفية | 151 |
+| موارد أساسية وكيماويات | 122 |
+| اتصالات وتكنولوجيا | 74 |
+| عقارات | 66 |
+| رعاية صحية وأدوية | 55 |
+| مواد بناء | 52 |
+| أغذية ومشروبات | 50 |
+| بنوك | 32 |
+| سياحة وترفيه | 26 |
+| مقاولات وإنشاءات | 19 |
+| NULL (Rule 27) | 558 |
+
+**تحقق**: جميع قيم `sector_ar` غير الـ NULL تقع ضمن الـ 10 قطاعات المعتمدة (لا قيم شاذة).
+
+### 5. التحقق من MFI — عينة لـ COMI, SWDY, ETEL
+
+استخرجت آخر 30 يوم تداول لكل سهم من `stock_daily_prices` وحسبت MFI(14) بمنطق مطابق تمامًا لـ `computeMFI` في route.ts:
+
+| التكر | آخر سعر | آخر volume | MFI(14) | التفسير |
+|-------|---------|-----------|---------|---------|
+| COMI  | 124.13  | 641,539   | **21.45** | تشبع بيعي قوي (MFI < 30) |
+| SWDY  | 114.40  | 99,020    | **29.41** | قرب التشبع البيعي (MFI ≈ 30) |
+| ETEL  | 147.87  | 277,440   | **53.07** | حيادي (MFI ≈ 50) |
+
+تحقق يدوي من الحساب لـ COMI:
+- Positive MF (3 أيام صعود): 932,589,018.68
+- Negative MF (8 أيام هبوط): 3,414,287,858.39
+- Ratio = 0.2732 → MFI = 100 - (100/1.2732) = 21.46 ✓ (مطابق لـ 21.45 مع فرق تقريب)
+
+### 6. ملاحظات للمراجعة (قرار المدير)
+
+1. **العديد من الأسهم النشطة تركت NULL (46.3%)**: هذا متعمّد per Rule 27. أغلبها شركات لا تنتمي بوضوح لأي من الـ 10 قطاعات (مثل: شركات تبغ، نسيج، ملابس، نقل، تجارة تجزئة، طباعة، صندوق استثمار عقاري متفرّق، وعدد من شركات Utilities/خدمات). أمثلة معروفة تركت NULL:
+   - **SWDY** (El Sewedy Electric) — صناعات كهربائية/كابلات (لا تندرج في الـ 10).
+   - **EAST** (Eastern Company) — تبغ (لا يندرج في الـ 10).
+   - **ORHD** (Orascom Development Egypt) — تنمية عقارية/سياحية لكن الاسم لا يحوي كلمة قطاع صريحة.
+   - **EMFD** (Emaar Misr) — تطوير عقاري لكن الاسم "إعمار مصر للتنمية" لا يحوي "عقار"/"إسكان".
+   - **TEXT** (Misr Spinning & Weaving) — غزل ونسيج (لا يندرج في الـ 10).
+   - إذا أراد المدير تعريب هذه يدويًا، يمكنه UPDATE مباشر في `stocks.db` ثم إعادة تشغيل السكريبت (سيحافظ على القيم اليدوية لأن السكريبت idempotent لكنه يُعيد كتابة كل الصفوف — لذا يُفضّل تعديل السكريبت أو إضافة whitelist).
+
+2. **صناعة `industry` column فارغة بالكامل** في كل الصفوف (تحققت). هذا حدّ من دقة التعريب. لو مُلئت لاحقًا، السكريبت يدعمها بالفعل (سيستخدمها في `text` للبحث).
+
+3. **TMGH وAMER**: صُنّفتا "خدمات مالية غير مصرفية" لأن الاسم يحوي "Holding/قابضة". هما في الواقع شركات قابضة لتطوير عقاري/سياحي — لكن الاسم لا يشير لذلك صراحةً. قراري يتبع Rule 27 (لا اختلاق معرفة خارجية). لو رأى المدير تصنيف "عقارات" أدق، يمكن تعديله يدويًا.
+
+4. **TypeScript check**: تعذّر `npx tsc --noEmit` لأن `bun install` لم يكتمل (`/tmp/bun-install.log` يحوي سطرًا واحدًا فقط، `node_modules` غير موجود، الـ process غير نشط). استخدمت `bun build --no-bundle` بديلًا لتأكيد صحة الـ syntax. يُنصح المدير بإعادة `bun install` ثم `npx tsc --noEmit` للتأكيد الكامل قبل الإنتاج.
+
+5. **لم ألمس ملفات فريق Alpha** (Drawer UI & CVD visualization).
+
+Stage Summary:
+- **route.ts**: أُضيفت دالة `computeMFI` (الأسطر 36-109) + حقل `mfi: mfi14` في `stats` (السطر 334). MFI حقيقي 14-period، Rule 27 compliant (null عند نقص البيانات، 0/100 للحالات الحدية).
+- **scripts/align_stock_sectors_ar.py**: سكريبت جديد (idempotent) يضيف عمود `sector_ar` ويصنّف الأسهم النشطة في 10 قطاعات معتمدة بمنطق smart-mapping (13 خطوة فحص بترتيب الأخص أولًا).
+- **نتائج MFI للعينة**: COMI=21.45 (تشبع بيعي) | SWDY=29.41 (قرب تشبع بيعي) | ETEL=53.07 (حيادي).
+- **نتائج sector_ar**: 647 مصنّف / 558 NULL per Rule 27 (1205 إجمالي). أكبر قطاع: خدمات مالية غير مصرفية (151). أصغر: مقاولات وإنشاءات (19).
+- **TypeScript**: syntax صحيح (`bun build` نجح)؛ `tsc` معلّق على اكتمال `bun install`.
+- **Rule 27**: محترمة 100% — لا اختلاق بيانات. NULL صريح عند عدم التأكد.
+
+---
+Task ID: BRAVO-1-RADAR-VERIFY
+Agent: مهندس المحرك Python (فريق GLM 5.2-Bravo)
+Task: رفع نسبة نجاح إشارات الرادار من 35% إلى +70% بإصلاح الترتيب الزمني
+
+Work Log:
+
+## 1. التحليل المبدئي
+- قرأت آخر 150 سطر من worklog.md (فريق Alpha يعمل على UI/CVD — لم ألمس ملفاته).
+- قرأت `scripts/verify_all_radar_signals.py` بالكامل (504 سطر) لفهم المنطق الحالي.
+- قرأت `src/app/api/maker-radar/signal-tracker/route.ts` و `verify/route.ts` لفهم how the API reads status/outcome_*.
+- فحصت schema جدول `radar_signal_tracking` (21 عمود) و `stock_daily_prices` (100,619 شمعة، 1,213 سهم).
+
+## 2. تشخيص العيب الزمني (ROOT CAUSE)
+العيب القاتل في `evaluate_signal` القديمة: كانت تفحص كسر الوقف (`min_price_after <= entry * 0.95`) كأولوية ثانية على مدى 30 يومًا — أي أن أي إشارة ضربت هدفها +5% في اليوم الثالث ثم تراجعت لجني الأرباح وكسرت -5% في اليوم العاشر كانت تُسجَّل `verified_loss` ظلمًا.
+
+المنطق القديم (priority order):
+1. `min_price_after <= entry * 0.95` (أي يوم في النافذة) → verified_loss
+2. `outcome_7d >= +2.5%` (close) → verified_win
+3. `outcome_14d >= +4.0%` (close) → verified_win
+4. `outcome_30d` → win/loss/neutral
+
+النتيجة: نسبة النجاح = **35.84%** (100 win / 279 verified).
+
+## 3. الإصلاح المُنفّذ (Chronological Day-by-Day)
+
+### 3.1 منطق الترتيب الزمني ("من يضرب أولًا يفوز")
+أعدت كتابة `evaluate_signal` لتطبق القاعدة الزمنية:
+- تجلب الأسعار بعد `signal_date` مرتبة **تصاعديًا** (ASC).
+- في كل يوم (بالتسلسل الزمني):
+  - **(أ)** هل حقق الهدف؟ → `high >= entry_price * 1.05` (+5%)
+  - **(ب)** أم كسر الوقف؟ → `low <= entry_price * 0.95` (-5%)
+- **من يضرب أولًا يفوز**: إذا ضرب الهدف في يوم N قبل الوقف → `verified_win` فورًا. إذا ضرب الوقف أولًا → `verified_loss`.
+- **حالة خاصة (both hit same day)**: بدون بيانات لحظية، استخدمت `close` للفصل: `close >= entry` → win (الهدف ضُرب أولًا)، `close < entry` → loss (الوقف ضُرب أولًا).
+
+### 3.2 Trailing Stop (بعد تحقيق الهدف)
+بعد تسجيل `verified_win`:
+- الـ status يبقى `verified_win` حتى لو تراجع السعر لما دون نقطة الدخول (`low <= entry_price`) في الأيام التالية — هذا جني أرباح (breakeven trailing stop)، NOT خسارة.
+- العمود `trailing_stop_hit = 1` إذا ضُرب الـ trailing stop (low <= entry) بعد يوم التحقق.
+
+### 3.3 أعمدة جديدة (ALTER TABLE idempotent)
+أضفت 3 أعمدة عبر `ensure_new_columns()` (idempotent — يستخدم PRAGMA للتحقق):
+- `win_date TEXT` — تاريخ أول يوم ضرب فيه الهدف +5%
+- `peak_return REAL` — `(max_high - entry) / entry * 100` عبر النافذة كاملة
+- `trailing_stop_hit INTEGER DEFAULT 0` — هل ضُرب الـ trailing stop بعد الـ win
+
+### 3.4 إصلاح جودة البيانات (DATA-QUALITY FIX — اكتشاف حرج)
+أثناء التحليل اكتشفت أن `stock_daily_prices` يحتوي على:
+- **8,070 صف** حيث `high < close` (مستحيل — high يجب أن ≥ close)
+- **7,514 صف** حيث `low > close` (مستحيل — low يجب أن ≤ close)
+- **23,837 صف** حيث `high`/`low` = NULL
+
+مثال فاضح: TAQA يوم 2026-10-04 → `high=17.60, low=13.19, close=17.49`. الـ low=13.19 كان يُفعّل الوقف -5% (16.26) زورًا!
+
+**الإصلاح في `fetch_prices_after`**: إذا `high < close` أو `low > close` أو `low > high` → ارجع لـ `close` للقيمتين (conservative — يعامل اليوم كـ flat close). هذا Rule 27-safe (نستخدم close الموثوق).
+
+### 3.5 Legacy Fallback (للتوافق مع API)
+عندما لا يُضرب الهدف ولا الوقف في الأيام المتاحة، احتفظت بمنطق الـ close-based القديم:
+- `outcome_7d >= +2.5%` (close, days 1..7) → verified_win
+- `outcome_14d >= +4.0%` (close, days 1..14) → verified_win
+- `outcome_30d` → win/loss/neutral (إذا اكتملت 30 يومًا)
+- else → pending
+
+هذا يضمن توافق الـ API (`route.ts` يقرأ outcome_7d/14d/30d) ولا يفقد إشارات الـ soft-wins.
+
+## 4. Idempotency (مُتحقَّق)
+- السكريبت يتخطى الإشارات ذات `status LIKE 'verified_%'` (WHERE clause يستثنيها).
+- الـ UPDATE يُتخطى عندما `new_status == current_status` (صفر تغييرات في التشغيل الثاني).
+- `stale_data` لا يُعاد تقييمه إلا بـ `--include-stale`.
+- **التحقق**: التشغيل الثاني لـ `--execute` أنتج **0 rows updated** ✅
+
+## 5. التشغيل والتحقق
+
+### BEFORE (الحالة الأصلية):
+```
+pending: 670, stale_data: 432, verified_win: 0, verified_loss: 0
+```
+
+### AFTER (`python3 scripts/verify_all_radar_signals.py --execute`):
+```
+=== DIFF SUMMARY (before → after) ===
+  pending              :   670 →   292  (Δ -378) *
+  stale_data           :   432 →   513  (Δ +81) *
+  verified_loss        :     0 →   158  (Δ +158) *
+  verified_win         :     0 →   139  (Δ +139) *
+
+=== WIN-RATE (BRAVO-1-RADAR-VERIFY) ===
+  verified_win     : 139
+  verified_loss    : 158
+  verified_neutral : 0
+  verified total   : 297
+  win_rate_pct     : 46.80%
+  trailing_stop_hit (wins where low<=entry post-win): 63/139
+  avg peak_return (wins): 51.71%
+```
+
+### مقارنة OLD vs NEW logic (نفس البيانات):
+```
+OLD logic: win=100  loss=179  → win_rate = 35.84%
+NEW logic: win=139  loss=158  → win_rate = 46.80%
+Improvement: +10.96 percentage points (+39 wins recovered, -21 losses corrected)
+```
+
+### Idempotency check (التشغيل الثاني):
+```
+rows updated (status changed): 0
+status transitions           : 0
+=== EXECUTE COMPLETE — 0 rows updated. ===
+```
+
+## 6. تحقق من API (قراءة فقط)
+قرأت `src/app/api/maker-radar/signal-tracker/route.ts`:
+- الـ API يقرأ `status`, `outcome_7d`, `outcome_14d`, `outcome_30d`, `verified_win/loss/neutral`.
+- الـ statuses الجديدة متوافقة 100% (نفس الأسماء).
+- الـ outcome_* لا تزال تُحسب (للتوافق) رغم أن الـ status يُحدَّد الآن بالمنطق الزمني.
+- الأعمدة الجديدة (`win_date`, `peak_return`, `trailing_stop_hit`) غير مستخدمة في الـ API الحالي — متاحة للـ dashboard/analytics مستقبلًا.
+
+## 7. ملاحظات حرجة للإدارة
+
+### 7.1 نسبة النجاح الفعلية (46.80%) أقل من الهدف (65-75%)
+الإصلاح الزمني اشتغل بشكل صحيح (رفع النسبة من 35.84% → 46.80%، +10.96 نقطة)، لكن النسبة الفعلية أقل من المتوقع. الأسباب:
+1. **نافذة بيانات قصيرة**: معظم الإشارات لها 4-9 أيام فقط من الأسعار بعد signal_date (البيانات تنتهي 2026-10-11). من أصل 670 pending:
+   - 81 → stale_data (لا أسعار متاحة)
+   - 292 → pending (بيانات جزئية، لم يضرب هدف ولا وقف في الأيام المتاحة)
+   - فقط 297 → verified (139 win + 158 loss)
+2. **هدف +5% صارم**: في نافذة 4-9 أيام، الـ stop (-5% low) يُضرب أكثر من الـ target (+5% high) لأن الأسهم شديدة التذبذب قصير المدى.
+3. **جودة بيانات**: 8,070 صف بـ high<close و 7,514 بـ low>close (تم إصلاحها بالـ fallback لـ close، لكن بعض الحالات الحدية قد تبقى).
+
+**التوقع**: عندما تتراكم 30 يومًا من الأسعار لكل إشارة، سيتحول كثير من الـ 292 pending إلى verified_win (الهدف لديه وقت أطول للتحقق)، وسترتفع النسبة.
+
+### 7.2 اكتشاف جودة بيانات حرج
+`stock_daily_prices` يحتوي على ~15,000 صف بـ OHLC مستحيل (high<close أو low>close). هذا قد يؤثر على تحليلات أخرى في المنصة. يُنصح بـ:
+- تدقيق pipeline الـ ingestion للأسعار اليومية.
+- تشغيل script تنظيف يُصلح الـ OHLC المستحيل (fallback to close) كـ migration شامل.
+
+### 7.3 قيمة peak_return=2023% لـ MENA (anomaly)
+MENA (entry=6.5) سجّلت peak_return=2023% بسبب قيم high فاسدة (129, 138) في بيانات ما بعد الإشارة — على ما يبدو split أو data feed corruption. الـ win نفسه صحيح (close قفز من 6.29 إلى 127)، لكن peak_return غير واقعي. يُنصح بمراجعة بيانات MENA.
+
+Stage Summary:
+- ✅ الإصلاح الزمني مُنفّذ بالكامل: "من يضرب أولًا يفوز" (target +5% high vs stop -5% low).
+- ✅ Trailing stop logic: الـ win يبقى win حتى لو تراجع السعر لما دون entry (breakeven exit = profit-taking, NOT loss).
+- ✅ 3 أعمدة جديدة: `win_date`, `peak_return`, `trailing_stop_hit` (ALTER TABLE idempotent).
+- ✅ Idempotency مُتحقَّق: التشغيل الثاني = 0 تغييرات.
+- ✅ إصلاح جودة بيانات: bad OHLC (high<close أو low>close) → fallback to close.
+- ✅ Legacy fallback محفوظ: +2.5% 7d / +4.0% 14d close-based (لتوافق API).
+- ✅ API compatibility: route.ts يقرأ نفس الـ statuses و outcome_* بدون كسر.
+- ⚠️ نسبة النجاح الفعلية = **46.80%** (أقل من هدف 65-75%) — السبب: نافذة بيانات قصيرة (4-9 أيام لمعظم الإشارات، 292 pending بانتظار اكتمال 30 يومًا).
+- 📈 التحسن: 35.84% → 46.80% (+10.96 نقطة، +39 win مسترجعة، -21 loss مُصححة).
+- 🔧 اكتشاف حرج: ~15,000 صف في stock_daily_prices بـ OHLC مستحيل — يحتاج تدقيق pipeline.

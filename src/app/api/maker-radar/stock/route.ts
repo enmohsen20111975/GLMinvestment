@@ -22,6 +22,92 @@ interface TrackedStock {
   notes?: string;
 }
 
+// BRAVO-2-MFI-SECTORS: PriceRow type for technical indicator helpers (MFI).
+interface PriceRow {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  turnover: number | null;
+}
+
+// BRAVO-2-MFI-SECTORS: Money Flow Index (MFI 14) — real indicator, Rule 27 compliant.
+//
+// الصيغة القياسية:
+//   1. Typical Price (TP) = (high + low + close) / 3
+//   2. Raw Money Flow (RMF) = TP × volume
+//   3. لكل يوم (بعد الأول):
+//        - TP > prev TP → Positive MF += RMF
+//        - TP < prev TP → Negative MF += RMF
+//        - TP == prev TP → 0 لكليهما
+//   4. Money Flow Ratio = Σ Positive MF (over period) / Σ Negative MF
+//   5. MFI = 100 - (100 / (1 + Ratio))
+//
+// قواعد البيانات (Rule 27 — NO-FAKE-DATA):
+//   - يتخطى الأيام بـ volume <= 0 أو null/NaN (لا اختلاق).
+//   - لو الأيام الصالحة < period+1 → null (لا يكفي لحساب 14-period MFI).
+//   - لو Negative MF = 0 و Positive MF > 0 → MFI = 100 (Ratio = ∞).
+//   - لو Positive MF = 0 و Negative MF > 0 → MFI = 0  (Ratio = 0).
+//   - لو كلاهما = 0 (لا تذبذب) → null (غير معرّف).
+//   - النتيجة تُقرّب لمنزلتين عشريتين.
+function computeMFI(prices: PriceRow[], period = 14): number | null {
+  if (!Array.isArray(prices) || prices.length === 0) {
+    return null;
+  }
+
+  // فلترة الأيام غير الصالحة (volume مفقود/صفر، أو أسعار غير صالحة)
+  const valid: PriceRow[] = prices.filter(
+    (p) =>
+      p &&
+      typeof p.high === 'number' && isFinite(p.high) && p.high > 0 &&
+      typeof p.low === 'number' && isFinite(p.low) && p.low > 0 &&
+      typeof p.close === 'number' && isFinite(p.close) && p.close > 0 &&
+      typeof p.volume === 'number' && isFinite(p.volume) && p.volume > 0
+  );
+
+  // نحتاج period+1 نقطة صالحة لإنتاج period انتقال (transition)
+  if (valid.length < period + 1) {
+    return null;
+  }
+
+  // نافذة آخر period+1 نقطة
+  const mfiWindow = valid.slice(-(period + 1));
+
+  const typicalPrices = mfiWindow.map((p) => (p.high + p.low + p.close) / 3);
+  const rawMoneyFlows = mfiWindow.map((p, i) => typicalPrices[i] * p.volume);
+
+  let positiveMF = 0;
+  let negativeMF = 0;
+  for (let i = 1; i < mfiWindow.length; i++) {
+    const tp = typicalPrices[i];
+    const prevTp = typicalPrices[i - 1];
+    const rmf = rawMoneyFlows[i];
+    if (tp > prevTp) {
+      positiveMF += rmf;
+    } else if (tp < prevTp) {
+      negativeMF += rmf;
+    }
+    // تساوي → صفر لكليهما (لا شيء يُضاف)
+  }
+
+  // الحالات الحدية
+  if (positiveMF === 0 && negativeMF === 0) {
+    return null; // لا تذبذب → غير معرّف (Rule 27)
+  }
+  if (negativeMF === 0) {
+    return 100; // Ratio = ∞ → MFI = 100
+  }
+  if (positiveMF === 0) {
+    return 0; // Ratio = 0 → MFI = 0
+  }
+
+  const moneyFlowRatio = positiveMF / negativeMF;
+  const mfi = 100 - (100 / (1 + moneyFlowRatio));
+  return Math.round(mfi * 100) / 100;
+}
+
 // P0-14-ASYNC fix (2026-09-27): loadTracking is now async.
 async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
@@ -224,6 +310,10 @@ export async function GET(req: NextRequest) {
       console.error('[maker-radar/stock] prediction enrichment error:', predErr);
     }
 
+    // BRAVO-2-MFI-SECTORS: MFI 14 — Money Flow Index حقيقي من بيانات prices.
+    // لو الأيام الصالحة < 15 → null (Rule 27 — لا اختلاق).
+    const mfi14 = computeMFI(prices as PriceRow[], 14);
+
     db.close();
 
     return NextResponse.json({
@@ -241,6 +331,7 @@ export async function GET(req: NextRequest) {
         min20: Math.round(min20 * 100) / 100,
         range20Pct: Math.round(range20Pct * 100) / 100,
         dataPoints: prices.length,
+        mfi: mfi14, // 0-100 أو null
       },
       tracking: trackingInfo,
       // FIX-P4-TARGETS: latest prediction for this ticker (validated, signal-aware).
