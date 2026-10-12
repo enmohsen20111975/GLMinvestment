@@ -1,130 +1,119 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
-import { checkTrialNotExpired } from '@/lib/subscription-gate';
+import { trialExpiredResponse } from '@/lib/subscription-gate';
+// Rule 20 (Python = brain): unified Python backend URL resolver.
+// Handles env-var precedence (PYTHON_BACKEND_URL → EGXPY_SERVICE_URL → …)
+// and replaces `localhost` with `127.0.0.1` server-side to dodge IPv6 DNS bugs.
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-export const maxDuration = 30; // Python scan takes ~5s for 416 EGX tickers
+export const maxDuration = 60; // Python scan ~5s for ~360 EGX tickers; allow headroom.
 
 /**
  * GET /api/maker-radar/wyckoff-screener?market=EGX&phase_filter=C_SPRING&limit=20
+ * ============================================================================
  *
- * Thin proxy to the Python backend's `/api/wyckoff-screener` (Flask blueprint
- * `wyckoff_screener_bp` on port 8010). All computation happens in Python
- * (`utils.shared_liquidity.detect_wyckoff_accumulation`) per Rule 20.
+ * Thin HTTP proxy to the Python Wyckoff screener endpoint
+ * (`GET <PYTHON_BACKEND_URL>/api/wyckoff-screener`).
  *
- * Response shape (Python):
+ * Rule 20 (Python = brain): all computation lives in
+ * `vps-service/api/wyckoff_screener_routes.py`, which uses the canonical
+ * `detect_wyckoff_accumulation` from `utils/shared_liquidity.py`
+ * (Rule 67 — CALCULATION-CANONICAL). Node is a pure pass-through.
+ *
+ * Rule 27 (NO-FAKE-DATA): if the Python backend is unreachable or returns an
+ * error, we surface 503 with a clear message — NO fallback / invented data.
+ *
+ * Auth model (matches parent /api/maker-radar): anonymous users pass through
+ * to see the screener (free-tier preview). Authenticated users with an
+ * expired 14-day trial are blocked at 403 TRIAL_EXPIRED. This mirrors the
+ * parent route's behavior — no separate auth required for the screener.
+ *
+ * Response shape (from Python):
  *   {
  *     success: true,
- *     market: string,
- *     phase_filter: string,
- *     limit: number,
- *     stocks: Array<{
- *       ticker: string;
- *       name_ar: string;
- *       phase: string;             // 'A_SC' | 'B_CAUSE' | 'C_SPRING' | 'D_SOS' | ...
- *       phase_label_ar: string;
- *       confidence: number;        // 0-100
- *       whale_flow_egp: number;
- *       support, resistance, range_pct, midpoint, lower_third;
- *       in_support_zone: boolean;
- *       vsa_confirmed: boolean;
- *       wash_trade_detected: boolean;
- *       signal_count: number;
- *       is_signal: boolean;
- *       reason: string;
- *       avg_up_volume, avg_down_volume, avg_20d_volume;
- *     }>,
- *     phase_distribution: Record<string, number>,
- *     scanned_count: number,
- *     skipped_count: number,
- *     returned_count: number,
- *     truncated: boolean,
- *     computed_at: string
+ *     market: 'EGX',
+ *     phase_filter: 'C_SPRING',
+ *     stocks: [ { ticker, name_ar, phase, phase_label_ar, confidence,
+ *                 whale_flow_egp, support, resistance, in_support_zone,
+ *                 vsa_confirmed, wash_trade_detected, signal_count, ... } ],
+ *     phase_distribution: { A_SC: N, B_CAUSE: N, ... },
+ *     computed_at: ISO8601,
+ *     scanned_count: N,
+ *     skipped_count: N,
  *   }
- *
- * Rule 27 (NO-FAKE-DATA): if Python is unreachable, surface an empty list
- * with `success:false` — the UI shows an empty state. Never invent phases.
  */
-
-const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
-
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const market = (url.searchParams.get('market') || 'EGX').toUpperCase();
-  const phaseFilter = (url.searchParams.get('phase_filter') || 'ALL').toUpperCase();
-  const limitRaw = Number(url.searchParams.get('limit') || '20');
-  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 50) : 20;
-
-  // PAYWALL: Maker Radar tier — same gate as the exit radar (paid + trial).
-  // Wyckoff screener is a Pro-grade feature; anonymous + free-trial-expired
-  // users are blocked from server-side enforcement.
+  // ─── Trial / subscription gate (same gate as parent /api/maker-radar) ────
+  // Maker Radar is a paid-tier preview for free users; if an authenticated
+  // user's 14-day trial has fully expired, we 403 TRIAL_EXPIRED. Anonymous
+  // users (no userId) pass through — same as the parent radar route.
   const { userId } = await getSessionUserId();
-  if (!userId) {
-    return NextResponse.json(
-      { success: false, error: 'WYCKOFF_SCREENER_LOCKED', upgradeUrl: '/pricing' },
-      { status: 403 },
-    );
-  }
-  const trial = await checkTrialNotExpired(userId);
-  if (!trial.ok) {
-    return NextResponse.json(
-      { success: false, error: 'WYCKOFF_SCREENER_LOCKED', upgradeUrl: '/pricing' },
-      { status: 403 },
-    );
-  }
-
-  // ─── Proxy to Python (Rule 20 — Node is just a proxy) ────────────────────
-  const pyUrl = `${PY}/api/wyckoff-screener?market=${encodeURIComponent(market)}&phase_filter=${encodeURIComponent(phaseFilter)}&limit=${limit}`;
-  try {
-    const r = await fetch(pyUrl, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(20_000),
-      headers: { Accept: 'application/json' },
-    });
-
-    if (!r.ok) {
-      // Forward Python's error envelope if possible.
-      let errBody: Record<string, unknown> = {
-        success: false,
-        error: `python_${r.status}`,
-        error_ar: 'تعذّر تشغيل مُفرّز وايكوف من Python. حاول لاحقاً.',
-        market,
-        phase_filter: phaseFilter,
-        stocks: [],
-      };
-      try {
-        const txt = await r.text();
-        if (txt) {
-          const j = JSON.parse(txt) as Record<string, unknown>;
-          errBody = { ...errBody, ...j, success: false };
-        }
-      } catch {
-        // ignore JSON parse failure — keep default error envelope
-      }
-      return NextResponse.json(errBody, { status: r.status });
+  if (userId) {
+    const trialBlock = await trialExpiredResponse(userId);
+    if (trialBlock) {
+      return NextResponse.json(trialBlock.body, { status: trialBlock.status });
     }
+  }
 
-    const payload = (await r.json()) as Record<string, unknown>;
-    // Pass through as-is (Rule 20 — Node is just a proxy).
-    return NextResponse.json(payload, { status: 200 });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[wyckoff-screener] proxy failed:', msg);
-    // Rule 27: surface a clear empty-state response — never fabricate.
+  // ─── Forward query string verbatim to the Python backend ─────────────────
+  // We pass the original search params unchanged so the Python blueprint can
+  // validate / clamp them itself (single source of truth for param parsing).
+  const url = new URL(req.url);
+  const upstreamUrl = `${PYTHON_BACKEND_URL}/api/wyckoff-screener?${url.searchParams.toString()}`;
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(upstreamUrl, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+      // 45s server-side timeout. The Python endpoint scans ~360 EGX tickers
+      // in <5s, so 45s gives generous headroom for cold-start DB locks.
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch (e: any) {
+    // Python backend is offline (port :8010 not listening, container down, …).
+    // Rule 27: surface 503 — do NOT invent a fallback.
+    const reason =
+      e?.name === 'TimeoutError'
+        ? 'طلب Python Backend انتهى (timeout بعد 45 ثانية)'
+        : e?.message || 'Python Backend غير قابل للوصول';
     return NextResponse.json(
       {
         success: false,
-        error: 'backend_unreachable',
-        error_ar: 'تعذّر الوصول لخدمة وايكوف. حاول لاحقاً.',
-        detail: msg,
-        market,
-        phase_filter: phaseFilter,
-        stocks: [],
-        scanned_count: 0,
-        returned_count: 0,
+        error: 'python_backend_unreachable',
+        error_ar:
+          'خدمة الـ Python Backend غير متاحة حالياً — مُفرّز وايكوف معطّل مؤقتاً. حاول مرة ثانية خلال دقيقة.',
+        detail: reason,
+        python_backend_url: PYTHON_BACKEND_URL,
+        retry_after_seconds: 30,
       },
       { status: 503 },
     );
   }
+
+  // ─── Pass upstream body through unchanged ───────────────────────────────
+  // If Python returned 400 (invalid_phase_filter) or 503 (db_unavailable),
+  // surface the same status + body to the caller.
+  let body: unknown;
+  try {
+    body = await upstream.json();
+  } catch (parseErr) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'python_backend_invalid_json',
+        error_ar: 'استجابة غير صالحة من Python Backend.',
+        detail: parseErr instanceof Error ? parseErr.message : String(parseErr),
+        upstream_status: upstream.status,
+      },
+      { status: 502 },
+    );
+  }
+
+  return NextResponse.json(body, {
+    status: upstream.status,
+    headers: { 'Cache-Control': 'no-store' },
+  });
 }
