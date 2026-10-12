@@ -527,7 +527,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
               <PriceChart data={chartData.ohlcv} analysis={updatedAnalysis} />
             ) : (
               <div className="h-64 flex items-center justify-center text-muted-foreground">
-                لا توجد بيانات رسم بياني
+                بانتظار تحميل بيانات الرسم البياني
               </div>
             )}
           </CardContent>

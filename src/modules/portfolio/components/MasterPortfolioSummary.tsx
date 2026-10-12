@@ -118,7 +118,7 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
     return (
       <Card className="bg-muted/30 border-border">
         <CardContent className="p-4 text-center text-sm text-muted-foreground">
-          لا توجد بيانات محفظة. أنشئ محفظة فرعية للبدء.
+          ابدأ بإنشاء محفظة فرعية لتتبع استثماراتك
         </CardContent>
       </Card>
     );

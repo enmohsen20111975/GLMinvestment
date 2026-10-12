@@ -618,7 +618,7 @@ function ProjectionCard({
           </div>
         ) : !data ? (
           <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-            لا توجد بيانات كافية لحساب التوقع
+            جاري تجهيز بيانات التوقع — أضف أصولًا لمحفظتك لبدء التحليل
           </div>
         ) : (
           <>
@@ -938,7 +938,7 @@ function EquityCurveCard({
         ) : !data || chartData.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
             <Wallet className="h-8 w-8 text-muted-foreground/50" />
-            لا توجد بيانات تاريخية كافية بعد
+            بانتظار تراكم البيانات التاريخية لعرض المنحنى
           </div>
         ) : (
           <>

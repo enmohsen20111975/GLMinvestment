@@ -229,7 +229,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
       <Card>
         <CardContent className="p-8 text-center">
           <Info className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-muted-foreground">لا توجد بيانات متاحة حالياً</p>
+          <p className="text-muted-foreground">جاري تحديث التوصيات — تابعنا للحصول على أحدث الفرص</p>
           <p className="text-sm text-muted-foreground mt-1">سيتم إضافة بيانات جديدة قريباً</p>
         </CardContent>
       </Card>
@@ -294,7 +294,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
         borderClass="border-green-200"
         bgClass="bg-gradient-to-br from-green-50 via-emerald-50 to-green-100/40"
         hasData={stocks.length > 0}
-        emptyHint="لا توجد بيانات متاحة حالياً"
+        emptyHint="جاري تحديث التوصيات — تابعنا للحصول على أحدث الفرص"
       >
         {(ref) => (
           <ExpertPredictionsImageCard

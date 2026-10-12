@@ -129,7 +129,7 @@ function ExportToolbar({
         onClick={onPng}
         disabled={exporting}
         variant="outline"
-        className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 bg-card"
+        className="gap-2 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-300 bg-card"
       >
         <Download className="w-4 h-4" />
         {exporting ? 'جارٍ التصدير...' : pngLabel}
@@ -175,14 +175,14 @@ function ProfessionalHeader({
             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
               دليل الاستثمار
             </h1>
-            <p className="text-[11px] text-amber-300/80 tracking-wide uppercase">
+            <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 tracking-wide uppercase">
               Egyptian Investment Platform · Professional Reports
             </p>
           </div>
         </div>
         <div className="text-left">
           <h2 className="text-base sm:text-lg font-bold text-amber-300">{title}</h2>
-          <p className="text-xs text-slate-300/90">{subtitle}</p>
+          <p className="text-xs text-muted-foreground/90">{subtitle}</p>
           <div className="flex items-center justify-end gap-2 mt-1">
             <Badge
               variant="outline"
@@ -190,7 +190,7 @@ function ProfessionalHeader({
             >
               {market} · LIVE
             </Badge>
-            <span className="text-[11px] text-slate-400">{dateStr}</span>
+            <span className="text-[11px] text-muted-foreground">{dateStr}</span>
           </div>
         </div>
       </div>
@@ -310,7 +310,7 @@ function SectorReport() {
   return (
     <div
       ref={reportRef}
-      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-border/50 print:border-0"
       dir="rtl"
     >
       <ProfessionalHeader
@@ -319,7 +319,7 @@ function SectorReport() {
         dateStr={dateStr}
       />
 
-      <p className="text-[10px] text-amber-300/70 italic text-center leading-relaxed">
+      <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 italic text-center leading-relaxed">
         ⚠️ إخلاء مسؤولية: المنصة تقدم رأيًا آليًا لأغراض تعليمية فقط، وليست نصيحة استثمارية.
       </p>
 
@@ -332,26 +332,26 @@ function SectorReport() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 to-amber-400/5 p-3.5">
-          <p className="text-[11px] text-slate-300 mb-1">عدد القطاعات</p>
-          <p className="text-2xl font-extrabold text-amber-200 tabular-nums">
+          <p className="text-[11px] text-muted-foreground mb-1">عدد القطاعات</p>
+          <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-300 tabular-nums">
             {safeFmtNum(sectors.length, 0)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-500/30 bg-slate-500/10 p-3.5">
-          <p className="text-[11px] text-slate-300 mb-1">إجمالي الأسهم</p>
-          <p className="text-2xl font-extrabold text-slate-200 tabular-nums">
+        <div className="rounded-xl border border-border/30 bg-muted/30 p-3.5">
+          <p className="text-[11px] text-muted-foreground mb-1">إجمالي الأسهم</p>
+          <p className="text-2xl font-extrabold text-foreground tabular-nums">
             {safeFmtNum(totalStocks, 0)}
           </p>
         </div>
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5">
-          <p className="text-[11px] text-slate-300 mb-1">متوسط التغيّر</p>
+          <p className="text-[11px] text-muted-foreground mb-1">متوسط التغيّر</p>
           <p className={cn('text-2xl font-extrabold tabular-nums', avgChange >= 0 ? 'text-emerald-300' : 'text-red-300')}>
             {safeFmtPct(avgChange, 2)}
           </p>
         </div>
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5">
-          <p className="text-[11px] text-slate-300 mb-1">درجة السوق</p>
-          <p className="text-2xl font-extrabold text-amber-300 tabular-nums">
+          <p className="text-[11px] text-muted-foreground mb-1">درجة السوق</p>
+          <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">
             {safeFmtNum(report.summary?.market_breadth ?? 0, 0)}
           </p>
         </div>
@@ -362,7 +362,7 @@ function SectorReport() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Card className="border-emerald-500/30 bg-emerald-500/5">
             <CardContent className="p-4">
-              <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
+              <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
                 <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
                 أفضل قطاع
               </p>
@@ -370,12 +370,12 @@ function SectorReport() {
               <p className="text-2xl font-extrabold text-emerald-400 tabular-nums">
                 {safeFmtPct(bestSector.avg_change_percent, 2)}
               </p>
-              <p className="text-[11px] text-slate-400">{bestSector.count ?? 0} سهم</p>
+              <p className="text-[11px] text-muted-foreground">{bestSector.count ?? 0} سهم</p>
             </CardContent>
           </Card>
           <Card className="border-red-500/30 bg-red-500/5">
             <CardContent className="p-4">
-              <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
+              <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
                 <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />
                 أسوأ قطاع
               </p>
@@ -383,19 +383,19 @@ function SectorReport() {
               <p className="text-2xl font-extrabold text-red-400 tabular-nums">
                 {safeFmtPct(worstSector.avg_change_percent, 2)}
               </p>
-              <p className="text-[11px] text-slate-400">{worstSector.count ?? 0} سهم</p>
+              <p className="text-[11px] text-muted-foreground">{worstSector.count ?? 0} سهم</p>
             </CardContent>
           </Card>
         </div>
       )}
 
       {/* Sector Heatmap */}
-      <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
+      <Card className="overflow-hidden border-border/50 bg-card print:break-inside-avoid">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
             <Layers className="w-5 h-5" />
             خريطة أداء القطاعات
-            <span className="text-[10px] font-normal text-slate-400">
+            <span className="text-[10px] font-normal text-muted-foreground">
               Sector Heatmap
             </span>
           </CardTitle>
@@ -424,7 +424,7 @@ function SectorReport() {
                     <p className="text-xs font-semibold text-white truncate">
                       {sector.name || '—'}
                     </p>
-                    <p className="text-[10px] text-slate-200 mb-1">
+                    <p className="text-[10px] text-foreground mb-1">
                       {sector.count ?? 0} سهم
                     </p>
                     <p
@@ -445,7 +445,7 @@ function SectorReport() {
 
       {/* Sector Comparison Table */}
       {sectors.length > 0 && (
-        <Card className="overflow-hidden border-slate-700/50 bg-card print:break-inside-avoid">
+        <Card className="overflow-hidden border-border/50 bg-card print:break-inside-avoid">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
               <BarChart3 className="w-5 h-5" />
@@ -454,7 +454,7 @@ function SectorReport() {
           </CardHeader>
           <CardContent className="p-0">
             <table className="w-full text-sm">
-              <thead className="bg-background/60 text-[11px] text-slate-400 uppercase">
+              <thead className="bg-background/60 text-[11px] text-muted-foreground uppercase">
                 <tr>
                   <th className="text-right py-2 px-3 font-medium">#</th>
                   <th className="text-right py-2 px-3 font-medium">القطاع</th>
@@ -470,9 +470,9 @@ function SectorReport() {
                   const barWidth = Math.min(Math.abs(change) * 10, 100);
                   return (
                     <tr key={`row-${sector.name ?? i}`} className="border-t border-slate-700/30">
-                      <td className="py-2 px-3 text-slate-400 tabular-nums">{i + 1}</td>
-                      <td className="py-2 px-3 font-medium text-slate-100">{sector.name || '—'}</td>
-                      <td className="py-2 px-3 text-left tabular-nums text-slate-300">
+                      <td className="py-2 px-3 text-muted-foreground tabular-nums">{i + 1}</td>
+                      <td className="py-2 px-3 font-medium text-foreground">{sector.name || '—'}</td>
+                      <td className="py-2 px-3 text-left tabular-nums text-muted-foreground">
                         {sector.count ?? 0}
                       </td>
                       <td className={cn('py-2 px-3 text-left tabular-nums font-bold', isUp ? 'text-emerald-400' : 'text-red-400')}>
@@ -587,7 +587,7 @@ function PredictionsReport() {
   return (
     <div
       ref={reportRef}
-      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+      className="space-y-5 print:space-y-3 bg-background print:bg-white p-4 sm:p-5 rounded-2xl border border-border/50 print:border-0"
       dir="rtl"
     >
       <ProfessionalHeader
@@ -596,7 +596,7 @@ function PredictionsReport() {
         dateStr={dateStr}
       />
 
-      <p className="text-[10px] text-amber-300/70 italic text-center leading-relaxed">
+      <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 italic text-center leading-relaxed">
         ⚠️ إخلاء مسؤولية: التوقعات رأي آلي تعليمي تحليلي وليست نصيحة استثمارية. لا ضمان للنتائج.
       </p>
 
@@ -610,13 +610,13 @@ function PredictionsReport() {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold text-amber-300 uppercase tracking-wide">
+          <h3 className="text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
             ملخص الأداء · Performance Summary
           </h3>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <div className="rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 to-amber-400/5 p-3.5">
-            <p className="text-[11px] text-slate-300 mb-1">أداء EGX30 الأسبوعي</p>
+            <p className="text-[11px] text-muted-foreground mb-1">أداء EGX30 الأسبوعي</p>
             <p className={cn('text-2xl font-extrabold tabular-nums', egx30Perf >= 0 ? 'text-emerald-300' : 'text-red-300')}>
               {safeFmtPct(egx30Perf, 2)}
             </p>
@@ -625,13 +625,13 @@ function PredictionsReport() {
             )}
           </div>
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5">
-            <p className="text-[11px] text-slate-300 mb-1">أداء الذهب</p>
+            <p className="text-[11px] text-muted-foreground mb-1">أداء الذهب</p>
             <p className={cn('text-2xl font-extrabold tabular-nums', goldPerf >= 0 ? 'text-emerald-300' : 'text-red-300')}>
               {safeFmtPct(goldPerf, 2)}
             </p>
           </div>
-          <div className="rounded-xl border border-slate-500/30 bg-slate-500/10 p-3.5">
-            <p className="text-[11px] text-slate-300 mb-1">أداء الدولار</p>
+          <div className="rounded-xl border border-border/30 bg-muted/30 p-3.5">
+            <p className="text-[11px] text-muted-foreground mb-1">أداء الدولار</p>
             <p className={cn('text-2xl font-extrabold tabular-nums', usdPerf >= 0 ? 'text-emerald-300' : 'text-red-300')}>
               {safeFmtPct(usdPerf, 2)}
             </p>
@@ -644,7 +644,7 @@ function PredictionsReport() {
         {bestStock && (
           <Card className="border-emerald-500/30 bg-emerald-500/5">
             <CardContent className="p-4">
-              <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
+              <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
                 <Trophy className="w-3.5 h-3.5 text-amber-400" />
                 أفضل سهم متوقع
               </p>
@@ -660,7 +660,7 @@ function PredictionsReport() {
         {worstStock && (
           <Card className="border-red-500/30 bg-red-500/5">
             <CardContent className="p-4">
-              <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
+              <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                 أسوأ سهم متوقع (خسارة صريحة)
               </p>
@@ -700,7 +700,7 @@ function PredictionsReport() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white">{p.symbol || '—'}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{p.name || ''}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{p.name || ''}</p>
                   </div>
                   <span className="text-sm font-bold text-emerald-400 tabular-nums">
                     <ArrowUpRight className="w-3.5 h-3.5 inline -mt-0.5" />{' '}
@@ -732,7 +732,7 @@ function PredictionsReport() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-white">{worstStock.symbol || '—'}</p>
-                <p className="text-[10px] text-slate-400 truncate">{worstStock.name || ''}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{worstStock.name || ''}</p>
               </div>
               <span className="text-sm font-bold text-red-400 tabular-nums">
                 <ArrowDownRight className="w-3.5 h-3.5 inline -mt-0.5" />{' '}
@@ -758,7 +758,7 @@ function PredictionsReport() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ol className="space-y-2 list-decimal list-inside text-xs text-slate-200">
+                <ol className="space-y-2 list-decimal list-inside text-xs text-foreground">
                   {lessons.map((l, i) => (
                     <li key={`lesson-${i}`}>{l}</li>
                   ))}
@@ -799,14 +799,14 @@ function PredictionsReport() {
             <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
               <Activity className="w-5 h-5" />
               الملخص الذكي لتوقعات الأسبوع
-              <span className="text-[10px] font-normal text-amber-300/70">
+              <span className="text-[10px] font-normal text-amber-600/70 dark:text-amber-400/70">
                 ملخص تحليلي
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <pre
-              className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200 font-sans bg-black/20 rounded-lg p-3 border border-slate-700/40"
+              className="whitespace-pre-wrap text-sm leading-relaxed text-foreground font-sans bg-black/20 rounded-lg p-3 border border-border/40"
               dir="rtl"
             >
 {report.content}
@@ -882,25 +882,169 @@ function Sparkline({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GLM5.2-A (Phase 2): Executive Morning Brief Cards
+// 3 بطاقات تنفيذية صباحية قابلة للتصدير كصورة
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ExecutiveMorningBrief() {
+  const [daily, setDaily] = useState<DailyReportPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDailyReport()
+      .then(d => { if (!cancelled) setDaily(d); })
+      .catch(() => { /* silent */ })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleExport = async () => {
+    if (!cardRef.current) return;
+    setExporting(true);
+    try {
+      await exportReportToPng(cardRef.current, { filename: `morning-brief-${new Date().toISOString().slice(0, 10)}` });
+      toast.success('تم تصدير الملخص الصباحي كصورة');
+    } catch {
+      toast.error('فشل تصدير الصورة');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!daily) return null;
+
+  // Extract data from the daily report payload (Rule 67 — from API, no fabrication)
+  const regime = String(daily.regime || daily.market_regime || 'NORMAL');
+  const regimeAr = regime === 'DEFENSIVE' ? 'وضع دفاعي' : regime === 'AGGRESSIVE' ? 'وضع هجومي' : 'وضع طبيعي';
+  const regimeColor = regime === 'DEFENSIVE' ? 'text-rose-600 dark:text-rose-400' : regime === 'AGGRESSIVE' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400';
+  const regimeBg = regime === 'DEFENSIVE' ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800' : regime === 'AGGRESSIVE' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800';
+
+  const rawPicks = (daily.top_picks || daily.recommendations || []) as Array<Record<string, unknown>>;
+  const topPicks = rawPicks.slice(0, 3);
+  const inflow = Number(daily.smart_money_inflow || daily.net_flow_egp || 0);
+  const reportDate = String(daily.date || daily.generated_at || '');
+  const breadthPct = daily.breadth_pct != null ? Number(daily.breadth_pct) : null;
+  const turnoverTotal = daily.turnover_total != null ? Number(daily.turnover_total) : null;
+
+  return (
+    <div ref={cardRef} className="mb-6 space-y-3">
+      {/* Header with export button */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span className="text-sm font-bold text-foreground">الملخص الصباحي التنفيذي</span>
+          <span className="text-[10px] text-muted-foreground">{safeFmtArDate(reportDate)}</span>
+        </div>
+        <Button size="sm" variant="outline" onClick={handleExport} disabled={exporting} className="h-7 text-xs gap-1.5 shrink-0">
+          {exporting ? <span className="animate-pulse">جاري التصدير...</span> : (
+            <>
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">تصدير كصورة</span>
+              <span className="sm:hidden">صورة</span>
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* 3 Executive Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Card 1: Market Regime Status */}
+        <Card className={cn('p-4 border-2', regimeBg)}>
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-4 h-4 shrink-0" />
+            <span className="text-xs font-bold text-foreground">حالة السوق وحماية رأس المال</span>
+          </div>
+          <div className={cn('text-lg font-black', regimeColor)}>{regimeAr}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            {regime === 'DEFENSIVE' ? 'تقليل المراكز — حماية رأس المال أولوية' : regime === 'AGGRESSIVE' ? 'فرصة لزيادة المراكز — الزخم إيجابي' : 'استراتيجية متوازنة مناسبة للوضع الحالي'}
+          </div>
+          {breadthPct != null && (
+            <div className="text-[10px] text-muted-foreground mt-1">اتساع السوق: {safeFmtPct(breadthPct)}%</div>
+          )}
+        </Card>
+
+        {/* Card 2: Top AI High-Conviction Picks */}
+        <Card className="p-4 border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Trophy className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-xs font-bold text-foreground">أفضل الفرص الصاعدة (معتمدة بالذكاء الاصطناعي)</span>
+          </div>
+          {topPicks.length > 0 ? (
+            <div className="space-y-1">
+              {topPicks.map((p, i) => {
+                const sym = String(p.symbol || p.ticker || '—');
+                const chgRaw = p.change_percent;
+                const chg = typeof chgRaw === 'number' ? chgRaw : null;
+                return (
+                  <div key={i} className="flex items-center gap-2 text-[11px]">
+                    <span className="text-muted-foreground w-4">{i + 1}.</span>
+                    <span className="font-bold text-foreground truncate">{sym}</span>
+                    {chg != null && (
+                      <span className={cn('font-mono font-bold mr-auto', chg >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+                        {chg >= 0 ? '+' : ''}{chg.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-[10px] text-muted-foreground italic">جاري تحديث الفرص — تابعنا للحصول على أحدث التوصيات</div>
+          )}
+        </Card>
+
+        {/* Card 3: Smart Money Inflow */}
+        <Card className="p-4 border-2 border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span className="text-xs font-bold text-foreground">تدفق السيولة المؤسسية</span>
+          </div>
+          <div className={cn('text-lg font-black font-mono', inflow >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+            {inflow >= 0 ? '+' : ''}{(inflow / 1_000_000).toFixed(1)}M
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-1">صافي التدفق (مليون ج.م)</div>
+          {turnoverTotal != null && (
+            <div className="text-[10px] text-muted-foreground mt-0.5">إجمالي التداول: {(turnoverTotal / 1_000_000).toFixed(0)}M ج.م</div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main ReportsView
 // ─────────────────────────────────────────────────────────────────────────────
 export function ReportsView() {
   const t = useTranslation();
   return (
-    <div className="min-h-screen flex flex-col bg-background text-slate-100">
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-slate-700/50 print:hidden">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border print:hidden">
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-emerald-500 flex items-center justify-center">
-            <FileBarChart className="w-5 h-5 text-slate-950" strokeWidth={2.5} />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-emerald-500 flex items-center justify-center shrink-0">
+            <FileBarChart className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
           <div className="min-w-0 mr-auto">
-            <h1 className="text-lg font-extrabold text-amber-300 flex items-center gap-2">
+            <h1 className="text-lg font-extrabold text-amber-600 dark:text-amber-400 flex items-center gap-2">
               {t('reports.view.title')}
             </h1>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-muted-foreground">
               تقارير مالية احترافية · نظام تحليل موحد
             </p>
-            <p className="text-[10px] text-amber-300/60 italic mt-0.5">
+            <p className="text-[10px] text-amber-600/60 dark:text-amber-400/60 italic mt-0.5">
               {t('reports.view.disclaimer')}
             </p>
           </div>
@@ -909,32 +1053,35 @@ export function ReportsView() {
 
       <main className="flex-1 print:p-0">
         <div className="p-4 md:p-6">
+          {/* GLM5.2-A (Phase 2): Executive Morning Brief Cards */}
+          <ExecutiveMorningBrief />
+
           <Tabs defaultValue="daily" dir="rtl" className="w-full">
-            <TabsList className="mb-6 w-full flex h-auto flex-wrap gap-1 bg-card border border-slate-700/40 p-1 rounded-xl print:hidden">
+            <TabsList className="mb-6 w-full flex h-auto flex-wrap gap-1 bg-card border border-border p-1 rounded-xl print:hidden">
               <TabsTrigger
                 value="daily"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg py-2 font-bold"
               >
                 <BarChart3 className="w-3.5 h-3.5" />
                 التقرير اليومي
               </TabsTrigger>
               <TabsTrigger
                 value="stock"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg py-2 font-bold"
               >
                 <Activity className="w-3.5 h-3.5" />
                 تقرير السهم
               </TabsTrigger>
               <TabsTrigger
                 value="sector"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg py-2 font-bold"
               >
                 <Layers className="w-3.5 h-3.5" />
                 تقرير القطاعات
               </TabsTrigger>
               <TabsTrigger
                 value="predictions"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg py-2 font-bold"
               >
                 <Shield className="w-3.5 h-3.5" />
                 تقرير التوقعات

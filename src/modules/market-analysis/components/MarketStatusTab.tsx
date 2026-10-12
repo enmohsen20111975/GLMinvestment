@@ -1039,7 +1039,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                     </div>
                   ))
                 ) : (
-                  <p className="text-muted-foreground text-sm p-2">لا توجد بيانات أحجام</p>
+                  <p className="text-muted-foreground text-sm p-2">بانتظار بيانات الأحجام</p>
                 )}
               </div>
             </div>
@@ -1063,7 +1063,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                     </div>
                   ))}
                 {Object.keys(weekStats.sectors).length === 0 && (
-                  <p className="text-muted-foreground text-sm p-2">لا توجد بيانات قطاعات</p>
+                  <p className="text-muted-foreground text-sm p-2">بانتظار بيانات القطاعات</p>
                 )}
               </div>
             </div>

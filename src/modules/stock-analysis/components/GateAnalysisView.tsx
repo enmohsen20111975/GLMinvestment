@@ -341,7 +341,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
 
         {/* Footer */}
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <p className="text-[10px] text-muted-foreground leading-relaxed max-w-[70%]">الحساب من Python canonical engine — Rule 20 (Python=Brain)</p>
+          <p className="text-[10px] text-muted-foreground leading-relaxed max-w-[70%]">الحساب من المحرك الموحد المعتمد</p>
           <Button variant="ghost" size="sm" className="text-xs gap-1.5" onClick={handleCopy}>
             {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
             نسخ TradingView

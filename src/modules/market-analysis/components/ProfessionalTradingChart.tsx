@@ -676,7 +676,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-              لا توجد بيانات شارت متاحة — استخدم TradingView
+              بانتظار تحديث الشموع — يمكن التبديل لـ TradingView
             </div>
           )}
         </div>

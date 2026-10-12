@@ -83,6 +83,8 @@ export interface DailyReportPayload {
   top_losers?: ReportStockMini[];
   gold?: { price_21?: number | string; [k: string]: unknown } | null;
   usd_rate?: number | null;
+  // GLM5.2-A (Phase 2): Executive Morning Brief fields — optional, from API
+  [k: string]: unknown;
 }
 
 export interface WeeklyPerformer {

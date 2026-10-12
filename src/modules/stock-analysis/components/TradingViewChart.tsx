@@ -1743,7 +1743,7 @@ export function TradingViewChart({
     return (
       <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center justify-center min-h-[400px]">
         <p className="text-sm font-medium text-muted-foreground">
-          لا توجد بيانات تاريخية لهذا السهم
+          بانتظار تحديث بيانات الشارت — يتم التحميل تلقائيًا
         </p>
       </div>
     );

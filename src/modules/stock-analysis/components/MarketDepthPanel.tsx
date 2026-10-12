@@ -164,7 +164,7 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
           </div>
         ) : !data || !summary ? (
           <div className="text-center py-6 text-xs text-muted-foreground">
-            لا توجد بيانات لحظية لهذا السهم
+            بانتظار تداول السهم في الجلسة القادمة
           </div>
         ) : (
           <>

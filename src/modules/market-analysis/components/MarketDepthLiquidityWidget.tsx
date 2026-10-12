@@ -248,7 +248,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <Layers className="w-6 h-6 text-muted-foreground/60" />
             <p className="text-xs text-muted-foreground">
-              {data?.note || 'لا توجد بيانات عمق لهذا السهم'}
+              {data?.note || 'بانتظار نشاط التداول على هذا السهم'}
             </p>
           </div>
         )}
