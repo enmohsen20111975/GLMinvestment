@@ -77503,3 +77503,41 @@ Stage Summary:
 - npx tsc --noEmit --skipLibCheck | grep signal-tracker → 0 أخطاء جديدة.
 - pre-commit hook: PASS (check:guards + ticker-registry).
 - التحقق النهائي via curl: verified=0, win_rate=0 (مش مضلل), avg_outcome_7d=-2.74%, كل labels عربي.
+
+---
+
+Task ID: GLM5.2-RADAR-S2-VERIFY-ENGINE
+Agent: Verify Engine + Script Agent
+
+Work Log:
+- Commit `f9690616`: feat(GLM5.2-RADAR-S2-VERIFY-ENGINE): price source + win/loss eval + batch script
+- Files changed: src/app/api/maker-radar/signal-tracker/verify/route.ts (+130/-32), scripts/verify_all_radar_signals.py (new, 504 lines, chmod +x)
+- PRICE_SOURCES reordered: stock_daily_prices (stocks.db, 100,619 candles) → PRIMARY; price_history.db marked MALFORMED with explanatory comment
+- Evaluation logic implemented (mirrored in route.ts + script):
+  - WIN_7D_PCT = +2.5%  → first close in trading days 1..7  with pct >= +2.5% → verified_win
+  - WIN_14D_PCT = +4.0% → first close in trading days 1..14 with pct >= +4.0% → verified_win
+  - STOP_LOSS_PCT = -5.0% → min_price_after <= entry*0.95 → verified_loss (any day, independent of horizon)
+  - outcome_30d: final 30th-day close pct → win/loss/neutral by threshold (+2.5% / -5.0%)
+  - Stale data (no prices in stock_daily_prices) → status='stale_data' (NOT verified, Rule 27)
+- scripts/verify_all_radar_signals.py created:
+  - --dry-run default, --execute to apply changes
+  - --include-stale to re-evaluate stale_data signals
+  - Idempotent: skips verified_* (and stale_data without --include-stale)
+  - BEFORE/AFTER snapshots + diff summary
+  - Mirrors route.ts thresholds EXACTLY (single source of truth in headers)
+- BEFORE: 670 pending + 432 stale_data + 0 verified = 1102 total
+- AFTER (1st --execute): 308 pending + 513 stale_data + 181 verified_loss + 100 verified_win = 1102 total
+- AFTER (2nd --execute, idempotency check): 0 status changes (Δ=0 across all statuses)
+- pre-commit hook: PASS (check:guards + ticker-registry)
+- npx tsc --noEmit: 0 new errors in verify/route.ts
+- Python AST parse: PASS
+- Forbidden files (MakerRadarTab.tsx, api/maker-radar/stock): NOT touched ✓
+
+Stage Summary:
+- PRICE_SOURCES updated (price_history.db malformed → stock_daily_prices as PRIMARY)
+- Win/Loss evaluation logic implemented (7d/14d/30d thresholds + stop-loss)
+- verify_all_radar_signals.py created + executed (--dry-run → --execute → idempotency check)
+- verified signals: 0 → 281 (100 verified_win + 181 verified_loss)
+- pre-commit hook: PASS
+- Rule 27 (NO-FAKE-DATA): respected — only real stock_daily_prices prices used
+- Rule 75 (PUSH-AFTER-EVERY-TASK): commit f9690616 + pushed to origin/main
