@@ -78348,3 +78348,135 @@ Stage Summary:
 - sector_ar: SECTOR_AR_MAP (37 قطاع) + يفضل sector_ar من API
 - formatProfessionalAnalysis محدّث: MFI حقيقي + القطاع العربي في header + line جديد
 - 0 أخطاء TypeScript جديدة
+
+---
+Task ID: TITAN-2-BACKTEST-API
+Agent: مهندس واجهات Next.js (فريق GLM 5.2-Bravo)
+Task: مسار API لعرض الباك-تيست المؤسسي (Institutional Backtest)
+
+Work Log:
+- قرأت آخر 150 سطر من worklog.md لفهم context الفريق (BRAVO-FINAL-PUSH + P0-ALPHA-ALERTS-MFI آخر مدخلين). تأكدت أن فريق Alpha يعمل على UI (alerts/MFI) — لم ألمس أي ملفاته.
+- قرأت `src/app/api/maker-radar/signal-tracker/route.ts` بالكامل (98 سطر) لاستيعاب الـ patterns المعتمدة في المشروع: `export const dynamic = 'force-dynamic'`، استخدام `NextResponse.json`، fallback لـ null عند غياب البيانات (Rule 27)، console.error مع prefix `[namespace]` للأخطاء، وتبني نفس الـ shape `{ success, ... , error }`.
+- قرأت الأسطر الأولى من `src/app/api/maker-radar/stock/route.ts` للتأكد من imports الصحيحة: `fs/promises` (async) + `path` + `process.cwd()` كما هو متبع في `loadTracking`. تجنبت `fs.readFileSync` التزامًا بـ P0-14-ASYNC fix المُوثّق في الملف.
+- أنشأت المجلد `src/app/api/maker-radar/institutional-backtest/` (لم يكن موجودًا).
+- كتبت `route.ts` (109 سطر):
+  • imports: `NextResponse` + `readFile` (fs/promises) + `path`.
+  • exports: `revalidate = 300` (كاش 5 دقائق) + `dynamic = 'force-dynamic'` (لأن الـ JSON يتغير عند إعادة التشغيل).
+  • ثابت `REPORT_PATH` يشير إلى `db/reports/institutional_backtest_summary.json` عبر `process.cwd()`.
+  • دالة `GET` واحدة بثلاث طبقات try/catch متداخلة:
+      (1) readFile → 404 لو الملف غير موجود (`backtest_not_run` + hint بتشغيل Python script).
+      (2) JSON.parse → 500 لو الـ JSON تالف (`backtest_report_corrupted` + hint بإعادة التشغيل).
+      (3) outer try → 500 عام (`internal_error`) لأي استثناء غير متوقع + console.error.
+  • في حالة النجاح: `{ success: true, data: <report as-is>, cached_at: ISO, disclaimer: report.disclaimer || fallback Rule 27 }`.
+  • لا تتم أي إعادة ترتيب أو تنقية لحقول الـ report — الـ API شفاف تمامًا (Rule 20 — Python = Brain).
+  • لا حساب مالي إطلاقًا. لا اختلاق بيانات (Rule 27). الـ report يمر كما هو.
+  • تعليقات بالعربية تشرح: الغرض من المسار، Rule 20، Rule 27، سبب اختيار `force-dynamic` + `revalidate=300`، وسبب استخدام `any` للـ parsed JSON.
+- شغّلت `npx tsc --noEmit 2>&1 | grep "institutional-backtest" | head -10` → خرج فارغ = 0 أخطاء TypeScript في الملف الجديد.
+- لم أشغّل `bun run dev` (المدير سيتولى التحقق النهائي بـ curl بعد دمج عمل الوكيل 1).
+- لم أعمل commit/push (قرار المدير).
+- لم ألمس أي ملف آخر.
+
+Stage Summary:
+- LOC: 109 سطرًا (route.ts) — مسار واحد GET فقط.
+- exports: `revalidate = 300`, `dynamic = 'force-dynamic'`, `GET()`.
+- الـ response shape الناجح: `{ success: true, data: <full JSON report as-is>, cached_at: string (ISO), disclaimer: string }`.
+- حالات الخطأ:
+    • 404 — `backtest_not_run` (JSON غير موجود) + hint.
+    • 500 — `backtest_report_corrupted` (JSON تالف) + hint.
+    • 500 — `internal_error` (أي خطأ غير متوقع).
+- TypeScript check: نجح (0 أخطاء في الملف الجديد).
+- Rule 20 محترمة 100%: لا حساب مالي في الـ API، يقرأ JSON فقط.
+- Rule 27 محترمة 100%: لا اختلاق بيانات، fallback فقط لـ disclaimer (نص ثابت يشرح القاعدة).
+- مشاكل: لا توجد. المجلد لم يكن موجودًا فأنشأته. الـ JSON غير موجود بعد (متوقع — الوكيل 1 يعمل بالتوازي، الـ API defensive جاهز).
+- يحتاج قرار المدير:
+    1) بعد أن يُنتج الوكيل 1 الـ JSON، يجب تشغيل `bun run dev` + `curl http://localhost:3000/api/maker-radar/institutional-backtest` للتحقق النهائي.
+    2) commit/push (وفق Rule 75).
+    3) التنسيق مع فريق Alpha لو سيبنون UI يستهلك هذا الـ endpoint.
+
+---
+Task ID: TITAN-1-BACKTEST-SCRIPT
+Agent: مهندس محرك Python + محلل كمي (فريق GLM 5.2-Bravo)
+Task: بناء سكريبت الباك-تيست المؤسسي لـ 100,619 شمعة + 1,102 إشارة رادار
+
+Work Log:
+- قرأت آخر 150 سطر من worklog.md لاستيعاب سياق BRAVO-1-RADAR-VERIFY
+  (إصلاح التحقق الزمني 35.84% → 46.80%) و BRAVO-FINAL-PUSH (sector overrides).
+- قرأت scripts/verify_all_radar_signals.py كاملًا (724 سطر) لفهم منطق
+  evaluate_signal: "من يضرب أولًا يفوز" (target +5% high vs stop -5% low)
+  + Trailing Stop (breakeven after win) + OHLC fallback (high<close أو
+  low>close → close) + legacy close-based fallbacks (outcome_7d ≥ +2.5% /
+  outcome_14d ≥ +4.0% / outcome_30d thresholds).
+- تحققت من db/stocks.db (readonly): 100,619 شمعة لـ 1,213 سهم، المدى
+  2025-09-22 → 2026-10-11 فقط. 1,102 إشارة في radar_signal_tracking
+  (كلها في 2026-09-28 → 2026-10-11). التوزيع: 513 stale_data، 292 pending،
+  158 verified_loss، 139 verified_win.
+- اكتشاف حرج: إعادة تقييم ALL 1102 إشارة من الصفر ينتج 693 verified
+  (207 win + 486 loss) = 29.87% win rate — يختلف عن 46.80% المنشور. السبب:
+  verify_all_radar_signals.py يتخطى stale_data signals افتراضيًا (432
+  signal مُعلّمة stale سابقًا أصبح لديها أسعار الآن لكن verify لم يُعِد
+  تقييمها). لذلك اخترت استخدام stored status column في DB للاتساق مع
+  القيمة المنشورة (46.80%)، ووثّقت القرار في JSON (trade_classification_source)
+  و في الـ disclaimer.
+- بنيت scripts/institutional_multi_market_backtest.py (955 سطر) بـ:
+  * open_db_readonly() — اتصال readonly عبر file:...?mode=ro
+  * fetch_prices_after() — نفس منطق verify (OHLC fallback مُطبّق)
+  * derive_realized_return() — استخراج العائد من stored fields:
+    - verified_win مع win_date → +5.0% (target hit)
+    - verified_win بدون win_date → outcome_7d (legacy close-based)
+    - verified_loss → -5.0% (stop hit)
+    - verified_neutral → outcome_30d
+  * derive_exit_date() / derive_holding_days() — لترتيب equity curve
+  * compute_sharpe() — (mean/std)*sqrt(252)، يعيد 0 لـ std=0
+  * compute_sortino() — downside_std = sqrt(mean(min(0,r)^2))،
+    يعيد None لو لا توجد عوائد سلبية
+  * compute_profit_factor() — gross_profit/gross_loss، يعيد None لو 0 losses
+  * build_equity_curve() — 100,000 EGP start + equal-weight position sizing
+  * compute_max_drawdown() — peak-to-trough على equity curve
+  * safe_round() / has_nan_inf() — تنظيف JSON من NaN/Infinity
+- شغّلت السكريبت مرتين للتأكد من idempotency: الفرق الوحيد = generated_at
+  timestamp. ✓
+- Annual breakdown: 2021-2024 = null + "no data available for this year"
+  (لا بيانات أسعار و لا إشارات). 2025 = null + "no signals in 2025
+  (radar_signal_tracking starts 2026-09-28)" — توجد بيانات أسعار
+  Sep-Dec 2025 لكن لا توجد إشارات. 2026 = 46.80% من 297 verified signal.
+- by_signal_type: 6 أنواع مع win_rate لكل نوع. أعلى: D_explosive_surge
+  و explosive_surge (100% لكن n=1 لكل منهما — تحذير حجم العينة).
+  quiet_accumulation_strong (n=158) = 48.10%، pre_surge (n=114) = 45.61%،
+  A_pre_surge (n=11) = 54.55%، B_quiet_accumulation_strong (n=12) = 25.00%.
+- top_performers: أعلى 15 سهمًا بـ win_rate. TORA/MENA/BINV/GBCO = 100%
+  (5-6 إشارات لكل). معظمهم يحقق +5% لكل صفقة (target-hit exits).
+
+Stage Summary:
+- ✅ scripts/institutional_multi_market_backtest.py (955 LOC) — سكريبت
+  idempotent، readonly، يلتزم بـ Rule 27 (لا اختلاق بيانات).
+- ✅ db/reports/institutional_backtest_summary.json (5,328 bytes) — يحتوي
+  على كل المقاييس المطلوبة + data_coverage_note + disclaimer.
+- 📊 الأرقام النهائية:
+  - total_signals: 1,102 | verified: 297 | win: 139 | loss: 158 | neutral: 0
+  - overall_win_rate_pct: 46.80% (مطابق لـ verify_all_radar_signals.py ✓)
+  - Sharpe Ratio: -1.3985 (سيء — <=0، العوائد السلبية طاغية)
+  - Sortino Ratio: -1.8778 (سيء — <=0)
+  - Profit Factor: 0.8378 (سيء — <=1، الخسائر تتجاوز الأرباح)
+  - Max Drawdown: 0.85% (ممتاز — <20% لكن منخفض بسبب position sizing = 100K/297)
+  - avg_return_per_trade: -0.4314%
+  - total_return: -0.4314% (100,000 → 99,568.61 EGP)
+  - Annual: 2021-2024 = null (no data)، 2025 = null (no signals)،
+    2026 = 46.80% (297 signals)
+- 🔍 Reality Check:
+  - Sharpe و PF سلبيان — منطقي مع win rate 46.80% < 50% (breakeven لـ
+    +5%/-5% هو ~50.5%). الاستراتيجية تحتاج >50% win rate لتكون مربحة.
+  - MDD منخفض جدًا (0.85%) بسبب equal-weight sizing على 297 صفقة
+    (position = 337 EGP لكل صفقة) — ليس انعكاسًا لقلة المخاطرة بل
+    لطريقة sizing.
+  - الأرقام متسقة داخليًا: win rate 46.80% + avg_win ≈ 4.78% + avg_loss
+    = -5% → net -0.43%/trade → PF 0.84 → Sharpe -1.40 (متناسق).
+- ⚠️ قيد البيانات الحقيقي (Rule 27): البيانات تغطي 2025-09 → 2026-10
+  فقط، والإشارات 2026-09-28 → 2026-10-11 فقط. التكليف الأصلي بـ
+  "باك-تيست 2020-2026" غير قابل للتنفيذ حرفيًا — أُبلغ صراحة في
+  JSON بـ null + note لكل سنة بدون بيانات.
+- 🔧 قرار هندسي مهم (يحتاج موافقة المدير): استخدمت stored status column
+  بدل إعادة التقييم من الصفر. لو أُعيد التقييم على البيانات الحالية،
+  النتيجة = 29.87% (693 verified) بدل 46.80% (297 verified). الفرق
+  ناتج عن 432 signal مُعلّمة stale_data سابقًا لديها أسعار الآن. لو
+  يرغب المدير بالأرقام الأحدث، يمكن تشغيل verify_all_radar_signals.py
+  --execute --include-stale أولًا لتحديث stored status.
