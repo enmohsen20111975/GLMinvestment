@@ -4,6 +4,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Lightbulb, AlertTriangle, Key, BookOpen, CheckCircle2, XCircle, TrendingUp, TrendingDown, ClipboardCheck, Zap, NotebookPen, ShieldCheck, Database, Signal, Lock, Send, FileText, RefreshCw, Layers, ArrowUp, ArrowDown, Scale, PieChart, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/i18n-context';
 
 /* ============================================================
    LEARNING VISUAL COMPONENTS
@@ -11,7 +12,8 @@ import { cn } from '@/lib/utils';
    ============================================================ */
 
 /* ── 1. Candlestick Diagram (شموع يابانية) ── */
-export function CandlestickDiagram({ variant = 'bullish' }: { variant?: 'bullish' | 'bearish' | 'doji' | 'hammer' }) {
+export function CandlestickDiagram({ variant = 'bullish' }: { variant?: 'bullish' | 'bearish' | 'doji' | 'hammer' }) {  const t = useTranslation();
+
   const candles: Record<string, { open: number; close: number; high: number; low: number; color: string }> = {
     bullish: { open: 40, close: 20, high: 10, low: 50, color: '#10b981' },
     bearish: { open: 20, close: 40, high: 10, low: 50, color: '#ef4444' },
@@ -20,10 +22,10 @@ export function CandlestickDiagram({ variant = 'bullish' }: { variant?: 'bullish
   };
   const c = candles[variant];
   const labels: Record<string, string> = {
-    bullish: 'شمعة صاعدة (Bullish) - السعر ارتفع',
-    bearish: 'شمعة هابطة (Bearish) - السعر انخفض',
-    doji: 'شمعة الدوجي (Doji) - تردد في السوق',
-    hammer: 'شمعة المطرقة (Hammer) - انعكاس محتمل',
+    bullish: t('learning.k_144'),
+    bearish: t('learning.k_145'),
+    doji: t('learning.k_146'),
+    hammer: t('learning.k_147'),
   };
 
   return (
@@ -44,23 +46,23 @@ export function CandlestickDiagram({ variant = 'bullish' }: { variant?: 'bullish
           />
           {/* Labels */}
           <line x1="60" y1={c.high} x2="70" y2={c.high} stroke="#6b7280" strokeWidth="1" strokeDasharray="2" />
-          <text x="72" y={c.high + 4} fontSize="10" fill="#6b7280">أعلى</text>
+          <text x="72" y={c.high + 4} fontSize="10" fill="#6b7280">{t('learning.k_006')}</text>
           <line x1="60" y1={c.low} x2="70" y2={c.low} stroke="#6b7280" strokeWidth="1" strokeDasharray="2" />
-          <text x="72" y={c.low + 4} fontSize="10" fill="#6b7280">أدنى</text>
+          <text x="72" y={c.low + 4} fontSize="10" fill="#6b7280">{t('learning.k_007')}</text>
           <line x1="10" y1={c.open} x2="25" y2={c.open} stroke="#6b7280" strokeWidth="1" strokeDasharray="2" />
-          <text x="0" y={c.open + 4} fontSize="10" fill="#6b7280">افتتاح</text>
+          <text x="0" y={c.open + 4} fontSize="10" fill="#6b7280">{t('learning.k_008')}</text>
           <line x1="10" y1={c.close} x2="25" y2={c.close} stroke="#6b7280" strokeWidth="1" strokeDasharray="2" />
-          <text x="0" y={c.close + 4} fontSize="10" fill="#6b7280">إغلاق</text>
+          <text x="0" y={c.close + 4} fontSize="10" fill="#6b7280">{t('learning.k_009')}</text>
         </svg>
 
         {/* Description */}
         <div className="flex-1 max-w-xs text-center sm:text-right">
           <h4 className="font-bold text-lg mb-2" style={{ color: c.color }}>{labels[variant]}</h4>
           <div className="space-y-1 text-sm text-muted-foreground">
-            <p>• <span className="font-semibold">الجسم (Body):</span> بين سعر الافتتاح والإغلاق</p>
-            <p>• <span className="font-semibold">الظل (Wick):</span> من أعلى سعر لأدنى سعر</p>
-            <p>• <span className="font-semibold">اللون الأخضر:</span> الإغلاق أعلى من الافتتاح</p>
-            <p>• <span className="font-semibold">اللون الأحمر:</span> الإغلاق أقل من الافتتاح</p>
+            <p>• <span className="font-semibold">{t('learning.k_010')}</span>{t('learning.k_011')}</p>
+            <p>• <span className="font-semibold">{t('learning.k_012')}</span>{t('learning.k_013')}</p>
+            <p>• <span className="font-semibold">{t('learning.k_014')}</span>{t('learning.k_015')}</p>
+            <p>• <span className="font-semibold">{t('learning.k_016')}</span>{t('learning.k_017')}</p>
           </div>
         </div>
       </div>
@@ -69,16 +71,17 @@ export function CandlestickDiagram({ variant = 'bullish' }: { variant?: 'bullish
 }
 
 /* ── 2. P/E Ratio Visual (نسبة السعر إلى الأرباح) ── */
-export function PERatioVisual() {
+export function PERatioVisual() {  const t = useTranslation();
+
   const examples = [
-    { company: 'البنك التجاري الدولي', price: 132, eps: 15, pe: 8.8, status: 'رخيص', color: 'text-emerald-600' },
-    { company: 'أوراسكوم للتنمية', price: 734, eps: 25, pe: 29.4, status: 'مكلف', color: 'text-red-600' },
-    { company: 'اتصالات مصر', price: 94, eps: 6.5, pe: 14.5, status: 'معقول', color: 'text-amber-600' },
+    { company: t('learning.k_148'), price: 132, eps: 15, pe: 8.8, status: t('learning.k_149'), color: 'text-emerald-600' },
+    { company: t('learning.k_150'), price: 734, eps: 25, pe: 29.4, status: t('learning.k_151'), color: 'text-red-600' },
+    { company: t('learning.k_152'), price: 94, eps: 6.5, pe: 14.5, status: t('learning.k_153'), color: 'text-amber-600' },
   ];
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">أمثلة عملية: حساب P/E لأسهم مصرية</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_018')}</h4>
       <div className="space-y-3">
         {examples.map((ex, i) => (
           <motion.div
@@ -104,9 +107,7 @@ export function PERatioVisual() {
           </motion.div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground mt-3 text-center">
-        القاعدة: P/E &lt; 10 رخيص | 10-20 معقول | &gt; 30 مكلف
-      </p>
+      <p className="text-xs text-muted-foreground mt-3 text-center">{t('learning.k_019')}</p>
     </div>
   );
 }
@@ -116,17 +117,18 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
 }
 
 /* ── 3. Market Hours Timeline (ساعات التداول) ── */
-export function MarketHoursTimeline() {
+export function MarketHoursTimeline() {  const t = useTranslation();
+
   const sessions = [
-    { time: '9:00', label: 'الجلسة الاستباقية', desc: 'إدخال الأوامر', color: 'bg-teal-500', active: false },
-    { time: '9:45', label: 'فتح التداول', desc: 'بداية التنفيذ', color: 'bg-emerald-500', active: true },
-    { time: '10:00', label: 'الجلسة الرئيسية', desc: 'أعلى سيولة', color: 'bg-emerald-600', active: true },
-    { time: '14:30', label: 'إغلاق التداول', desc: 'نهاية الجلسة', color: 'bg-orange-500', active: false },
+    { time: '9:00', label: t('learning.k_154'), desc: t('learning.k_155'), color: 'bg-teal-500', active: false },
+    { time: '9:45', label: t('learning.k_156'), desc: t('learning.k_157'), color: 'bg-emerald-500', active: true },
+    { time: '10:00', label: t('learning.k_158'), desc: t('learning.k_159'), color: 'bg-emerald-600', active: true },
+    { time: '14:30', label: t('learning.k_160'), desc: t('learning.k_161'), color: 'bg-orange-500', active: false },
   ];
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-4 text-center">ساعات عمل البورصة المصرية (بتوقيت القاهرة)</h4>
+      <h4 className="font-bold mb-4 text-center">{t('learning.k_020')}</h4>
       <div className="relative">
         {/* Timeline line */}
         <div className="absolute top-6 right-0 left-0 h-0.5 bg-border" />
@@ -151,27 +153,26 @@ export function MarketHoursTimeline() {
         </div>
       </div>
       <div className="mt-4 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
-        <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
-          ⚠️ أعلى تقلبات: أول 30 دقيقة وآخر 30 دقيقة - ينصح المبتدئون بتجنبها
-        </p>
+        <p className="text-xs text-amber-700 dark:text-amber-400 text-center">{t('learning.k_021')}</p>
       </div>
     </div>
   );
 }
 
 /* ── 4. Portfolio Diversification (تنويع المحفظة) ── */
-export function PortfolioDiversification() {
+export function PortfolioDiversification() {  const t = useTranslation();
+
   const allocations = [
-    { sector: 'البنوك', percent: 30, color: 'bg-emerald-500' },
-    { sector: 'العقارات', percent: 25, color: 'bg-teal-500' },
-    { sector: 'الاتصالات', percent: 20, color: 'bg-purple-500' },
-    { sector: 'الصناعة', percent: 15, color: 'bg-amber-500' },
-    { sector: 'نقدية', percent: 10, color: 'bg-gray-400' },
+    { sector: t('learning.k_162'), percent: 30, color: 'bg-emerald-500' },
+    { sector: t('learning.k_163'), percent: 25, color: 'bg-teal-500' },
+    { sector: t('learning.k_164'), percent: 20, color: 'bg-purple-500' },
+    { sector: t('learning.k_165'), percent: 15, color: 'bg-amber-500' },
+    { sector: t('learning.k_166'), percent: 10, color: 'bg-gray-400' },
   ];
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-4 text-center">مثال: توزيع محفظة استثمارية متنوعة</h4>
+      <h4 className="font-bold mb-4 text-center">{t('learning.k_022')}</h4>
       <div className="flex h-12 rounded-lg overflow-hidden">
         {allocations.map((a, i) => (
           <motion.div
@@ -194,24 +195,23 @@ export function PortfolioDiversification() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground mt-3 text-center">
-        القاعدة الذهبية: لا تضع أكثر من 30% من رأس مالك في قطاع واحد
-      </p>
+      <p className="text-xs text-muted-foreground mt-3 text-center">{t('learning.k_023')}</p>
     </div>
   );
 }
 
 /* ── 5. Risk Management Pyramid (هرم إدارة المخاطر) ── */
-export function RiskPyramid() {
+export function RiskPyramid() {  const t = useTranslation();
+
   const levels = [
-    { level: 'عالي المخاطر', desc: '10% - مضاربات و أسهم صغيرة', color: 'bg-red-500', width: 'w-1/4' },
-    { level: 'متوسط المخاطر', desc: '30% - أسهم نمو و تحليل فني', color: 'bg-amber-500', width: 'w-1/2' },
-    { level: 'منخفض المخاطر', desc: '60% - أسهم قيمة و توزيعات أرباح', color: 'bg-emerald-500', width: 'w-3/4' },
+    { level: t('learning.k_167'), desc: t('learning.k_168'), color: 'bg-red-500', width: 'w-1/4' },
+    { level: t('learning.k_169'), desc: t('learning.k_170'), color: 'bg-amber-500', width: 'w-1/2' },
+    { level: t('learning.k_171'), desc: t('learning.k_172'), color: 'bg-emerald-500', width: 'w-3/4' },
   ];
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-4 text-center">هرم توزيع المخاطر</h4>
+      <h4 className="font-bold mb-4 text-center">{t('learning.k_024')}</h4>
       <div className="flex flex-col items-center gap-1">
         {levels.map((l, i) => (
           <motion.div
@@ -262,7 +262,8 @@ export function ExampleCard({ title, scenario, calculation, result, takeaway }: 
   calculation: React.ReactNode;
   result: string;
   takeaway: string;
-}) {
+}) {  const t = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -277,24 +278,24 @@ export function ExampleCard({ title, scenario, calculation, result, takeaway }: 
       </div>
       <div className="p-4 space-y-3">
         <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-1">السيناريو:</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-1">{t('learning.k_025')}</p>
           <p className="text-sm">{scenario}</p>
         </div>
         <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-1">الحساب:</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-1">{t('learning.k_026')}</p>
           <div className="text-sm font-mono bg-muted/30 p-2 rounded">{calculation}</div>
         </div>
         <div className="flex items-start gap-2 p-2 rounded bg-emerald-500/10">
           <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">النتيجة:</p>
+            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{t('learning.k_027')}</p>
             <p className="text-sm">{result}</p>
           </div>
         </div>
         <div className="flex items-start gap-2 p-2 rounded bg-teal-500/10">
           <Lightbulb className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-teal-700 dark:text-teal-400">الدرس المستفاد:</p>
+            <p className="text-xs font-semibold text-teal-700 dark:text-teal-400">{t('learning.k_028')}</p>
             <p className="text-sm">{takeaway}</p>
           </div>
         </div>
@@ -304,15 +305,16 @@ export function ExampleCard({ title, scenario, calculation, result, takeaway }: 
 }
 
 /* ── 8. RSI Gauge (مؤشر القوة النسبية) ── */
-export function RSIGauge({ value = 65 }: { value?: number }) {
+export function RSIGauge({ value = 65 }: { value?: number }) {  const t = useTranslation();
+
   const angle = (value / 100) * 180 - 90; // -90 to 90 degrees
-  const zone = value >= 70 ? { label: 'تشبع شرائي', color: 'text-red-500' } :
-               value <= 30 ? { label: 'تشبع بيعي', color: 'text-emerald-500' } :
-               { label: 'منطقة محايدة', color: 'text-amber-500' };
+  const zone = value >= 70 ? { label: t('learning.k_173'), color: 'text-red-500' } :
+               value <= 30 ? { label: t('learning.k_174'), color: 'text-emerald-500' } :
+               { label: t('learning.k_175'), color: 'text-amber-500' };
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">مؤشر RSI - القوة النسبية</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_029')}</h4>
       <div className="flex flex-col items-center">
         <svg width="200" height="120" viewBox="0 0 200 120">
           {/* Background arc - green zone (0-30) */}
@@ -337,9 +339,9 @@ export function RSIGauge({ value = 65 }: { value?: number }) {
         </svg>
         <p className={cn('font-bold text-lg', zone.color)}>{zone.label}</p>
         <div className="flex gap-4 mt-2 text-xs">
-          <span className="text-emerald-600">تشبع بيعي (≤30)</span>
-          <span className="text-amber-600">محايد (30-70)</span>
-          <span className="text-red-600">تشبع شرائي (≥70)</span>
+          <span className="text-emerald-600">{t('learning.k_030')}</span>
+          <span className="text-amber-600">{t('learning.k_031')}</span>
+          <span className="text-red-600">{t('learning.k_032')}</span>
         </div>
       </div>
     </div>
@@ -347,7 +349,8 @@ export function RSIGauge({ value = 65 }: { value?: number }) {
 }
 
 /* ── 9. MACD Indicator (مؤشر MACD) ── */
-export function MACDVisual() {
+export function MACDVisual() {  const t = useTranslation();
+
   // Simulated MACD data points
   const dataPoints = [
     { macd: -2, signal: -1.5, hist: -0.5 },
@@ -363,7 +366,7 @@ export function MACDVisual() {
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">مؤشر MACD - تقاطع خط الإشارة</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_033')}</h4>
       <svg width="100%" height="180" viewBox="0 0 360 180">
         {/* Zero line */}
         <line x1="20" y1="90" x2="340" y2="90" stroke="#6b7280" strokeWidth="1" strokeDasharray="4" />
@@ -405,22 +408,23 @@ export function MACDVisual() {
 
         {/* Crossover annotation */}
         <circle cx="180" cy="54" r="6" fill="none" stroke="#10b981" strokeWidth="2" />
-        <text x="165" y="40" fontSize="9" fill="#10b981" fontWeight="bold">تقاطع ذهبي</text>
+        <text x="165" y="40" fontSize="9" fill="#10b981" fontWeight="bold">{t('learning.k_034')}</text>
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs">
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> MACD</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" /> خط الإشارة</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-2 bg-emerald-500/50" /> الهيستوجرام</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" />{t('learning.k_035')}</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-2 bg-emerald-500/50" />{t('learning.k_036')}</span>
       </div>
     </div>
   );
 }
 
 /* ── 10. Support/Resistance (الدعم والمقاومة) ── */
-export function SupportResistanceVisual() {
+export function SupportResistanceVisual() {  const t = useTranslation();
+
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">مستويات الدعم والمقاومة</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_037')}</h4>
       <svg width="100%" height="220" viewBox="0 0 360 220">
         {/* Resistance line */}
         <motion.line
@@ -428,7 +432,7 @@ export function SupportResistanceVisual() {
           stroke="#ef4444" strokeWidth="2" strokeDasharray="6"
           initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1 }}
         />
-        <text x="280" y="45" fontSize="11" fill="#ef4444" fontWeight="bold">مقاومة (Resistance)</text>
+        <text x="280" y="45" fontSize="11" fill="#ef4444" fontWeight="bold">{t('learning.k_038')}</text>
 
         {/* Support line */}
         <motion.line
@@ -436,7 +440,7 @@ export function SupportResistanceVisual() {
           stroke="#10b981" strokeWidth="2" strokeDasharray="6"
           initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1, delay: 0.3 }}
         />
-        <text x="290" y="185" fontSize="11" fill="#10b981" fontWeight="bold">دعم (Support)</text>
+        <text x="290" y="185" fontSize="11" fill="#10b981" fontWeight="bold">{t('learning.k_039')}</text>
 
         {/* Price candles bouncing between support/resistance */}
         {[
@@ -456,18 +460,17 @@ export function SupportResistanceVisual() {
         ))}
 
         {/* Labels */}
-        <text x="150" y="25" fontSize="10" fill="#6b7280">السعر يرتد من المقاومة لأسفل</text>
-        <text x="150" y="205" fontSize="10" fill="#6b7280">السعر يرتد من الدعم لأعلى</text>
+        <text x="150" y="25" fontSize="10" fill="#6b7280">{t('learning.k_040')}</text>
+        <text x="150" y="205" fontSize="10" fill="#6b7280">{t('learning.k_041')}</text>
       </svg>
-      <p className="text-xs text-muted-foreground mt-2 text-center">
-        القاعدة: اشترِ قرب الدعم مع وقف خسارة تحته، بعْ قرب المقاومة
-      </p>
+      <p className="text-xs text-muted-foreground mt-2 text-center">{t('learning.k_042')}</p>
     </div>
   );
 }
 
 /* ── 11. Moving Averages (المتوسطات المتحركة) ── */
-export function MovingAveragesVisual() {
+export function MovingAveragesVisual() {  const t = useTranslation();
+
   const candles = [
     120, 118, 122, 125, 120, 128, 130, 126, 132, 135, 130, 138, 140, 135, 142
   ];
@@ -484,7 +487,7 @@ export function MovingAveragesVisual() {
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">المتوسطات المتحركة (MA 5 و MA 10)</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_043')}</h4>
       <svg width="100%" height="200" viewBox="0 0 360 200">
         {/* Price candles */}
         {candles.map((c, i) => {
@@ -513,18 +516,17 @@ export function MovingAveragesVisual() {
         />
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" /> MA 5 (سريع)</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> MA 10 (بطيء)</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" />{t('learning.k_044')}</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" />{t('learning.k_045')}</span>
       </div>
-      <p className="text-xs text-muted-foreground mt-2 text-center">
-        التقاطع الذهبي: MA السريع يقطع البطيء صعوداً = إشارة شراء
-      </p>
+      <p className="text-xs text-muted-foreground mt-2 text-center">{t('learning.k_046')}</p>
     </div>
   );
 }
 
 /* ── 12. Bollinger Bands (نطاقات بولينجر) ── */
-export function BollingerBandsVisual() {
+export function BollingerBandsVisual() {  const t = useTranslation();
+
   const prices = [120, 122, 118, 125, 128, 124, 130, 135, 132, 128, 125, 122, 126, 130, 134];
   const sma = prices.reduce((a, b) => a + b, 0) / prices.length;
   const upper = sma + 8;
@@ -532,7 +534,7 @@ export function BollingerBandsVisual() {
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">نطاقات بولينجر (Bollinger Bands)</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_047')}</h4>
       <svg width="100%" height="200" viewBox="0 0 360 200">
         {/* Upper band */}
         <motion.path
@@ -560,31 +562,32 @@ export function BollingerBandsVisual() {
         />
         {/* Squeeze annotation */}
         <rect x="140" y="40" width="80" height="20" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3" />
-        <text x="150" y="35" fontSize="9" fill="#f59e0b" fontWeight="bold">Squeeze (تضييق)</text>
+        <text x="150" y="35" fontSize="9" fill="#f59e0b" fontWeight="bold">{t('learning.k_048')}</text>
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs flex-wrap">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> السعر</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-500" /> المتوسط (SMA20)</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500" /> النطاق العلوي</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-emerald-500" /> النطاق السفلي</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" />{t('learning.k_049')}</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-500" />{t('learning.k_050')}</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500" />{t('learning.k_051')}</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-emerald-500" />{t('learning.k_052')}</span>
       </div>
     </div>
   );
 }
 
 /* ── 13. DCF Flow (نموذج التدفقات النقدية المخصومة) ── */
-export function DCFFlowVisual() {
+export function DCFFlowVisual() {  const t = useTranslation();
+
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">نموذج DCF - كيف نحسب القيمة العادلة</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_053')}</h4>
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
         {/* Step 1 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="flex-1 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center"
         >
-          <p className="text-xs font-bold text-emerald-600 mb-1">1. تقدير التدفقات</p>
-          <p className="text-[10px]">النقدية المتوقعة لـ 5 سنوات</p>
+          <p className="text-xs font-bold text-emerald-600 mb-1">{t('learning.k_054')}</p>
+          <p className="text-[10px]">{t('learning.k_055')}</p>
         </motion.div>
         <span className="text-emerald-500 text-center rotate-90 sm:rotate-0">←</span>
         {/* Step 2 */}
@@ -592,8 +595,8 @@ export function DCFFlowVisual() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="flex-1 p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-center"
         >
-          <p className="text-xs font-bold text-teal-600 mb-1">2. معدل الخصم</p>
-          <p className="text-[10px]">خصم للتضخم والمخاطر</p>
+          <p className="text-xs font-bold text-teal-600 mb-1">{t('learning.k_056')}</p>
+          <p className="text-[10px]">{t('learning.k_057')}</p>
         </motion.div>
         <span className="text-teal-500 text-center rotate-90 sm:rotate-0">←</span>
         {/* Step 3 */}
@@ -601,8 +604,8 @@ export function DCFFlowVisual() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
           className="flex-1 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center"
         >
-          <p className="text-xs font-bold text-amber-600 mb-1">3. القيمة الطرفية</p>
-          <p className="text-[10px]">قيمة ما بعد 5 سنوات</p>
+          <p className="text-xs font-bold text-amber-600 mb-1">{t('learning.k_058')}</p>
+          <p className="text-[10px]">{t('learning.k_059')}</p>
         </motion.div>
         <span className="text-amber-500 text-center rotate-90 sm:rotate-0">←</span>
         {/* Step 4 */}
@@ -610,75 +613,73 @@ export function DCFFlowVisual() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
           className="flex-1 p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center"
         >
-          <p className="text-xs font-bold text-purple-600 mb-1">4. القيمة العادلة</p>
-          <p className="text-[10px]">مجموع القيم الحالية</p>
+          <p className="text-xs font-bold text-purple-600 mb-1">{t('learning.k_060')}</p>
+          <p className="text-[10px]">{t('learning.k_061')}</p>
         </motion.div>
       </div>
-      <p className="text-xs text-muted-foreground mt-3 text-center">
-        الفكرة: جنيه اليوم أثمن من جنيه الغد → نخصم التدفقات المستقبلية
-      </p>
+      <p className="text-xs text-muted-foreground mt-3 text-center">{t('learning.k_062')}</p>
     </div>
   );
 }
 
 /* ── 14. ROE DuPont (تحليل العائد على حقوق الملكية) ── */
-export function ROEDuPontVisual() {
+export function ROEDuPontVisual() {  const t = useTranslation();
+
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">تحليل DuPont - فكك ROE لـ 3 مكونات</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_063')}</h4>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
           className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center"
         >
-          <p className="text-xs font-bold text-emerald-600">هامش الربح</p>
-          <p className="text-[10px] text-muted-foreground mb-1">صافي الربح ÷ الإيرادات</p>
+          <p className="text-xs font-bold text-emerald-600">{t('learning.k_064')}</p>
+          <p className="text-[10px] text-muted-foreground mb-1">{t('learning.k_065')}</p>
           <p className="text-lg font-bold">15%</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
           className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-center"
         >
-          <p className="text-xs font-bold text-teal-600">دوران الأصول</p>
-          <p className="text-[10px] text-muted-foreground mb-1">الإيرادات ÷ الأصول</p>
+          <p className="text-xs font-bold text-teal-600">{t('learning.k_066')}</p>
+          <p className="text-[10px] text-muted-foreground mb-1">{t('learning.k_067')}</p>
           <p className="text-lg font-bold">1.2x</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
           className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center"
         >
-          <p className="text-xs font-bold text-amber-600">الرافعة المالية</p>
-          <p className="text-[10px] text-muted-foreground mb-1">الأصول ÷ حقوق الملكية</p>
+          <p className="text-xs font-bold text-amber-600">{t('learning.k_068')}</p>
+          <p className="text-[10px] text-muted-foreground mb-1">{t('learning.k_069')}</p>
           <p className="text-lg font-bold">2.0x</p>
         </motion.div>
       </div>
       <div className="mt-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center">
-        <p className="text-xs font-bold text-purple-600 mb-1">ROE = هامش الربح × دوران الأصول × الرافعة</p>
+        <p className="text-xs font-bold text-purple-600 mb-1">{t('learning.k_070')}</p>
         <p className="text-lg font-bold">15% × 1.2 × 2.0 = 36%</p>
       </div>
-      <p className="text-xs text-muted-foreground mt-2 text-center">
-        ميزة DuPont: تعرفك هل ROE العالي بسبب الكفاءة ولا بسبب الديون الكثيرة
-      </p>
+      <p className="text-xs text-muted-foreground mt-2 text-center">{t('learning.k_071')}</p>
     </div>
   );
 }
 
 /* ── 15. Emotional Cycle (دورة المشاعر في التداول) ── */
-export function EmotionalCycleVisual() {
+export function EmotionalCycleVisual() {  const t = useTranslation();
+
   const emotions = [
-    { phase: 'التفاؤل', color: 'bg-emerald-500', icon: '😊' },
-    { phase: 'الحماس', color: 'bg-teal-500', icon: '🤩' },
-    { phase: 'النشوة', color: 'bg-teal-500', icon: '🤑' },
-    { phase: 'القلق', color: 'bg-amber-500', icon: '😰' },
-    { phase: 'الإنكار', color: 'bg-orange-500', icon: '😨' },
-    { phase: 'الذعر', color: 'bg-red-500', icon: '😱' },
-    { phase: 'الاستسلام', color: 'bg-gray-500', icon: '😞' },
-    { phase: 'الاكتئاب', color: 'bg-gray-700', icon: '😔' },
+    { phase: t('learning.k_176'), color: 'bg-emerald-500', icon: '😊' },
+    { phase: t('learning.k_177'), color: 'bg-teal-500', icon: '🤩' },
+    { phase: t('learning.k_178'), color: 'bg-teal-500', icon: '🤑' },
+    { phase: t('learning.k_179'), color: 'bg-amber-500', icon: '😰' },
+    { phase: t('learning.k_180'), color: 'bg-orange-500', icon: '😨' },
+    { phase: t('learning.k_181'), color: 'bg-red-500', icon: '😱' },
+    { phase: t('learning.k_182'), color: 'bg-gray-500', icon: '😞' },
+    { phase: t('learning.k_183'), color: 'bg-gray-700', icon: '😔' },
   ];
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">دورة المشاعر في التداول - احذرها!</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_072')}</h4>
       <div className="grid grid-cols-4 gap-2">
         {emotions.map((e, i) => (
           <motion.div
@@ -693,21 +694,20 @@ export function EmotionalCycleVisual() {
           </motion.div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground mt-3 text-center">
-        الترتيب من اليسار لليمين: مع ارتفاع السعر (مرحلة 1-3) ثم الهبوط (4-8)
-      </p>
+      <p className="text-xs text-muted-foreground mt-3 text-center">{t('learning.k_073')}</p>
     </div>
   );
 }
 
 /* ── 16. DCA Strategy (استراتيجية المتوسط) ── */
-export function DCAStrategyVisual() {
+export function DCAStrategyVisual() {  const t = useTranslation();
+
   const months = [
-    { month: 'يناير', price: 100, shares: 10, invest: 1000 },
-    { month: 'فبراير', price: 80, shares: 12.5, invest: 1000 },
-    { month: 'مارس', price: 60, shares: 16.67, invest: 1000 },
-    { month: 'أبريل', price: 90, shares: 11.11, invest: 1000 },
-    { month: 'مايو', price: 110, shares: 9.09, invest: 1000 },
+    { month: t('learning.k_184'), price: 100, shares: 10, invest: 1000 },
+    { month: t('learning.k_185'), price: 80, shares: 12.5, invest: 1000 },
+    { month: t('learning.k_186'), price: 60, shares: 16.67, invest: 1000 },
+    { month: t('learning.k_187'), price: 90, shares: 11.11, invest: 1000 },
+    { month: t('learning.k_188'), price: 110, shares: 9.09, invest: 1000 },
   ];
   const totalShares = months.reduce((a, m) => a + m.shares, 0);
   const totalInvest = months.reduce((a, m) => a + m.invest, 0);
@@ -715,7 +715,7 @@ export function DCAStrategyVisual() {
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
-      <h4 className="font-bold mb-3 text-center">استراتيجية DCA - متوسط تكلفة الوحدات</h4>
+      <h4 className="font-bold mb-3 text-center">{t('learning.k_074')}</h4>
       <div className="space-y-2">
         {months.map((m, i) => (
           <motion.div
@@ -734,21 +734,19 @@ export function DCAStrategyVisual() {
       </div>
       <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
         <div className="flex justify-between text-sm">
-          <span>إجمالي الاستثمار:</span>
+          <span>{t('learning.k_075')}</span>
           <span className="font-bold">{totalInvest} ج.م</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span>إجمالي الأسهم:</span>
+          <span>{t('learning.k_076')}</span>
           <span className="font-bold">{(totalShares ?? 0).toFixed(2)} سهم</span>
         </div>
         <div className="flex justify-between text-sm font-bold text-emerald-700 dark:text-emerald-400">
-          <span>متوسط السعر:</span>
+          <span>{t('learning.k_077')}</span>
           <span>{(avgPrice ?? 0).toFixed(2)} ج.م</span>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground mt-2 text-center">
-        DCA بتقلل متوسط السعر لأنك بتشتري أسهم أكثر لما السعر ينزل
-      </p>
+      <p className="text-xs text-muted-foreground mt-2 text-center">{t('learning.k_078')}</p>
     </div>
   );
 }
@@ -807,7 +805,8 @@ export function DiagramRenderer({ type }: { type: string }) {
    Kahneman & Tversky 1979: الخسارة تؤلم 2.25× أكثر من فرحة نفس المبلغ.
    Gain curve: concave, emerald gradient.
    Loss curve: steeper convex, red gradient. */
-export function LossAversionCurve() {
+export function LossAversionCurve() {  const t = useTranslation();
+
   // Plot geometry inside viewBox 0 0 600 380
   const ORIGIN_X = 300;
   const ORIGIN_Y = 200;
@@ -830,7 +829,7 @@ export function LossAversionCurve() {
         viewBox="0 0 600 380"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
-        aria-label="منحنى Loss Aversion — نظرية التوقع"
+        aria-label={t('learning.attr_001')}
         style={{ maxWidth: '100%', height: 'auto' }}
       >
         <defs>
@@ -876,9 +875,7 @@ export function LossAversionCurve() {
           fontWeight="700"
           fill="#0f172a"
           direction="rtl"
-        >
-          منحنى Loss Aversion — نظرية التوقع
-        </text>
+        >{t('learning.attr_001')}</text>
 
         {/* Subtle grid */}
         {Array.from({ length: 7 }).map((_, i) => {
@@ -930,9 +927,7 @@ export function LossAversionCurve() {
 
         {/* Origin dot */}
         <circle cx={ORIGIN_X} cy={ORIGIN_Y} r="4.5" fill="#0f172a" />
-        <text x={ORIGIN_X + 8} y={ORIGIN_Y - 8} fontSize="11" fill="#475569" direction="rtl">
-          0 (مرجع)
-        </text>
+        <text x={ORIGIN_X + 8} y={ORIGIN_Y - 8} fontSize="11" fill="#475569" direction="rtl">{t('learning.k_079')}</text>
 
         {/* LOSS marker: خسارة 1000ج (ألم = 2.25) */}
         <line
@@ -965,12 +960,8 @@ export function LossAversionCurve() {
             stroke="#dc2626"
             strokeOpacity="0.4"
           />
-          <text x="48" y={lossMarker.y + 5} fontSize="11.5" fontWeight="600" fill="#991b1b" direction="rtl">
-            خسارة 1000ج
-          </text>
-          <text x="48" y={lossMarker.y + 18} fontSize="10.5" fill="#b91c1c" direction="rtl">
-            (ألم = 2.25)
-          </text>
+          <text x="48" y={lossMarker.y + 5} fontSize="11.5" fontWeight="600" fill="#991b1b" direction="rtl">{t('learning.k_080')}</text>
+          <text x="48" y={lossMarker.y + 18} fontSize="10.5" fill="#b91c1c" direction="rtl">{t('learning.k_081')}</text>
         </g>
 
         {/* GAIN marker: ربح 2250ج (فرحة = 1.0) */}
@@ -1004,12 +995,8 @@ export function LossAversionCurve() {
             stroke="#059669"
             strokeOpacity="0.4"
           />
-          <text x="438" y={gainMarker.y - 3} fontSize="11.5" fontWeight="600" fill="#065f46" direction="rtl">
-            ربح 2250ج
-          </text>
-          <text x="438" y={gainMarker.y + 10} fontSize="10.5" fill="#047857" direction="rtl">
-            (فرحة = 1.0)
-          </text>
+          <text x="438" y={gainMarker.y - 3} fontSize="11.5" fontWeight="600" fill="#065f46" direction="rtl">{t('learning.k_082')}</text>
+          <text x="438" y={gainMarker.y + 10} fontSize="10.5" fill="#047857" direction="rtl">{t('learning.k_083')}</text>
         </g>
 
         {/* Axis labels */}
@@ -1023,9 +1010,7 @@ export function LossAversionCurve() {
           fontWeight="600"
           fill="#475569"
           direction="rtl"
-        >
-          الربح / الخسارة (جنيه)
-        </text>
+        >{t('learning.k_084')}</text>
         {/* Y-axis label (rotated) */}
         <g transform="rotate(-90 22 200)">
           <text
@@ -1037,36 +1022,25 @@ export function LossAversionCurve() {
             fontWeight="600"
             fill="#475569"
             direction="rtl"
-          >
-            القيمة النفسية (فرحة ▲ / ألم ▼)
-          </text>
+          >{t('learning.k_085')}</text>
         </g>
 
         {/* Curve legends */}
         <g direction="rtl">
           <rect x="370" y="148" width="148" height="44" rx="8" fill="#ffffff" fillOpacity="0.85" stroke="#10b981" strokeOpacity="0.35" />
           <line x1="380" y1="160" x2="402" y2="160" stroke="#10b981" strokeWidth="3" />
-          <text x="408" y="164" fontSize="10.5" fontWeight="600" fill="#065f46" direction="rtl">
-            Gain Curve (فرحة)
-          </text>
-          <text x="380" y="180" fontSize="9.5" fill="#047857" direction="rtl">
-            ميل لطيف — تقليل الحساسية
-          </text>
+          <text x="408" y="164" fontSize="10.5" fontWeight="600" fill="#065f46" direction="rtl">{t('learning.k_086')}</text>
+          <text x="380" y="180" fontSize="9.5" fill="#047857" direction="rtl">{t('learning.k_087')}</text>
         </g>
         <g direction="rtl">
           <rect x="78" y="246" width="158" height="44" rx="8" fill="#ffffff" fillOpacity="0.85" stroke="#dc2626" strokeOpacity="0.35" />
           <line x1="88" y1="258" x2="110" y2="258" stroke="#dc2626" strokeWidth="3" />
-          <text x="116" y="262" fontSize="10.5" fontWeight="600" fill="#991b1b" direction="rtl">
-            Loss Curve (ألم 2.25×)
-          </text>
-          <text x="88" y="278" fontSize="9.5" fill="#b91c1c" direction="rtl">
-            ميل حاد — ألم أعمق
-          </text>
+          <text x="116" y="262" fontSize="10.5" fontWeight="600" fill="#991b1b" direction="rtl">{t('learning.k_088')}</text>
+          <text x="88" y="278" fontSize="9.5" fill="#b91c1c" direction="rtl">{t('learning.k_089')}</text>
         </g>
       </svg>
 
-      <p className="mt-2 text-center text-xs text-muted-foreground" dir="rtl">
-        الخسارة تؤلم <span className="font-bold text-red-600">2.25×</span> أكثر من فرحة نفس المبلغ —{' '}
+      <p className="mt-2 text-center text-xs text-muted-foreground" dir="rtl">{t('learning.k_090')}<span className="font-bold text-red-600">2.25×</span> أكثر من فرحة نفس المبلغ —{' '}
         <span dir="ltr" className="font-mono text-[11px]">
           Kahneman &amp; Tversky 1979
         </span>
@@ -1094,7 +1068,7 @@ const SOP_STAGES: SopStage[] = [
     iconBg: 'bg-emerald-100 dark:bg-emerald-950/40',
     iconColor: 'text-emerald-600 dark:text-emerald-400',
     title: 'Pre-trade Checklist',
-    subtitle: 'قبل الصفقة',
+    subtitle: 'learning.k_189',
     items: ['Entry / Stop', 'Position size', 'Contra-thesis', 'Exit plan'],
   },
   {
@@ -1102,28 +1076,29 @@ const SOP_STAGES: SopStage[] = [
     iconBg: 'bg-amber-100 dark:bg-amber-950/40',
     iconColor: 'text-amber-600 dark:text-amber-400',
     title: 'Execute Trade',
-    subtitle: 'تنفيذ',
-    items: ['Hard rules', 'No override', 'Stop آلي'],
+    subtitle: 'learning.k_099',
+    items: ['Hard rules', 'No override', 'learning.k_190'],
   },
   {
     icon: NotebookPen,
     iconBg: 'bg-emerald-100 dark:bg-emerald-950/40',
     iconColor: 'text-emerald-600 dark:text-emerald-400',
     title: 'Journal Entry',
-    subtitle: 'يوميات',
-    items: ['تفسير القرار', 'المشاعر', 'النتيجة'],
+    subtitle: 'learning.k_191',
+    items: ['learning.k_192', 'learning.k_193', 'learning.k_194'],
   },
   {
     icon: TrendingUp,
     iconBg: 'bg-amber-100 dark:bg-amber-950/40',
     iconColor: 'text-amber-600 dark:text-amber-400',
     title: 'Review Weekly',
-    subtitle: 'مراجعة',
-    items: ['win rate', 'avg R', 'تعديل SOP'],
+    subtitle: 'learning.k_100',
+    items: ['win rate', 'avg R', 'learning.k_195'],
   },
 ];
 
-export function SopPipelineFlow() {
+export function SopPipelineFlow() {  const t = useTranslation();
+
   // Card geometry in viewBox 0 0 900 320
   const cardW = 188;
   const cardH = 158;
@@ -1205,9 +1180,7 @@ export function SopPipelineFlow() {
           fontSize="12"
           fill="#64748b"
           direction="rtl"
-        >
-          إجراءات قياسية تمنع التدخل العاطفي
-        </text>
+        >{t('learning.k_091')}</text>
 
         {/* Connector arrows between cards (drawn first, behind cards) */}
         <line x1={gapX1} y1={cardY + cardH / 2} x2={xs[1] - 4} y2={cardY + cardH / 2} stroke="url(#sopArrow)" strokeWidth="3.4" markerEnd="url(#sopArrowHead)" />
@@ -1231,9 +1204,7 @@ export function SopPipelineFlow() {
           fontWeight="600"
           fill="#0f766e"
           direction="rtl"
-        >
-          (loop أسبوعي — تعديل الـ SOP كل أسبوع)
-        </text>
+        >{t('learning.k_092')}</text>
 
         {/* Cards (foreignObject with HTML for clean layout) */}
         {SOP_STAGES.map((stage, i) => {
@@ -1260,7 +1231,7 @@ export function SopPipelineFlow() {
                       {stage.title}
                     </p>
                     <p className="text-[9.5px] text-muted-foreground" dir="rtl">
-                      {stage.subtitle}
+                      {t(stage.subtitle)}
                     </p>
                   </div>
                 </div>
@@ -1268,7 +1239,7 @@ export function SopPipelineFlow() {
                   {stage.items.map((item, j) => (
                     <div key={j} className="flex items-start gap-1 text-[10px] leading-tight">
                       <span className="mt-[1px] text-emerald-500">✓</span>
-                      <span className="flex-1 text-slate-700 dark:text-slate-300">{item}</span>
+                      <span className="flex-1 text-slate-700 dark:text-slate-300">{item.startsWith('learning.') ? t(item) : item}</span>
                     </div>
                   ))}
                 </div>
@@ -1290,7 +1261,7 @@ export function SopPipelineFlow() {
 }
 
 /* ── 20. Trading System Pipeline (الخريطة المنطقية لنظام التداول الآلي) ──
-   Owner's #1 ask: "الربط البرمجي/الخوارزمي يحتاج أن يتحول إلى رسم منطقي جميل"
+   Owner's #1 ask: t('learning.k_196')
    Dark premium dashboard aesthetic, 8 stages + feedback loop. */
 type PipelineStage = {
   num: number;
@@ -1306,7 +1277,7 @@ const PIPELINE_STAGES: PipelineStage[] = [
   {
     num: 1,
     icon: Database,
-    titleAr: 'استيعاب البيانات',
+    titleAr: 'learning.k_197',
     titleEn: 'DATA INGESTION',
     desc: 'EGX / TADAWUL / Crypto / Gold feeds',
     accent: 'emerald',
@@ -1315,16 +1286,16 @@ const PIPELINE_STAGES: PipelineStage[] = [
   {
     num: 2,
     icon: ShieldCheck,
-    titleAr: 'حارس المصادر',
+    titleAr: 'learning.k_198',
     titleEn: 'SOURCE AUTHORITY GUARD',
-    desc: 'ي validate المصدر ويرفض المصادر الممنوعة',
+    desc: 'learning.k_199',
     accent: 'emerald',
     live: true,
   },
   {
     num: 3,
     icon: ShieldCheck,
-    titleAr: 'طبقة التحقق',
+    titleAr: 'learning.k_200',
     titleEn: 'DATA VALIDATION LAYER',
     desc: 'current_price>0 · 52w sanity · S/R sanity',
     accent: 'amber',
@@ -1333,7 +1304,7 @@ const PIPELINE_STAGES: PipelineStage[] = [
   {
     num: 4,
     icon: Signal,
-    titleAr: 'توليد الإشارة',
+    titleAr: 'learning.k_201',
     titleEn: 'SIGNAL GENERATION',
     desc: 'technical + fundamental scoring → master_score',
     accent: 'amber',
@@ -1341,7 +1312,7 @@ const PIPELINE_STAGES: PipelineStage[] = [
   {
     num: 5,
     icon: Lock,
-    titleAr: 'بوابة المخاطر',
+    titleAr: 'learning.k_202',
     titleEn: 'RISK GATE',
     desc: 'position sizing · Kelly fraction · max drawdown',
     accent: 'red',
@@ -1349,7 +1320,7 @@ const PIPELINE_STAGES: PipelineStage[] = [
   {
     num: 6,
     icon: Send,
-    titleAr: 'التنفيذ',
+    titleAr: 'learning.k_203',
     titleEn: 'EXECUTION',
     desc: 'paper trade · live alert · Telegram publish',
     accent: 'cyan',
@@ -1357,7 +1328,7 @@ const PIPELINE_STAGES: PipelineStage[] = [
   {
     num: 7,
     icon: FileText,
-    titleAr: 'يوميات التداول',
+    titleAr: 'learning.k_204',
     titleEn: 'JOURNAL',
     desc: 'log entry · emotion · thesis',
     accent: 'purple',
@@ -1365,9 +1336,9 @@ const PIPELINE_STAGES: PipelineStage[] = [
   {
     num: 8,
     icon: RefreshCw,
-    titleAr: 'المراجعة والـ Feedback',
+    titleAr: 'learning.k_205',
     titleEn: 'REVIEW & FEEDBACK LOOP',
-    desc: 'weekly win rate · avg R · تعديل SOP → feeds Risk Gate',
+    desc: 'learning.k_206',
     accent: 'purple',
   },
 ];
@@ -1410,7 +1381,8 @@ const ACCENT_STYLES: Record<PipelineStage['accent'], { ring: string; badge: stri
   },
 };
 
-export function TradingSystemPipeline() {
+export function TradingSystemPipeline() {  const t = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -1421,9 +1393,7 @@ export function TradingSystemPipeline() {
     >
       {/* Header */}
       <div className="mb-4 text-center">
-        <h3 className="text-base font-bold text-slate-100 sm:text-lg">
-          الخريطة المنطقية لنظام التداول الآلي
-        </h3>
+        <h3 className="text-base font-bold text-slate-100 sm:text-lg">{t('learning.k_093')}</h3>
         <p className="mt-1 text-xs text-slate-400 sm:text-sm">
           من الإشارة إلى التنفيذ إلى المراجعة —{' '}
           <span dir="ltr" className="font-mono">
@@ -1493,17 +1463,15 @@ export function TradingSystemPipeline() {
                   {stage.titleEn}
                 </p>
                 <p className="mt-0.5 text-center text-[13px] font-bold text-slate-100" dir="rtl">
-                  {stage.titleAr}
+                  {t(stage.titleAr)}
                 </p>
                 <p className="mt-1.5 text-center text-[10.5px] leading-snug text-slate-400" dir="rtl">
-                  {stage.desc}
+                  {stage.desc.startsWith('learning.') ? t(stage.desc) : stage.desc}
                 </p>
 
                 {/* Feedback source marker */}
                 {isFeedbackSource && (
-                  <div className="mt-2 rounded-md border border-purple-500/30 bg-purple-500/10 px-1.5 py-1 text-center text-[9px] font-semibold text-purple-300" dir="rtl">
-                    ↻ feedback → المرحلة 5
-                  </div>
+                  <div className="mt-2 rounded-md border border-purple-500/30 bg-purple-500/10 px-1.5 py-1 text-center text-[9px] font-semibold text-purple-300" dir="rtl">{t('learning.k_094')}</div>
                 )}
               </motion.div>
 
@@ -1532,7 +1500,7 @@ export function TradingSystemPipeline() {
           <div className="flex items-center gap-2 text-[11px] text-slate-300">
             <RefreshCw className="h-3.5 w-3.5 text-purple-400" />
             <span>
-              <span className="font-semibold text-purple-300">حلقة المراجعة:</span>{' '}
+              <span className="font-semibold text-purple-300">{t('learning.k_095')}</span>{' '}
               ناتج المرحلة 8 (win rate + avg R) بيعدّل حدود المرحلة 5 (Risk Gate) أسبوعياً.
             </span>
           </div>
@@ -1545,20 +1513,15 @@ export function TradingSystemPipeline() {
       {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] sm:gap-x-5 sm:text-[11px]" dir="rtl">
         <span className="flex items-center gap-1 text-emerald-300">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> بيانات حية
-        </span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />{t('learning.k_096')}</span>
         <span className="flex items-center gap-1 text-amber-300">
-          <span className="h-2 w-2 rounded-full bg-amber-500" /> تحقق
-        </span>
+          <span className="h-2 w-2 rounded-full bg-amber-500" />{t('learning.k_097')}</span>
         <span className="flex items-center gap-1 text-red-300">
-          <span className="h-2 w-2 rounded-full bg-red-500" /> بوابة
-        </span>
+          <span className="h-2 w-2 rounded-full bg-red-500" />{t('learning.k_098')}</span>
         <span className="flex items-center gap-1 text-cyan-300">
-          <span className="h-2 w-2 rounded-full bg-cyan-500" /> تنفيذ
-        </span>
+          <span className="h-2 w-2 rounded-full bg-cyan-500" />{t('learning.k_099')}</span>
         <span className="flex items-center gap-1 text-purple-300">
-          <span className="h-2 w-2 rounded-full bg-purple-500" /> مراجعة
-        </span>
+          <span className="h-2 w-2 rounded-full bg-purple-500" />{t('learning.k_100')}</span>
       </div>
     </motion.div>
   );
@@ -1580,59 +1543,60 @@ export function TradingSystemPipeline() {
      Stage 4 — Decline / Downtrend   (public panics, sells low)
    Overlay: typical price curve shape across the 4 stages.
    Teaches WHEN to be in the market vs. in cash. */
-export function MarketStagesVisual() {
+export function MarketStagesVisual() {  const t = useTranslation();
+
   const stages = [
     {
       id: 1,
-      name: 'التجميع',
+      name: t('learning.k_207'),
       nameEn: 'Accumulation',
       color: '#10b981',
       bg: 'bg-emerald-500/10',
       border: 'border-emerald-500/40',
-      action: 'شراء تدريجي',
+      action: t('learning.k_208'),
       actionEn: 'Buy',
       icon: '📥',
-      desc: 'السعر يتحرك أفقيًا في نطاق ضيق بعد نزول طويل. الصناع يجمعون السهم بصمت.',
-      characteristics: ['تذبذب منخفض', 'حجم متناقص', 'اختراقات كاذبة'],
+      desc: t('learning.k_209'),
+      characteristics: [t('learning.k_210'), t('learning.k_211'), t('learning.k_212')],
     },
     {
       id: 2,
-      name: 'الصعود',
+      name: t('learning.k_213'),
       nameEn: 'Advance',
       color: '#059669',
       bg: 'bg-emerald-600/10',
       border: 'border-emerald-600/40',
-      action: 'احتفاظ / إضافة',
+      action: t('learning.k_214'),
       actionEn: 'Hold',
       icon: '🚀',
-      desc: 'السعر يكسر القمة ويصعد بزخم. الجمهور يبدأ بالانتباه والدخول.',
-      characteristics: ['قمم أعلى وقيعان أعلى', 'حجم متصاعد', 'اختراقات مؤكدة'],
+      desc: t('learning.k_215'),
+      characteristics: [t('learning.k_216'), t('learning.k_217'), t('learning.k_218')],
     },
     {
       id: 3,
-      name: 'التوزيع',
+      name: t('learning.k_219'),
       nameEn: 'Distribution',
       color: '#f59e0b',
       bg: 'bg-amber-500/10',
       border: 'border-amber-500/40',
-      action: 'بيع تدريجي',
+      action: t('learning.k_220'),
       actionEn: 'Sell',
       icon: '📤',
-      desc: 'السعر يصل للقمة ويتحرك أفقيًا بتذبذب عالٍ. الصناع يبيعون على القمة.',
-      characteristics: ['تذبذب عالٍ', 'حجم مرتفع', 'تباعد سلبي RSI'],
+      desc: t('learning.k_221'),
+      characteristics: [t('learning.k_222'), t('learning.k_223'), t('learning.k_224')],
     },
     {
       id: 4,
-      name: 'الهبوط',
+      name: t('learning.k_225'),
       nameEn: 'Decline',
       color: '#ef4444',
       bg: 'bg-red-500/10',
       border: 'border-red-500/40',
-      action: 'بيع / قصر',
+      action: t('learning.k_226'),
       actionEn: 'Short',
       icon: '📉',
-      desc: 'السعر يكسر القاع وينزل بزخم. الجمهور يذعر ويبيع بخسارة.',
-      characteristics: ['قمم أدنى وقيعان أدنى', 'حجم متصاعد على الهبوط', 'ارتجاعات كاذبة'],
+      desc: t('learning.k_227'),
+      characteristics: [t('learning.k_228'), t('learning.k_229'), t('learning.k_230')],
     },
   ];
 
@@ -1651,9 +1615,7 @@ export function MarketStagesVisual() {
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
         <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-        <h4 className="text-base font-bold sm:text-lg">
-          مراحل السوق الأربعة — نظرية Weinstein + Wyckoff
-        </h4>
+        <h4 className="text-base font-bold sm:text-lg">{t('learning.k_101')}</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
         السوق لا يصعد للأبد ولا يهبط للأبد — يدور في 4 مراحل. معرفة المرحلة الحالية
@@ -1666,7 +1628,7 @@ export function MarketStagesVisual() {
         viewBox="0 0 800 130"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
-        aria-label="منحنى السعر عبر مراحل السوق الأربع"
+        aria-label={t('learning.attr_002')}
         style={{ maxWidth: '100%', height: 'auto' }}
         className="rounded-lg border border-slate-200 bg-slate-50/40 dark:border-slate-700 dark:bg-slate-950/40"
       >
@@ -1694,10 +1656,10 @@ export function MarketStagesVisual() {
         <path d={pricePath} fill="none" stroke="url(#stagePriceStroke)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Stage labels under curve */}
-        <text x="115" y="118" textAnchor="middle" fontSize="10" fill="#10b981" fontWeight="700">المرحلة 1</text>
-        <text x="355" y="118" textAnchor="middle" fontSize="10" fill="#059669" fontWeight="700">المرحلة 2</text>
-        <text x="560" y="118" textAnchor="middle" fontSize="10" fill="#f59e0b" fontWeight="700">المرحلة 3</text>
-        <text x="700" y="118" textAnchor="middle" fontSize="10" fill="#ef4444" fontWeight="700">المرحلة 4</text>
+        <text x="115" y="118" textAnchor="middle" fontSize="10" fill="#10b981" fontWeight="700">{t('learning.k_102')}</text>
+        <text x="355" y="118" textAnchor="middle" fontSize="10" fill="#059669" fontWeight="700">{t('learning.k_103')}</text>
+        <text x="560" y="118" textAnchor="middle" fontSize="10" fill="#f59e0b" fontWeight="700">{t('learning.k_104')}</text>
+        <text x="700" y="118" textAnchor="middle" fontSize="10" fill="#ef4444" fontWeight="700">{t('learning.k_105')}</text>
       </svg>
 
       {/* Stage cards */}
@@ -1747,7 +1709,7 @@ export function MarketStagesVisual() {
 
       {/* Educational takeaway */}
       <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200" dir="rtl">
-        <span className="font-bold">قاعدة عامة:</span> لا تشترِ في المرحلة 4، ولا تبع في
+        <span className="font-bold">{t('learning.k_106')}</span> لا تشترِ في المرحلة 4، ولا تبع في
         المرحلة 2. أفضل نقطة شراء = نهاية المرحلة 1، وأفضل نقطة بيع = بداية المرحلة 3.
         التحرّك ضدّ المرحلة = خسارة شبه مؤكدة.
       </div>
@@ -1761,7 +1723,8 @@ export function MarketStagesVisual() {
      - Buy market orders lift the ask → price up
      - Sell market orders hit the bid → price down
      - Imbalance between aggressive buyers/sellers = direction */
-export function OrderFlowVisual() {
+export function OrderFlowVisual() {  const t = useTranslation();
+
   // Price levels (top → bottom). Best ask is 100.0; best bid is 99.9 (0.1 spread).
   const levels = [
     { price: 100.4, side: 'ask' as const, size: 120 },
@@ -1790,7 +1753,7 @@ export function OrderFlowVisual() {
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
         <Scale className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-        <h4 className="text-base font-bold sm:text-lg">تدفّق الأوامر — لماذا يتحرك السعر؟</h4>
+        <h4 className="text-base font-bold sm:text-lg">{t('learning.k_107')}</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
         السعر بيتحرك لما الطلبات السوقية (Market Orders) تخبط في طلبات
@@ -1805,14 +1768,14 @@ export function OrderFlowVisual() {
           viewBox="0 0 540 440"
           xmlns="http://www.w3.org/2000/svg"
           role="img"
-          aria-label="سلم تسعير الـ Bid/Ask مع تدفقات الأوامر"
+          aria-label={t('learning.attr_003')}
           style={{ maxWidth: '100%', height: 'auto' }}
           className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
         >
           {/* Column headers */}
-          <text x="80" y="20" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ef4444">طلبات البيع (Ask)</text>
-          <text x="270" y="20" textAnchor="middle" fontSize="11" fontWeight="700" fill="#475569">السعر</text>
-          <text x="460" y="20" textAnchor="middle" fontSize="11" fontWeight="700" fill="#10b981">طلبات الشراء (Bid)</text>
+          <text x="80" y="20" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ef4444">{t('learning.k_108')}</text>
+          <text x="270" y="20" textAnchor="middle" fontSize="11" fontWeight="700" fill="#475569">{t('learning.k_049')}</text>
+          <text x="460" y="20" textAnchor="middle" fontSize="11" fontWeight="700" fill="#10b981">{t('learning.k_109')}</text>
 
           {/* Each level */}
           {levels.map((lvl, idx) => {
@@ -1843,20 +1806,20 @@ export function OrderFlowVisual() {
           {/* Spread indicator */}
           <line x1="180" y1="222" x2="240" y2="222" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3,2" />
           <line x1="300" y1="222" x2="360" y2="222" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3,2" />
-          <text x="270" y="237" textAnchor="middle" fontSize="9" fill="#92400e" fontWeight="700">سبيرد = 0.1</text>
+          <text x="270" y="237" textAnchor="middle" fontSize="9" fill="#92400e" fontWeight="700">{t('learning.k_110')}</text>
 
           {/* Market buy order arrow (hits ask) */}
           <g>
             <path d="M 470 80 L 320 100" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
             <path d="M 320 100 L 326 92 M 320 100 L 332 102" stroke="#10b981" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <text x="475" y="76" textAnchor="end" fontSize="10" fill="#10b981" fontWeight="700">شراء سوقي</text>
+            <text x="475" y="76" textAnchor="end" fontSize="10" fill="#10b981" fontWeight="700">{t('learning.k_111')}</text>
           </g>
 
           {/* Market sell order arrow (hits bid) */}
           <g>
             <path d="M 70 360 L 220 320" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
             <path d="M 220 320 L 213 322 M 220 320 L 213 314" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <text x="65" y="375" textAnchor="start" fontSize="10" fill="#ef4444" fontWeight="700">بيع سوقي</text>
+            <text x="65" y="375" textAnchor="start" fontSize="10" fill="#ef4444" fontWeight="700">{t('learning.k_112')}</text>
           </g>
         </svg>
 
@@ -1865,11 +1828,11 @@ export function OrderFlowVisual() {
           {/* Order book totals */}
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center">
-              <div className="text-[10px] font-semibold text-red-700 dark:text-red-300">إجمالي Ask</div>
+              <div className="text-[10px] font-semibold text-red-700 dark:text-red-300">{t('learning.k_113')}</div>
               <div className="text-lg font-bold text-red-700 dark:text-red-300">{totalAsk.toLocaleString()}</div>
             </div>
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center">
-              <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">إجمالي Bid</div>
+              <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">{t('learning.k_114')}</div>
               <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{totalBid.toLocaleString()}</div>
             </div>
           </div>
@@ -1877,9 +1840,9 @@ export function OrderFlowVisual() {
           {/* Imbalance bar */}
           <div className="rounded-lg border border-slate-300 bg-muted/40 p-3 dark:border-slate-700">
             <div className="mb-1 flex items-center justify-between text-[10px]">
-              <span className="text-red-600 dark:text-red-400">بيع &lt;&lt;</span>
-              <span className="font-semibold">عدم التوازن (Imbalance)</span>
-              <span className="text-emerald-600 dark:text-emerald-400">&gt;&gt; شراء</span>
+              <span className="text-red-600 dark:text-red-400">{t('learning.k_115')}</span>
+              <span className="font-semibold">{t('learning.k_116')}</span>
+              <span className="text-emerald-600 dark:text-emerald-400">{t('learning.k_117')}</span>
             </div>
             <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
               <div
@@ -1893,20 +1856,20 @@ export function OrderFlowVisual() {
               <div className="absolute left-1/2 top-0 h-3 w-0.5 -translate-x-1/2 bg-slate-400" />
             </div>
             <div className="mt-2 text-center text-xs font-bold" style={{ color: imbalance >= 0 ? '#10b981' : '#ef4444' }}>
-              {imbalance >= 0 ? 'الشراء أقوى → السعر يصعد' : 'البيع أقوى → السعر ينخفض'}
+              {imbalance >= 0 ? t('learning.k_231') : t('learning.k_232')}
               {' '}({(imbalance * 100).toFixed(1)}%)
             </div>
           </div>
 
           {/* Educational key */}
           <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs leading-relaxed text-emerald-900 dark:text-emerald-200">
-            <div className="mb-2 font-bold">القاعدة الذهبية لتدفّق الأوامر:</div>
+            <div className="mb-2 font-bold">{t('learning.k_118')}</div>
             <ul className="space-y-1">
-              <li>• <span className="font-semibold">Limit Order:</span> أمر بانتظار سعر معيّن (يخلق سيولة).</li>
-              <li>• <span className="font-semibold">Market Buy:</span> يشتري فورًا من أعلى سعر Ask متاح (يرفع السعر).</li>
-              <li>• <span className="font-semibold">Market Sell:</span> يبيع فورًا في أدنى سعر Bid متاح (يخفض السعر).</li>
-              <li>• لو الـ Ask تراكم أكثر من الـ Bid → ضغط بيعي.</li>
-              <li>• لو الـ Bid تراكم أكثر من الـ Ask → ضغط شرائي.</li>
+              <li>• <span className="font-semibold">Limit Order:</span>{t('learning.k_119')}</li>
+              <li>• <span className="font-semibold">Market Buy:</span>{t('learning.k_120')}</li>
+              <li>• <span className="font-semibold">Market Sell:</span>{t('learning.k_121')}</li>
+              <li>{t('learning.k_122')}</li>
+              <li>{t('learning.k_123')}</li>
             </ul>
           </div>
         </div>
@@ -1920,7 +1883,8 @@ export function OrderFlowVisual() {
      Doji, Hammer, Bullish Engulfing, Shooting Star, Morning Star, Evening Star
    Each: SVG candle(s) + Arabic name + signal (bullish/bearish/neutral) + when it appears.
    Teaches pattern recognition — the most-asked beginner topic. */
-export function CandlestickPatternsVisual() {
+export function CandlestickPatternsVisual() {  const t = useTranslation();
+
   // Each candle: { o, h, l, c } in SVG Y coords (smaller Y = higher price).
   type C = { o: number; h: number; l: number; c: number };
   const patterns: {
@@ -1934,75 +1898,75 @@ export function CandlestickPatternsVisual() {
   }[] = [
     {
       id: 'doji',
-      name: 'الدوجي',
+      name: t('learning.k_233'),
       nameEn: 'Doji',
       signal: 'neutral',
-      appears: 'بعد ترند قوي',
+      appears: t('learning.k_234'),
       candles: [{ o: 50, h: 30, l: 70, c: 50 }],
-      desc: 'افتتاح = إغلاق. تردد تام بين المشتري والبائع. غالبًا ينذر بانعكاس.',
+      desc: t('learning.k_235'),
     },
     {
       id: 'hammer',
-      name: 'المطرقة',
+      name: t('learning.k_236'),
       nameEn: 'Hammer',
       signal: 'bullish',
-      appears: 'في قاع ترند هابط',
+      appears: t('learning.k_237'),
       candles: [{ o: 55, h: 50, l: 85, c: 48 }],
-      desc: 'جسم صغير أعلى الشمعة مع ظل سفلي طويل. المشترون رفضوا الأسعار المنخفضة.',
+      desc: t('learning.k_238'),
     },
     {
       id: 'engulfing',
-      name: 'الابتلاع الصاعد',
+      name: t('learning.k_239'),
       nameEn: 'Bullish Engulfing',
       signal: 'bullish',
-      appears: 'في قاع ترند هابط',
+      appears: t('learning.k_237'),
       candles: [
         { o: 40, h: 35, l: 65, c: 60 },
         { o: 65, h: 25, l: 70, c: 30 },
       ],
-      desc: 'شمعة خضراء كبيرة تبتلع الشمعة الحمراء السابقة بالكامل. زخم شرائي قوي.',
+      desc: t('learning.k_240'),
     },
     {
       id: 'shooting-star',
-      name: 'النجم الهابط',
+      name: t('learning.k_241'),
       nameEn: 'Shooting Star',
       signal: 'bearish',
-      appears: 'في قمة ترند صاعد',
+      appears: t('learning.k_242'),
       candles: [{ o: 55, h: 25, l: 60, c: 50 }],
-      desc: 'جسم صغير أسفل الشمعة مع ظل علوي طويل. البائعون رفضوا الأسعار المرتفعة.',
+      desc: t('learning.k_243'),
     },
     {
       id: 'morning-star',
-      name: 'نجمة الصباح',
+      name: t('learning.k_244'),
       nameEn: 'Morning Star',
       signal: 'bullish',
-      appears: 'في قاع ترند هابط',
+      appears: t('learning.k_237'),
       candles: [
         { o: 30, h: 28, l: 60, c: 58 },
         { o: 56, h: 52, l: 62, c: 54 },
         { o: 50, h: 30, l: 55, c: 32 },
       ],
-      desc: 'ثلاث شمعات: حمراء كبيرة، صغيرة مترددة، خضراء كبيرة. تأكيد انعكاس صاعد.',
+      desc: t('learning.k_245'),
     },
     {
       id: 'evening-star',
-      name: 'نجمة المساء',
+      name: t('learning.k_246'),
       nameEn: 'Evening Star',
       signal: 'bearish',
-      appears: 'في قمة ترند صاعد',
+      appears: t('learning.k_242'),
       candles: [
         { o: 50, h: 28, l: 55, c: 30 },
         { o: 32, h: 28, l: 38, c: 35 },
         { o: 38, h: 60, l: 62, c: 58 },
       ],
-      desc: 'ثلاث شمعات: خضراء كبيرة، صغيرة مترددة، حمراء كبيرة. تأكيد انعكاس هابط.',
+      desc: t('learning.k_247'),
     },
   ];
 
   const signalBadge: Record<string, { label: string; cls: string }> = {
-    bullish: { label: 'صاعد', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' },
-    bearish: { label: 'هابط', cls: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30' },
-    neutral: { label: 'محايد', cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' },
+    bullish: { label: t('learning.k_248'), cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' },
+    bearish: { label: t('learning.k_249'), cls: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30' },
+    neutral: { label: t('learning.k_250'), cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' },
   };
 
   function MiniCandle({ c, idx }: { c: C; idx: number }) {
@@ -2031,7 +1995,7 @@ export function CandlestickPatternsVisual() {
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
         <Crosshair className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-        <h4 className="text-base font-bold sm:text-lg">أنماط الشموع اليابانية المتقدمة</h4>
+        <h4 className="text-base font-bold sm:text-lg">{t('learning.k_124')}</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
         6 أنماط أساسية لازم كل متداول يعرفها. الأهم مش شكل النمط بس،
@@ -2077,7 +2041,7 @@ export function CandlestickPatternsVisual() {
 
               <p className="mt-2 text-[11px] leading-relaxed text-foreground">{p.desc}</p>
               <div className="mt-2 text-[10px] text-muted-foreground">
-                <span className="font-semibold">يظهر:</span> {p.appears}
+                <span className="font-semibold">{t('learning.k_125')}</span> {p.appears}
               </div>
               <div className="mt-0.5 text-[10px] text-muted-foreground ltr:text-left" dir="ltr">
                 {p.nameEn}
@@ -2088,7 +2052,7 @@ export function CandlestickPatternsVisual() {
       </div>
 
       <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200" dir="rtl">
-        <span className="font-bold">تحذير مهم:</span> الأنماط وحدها لا تكفي. ادمجها مع
+        <span className="font-bold">{t('learning.k_126')}</span> الأنماط وحدها لا تكفي. ادمجها مع
         المستويات (دعم/مقاومة)، السياق (مرحلة السوق)، وحجم التداول. شمعة مطرقة في
         فراغ = مجرد ضجيج.
       </div>
@@ -2100,7 +2064,8 @@ export function CandlestickPatternsVisual() {
    Draggable Entry / Stop / Target lines on a price chart.
    Real-time calculation of Risk, Reward, R:R ratio.
    Teaches position sizing: your stop placement DICTATES your position size. */
-export function RiskRewardVisual() {
+export function RiskRewardVisual() {  const t = useTranslation();
+
   const MIN_P = 80;
   const MAX_P = 140;
   const SVG_W = 600;
@@ -2181,7 +2146,7 @@ export function RiskRewardVisual() {
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
         <Scale className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-        <h4 className="text-base font-bold sm:text-lg">حاسبة المخاطرة/العائد — تفاعلية</h4>
+        <h4 className="text-base font-bold sm:text-lg">{t('learning.k_127')}</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
         اسحب الخطوط لتعديل entry / stop / target. الـ R:R بيتحدّث فورًا.
@@ -2196,7 +2161,7 @@ export function RiskRewardVisual() {
             viewBox={`0 0 ${SVG_W} ${SVG_H}`}
             xmlns="http://www.w3.org/2000/svg"
             role="img"
-            aria-label="رسم تفاعلي للمخاطرة والعائد"
+            aria-label={t('learning.attr_004')}
             style={{ maxWidth: '100%', height: 'auto', touchAction: 'none' }}
             className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
             onPointerMove={handlePointerMove}
@@ -2292,21 +2257,19 @@ export function RiskRewardVisual() {
               onPointerDown={(e) => handlePointerDown(e, 'target')}
             />
           </svg>
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            💡 اسحب الخطوط الأفقية لتعديل الأسعار. أو استخدم المنزلقات بالأسفل.
-          </p>
+          <p className="mt-2 text-[10px] text-muted-foreground">{t('learning.k_128')}</p>
         </div>
 
         {/* Metrics + sliders */}
         <div className="flex flex-col gap-3" dir="rtl">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center">
-              <div className="text-[10px] text-red-700 dark:text-red-300">المخاطرة</div>
+              <div className="text-[10px] text-red-700 dark:text-red-300">{t('learning.k_129')}</div>
               <div className="text-lg font-bold text-red-700 dark:text-red-300">{(risk ?? 0).toFixed(1)}</div>
               <div className="text-[9px] text-muted-foreground">({(risk / entry * 100).toFixed(1)}%)</div>
             </div>
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center">
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-300">العائد</div>
+              <div className="text-[10px] text-emerald-700 dark:text-emerald-300">{t('learning.k_130')}</div>
               <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{(reward ?? 0).toFixed(1)}</div>
               <div className="text-[9px] text-muted-foreground">({(reward / entry * 100).toFixed(1)}%)</div>
             </div>
@@ -2328,14 +2291,14 @@ export function RiskRewardVisual() {
                   : 'border-red-500/40 bg-red-500/15 text-red-800 dark:text-red-200',
             )}
           >
-            {rr >= 2 ? '✅ صفقة مقبولة — R:R ≥ 2:1' : rr >= 1 ? '⚠️ صفقة هامشية — R:R بين 1 و 2' : '❌ صفقة مرفوضة — R:R < 1'}
+            {rr >= 2 ? t('learning.k_251') : rr >= 1 ? t('learning.k_252') : t('learning.k_253')}
           </div>
 
           {/* Sliders for accessibility */}
           <div className="space-y-3 rounded-lg border border-slate-200 bg-muted/30 p-3 dark:border-slate-700" dir="rtl">
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
-                <span className="font-semibold text-slate-700 dark:text-slate-300">سعر الدخول (Entry)</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{t('learning.k_131')}</span>
                 <span className="text-slate-600 dark:text-slate-400">{(entry ?? 0).toFixed(1)}</span>
               </div>
               <input
@@ -2350,7 +2313,7 @@ export function RiskRewardVisual() {
             </div>
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
-                <span className="font-semibold text-red-700 dark:text-red-400">الوقف (Stop)</span>
+                <span className="font-semibold text-red-700 dark:text-red-400">{t('learning.k_132')}</span>
                 <span className="text-slate-600 dark:text-slate-400">{(stop ?? 0).toFixed(1)}</span>
               </div>
               <input
@@ -2365,7 +2328,7 @@ export function RiskRewardVisual() {
             </div>
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400">الهدف (Target)</span>
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">{t('learning.k_133')}</span>
                 <span className="text-slate-600 dark:text-slate-400">{(target ?? 0).toFixed(1)}</span>
               </div>
               <input
@@ -2382,7 +2345,7 @@ export function RiskRewardVisual() {
 
           {/* Position sizing lesson */}
           <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[11px] leading-relaxed text-emerald-900 dark:text-emerald-200" dir="rtl">
-            <div className="mb-1 font-bold">حجم الصفقة (Position Size):</div>
+            <div className="mb-1 font-bold">{t('learning.k_134')}</div>
             لو مخاطرك المسموحة = 2% من رأس المال (مثلاً 1000 ج.م من 50,000)،
             والمخاطرة لكل سهم = {(risk ?? 0).toFixed(1)} ج.م →
             <div className="mt-1 text-center font-bold text-emerald-700 dark:text-emerald-300">
@@ -2399,7 +2362,8 @@ export function RiskRewardVisual() {
    Interactive SVG donut with 6 asset classes.
    Click slice → detail panel: expected return, volatility, role.
    Teaches diversification across markets (EGX/TADAWUL/US/Crypto/Gold/Cash). */
-export function PortfolioAllocationVisual() {
+export function PortfolioAllocationVisual() {  const t = useTranslation();
+
   type Asset = {
     id: string;
     name: string;
@@ -2412,12 +2376,12 @@ export function PortfolioAllocationVisual() {
     note: string;
   };
   const assets: Asset[] = [
-    { id: 'egx', name: 'أسهم مصرية', nameEn: 'EGX', pct: 40, color: '#10b981', expectedReturn: 14, volatility: 24, role: 'محرك النمو الأساسي', note: 'السوق المحلي — تقلبات عالية لكن فرص نمو كبيرة.' },
-    { id: 'tadawul', name: 'أسهم سعودية', nameEn: 'TADAWUL', pct: 15, color: '#059669', expectedReturn: 10, volatility: 18, role: 'تنويع إقليمي', note: 'سوق خليجي مستقر، قطاعات بنكية وبتروكيماوية.' },
-    { id: 'us', name: 'أسهم أمريكية', nameEn: 'US Stocks', pct: 15, color: '#f59e0b', expectedReturn: 9, volatility: 15, role: 'تنويع دولي + تحوّط عملة', note: 'وصول لشركات عالمية كبرى، يُحمّل مخاطر صرف الدولار.' },
-    { id: 'crypto', name: 'عملات رقمية', nameEn: 'Crypto', pct: 10, color: '#64748b', expectedReturn: 30, volatility: 70, role: 'مضاربة عالية المخاطر', note: 'بيتكوين أساسًا. تخصيص صغير فقط بسبب التقلبات الشديدة.' },
-    { id: 'gold', name: 'ذهب', nameEn: 'Gold', pct: 15, color: '#d97706', expectedReturn: 6, volatility: 12, role: 'ملاذ آمن + تحوّط تضخمي', note: 'يحافظ على القوة الشرائية في فترات التضخم والركود.' },
-    { id: 'cash', name: 'نقدية', nameEn: 'Cash', pct: 5, color: '#94a3b8', expectedReturn: 8, volatility: 0, role: 'مخزن فرص', note: 'شهادات إيداع — عائد ثابت. متاحة لاقتناص الفرص عند انخفاض الأسواق.' },
+    { id: 'egx', name: t('learning.k_254'), nameEn: 'EGX', pct: 40, color: '#10b981', expectedReturn: 14, volatility: 24, role: t('learning.k_255'), note: t('learning.k_256') },
+    { id: 'tadawul', name: t('learning.k_257'), nameEn: 'TADAWUL', pct: 15, color: '#059669', expectedReturn: 10, volatility: 18, role: t('learning.k_258'), note: t('learning.k_259') },
+    { id: 'us', name: t('learning.k_260'), nameEn: 'US Stocks', pct: 15, color: '#f59e0b', expectedReturn: 9, volatility: 15, role: t('learning.k_261'), note: t('learning.k_262') },
+    { id: 'crypto', name: t('learning.k_263'), nameEn: 'Crypto', pct: 10, color: '#64748b', expectedReturn: 30, volatility: 70, role: t('learning.k_264'), note: t('learning.k_265') },
+    { id: 'gold', name: t('learning.k_266'), nameEn: 'Gold', pct: 15, color: '#d97706', expectedReturn: 6, volatility: 12, role: t('learning.k_267'), note: t('learning.k_268') },
+    { id: 'cash', name: t('learning.k_166'), nameEn: 'Cash', pct: 5, color: '#94a3b8', expectedReturn: 8, volatility: 0, role: t('learning.k_269'), note: t('learning.k_270') },
   ];
 
   const [active, setActive] = useState<Asset>(assets[0]);
@@ -2469,7 +2433,7 @@ export function PortfolioAllocationVisual() {
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
         <PieChart className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-        <h4 className="text-base font-bold sm:text-lg">توزيع المحفظة عبر الأسواق — عجلة تفاعلية</h4>
+        <h4 className="text-base font-bold sm:text-lg">{t('learning.k_135')}</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
         اضغط على أي قطاع في العجلة لتشاهد تفاصيله. التوزيع المقترح تعليمي وبيمثل
@@ -2484,7 +2448,7 @@ export function PortfolioAllocationVisual() {
             viewBox="0 0 320 320"
             xmlns="http://www.w3.org/2000/svg"
             role="img"
-            aria-label="عجلة توزيع المحفظة"
+            aria-label={t('learning.attr_005')}
             style={{ maxWidth: '320px', height: 'auto' }}
           >
             {slices.map((s) => {
@@ -2506,9 +2470,9 @@ export function PortfolioAllocationVisual() {
               );
             })}
             {/* Center label */}
-            <text x={CX} y={CY - 6} textAnchor="middle" fontSize="11" fill="#64748b" fontWeight="600">العائد المتوقع</text>
+            <text x={CX} y={CY - 6} textAnchor="middle" fontSize="11" fill="#64748b" fontWeight="600">{t('learning.k_136')}</text>
             <text x={CX} y={CY + 14} textAnchor="middle" fontSize="22" fill="#10b981" fontWeight="800">+{(portfolioReturn ?? 0).toFixed(1)}%</text>
-            <text x={CX} y={CY + 32} textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="500">سنويًا</text>
+            <text x={CX} y={CY + 32} textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="500">{t('learning.k_137')}</text>
           </svg>
 
           {/* Legend */}
@@ -2554,15 +2518,15 @@ export function PortfolioAllocationVisual() {
             <p className="text-xs leading-relaxed text-foreground">{active.note}</p>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-md bg-muted/40 p-2">
-                <div className="text-[10px] text-muted-foreground">العائد المتوقع</div>
+                <div className="text-[10px] text-muted-foreground">{t('learning.k_136')}</div>
                 <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400">+{active.expectedReturn}%</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
-                <div className="text-[10px] text-muted-foreground">التقلب السنوي</div>
+                <div className="text-[10px] text-muted-foreground">{t('learning.k_138')}</div>
                 <div className="text-sm font-bold text-amber-700 dark:text-amber-400">±{active.volatility}%</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
-                <div className="text-[10px] text-muted-foreground">الدور</div>
+                <div className="text-[10px] text-muted-foreground">{t('learning.k_139')}</div>
                 <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{active.role}</div>
               </div>
             </div>
@@ -2570,16 +2534,14 @@ export function PortfolioAllocationVisual() {
 
           {/* Portfolio aggregate stats */}
           <div className="rounded-lg border border-slate-300 bg-muted/30 p-3 dark:border-slate-700">
-            <div className="mb-2 text-center text-xs font-semibold text-slate-700 dark:text-slate-300">
-              إحصائيات المحفظة الكاملة
-            </div>
+            <div className="mb-2 text-center text-xs font-semibold text-slate-700 dark:text-slate-300">{t('learning.k_140')}</div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
-                <div className="text-[10px] text-muted-foreground">عائد متوقع</div>
+                <div className="text-[10px] text-muted-foreground">{t('learning.k_141')}</div>
                 <div className="text-base font-bold text-emerald-700 dark:text-emerald-400">+{(portfolioReturn ?? 0).toFixed(1)}%</div>
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground">تقلب إجمالي</div>
+                <div className="text-[10px] text-muted-foreground">{t('learning.k_142')}</div>
                 <div className="text-base font-bold text-amber-700 dark:text-amber-400">±{(portfolioVol ?? 0).toFixed(1)}%</div>
               </div>
               <div>
@@ -2590,7 +2552,7 @@ export function PortfolioAllocationVisual() {
           </div>
 
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-900 dark:text-amber-200" dir="rtl">
-            <span className="font-bold">درس التنويع:</span> المحفظة دي بتدي عائد
+            <span className="font-bold">{t('learning.k_143')}</span> المحفظة دي بتدي عائد
             متوقع +{(portfolioReturn ?? 0).toFixed(0)}% لكن بتقلب ±{(portfolioVol ?? 0).toFixed(0)}% فقط —
             أقل من وضع 100% في Crypto (±70%) أو 100% في EGX (±24%). التنويع بيوازن
             بين العائد والمخاطرة.
