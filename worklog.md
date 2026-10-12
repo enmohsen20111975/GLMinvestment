@@ -78509,3 +78509,65 @@ Stage Summary:
 - bun run lint: PASS (no warnings)
 - pre-commit hook: PASS (check_no_hard_delete + check_no_raw_insert + ticker-registry)
 - Python backend verified live: `curl '127.0.0.1:8010/api/wyckoff-screener?market=EGX&phase_filter=D_SOS&limit=5'` returns valid JSON with phase_distribution + per-stock phase/confidence/whale_flow_egp (e.g. MENA phase=D_SOS confidence=70%).
+
+---
+
+Task ID: P0-ALPHA-WYCKOFF-SCREENER-API
+Agent: Wyckoff Screener API Agent (S1)
+
+Work Log:
+- vps-service/api/wyckoff_screener_routes.py created → commit 3851731f
+  * Flask Blueprint `wyckoff_screener_bp` (no url_prefix — route decorator uses `/api/wyckoff-screener`)
+  * Endpoint: `GET /api/wyckoff-screener?market=EGX&phase_filter=C_SPRING&limit=20`
+  * Reads active stocks from `db/stocks.db.stocks` (market IN ('EGX','مصر'), is_active=1)
+  * market=EGX30 → adds `is_egx30=1` filter (returns 15 EGX30 constituents)
+  * Reads last ~40 days of OHLCV from `stock_daily_prices` (close, high, low, volume, ASC)
+  * Substitutes per-candle NULL highs/lows with `max/min(close[i], close[i-1])` proxy
+    (matches the detector's whole-list-None fallback — prevents `min(lows)` crash on mixed types)
+  * Calls `detect_wyckoff_accumulation(closes, volumes, highs, lows)` from
+    `utils.shared_liquidity` (Rule 67 — CALCULATION-CANONICAL)
+  * Rule 27: insufficient-data stocks (< 30 closes) → skipped, never invented
+  * whale_flow_egp = `SUM(volume*price) FROM intraday.db.stock_intraday WHERE ticker=? AND substr(timestamp,1,10)=date('now')`
+  * Confidence score (0-100): in_support_zone +25, vsa_confirmed +25, phase!=NONE +20,
+    phase bonus (D_SOS/C_SPRING=15, B_CAUSE=10, A_SC=5), signal_count×5 (max +15).
+    Wash trade = 0 (forced). Clamped to [0,100].
+  * phase_label_ar map: A_SC="هزة البيع القصوى", B_CAUSE="بناء القاعدة",
+    C_SPRING="هز الشجرة (Spring)", D_SOS="إشارة قوة", CHURNING_WASH_TRADE="تدوير وتصريف", NONE="لا توجد مرحلة واضحة"
+  * Sort: phase priority (D_SOS=0, C_SPRING=1, B_CAUSE=2, A_SC=3, NONE=4, CHURNING=5) then confidence DESC
+  * phase_distribution: full breakdown of ALL_PHASES across the whole scanned universe
+- vps-service/lightweight_server.py modified → commit a0d022e2
+  * Added `('api.wyckoff_screener_routes', 'wyckoff_screener_bp')` to BLUEPRINTS list
+  * Production Flask server now serves `/api/wyckoff-screener` on port :8010
+- src/app/api/maker-radar/wyckoff-screener/route.ts modified → commit 43986848
+  * Replaced previous spawn-based route with pure HTTP thin proxy (Rule 20)
+  * Uses unified `PYTHON_BACKEND_URL` from `@/lib/python-backend`
+    (env precedence: PYTHON_BACKEND_URL → EGXPY_SERVICE_URL → … → http://127.0.0.1:8010)
+  * Forwards query string verbatim to Python (Python is single source of truth for param validation)
+  * Passes upstream status code + body through unchanged
+  * 503 + Arabic message if Python backend unreachable (Rule 27 — no fake fallback)
+  * 502 + message if upstream returns invalid JSON
+  * Auth model matches parent /api/maker-radar: anonymous users pass through
+    (free-tier preview); authenticated users with expired trial → 403 TRIAL_EXPIRED
+
+Verification (curl, end-to-end):
+- `curl 'http://localhost:3000/api/maker-radar/wyckoff-screener?market=EGX&phase_filter=C_SPRING'` → 200
+  → stocks=[{ticker:"MTIE", phase:"C_SPRING", phase_label_ar:"هز الشجرة (Spring)", confidence:90, whale_flow_egp:0, in_support_zone:true, vsa_confirmed:true, is_signal:true, ...}]
+- `curl '?market=EGX30'` → 200, scanned=15 (EGX30 constituents), phase_distribution={A_SC:1, B_CAUSE:2, C_SPRING:0, D_SOS:0, CHURNING:0, NONE:12}
+- `curl '?market=EGX&phase_filter=ALL&limit=50'` → 200, scanned=362, returned=50, skipped=63 (Rule 27)
+- `curl '?phase_filter=BOGUS'` → 400 + Arabic error (forwarded from Python)
+- `curl '?limit=200'` → 200, limit clamped to 50 (Python enforces max)
+- Python backend offline → 503 + `error:"python_backend_unreachable"` + Arabic message + retry_after_seconds:30
+
+Stage Summary:
+- vps-service/api/wyckoff_screener_routes.py created (Flask Blueprint, 458 lines)
+- src/app/api/maker-radar/wyckoff-screener/route.ts created (thin HTTP proxy, 119 lines)
+- vps-service/lightweight_server.py updated (blueprint registered)
+- 15 EGX30 stocks scanned (when market=EGX30), 362 when market=EGX (all active)
+- phase_distribution returned (A_SC/B_CAUSE/C_SPRING/D_SOS/CHURNING/NONE)
+- whale_flow_egp computed from intraday.db.stock_intraday for today
+- Rule 20: computation 100% in Python; Node = pure HTTP proxy
+- Rule 27: insufficient-data stocks skipped; Python-unreachable = clear 503 (no fake fallback)
+- Rule 67: uses canonical detect_wyckoff_accumulation from utils/shared_liquidity.py
+- Rule 75: commit + push after each file (3 commits, all pushed to main)
+- pre-commit hook: PASS (check_no_hard_delete + check_no_raw_insert + ticker-registry)
+- 0 new TypeScript errors (pre-existing 1664 errors unchanged — none from wyckoff code)
