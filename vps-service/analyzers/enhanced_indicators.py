@@ -201,46 +201,23 @@ class EnhancedIndicators:
         return current_k, current_d
 
     # ---------- ATR ----------
-    # PKG4-DEV-A (Engine Unification): كان بيستخدم SMA(period) وهذا غلط رياضيًا
-    # حسب Rule 54 (CALCULATION-CANONICAL) — ATR لازم Wilder's smoothing.
-    # تم توحيد الحساب ليطابق analyzers/indicators/atr.py (canonical).
+    # PKG4-ATR-UNIFY (Rule 54): delegates to analyzers.indicators.atr.calc_atr
+    # (canonical Wilder's smoothing — math verified = 1.4643 on reference data).
+    # Pre-PKG4 this method inlined the Wilder's formula; now it is a thin
+    # wrapper so every ATR computation site routes through the canonical SSOT.
     @staticmethod
     def calc_atr(highs: list[float], lows: list[float], closes: list[float],
                  period: int = 14) -> float:
         """
-        حساب Average True Range بصيغة Wilder's smoothing (canonical — Rule 54).
+        Average True Range — canonical Wilder's smoothing (Rule 54).
 
-        True Range = max(high-low, |high-prev_close|, |low-prev_close|)
-        ATR = (ATR_prev × (period-1) + TR) / period   ← Wilder's smoothing
-
-        المرجعية: analyzers/indicators/atr.py (المصدر الموحّد الوحيد).
-        لو فيه محتاج API قائمة (Tuple/List) بيُفضّل استيراد canonical مباشرةً.
+        Delegates to `analyzers.indicators.calc_atr` (the project SSOT).
+        Returns 0.0 when canonical returns None (insufficient data),
+        preserving this method's pre-existing float contract.
         """
-        n = min(len(highs), len(lows), len(closes))
-        if n < 2:
-            return 0.0
-
-        tr_values: list[float] = []
-        for i in range(1, n):
-            tr1 = highs[i] - lows[i]
-            tr2 = abs(highs[i] - closes[i - 1])
-            tr3 = abs(lows[i] - closes[i - 1])
-            tr = max(tr1, tr2, tr3)
-            tr_values.append(tr)
-
-        if not tr_values:
-            return 0.0
-
-        if len(tr_values) < period:
-            # لو الداتا أقل من المطلوب نرجّع متوسط اللي موجود
-            return sum(tr_values) / len(tr_values)
-
-        # Wilder's smoothing (canonical — لا SMA).
-        # seed = simple average of first `period` TRs, then recursive smoothing.
-        atr = sum(tr_values[:period]) / period
-        for i in range(period, len(tr_values)):
-            atr = (atr * (period - 1) + tr_values[i]) / period
-        return round(atr, 4)
+        from analyzers.indicators import calc_atr as _canonical_calc_atr
+        result = _canonical_calc_atr(highs, lows, closes, period)
+        return result if result is not None else 0.0
 
     # ---------- ADX ----------
     @staticmethod
