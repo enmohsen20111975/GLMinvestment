@@ -36,6 +36,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import { existsSync } from 'fs';
+// ─── PKG3-ROUND2 (Rule 20: Python = brain; Rule 67: SSOT) ──────────────
+// Before: this route opened stocks.db DIRECTLY in the Node route file with
+//         `openDb('stocks.db').prepare('SELECT current_price FROM stocks WHERE ticker = ?')`.
+//         That bypassed the canonical resolution chain (stocks.db → data_engine
+//         → vps_api) and gave no source-stamping, no caching, no audit trail.
+// After: the canonical current_price is fetched via `getCanonicalPrice()`
+//        (Rule 67 SSOT) wrapped in `cache.getOrCompute()` (TTL=60s, LRU).
+//        If no canonical price exists → null (Rule 27 NO-FAKE-DATA) → the
+//        depth route falls back to the latest intraday tick price, and if
+//        that's also missing → "—" empty response (no fabricated price).
+import { getCanonicalPrice } from '@/lib/canonical-price';
+import { cache } from '@/lib/cache-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -161,21 +173,26 @@ export async function GET(
   };
 
   try {
-    // ---------- 1. Current price from stocks.db ----------
+    // ---------- 1. Canonical current_price (PKG3-ROUND2 — Rule 67 SSOT) ----------
+    // Before: route opened stocks.db DIRECTLY (`SELECT current_price FROM
+    //         stocks WHERE ticker = ?`) — Rule 20 violation.
+    // After: canonical-price adapter (stocks.db → data_engine → vps_api)
+    //        wrapped in cache.getOrCompute (TTL=60s, LRU — matches Python).
     let currentPrice = 0;
-    let stocksDb: Database.Database | null = null;
     try {
-      stocksDb = openDb('stocks.db');
-      const row = stocksDb
-        .prepare('SELECT current_price FROM stocks WHERE ticker = ? LIMIT 1')
-        .get(rawTicker) as { current_price?: number | null } | undefined;
-      if (row?.current_price) {
-        currentPrice = safeNum(row.current_price);
+      const canonical = await cache.getOrCompute(
+        `canonical_price:${rawTicker}`,
+        () => getCanonicalPrice(rawTicker, { allowLive: false }),
+        60_000,
+      );
+      if (canonical && Number.isFinite(canonical.value) && canonical.value > 0) {
+        currentPrice = canonical.value;
       }
-      stocksDb.close();
     } catch (e) {
-      try { stocksDb?.close(); } catch { /* ignore - safe-by-design */ }
-      console.warn(`[depth] stocks.db lookup failed for ${rawTicker}:`, e instanceof Error ? e.message : e);
+      console.warn(
+        `[depth] canonical-price lookup failed for ${rawTicker}:`,
+        e instanceof Error ? e.message : e,
+      );
     }
 
     // ---------- 2. Intraday ticks ----------
