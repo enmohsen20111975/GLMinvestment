@@ -86,20 +86,26 @@ export async function GET(
   const promises: Promise<void>[] = [];
 
   // 1. Deep Analysis (Python) — basic, price, technical, history, news, predictions, hunter, board
+  // ALPHA-3-DEEP-ANALYSIS-SPEED: lowered timeout 30s → 15s. Python now caches
+  // the full response at TTL=60s + price_history at TTL=300s, so a cold call
+  // completes in <1s on cache hit and ~1-2s on cache miss. 15s is generous.
+  // If Python still doesn't answer → the getUnifiedStockData() fallback below
+  // kicks in (SQLite-direct via better-sqlite3) and the chart renders from
+  // canonical data instead of staying empty.
   promises.push(
     fetch(`${PYTHON_BACKEND}/api/stock/deep-analysis?ticker=${encodeURIComponent(tickerUpper)}&market=${encodeURIComponent(market)}`, {
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(15000),
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     })
       .then(async (res) => {
         if (!res.ok) {
-          response.errors.push(`deep-analysis: HTTP ${res.status}`);
+          response.errors.push(`deep-analysis: HTTP ${res.status} (fallback to SQLite via unified)`);
           return;
         }
         const data = await res.json();
         if (data.success === false) {
-          response.errors.push(`deep-analysis: ${data.error || 'failed'}`);
+          response.errors.push(`deep-analysis: ${data.error || 'failed'} (fallback to SQLite via unified)`);
           return;
         }
         response.basic = data.basic_info;
@@ -113,7 +119,13 @@ export async function GET(
         response.board = data.board_analysis;
       })
       .catch((e) => {
-        response.errors.push(`deep-analysis: ${e instanceof Error ? e.message : 'fetch failed'}`);
+        const msg = e instanceof Error ? e.message : 'fetch failed';
+        const isTimeout = /timeout|aborted|abort/i.test(msg);
+        response.errors.push(
+          isTimeout
+            ? `deep-analysis: timeout (>15s) — falling back to SQLite via unified`
+            : `deep-analysis: ${msg} (fallback to SQLite via unified)`
+        );
       })
   );
 
@@ -126,9 +138,13 @@ export async function GET(
   // elsewhere) is still overridden with canonical signal in the UNIFIED-DATA-OVERRIDE block.
 
   // 3. Professional Analysis (Python)
+  // ALPHA-3-DEEP-ANALYSIS-SPEED: also reduced 30s → 15s for parity with the
+  // deep-analysis timeout — Promise.allSettled waits for ALL promises, so
+  // keeping professional at 30s would still cap the comprehensive endpoint
+  // at 30s even if deep-analysis returned in <1s.
   promises.push(
     fetch(`${PYTHON_BACKEND}/api/professional-analysis/${encodeURIComponent(tickerUpper)}`, {
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(15000),
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     })
