@@ -487,7 +487,23 @@ export function UnifiedPublishButton({
         },
         vision_bullet_points: [
           // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — prefer prediction.entry_price
-          `نطاق الدخول الآمن: ${unified?.prediction?.entry_price != null ? `${safeToFixed(unified.prediction.entry_price)} ج.م` : (pData.entryZoneLow && pData.entryZoneHigh ? `${pData.entryZoneLow} إلى ${pData.entryZoneHigh} ج.م` : 'قرب مستويات الدعم')}`,
+          (() => {
+            const entry = unified?.prediction?.entry_price != null ? Number(unified.prediction.entry_price) : null;
+            if (entry != null && entry > 0) {
+              if (current > entry * 1.03) {
+                const pctAbove = (((current - entry) / entry) * 100).toFixed(1);
+                return `حالة الدخول: السعر تحرك أعلى سعر الشراء المقترح (+${pctAbove}% من ${safeToFixed(entry)} ج.م) — التزام بالخطة دون مطاردة`;
+              }
+              return `سعر الدخول المقترح: ${safeToFixed(entry)} ج.م`;
+            }
+            if (pData.entryZoneLow && pData.entryZoneHigh && pData.entryZoneLow !== pData.entryZoneHigh) {
+              return `نطاق الدخول الآمن: ${pData.entryZoneLow} إلى ${pData.entryZoneHigh} ج.م`;
+            }
+            if (pData.entryZoneLow) {
+              return `سعر الدخول المقترح: ${pData.entryZoneLow} ج.م`;
+            }
+            return 'قرب مستويات الدعم الفنية';
+          })(),
           pData.rsi ? `مؤشر القوة النسبية RSI عند ${pData.rsi} (${pData.rsi < 35 ? 'تشبع بيعي / فرصة ارتداد' : pData.rsi > 65 ? 'تشبع شرائي' : 'منطقة توازن'})` : 'مؤشر الزخم يتماشى مع حركة السيولة',
           pData.stopLoss ? `وقف الخسارة الهيكلي محدد بدقة عند ${pData.stopLoss} ج.م` : 'إدارة المخاطر والالتزام بوقف الخسارة أولوية',
           'مراقبة أحجام التداول والسيولة المؤسسية قبل اتخاذ القرار',

@@ -657,17 +657,69 @@ export function formatProfessionalAnalysis(
   const fmtPrice = (n: number | null | undefined): string =>
     n == null || isNaN(n as number) ? '—' : (Number(n)).toFixed(2);
 
+  // ─── Financial Realism & No-Chase Guard (Fixed by GM) ─────────────
+  // If price has already moved past entry by >3%, or recommendation is HOLD,
+  // do NOT present historical entry as a "safe current buy zone"!
+  const isPastEntry =
+    lastClose != null && entryHigh != null && lastClose > entryHigh * 1.03;
+  const gainFromEntry =
+    lastClose != null && entryLow != null && entryLow > 0
+      ? ((lastClose - entryLow) / entryLow) * 100
+      : null;
+
+  // Compute live Risk:Reward from current price (to protect traders from chasing)
+  let rrFromCurrent: string | null = null;
+  if (lastClose != null && target1 != null && stopLoss != null) {
+    const upside = target1 - lastClose;
+    const downside = lastClose - stopLoss;
+    if (upside > 0 && downside > 0) {
+      rrFromCurrent = (upside / downside).toFixed(2);
+    }
+  }
+
+  // Wyckoff contextual explanation (if overbought MFI + distribution)
+  let wyckoffExplained = wyckoff;
+  if (
+    detail?.stats?.mfi != null &&
+    detail.stats.mfi >= 80 &&
+    (wyckoff.includes('توزيع') || wyckoff.includes('تصريف') || wyckoff.includes('قمة'))
+  ) {
+    wyckoffExplained = `${wyckoff} — (ذروة شرائية Buying Climax واستغلال السيولة المفرطة للتصريف عند القمة)`;
+  }
+
   const lines: string[] = [];
   lines.push(`📊 تقرير رادار السيولة وصانع السوق | ${headerName}${headerSuffix}`);
   lines.push('━━━━━━━━━━━━━━━━━━━━');
   lines.push(`🔹 السعر الحالي: ${fmtPrice(lastClose)} ج.م`);
   lines.push(`🔹 حالة السهم: ${status}`);
-  lines.push(`🔹 سلوك صانع السوق (Wyckoff): ${wyckoff}`);
+  lines.push(`🔹 سلوك صانع السوق (Wyckoff): ${wyckoffExplained}`);
   lines.push(`🔹 مؤشر تدفق السيولة MFI: ${mfiLabel} - ${flow}`);
   lines.push(`🔹 القطاع: ${sectorAr}`);
-  lines.push(`🔹 نطاق الدخول الآمن: من ${fmtPrice(entryLow)} إلى ${fmtPrice(entryHigh)} ج.م`);
+
+  // Entry zone rendering: never output "من X إلى X" for identical numbers!
+  if (isPastEntry || recommendation === 'HOLD') {
+    lines.push(
+      `🔹 حالة الدخول: تجاوز نقطة الشراء ${gainFromEntry != null ? `(+${gainFromEntry.toFixed(1)}% من سعر الدخول ${fmtPrice(entryLow)} ج.م)` : `(${fmtPrice(entryLow)} ج.م)`} — لا يُنصح بفتح صفقات جديدة (احتفاظ فقط)`,
+    );
+  } else if (entryLow != null && entryHigh != null) {
+    if (Math.abs(entryLow - entryHigh) < 0.01) {
+      lines.push(
+        `🔹 سعر الارتكاز للدخول: ${fmtPrice(entryLow)} ج.م (نطاق آمن ${fmtPrice(entryLow * 0.99)} — ${fmtPrice(entryLow * 1.01)} ج.م)`,
+      );
+    } else {
+      lines.push(`🔹 نطاق الدخول الآمن: من ${fmtPrice(entryLow)} إلى ${fmtPrice(entryHigh)} ج.م`);
+    }
+  } else {
+    lines.push(`🔹 نطاق الدخول: —`);
+  }
+
   lines.push(`🔹 مستهدفات الحركة: هدف أول ${fmtPrice(target1)} ج.م | هدف ثانٍ ${fmtPrice(target2)} ج.م`);
   lines.push(`🔹 وقف الخسارة الفولاذي: ${fmtPrice(stopLoss)} ج.م (كسر بإغلاق)`);
+
+  if (rrFromCurrent != null && isPastEntry) {
+    lines.push(`⚠️ نسبة العائد للمخاطرة الحالية: ${rrFromCurrent} : 1 (مخاطرة غير متكافئة للمشتري الجديد عند ${fmtPrice(lastClose)} ج.م)`);
+  }
+
   lines.push('━━━━━━━━━━━━━━━━━━━━');
   lines.push(`💡 رؤية المحلل: ${recommendation}`);
   lines.push('📌 منصة GLM Investment — نظام كشف السيولة الذكية');
