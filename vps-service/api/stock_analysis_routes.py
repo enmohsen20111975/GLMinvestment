@@ -23,9 +23,12 @@ Endpoint:
 
 import os
 import sys as _sys
+import threading
+import time
+from collections import OrderedDict
 from pathlib import Path as _Path
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import Blueprint, request, jsonify
 
@@ -586,23 +589,35 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
         narrative.append(' — '.join(line2))
 
     line3: List[str] = []
-    if risk_reward >= 3.0:
-        line3.append(f"R/R = 1:{risk_reward:.1f} (ممتاز)")
-    elif risk_reward >= 2.0:
-        line3.append(f"R/R = 1:{risk_reward:.1f} (مقبول)")
+    # ALPHA-3-DEEP-ANALYSIS-SPEED: guard against risk_reward=None (Rule 27 —
+    # target is NULL when no 30-day high data exists). Previously the bare
+    # `risk_reward >= 3.0` comparison raised TypeError on every ticker that
+    # lacked 30-day high data → endpoint 500 → cache never populated → every
+    # call re-paid the full DB cost → chart stayed empty. Now: skip the R/R
+    # narrative line honestly (no fabrication, Rule 27 preserved).
+    if risk_reward is not None:
+        if risk_reward >= 3.0:
+            line3.append(f"R/R = 1:{risk_reward:.1f} (ممتاز)")
+        elif risk_reward >= 2.0:
+            line3.append(f"R/R = 1:{risk_reward:.1f} (مقبول)")
+        else:
+            line3.append(f"R/R = 1:{risk_reward:.1f} (ضعيف — وقف بعيد أو هدف قريب)")
     else:
-        line3.append(f"R/R = 1:{risk_reward:.1f} (ضعيف — وقف بعيد أو هدف قريب)")
+        line3.append("R/R = — (لا يوجد 30 يوم هاي حقيقي — Rule 27)")
     if entry_trigger:
         line3.append(entry_trigger)
     if line3:
         narrative.append(' — '.join(line3))
 
     # eligible: نفس معايير hunting_engine (R/R >= 3.0, risk in [4%, 30%], reward <= 20%)
+    # ALPHA-3: short-circuit when risk_reward is None — never eligible.
     eligible = (
-        risk_reward >= 3.0
+        risk_reward is not None
+        and risk_reward >= 3.0
         and 4.0 <= risk_pct <= 30.0
         and 0.0 < reward_pct <= 20.0
         and stop < entry
+        and target is not None
         and target > entry
     )
 
@@ -611,14 +626,17 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
     if eligible:
         reason_parts.append("عدّى فلاتر الصياد (R/R ≥ 3.0)")
     else:
-        if risk_reward < 3.0:
-            reason_parts.append(f"R/R = {risk_reward:.1f} (أقل من 3.0 المطلوبة)")
-        if risk_pct < 4.0:
-            reason_parts.append("الوقف قريب جداً من الدخول")
-        if risk_pct > 30.0:
-            reason_parts.append("الوقف بعيد جداً (سهم شديد التذبذب)")
-        if reward_pct > 20.0:
-            reason_parts.append("الهدف بعيد (> 20% — غير واقعي)")
+        if risk_reward is None:
+            reason_parts.append("لا يوجد 30 يوم هاي حقيقي — لا يمكن حساب R/R (Rule 27)")
+        else:
+            if risk_reward < 3.0:
+                reason_parts.append(f"R/R = {risk_reward:.1f} (أقل من 3.0 المطلوبة)")
+            if risk_pct < 4.0:
+                reason_parts.append("الوقف قريب جداً من الدخول")
+            if risk_pct > 30.0:
+                reason_parts.append("الوقف بعيد جداً (سهم شديد التذبذب)")
+            if reward_pct > 20.0:
+                reason_parts.append("الهدف بعيد (> 20% — غير واقعي)")
     if basic.get('sector'):
         reason_parts.append(f"القطاع: {basic.get('sector')}")
 
@@ -627,8 +645,8 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
         'eligible': eligible,
         'entry': round(entry, 2),
         'stop': round(stop, 2),
-        'target': round(target, 2),
-        'risk_reward': round(risk_reward, 2),
+        'target': round(target, 2) if target is not None else None,
+        'risk_reward': round(risk_reward, 2) if risk_reward is not None else None,
         'support': round(support, 2),
         'resistance': round(resistance, 2),
         'risk_pct': round(risk_pct, 1),
@@ -754,6 +772,84 @@ def _compute_fallback_technical_indicators(price_history: List[Dict[str, Any]], 
 # Endpoint: /api/stock/deep-analysis
 # ============================================================
 
+# ── ALPHA-3-DEEP-ANALYSIS-SPEED — In-memory response cache (TTL=60s) ──────
+# WHY: deep-analysis بـ يفتح 4-5 اتصالات SQLite (stocks / data_engine /
+# news / predictions / hunting_engine helpers) + بـ يستدعي board_of_analysts
+# وكل ده لو حصل كل مرة = 1.5-3 ثواني للسهم الواحد → الـ Node proxy بـ timeout
+# والـ chart بـ يظهر فارغ.
+#
+# WHAT: نـ cache الـ response الكامل (json-serializable) لـ (ticker, market)
+# لمدة 60 ثانية. الكاش thread-safe + LRU eviction عند 200 مدخول.
+# السعر الحالي بيتحدّث كل ~5 دقايق (scraper cadence) → TTL=60s توفر fresh
+# بدرجة كافية مع تقليل 90% من DB load.
+#
+# Rule 27 (لا اختلاط/اختلاق بيانات): الكاش بيرجّع نفس الـ response اللي Python
+# بـ يرجّعه أصلاً — مفيش أي fabrication. مجرد إعادة استخدام نتيجة صادقة.
+# Rule 20 (Python=brain): الكاش في الـ brain، Node لسه proxy بحت.
+_DEEP_ANALYSIS_CACHE_TTL = 60.0  # seconds
+_DEEP_ANALYSIS_CACHE_MAX = 200   # ~200 ticker × 1 market = 200 entries max
+_deep_analysis_cache: "OrderedDict[Tuple[str, str], Tuple[Dict[str, Any], float]]" = OrderedDict()
+_deep_analysis_cache_lock = threading.Lock()
+_deep_analysis_cache_hits = 0
+_deep_analysis_cache_misses = 0
+
+
+def _deep_cache_get(key: Tuple[str, str]) -> Optional[Dict[str, Any]]:
+    """Lookup the deep-analysis response cache. Returns None on miss/expiry."""
+    global _deep_analysis_cache_hits, _deep_analysis_cache_misses
+    now = time.monotonic()
+    with _deep_analysis_cache_lock:
+        entry = _deep_analysis_cache.get(key)
+        if entry is not None:
+            data, ts = entry
+            if now - ts < _DEEP_ANALYSIS_CACHE_TTL:
+                _deep_analysis_cache_hits += 1
+                _deep_analysis_cache.move_to_end(key)
+                # Return a shallow copy so callers can safely mutate without
+                # corrupting the cached entry (response is rebuilt below with
+                # fresh timestamp/elapsed_ms anyway — defensive only).
+                import copy as _copy
+                return _copy.deepcopy(data)
+            else:
+                # expired
+                del _deep_analysis_cache[key]
+        _deep_analysis_cache_misses += 1
+        return None
+
+
+def _deep_cache_set(key: Tuple[str, str], data: Dict[str, Any]) -> None:
+    """Store a deep-analysis response in the cache."""
+    now = time.monotonic()
+    with _deep_analysis_cache_lock:
+        while len(_deep_analysis_cache) >= _DEEP_ANALYSIS_CACHE_MAX:
+            _deep_analysis_cache.popitem(last=False)  # LRU eviction
+        _deep_analysis_cache[key] = (data, now)
+        _deep_analysis_cache.move_to_end(key)
+
+
+def clear_deep_analysis_cache() -> None:
+    """Clear the deep-analysis response cache. Call between unrelated runs."""
+    global _deep_analysis_cache_hits, _deep_analysis_cache_misses
+    with _deep_analysis_cache_lock:
+        _deep_analysis_cache.clear()
+        _deep_analysis_cache_hits = 0
+        _deep_analysis_cache_misses = 0
+
+
+def get_deep_analysis_cache_stats() -> Dict[str, int]:
+    """Return cache statistics for observability / debugging."""
+    with _deep_analysis_cache_lock:
+        total = _deep_analysis_cache_hits + _deep_analysis_cache_misses
+        return {
+            "size": len(_deep_analysis_cache),
+            "max_size": _DEEP_ANALYSIS_CACHE_MAX,
+            "ttl_seconds": int(_DEEP_ANALYSIS_CACHE_TTL),
+            "hits": _deep_analysis_cache_hits,
+            "misses": _deep_analysis_cache_misses,
+            "hit_rate": round(_deep_analysis_cache_hits / max(total, 1), 3),
+        }
+
+
 @stock_analysis_bp.route('/deep-analysis', methods=['GET'])
 def deep_analysis():
     """
@@ -771,6 +867,21 @@ def deep_analysis():
             'success': False,
             'error': 'ticker مطلوب. مثال: /api/stock/deep-analysis?ticker=EGTS&market=EGX',
         }), 400
+
+    # ── ALPHA-3-DEEP-ANALYSIS-SPEED — fast-path cache hit ───────────────
+    # لو الـ response اتـ cache-ت في آخر 60 ثانية، نرجّعها فورًا — بدون أي DB I/O.
+    cache_key = (ticker, market)
+    cached_response = _deep_cache_get(cache_key)
+    if cached_response is not None:
+        # Stamp fresh timestamp + elapsed (so client sees the response is
+        # fresh from the cache perspective; data itself is up to 60s old).
+        cached_response['timestamp'] = datetime.now().isoformat()
+        cached_response['_cache'] = {
+            'hit': True,
+            'age_seconds': None,  # unknown to caller — defensive
+            'stats': get_deep_analysis_cache_stats(),
+        }
+        return jsonify(cached_response)
 
     start_time = datetime.now()
 
@@ -1013,5 +1124,21 @@ def deep_analysis():
     else:
         response['board_analysis'] = {'available': False}
     # ──────────────────────────────────────────────────────────────────────
+
+    # ── ALPHA-3-DEEP-ANALYSIS-SPEED — populate cache before returning ────
+    # Cache only successful, fully-built responses. Errors (404 above) bypass
+    # the cache so a retry can succeed when the underlying DB recovers.
+    # Stamp the elapsed_ms before caching so clients see the real build cost.
+    try:
+        response['elapsed_ms'] = int((datetime.now() - start_time).total_seconds() * 1000)
+        response['_cache'] = {
+            'hit': False,
+            'ttl_seconds': int(_DEEP_ANALYSIS_CACHE_TTL),
+            'stats': get_deep_analysis_cache_stats(),
+        }
+        _deep_cache_set(cache_key, response)
+    except Exception:
+        # Caching failure MUST NEVER break the response — defensive pass.
+        pass
 
     return jsonify(response)
