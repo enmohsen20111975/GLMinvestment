@@ -79938,6 +79938,7 @@ Stage Summary:
 - ✅ النموذج جاهز للاستخدام كـ Gatekeeper في inference مستقبلي.
 >>>>>>> 3d6d6ec (feat(BRAVO-LGBM): نموذج LightGBM لتصنيف الصفقات — Signal Gatekeeper ML)
 
+<<<<<<< HEAD
 <<<<<<< ALPHA-3-DEEP-ANALYSIS-SPEED (feat: deep-analysis cache + 15s timeout)
 
 Task ID: ALPHA-3-DEEP-ANALYSIS-SPEED
@@ -80151,3 +80152,76 @@ Stage Summary:
      نضمن إن get_defensive_stocks() ما يكسرش مع schema changes مستقبلية.
 
 >>>>>>> ALPHA-2-DEFENSIVE-STOCKS (feat: defensive stock filter for DEFENSIVE regime)
+=======
+---
+Task ID: BRAVO-UX-INSTITUTIONAL-SHIELDS
+Agent: مهندس واجهات Next.js (فريق GLM 5.2-Bravo)
+Task: بانرات حماية مؤسسية + fallback سلس + بطاقات ذكية
+
+Work Log:
+- قرأت آخر 80 سطر من worklog.md (آخر Task = BRAVO-LGBM-SIGNAL-CLASSIFIER، النموذج محفوظ في models/lgbm_signal_gatekeeper.joblib).
+- قرأت PersonaTab.tsx الأسطر 1780-1880 (منطقة الوضع الدفاعي + formatRegimeReasonAr) ثم تابعت حتى السطر 2000 لأرى بنية الـ Card الفاضية بالكامل + how previousPredictions state بيتم استخدامه في PreviousPredictionsArchive تحت الصفحة.
+- قرأت ComprehensiveStockAnalysis.tsx الأسطر 1050-1120 (ChartsTab empty state + PhaseCard) ثم تابعت لرؤية FundamentalTab (الأسطر 839-878) و QuickStatsRow (الأسطر 461-502).
+- قرأت SingleStockAnalysisView.tsx الأسطر 700-810 (chart render + fallback "لا توجد بيانات كافية") ثم تابعت لرؤية DNA section (الأسطر 1195-1235) و Footer القطاع/الثقة (الأسطر 1330-1340).
+- تحققت من bun-install.log (لا يزال في طور الـ init — tsc متوفر بالفعل في node_modules).
+- تحققت من PreviousPredictionsArchive signature في PredictionsTab.tsx (يقبل predictions + title).
+- تحققت من imports الموجودة في الملفات الثلاثة — Loader2 موجود في SingleStockAnalysisView وغير موجود في ComprehensiveStockAnalysis (أضفته).
+
+المهمة B1 — PersonaTab.tsx (Institutional Risk Shields):
+- أضفت ShieldAlert لـ imports (جانب ShieldCheck الموجود أصلاً) من lucide-react.
+- أضفت state جديد: showRecommendationsHistory (boolean، افتراضي false) — للتبديل بين البانر الدفاعي وأرشيف التوصيات السابقة.
+- أضفت early return قبل الـ main banner: لو (isDefensive && showRecommendationsHistory) → اعرض Card مستقل فيه PreviousPredictionsArchive + زر "العودة للبانر الدفاعي" + placeholder مهذب لو الأرشيف فاضي (مع Clock icon + رسالة "يتم تجميع السجل تلقائياً").
+- رقيت البانر الدفاعي:
+    * استبدلت border-amber-300 الجاف بـ bg-gradient-to-br from-amber-50 to-amber-50/30 dark:from-amber-950/30 dark:to-amber-950/10 + shadow-sm (design tokens مؤسسية).
+    * استبدلت الإيموجي الجاف بـ ShieldAlert icon داخل دائرة amber-100 + ring-2 amber-200 (هوية بصرية فاخرة).
+    * استبدلت العنوان الجاف بـ "🛡️ حماية رأس المال — الوضع الدفاعي" (font-bold text-amber-700 dark:text-amber-300).
+    * أضفت قسم "إرشادات إدارة السيولة" فيه 3 نقاط: تقليل حجم الصفقات الجديدة + التركيز على الأسهم الدفاعية + مراقبة السيولة النقدية (كل نقطة بـ bullet دائري amber-500).
+    * أضفت زر "📋 سجل التوصيات السابقة" (border-amber-300 text-amber-700) بجانب زر "تحديث الآن" — للوضع الدفاعي فقط.
+    * احتفظت بقسم "مؤشرات التحفظ الفني الحالية" (arabicReasons) كما هو — عمل formatRegimeReasonAr لم يُلمس.
+    * احتفظت بـ headline/subtext/headlineColor/emoji للـ non-defensive cases (loading, no regime) كما هو.
+    * كل البانر dir="rtl" محترم.
+
+المهمة B2 — Empty State Cards (بدل الرسائل الجافة):
+- ComprehensiveStockAnalysis.tsx ChartsTab (line 1122): استبدلت "لا توجد بيانات تاريخية متاحة للرسم" بـ Card أنيقة فيها:
+    * Loader2 (animate-spin) داخل دائرة amber-100 + ring-2 amber-200.
+    * عنوان: "📊 بانتظار تحديث الشموع التاريخية".
+    * نص: "يتم التحميل من قاعدة البيانات الاحتياطية تلقائياً — ستظهر الشموع فور توفرها."
+- SingleStockAnalysisView.tsx (line 799-817): استبدلت "لا توجد بيانات كافية لهذا السهم" بـ بطاقة فيها:
+    * Loader2 (animate-spin) داخل دائرة amber-100.
+    * عنوان: "📊 بانتظار تحديث بيانات {ticker}".
+    * نص: "يتم التحميل من قاعدة البيانات الاحتياطية تلقائياً — ستظهر الشموع فور توفرها."
+    * dir="rtl" محترم.
+
+المهمة B3 — SmartPlaceholder (بطاقات ذكية بدل —):
+- أضفت SmartPlaceholder function component inline في ComprehensiveStockAnalysis.tsx و SingleStockAnalysisView.tsx (نفس الـ implementation في الملفين):
+    * messages map: mfi, sector_ar, rsi, support, resistance, default.
+    * كل field ليه رسالة عربية مهذبة + emoji + dir="rtl".
+- استخدمته في:
+    * ComprehensiveStockAnalysis QuickStatsRow: RSI (field="rsi") و P/E (field="default").
+    * ComprehensiveStockAnalysis FundamentalTab: استبدلت 12 خانة "—" (P/E, P/B, P/S, EPS, ROE, ROA, هامش الربح, توزيعات, دين/حقوق ملكية, السيولة, القيمة الدفترية, Beta) بـ SmartPlaceholder field="default".
+    * SingleStockAnalysisView DNA section: volatility, best_weekday, worst_weekday (field="default") + القطاع (field="sector_ar") + الثقة (field="default").
+- غيّرت type الـ value في stats/items من string إلى React.ReactNode عشان يقبل either string أو JSX.
+- أضفت dir="rtl" على الـ containers اللي بتعمل render للقيم.
+
+التحقق من TypeScript:
+- شغّلت npx tsc --noEmit وعدّيت الأخطاء:
+    * قبل التعديلات: PersonaTab=31, SingleStockAnalysisView=27, ComprehensiveStockAnalysis=195 (pre-existing).
+    * بعد التعديلات: PersonaTab=31, SingleStockAnalysisView=27, ComprehensiveStockAnalysis=195.
+    * النتيجة: 0 أخطاء TypeScript جديدة من تعديلاتي (كل الأخطاء pre-existing في Record<string, unknown> access patterns و FullAnalysisResponse typing).
+- لاحظت أن tsconfig.json اتعمل عليه تعديل تلقائي (jsx: preserve → react-jsx) أثناء الـ bun install — استعدته بـ git checkout tsconfig.json (مش من scope المهام).
+- لم أشغّل dev server (حسب التعليمات — المدير سيتولى التحقق النهائي).
+
+Stage Summary:
+- PersonaTab.tsx: +120 / -8 (ال diff الفعلي) — بانر دفاعي مؤسسي فاخر + زر تبديل لسجل التوصيات السابقة + state جديد + ShieldAlert import. formatRegimeReasonAr لم يُلمس.
+- SingleStockAnalysisView.tsx: +60 / -6 — بطاقة بانتظار التحديث بدل "لا توجد بيانات كافية" + SmartPlaceholder component + 5 مواقع مستبدلة (volatility/best_weekday/worst_weekday/sector/confidence).
+- ComprehensiveStockAnalysis.tsx: +95 / -15 — Loader2 import + SmartPlaceholder component + ChartsTab empty state أنيقة + RSI/P/E في QuickStatsRow بـ SmartPlaceholder + 12 خانة في FundamentalTab بـ SmartPlaceholder.
+- Total: 241 insertions, 34 deletions عبر 3 ملفات.
+- Rule 27 ✅ (لا اختلاق بيانات — البطاقات تشرح الحالة فقط).
+- Rule 20 ✅ (لا حساب مالي في الواجهة).
+- ✅ TypeScript: 0 أخطاء جديدة.
+- ✅ RTL محترم (dir="rtl" على كل البطاقات الجديدة).
+- ✅ Design tokens (bg-amber-50, border-amber-200, text-muted-foreground — لا hex colors).
+- ✅ lucide-react icons (ShieldAlert, ShieldCheck, Loader2, Clock).
+- ⛔ لا commit/push.
+- ⛔ لا حذف منطق مالي أو fallback موجود.
+>>>>>>> 45bfcb6 (feat(BRAVO-UX): حماية مؤسسية + fallback سلس + بطاقات ذكية)

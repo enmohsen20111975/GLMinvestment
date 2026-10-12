@@ -268,6 +268,28 @@ export interface SingleStockAnalysisViewProps {
   onTickerChange?: (newTicker: string) => void;
 }
 
+// ============================================================================
+// BRAVO-UX (Task B3): SmartPlaceholder — بطاقة ذكية بدل الشرطة الفارغة (—)
+// ============================================================================
+// الفلسفة: لما القيمة التحليلية تكون فاضية (RSI/MFI/Sector/Support/Resistance)
+// نعرض رسالة تشرح الحالة بدل "—" جافة. ده توضيح سبب الفراغ، مش اختلاق (Rule 27).
+function SmartPlaceholder({ field, label }: { field: string; label?: string }) {
+  const messages: Record<string, string> = {
+    mfi: '🔄 مؤشر MFI — بانتظار بيانات كافية',
+    sector_ar: '📊 القطاع — قيد التصنيف',
+    rsi: '📈 RSI — يحسب من الشموع',
+    support: '🎯 الدعم — تحليل تلقائي',
+    resistance: '🎯 المقاومة — تحليل تلقائي',
+    default: '⏳ قيد التحديث',
+  };
+  const msg = messages[field] || messages.default;
+  return (
+    <span className="text-xs text-muted-foreground italic" dir="rtl">
+      {label ? `${label}: ` : ''}{msg}
+    </span>
+  );
+}
+
 export function SingleStockAnalysisView({
   initialTicker,
   predictionContext,
@@ -775,8 +797,22 @@ export function SingleStockAnalysisView({
                 fusionMetrics={(data as Record<string, unknown>).fusion_metrics}
               />
             ) : (
-              <div className="flex flex-col justify-center items-center h-full min-h-[440px] text-muted-foreground text-xs">
-                لا توجد بيانات كافية لهذا السهم
+              // BRAVO-UX (Task B2): بدل الرسالة الجافة "لا توجد بيانات كافية"،
+              // نعرض بطاقة أنيقة فيها spinner + رسالة "بانتظار التحديث" — تعكس
+              // الـ fallback المعماري. لا اختلاق بيانات (Rule 27).
+              <div
+                className="flex flex-col justify-center items-center h-full min-h-[440px] gap-3 p-4 text-center"
+                dir="rtl"
+              >
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/40 ring-2 ring-amber-200 dark:ring-amber-800/60">
+                  <Loader2 className="h-6 w-6 text-amber-600 dark:text-amber-400 animate-spin" />
+                </div>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  📊 بانتظار تحديث بيانات {ticker}
+                </p>
+                <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                  يتم التحميل من قاعدة البيانات الاحتياطية تلقائيًا — ستظهر الشموع فور توفرها.
+                </p>
               </div>
             )}
           </div>
@@ -1159,7 +1195,10 @@ export function SingleStockAnalysisView({
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                           <div className="p-1.5 rounded bg-muted/40 border border-border/40">
                             <span className="text-[10px] text-muted-foreground block">التذبذب</span>
-                            <span className="font-bold text-foreground text-[11px]">{dna.volatility || '—'}</span>
+                            {/* BRAVO-UX (B3): SmartPlaceholder لو القيمة فاضية */}
+                            <span className="font-bold text-foreground text-[11px]">
+                              {dna.volatility ? dna.volatility : <SmartPlaceholder field="default" />}
+                            </span>
                           </div>
                           <div className="p-1.5 rounded bg-muted/40 border border-border/40">
                             <span className="text-[10px] text-muted-foreground block">العائد السنوي</span>
@@ -1181,13 +1220,13 @@ export function SingleStockAnalysisView({
                           <div className="p-1.5 rounded bg-emerald-500/5 border border-emerald-500/20">
                             <span className="text-[10px] text-muted-foreground block">أفضل يوم</span>
                             <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">
-                              {dna.best_weekday || '—'}
+                              {dna.best_weekday ? dna.best_weekday : <SmartPlaceholder field="default" />}
                             </span>
                           </div>
                           <div className="p-1.5 rounded bg-rose-500/5 border border-rose-500/20">
                             <span className="text-[10px] text-muted-foreground block">أضعف يوم</span>
                             <span className="font-bold text-rose-600 dark:text-rose-400 text-[11px]">
-                              {dna.worst_weekday || '—'}
+                              {dna.worst_weekday ? dna.worst_weekday : <SmartPlaceholder field="default" />}
                             </span>
                           </div>
                         </div>
@@ -1294,9 +1333,16 @@ export function SingleStockAnalysisView({
 
                         {/* Footer */}
                         <div className="text-[9px] text-muted-foreground text-center pt-1 border-t border-border/40">
-                          القطاع: <strong className="text-foreground">{dna.sector || '—'}</strong> | عينة:{' '}
+                          {/* BRAVO-UX (B3): القطاع → SmartPlaceholder sector_ar */}
+                          القطاع:{' '}
+                          <strong className="text-foreground">
+                            {dna.sector ? dna.sector : <SmartPlaceholder field="sector_ar" />}
+                          </strong>{' '}
+                          | عينة:{' '}
                           <strong className="text-foreground">{dna.sample_months ?? 0}</strong> شهر | الثقة:{' '}
-                          <strong className="text-foreground">{dna.confidence || '—'}</strong>
+                          <strong className="text-foreground">
+                            {dna.confidence ? dna.confidence : <SmartPlaceholder field="default" />}
+                          </strong>
                         </div>
                       </CardContent>
                     </Card>

@@ -22,6 +22,7 @@ import {
   TrendingUp, TrendingDown, Activity, BarChart3, DollarSign,
   Shield, Target, Newspaper, Brain, Zap, Award, AlertTriangle,
   RefreshCw, Clock, ChevronRight, Gauge, PieChart, LineChart as LineChartIcon,
+  Loader2,
 } from 'lucide-react';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -145,6 +146,37 @@ function signalBadge(signal: string): { label: string; className: string } {
   if (s.includes('sell')) return { label: 'بيع', className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' };
   if (s.includes('reduce')) return { label: 'تخفيض', className: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' };
   return { label: 'انتظار', className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' };
+}
+
+// ============================================================================
+// BRAVO-UX (Task B3): SmartPlaceholder — بطاقة ذكية بدل الشرطة الفارغة (—)
+// ============================================================================
+// الفلسفة: القيم الفارغة في الجداول التحليلية (RSI/MFI/Support/Resistance/Sector)
+// لازم تتعرض برسالة تشرح الحالة بدل ما المستخدم يشوف "—" جافة. ده مش اختلاق بيانات
+// (Rule 27) — ده توضيح سبب الفراغ + الوقت المتوقع للتحديث.
+//
+// الأنماط:
+// - mfi        → "🔄 مؤشر MFI — بانتظار بيانات كافية"
+// - sector_ar  → "📊 القطاع — قيد التصنيف"
+// - rsi        → "📈 RSI — يحسب من الشموع"
+// - support    → "🎯 الدعم — تحليل تلقائي"
+// - resistance → "🎯 المقاومة — تحليل تلقائي"
+// - default    → "⏳ قيد التحديث"
+function SmartPlaceholder({ field, label }: { field: string; label?: string }) {
+  const messages: Record<string, string> = {
+    mfi: '🔄 مؤشر MFI — بانتظار بيانات كافية',
+    sector_ar: '📊 القطاع — قيد التصنيف',
+    rsi: '📈 RSI — يحسب من الشموع',
+    support: '🎯 الدعم — تحليل تلقائي',
+    resistance: '🎯 المقاومة — تحليل تلقائي',
+    default: '⏳ قيد التحديث',
+  };
+  const msg = messages[field] || messages.default;
+  return (
+    <span className="text-xs text-muted-foreground italic" dir="rtl">
+      {label ? `${label}: ` : ''}{msg}
+    </span>
+  );
 }
 
 // ============================================================================
@@ -459,7 +491,15 @@ function StockHeaderBar({
 // ============================================================================
 
 function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown> | null | undefined; tech: Record<string, unknown> | null | undefined; metrics: Record<string, unknown> | null | undefined }) {
-  const stats = [
+  // BRAVO-UX (Task B3): value يصير React.ReactNode عشان نقدر نعرض SmartPlaceholder
+  // للقيم الفارغة (RSI/P/E) بدل الشرطة الجافة "—".
+  const stats: Array<{
+    label: string;
+    value: React.ReactNode;
+    sub: React.ReactNode;
+    icon: typeof DollarSign;
+    color: string;
+  }> = [
     {
       label: 'السعر',
       value: formatPrice(price.current_price),
@@ -469,14 +509,14 @@ function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown
     },
     {
       label: 'RSI (14)',
-      value: tech.rsi ? (tech.rsi ?? 0).toFixed(1) : '—',
+      value: tech.rsi ? (tech.rsi ?? 0).toFixed(1) : <SmartPlaceholder field="rsi" />,
       sub: tech.rsi > 70 ? 'تشبع شرائي' : tech.rsi < 30 ? 'تشبع بيعي' : 'محايد',
       icon: Activity,
       color: tech.rsi > 70 ? 'text-red-500' : tech.rsi < 30 ? 'text-emerald-500' : 'text-amber-500',
     },
     {
       label: 'P/E',
-      value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : '—',
+      value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : <SmartPlaceholder field="default" />,
       sub: metrics.pe_ratio < 15 ? 'رخيص' : metrics.pe_ratio > 30 ? 'غالي' : 'عادل',
       icon: BarChart3,
       color: 'text-purple-600 dark:text-purple-400',
@@ -492,7 +532,7 @@ function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown
               <span className="text-xs text-muted-foreground">{s.label}</span>
               <s.icon className={cn('w-4 h-4', s.color)} />
             </div>
-            <div className={cn('text-lg font-bold tabular-nums', s.color)}>{s.value}</div>
+            <div className={cn('text-lg font-bold tabular-nums', s.color)} dir="rtl">{s.value}</div>
             <div className="text-[10px] text-muted-foreground mt-0.5">{s.sub}</div>
           </CardContent>
         </Card>
@@ -805,20 +845,22 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
 // ============================================================================
 
 function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> | null | undefined; basic: Record<string, unknown> | null | undefined }) {
-  const items = [
+  // BRAVO-UX (Task B3): value يصير React.ReactNode عشان نعرض SmartPlaceholder للقيم الفارغة
+  // بدل الشرطة "—" الجافة. القيم الفارغة هنا مالية عامة → field="default".
+  const items: Array<{ label: string; value: React.ReactNode; icon: typeof DollarSign }> = [
     { label: 'القيمة السوقية', value: formatMarketCap(metrics.market_cap), icon: DollarSign },
-    { label: 'P/E (السعر/الربح)', value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : '—', icon: BarChart3 },
-    { label: 'P/B (السعر/القيمة الدفترية)', value: metrics.pb_ratio ? (metrics.pb_ratio ?? 0).toFixed(2) : '—', icon: BarChart3 },
-    { label: 'P/S (السعر/المبيعات)', value: metrics.ps_ratio ? (metrics.ps_ratio ?? 0).toFixed(2) : '—', icon: BarChart3 },
-    { label: 'EPS (ربحية السهم)', value: metrics.eps ? (metrics.eps ?? 0).toFixed(2) : '—', icon: DollarSign },
-    { label: 'ROE (العائد على حقوق الملكية)', value: metrics.roe ? `${(metrics.roe ?? 0).toFixed(1)}%` : '—', icon: TrendingUp },
-    { label: 'ROA (العائد على الأصول)', value: metrics.roa ? `${(metrics.roa ?? 0).toFixed(1)}%` : '—', icon: TrendingUp },
-    { label: 'هامش الربح', value: metrics.profit_margin ? `${(metrics.profit_margin ?? 0).toFixed(1)}%` : '—', icon: PieChart },
-    { label: 'توزيعات الأرباح', value: metrics.dividend_yield ? `${(metrics.dividend_yield ?? 0).toFixed(2)}%` : '—', icon: DollarSign },
-    { label: 'دين/حقوق ملكية', value: metrics.debt_to_equity ? (metrics.debt_to_equity ?? 0).toFixed(2) : '—', icon: Shield },
-    { label: 'السيولة (Current Ratio)', value: metrics.current_ratio ? (metrics.current_ratio ?? 0).toFixed(2) : '—', icon: Activity },
-    { label: 'القيمة الدفترية/السهم', value: metrics.book_value_per_share ? (metrics.book_value_per_share ?? 0).toFixed(2) : '—', icon: DollarSign },
-    { label: 'Beta', value: metrics.beta ? (metrics.beta ?? 0).toFixed(2) : '—', icon: Activity },
+    { label: 'P/E (السعر/الربح)', value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : <SmartPlaceholder field="default" />, icon: BarChart3 },
+    { label: 'P/B (السعر/القيمة الدفترية)', value: metrics.pb_ratio ? (metrics.pb_ratio ?? 0).toFixed(2) : <SmartPlaceholder field="default" />, icon: BarChart3 },
+    { label: 'P/S (السعر/المبيعات)', value: metrics.ps_ratio ? (metrics.ps_ratio ?? 0).toFixed(2) : <SmartPlaceholder field="default" />, icon: BarChart3 },
+    { label: 'EPS (ربحية السهم)', value: metrics.eps ? (metrics.eps ?? 0).toFixed(2) : <SmartPlaceholder field="default" />, icon: DollarSign },
+    { label: 'ROE (العائد على حقوق الملكية)', value: metrics.roe ? `${(metrics.roe ?? 0).toFixed(1)}%` : <SmartPlaceholder field="default" />, icon: TrendingUp },
+    { label: 'ROA (العائد على الأصول)', value: metrics.roa ? `${(metrics.roa ?? 0).toFixed(1)}%` : <SmartPlaceholder field="default" />, icon: TrendingUp },
+    { label: 'هامش الربح', value: metrics.profit_margin ? `${(metrics.profit_margin ?? 0).toFixed(1)}%` : <SmartPlaceholder field="default" />, icon: PieChart },
+    { label: 'توزيعات الأرباح', value: metrics.dividend_yield ? `${(metrics.dividend_yield ?? 0).toFixed(2)}%` : <SmartPlaceholder field="default" />, icon: DollarSign },
+    { label: 'دين/حقوق ملكية', value: metrics.debt_to_equity ? (metrics.debt_to_equity ?? 0).toFixed(2) : <SmartPlaceholder field="default" />, icon: Shield },
+    { label: 'السيولة (Current Ratio)', value: metrics.current_ratio ? (metrics.current_ratio ?? 0).toFixed(2) : <SmartPlaceholder field="default" />, icon: Activity },
+    { label: 'القيمة الدفترية/السهم', value: metrics.book_value_per_share ? (metrics.book_value_per_share ?? 0).toFixed(2) : <SmartPlaceholder field="default" />, icon: DollarSign },
+    { label: 'Beta', value: metrics.beta ? (metrics.beta ?? 0).toFixed(2) : <SmartPlaceholder field="default" />, icon: Activity },
   ];
 
   return (
@@ -837,7 +879,7 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
                 <item.icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="text-[10px] text-muted-foreground truncate">{item.label}</div>
-                  <div className="text-sm font-bold tabular-nums">{item.value}</div>
+                  <div className="text-sm font-bold tabular-nums" dir="rtl">{item.value}</div>
                 </div>
               </div>
             ))}
@@ -1088,11 +1130,22 @@ function PhaseCard({ title, phase }: { title: string; phase: Record<string, unkn
 // ============================================================================
 
 function ChartsTab({ priceHistory, tech }: { priceHistory: Array<Record<string, unknown>>; tech: Record<string, unknown> | null | undefined }) {
+  // BRAVO-UX (Task B2): بدل الرسالة الجافة "لا توجد بيانات تاريخية"، نعرض بطاقة أنيقة
+  // فيها spinner + رسالة "بانتظار تحديث الشموع التاريخية" — تعكس الـ fallback الذي
+  // أضافه المهندس المعماري في الـ routes (SQLite fallback). مفيش اختلاق بيانات (Rule 27).
   if (!priceHistory || priceHistory.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-8 text-center text-muted-foreground">
-          لا توجد بيانات تاريخية متاحة للرسم
+      <Card className="border-dashed border-amber-200 dark:border-amber-900/60 bg-amber-50/30 dark:bg-amber-950/10">
+        <CardContent className="p-8 text-center" dir="rtl">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/40 mb-3 ring-2 ring-amber-200 dark:ring-amber-800/60">
+            <Loader2 className="h-6 w-6 text-amber-600 dark:text-amber-400 animate-spin" />
+          </div>
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-1">
+            📊 بانتظار تحديث الشموع التاريخية
+          </p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            يتم التحميل من قاعدة البيانات الاحتياطية تلقائيًا — ستظهر الشموع فور توفرها.
+          </p>
         </CardContent>
       </Card>
     );

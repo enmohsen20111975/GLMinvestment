@@ -22,7 +22,7 @@ import {
   TrendingUp, TrendingDown, Clock, Calendar,
   BarChart3, Target, AlertTriangle, CheckCircle,
   Activity, ArrowUpRight, ArrowDownRight, Info,
-  RefreshCw, Moon, Copy, Share2, ShieldCheck, ShieldX, Crosshair, Gauge, Facebook, ArrowRight, ArrowLeft,
+  RefreshCw, Moon, Copy, Share2, ShieldCheck, ShieldAlert, ShieldX, Crosshair, Gauge, Facebook, ArrowRight, ArrowLeft,
   Bitcoin, Zap, Download, Image as ImageIcon, FileText, Camera, Loader2, X, Layers, Send
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
@@ -1385,6 +1385,10 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
   // P6-PREDICTIONS: أرشيف التوقعات السابقة (يتم عرضه أسفل الـ PersonaTableView).
   // بيتسحب من نفس /api/unified/predictions تحت مفتاح previous_predictions.
   const [previousPredictions, setPreviousPredictions] = useState<PreviousPrediction[]>([]);
+  // BRAVO-UX (Institutional Risk Shields): زر تبديل لاستعراض سجل التوصيات السابقة
+  // داخل البانر الدفاعي — بدل ما العميل يقفّل الشاشة على وضع "لا فرص"، يقدر يشوف
+  // أداء التوصيات السابقة جنب البانر. القيمة false = بانر دفاعي، true = أرشيف.
+  const [showRecommendationsHistory, setShowRecommendationsHistory] = useState(false);
   // C2-SECTOR-HEAT: قطاعات ساخنة/ميتة من الـ backend meta (للـ banner).
   const [sectorHeat, setSectorHeat] = useState<{
     hot?: Array<{ sector: string; avg_chg: number; rising_ratio: number; n: number; boost: number }>;
@@ -1858,12 +1862,105 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
       ? marketRegime.reasons.map(formatRegimeReasonAr).filter(Boolean)
       : [];
 
+    // BRAVO-UX: وضع "سجل التوصيات السابقة" داخل البانر الدفاعي — بيستبدل البانر
+    // بجدول التوصيات السابقة عشان العميل يشوف أداء المحرك بدل ما يقفّل على "لا فرص".
+    // لو الأرشيف فاضي → نعرض placeholder مهذب (مش اختلاق بيانات — Rule 27).
+    if (isDefensive && showRecommendationsHistory) {
+      return (
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20">
+          <CardContent className="p-4 space-y-3" dir="rtl">
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-amber-200/60 dark:border-amber-900/60">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <h3 className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                  📋 سجل التوصيات السابقة
+                </h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRecommendationsHistory(false)}
+                className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/40"
+              >
+                <ArrowRight className="h-4 w-4 ml-1" />
+                العودة للبانر الدفاعي
+              </Button>
+            </div>
+            {previousPredictions.length > 0 ? (
+              <PreviousPredictionsArchive
+                predictions={previousPredictions}
+                title="توصيات سابقة أثناء الأوضاع الدفاعية"
+              />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-xs space-y-2">
+                <Clock className="h-8 w-8 mx-auto opacity-50" />
+                <p>لا يوجد سجل توصيات سابقة متاح حاليًا لهذا السوق.</p>
+                <p className="text-[11px] opacity-80">
+                  يتم تجميع السجل تلقائيًا مع تاريخ التداول — تحدّث البيانات كل 15 دقيقة.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
-      <Card className={isDefensive ? 'border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-950/10' : 'border-dashed'}>
-        <CardContent className="p-8 text-center" dir="rtl">
-          <span className="text-4xl mb-3 block">{emoji}</span>
-          <p className={`text-lg font-semibold mb-2 ${headlineColor}`}>{headline}</p>
-          <p className="text-sm text-muted-foreground mb-4 max-w-xl mx-auto leading-relaxed">{subtext}</p>
+      <Card
+        className={
+          isDefensive
+            ? 'border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-amber-50/30 dark:from-amber-950/30 dark:to-amber-950/10 shadow-sm'
+            : 'border-dashed'
+        }
+      >
+        <CardContent className={isDefensive ? 'p-6 text-center' : 'p-8 text-center'} dir="rtl">
+          {/* أيقونة الوضع الدفاعي المؤسسية — ShieldAlert بدل الإيموجي الجاف */}
+          {isDefensive ? (
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/40 mb-3 ring-2 ring-amber-200 dark:ring-amber-800 shadow-sm">
+              <ShieldAlert className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+            </div>
+          ) : (
+            <span className="text-4xl mb-3 block">{emoji}</span>
+          )}
+
+          {/* العنوان الفاخر للوضع الدفاعي — يلغي الحاجة للعنوان الجاف */}
+          {isDefensive ? (
+            <h3 className="text-base font-bold mb-2 text-amber-700 dark:text-amber-300">
+              🛡️ حماية رأس المال — الوضع الدفاعي
+            </h3>
+          ) : (
+            <p className={`text-lg font-semibold mb-2 ${headlineColor}`}>{headline}</p>
+          )}
+
+          <p className="text-sm text-muted-foreground mb-4 max-w-xl mx-auto leading-relaxed">
+            {subtext}
+          </p>
+
+          {/* إرشادات إدارة السيولة — 3 نقاط واضحة (للوضع الدفاعي فقط) */}
+          {isDefensive && (
+            <div className="bg-background/80 dark:bg-background/40 border border-amber-200 dark:border-amber-900/60 rounded-xl p-4 max-w-lg mx-auto mb-4 text-right">
+              <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mb-2.5 flex items-center gap-1.5 justify-center">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                إرشادات إدارة السيولة:
+              </p>
+              <ul className="text-xs text-foreground/80 dark:text-foreground/70 space-y-1.5">
+                <li className="flex items-start gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <span>تقليل حجم الصفقات الجديدة إلى الحد الأدنى</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <span>التركيز على الأسهم الدفاعية (منخفضة التذبذب + توزيعات أرباح)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <span>مراقبة السيولة النقدية وتجنب البيع في ذعر</span>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {/* مؤشرات التحفظ الفني (الـ arabicReasons) — ناتج formatRegimeReasonAr كما هو */}
           {arabicReasons.length > 0 && (
             <div className="bg-background/80 dark:bg-background/40 border border-amber-200/60 dark:border-amber-900/60 rounded-xl p-3.5 max-w-md mx-auto mb-5 text-right">
               <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mb-2">
@@ -1884,6 +1981,17 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               <RefreshCw className="h-4 w-4 ml-2" />
               تحديث الآن
             </Button>
+            {/* زر تبديل لاستعراض سجل التوصيات السابقة (للوضع الدفاعي فقط) */}
+            {isDefensive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRecommendationsHistory(true)}
+                className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/30"
+              >
+                📋 سجل التوصيات السابقة
+              </Button>
+            )}
             <a
               href="https://invist.m2y.net"
               target="_blank"
