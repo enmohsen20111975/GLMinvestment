@@ -205,6 +205,63 @@ def get_unified_trader_levels(
     sym = ticker.upper().strip()
     levels = calculate_precise_trader_levels(sym, current_price=current_price)
 
+    # ════════════════════════════════════════════════════════════════════
+    # GLM5.2-S1-FANTASY-CAP — Apply realistic target cap BEFORE UPDATE
+    # ════════════════════════════════════════════════════════════════════
+    # 2026-10-13: 838 predictions (54%) had fantasy targets > +50% (REAC,
+    # MASR, ...). The cap clamps target_1/target_2 to realistic bounds
+    # (TP1: +12% or +1.5×ATR; TP2: +25% or +3.0×ATR; hard cap +30%) BEFORE
+    # the UPDATE statement writes them to predictions.db.
+    #
+    # Rule 27 (NO-FAKE-DATA): the ORIGINAL (uncapped) targets are preserved
+    # in `levels['target_1_original'] / target_2_original` and in
+    # `analysis_json.trader_levels_original` so the data trail is honest.
+    #
+    # Rule 67 (CALCULATION-CANONICAL): the ATR comes from
+    # `calculate_precise_trader_levels()` which uses `_calculate_atr()`
+    # from `analyzers.support_resistance_calculator` (canonical Wilder's).
+    # ════════════════════════════════════════════════════════════════════
+    try:
+        from analyzers.core_scoring_engine import apply_realistic_target_cap
+
+        _cap_entry = float(levels.get('current_price') or 0)
+        _cap_atr = float(levels.get('atr') or 0)
+        _cap_orig_t1 = float(levels.get('target_1') or 0)
+        _cap_orig_t2 = float(levels.get('target_2') or 0)
+
+        if _cap_entry > 0 and _cap_orig_t1 > 0:
+            _capped_t1 = apply_realistic_target_cap(
+                entry_price=_cap_entry,
+                target_price=_cap_orig_t1,
+                atr=_cap_atr,
+                is_high_momentum=False,  # trader_levels are conservative defaults
+                tp_level=1,
+            )
+            # Preserve original in levels dict for transparency (Rule 27)
+            if _capped_t1 < _cap_orig_t1:
+                levels['target_1_original'] = round(_cap_orig_t1, 4)
+            levels['target_1'] = _capped_t1
+
+        if _cap_entry > 0 and _cap_orig_t2 > 0:
+            _capped_t2 = apply_realistic_target_cap(
+                entry_price=_cap_entry,
+                target_price=_cap_orig_t2,
+                atr=_cap_atr,
+                is_high_momentum=False,
+                tp_level=2,
+            )
+            if _capped_t2 < _cap_orig_t2:
+                levels['target_2_original'] = round(_cap_orig_t2, 4)
+            levels['target_2'] = _capped_t2
+    except ImportError:
+        # analyzers.core_scoring_engine unavailable — fall through with
+        # uncapped levels. This is a safe degradation (the record_prediction
+        # path will apply the cap when the levels reach it through V40.2).
+        pass
+    except Exception:
+        # Defensive: cap failure MUST NOT break the UPDATE path.
+        pass
+
     if persist:
         pred_db_path = _PROJECT_ROOT / "db" / "predictions.db"
         if pred_db_path.exists():
