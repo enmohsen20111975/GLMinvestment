@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-10-12T20:47:06.578757+00:00",
+  "db_path": "/home/z/my-project/db/predictions.db",
+  "markets": {
+    "EGX": {
+      "active_predictions": 1474,
+      "accepted_tonight": 0,
+      "rejected_by_lgbm_gatekeeper": 0
+    },
+    "US": {
+      "active_predictions": 76,
+      "accepted_tonight": 0,
+      "rejected_by_lgbm_gatekeeper": 0
+    },
+    "CRYPTO": {
+      "active_predictions": 1,
+      "accepted_tonight": 0,
+      "rejected_by_lgbm_gatekeeper": 0
+    }
+  },
+  "totals": {
+    "active_predictions": 1551,
+    "accepted_tonight": 0,
+    "rejected_by_lgbm_gatekeeper": 0
+  },
+  "phases_executed": [
+    {
+      "phase": "المرحلة 1: CRYPTO (العملات الرقمية 24/7)",
+      "success": true,
+      "returncode": 0,
+      "duration_seconds": 0
+    },
+    {
+      "phase": "المرحلة 2: KSA (السوق السعودي)",
+      "success": true,
+      "returncode": 0,
+      "duration_seconds": 0
+    },
+    {
+      "phase": "المرحلة 3: US (السوق الأمريكي)",
+      "success": true,
+      "returncode": 0,
+      "duration_seconds": 0
+    },
+    {
+      "phase": "المرحلة 4a: KSE (الكويت)",
+      "success": true,
+      "returncode": 0,
+      "duration_seconds": 0
+    },
+    {
+      "phase": "المرحلة 4b: QSE (قطر)",
+      "success": true,
+      "returncode": 0,
+      "duration_seconds": 0
+    },
+    {
+      "phase": "المرحلة 5a: EGX (السوق المصري) — التوقعات",
+      "success": true,
+      "returncode": 0,
+      "duration_seconds": 0
+    },
+    {
+      "phase": "المرحلة 5b: EGX — daily_closer (إغلاق يومي)",
+      "success": true,
+      "returncode": 0,
+      "duration_seconds": 0
+    }
+  ],
+  "total_duration_seconds": 15.0,
+  "dry_run": true
+}
