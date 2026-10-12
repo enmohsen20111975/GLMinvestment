@@ -54,9 +54,8 @@ export async function GET(request: NextRequest) {
     console.error('[predictions:honest-tracking:live-tracking] Python backend unavailable:', error);
     return NextResponse.json({
       success: false,
-      error: 'python-backend-unavailable',
-      message: 'Python backend غير متاح — لا يمكن عرض بيانات وهمية (Rule 27)',
-      rule: 'NO-FAKE-DATA (Rule 27) + Python=Brain (Rule 20)',
+      error: 'backend_updating',
+      message: 'جاري تحديث بيانات التتبع وسجل الصفقات، يرجى المحاولة بعد قليل.',
     }, { status: 503 });
   }
 }

@@ -74,6 +74,17 @@ function buildPythonUrl(
   return `${PYTHON_BACKEND_URL}${path}?${params.toString()}`;
 }
 
+interface CacheEntry {
+  body: ArrayBuffer;
+  headers: [string, string][];
+  status: number;
+  statusText: string;
+  expires: number;
+}
+
+const reportsCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
+
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const typeRaw = (sp.get('type') || 'daily').toLowerCase().trim();
@@ -90,6 +101,20 @@ export async function GET(request: NextRequest) {
       },
       { status: 400 },
     );
+  }
+
+  const cacheKey = `${typeRaw}:${market}`;
+  if (!force) {
+    const cached = reportsCache.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      const responseHeaders = new Headers(cached.headers);
+      responseHeaders.set('X-Reports-Cache', 'HIT');
+      return new NextResponse(cached.body.slice(0), {
+        status: cached.status,
+        statusText: cached.statusText,
+        headers: responseHeaders,
+      });
+    }
   }
 
   const upstream = buildPythonUrl(typeRaw, market, force);
@@ -109,6 +134,7 @@ export async function GET(request: NextRequest) {
 
     // Build response headers — copy content-type, drop hop-by-hop.
     const responseHeaders = new Headers();
+    const headerEntries: [string, string][] = [];
     backendRes.headers.forEach((value, key) => {
       const lk = key.toLowerCase();
       if (
@@ -121,6 +147,7 @@ export async function GET(request: NextRequest) {
         return;
       }
       responseHeaders.set(key, value);
+      headerEntries.push([key, value]);
     });
 
     // Same-origin CORS hardening (mirror /api/proxy/* behavior).
@@ -148,6 +175,18 @@ export async function GET(request: NextRequest) {
     );
 
     const body = await backendRes.arrayBuffer();
+
+    // Cache successful responses for 3 minutes
+    if (backendRes.status === 200) {
+      reportsCache.set(cacheKey, {
+        body,
+        headers: headerEntries,
+        status: backendRes.status,
+        statusText: backendRes.statusText,
+        expires: Date.now() + CACHE_TTL_MS,
+      });
+    }
+
     return new NextResponse(body, {
       status: backendRes.status,
       statusText: backendRes.statusText,
@@ -164,9 +203,9 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: aborted
-          ? 'انتهت مهلة الاتصال بمحرك التقارير (Python). حاول مرة أخرى.'
-          : 'تعذّر الوصول إلى محرك التقارير (Python backend). تأكد من تشغيله.',
-        error_code: aborted ? 'timeout' : 'backend_unavailable',
+          ? 'استغرق تحميل بيانات السوق وقتاً أطول من المعتاد. يرجى إعادة المحاولة.'
+          : 'جاري تحديث بيانات السوق حالياً. يرجى إعادة المحاولة بعد لحظات.',
+        error_code: aborted ? 'timeout' : 'backend_updating',
         type: typeRaw,
         market,
         // Empty payload so the UI can show its "no data" state instead of crashing.

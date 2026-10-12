@@ -1229,12 +1229,12 @@ export function StockAnalysisReport() {
               <RecommendationSection analysis={analysis} />
 
               {/* Footer */}
-              <div className="text-center pt-3 border-t border-slate-700/40 text-[11px] text-slate-500 print:pt-2">
-                <p className="mb-0.5">
-                  تم إنشاء هذا التقرير بواسطة محرك التحليل الشامل (Python comprehensive)
+              <div className="text-center pt-3 border-t border-border/40 text-[11px] text-muted-foreground print:pt-2">
+                <p className="mb-0.5 font-medium">
+                  تم إعداد هذا التقرير آلياً عبر خوارزميات التحليل المالي والكمي المتقدمة
                 </p>
                 <p className="text-[10px]">
-                  Rule 20: Node.js للعرض فقط — كل التحليل من Python · Rule 67: مصدر موحد للبيانات
+                  دليل الاستثمار — تحليلات كمية ومعالجة فورية للأسواق المالية © 2026
                 </p>
               </div>
             </>

@@ -112,6 +112,10 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  if (typeof body === 'object' && body !== null && !('success' in body)) {
+    (body as Record<string, unknown>).success = upstream.ok;
+  }
+
   return NextResponse.json(body, {
     status: upstream.status,
     headers: { 'Cache-Control': 'no-store' },

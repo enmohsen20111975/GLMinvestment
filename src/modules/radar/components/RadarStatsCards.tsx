@@ -233,8 +233,8 @@ export function RadarSignalStatsCard() {
             </div>
             <div className="text-center p-2 rounded-md bg-muted/30">
               <div className="text-[10px] text-muted-foreground">نسبة النجاح</div>
-              <div className={`text-lg font-bold ${stats.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : stats.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                {(stats.win_rate_pct ?? 0).toFixed(1)}%
+              <div className={`text-lg font-bold ${stats.verified === 0 ? 'text-muted-foreground' : stats.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : stats.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {stats.verified === 0 ? '—' : `${(stats.win_rate_pct ?? 0).toFixed(1)}%`}
               </div>
             </div>
           </div>
@@ -244,19 +244,19 @@ export function RadarSignalStatsCard() {
             <div className="text-center p-1.5 rounded bg-muted/20">
               <div className="text-[9px] text-muted-foreground">7 أيام</div>
               <div className={`font-semibold ${pnlColorClass(stats.avg_outcome_7d)}`}>
-                {fmtPct(stats.avg_outcome_7d)}
+                {stats.verified === 0 ? '—' : fmtPct(stats.avg_outcome_7d)}
               </div>
             </div>
             <div className="text-center p-1.5 rounded bg-muted/20">
               <div className="text-[9px] text-muted-foreground">14 يوم</div>
               <div className={`font-semibold ${pnlColorClass(stats.avg_outcome_14d)}`}>
-                {fmtPct(stats.avg_outcome_14d)}
+                {stats.verified === 0 ? '—' : fmtPct(stats.avg_outcome_14d)}
               </div>
             </div>
             <div className="text-center p-1.5 rounded bg-muted/20">
               <div className="text-[9px] text-muted-foreground">30 يوم</div>
               <div className={`font-semibold ${pnlColorClass(stats.avg_outcome_30d)}`}>
-                {fmtPct(stats.avg_outcome_30d)}
+                {stats.verified === 0 ? '—' : fmtPct(stats.avg_outcome_30d)}
               </div>
             </div>
           </div>
@@ -280,8 +280,8 @@ export function RadarSignalStatsCard() {
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">{s.wins} رابح</span>
-                    <span className={`font-bold ${s.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : s.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      {(s.win_rate_pct ?? 0).toFixed(0)}%
+                    <span className={`font-bold ${s.verified === 0 ? 'text-muted-foreground' : s.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : s.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {s.verified === 0 ? 'قيد القياس' : `${(s.win_rate_pct ?? 0).toFixed(0)}%`}
                     </span>
                   </div>
                 </div>

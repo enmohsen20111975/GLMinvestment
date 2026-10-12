@@ -788,7 +788,7 @@ export function PredictionTrackingDashboard({
     // PERSONA-DEDUP + Rule 7: نفس الفلاتر + HARD cap 50%.
     const closed = aggregateByTicker
       .filter((p) => p.outcome === 'WIN' || p.outcome === 'LOSS')
-      .filter((p) => p.closedAt && p.returnPct != null)
+      .filter((p) => (p.closedAt || p.executionDate || p.entryDate) && p.returnPct != null)
       .filter((p) => Math.abs(Number(p.returnPct || 0)) <= 50)
       .filter((p) => {
         if (entryCutoff === null || !p.entryDate) return true;
@@ -796,11 +796,14 @@ export function PredictionTrackingDashboard({
         if (isNaN(t)) return true;
         return t >= entryCutoff;
       })
-      .map((p) => ({
-        ticker: p.ticker,
-        closedAt: String(p.closedAt).slice(0, 10), // YYYY-MM-DD
-        returnPct: Number(p.returnPct),
-      }));
+      .map((p) => {
+        const effectiveDate = p.closedAt || p.executionDate || p.entryDate;
+        return {
+          ticker: p.ticker,
+          closedAt: String(effectiveDate).slice(0, 10), // YYYY-MM-DD
+          returnPct: Number(p.returnPct),
+        };
+      });
 
     // تجميع حسب اليوم
     const dayMap = new Map<string, { returnPct: number; ticker: string; isWin: boolean }[]>();

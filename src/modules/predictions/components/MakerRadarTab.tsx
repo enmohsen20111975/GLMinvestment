@@ -1088,7 +1088,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (cancelled) return;
-        if (json.success && Array.isArray(json.stocks)) {
+        if ((json.success ?? Array.isArray(json.stocks)) && Array.isArray(json.stocks)) {
           const map: Record<string, WyckoffStockEntry> = {};
           for (const s of json.stocks) {
             if (s && s.ticker) map[String(s.ticker).toUpperCase()] = s as WyckoffStockEntry;

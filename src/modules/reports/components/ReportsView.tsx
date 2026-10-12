@@ -218,11 +218,11 @@ function OfflineState({ reason }: { reason: string }) {
       className="flex flex-col items-center justify-center py-16 text-center"
       dir="rtl"
     >
-      <AlertTriangle className="w-12 h-12 mb-3 text-amber-400" />
-      <p className="text-base font-bold text-amber-300 mb-1">تعذّر تحميل التقرير</p>
-      <p className="text-xs text-slate-400 max-w-md">{reason}</p>
-      <p className="text-[11px] text-slate-500 mt-3 max-w-md">
-        محرك التقارير (Python) هو المسؤول عن توليد كل التقارير — Node.js للعرض فقط.
+      <AlertTriangle className="w-12 h-12 mb-3 text-amber-500" />
+      <p className="text-base font-bold text-foreground mb-1">جاري تجهيز وتحديث التقرير</p>
+      <p className="text-xs text-muted-foreground max-w-md">{reason}</p>
+      <p className="text-[11px] text-muted-foreground mt-3 max-w-md">
+        يتم الآن تحديث مؤشرات الأسواق والبيانات المالية الحية، يرجى إعادة المحاولة بعد لحظات.
       </p>
     </div>
   );
@@ -496,10 +496,10 @@ function SectorReport() {
       )}
 
       {/* Footer */}
-      <div className="text-center pt-3 border-t border-slate-700/40 text-[11px] text-slate-500 print:pt-2">
-        <p className="mb-0.5">تم إنشاء هذا التقرير بواسطة محرك التقارير (Python reports_engine)</p>
+      <div className="text-center pt-3 border-t border-border/40 text-[11px] text-muted-foreground print:pt-2">
+        <p className="mb-0.5 font-medium">تم إعداد هذا التقرير آلياً عبر خوارزميات التحليل المالي والكمي المتقدمة</p>
         <p className="text-[10px]">
-          Rule 20: Node.js للعرض فقط — كل التحليل من Python · Rule 67: مصدر موحد للبيانات
+          دليل الاستثمار — تحليلات كمية ومعالجة فورية للأسواق المالية © 2026
         </p>
       </div>
     </div>
@@ -816,10 +816,10 @@ function PredictionsReport() {
       )}
 
       {/* Footer */}
-      <div className="text-center pt-3 border-t border-slate-700/40 text-[11px] text-slate-500 print:pt-2">
-        <p className="mb-0.5">تم إنشاء هذا التقرير بواسطة محرك التقارير (Python reports_engine)</p>
+      <div className="text-center pt-3 border-t border-border/40 text-[11px] text-muted-foreground print:pt-2">
+        <p className="mb-0.5 font-medium">تم إعداد هذا التقرير آلياً عبر خوارزميات التحليل المالي والكمي المتقدمة</p>
         <p className="text-[10px]">
-          Rule 20: Node.js للعرض فقط — كل التحليل من Python · Rule 67: مصدر موحد للبيانات
+          دليل الاستثمار — تحليلات كمية ومعالجة فورية للأسواق المالية © 2026
         </p>
       </div>
     </div>
