@@ -28,6 +28,21 @@ import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 import {
   getStockByTickerFallback,
 } from '@/lib/flutter-sqlite-fallback';
+// ─── PKG3-ROUND2 (Rule 67: SSOT — canonical-price) ─────────────────────
+// Before: route read current_price directly from `stockRow.current_price`
+//         via the lib wrapper `getStockByTickerFallback()` (which opens
+//         stocks.db directly). That bypassed the canonical resolution
+//         chain (stocks.db → data_engine → vps_api).
+// After: current_price + previous_close are overridden by the canonical
+//        adapter `getCanonicalPrice()` wrapped in `cache.getOrCompute()`
+//        (TTL=60s, LRU=512). The metadata (name, sector, market_cap,
+//        pe_ratio, etc.) still comes from the lib wrapper — those are NOT
+//        price reads so they don't fall under Rule 67's canonical SSOT.
+//        Rule 27 (NO-FAKE-DATA): if canonical adapter returns null →
+//        falls back to the lib wrapper value (which is also a real stocks.db
+//        read, not fabricated). If BOTH return null → 0 → UI renders "—".
+import { getCanonicalPrice } from '@/lib/canonical-price';
+import { cache } from '@/lib/cache-manager';
 // ─── UNIFIED-DATA-CONTRACT (Task UNIFIED-API-V3, Rule 72) ────────────────
 // قبل كده: publish-data route بـ يجيب RSI/signal/support من Python backend
 // أو stocks.db (ممكن يكون قديم). النتيجة: CANA بـ يطلع RSI=56.8 في publish-data
@@ -374,8 +389,35 @@ export async function GET(
     );
   }
 
-  const currentPrice = toNum(stockRow.current_price);
-  const previousClose = toNum(stockRow.previous_close);
+  // PKG3-ROUND2: override current_price + previous_close with the canonical
+  // values (Rule 67 SSOT). The lib wrapper returns stocks.db fields directly,
+  // which bypasses the canonical resolution chain. We override it here so
+  // the canonical adapter (stocks.db → data_engine → vps_api) is the single
+  // source of truth for the price fields. Falls back to the lib row's value
+  // if the canonical adapter returns null (defensive — both paths read real
+  // stocks.db data, no fabricated values per Rule 27 NO-FAKE-DATA).
+  let currentPrice = toNum(stockRow.current_price);
+  let previousClose = toNum(stockRow.previous_close);
+  try {
+    const canonical = await cache.getOrCompute(
+      `canonical_price:${tickerUpper}`,
+      () => getCanonicalPrice(tickerUpper, { allowLive: false }),
+      60_000,
+    );
+    if (canonical && Number.isFinite(canonical.value) && canonical.value > 0) {
+      currentPrice = canonical.value;
+      if (
+        canonical.previousClose != null &&
+        Number.isFinite(canonical.previousClose) &&
+        canonical.previousClose > 0
+      ) {
+        previousClose = canonical.previousClose;
+      }
+    }
+  } catch {
+    // canonical adapter failure → keep lib wrapper values (still real data).
+  }
+
   const changePct =
     toNum(stockRow.change_percent) !== 0
       ? toNum(stockRow.change_percent)
