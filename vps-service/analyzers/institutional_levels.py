@@ -124,19 +124,20 @@ def _compute_fibonacci(candles: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     # BRAVO-CO-DEPLOYMENT B3 — expose explicit Golden Pocket keys.
     # The Golden Pocket is conventionally the 0.5..0.618 retracement zone —
-    # a strong institutional re-accumulation area. For an uptrend:
-    #   golden_pocket_low  = levels['0.618']
-    #   golden_pocket_high = levels['0.5']
-    # For a downtrend retracement, the order is inverted:
-    #   golden_pocket_low  = levels['0.5']
-    #   golden_pocket_high = levels['0.618']
-    # We expose both keys so API consumers can draw the pocket as a band.
-    if trend == 'down':
-        golden_pocket_low = levels.get('0.5')
-        golden_pocket_high = levels.get('0.618')
+    # a strong institutional re-accumulation area. The pocket is a PRICE
+    # BAND, so:
+    #   golden_pocket_low  = min(levels['0.5'], levels['0.618'])
+    #   golden_pocket_high = max(levels['0.5'], levels['0.618'])
+    # This convention works for both up and down trends (the 0.5 and 0.618
+    # levels swap ordering depending on trend direction).
+    lvl_05 = levels.get('0.5')
+    lvl_618 = levels.get('0.618')
+    if lvl_05 is not None and lvl_618 is not None:
+        golden_pocket_low = min(lvl_05, lvl_618)
+        golden_pocket_high = max(lvl_05, lvl_618)
     else:
-        golden_pocket_low = levels.get('0.618')
-        golden_pocket_high = levels.get('0.5')
+        golden_pocket_low = None
+        golden_pocket_high = None
 
     return {
         'swing_high': round(swing_high, 4),
