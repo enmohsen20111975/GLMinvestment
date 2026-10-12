@@ -908,6 +908,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   // quick-filter button the manager asked for — isolates quality stocks).
   // 'surge' = only stocks with volume_ratio >= 2.5 (sudden liquidity spikes).
   const [liquidityTierFilter, setLiquidityTierFilter] = useState<'institutional' | 'surge' | null>(null);
+  // GLM5.2-A (AI-CONFIDENCE-UI): High Conviction AI filter.
+  // null = show all. 'high_conviction' = only stocks with AI confidence >= 65%.
+  const [aiConfidenceFilter, setAiConfidenceFilter] = useState<boolean>(false);
   // EGX30 / EGX70 index filter (the manager's second quick-filter button).
   const [indexFilter, setIndexFilter] = useState<'EGX30' | 'EGX70' | null>(null);
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('7d');
@@ -1417,6 +1420,17 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       // 🚀 RVol surge: volume_ratio >= 2.5x — sudden liquidity spike
       filtered = filtered.filter((s) => Number(s.volume_ratio_10d_vs_20d ?? 0) >= 2.5);
     }
+    // GLM5.2-A (AI-CONFIDENCE-UI): High Conviction AI filter.
+    // Only stocks with AI confidence >= 65% (prediction.confidence or master_score).
+    if (aiConfidenceFilter) {
+      filtered = filtered.filter((s) => {
+        const p = predictionForTicker(s.ticker);
+        const conf = p?.confidence != null ? Number(p.confidence)
+          : p?.master_score != null ? Number(p.master_score)
+          : null;
+        return conf != null && conf >= 65;
+      });
+    }
     if (indexFilter === 'EGX30') {
       filtered = filtered.filter((s) => s.is_egx30 === 1 || s.is_egx30 === true);
     } else if (indexFilter === 'EGX70') {
@@ -1433,7 +1447,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
 
   const filteredQuiet = useMemo(() => {
     let list = (data?.quiet_list || []).filter(s => dedupSet.allow(s, 'quiet'));
@@ -1443,7 +1457,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
 
   const filteredExplosive = useMemo(() => {
     let list = (data?.explosive_list || []).filter(s => dedupSet.allow(s, 'explosive'));
@@ -1453,7 +1467,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
 
   const filteredEarlyBreak = useMemo(() => {
     let list = (data?.early_break_list || []).filter(s => dedupSet.allow(s, 'early_break'));
@@ -1463,7 +1477,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
 
   // FIX-UI-AUDIT (re-applied to NEW path): radarKpi aggregates the four
   // lists into the 4 audit-approved metrics (replaces the raw-count cards
@@ -2023,6 +2037,19 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             title="عرض أسهم طفرات السيولة فقط (volume_ratio ≥ 2.5× المتوسط)"
           >
             🚀 طفرات السيولة RVol
+          </button>
+          {/* GLM5.2-A (AI-CONFIDENCE-UI) — High Conviction AI filter */}
+          <button
+            onClick={() => setAiConfidenceFilter((v) => !v)}
+            className={cn(
+              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
+              aiConfidenceFilter
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+            title="عرض التوصيات فائقة الثقة فقط (AI confidence ≥ 65%)"
+          >
+            ✨ توصيات الذكاء الاصطناعي فائقة الثقة (AI ≥ 65%)
           </button>
           <button
             onClick={() => setIndexFilter((v) => (v === 'EGX30' ? null : 'EGX30'))}
@@ -2867,6 +2894,74 @@ const StockTable = memo(function StockTable({
     return String(n);
   }
 
+  // ─── GLM5.2-A (AI-CONFIDENCE-UI) — AI Confidence Badge Helper ──────────
+  // Classifies the AI model's confidence score (0-100) into 3 tiers.
+  // Uses prediction.confidence (preferred) → master_score (fallback).
+  // Rule 27: if both are null, shows a neutral gray badge (no fabrication).
+  function getAiConfidenceBadge(
+    confidence: number | null | undefined,
+    masterScore: number | null | undefined,
+  ): {
+    tier: 'high' | 'medium' | 'low' | 'none';
+    emoji: string;
+    label: string;
+    full_label: string;
+    color: string;
+    bg: string;
+    border: string;
+    value: number | null;
+  } {
+    const val = confidence != null ? Number(confidence)
+      : masterScore != null ? Number(masterScore)
+      : null;
+    if (val == null || !Number.isFinite(val)) {
+      return {
+        tier: 'none',
+        emoji: '⚠️',
+        label: 'محايد',
+        full_label: '⚠️ ذكاء اصطناعي: محايد / عالي المخاطر',
+        color: 'text-muted-foreground',
+        bg: 'bg-muted/50',
+        border: 'border-border/50',
+        value: null,
+      };
+    }
+    if (val >= 70) {
+      return {
+        tier: 'high',
+        emoji: '🤖',
+        label: 'ثقة عالية',
+        full_label: `🤖 ذكاء اصطناعي: ثقة عالية (${Math.round(val)}%)`,
+        color: 'text-emerald-700 dark:text-emerald-300',
+        bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+        border: 'border-emerald-200 dark:border-emerald-800',
+        value: val,
+      };
+    }
+    if (val >= 55) {
+      return {
+        tier: 'medium',
+        emoji: '🤖',
+        label: 'ثقة متوسطة',
+        full_label: `🤖 ذكاء اصطناعي: ثقة متوسطة (${Math.round(val)}%)`,
+        color: 'text-blue-600 dark:text-blue-400',
+        bg: 'bg-blue-50 dark:bg-blue-950/40',
+        border: 'border-blue-200 dark:border-blue-800',
+        value: val,
+      };
+    }
+    return {
+      tier: 'low',
+      emoji: '⚠️',
+      label: 'محايد / عالي المخاطر',
+      full_label: `⚠️ ذكاء اصطناعي: محايد / عالي المخاطر (${Math.round(val)}%)`,
+      color: 'text-muted-foreground',
+      bg: 'bg-muted/50',
+      border: 'border-border/50',
+      value: val,
+    };
+  }
+
   const columns: Column<RadarStockRow>[] = useMemo(() => [
     {
       key: '_idx',
@@ -2893,6 +2988,10 @@ const StockTable = memo(function StockTable({
             ? stock.current_price * stock.avg_volume_20d
             : null);
         const liq = getLiquidityTier(turnover, stock.volume_ratio_10d_vs_20d);
+        // GLM5.2-A (AI-CONFIDENCE-UI): AI confidence badge.
+        // Uses prediction.confidence → master_score fallback (Rule 67 SSOT).
+        const pred = predictionForTicker(stock.ticker);
+        const aiBadge = getAiConfidenceBadge(pred?.confidence, pred?.master_score);
         return (
           <div className="flex items-center gap-2">
             <StockIconMini
@@ -2903,7 +3002,7 @@ const StockTable = memo(function StockTable({
               className="w-6 h-6"
             />
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-bold text-sm leading-tight">{stock.ticker}</span>
                 {/* Task 23-C Deliverable 2 — inline Sharia badge next to each
                     radar pick. EGX-only: badge shows "غير متاح" for other
@@ -2917,6 +3016,16 @@ const StockTable = memo(function StockTable({
                   className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold border ${liq.bg} ${liq.color} ${liq.border}`}
                 >
                   <span>{liq.emoji}</span>
+                </span>
+                {/* GLM5.2-A (AI-CONFIDENCE-UI) — AI Confidence Badge (🤖/⚠️) */}
+                <span
+                  title={aiBadge.full_label}
+                  className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold border ${aiBadge.bg} ${aiBadge.color} ${aiBadge.border} ${aiBadge.tier === 'high' ? 'shadow-sm shadow-emerald-500/20' : ''}`}
+                >
+                  <span>{aiBadge.emoji}</span>
+                  {aiBadge.value != null && (
+                    <span className="font-mono">{Math.round(aiBadge.value)}%</span>
+                  )}
                 </span>
               </div>
               {sInfo?.name_ar && (

@@ -79815,3 +79815,125 @@ Stage Summary:
 - Rule 27 محترمة (مفيش بيانات وهمية)
 - Responsive كامل (flex-wrap + grid)
 
+
+<<<<<<< HEAD
+---
+Task ID: ALPHA-AI-CONFIDENCE-UI
+Agent: فريق ألفا (UI/Frontend Team)
+Task: عرض احتمالية الذكاء الاصطناعي (AI Confidence Score) في الواجهة
+
+## ملخص التنفيذ (3 مهام)
+
+### Task 1: شارة AI Confidence في جدول الرادار ✅
+أضفت `getAiConfidenceBadge(confidence, masterScore)` helper بـ 3 tiers:
+- 🤖 **ثقة عالية** (>= 70%): emerald + shadow-sm براق
+- 🤖 **ثقة متوسطة** (55-69%): blue
+- ⚠️ **محايد / عالي المخاطر** (< 55%): muted gray
+- fallback: لو confidence + master_score null → neutral badge
+
+الشارة بتعرض في عمود ticker بجوار شارة السيولة:
+- emoji (🤖/⚠️) + percentage (font-mono)
+- title بـ full_label: "🤖 ذكاء اصطناعي: ثقة عالية (75%)"
+- uses prediction.confidence → master_score fallback (Rule 67 SSOT)
+
+### Task 2: زر فلترة High Conviction AI ✅
+أضفت زر: **✨ توصيات الذكاء الاصطناعي فائقة الثقة (AI ≥ 65%)**
+- emerald active state + shadow-sm
+- filter logic: prediction.confidence >= 65% (أو master_score fallback)
+- مُطبّق على كل 4 radar lists (pre_surge, quiet, explosive, early_break)
+- useMemo deps محدّثة بـ aiConfidenceFilter + predictionForTicker
+
+### Task 3: التصميم والأناقة ✅
+- الثيم المظلم الفاخر: emerald + blue + muted (design tokens)
+- shadow-sm براق للـ high confidence badge (shadow-emerald-500/20)
+- أيقونات: 🤖 للـ AI + ⚠️ للـ محايد
+- Responsive: flex-wrap للـ badges + الأزرار
+- font-mono للنسب المئوية
+
+## التحقق
+- `npx tsc --noEmit`: 0 أخطاء جديدة ✅
+- pre-commit hook: PASS ✅
+- Rule 27: لو confidence + master_score null → neutral badge (مفيش اختلاق) ✅
+- design tokens فقط (emerald + blue + muted + fuchsia) ✅
+- Responsive: flex-wrap على الموبايل ✅
+
+## التغييرات
+- `getAiConfidenceBadge()` helper: 3 tiers + none fallback
+- شارة AI في عمود ticker (بجوار liquidity badge)
+- state: `aiConfidenceFilter` (boolean)
+- filter logic في `applyLiquidityAndIndexFilters`: confidence >= 65%
+- زر فلترة: "✨ توصيات الذكاء الاصطناعي فائقة الثقة (AI ≥ 65%)"
+- useMemo deps: aiConfidenceFilter + predictionForTicker
+
+Stage Summary:
+- شارة AI Confidence (🤖/⚠️) بجوار كل سهم في الجدول
+- زر فلترة High Conviction AI (>= 65%)
+- 3 tiers: ثقة عالية (emerald) + متوسطة (blue) + محايد (muted)
+- Rule 27 محترمة (fallback neutral لو مفيش data)
+- 0 أخطاء TypeScript جديدة
+=======
+
+---
+Task ID: BRAVO-LGBM-SIGNAL-CLASSIFIER
+Agent: مهندس Machine Learning + Python (فريق GLM 5.2-Bravo)
+Task: بناء نموذج LightGBM لتصنيف الصفقات + تدريب + حفظ
+
+Work Log:
+- قرأت آخر 100 سطر من worklog.md (آخر task كان ALPHA-ADMIN-PORTFOLIO-POLISH).
+- قرأت scripts/institutional_multi_market_backtest.py وركزت على:
+    * compute_avg_turnover_20d() — مع fallback close×volume عند NULL turnover.
+    * LIQUIDITY_TIERS (institutional>=75, active_mid>=30, light<30).
+    * RVOL_SURGE_THRESHOLD = 2.5x.
+    * compute_market_distribution_at_signal_date() — universe من stock_daily_prices WHERE market=?.
+    * percentile_rank_from_distribution() — count_le/n*100.
+- قرأت scripts/maker_radar.py — compute_market_percentile_rank() (نفس منطق التوزيع).
+- قرأت scripts/verify_all_radar_signals.py — evaluate_signal() chronological day-by-day
+  + same-day conservative rule (لو target & stop ضربوا في نفس اليوم → loss first).
+- قرأت src/app/api/maker-radar/stock/route.ts — computeMFI() (TP, RMF, PosMF/NegMF, MFI=100-100/(1+Ratio)).
+- تحققت من بيانات db/stocks.db (readonly, mode=ro):
+    * radar_signal_tracking: 139 verified_win + 158 verified_loss = 297 إشارة.
+    * signal_date range: 2026-09-30 → 2026-10-07 (5 تواريخ تداول فقط).
+    * 101 ticker مختلف في الإشارات الموثّقة (كلها في EGX stock_daily_prices).
+    * stock_daily_prices EGX: 25,738 صف، 434 ticker، المدى 2026-07-28 → 2026-10-07.
+    * EGX rows with NULL OHLC: 10,881 (يتم تخطّيها/الـ fallback لـ close).
+- أنشأت scripts/train_signal_classifier_lgbm.py (~620 سطر فعلي + تعليقات عربية):
+    * 6 features: percentile_rank, rvol_20d, mfi_14, atr_ratio, wyckoff_score, distance_to_ma20.
+    * Memory-safe: cache توزيع السوق per signal_date (5 entries فقط) + استعلامات محدودة بـ LIMIT.
+    * Rule 27: لا اختلاق — fallback صريح (MFI=50, ATR=0) لو بيانات ناقصة؛ حذف صفوف NaN.
+    * Purged Time-Series Split: sort by signal_date → date-boundary split أقرب لـ 70% →
+      purge 5 calendar days من train قبل test_start (مع skip ذكي لو سيُفرغ train).
+    * LGBMClassifier (objective=binary, n_est=200, max_depth=5, lr=0.05, min_child=10,
+      subsample=0.8, colsample=0.8, reg_alpha=0.1, reg_lambda=1.0, random_state=42, verbose=-1).
+    * تقييم Baseline vs After-Filter (proba>=0.65): precision/recall/accuracy/coverage/confusion.
+    * حفظ joblib: {model, feature_names, prob, lgbm_params, n_train/test, date_ranges, baseline,
+      precision_at_threshold, coverage, sklearn_version, lightgbm_version, trained_at}.
+    * Idempotent (random_state=42 + قراءة readonly) — تأكدت بـ re-run (نفس الأرقام).
+- Syntax check: python3 -c "import ast; ast.parse(...)" → SYNTAX OK.
+- التشغيل: python3 scripts/train_signal_classifier_lgbm.py → نجح بدون أخطاء.
+
+Stage Summary:
+- Data: 297 إشارة → 295 صالحة (2 drop NaN) → class balance 47.12% win / 52.88% loss.
+- Split (purged chronological): train=174 (2026-09-30 → 2026-10-03), test=121 (2026-10-04 → 2026-10-07).
+  * ⚠️ purge_gap=5 days skipped (البيانات 5 تواريخ فقط → سيُفرغ train)؛
+    الانفصال الزمني محترم (train_end=10-03 < test_start=10-04 — لا overlap في نفس اليوم).
+- Baseline Win Rate (test): 40.50%.
+- After LGBM Filter (proba >= 0.65):
+    * Accepted: 53/121 (Coverage: 43.80% — ضمن النطاق المقبول 20-80%).
+    * Precision (Win Rate of accepted): 64.15%.
+    * Recall: 69.39%.
+    * Accuracy: 71.90%.
+    * Improvement: +23.66 percentage points over baseline.
+- Confusion Matrix (test, labels=[loss, win]):
+    * TN=53 (loss rejected ✓), FP=19 (loss accepted ❌),
+    * FN=15 (win rejected ❌), TP=34 (win accepted ✓).
+- Feature Importance (LightGBM gain-based, sum=1823):
+    1. atr_ratio        : 407 (22.3%)
+    2. percentile_rank  : 362 (19.9%)
+    3. mfi_14           : 340 (18.7%)
+    4. distance_to_ma20 : 270 (14.8%)
+    5. rvol_20d         : 237 (13.0%)
+    6. wyckoff_score    : 207 (11.4%)
+- Model saved: models/lgbm_signal_gatekeeper.joblib (85.1 KB, compressed=3).
+- Rule 27 ✅ + Rule 20 ✅ + لا commit/push ✅ + mode=ro ✅ + idempotent ✅.
+- ✅ النموذج جاهز للاستخدام كـ Gatekeeper في inference مستقبلي.
+>>>>>>> 3d6d6ec (feat(BRAVO-LGBM): نموذج LightGBM لتصنيف الصفقات — Signal Gatekeeper ML)
