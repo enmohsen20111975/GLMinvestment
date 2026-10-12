@@ -190,6 +190,110 @@ export async function GET(request: NextRequest) {
     };
   });
 
+  // ── Task CHART-MARKERS: markers + zones + prediction_ray من Python canonical ──
+  // Rule 20 (PYTHON = BRAIN): نستدعي Python module عبر subprocess لاستخراج
+  // markers (radar signals) + zones (order blocks + fibonacci) + prediction_ray.
+  // Rule 27 (NO-FAKE-DATA): كل البيانات من radar_signal_tracking + predictions.db.
+  let markers: Record<string, unknown>[] = [];
+  let zones: Record<string, unknown>[] = [];
+  let prediction_ray: Record<string, unknown> | null = null;
+  let institutional_levels: Record<string, unknown> | null = null;
+
+  if (ohlcv.length >= 10) {
+    try {
+      const { execFile } = await import('child_process');
+      const { promisify } = await import('util');
+      const execFileAsync = promisify(execFile);
+      const projectRoot = process.cwd();
+
+      // مرر candles عبر stdin (آمن من shell escaping issues)
+      // تحويل unix timestamp → 'YYYY-MM-DD' string لأن Python يتوقع date string
+      const candlesJson = JSON.stringify(ohlcvRaw.map((c) => {
+        const rawDate = c.date;
+        let dateStr = '';
+        if (typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(rawDate)) {
+          dateStr = rawDate.substring(0, 10);
+        } else if (typeof rawDate === 'number' && rawDate > 0) {
+          // unix timestamp → YYYY-MM-DD (UTC)
+          dateStr = new Date(rawDate * 1000).toISOString().substring(0, 10);
+        }
+        return {
+          date: dateStr,
+          open: Number(c.open) || 0,
+          high: Number(c.high) || 0,
+          low: Number(c.low) || 0,
+          close: Number(c.close) || 0,
+          volume: Number(c.volume) || 0,
+        };
+      }));
+
+      const script = `
+import sys, json, os
+sys.path.insert(0, os.path.join(${JSON.stringify(projectRoot)}, 'vps-service'))
+from analyzers.institutional_levels import (
+    compute_institutional_levels,
+    compute_radar_markers,
+    compute_chart_zones,
+    compute_prediction_ray,
+)
+stocks_db = os.path.join(${JSON.stringify(projectRoot)}, 'db', 'stocks.db')
+predictions_db = os.path.join(${JSON.stringify(projectRoot)}, 'db', 'predictions.db')
+candles = json.loads(sys.stdin.read())
+inst = compute_institutional_levels(candles)
+m = compute_radar_markers(${JSON.stringify(ticker)}, candles, stocks_db)
+z = compute_chart_zones(candles, inst)
+pr = compute_prediction_ray(${JSON.stringify(ticker)}, stocks_db, predictions_db)
+print(json.dumps({
+  'institutional_levels': inst,
+  'markers': m,
+  'zones': z,
+  'prediction_ray': pr,
+}, ensure_ascii=False, default=str))
+`;
+      // استخدم spawn مع stdin pipe (execFile لا يدعم input بشكل موثوق)
+      const { spawn } = await import('child_process');
+      const child = spawn('python3', ['-c', script], {
+        cwd: projectRoot,
+        env: { ...process.env, PROJECT_ROOT: projectRoot },
+      });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+      child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+      child.stdin.write(candlesJson);
+      child.stdin.end();
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          child.kill();
+          reject(new Error('Python subprocess timeout'));
+        }, 8000);
+        child.on('close', (code) => {
+          clearTimeout(timer);
+          if (code === 0) resolve();
+          else reject(new Error(`Python exit ${code}: ${stderr}`));
+        });
+        child.on('error', (err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+      });
+      const parsed = JSON.parse(stdout.trim().split('\n').filter((l: string) => l.trim().startsWith('{')).pop() || '{}');
+      markers = (parsed.markers || []).map((m: Record<string, unknown>) => ({
+        ...m,
+        time: _toUnix(m.time),
+      })).filter((m: Record<string, unknown>) => {
+        const t = m.time as number;
+        return t > 0 && ohlcv.some((c) => c.time === t);
+      });
+      zones = parsed.zones || [];
+      prediction_ray = parsed.prediction_ray || null;
+      institutional_levels = parsed.institutional_levels || null;
+    } catch (e) { // silent fallback (safe-by-design — Rule 27)
+      // لو فشل Python، نُرجع arrays فارغة (لا اختلاع)
+      console.error('[chart/full-analysis] Python markers subprocess failed:', e);
+    }
+  }
+
   const data: Record<string, unknown> = {
     success: true,
     source: 'sqlite_fallback',
@@ -197,7 +301,11 @@ export async function GET(request: NextRequest) {
     timeframe: timeframe === '1D' ? 'DAY' : timeframe,
     ohlcv,
     indicators: {},
-    smart_markers: [],
+    smart_markers: markers,
+    markers, // Task CHART-MARKERS: قائمة إشارات صانع السوق
+    zones, // Task CHART-MARKERS: مناطق الطلب والعرض (Order Blocks + Fibonacci)
+    prediction_ray, // Task CHART-MARKERS: خط الهدف ووقف الخسارة
+    institutional_levels, // Task CHART-MARKERS: المستويات المؤسسية الكاملة
     bos_events: [],
     sweeps: [],
     cmf_data: [],

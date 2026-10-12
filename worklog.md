@@ -80715,6 +80715,7 @@ Stage Summary:
 - ⚠ ملاحظة للمدير (5): stock_daily_prices يحوي EGX + US فقط — لا TADAWUL/KSE/QSE.
   التوصية: ملء بيانات الأسواق الأخرى قبل أي per-market breakdown حقيقي لها.
 
+<<<<<<< HEAD
 
 Task ID: NIGHTLY-PLATFORM-POLISH
 Agent: فريق ألفا (UI/UX)
@@ -80755,3 +80756,28 @@ Stage Summary:
 - 0 أخطاء TypeScript جديدة
 
 
+=======
+---
+Task ID: BRAVO-CHART-MARKERS
+Agent: مهندس الأنظمة والبيانات (فريق GLM 5.2-Bravo)
+Task: تزويد API الشارت ببيانات إشارات صانع السوق + Order Blocks + prediction_ray
+
+Work Log:
+- أضفت 3 دوال جديدة في vps-service/analyzers/institutional_levels.py:
+  * compute_radar_markers(): markers من radar_signal_tracking (6 signal types → marker styles)
+  * compute_chart_zones(): zones من Order Blocks + Fibonacci Golden Pocket
+  * compute_prediction_ray(): entry/target/stop من predictions.db
+- أضفت SIGNAL_TYPE_TO_MARKER dict (6 أنواع → position/color/shape/text)
+- حدّثت src/app/api/v2/chart/full-analysis/route.ts:
+  * استدعاء Python subprocess (spawn + stdin pipe) لحساب markers + zones + prediction_ray
+  * تحويل unix timestamp → 'YYYY-MM-DD' string للـ candles
+  * filter الـ stdout لأخذ آخر سطر JSON فقط (تجاهل CONFIG logs)
+  * إضافة markers + zones + prediction_ray + institutional_levels للـ response
+
+Stage Summary:
+- ✅ COMI: 7 markers (فخ صعود arrowDown أصفر) + 4 zones (1 demand + 2 supply + 1 fibonacci) + institutional_levels كاملة.
+- ✅ ABUK: 8 markers (صانع السوق arrowUp أخضر) + 4 zones.
+- ✅ prediction_ray: None لـ COMI (لا توقع في predictions.db — Rule 27 محترمة).
+- ✅ Rule 27: markers فقط للشموع ذات إشارات حقيقية في radar_signal_tracking.
+- ✅ Rule 20: كل الحسابات في Python (subprocess من Node).
+>>>>>>> 092a52f (feat(BRAVO-CHART-MARKERS): إشارات صانع السوق + Order Blocks + prediction_ray في API الشارت)

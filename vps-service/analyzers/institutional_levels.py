@@ -335,3 +335,251 @@ def compute_institutional_levels(candles: List[Dict[str, Any]]) -> Optional[Dict
         # دفاعي: لو أي حساب فشل، لا نُسقط الـ endpoint كله — نُرجع None صريحًا
         # (الـ caller سيتعامل مع None = "لا توجد مستويات متاحة" — Rule 27)
         return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5) Radar Markers — إشارات صانع السوق من radar_signal_tracking (Task CHART-MARKERS)
+# ─────────────────────────────────────────────────────────────────────────────
+# Rule 27 (NO-FAKE-DATA): الإشارات فقط للشموع التي انطبقت عليها خوارزميات
+# maker_radar الحقيقية والمسجّلة في radar_signal_tracking.
+#
+# خريطة signal_type → marker style (مطابقة لـ maker_radar.py signal_type values):
+SIGNAL_TYPE_TO_MARKER = {
+    # تجميع صانع سوق → سهم أخضر تحت الشمعة (arrowUp)
+    'quiet_accumulation_strong': {
+        'position': 'belowBar', 'color': '#089981', 'shape': 'arrowUp',
+        'text': 'صانع السوق', 'label_ar': 'تجميع قوي',
+    },
+    'B_quiet_accumulation_strong': {
+        'position': 'belowBar', 'color': '#089981', 'shape': 'arrowUp',
+        'text': 'صانع السوق', 'label_ar': 'تجميع قوي (B)',
+    },
+    # اختراق مبكر / طفرة → سهم أصفر فوق الشمعة (arrowDown = فخ صعود محتمل)
+    'pre_surge': {
+        'position': 'aboveBar', 'color': '#eab308', 'shape': 'arrowDown',
+        'text': 'فخ صعود', 'label_ar': 'اختراق مبكر',
+    },
+    'A_pre_surge': {
+        'position': 'aboveBar', 'color': '#eab308', 'shape': 'arrowDown',
+        'text': 'فخ صعود', 'label_ar': 'اختراق مبكر (A)',
+    },
+    # انفجار سعري → دائرة زرقاء تحت الشمعة (امتصاص)
+    'explosive_surge': {
+        'position': 'belowBar', 'color': '#3b82f6', 'shape': 'circle',
+        'text': 'امتصاص', 'label_ar': 'انفجار سيولي',
+    },
+    'D_explosive_surge': {
+        'position': 'belowBar', 'color': '#3b82f6', 'shape': 'circle',
+        'text': 'امتصاص', 'label_ar': 'انفجار سيولي (D)',
+    },
+}
+
+
+def compute_radar_markers(
+    ticker: str,
+    candles: List[Dict[str, Any]],
+    stocks_db_path: str,
+) -> List[Dict[str, Any]]:
+    """ابنِ قائمة markers من radar_signal_tracking للـ ticker.
+
+    Rule 27: فقط الإشارات الحقيقية المسجّلة في DB — لا اختلاع.
+    Rule 20: كل المنطق في Python.
+
+    Args:
+        ticker: رمز السهم (مثل 'COMI').
+        candles: قائمة الشموع (لربط الإشارة بالـ time).
+        stocks_db_path: مسار db/stocks.db.
+
+    Returns:
+        قائمة markers بصيغة TradingView Lightweight Charts:
+        [{time, position, color, shape, text}, ...]
+    """
+    if not ticker or not candles:
+        return []
+
+    import sqlite3
+    markers: List[Dict[str, Any]] = []
+
+    try:
+        conn = sqlite3.connect(f"file:{stocks_db_path}?mode=ro", uri=True, timeout=10.0)
+        cur = conn.cursor()
+        # اقرأ كل إشارات الـ ticker (كل الأنواع + كل الـ statuses)
+        rows = cur.execute(
+            """SELECT signal_date, signal_type, entry_price, status
+               FROM radar_signal_tracking
+               WHERE ticker = ? AND signal_date IS NOT NULL
+               ORDER BY signal_date ASC""",
+            (ticker.upper().strip().split('.')[0],),
+        ).fetchall()
+        conn.close()
+
+        if not rows:
+            return []
+
+        # ابنِ set من تواريخ الشموع لمطابقة سريعة
+        candle_dates = {}
+        for c in candles:
+            d = _candle_date(c)
+            if d:
+                candle_dates[d] = True
+
+        for signal_date, signal_type, entry_price, status in rows:
+            style = SIGNAL_TYPE_TO_MARKER.get(signal_type)
+            if not style:
+                continue  # نوع غير معروف — تجاهل (Rule 27 — لا تخمين)
+
+            # تحقق إن signal_date موجود في الـ candles (الشمعة الحقيقية)
+            if signal_date not in candle_dates:
+                # لو الشمعة غير موجودة في النطاق المعروض، تخطّى (لا اختلاع time)
+                continue
+
+            # لو الإشارة REJECTED_BY_AI_GATEKEEPER → لا تُظهرها (مرفوضة)
+            if status == 'REJECTED_BY_AI_GATEKEEPER':
+                continue
+
+            markers.append({
+                'time': signal_date,
+                'position': style['position'],
+                'color': style['color'],
+                'shape': style['shape'],
+                'text': style['text'],
+                'signal_type': signal_type,
+                'label_ar': style['label_ar'],
+                'entry_price': float(entry_price) if entry_price else None,
+                'status': status,
+            })
+
+        return markers
+    except Exception:
+        # دفاعي: لو فشل الاستعلام، ارجع قائمة فارغة (لا اختلاع)
+        return []
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6) Zones — مناطق الطلب والعرض من Order Blocks + Fibonacci (Task CHART-MARKERS)
+# ─────────────────────────────────────────────────────────────────────────────
+def compute_chart_zones(
+    candles: List[Dict[str, Any]],
+    institutional_levels: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
+    """ابنِ قائمة zones من Order Blocks + Fibonacci.
+
+    Rule 27: من بيانات الشموع الحقيقية فقط — لا اختلاع.
+
+    Args:
+        candles: قائمة الشموع.
+        institutional_levels: ناتج compute_institutional_levels (لو محسوب مسبقًا).
+
+    Returns:
+        [{zone_type, price_high, price_low, label, source_date}, ...]
+    """
+    if not candles or len(candles) < 10:
+        return []
+
+    if institutional_levels is None:
+        institutional_levels = compute_institutional_levels(candles)
+
+    if not institutional_levels:
+        return []
+
+    zones: List[Dict[str, Any]] = []
+
+    # (أ) Order Blocks → zones
+    for ob in (institutional_levels.get('order_blocks') or []):
+        ob_type = ob.get('type', '')
+        # bullish OB = منطقة طلب (demand) | bearish OB = منطقة عرض (supply)
+        zone_type = 'order_block_demand' if ob_type == 'bullish' else 'order_block_supply'
+        label = 'منطقة طلب (Order Block)' if ob_type == 'bullish' else 'منطقة عرض (Order Block)'
+        zones.append({
+            'zone_type': zone_type,
+            'price_high': float(ob.get('high', 0)),
+            'price_low': float(ob.get('low', 0)),
+            'label': label,
+            'source_date': ob.get('end_date', ''),
+            'color': '#089981' if ob_type == 'bullish' else '#f23645',
+        })
+
+    # (ب) Fibonacci Golden Pocket (0.618) → zone
+    fib = institutional_levels.get('fibonacci') or {}
+    fib_levels = fib.get('levels') or {}
+    swing_high = float(fib.get('swing_high', 0))
+    swing_low = float(fib.get('swing_low', 0))
+    if swing_high > 0 and swing_low > 0:
+        golden_618 = fib_levels.get('0.618')
+        golden_500 = fib_levels.get('0.5')
+        if golden_618 and golden_500:
+            zones.append({
+                'zone_type': 'fibonacci_golden_pocket',
+                'price_high': float(max(golden_618, golden_500)),
+                'price_low': float(min(golden_618, golden_500)),
+                'label': 'جيب ذهبي (Golden Pocket 0.5-0.618)',
+                'source_date': '',
+                'color': '#a855f7',
+            })
+
+    return zones
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7) Prediction Ray — خط الهدف ووقف الخسارة من التوقع الكنسي (Task CHART-MARKERS)
+# ─────────────────────────────────────────────────────────────────────────────
+def compute_prediction_ray(
+    ticker: str,
+    stocks_db_path: str,
+    predictions_db_path: str = '',
+) -> Optional[Dict[str, Any]]:
+    """اقرأ أحدث توقع للـ ticker من predictions.db وارجع entry/target/stop.
+
+    Rule 27: من predictions.db الحقيقية فقط — لا اختلاع.
+
+    Returns:
+        {entry_price, target_price, stop_loss_price, signal, prediction_date}
+        أو None لو لا يوجد توقع.
+    """
+    if not ticker:
+        return None
+
+    import sqlite3
+    import os
+
+    # حدد مسار predictions.db
+    if not predictions_db_path:
+        predictions_db_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(stocks_db_path))),
+            'db', 'predictions.db'
+        )
+
+    if not os.path.exists(predictions_db_path):
+        return None
+
+    try:
+        conn = sqlite3.connect(f"file:{predictions_db_path}?mode=ro", uri=True, timeout=10.0)
+        cur = conn.cursor()
+        # اقرأ أحدث توقع للـ ticker
+        row = cur.execute(
+            """SELECT ticker, signal, entry_price, target_price, stop_loss,
+                      prediction_date
+               FROM predictions
+               WHERE ticker = ?
+               ORDER BY prediction_date DESC, id DESC
+               LIMIT 1""",
+            (ticker.upper().strip().split('.')[0],),
+        ).fetchone()
+        conn.close()
+
+        if not row:
+            return None
+
+        _ticker, signal, entry_price, target_price, stop_loss, pred_date = row
+        if not entry_price or entry_price <= 0:
+            return None
+
+        return {
+            'entry_price': float(entry_price),
+            'target_price': float(target_price) if target_price else None,
+            'stop_loss_price': float(stop_loss) if stop_loss else None,
+            'signal': signal,
+            'prediction_date': pred_date,
+        }
+    except Exception:
+        return None
