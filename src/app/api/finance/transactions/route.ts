@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFinanceDb } from '@/lib/finance-db';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { sumSafe, subSafe } from '@/lib/decimal';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,22 +70,29 @@ export async function GET(request: NextRequest) {
 
     const items = db.prepare(query).all(...params) as any[];
 
-    // Calculate summary
-    let totalIncome = 0;
-    let totalExpense = 0;
-    for (const item of items) {
-      if (item.type === 'income') totalIncome += Number(item.amount || 0);
-      else if (item.type === 'expense') totalExpense += Number(item.amount || 0);
-    }
+    // PKG2-DEV-A (Strict Engineering): floating-point safe summation.
+    // Previously: `totalIncome += Number(item.amount)` accumulated IEEE-754
+    // drift (0.1+0.2 = 0.30000000000000004), then Math.round(x*100)/100
+    // tried to mask it. Now uses integer-scaled sumSafe() from decimal.ts.
+    const incomeAmounts = items
+      .filter((i) => i.type === 'income')
+      .map((i) => Number(i.amount || 0));
+    const expenseAmounts = items
+      .filter((i) => i.type === 'expense')
+      .map((i) => Number(i.amount || 0));
+
+    const totalIncome = sumSafe(incomeAmounts);
+    const totalExpense = sumSafe(expenseAmounts);
+    const net = subSafe(totalIncome, totalExpense);
 
     return NextResponse.json({
       success: true,
       items,
       total: items.length,
       summary: {
-        total_income: Math.round(totalIncome * 100) / 100,
-        total_expense: Math.round(totalExpense * 100) / 100,
-        net: Math.round((totalIncome - totalExpense) * 100) / 100,
+        total_income: totalIncome,
+        total_expense: totalExpense,
+        net,
       },
     });
   } catch (error) {

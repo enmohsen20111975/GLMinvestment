@@ -1,18 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { apiOk, apiErr } from '@/lib/api-response';
 
 /**
  * POST /api/i18n/set-locale
  *
- * FOCUS-5-TASKS — i18n Phase 2 (2026-10-01):
- *   Sets the `NEXT_LOCALE` cookie to switch the UI language.
- *   The cookie is read by `src/i18n/i18n.ts` (next-intl getRequestConfig).
+ * PKG1-DEV-A (Bilingual): sets the `NEXT_LOCALE` cookie to switch the UI
+ * language. The cookie is read by `src/lib/i18n-context.tsx` on the client.
+ *
+ * PKG2-DEV-A (Engineering): migrated to the Unified Response Schema
+ * (`apiOk` / `apiErr` from `@/lib/api-response`). Removes `err: any`.
  *
  * Body: { "locale": "ar" | "en" }
  * Cookie lifetime: 1 year (maxAge: 365 * 24 * 60 * 60).
  * httpOnly: false — so the LanguageToggle client component can read it too.
  * sameSite: 'lax' — allows the cookie to be sent on top-level navigations.
  *
- * Reference: Rule 62 (GIT-PUSH-DISCIPLINE).
+ * Reference: Rule 62 (GIT-PUSH-DISCIPLINE), Rule 67 (SSOT — unified response).
  */
 
 const VALID_LOCALES = ['ar', 'en'] as const;
@@ -21,22 +24,25 @@ type Locale = (typeof VALID_LOCALES)[number];
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const requestedLocale = body?.locale;
+    const requestedLocale: unknown = body?.locale;
 
     // Validate the locale — reject anything other than 'ar' or 'en'.
-    if (!requestedLocale || !VALID_LOCALES.includes(requestedLocale)) {
-      return NextResponse.json(
-        { success: false, error: `Invalid locale. Must be one of: ${VALID_LOCALES.join(', ')}` },
-        { status: 400 }
+    if (
+      typeof requestedLocale !== 'string' ||
+      !VALID_LOCALES.includes(requestedLocale as Locale)
+    ) {
+      return apiErr(
+        'invalid_locale',
+        `Invalid locale. Must be one of: ${VALID_LOCALES.join(', ')}`,
+        400
       );
     }
 
     const locale = requestedLocale as Locale;
 
-    // Set the cookie on the response. The browser stores it + sends it on
-    // every subsequent request, where next-intl reads it via `cookies()`.
-    const response = NextResponse.json({
-      success: true,
+    // Build the unified success response, then attach the cookie.
+    // (apiOk returns a NextResponse, which exposes .cookies.)
+    const response = apiOk({
       locale,
       message: `Locale set to ${locale}`,
     });
@@ -50,10 +56,8 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: err?.message || 'Internal error' },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal error';
+    return apiErr('internal_error', message, 500);
   }
 }
