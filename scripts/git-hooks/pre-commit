@@ -22,11 +22,12 @@ set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-echo "[pre-commit] Running check:guards (DEV-14 §4)..."
+echo "[pre-commit] Running check:guards (DEV-14 §4 + P0-TICKER-PURGE)..."
 
-# Run both guard checks. If either fails, the commit is aborted.
+# Run all guard checks. If any fails, the commit is aborted.
 python3 scripts/check_no_hard_delete.py
 python3 scripts/check_no_raw_insert.py
+python3 scripts/git-hooks/pre-commit-ticker-registry || exit 1
 
 echo "[pre-commit] ✓ All guards passed — proceeding with commit."
 exit 0

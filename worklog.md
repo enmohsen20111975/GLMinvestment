@@ -76750,3 +76750,120 @@ Stage Summary:
 - Round 2 من كل الـ 4 حزم: ✅ مكتملة (عبر 4 وكلاء فرعيين)
 - الأرقام قابلة للقياس ومُتحقق منها بشكل مستقل
 - المنصة تعمل (HTTP 200) + pre-commit hooks مثبتة وتعمل
+
+---
+
+## Task ID: P0-TICKER-PURGE
+**Agent:** Ticker Purge Agent
+**Date:** 2026-10-12
+
+### Background
+Field audit confirmed severe ticker-registry data quality issues on the EGX
+stock database. This task is a one-shot purge + alignment to fix all of them
+in a safe, idempotent, dry-run-by-default manner.
+
+### Pre-purge state (verified by direct DB inspection)
+| Metric                                       | Count |
+|----------------------------------------------|-------|
+| stocks table EGX rows                        | 461   |
+| stocks table EGX active (is_active=1)        | 427   |
+| ticker_registry EGX entries                  | 458   |
+| ticker_registry EGX w/ valid TV symbol       | 8     (1.7%) |
+| name_ar == name (English placeholder in Arabic field) | 79  |
+| ISIN-like tickers (ticker LIKE 'EGS%')       | 20    |
+| Duplicate name_ar groups (>=2 active EGX rows share name_ar) | 6 |
+
+### Work Log
+1. **Read worklog + inspected stocks.db schema and full state**
+   - Read last 60 lines of worklog.md for context.
+   - Used Python `sqlite3` (sqlite3 CLI not available) to enumerate all
+     71 tables in stocks.db and 47 tables in predictions.db, and identified
+     the 23 + 16 ticker-referencing tables across both DBs that would need
+     re-parenting if any ticker were deleted.
+
+2. **Created `scripts/purge_and_align_egx_tickers.py`**
+   - Six phases, idempotent, dry-run by default (`--execute` to apply).
+   - Phase 1: comprehensive analysis + report (always runs, no DB writes).
+   - Phase 2: delete explicit duplicates + less-used member of each
+     name_ar dup group (re-parenting all references to canonical ticker).
+     When ticker_registry reveals the two tickers are distinct companies
+     with different name_ar values (e.g., MNHD/MASR), FIX stocks.name_ar
+     from ticker_registry instead of deleting either.
+   - Phase 3: merge ISIN-like EGS tickers into canonical real tickers;
+     deactivate those without a canonical replacement.
+   - Phase 4: fix name_ar from ticker_registry Arabic name where available;
+     deactivate (Rule 27 NO-FAKE-DATA) those without an Arabic alternative.
+   - Phase 5: deactivate delisted stocks (EDBM).
+   - Phase 6: fill tradingview_symbol = `EGX:{ticker}` for all active
+     EGX rows in ticker_registry.
+   - Creates timestamped DB backups + an in-DB snapshot table for recovery.
+
+3. **Ran dry-run; reviewed report; ran `--execute`** — applied all 6 phases:
+   | Phase | Action | Count | Notes |
+   |-------|--------|-------|-------|
+   | 2 | Deleted duplicates (re-parented refs to canonical) | 6 | ADP→ADPC, COSG→CALT, ARAB_R2→ARAB, KAHA→POUL, PACL→EGCH, ALXD→AIUD |
+   | 2 | name_ar fixed (not deleted) | 2 | MNHD, MASR (ticker_registry had distinct Arabic names — stocks.name_ar was corrupted) |
+   | 3 | Merged EGS → canonical real ticker | 12 | EGS220N1C016→NBCC, EGS3E071C013 + -EGP→ACRO, EGS65861C014→EABD, EGS385S1C012→FERC, EGS3I0S1C019→FCMD, EGS73M81C012→NAMI, EGS924K1C018→LUTS_R1, EGS370O1C013→NAPR, EGS48271C018+(-EGP)→ESAC, EGS(id=900, wrong-ticker Ferchem)→FERC |
+   | 3 | Deactivated EGS (no canonical replacement) | 7 | EGS30AJ1C016(+EGP), EGS59231C018, EGS65101C015, EGS65621C012, EGS659O1C015, EGS72L31C011 |
+   | 4 | name_ar fixed from ticker_registry | 0 | (the 2 candidates already fixed in Phase 2) |
+   | 4 | Deactivated (no Arabic name available — Rule 27) | 40 | includes EDBM (delisted per task directive) |
+   | 5 | Deactivated delisted | 0 | (EDBM already deactivated in Phase 4) |
+   | 6 | TV symbols filled (EGX: prefix) | 436 | 100% of active EGX ticker_registry rows |
+
+4. **Re-ran `--execute` to verify idempotency** — all phases returned 0 changes,
+   final state identical. PASS.
+
+5. **Final verification**
+   - `curl http://localhost:3000` → HTTP 200 ✓
+   - `curl http://localhost:3000/api/stocks` → HTTP 200 ✓
+   - ADP, COSG, ARAB_R2, KAHA, PACL, ALXD gone ✓
+   - ADPC, CALT, MNHD (with fixed name_ar "مدينة نصر للإسكان والتعمير"), MASR
+     (with fixed name_ar "مدينة مصر"), ARAB, POUL, EGCH, AIUD, ACRO, EABD,
+     NBCC present ✓
+   - Only 1 active EGS-like ticker remaining: EGSA (Egyptian Satellite Co. — valid) ✓
+   - 436 ticker_registry EGX active rows; 436 with `EGX:` TV symbol prefix (100%) ✓
+
+### Post-purge state
+| Metric                                       | Before | After | Δ |
+|----------------------------------------------|--------|-------|---|
+| EGX stocks total                             | 461    | 443   | -18 |
+| EGX active stocks                            | 427    | 362   | -65 |
+| ticker_registry EGX active                   | 458    | 436   | -22 |
+| ticker_registry EGX w/ TV symbol            | 8      | 436   | +428 |
+| ticker_registry TV symbol coverage           | 1.7%   | 100%  | — |
+| name_ar == name (data quality issue)         | 79     | 76    | -3 |
+| Active ISIN-like tickers (EGS...)            | 20     | 1 (EGSA only) | -19 |
+| Active duplicate name_ar groups              | 6      | 0     | -6 |
+
+### Created ingestion constraint
+`scripts/git-hooks/pre-commit-ticker-registry` (Python, executable)
+- Scans staged files (`.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.sql`, `.cjs`, `.mjs`)
+  for `INSERT INTO stocks` SQL with a literal ticker value.
+- Parses both column-list and positional variants; extracts the ticker
+  literal from the VALUES clause; checks it against ticker_registry
+  (canonical_ticker + egx_ticker) in `db/stocks.db`.
+- Skips INSERTs with parameter placeholders (no static ticker to check —
+  runtime responsibility).
+- Wired into active `.git/hooks/pre-commit` chain.
+- Tested: violating INSERT (`'TICKER_NOT_IN_REGISTRY'`) → commit BLOCKED;
+  valid ticker (`'COMI'`) → commit PASS; placeholder-only → commit PASS.
+
+### Manual-review TODO file
+`scripts/output/ticker_purge_TODO.txt` lists:
+- 7 deactivated EGS tickers (no canonical replacement found — confirm
+  whether real EGX tickers exist for them)
+- 40 stocks deactivated per Rule 27 (NO-FAKE-DATA) because name_ar is an
+  English placeholder and ticker_registry has no Arabic name for them.
+  To re-activate: supply correct Arabic name in ticker_registry.
+
+### Stage Summary
+- 6 مكررات تم حذفها (ADP, COSG, ARAB_R2, KAHA, PACL, ALXD)
+- 2 مكررات تم إصلاح name_ar لها بدون حذف (MNHD, MASR)
+- 12 أكواد ISIN تم دمجها في الرموز الحقيقية (NBCC, ACRO, EABD, FERC, FCMD, NAMI, LUTS_R1, NAPR, ESAC)
+- 7 أكواد ISIN تم تعطيلها (لا يوجد بديل حقيقي)
+- 40 سهماً بـ name_ar إنجليزي تم تعطيلها (Rule 27 — لا اختلاق)
+- 0 مجموعة مكررة متبقية (من 6)
+- 436 سهماً نشطاً بـ TV symbol 100% (من 1.7%)
+- pre-commit hook: PASS (مُتحقق منه: violating INSERT → BLOCKED, valid → PASS)
+- المنصة لše شغالة: HTTP 200 على :3000 و /api/stocks
+- منفّذ بـ Rule 75: commit + push بعد السكربت

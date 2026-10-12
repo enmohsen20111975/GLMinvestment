@@ -1,0 +1,374 @@
+#!/usr/bin/env python3
+"""
+pre-commit-ticker-registry — P0-TICKER-PURGE ingestion constraint
+=================================================================
+Blocks any commit that introduces a NEW `INSERT INTO stocks` SQL
+statement with a literal ticker value NOT present in `ticker_registry`.
+
+Purpose
+-------
+After the P0-TICKER-PURGE consolidation, every active EGX stock in the
+`stocks` table MUST have a corresponding `ticker_registry` entry
+(canonical_ticker, egx_ticker, tradingview_symbol, name_ar, ...).
+This hook prevents regressions: nobody can silently insert a new
+stock without first registering its canonical metadata.
+
+What counts as a violation
+--------------------------
+Any staged file (Python / JS / TS / SQL) containing a line like:
+
+    INSERT INTO stocks (..., ticker, ...) VALUES (..., 'NEWC', ...)
+
+where `NEWC` is a literal ticker NOT present in
+`ticker_registry.canonical_ticker` or `ticker_registry.egx_ticker`.
+
+What is allowed
+---------------
+- INSERTs that use SQL parameter placeholders (?, $1, :name, %s)
+  without an inline literal ticker — those are checked at runtime
+  by the application layer.
+- INSERTs whose literal ticker IS present in ticker_registry.
+- INSERTs in test fixtures / archive paths (excluded from scan scope).
+
+Install (one-time)
+------------------
+  cp scripts/git-hooks/pre-commit-ticker-registry .git/hooks/pre-commit-ticker-registry
+  chmod +x .git/hooks/pre-commit-ticker-registry
+  # Then add to .git/hooks/pre-commit:
+  #   python3 scripts/git-hooks/pre-commit-ticker-registry || exit 1
+
+Bypass (emergency)
+------------------
+  git commit --no-verify
+
+References
+----------
+  - worklog.md Task P0-TICKER-PURGE
+  - Rule 27 (NO-FAKE-DATA): every ticker must have a registered Arabic name.
+"""
+from __future__ import annotations
+
+import re
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+def _find_repo_root() -> Path:
+    """Find the repo root: walk up from this file's dir until we find
+    a .git directory. Falls back to git rev-parse --show-toplevel."""
+    p = Path(__file__).resolve()
+    # Walk up — works whether we're in scripts/git-hooks/ or copied elsewhere
+    for parent in [p.parent, *p.parents]:
+        if (parent / ".git").exists():
+            return parent
+    # Fallback: ask git
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, cwd=str(p.parent),
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return Path(out.stdout.strip())
+    except Exception:
+        pass
+    # Last resort: assume 2 levels up (scripts/git-hooks/...)
+    return p.parents[2] if len(p.parents) > 2 else p.parent
+
+
+REPO_ROOT = _find_repo_root()
+STOCKS_DB = REPO_ROOT / "db" / "stocks.db"
+
+# Files to scan (extensions)
+SCAN_EXTENSIONS = {".py", ".js", ".ts", ".tsx", ".jsx", ".sql", ".cjs", ".mjs"}
+
+# Path fragments to exclude
+PATH_EXCLUDES = (
+    "node_modules/",
+    "__pycache__/",
+    ".git/",
+    "archive/",
+    "scripts/output/",
+    "db/stocks.db",          # binary DB file
+    "db/stocks.db-bak",      # binary backup
+    "pre-commit-ticker-registry",  # self-reference
+)
+
+# SQL INSERT INTO stocks with explicit column list:
+#   INSERT INTO stocks (col1, col2, ticker, col4) VALUES (v1, v2, v3, v4)
+# Group 1 = column list, Group 2 = values list
+INSERT_WITH_COLUMNS_RE = re.compile(
+    r"INSERT\s+INTO\s+stocks\s*\(([^)]*)\)\s*VALUES\s*\(([^)]*)\)",
+    re.IGNORECASE | re.DOTALL,
+)
+# INSERT INTO stocks without column list (positional):
+#   INSERT INTO stocks VALUES (v1, v2, v3, ...)
+# Group 1 = values list
+INSERT_POSITIONAL_RE = re.compile(
+    r"INSERT\s+INTO\s+stocks\s+VALUES\s*\(([^)]*)\)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Match a quoted string literal 'ABCDE' or "ABCDE" (SQL string)
+QUOTED_LITERAL_RE = re.compile(r"""(['"])([A-Z0-9_\-]+)\1""")
+
+# Ticker-like pattern: starts with letter, 1-30 chars, allows A-Z 0-9 _ -
+TICKER_LIKE_RE = re.compile(r"^[A-Z][A-Z0-9_\-]{1,29}$")
+
+# Triple-quote state for Python files (skip docstrings)
+TRIPLE_QUOTES = ('"""', "'''")
+
+
+def staged_files() -> list[Path]:
+    """Return list of staged file paths (added/copied/modified/rename)."""
+    out = subprocess.run(
+        ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMRTX"],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    files = []
+    for line in out.stdout.splitlines():
+        p = REPO_ROOT / line
+        if p.is_file() and p.suffix in SCAN_EXTENSIONS:
+            files.append(p)
+    return files
+
+
+def is_excluded(path: Path) -> bool:
+    rel = path.relative_to(REPO_ROOT).as_posix()
+    return any(exc in rel for exc in PATH_EXCLUDES)
+
+
+def load_registered_tickers() -> set[str]:
+    """Load all canonical_ticker + egx_ticker values from ticker_registry."""
+    tickers: set[str] = set()
+    if not STOCKS_DB.exists():
+        # If the DB doesn't exist (fresh clone), allow everything —
+        # CI will catch violations when the DB is present.
+        return tickers
+    try:
+        with sqlite3.connect(str(STOCKS_DB)) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT canonical_ticker FROM ticker_registry")
+            for (t,) in cur.fetchall():
+                if t:
+                    tickers.add(t)
+            cur.execute("SELECT egx_ticker FROM ticker_registry WHERE egx_ticker IS NOT NULL")
+            for (t,) in cur.fetchall():
+                if t:
+                    tickers.add(t)
+    except sqlite3.Error as e:
+        sys.stderr.write(
+            f"[pre-commit-ticker-registry] WARN: cannot read ticker_registry: {e}\n"
+            f"  Allowing commit — but DB constraint cannot be enforced.\n"
+        )
+    return tickers
+
+
+def _split_top_level(s: str) -> list[str]:
+    """Split a comma-separated list, ignoring commas inside parens/brackets."""
+    out: list[str] = []
+    depth = 0
+    cur = []
+    in_quote = None
+    for ch in s:
+        if in_quote:
+            cur.append(ch)
+            if ch == in_quote:
+                in_quote = None
+            continue
+        if ch in ("'", '"'):
+            in_quote = ch
+            cur.append(ch)
+            continue
+        if ch in "([{":
+            depth += 1
+            cur.append(ch)
+            continue
+        if ch in ")]}":
+            depth -= 1
+            cur.append(ch)
+            continue
+        if ch == "," and depth == 0:
+            out.append("".join(cur).strip())
+            cur = []
+            continue
+        cur.append(ch)
+    if cur:
+        out.append("".join(cur).strip())
+    return out
+
+
+def _extract_literal(value: str) -> str | None:
+    """If value is a quoted string literal, return its content; else None."""
+    v = value.strip()
+    if len(v) >= 2 and v[0] in ("'", '"') and v[-1] == v[0]:
+        return v[1:-1]
+    return None
+
+
+def extract_ticker_literals_from_insert_line(text: str) -> list[str]:
+    """Extract literal ticker strings from an INSERT INTO stocks statement.
+
+    Returns an empty list if no literal ticker can be statically extracted
+    (e.g., all placeholders), so the caller can skip the check.
+    """
+    out: list[str] = []
+    # Try with explicit column list first
+    m = INSERT_WITH_COLUMNS_RE.search(text)
+    if m:
+        cols = _split_top_level(m.group(1))
+        vals = _split_top_level(m.group(2))
+        if len(cols) != len(vals):
+            # Mismatched column count — be conservative and inspect every
+            # ticker-like literal in the VALUES clause
+            for v in vals:
+                lit = _extract_literal(v)
+                if lit and TICKER_LIKE_RE.match(lit):
+                    out.append(lit)
+            return out
+        # Find ticker column index (case-insensitive)
+        for idx, col in enumerate(cols):
+            col_name = col.strip().lower()
+            if col_name == "ticker" or col_name == "stock_symbol":
+                if idx < len(vals):
+                    lit = _extract_literal(vals[idx])
+                    if lit and TICKER_LIKE_RE.match(lit):
+                        out.append(lit)
+        return out
+
+    # Positional INSERT (no column list) — inspect every ticker-like literal
+    m = INSERT_POSITIONAL_RE.search(text)
+    if m:
+        for v in _split_top_level(m.group(1)):
+            lit = _extract_literal(v)
+            if lit and TICKER_LIKE_RE.match(lit):
+                out.append(lit)
+    return out
+
+
+def scan_file(path: Path, registered: set[str]) -> list[tuple[int, str, list[str]]]:
+    """Scan a single file for INSERT INTO stocks with unregistered tickers.
+
+    Returns a list of (line_number, line_content, [unregistered_tickers]) tuples.
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return []
+
+    violations: list[tuple[int, str, list[str]]] = []
+    lines = text.splitlines()
+
+    # Triple-quote state machine (skip Python docstrings)
+    in_triple = False
+    triple_token: str | None = None
+
+    for idx, raw in enumerate(lines):
+        line = raw.rstrip()
+
+        # Update triple-quote state for Python/JS template strings
+        if path.suffix == ".py":
+            if not in_triple:
+                for tok in TRIPLE_QUOTES:
+                    if tok in line:
+                        count = line.count(tok)
+                        if count % 2 == 1:
+                            in_triple = True
+                            triple_token = tok
+                            break
+            else:
+                if triple_token and triple_token in line:
+                    count = line.count(triple_token)
+                    if count % 2 == 1:
+                        in_triple = False
+                        triple_token = None
+                continue
+
+        # Skip pure comment lines
+        stripped = line.lstrip()
+        if stripped.startswith("#") or stripped.startswith("--"):
+            continue
+        if stripped.startswith("//") or stripped.startswith("*"):
+            continue
+
+        # We need a multi-line scan for INSERT statements because VALUES (...)
+        # can span multiple lines. We grab up to 5 lines from the current
+        # position to capture the full VALUES clause.
+        if not re.search(r"INSERT\s+INTO\s+stocks", line, re.IGNORECASE):
+            continue
+
+        # Build a window of up to 5 lines starting here
+        window = "\n".join(lines[idx : idx + 5])
+        literals = extract_ticker_literals_from_insert_line(window)
+        if not literals:
+            # All placeholders (or no literal) — runtime responsibility
+            continue
+
+        # For each literal, check if it could be a ticker (uppercase
+        # letters/digits/underscores/dashes) and if so, verify it's registered
+        unregistered = []
+        for lit in literals:
+            if not TICKER_LIKE_RE.match(lit):
+                continue  # Not ticker-like (could be a sector name etc.)
+            if lit not in registered:
+                unregistered.append(lit)
+
+        if unregistered:
+            violations.append((idx + 1, line, unregistered))
+
+    return violations
+
+
+def main() -> int:
+    files = staged_files()
+    if not files:
+        return 0
+
+    registered = load_registered_tickers()
+    if not registered:
+        # Fresh clone without DB, or DB read failed — let CI catch it
+        sys.stderr.write(
+            "[pre-commit-ticker-registry] WARN: ticker_registry empty or "
+            "unreadable — skipping check (DB may be absent in this clone).\n"
+        )
+        return 0
+
+    all_violations: list[tuple[str, int, str, list[str]]] = []
+    for f in files:
+        if is_excluded(f):
+            continue
+        v = scan_file(f, registered)
+        for lineno, content, unregs in v:
+            all_violations.append((str(f.relative_to(REPO_ROOT)), lineno, content, unregs))
+
+    if not all_violations:
+        sys.stderr.write(
+            f"[pre-commit-ticker-registry] PASS — "
+            f"{len(files)} staged file(s) scanned, 0 unregistered INSERT INTO stocks tickers.\n"
+        )
+        return 0
+
+    sys.stderr.write(
+        "\n\033[31m[pre-commit-ticker-registry] BLOCKED — P0-TICKER-PURGE constraint:\033[0m\n"
+    )
+    sys.stderr.write(
+        "Found INSERT INTO stocks with ticker literal(s) NOT in ticker_registry:\n\n"
+    )
+    for path, lineno, content, unregs in all_violations:
+        sys.stderr.write(f"  {path}:{lineno}: ticker(s) {unregs}\n")
+        sys.stderr.write(f"    {content.strip()[:120]}\n")
+    sys.stderr.write(
+        "\nFix options:\n"
+        "  1. Register the ticker in ticker_registry FIRST (canonical_ticker,\n"
+        "     egx_ticker, tradingview_symbol, name_ar, ...) — then commit.\n"
+        "  2. Use SQL parameter placeholders (?, :name, $1, %s) instead of a\n"
+        "     literal ticker, so the runtime is responsible for validation.\n"
+        "  3. Bypass (emergency): git commit --no-verify\n\n"
+    )
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

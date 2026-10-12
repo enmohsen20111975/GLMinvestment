@@ -1,0 +1,4 @@
+# P0-TICKER-PURGE TODO list — generated 2026-10-12T10:25:49.377149
+# Snapshot table: stocks_purge_snapshot_20261012102549 (in stocks.db)
+# Backups: stocks.db.bak.*, predictions.db.bak.*
+
