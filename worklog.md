@@ -80345,3 +80345,141 @@ Stage Summary:
 - ⚠️ وصف المهمة ذكر "6 features" لكن النموذج الفعلي مدرب على **12 features**
   (تم التحقق من train_signal_classifier_lgbm.py). طبّقت 12 features بدقة لضمان
   التطابق مع توزيع التدريب.
+
+Task ID: BRAVO-CO-DEPLOYMENT
+Agent: Bravo Backend Agent (Python Engine)
+Task: B1 (price history fix) + B2 (LightGBM gatekeeper) + B3 (institutional levels)
+
+Work Log:
+
+Context — قرأت قبل البدء:
+- worklog.md (آخر 40 سطر) — آخر Task كان BRAVO-CODEPLOY-B2-B3 (مهندس GLM 5.2-Bravo
+  عمل lgbm_gatekeeper + institutional_levels — أكتشف إن عملهم متاح بالفعل).
+- vps-service/data/prices.py بالكامل — load_price_history بترجع 1 شمعة لـ PORT
+  (السبب: price_history.db malformed + egksco_price_history مش موجود في data_engine.db).
+- vps-service/jobs/daily_predictor.py (الأسطر 3125-3598) — حددت نقطة الإدراج قبل
+  tracker.record_prediction().
+- scripts/maker_radar.py (الأسطر 980-1230 + 1870-1880) — حددت نقطة الإدراج قبل
+  _track_signals_to_db().
+- vps-service/api/stock_analysis_routes.py (deep_analysis endpoint + helpers).
+
+المكتشفات الحرجة (تم التحقق منها):
+- price_history.db فعلاً malformed — PRAGMA integrity_check رجع "database disk image
+  is malformed". تم logging الفشل + skip للـ fallback.
+- data_engine.db.egksco_price_history غير موجودة فعلاً (18 table بس بدونها).
+- stocks.db.egksco_price_history موجودة لكن فارغة (0 rows — لم تُستخدم بعد).
+- stocks.db.stock_daily_prices لـ PORT فيها 37 صف (مش 1) لكن كلها بنفس current_price
+  (106.92) — فعلياً 1 شمعة فريدة مكررة 37 مرة. Rule 27: نرجّع الـ 37 صف بصراحة.
+- stocks.db.stocks table فيها snapshot واحد لـ PORT (current_price=106.92).
+- lgbm_signal_gatekeeper.joblib موجود (263KB) + 12 features في feature_name_.
+
+B1 — إصلاح load_price_history في vps-service/data/prices.py (commit 325b58ee):
+- أضفت _price_history_db_is_healthy() — PRAGMA integrity_check مع cache per-process.
+  Malformed → log warning + skip silently لكل reads اللاحقة (لا placeholder).
+- أضفت load_price_history_db_rows() — reader لـ price_history.db مع schema auto-detect
+  (date/price_date, ticker/symbol, open/open_price, etc.).
+- أعدت كتابة load_egksco_history() بحيث بـ يجرّب BOTH data_engine.db AND stocks.db
+  (معاً) — لاكتشاف egksco_price_history في أي ملف (بعض الـ deployments بتحطها في
+  stocks.db بـ column `date` بدلاً من `price_date`).
+- أضفت load_stock_daily_prices() — reader لـ stocks.db.stock_daily_prices مع
+  COALESCE(canonical, legacy) لـ OHLC columns. PORT عندها close_price=NULL بس
+  close=106.92 — نجح الـ COALESCE في استخراجها.
+- أضفت load_stocks_table_snapshot() — last-resort snapshot من stocks.stocks
+  (current_price + open_price + high_price + low_price). يُستخدم فقط لو الـ merged
+  candles < 30 (وليس 1) — لتجنّب الإفراط في الإدراج.
+- أضفت _merge_candle_lists() — دمج عدة مصادر بـ dedup حسب التاريخ، الأسبقية
+  للمصدر الأول (egksco > price_history.db > stock_daily_prices > snapshot).
+- أعدت كتابة load_price_history() لتستخدم كل المصادر + logging صريح لكل المصادر.
+- أضفت _MIN_CANDLES_BEFORE_SNAPSHOT_FALLBACK = 30 — لو الـ merged < 30 → نضيف
+  snapshot من stocks table + warning واضح.
+- حدّثت get_tickers_with_history() — تستخدم integrity_check + fallback لـ
+  stock_daily_prices + egksco_price_history tickers.
+- Rule 27 محترم: لو PORT عنده 37 صف مكررة → نرجّع 37 صف بصراحة (لا fabrication).
+- Rule 24 محترم: empty [] هو last resort.
+
+B2 — LightGBM Gatekeeper (commit fdef10f7 + bde1cc7c):
+- أضفت vps-service/utils/lgbm_gatekeeper.py — NEW module مع:
+  * _load_model() — lazy + thread-safe singleton (joblib.load مع fallback).
+  * evaluate_signal(candles=..., signal_type=..., avg_turnover_20d=...,
+    percentile_rank=..., features=..., threshold=0.65) → verdict dict.
+  * compute_features_from_candles() — يحسب الـ 12 features (RSI Wilder, MFI,
+    RVol, Bollinger, ATR%, price_to_sma, dist_from_20d_high, signal_type_code).
+  * get_model_info() — diagnostics للـ /healthz.
+  * FAIL-OPEN policy: لو joblib مفقود / model file مفقود / features mismatch /
+    insufficient candles (< 20) → APPROVE + warning log (per owner directive:
+    لا تمنع إشارات شرعية بسبب مشكلة ML infra).
+  * Threshold = 0.65 (78.95% win rate per lgbm_metrics.json).
+- دمج في scripts/maker_radar.py — أضفت _filter_signals_by_lgbm_gatekeeper()
+  قبل _track_signals_to_db(). Approved signals → تُسجّل بـ status='pending' /
+  'rvol_surge_breakout' كالمعتاد. Rejected signals → تُسجّل بـ status='ai_rejected'
+  للشفافية المؤسسية (UPDATE منفصل بعد INSERT لأن _track_signals_to_db يكتب
+  status افتراضي).
+- دمج في vps-service/jobs/daily_predictor.py — تم خلال الـ rebase اكتشفت إن
+  المهندس الآخر (GLM 5.2-Bravo) أضاف بالفعل block مماثل يستخدم analyzers/
+  lgbm_gatekeeper.py مع API مختلف (predict_signal_probability(ticker, scan_date,
+  entry, signal, conn)). حليت الـ conflict بأخذ HEAD side (theirs) لأن:
+  * الـ daily_predictor عنده conn متاح للـ stocks.db — مناسب لـ API بتاعهم.
+  * maker_radar عنده candle list جاهز من fetch_ticker_series — مناسب لـ API بتاعي.
+  * كل منهم في module منفصل (analyzers/ vs utils/) — لا تعارض في imports.
+- ملاحظة: utils/lgbm_gatekeeper.py (mine) و analyzers/lgbm_gatekeeper.py (theirs)
+  كلاهما موجود الآن في الكود. كل واحد له API مختلف + caller مختلف. هذا غير مثالي
+  لكنه يعمل بشكل آمن. توصية: يمكن دمجهما لاحقاً في مهمة منفصلة.
+
+B3 — Institutional Levels (commit 19f5b721 + bde1cc7c):
+- اكتشفت إن analyzers/institutional_levels.py موجود بالفعل (من المهندس GLM 5.2-Bravo)
+  مع compute_institutional_levels(candles) و Fibonacci + Pivots + OB + FVG.
+- اكتشفت إن stock_analysis_routes.py:1454 imports + uses هذا الـ module بالفعل.
+- حذفت duplicate code كان عندي في stock_analysis_routes.py (~17KB) لأن canonical
+  source موجود + متصل بالفعل.
+- حسّنت analyzers/institutional_levels.py — أضفت explicit golden_pocket_low /
+  golden_pocket_high keys للـ fibonacci response. الـ Golden Pocket = 0.5..0.618
+  retracement zone (institutional re-accumulation band). استخدمت min/max لضمان
+  golden_pocket_low ≤ golden_pocket_high دائماً (trend-agnostic — للـ up trend
+  الـ 0.618 أعلى، للـ down trend الـ 0.5 أعلى).
+- Rule 27 محترم: candles < 10 → None.
+- Rule 20 محترم: كل الحسابات في Python.
+
+التحقق (Verification — كلها PASS):
+- ✅ Verification 1: python3 -c "from data.prices import load_price_history;
+  print(len(load_price_history('PORT', 90)))" → 37 (ليس 90 — Rule 27: لا fabrication
+  لـ 53 شمعة إضافية. الـ price_history.db malformed + egksco غير موجود، ف(stock_
+  daily_prices هي المصدر الوحيد + فيه 37 صف لـ PORT بـ current_price مكررة.
+  ملاحظة: لو اشتغل egksco scraper + ملأ data_engine.db.egksco_price_history بـ
+  تاريخ حقيقي لـ PORT → هيرجع ≥ 90 شمعة تلقائياً بدون تعديل الكود).
+- ✅ Verification 2: python3 -c "import joblib; m = joblib.load('models/
+  lgbm_signal_gatekeeper.joblib'); print(type(m), m.feature_name_)" →
+  LGBMClassifier + 12 features.
+- ✅ Verification 3: python3 -c "import ast; ast.parse(open('vps-service/data/
+  prices.py').read()); print('OK')" → OK.
+- ✅ End-to-end: load_price_history('AAPL', 90) → 90 candles (stock_daily_prices
+  fallback worked). compute_institutional_levels(AAPL_candles) → Fibonacci
+  swing 300.57→345.34 + Golden Pocket 322.96→328.24 + 3 OBs + 3 FVGs + Pivots.
+- ✅ Gatekeeper e2e: synthetic 30-candle data → REJECTED (prob=0.0293 < 0.65).
+  Insufficient candles (< 20) → APPROVED with reason=AI_GATEKEEPER_INSUFFICIENT_DATA.
+
+Stage Summary:
+- ✅ 1 module جديد: vps-service/utils/lgbm_gatekeeper.py (454 سطر — lazy model load,
+  12-feature computation, threshold 0.65, fail-open policy).
+- ✅ 5 ملفات مُعدّلة:
+  * vps-service/data/prices.py (+524 / -98 = +426 سطر) — multi-source merge +
+    PRAGMA integrity_check + stocks snapshot fallback.
+  * vps-service/jobs/daily_predictor.py (+0 / -0 net — rebase حلّ conflict بأخذ
+    HEAD side الذي يحتوي lgbm_gatekeeper block من المهندس الآخر).
+  * scripts/maker_radar.py (+90 سطر) — _filter_signals_by_lgbm_gatekeeper() +
+    ai_rejected tracking.
+  * vps-service/analyzers/institutional_levels.py (+13 / -12 = +1 سطر) —
+    explicit golden_pocket_low / golden_pocket_high keys.
+  * vps-service/api/stock_analysis_routes.py (-17KB / +0) — حذفت duplicate
+    compute_institutional_levels helpers (canonical موجود في analyzers/).
+- ✅ Rule 1 (DBs readonly): كل reads بـ mode=ro.
+- ✅ Rule 24 (NO PLACEHOLDER): empty [] هو last resort.
+- ✅ Rule 27 (NO FAKE DATA): لا fabrication — لو PORT عنده 37 صف → نرجع 37.
+- ✅ Rule 20 (PYTHON = BRAIN): كل الحسابات في Python.
+- ✅ Rule 75 (PUSH AFTER EVERY TASK): 4 commits + 4 pushes
+  (325b58ee + fdef10f7 + 19f5b721 + bde1cc7c).
+- ✅ ast.parse PASS على كل الـ 6 ملفات المُعدّلة.
+- ⚠️ ملاحظة للمدير: utils/lgbm_gatekeeper.py + analyzers/lgbm_gatekeeper.py كلاهما
+  موجود بـ APIs مختلفة. توصية: مهمة CLEANUP منفصلة لدمجهما في canonical واحد.
+- ⚠️ ملاحظة للمدير: price_history.db malformed في sandbox — يحتاج backup + restore
+  من production (مهمة DBA منفصلة). الـ code يتعامل مع الموقف بـ fail-safe لكن
+  الأداء أفضل بكثير مع DB صحيح.
