@@ -1088,6 +1088,12 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (cancelled) return;
+
+
+        // GLM5.2-A (P0-WYCKOFF-FIX): relaxed check — Python may omit success:true
+        // but still return a valid stocks array. Accept if stocks is an array
+        // regardless of the success flag (fixes the SOS Phase D empty table bug).
+
         if ((json.success ?? Array.isArray(json.stocks)) && Array.isArray(json.stocks)) {
           const map: Record<string, WyckoffStockEntry> = {};
           for (const s of json.stocks) {

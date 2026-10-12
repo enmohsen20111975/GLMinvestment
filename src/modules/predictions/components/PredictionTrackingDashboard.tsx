@@ -786,9 +786,20 @@ export function PredictionTrackingDashboard({
     }
 
     // PERSONA-DEDUP + Rule 7: نفس الفلاتر + HARD cap 50%.
+    // GLM5.2-A (P0-FROZEN-CHART-FIX): was filtering on `p.closedAt` only, but
+    // 95% of closed trades store their date in `executionDate` or `entryDate`.
+    // Now uses effectiveDate = closedAt || executionDate || entryDate.
     const closed = aggregateByTicker
       .filter((p) => p.outcome === 'WIN' || p.outcome === 'LOSS')
+
       .filter((p) => (p.closedAt || p.executionDate || p.entryDate) && p.returnPct != null)
+
+      .filter((p) => {
+        // GLM5.2-A: effective date fallback — closedAt → executionDate → entryDate
+        const effectiveDate = p.closedAt || p.executionDate || p.entryDate;
+        return effectiveDate && p.returnPct != null;
+      })
+
       .filter((p) => Math.abs(Number(p.returnPct || 0)) <= 50)
       .filter((p) => {
         if (entryCutoff === null || !p.entryDate) return true;
@@ -796,6 +807,7 @@ export function PredictionTrackingDashboard({
         if (isNaN(t)) return true;
         return t >= entryCutoff;
       })
+
       .map((p) => {
         const effectiveDate = p.closedAt || p.executionDate || p.entryDate;
         return {
@@ -804,6 +816,14 @@ export function PredictionTrackingDashboard({
           returnPct: Number(p.returnPct),
         };
       });
+
+      .map((p) => ({
+        ticker: p.ticker,
+        // GLM5.2-A: use effectiveDate for the chart x-axis
+        closedAt: String(p.closedAt || p.executionDate || p.entryDate).slice(0, 10),
+        returnPct: Number(p.returnPct),
+      }));
+
 
     // تجميع حسب اليوم
     const dayMap = new Map<string, { returnPct: number; ticker: string; isWin: boolean }[]>();
@@ -1136,6 +1156,17 @@ export function PredictionTrackingDashboard({
       className: 'font-mono',
       render: (p) => {
         const highest = Number(p.highestPriceReached ?? p.highest_price_reached ?? 0);
+        const entry = Number(p.entryPrice ?? p.entry_price ?? 0);
+        // GLM5.2-A (P0-FROZEN-PRICES): لو highest == entry == lowest → الصفقة
+        // مجمّدة (لم تتحرك بعد). أعرض "سعر الدخول" بدل رقم مضلل.
+        const isFrozen = highest > 0 && entry > 0 && highest === entry;
+        if (isFrozen) {
+          return (
+            <span className="text-[10px] text-muted-foreground italic" title="سعر الدخول — السهم قيد الانتظار ولم يسجل حركة تذبذب بعد">
+              {fmtPrice(highest)} <span className="text-[8px]">(سعر الدخول)</span>
+            </span>
+          );
+        }
         return (
           <span className={cn('text-[11px] font-bold', highest > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
             {highest > 0 ? fmtPrice(highest) : '—'}
@@ -1151,6 +1182,16 @@ export function PredictionTrackingDashboard({
       className: 'font-mono',
       render: (p) => {
         const lowest = Number(p.lowestPriceReached ?? p.lowest_price_reached ?? 0);
+        const entry = Number(p.entryPrice ?? p.entry_price ?? 0);
+        // GLM5.2-A: same frozen check for lowest.
+        const isFrozen = lowest > 0 && entry > 0 && lowest === entry;
+        if (isFrozen) {
+          return (
+            <span className="text-[10px] text-muted-foreground italic" title="سعر الدخول — قيد الانتظار">
+              {fmtPrice(lowest)} <span className="text-[8px]">(سعر الدخول)</span>
+            </span>
+          );
+        }
         return (
           <span className={cn('text-[11px] font-bold', lowest > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
             {lowest > 0 ? fmtPrice(lowest) : '—'}

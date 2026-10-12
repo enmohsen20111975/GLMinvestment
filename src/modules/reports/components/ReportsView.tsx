@@ -218,11 +218,19 @@ function OfflineState({ reason }: { reason: string }) {
       className="flex flex-col items-center justify-center py-16 text-center"
       dir="rtl"
     >
+
       <AlertTriangle className="w-12 h-12 mb-3 text-amber-500" />
       <p className="text-base font-bold text-foreground mb-1">جاري تجهيز وتحديث التقرير</p>
       <p className="text-xs text-muted-foreground max-w-md">{reason}</p>
       <p className="text-[11px] text-muted-foreground mt-3 max-w-md">
         يتم الآن تحديث مؤشرات الأسواق والبيانات المالية الحية، يرجى إعادة المحاولة بعد لحظات.
+
+      <AlertTriangle className="w-12 h-12 mb-3 text-amber-400" />
+      <p className="text-base font-bold text-amber-300 mb-1">تعذّر تحميل التقرير</p>
+      <p className="text-xs text-slate-400 max-w-md">{reason}</p>
+      <p className="text-[11px] text-slate-500 mt-3 max-w-md">
+        جاري تجهيز وتحديث بيانات التقرير ومؤشرات الأسواق المالية.
+
       </p>
     </div>
   );
@@ -247,7 +255,7 @@ function SectorReport() {
       setReport({
         success: false,
         skipped: true,
-        reason: 'تعذّر الاتصال بمحرك التقارير',
+        reason: 'جاري تجهيز بيانات التقرير — يرجى المحاولة بعد لحظات',
       });
     } finally {
       setLoading(false);
@@ -292,7 +300,7 @@ function SectorReport() {
   if (loading) return <LoadingSkeleton />;
 
   if (!report || report.skipped || report.success === false) {
-    return <OfflineState reason={report?.reason ?? 'محرك التقارير غير متاح'} />;
+    return <OfflineState reason={report?.reason ?? 'جاري تجهيز التقرير — يرجى المحاولة بعد لحظات'} />;
   }
 
   const sectors = extractSectors(report).sort(
@@ -403,7 +411,7 @@ function SectorReport() {
         <CardContent>
           {sectors.length === 0 ? (
             <p className="text-xs text-slate-500 text-center py-6">
-              بيانات القطاعات متاحة عند تضمينها في تقرير Python اليومي
+              بيانات القطاعات متاحة عند إدراجها في التقرير اليومي
             </p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -496,10 +504,17 @@ function SectorReport() {
       )}
 
       {/* Footer */}
+
       <div className="text-center pt-3 border-t border-border/40 text-[11px] text-muted-foreground print:pt-2">
         <p className="mb-0.5 font-medium">تم إعداد هذا التقرير آلياً عبر خوارزميات التحليل المالي والكمي المتقدمة</p>
         <p className="text-[10px]">
           دليل الاستثمار — تحليلات كمية ومعالجة فورية للأسواق المالية © 2026
+
+      <div className="text-center pt-3 border-t border-slate-700/40 text-[11px] text-slate-500 print:pt-2">
+        <p className="mb-0.5">تم إنشاء هذا التقرير تلقائياً بواسطة نظام التحليل المالي</p>
+        <p className="text-[10px]">
+          نظام تحليل مالي موحد — جميع البيانات من مصدر معتمد
+
         </p>
       </div>
     </div>
@@ -525,7 +540,7 @@ function PredictionsReport() {
       setReport({
         success: false,
         skipped: true,
-        reason: 'تعذّر الاتصال بمحرك التقارير',
+        reason: 'جاري تجهيز بيانات التقرير — يرجى المحاولة بعد لحظات',
       });
     } finally {
       setLoading(false);
@@ -570,7 +585,7 @@ function PredictionsReport() {
   if (loading) return <LoadingSkeleton />;
 
   if (!report || report.skipped || report.success === false) {
-    return <OfflineState reason={report?.reason ?? 'محرك التقارير غير متاح'} />;
+    return <OfflineState reason={report?.reason ?? 'جاري تجهيز التقرير — يرجى المحاولة بعد لحظات'} />;
   }
 
   const topPerformers = extractTopPerformers(report).slice(0, 5);
@@ -740,7 +755,7 @@ function PredictionsReport() {
               </span>
             </div>
             <p className="text-[11px] text-slate-500 text-center mt-2">
-              Rule 67: عرض الخسائر بصراحة — لا إخفاء للنتائج السلبية.
+              عرض النتائج بشفافية كاملة
             </p>
           </CardContent>
         </Card>
@@ -800,7 +815,7 @@ function PredictionsReport() {
               <Activity className="w-5 h-5" />
               الملخص الذكي لتوقعات الأسبوع
               <span className="text-[10px] font-normal text-amber-300/70">
-                AI Summary · Python
+                ملخص تحليلي
               </span>
             </CardTitle>
           </CardHeader>
@@ -816,10 +831,17 @@ function PredictionsReport() {
       )}
 
       {/* Footer */}
+
       <div className="text-center pt-3 border-t border-border/40 text-[11px] text-muted-foreground print:pt-2">
         <p className="mb-0.5 font-medium">تم إعداد هذا التقرير آلياً عبر خوارزميات التحليل المالي والكمي المتقدمة</p>
         <p className="text-[10px]">
           دليل الاستثمار — تحليلات كمية ومعالجة فورية للأسواق المالية © 2026
+
+      <div className="text-center pt-3 border-t border-slate-700/40 text-[11px] text-slate-500 print:pt-2">
+        <p className="mb-0.5">تم إنشاء هذا التقرير تلقائياً بواسطة نظام التحليل المالي</p>
+        <p className="text-[10px]">
+          نظام تحليل مالي موحد — جميع البيانات من مصدر معتمد
+
         </p>
       </div>
     </div>
@@ -898,7 +920,7 @@ export function ReportsView() {
               {t('reports.view.title')}
             </h1>
             <p className="text-[11px] text-slate-400">
-              Professional Financial Reports · Python Brain · Rule 67 Unified Source
+              تقارير مالية احترافية · نظام تحليل موحد
             </p>
             <p className="text-[10px] text-amber-300/60 italic mt-0.5">
               {t('reports.view.disclaimer')}

@@ -140,42 +140,42 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
       />
 
       {/* Panel */}
-      <div className="fixed top-0 left-0 bottom-0 w-full max-w-md bg-[#131722] border-l border-zinc-800 z-50 flex flex-col shadow-2xl">
+      <div className="fixed top-0 left-0 bottom-0 w-full max-w-md bg-card border-l border-border z-50 flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800 shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <BellRing className="h-5 w-5 text-amber-400" />
             <h2 className="text-base font-bold text-white">التنبيهات</h2>
-            <Badge className="bg-zinc-800 text-zinc-400 font-mono">{ticker}</Badge>
+            <Badge className="bg-muted text-muted-foreground font-mono">{ticker}</Badge>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-zinc-800"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Global Settings */}
-        <div className="p-4 border-b border-zinc-800 space-y-3 shrink-0">
+        <div className="p-4 border-b border-border space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {soundEnabled ? (
                 <Volume2 className="h-4 w-4 text-emerald-400" />
               ) : (
-                <VolumeX className="h-4 w-4 text-zinc-500" />
+                <VolumeX className="h-4 w-4 text-muted-foreground" />
               )}
-              <span className="text-sm text-zinc-300">التنبيه الصوتي</span>
+              <span className="text-sm text-foreground">التنبيه الصوتي</span>
             </div>
             <Switch checked={soundEnabled} onCheckedChange={toggleSound} />
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-zinc-400" />
-              <span className="text-sm text-zinc-300">إشعارات المتصفح</span>
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">إشعارات المتصفح</span>
               {notifPermission === 'denied' && (
                 <span className="text-[10px] text-red-400">(مرفوض)</span>
               )}
@@ -191,7 +191,7 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
             variant="outline"
             size="sm"
             onClick={handleTestSound}
-            className="w-full h-8 text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            className="w-full h-8 text-xs border-border text-foreground hover:bg-muted"
           >
             <Volume1 className="h-3.5 w-3.5 ml-2" />
             جرّب الصوت
@@ -199,22 +199,22 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
         </div>
 
         {/* Add Alert Form */}
-        <div className="p-4 border-b border-zinc-800 space-y-3 shrink-0">
+        <div className="p-4 border-b border-border space-y-3 shrink-0">
           <div className="flex items-center gap-2">
             <Plus className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm font-medium text-zinc-200">إضافة تنبيه جديد</span>
+            <span className="text-sm font-medium text-foreground">إضافة تنبيه جديد</span>
           </div>
 
           <Select value={selectedType} onValueChange={(v) => setSelectedType(v as AlertType)}>
-            <SelectTrigger className="h-9 bg-zinc-900 border-zinc-800 text-zinc-200 text-sm">
+            <SelectTrigger className="h-9 bg-card border-border text-foreground text-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-800 max-h-64">
+            <SelectContent className="bg-card border-border max-h-64">
               {Object.entries(ALERT_TYPE_META).map(([type, m]) => (
                 <SelectItem
                   key={type}
                   value={type}
-                  className="text-zinc-200 focus:bg-zinc-800 text-sm"
+                  className="text-foreground focus:bg-muted text-sm"
                 >
                   <div className="flex items-center gap-2">
                     <span>{m.icon}</span>
@@ -227,14 +227,14 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
 
           {meta.needsThreshold && (
             <div className="space-y-1">
-              <label className="text-[11px] text-zinc-400">{meta.thresholdLabel}</label>
+              <label className="text-[11px] text-muted-foreground">{meta.thresholdLabel}</label>
               <Input
                 type="number"
                 step="0.01"
                 value={threshold}
                 onChange={(e) => setThreshold(e.target.value)}
                 placeholder={meta.thresholdPlaceholder}
-                className="h-9 bg-zinc-900 border-zinc-800 text-zinc-200 text-sm"
+                className="h-9 bg-card border-border text-foreground text-sm"
               />
             </div>
           )}
@@ -252,9 +252,9 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {tickerAlerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <AlertCircle className="h-10 w-10 text-zinc-600 mb-3" />
-              <p className="text-sm text-zinc-500">لا توجد تنبيهات لهذا السهم</p>
-              <p className="text-[11px] text-zinc-600 mt-1">
+              <AlertCircle className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground">لا توجد تنبيهات لهذا السهم</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
                 أضف تنبيه выше لتصلك إشعارات لحظية
               </p>
             </div>
@@ -271,8 +271,8 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
         </div>
 
         {/* Footer Info */}
-        <div className="p-3 border-t border-zinc-800 bg-zinc-950/50 shrink-0">
-          <p className="text-[10px] text-zinc-500 text-center leading-relaxed">
+        <div className="p-3 border-t border-border bg-muted/30 shrink-0">
+          <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
             🔔 التنبيهات بتفعّل فقط لما الشارت مفتوح وتوصّل WebSocket حي.
             <br />
             يتم كتم التنبيه نفسه لمدة 5 دقائق بعد تفعيله (debounce).
@@ -303,8 +303,8 @@ function AlertRow({
     <div
       className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
         alert.enabled
-          ? 'bg-zinc-900/60 border-zinc-700'
-          : 'bg-zinc-950/40 border-zinc-800 opacity-60'
+          ? 'bg-muted/40 border-border'
+          : 'bg-muted/20 border-border opacity-60'
       } ${recentlyFired ? 'ring-1 ring-amber-500/50' : ''}`}
     >
       <div
@@ -316,7 +316,7 @@ function AlertRow({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-zinc-200 truncate">
+          <span className="text-sm font-medium text-foreground truncate">
             {meta.labelAr}
           </span>
           {alert.threshold !== undefined && (
@@ -334,7 +334,7 @@ function AlertRow({
             </Badge>
           )}
         </div>
-        <span className="text-[10px] text-zinc-500">
+        <span className="text-[10px] text-muted-foreground">
           {new Date(alert.createdAt).toLocaleString('ar-EG', {
             month: 'short',
             day: 'numeric',
@@ -363,7 +363,7 @@ function AlertRow({
         variant="ghost"
         size="sm"
         onClick={onRemove}
-        className="h-7 w-7 p-0 text-zinc-500 hover:text-red-400 hover:bg-red-950/40 shrink-0"
+        className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-950/40 shrink-0"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>

@@ -104,7 +104,7 @@ function getBrokerColor(broker: string): string {
   if (broker === 'master') return 'text-emerald-400 bg-emerald-950/40 border-emerald-800';
   if (broker === 'Thndr') return 'text-teal-400 bg-slate-900/40 border-teal-800';
   if (broker === 'Direct') return 'text-purple-400 bg-purple-950/40 border-purple-800';
-  return 'text-zinc-400 bg-zinc-900/40 border-zinc-700';
+  return 'text-muted-foreground bg-muted/30 border-border';
 }
 
 export function MultiPortfolioSelector({
@@ -318,7 +318,7 @@ export function MultiPortfolioSelector({
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
             selectedPortfolioId === 'master'
               ? 'bg-emerald-500/20 text-emerald-400 border-emerald-700'
-              : 'bg-zinc-900/40 text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-zinc-300'
+              : 'bg-muted/30 text-muted-foreground border-border hover:border-border hover:text-foreground'
           }`}
           title="عرض المحفظة الأم (المجمّعة)"
         >
@@ -338,7 +338,7 @@ export function MultiPortfolioSelector({
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                   selectedPortfolioId === p.id
                     ? colorStyle
-                    : 'bg-zinc-900/40 text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-zinc-300'
+                    : 'bg-muted/30 text-muted-foreground border-border hover:border-border hover:text-foreground'
                 }`}
                 title={`${p.name} (${p.broker})`}
               >

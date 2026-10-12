@@ -233,9 +233,24 @@ export function RadarSignalStatsCard() {
             </div>
             <div className="text-center p-2 rounded-md bg-muted/30">
               <div className="text-[10px] text-muted-foreground">نسبة النجاح</div>
+
               <div className={`text-lg font-bold ${stats.verified === 0 ? 'text-muted-foreground' : stats.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : stats.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
                 {stats.verified === 0 ? '—' : `${(stats.win_rate_pct ?? 0).toFixed(1)}%`}
               </div>
+
+              {/* GLM5.2-A (P0-RADAR-STATS-REPAIR): لو verified === 0، نمنع عرض
+                  0.0% بالأحمر ونعرض "—" + "قيد القياس" بدل ما نوحي بفشل المنصة. */}
+              {stats.verified === 0 ? (
+                <div className="text-lg font-bold text-muted-foreground">—</div>
+              ) : (
+                <div className={`text-lg font-bold ${stats.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : stats.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {(stats.win_rate_pct ?? 0).toFixed(1)}%
+                </div>
+              )}
+              {stats.verified === 0 && (
+                <div className="text-[9px] text-muted-foreground mt-0.5">قيد القياس</div>
+              )}
+
             </div>
           </div>
 

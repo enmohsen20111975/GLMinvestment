@@ -112,11 +112,23 @@ export async function GET(req: NextRequest) {
     );
   }
 
+
   if (typeof body === 'object' && body !== null && !('success' in body)) {
     (body as Record<string, unknown>).success = upstream.ok;
   }
 
   return NextResponse.json(body, {
+
+  // GLM5.2-A (P0-WYCKOFF-FIX): ensure success:true is always present when the
+  // upstream returns a valid stocks array. Python may omit it, causing the
+  // frontend to reject valid data and show an empty table.
+  const response = typeof body === 'object' && body !== null ? { ...body } : body;
+  if (typeof response === 'object' && response !== null && Array.isArray((response as Record<string, unknown>).stocks)) {
+    (response as Record<string, unknown>).success = true;
+  }
+
+  return NextResponse.json(response, {
+
     status: upstream.status,
     headers: { 'Cache-Control': 'no-store' },
   });

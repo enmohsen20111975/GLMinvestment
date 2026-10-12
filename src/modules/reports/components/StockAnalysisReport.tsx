@@ -1114,7 +1114,7 @@ export function StockAnalysisReport() {
           <div>
             <h1 className="text-base font-extrabold text-amber-300">تقرير تحليل السهم</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-wide">
-              Stock Analysis Report · Python Brain
+              تقرير تحليل السهم
             </p>
           </div>
         </div>
@@ -1229,12 +1229,21 @@ export function StockAnalysisReport() {
               <RecommendationSection analysis={analysis} />
 
               {/* Footer */}
+
               <div className="text-center pt-3 border-t border-border/40 text-[11px] text-muted-foreground print:pt-2">
                 <p className="mb-0.5 font-medium">
                   تم إعداد هذا التقرير آلياً عبر خوارزميات التحليل المالي والكمي المتقدمة
                 </p>
                 <p className="text-[10px]">
                   دليل الاستثمار — تحليلات كمية ومعالجة فورية للأسواق المالية © 2026
+
+              <div className="text-center pt-3 border-t border-slate-700/40 text-[11px] text-slate-500 print:pt-2">
+                <p className="mb-0.5">
+                  تم إنشاء هذا التقرير بواسطة نظام التحليل المالي الشامل
+                </p>
+                <p className="text-[10px]">
+                  نظام تحليل مالي موحد — جميع البيانات من مصدر معتمد
+
                 </p>
               </div>
             </>
@@ -1245,7 +1254,7 @@ export function StockAnalysisReport() {
                 تعذّر تحميل التحليل المهني لهذا السهم
               </p>
               <p className="text-xs text-slate-400 max-w-md">
-                محرك التحليل (Python comprehensive) لم يستجب. حاول مرة أخرى أو اختر سهماً آخر.
+                جاري تجهيز بيانات التحليل — حاول مرة أخرى أو اختر سهماً آخر.
               </p>
               {comprehensive?.errors && comprehensive.errors.length > 0 && (
                 <details className="mt-3 text-left max-w-md">
@@ -1271,7 +1280,7 @@ export function StockAnalysisReport() {
           </p>
           <p className="text-sm text-slate-400 max-w-md">
             التقرير يجمع كل قوة المشروع (التحليل الفني + الأساسي + المخاطر + التوصية)
-            من محرك واحد موحد (Python comprehensive) — Rule 67.
+            من نظام تحليل مالي موحد — مصدر معتمد.
           </p>
         </div>
       )}
