@@ -78245,3 +78245,29 @@ Stage Summary:
 - ⚠️ نسبة النجاح الفعلية = **46.80%** (أقل من هدف 65-75%) — السبب: نافذة بيانات قصيرة (4-9 أيام لمعظم الإشارات، 292 pending بانتظار اكتمال 30 يومًا).
 - 📈 التحسن: 35.84% → 46.80% (+10.96 نقطة، +39 win مسترجعة، -21 loss مُصححة).
 - 🔧 اكتشاف حرج: ~15,000 صف في stock_daily_prices بـ OHLC مستحيل — يحتاج تدقيق pipeline.
+
+---
+Task ID: BRAVO-FINAL-PUSH
+Agent: المدير العام (فريق GLM 5.2-Bravo) — تنفيذ قرارات الإدارة العامة
+Task: اعتماد قفزة الـ Win Rate + تصحيح العمالقة الأربعة + Push (FINAL APPROVAL)
+
+Work Log:
+- استلمت قرارات المدير العامة الثلاثة: (1) اعتماد 46.80% كنسبة صادقة (Rule 27)، (2) تصحيح 4 عمالقة (TMGH/SWDY/EKHO/AMER)، (3) Push وفق Rule 75.
+- عدّلت scripts/align_stock_sectors_ar.py: أضفت TICKER_OVERRIDES dict (4 شركات) + فحص أولًا في classify() + تمرير ticker من main() + عدّاد overrides_applied. موّقت كل override بـ comment يشرح السبب (Rule 27 — توثيق القرار الإداري، ليس اختلاقًا).
+- شغّلت السكريبت المحدّث: الأربعة عمالقة ثبتوا في القطاعات الصحيحة (TMGH→عقارات، SWDY→موارد أساسية وكيماويات، EKHO→خدمات مالية غير مصرفية، AMER→سياحة وترفيه). إجمالي classified: 648 (53.8%)، NULL: 557 (46.2%).
+- git pull --rebase origin main: تعارض في worklog.md (Alpha دفعت 4 commits جديدة للـ intraday pipeline). حلّت التعارض يدويًا بالاحتفاظ بكلا المحتويين (Alpha + BRAVO) مع فاصل "---"، أزلت الـ 3 markers.
+- تحققت من APIs بعد التصحيح: TMGH mfi=27.83 sector_ar=عقارات | SWDY mfi=29.41 sector_ar=موارد أساسية وكيماويات | EKHO mfi=None sector_ar=خدمات مالية غير مصرفية | AMER mfi=56.77 sector_ar=سياحة وترفيه. signal-tracker win_rate=46.80% (ثابتة).
+- git commit (0cf181b): feat(BRAVO-FINAL): giants sector overrides per manager approval — 1 file, +34/-1.
+- git push origin main: نجح (403e688..0cf181b). remote متزامن.
+- توكن GitHub: استُخدم inline via credential helper، لم يُخزن في أي ملف. تحققت: .git/config نظيف.
+
+Stage Summary:
+- ✅ قرارات المدير العامة الثلاثة نُفّذت بالكامل.
+- ✅ Win rate 46.80% معتمدة كنسبة صادقة (Rule 27 — أمانة مؤسسية).
+- ✅ 4 عمالقة صُحّحوا في stocks.db sector_ar + موثّقون في TICKER_OVERRIDES.
+- ✅ Push لـ origin/main نجح (commit 0cf181b).
+- ✅ تعارض worklog.md مع Alpha حُل بأمان (كلا المحتويين محفوظ).
+- ✅ Rule 27 محترمة: overrides موثّقة بـ comments، ليست اختلاقًا.
+- ✅ Rule 75 محترمة: pull --rebase قبل + commit واضح + push.
+- ✅ لا توكن في أي ملف أو git config.
+- 📊 الأرقام النهائية: 648 معرّب (53.8%) + 557 NULL (46.2%) | 4 عمالقة صحيحين | win_rate=46.80% (139 win / 158 loss / 297 verified / 292 pending / 513 stale_data).
