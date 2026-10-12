@@ -80507,3 +80507,30 @@ Stage Summary:
 - ✅ Syntax check: 3/3 files OK (maker_radar + daily_predictor + market_regime_engine).
 - ✅ STABLECOINS filter test: 7 blocked + 6 allowed (BTC/ETH/SOL/BNB/LINK/AVAX pass).
 - ✅ COALESCE logic test: Schema A (close_price) + Schema B (COALESCE→price_usd).
+
+---
+Task ID: BRAVO-OVERNIGHT-MASTER
+Agent: مهندس الأنظمة والبيانات والذكاء الاصطناعي (فريق GLM 5.2-Bravo)
+Task: المعالج الليلي الشامل الهادئ + إصلاح خطأ SQL
+
+Work Log:
+- أصلحت خطأ SQL في market_regime_engine.py سطر 596:
+  * كان: "NULL as turnover" → ينتج "NULL as turnover as turnover_val" = SQL syntax error
+  * صار: "NULL" فقط → ينتج "NULL as turnover_val" = SQL صحيح
+- أنشأت scripts/overnight_market_master.py (سكربت ليلي شامل):
+  * مبدأ "العمل على الهادي": subprocess منفصل + gc.collect() + sleep 600s بين المراحل
+  * عد تنازلي لطيف في الكونسول أثناء النوم
+  * SQLite timeout=30.0 لمنع قفل الجداول
+  * 6 مراحل منظمة: CRYPTO → KSA → US → KSE → QSE → EGX → EGX_CLOSER
+  * استراحات: 10 دقائق بين المراحل الكبرى + 5 دقائق بين KSE/QSE
+  * التقرير الصباحي: overnight_summary.json + جدول كونسول عربي
+  * log مزدوج: console + logs/overnight_run.log
+  * --dry-run flag للفحص (نوم 3s بدل 600s)
+  * --phase FLAG لمرحلة واحدة فقط
+
+Stage Summary:
+- ✅ خطأ SQL مُصلَح: "NULL as turnover" → "NULL" (market_regime_engine.py سطر 596).
+- ✅ scripts/overnight_market_master.py: 385 LOC + 7 مراحل + rests + gc + morning report.
+- ✅ dry-run test: 7/7 مراحل ناجحة + JSON 1,786 bytes + log 5KB.
+- ✅ التقرير الصباحي يعرض: 1,551 توقع نشط (EGX 1,474 + US 76 + CRYPTO 1).
+- ✅ Syntax check: 2/2 files OK.

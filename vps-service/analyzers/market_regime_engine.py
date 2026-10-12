@@ -592,8 +592,9 @@ class MarketRegimeEngine:
             "COALESCE(total_volume, volume, 0)" if "total_volume" in cols else
             (cfg["volume_col"] if cfg["volume_col"] in cols else "volume")
         )
-        # turnover (optional)
-        turnover_expr = cfg["turnover_col"] if (cfg.get("turnover_col") and cfg["turnover_col"] in cols) else "NULL as turnover"
+        # turnover (optional) — Task FIX: كان "NULL as turnover" فبينتج
+        # "NULL as turnover as turnover_val" = SQL syntax error. صار "NULL" فقط.
+        turnover_expr = cfg["turnover_col"] if (cfg.get("turnover_col") and cfg["turnover_col"] in cols) else "NULL"
 
         select_sql = f"{cfg['date_col']}, {open_expr} as open_val, {high_expr} as high_val, {low_expr} as low_val, {close_expr} as close_val, {volume_expr} as volume_val, {turnover_expr} as turnover_val"
 
