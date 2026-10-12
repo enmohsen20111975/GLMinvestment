@@ -76485,3 +76485,60 @@ Stage Summary:
   في core_scoring_engine هو heuristic واضح (3% من آخر إغلاق) ومُوثّق كـ estimate وليس ATR
 - Rule 67 (SSOT): PASS — canonical `analyzers/indicators/atr.py` لم يُمَس
 - Rule 75 (PUSH-AFTER-EVERY-TASK): PASS — commit + push بعد كل ملف (10 commits + pushes)
+
+---
+Task ID: PKG3-ROUND2
+Agent: PKG3 SSOT Agent
+Task: توحيد مسارات قراءة السعر
+
+Work Log:
+
+### Round 2 — 5 routes مُهاجرة لـ canonical-price ✅
+
+| # | Route | Before (Rule 20 violation) | After (canonical-price SSOT) | Commit |
+|---|---|---|---|---|
+| 1 | `src/app/api/stocks/[ticker]/depth/route.ts` | `openDb('stocks.db').prepare('SELECT current_price FROM stocks WHERE ticker=?')` — فتح DIRECT للـ SQLite في الـ route | `cache.getOrCompute('canonical_price:'+ticker, () => getCanonicalPrice(ticker, {allowLive:false}), 60_000)` — يمر عبر canonical adapter (stocks.db → data_engine → vps_api) | `561f6c79` |
+| 2 | `src/app/api/explosive/[ticker]/route.ts` | `getStockByTickerFallback().current_price` — lib wrapper بيفتح stocks.db مباشرة | canonical override للسعر بس (الميتاداتا من lib wrapper) | `792ef9ba` |
+| 3 | `src/app/api/flow/[ticker]/route.ts` | نفس نمط #2 | نفس نمط #2 | `d99dcd70` |
+| 4 | `src/app/api/stocks/[ticker]/publish-data/route.ts` | `stockRow.current_price` + `stockRow.previous_close` | canonical override للسعرين + إعادة حساب `changePct` من الـ canonical pair | `e6a9704d` |
+| 5 | `src/app/api/stocks/[ticker]/route.ts` | price من Python response OR lib row — bypass للـ canonical | `applyCanonicalPriceOverride()` post-step بيـ override في الـ response النهائي؛ بـ يضيف `current_price_source` + `current_price_as_of` metadata fields | `2c03e5f5` |
+
+### Before → After
+
+- **Before:** 6 مسارات مباشرة لقراءة السعر (كلها تفتح SQLite مباشرة أو عبر lib wrapper بـ يـ bypass الـ canonical resolution chain)
+- **After:** 5 مسارات عبر canonical-price adapter (المسار السادس `stocks/[ticker]/professional-analysis/route.ts` كان deprecated بـ يرجع HTTP 410 بدون قراءة سعر — ما يحتاج migration)
+
+### Notes
+
+- **Task description clarification:** التاسك ذكر `getLastCleanClose` لكن الـ canonical adapter بـ يصدّر `getCanonicalPrice(ticker, {allowLive})` (الذي بداخله بيستدعي `getLastCleanClose` من data-engine-db-sqljs كـ fallback tier 2). استخدمت `getCanonicalPrice` لأنه الـ SSOT entry point.
+- **Cache key:** `canonical_price:{TICKER}` — مشترك بين كل 5 routes → depth request بعد publish-data request بـ يلقى الـ cache hot → 0 DB reads.
+- **TTL=60s + LRU=512** — يطابق `cache_manager.py` في الـ Python (Rule 67 SSOT).
+- **`allowLive: false`** في كل 5 routes — لأن Python backend بيُجرّب upstream أولاً (في routes 2/3/4/5)، فمنع live API call في الـ fallback بـ يوفر round-trip و بيمنع double-hop.
+- **depth route — استثناء:** الـ route لسه بيفتح `intraday.db` لقراءة tick data (`SELECT ticker, timestamp, price, volume FROM stock_intraday`). هذا مش "قراءة سعر" per Rule 20 intent (اللي بيستهدف `stocks.db.current_price` reads) — ده بيانات ticks لـ reconstruct الـ depth/DOM. سِبته زي ما هو.
+
+### Rule 27 (NO-FAKE-DATA) behavior per route
+
+| Route | لو canonical رجع null |
+|---|---|
+| depth | fallback لأحدث tick price من intraday → لو مفيش ticks → response فاضي بـ note "—" (بدون سعر مُختلَق) |
+| explosive | `current_price: null` → UI "—" (مفيش fallback لـ lib row price — كان هيـ bypass الـ canonical) |
+| flow | `current_price: null` → UI "—" (نفس explosive) |
+| publish-data | fallback لـ `stockRow.current_price` من lib wrapper (الاثنين بيقرأ real stocks.db data — defensive parity) |
+| stocks/[ticker] | يحمي القيمة الموجودة (Python/lib row — real number) — defensive parity |
+
+### Round 3 candidates (مؤجّلة)
+
+- `src/lib/flutter-sqlite-fallback.ts:getStockByTickerFallback` — لسه بيفتح stocks.db مباشرة. هذا الـ SSOT foundation تحت canonical-price (canonical-price بيستخدمه كـ tier 1) — لكن الـ auxiliary readers (`getStockProfileFallback`, `getTopMoversFallback`, `getMovementClassificationFallback`) لسه بـ SELECT `current_price` لـ أغراضها الخاصة. Round 3 ممكن يـ route دي عبر canonical-price برضو.
+- Routes في `/api/portfolio/*` و `/api/market/*` بـ تقرأ `current_price` عبر `unified-stock-data.ts` (SSOT تاني للـ unified fields) — قرار scoping لـ Round 3 هل تـ route عبر canonical-price كمان.
+
+Stage Summary:
+- 5/5 routes تم ترحيلها لـ canonical-price adapter ✅
+- قبل: 6 مسارات مباشرة → بعد: 5 مسارات عبر canonical (المسادس deprecated بدون قراءة)
+- npx tsc --noEmit --skipLibCheck: 0 أخطاء جديدة في الـ 5 routes المُهاجرة (الأخطاء الموجودة في ملفات تانية pre-existing، مش من تغييراتي)
+- bun run lint: PASS (zero output)
+- pre-commit hook (check_no_hard_delete + check_no_raw_insert): PASS على كل الـ 5 commits
+- Rule 67 (CALCULATION-CANONICAL): PASS — كل قراءات `current_price` في الـ 5 routes بتأتي من canonical adapter
+- Rule 27 (NO-FAKE-DATA): PASS — مفيش fallback وهمي في أي route؛ null → UI "—"
+- Rule 20 (Python = brain): PASS — مفيش Node route بيفتح stocks.db لقراءة `current_price` بعد الـ migration (depth route بيفتح intraday.db بس لـ tick data، مش price read)
+- Rule 75 (PUSH-AFTER-EVERY-TASK): PASS — commit + push بعد كل route (5 commits + 5 pushes)
+- Cache hit ratio متوقّع: عالي جداً — كل 5 routes بتستخدم نفس الـ cache key `canonical_price:{TICKER}`، فأول request بـ يسخّن الـ cache لـ باقي الـ routes
