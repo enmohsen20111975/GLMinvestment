@@ -727,26 +727,85 @@ def _canonical_load(ticker: str, limit: int) -> List[Dict]:
     except Exception as e:
         # Fallback: read directly from stock_daily_prices (defensive)
         # This should rarely happen — only if master_analyzer import fails.
-        import sqlite3
+        result = _load_from_stock_daily_prices(ticker, limit)
+        if result:
+            print(f"[data.prices] ⚠️ canonical load failed ({e}), "
+                  f"fallback stock_daily_prices returned {len(result)} rows for {ticker}")
+        return result
+
+
+def _load_from_stock_daily_prices(ticker: str, limit: int) -> List[Dict[str, Any]]:
+    """Read directly from stocks.db.stock_daily_prices — robust column handling.
+
+    Task P0-BRAVO-CODEPLOYMENT-B1: هذا الـ reader يستخدم الأعمدة الأساسية
+    (open/high/low/close) مع fallback إلي open_price/high_price/low_price/close_price
+    لو الأعمدة الأساسية NULL. هذا يضمن قراءة كل الشموع المتاحة (حتى 365 شمعة).
+
+    Returns: List of {date, open, high, low, close, volume} oldest first.
+    """
+    import sqlite3
+    base_ticker = ticker.upper().strip().split(".")[0]
+
+    def _parse_vol(v):
+        """Parse volume — handles int, float, and string formats like '12.74M', '500K'."""
+        if v is None:
+            return 0
+        if isinstance(v, (int, float)):
+            return int(v)
         try:
-            conn = sqlite3.connect(STOCKS_DB)
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT price_date as date, open_price as open, high_price as high, "
-                "low_price as low, close_price as close, volume "
-                "FROM stock_daily_prices WHERE ticker = ? AND close_price > 0 "
-                "ORDER BY price_date DESC LIMIT ?",
-                (ticker.upper().split(".")[0], limit),
-            ).fetchall()
-            conn.close()
-            result = [dict(r) for r in reversed(rows)]
-            if result:
-                print(f"[data.prices] ⚠️ canonical load failed ({e}), "
-                      f"fallback stock_daily_prices returned {len(result)} rows for {ticker}")
-            return result
+            return int(v)
+        except (ValueError, TypeError):
+            pass
+        # String with suffix (e.g. '12.74 M', '500 K', '1.2B')
+        try:
+            s = str(v).strip().replace('\u202f', '').replace('\xa0', '').replace(' ', '').upper()
+            multiplier = 1
+            if s.endswith('B'):
+                multiplier = 1_000_000_000
+                s = s[:-1]
+            elif s.endswith('M'):
+                multiplier = 1_000_000
+                s = s[:-1]
+            elif s.endswith('K'):
+                multiplier = 1_000
+                s = s[:-1]
+            return int(float(s) * multiplier)
         except Exception:
-            print(f"[data.prices] ❌ both canonical and fallback failed for {ticker}: {e}")
-            return []
+            return 0
+
+    try:
+        conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True, timeout=3)
+        conn.row_factory = sqlite3.Row
+        # استخدم COALESCE للأعمدة المزدوجة (open vs open_price)
+        rows = conn.execute(
+            """SELECT price_date as date,
+                      COALESCE(open, open_price) as open,
+                      COALESCE(high, high_price) as high,
+                      COALESCE(low, low_price) as low,
+                      COALESCE(close, close_price) as close,
+                      volume
+               FROM stock_daily_prices
+               WHERE ticker = ? AND COALESCE(close, close_price) IS NOT NULL
+                     AND COALESCE(close, close_price) > 0
+               ORDER BY price_date DESC LIMIT ?""",
+            (base_ticker, limit),
+        ).fetchall()
+        conn.close()
+        result = []
+        for r in reversed(rows):
+            d = dict(r)
+            result.append({
+                "date": d["date"],
+                "open": float(d["open"]) if d["open"] else 0.0,
+                "high": float(d["high"]) if d["high"] else 0.0,
+                "low": float(d["low"]) if d["low"] else 0.0,
+                "close": float(d["close"]) if d["close"] else 0.0,
+                "volume": _parse_vol(d["volume"]),
+            })
+        return result
+    except Exception as e:
+        print(f"[data.prices] _load_from_stock_daily_prices error for {ticker}: {e}")
+        return []
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -837,6 +896,26 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
         # Merge: egksco takes precedence; ph fills in dates egksco is missing.
         if extra_ph:
             ph_data = extra_ph
+# ── Task P0-BRAVO-CODEPLOYMENT-B1 (Bravo addition) ──
+    # ── Task P0-BRAVO-CODEPLOYMENT-B1 (Owner Directive 2026-10-12) ──
+    # ROOT-CAUSE FIX: لو egksco رجع أقل من 30 شمعة (مثلاً PORT بـ شمعة واحدة)،
+    # يُمنع الاكتفاء بها! يتم الدمج فورًا مع stock_daily_prices + price_history.db
+    # لضمان إرجاع تاريخ كامل (90 إلى 365 شمعة) لأي سهم له بيانات تاريخية.
+    MIN_FULL_HISTORY = 30  # أقل من هذا = "مبتور" → يجب الدمج
+    needs_merge = len(egksco_data) < MIN_FULL_HISTORY
+
+    # 2) FALLBACK / MERGE: master_analyzer.load_merged_history (tries price_history.db +
+    #    data_engine.db.egksco_price_history via Step-3 fallback + stock_daily_prices)
+    if not egksco_data or needs_merge:
+        canonical_data = _canonical_load(ticker_norm, limit)
+        if not canonical_data and ticker_norm != raw_norm:
+            canonical_data = _canonical_load(raw_norm, limit)
+        # Task B1: لو canonicalData قليل، اقرأ مباشرة من stock_daily_prices (robust reader)
+        sdp_data = _load_from_stock_daily_prices(ticker_norm, limit)
+        if len(sdp_data) > len(canonical_data):
+            canonical_data = sdp_data  # استخدم الأكثر اكتمالاً
+    else:
+        canonical_data = []
 
     # ── 3) stock_daily_prices (stocks.db) — fallback + gap-filler ──
     #     Used when egksco AND price_history.db are both empty/sparse.
@@ -894,6 +973,42 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
 
     # Pick the source — egksco first (PRIMARY), fallback to canonical
     data = merged
+# ── Task P0-BRAVO-CODEPLOYMENT-B1 (Bravo addition) ──
+    n_canonical = len(canonical_data)
+    if n_egksco >= MIN_FULL_HISTORY:
+        print(f"[data.prices] {ticker_norm}: egksco={n_egksco} rows (PRIMARY — Rule 46) | "
+              f"canonical=0 rows (egksco sufficient ≥ {MIN_FULL_HISTORY})")
+    elif n_egksco > 0 and n_canonical > 0:
+        print(f"[data.prices] {ticker_norm}: egksco={n_egksco} rows (TRUNCATED < {MIN_FULL_HISTORY}) | "
+              f"canonical={n_canonical} rows → MERGING for full history (Task B1)")
+    elif n_egksco > 0:
+        print(f"[data.prices] {ticker_norm}: egksco={n_egksco} rows (TRUNCATED < {MIN_FULL_HISTORY}) | "
+              f"canonical=0 rows — no merge data available")
+    elif n_canonical > 0:
+        print(f"[data.prices] {ticker_norm}: egksco=0 rows | "
+              f"canonical(fallback)={n_canonical} rows")
+    else:
+        print(f"[data.prices] {ticker_norm}: egksco=0 rows | "
+              f"canonical=0 rows — NO DATA (empty per Rule 24)")
+
+    # ── MERGE LOGIC (Task B1): dedup by date, prefer egksco (fresher), fill gaps ──
+    if n_egksco > 0 and n_canonical > 0:
+        # دمج: prefer egksco للتواريخ المتداخلة (أحدث)، أضف canonical للتواريخ الناقصة
+        merged_by_date: dict = {}
+        for row in canonical_data:
+            d = row.get("date") or row.get("price_date")
+            if d:
+                merged_by_date[d] = row
+        for row in egksco_data:
+            d = row.get("date") or row.get("price_date")
+            if d:
+                merged_by_date[d] = row  # egksco يفضل (overwrite canonical)
+        data = sorted(merged_by_date.values(), key=lambda r: r.get("date", r.get("price_date", "")))
+        print(f"[data.prices] {ticker_norm}: MERGED total={len(data)} rows "
+              f"(egksco={n_egksco} + canonical={n_canonical}, dedup by date)")
+    else:
+        # Pick the source — egksco first (PRIMARY), fallback to canonical
+        data = egksco_data if egksco_data else canonical_data
 
     # Ensure consistent key names (canonical returns date/open/high/low/close/volume)
     # but be defensive: some callers expect close_price/high_price. We standardize here.

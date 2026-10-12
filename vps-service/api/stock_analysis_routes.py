@@ -992,6 +992,17 @@ def deep_analysis():
     # 5) hunter assessment (entry/stop/target/R-R)
     hunter = _compute_hunter_assessment(basic, price_history)
 
+    # 6) institutional_levels (Task BRAVO-CODEPLOY-B3) — مستويات السيولة المؤسسية
+    # Rule 27 (NO-FAKE-DATA): لو الـ candles < 10 → None (لا اختلاع).
+    # المستويات تشمل: Fibonacci + Pivot Points + Order Blocks + Fair Value Gaps.
+    institutional_levels = None
+    try:
+        from analyzers.institutional_levels import compute_institutional_levels
+        institutional_levels = compute_institutional_levels(price_history)
+    except Exception:
+        # دفاعي: لو الـ helper فشل، نُرجع None (لا اختلاع — Rule 27)
+        institutional_levels = None
+
     elapsed_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
     # نبني التقسيم النهائي للـ response
@@ -1075,6 +1086,11 @@ def deep_analysis():
         # hunter_assessment: تقييم الصياد (entry/stop/target/R-R)
         'hunter_assessment': hunter,
 
+        # institutional_levels: مستويات السيولة المؤسسية (Task BRAVO-CODEPLOY-B3)
+        # Rule 27: لو الـ candles < 10 → None (لا اختلاع).
+        # {fibonacci, pivots, order_blocks, fair_value_gaps} أو None.
+        'institutional_levels': institutional_levels,
+
         # meta
         'meta': {
             'hunting_helpers_available': HUNTING_HELPERS_AVAILABLE,
@@ -1086,6 +1102,7 @@ def deep_analysis():
             'predictions_count': len(predictions),
             'hunter_available': hunter.get('available', False),
             'hunter_eligible': hunter.get('eligible', False),
+            'institutional_levels_available': institutional_levels is not None,
         },
     }
 

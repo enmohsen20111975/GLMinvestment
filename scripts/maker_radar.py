@@ -983,6 +983,7 @@ def _track_signals_to_db(
     market_code: str = 'EGX',
     disqualified_illiquid: list = None,
     rvol_surge_breakouts: list = None,
+    gatekeeper_rejected: list = None,
 ):
     """تسجيل إشارات الرادار في radar_signal_tracking table في stocks.db.
 
@@ -998,10 +999,15 @@ def _track_signals_to_db(
             الأسهم ذات الاستثناء موجودة بالفعل في under_microscope ويكشفها
             الكود عبر علامة `rvol_surge_exception`. تُكتشف وتُسجّل تلقائيًا
             بـ status='rvol_surge_breakout' في الـ loop الرئيسي.
+        gatekeeper_rejected: قائمة الأسهم المرفوضة بواسطة حارس البوابة LGBM
+            (Task BRAVO-CODEPLOY-B2) — تُسجّل بـ status='REJECTED_BY_AI_GATEKEEPER'
+            للشفافية المؤسسية (مع تسجيل proba في reason) — لا تُضاف لـ
+            under_microscope ولا تُرسل للتليجرام.
     """
     disqualified_illiquid = disqualified_illiquid or []
     rvol_surge_breakouts = rvol_surge_breakouts or []
-    if not under_microscope and not disqualified_illiquid and not rvol_surge_breakouts:
+    gatekeeper_rejected = gatekeeper_rejected or []
+    if not under_microscope and not disqualified_illiquid and not rvol_surge_breakouts and not gatekeeper_rejected:
         return
 
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
@@ -1080,6 +1086,15 @@ def _track_signals_to_db(
             full_reason += f' | buy={buy_pct:.0f}%'
         if kill_switch:
             full_reason += f' | ⚠️ KILL: {kill_reason}'
+        # Task BRAVO-CODEPLOY-B2: إضافة نتيجة حارس البوابة LGBM للسبب
+        # (لو الإشارة ACCEPTED أو SKIPPED_INSUFFICIENT_DATA — REJECTED تُسجّل
+        #  في block منفصل بـ status='REJECTED_BY_AI_GATEKEEPER').
+        _gk_verdict = stock.get('_gk_verdict')
+        _gk_proba = stock.get('_gk_proba')
+        if _gk_verdict == 'ACCEPTED' and _gk_proba is not None:
+            full_reason += f' | 🤖 LGBM-GK proba={_gk_proba:.2f} ACCEPTED (>=0.65)'
+        elif _gk_verdict == 'SKIPPED_INSUFFICIENT_DATA':
+            full_reason += ' | 🤖 LGBM-GK SKIPPED (insufficient data — conservative pass)'
 
         # Task FIX-STALE-DTPP-2026-10-07: store freshness metadata
         data_date = stock.get('data_date', '') or ''
@@ -1166,6 +1181,47 @@ def _track_signals_to_db(
         ))
         disqualified_inserted += 1
 
+    # ─── LGBM GATEKEEPER REJECTIONS (Task BRAVO-CODEPLOY-B2) ─────────────
+    # تسجيل الأسهم المرفوضة بواسطة حارس البوابة LGBM بشفافية كاملة:
+    #   - status = 'REJECTED_BY_AI_GATEKEEPER' (لمرشّح للتنفيذ — مرفوض مؤسسيًا)
+    #   - signal_type = path الأصلي (للتمييز في الـ analytics)
+    #   - reason يوضّح proba و threshold (Rule 27 — NO-FAKE-DATA)
+    #   - entry_price = current_price (للرجوع التاريخي وتتبع ما كان سيحدث)
+    # الهدف: شفافية مؤسسية — نعرف كم سهمًا رفضه الـ AI يوميًا ولماذا.
+    # هذه الأسهم لا تُضاف لـ under_microscope (لا تُرسل للتليجرام ولا تُنشر).
+    gatekeeper_rejected_inserted = 0
+    for stock in gatekeeper_rejected:
+        ticker = stock.get('ticker', '')
+        if not ticker:
+            continue
+        path = stock.get('path', '') or 'unknown'
+        entry_price = stock.get('current_price', 0) or 0
+        _gk_proba = stock.get('_gk_proba', 0.0) or 0.0
+        gk_reason = (
+            f'LGBM AI Gatekeeper: REJECTED — proba={_gk_proba:.2f} < 0.65 threshold. '
+            f'Signal {path} not strong enough per ML model trained on 619 historical signals.'
+        )
+        # نضيف معلومات data_quality للسهم المرفوض (للتحليل لاحقًا)
+        gk_data_date = stock.get('data_date', '') or ''
+        gk_data_quality = stock.get('data_quality', 'unknown') or 'unknown'
+        gk_staleness = stock.get('staleness_days')
+        gk_price_source = stock.get('price_source', 'daily') or 'daily'
+        gk_live_price = stock.get('live_price')
+        gk_daily_price = stock.get('daily_price')
+
+        conn.execute("""
+            INSERT INTO radar_signal_tracking
+                (ticker, signal_date, signal_type, entry_price, path, reason, status,
+                 data_date, data_quality, staleness_days, price_source, live_price, daily_price)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            ticker, scan_date, path, entry_price, path,
+            gk_reason[:500], 'REJECTED_BY_AI_GATEKEEPER',
+            gk_data_date, gk_data_quality, gk_staleness, gk_price_source,
+            gk_live_price, gk_daily_price,
+        ))
+        gatekeeper_rejected_inserted += 1
+
     # ─── RVol SURGE BREAKOUTS — كشف الأسهم ذات استثناء طفرة الحجم الذهبي ──
     # (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY §1.3)
     # هذه الأسهم موجودة بالفعل في `under_microscope` ويكشفها الـ loop الرئيسي
@@ -1226,6 +1282,7 @@ def _track_signals_to_db(
     log(f"📝 Signal tracking: {inserted} signals + {disqualified_inserted} "
         f"disqualified_illiquid + {total_rvol} rvol_surge_breakout "
         f"({rvol_in_under_microscope} in under_microscope + {rvol_inserted_extra} extra) "
+        f"+ {gatekeeper_rejected_inserted} REJECTED_BY_AI_GATEKEEPER "
         f"saved to radar_signal_tracking (date={scan_date})")
 
 
@@ -1697,6 +1754,53 @@ def main():
 
     under_microscope = pre_surge_list + quiet_list + explosive_list + early_break_list
 
+    # ─── LGBM GATEKEEPER (Task BRAVO-CODEPLOY-B2) ──────────────────────────
+    # حارس البوابة الذكي يفحص كل إشارة مرشّحة قبل إضافتها لـ under_microscope.
+    # لو proba < 0.65 → تُرفض الإشارة (لا تُرسل للتليجرام ولا تُنشر)، وتُسجّل
+    # في radar_signal_tracking بـ status='REJECTED_BY_AI_GATEKEEPER' للشفافية.
+    # لو ACCEPTED أو SKIPPED_INSUFFICIENT_DATA → تُضاف لـ under_microscope.
+    gatekeeper_rejected_list: list = []
+    try:
+        from analyzers.lgbm_gatekeeper import predict_signal_probability, open_stocks_db_readonly
+        _gk_conn = open_stocks_db_readonly()
+        if _gk_conn is not None and under_microscope:
+            _accepted: list = []
+            _rejected: list = []
+            for _stock in under_microscope:
+                _t = _stock.get('ticker', '')
+                _ep = _stock.get('current_price', 0) or 0
+                _st = _stock.get('path', '') or ''
+                try:
+                    _gk_proba, _gk_features, _gk_verdict = predict_signal_probability(
+                        _t, today_iso, _ep, _st, _gk_conn
+                    )
+                except Exception:
+                    _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
+                _stock['_gk_proba'] = _gk_proba
+                _stock['_gk_verdict'] = _gk_verdict
+                if _gk_verdict == 'REJECTED_BY_AI_GATEKEEPER':
+                    _rejected.append(_stock)
+                else:
+                    _accepted.append(_stock)
+            _gk_conn.close()
+            _gk_rejected_count = len(_rejected)
+            _gk_accepted_count = len(_accepted)
+            _gk_skipped_count = sum(1 for s in _accepted if s.get('_gk_verdict') == 'SKIPPED_INSUFFICIENT_DATA')
+            under_microscope = _accepted
+            gatekeeper_rejected_list = _rejected
+            log(f"\n=== 🤖 LGBM GATEKEEPER (Task BRAVO-CODEPLOY-B2) ===")
+            log(f"  Threshold: 0.65 | ACCEPTED: {_gk_accepted_count} (incl. {_gk_skipped_count} SKIPPED insufficient-data) | REJECTED: {_gk_rejected_count}")
+            if _rejected:
+                for _r in _rejected[:5]:  # أول 5 مرفوضين للـ log
+                    log(f"    ❌ {_r.get('ticker', '')} — proba={_r.get('_gk_proba', 0):.2f} < 0.65 (path={_r.get('path', '')})")
+                if len(_rejected) > 5:
+                    log(f"    ... و {len(_rejected) - 5} سهم آخر مرفوض")
+            log(f"  🔬 under_microscope بعد الـ GK: {len(under_microscope)} (قبل: {len(_accepted) + len(_rejected)})")
+        else:
+            log(f"\n⚠️ LGBM Gatekeeper: stocks.db غير متاح أو under_microscope فاضي — تخطّي الفلترة")
+    except Exception as _gk_err:
+        log(f"⚠️ LGBM Gatekeeper unavailable: {_gk_err} — كل الإشارات ستُمرّر (conservative)")
+
     # ─── DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY) ──
     # اعزل الأسهم المستبعدة (tier='light' بدون استثناء RVol) في قائمة منفصلة
     # للشفافية. الأسهم دي مش في under_microscope (winner_path=None من scan_ticker)،
@@ -1875,6 +1979,7 @@ def main():
             market_code,
             disqualified_illiquid=disqualified_illiquid_list,
             rvol_surge_breakouts=rvol_surge_breakouts_list,
+            gatekeeper_rejected=gatekeeper_rejected_list,
         )
     except Exception as _track_err:
         log(f"⚠️ Signal tracking failed: {_track_err}")

@@ -3393,6 +3393,61 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 )
                 continue
 
+            # ── LGBM GATEKEEPER (Task BRAVO-CODEPLOY-B2.3) ───────────────────
+            # حارس البوابة الذكي يفحص كل توصية BUY قبل إدراجها في predictions table.
+            # النموذج (models/lgbm_signal_gatekeeper.joblib) مُدرّب على 619 صفقة
+            # حقيقية بـ threshold=0.65 (78.95% win rate على 57 صفقة out-of-sample).
+            # لو proba < 0.65 → لا تُدرج التوصية (لا تُكتب في predictions)،
+            #   و تُسجّل في log فقط (للـ audit trail — التتبع المؤسسي).
+            # لو ACCEPTED أو SKIPPED_INSUFFICIENT_DATA → تُدرج التوصية كالمعتاد.
+            # Rule 27 (NO-FAKE-DATA): لو الـ features لا يمكن حسابها (بيانات ناقصة)،
+            #   verdict='SKIPPED_INSUFFICIENT_DATA' → السماح بالمرور conservative.
+            if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
+                try:
+                    from analyzers.lgbm_gatekeeper import (
+                        predict_signal_probability,
+                        open_stocks_db_readonly,
+                    )
+                    _gk_conn = open_stocks_db_readonly()
+                    if _gk_conn is not None:
+                        try:
+                            _gk_proba, _gk_features, _gk_verdict = predict_signal_probability(
+                                sig['ticker'], scan_date, float(sig['entry']),
+                                str(sig.get('signal', '')), _gk_conn
+                            )
+                        finally:
+                            _gk_conn.close()
+                    else:
+                        _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
+                except Exception as _gk_err:
+                    _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
+                    print(
+                        f"[LGBM-GATEKEEPER] WARN {sig['ticker']} gatekeeper exception: {_gk_err} "
+                        f"→ SKIPPED (conservative pass)",
+                        flush=True,
+                    )
+                if _gk_verdict == 'REJECTED_BY_AI_GATEKEEPER':
+                    print(
+                        f"[LGBM-GATEKEEPER] REJECTED {sig['ticker']} "
+                        f"proba={_gk_proba:.2f} < 0.65 threshold "
+                        f"(signal={_sig_signal}, evidence={_sig_evidence}/6) → SKIP prediction",
+                        flush=True,
+                    )
+                    continue
+                # ACCEPTED أو SKIPPED_INSUFFICIENT_DATA → نكمّل وندخل التوصية
+                if _gk_verdict == 'ACCEPTED':
+                    print(
+                        f"[LGBM-GATEKEEPER] ACCEPTED {sig['ticker']} "
+                        f"proba={_gk_proba:.2f} >= 0.65 (signal={_sig_signal})",
+                        flush=True,
+                    )
+                else:
+                    print(
+                        f"[LGBM-GATEKEEPER] SKIPPED {sig['ticker']} "
+                        f"insufficient data → conservative pass (signal={_sig_signal})",
+                        flush=True,
+                    )
+
             try:
                 # Rule 54 BUG FIX: master_score كان = tech_score (نفس القيمة في العمودين)
                 # دلوقتي master_score = combined_score (يشمل تأثير الأخبار + كل التعديلات)

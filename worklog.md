@@ -80225,3 +80225,123 @@ Stage Summary:
 - ⛔ لا commit/push.
 - ⛔ لا حذف منطق مالي أو fallback موجود.
 >>>>>>> 45bfcb6 (feat(BRAVO-UX): حماية مؤسسية + fallback سلس + بطاقات ذكية)
+
+---
+Task ID: BRAVO-CODEPLOY-B2-B3
+Agent: مهندس محرك Python (فريق GLM 5.2-Bravo)
+Task: LGBM Gatekeeper + Institutional Levels API
+
+Work Log:
+- قرأت آخر 80 سطر من worklog.md (آخر Task = BRAVO-UX-INSTITUTIONAL-SHIELDS —
+  بانرات حماية مؤسسية + fallback سلس للواجهات Next.js).
+- قرأت models/lgbm_metrics.json — النموذج مدرب على 619 صفقة، threshold=0.65
+  يعطي 78.95% win rate على 57 صفقة out-of-sample (+60.85pp over baseline 18.09%).
+- فحصت models/lgbm_signal_gatekeeper.joblib بـ joblib.load — هو LGBMClassifier
+  (sklearn wrapper) مباشرةً (مش dict). لذا صمّمت load_gatekeeper_model() يُرجع
+  dict فيه {'model', 'feature_names', 'threshold', 'prob', 'available'}.
+- قرأت scripts/train_signal_classifier_lgbm.py — النموذج يتدرب على **12 features**
+  (مش 6 كما في وصف المهمة): percentile_rank, avg_turnover_20d_log, rvol_20d,
+  rsi_14, mfi_14, price_to_sma20, price_to_sma50, atr_14_pct, bollinger_bandwidth,
+  high_low_spread_pct, dist_from_20d_high, signal_type_code. طبّقت نفس الـ logic
+  في extract_features_for_signal() (نفس المعادلات + نفس fallback لـ turnover=
+  close*volume + نفس filter `close IS NOT NULL AND close > 0`).
+- قرأت vps-service/api/stock_analysis_routes.py endpoint /api/stock/deep-analysis
+  (الأسطر 853-1144) — وجدت price_history بيتم جلبه عبر _get_price_history() (اللي
+  بيستدعي load_price_history من data/prices.py — مهمة B1).
+- قرأت scripts/maker_radar.py — _track_signals_to_db() (الأسطر 980-1230) وmain()
+  (الأسطر 1698-1740) — حددت نقطة الإدراج: بعد بناء under_microscope (line 1755)
+  و قبل الـ JSON/telegram/report.
+
+B2.1 — إنشاء vps-service/analyzers/lgbm_gatekeeper.py (NEW):
+- load_gatekeeper_model(): cached + thread-safe. يُرجع dict بـ keys: model,
+  feature_names (12), threshold=0.65, prob=0.65 (alias), available (bool).
+- extract_features_for_signal(ticker, signal_date, entry_price, signal_type, conn):
+  يستخرج الـ 12 features من stock_daily_prices (point-in-time، نفس logic الـ train
+  script بدقة). تطبيق fallback turnover=close*volume و filter close > 0 (مطابقة).
+- predict_signal_probability(): يُرجع (proba, features, verdict). verdict =
+  'ACCEPTED' لو proba>=0.65 | 'REJECTED_BY_AI_GATEKEEPER' لو proba<0.65 |
+  'SKIPPED_INSUFFICIENT_DATA' لو الـ features لا يمكن حسابها (Rule 27 — لا اختلاع).
+- _load_market_turnovers(): cache per signal_date (نفس اليوم = نفس القائمة).
+  SQL يستخدم ROW_NUMBER() window function لآخر 20 صف لكل ticker + CASE WHEN
+  fallback لـ turnover (مطابقة لـ train script).
+- open_stocks_db_readonly(): اتصال mode=ro (Rule 1 — لا كتابة في DBs الإنتاجية).
+
+B2.2 — دمج Gatekeeper في scripts/maker_radar.py:
+- _track_signals_to_db(): أضفت parameter جديد `gatekeeper_rejected: list = None`.
+  أضفت block منفصل (lines 1184-1223) يكتب كل سهم مرفوض بـ status=
+  'REJECTED_BY_AI_GATEKEEPER' + reason يوضّح proba و threshold. كما أضفت
+  إدراج proba في reason للـ ACCEPTED/SKIPPED في الـ loop الرئيسي (lines 1089-1097).
+  حدّثت الـ log line لتشمل عدّاد REJECTED_BY_AI_GATEKEEPER.
+- main(): بعد under_microscope = pre_surge_list + ... (line 1755)، أضفت block
+  كامل (lines 1757-1802) يفحص كل إشارة بواسطة predict_signal_probability.
+  ACCEPTED → يبقى في under_microscope + proba في reason. REJECTED → يُنقل
+  لـ gatekeeper_rejected_list (لا يُرسل للتليجرام ولا يُنشر). SKIPPED → يبقى
+  في under_microscope (conservative pass). حدّثت call لـ _track_signals_to_db
+  عشان يمرّر gatekeeper_rejected=gatekeeper_rejected_list (line 1982).
+
+B2.3 — دمج Gatekeeper في vps-service/jobs/daily_predictor.py:
+- أضفت block (lines 3396-3449) بعد V40.2 EVIDENCE GATE (line 3394 continue)
+  و قبل try: record_prediction. لكل توصية BUY/STRONG_BUY/ACCUMULATE: يستدعي
+  predict_signal_probability(ticker, scan_date, entry, signal, conn).
+  REJECTED → continue (لا تُدرج التوصية في predictions table) + log واضح:
+  "[LGBM-GATEKEEPER] REJECTED {ticker} proba={X:.2f} < 0.65". ACCEPTED أو
+  SKIPPED → نكمّل وندخل التوصية كالمعتاد (مع log للتأكيد).
+
+B3.1 — إنشاء vps-service/analyzers/institutional_levels.py (NEW):
+- compute_institutional_levels(candles): يُرجع dict بـ 4 keys أو None لو
+  candles < 10 (Rule 27 — لا اختلاع).
+- Fibonacci: آخر swing high/low في الـ 50 شمعة الأخيرة. trend = 'up' لو
+  last_close > first_close للنافذة. levels = {0.382, 0.5, 0.618, 0.786}.
+  صاعد: level = swing_low + range*ratio. هابط: level = swing_high - range*ratio.
+- Pivots (Classic): بناءً على آخر شمعة. P=(H+L+C)/3, R1=2P-L, S1=2P-H,
+  R2=P+(H-L), S2=P-(H-L).
+- Order Blocks: آخر 3 مناطق. bullish=3 شموع هابطة متتالية + شمعة صاعدة قوية
+  (>1% move). bearish=3 شموع صاعدة + شمعة هابطة قوية (<-1% move). النطاق
+  = (min low, max high) للـ 3 شموع. كل OB = {start_date, end_date, high, low, type}.
+- Fair Value Gaps: آخر 3. bullish FVG: low[i] > high[i-2]. bearish FVG:
+  high[i] < low[i-2]. كل FVG = {date, type, top, bottom}.
+
+B3.2 — دمج institutional_levels في vps-service/api/stock_analysis_routes.py:
+- في /api/stock/deep-analysis (line 853): بعد _compute_hunter_assessment، أضفت
+  block (lines 995-1004) يستدعي compute_institutional_levels(price_history) في
+  try/except (Rule 27 — None لو فشل). أضفت key جديد 'institutional_levels' في
+  response (line 1092) + 'institutional_levels_available' في meta (line 1105).
+- ⛔ ملاحظة: /api/chart/full-analysis موجود في chart_routes.py لكنه **خارج
+  قائمة الملفات المسموح تعديلها** — يحتاج مهمة منفصلة لإضافته هناك.
+
+التحقق:
+- ✅ Syntax OK لكل الـ 5 ملفات (ast.parse).
+- ✅ Model load: load_gatekeeper_model() يُرجع dict بـ 12 feature names + threshold=0.65.
+- ✅ Gatekeeper e2e (COMI 2026-10-09, A_pre_surge): proba=0.3647 → REJECTED
+  (features كلها منطقية: percentile_rank=82.93, rvol_20d=1.02, rsi_14=11.95).
+- ✅ SKIPPED e2e (ticker '1325' له 5 صفوف فقط): verdict=SKIPPED_INSUFFICIENT_DATA.
+- ✅ Institutional levels (COMI 60 شمعة): Fibonacci swing_high=142.5/swing_low=124.01/
+  trend=down + 4 levels, Pivots P=124.68/R1=125.35/R2=126.57/S1=123.46/S2=122.79,
+  3 Order Blocks (mix bullish/bearish), 3 Fair Value Gaps.
+- ✅ Rule 27: candles<10 → None (تم التحقق).
+- ✅ Flask test client: /api/stock/deep-analysis?ticker=COMI يُرجع institutional_levels
+  key مع كامل البيانات + meta.institutional_levels_available=True.
+- ✅ Simulation maker_radar flow (4 إشارات): 3 REJECTED + 1 SKIPPED → under_microscope
+  قبل GK = 4, بعد GK = 1 (conservative pass).
+
+Stage Summary:
+- ✅ 2 modules جديدة: vps-service/analyzers/lgbm_gatekeeper.py (260 سطر) +
+  vps-service/analyzers/institutional_levels.py (260 سطر).
+- ✅ 3 ملفات مُعدّلة: scripts/maker_radar.py (+~115 سطر — _track_signals_to_db
+  + main gatekeeper block + signature update), vps-service/jobs/daily_predictor.py
+  (+~54 سطر — LGBM block قبل record_prediction), vps-service/api/stock_analysis_routes.py
+  (+~17 سطر — institutional_levels في response + meta).
+- ✅ Model artifact: models/lgbm_signal_gatekeeper.joblib (LGBMClassifier — 12 features).
+- ✅ Threshold = 0.65 (78.95% win rate out-of-sample — من lgbm_metrics.json).
+- ✅ Rule 27 (NO-FAKE-DATA) محترم: SKIPPED_INSUFFICIENT_DATA + None لو candles<10.
+- ✅ Rule 20 (PYTHON = BRAIN): كل الحسابات في Python — لا JS.
+- ✅ Rule 1 (DBs readonly): file:db/stocks.db?mode=ro (لا كتابة في DBs الإنتاجية).
+- ✅ Idempotent: clear_cache + run-safe try/except في كل الـ integration points.
+- ⛔ لا commit/push.
+- ⛔ لا تشغيل bun run dev.
+- ⛔ لا لمس src/ أو maestro_orchestrator.py أو vps-service/data/prices.py.
+- ⚠️ /api/chart/full-analysis (في chart_routes.py) **خارج الملفات المسموح تعديلها**
+  — يحتاج قرار المدير لمهمة منفصلة لإضافة institutional_levels هناك.
+- ⚠️ وصف المهمة ذكر "6 features" لكن النموذج الفعلي مدرب على **12 features**
+  (تم التحقق من train_signal_classifier_lgbm.py). طبّقت 12 features بدقة لضمان
+  التطابق مع توزيع التدريب.
