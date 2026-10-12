@@ -450,6 +450,134 @@ class PredictionTracker:
         if _persona not in ('gambler', 'balanced', 'conservative'):
             _persona = 'balanced'
 
+        # ════════════════════════════════════════════════════════════════════
+        # GLM5.2-S1-FANTASY-CAP — Hard Realistic Target Cap + R:R Guard
+        # ════════════════════════════════════════════════════════════════════
+        # 2026-10-13: Audit found 838 predictions (54%) with fantasy targets
+        # > +50% (REAC target=161.7 / +1623%, MASR target=55.72 / +540%).
+        # The cap clamps target_price / target_price_2 to realistic bounds
+        # BEFORE the geometry guard + INSERT/UPDATE paths see them.
+        #
+        # Rule 27 (NO-FAKE-DATA): the ORIGINAL target is preserved in `notes`
+        # so the data trail is honest (we don't silently fabricate a target —
+        # we document the cap action transparently).
+        #
+        # Rule 67 (CALCULATION-CANONICAL): ATR comes from `atr_at_entry` if the
+        # caller provided it (canonical calc_atr value), else fallback to 3% of
+        # entry (per calc_atr convention).
+        #
+        # Rule 75 (PUSH-AFTER-EVERY-TASK): this change is committed + pushed
+        # in its own commit before any other file modification.
+        # ════════════════════════════════════════════════════════════════════
+        _sig_upper = (signal or '').upper().strip()
+        _is_buy_like = _sig_upper in ('BUY', 'STRONG_BUY', 'ACCUMULATE')
+        _is_sell_like = _sig_upper in ('SELL', 'STRONG_SELL', 'REDUCE')
+        # HOLD with prices = the caller wants to INSERT a HOLD row with entry/
+        # target/stop — that's blocked by prediction_write_guard (GLM5.2-S1 §3).
+        # HOLD without prices = textual recommendation (allowed — skip cap+RR).
+        _is_hold = _sig_upper == 'HOLD'
+
+        if not _is_hold and (entry_price and target_price and stop_loss):
+            try:
+                from analyzers.core_scoring_engine import (
+                    apply_realistic_target_cap,
+                    validate_rr_ratio,
+                )
+
+                # ── ATR resolution (Rule 67 — use canonical atr_at_entry) ──
+                _cap_atr = float(atr_at_entry) if atr_at_entry else 0.0
+                if _cap_atr <= 0 and entry_price:
+                    _cap_atr = float(entry_price) * 0.03
+
+                # ── Momentum flag (high-momentum stocks: rockets/bombs) ──
+                _is_high_momentum = bool(
+                    (explosive_score and float(explosive_score) >= 50)
+                    or (explosive_label and explosive_label.upper() in ('BOMB', 'ROCKET', 'SPARK'))
+                )
+
+                # ── Apply TP1 cap ──
+                _original_target_1 = float(target_price)
+                _capped_target_1 = apply_realistic_target_cap(
+                    entry_price=entry_price,
+                    target_price=target_price,
+                    atr=_cap_atr,
+                    is_high_momentum=_is_high_momentum,
+                    tp_level=1,
+                )
+
+                # ── Apply TP2 cap (if provided) ──
+                _original_target_2 = None
+                _capped_target_2 = None
+                if target_price_2:
+                    _original_target_2 = float(target_price_2)
+                    _capped_target_2 = apply_realistic_target_cap(
+                        entry_price=entry_price,
+                        target_price=target_price_2,
+                        atr=_cap_atr,
+                        is_high_momentum=_is_high_momentum,
+                        tp_level=2,
+                    )
+
+                # ── Rule 27: preserve original target in notes (NO-FAKE-DATA) ──
+                # The cap is honest only if we document what was capped.
+                # If `notes` already contains a FANTASY-CAP tag for TP1, skip
+                # (avoid duplicating the preservation when record_prediction
+                # is called twice for the same ticker — idempotency).
+                _cap_note_marker = '[FANTASY-CAP'
+                if (_capped_target_1 < _original_target_1
+                        and _cap_note_marker not in (notes or '')):
+                    _cap_note = (
+                        f" {_cap_note_marker} original_tp1={_original_target_1:.4f}"
+                        f" -> capped_tp1={_capped_target_1:.4f}"
+                        f" atr={_cap_atr:.4f} momentum={int(_is_high_momentum)}"
+                    )
+                    if _original_target_2 is not None and _capped_target_2 is not None:
+                        _cap_note += (
+                            f" | original_tp2={_original_target_2:.4f}"
+                            f" -> capped_tp2={_capped_target_2:.4f}"
+                        )
+                    _cap_note += ']'
+                    notes = (notes or '') + _cap_note
+
+                # ── Apply capped values back to caller-visible variables ──
+                target_price = _capped_target_1
+                if _capped_target_2 is not None:
+                    target_price_2 = _capped_target_2
+
+                # ── GLM5.2-S1 §2: R:R Guard — reject if R:R < 1.5 ──
+                # The geometry_guard R5 also checks this (min_rr=1.5), but
+                # calling validate_rr_ratio first gives a clearer message + is
+                # the explicit per-spec guard.
+                if _is_buy_like or _is_sell_like:
+                    if not validate_rr_ratio(entry_price, target_price, stop_loss):
+                        print(
+                            f"[FANTASY-CAP-RR-REJECT] ticker={ticker} signal={signal} "
+                            f"entry={entry_price} target={target_price} stop={stop_loss} "
+                            f"| R:R < 1.5 (gambling setup, not a tradeable signal)",
+                            flush=True,
+                        )
+                        return None
+
+            except ImportError:
+                # analyzers.core_scoring_engine unavailable — proceed WITHOUT cap.
+                # This is a safe degradation: the geometry_guard R4 still caps
+                # at entry×3.0, so fantasy targets won't reach the DB. But the
+                # tighter GLM5.2-S1 cap is skipped — log loudly so we know.
+                print(
+                    f"[FANTASY-CAP-SKIP] ticker={ticker} signal={signal} | "
+                    f"apply_realistic_target_cap not importable — falling back to "
+                    f"geometry_guard R4 (entry×3.0) only.",
+                    flush=True,
+                )
+            except Exception as _cap_err:
+                # Defensive: cap failure MUST NOT break the INSERT path.
+                # Log loudly + fall through to geometry_guard.
+                print(
+                    f"[FANTASY-CAP-ERR] ticker={ticker} signal={signal} | "
+                    f"cap raised ({_cap_err}) — skipping cap, relying on geometry_guard.",
+                    flush=True,
+                )
+
         # ── MASTER DIRECTIVE المحور 3: حراسة هندسة الأسعار (Geometry Guard) ──
         # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
         # Previously the comment here described an AUTO-FIX path that
