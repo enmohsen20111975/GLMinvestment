@@ -292,21 +292,54 @@ calc_rsi = _calc_rsi_series
 
 
 def calc_atr(highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> List[float]:
-    """Average True Range"""
-    if len(highs) < 2:
-        return [0.0] * len(highs)
-    
-    tr_values = [highs[0] - lows[0]]
-    for i in range(1, len(highs)):
-        tr = max(
+    """ATR series — canonical Wilder's smoothing (Rule 54).
+
+    PKG4-ATR-UNIFY: produces a per-bar ATR series using the same Wilder's
+    smoothing formula as analyzers.indicators.atr.calc_atr.
+    Pre-PKG4 this used `calc_ema(tr_values, period)` (a generic EMA), which
+    diverged from canonical Wilder's smoothing (a special-case EMA with
+    α = 1/period and a different seed).
+
+    Series form is required because legacy callers consume both:
+      - atr_vals[-1]              (today's ATR for entry signals)
+      - future_atrs_list[day+1:]  (forward ATR series for trailing-stop sim)
+
+    The final element is guaranteed to equal
+    analyzers.indicators.calc_atr(highs, lows, closes, period).
+
+    Rule 54 note: the math below MUST stay identical to the canonical
+    formula. Any divergence is a Rule 54 violation.
+    """
+    # PKG4-ATR-UNIFY: math delegates (formula = canonical Wilder's).
+    n = min(len(highs), len(lows), len(closes))
+    if n < 2:
+        return [0.0] * max(n, 1)
+    # TR primitive — same as canonical (max of 3 terms per bar).
+    # Note: trs[0] is a synthetic placeholder (no prev close on bar 0);
+    # canonical ignores bar 0 (range starts at index 1).
+    trs: List[float] = [0.0]  # placeholder for bar 0
+    for i in range(1, n):
+        trs.append(max(
             highs[i] - lows[i],
-            abs(highs[i] - closes[i-1]),
-            abs(lows[i] - closes[i-1])
-        )
-        tr_values.append(tr)
-    
-    # EMA of TR
-    return calc_ema(tr_values, period)
+            abs(highs[i] - closes[i - 1]),
+            abs(lows[i] - closes[i - 1]),
+        ))
+    out: List[float] = [0.0] * n
+    # Canonical fallback: when fewer than `period` TRs exist, return mean.
+    if (len(trs) - 1) < period:
+        valid = trs[1:]  # exclude placeholder
+        avg = sum(valid) / len(valid) if valid else 0.0
+        for i in range(1, n):
+            out[i] = avg
+        return out
+    # Seed: SMA of first `period` TRs (matches canonical seed at bar `period`).
+    atr = sum(trs[1:period + 1]) / period
+    out[period] = round(atr, 4)
+    # Wilder's recursive smoothing — same formula as canonical calc_atr.
+    for i in range(period + 1, n):
+        atr = (atr * (period - 1) + trs[i]) / period
+        out[i] = round(atr, 4)
+    return out
 
 
 def calc_bollinger_bands(closes: List[float], period: int = 20, std_dev: float = 2.0) -> Tuple[List[float], List[float], List[float]]:
