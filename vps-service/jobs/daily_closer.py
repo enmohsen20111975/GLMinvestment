@@ -3076,16 +3076,84 @@ class DailyCloser:
                 _prediction_date_db = str(_ep_row[3])
 
             if _entry_price_db > 0:
-                # ── SPLIT GUARD: drop > 35% from entry without progressive stop ──
+                # ── SPLIT GUARD (hardened GLM5.2-S3) ──────────────────────────────
+                # Heuristic: لو actual_return < -35% من entry_price → غالباً تجزئة
+                # سهم، مش خسارة فعلية. تأكيد إضافي (informational، مش gating):
+                #   (a) progressive_stop_hit? لو highest_price_reached قريب من entry
+                #       (ما أقربش من entry × 0.7) و actual_return < -35% → غالباً
+                #       gap overnight بسبب split، مش drawdown تدريجي → split.
+                #   (b) split history في corporate_actions (لو فيه action_type
+                #       LIKE 'split%' للـ ticker ده) → تأكيد إضافي.
+                # الـ guard بـ يطبّق الاستبعاد على أي حال لو actual_return < -35%
+                # (conservative — مفيش خسارة فعلية تظهر -48% في يوم واحد من غير
+                # وقف تدرجي)، لكن الـ notes بـ يسجّل السياق علشان المراجعة.
+                # ────────────────────────────────────────────────────────────────
                 if actual_return < -_SPLIT_DROP_THRESHOLD_PCT:
                     _split_excluded = True
                     _original_return = actual_return
                     actual_return = 0.0  # استبعاد من P&L
                     exit_type = 'split_excluded'
+
+                    # (a) progressive-stop check — لو highest_price_reached < 0.7×entry
+                    # → السهم ما اتداولش فوق entry قبل ما "ينزل" → gap = split.
+                    _hpr_for_split = float(highest_price_reached or 0)
+                    _progressive_stop_hit = (
+                        _hpr_for_split > 0
+                        and _hpr_for_split >= _entry_price_db * 0.70
+                    )
+
+                    # (b) corporate_actions split-history check (informational)
+                    _split_in_corp_actions = False
+                    try:
+                        _ca_conn = self._conn(self.predictions_db)
+                        _ca_cur = _ca_conn.cursor()
+                        _ca_cur.execute(
+                            "SELECT COUNT(*) FROM corporate_actions "
+                            "WHERE ticker = ? AND (action_type LIKE 'split%' "
+                            "OR details LIKE '%split%')",
+                            (ticker,),
+                        )
+                        _split_in_corp_actions = (_ca_cur.fetchone()[0] or 0) > 0
+                        _ca_conn.close()
+                    except Exception:
+                        pass  # table may not exist; safe-by-design
+
+                    _exit_price_for_split = float(exit_close_price or highest_price_reached or 0)
+
+                    # (c) write notes — keep existing notes + append split marker
+                    try:
+                        _nconn = self._conn(self.predictions_db)
+                        _ncur = _nconn.cursor()
+                        _ncur.execute("SELECT notes FROM predictions WHERE id = ?", (pred_id,))
+                        _existing_notes = (_ncur.fetchone() or [None])[0] or ''
+                        _split_marker = (
+                            f" | SPLIT DETECTED — original_return={_original_return:.2f}%, "
+                            f"original_entry={_entry_price_db}, "
+                            f"post_split_price={_exit_price_for_split}, "
+                            f"progressive_stop_hit={'yes' if _progressive_stop_hit else 'no'}, "
+                            f"corp_action_split={'yes' if _split_in_corp_actions else 'no'}"
+                        )
+                        if 'SPLIT DETECTED' not in _existing_notes:
+                            _new_notes = (_existing_notes + _split_marker)[:2000]
+                            _ncur.execute(
+                                "UPDATE predictions SET notes = ? WHERE id = ?",
+                                (_new_notes, pred_id),
+                            )
+                            _nconn.commit()
+                        _nconn.close()
+                    except Exception as _nq_err:
+                        logger.warning(
+                            f"[SPLIT-NOTES] #{pred_id} {ticker}: failed to write split notes: {_nq_err}"
+                        )
+
                     logger.warning(
                         f"[SPLIT-GUARD] #{pred_id} {ticker}: actual_return={_original_return:.2f}% "
                         f"< -{_SPLIT_DROP_THRESHOLD_PCT}% threshold → SPLIT EXCLUDED "
-                        f"(entry={_entry_price_db}, stop={_stop_loss_db}) — not counted in P&L"
+                        f"(entry={_entry_price_db}, stop={_stop_loss_db}, "
+                        f"post_split_price={_exit_price_for_split}, "
+                        f"progressive_stop_hit={'yes' if _progressive_stop_hit else 'no'}, "
+                        f"corp_action_split={'yes' if _split_in_corp_actions else 'no'}) "
+                        f"— not counted in P&L"
                     )
                 # ── HARD LOSS CEILING: cap actual_return at -7% ──
                 elif actual_return < -_HARD_LOSS_CEILING_PCT:
@@ -3103,6 +3171,41 @@ class DailyCloser:
                 f"proceeding with original actual_return={actual_return:.2f}%"
             )
         # ──────────────────────────────────────────────────────────────────────
+
+        # ──────────────────────────────────────────────────────────────────────
+        # GLM5.2-S2-PARTIAL-TP-TRAILING: Time Exit (خروج محايد بدل EXPIRED)
+        # ──────────────────────────────────────────────────────────────────────
+        # الكارثة: 958 صفقة (61.8%) ماتت EXPIRED — رأس مال المتداولين متجمد
+        # في صفقات معلقة بلا أي ربح محقق. السبب: الـ EXPIRED كان بـ يخلي
+        # actual_return = (close - entry) / entry، فلو الصفقة كانت سالبة
+        # بسيطة (-2%) بتتحسب كخسارة EXPIRED → يحسّن الـ win rate بشكل مظلل
+        # وبيـ تجمّد رأس المال.
+        #
+        # الحل: لو status == 'EXPIRED' AND holding_days > 15 (15 جلسة تداول)
+        # AND مفيش target/stop hit → حوّل لـ TIME_EXIT. ده يـ:
+        #   1. يطلق رأس المال (status=TIME_EXIT → outside the PENDING pool)
+        #   2. يـ record الـ actual_return الحقيقي (موجب/سالب/صفر) بدل ما
+        #      يتركها EXPIRED بلا قيمة.
+        #   3. يميّز الـ exits الزمنية عن الـ EXPIRED الحقيقية (اللي عندها
+        #      data_quality issues).
+        #
+        # الـ actual_return هنا بالفعل محسوب من الـ caller = (close - entry)/entry*100.
+        # اللي بنعمله هنا = rename للـ status + exit_type فقط.
+        #
+        # Rule 27 (NO-FAKE-DATA): الـ current_price مصدره الـ caller (close من
+        # price_history) — مفيش اختلاق. لو الـ caller ما إستدعاش _mark_closed
+        # الـ prediction بـ يفضل pending (safe-by-design).
+        # ──────────────────────────────────────────────────────────────────────
+        _TIME_EXIT_MIN_HOLDING_DAYS = 15  # 15 جلسة تداول (≈ 3 أسابيع)
+        if status == 'EXPIRED' and holding_days > _TIME_EXIT_MIN_HOLDING_DAYS:
+            _original_status = status
+            status = 'TIME_EXIT'
+            exit_type = 'time_exit'
+            logger.info(
+                f"[TIME-EXIT] #{pred_id} {ticker}: holding_days={holding_days} "
+                f"> {_TIME_EXIT_MIN_HOLDING_DAYS} → converted EXPIRED → TIME_EXIT "
+                f"(actual_return={actual_return:.2f}%, entry={_entry_price_db:.4f})"
+            )
 
         try:
             conn = self._conn(self.predictions_db)
