@@ -76542,3 +76542,100 @@ Stage Summary:
 - Rule 20 (Python = brain): PASS — مفيش Node route بيفتح stocks.db لقراءة `current_price` بعد الـ migration (depth route بيفتح intraday.db بس لـ tick data، مش price read)
 - Rule 75 (PUSH-AFTER-EVERY-TASK): PASS — commit + push بعد كل route (5 commits + 5 pushes)
 - Cache hit ratio متوقّع: عالي جداً — كل 5 routes بتستخدم نفس الـ cache key `canonical_price:{TICKER}`، فأول request بـ يسخّن الـ cache لـ باقي الـ routes
+
+---
+Task ID: PKG2-ROUND2
+Agent: PKG2 Engineering Agent
+Task: ترحيل routes لـ unified response + إزالة any
+
+Work Log:
+
+### Routes migrated (12 total — exceeds the 10-route target)
+
+| # | Route | Migration | Commit |
+|---|-------|-----------|--------|
+| 1 | `/api/keepalive` | `NextResponse.json({status,...})` → `apiOk({...})` | bundled into 561f6c79 |
+| 2 | `/api/sniper/scan` | error path → `apiErr('backend_unreachable', msg, 503)` + `catch (err: unknown)` | f102b42c |
+| 3 | `/api/flow` | cached proxy error → `apiErr` + `catch (err: unknown)` | 0ffc3924 |
+| 4 | `/api/explosive` | proxy+paywall error → `apiErr` + typed `Record<string, unknown>` payload | 018cef45 |
+| 5 | `/api/recommendations/verify` | proxy error → `apiErr` + typed `unknown` payload | c708d702 |
+| 6 | `/api/stocks/presets` | proxy error → `apiErr` + typed `unknown` payload | b6ebaede |
+| 7 | `/api/risk/stock-types` | removed fake static fallback (Rule 27) → `apiErr` + typed `unknown` payload | e2489da7 |
+| 8 | `/api/expert-recommendations/batch` | admin proxy error → `apiErr` + typed `unknown` payload | 70031474 |
+| 9 | `/api/predictions/monthly-league` | removed fabricated empty league array (Rule 27) → `apiErr` | bundled into 68bdfae1 |
+| 10 | `/api/predictions/tracking/list` | deprecated 410 → `apiErr('endpoint_deprecated', msg, 410, details)` | 1ca74d8f |
+| 11 | `/api/stocks/[ticker]/comprehensive` | 15 `any` → 0 (all `(response.X as any).field` → `response.X.field`) | fff62968 |
+| 12 | `/api/v2/unified/scan` | 11 `any` → 0 (LooseRecord type alias) + error → `apiErr('unified_scan_failed', ...)` | 55d137fa |
+| 13 | `/api/portfolio/unified-watch` | 16 `any` → 0 (StockEnriched interface) + auth/internal errors → `apiErr` | f22decd6 |
+
+### Metrics — Before / After
+
+| Metric | Before | After | Δ |
+|--------|--------|-------|---|
+| `any` total | 1079 | 1028 | **−51** (exceeded −50 target ✅) |
+| `as any` casts | 256 | 235 | −21 |
+| `: any` colon | 552 | 538 | −14 |
+| `any[]` array | 152 | 143 | −9 |
+| `: any[` indexed | 83 | 76 | −7 |
+| Unified helper adopted | 2 | 14 | **+12** ✅ |
+| Pending migration | 451 | 439 | **−12** (beat −10 target ✅) |
+| Floating-point risk | 178 | 178 | unchanged (no new FP added) |
+| tsc errors | 1669 | 1728 | +59 (all in another agent's WIP EnhancedPortfolioView.tsx — verified my files have 0 new errors via grep) |
+
+### Patterns applied
+
+**Proxy route pattern (Rule 20 — Python = brain):**
+```ts
+import { apiErr } from '@/lib/api-response';
+try {
+  const res = await fetch(...);
+  const data: unknown = await res.json();
+  return NextResponse.json(data);  // pass through Python's shape
+} catch (err: unknown) {  // was `catch (e)` (implicit any)
+  const msg = err instanceof Error ? err.message : String(err);
+  return apiErr('backend_unreachable', `Python backend unreachable: ${msg}`, 503);
+}
+```
+
+**`any` → typed pattern (LooseRecord):**
+```ts
+type LooseRecord = Record<string, unknown>;
+// Loose JSON record — Python responses / SQLite rows don't have a strict schema.
+```
+
+**`as any` → proper interface pattern:**
+```ts
+// Before:
+const stock: any = { prediction: null as any, advice: null as any };
+(response.board as any).signal = ...;
+
+// After:
+interface StockEnriched {
+  prediction?: LooseRecord | null;
+  advice?: StockAdvice | null;
+  // ...
+}
+const stock: StockEnriched = { prediction: null, advice: null };
+response.board.signal = ...;  // response.board is Record<string, unknown>
+```
+
+### Rule 27 (NO-FAKE-DATA) — explicit fake-fallback removals
+
+1. **`/api/risk/stock-types`** — previously returned a hardcoded `success:true, source:'fallback'` response with a static table of risk classifications when Python was down. That was fabricated data. Now returns an explicit `apiErr('backend_unreachable', msg, 503)` — the UI may ship its own static defaults, but the API must not.
+
+2. **`/api/predictions/monthly-league`** — previously returned a fabricated `success:false, league:[]` empty array on outage, hiding the real backend failure behind what looked like "no league exists". Now returns an explicit `apiErr('backend_unreachable', msg, 503)`.
+
+### Issues encountered
+- 2 of my migrations (keepalive, monthly-league) were bundled into PKG3-ROUND2's commits because the other agent ran `git add -A` while my file was staged. The changes ARE in `origin/main`, just under different commit hashes/messages. Mitigated going forward by running `git diff --cached --name-only` before each commit to verify only my file was staged.
+
+Stage Summary:
+- 12 routes migrated (10 base + 2 bonus heavy routes)
+- 51 `any` usages removed (target was ~50) ✅
+- 12 new unified helper adoptions (target was ~10) ✅
+- npx tsc --noEmit --skipLibCheck: 0 new errors introduced in my files (verified via per-file grep; the 2 errors visible in comprehensive/route.ts at lines 167 & 233 are PRE-EXISTING — confirmed via `git stash`)
+- pre-commit hook: PASS on all 12 commits (check_no_hard_delete + check_no_raw_insert)
+- Rule 20 (Python = brain): PASS — all proxy routes pass through Python's response shape; no Node-side calculation logic added
+- Rule 27 (NO-FAKE-DATA): PASS — explicitly removed 2 fabricated fallbacks (risk/stock-types + monthly-league); all Python-unreachable paths return explicit `apiErr`
+- Rule 67 (CALCULATION-CANONICAL): PASS — no new calculations in Node routes
+- Rule 75 (PUSH-AFTER-EVERY-TASK): PASS — 12 commits, all pushed to origin/main
+
