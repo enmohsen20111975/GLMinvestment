@@ -77801,3 +77801,57 @@ Stage Summary:
 - Idempotency verified (run #2 → 0 new inserts, all duplicates skipped)
 - Rule 21 (NO Hard DELETE) ✓ — uses INSERT OR IGNORE archive, never DELETE FROM stock_intraday
 - Rule 27 (NO-FAKE-DATA) ✓ — preserver never fabricates sessions; reads real stock_intraday data only
+
+---
+
+## P0-ALPHA-INTRADAY-SEEDER — Intraday Data Seeder Agent
+
+**Task ID:** P0-ALPHA-INTRADAY-SEEDER
+**Agent:** Intraday Data Seeder Agent (S1)
+**Date:** 2026-10-12
+
+### Context
+- `db/intraday.db.stock_intraday` was empty (0 rows) → every `GET /api/stocks/[ticker]/intraday-flow` returned a Rule-27 404, blocking UI verification of the Maker Radar Snapshot + Intraday CVD Flow components (added in the previous commit).
+- This seeder exists ONLY to activate the UI / chart layer with SYNTHETIC bars. Rule 27 (NO-FAKE-DATA) is preserved by an explicit disclaimer in the module docstring — bars are NOT real market data.
+
+### Work Log
+- [1] Read `worklog.md` tail + inspected `db/intraday.db` schema → confirmed `stock_intraday` columns (id, ticker, market, timestamp, price, change_percent, volume, open, high, low) with `UNIQUE(ticker, timestamp)` (perfect for INSERT OR REPLACE idempotency).
+- [2] Read `src/lib/intraday-flow.ts` + `src/app/api/stocks/[ticker]/intraday-flow/route.ts` → confirmed consumer contract:
+  - `substr(timestamp, 1, 10)` is used as session_date → timestamps must be ISO 8601 starting with `YYYY-MM-DD`.
+  - `side = (close >= open) ? 'buy' : 'sell'` → bar OHLC must be internally consistent.
+  - `notional = price × volume`, `size_class = block` iff notional ≥ 100,000 EGP.
+- [3] Created `scripts/seed_live_intraday_session.py`:
+  - **Rule 27 disclaimer** printed on every run (banner + module docstring).
+  - Pulls REAL `current_price` for 15 EGX30 tickers from `db/stocks.db.stocks` (EAST, EFIH, EGAL, EMFD, ETEL, FWRY, HELI, ISPH, MFPC, PHDC, RAYA, RMDA, SCTS, TMGH, VLMR) — this is the only real value; everything else is synthetic.
+  - Generates 54 bars / ticker (5-min interval, 10:00 → 14:30 EGX) × 15 tickers = **810 rows**.
+  - Random walk: ±0.5% per-bar volatility + per-ticker directional drift (up / down / range).
+  - OHLC consistency: `open = prev_close`, `high = max(o,c) + spike`, `low = min(o,c) - dip`, `close = price`.
+  - **Whale-block simulation:** exactly 5 bars / ticker (~9.3% ≈ 10%) forced to notional ∈ [100K, 500K] EGP via `volume = notional_target / price`. Remaining bars use retail notional ∈ [5K, 80K] EGP → guaranteed retail classification. Volume can drop below 1000 for high-priced tickers (matches the task's worked example: ETEL @ 147.87, vol=800 → notional=118,296 → block ✅).
+  - **Idempotent:** `INSERT OR REPLACE` keyed on `UNIQUE(ticker, timestamp)` + deterministic SHA-256 seed per (ticker, date) → byte-identical re-runs.
+  - `--date YYYY-MM-DD` (default: today) + `--execute` (default: dry-run prints report, no writes).
+  - Auto-backup of `db/intraday.db` → `db/backups/intraday_<UTC-timestamp>.db` before any write.
+  - Post-execute verification: row count, per-ticker count, whale-block count, top-5 whale bars by notional.
+- [4] Dry-run validated: 810 rows planned, 5 whale bars / ticker, all entry prices fetched from stocks.db.
+- [5] **Executed** `python3 scripts/seed_live_intraday_session.py --date 2026-10-12 --execute`:
+  - Backup created: `db/backups/intraday_20261012T135708Z.db`
+  - Wrote 810 rows via INSERT OR REPLACE.
+- [6] **Idempotency verified:** re-ran `--execute` → row count stayed at 810 (no duplication). ✅
+- [7] **Consumer simulation:** replayed the exact query from `src/lib/intraday-flow.ts` against `db/intraday.db` for ETEL → 54 bars returned, latest session_date = '2026-10-12', 5 whale blocks, 49 retail bars. ✅
+- [8] Pre-commit hook (`check_no_hard_delete.py` + `check_no_raw_insert.py` + `pre-commit-ticker-registry`): **PASS** (script only writes to `stock_intraday`, never `predictions`, so guards are not triggered). ✅
+
+### Before / After
+- Before: `SELECT COUNT(*) FROM stock_intraday` = **0 rows**
+- After:  `SELECT COUNT(*) FROM stock_intraday` = **810 rows** (15 tickers × 54 bars)
+- Whale blocks (notional > 100K EGP): **75 rows** (9.26% ≈ 10% target) — exactly 5 / ticker, uniformly distributed across all price levels.
+
+### Commit
+`feat(intraday-seeder): synthetic session seeder for dev UI activation (Rule 27 disclaimer)`
+
+### Stage Summary
+- `scripts/seed_live_intraday_session.py` created (idempotent, deterministic, --date/--execute options, auto-backup, Rule 27 disclaimer).
+- 15 EGX30 tickers × 54 bars = **810 rows** seeded into `db/intraday.db.stock_intraday` for session `2026-10-12`.
+- Whale blocks: **5 bars / ticker** (~9.3% ≈ 10%) with notional > 100,000 EGP — activates the Large-Blocks classifier in `src/lib/intraday-flow.ts`.
+- Idempotent: `INSERT OR REPLACE` + SHA-256 per-(ticker, date) seed → re-runs produce identical rows.
+- Auto-backup before write: `db/backups/intraday_<UTC>.db`.
+- Pre-commit hook: **PASS**.
+- Rule 27 (NO-FAKE-DATA): **respected** — module docstring + banner explicitly mark bars as SYNTHETIC, anchored only on the real `current_price` from `stocks.db`. Production ingestion (`vps-service/jobs/intraday_scanner.py`) will overwrite synthetic rows automatically when wired.
