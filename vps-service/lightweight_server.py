@@ -131,6 +131,11 @@ BLUEPRINTS = [
     # V38-INSTITUTIONAL: V38 Institutional Decision Engine Backtest
     # محرك القرار المؤسسي V38 — محاكاة + نتائج + إثباتات
     ('api.v38_backtest_routes', 'v38_backtest_bp'),
+    # P0-ALPHA-WYCKOFF-SCREENER-API (2026-10-12): Wyckoff Accumulation screener.
+    # الـ logic كله في Python (`utils.shared_liquidity.detect_wyckoff_accumulation`)
+    # — Node route (`/api/maker-radar/wyckoff-screener`) مجرد thin proxy (Rule 20).
+    # يفحص كل أسهم EGX (is_active=1) + يرجع phase_distribution + whale_flow_egp.
+    ('api.wyckoff_screener_routes', 'wyckoff_screener_bp'),
 ]
 
 for mod_name, bp_name in BLUEPRINTS:
