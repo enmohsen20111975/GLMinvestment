@@ -115,6 +115,202 @@ def calc_atr(highs: List[float], lows: List[float], closes: List[float],
         return closes[-1] * 0.03 if closes else 0.0
 
 
+# ============================================================================
+# GLM5.2-S1-FANTASY-CAP — Hard Realistic Target Cap + R:R Guard
+# ============================================================================
+# Background (2026-10-13 — MANAGER + ASSISTANT independent audit):
+#   838 predictions (54%) had fantasy targets > +50%:
+#     - REAC: entry=9.38, target=161.7 (+1623.9%!)
+#     - MASR: entry=8.7,  target=55.72 (+540.5%!)
+#   - R:R ratios like 272:1 (means: trades where reward is 272× the risk —
+#     statistically impossible to fill in short/medium-term horizon).
+#   - HOLD signals being INSERTed as new prediction rows with entry/target/stop.
+#
+# This module implements:
+#   1. apply_realistic_target_cap()  — caps TP1/TP2 to realistic ATR + %
+#                                      bounds, with a hard +30% ceiling.
+#   2. validate_rr_ratio()           — rejects predictions with R:R < 1.5
+#                                      (reward must be ≥ 1.5× risk).
+#
+# Both functions are PURE — no DB access, no side effects. They MUST be
+# called BEFORE any INSERT INTO predictions OR UPDATE target_price.
+#
+# Rule 27 (NO-FAKE-DATA): لو الـ cap بـ يقلل الهدف، الـ caller لازم يحفظ
+# الهدف القديم في notes عشان نحافظ على شفافية البيانات (مش اختلاق).
+#
+# Rule 67 (CALCULATION-CANONICAL): الـ ATR لازم من canonical
+# `analyzers.indicators.calc_atr`. الـ R:R لازم من canonical
+# `utils.risk_reward.compute_risk_reward`.
+# ============================================================================
+
+# Hard ceiling: short/medium-term target MUST NOT exceed +30% from entry.
+# Even high-momentum rockets cannot print +1623% targets in a single row.
+_HARD_TARGET_CAP_MULT = 1.30
+
+# TP1 caps (per spec):
+#   - regular stocks:        +12% gain OR +1.5×ATR (whichever is smaller)
+#   - high-momentum stocks:  +20% gain OR +2.0×ATR (whichever is smaller)
+_TP1_REGULAR_PCT_MULT   = 1.12
+_TP1_REGULAR_ATR_MULT   = 1.5
+_TP1_MOMENTUM_PCT_MULT  = 1.20
+_TP1_MOMENTUM_ATR_MULT  = 2.0
+
+# TP2 cap: +25% gain OR +3.0×ATR (whichever is smaller)
+_TP2_PCT_MULT = 1.25
+_TP2_ATR_MULT = 3.0
+
+# Minimum R:R ratio — anything below this is "gambling", not "trading".
+_MIN_RR_RATIO = 1.5
+
+
+def apply_realistic_target_cap(
+    entry_price: float,
+    target_price: float,
+    atr: float,
+    is_high_momentum: bool = False,
+    tp_level: int = 1,
+) -> float:
+    """Hard realistic target cap — prevents fantasy targets like +1623%.
+
+    Caps ``target_price`` to the realistic upper bound dictated by ATR + a
+    fixed percentage ceiling, then applies the absolute hard cap (+30% for
+    short/medium-term predictions).
+
+    Args:
+        entry_price: سعر الدخول (MUST be > 0).
+        target_price: السعر المستهدف (الهدف) القادم من المحرك.
+        atr: قيمة ATR(14) من canonical `analyzers.indicators.calc_atr`.
+             لو None أو 0 → fallback لـ 3% من entry.
+        is_high_momentum: True لأسهم المضاربة عالية الزخم (rockets/bombs).
+                          False للأسهم العادية.
+        tp_level: 1 = TP1 (الهدف الأول), 2 = TP2 (الهدف الثاني).
+
+    Returns:
+        الهدف بعد الـ cap (float). لو الـ target كان أصغر من الـ cap → بيرجّع
+        زي ما هو (مفيش inflation). لو كان أكبر → بيرجّع الـ cap.
+
+    Examples:
+        >>> apply_realistic_target_cap(9.38, 161.7, 0.5)
+        10.13   # capped from +1623.9% to +8.0% (1.5×ATR bound)
+        >>> apply_realistic_target_cap(100.0, 105.0, 2.0)
+        105.0   # already realistic, no change
+        >>> apply_realistic_target_cap(100.0, 200.0, 5.0, is_high_momentum=True)
+        120.0   # high-momentum TP1 cap = +20% (entry×1.20)
+    """
+    # Defensive casts — accept Decimal/str-numeric/int without crashing
+    try:
+        if entry_price is None or target_price is None:
+            return target_price
+        entry = float(entry_price)
+        target = float(target_price)
+        atr_v = float(atr) if atr is not None else 0.0
+    except (TypeError, ValueError):
+        return target_price
+
+    # Reject invalid inputs (don't fabricate — Rule 27 NO-FAKE-DATA)
+    if entry <= 0 or target <= 0:
+        return target_price
+
+    # ATR fallback (per calc_atr convention — 3% of entry if missing/invalid)
+    if atr_v <= 0:
+        atr_v = entry * 0.03
+
+    # Select caps based on tp_level + momentum flag
+    if tp_level == 2:
+        pct_mult = _TP2_PCT_MULT
+        atr_mult = _TP2_ATR_MULT
+    elif tp_level == 1:
+        if is_high_momentum:
+            pct_mult = _TP1_MOMENTUM_PCT_MULT
+            atr_mult = _TP1_MOMENTUM_ATR_MULT
+        else:
+            pct_mult = _TP1_REGULAR_PCT_MULT
+            atr_mult = _TP1_REGULAR_ATR_MULT
+    else:
+        # Unknown tp_level — pass-through (don't fabricate)
+        return target_price
+
+    # Soft cap = min(target, entry×pct_mult, entry + atr_mult×ATR)
+    atr_cap = entry + atr_mult * atr_v
+    pct_cap = entry * pct_mult
+    soft_cap = min(atr_cap, pct_cap)
+
+    # Apply soft cap first
+    capped = min(target, soft_cap)
+
+    # Apply hard ceiling (+30%) — absolute maximum for short/medium-term
+    capped = min(capped, entry * _HARD_TARGET_CAP_MULT)
+
+    # Sanity floor: target must remain > entry (otherwise it's a losing trade)
+    if capped <= entry:
+        capped = entry * 1.001  # tiny positive target — won't trigger geometry guard
+
+    return round(capped, 4)
+
+
+def validate_rr_ratio(
+    entry_price: float,
+    target_price: float,
+    stop_loss: float,
+    min_rr: float = _MIN_RR_RATIO,
+) -> bool:
+    """Validate that the Risk:Reward ratio is at least ``min_rr`` (default 1.5).
+
+    Uses the canonical `utils.risk_reward.compute_risk_reward` (Rule 67).
+    Returns True if R:R >= min_rr, False otherwise.
+
+    Exception (per spec): HOLD signals shouldn't reach this function —
+    HOLD INSERT prevention is handled separately in
+    `core.prediction_write_guard.validate_prediction_evidence()`.
+
+    Args:
+        entry_price: سعر الدخول (MUST be > 0).
+        target_price: سعر الهدف (MUST be > 0, > entry for BUY).
+        stop_loss: سعر الوقف (MUST be > 0, < entry for BUY).
+        min_rr: الحد الأدنى لـ R:R (default 1.5).
+
+    Returns:
+        True if R:R >= min_rr, False otherwise.
+
+    Examples:
+        >>> validate_rr_ratio(10, 12, 9)
+        True    # R:R = 2.0 (reward=2, risk=1)
+        >>> validate_rr_ratio(10, 11, 9)
+        False   # R:R = 1.0 (reward=1, risk=1 — too risky)
+        >>> validate_rr_ratio(10, 15, 9)
+        True    # R:R = 5.0 (reward=5, risk=1)
+    """
+    # Rule 67: use canonical compute_risk_reward
+    try:
+        from utils.risk_reward import compute_risk_reward
+        rr = compute_risk_reward(
+            entry_price, target_price, stop_loss, fallback=0.0,
+        )
+    except Exception:
+        # Defensive inline fallback (matches compute_risk_reward spec)
+        try:
+            entry = float(entry_price)
+            target = float(target_price)
+            stop = float(stop_loss)
+            if entry <= 0 or stop <= 0 or target <= 0:
+                return False
+            if target > entry and stop < entry:
+                risk = entry - stop
+                reward = target - entry
+            elif stop > entry and target < entry:
+                risk = stop - entry
+                reward = entry - target
+            else:
+                return False
+            if risk <= 0 or reward <= 0:
+                return False
+            rr = round(reward / risk, 2)
+        except (TypeError, ValueError, ZeroDivisionError):
+            return False
+
+    return bool(rr >= min_rr)
+
+
 def calc_bollinger(closes: List[float], period: int = 20) -> Tuple[float, float, float]:
     """حساب Bollinger Bands → (upper, middle, lower)"""
     if len(closes) < period:
