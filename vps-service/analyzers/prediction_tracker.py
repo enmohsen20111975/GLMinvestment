@@ -363,6 +363,15 @@ class PredictionTracker:
                 # كانوا محسوبين في daily_predictor.py لكن غير مكتوبين في DB → None/—
                 ("risk_reward",           "REAL"),               # P0: R:R ratio (مطابقة V40.2)
                 ("who_is_buying",         "TEXT DEFAULT ''"),     # P0: "🏦 شراء مؤسساتي" / "👤 شراء أفراد" (mirror Pine L669-763)
+                # GLM5.2-S2-PARTIAL-TP-TRAILING: Partial TP1 + Breakeven Guard
+                # الكارثة: 958 صفقة (61.8%) ماتت EXPIRED. السبب: غياب Partial TP1 +
+                # غياب Trailing/Breakeven. الـ daily_closer عنده partial_exit_price
+                # + partial_exit_date + partial_return_pct في migrations بتاعته، لكن
+                # الـ tracker مفيهوش الـ flag المنطقي partial_done ولا الـ original_stop.
+                # هنا بـ نـ add العمودين الناقصين + نـ leave الـ daily_closer يستخدم
+                # الـ 3 اللي عنده (idempotent — الـ migrations هنا بـ skip لو موجودة).
+                ("partial_done",          "INTEGER DEFAULT 0"),   # 0=not triggered | 1=TP1 partial executed
+                ("original_stop_loss",   "REAL"),                # الـ stop الأصلي قبل Breakeven Guard
             ]
             for col_name, col_def in migrations:
                 if col_name not in existing_cols:
@@ -1022,6 +1031,414 @@ class PredictionTracker:
             return {'status': 'error', 'message': str(e)}
         finally:
             conn.close()
+
+    # ========================================================================
+    # GLM5.2-S2-PARTIAL-TP-TRAILING: Partial TP1 + Breakeven Guard
+    # ========================================================================
+    # الكارثة: 958 صفقة (61.8%) ماتت EXPIRED → تجميد رأس مال المتداولين.
+    # السبب الجذري: غياب جني أرباح جزئي عند TP1، فالصفقة إما تكمل لـ TP كامل
+    # أو تموت EXPIRED بدون أي ربح محقق. الحل: تسجيل partial عند TP1 + نقل
+    # الـ stop لـ breakeven (entry+0.5%) لـ حماية الـ 50% الباقية من التراجع.
+    #
+    # القواعد الإلزامية المُطبّقة هنا:
+    #   Rule 27 (NO-FAKE-DATA): current_price من utils.live_price (canonical)
+    #   Rule 67 (CALCULATION-CANONICAL): canonical-price.ts / stocks.db
+    #   Rule 75 (PUSH-AFTER-EVERY-TASK): commit بعد كل ملف
+    # ========================================================================
+
+    # R4 (matching enforce_geometry_guard): target > entry × 3.0 → هدف خيالي (تلوث تجزئة).
+    # أي target يخالف ده بـ يتمـ cap عند entry × 3.0 بدل ما الـ partial logic
+    # يـ trigger عند سعر غير واقعي زي REAC target=161.7 (entry=9.38 → ×17.24!).
+    _PARTIAL_TP_TARGET_CAP_MULT = 3.0
+
+    # Breakeven guard: نقل الـ stop لـ entry + 0.5% لتغطية العمولات.
+    # ده يضمن إن الصفقة الرابحة (بعد Partial TP1) مش هترجع خاسرة أبدًا.
+    _BREAKEVEN_STOP_MULT = 1.005  # entry + 0.5%
+
+    def _fetch_current_price_canonical(self, ticker: str) -> float:
+        """جلب السعر الحالي من المصدر الكنوني (Rule 67 + Rule 27 — NO-FAKE-DATA).
+
+        Priority (نفس مسار الشارت):
+          1. utils.live_price.get_live_price — intraday.db → data_engine.db → stocks.db
+          2. fallback: stocks.db.egksco_stocks.last_price
+          3. fallback: stocks.db.stocks.current_price (مع pollution check)
+
+        لو مفيش مصدر متاح → 0.0 (الـ caller بـ يـ skip الـ partial logic).
+        """
+        # مسار 1: canonical live_price module
+        try:
+            from utils.live_price import get_live_price
+            _p = get_live_price(ticker)
+            if _p and float(_p) > 0:
+                return float(_p)
+        except ImportError:
+            pass
+        except Exception as _lp_err:
+            print(
+                f"[PartialTP] get_live_price failed for {ticker}: {_lp_err} — fallback",
+                flush=True,
+            )
+
+        # مسار 2/3: stocks.db مباشرة (fallback لو utils/live_price مش متاح)
+        try:
+            _stocks_db = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                'db', 'stocks.db',
+            )
+            _fc = sqlite3.connect(_stocks_db, timeout=15.0)
+            _fc.row_factory = sqlite3.Row
+            _cc = _fc.cursor()
+            _cc.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            _tables = {r[0] for r in _cc.fetchall()}
+            if 'egksco_stocks' in _tables:
+                _cc.execute(
+                    "SELECT last_price FROM egksco_stocks WHERE symbol = ? "
+                    "ORDER BY last_update DESC LIMIT 1",
+                    (ticker,),
+                )
+                _r = _cc.fetchone()
+                if _r and _r[0]:
+                    _v = float(_r[0])
+                    if _v > 0:
+                        _fc.close()
+                        return _v
+            if 'stocks' in _tables:
+                _cc.execute(
+                    "SELECT current_price FROM stocks WHERE ticker = ? LIMIT 1",
+                    (ticker,),
+                )
+                _r = _cc.fetchone()
+                if _r and _r[0]:
+                    _v = float(_r[0])
+                    if _v > 0:
+                        _fc.close()
+                        return _v
+            _fc.close()
+        except Exception as _fb_err:
+            print(
+                f"[PartialTP] stocks.db fallback failed for {ticker}: {_fb_err}",
+                flush=True,
+            )
+        return 0.0
+
+    def check_partial_tp1(
+        self,
+        prediction_id: int,
+        current_price: Optional[float] = None,
+    ) -> Dict:
+        """جني 50% من الأرباح عند TP1 (Partial Take-Profit 1).
+
+        تُستدعى يوميًا من daily_closer. لو السعر الحالي ≥ target_price (TP1) →
+        يسجّل partial_exit_price = effective_target، partial_done=True،
+        partial_return_pct = (target - entry) / entry × 100. النصف الآخر يفضل
+        مفتوح لـ TP2 (يتم إغلاقه لاحقًا عبر daily_closer trailing/expiry).
+
+        CAP (R4 — matching enforce_geometry_guard):
+          لو target_price > entry × 3.0 → الهدف خيالي (تلوث تجزئة زي REAC
+          target=161.7 / entry=9.38 = ×17.24). في الحالة دي بنطبّق cap:
+            effective_target = entry × 3.0
+          وده اللي بـ نـ trigger الـ partial عنده. الهدف الأصلي بـ يفضل في DB
+          (مش بنمسحه) لكنه مبيـtriggerش الـ partial — لو كان خيالي، الـ cap هو
+          اللي بـ يـ فعّل الـ TP1. ده حل Practical عشان مفيش صفقة بـ تكمل 17×
+          في مدة قصيرة.
+
+        Rule 27 (NO-FAKE-DATA):
+          - current_price من utils.live_price (canonical) — ممنوع اختلاق أسعار.
+          - partial_exit_price = effective_target (REAL، مش fake) — ده السعر
+            اللي بـ يـ trigger عند current_price ≥ effective_target.
+
+        Args:
+            prediction_id: ID التوقع في جدول predictions.
+            current_price: لو مفيش → بـ يتم جلبه من المصدر الكنوني (Rule 67).
+
+        Returns:
+            Dict: {
+                action: 'partial_tp1_filled' | 'no_action' | 'already_partial'
+                       | 'already_closed' | 'capped_unrealistic' | 'error',
+                effective_target: float | None,
+                original_target: float | None,
+                current_price: float,
+                partial_return_pct: float | None,
+                message: str,
+            }
+        """
+        # ── fetch prediction ───────────────────────────────────────────────
+        try:
+            with _open_db(self.db_path, writable=True) as conn:
+                cur = conn.cursor()
+                cur.execute('''
+                    SELECT ticker, signal, signal_type, entry_price, target_price,
+                           stop_loss, partial_done, partial_exit_price,
+                           outcome_date
+                    FROM predictions WHERE id = ?
+                ''', (prediction_id,))
+                row = cur.fetchone()
+                if not row:
+                    return {'action': 'error', 'message': 'Prediction not found'}
+
+                # row_factory ممكن يكون Row أو tuple — نتعامل مع الاتنين
+                try:
+                    row_dict = dict(row)
+                except (TypeError, ValueError):
+                    row_dict = {
+                        'ticker': row[0], 'signal': row[1], 'signal_type': row[2],
+                        'entry_price': row[3], 'target_price': row[4],
+                        'stop_loss': row[5], 'partial_done': row[6],
+                        'partial_exit_price': row[7], 'outcome_date': row[8],
+                    }
+
+                ticker = str(row_dict.get('ticker') or '')
+                entry_price = float(row_dict.get('entry_price') or 0)
+                original_target = float(row_dict.get('target_price') or 0)
+                partial_done = int(row_dict.get('partial_done') or 0)
+                outcome_date = row_dict.get('outcome_date')
+                # رغم إن signal_type مش مستخدم في الحساب، بنـ fetchه للـ log
+                _signal_type = str(row_dict.get('signal_type') or 'BUY').upper()
+        except Exception as _fp_err:
+            return {
+                'action': 'error',
+                'message': f'fetch prediction failed: {_fp_err}',
+            }
+
+        # ── guards ───────────────────────────────────────────────────────────
+        if entry_price <= 0:
+            return {
+                'action': 'error',
+                'message': f'entry_price={entry_price} <= 0 — invalid',
+            }
+
+        # لو الصفقة اتقفلت فعلًا (outcome_date IS NOT NULL) → مفيش داعي partial
+        if outcome_date:
+            return {
+                'action': 'already_closed',
+                'effective_target': None,
+                'original_target': original_target,
+                'current_price': current_price or 0.0,
+                'partial_return_pct': None,
+                'message': f'prediction #{prediction_id} already closed (outcome_date={outcome_date})',
+            }
+
+        # لو الـ partial اتعمل قبل كده → skip (idempotent)
+        if partial_done == 1:
+            return {
+                'action': 'already_partial',
+                'effective_target': float(row_dict.get('partial_exit_price') or 0),
+                'original_target': original_target,
+                'current_price': current_price or 0.0,
+                'partial_return_pct': None,
+                'message': f'prediction #{prediction_id} partial_done=1 already',
+            }
+
+        # ── CAP (R4): لو target > entry × 3.0 → effective_target = entry × 3.0 ──
+        _capped = False
+        effective_target = original_target
+        _cap_value = entry_price * self._PARTIAL_TP_TARGET_CAP_MULT
+        if original_target > _cap_value:
+            _capped = True
+            effective_target = round(_cap_value, 4)
+            print(
+                f"[PartialTP] #{prediction_id} {ticker}: target={original_target} "
+                f"> entry×3.0={_cap_value:.4f} → UNREALISTIC, capped to "
+                f"effective_target={effective_target} (R4 — تلوث تجزئة)",
+                flush=True,
+            )
+
+        # ── fetch current_price من المصدر الكنوني (Rule 27 + Rule 67) ──
+        if current_price is None:
+            current_price = self._fetch_current_price_canonical(ticker)
+        else:
+            current_price = float(current_price)
+
+        if current_price <= 0:
+            return {
+                'action': 'no_action',
+                'effective_target': effective_target,
+                'original_target': original_target,
+                'current_price': 0.0,
+                'partial_return_pct': None,
+                'message': f'current_price unavailable for {ticker} — skip',
+            }
+
+        # ── check trigger: current_price >= effective_target ──────────────
+        # >= بدل == علشان نمسك الـ gap-ups كمان (السهم ممكن يفتح فوق الهدف)
+        if current_price < effective_target:
+            return {
+                'action': 'no_action',
+                'effective_target': effective_target,
+                'original_target': original_target,
+                'current_price': current_price,
+                'partial_return_pct': None,
+                'message': (
+                    f'current={current_price:.4f} < effective_target='
+                    f'{effective_target:.4f} — pending'
+                ),
+            }
+
+        # ── TRIGGER: سجّل الـ partial ─────────────────────────────────────
+        partial_return_pct = (
+            (effective_target - entry_price) / entry_price * 100
+            if entry_price > 0 else 0.0
+        )
+        _today = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            with _open_db(self.db_path, writable=True) as conn:
+                cur = conn.cursor()
+                cur.execute('''
+                    UPDATE predictions SET
+                        partial_done = 1,
+                        partial_exit_price = ?,
+                        partial_exit_date = ?,
+                        partial_return_pct = ?
+                    WHERE id = ?
+                ''', (
+                    effective_target,
+                    _today,
+                    round(partial_return_pct, 4),
+                    prediction_id,
+                ))
+                conn.commit()
+        except Exception as _up_err:
+            return {
+                'action': 'error',
+                'message': f'partial UPDATE failed: {_up_err}',
+            }
+
+        _action = 'capped_unrealistic' if _capped else 'partial_tp1_filled'
+        return {
+            'action': _action,
+            'effective_target': effective_target,
+            'original_target': original_target,
+            'current_price': current_price,
+            'partial_return_pct': round(partial_return_pct, 4),
+            'message': (
+                f'PARTIAL TP1 triggered for #{prediction_id} {ticker}: '
+                f'entry={entry_price:.4f} effective_target='
+                f'{effective_target:.4f} current={current_price:.4f} '
+                f'return={partial_return_pct:.2f}% capped={_capped}'
+            ),
+        }
+
+    def check_breakeven_move(self, prediction_id: int) -> Dict:
+        """Breakeven Guard — نقل الـ stop لـ entry+0.5% بعد Partial TP1.
+
+        تُستدعى بعد check_partial_tp1. لو partial_done=True → حدّث stop_loss
+        = entry × 1.005 (entry + 0.5% لتغطية العمولات) واحفظ الـ stop الأصلي
+        في original_stop_loss. هذا يضمن إن الصفقة الرابحة مش هترجع خاسرة.
+
+        Rule 27 (NO-FAKE-DATA): الـ stop الجديد = entry × 1.005 — ده سعر حقيقي
+        محسوب من entry_price (مش اختلاق). الـ original_stop_loss بـ يحفظ القيمة
+        الأصلية للمراجعة/الـ audit.
+
+        Args:
+            prediction_id: ID التوقع.
+
+        Returns:
+            Dict: {
+                action: 'breakeven_set' | 'no_action' | 'already_breakeven'
+                       | 'not_partial_yet' | 'error',
+                new_stop: float | None,
+                original_stop: float | None,
+                entry_price: float | None,
+                message: str,
+            }
+        """
+        try:
+            with _open_db(self.db_path, writable=True) as conn:
+                cur = conn.cursor()
+                cur.execute('''
+                    SELECT entry_price, stop_loss, partial_done, original_stop_loss
+                    FROM predictions WHERE id = ?
+                ''', (prediction_id,))
+                row = cur.fetchone()
+                if not row:
+                    return {'action': 'error', 'message': 'Prediction not found'}
+
+                try:
+                    row_dict = dict(row)
+                except (TypeError, ValueError):
+                    row_dict = {
+                        'entry_price': row[0], 'stop_loss': row[1],
+                        'partial_done': row[2], 'original_stop_loss': row[3],
+                    }
+
+                entry_price = float(row_dict.get('entry_price') or 0)
+                current_stop = float(row_dict.get('stop_loss') or 0)
+                partial_done = int(row_dict.get('partial_done') or 0)
+                original_stop_saved = row_dict.get('original_stop_loss')
+                # NULL أو None = لسه محفظناهوش
+                if original_stop_saved is not None:
+                    try:
+                        original_stop_saved = float(original_stop_saved)
+                    except (TypeError, ValueError):
+                        original_stop_saved = None
+        except Exception as _fp_err:
+            return {
+                'action': 'error',
+                'message': f'fetch prediction failed: {_fp_err}',
+            }
+
+        # ── guards ───────────────────────────────────────────────────────────
+        if entry_price <= 0:
+            return {
+                'action': 'error',
+                'message': f'entry_price={entry_price} <= 0 — invalid',
+            }
+
+        # لو الـ breakeven اتعمل قبل كده → skip (idempotent)
+        if original_stop_saved is not None:
+            return {
+                'action': 'already_breakeven',
+                'new_stop': current_stop,
+                'original_stop': original_stop_saved,
+                'entry_price': entry_price,
+                'message': (
+                    f'#{prediction_id} breakeven already set: '
+                    f'stop={current_stop:.4f} original={original_stop_saved:.4f}'
+                ),
+            }
+
+        # لو الـ partial لسه مـ triggerش → مفيش breakeven
+        if partial_done != 1:
+            return {
+                'action': 'not_partial_yet',
+                'new_stop': None,
+                'original_stop': None,
+                'entry_price': entry_price,
+                'message': (
+                    f'#{prediction_id} partial_done={partial_done} — call '
+                    f'check_partial_tp1() first'
+                ),
+            }
+
+        # ── apply breakeven: stop = entry × 1.005, save original ─────────
+        new_stop = round(entry_price * self._BREAKEVEN_STOP_MULT, 4)
+        try:
+            with _open_db(self.db_path, writable=True) as conn:
+                cur = conn.cursor()
+                cur.execute('''
+                    UPDATE predictions SET
+                        stop_loss = ?,
+                        original_stop_loss = ?
+                    WHERE id = ?
+                ''', (new_stop, current_stop if current_stop > 0 else None, prediction_id))
+                conn.commit()
+        except Exception as _up_err:
+            return {
+                'action': 'error',
+                'message': f'breakeven UPDATE failed: {_up_err}',
+            }
+
+        return {
+            'action': 'breakeven_set',
+            'new_stop': new_stop,
+            'original_stop': current_stop,
+            'entry_price': entry_price,
+            'message': (
+                f'BREAKEVEN SET for #{prediction_id}: stop moved from '
+                f'{current_stop:.4f} → {new_stop:.4f} (entry+0.5%) | '
+                f'original saved in original_stop_loss'
+            ),
+        }
 
     def learn_from_failure(self, prediction_id: int, failure_reason: str = '') -> Dict:
         """
