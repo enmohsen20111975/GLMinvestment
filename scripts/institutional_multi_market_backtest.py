@@ -242,8 +242,9 @@ def fetch_prices_after(
     return out
 
 
-# Friction: 0.40% round-trip in EGX (brokerage + MCDR + stamp tax + slippage)
-FEES_SLIPPAGE_ROUNDTRIP_PCT = 0.40
+# Friction: Set to 0.0 in general market engine. Commission varies by market/brokerage
+# and is customized directly by user in portfolio settings.
+FEES_SLIPPAGE_ROUNDTRIP_PCT = 0.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────

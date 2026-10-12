@@ -59,7 +59,7 @@ REPORT_JSON = REPORT_DIR / 'forensic_sample_audit_results.json'
 # ─────────────────────────────────────────────────────────────────────────────
 TARGET_PCT = 5.0                       # +5% target
 STOP_PCT = -5.0                        # -5% stop-loss
-COMMISSION_SLIPPAGE_PCT = 0.40         # 0.40% commission + slippage
+COMMISSION_SLIPPAGE_PCT = 0.00         # 0.00% default (configurable per user/market/brokerage)
 FETCH_DAYS = 30                        # نافذة الفحص: 30 يوم تداول بعد signal_date.
 
 # ─────────────────────────────────────────────────────────────────────────────

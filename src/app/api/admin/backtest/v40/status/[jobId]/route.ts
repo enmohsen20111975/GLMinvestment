@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     let running = false;
     try {
       // pgrep returns exit code 1 when no matches; execFile throws on non-zero exit.
-      const { stdout } = await execFileAsync('pgrep', ['-f', 'daily_predictor'], { timeout: 3000 });
+      const { stdout } = await execFileAsync('pgrep', ['-f', 'institutional_multi_market_backtest|daily_predictor'], { timeout: 3000 });
       running = stdout.trim().length > 0;
     } catch { // silent fallback (safe-by-design)
       running = false;
@@ -46,7 +46,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
 
     // Check if completed
     const completed = content.includes('GENERATION COMPLETE') ||
-                      content.includes('Total predictions:');
+                      content.includes('Total predictions:') ||
+                      content.includes('=== DONE ===') ||
+                      content.includes('JSON written:');
 
     // Get log file modification time (async)
     const stats = await stat(logFile);

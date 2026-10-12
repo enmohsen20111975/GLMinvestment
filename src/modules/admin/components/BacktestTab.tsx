@@ -175,14 +175,33 @@ export function BacktestTab() {
   const runBacktest = async () => {
     setRunning(true);
     setJobStatus('running');
-    // MAESTRO-GHOST-HUNT (2026-10-12 — SIDE-EFFECTS-AUDIT):
-    // /api/admin/backtest/v40/run اتعطل (410 Gone) — كان بـ يعمل DELETE FROM predictions
-    // على كل backtest (Rule 1 + Rule 35 violation). الحل: اعرض رسالة واضحة إن الـ backtest
-    // لازم يشتغل على sandbox DB copy (مش production) + اعرض الـ command.
-    toast.error('Backtest endpoint معطل. شغّل على sandbox DB copy: python3 vps-service/jobs/daily_predictor.py --start <date> --end <date> --max-picks 5');
-    setRunning(false);
-    setJobStatus('idle');
-    return;
+    try {
+      const res = await fetch('/api/admin/backtest/v40/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          market,
+          strategy,
+          persona,
+          maxPicks,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.jobId) {
+        setJobId(json.jobId);
+        toast.success(json.message || 'تم إطلاق الباك-تست المؤسسي الآمن في الخلفية.');
+      } else {
+        toast.error(json.error || 'فشل تشغيل الباك-تست');
+        setRunning(false);
+        setJobStatus('idle');
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال بالخادم');
+      setRunning(false);
+      setJobStatus('idle');
+    }
   };
 
   const summary = data?.summary;
