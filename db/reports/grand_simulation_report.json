@@ -1,0 +1,124 @@
+{
+  "generated_at": "2026-10-12T21:02:29.939967+00:00",
+  "task": "BRAVO-GRAND-SIMULATION",
+  "task_id": "BRAVO-GRAND-SIMULATION-PHASES-2-3",
+  "agent": "مهندس Quant/ML (فريق GLM 5.2-Bravo)",
+  "phase_1_data_quality": {
+    "total_tickers": 1213,
+    "tickers_sufficient": 1080,
+    "pct_sufficient": 89.0,
+    "total_candles": 100619,
+    "duplicates": 0,
+    "zero_close": 0,
+    "anomalies": 15584,
+    "report_path": "db/reports/data_quality_report.json"
+  },
+  "phase_2_grand_backtest": {
+    "total_signals": 1102,
+    "verified_signals": 297,
+    "verified_win": 120,
+    "verified_loss": 177,
+    "overall_win_rate_pct": 40.4,
+    "net_win_rate_after_commission_pct": 40.4,
+    "concurrent_equity_curve": {
+      "starting_equity_egp": 100000.0,
+      "final_equity_egp": 98157.27,
+      "max_concurrent_drawdown_pct": 1.9445,
+      "max_concurrent_positions": 235,
+      "total_return_pct": -1.8427,
+      "n_points": 298
+    },
+    "per_market_breakdown": {
+      "EGX": {
+        "signals": 297,
+        "verified_win": 120,
+        "verified_loss": 177,
+        "verified_neutral": 0,
+        "win_rate_pct": 40.4,
+        "profit_factor": 0.5429,
+        "sharpe_ratio": -4.868,
+        "sortino_ratio": -5.602,
+        "mdd_pct": 1.5528
+      },
+      "US": null,
+      "TADAWUL": null,
+      "KSE": null,
+      "QSE": null
+    },
+    "commission_slippage_pct": 0.4,
+    "marginal_reclassifications": 0,
+    "sequential_metrics": {
+      "sharpe_ratio": -4.868,
+      "sortino_ratio": -5.602,
+      "profit_factor": 0.5429,
+      "max_drawdown_pct": 1.5528,
+      "total_return_pct": -1.4711,
+      "final_equity_egp": 98528.88
+    }
+  },
+  "phase_3_lgbm_v2": {
+    "model_path": "models/lgbm_signal_gatekeeper.joblib",
+    "version": "V2",
+    "n_train": 221,
+    "n_test": 46,
+    "n_purged": 28,
+    "features_count": 12,
+    "feature_names": [
+      "percentile_rank",
+      "avg_turnover_20d_log",
+      "rvol_20d",
+      "rsi_14",
+      "mfi_14",
+      "price_to_sma20",
+      "price_to_sma50",
+      "atr_14_pct",
+      "bollinger_bandwidth",
+      "high_low_spread_pct",
+      "dist_from_20d_high",
+      "signal_type_code"
+    ],
+    "baseline_win_rate_pct": 21.74,
+    "precision_at_threshold_0.65": 0.0,
+    "recall_at_threshold_0.65": 0.0,
+    "coverage_pct": 0.0,
+    "roc_auc": 0.6778,
+    "win_rate_pct_at_threshold": 0.0,
+    "confusion_matrix": {
+      "TP": 0,
+      "TN": 36,
+      "FP": 0,
+      "FN": 10
+    },
+    "improvement_pp": -21.74,
+    "threshold": 0.65,
+    "trained_at": "2026-10-12T21:02:21.511213+00:00",
+    "purge_gap_days_requested": 5,
+    "purge_gap_days_actual": 2,
+    "purge_fallback_note": "Requested gap=5 days; actual gap=2 days (signal date range too short for full 5-day purge).",
+    "training_universe": {
+      "source": "radar_signal_tracking (verified_win + verified_loss)",
+      "total_verified_signals": 297,
+      "verified_win": 120,
+      "verified_loss": 177,
+      "skipped_insufficient_history": 2,
+      "valid_samples_used": 295
+    },
+    "feature_importances_top7": {
+      "dist_from_20d_high": 67,
+      "atr_14_pct": 65,
+      "mfi_14": 60,
+      "price_to_sma20": 51,
+      "bollinger_bandwidth": 43,
+      "high_low_spread_pct": 32,
+      "rvol_20d": 21
+    }
+  },
+  "rule_27_compliance": "All metrics from real data — no fabrication. Phase 1 uses real candles in stock_daily_prices. Phase 2 uses real stored status column in radar_signal_tracking (Phase-1 re-verified). Phase 3 trains on the same 297 verified signals with features computed point-in-time from real price data.",
+  "rule_20_compliance": "All calculations in Python (institutional_multi_market_backtest.py + train_signal_classifier_lgbm.py + generate_grand_simulation_report.py).",
+  "inputs": {
+    "data_quality_report": "db/reports/data_quality_report.json",
+    "institutional_backtest_summary": "db/reports/institutional_backtest_summary.json",
+    "lgbm_metrics": "models/lgbm_metrics.json",
+    "lgbm_model": "models/lgbm_signal_gatekeeper.joblib"
+  }
+}

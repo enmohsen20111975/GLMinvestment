@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-10-12T16:37:16.308696+00:00",
+  "generated_at": "2026-10-12T21:02:17.025180+00:00",
   "data_source": {
     "db": "db/stocks.db",
     "table": "stock_daily_prices",
-    "total_candles": 26851,
-    "total_tickers": 1024,
+    "total_candles": 100619,
+    "total_tickers": 1213,
     "date_range": {
-      "start": "2025-10-01",
-      "end": "2026-10-12"
+      "start": "2025-09-22",
+      "end": "2026-10-11"
     },
     "data_coverage_note": "Data covers 2025-09 to 2026-10 only. No data for 2020-2024."
   },
@@ -21,25 +21,86 @@
     "trailing_stop": "breakeven after target hit"
   },
   "portfolio_metrics": {
-    "total_signals": 2723,
-    "verified_signals": 1463,
-    "verified_win": 175,
-    "verified_loss": 1288,
+    "total_signals": 1102,
+    "verified_signals": 297,
+    "verified_win": 120,
+    "verified_loss": 177,
     "verified_neutral": 0,
-    "pending": 309,
-    "stale_data": 857,
-    "overall_win_rate_pct": 11.96,
-    "sharpe_ratio": -18.5402,
-    "sortino_ratio": -12.8776,
-    "profit_factor": 0.1354,
-    "max_drawdown_pct": 3.811,
-    "avg_return_per_trade_pct": -3.8058,
-    "total_return_pct": -3.8058,
+    "pending": 292,
+    "stale_data": 513,
+    "overall_win_rate_pct": 40.4,
+    "sharpe_ratio": -4.868,
+    "sortino_ratio": -5.602,
+    "profit_factor": 0.5429,
+    "max_drawdown_pct": 1.5528,
+    "avg_return_per_trade_pct": -1.4711,
+    "total_return_pct": -1.4711,
     "starting_equity_egp": 100000.0,
-    "final_equity_egp": 96194.24,
-    "n_trades_used": 1463,
+    "final_equity_egp": 98528.88,
+    "n_trades_used": 297,
     "sharpe_note": "Sharpe computed on per-trade realized returns as the daily-return series (documented simplification — signals span only 14 calendar days; true portfolio daily returns would require overlapping position handling).",
     "trade_classification_source": "Stored `status` column in radar_signal_tracking — consistent with verify_all_radar_signals.py output. Signals marked 'pending' or 'stale_data' by the verify script are excluded from the backtest universe."
+  },
+  "commission_impact": {
+    "commission_pct_round_trip": 0.4,
+    "gross_win_count": 120,
+    "gross_loss_count": 177,
+    "gross_neutral_count": 0,
+    "gross_win_rate_pct": 40.4,
+    "effective_win_count_after_commission": 120,
+    "effective_loss_count_after_commission": 177,
+    "effective_neutral_count_after_commission": 0,
+    "net_win_rate_after_commission_pct": 40.4,
+    "marginal_reclassifications_win_to_loss": 0,
+    "rule_note": "إلغاء الصفقات الهامشية: لو net_return ≤ 0 بعد خصم 0.40% (مثلاً win بـ +0.3% → net = -0.1%) → تُعاد تصنيفها verified_loss (لم تفز فعليًا)."
+  },
+  "concurrent_equity_curve": {
+    "starting_equity_egp": 100000.0,
+    "final_equity_egp": 98157.27,
+    "max_concurrent_positions": 235,
+    "max_concurrent_drawdown_pct": 1.9445,
+    "total_return_pct": -1.8427,
+    "n_points": 298,
+    "position_sizing_rule": "position_size = current_equity / max_concurrent_positions (ديناميكي — يُعاد حسابه عند كل خروج صفقة).",
+    "method_note": "Concurrent equity curve يأخذ في الاعتبار الصفقات المتزامنة (overlapping positions). لكل يوم تداول: equity += sum(net_returns × position_size) للصفقات التي تُغلق ذلك اليوم. Max Concurrent Drawdown = أكبر تراجع (peak-to-trough) في هذا المنحنى كنسبة %.",
+    "first_5_points": [
+      100000.0,
+      99977.02,
+      99954.05,
+      99973.61,
+      99950.64
+    ],
+    "last_5_points": [
+      98122.2,
+      98099.65,
+      98118.86,
+      98138.06,
+      98157.27
+    ]
+  },
+  "per_market_breakdown": {
+    "EGX": {
+      "signals": 297,
+      "verified_win": 120,
+      "verified_loss": 177,
+      "verified_neutral": 0,
+      "win_rate_pct": 40.4,
+      "profit_factor": 0.5429,
+      "sharpe_ratio": -4.868,
+      "sortino_ratio": -5.602,
+      "mdd_pct": 1.5528
+    },
+    "US": null,
+    "TADAWUL": null,
+    "KSE": null,
+    "QSE": null
+  },
+  "per_market_notes": {
+    "EGX": "",
+    "US": "لا توجد إشارات موثّقة في هذا السوق — Rule 27 (NO-FAKE-DATA).",
+    "TADAWUL": "لا توجد إشارات موثّقة في هذا السوق — Rule 27 (NO-FAKE-DATA).",
+    "KSE": "لا توجد إشارات موثّقة في هذا السوق — Rule 27 (NO-FAKE-DATA).",
+    "QSE": "لا توجد إشارات موثّقة في هذا السوق — Rule 27 (NO-FAKE-DATA)."
   },
   "annual_breakdown": [
     {
@@ -74,143 +135,133 @@
     },
     {
       "year": "2026",
-      "win_rate_pct": 11.96,
-      "signals": 1463,
+      "win_rate_pct": 40.4,
+      "signals": 297,
       "note": ""
     }
   ],
   "by_signal_type": [
     {
-      "signal_type": "pre_surge",
-      "count": 519,
-      "win_rate_pct": 12.14
-    },
-    {
       "signal_type": "quiet_accumulation_strong",
-      "count": 370,
-      "win_rate_pct": 12.7
+      "count": 158,
+      "win_rate_pct": 44.3
     },
     {
-      "signal_type": "A_pre_surge",
-      "count": 341,
-      "win_rate_pct": 12.9
+      "signal_type": "pre_surge",
+      "count": 114,
+      "win_rate_pct": 39.47
     },
     {
       "signal_type": "B_quiet_accumulation_strong",
-      "count": 217,
-      "win_rate_pct": 9.22
+      "count": 12,
+      "win_rate_pct": 25.0
     },
     {
-      "signal_type": "explosive_surge",
+      "signal_type": "A_pre_surge",
       "count": 11,
-      "win_rate_pct": 9.09
+      "win_rate_pct": 18.18
     },
     {
       "signal_type": "D_explosive_surge",
-      "count": 3,
-      "win_rate_pct": 0.0
-    },
-    {
-      "signal_type": "E_early_break",
       "count": 1,
       "win_rate_pct": 0.0
     },
     {
-      "signal_type": "early_break",
+      "signal_type": "explosive_surge",
       "count": 1,
       "win_rate_pct": 0.0
     }
   ],
   "top_performers": [
     {
-      "ticker": "AMIA",
-      "signals": 16,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
-    },
-    {
-      "ticker": "UNIT",
-      "signals": 12,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
-    },
-    {
-      "ticker": "OLFI",
-      "signals": 12,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
-    },
-    {
       "ticker": "TORA",
-      "signals": 11,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 5.62
-    },
-    {
-      "ticker": "DOMT",
-      "signals": 9,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
-    },
-    {
-      "ticker": "SCFM",
-      "signals": 8,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
-    },
-    {
-      "ticker": "IBCT",
       "signals": 6,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
-      "ticker": "AMER",
-      "signals": 6,
+      "ticker": "ALCN",
+      "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.47
     },
     {
-      "ticker": "DCRC",
-      "signals": 2,
+      "ticker": "ISPH",
+      "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 4.0
+      "avg_return_pct": 3.11
     },
     {
-      "ticker": "VLMRA",
-      "signals": 2,
+      "ticker": "AFDI",
+      "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
-      "ticker": "ELNA",
-      "signals": 1,
+      "ticker": "ORAS",
+      "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 2.98
+      "avg_return_pct": 4.6
     },
     {
-      "ticker": "ACTF",
-      "signals": 11,
-      "win_rate_pct": 90.91,
-      "avg_return_pct": 4.09
+      "ticker": "EGAS",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
     },
     {
-      "ticker": "EGAL",
-      "signals": 9,
-      "win_rate_pct": 88.89,
-      "avg_return_pct": 3.89
+      "ticker": "ARVA",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
     },
     {
-      "ticker": "MHOT",
-      "signals": 13,
-      "win_rate_pct": 69.23,
-      "avg_return_pct": 1.92
+      "ticker": "CLHO",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 3.15
     },
     {
-      "ticker": "ADIB",
-      "signals": 14,
-      "win_rate_pct": 64.29,
-      "avg_return_pct": 1.43
+      "ticker": "APSW",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
+    },
+    {
+      "ticker": "MOIN",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
+    },
+    {
+      "ticker": "AMOC",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
+    },
+    {
+      "ticker": "AJWA",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
+    },
+    {
+      "ticker": "EFIH",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
+    },
+    {
+      "ticker": "MPRC",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 4.6
+    },
+    {
+      "ticker": "ORWE",
+      "signals": 4,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 2.53
     }
   ],
   "liquidity_comparison": {
@@ -242,50 +293,57 @@
     "percentile_rank_definition": "percentile = (count_le / n) * 100 — نسبة الـ tickers في السوق اللي avg_turnover_20d بتاعها <= avg_turnover_20d بتاع السهم. يُحسب بشكل مستقل لكل سوق (EGX / TADAWUL / KSE / US / QSE) عشان نتجنب تحويل العملات.",
     "unfiltered_universe": {
       "label": "السوق العام (Unfiltered)",
-      "total_signals": 2723,
-      "verified_win": 175,
-      "win_rate_pct": 6.43,
-      "profit_factor": 0.1354,
-      "sharpe_ratio": -18.5402,
+      "total_signals": 1102,
+      "verified_win": 120,
+      "win_rate_pct": 10.89,
+      "profit_factor": 0.5429,
+      "sharpe_ratio": -4.868,
       "note": "كل الإشارات بدون فلتر سيولة — يُظهر نسبة النجاح الحقيقية للأسهم الميتة (pending + stale_data + disqualified_illiquid تُحسب كـ non-win)"
     },
     "institutional_liquid_universe": {
       "label": "السيولة المؤسسية المئوية (top 25%)",
-      "total_signals": 809,
-      "verified_win": 55,
-      "verified_loss": 339,
+      "total_signals": 304,
+      "verified_win": 39,
+      "verified_loss": 57,
       "verified_neutral": 0,
-      "verified_total": 394,
-      "win_rate_pct": 6.8,
-      "profit_factor": 0.1583,
-      "sharpe_ratio": -16.7497,
+      "verified_total": 96,
+      "win_rate_pct": 12.83,
+      "profit_factor": 0.5177,
+      "sharpe_ratio": -5.2109,
       "note": "الأسهم في أعلى 25% تداولاً داخل سوقها (percentile >= 75). النسبة الحقيقية للمستثمر المؤسسي."
     },
     "rvol_surge_breakouts": {
       "label": "🚀 طفرة سيولة وانفجار سعري (RVol Surge Breakout)",
-      "total_signals": 27,
+      "total_signals": 4,
       "verified_win": 2,
-      "verified_loss": 12,
+      "verified_loss": 0,
       "verified_neutral": 0,
-      "verified_total": 14,
-      "win_rate_pct": 7.41,
-      "profit_factor": 0.2589,
-      "sharpe_ratio": -10.6614,
+      "verified_total": 2,
+      "win_rate_pct": 50.0,
+      "profit_factor": null,
+      "sharpe_ratio": 0.0,
       "note": "أسهم خفيفة (tier=light, percentile < 30) قفز حجمها >= 2.5x من متوسط 20 يوم مع إشارة تجميع/انفجار (signal_type يحوي accumulation أو surge). تم منحها استثناء فوري بدل الاستبعاد."
     },
     "liquidity_tiers_breakdown": {
       "EGX": {
-        "institutional": 809,
-        "active_mid": 1595,
-        "light": 319,
+        "institutional": 304,
+        "active_mid": 548,
+        "light": 169,
         "unknown": 0,
-        "rvol_surge": 27
+        "rvol_surge": 4
+      },
+      "UNKNOWN": {
+        "institutional": 0,
+        "active_mid": 0,
+        "light": 0,
+        "unknown": 81,
+        "rvol_surge": 0
       }
     },
-    "disqualified_illiquid_count": 94,
+    "disqualified_illiquid_count": 0,
     "rvol_surge_breakout_count": 0,
-    "improvement_pct_points": 0.37,
-    "improvement_note": "+0.37 نقطة تحسن بفضل فلتر السيولة المؤسسية المئوية (institutional_liquid_win_rate - unfiltered_win_rate)",
+    "improvement_pct_points": 1.94,
+    "improvement_note": "+1.94 نقطة تحسن بفضل فلتر السيولة المؤسسية المئوية (institutional_liquid_win_rate - unfiltered_win_rate)",
     "legacy_note": "تم الاستبدال بمحرك ديناميكي مئوي في Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY. الـ LIQUIDITY_FLOOR_EGP الثابت (2,000,000 EGP) تم إلغاؤه — لم يعد يُستخدم."
   },
   "disclaimer": "Rule 27 (NO-FAKE-DATA): all metrics computed from real price data only. No data for 2020-2024 — annual_breakdown shows null with note. radar_signal_tracking contains signals from 2026-09-28 onwards only; 2025 has no signals (price data exists Sep-Dec 2025 but no radar signals were generated). Trade classification uses the stored status column from verify_all_radar_signals.py (idempotent) for consistency with the published 46.80% win rate."

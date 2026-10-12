@@ -154,6 +154,10 @@ _MODEL: Any = None  # cached LGBMClassifier (or None if unavailable)
 _MODEL_LOAD_TRIED = False  # so we don't keep retrying on every call
 _MODEL_FEATURES: Optional[List[str]] = None
 _MODEL_LOAD_ERROR: Optional[str] = None
+# BRAVO-GRAND-SIMULATION-PHASE-3: V2 metadata (set when V2 dict is loaded)
+_MODEL_VERSION: Optional[str] = None
+_MODEL_ROC_AUC: Optional[float] = None
+_MODEL_TRAINED_AT: Optional[str] = None
 
 
 def _find_model_path() -> Optional[Path]:
@@ -172,6 +176,7 @@ def _load_model() -> Tuple[Any, Optional[List[str]], Optional[str]]:
     the cached result so we don't spam logs.
     """
     global _MODEL, _MODEL_FEATURES, _MODEL_LOAD_TRIED, _MODEL_LOAD_ERROR
+    global _MODEL_VERSION, _MODEL_ROC_AUC, _MODEL_TRAINED_AT
 
     if _MODEL_LOAD_TRIED:
         return _MODEL, _MODEL_FEATURES, _MODEL_LOAD_ERROR
@@ -191,7 +196,7 @@ def _load_model() -> Tuple[Any, Optional[List[str]], Optional[str]]:
 
         try:
             import joblib  # noqa: F401  (import-checked)
-            model = joblib.load(str(model_path))
+            loaded = joblib.load(str(model_path))
         except ImportError as e:
             _MODEL_LOAD_ERROR = (
                 f"joblib not installed — install with `pip install joblib scikit-learn`. "
@@ -204,11 +209,32 @@ def _load_model() -> Tuple[Any, Optional[List[str]], Optional[str]]:
             print(f"[lgbm_gatekeeper] ⚠️ {_MODEL_LOAD_ERROR} — fallback passthrough")
             return None, None, _MODEL_LOAD_ERROR
 
-        # Extract feature names — sklearn LGBMClassifier exposes them via
-        # `feature_name_` (lightgbm 3.x) or `feature_names_in_` (sklearn 1.x).
-        feats = getattr(model, "feature_name_", None) or getattr(
-            model, "feature_names_in_", None
-        )
+        # BRAVO-GRAND-SIMULATION-PHASE-3: V2 model is saved as a dict with
+        # metadata (version, model, feature_names, roc_auc, confusion_matrix,
+        # trained_at, ...). V1 was a plain LGBMClassifier. Handle both formats.
+        if isinstance(loaded, dict) and "model" in loaded:
+            # V2 dict format — extract the inner LGBMClassifier
+            model = loaded["model"]
+            # Prefer explicit feature_names from the dict; fall back to the
+            # LGBMClassifier's own feature_name_ attribute.
+            feats = loaded.get("feature_names")
+            if not feats:
+                feats = getattr(model, "feature_name_", None) or getattr(
+                    model, "feature_names_in_", None
+                )
+            _MODEL_VERSION = loaded.get("version", "V2")
+            _MODEL_ROC_AUC = loaded.get("roc_auc")
+            _MODEL_TRAINED_AT = loaded.get("trained_at")
+        else:
+            # V1 plain LGBMClassifier
+            model = loaded
+            feats = getattr(model, "feature_name_", None) or getattr(
+                model, "feature_names_in_", None
+            )
+            _MODEL_VERSION = "V1"
+            _MODEL_ROC_AUC = None
+            _MODEL_TRAINED_AT = None
+
         if feats is None and hasattr(model, "booster_"):
             try:
                 feats = model.booster_.feature_name()
@@ -218,8 +244,9 @@ def _load_model() -> Tuple[Any, Optional[List[str]], Optional[str]]:
         _MODEL_FEATURES = list(feats) if feats else None
         if _MODEL_FEATURES:
             print(
-                f"[lgbm_gatekeeper] ✅ model loaded ({model_path.name}) "
-                f"— {len(_MODEL_FEATURES)} features"
+                f"[lgbm_gatekeeper] ✅ model loaded ({model_path.name}, "
+                f"version={_MODEL_VERSION}) — {len(_MODEL_FEATURES)} features"
+                + (f", roc_auc={_MODEL_ROC_AUC}" if _MODEL_ROC_AUC is not None else "")
             )
         else:
             print(

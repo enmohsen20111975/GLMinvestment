@@ -242,9 +242,26 @@ def fetch_prices_after(
     return out
 
 
-# Friction: Set to 0.0 in general market engine. Commission varies by market/brokerage
-# and is customized directly by user in portfolio settings.
-FEES_SLIPPAGE_ROUNDTRIP_PCT = 0.0
+# ─────────────────────────────────────────────────────────────────────────────
+# Commission / Slippage (Task BRAVO-GRAND-SIMULATION-PHASE-2)
+# ─────────────────────────────────────────────────────────────────────────────
+# خصم 0.40% عمولات ذهاباً وإياباً (round-trip). لو gross_return = +5% → net = +4.60%.
+# لو gross_return = -5% → net = -5.40%.
+# إلغاء الصفقات الهامشية: لو net_return ≤ 0 بعد الخصم (مثلاً win بـ +0.3% →
+# net = -0.1%) → تُعاد تصنيفها verified_loss (لم تفز فعليًا).
+COMMISSION_PCT = 0.40
+FEES_SLIPPAGE_ROUNDTRIP_PCT = COMMISSION_PCT  # alias للتوافق مع الكود القديم
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Concurrent Equity Curve Parameters (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1)
+# ─────────────────────────────────────────────────────────────────────────────
+# Equity curve يبدأ بـ 100,000 EGP ويتحرك مع الصفقات المتزامنة.
+# position_size = equity / max_concurrent_positions (ديناميكي).
+# max_concurrent_positions: أقصى عدد صفقات مفتوحة في نفس الوقت.
+CONCURRENT_START_EQUITY_EGP = 100_000.0
+
+# الأسواق المدعومة في per-market breakdown (Task BRAVO-GRAND-SIMULATION §2.1.D)
+SUPPORTED_MARKETS = ['EGX', 'US', 'TADAWUL', 'KSE', 'QSE']
 
 
 def _parse_num(val) -> float:
@@ -490,10 +507,19 @@ def check_rvol_surge_for_backtest(
 # ─────────────────────────────────────────────────────────────────────────────
 # Realized-return derivation (from stored verify_all_radar_signals output)
 # ─────────────────────────────────────────────────────────────────────────────
-def derive_realized_return(row: sqlite3.Row) -> Optional[float]:
+def derive_gross_return(row: sqlite3.Row) -> Optional[float]:
     """
-    Derive the realized net trade return (%) from stored verify output,
-    strictly deducting 0.40% round-trip transaction costs & slippage (Rule 27).
+    Derive the GROSS trade return (%) BEFORE commission (Rule 27 — uses real
+    stored values). Same logic as the original derive_realized_return but
+    WITHOUT commission deduction.
+
+    - verified_win with win_date IS NOT NULL → +5.0% (target hit at +5% high)
+    - verified_win with win_date IS NULL     → outcome_7d (legacy close-based win;
+                                                fallback to outcome_14d, then
+                                                peak_return, then to +2.5% as a
+                                                last resort)
+    - verified_loss                          → -5.0% (stop hit at -5% low)
+    - verified_neutral                       → outcome_30d (or 0.0 if NULL)
     """
     status = row['status']
     raw_ret: Optional[float] = None
@@ -514,11 +540,60 @@ def derive_realized_return(row: sqlite3.Row) -> Optional[float]:
     elif status == 'verified_neutral':
         v = row['outcome_30d']
         raw_ret = float(v) if v is not None else 0.0
+    return raw_ret
 
-    if raw_ret is not None:
-        # Deduct realistic trading fees (net realized return)
-        return round(raw_ret - FEES_SLIPPAGE_ROUNDTRIP_PCT, 4)
-    return None  # pending, stale_data, or anything else
+
+def derive_realized_return(row: sqlite3.Row) -> Optional[float]:
+    """
+    Derive the realized NET trade return (%) AFTER commission deduction.
+    Wraps derive_gross_return + applies COMMISSION_PCT.
+
+    NOTE: للتوافق مع الكود القديم، يُرجع net return فقط. للحصول على كل من
+    gross + net + effective_status، استخدم derive_returns_with_commission.
+    """
+    gross = derive_gross_return(row)
+    if gross is None:
+        return None
+    return round(gross - COMMISSION_PCT, 4)
+
+
+def derive_returns_with_commission(
+    row: sqlite3.Row,
+) -> Tuple[Optional[float], Optional[float], str]:
+    """
+    Derive (gross_return_pct, net_return_pct, effective_status) for a verified
+    signal, applying the 0.40% round-trip commission + marginal-trade
+    cancellation rule (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.ب).
+
+    القاعدة (مُلغى الصفقات الهامشية):
+      - لو status='verified_win' و net_return ≤ 0 بعد الخصم
+        (مثلاً win بـ +0.3% → net = -0.1%) → تُعاد تصنيفها verified_loss.
+      - لو status='verified_loss' → تبقى verified_loss (net دائمًا أقل من 0).
+      - لو status='verified_neutral' → تبقى verified_neutral.
+
+    Args:
+        row: صف من radar_signal_tracking بـ status موثّق.
+
+    Returns:
+        tuple (gross_return_pct, net_return_pct, effective_status):
+            - gross_return_pct: العائد قبل العمولة (Target/Stop/outcome).
+            - net_return_pct: gross - COMMISSION_PCT (مخصوم منه 0.40%).
+            - effective_status: الحالة النهائية بعد إعادة التصنيف.
+        لو status ليس موثّقًا → (None, None, status).
+    """
+    status = row['status']
+    gross = derive_gross_return(row)
+    if gross is None:
+        return (None, None, status)
+
+    net = round(gross - COMMISSION_PCT, 4)
+
+    # إعادة تصنيف الصفقات الهامشية (win بـ ≤ 0.40% يصبح loss بعد العمولة)
+    effective_status = status
+    if status == 'verified_win' and net <= 0:
+        effective_status = 'verified_loss'
+
+    return (gross, net, effective_status)
 
 
 def derive_exit_date(row: sqlite3.Row, conn: sqlite3.Connection
@@ -710,6 +785,204 @@ def compute_total_return_pct(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Concurrent Equity Curve (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.أ + §2.1.ج)
+# ─────────────────────────────────────────────────────────────────────────────
+def compute_max_concurrent_positions(trades: List[Dict[str, Any]]) -> int:
+    """
+    حساب أقصى عدد صفقات مفتوحة في نفس الوقت (Max Concurrent Positions).
+
+    Sweep algorithm:
+      - لكل صفقة، نولّد حدثين: entry (+1) عند signal_date، exit (-1) عند exit_date.
+      - نُرتب الأحداث تصاعديًا حسب (date, kind) بحيث يُعالَج entry قبل exit في
+        نفس اليوم (تفسير محافظ — يُعطي أقصى تزامن ممكن).
+      - max_concurrent = أقصى قيمة للمجموع الجاري.
+
+    Args:
+        trades: قائمة الصفقات (كل صفقة لها signal_date + exit_date).
+
+    Returns:
+        int: أقصى عدد صفقات متزامنة (≥ 0).
+    """
+    events: List[Tuple[str, int]] = []
+    for t in trades:
+        entry = t.get('signal_date')
+        exit_d = t.get('exit_date')
+        if not entry or not exit_d:
+            continue
+        events.append((entry, +1))
+        events.append((exit_d, -1))
+    if not events:
+        return 0
+    # ترتيب: entries قبل exits في نفس اليوم (kind+1 قبل kind-1).
+    # sort tuple (date, kind) — but we want +1 first, so negate kind.
+    events.sort(key=lambda x: (x[0], -x[1]))
+    current = 0
+    max_conc = 0
+    for _, kind in events:
+        current += kind
+        if current > max_conc:
+            max_conc = current
+    return max_conc
+
+
+def build_concurrent_equity_curve(
+    trades: List[Dict[str, Any]],
+    start_equity: float = CONCURRENT_START_EQUITY_EGP,
+) -> Tuple[List[float], int, List[Dict[str, Any]]]:
+    """
+    بناء Concurrent Equity Curve مع position sizing ديناميكي.
+
+    الخوارزمية (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.ج):
+      1. احسب max_concurrent_positions = أقصى تزامن بين كل الصفقات.
+      2. لو max_concurrent = 0 → ارجع [start_equity] فقط.
+      3. رتّب الصفقات تصاعديًا حسب exit_date (وعند التعادل، signal_date ثم id).
+      4. لكل صفقة:
+           position_size = current_equity / max_concurrent_positions
+           equity += position_size * net_return_pct / 100.0
+      5. ارجع (equity_curve, max_concurrent, sorted_trades_used).
+
+    Args:
+        trades: قائمة الصفقات (كل صفقة لها net_return_pct + signal_date +
+                exit_date + id).
+        start_equity: رأس المال الابتدائي (default 100,000 EGP).
+
+    Returns:
+        tuple (equity_curve, max_concurrent_positions, sorted_trades):
+            - equity_curve: list[float] يبدأ بـ start_equity + نقطة لكل صفقة.
+            - max_concurrent_positions: int.
+            - sorted_trades: الصفقات المُستخدمة مُرتّبة حسب exit_date.
+    """
+    valid_trades = [
+        t for t in trades
+        if t.get('net_return_pct') is not None
+        and t.get('signal_date')
+        and t.get('exit_date')
+    ]
+    if not valid_trades:
+        return [start_equity], 0, []
+
+    max_conc = compute_max_concurrent_positions(valid_trades)
+    if max_conc <= 0:
+        max_conc = 1  # safety
+
+    sorted_trades = sorted(
+        valid_trades,
+        key=lambda x: (x['exit_date'] or '', x['signal_date'] or '', x.get('id', 0))
+    )
+    equity = float(start_equity)
+    curve = [equity]
+    curve_meta: List[Dict[str, Any]] = []
+    for t in sorted_trades:
+        position_size = equity / max_conc
+        net_ret = float(t['net_return_pct'])
+        equity += position_size * net_ret / 100.0
+        curve.append(equity)
+        curve_meta.append({
+            'id': t.get('id'),
+            'ticker': t.get('ticker'),
+            'signal_date': t.get('signal_date'),
+            'exit_date': t.get('exit_date'),
+            'net_return_pct': net_ret,
+            'position_size_egp': round(position_size, 2),
+            'equity_after_egp': round(equity, 2),
+        })
+    return curve, max_conc, sorted_trades
+
+
+def compute_concurrent_max_drawdown(
+    equity_curve: List[float],
+) -> float:
+    """
+    MDD على الـ concurrent equity curve (peak-to-trough %).
+    نفس منطق compute_max_drawdown لكنه مُسمّى بشكل صريح للـ concurrent curve.
+    """
+    return compute_max_drawdown(equity_curve)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-Market Breakdown (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.د)
+# ─────────────────────────────────────────────────────────────────────────────
+def compute_per_market_breakdown(
+    trades: List[Dict[str, Any]],
+    supported_markets: List[str] = SUPPORTED_MARKETS,
+) -> Dict[str, Optional[Dict[str, Any]]]:
+    """
+    حساب مقاييس الأداء لكل سوق على حدة.
+
+    لكل سوق في supported_markets:
+      - فلترة الصفقات حسب trade['market'] == this_market.
+      - لو لا توجد صفقات موثّقة في السوق → null + note (Rule 27 — لا اختلاق).
+      - لو توجد صفقات → احسب:
+          signals, win_rate_pct, profit_factor, sharpe, sortino, mdd_pct,
+          verified_win, verified_loss, verified_neutral.
+
+    Args:
+        trades: قائمة الصفقات (كل صفقة لها market + effective_status +
+                net_return_pct).
+        supported_markets: قائمة الأسواق المدعومة.
+
+    Returns:
+        dict: {market: metrics_dict_or_None_with_note}.
+    """
+    breakdown: Dict[str, Optional[Dict[str, Any]]] = {}
+    for mkt in supported_markets:
+        mkt_trades = [t for t in trades if (t.get('market') or 'UNKNOWN') == mkt]
+        if not mkt_trades:
+            breakdown[mkt] = None
+            # note تُضاف في JSON layer (للحفاظ على نوع البيانات متّسقًا)
+            continue
+
+        # عدّ بالمstatus الفعّال (بعد إعادة تصنيف الصفقات الهامشية)
+        eff_win = sum(
+            1 for t in mkt_trades
+            if t.get('effective_status') == 'verified_win'
+        )
+        eff_loss = sum(
+            1 for t in mkt_trades
+            if t.get('effective_status') == 'verified_loss'
+        )
+        eff_neutral = sum(
+            1 for t in mkt_trades
+            if t.get('effective_status') == 'verified_neutral'
+        )
+        eff_total = eff_win + eff_loss + eff_neutral
+
+        win_rate = (eff_win / eff_total * 100) if eff_total > 0 else 0.0
+
+        returns_pct = [
+            t['net_return_pct'] for t in mkt_trades
+            if t.get('net_return_pct') is not None
+        ]
+        returns_dec = [r / 100.0 for r in returns_pct]
+
+        pf = compute_profit_factor(returns_dec)
+        sharpe = compute_sharpe(returns_dec)
+        sortino = compute_sortino(returns_dec)
+
+        # MDD على equity curve خاص بالسوق (sequential، لكل صفقة)
+        mkt_sorted = sorted(
+            [t for t in mkt_trades if t.get('net_return_pct') is not None],
+            key=lambda x: (x.get('exit_date') or '', x.get('signal_date') or '',
+                           x.get('id', 0))
+        )
+        mkt_curve = build_equity_curve(mkt_sorted, START_EQUITY_EGP)
+        mkt_mdd = compute_max_drawdown(mkt_curve)
+
+        breakdown[mkt] = {
+            'signals': len(mkt_trades),
+            'verified_win': eff_win,
+            'verified_loss': eff_loss,
+            'verified_neutral': eff_neutral,
+            'win_rate_pct': safe_round(win_rate, 2),
+            'profit_factor': safe_round(pf, 4),
+            'sharpe_ratio': safe_round(sharpe, 4),
+            'sortino_ratio': safe_round(sortino, 4),
+            'mdd_pct': safe_round(mkt_mdd, 4),
+        }
+    return breakdown
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Utility — NaN/Infinity sanitization for JSON
 # ─────────────────────────────────────────────────────────────────────────────
 def safe_round(value: Any, ndigits: int = 4) -> Any:
@@ -812,13 +1085,26 @@ def main() -> int:
     # For each verified signal, derive the realized return from stored fields.
     # We open a fresh readonly connection for price-related derivations
     # (exit_date, holding_days) to keep memory bounded.
+    #
+    # Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.ب:
+    #   - gross_return_pct : العائد قبل العمولة.
+    #   - net_return_pct   : العائد بعد خصم 0.40% عمولة ذهاباً وإياباً.
+    #   - effective_status : الحالة بعد إعادة تصنيف الصفقات الهامشية
+    #                        (win بـ ≤ 0.40% → loss).
     trades: List[Dict[str, Any]] = []
+    marginal_reclassifications = 0  # عدّ الصفقات التي أُعيد تصنيفها win→loss
     conn = open_db_readonly(STOCKS_DB)
     try:
         for row in verified_rows:
-            realized = derive_realized_return(row)
-            if realized is None:
+            gross_ret, net_ret, eff_status = derive_returns_with_commission(row)
+            if net_ret is None:
                 continue
+            # تتبع الصفقات التي أُعيد تصنيفها (win → loss بسبب العمولة)
+            if (
+                row['status'] == 'verified_win'
+                and eff_status == 'verified_loss'
+            ):
+                marginal_reclassifications += 1
             exit_date = derive_exit_date(row, conn)
             holding_days = derive_holding_days(row, conn)
             trades.append({
@@ -828,9 +1114,13 @@ def main() -> int:
                 'signal_type': row['signal_type'],
                 'entry_price': float(row['entry_price']) if row['entry_price']
                                 else None,
-                'status': row['status'],
+                'status': row['status'],  # الحالة الأصلية
+                'effective_status': eff_status,  # بعد العمولة
                 'exit_date': exit_date,
-                'realized_return_pct': realized,
+                'gross_return_pct': gross_ret,
+                'net_return_pct': net_ret,
+                'realized_return_pct': net_ret,  # alias للتوافق مع الكود القديم
+                'commission_pct': COMMISSION_PCT,
                 'holding_days': holding_days,
                 'win_date': row['win_date'],
                 'peak_return': (
@@ -842,15 +1132,32 @@ def main() -> int:
     finally:
         conn.close()
 
-    # ─── Aggregate counts ───
-    verified_win = sum(1 for t in trades if t['status'] == 'verified_win')
-    verified_loss = sum(1 for t in trades if t['status'] == 'verified_loss')
-    verified_neutral = sum(
+    # ─── Aggregate counts (GROSS + NET/EFFECTIVE) ───
+    # GROSS counts = الـ status الأصلي (قبل العمولة)
+    verified_win_gross = sum(1 for t in trades if t['status'] == 'verified_win')
+    verified_loss_gross = sum(1 for t in trades if t['status'] == 'verified_loss')
+    verified_neutral_gross = sum(
         1 for t in trades if t['status'] == 'verified_neutral'
     )
     verified_total = len(trades)
     overall_win_rate = (
-        (verified_win / verified_total * 100) if verified_total > 0 else 0.0
+        (verified_win_gross / verified_total * 100)
+        if verified_total > 0 else 0.0
+    )
+
+    # EFFECTIVE counts = بعد خصم العمولة وإعادة تصنيف الصفقات الهامشية
+    verified_win = sum(
+        1 for t in trades if t['effective_status'] == 'verified_win'
+    )
+    verified_loss = sum(
+        1 for t in trades if t['effective_status'] == 'verified_loss'
+    )
+    verified_neutral = sum(
+        1 for t in trades if t['effective_status'] == 'verified_neutral'
+    )
+    net_win_rate_after_commission = (
+        (verified_win / verified_total * 100)
+        if verified_total > 0 else 0.0
     )
 
     # Pending + stale counts (from stored DB, for the metrics block).
@@ -1012,6 +1319,26 @@ def main() -> int:
     max_drawdown_pct = compute_max_drawdown(equity_curve)
     final_equity = equity_curve[-1] if equity_curve else START_EQUITY_EGP
 
+    # ─── Concurrent Equity Curve (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.أ + §2.1.ج) ───
+    # منحنى تراكمي يأخذ في الاعتبار الصفقات المتزامنة (overlapping positions)
+    # بدل المعالجة التسلسلية البسيطة. position_size = equity / max_concurrent.
+    concurrent_equity_curve, max_concurrent_positions, concurrent_sorted_trades = (
+        build_concurrent_equity_curve(trades, CONCURRENT_START_EQUITY_EGP)
+    )
+    concurrent_max_drawdown_pct = compute_concurrent_max_drawdown(
+        concurrent_equity_curve
+    )
+    concurrent_total_return_pct = compute_total_return_pct(
+        concurrent_equity_curve, CONCURRENT_START_EQUITY_EGP
+    )
+    concurrent_final_equity = (
+        concurrent_equity_curve[-1] if concurrent_equity_curve
+        else CONCURRENT_START_EQUITY_EGP
+    )
+
+    # ─── Per-Market Breakdown (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.د) ───
+    per_market_breakdown = compute_per_market_breakdown(trades, SUPPORTED_MARKETS)
+
     # ─── Sharpe / Sortino ───
     # Treat per-trade realized returns as the daily-return series (documented
     # simplification — see module docstring).
@@ -1036,12 +1363,53 @@ def main() -> int:
         else 'null (no losses)'
     )
     print(f'  profit_factor                      : {pf_str}')
-    print(f'  max_drawdown_pct                   : {max_drawdown_pct:.4f}%')
+    print(f'  max_drawdown_pct (sequential)      : {max_drawdown_pct:.4f}%')
     print(f'  avg_return_per_trade_pct           : '
           f'{avg_return_per_trade_pct:+.4f}%')
-    print(f'  total_return_pct                   : {total_return_pct:+.4f}%')
+    print(f'  total_return_pct (sequential)      : {total_return_pct:+.4f}%')
     print(f'  starting_equity_egp                : {START_EQUITY_EGP:,.2f}')
-    print(f'  final_equity_egp                   : {final_equity:,.2f}')
+    print(f'  final_equity_egp (sequential)      : {final_equity:,.2f}')
+    print()
+    print('[commission impact (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.ب)]')
+    print(f'  commission_pct (round-trip)        : {COMMISSION_PCT:.2f}%')
+    print(f'  gross_win_count                    : {verified_win_gross}')
+    print(f'  gross_loss_count                   : {verified_loss_gross}')
+    print(f'  gross_win_rate_pct                 : {overall_win_rate:.2f}%')
+    print(f'  effective_win_count (after comm.)  : {verified_win}')
+    print(f'  effective_loss_count (after comm.) : {verified_loss}')
+    print(f'  net_win_rate_after_commission_pct  : '
+          f'{net_win_rate_after_commission:.2f}%')
+    print(f'  marginal_reclassifications (win→loss): {marginal_reclassifications}')
+    print()
+    print('[concurrent equity curve (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.أ+ج)]')
+    print(f'  starting_equity_egp                : {CONCURRENT_START_EQUITY_EGP:,.2f}')
+    print(f'  max_concurrent_positions           : {max_concurrent_positions}')
+    print(f'  concurrent_max_drawdown_pct        : '
+          f'{concurrent_max_drawdown_pct:.4f}%')
+    print(f'  concurrent_total_return_pct        : '
+          f'{concurrent_total_return_pct:+.4f}%')
+    print(f'  concurrent_final_equity_egp        : '
+          f'{concurrent_final_equity:,.2f}')
+    print()
+    print('[per-market breakdown (Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.د)]')
+    for mkt in SUPPORTED_MARKETS:
+        info = per_market_breakdown.get(mkt)
+        if info is None:
+            print(f'  {mkt:10s}: null (no verified signals in this market — '
+                  'Rule 27)')
+        else:
+            pf_mkt = info.get('profit_factor')
+            so_mkt = info.get('sortino_ratio')
+            pf_str_m = f'{pf_mkt:.4f}' if pf_mkt is not None else 'null'
+            so_str_m = f'{so_mkt:.4f}' if so_mkt is not None else 'null'
+            print(f'  {mkt:10s}: signals={info["signals"]:4d}  '
+                  f'win={info["verified_win"]:4d}  '
+                  f'loss={info["verified_loss"]:4d}  '
+                  f'win_rate={info["win_rate_pct"]:6.2f}%  '
+                  f'PF={pf_str_m:>8s}  '
+                  f'Sharpe={info["sharpe_ratio"]:7.4f}  '
+                  f'Sortino={so_str_m:>8s}  '
+                  f'MDD={info["mdd_pct"]:6.2f}%')
     print()
 
     # ─── DYNAMIC LIQUIDITY COMPARISON (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY) ──
@@ -1309,6 +1677,67 @@ def main() -> int:
                 "Signals marked 'pending' or 'stale_data' by the verify "
                 "script are excluded from the backtest universe."
             ),
+        },
+        # ─── Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.ب: Commission Impact ───
+        'commission_impact': {
+            'commission_pct_round_trip': COMMISSION_PCT,
+            'gross_win_count': verified_win_gross,
+            'gross_loss_count': verified_loss_gross,
+            'gross_neutral_count': verified_neutral_gross,
+            'gross_win_rate_pct': safe_round(overall_win_rate, 2),
+            'effective_win_count_after_commission': verified_win,
+            'effective_loss_count_after_commission': verified_loss,
+            'effective_neutral_count_after_commission': verified_neutral,
+            'net_win_rate_after_commission_pct': safe_round(
+                net_win_rate_after_commission, 2
+            ),
+            'marginal_reclassifications_win_to_loss': (
+                marginal_reclassifications
+            ),
+            'rule_note': (
+                'إلغاء الصفقات الهامشية: لو net_return ≤ 0 بعد خصم 0.40% '
+                '(مثلاً win بـ +0.3% → net = -0.1%) → تُعاد تصنيفها '
+                'verified_loss (لم تفز فعليًا).'
+            ),
+        },
+        # ─── Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.أ + §2.1.ج: Concurrent ─
+        'concurrent_equity_curve': {
+            'starting_equity_egp': CONCURRENT_START_EQUITY_EGP,
+            'final_equity_egp': safe_round(concurrent_final_equity, 2),
+            'max_concurrent_positions': max_concurrent_positions,
+            'max_concurrent_drawdown_pct': safe_round(
+                concurrent_max_drawdown_pct, 4
+            ),
+            'total_return_pct': safe_round(concurrent_total_return_pct, 4),
+            'n_points': len(concurrent_equity_curve),
+            'position_sizing_rule': (
+                'position_size = current_equity / max_concurrent_positions '
+                '(ديناميكي — يُعاد حسابه عند كل خروج صفقة).'
+            ),
+            'method_note': (
+                'Concurrent equity curve يأخذ في الاعتبار الصفقات المتزامنة '
+                '(overlapping positions). لكل يوم تداول: equity += sum(net_returns '
+                '× position_size) للصفقات التي تُغلق ذلك اليوم. '
+                'Max Concurrent Drawdown = أكبر تراجع (peak-to-trough) في هذا '
+                'المنحنى كنسبة %.'
+            ),
+            'first_5_points': [
+                safe_round(p, 2) for p in concurrent_equity_curve[:5]
+            ],
+            'last_5_points': (
+                [safe_round(p, 2) for p in concurrent_equity_curve[-5:]]
+                if len(concurrent_equity_curve) >= 5
+                else [safe_round(p, 2) for p in concurrent_equity_curve]
+            ),
+        },
+        # ─── Task BRAVO-GRAND-SIMULATION-PHASE-2 §2.1.د: Per-Market ─────────
+        'per_market_breakdown': per_market_breakdown,
+        'per_market_notes': {
+            mkt: (
+                'لا توجد إشارات موثّقة في هذا السوق — Rule 27 (NO-FAKE-DATA).'
+                if per_market_breakdown.get(mkt) is None else ''
+            )
+            for mkt in SUPPORTED_MARKETS
         },
         'annual_breakdown': annual,
         'by_signal_type': sig_type_breakdown,
@@ -1598,13 +2027,16 @@ def main() -> int:
     else:
         print('  ✓ No NaN/Infinity values in JSON output.')
 
-    # Verify expected win-rate match
-    if abs(wr_val - 46.80) < 0.05:
-        print(f'  ✓ Win Rate ({wr_val:.2f}%) matches verify_all_radar_signals.py '
-              'published value (46.80%).')
+    # Verify expected win-rate match (BRAVO-GRAND-SIMULATION: 40.40% post-cleaning)
+    # المرحلة 1 (data_gap_cleaner) أعادت توثيق الإشارات → 120 win + 177 loss = 40.40%.
+    EXPECTED_WR = 40.40
+    if abs(wr_val - EXPECTED_WR) < 0.05:
+        print(f'  ✓ Win Rate ({wr_val:.2f}%) matches BRAVO-GRAND-SIMULATION '
+              f'Phase-1 cleaned value ({EXPECTED_WR}%).')
     else:
-        print(f'  ⚠ Win Rate ({wr_val:.2f}%) does NOT match expected 46.80% '
-              '— investigate.')
+        print(f'  ⚠ Win Rate ({wr_val:.2f}%) does NOT match expected '
+              f'{EXPECTED_WR}% — investigate (maybe new signals not yet '
+              'verified by Phase-1 cleaner).')
 
     # ─── Liquidity comparison reality check (TITAN-HEAVY-PUMP-1) ─────────
     print()

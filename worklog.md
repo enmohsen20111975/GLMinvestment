@@ -80534,3 +80534,181 @@ Stage Summary:
 - ✅ dry-run test: 7/7 مراحل ناجحة + JSON 1,786 bytes + log 5KB.
 - ✅ التقرير الصباحي يعرض: 1,551 توقع نشط (EGX 1,474 + US 76 + CRYPTO 1).
 - ✅ Syntax check: 2/2 files OK.
+
+---
+Task ID: BRAVO-GRAND-SIMULATION-PHASES-2-3
+Agent: مهندس Quant/ML (فريق GLM 5.2-Bravo)
+Task: الباك-تست المؤسسي متعدد الأسواق + LGBM V2 + grand_simulation_report
+
+Work Log:
+- قرأت آخر 100 سطر من worklog.md لفهم السياق (آخر مهمة: BRAVO-OVERNIGHT-MASTER).
+- قرأت scripts/institutional_multi_market_backtest.py (1,681 LOC) — فهمت:
+  * derive_realized_return (chronological + same-day conservative).
+  * liquidity_comparison section (Dynamic Market Percentile Rank).
+  * بنية الـ JSON output.
+- قرأت scripts/train_signal_classifier_lgbm.py (453 LOC) — فهمت:
+  * 12 features المستخدمة.
+  * split_idx بسيط (75/25 chronological بدون purge).
+  * threshold 0.65 evaluation (multiple thresholds sweep).
+- تحققت من قاعدة البيانات:
+  * radar_signal_tracking: 120 verified_win + 177 verified_loss = 297 إشارة قابلة للتدريب.
+  * كل الـ 297 إشارة من سوق EGX فقط (لا verified signals في US/TADAWUL/KSE/QSE).
+  * stock_daily_prices: 100,619 candles لكن markets فقط EGX + US (لا TADAWUL/KSE/QSE).
+  * 81 إشارة بدون stocks entry — كلها crypto + كلها stale_data (لا تؤثر على الباك-تست).
+  * existing model: lgbm_signal_gatekeeper.joblib (87KB قبل التدريب V2).
+
+المرحلة 2 — تطوير scripts/institutional_multi_market_backtest.py:
+- أضفت COMMISSION_PCT = 0.40 (خصم ذهاباً وإياباً) — استبدل FEES_SLIPPAGE_ROUNDTRIP_PCT = 0.0.
+- أضفت derive_gross_return() و derive_returns_with_commission() (جديدة) — تحسب:
+  * gross_return_pct (قبل العمولة).
+  * net_return_pct (بعد خصم 0.40%).
+  * effective_status (إعادة تصنيف الصفقات الهامشية: win بـ ≤0.40% → loss).
+- أضفت CONCURRENT_START_EQUITY_EGP = 100,000 EGP + SUPPORTED_MARKETS list.
+- أضفت compute_max_concurrent_positions() — sweep algorithm (entries قبل exits في نفس اليوم).
+- أضفت build_concurrent_equity_curve() — position sizing ديناميكي
+  (position_size = current_equity / max_concurrent_positions).
+- أضفت compute_concurrent_max_drawdown() — MDD على الـ concurrent curve.
+- أضفت compute_per_market_breakdown() — لكل سوق: signals, win_rate, PF, Sharpe,
+  Sortino, MDD. لو لا توجد إشارات موثّقة → null + note (Rule 27).
+- عدّلت main():
+  * استبدال derive_realized_return بـ derive_returns_with_commission في بناء trades.
+  * إضافة gross_return_pct, net_return_pct, effective_status, commission_pct لكل صفقة.
+  * حساب GROSS + EFFECTIVE counts (net_win_rate_after_commission_pct).
+  * بناء concurrent_equity_curve + per_market_breakdown.
+  * إضافة sections جديدة في JSON: commission_impact, concurrent_equity_curve,
+    per_market_breakdown, per_market_notes.
+  * تحديث reality check: 40.40% بدل 46.80% (المرحلة 1 أعادت توثيق الإشارات).
+
+المرحلة 2 — تشغيل الباك-تست المحدّث:
+- python3 scripts/institutional_multi_market_backtest.py → SUCCESS.
+- النتائج:
+  * total_signals: 1102 | verified_signals: 297 (120 win + 177 loss).
+  * overall_win_rate_pct (GROSS): 40.40%.
+  * net_win_rate_after_commission_pct: 40.40% (0 marginal reclassifications
+    because كل الـ verified_win لها win_date = +5% target hit → net = +4.60% > 0).
+  * Concurrent Equity Curve: starting=100,000 → final=98,157.27 EGP (loss 1.84%).
+  * max_concurrent_positions: 235 (تزامن عالٍ جداً — كل الإشارات في 8 أيام).
+  * max_concurrent_drawdown_pct: 1.9445% (ممتاز — <20% مؤسسيًا).
+  * Per-market breakdown: EGX=real metrics / US, TADAWUL, KSE, QSE=null + note.
+  * JSON file: db/reports/institutional_backtest_summary.json (11,469 bytes).
+
+المرحلة 3 — تطوير scripts/train_signal_classifier_lgbm.py (V2):
+- أصلحت PROJECT_ROOT (كان /home/meme/my_apps/GLMinvestment ← /home/z/my-project).
+- غيرت training universe: استخدم status column مباشرة (297 verified signals) بدل
+  evaluate_ground_truth_outcome (الذي أعاد تقييم الأسعار من الصفر).
+- أضفت purged_time_series_split() — chronological + 5-day gap (López de Prado).
+  * fallback: لو الـ gap=5 أنتج test فارغ (بياناتنا 8 أيام فقط)، نُقلل تدريجيًا
+    (5→3→2→1→0) حتى نحصل على test set ≥10% من البيانات.
+- أضفت compute_v2_metrics() — يحسب:
+  * Confusion Matrix (TP/TN/FP/FN) عند threshold.
+  * Precision, Recall, F1.
+  * Coverage (نسبة الإشارات المقبولة).
+  * ROC-AUC score (sklearn.metrics.roc_auc_score).
+- حفظت النموذج V2 كـ dict مع metadata كامل:
+  {version, model, feature_names, roc_auc, confusion_matrix, precision,
+   recall, coverage_pct, trained_at, n_train, n_test, n_purged, ...}.
+
+المرحلة 3 — تحديث vps-service/utils/lgbm_gatekeeper.py:
+- أضفت دعم V2 dict format (يستخرج LGBMClassifier من loaded['model']).
+- حفاظًا على backward compatibility مع V1 (plain LGBMClassifier).
+- أضفت globals: _MODEL_VERSION, _MODEL_ROC_AUC, _MODEL_TRAINED_AT.
+- جرّبت end-to-end: تحميل V2 + predict_proba على sample → نجح.
+
+المرحلة 3 — تدريب LGBM V2:
+- python3 scripts/train_signal_classifier_lgbm.py → SUCCESS.
+- النتائج:
+  * Training universe: 297 verified signals (120 win + 177 loss).
+  * Valid samples after feature extraction: 295 (skipped 2 for <20 candles).
+  * Purged split: gap=2 days (fallback من 5 لأن signal range 8 أيام فقط).
+    n_train=221 (102 wins, 46.15%) | n_test=46 (10 wins, 21.74%) | n_purged=28.
+  * V2 metrics @ threshold 0.65:
+    - Coverage: 0.00% (النموذج رفض كل الإشارات عند 0.65)
+    - Precision: 0.0 | Recall: 0.0 | F1: 0.0
+    - Confusion Matrix: TP=0, TN=36, FP=0, FN=10 (تنبأ بكل negatives)
+    - ROC-AUC: 0.6778 (decent discriminative power)
+  * Threshold sweep: th=0.40 → 14 accepted, 28.57% win rate (أعلى من baseline 21.74%).
+  * Top features: dist_from_20d_high (67), atr_14_pct (65), mfi_14 (60),
+    price_to_sma20 (51), bollinger_bandwidth (43), high_low_spread_pct (32), rvol_20d (21).
+  * Model artifact: models/lgbm_signal_gatekeeper.joblib (56,500 bytes — dict format).
+  * Metrics JSON: models/lgbm_metrics.json (4,376 bytes).
+
+المرحلة 3 — توليد db/reports/grand_simulation_report.json:
+- أنشأت scripts/generate_grand_simulation_report.py (جديد) — يقرأ كل reports السابقة
+  ويُجمّعها في grand_simulation_report.json واحد.
+- python3 scripts/generate_grand_simulation_report.py → SUCCESS.
+- النتائج (db/reports/grand_simulation_report.json — 4,021 bytes):
+  * phase_1_data_quality: 1213 tickers, 1080 sufficient (89.0%), 100,619 candles.
+  * phase_2_grand_backtest: 1102 signals, 297 verified, 40.40% win rate,
+    concurrent MDD 1.94%, per-market breakdown (EGX=real / others=null).
+  * phase_3_lgbm_v2: V2, n_train=221, n_test=46, ROC-AUC=0.6778,
+    confusion_matrix {TP=0, TN=36, FP=0, FN=10}, coverage=0%, precision=0.
+  * rule_27_compliance + rule_20_compliance notes.
+
+التحقق (Verification — كلها PASS):
+- ✅ Syntax check 4/4 files OK:
+  * scripts/institutional_multi_market_backtest.py
+  * scripts/train_signal_classifier_lgbm.py
+  * scripts/generate_grand_simulation_report.py
+  * vps-service/utils/lgbm_gatekeeper.py
+- ✅ الباك-تست المُحدّث اشتغل وأنتج JSON بـ sections الجديدة (commission_impact,
+  concurrent_equity_curve, per_market_breakdown, per_market_notes).
+- ✅ LGBM V2 اشتغل وحفظ كـ dict مع metadata كامل.
+- ✅ End-to-end test: gatekeeper حمّل V2 model بنجاح + predict_proba شغّال.
+- ✅ grand_simulation_report.json اشتغل ويحوي كل الـ 3 phases.
+- ✅ Rule 27 محترم: كل الـ metrics من بيانات حقيقية — لا fabrication.
+  EGX فقط له verified signals → US/TADAWUL/KSE/QSE = null + note.
+- ✅ Rule 20 محترم: كل الحسابات في Python.
+- ✅ Idempotent: إعادة التشغيل تُنتج نفس المحتوى (عدا generated_at).
+
+Stage Summary:
+- ✅ 3 ملفات مُعدّلة + 1 ملف جديد:
+  * scripts/institutional_multi_market_backtest.py (+344 سطر):
+    - COMMISSION_PCT = 0.40 + derive_gross_return/derive_returns_with_commission.
+    - compute_max_concurrent_positions + build_concurrent_equity_curve.
+    - compute_per_market_breakdown.
+    - 4 sections جديدة في JSON: commission_impact, concurrent_equity_curve,
+      per_market_breakdown, per_market_notes.
+    - reality check محدّث: 40.40% بدل 46.80%.
+  * scripts/train_signal_classifier_lgbm.py (rewritten — 745 سطر):
+    - PROJECT_ROOT fixed (/home/z/my-project).
+    - training universe = 297 verified signals (status column).
+    - purged_time_series_split (5-day gap + fallback 5→3→2→1→0).
+    - compute_v2_metrics (Confusion Matrix, Precision, Coverage, ROC-AUC).
+    - model artifact = dict with metadata (V2).
+  * vps-service/utils/lgbm_gatekeeper.py (+30 سطر): V2 dict format support
+    (يستخرج LGBMClassifier من loaded['model']) — backward compatible مع V1.
+  * scripts/generate_grand_simulation_report.py (جديد — 215 سطر): يُجمّع
+    phase_1 + phase_2 + phase_3 في grand_simulation_report.json واحد.
+- ✅ Per-market breakdown (Phase 2):
+  * EGX: 297 signals, 40.40% win rate, PF=0.5429, Sharpe=-4.868, Sortino=-5.602, MDD=1.55%.
+  * US, TADAWUL, KSE, QSE: null + note (no verified signals — Rule 27).
+- ✅ Concurrent Equity Curve (Phase 2):
+  * starting=100,000 → final=98,157.27 EGP (loss 1.84%).
+  * max_concurrent_positions=235 (تزامن عالٍ — 8 أيام بيانات فقط).
+  * max_concurrent_drawdown_pct=1.9445% (ممتاز مؤسسيًا).
+- ✅ LGBM V2 metrics (Phase 3):
+  * Training: 221 train (102 wins, 46.15%) + 46 test (10 wins, 21.74%) + 28 purged.
+  * ROC-AUC=0.6778 (decent discriminative power).
+  * Confusion Matrix @0.65: TP=0, TN=36, FP=0, FN=10 (very conservative).
+  * Coverage=0% at threshold 0.65 — الـ threshold محتاج إعادة معايرة (V2 أكثر تحفظًا من V1).
+  * Top features: dist_from_20d_high, atr_14_pct, mfi_14, price_to_sma20.
+- ✅ grand_simulation_report.json:
+  * Location: /home/z/my-project/db/reports/grand_simulation_report.json (4,021 bytes).
+  * Structure: generated_at, task, task_id, agent, phase_1_data_quality,
+    phase_2_grand_backtest, phase_3_lgbm_v2, rule_27_compliance,
+    rule_20_compliance, inputs.
+- ⚠ ملاحظة للمدير (1): V2 model at threshold 0.65 has coverage=0% (يرفض كل
+  الإشارات). ROC-AUC=0.68 يعني أن النموذج عنده discriminative power حقيقي،
+  لكن الـ threshold 0.65 (الموروث من V1) عالي جداً على V2. توصية: معايرة الـ
+  threshold على V2 (0.40 → 28.57% win rate أعلى من baseline 21.74%).
+- ⚠ ملاحظة للمدير (2): purged_time_series_split fallback — البيانات 8 أيام
+  فقط، فالـ 5-day purge أنتج test set فارغ. fallback لـ 2-day gap (مُوثّق في
+  الـ metadata). لو البيانات تتوسع في المستقبل، الـ 5-day gap سيعمل تلقائياً.
+- ⚠ ملاحظة للمدير (3): كل الـ 297 verified signals من EGX فقط — لا توجد إشارات
+  موثّقة في US/TADAWUL/KSE/QSE. Per-market breakdown لهذه الأسواق = null + note
+  (Rule 27 — لا اختلاق). التوصية: تشغيل verify_all_radar_signals.py على إشارات
+  الأسواق الأخرى لتوسيع التغطية.
+- ⚠ ملاحظة للمدير (4): vps-service/utils/lgbm_gatekeeper.py تم تعديله (V2 dict
+  format support). هذا التغيير backward compatible مع V1 لكن يحتاج مراجعة.
+- ⚠ ملاحظة للمدير (5): stock_daily_prices يحوي EGX + US فقط — لا TADAWUL/KSE/QSE.
+  التوصية: ملء بيانات الأسواق الأخرى قبل أي per-market breakdown حقيقي لها.
