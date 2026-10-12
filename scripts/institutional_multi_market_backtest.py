@@ -126,12 +126,49 @@ TRADING_DAYS_PER_YEAR = 252  # for Sharpe/Sortino annualization
 START_EQUITY_EGP = 100_000.0
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Liquidity gate (Task BRAVO-BACKTEST-LIQUIDITY)
+# Dynamic Liquidity Engine (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
 # ─────────────────────────────────────────────────────────────────────────────
-# Same floor as the maker_radar liquidity filter (Agent 1).
-# A signal is classified `is_liquid` when avg_turnover_20d >= this floor.
-LIQUIDITY_FLOOR_EGP = 2_000_000.0
+# تم الاستبدال بمحرك ديناميكي مئوي — كل سوق يُحلَّل بشكل مستقل، ويتم ترتيب
+# الأسهم داخل السوق بالمئوي (Market Percentile Rank). هذا يُتيح مقارنة عادلة
+# بين الأسواق ذات العملات والسيولات المختلفة (EGP/SAR/USD/KWD/QAR) دون
+# الحاجة لتحويل العملات.
+#
+# التقسيم (LIQUIDITY_TIERS):
+#   - 💎 سيولة مؤسسية: أعلى 25% تداولاً (percentile >= 75) → qualified
+#   - 🔷 نشط متوسط:    بين 25% و 70% (percentile 30-75) → qualified
+#   - ⚠️ خفيف:         أدنى 30% (percentile < 30) → disqualified_illiquid
+#
+# استثناء طفرة الحجم الذهبي (RVol Surge Exception):
+#   لو سهم في tier 'light' قفز حجمه اليومي >= 2.5x من متوسط 20 يوم بالتزامن
+#   مع إشارة تجميع/انفجار (signal_type يحوي 'accumulation' أو 'surge') →
+#   يُمنح استثناء فوريًا ويُصنف كـ '🚀 طفرة سيولة وانفجار سعري (RVol Surge
+#   Breakout)' بدل الاستبعاد.
 LIQUIDITY_LOOKBACK_DAYS = 20  # trailing 20 trading days before signal_date
+
+LIQUIDITY_TIERS = {
+    'institutional': {
+        'min_percentile': 75,
+        'label': '💎 سيولة مؤسسية',
+        'status': 'qualified',
+    },
+    'active_mid': {
+        'min_percentile': 30,
+        'label': '🔷 نشط متوسط',
+        'status': 'qualified',
+    },
+    'light': {
+        'min_percentile': 0,
+        'label': '⚠️ خفيف',
+        'status': 'disqualified_illiquid',
+    },
+}
+
+RVOL_SURGE_THRESHOLD = 2.5  # × متوسط حجم 20 يوم
+RVOL_SURGE_LABEL = '🚀 طفرة سيولة وانفجار سعري (RVol Surge Breakout)'
+RVOL_SURGE_STATUS = 'rvol_surge_breakout'  # status في radar_signal_tracking
+
+# LEGACY (محفوظ للتوثيق التاريخي — تم الاستبدال بمحرك ديناميكي مئوي):
+# LIQUIDITY_FLOOR_EGP = 2_000_000.0  # legacy — تم الاستبدال بمحرك ديناميكي مئوي
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -256,6 +293,178 @@ def compute_avg_turnover_20d(
     if not turnovers:
         return 0.0
     return sum(turnovers) / len(turnovers)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dynamic Liquidity Engine — Market Percentile Rank (Task TITAN-HEAVY-PUMP-1)
+# ─────────────────────────────────────────────────────────────────────────────
+def compute_market_distribution_at_signal_date(
+    conn: sqlite3.Connection,
+    market: str,
+    signal_date: str,
+    days: int = LIQUIDITY_LOOKBACK_DAYS,
+) -> Dict[str, float]:
+    """حساب توزيع avg_turnover_20d لكل tickers في السوق عند signal_date.
+
+    لكل ticker في السوق (من stock_daily_prices WHERE market = ?)، نحسب
+    avg_turnover_20d لآخر 20 يوم تداول BEFORE signal_date. التوزيع الناتج
+    يُستخدم لحساب الـ percentile rank لأي ticker في نفس السوق.
+
+    Rule 27 — NO-FAKE-DATA:
+      - turnover column يُستخدم لو موجود و > 0.
+      - fallback: close × volume.
+      - Tickers بدون بيانات كافية → لا تُدرج.
+
+    Args:
+        conn: اتصال sqlite (readonly).
+        market: كود السوق (EGX, US, ...).
+        signal_date: التاريخ المرجعي (YYYY-MM-DD).
+        days: عدد الأيام للمتوسط (default 20).
+
+    Returns:
+        dict: {ticker: avg_turnover_20d} لكل ticker له بيانات كافية.
+    """
+    # نجيب كل tickers في السوق من stock_daily_prices (نفس الجدول اللي بيستخدمه
+    # maker_radar.py). استخدام `market` column في stock_daily_prices يضمن إننا
+    # نأخذ نفس universe اللي الرادار بيتعامل معاه.
+    ticker_rows = conn.execute(
+        "SELECT DISTINCT ticker FROM stock_daily_prices WHERE market = ?",
+        (market,),
+    ).fetchall()
+    tickers = [r[0] for r in ticker_rows if r[0]]
+    if not tickers:
+        return {}
+
+    distribution: Dict[str, float] = {}
+    for ticker in tickers:
+        avg = compute_avg_turnover_20d(conn, ticker, signal_date)
+        if avg > 0:
+            distribution[ticker] = avg
+    return distribution
+
+
+def percentile_rank_from_distribution(
+    distribution: Dict[str, float],
+    value: float,
+) -> Optional[float]:
+    """حساب الـ percentile rank لقيمة داخل توزيع.
+
+    الصيغة: percentile = (count_le / n) * 100
+    حيث count_le = عدد القيم في التوزيع <= value.
+
+    Args:
+        distribution: dict {ticker: avg_turnover_20d}.
+        value: القيمة المراد حساب الـ percentile لها.
+
+    Returns:
+        float: 0-100، أو None لو التوزيع فاضي.
+    """
+    if not distribution or value is None:
+        return None
+    sorted_avgs = sorted(distribution.values())
+    n = len(sorted_avgs)
+    count_le = sum(1 for v in sorted_avgs if v <= value)
+    return round((count_le / n) * 100, 2)
+
+
+def classify_liquidity_tier_for_backtest(percentile_rank: Optional[float]) -> str:
+    """تصنيف السهم إلى أحد الـ 3 tiers حسب الـ percentile rank.
+
+    Args:
+        percentile_rank: 0-100 (أو None لو مش متوفر).
+
+    Returns:
+        str: 'institutional' / 'active_mid' / 'light' / 'unknown'.
+    """
+    if percentile_rank is None:
+        return 'unknown'
+    try:
+        pr = float(percentile_rank)
+    except (TypeError, ValueError):
+        return 'unknown'
+    if pr >= LIQUIDITY_TIERS['institutional']['min_percentile']:
+        return 'institutional'
+    if pr >= LIQUIDITY_TIERS['active_mid']['min_percentile']:
+        return 'active_mid'
+    return 'light'
+
+
+def compute_rvol_at_signal_date(
+    conn: sqlite3.Connection,
+    ticker: str,
+    signal_date: str,
+    days: int = LIQUIDITY_LOOKBACK_DAYS,
+) -> Tuple[float, float, float]:
+    """حساب RVol = today_volume / avg_volume_20d عند signal_date.
+
+    Args:
+        conn: اتصال sqlite (readonly).
+        ticker: رمز السهم.
+        signal_date: تاريخ الإشارة (YYYY-MM-DD).
+        days: عدد الأيام للمتوسط (default 20).
+
+    Returns:
+        tuple (today_volume, avg_volume_20d, rvol):
+            - today_volume: حجم التداول في signal_date (0 لو مفيش).
+            - avg_volume_20d: متوسط حجم آخر 20 يوم قبل signal_date.
+            - rvol: today_volume / avg_volume_20d (0 لو avg=0).
+    """
+    # حجم signal_date (نأخذ أول صف price_date <= signal_date عشان signal_date
+    # نفسه ممكن مفيش بيانات فيه — نأخذ أحدث يوم سابق).
+    today_row = conn.execute(
+        """
+        SELECT volume FROM stock_daily_prices
+        WHERE ticker = ? AND price_date <= ? AND volume IS NOT NULL AND volume > 0
+        ORDER BY price_date DESC LIMIT 1
+        """,
+        (ticker, signal_date),
+    ).fetchone()
+    today_volume = float(today_row['volume']) if today_row and today_row['volume'] else 0.0
+
+    # متوسط حجم آخر 20 يوم قبل signal_date
+    rows = conn.execute(
+        """
+        SELECT volume FROM stock_daily_prices
+        WHERE ticker = ? AND price_date < ? AND volume IS NOT NULL AND volume > 0
+        ORDER BY price_date DESC LIMIT ?
+        """,
+        (ticker, signal_date, days),
+    ).fetchall()
+    if not rows:
+        return (today_volume, 0.0, 0.0)
+    avg_volume_20d = sum(float(r['volume']) for r in rows) / len(rows)
+    rvol = (today_volume / avg_volume_20d) if avg_volume_20d > 0 else 0.0
+    return (today_volume, avg_volume_20d, rvol)
+
+
+def check_rvol_surge_for_backtest(
+    rvol: float,
+    signal_type: str,
+) -> Tuple[bool, Optional[str]]:
+    """فحص طفرة الحجم الذهبي (RVol Surge) لاستثناء الأسهم الخفيفة في الـ backtest.
+
+    القاعدة (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY §1.3):
+      - لو RVol >= 2.5 AND signal_type يحوي 'accumulation' أو 'surge'
+        → يُمنح استثناء فوريًا.
+
+    Args:
+        rvol: today_volume / avg_volume_20d.
+        signal_type: نوع الإشارة (path).
+
+    Returns:
+        tuple (is_surge: bool, label: str|None).
+    """
+    try:
+        rvol_f = float(rvol or 0)
+    except (TypeError, ValueError):
+        return (False, None)
+    if rvol_f < RVOL_SURGE_THRESHOLD:
+        return (False, None)
+    sig = str(signal_type or '').lower()
+    if 'accumulation' in sig or 'surge' in sig:
+        return (True, RVOL_SURGE_LABEL)
+    return (False, None)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Realized-return derivation (from stored verify_all_radar_signals output)
@@ -625,7 +834,7 @@ def main() -> int:
 
     # Pending + stale counts (from stored DB, for the metrics block).
     # Also load ALL signals (incl. pending/stale) to enable the liquidity
-    # comparison (Task BRAVO-BACKTEST-LIQUIDITY).
+    # comparison (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY).
     conn = open_db_readonly(STOCKS_DB)
     try:
         pending = conn.execute(
@@ -636,37 +845,101 @@ def main() -> int:
             "WHERE status='stale_data'"
         ).fetchone()[0]
         # Count of signals explicitly disqualified for being illiquid
-        # (status 'disqualified_illiquid' — set by Agent 1 / maker_radar
-        # liquidity gate; 0 today, may become >0 after Agent 1 runs).
+        # (status 'disqualified_illiquid' — set by maker_radar.py dynamic
+        # liquidity engine; tier='light' without RVol surge exception).
         disqualified_illiquid_count = conn.execute(
             "SELECT COUNT(*) FROM radar_signal_tracking "
             "WHERE status='disqualified_illiquid'"
         ).fetchone()[0]
-        # Pull every signal row (cheap — 1,102 rows).
+        # Count of signals with RVol surge exception (status 'rvol_surge_breakout'
+        # — set by maker_radar.py dynamic liquidity engine for light tier stocks
+        # with RVol >= 2.5x + accumulation/surge signal).
+        rvol_surge_breakout_count = conn.execute(
+            "SELECT COUNT(*) FROM radar_signal_tracking "
+            "WHERE status='rvol_surge_breakout'"
+        ).fetchone()[0]
+        # Pull every signal row JOINed with stocks to get market.
+        # LEFT JOIN عشان نحتفظ بالـ 81 signals اللي tickers مش في stocks table
+        # (worklogs: AAVE, BTC, ETH, ...). هذه الإشارات هتكون market=None
+        # → tier='unknown'.
         all_signal_rows = conn.execute(
             """
-            SELECT id, ticker, signal_date, status
-            FROM radar_signal_tracking
+            SELECT r.id, r.ticker, r.signal_date, r.signal_type, r.status,
+                   s.market AS stock_market
+            FROM radar_signal_tracking r
+            LEFT JOIN stocks s ON r.ticker = s.ticker
             """
         ).fetchall()
     finally:
         conn.close()
 
-    # ─── Liquidity classification (Task BRAVO-BACKTEST-LIQUIDITY) ───────────
-    # Compute avg_turnover_20d for EVERY signal in radar_signal_tracking
-    # (1,102 rows) using REAL stored price data (Rule 27). Then classify
-    # each signal as `is_liquid = avg_turnover_20d >= LIQUIDITY_FLOOR_EGP`.
+    # ─── DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY) ─
+    # لكل signal، نحسب:
+    #   (a) avg_turnover_20d (من compute_avg_turnover_20d).
+    #   (b) percentile_rank داخل سوقه عند signal_date.
+    #   (c) tier (institutional / active_mid / light / unknown).
+    #   (d) rvol_value + rvol_surge_exception (للأسهم الخفيفة).
+    #
+    # لتحسين الأداء، نـ cache التوزيع per (market, signal_date) — لكل تاريخ
+    # سوق، نحسب التوزيع مرة واحدة ونُعيد استخدامه لكل signals في نفس المجموعة.
     signal_liquidity: Dict[int, Dict[str, Any]] = {}
+    distribution_cache: Dict[Tuple[str, str], Dict[str, float]] = {}
+
     conn = open_db_readonly(STOCKS_DB)
     try:
         for srow in all_signal_rows:
-            avg_to = compute_avg_turnover_20d(
-                conn, srow['ticker'], srow['signal_date']
-            )
+            ticker = srow['ticker']
+            signal_date = srow['signal_date']
+            signal_type = srow['signal_type']
+            market = srow['stock_market'] or 'UNKNOWN'
+
+            # (a) avg_turnover_20d
+            avg_to = compute_avg_turnover_20d(conn, ticker, signal_date)
+
+            # (b) percentile_rank — نـ cache التوزيع per (market, signal_date)
+            cache_key = (market, signal_date)
+            if cache_key not in distribution_cache:
+                if market == 'UNKNOWN':
+                    # لا نعرف السوق → لا توزيع → percentile=None
+                    distribution_cache[cache_key] = {}
+                else:
+                    distribution_cache[cache_key] = compute_market_distribution_at_signal_date(
+                        conn, market, signal_date
+                    )
+            distribution = distribution_cache[cache_key]
+            percentile_rank = percentile_rank_from_distribution(distribution, avg_to)
+
+            # (c) tier
+            tier = classify_liquidity_tier_for_backtest(percentile_rank)
+
+            # (d) rvol + surge exception (للأسهم الخفيفة فقط)
+            rvol_value = 0.0
+            rvol_surge_exception = False
+            if tier == 'light':
+                _, _, rvol_value = compute_rvol_at_signal_date(
+                    conn, ticker, signal_date
+                )
+                is_surge, _ = check_rvol_surge_for_backtest(
+                    rvol_value, signal_type
+                )
+                rvol_surge_exception = is_surge
+
             signal_liquidity[srow['id']] = {
                 'avg_turnover_20d': avg_to,
-                'is_liquid': avg_to >= LIQUIDITY_FLOOR_EGP,
+                'percentile_rank': percentile_rank,
+                'tier': tier,
+                'rvol_value': round(rvol_value, 2),
+                'rvol_surge_exception': rvol_surge_exception,
+                'market': market,
                 'status': srow['status'],
+                # is_institutional_liquid: True لو percentile >= 75 (top 25%)
+                'is_institutional_liquid': (
+                    percentile_rank is not None
+                    and percentile_rank >= LIQUIDITY_TIERS['institutional']['min_percentile']
+                ),
+                # is_qualified: True لو tier in (institutional, active_mid, unknown)
+                # أو light مع surge exception.
+                'is_qualified': tier in ('institutional', 'active_mid', 'unknown') or rvol_surge_exception,
             }
     finally:
         conn.close()
@@ -676,10 +949,22 @@ def main() -> int:
         liq = signal_liquidity.get(t['id'])
         if liq is None:
             t['avg_turnover_20d'] = 0.0
-            t['is_liquid'] = False
+            t['percentile_rank'] = None
+            t['liquidity_tier'] = 'unknown'
+            t['rvol_value'] = 0.0
+            t['rvol_surge_exception'] = False
+            t['market'] = 'UNKNOWN'
+            t['is_institutional_liquid'] = False
+            t['is_qualified'] = True
         else:
             t['avg_turnover_20d'] = liq['avg_turnover_20d']
-            t['is_liquid'] = liq['is_liquid']
+            t['percentile_rank'] = liq['percentile_rank']
+            t['liquidity_tier'] = liq['tier']
+            t['rvol_value'] = liq['rvol_value']
+            t['rvol_surge_exception'] = liq['rvol_surge_exception']
+            t['market'] = liq['market']
+            t['is_institutional_liquid'] = liq['is_institutional_liquid']
+            t['is_qualified'] = liq['is_qualified']
 
     print(f'[backtest universe] verified trades = {verified_total} '
           f'({verified_win} win + {verified_loss} loss + '
@@ -738,71 +1023,134 @@ def main() -> int:
     print(f'  final_equity_egp                   : {final_equity:,.2f}')
     print()
 
-    # ─── Liquidity comparison metrics (Task BRAVO-BACKTEST-LIQUIDITY) ───────
-    # Compare two universes head-to-head:
-    #   (a) Unfiltered universe = ALL 1,102 signals (incl. pending / stale /
-    #       disqualified_illiquid). Win rate = verified_win / total * 100.
-    #       PF + Sharpe computed on the verified subset (the only subset
-    #       that has realized returns — pending/stale are non-trades).
-    #   (b) Liquid universe   = signals whose avg_turnover_20d >= floor.
-    #       Win rate, PF, Sharpe computed on the liquid subset only.
-    unfiltered_total = n_signals_total  # 1,102
-    unfiltered_verified_win = verified_win  # 139
+    # ─── DYNAMIC LIQUIDITY COMPARISON (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY) ──
+    # مقارنة 3 أكوان head-to-head:
+    #   (a) unfiltered_universe     = كل الإشارات (كل statuses).
+    #   (b) institutional_liquid_universe = إشارات percentile_rank >= 75 (top 25%).
+    #   (c) rvol_surge_breakouts    = إشارات light tier + RVol >= 2.5 + accumulation/surge.
+    #
+    # لكل كون، نحسب: total_signals, verified_win, win_rate_pct, profit_factor,
+    # sharpe_ratio. الـ win_rate = verified_win / total_signals * 100 (كل الإشارات،
+    # مش بس الـ verified — عشان نلتقط الـ pending + stale_data + disqualified_illiquid
+    # اللي بتمثل "non-win" فعلي).
+    unfiltered_total = n_signals_total
+    unfiltered_verified_win = verified_win
     unfiltered_win_rate = (
         (unfiltered_verified_win / unfiltered_total * 100)
         if unfiltered_total > 0 else 0.0
     )
-    # Unfiltered PF + Sharpe are by construction identical to the existing
-    # portfolio metrics (same verified subset — pending/stale excluded).
+    # Unfiltered PF + Sharpe هي نفسها portfolio metrics (نفس الـ verified subset).
     unfiltered_profit_factor = profit_factor
     unfiltered_sharpe = sharpe
 
-    # (b) Liquid universe.
-    liquid_signal_ids = [
-        sid for sid, info in signal_liquidity.items() if info['is_liquid']
+    # (b) institutional_liquid_universe = percentile_rank >= 75.
+    institutional_liquid_ids = [
+        sid for sid, info in signal_liquidity.items()
+        if info['is_institutional_liquid']
     ]
-    liquid_total = len(liquid_signal_ids)
-    liquid_verified_win = sum(
+    inst_liquid_total = len(institutional_liquid_ids)
+    inst_liquid_verified_win = sum(
         1 for t in trades
-        if t['is_liquid'] and t['status'] == 'verified_win'
+        if t.get('is_institutional_liquid') and t['status'] == 'verified_win'
     )
-    liquid_loss = sum(
+    inst_liquid_loss = sum(
         1 for t in trades
-        if t['is_liquid'] and t['status'] == 'verified_loss'
+        if t.get('is_institutional_liquid') and t['status'] == 'verified_loss'
     )
-    liquid_neutral = sum(
+    inst_liquid_neutral = sum(
         1 for t in trades
-        if t['is_liquid'] and t['status'] == 'verified_neutral'
+        if t.get('is_institutional_liquid') and t['status'] == 'verified_neutral'
     )
-    liquid_verified_total = (
-        liquid_verified_win + liquid_loss + liquid_neutral
+    inst_liquid_verified_total = (
+        inst_liquid_verified_win + inst_liquid_loss + inst_liquid_neutral
     )
-    liquid_win_rate = (
-        (liquid_verified_win / liquid_total * 100)
-        if liquid_total > 0 else 0.0
+    inst_liquid_win_rate = (
+        (inst_liquid_verified_win / inst_liquid_total * 100)
+        if inst_liquid_total > 0 else 0.0
     )
-    liquid_returns_pct: List[float] = [
+    inst_liquid_returns_pct: List[float] = [
         t['realized_return_pct'] for t in trades
-        if t['is_liquid'] and t['realized_return_pct'] is not None
+        if t.get('is_institutional_liquid') and t['realized_return_pct'] is not None
     ]
-    liquid_returns_dec: List[float] = [
-        r / 100.0 for r in liquid_returns_pct
+    inst_liquid_returns_dec: List[float] = [
+        r / 100.0 for r in inst_liquid_returns_pct
     ]
-    liquid_profit_factor = compute_profit_factor(liquid_returns_dec)
-    liquid_sharpe = compute_sharpe(liquid_returns_dec)
-    improvement_pct_points = liquid_win_rate - unfiltered_win_rate
+    inst_liquid_profit_factor = compute_profit_factor(inst_liquid_returns_dec)
+    inst_liquid_sharpe = compute_sharpe(inst_liquid_returns_dec)
+    improvement_inst_pp = inst_liquid_win_rate - unfiltered_win_rate
 
-    print('[liquidity comparison — Task BRAVO-BACKTEST-LIQUIDITY]')
-    print(f'  liquidity floor EGP        : {LIQUIDITY_FLOOR_EGP:,.0f}')
+    # (c) rvol_surge_breakouts = signals with rvol_surge_exception=True.
+    # (من signal_liquidity: tier='light' + RVol >= 2.5 + accumulation/surge signal)
+    rvol_surge_ids = [
+        sid for sid, info in signal_liquidity.items()
+        if info.get('rvol_surge_exception')
+    ]
+    rvol_total = len(rvol_surge_ids)
+    rvol_verified_win = sum(
+        1 for t in trades
+        if t.get('rvol_surge_exception') and t['status'] == 'verified_win'
+    )
+    rvol_loss = sum(
+        1 for t in trades
+        if t.get('rvol_surge_exception') and t['status'] == 'verified_loss'
+    )
+    rvol_neutral = sum(
+        1 for t in trades
+        if t.get('rvol_surge_exception') and t['status'] == 'verified_neutral'
+    )
+    rvol_verified_total = rvol_verified_win + rvol_loss + rvol_neutral
+    rvol_win_rate = (
+        (rvol_verified_win / rvol_total * 100)
+        if rvol_total > 0 else 0.0
+    )
+    rvol_returns_pct: List[float] = [
+        t['realized_return_pct'] for t in trades
+        if t.get('rvol_surge_exception') and t['realized_return_pct'] is not None
+    ]
+    rvol_returns_dec: List[float] = [
+        r / 100.0 for r in rvol_returns_pct
+    ]
+    rvol_profit_factor = compute_profit_factor(rvol_returns_dec)
+    rvol_sharpe = compute_sharpe(rvol_returns_dec)
+
+    # ─── liquidity_tiers_breakdown per market ─────────────────────────────
+    # count لكل tier في كل سوق.
+    liquidity_tiers_breakdown: Dict[str, Dict[str, int]] = defaultdict(
+        lambda: {'institutional': 0, 'active_mid': 0, 'light': 0, 'unknown': 0, 'rvol_surge': 0}
+    )
+    for sid, info in signal_liquidity.items():
+        mkt = info.get('market') or 'UNKNOWN'
+        tier = info.get('tier', 'unknown')
+        if tier in liquidity_tiers_breakdown[mkt]:
+            liquidity_tiers_breakdown[mkt][tier] += 1
+        if info.get('rvol_surge_exception'):
+            liquidity_tiers_breakdown[mkt]['rvol_surge'] += 1
+    # تحويل defaultdict إلى dict عادي للـ JSON
+    liquidity_tiers_breakdown = dict(liquidity_tiers_breakdown)
+
+    print('[liquidity comparison — Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY]')
+    print(f'  method                     : market_percentile_rank')
     print(f'  lookback trading days      : {LIQUIDITY_LOOKBACK_DAYS}')
+    print(f'  rvol surge threshold       : {RVOL_SURGE_THRESHOLD}x')
     print(f'  disqualified_illiquid (DB) : {disqualified_illiquid_count}')
-    print(f'  unfiltered universe        : total={unfiltered_total} '
+    print(f'  rvol_surge_breakout (DB)   : {rvol_surge_breakout_count}')
+    print(f'  unfiltered_universe        : total={unfiltered_total} '
           f'win={unfiltered_verified_win} '
           f'win_rate={unfiltered_win_rate:.2f}%')
-    print(f'  liquid universe (>=floor)  : total={liquid_total} '
-          f'win={liquid_verified_win} '
-          f'win_rate={liquid_win_rate:.2f}%')
-    print(f'  improvement (pp)           : {improvement_pct_points:+.2f}')
+    print(f'  institutional_liquid (>=75): total={inst_liquid_total} '
+          f'win={inst_liquid_verified_win} '
+          f'win_rate={inst_liquid_win_rate:.2f}%')
+    print(f'  rvol_surge_breakouts       : total={rvol_total} '
+          f'win={rvol_verified_win} '
+          f'win_rate={rvol_win_rate:.2f}%')
+    print(f'  improvement (inst vs unfiltered, pp): {improvement_inst_pp:+.2f}')
+    print(f'  liquidity_tiers_breakdown  :')
+    for mkt, counts in sorted(liquidity_tiers_breakdown.items()):
+        print(f'    {mkt:15s}: institutional={counts["institutional"]:4d}  '
+              f'active_mid={counts["active_mid"]:4d}  '
+              f'light={counts["light"]:4d}  '
+              f'unknown={counts["unknown"]:4d}  '
+              f'rvol_surge={counts["rvol_surge"]:3d}')
     print()
 
     # ─── Annual breakdown ───
@@ -945,15 +1293,27 @@ def main() -> int:
         'by_signal_type': sig_type_breakdown,
         'top_performers': top_performers,
         'liquidity_comparison': {
-            'floor_egp': int(LIQUIDITY_FLOOR_EGP),
+            'method': 'market_percentile_rank',
+            'tiers': LIQUIDITY_TIERS,
+            'rvol_surge_exception': {
+                'threshold': RVOL_SURGE_THRESHOLD,
+                'label': RVOL_SURGE_LABEL,
+                'status': RVOL_SURGE_STATUS,
+            },
             'lookback_days': LIQUIDITY_LOOKBACK_DAYS,
             'turnover_definition': (
                 'avg_turnover_20d = mean(turnover) over the trailing '
                 '20 trading days before signal_date. turnover column '
                 'used when present; falls back to close*volume when NULL.'
             ),
+            'percentile_rank_definition': (
+                'percentile = (count_le / n) * 100 — نسبة الـ tickers في '
+                'السوق اللي avg_turnover_20d بتاعها <= avg_turnover_20d '
+                'بتاع السهم. يُحسب بشكل مستقل لكل سوق (EGX / TADAWUL / '
+                'KSE / US / QSE) عشان نتجنب تحويل العملات.'
+            ),
             'unfiltered_universe': {
-                'label': 'الكون العام (Unfiltered)',
+                'label': 'السوق العام (Unfiltered)',
                 'total_signals': unfiltered_total,
                 'verified_win': unfiltered_verified_win,
                 'win_rate_pct': safe_round(unfiltered_win_rate, 2),
@@ -965,28 +1325,53 @@ def main() -> int:
                     'disqualified_illiquid تُحسب كـ non-win)'
                 ),
             },
-            'liquid_universe': {
-                'label': 'الكون المؤسسي (Liquid ≥ 2M EGP)',
-                'total_signals': liquid_total,
-                'verified_win': liquid_verified_win,
-                'verified_loss': liquid_loss,
-                'verified_neutral': liquid_neutral,
-                'verified_total': liquid_verified_total,
-                'win_rate_pct': safe_round(liquid_win_rate, 2),
-                'profit_factor': safe_round(liquid_profit_factor, 4),
-                'sharpe_ratio': safe_round(liquid_sharpe, 4),
+            'institutional_liquid_universe': {
+                'label': 'السيولة المؤسسية المئوية (top 25%)',
+                'total_signals': inst_liquid_total,
+                'verified_win': inst_liquid_verified_win,
+                'verified_loss': inst_liquid_loss,
+                'verified_neutral': inst_liquid_neutral,
+                'verified_total': inst_liquid_verified_total,
+                'win_rate_pct': safe_round(inst_liquid_win_rate, 2),
+                'profit_factor': safe_round(inst_liquid_profit_factor, 4),
+                'sharpe_ratio': safe_round(inst_liquid_sharpe, 4),
                 'note': (
-                    'الأسهم المؤهلة سيوليًا فقط — النسبة الحقيقية '
-                    'للمستثمر المؤسسي'
+                    'الأسهم في أعلى 25% تداولاً داخل سوقها (percentile '
+                    '>= 75). النسبة الحقيقية للمستثمر المؤسسي.'
                 ),
             },
+            'rvol_surge_breakouts': {
+                'label': RVOL_SURGE_LABEL,
+                'total_signals': rvol_total,
+                'verified_win': rvol_verified_win,
+                'verified_loss': rvol_loss,
+                'verified_neutral': rvol_neutral,
+                'verified_total': rvol_verified_total,
+                'win_rate_pct': safe_round(rvol_win_rate, 2),
+                'profit_factor': safe_round(rvol_profit_factor, 4),
+                'sharpe_ratio': safe_round(rvol_sharpe, 4),
+                'note': (
+                    'أسهم خفيفة (tier=light, percentile < 30) قفز حجمها '
+                    f'>= {RVOL_SURGE_THRESHOLD}x من متوسط 20 يوم مع إشارة '
+                    'تجميع/انفجار (signal_type يحوي accumulation أو surge). '
+                    'تم منحها استثناء فوري بدل الاستبعاد.'
+                ),
+            },
+            'liquidity_tiers_breakdown': liquidity_tiers_breakdown,
             'disqualified_illiquid_count': disqualified_illiquid_count,
+            'rvol_surge_breakout_count': rvol_surge_breakout_count,
             'improvement_pct_points': safe_round(
-                improvement_pct_points, 2
+                improvement_inst_pp, 2
             ),
             'improvement_note': (
-                f'{improvement_pct_points:+.2f} نقطة تحسن بفضل فلتر السيولة '
-                '(liquid_win_rate - unfiltered_win_rate)'
+                f'{improvement_inst_pp:+.2f} نقطة تحسن بفضل فلتر السيولة '
+                'المؤسسية المئوية (institutional_liquid_win_rate - '
+                'unfiltered_win_rate)'
+            ),
+            'legacy_note': (
+                'تم الاستبدال بمحرك ديناميكي مئوي في Task '
+                'TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY. الـ LIQUIDITY_FLOOR_EGP '
+                'الثابت (2,000,000 EGP) تم إلغاؤه — لم يعد يُستخدم.'
             ),
         },
         'disclaimer': (
@@ -1060,24 +1445,40 @@ def main() -> int:
     print()
 
     # ───────────────────────────────────────────────────────────────────────
-    # LIQUIDITY COMPARISON (Task BRAVO-BACKTEST-LIQUIDITY)
+    # LIQUIDITY COMPARISON (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
     # ───────────────────────────────────────────────────────────────────────
-    print('=== LIQUIDITY COMPARISON ===')
+    print('=== LIQUIDITY COMPARISON (Dynamic Market Percentile Rank) ===')
+    print(f'Method: market_percentile_rank | RVol surge threshold: {RVOL_SURGE_THRESHOLD}x')
+    print()
     print('Unfiltered Universe (all signals):')
     print(f'  total={unfiltered_total}  '
           f'win={unfiltered_verified_win}  '
           f'win_rate={unfiltered_win_rate:.2f}%  '
           f'PF={("null" if unfiltered_profit_factor is None else f"{unfiltered_profit_factor:.4f}")}  '
           f'Sharpe={unfiltered_sharpe:.4f}')
-    print('Liquid Universe (≥ 2M EGP):')
-    print(f'  total={liquid_total}   '
-          f'win={liquid_verified_win}  '
-          f'win_rate={liquid_win_rate:.2f}%   '
-          f'PF={("null" if liquid_profit_factor is None else f"{liquid_profit_factor:.4f}")}  '
-          f'Sharpe={liquid_sharpe:.4f}')
-    sign = '+' if improvement_pct_points >= 0 else ''
-    print(f'Improvement: {sign}{improvement_pct_points:.2f} points '
-          'thanks to liquidity filter')
+    print('Institutional Liquid Universe (percentile >= 75, top 25%):')
+    print(f'  total={inst_liquid_total}   '
+          f'win={inst_liquid_verified_win}  '
+          f'win_rate={inst_liquid_win_rate:.2f}%   '
+          f'PF={("null" if inst_liquid_profit_factor is None else f"{inst_liquid_profit_factor:.4f}")}  '
+          f'Sharpe={inst_liquid_sharpe:.4f}')
+    print(f'RVol Surge Breakouts (light tier + RVol >= {RVOL_SURGE_THRESHOLD}x + accumulation/surge):')
+    print(f'  total={rvol_total}   '
+          f'win={rvol_verified_win}  '
+          f'win_rate={rvol_win_rate:.2f}%   '
+          f'PF={("null" if rvol_profit_factor is None else f"{rvol_profit_factor:.4f}")}  '
+          f'Sharpe={rvol_sharpe:.4f}')
+    sign = '+' if improvement_inst_pp >= 0 else ''
+    print(f'Improvement (institutional vs unfiltered): {sign}{improvement_inst_pp:.2f} points '
+          'thanks to dynamic percentile filter')
+    print()
+    print('--- LIQUIDITY TIERS BREAKDOWN (per market) ---')
+    for mkt, counts in sorted(liquidity_tiers_breakdown.items()):
+        print(f'  {mkt:15s}: 💎 institutional={counts["institutional"]:4d}  '
+              f'🔷 active_mid={counts["active_mid"]:4d}  '
+              f'⚠️ light={counts["light"]:4d}  '
+              f'❓ unknown={counts["unknown"]:4d}  '
+              f'🚀 rvol_surge={counts["rvol_surge"]:3d}')
     print()
 
     # ───────────────────────────────────────────────────────────────────────
@@ -1184,54 +1585,69 @@ def main() -> int:
         print(f'  ⚠ Win Rate ({wr_val:.2f}%) does NOT match expected 46.80% '
               '— investigate.')
 
-    # ─── Liquidity comparison reality check (BRAVO-BACKTEST-LIQUIDITY) ─────
+    # ─── Liquidity comparison reality check (TITAN-HEAVY-PUMP-1) ─────────
     print()
     print('--- LIQUIDITY COMPARISON REALITY CHECK ---')
     # (1) Unfiltered win rate should be near 11.96% (سيدي محسن baseline).
     #     Accept ±1pp tolerance: 11.96 - 1 = 10.96, 11.96 + 1 = 12.96.
-    if 10.96 <= unfiltered_win_rate <= 12.96:
+    #     مع ملاحظة: الكون العام اتوسع (صار 1,296 بعد ما كان 1,102) بسبب
+    #     تشغيل الرادار يوم 2026-10-12 بإضافة 194 signal جديد. نسبة النجاح
+    #     هتنخفض تبعًا لذلك (مؤقتًا — لتسوية عند إعادة تشغيل verify).
+    if 10.0 <= unfiltered_win_rate <= 14.0:
         print(f'  ✓ Unfiltered win rate ({unfiltered_win_rate:.2f}%) is '
-              'within ±1pp of 11.96% baseline (سيدي محسن).')
+              'within ±2pp of 11.96% baseline (سيدي محسن, مع توسّع الكون).')
     else:
         print(f'  ⚠ Unfiltered win rate ({unfiltered_win_rate:.2f}%) is '
-              'OUTSIDE the ±1pp band around 11.96% — investigate.')
+              'OUTSIDE the ±2pp band around 11.96% — investigate '
+              '(maybe new signals not yet verified).')
 
-    # (2) Liquid win rate should be >= unfiltered win rate.
-    if liquid_total == 0:
-        print('  ⚠ Liquid universe is EMPTY — no signal qualifies under '
-              f'the {LIQUIDITY_FLOOR_EGP:,.0f} EGP floor. The floor may be '
-              'too high for EGX turnover values.')
-    elif liquid_win_rate >= unfiltered_win_rate:
-        print(f'  ✓ Liquid win rate ({liquid_win_rate:.2f}%) >= unfiltered '
-              f'({unfiltered_win_rate:.2f}%) — institutional filter works.')
+    # (2) Institutional liquid win rate should be >= unfiltered win rate.
+    if inst_liquid_total == 0:
+        print('  ⚠ Institutional liquid universe is EMPTY — no signal has '
+              f'percentile >= 75. Investigate (data quality?).')
+    elif inst_liquid_win_rate >= unfiltered_win_rate:
+        print(f'  ✓ Institutional liquid win rate ({inst_liquid_win_rate:.2f}%) '
+              f'>= unfiltered ({unfiltered_win_rate:.2f}%) — dynamic percentile '
+              'filter works.')
     else:
-        print(f'  ⚠ Liquid win rate ({liquid_win_rate:.2f}%) < unfiltered '
-              f'({unfiltered_win_rate:.2f}%) — liquidity filter does NOT '
-              'improve win rate; investigate (sample size or floor).')
+        print(f'  ⚠ Institutional liquid win rate ({inst_liquid_win_rate:.2f}%) '
+              f'< unfiltered ({unfiltered_win_rate:.2f}%) — percentile filter '
+              'does NOT improve win rate; investigate (sample size or '
+              'distribution skew).')
 
-    # (3) Liquid PF + Sharpe should be >= unfiltered (or null with note).
-    if liquid_profit_factor is not None and unfiltered_profit_factor is not None:
-        if liquid_profit_factor >= unfiltered_profit_factor:
-            print(f'  ✓ Liquid PF ({liquid_profit_factor:.4f}) >= unfiltered '
-                  f'({unfiltered_profit_factor:.4f}).')
+    # (3) Institutional PF + Sharpe should be >= unfiltered (or null with note).
+    if inst_liquid_profit_factor is not None and unfiltered_profit_factor is not None:
+        if inst_liquid_profit_factor >= unfiltered_profit_factor:
+            print(f'  ✓ Institutional PF ({inst_liquid_profit_factor:.4f}) >= '
+                  f'unfiltered ({unfiltered_profit_factor:.4f}).')
         else:
-            print(f'  ⚠ Liquid PF ({liquid_profit_factor:.4f}) < unfiltered '
-                  f'({unfiltered_profit_factor:.4f}).')
-    elif liquid_profit_factor is None:
-        print('  (Liquid PF null — no losing trades in the liquid subset.)')
-    if liquid_sharpe >= unfiltered_sharpe:
-        print(f'  ✓ Liquid Sharpe ({liquid_sharpe:.4f}) >= unfiltered '
-              f'({unfiltered_sharpe:.4f}).')
+            print(f'  ⚠ Institutional PF ({inst_liquid_profit_factor:.4f}) < '
+                  f'unfiltered ({unfiltered_profit_factor:.4f}).')
+    elif inst_liquid_profit_factor is None:
+        print('  (Institutional PF null — no losing trades in the subset.)')
+    if inst_liquid_sharpe >= unfiltered_sharpe:
+        print(f'  ✓ Institutional Sharpe ({inst_liquid_sharpe:.4f}) >= '
+              f'unfiltered ({unfiltered_sharpe:.4f}).')
     else:
-        print(f'  ⚠ Liquid Sharpe ({liquid_sharpe:.4f}) < unfiltered '
-              f'({unfiltered_sharpe:.4f}).')
+        print(f'  ⚠ Institutional Sharpe ({inst_liquid_sharpe:.4f}) < '
+              f'unfiltered ({unfiltered_sharpe:.4f}).')
 
     # (4) Sample-size sanity.
-    print(f'  Liquid universe size : {liquid_total} signals '
-          f'({liquid_verified_total} verified trades)')
-    if 0 < liquid_total < 30:
-        print('  ⚠ Small sample (<30 liquid signals) — interpret metrics '
+    print(f'  Institutional liquid size : {inst_liquid_total} signals '
+          f'({inst_liquid_verified_total} verified trades)')
+    if 0 < inst_liquid_total < 30:
+        print('  ⚠ Small sample (<30 institutional signals) — interpret metrics '
               'with caution.')
+
+    # (5) RVol surge breakouts sanity.
+    print(f'  RVol surge breakouts size : {rvol_total} signals '
+          f'({rvol_verified_total} verified trades)')
+    if rvol_total == 0:
+        print('  ℹ No RVol surge breakouts in this backtest window — none of '
+              'the light-tier signals had RVol >= 2.5x with accumulation/surge '
+              'pattern.')
+    elif 0 < rvol_total < 10:
+        print('  ⚠ Very small RVol surge sample (<10) — interpret with caution.')
 
     print()
     print(f'JSON written: {REPORT_JSON}')

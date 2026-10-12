@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-12T15:43:26.993094+00:00",
+  "generated_at": "2026-10-12T16:15:02.086382+00:00",
   "data_source": {
     "db": "db/stocks.db",
     "table": "stock_daily_prices",
@@ -21,12 +21,12 @@
     "trailing_stop": "breakeven after target hit"
   },
   "portfolio_metrics": {
-    "total_signals": 1191,
+    "total_signals": 1117,
     "verified_signals": 297,
     "verified_win": 139,
     "verified_loss": 158,
     "verified_neutral": 0,
-    "pending": 338,
+    "pending": 300,
     "stale_data": 513,
     "overall_win_rate_pct": 46.8,
     "sharpe_ratio": -2.6952,
@@ -204,33 +204,86 @@
     }
   ],
   "liquidity_comparison": {
-    "floor_egp": 2000000,
+    "method": "market_percentile_rank",
+    "tiers": {
+      "institutional": {
+        "min_percentile": 75,
+        "label": "💎 سيولة مؤسسية",
+        "status": "qualified"
+      },
+      "active_mid": {
+        "min_percentile": 30,
+        "label": "🔷 نشط متوسط",
+        "status": "qualified"
+      },
+      "light": {
+        "min_percentile": 0,
+        "label": "⚠️ خفيف",
+        "status": "disqualified_illiquid"
+      }
+    },
+    "rvol_surge_exception": {
+      "threshold": 2.5,
+      "label": "🚀 طفرة سيولة وانفجار سعري (RVol Surge Breakout)",
+      "status": "rvol_surge_breakout"
+    },
     "lookback_days": 20,
     "turnover_definition": "avg_turnover_20d = mean(turnover) over the trailing 20 trading days before signal_date. turnover column used when present; falls back to close*volume when NULL.",
+    "percentile_rank_definition": "percentile = (count_le / n) * 100 — نسبة الـ tickers في السوق اللي avg_turnover_20d بتاعها <= avg_turnover_20d بتاع السهم. يُحسب بشكل مستقل لكل سوق (EGX / TADAWUL / KSE / US / QSE) عشان نتجنب تحويل العملات.",
     "unfiltered_universe": {
-      "label": "الكون العام (Unfiltered)",
-      "total_signals": 1191,
+      "label": "السوق العام (Unfiltered)",
+      "total_signals": 1117,
       "verified_win": 139,
-      "win_rate_pct": 11.67,
+      "win_rate_pct": 12.44,
       "profit_factor": 0.7106,
       "sharpe_ratio": -2.6952,
       "note": "كل الإشارات بدون فلتر سيولة — يُظهر نسبة النجاح الحقيقية للأسهم الميتة (pending + stale_data + disqualified_illiquid تُحسب كـ non-win)"
     },
-    "liquid_universe": {
-      "label": "الكون المؤسسي (Liquid ≥ 2M EGP)",
-      "total_signals": 917,
-      "verified_win": 117,
-      "verified_loss": 141,
+    "institutional_liquid_universe": {
+      "label": "السيولة المؤسسية المئوية (top 25%)",
+      "total_signals": 310,
+      "verified_win": 43,
+      "verified_loss": 53,
       "verified_neutral": 0,
-      "verified_total": 258,
-      "win_rate_pct": 12.76,
-      "profit_factor": 0.6634,
-      "sharpe_ratio": -3.2407,
-      "note": "الأسهم المؤهلة سيوليًا فقط — النسبة الحقيقية للمستثمر المؤسسي"
+      "verified_total": 96,
+      "win_rate_pct": 13.87,
+      "profit_factor": 0.6211,
+      "sharpe_ratio": -3.7408,
+      "note": "الأسهم في أعلى 25% تداولاً داخل سوقها (percentile >= 75). النسبة الحقيقية للمستثمر المؤسسي."
     },
-    "disqualified_illiquid_count": 43,
-    "improvement_pct_points": 1.09,
-    "improvement_note": "+1.09 نقطة تحسن بفضل فلتر السيولة (liquid_win_rate - unfiltered_win_rate)"
+    "rvol_surge_breakouts": {
+      "label": "🚀 طفرة سيولة وانفجار سعري (RVol Surge Breakout)",
+      "total_signals": 4,
+      "verified_win": 2,
+      "verified_loss": 0,
+      "verified_neutral": 0,
+      "verified_total": 2,
+      "win_rate_pct": 50.0,
+      "profit_factor": null,
+      "sharpe_ratio": 0.0,
+      "note": "أسهم خفيفة (tier=light, percentile < 30) قفز حجمها >= 2.5x من متوسط 20 يوم مع إشارة تجميع/انفجار (signal_type يحوي accumulation أو surge). تم منحها استثناء فوري بدل الاستبعاد."
+    },
+    "liquidity_tiers_breakdown": {
+      "EGX": {
+        "institutional": 310,
+        "active_mid": 550,
+        "light": 176,
+        "unknown": 0,
+        "rvol_surge": 4
+      },
+      "UNKNOWN": {
+        "institutional": 0,
+        "active_mid": 0,
+        "light": 0,
+        "unknown": 81,
+        "rvol_surge": 0
+      }
+    },
+    "disqualified_illiquid_count": 7,
+    "rvol_surge_breakout_count": 0,
+    "improvement_pct_points": 1.43,
+    "improvement_note": "+1.43 نقطة تحسن بفضل فلتر السيولة المؤسسية المئوية (institutional_liquid_win_rate - unfiltered_win_rate)",
+    "legacy_note": "تم الاستبدال بمحرك ديناميكي مئوي في Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY. الـ LIQUIDITY_FLOOR_EGP الثابت (2,000,000 EGP) تم إلغاؤه — لم يعد يُستخدم."
   },
   "disclaimer": "Rule 27 (NO-FAKE-DATA): all metrics computed from real price data only. No data for 2020-2024 — annual_breakdown shows null with note. radar_signal_tracking contains signals from 2026-09-28 onwards only; 2025 has no signals (price data exists Sep-Dec 2025 but no radar signals were generated). Trade classification uses the stored status column from verify_all_radar_signals.py (idempotent) for consistency with the published 46.80% win rate."
 }

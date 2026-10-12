@@ -48,12 +48,58 @@ from utils.shared_liquidity import (
 
 
 # ============================================================================
-# LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER — Owner Directive)
+# DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
 # ============================================================================
-# القاعدة الصارمة: أي سهم يقل متوسط تداوله اليومي (20d) عن 2,000,000 EGP
-# يُصنف فورًا كـ disqualified_illiquid — مستبعد لضعف السيولة وانعدام صانع السوق.
-# الحد معتمد من المالك (سيدي محسن) كحارس مؤسسي صارم.
-LIQUIDITY_FLOOR_EGP = 2_000_000  # 2M EGP/day minimum 20d avg turnover
+# تم الاستبدال بمحرك ديناميكي مئوي — كل سوق يُحلَّل بشكل مستقل، ويتم ترتيب
+# الأسهم داخل السوق بالمئوي (Market Percentile Rank). هذا يُتيح مقارنة عادلة
+# بين الأسواق ذات العملات والسيولات المختلفة (EGP/SAR/USD/KWD/QAR) دون
+# الحاجة لتحويل العملات.
+#
+# التقسيم (LIQUIDITY_TIERS):
+#   - 💎 سيولة مؤسسية: أعلى 25% تداولاً (percentile >= 75) → qualified
+#   - 🔷 نشط متوسط:    بين 25% و 70% (percentile 30-75) → qualified
+#   - ⚠️ خفيف:         أدنى 30% (percentile < 30) → disqualified_illiquid
+#
+# استثناء طفرة الحجم الذهبي (RVol Surge Exception):
+#   لو سهم في tier 'light' قفز حجمه اليومي >= 2.5x من متوسط 20 يوم بالتزامن
+#   مع إشارة تجميع/انفجار (signal_type يحوي 'accumulation' أو 'surge') →
+#   يُمنح استثناء فوريًا ويُصنف كـ '🚀 طفرة سيولة وانفجار سعري (RVol Surge
+#   Breakout)' بدل الاستبعاد.
+#
+# LEGACY (محجوز للتوثيق التاريخي — Task BRAVO-LIQUIDITY-GATEKEEPER):
+#   كان LIQUIDITY_FLOOR_EGP = 2_000_000 ثابت لكل الأسواق. تم إلغاؤه لأنه:
+#     (1) لا يفرّق بين EGX (EGP) و US (USD) و TADAWUL (SAR) — عملات مختلفة.
+#     (2) يُقصي أسهم مؤسسية فعلية في أسواق ذات سيولة أقل (KSE/QSE).
+#     (3) لا يلتقط طفرات الحجم (RVol Surge) التي تُشير لتحول سيولي.
+#   لم يعد يُستخدم في الفلترة الجديدة — يتم الاستبدال بمحرك ديناميكي مئوي.
+# LIQUIDITY_FLOOR_EGP = 2_000_000  # legacy — تم الاستبدال بمحرك ديناميكي مئوي
+
+# ─── معرفات الـ tiers الثلاثة (لكل سوق بشكل مستقل) ──────────────────────
+LIQUIDITY_TIERS = {
+    'institutional': {
+        'min_percentile': 75,
+        'label': '💎 سيولة مؤسسية',
+        'status': 'qualified',
+    },
+    'active_mid': {
+        'min_percentile': 30,
+        'label': '🔷 نشط متوسط',
+        'status': 'qualified',
+    },
+    'light': {
+        'min_percentile': 0,
+        'label': '⚠️ خفيف',
+        'status': 'disqualified_illiquid',
+    },
+}
+
+# ─── عتبة طفرة الحجم الذهبي (RVol Surge Exception) ─────────────────────
+RVOL_SURGE_THRESHOLD = 2.5  # × متوسط حجم 20 يوم
+RVOL_SURGE_LABEL = '🚀 طفرة سيولة وانفجار سعري (RVol Surge Breakout)'
+RVOL_SURGE_STATUS = 'rvol_surge_breakout'  # status في radar_signal_tracking
+
+# عدد الأيام لمتوسط التداول (متوسط 20 يوم — نفس المعيار السابق)
+LIQUIDITY_LOOKBACK_DAYS = 20
 
 
 # ============================================================================
@@ -271,23 +317,216 @@ def compute_turnover(row):
 
 
 # ============================================================================
-# LIQUIDITY GATEKEEPER — حارس السيولة الصارم (Task BRAVO-LIQUIDITY-GATEKEEPER)
+# DYNAMIC LIQUIDITY ENGINE — المحرك المئوي (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
 # ============================================================================
-def is_liquid_enough(avg_turnover_20d: float) -> bool:
-    """Liquidity Gatekeeper: avg 20d turnover must be >= 2,000,000 EGP.
+# يعتمد على Market Percentile Rank داخل كل سوق بشكل مستقل. هذا يحل مشكلة
+# الـ LIQUIDITY_FLOOR_EGP الثابت الذي كان يطبق نفس الحد (2M EGP) على كل
+# الأسواق رغم اختلاف العملات (EGP/SAR/USD/KWD/QAR) والسيولات.
+#
+# المكوّنات:
+#   1. compute_market_percentile_rank(conn, market, tickers) — يُرجع dict
+#      {ticker: percentile_rank (0-100)} لكل سهم في السوق.
+#   2. classify_liquidity_tier(percentile_rank) — يُرجع أحد الـ 3 tiers.
+#   3. check_rvol_surge(today_volume, avg_volume_20d, signal_type) — استثناء
+#      طفرة الحجم الذهبي للأسهم الخفيفة.
+# ============================================================================
 
-    القاعدة الصارمة (Owner Directive — Task BRAVO-LIQUIDITY-GATEKEEPER):
-      أي سهم يقل متوسط تداوله اليومي عن 2,000,000 EGP يُستبعد فورًا
-      لضعف السيولة وانعدام صانع السوق (لا يوجد maker يضمن تنفيذ الأوامر).
+def compute_market_percentile_rank(
+    conn: sqlite3.Connection,
+    market: str,
+    tickers: list = None,
+    days: int = LIQUIDITY_LOOKBACK_DAYS,
+) -> dict:
+    """حساب الترتيب المئوي (Market Percentile Rank) لمتوسط التداول اليومي
+    (20d) داخل السوق المحدد بشكل مستقل.
+
+    لكل سهم في السوق، نحسب avg_turnover_20d من البيانات التاريخية، ثم
+    نُحوّله إلى percentile rank (0-100) داخل السوق. هذا يُتيح مقارنة عادلة
+    بين الأسواق ذات العملات والسيولات المختلفة دون الحاجة لتحويل العملات.
+
+    Rule 27 — NO-FAKE-DATA:
+      - turnover column يُستخدم لو موجود و > 0.
+      - fallback: close × volume (لأن turnover NULL في ~69% من الصفوف).
+      - الأسهم بدون بيانات كافية (< days أسعار) → لا تُدرج (يعني
+        percentile_rank=None للسهم).
 
     Args:
-        avg_turnover_20d: متوسط قيمة التداول اليومي آخر 20 يوم (EGP).
+        conn: اتصال sqlite بالـ production DB (PROD_DB).
+        market: كود السوق (EGX/TADAWUL/KSE/US/QSE). يُستخدم فقط للـ log.
+        tickers: قائمة tickers محددة. لو None، نستخدم كل tickers متاحة في
+            PROD_TABLE. ننصح بتمرير قائمة tickers السوق الكاملة من stocks
+            table عشان يكون الـ percentile نسبة للسوق كله (مش subset).
+        days: عدد الأيام لمتوسط التداول (default 20).
 
     Returns:
-        True لو السهم مؤهل سيولياً (≥ 2M EGP/day)، False لو مستبعد.
+        dict: {ticker: percentile_rank (0-100)}.
+        لو السوق مفيهوش بيانات → dict فاضي.
+        لو ticker ما عندهوش بيانات كافية → لا يكون موجود في الـ dict
+        (يتم التعامل معه في scan_ticker كـ tier='unknown').
+    """
+    if tickers is None:
+        try:
+            tickers = [
+                r[0] for r in conn.execute(
+                    f"SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE} "
+                    f"WHERE {TICKER_COL} IS NOT NULL AND {TICKER_COL} != ''"
+                ).fetchall()
+            ]
+        except Exception:
+            tickers = []
+    if not tickers:
+        return {}
+
+    # حساب avg_turnover_20d لكل ticker — نستخدم نفس منطق compute_turnover
+    # مع fallback لـ close × volume لو turnover NULL.
+    ticker_avgs: dict = {}
+    for ticker in tickers:
+        try:
+            cols = f"{DATE_COL}, {PRICE_COL} AS close, {VOL_COL} AS volume"
+            if TURN_COL:
+                cols += f", {TURN_COL} AS turnover"
+            else:
+                cols += ", NULL AS turnover"
+            rows = conn.execute(
+                f"""
+                SELECT {cols}
+                FROM {PROD_TABLE}
+                WHERE {TICKER_COL} = ? AND {PRICE_COL} IS NOT NULL AND {PRICE_COL} > 0
+                ORDER BY {DATE_COL} DESC
+                LIMIT ?
+                """,
+                (ticker, days),
+            ).fetchall()
+        except Exception:
+            continue
+        if not rows or len(rows) < days:
+            continue  # ما عندهوش بيانات كافية
+        turnovers = []
+        for r in rows:
+            d = dict(r)
+            t = d.get('turnover')
+            if t is not None:
+                try:
+                    t_float = float(t)
+                    if t_float > 0:
+                        turnovers.append(t_float)
+                        continue
+                except (TypeError, ValueError):
+                    pass
+            close = float(d.get('close') or 0)
+            vol = parse_volume(d.get('volume'))
+            turnovers.append(close * vol)
+        if turnovers:
+            ticker_avgs[ticker] = sum(turnovers) / len(turnovers)
+
+    if not ticker_avgs:
+        log(f"  ⚠️ compute_market_percentile_rank: مفيش بيانات كافية لسوق {market} "
+            f"(0 tickers بـ ≥{days} يوم تداول). كل الأسهم هتكون tier='unknown'.")
+        return {}
+
+    # حساب percentile rank: لكل ticker، نسبة الـ tickers اللي avg_turnover_20d
+    # بتاعها <= avg_turnover_20d بتاع السهم ده. الصيغة:
+    #   percentile = (count_le / n) * 100
+    # أعلى ticker → 100، أدنى ticker → ~0.
+    sorted_avgs = sorted(ticker_avgs.values())
+    n = len(sorted_avgs)
+    percentile_ranks: dict = {}
+    for ticker, avg in ticker_avgs.items():
+        count_le = sum(1 for v in sorted_avgs if v <= avg)
+        percentile_ranks[ticker] = round((count_le / n) * 100, 2)
+    log(f"  📊 Market Percentile Rank ({market}): {len(percentile_ranks)} ticker "
+        f"تم تصنيفهم (n={n}, avg_turnover_20d range: "
+        f"{sorted_avgs[0]:,.0f} → {sorted_avgs[-1]:,.0f}).")
+    return percentile_ranks
+
+
+def classify_liquidity_tier(percentile_rank) -> str:
+    """تصنيف السهم إلى أحد الـ 3 tiers حسب الـ percentile rank داخل سوقه.
+
+    Args:
+        percentile_rank: 0-100 (أو None لو مش متوفر للسوق).
+
+    Returns:
+        str: 'institutional' (>=75) / 'active_mid' (30-75) /
+             'light' (<30) / 'unknown' (لو percentile_rank is None).
+    """
+    if percentile_rank is None:
+        return 'unknown'
+    try:
+        pr = float(percentile_rank)
+    except (TypeError, ValueError):
+        return 'unknown'
+    if pr >= LIQUIDITY_TIERS['institutional']['min_percentile']:
+        return 'institutional'
+    if pr >= LIQUIDITY_TIERS['active_mid']['min_percentile']:
+        return 'active_mid'
+    return 'light'
+
+
+def check_rvol_surge(today_volume, avg_volume_20d, signal_type) -> tuple:
+    """فحص طفرة الحجم الذهبي (RVol Surge) لاستثناء الأسهم الخفيفة.
+
+    القاعدة (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY §1.3):
+      - RVol = today_volume / avg_volume_20d
+      - لو RVol >= 2.5 AND signal_type يحوي 'accumulation' أو 'surge'
+        → يُمنح استثناء فوريًا (يصبح under_microscope بدل disqualified).
+
+    Args:
+        today_volume: حجم تداول اليوم (آخر شمعة).
+        avg_volume_20d: متوسط حجم 20 يوم.
+        signal_type: مسار الإشارة (مثل 'B_quiet_accumulation_strong' أو
+                     'A_pre_surge' أو 'D_explosive_surge'). الـ paths المؤهلة:
+                     A_pre_surge / B_quiet_accumulation_strong /
+                     C_quiet_accumulation_weak / D_explosive_surge.
+                     E_early_break لا يؤهل (لا يحوي 'accumulation' أو 'surge').
+
+    Returns:
+        tuple (is_surge: bool, label: str|None).
+        لو is_surge=True → label = RVOL_SURGE_LABEL.
+        لو is_surge=False → label = None.
     """
     try:
-        return float(avg_turnover_20d or 0) >= LIQUIDITY_FLOOR_EGP
+        tv = float(today_volume or 0)
+        av = float(avg_volume_20d or 0)
+    except (TypeError, ValueError):
+        return (False, None)
+    if av <= 0:
+        return (False, None)
+    rvol = tv / av
+    if rvol < RVOL_SURGE_THRESHOLD:
+        return (False, None)
+    # تحقق إن signal_type يحوي 'accumulation' أو 'surge' (إشارة تجميع/انفجار)
+    sig = str(signal_type or '').lower()
+    if 'accumulation' in sig or 'surge' in sig:
+        return (True, RVOL_SURGE_LABEL)
+    return (False, None)
+
+
+# ============================================================================
+# LEGACY — Liquidity Gatekeeper (محجوز للتوثيق التاريخي + backward compat)
+# ============================================================================
+# تم الاستبدال بمحرك ديناميكي مئوي (compute_market_percentile_rank +
+# classify_liquidity_tier). الدالة دي محفوظة عشان أي سكريبت خارجي بيستوردها
+# لا يكسر، لكنها لم تُعد تُستخدم في scan_ticker الجديد.
+def is_liquid_enough(avg_turnover_20d: float) -> bool:
+    """[DEPRECATED] Liquidity Gatekeeper الثابت — تم الاستبدال بمحرك ديناميكي مئوي.
+
+    القاعدة القديمة (Owner Directive — Task BRAVO-LIQUIDITY-GATEKEEPER):
+      أي سهم يقل متوسط تداوله اليومي عن 2,000,000 EGP يُستبعد فورًا.
+
+    الحالة الحالية: تم الاستبدال بمحرك ديناميكي مئوي في
+    Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY. هذه الدالة محفوظة لـ backward
+    compat فقط — scan_ticker لم يعد يستخدمها.
+
+    Args:
+        avg_turnover_20d: متوسط قيمة التداول اليومي آخر 20 يوم.
+
+    Returns:
+        True لو avg_turnover_20d >= 2,000,000 (legacy floor).
+    """
+    LEGACY_FLOOR = 2_000_000  # legacy — تم الاستبدال بمحرك ديناميكي مئوي
+    try:
+        return float(avg_turnover_20d or 0) >= LEGACY_FLOOR
     except (TypeError, ValueError):
         return False
 
@@ -411,8 +650,18 @@ def is_early_break(closes, volumes, highs=None):
     return True, f'break: close {last_close:.2f} > max_20 {max_20:.2f}, vol {vol_ratio:.2f}×, range {range_pct:.1f}%'
 
 
-def scan_ticker(rows, ticker, regime='NORMAL'):
-    """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى) مع تكييف وضع السوق."""
+def scan_ticker(rows, ticker, regime='NORMAL', percentile_rank=None):
+    """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى) مع تكييف وضع السوق.
+
+    Args:
+        rows: قائمة صفوف الأسعار التاريخية (آخر 40 يوم).
+        ticker: رمز السهم.
+        regime: وضع السوق (NORMAL / DEFENSIVE / etc).
+        percentile_rank: الترتيب المئوي للسهم داخل سوقه (0-100) من
+            compute_market_percentile_rank. لو None → tier='unknown' (يُعامَل
+            كـ qualified لأنه مفيش بيانات كافية لرفضه).
+            (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
+    """
     # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
     if len(rows) < 15:
         return None
@@ -457,13 +706,32 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     avg_volume_20d = statistics.mean(volumes[-20:]) if len(volumes) >= 20 else (statistics.mean(volumes) if volumes else 0)
     avg_volume_10d = statistics.mean(volumes[-10:]) if len(volumes) >= 10 else 0
 
-    # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER — Owner Directive) ──
-    # القاعدة الصارمة: لو متوسط التداول اليومي (20d) < 2,000,000 EGP
-    # → السهم يُصنف فورًا كـ disqualified_illiquid (مستبعد لضعف السيولة).
-    # نحسب العلامة هنا، ويتم تطبيقها في override بعد منطق winner_path.
-    liquid_enough = is_liquid_enough(avg_turnover_20d)
-    disqualified = (not liquid_enough)
-    disqualify_reason = 'illiquid' if disqualified else None
+    # ─── DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY) ──
+    # المحرك المئوي الديناميكي: نُصنّف السهم إلى أحد الـ 3 tiers حسب
+    # الـ percentile rank داخل سوقه. لو percentile_rank=None (السوق مفيهوش
+    # بيانات كافية) → tier='unknown' → يُعامَل كـ qualified (لا استبعاد).
+    #
+    # التقسيم:
+    #   - institutional (>=75): 💎 سيولة مؤسسية
+    #   - active_mid (30-75):   🔷 نشط متوسط
+    #   - light (<30):          ⚠️ خفيف — disqualified_illiquid
+    #   - unknown (None):       مؤهل افتراضيًا (لا استبعاد)
+    tier = classify_liquidity_tier(percentile_rank)
+    rvol_surge_exception = False  # قد يتم رفعها لاحقًا لو السهم خفيف + RVol >= 2.5
+
+    # متغيرات الـ gate (متوافقة مع الكود القديم):
+    #   - liquid_enough: True لو tier in (institutional, active_mid, unknown)
+    #   - disqualified: True لو tier == 'light' (ونتم استثناء RVol لاحقًا)
+    #   - disqualify_reason: 'illiquid' لو light، None غير ذلك
+    if tier == 'light':
+        liquid_enough = False
+        disqualified = True
+        disqualify_reason = 'illiquid'
+    else:
+        # institutional / active_mid / unknown → مؤهل
+        liquid_enough = True
+        disqualified = False
+        disqualify_reason = None
 
     # مقاييس الترتيب: قوة الحجم النسبي + استقرار السعر
     volume_ratio_10d_vs_20d = (avg_volume_10d / avg_volume_20d) if avg_volume_20d > 0 else 0
@@ -517,19 +785,48 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         winner_position_size = 0.025  # 2.5%
         winner_reason = break_reason
 
-    # ─── LIQUIDITY GATEKEEPER OVERRIDE (Task BRAVO-LIQUIDITY-GATEKEEPER) ───
-    # القاعدة الصارمة: لو السهم illiquid (avg 20d turnover < 2,000,000 EGP)
-    # → نلغي ترشيحه لأي مسار (winner_path=None) ولا يُصدر له إشارة رادار.
-    # نحتفظ بكل الـ detection logic للرجوع التاريخي والتحليل، لكن لا يصدر
-    # توصية للعميل. الأسهم المستبعدة تُسجّل في DB بـ status=disqualified_illiquid
-    # للشفافية المؤسسية (نعرف كم سهم استبعدنا ولماذا).
-    if disqualified:
-        winner_path = None
-        winner_position_size = 0.0
-        winner_reason = (
-            f'⛔ DISQUALIFIED (illiquid) — Liquidity Gate: '
-            f'avg 20d turnover = {avg_turnover_20d:,.0f} EGP < {LIQUIDITY_FLOOR_EGP:,} EGP floor'
+    # ─── DYNAMIC LIQUIDITY ENGINE OVERRIDE + RVol SURGE EXCEPTION ─────────
+    # (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
+    #
+    # القاعدة الجديدة (محرّك مئوي ديناميكي):
+    #   - لو tier == 'light' (percentile < 30) → السهم مستبعد افتراضيًا.
+    #     لكن قبل ما نلغي ترشيحه، نتحقق من استثناء طفرة الحجم الذهبي:
+    #       لو RVol = today_volume / avg_volume_20d >= 2.5
+    #       AND winner_path يحوي 'accumulation' أو 'surge'
+    #       → نمنح استثناء فوريًا، يُصنف كـ '🚀 طفرة سيولة وانفجار سعري'
+    #       ويبقى under_microscope مع علامة rvol_surge_exception=True.
+    #   - لو tier == 'light' وما حققش الاستثناء → نلغي ترشيحه (winner_path=None).
+    #   - لو tier in (institutional, active_mid, unknown) → لا تغيير (مؤهل).
+    #
+    # الأسهم المستبعدة تُسجّل في DB بـ status=disqualified_illiquid للشفافية
+    # المؤسسية. الأسهم ذات الاستثناء تُسجّل بـ status=rvol_surge_breakout.
+    if disqualified and tier == 'light':
+        # تحقق من استثناء طفرة الحجم الذهبي (RVol Surge)
+        today_volume = volumes[-1] if volumes else 0
+        is_surge, surge_label = check_rvol_surge(
+            today_volume, avg_volume_20d, winner_path
         )
+        if is_surge:
+            # ✅ استثناء فوري — السهم يبقى under_microscope مع علامة خاصة
+            rvol_surge_exception = True
+            disqualified = False  # تم رفع الاستبعاد
+            disqualify_reason = None
+            # نُضيف علامة الاستثناء للسبب (بدل ما نلغي الترشيح)
+            surge_note = (
+                f' | {surge_label} — RVol={today_volume / avg_volume_20d:.2f}x '
+                f'(≥{RVOL_SURGE_THRESHOLD}x من متوسط 20 يوم)'
+            )
+            winner_reason = (winner_reason or '') + surge_note
+        else:
+            # ⛔ مستبعد — tier=light وما حققش استثناء طفرة الحجم
+            winner_path = None
+            winner_position_size = 0.0
+            winner_reason = (
+                f'⛔ DISQUALIFIED (light tier) — Dynamic Liquidity Engine: '
+                f'percentile_rank={percentile_rank} (< 30 = bottom 30%), '
+                f'avg 20d turnover = {avg_turnover_20d:,.0f} '
+                f'(tier={LIQUIDITY_TIERS["light"]["label"]})'
+            )
 
     # ─── PHASE-4: Money Flow + Life Cycle + Kill Switch ──────────────────
     money_flow = compute_money_flow(closes, volumes, highs, lows)
@@ -660,12 +957,19 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'quiet_details': quiet_details if quiet else None,
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,
-        # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ─────────
-        # علامات حارس السيولة — يستخدمها main loop لفلترة under_microscope
-        # وتسجيل المستبعدة في DB بـ status=disqualified_illiquid للشفافية.
+        # ─── DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY) ─
+        # علامات محرّك السيولة الديناميكي — يستخدمها main loop لفلترة
+        # under_microscope وتسجيل المستبعدة في DB بـ status=disqualified_illiquid
+        # للشفافية. الأسهم ذات الاستثناء تُسجّل بـ status=rvol_surge_breakout.
         'liquid_enough': liquid_enough,
         'disqualified': disqualified,
         'disqualify_reason': disqualify_reason,
+        # الحقول الجديدة للمحرّك المئوي:
+        'percentile_rank': percentile_rank,  # 0-100 أو None
+        'liquidity_tier': tier,  # institutional / active_mid / light / unknown
+        'liquidity_tier_label': LIQUIDITY_TIERS.get(tier, {}).get('label', '❓ غير معروف') if tier != 'unknown' else '❓ غير معروف (لا بيانات)',
+        'rvol_surge_exception': rvol_surge_exception,
+        'rvol_value': round((volumes[-1] / avg_volume_20d) if (volumes and avg_volume_20d > 0) else 0, 2),
     }
 
 
@@ -678,20 +982,26 @@ def _track_signals_to_db(
     scan_date: str,
     market_code: str = 'EGX',
     disqualified_illiquid: list = None,
+    rvol_surge_breakouts: list = None,
 ):
     """تسجيل إشارات الرادار في radar_signal_tracking table في stocks.db.
 
     Args:
-        under_microscope: قائمة الأسهم تحت الميكروسكوب (status='pending' أو 'stale_data')
+        under_microscope: قائمة الأسهم تحت الميكروسكوب (status='pending' أو
+            'stale_data' أو 'rvol_surge_breakout' لو لها علامة rvol_surge_exception).
         scan_date: تاريخ الفحص (YYYY-MM-DD)
         market_code: كود السوق
         disqualified_illiquid: قائمة الأسهم المستبعدة لضعف السيولة
-            (Task BRAVO-LIQUIDITY-GATEKEEPER) — تُسجّل بـ status='disqualified_illiquid'
-            للشفافية المؤسسية: نريد أن نعرف كم سهمًا استبعدنا ولماذا، بدلًا من
-            تجاهلها بصمت (Rule 27 — NO-FAKE-DATA: لا اختلاق، ولا تجاهل صامت).
+            (tier='light' بدون استثناء RVol) — تُسجّل بـ
+            status='disqualified_illiquid' للشفافية المؤسسية.
+        rvol_surge_breakouts: [DEPRECATED] القائمة دي محفوظة للتوافق الخلفي —
+            الأسهم ذات الاستثناء موجودة بالفعل في under_microscope ويكشفها
+            الكود عبر علامة `rvol_surge_exception`. تُكتشف وتُسجّل تلقائيًا
+            بـ status='rvol_surge_breakout' في الـ loop الرئيسي.
     """
     disqualified_illiquid = disqualified_illiquid or []
-    if not under_microscope and not disqualified_illiquid:
+    rvol_surge_breakouts = rvol_surge_breakouts or []
+    if not under_microscope and not disqualified_illiquid and not rvol_surge_breakouts:
         return
 
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
@@ -779,8 +1089,25 @@ def _track_signals_to_db(
         live_price = stock.get('live_price')
         daily_price = stock.get('daily_price')
 
-        # لو البيانات قديمة جداً → نضيف تحذير صريح في reason + status = stale_data
-        if stock.get('data_stale') and staleness_days and staleness_days > 1:
+        # تحديد initial_status بناءً على:
+        # (a) علامة rvol_surge_exception → 'rvol_surge_breakout' (أولوية قصوى)
+        # (b) data_stale + staleness_days > 3 → 'stale_data'
+        # (c) غير ذلك → 'pending'
+        # (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
+        if stock.get('rvol_surge_exception'):
+            initial_status = 'stale_data' if (
+                stock.get('data_stale') and staleness_days and staleness_days > 3
+            ) else RVOL_SURGE_STATUS  # 'rvol_surge_breakout'
+            # نُضيف علامة الاستثناء للسبب لو مش موجودة (للتحليل)
+            if RVOL_SURGE_LABEL not in full_reason:
+                rvol_value = stock.get('rvol_value', 0) or 0
+                surge_note = (
+                    f' | {RVOL_SURGE_LABEL} — RVol={rvol_value}x '
+                    f'(≥{RVOL_SURGE_THRESHOLD}x من متوسط 20 يوم, '
+                    f'tier=light exception)'
+                )
+                full_reason = (full_reason + surge_note)[:500]
+        elif stock.get('data_stale') and staleness_days and staleness_days > 1:
             stale_note = f' | ⚠️ DATA STALE ({staleness_days}d, src={price_source}, date={data_date})'
             full_reason = (full_reason + stale_note)[:500]
             # لو قديم جداً (>3 أيام) → status=stale_data بدلاً من pending
@@ -797,8 +1124,8 @@ def _track_signals_to_db(
               data_date, data_quality, staleness_days, price_source, live_price, daily_price))
         inserted += 1
 
-    # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ──────────
-    # تسجيل الأسهم المستبعدة لضعف السيولة بشفافية كاملة:
+    # ─── DYNAMIC LIQUIDITY ENGINE — تسجيل المستبعدين (Task TITAN-HEAVY-PUMP-1) ──
+    # تسجيل الأسهم المستبعدة (tier='light' بدون استثناء RVol) بشفافية كاملة:
     #   - status = 'disqualified_illiquid' (لمرشّح للتنفيذ — مستبعد مؤسسيًا)
     #   - signal_type = 'disqualified_illiquid' (للتمييز في الـ analytics)
     #   - path = None (لم يصدر له مسار رادار)
@@ -812,9 +1139,11 @@ def _track_signals_to_db(
             continue
         entry_price = stock.get('current_price', 0) or 0
         avg_turnover_20d = stock.get('avg_turnover_20d', 0) or 0
+        percentile_rank = stock.get('percentile_rank')
         liq_reason = (
-            f'Liquidity Gate: avg 20d turnover = {avg_turnover_20d:,.0f} EGP '
-            f'< {LIQUIDITY_FLOOR_EGP:,} EGP floor'
+            f'Dynamic Liquidity Engine: tier=light (⚠️ خفيف) — '
+            f'percentile_rank={percentile_rank} (< 30 = bottom 30%), '
+            f'avg 20d turnover = {avg_turnover_20d:,.0f}'
         )
         # نضيف معلومات data_quality للسهم المستبعد (للتحليل لاحقًا)
         dqi_data_date = stock.get('data_date', '') or ''
@@ -837,9 +1166,67 @@ def _track_signals_to_db(
         ))
         disqualified_inserted += 1
 
+    # ─── RVol SURGE BREAKOUTS — كشف الأسهم ذات استثناء طفرة الحجم الذهبي ──
+    # (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY §1.3)
+    # هذه الأسهم موجودة بالفعل في `under_microscope` ويكشفها الـ loop الرئيسي
+    # عبر علامة `rvol_surge_exception` ويُسجّلها بـ status='rvol_surge_breakout'.
+    # الـ parameter `rvol_surge_breakouts` محفوظ للتوافق الخلفي (defensive) —
+    # أي سهم هنا غير موجود في under_microscope يُسجّل يدويًا بـ status='rvol_surge_breakout'.
+    rvol_inserted_extra = 0
+    under_microscope_tickers = {s.get('ticker') for s in under_microscope if s.get('ticker')}
+    for stock in rvol_surge_breakouts:
+        ticker = stock.get('ticker', '')
+        if not ticker or ticker in under_microscope_tickers:
+            continue  # تمت معالجته في الـ loop الرئيسي
+        path = stock.get('path', '') or 'rvol_surge_breakout'
+        entry_price = stock.get('current_price', 0) or 0
+        reason = (stock.get('reason', '') or '')[:500]
+        rvol_value = stock.get('rvol_value', 0) or 0
+        percentile_rank = stock.get('percentile_rank')
+        rvol_reason = (
+            f'{RVOL_SURGE_LABEL} — tier=light exception: '
+            f'RVol={rvol_value}x (≥{RVOL_SURGE_THRESHOLD}x من متوسط 20 يوم), '
+            f'percentile_rank={percentile_rank}, signal={path}'
+        )
+        if reason:
+            rvol_reason = f'{reason} | {rvol_reason}'[:500]
+
+        rvol_data_date = stock.get('data_date', '') or ''
+        rvol_data_quality = stock.get('data_quality', 'unknown') or 'unknown'
+        rvol_staleness = stock.get('staleness_days')
+        rvol_price_source = stock.get('price_source', 'daily') or 'daily'
+        rvol_live_price = stock.get('live_price')
+        rvol_daily_price = stock.get('daily_price')
+
+        if stock.get('data_stale') and rvol_staleness and rvol_staleness > 3:
+            initial_status = 'stale_data'
+        else:
+            initial_status = RVOL_SURGE_STATUS  # 'rvol_surge_breakout'
+
+        conn.execute("""
+            INSERT INTO radar_signal_tracking
+                (ticker, signal_date, signal_type, entry_price, path, reason, status,
+                 data_date, data_quality, staleness_days, price_source, live_price, daily_price)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            ticker, scan_date, 'rvol_surge_breakout', entry_price, path,
+            rvol_reason[:500], initial_status,
+            rvol_data_date, rvol_data_quality, rvol_staleness, rvol_price_source,
+            rvol_live_price, rvol_daily_price,
+        ))
+        rvol_inserted_extra += 1
+
     conn.commit()
     conn.close()
-    log(f"📝 Signal tracking: {inserted} signals + {disqualified_inserted} disqualified_illiquid saved to radar_signal_tracking (date={scan_date})")
+    # عد الأسهم ذات الاستثناء في under_microscope (للـ log + JSON)
+    rvol_in_under_microscope = sum(
+        1 for s in under_microscope if s.get('rvol_surge_exception')
+    )
+    total_rvol = rvol_in_under_microscope + rvol_inserted_extra
+    log(f"📝 Signal tracking: {inserted} signals + {disqualified_inserted} "
+        f"disqualified_illiquid + {total_rvol} rvol_surge_breakout "
+        f"({rvol_in_under_microscope} in under_microscope + {rvol_inserted_extra} extra) "
+        f"saved to radar_signal_tracking (date={scan_date})")
 
 
 def main():
@@ -1080,6 +1467,42 @@ def main():
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
             """).fetchall()]
+    # ─── DYNAMIC LIQUIDITY ENGINE: حساب الـ Market Percentile Rank ──────
+    # (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY §1.2)
+    # قبل ما نبدأ الـ scan، نحسب الـ percentile rank لكل سهم في السوق.
+    # الـ percentile يُحسب نسبة لـ كامل السوق (universe) — مش subset محدود
+    # بـ --tickers أو --limit. هذا يضمن مقارنة عادلة بين الأسهم.
+    #
+    # القاعدة: لو --tickers محدد، نجيب قائمة السوق الكاملة من db/stocks.db
+    # عشان الـ percentile يكون نسبي للسوق كله. لو --tickers مش محدد، نستخدم
+    # قائمة tickers الحالية (قبل --limit) كـ universe.
+    if args.tickers:
+        market_variants_pr = {
+            'EGX': ['EGX', 'مصر'],
+            'TADAWUL': ['TADAWUL', 'السعودية', 'KSA'],
+            'KSE': ['KSE', 'الكويت'],
+            'QSE': ['QSE', 'قطر'],
+            'US': ['US', 'أمريكا', 'الولايات المتحدة'],
+            'CRYPTO': ['CRYPTO', 'كريبتو'],
+            'GOLD': ['GOLD', 'ذهب'],
+        }
+        market_values_pr = market_variants_pr.get(
+            args.market.upper(), [args.market.upper()]
+        )
+        universe_tickers_for_percentile = _lookup_market_tickers_cross_db(market_values_pr)
+        if not universe_tickers_for_percentile:
+            universe_tickers_for_percentile = list(tickers)
+            log(f"  ⚠️ --tickers محدد بس مفيش stocks.db — الـ percentile هيُحسب نسبة للقائمة المحددة ({len(universe_tickers_for_percentile)} ticker).")
+        else:
+            log(f"  📊 --tickers محدد — الـ percentile هيُحسب نسبة لكامل سوق {args.market} ({len(universe_tickers_for_percentile)} ticker من stocks.db).")
+    else:
+        universe_tickers_for_percentile = list(tickers)  # full market list (قبل --limit)
+
+    # حساب الـ percentile ranks
+    percentile_ranks = compute_market_percentile_rank(
+        conn, args.market, tickers=universe_tickers_for_percentile
+    )
+
     if args.limit > 0:
         tickers = tickers[: args.limit]
     log(f"  فحص {len(tickers)} سهم (market={args.market})...")
@@ -1148,7 +1571,14 @@ def main():
 
     for i, ticker in enumerate(tickers, 1):
         rows = fetch_ticker_series(conn, ticker, days=40)
-        result = scan_ticker(rows, ticker, regime=regime_name)
+        # ─── DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1) ────────────
+        # نمرّر الـ percentile_rank للسهم (محسوب مسبقًا لكامل السوق).
+        # لو السهم مش موجود في الـ dict (ما عندهوش بيانات كافية) → None
+        # → tier='unknown' → يُعامَل كـ qualified (لا استبعاد).
+        result = scan_ticker(
+            rows, ticker, regime=regime_name,
+            percentile_rank=percentile_ranks.get(ticker),
+        )
         if result:
             # Task IMPROVEMENT-26: إضافة data_date + live_price + price_source
             # Task FIX-STALE-DTPP-2026-10-07: use the FRESHEST source as
@@ -1267,15 +1697,20 @@ def main():
 
     under_microscope = pre_surge_list + quiet_list + explosive_list + early_break_list
 
-    # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ─────────
-    # اعزل الأسهم المستبعدة لضعف السيولة في قائمة منفصلة للشفافية.
-    # الأسهم دي مش في under_microscope (winner_path=None من scan_ticker)،
+    # ─── DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY) ──
+    # اعزل الأسهم المستبعدة (tier='light' بدون استثناء RVol) في قائمة منفصلة
+    # للشفافية. الأسهم دي مش في under_microscope (winner_path=None من scan_ticker)،
     # لكنها لسه في results — فنفصلها عشان:
-    #   1. نطبع ملخص الـ Liquidity Gate (Total/Liquid/Disqualified).
+    #   1. نطبع ملخص الـ Liquidity Engine (Total/Tier breakdown).
     #   2. نمرّرها لـ _track_signals_to_db() عشان تُسجّل بـ status=disqualified_illiquid.
     disqualified_illiquid_list = [
         r for r in results
         if r.get('disqualified') and r.get('disqualify_reason') == 'illiquid'
+    ]
+    # الأسهم ذات استثناء طفرة الحجم الذهبي (موجودة في under_microscope بالفعل،
+    # لكن نفصلها للـ JSON output + log + analytics).
+    rvol_surge_breakouts_list = [
+        r for r in results if r.get('rvol_surge_exception')
     ]
 
     log(f"\n═══ النتايج النظيفة (market={args.market}, price≥{args.min_price}) ═══")
@@ -1286,17 +1721,26 @@ def main():
     log(f"    🔥 Explosive Surge: {len(explosive_list)}")
     log(f"    ⚡ Early Break: {len(early_break_list)}")
 
-    # ─── LIQUIDITY GATE SUMMARY (Task BRAVO-LIQUIDITY-GATEKEEPER) ───────
-    # ملخص حارس السيولة الصارم: كم سهمًا مؤهل vs مستبعد.
+    # ─── DYNAMIC LIQUIDITY ENGINE SUMMARY (Task TITAN-HEAVY-PUMP-1) ──────
+    # ملخص محرّك السيولة الديناميكي: توزيع الأسهم على الـ 3 tiers + استثناءات RVol.
     total_scanned_for_gate = len(results)
-    liquid_count = total_scanned_for_gate - len(disqualified_illiquid_list)
-    disqualified_count = len(disqualified_illiquid_list)
-    liquid_pct = (liquid_count / total_scanned_for_gate * 100) if total_scanned_for_gate else 0.0
-    disqualified_pct = (disqualified_count / total_scanned_for_gate * 100) if total_scanned_for_gate else 0.0
-    log(f"\n=== LIQUIDITY GATE SUMMARY ===")
+    institutional_count = sum(1 for r in results if r.get('liquidity_tier') == 'institutional')
+    active_mid_count = sum(1 for r in results if r.get('liquidity_tier') == 'active_mid')
+    light_count = sum(1 for r in results if r.get('liquidity_tier') == 'light')
+    unknown_count = sum(1 for r in results if r.get('liquidity_tier') == 'unknown')
+    rvol_count = len(rvol_surge_breakouts_list)
+    qualified_count = total_scanned_for_gate - light_count  # institutional + active_mid + unknown (rvol مدراجين فيهم لو فاتوا)
+    qualified_pct = (qualified_count / total_scanned_for_gate * 100) if total_scanned_for_gate else 0.0
+    light_pct = (light_count / total_scanned_for_gate * 100) if total_scanned_for_gate else 0.0
+    log(f"\n=== DYNAMIC LIQUIDITY ENGINE SUMMARY (market={args.market}) ===")
+    log(f"  Method: Market Percentile Rank (0-100)")
     log(f"  Total scanned: {total_scanned_for_gate}")
-    log(f"  Liquid (≥ {LIQUIDITY_FLOOR_EGP:,} EGP): {liquid_count} ({liquid_pct:.1f}%)")
-    log(f"  Disqualified (illiquid): {disqualified_count} ({disqualified_pct:.1f}%)")
+    log(f"  💎 Institutional (percentile >= 75): {institutional_count} ({(institutional_count/total_scanned_for_gate*100 if total_scanned_for_gate else 0):.1f}%)")
+    log(f"  🔷 Active Mid (percentile 30-75):    {active_mid_count} ({(active_mid_count/total_scanned_for_gate*100 if total_scanned_for_gate else 0):.1f}%)")
+    log(f"  ⚠️ Light (percentile < 30):           {light_count} ({light_pct:.1f}%) — disqualified_illiquid")
+    log(f"  ❓ Unknown (no market data):          {unknown_count}")
+    log(f"  🚀 RVol Surge Exceptions:             {rvol_count} (light tier + RVol >= {RVOL_SURGE_THRESHOLD}x + accumulation/surge signal)")
+    log(f"  Qualified (institutional+active+unknown): {qualified_count} ({qualified_pct:.1f}%)")
 
     # ─── عرض الأسهم تحت الميكروسكوب ────────────────────────────────────
     if quiet_list:
@@ -1351,6 +1795,18 @@ def main():
     # pattern for the EGX default.
     market_code = (args.market or "EGX").strip().upper()
     json_path = OUTPUT_DIR / f"maker_radar_{market_code}_{today_str}.json"
+
+    # ─── DYNAMIC LIQUIDITY ENGINE: توزيع الـ tiers للسوق الحالي ────────
+    # (Task TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY)
+    # لكل سوق، نُجمّع count لكل tier + عدد استثناءات RVol.
+    liquidity_tiers_breakdown_for_market = {
+        'institutional': institutional_count,
+        'active_mid': active_mid_count,
+        'light': light_count,
+        'unknown': unknown_count,
+        'rvol_surge': rvol_count,
+    }
+
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump({
             'generated_at': datetime.now().isoformat(),
@@ -1367,11 +1823,36 @@ def main():
             'pre_surge_count': len(pre_surge_list),
             'explosive_count': len(explosive_list),
             'early_break_count': len(early_break_list),
-            # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ───
-            'liquidity_floor_egp': LIQUIDITY_FLOOR_EGP,
-            'liquid_count': liquid_count,
+            # ─── DYNAMIC LIQUIDITY ENGINE (Task TITAN-HEAVY-PUMP-1) ─────────
+            'liquidity_engine': {
+                'method': 'market_percentile_rank',
+                'tiers': LIQUIDITY_TIERS,
+                'rvol_surge_exception': {
+                    'threshold': RVOL_SURGE_THRESHOLD,
+                    'label': RVOL_SURGE_LABEL,
+                    'status': RVOL_SURGE_STATUS,
+                },
+                'lookback_days': LIQUIDITY_LOOKBACK_DAYS,
+                'market': args.market,
+                'universe_size_for_percentile': len(universe_tickers_for_percentile),
+                'percentile_rank_count': len(percentile_ranks),
+                'tiers_breakdown': liquidity_tiers_breakdown_for_market,
+                'qualified_count': qualified_count,
+                'disqualified_illiquid_count': len(disqualified_illiquid_list),
+                'rvol_surge_breakouts_count': rvol_count,
+                'legacy_note': (
+                    'تم الاستبدال بمحرك ديناميكي مئوي في Task '
+                    'TITAN-HEAVY-PUMP-1-DYNAMIC-LIQUIDITY. الـ LIQUIDITY_FLOOR_EGP '
+                    'الثابت (2,000,000 EGP) تم إلغاؤه — لم يعد يُستخدم.'
+                ),
+            },
+            # ─── LEGACY (للتوافق مع الـ API القديم — قيم null/0) ────────────
+            'liquidity_floor_egp': None,  # legacy — تم الاستبدال بمحرك ديناميكي مئوي
+            'liquid_count': qualified_count,  # توافق خلفي: qualified = institutional+active+unknown
             'disqualified_illiquid_count': len(disqualified_illiquid_list),
             'disqualified_illiquid_list': disqualified_illiquid_list,
+            # ─── قائمة استثناءات RVol (جديدة) ─────────────────────────────
+            'rvol_surge_breakouts_list': rvol_surge_breakouts_list,
             'quiet_list': quiet_list,
             'pre_surge_list': pre_surge_list,
             'explosive_list': explosive_list,
@@ -1383,14 +1864,17 @@ def main():
 
     # ── Task IMPROVEMENT-22-2026-10-07: تسجيل الإشارات في radar_signal_tracking ──
     # بعد كل تشغيل، سجّل كل سهم تحت الميكروسكوب في DB عشان نقدر نتتبعها
-    # Task BRAVO-LIQUIDITY-GATEKEEPER: نمرّر قائمة المستبعدة لضعف السيولة
-    # عشان تُسجّل بـ status=disqualified_illiquid للشفافية المؤسسية.
+    # Task TITAN-HEAVY-PUMP-1: الأسهم ذات الاستثناء (rvol_surge_exception=True)
+    # موجودة في under_microscope ويكشفها _track_signals_to_db ويسجلها بـ
+    # status='rvol_surge_breakout'. المستبعدة (tier='light' بدون استثناء)
+    # تُسجّل بـ status='disqualified_illiquid'.
     try:
         _track_signals_to_db(
             under_microscope,
             today_iso,
             market_code,
             disqualified_illiquid=disqualified_illiquid_list,
+            rvol_surge_breakouts=rvol_surge_breakouts_list,
         )
     except Exception as _track_err:
         log(f"⚠️ Signal tracking failed: {_track_err}")
