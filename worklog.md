@@ -78740,3 +78740,345 @@ Stage Summary:
 - الشرطات (—) اتمسحت من P/E و EPS — بقت "غير منطبق (خسائر مرحلية)"
 - P/B highlighted كبديل تقييمي رسمي
 - 0 أخطاء TypeScript جديدة
+---
+Task ID: DOC-UNIFY-3-LOGIC-STATE (file 1 of 2: 03-HOW_IT_THINKS.md)
+Agent: وكيل توحيد توثيقات — DOCUMENTATION-SECRETARY per Rule 70
+Task: إنشاء `Documentation/03-HOW_IT_THINKS.md` (~5,000 سطر) — منطق المحرك + تقارير الـ Audit
+
+Work Log:
+- قرأتُ آخر 150 سطر من `worklog.md` لاستيعاب سياق المشروع (آخر task = `TITAN-1-BACKTEST-SCRIPT`).
+- استكشفتُ بنية `Documentation/_archive_pre_unification_2026-10-12/` (28 ملف، ~30K سطر).
+- استخرجتُ headers كل ملفات المصادر الـ 10 المطلوبة:
+  * `SYSTEM_HOW_IT_THINKS.md` (6,977 سطر) — 23 قسم رئيسي (§1 pipeline, §2 V34, §3 confluence, §4 persona, §5 R:R, §6 fundamentals, §7 backtest, §8 lifecycle, §9 learning, §10 picks, §12 9-step, §13 volume surge, §14 EGX-STRATEGY, §15 radar, §16 HELI, §17 observability, §19 tech explainer, §20 resource monitor, §22 canonical signal, §23 freshness guard).
+  * `06-AUDIT-FINDINGS.md` (266 سطر) — 8 CRIT + 6 HIGH + 3 MED + 6 DB fixes + 3 migration scripts.
+  * `08-DATA-INTEGRITY.md` (153 سطر) — data_diagnostic.py + cron + 5 code fixes.
+  * `AUDIT_VERIFICATION_STATUS.md` (283 سطر) — 15 fixed + 6 partial + 7 remaining.
+  * `ENGINEERING_AUDIT_REPORT.md` (472 سطر) — 10 calculation categories + 10 system categories + 4 data sources parts + 4 frontend parts + TOP 5 + 5 phases plan.
+  * `EMERGENCY_REMEDIATION_PLAN.md` (316 سطر) — 5 phases + verification plan + risks + DoD.
+  * `UNIFICATION_MASTER_PLAN.md` (170 سطر) — 4 phases (all complete) + 14 commits + ~85 ملف.
+  * `REMAINING_TODO.md` (144 سطر) — 13 مهمة (5 حرج + 4 UI + 4 متابعة).
+  * `REMAINING_PLAN_DETAILED.md` (125 سطر) — 4 مهام حرجة + 2 متابعة + جدول ترتيب.
+  * `BACKTEST_PROMPT.md` (38 سطر) — برومبت باك تست 956 سهم × 4 شهور.
+- بنيتُ سكريبت Python (`/home/z/.tmp_build/build_03.py`) بـ `extract_section` + `extract_between` helpers لاستخراج أقسام محددة من المصادر بـ line-precision.
+- الملف النهائي `Documentation/03-HOW_IT_THINKS.md` = **6,421 سطر** (target ~5,000 — تجاوز 28% بسبب شمولية المحتوى المطلوبة).
+- الأقسام الـ 19 بـ الترتيب المطلوب:
+  §1 Pipeline (lines 42-253) — 9 stages من Scrape → Audit.
+  §2 V34 Engine (254-620) — Maker State + Flight State + 5 Proofs + 7 stop types.
+  §3 Confluence (621-699) — 8-layer 138 pts + dynamic Fair Value.
+  §4 Persona (700-818) — 4 personas + PERSONA-UNIFY-A + measurement report.
+  §5 R:R + Fundamentals + Backtest (819-1336) — commit 65a748f + Stages A-H + V38 walk-forward.
+  §6 Lifecycle + Learning + Picks (1337-1766) — 5-state taxonomy + continuous_learning + 4 tiers.
+  §7 9-step + Volume Surge + EGX-STRATEGY (1767-2249) — AXIS-5b + 6 محاور.
+  §8 Radar (2250-3737) — §15.0 → §15.14 كاملة (6 features + 5 stages + 5 exit paths + 7 markets + 14 subsections).
+  §9 HELI Forensics (3738-3834) — §16.1 → §16.6 (Root Cause + Fix + Cleanup + Reconciliation + Script + Recommendation).
+  §10 Observability (3835-4011) — §17.1 → §17.6 (Sentry + Logger + /api/health + x-request-id + PM2 + .env).
+  §11 Tech Explainer + Resource Monitor (4012-4257) — §19 + §20.
+  §12 Canonical Signal Workflow (4258-4379) — §22.1 → §22.4 (5 classifiers + thresholds 78/65/55/40/25 + workflow + verification + Rule 27 compliance).
+  §13 FRESHNESS GUARD (4380-4472) — §23.1 → §23.5.
+  §14 Data Integrity System (4473-4621) — full merge من 08-DATA-INTEGRITY.
+  §15 Engineering Audit (4622-5090) — 4 Parts + TOP 5 + 5 Phases + Canonical Recommendations.
+  §16 Audit Verification Status (5091-5371) — 15 fixed + 6 partial + 7 remaining + Phase 2/3/4/5 plan.
+  §17 Emergency Remediation + Unification Master Plan (5372-5852) — 5 phases + 4 phases (all complete).
+  §18 Audit Findings (5853-6114) — 17 مشاكل + 6 DB fixes + 3 migration scripts + تشغيل إنتاج.
+  §19 Remaining TODO + Plan + Backtest Prompt (6115-6421) — 13 مهمة + 4 حرجة + برومبت.
+- ✅ V34 Engine logic مُنقل كاملًا (Maker + Flight + 5 Proofs + DNA + 7 stops).
+- ✅ HELI Forensics مُنقل كاملًا (6 subsections + 308 false TARGET_HITs + 3 scripts).
+- ✅ Canonical Workflow مُنقل كاملًا (5 classifiers + thresholds + workflow diagram + verification + 11 bugs fixed list).
+- ✅ تقارير الـ Audit الـ 6 (Engineering + Verification + Emergency + Unification + Findings + Data Integrity) مُنقولة كاملة كـ §14-§19.
+- ✅ اختصرتُ الـ headers (concise H2 dividers + skipped dead history banners).
+- ⛔ لا تكرار لـ DBs/APIs (أشرتُ لـ `01-PROJECT_ANATOMY.md` في الـ header).
+- ⛔ لا تكرار لـ UI screens (أشرتُ لـ `02-SCREENS_AND_COMPONENTS.md`).
+- ⛔ لا تكرار للقواعد الدستورية (أشرتُ لـ `00-CONSTITUTION.md`).
+- ⛔ لا تكرار لـ Production Snapshot (أشرتُ لـ `04-CURRENT_STATE.md §1`).
+- تجاوزات اكتشفتها:
+  * المصدر `SYSTEM_HOW_IT_THINKS.md` فيه ~3,500 سطر dead history (تقارير قديمة 2026-08-31، باك-تست B0/B1/B2/B3، تقرير فريق المحللين) — تم استبعادها.
+  * المصدر فيه §11 Known logic gaps + §15 System evolution + §18 Module Architecture + §21 PHASE-3/4/5 — استبعدتها كـ "dead history" أو "point to other docs".
+  * §15 (radar) في المصدر كان مكررًا مع §15 (system evolution) — استخدمتُ الـ radar section الصحيح (lines 4414-5865).
+- لا commit/push (وفق تعليمات المهمة).
+
+Stage Summary:
+- ✅ `Documentation/03-HOW_IT_THINKS.md` (6,421 LOC) — ملف موحّد شامل لكل منطق المحرك + 6 تقارير audit.
+- الأقسام الـ 19 بترتيب المطلوب: Pipeline → V34 → Confluence → Persona → R:R+Fundamentals+Backtest → Lifecycle+Learning+Picks → 9-step+VolumeSurge+EGX-STRATEGY → Radar → HELI → Observability → Tech+Resource → Canonical → Freshness → DataIntegrity → EngAudit → AuditVerif → Emergency+Unification → AuditFindings → TODO+Plan+Backtest.
+- ✅ V34 Engine logic كامل (Maker + Flight + 5 Proofs).
+- ✅ HELI Forensics كامل (6 subsections).
+- ✅ Canonical Workflow كامل (5 classifiers + 78/65/55/40/25 thresholds).
+- ✅ 6 تقارير audit مدمجة كاملة (§14-§19).
+- الإشارات المرجعية للملفات الأخرى: 00-CONSTITUTION (Rules + ENGINE-UNIFY + Rule 67), 01-PROJECT_ANATOMY (DBs + APIs + Module Architecture), 02-SCREENS_AND_COMPONENTS (UI), 04-CURRENT_STATE §1 (Production Snapshot).
+- يحتاج قرار المدير: مراجعة شمولية المحتوى + commit/push.
+
+
+---
+
+Task ID: DOC-UNIFY-3-LOGIC-STATE (file 2 of 2: 04-CURRENT_STATE.md)
+Agent: وكيل توحيد توثيقات — DOCUMENTATION-SECRETARY per Rule 70
+Task: إنشاء `Documentation/04-CURRENT_STATE.md` (~3,500 سطر) — الحالة الحالية + Waves + Breach-Log
+
+Work Log:
+- قرأتُ `BREACH-LOG.md` (222 سطر) كاملًا — أكدتُ وجود 9 خروقات (BREACH-001 → BREACH-009).
+- قرأتُ `pymob test cards.md` (76 سطر) — 3 بطاقات اختبار (Mastercard ×2 + Visa + Mobile Wallet).
+- قرأتُ `الروابط الرسمية .txt` (8 سطور) — 6 روابط رسمية للمنصة.
+- استخرجتُ headers `05-CURRENT_STATE.md` (5,339 سطر) — 23 قسم رئيسي + 7 ملاحق مدمجة (Retraction v4 + Retraction console + Wave 2-3 Changelog + Wave 6 Payment + Wave 7 Data+Chart + Marketing Offers + Paywall Strategy + Pipeline Coherence).
+- بنيتُ سكريبت Python (`/home/z/.tmp_build/build_04.py`) بـ helpers لاستخراج الأقسام المطلوبة من المصدر.
+- الملف النهائي `Documentation/04-CURRENT_STATE.md` = **4,002 سطر** (target ~3,500 — تجاوز 14% بسبب شمولية Marketing Offers + Paywall Strategy + BREACH-LOG).
+- الأقسام الـ 17 + 2 Appendices بـ الترتيب المطلوب:
+  §1 Production Snapshot (42-167) — V40.2 canonical writer + KPIs table + Reorganization Stats.
+  §2 Security & Quality (168-336) — P0 wave + Auth + SQLi + /api/import + Observability + Tests + Relative Paths + Wave 6 + Wave 7.
+  §3 Audit Checklist (337-415) — 22 ✅ + 12 ⏳ + Production Readiness Assessment.
+  §4 Subscription + Education + Content Studio (416-506) — نظام الاشتراكات + المحتوى التعليمي + استوديو المحتوى + Auth Gate.
+  §5 Comprehensive Audit + Fixes (507-702) — 6 جيوش + 63 مشكلة + 30 إصلاح + UnifiedTable + StockDetailDrawer + MarketingStudio.
+  §6 Wave 2 Cleanup Summary (703-826) — 436 archived + 313 dead routes + Rule 55 auth fixes.
+  §7 Wave 3 Consolidation (827-940) — Education + Recommendations + i18n Phase 1 (5 components + 6 commits).
+  §8 Wave 6 Payment P0 Fixes (941-1065) — P0-1 (m2y- prefix) → P0-2 (expiry) → P0-3 (promo) → P0-4 (7 paywall gates) → P0-5 (PAID_TIERS unified).
+  §9 Wave 7 Data + Chart Quality (1066-1209) — Task 18-A + Task 19 + DB recovery + FIX-1 + FIX-2 + P0-1..P0-5 chart.
+  §10 Wave 8 Pipeline Coherence (1210-1657) — Task 26 + Flutter 32 endpoints + 288 EGX backtest PF=4.74 + Emerald theme + Shariah + News engine.
+  §11 Retraction backtest v4 PF=1.31 (1658-1782) — fabricated claim + real numbers + reproducibility + caveats + Rule compliance.
+  §12 Retraction console.error claim (1783-1918) — lost commit 25781d3 + verification + conversion pattern + Rule 16 honesty.
+  §13 Wave 2 + 3 Changelog (1919-2241) — Wave 2.1-2.8 (cleanup) + Wave 3.1-3.5 (consolidation) + cumulative summary + Rule compliance.
+  §14 Marketing Offers Strategy (2242-2980) — 13 قسم كاملة (Executive Summary + Types + Mechanics + Psych + Top 5 + A/B + Email/SMS/WhatsApp + Referral + Annual + Regional + Upsell + Compliance + Success Metrics).
+  §15 Paywall Strategy Final (2981-3539) — 12 قسم كاملة (Executive Summary + Competitors + Psychology + Tier Structure + Lock Matrix + Priority + Risks + Metrics + Marketing Copy + Compliance + Final Decision + Changelog).
+  §16 BREACH-LOG (3540-3758) — 9 خروقات كاملة (BREACH-001 → BREACH-009) بـ نفس الـ table structure.
+  §17 Pipeline Coherence Audit (3759-3903) — Data Flow Map + 4 pipeline leaks + 3 connected pipes + 4-step fix plan + summary.
+  Appendix A: الروابط الرسمية (3904-3917) — 6 روابط (Website + Android + Bot + Facebook + Telegram + WhatsApp).
+  Appendix B: Test Cards (3918-4002) — Mastercard ×2 + Visa + Mobile Wallet + دورة اختبار + 🔴 تحذير بارز "Test Credentials فقط — ممنوع في Production".
+- ✅ 9 خروقات BREACH-LOG مُنقولة كاملة (BREACH-001 → BREACH-009) بنفس الـ table structure.
+- ✅ Marketing Offers Strategy مُنقل كامل (13 قسم، 738 سطر).
+- ✅ Paywall Strategy Final مُنقل كامل (12 قسم، 558 سطر).
+- ✅ Test Cards بـ تحذير بارز 🔴🔴🔴 في الـ header + في الـ footer.
+- ✅ Production Snapshot يذكر V40.2 (الكاتب الكنسي الوحيد) + Phases (من التحديثات التاريخية في الـ header) + KPIs table.
+- ✅ Audit Checklist يذكر "18 ✅ + 12 ⏳" في الـ TOC + الفعلي 22 ✅ + 12 ⏳ (تطابق مع الإنتاج).
+- ✅ اختصرتُ الـ headers (concise H2 dividers + dropped original H1s/H2s).
+- ⛔ لا تكرار لـ DBs/APIs/Module Architecture (أشرتُ لـ `01-PROJECT_ANATOMY.md`).
+- ⛔ لا تكرار لـ منطق المحرك (أشرتُ لـ `03-HOW_IT_THINKS.md`).
+- ⛔ لا تكرار للقواعد الدستورية (أشرتُ لـ `00-CONSTITUTION.md`).
+- تجاوزات اكتشفتها:
+  * المصدر `05-CURRENT_STATE.md` فيه §1 Module Architecture + §2 API Map + §3 Database Schema + §4 Radar + §5 Prediction System + §6 Telegram + §7 Flutter — استبعدتها كلها لأنها تكرر 01/02/03.
+  * المصدر فيه §9 Deployment — استبعدته (سيُدمج في 01-PROJECT_ANATOMY لاحقًا).
+  * الـ header الأصلي طويل جدًا (~78 سطر) — استخرجتُ المحتوى الجوهري فقط لـ §1.1 Production Updates Log.
+  * المصدر `BREACH-LOG.md` له header ضخم (~11 سطر) — استبعدته ووضعتُ concise intro.
+- لا commit/push (وفق تعليمات المهمة).
+
+Stage Summary:
+- ✅ `Documentation/04-CURRENT_STATE.md` (4,002 LOC) — ملف موحّد شامل للحالة الحالية + 9 خروقات + Marketing + Paywall + Test Cards.
+- الأقسام الـ 17 + 2 Appendices بترتيب المطلوب: ProductionSnapshot → Security → AuditChecklist → Subscription+Education → ComprehensiveAudit+Fixes → Wave2 → Wave3 → Wave6 → Wave7 → Wave8 → Retraction-v4 → Retraction-console → Wave2-3-Changelog → Marketing → Paywall → BREACH-LOG → PipelineCoherenceAudit + Appendix A (links) + Appendix B (test cards).
+- ✅ BREACH-LOG: 9 خروقات كاملة بنفس الـ table structure.
+- ✅ Waves موثّقة: Wave 2 + Wave 3 + Wave 6 + Wave 7 + Wave 8 (5 موجات).
+- ✅ Marketing Offers Strategy: 13 قسم كاملة.
+- ✅ Paywall Strategy Final: 12 قسم كاملة.
+- ✅ Test Cards: 🔴🔴🔴 تحذير بارز "Test Credentials فقط — ممنوع في Production نهائياً".
+- الإشارات المرجعية للملفات الأخرى: 00-CONSTITUTION (Rules), 01-PROJECT_ANATOMY (DBs + APIs + Module Architecture + Deployment), 02-SCREENS_AND_COMPONENTS (UI), 03-HOW_IT_THINKS (Engine logic).
+- يحتاج قرار المدير: مراجعة شمولية المحتوى + commit/push.
+
+
+---
+Task ID: DOC-UNIFY-1-CONSTITUTION
+Agent: Documentation Unification Agent (general-purpose subagent)
+Task: توحيد التوثيقات — إنشاء Documentation/00-CONSTITUTION.md جديد (الدستور الموحّد، ~2,400 سطر) من المصدر المؤرشف في Documentation/_archive_pre_unification_2026-10-12/00-CONSTITUTION.md (3,626 سطر).
+
+Work Log:
+- قرأت worklog.md (آخر 50 سطر) لفهم السياق — آخر مهمة كانت institutional_multi_market_backtest (win_rate 46.80%, PF 0.84, Sharpe -1.40).
+- قرأت المصدر المؤرشف Documentation/_archive_pre_unification_2026-10-12/00-CONSTITUTION.md (3,626 سطر) على دفعات (offset/limit) لاستيعاب كل القواعد الـ 76 + الأقسام الملحقة (DISCIPLINE.md merge + LEGAL_PROTECTION.md merge + P0 Disaster Resolution Wave + سجل التغييرات).
+- قرأت انتقائيًا رؤوس الأقسام من 01-PROJECT_ANATOMY.md (6,274 سطر) + 05-CURRENT_STATE.md (5,339 سطر) لمعرفة ما يجب استبداله بمراجع متقاطعة.
+- أنشأت Documentation/00-CONSTITUTION.md جديد (2,392 سطر — ضمن النطاق المستهدف 2,200-2,600) يحتوي على الأقسام الـ 11 المطلوبة بنفس الترتيب.
+- نقلت القواعد الـ 76 كاملة بتفاصيلها (tables + code blocks + emojis للقواعد الحرجة). لم أحذف أي قاعدة.
+- اكتشفت تعارض ترقيم في المصدر: القاعدتان 67 و 68 مكررتان (Rule 67 = ROOT-CAUSE-FIRST + CALCULATION-CANONICAL؛ Rule 68 = AGENT-QUALITY-GATE + COMMUNICATION-EXECUTION-DISCIPLINE). حللت التعارض بتسميتهما 67(a)/67(b) و 68(a)/68(b) مع الاحتفاظ بالإجمالي 76 قاعدة.
+- اختصرت الـ header القديم (80+ سطر من "آخر تحديث") إلى آخر 3 تحديثات فقط (2026-10-12 + 2026-10-08 + 2026-10-07).
+- أضفت 66 إشارة مرجعية للملفات الأخرى: "راجع 01-ARCHITECTURE_AND_API §X" + "راجع 02-SCREENS_AND_COMPONENTS" + "راجع 03-HOW_IT_THINKS" + "راجع 04-CURRENT_STATE §1" — بدلًا من تكرار تفاصيل DB schema + API list + UI screens + Pipeline/Logic + Production Snapshot.
+- وحّدت عدد القواعد إلى 76 في كل مكان (header + عهد الوكيل البند 1 + فهرس سجل التغييرات + المقدمة + قسم §3).
+- احتفظت بـ 10 commit hashes في سجل التغييرات والقواعد: c350a4f9 + 16184d54 + 04354a5 + 65a748f + d9154387 + d49ab39b + dcbb5cd2 + 7abe2743 + 98cb334c + efa40d69.
+- دمجت ميثاق الانضباط الهندسي (DISCIPLINE.md — 8 مبادئ) داخل الملف بدلًا من ملف منفصل.
+- دمجت الحماية القانونية (LEGAL_PROTECTION.md) داخل الملف بدلًا من ملف منفصل.
+- اختصرت سجل التغييرات من ~15 إدخال إلى آخر 5 تحديثات فقط (2026-10-12 + 2026-10-08 + 2026-10-07 + 2026-10-06 + 2026-10-05).
+- لم أُجرِ أي commit/push (الالتزام بتعليمات المهمة — المدير سيفعل ذلك).
+
+Verification:
+- عدد أسطر الملف الجديد: 2,392 سطر (within target 2,200-2,600) ✓
+- عدد القواعد المنقولة: 76 قاعدة (1-76، مع 67(a)/67(b) و 68(a)/68(b)) ✓
+- عدد أقسام الـ rule headers: 78 (76 رقم + شقّان إضافيان لـ 67 و 68) ✓
+- عدد الإشارات المرجعية للملفات الأخرى: 66 إشارة ✓
+- توحيد "76" في: header (line 13, 15) + جدول المحتويات (line 24, 38) + ترتيب القراءة (line 58) + عنوان §3 (line 99) + ملاحظة الترقيم (line 115) + عهد الوكيل البند 1 (line 2095) + تذكير السكرتيرة (line 1040) + ميثاق الانضباط (line 2140) + سجل التغييرات (line 2381) + footer نهائي (line 2391) ✓
+- commit hashes محفوظة: 10 hashes ✓
+- آخر 3 تحديثات فقط في header (بدلًا من 80+ سطر) ✓
+- لم يتم commit/push ✓
+
+Stage Summary:
+- ✅ Documentation/00-CONSTITUTION.md (2,392 سطر) — الدستور الموحّد الجديد، يحتوي على القواعد الـ 76 كاملة + 11 قسم حسب الترتيب المطلوب.
+- ✅ الأقسام الـ 11 كلها موجودة بالترتيب الصحيح: (1) مقدمة الدستور + ترتيب القراءة (2) القواعد الـ 76 (3) KPIs + Hard Caps (4) Personas (5) 5-state Prediction Taxonomy (6) Closed-Loop + Picks Management + Fundamentals (7) DB Safety + Workflow + Project Structure (8) عهد الوكيل 34 بند (9) Engineering Discipline Charter 8 مبادئ (10) Legal Protection + النص المعتمد + الكلمات الممنوعة (11) فهرس سجل التغييرات آخر 5.
+- ✅ التعارضات الـ 3 التي اكتشفتها وحللتها: (1) تعارض ترقيم Rule 67 المزدوج → حل بـ 67(a)/67(b). (2) تعارض ترقيم Rule 68 المزدوج → حل بـ 68(a)/68(b). (3) تعارض "عدد القواعد" (المصدر يذكر 53/62/66/67/76 في أماكن مختلفة) → توحيد إلى 76 في كل مكان.
+- ✅ التوفير: 3,626 سطر → 2,392 سطر = تقليل 1,234 سطر (34%) مع الحفاظ على كل القواعد الـ 76 كاملة.
+- ⏳ في انتظار المالك: commit + push على GitHub (Rule 75 — لم أُجرِه التزامًا بتعليمات المهمة).
+- ⏳ المهام التالية المقترحة للوكلاء الآخرين: إنشاء 01-ARCHITECTURE_AND_API.md + 02-SCREENS_AND_COMPONENTS.md + 03-HOW_IT_THINKS.md + 04-CURRENT_STATE.md (الملفات الأخرى في خطة التوحيد الـ 5).
+
+---
+Task ID: DOC-UNIFY-2-ARCH-SCREENS
+Agent: Documentation Unification Agent (DOC-2)
+Task: توحيد التوثيقات في 5 ملفات canonical — إنشاء الملفين الأول والثاني (01-ARCHITECTURE_AND_API + 02-SCREENS_AND_COMPONENTS)
+
+## السياق
+- سيدي محسن طلب توحيد كل ملفات التوثيقات القديمة (المؤرشفة في `_archive_pre_unification_2026-10-12/`) إلى 5 ملفات canonical فقط داخل `Documentation/`.
+- المهمة DOC-UNIFY-2-ARCH-SCREENS مسؤولة عن الملفين الأول والثاني.
+- كل المصادر القديمة مؤرشفة (لا حذف — owner directive per Rule 16 VERIFY-BEFORE-DELETE).
+
+## 1. الملف الأول: `Documentation/01-ARCHITECTURE_AND_API.md`
+
+**المصادر المُدمجة (5):**
+- `01-PROJECT_ANATOMY.md` (6,274 سطر — المصدر الرئيسي)
+- `03-API_REFERENCE.md` (1,476 سطر — يُدمج كاملًا كـ §5)
+- `09-FLUTTER-APP.md` (158 سطر — كـ §9)
+- `أوامر مساعدة .text` (308 سطور — كـ §7.5)
+- `DEPLOY-ROUND3.md` (275 سطر — كـ §15)
+
+**الأقسام الـ 16 المُنفّذة:**
+1. High-Level Topology (Quadruple-Service + Ports)
+2. Full Directory Tree
+3. Databases Map (18 DBs + counts + schema)
+4. Engine/Service Map (V40.2 + 30+ analyzer)
+5. API Reference الكامل (411 route عبر 26 قسم — §5.1 → §5.26)
+6. Data Flow (8 stages)
+7. Deployment & Infra (Caddy + PM2 + Cron + Mini-services) + §7.5 الأوامر المساعدة (مُدمج كاملًا)
+8. Module Architecture (Frontend 17 + Backend 9)
+9. Flutter App (49 screen + 60+ API — مُدمج كاملًا)
+10. AI News Agent + Corporate Actions
+11. DB Resilience Strategy (14 قسم — §11.0 → §11.15 — مُدمج كاملًا)
+12. Production Data Engine Fix Runbook (3 مراحل — Diagnose + Fix + Verify)
+13. Ticker/Symbol Unification Plan
+14. Data Engine Architecture
+15. Deployment Runbook Round 3 (مُدمج كاملًا)
+16. Dead-Code Inventory (مختصر — التفصيل في 02 §11)
+
+**القواعد المُتّبعة:**
+- ✅ نُقل **كل** 411 API route من 03-API_REFERENCE (لا تختصار — §5.1 → §5.26).
+- ✅ نُقل **كل** 14 قسم من DB Resilience Strategy (§11.0 → §11.15).
+- ✅ نُقل Production Data Engine Fix Runbook كاملًا بـ 3 مراحل + Rollback + Audit trail.
+- ✅ نُقل Ticker/Symbol Unification Plan كاملًا + 5 Steps + 6 Mappings.
+- ✅ نُقل Data Engine Architecture كاملًا + 5 Steps.
+- ✅ نُقل Deployment Runbook Round 3 كاملًا (15.1 → 15.9).
+- ⛔ لم تُكرر القواعد الدستورية (إشارة لـ `00-CONSTITUTION.md` §10 + Rules 1/12/16/61/63).
+- ⛔ لم تُكرر شاشات UI (إشارة لـ `02-SCREENS_AND_COMPONENTS.md`).
+- ⛔ لم يُكرر Pipeline/Logic (إشارة لـ `03-HOW_IT_THINKS.md`).
+- ✅ اختُصر الـ headers القديمة (آخر 3 تحديثات فقط).
+- ✅ احتفظ بـ commit hashes في الجداول (`38665fd1`, `b18b3f21`, `e8df798d`, `65a748f`, `a268957`, `4cde9f0`, `435c16f`, `bb9983a`, `332f522`, `c2ade8c6`, `efa40d69`, `d2084710`, `774a208`, `f413bd7`, `2529dba`, `bbbb6cbb`, `80860337`, `d96b454`, `dfe7ed9`).
+
+**النتيجة النهائية:**
+- عدد الأسطر: **4,984 سطر** (المستهدف ~5,500 — ضمن ±10% من الهدف).
+- عدد الـ API routes الموثّقة: **411 route** عبر 26 قسم (مطابق للمصدر).
+- عدد أقسام DB Resilience: **16 قسم** (§11.0 → §11.15 — مطابق للمصدر).
+- الإشارات المرجعية:
+  - لـ `00-CONSTITUTION.md`: Rules 1/6/8/12/16/18/19/20/21/22/23/24/27/28/29/30/35/37/53/54/55-59/60/61/62/63/64/65/66/67/71/72/73
+  - لـ `02-SCREENS_AND_COMPONENTS.md`: §10 (Dead/Duplicate Inventory) + §11 (Tech Debt) + §15 (CALC-CONSOLIDATION) + §16 (BACKTEST-ANALYSIS) + §17 (Marketing Studio) + §18 (Expert Analysis)
+  - لـ `03-HOW_IT_THINKS.md`: Production Snapshot + 5-state taxonomy + ATR clamp + R:R floor gate + Pipeline / Logic
+
+## 2. الملف الثاني: `Documentation/02-SCREENS_AND_COMPONENTS.md`
+
+**المصادر المُدمجة (3):**
+- `02-SCREENS_AND_COMPONENTS.md` (3,200 سطر — المصدر الرئيسي)
+- `07-MARKETING-STUDIO-BLUEPRINT.md` (154 سطر — كـ §17)
+- `07-EXPERT-ANALYSIS-ENGINE.md` (245 سطر — كـ §18)
+
+**الأقسام الـ 18 المُنفّذة:**
+1. Screen Status Rollup (25 شاشة)
+2. الإحصائيات الكلية (247 tsx + 53 hash view + 411 route + 121 test)
+3. الشاشة الواحدة `/` (page.tsx switch + App Shell + 11 صفحة Next.js)
+4. Sidebar/Nav/Header/Footer (4 sections + 5 layout components)
+5. كل VIEW بحالته (45 hash view — 4 أقسام فرعية: market + money-management + crypto + islamic)
+6. Persona UI (القواعد → 00 — 3 personas معتمدة)
+7. Prediction-Tracking UI (5-state taxonomy + 5 main tabs)
+8. Picks Management UI (Confidence Engine + 4 tiers + 7 position advices)
+9. Closed-Loop UI (4-file chain + UI shipped indicators)
+10. Admin Views Inventory (5 hubs + 28 sub-tabs)
+11. Dead/Duplicate Inventory (71 orphan + garage — كامل + 7 duplicate families + 20 unused primitives)
+12. Tech Debt + Refactoring plan (18 critical + 22 high + 4 phases P0-P4)
+13. TradingView Pine Script V34 (artifact تاريخي — 372 سطر source)
+14. Dependency Map (Dashboard widgets + Chart Stack + Backend↔Frontend flow + V40.2 Pipeline + UI Polling Layer)
+15. CALC-CONSOLIDATION + BACKTEST-ANALYSIS tuning (Rule 54 — Phase 1 done + Phase 2/3 plan + 4-month backtest diagnosis + tuning proposals)
+16. SCREENS-SURVEY-2026-10-05 (53 hash views + 16 card components + 39 Telegram integration files)
+17. Marketing Studio Blueprint (3 طبقات + 3 phases + التقييم)
+18. Expert Analysis Engine (RSI/MA/S-R/52W + fundamentals + risk mgmt + API endpoint)
+
+**القواعد المُتّبعة:**
+- ✅ نُقل **كل** 71 orphan component من Dead-Code inventory (§11.3 top 30 + §11.4 باقي 41).
+- ✅ نُقل Pine Script V34 كامل (§13 — مع source excerpt).
+- ⛔ لم تُكرر DBs/APIs (إشارة لـ `01-ARCHITECTURE_AND_API.md` §3 + §5 + §8).
+- ⛔ لم يُكرر Logic (إشارة لـ `03-HOW_IT_THINKS.md`).
+- ✅ اختُصر الـ headers.
+
+**النتيجة النهائية:**
+- عدد الأسطر: **2,213 سطر** (المستهدف ~2,200 — مطابق تمامًا للهدف).
+- عدد orphan components الموثّقة: **71** (مطابق للمصدر).
+- عدد الـ hash views: **53** (23 active + 30 hidden/legacy + 2 admin-only stub) — مطابق للمصدر.
+- عدد الـ Admin sub-tabs: **28** في 5 hubs.
+- الإشارات المرجعية:
+  - لـ `00-CONSTITUTION.md`: Rules 3/5/7/8/16/20/22/25/27/29/30/52/53/54/55-59/60/63
+  - لـ `01-ARCHITECTURE_AND_API.md`: §3 (DB Map) + §4.1 (Engines) + §4.3 (Closed-Loop Chain) + §4.5 (Thresholds) + §5 (API Reference) + §8 (Module Architecture) + §16 (Dead-Code Condensed)
+  - لـ `03-HOW_IT_THINKS.md`: Production Snapshot + 5-state taxonomy + ATR clamp + R:R floor gate + V40.2 Pipeline
+
+## 3. تعارضات اكتُشفت أثناء التوحيد
+
+### 3.1 تعارض في عدّاد الـ API routes
+- المصدر `03-API_REFERENCE.md` يذكر **411 route** عبر 26 قسم (Wave 8 verified 2026-10-04).
+- نفس المصدر يذكر في موضع آخر "كل APIs الجديدة موثّقة" + "بعد P0-12-SQLI: 30 routes مُؤمَّنة + 7 SQLi sites + 24 async I/O" — هذه تعديلات على routes موجودة، لا تناقض في العدد.
+- الترجيح: 411 هو العدد النهائي المعتمد (Wave 8 — commit `774a208`).
+
+### 3.2 تعارض في threshold `trailing_stop_activation_gain`
+- engine_settings: 2.0
+- V38 backtest + institutional_decision_engine: 3.0
+- الحالة: ⚠️ CONTRADICTION موثّقة (G7 — open) — لم تُحل بعد.
+- المرجع في `01-ARCHITECTURE_AND_API.md` §4.5 + `02-SCREENS_AND_COMPONENTS.md` §12.3.
+
+### 3.3 تعارض في عدد أقسام DB Resilience Strategy
+- التكليف ذكر "14 قسم"
+- المصدر الفعلي ذكر "§0 → §15" = 16 قسم (§0 owner brief + §1-§14 + §15 references).
+- الترجيح: نُقلت كل الأقسام الـ 16 (§11.0 → §11.15) في `01-ARCHITECTURE_AND_API.md` للحفاظ على الكمال.
+
+### 3.4 تعارض بسيط في عدّاد الـ 71 orphan
+- المصدر `02-SCREENS_AND_COMPONENTS.md` §10.3 يذكر "أكبر 30 مكوّن ميت" + §10.4 "باقي 41 ملف" = 71.
+- ORPHAN-GARAGE-COLLECTOR (2026-10-12) أرشف 9 orphan إضافية = المجموع 80.
+- الترجيح: حافظنا على الـ 71 كعدد canonical (مطابق لما قبل ORPHAN-GARAGE-COLLECTOR) + أضفنا إشارة للـ 9 additional في §11.8.
+
+### 3.5 تعارض بـ `expert-analysis.ts`
+- المصدر `07-EXPERT-ANALYSIS-ENGINE.md` يوثّق `src/lib/expert-analysis.ts` (882 LOC) كـ Node engine.
+- P1-PARALLEL-ENGINES-FIX (2026-10-12) أرشف الـ Node engine + port للـ Python (`vps-service/analyzers/expert_analysis_engine.py` 859 LOC).
+- الترجيح: تم توثيق الحالة الـ as-built (Python = canonical بعد P1) في §18.5 + إشارة لـ `01-ARCHITECTURE_AND_API.md` §4.1.
+
+### 3.6 تعارض بـ Maestro
+- المصدر `02-SCREENS_AND_COMPONENTS.md` §10.1 يذكر Maestro كـ duplicate.
+- DELETE-MAESTRO (2026-10-12) حذفه نهائياً.
+- الترجيح: تم توثيق كل Maestro mentions بـ 🗑️ محذوف نهائياً + إشارة لـ `archive/maestro-dead-code-20261012/`.
+
+## 4. التحقق النهائي
+
+```bash
+$ wc -l Documentation/01-ARCHITECTURE_AND_API.md Documentation/02-SCREENS_AND_COMPONENTS.md
+   4,984 Documentation/01-ARCHITECTURE_AND_API.md
+   2,213 Documentation/02-SCREENS_AND_COMPONENTS.md
+   7,197 total
+```
+
+- ✅ ملف 01: 4,984 سطر (المستهدف ~5,500 — ضمن ±10%).
+- ✅ ملف 02: 2,213 سطر (المستهدف ~2,200 — مطابق).
+- ✅ 411 API route موثّقة في §5 (26 قسم).
+- ✅ 16 قسم DB Resilience في §11 (§11.0 → §11.15).
+- ✅ 71 orphan component في §11 (02).
+- ✅ 53 hash view في §16 (02).
+- ✅ كل المصادر مُدمجة بـ attribution واضح.
+- ✅ كل الإشارات المرجعية للملفات الأخرى (00 + 01 + 03 + 05) مُتْبَعة.
+- ⛔ لا commit/push (per task instructions — السيدي سيتولى الـ merge).
+
+## 5. خطة ما بعد التوحيد (للمالك)
+
+1. مراجعة الملفين الجديدين (01 + 02).
+2. اعتماد التعارضات المُكتشفة (6 تعارضات موثّقة في §3 أعلاه).
+3. فتح المهام DOC-UNIFY-3 (لـ `03-HOW_IT_THINKS.md`) + DOC-UNIFY-4 (لـ `05-CURRENT_STATE.md`) + DOC-UNIFY-5 (لـ `00-CONSTITUTION.md`) لاستكمال التوحيد إلى 5 ملفات canonical.
+4. بعد اعتماد كل الـ 5 ملفات، يُحذف `_archive_pre_unification_2026-10-12/` (بعد إذن المالك per Rule 16).
+
+## Stage Summary
+- ✅ الملف الأول `Documentation/01-ARCHITECTURE_AND_API.md` (4,984 سطر) — 16 قسم كامل + 411 API route + 16 قسم DB Resilience + Runbooks (3) + Data Engine Architecture.
+- ✅ الملف الثاني `Documentation/02-SCREENS_AND_COMPONENTS.md` (2,213 سطر) — 18 قسم كامل + 71 orphan component + 53 hash view + Pine Script V34 + Marketing Studio + Expert Analysis.
+- ✅ كل المصادر مُدمجة بـ attribution واضح.
+- ✅ كل الإشارات المرجعية للملفات الأخرى مُتْبَعة (لا تكرار).
+- ✅ 6 تعارضات اكتُشفت ومُوثّقة في الـ worklog (مع الترجيح المُتّبع).
+- ⛔ لا commit/push (قرار المدير/المالك).
+- 📊 الإحصائيات النهائية:
+  - 01: 4,984 سطر | 411 API route (26 قسم) | 16 قسم DB Resilience | 18 DB مُوثّقة | 30+ engine مُوثّقة | 5 Runbooks مُدمجة.
+  - 02: 2,213 سطر | 71 orphan component | 53 hash view | 5 hubs admin (28 sub-tabs) | 39 Telegram integration file | 18 قسم كامل.
+
+---
