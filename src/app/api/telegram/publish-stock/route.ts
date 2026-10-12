@@ -32,6 +32,21 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   let predDb: Database.Database | null = null;
   try {
+    // Task P0-BRAVO-PROD-GOVERNANCE — TELEGRAM_ENABLED guard:
+    // الساندبوكس المحلي يجب أن يبقي التليجرام معطّل لمنع ازدواج الرسائل مع الإنتاج.
+    // .env.local يحوي TELEGRAM_ENABLED=false. الإنتاج يضبطها =true.
+    const telegramEnabled = process.env.TELEGRAM_ENABLED;
+    if (telegramEnabled === 'false' || telegramEnabled === '0' || telegramEnabled === undefined) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'telegram_disabled_locally',
+          message: 'التليجرام معطّل في هذه البيئة (TELEGRAM_ENABLED=false). النشر متاح على الإنتاج فقط.',
+        },
+        { status: 503 }
+      );
+    }
+
     // Task SECURITY-P0: admin-only — النشر على قناة تليجرام الإنتاجية يحتاج صلاحية أدمن.
     // كان: getSessionUserId فقط (أي مستخدم مسجل يقدر ينشر). الآن: requireAdminAsync.
     const adminError = await requireAdminAsync(req);

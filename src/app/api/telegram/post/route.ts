@@ -31,6 +31,15 @@ async function pythonBackendFetch(endpoint: string, options: RequestInit = {}) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Task P0-BRAVO-PROD-GOVERNANCE — TELEGRAM_ENABLED guard (local sandbox disabled)
+    const telegramEnabled = process.env.TELEGRAM_ENABLED;
+    if (telegramEnabled === 'false' || telegramEnabled === '0' || telegramEnabled === undefined) {
+      return NextResponse.json(
+        { success: false, error: 'telegram_disabled_locally', message: 'التليجرام معطّل محليًا (TELEGRAM_ENABLED=false).' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const action = body.action || 'message';
 

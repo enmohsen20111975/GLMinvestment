@@ -9,6 +9,15 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
+    // Task P0-BRAVO-PROD-GOVERNANCE — TELEGRAM_ENABLED guard (local sandbox disabled)
+    const telegramEnabled = process.env.TELEGRAM_ENABLED;
+    if (telegramEnabled === 'false' || telegramEnabled === '0' || telegramEnabled === undefined) {
+      return NextResponse.json(
+        { success: false, error: 'telegram_disabled_locally', message: 'التليجرام معطّل محليًا (TELEGRAM_ENABLED=false).' },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const market = searchParams.get('market') || 'EGX';
     const targetUrl = `${PY}/api/telegram/send-daily-report?market=${market}`;

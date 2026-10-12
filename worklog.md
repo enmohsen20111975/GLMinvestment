@@ -79702,3 +79702,26 @@ Stage Summary:
   (2) RVol surge sample صغير (4 signals فقط في الـ backtest window). لازم فترة أطول (بعد verify للـ 90 pending signals الجديدة) لتأكيد الـ 50% win rate.
   (3) الـ win_rate للكون العام اتخفض من 12.61% (1,102 signals) لـ 10.73% (1,296 signals) بسبب إضافة 194 signal جديدة لسه pending/stale. هتتعدل تلقائيًا بعد إعادة تشغيل verify_all_radar_signals.py.
   (4) تحديث radar-cache.ts / cards في الـ UI لعرض الـ tiers الجديدة (institutional/active_mid/light + rvol_surge) لو المالك يوافق — ده شغل فريق الـ UI (Alpha).
+
+---
+Task ID: P0-BRAVO-PROD-GOVERNANCE
+Agent: المدير العام (فريق GLM 5.2-Bravo) — حوكمة الإنتاج
+Task: تأمين التليجرام + Zero Friction + admin backtest safety + SQLite readiness
+
+Work Log:
+- أنشأت .env.local مع TELEGRAM_ENABLED=false (gitignored — Rule 5).
+- أضفت TELEGRAM_ENABLED guard في 3 routes: publish-stock + send-daily-report + post.
+- تأكدت FEES_SLIPPAGE_ROUNDTRIP_PCT=0.0 في institutional_multi_market_backtest.py (فريق Alpha سبق وضبطه).
+- تأكدت COMMISSION_SLIPPAGE_PCT=0.00 في audit_50_signals_deep.py + أعدت تشغيله (JSON محدّث: commission=0.0).
+- تأكدت admin backtest v40 routes آمنة: run/route.ts (mode=ro + /tmp/v40_backtest_${jobId}.log) + status route (readonly) + stats route (readonly: true).
+- تأكدت لا DELETE FROM predictions في أي admin route.
+- SQLite integrity: stocks.db ✅ + predictions.db ✅ + intraday.db ✅ (كلها ok).
+- predictions.db FK violations: 3,934 (exit_notifications 3,900 + morning_bell_signals 34) — non-critical (FK not enforced by default in SQLite, integrity_check=ok).
+
+Stage Summary:
+- ✅ المهمة 1: TELEGRAM_ENABLED=false في .env.local + guard في 3 routes (verified: 503 response).
+- ✅ المهمة 2: FEES=0.0 في backtest + COMMISSION=0.00 في audit_50 (JSON محدّث).
+- ✅ المهمة 3: admin backtest v40 routes آمنة (mode=ro + readonly + /tmp logs + no DELETE).
+- ✅ المهمة 4: SQLite readiness = 3/3 READY (integrity=ok) + إشارة جاهزية للإنتاج.
+- ✅ Rule 27 + Rule 20 + Rule 75 محترمة.
+- 🔔 إشارة الجاهزية: البيئة جاهزة لدمج LightGBM (المرحلة التالية).

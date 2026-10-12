@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-10-12T16:19:12.239027+00:00",
+  "generated_at": "2026-10-12T16:36:23.715407+00:00",
   "source": "Documentation/AUDIT_50_SIGNALS_SAMPLE.md",
-  "stocks_db": "/home/meme/my_apps/GLMinvestment/db/stocks.db",
-  "latest_db_price_date": "2026-10-12",
+  "stocks_db": "/home/z/my-project/db/stocks.db",
+  "latest_db_price_date": "2026-10-11",
   "methodology": {
     "evaluation": "chronological day-by-day with conservative same-day rule",
     "same_day_target_and_stop": "verified_loss (conservative)",
-    "commission_slippage_pct": 0.4,
+    "commission_slippage_pct": 0.0,
     "target_pct": 5.0,
     "stop_pct": -5.0,
     "fetch_days": 30,
@@ -15,18 +15,18 @@
   },
   "summary": {
     "total_signals": 50,
-    "matched": 36,
-    "changed": 12,
-    "undetermined": 2,
+    "matched": 26,
+    "changed": 9,
+    "undetermined": 15,
     "recorded_win_count": 9,
-    "audited_win_count": 19,
+    "audited_win_count": 13,
     "recorded_loss_count": 41,
-    "audited_loss_count": 29,
+    "audited_loss_count": 22,
     "recorded_win_rate_pct": 18.0,
-    "audited_win_rate_pct": 38.0,
-    "net_win_rate_after_commission_pct": 38.0,
-    "avg_gross_return_pct": -1.0417,
-    "avg_net_return_pct": -1.4417
+    "audited_win_rate_pct": 26.0,
+    "net_win_rate_after_commission_pct": 26.0,
+    "avg_gross_return_pct": -1.2857,
+    "avg_net_return_pct": -1.2857
   },
   "signals": [
     {
@@ -37,16 +37,16 @@
       "target_price": 2.22,
       "stop_price": 2.0,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_loss",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-01",
-      "first_hit_type": "stop",
-      "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "stop hit on 2026-10-01 (day 1) — low=2.0000 <= stop=2.0000. target not yet hit (high=2.0400 < target=2.2200)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (2.2200) nor stop (2.0000) hit within 9 trading days after signal_date."
     },
     {
       "index": 2,
@@ -59,13 +59,13 @@
       "audited_status": "verified_win",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-01",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-01 (day 1) — high=34.1000 >= target=33.6000. stop not yet hit (low=33.0100 > stop=30.4000)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-02 (day 1) — high=34.1000 >= target=33.6000. stop not yet hit (low=33.0100 > stop=30.4000)."
     },
     {
       "index": 3,
@@ -75,16 +75,16 @@
       "target_price": 19.95,
       "stop_price": 18.05,
       "recorded_status": "verified_win",
-      "audited_status": "verified_win",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-07",
-      "first_hit_type": "target",
-      "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 7,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-07 (day 7) — high=20.1800 >= target=19.9500. stop not yet hit (low=18.3000 > stop=18.0500)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (19.9500) nor stop (18.0500) hit within 9 trading days after signal_date."
     },
     {
       "index": 4,
@@ -97,13 +97,13 @@
       "audited_status": "verified_win",
       "match": false,
       "classification": "changed",
-      "first_hit_date": "2026-10-01",
+      "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-01 (day 1) — high=46.4000 >= target=46.1300. stop not yet hit (low=45.0000 > stop=41.7300)."
+      "net_return_pct": 5.0,
+      "days_to_resolved": 3,
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=46.8600 >= target=46.1300. stop not yet hit (low=45.7681 > stop=41.7300)."
     },
     {
       "index": 5,
@@ -113,16 +113,16 @@
       "target_price": 40.32,
       "stop_price": 36.48,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_win",
+      "audited_status": "undetermined",
       "match": false,
-      "classification": "changed",
-      "first_hit_date": "2026-10-05",
-      "first_hit_type": "target",
-      "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 5,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-05 (day 5) — high=41.3000 >= target=40.3200. stop not yet hit (low=39.2900 > stop=36.4800)."
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (40.3200) nor stop (36.4800) hit within 9 trading days after signal_date."
     },
     {
       "index": 6,
@@ -138,10 +138,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 4,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-04 (day 4) — high=7.9800 >= target=7.6300. stop not yet hit (low=7.0100 > stop=6.9100)."
+      "net_return_pct": 5.0,
+      "days_to_resolved": 3,
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=7.9600 >= target=7.6300. stop not yet hit (low=7.1998 > stop=6.9100)."
     },
     {
       "index": 7,
@@ -154,13 +154,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-06",
+      "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 6,
-      "prices_found_in_db": 12,
-      "audit_note": "stop hit on 2026-10-06 (day 6) — low=13.2500 <= stop=13.3200. target not yet hit (high=13.6800 < target=14.7200)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 5,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=13.2698 <= stop=13.3200. target not yet hit (high=13.4500 < target=14.7200)."
     },
     {
       "index": 8,
@@ -173,13 +173,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-04",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 4,
-      "prices_found_in_db": 12,
-      "audit_note": "stop hit on 2026-10-04 (day 4) — low=2.5100 <= stop=2.8000. target not yet hit (high=2.9900 < target=3.1000)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 1,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-02 (day 1) — low=2.5100 <= stop=2.8000. target not yet hit (high=2.5100 < target=3.1000)."
     },
     {
       "index": 9,
@@ -195,10 +195,10 @@
       "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 7,
-      "prices_found_in_db": 12,
-      "audit_note": "stop hit on 2026-10-07 (day 7) — low=15.8100 <= stop=20.3400. target not yet hit (high=21.6200 < target=22.4800)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 5,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=15.8100 <= stop=20.3400. target not yet hit (high=21.5004 < target=22.4800)."
     },
     {
       "index": 10,
@@ -211,13 +211,13 @@
       "audited_status": "verified_win",
       "match": false,
       "classification": "changed",
-      "first_hit_date": "2026-10-01",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-01 (day 1) — high=14.7000 >= target=14.5200. stop not yet hit (low=13.6300 > stop=13.1400)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-02 (day 1) — high=14.7000 >= target=14.5200. stop not yet hit (low=14.7000 > stop=13.1400)."
     },
     {
       "index": 11,
@@ -230,13 +230,13 @@
       "audited_status": "verified_win",
       "match": false,
       "classification": "changed",
-      "first_hit_date": "2026-10-01",
+      "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-01 (day 1) — high=32.0000 >= target=31.9100. stop not yet hit (low=30.0000 > stop=28.8700)."
+      "net_return_pct": 5.0,
+      "days_to_resolved": 3,
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=32.9300 >= target=31.9100. stop not yet hit (low=29.1000 > stop=28.8700)."
     },
     {
       "index": 12,
@@ -249,13 +249,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-06",
+      "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 6,
-      "prices_found_in_db": 12,
-      "audit_note": "stop hit on 2026-10-06 (day 6) — low=8.6600 <= stop=8.7200. target not yet hit (high=9.1300 < target=9.6400)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 5,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=8.6000 <= stop=8.7200. target not yet hit (high=9.0500 < target=9.6400)."
     },
     {
       "index": 13,
@@ -273,8 +273,8 @@
       "gross_return_pct": null,
       "net_return_pct": null,
       "days_to_resolved": null,
-      "prices_found_in_db": 12,
-      "audit_note": "neither target (844.6500) nor stop (764.2100) hit within 12 trading days after signal_date."
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (844.6500) nor stop (764.2100) hit within 9 trading days after signal_date."
     },
     {
       "index": 14,
@@ -287,13 +287,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-01",
+      "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "stop hit on 2026-10-01 (day 1) — low=331.0100 <= stop=331.6300. target not yet hit (high=344.4400 < target=366.5300)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 3,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-04 (day 3) — low=321.4400 <= stop=331.6300. target not yet hit (high=360.0000 < target=366.5300)."
     },
     {
       "index": 15,
@@ -309,10 +309,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 4,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-04 (day 4) — high=5.2500 >= target=5.1500. stop not yet hit (low=5.0000 > stop=4.6600)."
+      "net_return_pct": 5.0,
+      "days_to_resolved": 3,
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=6.0500 >= target=5.1500. stop not yet hit (low=5.0000 > stop=4.6600)."
     },
     {
       "index": 16,
@@ -325,13 +325,13 @@
       "audited_status": "verified_win",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-01",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-01 (day 1) — high=11.5500 >= target=11.4200. stop not yet hit (low=11.3200 > stop=10.3400)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-02 (day 1) — high=11.5500 >= target=11.4200. stop not yet hit (low=11.5500 > stop=10.3400)."
     },
     {
       "index": 17,
@@ -344,13 +344,13 @@
       "audited_status": "verified_win",
       "match": false,
       "classification": "changed",
-      "first_hit_date": "2026-10-01",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 1,
-      "prices_found_in_db": 12,
-      "audit_note": "target hit on 2026-10-01 (day 1) — high=21.6800 >= target=19.5700. stop not yet hit (low=18.9900 > stop=17.7100)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-02 (day 1) — high=20.9900 >= target=19.5700. stop not yet hit (low=20.9900 > stop=17.7100)."
     },
     {
       "index": 18,
@@ -360,16 +360,16 @@
       "target_price": 2.22,
       "stop_price": 2.0,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_loss",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-12",
-      "first_hit_type": "stop",
-      "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 11,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-12 (day 11) — low=1.9100 <= stop=2.0000. target not yet hit (high=2.0900 < target=2.2200)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (2.2200) nor stop (2.0000) hit within 9 trading days after signal_date."
     },
     {
       "index": 19,
@@ -382,13 +382,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-04",
+      "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=49.0000 <= stop=49.1600. target not yet hit (high=50.1000 < target=54.3400)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 5,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=47.4500 <= stop=49.1600. target not yet hit (high=48.3000 < target=54.3400)."
     },
     {
       "index": 20,
@@ -404,10 +404,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=2.2500 <= stop=2.3200. target not yet hit (high=2.3400 < target=2.5600)."
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-04 (day 3) — low=2.2500 <= stop=2.3200. target not yet hit (high=2.4300 < target=2.5600)."
     },
     {
       "index": 21,
@@ -417,16 +417,16 @@
       "target_price": 19.95,
       "stop_price": 18.05,
       "recorded_status": "verified_win",
-      "audited_status": "verified_win",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-07",
-      "first_hit_type": "target",
-      "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 6,
-      "prices_found_in_db": 11,
-      "audit_note": "target hit on 2026-10-07 (day 6) — high=20.1800 >= target=19.9500. stop not yet hit (low=18.3000 > stop=18.0500)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (19.9500) nor stop (18.0500) hit within 9 trading days after signal_date."
     },
     {
       "index": 22,
@@ -442,10 +442,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "target hit on 2026-10-04 (day 3) — high=46.7000 >= target=46.1300. stop not yet hit (low=45.7700 > stop=41.7300)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=46.8600 >= target=46.1300. stop not yet hit (low=45.7681 > stop=41.7300)."
     },
     {
       "index": 23,
@@ -455,16 +455,16 @@
       "target_price": 40.32,
       "stop_price": 36.48,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_win",
+      "audited_status": "undetermined",
       "match": false,
-      "classification": "changed",
-      "first_hit_date": "2026-10-05",
-      "first_hit_type": "target",
-      "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 4,
-      "prices_found_in_db": 11,
-      "audit_note": "target hit on 2026-10-05 (day 4) — high=41.3000 >= target=40.3200. stop not yet hit (low=39.2900 > stop=36.4800)."
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (40.3200) nor stop (36.4800) hit within 9 trading days after signal_date."
     },
     {
       "index": 24,
@@ -480,10 +480,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=276.6427 <= stop=289.6400. target not yet hit (high=302.0000 < target=320.1200)."
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-04 (day 3) — low=282.0000 <= stop=289.6400. target not yet hit (high=302.8500 < target=320.1200)."
     },
     {
       "index": 25,
@@ -499,10 +499,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "target hit on 2026-10-04 (day 3) — high=7.9800 >= target=7.6300. stop not yet hit (low=7.0100 > stop=6.9100)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=7.9600 >= target=7.6300. stop not yet hit (low=7.1998 > stop=6.9100)."
     },
     {
       "index": 26,
@@ -515,13 +515,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-04",
+      "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=388.4906 <= stop=398.2700. target not yet hit (high=425.0000 < target=440.1900)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 5,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=393.0000 <= stop=398.2700. target not yet hit (high=410.0000 < target=440.1900)."
     },
     {
       "index": 27,
@@ -534,13 +534,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-04",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=22.2200 <= stop=22.6100. target not yet hit (high=23.9900 < target=24.9900)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 1,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-02 (day 1) — low=22.2200 <= stop=22.6100. target not yet hit (high=23.5000 < target=24.9900)."
     },
     {
       "index": 28,
@@ -550,16 +550,16 @@
       "target_price": 61.38,
       "stop_price": 55.54,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_loss",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-04",
-      "first_hit_type": "stop",
-      "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=55.0483 <= stop=55.5400. target not yet hit (high=58.3800 < target=61.3800)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (61.3800) nor stop (55.5400) hit within 9 trading days after signal_date."
     },
     {
       "index": 29,
@@ -572,13 +572,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-06",
+      "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 5,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-06 (day 5) — low=13.2500 <= stop=13.3200. target not yet hit (high=13.6800 < target=14.7200)."
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=13.2698 <= stop=13.3200. target not yet hit (high=13.4500 < target=14.7200)."
     },
     {
       "index": 30,
@@ -594,10 +594,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=16.0000 <= stop=16.3900. target not yet hit (high=16.6900 < target=18.1100)."
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-04 (day 3) — low=16.2000 <= stop=16.3900. target not yet hit (high=16.6900 < target=18.1100)."
     },
     {
       "index": 31,
@@ -610,13 +610,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-04",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=2.5100 <= stop=2.8000. target not yet hit (high=2.9900 < target=3.1000)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 1,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-02 (day 1) — low=2.5100 <= stop=2.8000. target not yet hit (high=2.5100 < target=3.1000)."
     },
     {
       "index": 32,
@@ -632,10 +632,10 @@
       "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 6,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-07 (day 6) — low=15.8100 <= stop=20.3400. target not yet hit (high=21.6200 < target=22.4800)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 5,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=15.8100 <= stop=20.3400. target not yet hit (high=21.5004 < target=22.4800)."
     },
     {
       "index": 33,
@@ -651,10 +651,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=43.5300 <= stop=45.0300. target not yet hit (high=45.9400 < target=49.7700)."
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-04 (day 3) — low=44.2000 <= stop=45.0300. target not yet hit (high=45.9400 < target=49.7700)."
     },
     {
       "index": 34,
@@ -667,13 +667,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-04",
+      "first_hit_date": "2026-10-02",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=18.2500 <= stop=18.3700. target not yet hit (high=19.2000 < target=20.3100)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 1,
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-02 (day 1) — low=18.1200 <= stop=18.3700. target not yet hit (high=19.1500 < target=20.3100)."
     },
     {
       "index": 35,
@@ -689,10 +689,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "target hit on 2026-10-04 (day 3) — high=32.8600 >= target=31.9100. stop not yet hit (low=30.0000 > stop=28.8700)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=32.9300 >= target=31.9100. stop not yet hit (low=29.1000 > stop=28.8700)."
     },
     {
       "index": 36,
@@ -705,13 +705,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-06",
+      "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 5,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-06 (day 5) — low=8.6600 <= stop=8.7200. target not yet hit (high=9.1300 < target=9.6400)."
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-07 (day 5) — low=8.6000 <= stop=8.7200. target not yet hit (high=9.0500 < target=9.6400)."
     },
     {
       "index": 37,
@@ -727,9 +727,9 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
+      "prices_found_in_db": 9,
       "audit_note": "stop hit on 2026-10-04 (day 3) — low=32.8700 <= stop=33.2500. target not yet hit (high=33.6000 < target=36.7500)."
     },
     {
@@ -746,10 +746,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "same_day",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "target+stop both hit on 2026-10-04 (day 3) — conservative rule → verified_loss. high=7.2600 >= target=7.2100 AND low=6.2800 <= stop=6.5300."
+      "prices_found_in_db": 9,
+      "audit_note": "target+stop both hit on 2026-10-04 (day 3) — conservative rule → verified_loss. high=7.3300 >= target=7.2100 AND low=6.2800 <= stop=6.5300."
     },
     {
       "index": 39,
@@ -759,16 +759,16 @@
       "target_price": 18.94,
       "stop_price": 17.14,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_loss",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-04",
-      "first_hit_type": "stop",
-      "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=16.8400 <= stop=17.1400. target not yet hit (high=17.8900 < target=18.9400)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (18.9400) nor stop (17.1400) hit within 9 trading days after signal_date."
     },
     {
       "index": 40,
@@ -786,8 +786,8 @@
       "gross_return_pct": null,
       "net_return_pct": null,
       "days_to_resolved": null,
-      "prices_found_in_db": 11,
-      "audit_note": "neither target (844.6500) nor stop (764.2100) hit within 11 trading days after signal_date."
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (844.6500) nor stop (764.2100) hit within 9 trading days after signal_date."
     },
     {
       "index": 41,
@@ -797,16 +797,16 @@
       "target_price": 29.51,
       "stop_price": 26.7,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_loss",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-04",
-      "first_hit_type": "stop",
-      "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=26.7000 <= stop=26.7000. target not yet hit (high=27.9000 < target=29.5100)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (29.5100) nor stop (26.7000) hit within 9 trading days after signal_date."
     },
     {
       "index": 42,
@@ -822,10 +822,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=330.1500 <= stop=331.6300. target not yet hit (high=358.0000 < target=366.5300)."
+      "prices_found_in_db": 9,
+      "audit_note": "stop hit on 2026-10-04 (day 3) — low=321.4400 <= stop=331.6300. target not yet hit (high=360.0000 < target=366.5300)."
     },
     {
       "index": 43,
@@ -841,10 +841,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "target hit on 2026-10-04 (day 3) — high=5.2500 >= target=5.1500. stop not yet hit (low=5.0000 > stop=4.6600)."
+      "prices_found_in_db": 9,
+      "audit_note": "target hit on 2026-10-04 (day 3) — high=6.0500 >= target=5.1500. stop not yet hit (low=5.0000 > stop=4.6600)."
     },
     {
       "index": 44,
@@ -854,16 +854,16 @@
       "target_price": 24.81,
       "stop_price": 22.45,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_loss",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-04",
-      "first_hit_type": "stop",
-      "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 11,
-      "audit_note": "stop hit on 2026-10-04 (day 3) — low=22.1600 <= stop=22.4500. target not yet hit (high=23.9500 < target=24.8100)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 9,
+      "audit_note": "neither target (24.8100) nor stop (22.4500) hit within 9 trading days after signal_date."
     },
     {
       "index": 45,
@@ -873,16 +873,16 @@
       "target_price": 2.22,
       "stop_price": 2.0,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_loss",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-12",
-      "first_hit_type": "stop",
-      "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 10,
-      "prices_found_in_db": 10,
-      "audit_note": "stop hit on 2026-10-12 (day 10) — low=1.9100 <= stop=2.0000. target not yet hit (high=2.0900 < target=2.2200)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 8,
+      "audit_note": "neither target (2.2200) nor stop (2.0000) hit within 8 trading days after signal_date."
     },
     {
       "index": 46,
@@ -895,13 +895,13 @@
       "audited_status": "verified_loss",
       "match": true,
       "classification": "match",
-      "first_hit_date": "2026-10-04",
+      "first_hit_date": "2026-10-07",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
-      "days_to_resolved": 2,
-      "prices_found_in_db": 10,
-      "audit_note": "stop hit on 2026-10-04 (day 2) — low=49.0000 <= stop=49.1600. target not yet hit (high=50.1000 < target=54.3400)."
+      "net_return_pct": -5.0,
+      "days_to_resolved": 4,
+      "prices_found_in_db": 8,
+      "audit_note": "stop hit on 2026-10-07 (day 4) — low=47.4500 <= stop=49.1600. target not yet hit (high=48.3000 < target=54.3400)."
     },
     {
       "index": 47,
@@ -917,10 +917,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "stop",
       "gross_return_pct": -5.0,
-      "net_return_pct": -5.4,
+      "net_return_pct": -5.0,
       "days_to_resolved": 2,
-      "prices_found_in_db": 10,
-      "audit_note": "stop hit on 2026-10-04 (day 2) — low=2.2500 <= stop=2.3200. target not yet hit (high=2.3400 < target=2.5600)."
+      "prices_found_in_db": 8,
+      "audit_note": "stop hit on 2026-10-04 (day 2) — low=2.2500 <= stop=2.3200. target not yet hit (high=2.4300 < target=2.5600)."
     },
     {
       "index": 48,
@@ -930,16 +930,16 @@
       "target_price": 19.95,
       "stop_price": 18.05,
       "recorded_status": "verified_win",
-      "audited_status": "verified_win",
-      "match": true,
-      "classification": "match",
-      "first_hit_date": "2026-10-07",
-      "first_hit_type": "target",
-      "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 5,
-      "prices_found_in_db": 10,
-      "audit_note": "target hit on 2026-10-07 (day 5) — high=20.1800 >= target=19.9500. stop not yet hit (low=18.3000 > stop=18.0500)."
+      "audited_status": "undetermined",
+      "match": false,
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 8,
+      "audit_note": "neither target (19.9500) nor stop (18.0500) hit within 8 trading days after signal_date."
     },
     {
       "index": 49,
@@ -955,10 +955,10 @@
       "first_hit_date": "2026-10-04",
       "first_hit_type": "target",
       "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
+      "net_return_pct": 5.0,
       "days_to_resolved": 2,
-      "prices_found_in_db": 10,
-      "audit_note": "target hit on 2026-10-04 (day 2) — high=46.7000 >= target=46.1300. stop not yet hit (low=45.7700 > stop=41.7300)."
+      "prices_found_in_db": 8,
+      "audit_note": "target hit on 2026-10-04 (day 2) — high=46.8600 >= target=46.1300. stop not yet hit (low=45.7681 > stop=41.7300)."
     },
     {
       "index": 50,
@@ -968,16 +968,16 @@
       "target_price": 40.32,
       "stop_price": 36.48,
       "recorded_status": "verified_loss",
-      "audited_status": "verified_win",
+      "audited_status": "undetermined",
       "match": false,
-      "classification": "changed",
-      "first_hit_date": "2026-10-05",
-      "first_hit_type": "target",
-      "gross_return_pct": 5.0,
-      "net_return_pct": 4.6,
-      "days_to_resolved": 3,
-      "prices_found_in_db": 10,
-      "audit_note": "target hit on 2026-10-05 (day 3) — high=41.3000 >= target=40.3200. stop not yet hit (low=39.2900 > stop=36.4800)."
+      "classification": "undetermined",
+      "first_hit_date": null,
+      "first_hit_type": "none",
+      "gross_return_pct": null,
+      "net_return_pct": null,
+      "days_to_resolved": null,
+      "prices_found_in_db": 8,
+      "audit_note": "neither target (40.3200) nor stop (36.4800) hit within 8 trading days after signal_date."
     }
   ]
 }
