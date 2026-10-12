@@ -29,6 +29,20 @@
  *     layer surfaces a 404 with a clear explanation). We NEVER fabricate
  *     bars, deltas, or POC values.
  *
+ * GOLDEN SESSION FALLBACK (P0-ALPHA-SESSION-PRESERVER):
+ *   - `readFromStockIntraday` returns the latest session that actually
+ *     EXISTS in `stock_intraday` (GROUP BY date ORDER BY date DESC LIMIT 1),
+ *     regardless of whether it is today.
+ *   - If the latest available session is NOT today (market closed / no
+ *     data yet today), the response still serves that session with
+ *     `is_historical_session: true` + `session_date: 'YYYY-MM-DD'` so
+ *     the UI can label it clearly as "آخر جلسة كاملة".
+ *   - If BOTH tables have zero rows for the ticker → return null (404).
+ *   - The last 3 sessions are guaranteed to be preserved by the cron
+ *     job `vps-service/jobs/intraday_session_preserver.py` (Rule 21:
+ *     no hard DELETE; older sessions are copied to
+ *     `stock_intraday_archive` instead of being deleted).
+ *
  * Rule 20 (Python = brain):
  *   - This is a READ-ONLY analytics layer (no writes). All data comes from
  *     SQLite. No Node-side computation that the Python backend should own.
@@ -164,7 +178,14 @@ interface RawIntradayPricesRow {
 
 /**
  * Read the latest trading session's bars from stock_intraday (primary).
- * Returns null if the table is empty for this ticker.
+ *
+ * GOLDEN SESSION FALLBACK: returns the most recent session that EXISTS
+ * for this ticker — even if that session is not today (market closed /
+ * holiday / no data ingested yet today). The caller (computeIntradayFlow)
+ * marks such a response with `is_historical_session: true` and surfaces
+ * the real `session_date` so the UI can label it "آخر جلسة كاملة".
+ *
+ * Returns null if the table is empty for this ticker (→ 404, Rule 27).
  */
 function readFromStockIntraday(
   db: Database.Database,
