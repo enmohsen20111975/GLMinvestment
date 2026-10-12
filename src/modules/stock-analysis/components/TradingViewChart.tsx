@@ -8,6 +8,7 @@ import {
   CrosshairMode,
   LineStyle,
   type IChartApi,
+  type IPriceLine,
   type Time,
   type DeepPartial,
   type ChartOptions,
@@ -53,6 +54,9 @@ import {
   Clock,
   Eye,
   Users,
+  Zap,
+  Target,
+  Layers,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -948,6 +952,14 @@ export function TradingViewChart({
   const [multiPersonaOpen, setMultiPersonaOpen] = useState(false);
   const currentMarket = useAppStore((s) => s.currentMarket);
   const [chartEngine, setChartEngine] = useState<'interactive' | 'tradingview_widget'>('tradingview_widget');
+  // GLM5.2-A (ALPHA-MARKERS): toggle states for markers + priceLines
+  const [showMakerMarkers, setShowMakerMarkers] = useState(true);
+  const [showTradeLines, setShowTradeLines] = useState(true);
+  const [showSRZones, setShowSRZones] = useState(false);
+  // priceLine refs
+  const priceLinesRef = useRef<IPriceLine[]>([]);
+  // stored candle data for marker computation (set in the chart useEffect)
+  const lastCandlesRef = useRef<OhlcvBar[]>([]);
 
   const tvSymbol = useMemo(() => {
     const t = (ticker || 'PHDC').toUpperCase().trim();
@@ -1667,12 +1679,168 @@ export function TradingViewChart({
     // fitContent shows ALL candles at optimal zoom level.
     chart.timeScale().fitContent();
 
+    // ─── GLM5.2-A (ALPHA-MARKERS): Candlestick Markers + PriceLines ────────
+    // 1) setMarkers on candle series (entry, target, stop signals)
+    // 2) createPriceLine for target (green) + stop (red) + fib 0.618 (golden)
+    lastCandlesRef.current = cleanData;
+
+    if (candleSeriesRef.current && cleanData.length > 0) {
+      // Compute support/resistance + trade levels
+      const allHighs = cleanData.map(b => b.high).filter(v => v > 0);
+      const allLows = cleanData.map(b => b.low).filter(v => v > 0);
+      const allCloses = cleanData.map(b => b.close).filter(v => v > 0);
+      const swingHigh = allHighs.length > 0 ? Math.max(...allHighs) : 0;
+      const swingLow = allLows.length > 0 ? Math.min(...allLows) : 0;
+      const lastClose = allCloses.length > 0 ? allCloses[allCloses.length - 1] : 0;
+      const swingRange = swingHigh - swingLow || 1;
+
+      // Target = swing high (resistance), Stop = swing low (support)
+      const targetPrice = swingHigh > 0 ? swingHigh : lastClose * 1.05;
+      const stopPrice = swingLow > 0 ? swingLow : lastClose * 0.95;
+      // Fib 0.618 (Golden Pocket)
+      const fib618 = swingHigh - swingRange * 0.618;
+
+      // ─── Markers ────────────────────────────────────────────────────────
+      if (showMakerMarkers) {
+        type Marker = {
+          time: Time;
+          position: 'aboveBar' | 'belowBar' | 'inBar';
+          color: string;
+          shape: 'circle' | 'square' | 'arrowUp' | 'arrowDown';
+          text?: string;
+        };
+        const markers: Marker[] = [];
+
+        // Entry marker on the last candle
+        const lastBarTime = barTime(cleanData[cleanData.length - 1]) as Time;
+        markers.push({
+          time: lastBarTime,
+          position: 'belowBar',
+          color: '#3b82f6',
+          shape: 'arrowUp',
+          text: 'دخول',
+        });
+
+        // Find the highest-volume candle (volume climax — maker activity)
+        let maxVolIdx = 0;
+        let maxVol = 0;
+        for (let i = 0; i < cleanData.length; i++) {
+          if (cleanData[i].volume > maxVol) {
+            maxVol = cleanData[i].volume;
+            maxVolIdx = i;
+          }
+        }
+        if (maxVolIdx > 0 && maxVolIdx < cleanData.length - 1) {
+          markers.push({
+            time: barTime(cleanData[maxVolIdx]) as Time,
+            position: 'aboveBar',
+            color: '#f59e0b',
+            shape: 'circle',
+            text: 'ذروة حجم',
+          });
+        }
+
+        // Find the lowest low (support bounce marker)
+        let lowestIdx = 0;
+        let lowestVal = Infinity;
+        for (let i = 0; i < cleanData.length; i++) {
+          if (cleanData[i].low < lowestVal && cleanData[i].low > 0) {
+            lowestVal = cleanData[i].low;
+            lowestIdx = i;
+          }
+        }
+        if (lowestIdx > 0) {
+          markers.push({
+            time: barTime(cleanData[lowestIdx]) as Time,
+            position: 'belowBar',
+            color: '#10b981',
+            shape: 'circle',
+            text: 'ارتداد دعم',
+          });
+        }
+
+        markers.sort((a, b) => (a.time as number) - (b.time as number));
+        // setMarkers — lightweight-charts v5
+        (candleSeriesRef.current as any).setMarkers(markers);
+      } else {
+        (candleSeriesRef.current as any).setMarkers([]);
+      }
+
+      // ─── PriceLines (Trade Levels + Institutional Zones) ──────────────
+      // Remove previous price lines
+      if (priceLinesRef.current.length > 0) {
+        priceLinesRef.current.forEach(pl => {
+          try { (candleSeriesRef.current as any)?.removePriceLine(pl); } catch { /* silent */ }
+        });
+        priceLinesRef.current = [];
+      }
+
+      if (candleSeriesRef.current && showTradeLines) {
+        // 🎯 Target line (green)
+        const targetLine = candleSeriesRef.current.createPriceLine({
+          price: targetPrice,
+          color: '#10b981',
+          lineWidth: 2,
+          lineStyle: LineStyle.Solid,
+          axisLabelVisible: true,
+          title: '🎯 هدف الصفقة',
+        });
+        priceLinesRef.current.push(targetLine);
+
+        // 🛑 Stop Loss line (red)
+        const stopLine = candleSeriesRef.current.createPriceLine({
+          price: stopPrice,
+          color: '#f23645',
+          lineWidth: 2,
+          lineStyle: LineStyle.Solid,
+          axisLabelVisible: true,
+          title: '🛑 وقف الخسارة',
+        });
+        priceLinesRef.current.push(stopLine);
+      }
+
+      if (candleSeriesRef.current && showSRZones) {
+        // Fib 0.618 Golden Pocket (amber dashed)
+        const fibLine = candleSeriesRef.current.createPriceLine({
+          price: fib618,
+          color: '#f59e0b',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: 'Fib 0.618',
+        });
+        priceLinesRef.current.push(fibLine);
+
+        // Swing high (resistance)
+        const resLine = candleSeriesRef.current.createPriceLine({
+          price: swingHigh,
+          color: '#ef4444',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: 'مقاومة',
+        });
+        priceLinesRef.current.push(resLine);
+
+        // Swing low (support)
+        const supLine = candleSeriesRef.current.createPriceLine({
+          price: swingLow,
+          color: '#10b981',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: 'دعم',
+        });
+        priceLinesRef.current.push(supLine);
+      }
+    }
+
     // Cleanup on unmount
     return () => {
       chart.remove();
       chartRef.current = null;
     };
-  }, [data, indicators, focusMode, height, isFullscreen, isDark, chartType]);
+  }, [data, indicators, focusMode, height, isFullscreen, isDark, chartType, showMakerMarkers, showTradeLines, showSRZones]);
 
   // ─── Controls ──────────────────────────────────────────────────────────────
 
@@ -1995,6 +2163,45 @@ export function TradingViewChart({
             <Users className="size-3.5" />
             شخصيات متعددة
           </Button>
+
+          {/* GLM5.2-A (ALPHA-MARKERS): HUD Overlay Toggles */}
+          {chartEngine === 'interactive' && !focusMode && (
+            <>
+              <Button
+                variant={showMakerMarkers ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowMakerMarkers((v) => !v)}
+                aria-pressed={showMakerMarkers}
+                title={showMakerMarkers ? 'إخفاء إشارات صانع السوق' : 'إظهار إشارات صانع السوق'}
+                className="h-7 px-2.5 text-xs gap-1"
+              >
+                <Zap className="size-3.5" />
+                <span className="hidden sm:inline">إشارات</span>
+              </Button>
+              <Button
+                variant={showTradeLines ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowTradeLines((v) => !v)}
+                aria-pressed={showTradeLines}
+                title={showTradeLines ? 'إخفاء مسار الهدف والوقف' : 'إظهار مسار الهدف والوقف'}
+                className="h-7 px-2.5 text-xs gap-1"
+              >
+                <Target className="size-3.5" />
+                <span className="hidden sm:inline">هدف/وقف</span>
+              </Button>
+              <Button
+                variant={showSRZones ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowSRZones((v) => !v)}
+                aria-pressed={showSRZones}
+                title={showSRZones ? 'إخفاء مناطق الدعم والمقاومة' : 'إظهار مناطق الدعم والمقاومة المؤسسية'}
+                className="h-7 px-2.5 text-xs gap-1"
+              >
+                <Layers className="size-3.5" />
+                <span className="hidden sm:inline">دعم/مقاومة</span>
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
