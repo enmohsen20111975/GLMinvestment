@@ -78480,3 +78480,32 @@ Stage Summary:
   ناتج عن 432 signal مُعلّمة stale_data سابقًا لديها أسعار الآن. لو
   يرغب المدير بالأرقام الأحدث، يمكن تشغيل verify_all_radar_signals.py
   --execute --include-stale أولًا لتحديث stored status.
+
+---
+
+Task ID: P0-ALPHA-WYCKOFF-UI
+Agent: Wyckoff UI Agent
+
+Work Log:
+- [UI] MakerRadarTab.tsx — imported `cn` from `@/lib/utils`; added `WyckoffPhase` type + `WyckoffStockEntry` interface; added state `wyckoffFilter` + `wyckoffData` + `wyckoffError`.
+- [UI] Added `useEffect` that fetches `/api/maker-radar/wyckoff-screener?market=...&phase_filter=...&limit=20` every 60s while a filter is active (cancelled on cleanup). On failure sets `wyckoffError=true` + empty map (Rule 27 — no fabrication).
+- [UI] Added `wyckoffTickers` memo that intersects all 4 radar lists (`filteredExplosive` / `filteredPreSurge` / `filteredQuiet` / `filteredEarlyBreak`) with the screener results.
+- [UI] Added 2 Wyckoff filter buttons (🎯 C_SPRING + ⚡ D_SOS) after the existing path-filter buttons, plus a clear (✕) button shown when a phase is active. Design tokens only (bg-primary / bg-card / bg-muted) — no hex colors. Responsive via `flex-wrap` on the parent flex container.
+- [UI] Enhanced the empty state with Wyckoff-specific messages (Rule 27): 'backend unreachable' vs 'no phase matches' vs 'clear filter'.
+- [UI] Defined `WyckoffPhaseTracker` component — 5-phase horizontal curve (A_SC → B_CAUSE → C_SPRING → D_SOS → EXIT) with active highlight (scale-125 + shadow-lg), past-phase faded highlight, and a progress bar at the bottom. Badge shows confidence %. ARIA labels per node.
+- [UI] Wired `wyckoffData` prop into `StockDetailDrawer`; rendered `<WyckoffPhaseTracker>` after `<IntradayCvdFlow>` only when the ticker exists in `wyckoffData` (Rule 27 — no fabricated phase).
+- [API] Created `src/app/api/maker-radar/wyckoff-screener/route.ts` — thin Node proxy to Python Flask endpoint `/api/wyckoff-screener` (port 8010, blueprint `wyckoff_screener_bp` created by parallel agent P0-ALPHA-WYCKOFF-SCREENER-API). Applies PAYWALL trial gate (same as exit radar). Rule 20: Node = proxy only — all computation in Python's `detect_wyckoff_accumulation` from `vps-service/utils/shared_liquidity.py`.
+- [agent-ctx] Written record at `agent-ctx/P0-ALPHA-WYCKOFF-UI-wyckoff-ui-agent.md`.
+- Commit: c56cabda (pushed to origin/main after rebase on a99429cf from the parallel Python agent).
+
+Stage Summary:
+- 2 filter buttons added (C_SPRING + D_SOS) + clear (✕) button
+- WyckoffPhaseTracker component added to StockDetailDrawer (after IntradayCvdFlow)
+- State (wyckoffFilter/wyckoffData/wyckoffError) + 60s useEffect for fetching
+- Intersection logic applied to all 4 radar section memos via `wyckoffTickers`
+- Empty-state branching: backend-unreachable vs no-phase-matches vs clear-filter (Rule 27)
+- Node API route is a transparent proxy to the existing Python Flask blueprint (Rule 20)
+- npx tsc --noEmit --skipLibCheck: 1664 errors before == 1664 after (0 new — the 6 errors in TradingPlanSection are pre-existing and unchanged)
+- bun run lint: PASS (no warnings)
+- pre-commit hook: PASS (check_no_hard_delete + check_no_raw_insert + ticker-registry)
+- Python backend verified live: `curl '127.0.0.1:8010/api/wyckoff-screener?market=EGX&phase_filter=D_SOS&limit=5'` returns valid JSON with phase_distribution + per-stock phase/confidence/whale_flow_egp (e.g. MENA phase=D_SOS confidence=70%).
