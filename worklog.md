@@ -77270,3 +77270,109 @@ Stage Summary:
 - ✅ pre-commit hook: PASS
 - ✅ 4 commits pushed: 0ad603e9 → a42f97cb → 35e2a242 → f400c340
 - ✅ Going forward: 0 new fantasy targets will be written (cap enforces ≤+30%)
+
+---
+
+Task ID: GLM5.3-S2-COPY-ANALYSIS
+Agent: Copy Analysis Button Agent
+
+Work Log:
+- Modified files:
+  • src/modules/predictions/components/MakerRadarTab.tsx (+201 / −2)
+- Commit hash: 93f5064f (pushed to origin/main)
+- Pre-commit hook: PASS (3/3 guards — `check_no_raw_insert.py`,
+  `check_no_hard_delete.py`, `pre-commit-ticker-registry`)
+
+Implementation Details:
+- Added `formatProfessionalAnalysis(ticker, stockInfo, detail, radarStock)` helper
+  that builds the canonical Arabic share-ready text per the spec template:
+    📊 تقرير رادار السيولة وصانع السوق | [name] ([ticker])
+    ━━━━━━━━━━━━━━━━━━━━
+    🔹 السعر الحالي / حالة السهم / سلوك صانع السوق (Wyckoff) /
+       سيولة السهم ومؤشر MFI / نطاق الدخول الآمن /
+       مستهدفات الحركة / وقف الخسارة الفولاذي
+    ━━━━━━━━━━━━━━━━━━━━
+    💡 رؤية المحلل
+    📌 منصة GLM Investment — نظام كشف السيولة الذكية
+- Added `copyToClipboardWithFallback(text)` helper:
+    1) navigator.clipboard.writeText (secure contexts / HTTPS / localhost only)
+    2) document.execCommand('copy') fallback for HTTP dev + legacy browsers
+    Handles the HTTPS-only exception silently (warns + falls back).
+- Added prominent "نسخ التحليل الاحترافي" button to the StockDetailDrawer
+  sticky header. Design tokens only — `bg-primary` / `text-primary-foreground`
+  (NO raw hex colors). Icon: `Copy` from lucide-react. Loading spinner:
+  `Loader2` while writing to clipboard. Sonner toast on success:
+  "تم نسخ التحليل بنجاح!" — and on failure: "تعذّر نسخ التحليل — حاول
+  مرة أخرى".
+
+Rule Compliance:
+- ✅ Rule 27 (NO-FAKE-DATA): missing fields render as "—" instead of fabricated
+  values. MFI is NOT part of the StockDetail API contract, so it is shown as "—"
+  (never fabricated). Liquidity flow direction derived from real `roc10d`
+  (positive → "تدفق إيجابي", negative → "تدفق سلبي"). Entry / target / stop
+  values pulled ONLY from `detail.prediction` (no client-side multiplication).
+- ✅ Rule 4 (NO-DELETION): no existing buttons or features touched. The new
+  button is ADDED to the header alongside `UnifiedPublishButton`, the track
+  button, the "صفحة السهم" button, and the close button.
+- ✅ Rule 75 (PUSH-AFTER-EVERY-TASK): commit `93f5064f` pushed immediately
+  after file modification.
+- ✅ Design tokens only — no `#hex` colors used in the new button.
+- ✅ Sonner toast used (canonical project toast system, already mounted in
+  `app/layout.tsx`).
+
+Stage Summary:
+- ✅ Copy Professional Analysis button added to StockDetailDrawer (prominent,
+  design-token styled, with loading spinner)
+- ✅ formatProfessionalAnalysis() implemented (canonical Arabic template)
+- ✅ copyToClipboardWithFallback() implemented (HTTPS-aware + execCommand
+  fallback for old browsers / HTTP dev)
+- ✅ Sonner toast on success ("تم نسخ التحليل بنجاح!") and failure
+- ✅ npx tsc --noEmit --skipLibCheck: 0 NEW errors
+    (6 pre-existing errors in `TradingPlanSection` — unchanged from before
+     this task; lines 3589 / 3608 / 3642, all unrelated to copy feature)
+- ✅ bun run lint: clean (0 errors / 0 warnings)
+- ✅ pre-commit hook: PASS (3/3 guards)
+- ✅ curl http://localhost:3000 → HTTP 200 (36,952 bytes) — page renders
+
+---
+
+Task ID: GLM5.3-S1-WYCKOFF
+Agent: Wyckoff Logic Agent
+
+Work Log:
+- `vps-service/utils/shared_liquidity.py` (modified) — commit `619acfca`
+  - Added PHASE-5 block: Wyckoff Accumulation Schematic
+  - 4 phases implemented: A_SC / B_CAUSE / C_SPRING / D_SOS
+  - VSA (Volume Spread Analysis) helper: avg_up_vol vs avg_down_vol
+  - Wash Trade filter: volume >3× avg + doji/narrow range → CHURNING_WASH_TRADE
+  - 13 new constants exported (WYCKOFF_*)
+  - `_wyckoff_avg_volume()` + `_is_wash_trade_candle()` helpers
+  - `detect_wyckoff_accumulation()` main entry (~280 lines)
+  - `__all__` extended with new exports (backward-compatible: `detect_quiet_accumulation` untouched)
+- `scripts/test_wyckoff_accumulation.py` (new) — commit `619acfca`
+  - 7 fixtures, 19 assertions, all PASS
+  - B_CAUSE: tight range + low vol + VSA → phase=B_CAUSE, signal launched
+  - CHURNING_WASH_TRADE: doji + huge vol → phase=CHURNING_WASH_TRADE, signal cancelled
+  - A_SC, C_SPRING, D_SOS, insufficient-data, SC-without-AR (negative) covered
+
+Stage Summary:
+- detect_wyckoff_accumulation() implemented (4 phases: SC/AR, Cause, Spring, SOS)
+- VSA volume analysis added (avg_up_vol > avg_down_vol gate)
+- Wash Trading filter added (CHURNING_WASH_TRADE cancels accumulation)
+- Signal launch requires BOTH: in_support_zone (lower third) + VSA confirmed
+- Phase priority: CHURNING_WASH_TRADE > D_SOS > C_SPRING > B_CAUSE > A_SC > NONE
+- pre-commit hook: PASS (check_no_raw_insert + check_no_hard_delete + ticker-registry)
+- AST parse: PASS (shared_liquidity.py + test_wyckoff_accumulation.py)
+- Test suite: 19/19 PASS
+- Pushed to origin/main: 619acfca
+
+Rule Compliance:
+- ✅ Rule 27 (NO-FAKE-DATA): production callsites must pass real OHLCV from stocks.db — synthetic data only in test fixtures
+- ✅ Rule 67 (CALCULATION-CANONICAL): avg_20d_vol computed from canonical 20-day window via `_wyckoff_avg_volume()`
+- ✅ Rule 75 (PUSH-AFTER-EVERY-TASK): committed + pushed immediately (619acfca)
+- ✅ pre-commit hook: PASS (3/3 guards)
+- ✅ AST parse: PASS (no syntax errors)
+
+Integration Notes (for follow-up tasks):
+- `detect_wyckoff_accumulation()` is exported but NOT yet wired into `scripts/maker_radar.py` or `vps-service/jobs/daily_predictor.py` — those still call legacy `detect_quiet_accumulation()` for backward compatibility. Migration to Wyckoff should be a separate task with backtest comparison.
+- Position size for Wyckoff signal: `WYCKOFF_ACCUMULATION_POSITION_SIZE = 0.015` (1.5% — paper mode, same as PRE_SURGE)
