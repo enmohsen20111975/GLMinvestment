@@ -3055,6 +3055,12 @@ class DailyCloser:
         # price-aware hit-timestamp lookup (replaces datetime.now(timezone.utc)).
         _prediction_date_db = None
         _target_price_db = None
+        # GLM5.2-S2: defaults علشان الـ TIME_EXIT block اللي تحت يقدر يـ access
+        # _entry_price_db بأمان حتى لو الـ try/except بتاع الـ guard lookup فشل.
+        # قبل كده، لو الـ try باد exception (مثلاً temp db في test)،
+        # _entry_price_db مكنتش معرّفة → UnboundLocalError في الـ TIME_EXIT log.
+        _entry_price_db = 0.0
+        _stop_loss_db = 0.0
         try:
             _ep_conn = self._conn(self.predictions_db)
             _ep_cur = _ep_conn.cursor()
