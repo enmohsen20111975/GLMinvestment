@@ -328,33 +328,14 @@ class SniperEngine:
     def calc_atr(self, highs: List[float], lows: List[float],
                  closes: List[float], period: int = 14) -> float:
         """
-        ATR(14) — Average True Range with Wilder smoothing.
+        ATR(14) — Average True Range (canonical Wilder's smoothing, Rule 54).
 
-        True Range = max(H-L, |H-prevC|, |L-prevC|)
+        PKG4-ATR-UNIFY: delegates to analyzers.indicators.calc_atr.
+        Returns 0.0 when canonical returns None (insufficient data).
         """
-        if len(closes) < period + 1:
-            return 0.0
-
-        trs: List[float] = []
-        for i in range(1, len(closes)):
-            if i >= len(highs) or i >= len(lows):
-                break
-            h = highs[i]
-            l = lows[i]
-            pc = closes[i - 1]
-            if h <= 0 or l <= 0 or pc <= 0:
-                continue
-            tr = max(h - l, abs(h - pc), abs(l - pc))
-            trs.append(tr)
-
-        if len(trs) < period:
-            return round(sum(trs) / len(trs), 4) if trs else 0.0
-
-        atr = sum(trs[:period]) / period
-        for i in range(period, len(trs)):
-            atr = (atr * (period - 1) + trs[i]) / period
-
-        return round(atr, 4)
+        from analyzers.indicators import calc_atr as _canonical_calc_atr
+        result = _canonical_calc_atr(highs, lows, closes, period)
+        return result if result is not None else 0.0
 
     def calc_bollinger_bands(self, closes: List[float],
                              period: int = 20, num_std: float = 2.0) -> Dict:
