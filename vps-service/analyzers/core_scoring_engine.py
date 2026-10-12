@@ -94,31 +94,25 @@ def calc_sma(data: List[float], period: int) -> float:
 
 def calc_atr(highs: List[float], lows: List[float], closes: List[float],
              period: int = 14) -> float:
-    """حساب ATR (Average True Range) — Rule 54: بندوّد لـ analyzers.indicators.canonical (Wilder's)."""
+    """حساب ATR (Average True Range) — Rule 54: بندوّد لـ analyzers.indicators.canonical (Wilder's).
+
+    PKG4-ATR-UNIFY: تم تنظيف الـ fallback inline ليكون heuristic بسيط (3% من آخر
+    إغلاق) بدل نسخ صيغة Wilder's — الرياضيات الموحّدة كلها في canonical.
+    """
     # Rule 54: استخدم canonical (Wilder's) بدل SMA
     try:
         from analyzers.indicators import calc_atr as _canonical_atr
         result = _canonical_atr(highs, lows, closes, period)
-        # احتفظ بنفس الـ fallback (3% من آخر close) لو البيانات غير كافية
         if result is not None:
             return result
-        return closes[-1] * 0.03 if closes else 0
+        # canonical رجّع None (بيانات غير كافية) → fallback بسيط (Rule 27 NO-FAKE-DATA:
+        # لازم fallback يكون واضح إنه تقدير احتياطي، مش حساب ATR حقيقي).
+        return closes[-1] * 0.03 if closes else 0.0
     except Exception:
-        # fallback آمن لو canonical مش متاح
-        if len(closes) < period + 1:
-            return closes[-1] * 0.03 if closes else 0
-        trs = []
-        for i in range(1, len(closes)):
-            if i < len(highs) and i < len(lows):
-                tr = max(
-                    highs[i] - lows[i],
-                    abs(highs[i] - closes[i - 1]),
-                    abs(lows[i] - closes[i - 1])
-                )
-            else:
-                tr = abs(closes[i] - closes[i - 1])
-            trs.append(tr)
-        return sum(trs[-period:]) / period if len(trs) >= period else sum(trs) / len(trs)
+        # canonical مش متاح (import error مثلاً) → fallback بسيط وآمن.
+        # ملاحظة: ده تقدير احتياطي مش حساب ATR — لو ظهر بشكل متكرر لازم يُصلح
+        # المسار اللي بيمنع canonical من العمل.
+        return closes[-1] * 0.03 if closes else 0.0
 
 
 def calc_bollinger(closes: List[float], period: int = 20) -> Tuple[float, float, float]:
