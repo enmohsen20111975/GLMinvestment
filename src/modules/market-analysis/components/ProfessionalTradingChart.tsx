@@ -683,6 +683,171 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════════
+          §3-A — A2-EXPANDED: Multi-Timeframe Radar + Institutional Toggles + Indicators
+          غرفة التداول المؤسسية الدسمة — توافق الفريمات + المستويات + المؤشرات
+      ════════════════════════════════════════════════════════════════════════ */}
+      {/* Multi-Timeframe Radar Bar */}
+      <div className="px-4 py-2 border-t border-border bg-muted/20">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-bold text-muted-foreground ml-1">توافق الفريمات:</span>
+          {[
+            { tf: '15د', signal: data?.tf_15m_signal, key: '15m' },
+            { tf: 'ساعة', signal: data?.tf_1h_signal, key: '1h' },
+            { tf: 'يومي', signal: data?.tf_1d_signal || signalFinal, key: '1d' },
+            { tf: 'أسبوعي', signal: data?.tf_1w_signal, key: '1w' },
+          ].map(({ tf, signal, key }) => {
+            const sig = String(signal || '').toUpperCase();
+            const isBuy = sig.includes('BUY') || sig.includes('ACCUMULATE') || sig.includes('STRONG');
+            const isSell = sig.includes('SELL') || sig.includes('AVOID') || sig.includes('REDUCE');
+            const tone = isBuy ? 'buy' : isSell ? 'sell' : 'neutral';
+            return (
+              <div key={key} className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold',
+                tone === 'buy' && 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300',
+                tone === 'sell' && 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300',
+                tone === 'neutral' && 'bg-muted border-border text-muted-foreground',
+              )}>
+                <span>{tone === 'buy' ? '🟢' : tone === 'sell' ? '🔴' : '⚪'}</span>
+                <span>{tf}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Institutional Overlay Toggles */}
+      <div className="px-4 py-2 border-t border-border">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-bold text-muted-foreground ml-1">المستويات المؤسسية:</span>
+          <button
+            onClick={() => setVisibleIndicators((v) => ({ ...v, fibonacci: !v.fibonacci }))}
+            className={cn(
+              'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
+              visibleIndicators?.fibonacci
+                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+          >
+            📐 فيبوناتشي
+          </button>
+          <button
+            onClick={() => setVisibleIndicators((v) => ({ ...v, pivots: !v.pivots }))}
+            className={cn(
+              'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
+              visibleIndicators?.pivots
+                ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/40'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+          >
+            🎯 ارتكاز (Pivot)
+          </button>
+          <button
+            onClick={() => setVisibleIndicators((v) => ({ ...v, order_blocks: !v.order_blocks }))}
+            className={cn(
+              'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
+              visibleIndicators?.order_blocks
+                ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            )}
+          >
+            🏦 SMC / Order Blocks
+          </button>
+        </div>
+      </div>
+
+      {/* Institutional Levels Display (when toggles are on) */}
+      {(visibleIndicators?.fibonacci || visibleIndicators?.pivots || visibleIndicators?.order_blocks) && data?.ohlcv && data.ohlcv.length > 0 && (
+        <div className="px-4 py-2 border-t border-border bg-muted/10">
+          {(() => {
+            const ohlcv = data.ohlcv;
+            const highs = ohlcv.map((c: Record<string, unknown>) => Number(c.high ?? c.h ?? 0)).filter((n: number) => n > 0);
+            const lows = ohlcv.map((c: Record<string, unknown>) => Number(c.low ?? c.l ?? 0)).filter((n: number) => n > 0);
+            const closes = ohlcv.map((c: Record<string, unknown>) => Number(c.close ?? c.c ?? 0)).filter((n: number) => n > 0);
+            const swingHigh = highs.length ? Math.max(...highs) : 0;
+            const swingLow = lows.length ? Math.min(...lows) : 0;
+            const range = swingHigh - swingLow || 1;
+            const lastC = closes.length ? closes[closes.length - 1] : 0;
+            const lastH = highs.length ? highs[highs.length - 1] : 0;
+            const lastL = lows.length ? lows[lows.length - 1] : 0;
+            const pivot = (lastH + lastL + lastC) / 3;
+            return (
+              <div className="space-y-2">
+                {visibleIndicators?.fibonacci && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                    {[
+                      { label: 'Fib 0.382', val: swingHigh - range * 0.382 },
+                      { label: 'Fib 0.5', val: swingHigh - range * 0.5 },
+                      { label: 'Fib 0.618', val: swingHigh - range * 0.618 },
+                      { label: 'Golden Pocket', val: (swingHigh - range * 0.618 + swingHigh - range * 0.5) / 2 },
+                    ].map(f => (
+                      <div key={f.label} className="text-center p-1.5 rounded bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/50">
+                        <div className="text-[8px] text-muted-foreground">{f.label}</div>
+                        <div className="text-[10px] font-bold font-mono text-amber-700 dark:text-amber-300">{f.val.toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {visibleIndicators?.pivots && (
+                  <div className="grid grid-cols-5 gap-1">
+                    {[
+                      { label: 'P', val: pivot, cls: 'bg-primary/5 border-primary/20' },
+                      { label: 'R1', val: 2 * pivot - lastL, cls: 'bg-rose-50 dark:bg-rose-950/20 border-rose-200/50' },
+                      { label: 'S1', val: 2 * pivot - lastH, cls: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/50' },
+                      { label: 'R2', val: pivot + (lastH - lastL), cls: 'bg-rose-50 dark:bg-rose-950/20 border-rose-200/50' },
+                      { label: 'S2', val: pivot - (lastH - lastL), cls: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/50' },
+                    ].map(p => (
+                      <div key={p.label} className={cn('text-center p-1 rounded border', p.cls)}>
+                        <div className="text-[7px] text-muted-foreground">{p.label}</div>
+                        <div className="text-[9px] font-bold font-mono">{p.val.toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {visibleIndicators?.order_blocks && (
+                  <div className="p-2 rounded bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/50">
+                    <div className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 mb-1">مناطق كتل الأوامر (SMC)</div>
+                    <div className="flex gap-4 text-[9px] text-muted-foreground">
+                      <span>كتلة شراء: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{swingLow.toFixed(2)}</span></span>
+                      <span>كتلة بيع: <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{swingHigh.toFixed(2)}</span></span>
+                      <span>FVG: <span className="font-mono font-bold text-purple-600 dark:text-purple-400">{((swingHigh + swingLow) / 2).toFixed(2)}</span></span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Institutional Indicators Strip (RSI / MFI / MACD / Momentum) */}
+      <div className="px-4 py-2 border-t border-border bg-muted/10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {(() => {
+            const ind = data?.indicators || {};
+            const rsi = Number(ind.rsi_14 ?? ind.rsi ?? data?.rsi ?? 0);
+            const mfi = Number(ind.mfi_14 ?? ind.mfi ?? 0);
+            const macd = Number(ind.macd ?? ind.macd_line ?? 0);
+            const macdSignal = Number(ind.macd_signal ?? 0);
+            const momentum = Number(ind.momentum ?? ind.roc_10d ?? 0);
+            return [
+              { label: 'RSI', val: rsi, suffix: '', color: rsi > 70 ? 'text-rose-600' : rsi < 30 ? 'text-emerald-600' : 'text-foreground', sub: rsi > 70 ? 'تشبع شرائي' : rsi < 30 ? 'تشبع بيعي' : 'محايد' },
+              { label: 'MFI', val: mfi, suffix: '', color: mfi > 80 ? 'text-rose-600' : mfi < 20 ? 'text-emerald-600' : 'text-foreground', sub: mfi > 80 ? 'تدفق مفرط' : mfi > 60 ? 'تدفق قوي' : 'متوازن' },
+              { label: 'MACD', val: macd, suffix: '', color: macd > macdSignal ? 'text-emerald-600' : 'text-rose-600', sub: macd > macdSignal ? 'صاعد' : 'هابط' },
+              { label: 'الزخم', val: momentum, suffix: '%', color: momentum >= 0 ? 'text-emerald-600' : 'text-rose-600', sub: momentum >= 0 ? 'إيجابي' : 'سلبي' },
+            ].map(m => (
+              <div key={m.label} className="text-center p-1.5 rounded-lg bg-card border border-border/50">
+                <div className="text-[8px] text-muted-foreground">{m.label}</div>
+                <div className={cn('text-[11px] font-bold font-mono', m.color)}>
+                  {m.val.toFixed(m.label === 'MACD' ? 3 : 1)}{m.suffix}
+                </div>
+                <div className="text-[7px] text-muted-foreground">{m.sub}</div>
+              </div>
+            ));
+          })()}
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════════════════════
           §3.5 — AI Executive Stock Story (CHART-ENRICH 2026-10-10)
           لوحة التشخيص المالي والسرد التنفيذي — من prediction.analysis_reason + canonical
       ════════════════════════════════════════════════════════════════════════ */}

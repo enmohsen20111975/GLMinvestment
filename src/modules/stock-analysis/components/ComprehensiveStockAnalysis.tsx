@@ -1144,9 +1144,20 @@ function ChartsTab({ priceHistory, tech, ticker }: { priceHistory: Array<Record<
       .then(res => res.json())
       .then(json => {
         if (cancelled) return;
-        const candles = json.candles || json.priceHistory || json.history || [];
-        if (Array.isArray(candles) && candles.length > 0) {
-          setFallbackHistory(candles);
+        // A1-Fix: /api/v2/chart/full-analysis يرجع الشموع في المفتاح الكانوني ohlcv
+        // (مش candles أو priceHistory). ده كان السبب الجذري لرجوع مصفوفة فارغة.
+        const rawCandles = json.ohlcv || json.candles || json.priceHistory || json.history || [];
+        if (Array.isArray(rawCandles) && rawCandles.length > 0) {
+          // A1-Fix: تأكد إن كل شمعة لها مفتاح تاريخ صحيح للـ PriceWithMAChart
+          const normalized = rawCandles.map((c: Record<string, unknown>) => ({
+            date: c.date || c.price_date || c.timestamp || c.t || c.time || '',
+            open: Number(c.open ?? c.open_price ?? c.o ?? 0),
+            high: Number(c.high ?? c.high_price ?? c.h ?? 0),
+            low: Number(c.low ?? c.low_price ?? c.l ?? 0),
+            close: Number(c.close ?? c.close_price ?? c.c ?? 0),
+            volume: Number(c.volume ?? c.vol ?? c.v ?? 0),
+          }));
+          setFallbackHistory(normalized);
         }
       })
       .catch(() => { /* silent fallback (safe-by-design) */ })
