@@ -135,6 +135,9 @@ def calc_sma(closes: List[float], period: int) -> Optional[float]:
     return sum(closes[-period:]) / period
 
 
+# PKG4-TODO: delegate to analyzers.indicators.calc_atr (Rule 54 — CALCULATION-CANONICAL).
+# This script is archived/test-only; tracked in ENGINE_INVENTORY.md §Tier 3 TODO list.
+# Pre-PKG4 status: inline SMA-of-TR (window subset — diverges from canonical Wilder's).
 def calc_atr(bars: List[Bar], period: int) -> Optional[float]:
     """Average True Range over the last `period` bars.
     Requires at least `period` bars of high/low/close data."""

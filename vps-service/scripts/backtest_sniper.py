@@ -232,6 +232,9 @@ class TechnicalCalculator:
             'direction': direction,
         }
 
+    # PKG4-TODO: delegate to analyzers.indicators.calc_atr (Rule 54 — CALCULATION-CANONICAL).
+    # This script is archived/test-only; tracked in ENGINE_INVENTORY.md §Tier 3 TODO list.
+    # Pre-PKG4 status: inline Wilder's smoothing (math is close to canonical but not delegated).
     @staticmethod
     def calc_atr(highs: List[float], lows: List[float],
                  closes: List[float], period: int = 14) -> float:
