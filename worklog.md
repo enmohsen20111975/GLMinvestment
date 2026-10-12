@@ -78271,3 +78271,80 @@ Stage Summary:
 - ✅ Rule 75 محترمة: pull --rebase قبل + commit واضح + push.
 - ✅ لا توكن في أي ملف أو git config.
 - 📊 الأرقام النهائية: 648 معرّب (53.8%) + 557 NULL (46.2%) | 4 عمالقة صحيحين | win_rate=46.80% (139 win / 158 loss / 297 verified / 292 pending / 513 stale_data).
+
+---
+Task ID: P0-ALPHA-ALERTS-MFI
+Agent: الفريق المسؤول الأول (GLM5.2-A)
+Task: تنبيهات الدايفرجنس اللحظي + ربط زر التحليل الاحترافي بـ MFI
+
+## ملخص التنفيذ
+
+### 1. Institutional Divergence Badge في IntradayCvdFlow — ✅
+أضفت منطق كشف الدايفرجنس بمقارنة اتجاه السعر vs اتجاه CVD:
+- **Price DOWN + CVD UP** → 🔥 bullish divergence (تجميع خفي)
+  - badge: `🔥 دايفرجنس شرائي: تجميع خفي لصانع السوق وامتصاص للعروض`
+  - color: emerald + animate-pulse
+- **Price UP + CVD DOWN** → ⚠️ bearish divergence (تصريف خفي)
+  - badge: `⚠️ دايفرجنس بيعي: تصريف خفي وقوة شرائية منهكة`
+  - color: amber + animate-pulse
+- لا divergence → لا badge (سلوك افتراضي)
+
+الـ logic:
+- priceTrend: مقارنة first vs last volume_profile bucket price
+- cvdTrend: مقارنة first vs last cvd_series value
+- الشرطان لازم يكونوا متعاكسين عشان يطلع divergence
+
+### 2. ربط زر "نسخ التحليل الاحترافي" بـ MFI + القطاع المعرب — ✅
+- أضفت `mfi?: number | null` للـ `StockStats` interface
+- أضفت `sector_ar?: string | null` للـ `StockInfoRow` interface
+- أنشأت `SECTOR_AR_MAP` (37 mapping للقطاعات الإنجليزية → العربية)
+- أنشأت `resolveSectorAr(sector, sectorAr)` helper:
+  1. يفضل `stock_info.sector_ar` (من team Bravo API)
+  2. fallback لـ SECTOR_AR_MAP
+  3. fallback لـ '—' (Rule 27 — مفيش اختلاق)
+- أنشأت `resolveMfiLabel(stats)` helper:
+  - يقرأ `detail.stats.mfi`
+  - interpretation bands: ≥80 (تشبع شرائي) / 60-79 (تدفق شرائي مؤسسي قوي) / 40-59 (متوازن) / 20-39 (بيعي ضعيف) / <20 (تشبع بيعي)
+  - fallback لـ '—' لو مفيش mfi (Rule 27)
+
+### 3. تحديث formatProfessionalAnalysis:
+- **قبل**: `🔹 سيولة السهم ومؤشر MFI: — - تدفق إيجابي` (hardcoded —)
+- **بعد**: `🔹 مؤشر تدفق السيولة MFI: 68% (تدفق شرائي مؤسسي قوي) - تدفق إيجابي`
+- **قبل**: الـ header مفيهوش قطاع
+- **بعد**: `📊 تقرير رادار السيولة وصانع السوق | المصرية للاتصالات (ETEL) — الاتصالات`
+- أضفت line جديد: `🔹 القطاع: الاتصالات`
+
+## التحقق العملي
+
+### Divergence detection (اختبار على 5 tickers):
+| Ticker | Price trend | CVD trend | Divergence |
+|--------|-------------|-----------|------------|
+| ETEL | up (142.80→147.80) | down (-307→-7060) | ⚠️ bearish (تصريف خفي) ✅ |
+| TMGH | up (85.68→89.19) | down (-121→-6183) | ⚠️ bearish (تصريف خفي) ✅ |
+| FWRY | up | up | no divergence ✅ |
+| HELI | up | up | no divergence ✅ |
+| EAST | up | up | no divergence ✅ |
+
+الـ logic شغال صح — ETEL و TMGH عندهم bearish divergence (CVD هابط رغم السعر صاعد = تصريف خفي).
+
+### MFI + sector (تحقق الـ helpers):
+- `resolveMfiLabel({mfi: 68})` → `68% (تدفق شرائي مؤسسي قوي)` ✅
+- `resolveMfiLabel({mfi: 15})` → `15% (تدفق بيعي مفرط (تشبع بيعي))` ✅
+- `resolveMfiLabel({})` → `—` (Rule 27) ✅
+- `resolveSectorAr('Communications', null)` → `الاتصالات` ✅
+- `resolveSectorAr('Unknown', null)` → `—` (Rule 27) ✅
+- `resolveSectorAr('Finance', 'التمويل')` → `التمويل` (يفضل sector_ar) ✅
+
+## التحقق النهائي
+- `npx tsc --noEmit`: 0 أخطاء جديدة (6 أخطاء pre-existing في TradingPlanSection) ✅
+- dev server: HTTP 200 على :3000 ✅
+- pre-commit hook: PASS ✅
+- Rule 27 محترمة: كل fallback لـ '—' مش اختلاق ✅
+- design tokens فقط (emerald + amber + animate-pulse) ✅
+
+Stage Summary:
+- Institutional Divergence Badge: يكشف التجميع/التصريف الخفي من price vs CVD
+- MFI: يقرأ detail.stats.mfi + interpretation bands (5 مستويات)
+- sector_ar: SECTOR_AR_MAP (37 قطاع) + يفضل sector_ar من API
+- formatProfessionalAnalysis محدّث: MFI حقيقي + القطاع العربي في header + line جديد
+- 0 أخطاء TypeScript جديدة

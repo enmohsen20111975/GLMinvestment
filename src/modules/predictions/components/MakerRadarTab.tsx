@@ -242,6 +242,9 @@ interface StockStats {
   min20: number;
   range20Pct: number;
   dataPoints: number;
+  // GLM5.2-A (P0-ALPHA-ALERTS-MFI): team Bravo exposes detail.stats.mfi.
+  // Optional for backward-compat — older API responses may omit it.
+  mfi?: number | null;
 }
 
 interface StockInfoRow {
@@ -249,6 +252,9 @@ interface StockInfoRow {
   name?: string;
   name_ar?: string;
   sector?: string | null;
+  // GLM5.2-A (P0-ALPHA-ALERTS-MFI): team Bravo exposes sector_ar (Arabic sector).
+  // Optional for backward-compat — falls back to translateSector() if absent.
+  sector_ar?: string | null;
   industry?: string | null;
   market_cap?: number | null;
   pe_ratio?: number | null;
@@ -515,6 +521,92 @@ function liquidityFlowLabel(stats: StockStats | undefined): string {
   return `${flow}`;
 }
 
+// GLM5.2-A (P0-ALPHA-ALERTS-MFI): English sector → Arabic sector mapping.
+// Used as a fallback when stock_info.sector_ar is not yet provided by team
+// Bravo's API. Rule 27: when neither sector_ar nor a known mapping exists,
+// we return '—' rather than fabricating a fake Arabic sector name.
+const SECTOR_AR_MAP: Record<string, string> = {
+  'Communications': 'الاتصالات',
+  'Telecom': 'الاتصالات',
+  'Finance': 'التمويل',
+  'Financials': 'التمويل',
+  'Banks': 'البنوك',
+  'Banking': 'البنوك',
+  'Real Estate': 'العقارات',
+  'Real Estate & Development': 'العقارات والتعمير',
+  'Healthcare': 'الرعاية الصحية',
+  'Pharmaceuticals': 'الأدوية',
+  'Energy': 'الطاقة',
+  'Oil & Gas': 'البترول والغاز',
+  'Telecom & Media': 'الاتصالات والإعلام',
+  'Materials': 'المواد الأساسية',
+  'Basic Materials': 'المواد الأساسية',
+  'Chemicals': 'الكيمياويات',
+  'Industrials': 'الصناعات',
+  'Industrial': 'الصناعات',
+  'Consumer Discretionary': 'السلع الاستهلاكية التقديرية',
+  'Consumer Staples': 'السلع الاستهلاكية الأساسية',
+  'Consumer': 'الاستهلاكي',
+  'Utilities': 'المرافق',
+  'Information Technology': 'تكنولوجيا المعلومات',
+  'Technology': 'التكنولوجيا',
+  'Agri & Fisheries': 'الزراعة والثروة السمكية',
+  'Agriculture': 'الزراعة',
+  'Construction': 'التشييد',
+  'Construction & Materials': 'التشييد والمواد',
+  'Travel & Leisure': 'السياحة والترفيه',
+  'Tourism': 'السياحة',
+  'Transportation': 'النقل',
+  'Logistics': 'الخدمات اللوجستية',
+  'Education': 'التعليم',
+  'Financial Services': 'الخدمات المالية',
+  'Food & Beverage': 'الأغذية والمشروبات',
+  'Metals & Mining': 'المعادن والتعدين',
+  'Mining': 'التعدين',
+  'Petrochemicals': 'البتر وكيماويات',
+  'Power': 'الكهرباء',
+  'Retail': 'التجزئة',
+  'Services': 'الخدمات',
+  'Textiles': 'الغزل والنسيج',
+};
+
+/** Translate an English sector name to Arabic (with sector_ar override). */
+function resolveSectorAr(
+  sector: string | null | undefined,
+  sectorAr: string | null | undefined,
+): string {
+  // 1) Prefer the Arabic sector from team Bravo's API (Rule 67 SSOT).
+  if (sectorAr && sectorAr.trim()) return sectorAr.trim();
+  // 2) Fallback to the English→Arabic map.
+  if (sector && sector.trim()) {
+    const mapped = SECTOR_AR_MAP[sector.trim()];
+    if (mapped) return mapped;
+  }
+  // 3) No fabrication (Rule 27).
+  return '—';
+}
+
+/** Resolve the MFI label with a directional interpretation. */
+function resolveMfiLabel(stats: StockStats | undefined): string {
+  if (!stats) return '—';
+  const mfi = stats.mfi;
+  if (mfi == null || !Number.isFinite(mfi)) return '—';
+  const rounded = Math.round(mfi);
+  // Interpretation bands (standard MFI semantics):
+  //   ≥ 80 → overbought (تدفق شرائي مفرط)
+  //   60-79 → strong buy-side institutional flow
+  //   40-59 → balanced
+  //   20-39 → weak / distribution pressure
+  //   < 20 → oversold (تدفق بيعي مفرط)
+  let interpretation = '';
+  if (rounded >= 80) interpretation = 'تدفق شرائي مفرط (تشبع شرائي)';
+  else if (rounded >= 60) interpretation = 'تدفق شرائي مؤسسي قوي';
+  else if (rounded >= 40) interpretation = 'تدفق متوازن';
+  else if (rounded >= 20) interpretation = 'تدفق بيعي ضعيف';
+  else interpretation = 'تدفق بيعي مفرط (تشبع بيعي)';
+  return `${rounded}% (${interpretation})`;
+}
+
 /**
  * Build the canonical "Professional Analysis" share text for a stock drawer.
  * Rule 27 (NO-FAKE-DATA): missing fields render as "—" instead of fake values.
@@ -523,7 +615,12 @@ function liquidityFlowLabel(stats: StockStats | undefined): string {
  *   • price → detail.stats.lastClose
  *   • status / Wyckoff → radarStock.path
  *   • entry / target1 / target2 / stop_loss → detail.prediction
- *   • MFI → NOT in StockDetail API → shown as "—" (no fabrication)
+ *   • MFI → detail.stats.mfi (team Bravo) → resolveMfiLabel() → "—" if absent
+ *   • sector (Arabic) → stock_info.sector_ar (team Bravo) → SECTOR_AR_MAP fallback
+ *
+ * GLM5.2-A (P0-ALPHA-ALERTS-MFI): the MFI line now uses the real value from
+ * detail.stats.mfi when available (e.g. "68% (تدفق شرائي مؤسسي قوي)"), and the
+ * header includes the Arabic sector name (e.g. "الاتصالات") when available.
  */
 export function formatProfessionalAnalysis(
   ticker: string,
@@ -532,14 +629,18 @@ export function formatProfessionalAnalysis(
   radarStock: RadarStock | null | undefined,
 ): string {
   const name = stockInfo?.name_ar || stockInfo?.name || '';
+  // GLM5.2-A: header now includes the Arabic sector when available.
+  const sectorAr = resolveSectorAr(stockInfo?.sector, stockInfo?.sector_ar);
   const headerName = name ? `${name} (${ticker})` : ticker;
+  const headerSuffix = sectorAr !== '—' ? ` — ${sectorAr}` : '';
 
   const lastClose = detail?.stats?.lastClose;
   const status = pathToStockStatus(radarStock?.path);
   const wyckoff = pathToWyckoffPhase(radarStock?.path);
   const flow = liquidityFlowLabel(detail?.stats);
-  // MFI is not part of the StockDetail API contract — never fabricate (Rule 27)
-  const mfiLabel = '—';
+  // GLM5.2-A: MFI now reads from detail.stats.mfi (team Bravo) with a real
+  // interpretation band. Falls back to "—" when the API omits it (Rule 27).
+  const mfiLabel = resolveMfiLabel(detail?.stats);
 
   const pred = detail?.prediction;
   const entryLow =
@@ -557,12 +658,13 @@ export function formatProfessionalAnalysis(
     n == null || isNaN(n as number) ? '—' : (Number(n)).toFixed(2);
 
   const lines: string[] = [];
-  lines.push(`📊 تقرير رادار السيولة وصانع السوق | ${headerName}`);
+  lines.push(`📊 تقرير رادار السيولة وصانع السوق | ${headerName}${headerSuffix}`);
   lines.push('━━━━━━━━━━━━━━━━━━━━');
   lines.push(`🔹 السعر الحالي: ${fmtPrice(lastClose)} ج.م`);
   lines.push(`🔹 حالة السهم: ${status}`);
   lines.push(`🔹 سلوك صانع السوق (Wyckoff): ${wyckoff}`);
-  lines.push(`🔹 سيولة السهم ومؤشر MFI: ${mfiLabel} - ${flow}`);
+  lines.push(`🔹 مؤشر تدفق السيولة MFI: ${mfiLabel} - ${flow}`);
+  lines.push(`🔹 القطاع: ${sectorAr}`);
   lines.push(`🔹 نطاق الدخول الآمن: من ${fmtPrice(entryLow)} إلى ${fmtPrice(entryHigh)} ج.م`);
   lines.push(`🔹 مستهدفات الحركة: هدف أول ${fmtPrice(target1)} ج.م | هدف ثانٍ ${fmtPrice(target2)} ج.م`);
   lines.push(`🔹 وقف الخسارة الفولاذي: ${fmtPrice(stopLoss)} ج.م (كسر بإغلاق)`);
@@ -4087,6 +4189,34 @@ function IntradayCvdFlow({ ticker }: { ticker: string }) {
     : data.cvd_signal === 'distribution' ? 'text-rose-600 dark:text-rose-400'
     : 'text-muted-foreground';
 
+  // ─── GLM5.2-A — Institutional Divergence Badge (P0-ALPHA-ALERTS-MFI) ───────
+  // Detects hidden accumulation / distribution by comparing PRICE direction
+  // vs CVD direction over the session:
+  //   • Price DOWN + CVD UP   → bullish divergence (maker stealth accumulation)
+  //   • Price UP   + CVD DOWN → bearish divergence (maker stealth distribution)
+  //   • Otherwise              → no divergence
+  // Price direction is inferred from volume_profile buckets (first vs last close).
+  // CVD direction is inferred from cvd_series (first vs last value).
+  const priceTrendDown =
+    volBuckets.length >= 2
+      ? volBuckets[volBuckets.length - 1].price < volBuckets[0].price
+      : false;
+  const priceTrendUp =
+    volBuckets.length >= 2
+      ? volBuckets[volBuckets.length - 1].price > volBuckets[0].price
+      : false;
+  const cvdTrendUp =
+    cvdSeries.length >= 2
+      ? cvdSeries[cvdSeries.length - 1].cvd > cvdSeries[0].cvd
+      : false;
+  const cvdTrendDown =
+    cvdSeries.length >= 2
+      ? cvdSeries[cvdSeries.length - 1].cvd < cvdSeries[0].cvd
+      : false;
+
+  const bullishDivergence = priceTrendDown && cvdTrendUp;   // تجميع خفي
+  const bearishDivergence = priceTrendUp && cvdTrendDown;   // تصريف خفي
+
   return (
     <Card className="p-3">
       {/* header */}
@@ -4101,6 +4231,30 @@ function IntradayCvdFlow({ ticker }: { ticker: string }) {
           {data.is_historical_session ? `جلسة ${data.session_date}` : 'جلسة اليوم'}
         </Badge>
       </div>
+
+      {/* GLM5.2-A — Institutional Divergence Badge */}
+      {bullishDivergence && (
+        <div
+          role="alert"
+          className="mb-2 px-3 py-2 rounded-lg border border-emerald-300/50 bg-emerald-50/80 dark:bg-emerald-950/40 dark:border-emerald-700/50 flex items-center gap-2 animate-pulse"
+        >
+          <Flame className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 leading-snug">
+            🔥 دايفرجنس شرائي: تجميع خفي لصانع السوق وامتصاص للعروض
+          </span>
+        </div>
+      )}
+      {bearishDivergence && (
+        <div
+          role="alert"
+          className="mb-2 px-3 py-2 rounded-lg border border-amber-300/50 bg-amber-50/80 dark:bg-amber-950/40 dark:border-amber-700/50 flex items-center gap-2 animate-pulse"
+        >
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 leading-snug">
+            ⚠️ دايفرجنس بيعي: تصريف خفي وقوة شرائية منهكة
+          </span>
+        </div>
+      )}
 
       {/* SVG chart */}
       <div className="relative">
