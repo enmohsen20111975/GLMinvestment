@@ -74,19 +74,16 @@ LATE_RECENT_GAIN_PCT = 18.0        # صعود +18% في 5 أيام → late (ك�
 
 def _safe_atr(highs: List[float], lows: List[float], closes: List[float],
               period: int = 14) -> float:
-    """ATR(period)."""
-    n = min(len(highs), len(lows), len(closes))
-    if n < 2:
-        return 0.0
-    trs = []
-    for i in range(max(1, n - period), n):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i - 1]),
-            abs(lows[i] - closes[i - 1])
-        )
-        trs.append(tr)
-    return sum(trs) / len(trs) if trs else 0.0
+    """ATR(period) — canonical Wilder's smoothing (Rule 54).
+
+    PKG4-ATR-UNIFY: delegates to analyzers.indicators.calc_atr.
+    Pre-PKG4 inlined a TR-mean over a window subset (last `period` bars);
+    now uses canonical Wilder's smoothing (project SSOT). Returns 0.0
+    when canonical returns None (insufficient data).
+    """
+    from analyzers.indicators import calc_atr as _canonical_calc_atr
+    result = _canonical_calc_atr(highs, lows, closes, period)
+    return result if result is not None else 0.0
 
 
 def _sma(values: List[float], period: int) -> float:
