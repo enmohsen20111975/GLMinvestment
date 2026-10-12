@@ -73,20 +73,16 @@ def _safe_stdev(values: List[float], period: int) -> float:
 
 def _safe_atr(highs: List[float], lows: List[float], closes: List[float],
               period: int = 14) -> float:
-    """Average True Range — safe for short arrays."""
-    if len(closes) < 2 or not highs or not lows:
-        return 0.0
-    trs = []
-    for i in range(1, min(len(closes), period + 1)):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i - 1]),
-            abs(lows[i] - closes[i - 1])
-        )
-        trs.append(tr)
-    if not trs:
-        return 0.0
-    return sum(trs) / len(trs)
+    """Average True Range — canonical Wilder's smoothing (Rule 54).
+
+    PKG4-ATR-UNIFY: delegates to analyzers.indicators.calc_atr.
+    Pre-PKG4 inlined a TR-mean over the last `period` bars only; now uses
+    the canonical Wilder's smoothing (project SSOT). Returns 0.0 when
+    canonical returns None (insufficient data).
+    """
+    from analyzers.indicators import calc_atr as _canonical_calc_atr
+    result = _canonical_calc_atr(highs, lows, closes, period)
+    return result if result is not None else 0.0
 
 
 def _linear_regression_slope(values: List[float], period: int = 21) -> float:
