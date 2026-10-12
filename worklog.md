@@ -76867,3 +76867,58 @@ in a safe, idempotent, dry-run-by-default manner.
 - pre-commit hook: PASS (مُتحقق منه: violating INSERT → BLOCKED, valid → PASS)
 - المنصة لše شغالة: HTTP 200 على :3000 و /api/stocks
 - منفّذ بـ Rule 75: commit + push بعد السكربت
+
+---
+Task ID: P0-TICKER-PURGE-VERIFICATION
+Agent: الفريق المسؤول الأول (المنفذ الفني + المدقق)
+Task: تحقق مستقل من تطهير قاعدة بيانات الأسهم
+
+## ملخص التطهير (مُتحقق منه بشكل مستقل)
+
+| المقياس | قبل | بعد | التحقق المستقل |
+|---------|-----|------|----------------|
+| إجمالي EGX stocks | 461 | 443 | ✅ -18 (محذوفة) |
+| EGX active stocks | 427 | 362 | ✅ -65 (معطّلة) |
+| ticker_registry مع TV symbol | 8 (1.7%) | 436 (100%) | ✅ |
+| تكرارات نشطة (duplicate name_ar) | 6 | 0 | ✅ |
+| أكواد EGS... نشطة | 20 | 1 (EGSA فقط) | ✅ |
+| name_ar == name (إنجليزي) | 79 | 11 | ✅ |
+
+## التحقق من الحالات المذكورة من المدير العام
+
+| الحالة | الحالة النهائية |
+|--------|-----------------|
+| EDBM (مشطوب) | ✅ معطّل (is_active=0) |
+| ADP (مكرر ADPC) | ✅ محذوف |
+| COSG (مكرر CALT) | ✅ محذوف |
+| ARAB_R2, KAHA, PACL, ALXD | ✅ محذوفة |
+| EGS220N1C016 (NBCC الحقيقي) | ✅ محذوف + مدمج في NBCC |
+| EGS3E071C013 (ACRO الحقيقي) | ✅ محذوف + مدمج في ACRO |
+| EGS65861C014 (EABD الحقيقي) | ✅ محذوف + مدمج في EABD |
+
+## التحقق من الـ ingestion constraint (pre-commit hook)
+- `scripts/git-hooks/pre-commit-ticker-registry` موجود (13014 bytes) ✅
+- مدمج في `.git/hooks/pre-commit` (آخر سطر: `python3 scripts/git-hooks/pre-commit-ticker-registry || exit 1`) ✅
+- اختبار بـ ticker غير موجود → commit BLOCKED ✅
+- اختبار بـ ticker موجود (COMI) → PASS ✅
+
+## التحقق من المنصة
+- dev server: HTTP 200 على :3000 ✅
+- /api/stocks: HTTP 200 ✅
+- Idempotent: إعادة `--execute` بـ ينتج 0 تغييرات ✅
+
+## ملاحظات
+- 40 سهم معطّل بسبب عدم وجود name_ar عربي (Rule 27 NO-FAKE-DATA — مفيش اختلاق)
+- 7 EGS tickers معطّلة بدون canonical بديل — في TODO list للمراجعة اليدوية
+- Backups موجودة: `db/stocks.db.bak.pre-ticker-purge-20261012102507` + في-DB snapshot table
+
+## الـ Commit
+`71a1ffe0 purge(P0-TICKER-PURGE): align EGX tickers + ticker_registry ingestion hook`
+
+Stage Summary:
+- كل ادعاءات المدير العام مُتحقق منها + مُصلحة
+- 100% من الأسهم النشطة بـ tradingview_symbol
+- 0 تكرارات نشطة
+- ingestion constraint شغّال لمنع الانتكاس
+- المنصة تعمل (HTTP 200)
+- Rule 27 محترمة: مفيش اختلاق أسماء عربية
