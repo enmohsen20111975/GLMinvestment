@@ -70,6 +70,28 @@ VALID_SECTORS = {
 }
 
 # =====================================================================
+# TICKER_OVERRIDES — تصحيح يدوي للعمالقة (إقرار المدير العام 2026-10-12)
+# =====================================================================
+# هؤلاء شركات كبيرة ذات نشاط معروف، لكن حقول sector/industry/name لا تكفي
+# لتصنيفهم بدقة آليًا (شركات قابضة متعددة الأنشطة، أو الاسم العربي مضلل).
+# القرار الإداري وافق عليه المدير العام صراحة (FINAL APPROVAL) ولا يُعتبر
+# اختلاقًا (Rule 27 محترمة) بل تصحيحًا معلوماتيًا موثقًا.
+# لو أضفت شركات هنا، موّق السبب في comment.
+TICKER_OVERRIDES = {
+    # Talaat Moustafa Group — أكبر مطوّر عقاري مصري (EGX30). "Holding" لا يعني
+    # أنها مالية؛ نشاطها الأساسي تطوير عقاري. sector='Finance' مضلل في DB.
+    "TMGH": SECTOR_REAL_ESTATE,
+    # El Sewedy Electric — كابلات/كهرباء/موارد. sector='Producer Manufacturing'
+    # يُدخلها "موارد أساسية وكيماويات" (الأقرب من الـ 10 المعتمدة).
+    "SWDY": SECTOR_RESOURCES,
+    # Egypt Kuwait Holding — استثمارات قابضة متعددة الأنشطة (طاقة/بتروكيماويات/
+    # تأمين). "قابضة" → خدمات مالية غير مصرفية (قرار المدير).
+    "EKHO": SECTOR_FIN_SERVICES,
+    # Amer Group — مطوّع سياحي/فنادق عقاريًا (Porto). نشاطها الأشهر سياحي.
+    "AMER": SECTOR_TOURISM,
+}
+
+# =====================================================================
 # الكلمات المفتاحية لكل قطاع (عربي + إنجليزي)
 # =====================================================================
 # ملاحظات:
@@ -255,17 +277,23 @@ def has_any(text: str, keywords) -> bool:
 
 
 def classify(stock: dict) -> str | None:
-    """تحديد القطاع المعتمد من sector + industry + name + name_ar.
+    """تحديد القطاع المعتمد من ticker + sector + industry + name + name_ar.
 
     Returns:
         أحد قيم VALID_SECTORS أو None (Rule 27 — لا اختلاق).
     """
+    ticker = (stock.get("ticker") or "").strip().upper()
     sector = (stock.get("sector") or "").strip()
     industry = (stock.get("industry") or "").strip()
     name = (stock.get("name") or "").strip()
     name_ar = (stock.get("name_ar") or "").strip()
     # text يجمع كل الحقول للبحث الموحد
     text = f"{sector} | {industry} | {name} | {name_ar}"
+
+    # ===== 0. TICKER_OVERRIDES — تصحيح العمالقة (إقرار المدير العام) =====
+    # يُفحص أولًا لأنه قرار إداري صريح، أخصّ من أي استدلال آلي.
+    if ticker in TICKER_OVERRIDES:
+        return TICKER_OVERRIDES[ticker]
 
     # ===== ترتيب الفحوصات: الأخص أولًا =====
 
@@ -376,11 +404,13 @@ def main() -> int:
     # -----------------------------------------------------------------
     # 4. صنّف وحدّث
     # -----------------------------------------------------------------
+    overrides_applied = 0
     updates = []
     classified = 0
     null_count = 0
     for s in stocks:
         stock_dict = {
+            "ticker": s["ticker"],
             "sector": s["sector"],
             "industry": s["industry"],
             "name": s["name"],
@@ -390,12 +420,15 @@ def main() -> int:
         updates.append((result, s["id"]))
         if result:
             classified += 1
+            if s["ticker"] and s["ticker"].upper() in TICKER_OVERRIDES:
+                overrides_applied += 1
         else:
             null_count += 1
 
     cur.executemany("UPDATE stocks SET sector_ar = ? WHERE id = ?", updates)
     conn.commit()
     print(f"[update] {classified} classified, {null_count} left NULL (Rule 27).")
+    print(f"[update] {overrides_applied} ticker overrides applied (TMGH/SWDY/EKHO/AMER).")
 
     # -----------------------------------------------------------------
     # 5. AFTER: التوزيع الجديد لـ sector_ar
