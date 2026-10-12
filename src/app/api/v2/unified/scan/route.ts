@@ -19,16 +19,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { apiErr } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
+// Loose JSON record — Python responses don't have a strict schema (Rule 20).
+type LooseRecord = Record<string, unknown>;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function postPython(path: string, body: any, timeoutMs = 15000): Promise<any | null> {
+async function postPython(path: string, body: LooseRecord, timeoutMs = 15000): Promise<LooseRecord | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -41,13 +45,13 @@ async function postPython(path: string, body: any, timeoutMs = 15000): Promise<a
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
-    return await res.json();
+    return (await res.json()) as LooseRecord;
   } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
 
-async function getPython(path: string, timeoutMs = 10000): Promise<any | null> {
+async function getPython(path: string, timeoutMs = 10000): Promise<LooseRecord | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -59,31 +63,33 @@ async function getPython(path: string, timeoutMs = 10000): Promise<any | null> {
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
-    return await res.json();
+    return (await res.json()) as LooseRecord;
   } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
 
-function pickList(data: any): any[] {
+function pickList(data: LooseRecord | null): LooseRecord[] {
   if (!data) return [];
-  if (Array.isArray(data)) return data;
+  if (Array.isArray(data)) return data as LooseRecord[];
   for (const key of ['results', 'stocks', 'recommendations', 'data']) {
-    if (Array.isArray(data[key])) return data[key];
+    const v = data[key];
+    if (Array.isArray(v)) return v as LooseRecord[];
   }
   return [];
 }
 
-function num(v: any, fallback = 0): number {
+function num(v: unknown, fallback = 0): number {
   const n = typeof v === 'number' ? v : parseFloat(String(v));
   return Number.isFinite(n) ? n : fallback;
 }
 
-function scoreOf(rec: any, persona: string): number {
+function scoreOf(rec: LooseRecord, persona: string): number {
   // Try common score fields
   const candidates = ['score', 'maestro_score', 'unified_score', 'master_score', 'total_score'];
   for (const c of candidates) {
-    if (typeof rec[c] === 'number') return rec[c];
+    const v = rec[c];
+    if (typeof v === 'number') return v;
   }
   // Derive from confidence
   if (typeof rec.confidence === 'number') return Math.min(100, Math.max(0, rec.confidence));
@@ -112,17 +118,17 @@ function scoreOf(rec: any, persona: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    let body: any = {};
+    let body: LooseRecord = {};
     try {
-      body = await request.json();
+      body = (await request.json()) as LooseRecord;
     } catch { // silent fallback (safe-by-design)
       // Empty body is OK
     }
 
     const market    = String(body.market    || 'EGX');
     const persona   = String(body.persona   || 'balanced');
-    const topN      = Math.max(1,  Math.min(100, parseInt(body.top_n   || '20', 10) || 20));
-    const minScore  = Math.max(0,  Math.min(100, parseInt(body.min_score || '60', 10) || 60));
+    const topN      = Math.max(1,  Math.min(100, parseInt(String(body.top_n   || '20'), 10) || 20));
+    const minScore  = Math.max(0,  Math.min(100, parseInt(String(body.min_score || '60'), 10) || 60));
 
     // 1) Try Python unified/scan first
     const pyResp = await postPython('/api/v2/unified/scan', { market, persona, top_n: topN, min_score: minScore });
@@ -146,10 +152,10 @@ export async function POST(request: NextRequest) {
       getPython(`/api/scanner/quick?limit=${topN}`),
     ]);
 
-    const merged: any[] = [];
+    const merged: LooseRecord[] = [];
     const seen = new Set<string>();
 
-    const addAll = (items: any[]) => {
+    const addAll = (items: LooseRecord[]) => {
       for (const it of items) {
         const ticker = String(it.ticker || it.symbol || it.stock || '').toUpperCase();
         if (!ticker || seen.has(ticker)) continue;
@@ -199,16 +205,16 @@ export async function POST(request: NextRequest) {
         : 'No stocks passed the min_score threshold. Backend data sources may be empty.',
     });
   } catch (error) {
-    return NextResponse.json(
+    return apiErr(
+      'unified_scan_failed',
+      'فشل المسح الموحد للسوق',
+      500,
       {
-        success: false,
-        error: 'فشل المسح الموحد للسوق',
         error_en: 'Unified market scan failed',
-        details: error instanceof Error ? error.message : String(error),
+        cause: error instanceof Error ? error.message : String(error),
         results: [],
         count: 0,
-      },
-      { status: 500 }
+      }
     );
   }
 }
