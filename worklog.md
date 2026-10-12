@@ -79816,7 +79816,7 @@ Stage Summary:
 - Responsive كامل (flex-wrap + grid)
 
 
-<<<<<<< HEAD
+
 ---
 Task ID: ALPHA-AI-CONFIDENCE-UI
 Agent: فريق ألفا (UI/Frontend Team)
@@ -79871,7 +79871,7 @@ Stage Summary:
 - 3 tiers: ثقة عالية (emerald) + متوسطة (blue) + محايد (muted)
 - Rule 27 محترمة (fallback neutral لو مفيش data)
 - 0 أخطاء TypeScript جديدة
-=======
+
 
 ---
 Task ID: BRAVO-LGBM-SIGNAL-CLASSIFIER
@@ -79936,9 +79936,9 @@ Stage Summary:
 - Model saved: models/lgbm_signal_gatekeeper.joblib (85.1 KB, compressed=3).
 - Rule 27 ✅ + Rule 20 ✅ + لا commit/push ✅ + mode=ro ✅ + idempotent ✅.
 - ✅ النموذج جاهز للاستخدام كـ Gatekeeper في inference مستقبلي.
->>>>>>> 3d6d6ec (feat(BRAVO-LGBM): نموذج LightGBM لتصنيف الصفقات — Signal Gatekeeper ML)
 
-<<<<<<< HEAD
+
+
 <<<<<<< ALPHA-3-DEEP-ANALYSIS-SPEED (feat: deep-analysis cache + 15s timeout)
 
 Task ID: ALPHA-3-DEEP-ANALYSIS-SPEED
@@ -80030,7 +80030,7 @@ Stage Summary:
   3. `_stock_get_board_manager().generate_final_report(ticker)` لسه heavy بدون
      cache مستقل — ممكن نضيف board_cache (TTL=120s) في PHASE 2 لو لسه بطيء.
 
->>>>>>> ALPHA-3-DEEP-ANALYSIS-SPEED (feat: deep-analysis cache + 15s timeout)
+
 
 <<<<<<< ALPHA-2-DEFENSIVE-STOCKS (feat: defensive stock filter for DEFENSIVE regime)
 
@@ -80151,8 +80151,8 @@ Stage Summary:
   3. إضافة tests في tests/unit/test_phase_g_critical_engines.py عشان
      نضمن إن get_defensive_stocks() ما يكسرش مع schema changes مستقبلية.
 
->>>>>>> ALPHA-2-DEFENSIVE-STOCKS (feat: defensive stock filter for DEFENSIVE regime)
-=======
+
+
 ---
 Task ID: BRAVO-UX-INSTITUTIONAL-SHIELDS
 Agent: مهندس واجهات Next.js (فريق GLM 5.2-Bravo)
@@ -80224,7 +80224,7 @@ Stage Summary:
 - ✅ lucide-react icons (ShieldAlert, ShieldCheck, Loader2, Clock).
 - ⛔ لا commit/push.
 - ⛔ لا حذف منطق مالي أو fallback موجود.
->>>>>>> 45bfcb6 (feat(BRAVO-UX): حماية مؤسسية + fallback سلس + بطاقات ذكية)
+
 
 ---
 Task ID: BRAVO-CODEPLOY-B2-B3
@@ -80485,6 +80485,7 @@ Stage Summary:
   الأداء أفضل بكثير مع DB صحيح.
 
 ---
+<<<<<<< Updated upstream
 Task ID: BRAVO-CRYPTO-LIBERATION
 Agent: مهندس الرياضيات والأنظمة الكمية (فريق GLM 5.2-Bravo)
 Task: تحرير سوق الكريبتو 24/7 + STABLECOINS blacklist + crypto_prices schema fix
@@ -80534,6 +80535,7 @@ Stage Summary:
 - ✅ dry-run test: 7/7 مراحل ناجحة + JSON 1,786 bytes + log 5KB.
 - ✅ التقرير الصباحي يعرض: 1,551 توقع نشط (EGX 1,474 + US 76 + CRYPTO 1).
 - ✅ Syntax check: 2/2 files OK.
+
 
 ---
 Task ID: BRAVO-GRAND-SIMULATION-PHASES-2-3
@@ -80712,3 +80714,44 @@ Stage Summary:
   format support). هذا التغيير backward compatible مع V1 لكن يحتاج مراجعة.
 - ⚠ ملاحظة للمدير (5): stock_daily_prices يحوي EGX + US فقط — لا TADAWUL/KSE/QSE.
   التوصية: ملء بيانات الأسواق الأخرى قبل أي per-market breakdown حقيقي لها.
+
+
+Task ID: NIGHTLY-PLATFORM-POLISH
+Agent: فريق ألفا (UI/UX)
+Task: برنامج التطوير الشامل لتجربة المستثمر وتطهير الشاشات وهندسة التجاوب
+
+## المرحلة الأولى: التدقيق والتطهير الشامل (13 replacements)
+- استبدال نصوص برمجية إنجليزية بـ مصطلحات مالية عربية فخمة في 10 ملفات
+- حظر الشاشات الفارغة الجافة: "لا توجد بيانات كافية" → "جاري تجهيز..." أو "بانتظار..."
+- الملفات المُطهرة: GateAnalysisView, TradingViewChart, ProfessionalTradingChart, RoboAdvisorPanel (×2), MarketDepthPanel, StockAdvancedAnalysisView, ExpertPredictionsTab (×2), MarketDepthLiquidityWidget, MarketStatusTab (×2), MasterPortfolioSummary
+
+## المرحلة الثانية: استوديو التقارير التنفيذية
+- `ExecutiveMorningBrief` component جديد في ReportsView.tsx
+- 3 بطاقات تنفيذية صباحية:
+  1. **حالة السوق وحماية رأس المال** (Market Regime): دفاعي/هجومي/طبيعي + نصيحة + اتساع السوق
+  2. **أفضل الفرص الصاعدة** (Top AI Picks): top 3 picks + change%
+  3. **تدفق السيولة المؤسسية** (Smart Money Inflow): net flow + إجمالي التداول
+- زر **تصدير كصورة** (Export as Image): html-to-image → PNG عالية الجودة
+- Responsive: grid 1-col mobile / 3-col desktop
+
+## المرحلة الثالثة: هندسة التجاوب الكامل
+- استبدال 45 hardcoded slate/amber color بـ design tokens في ReportsView.tsx
+- text-slate-300 → text-muted-foreground
+- text-amber-300 → text-amber-600 dark:text-amber-400
+- border-slate-700 → border-border
+- bg-slate-700 → bg-muted
+- DailyReportPayload: أضيف [k: string]: unknown للـ index signature
+
+## التحقق
+- `npx tsc --noEmit`: 0 أخطاء جديدة ✅
+- Rule 27: كل البيانات من API (لا اختلاق) ✅
+- design tokens فقط (slate → muted/foreground/border) ✅
+- Responsive: flex-wrap + grid responsive + touch-friendly ✅
+
+Stage Summary:
+- 13 empty-state + English debug string replacements (10 ملفات)
+- ExecutiveMorningBrief: 3 بطاقات + تصدير صورة
+- 45 color → design tokens في ReportsView
+- 0 أخطاء TypeScript جديدة
+
+
