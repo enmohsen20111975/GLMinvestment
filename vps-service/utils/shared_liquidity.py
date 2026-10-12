@@ -1118,6 +1118,390 @@ def check_kill_switch(
     return False, ''
 
 
+# ============================================================================
+# PHASE-5: WYCKOFF ACCUMULATION — 4-Phase Schematic (GLM5.3-S1-WYCKOFF)
+# ============================================================================
+# قرار المالك (2026-10-12): استبدال المنطق السطحي بـ Wyckoff Schematic كامل.
+# المراحل الأربع الكنسية:
+#   A — Selling Climax (SC) + Automatic Rally (AR)
+#   B — Cause Building (tight range + volume dry-up)
+#   C — Spring / Shakeout (false break below support, close back above)
+#   D — Sign of Strength (SOS — green candle + volume + close > midpoint)
+#
+# إطلاق إشارة "تجميع سيولة" يتطلب شرطين معًا:
+#   1. السعر في الثلث السفلي من نطاق التذبذب (Support Zone)
+#   2. VSA مؤكد: الحجم ينكمش في الهبوط + يتسع في الصعود
+#
+# Wash Trading Filter:
+#   لو volume > 3× avg_20d + doji (body < 0.3% of range) أو نطاق ضيق جدًا
+#   → ألغِ إشارة التجميع + صنّفها CHURNING_WASH_TRADE.
+#
+# Rule 27 (NO-FAKE-DATA): كل المدخلات (closes/volumes/highs/lows) من stocks.db.
+# Rule 67 (CALCULATION-CANONICAL): avg_20d_vol محسوب من البيانات الكنسية المُمرّرة.
+
+# ─── عتبات Wyckoff (canonical) ─────────────────────────────────────────────
+WYCKOFF_LOOKBACK_DEFAULT = 30          # نافذة فحص المراحل (30 يوم)
+WYCKOFF_AVG_VOLUME_WINDOW = 20         # متوسط حجم 20 يوم (canonical)
+WYCKOFF_SPRING_DETECTION_WINDOW = 5    # آخر 5 أيام للبحث عن Spring/SOS
+
+# Phase A — Selling Climax + Automatic Rally
+WYCKOFF_SC_DROP_PCT_MIN = 3.0          # هبوط يومي ≥ 3%
+WYCKOFF_SC_VOLUME_RATIO = 1.8          # volume ≥ 1.8× avg_20d
+
+# Phase B — Cause Building
+WYCKOFF_CAUSE_RANGE_MAX_PCT = 5.0      # نطاق 5-10 أيام < 5%
+WYCKOFF_CAUSE_VOLUME_RATIO_MAX = 0.7   # volume < 0.7× avg_20d
+WYCKOFF_CAUSE_WINDOW_MIN = 5
+WYCKOFF_CAUSE_WINDOW_MAX = 10
+
+# Phase C — Spring / Shakeout
+WYCKOFF_SPRING_BREAK_PCT = 0.97        # low < support * 0.97
+
+# Phase D — Sign of Strength
+WYCKOFF_SOS_CHANGE_PCT_MIN = 2.0       # change > +2%
+WYCKOFF_SOS_VOLUME_RATIO = 1.8         # volume > 1.8× avg_20d
+
+# Wash Trade Filter
+WYCKOFF_WASH_VOLUME_RATIO = 3.0        # volume > 3× avg_20d
+WYCKOFF_WASH_DOJI_BODY_PCT = 0.3       # body < 0.3% of range (doji)
+WYCKOFF_WASH_NARROW_RANGE_PCT = 0.5    # range < 0.5% of close
+
+# Position size (إشارة Wyckoff = دخول مبكر جدًا، حجم صغير)
+WYCKOFF_ACCUMULATION_POSITION_SIZE = 0.015  # 1.5% (مثل PRE_SURGE — paper mode)
+
+
+def _wyckoff_avg_volume(volumes: List[float], window: int = WYCKOFF_AVG_VOLUME_WINDOW) -> float:
+    """متوسط حجم آخر `window` شمعة (canonical — Rule 67)."""
+    if not volumes or len(volumes) < window:
+        # fallback: متوسط كل ما هو متاح (لو أقل من window)
+        if not volumes:
+            return 0.0
+        return sum(volumes) / len(volumes)
+    return sum(volumes[-window:]) / window
+
+
+def _is_wash_trade_candle(
+    open_p: float,
+    close_p: float,
+    high_p: float,
+    low_p: float,
+    volume: float,
+    avg_20d_vol: float,
+) -> Tuple[bool, str]:
+    """فحص شمعة واحدة: هل هي wash trade؟
+
+    الشروط (volume > 3× avg_20d + (doji OR narrow range)):
+      - doji: body < 0.3% من range (الجسم شبه معدوم)
+      - narrow range: range < 0.5% من close (مدى ضيق للغاية)
+
+    Returns:
+        (is_wash, reason)
+    """
+    if avg_20d_vol <= 0:
+        return False, 'avg_20d_vol = 0'
+
+    vol_ratio = volume / avg_20d_vol
+    if vol_ratio <= WYCKOFF_WASH_VOLUME_RATIO:
+        return False, f'vol_ratio={vol_ratio:.2f} ≤ {WYCKOFF_WASH_VOLUME_RATIO}'
+
+    # حساب الـ body والـ range
+    body = abs(close_p - open_p)
+    candle_range = max(high_p - low_p, 1e-9)  # guard ضد القسمة على صفر
+    body_pct = (body / candle_range) * 100.0
+    close_safe = max(abs(close_p), 1e-9)
+    range_pct = (candle_range / close_safe) * 100.0
+
+    is_doji = body_pct < WYCKOFF_WASH_DOJI_BODY_PCT
+    is_narrow = range_pct < WYCKOFF_WASH_NARROW_RANGE_PCT
+
+    if is_doji:
+        return True, f'wash_trade (vol={vol_ratio:.2f}× + doji body={body_pct:.4f}% < {WYCKOFF_WASH_DOJI_BODY_PCT}%)'
+    if is_narrow:
+        return True, f'wash_trade (vol={vol_ratio:.2f}× + narrow range={range_pct:.4f}% < {WYCKOFF_WASH_NARROW_RANGE_PCT}%)'
+    return False, f'vol={vol_ratio:.2f}× لكن body={body_pct:.2f}% range={range_pct:.2f}% (مش doji/narrow)'
+
+
+def detect_wyckoff_accumulation(
+    closes: List[float],
+    volumes: List[float],
+    highs: List[float] = None,
+    lows: List[float] = None,
+    lookback: int = WYCKOFF_LOOKBACK_DEFAULT,
+) -> Tuple[bool, str, dict]:
+    """PHASE-5: كشف Wyckoff Accumulation Schematic (4 مراحل كاملة).
+
+    يفحص آخر `lookback` يوم ويحدد أي من المراحل الأربع متحققة:
+      - A_SC        : Selling Climax + Automatic Rally
+      - B_CAUSE     : Cause Building (نطاق ضيق + حجم منخفض)
+      - C_SPRING    : Spring / Shakeout (كسر وهمي للقاع)
+      - D_SOS       : Sign of Strength (شمعة خضراء قوية + حجم + close > midpoint)
+      - CHURNING_WASH_TRADE : wash trade (تدوير وتصريف محتمل)
+
+    إطلاق إشارة "تجميع سيولة" يتطلب شرطين معًا:
+      1. السعر في الثلث السفلي من نطاق التذبذب (Support Zone)
+      2. VSA مؤكد: avg_up_vol > avg_down_vol (الحجم يتسع في الصعود)
+
+    Phase priority (الأعلى أولوية):
+      CHURNING_WASH_TRADE > D_SOS > C_SPRING > B_CAUSE > A_SC > NONE
+
+    Returns:
+        (is_signal, reason, details)
+        - is_signal: True لو إشارة التجميع مطلقة (phase != WASH/NONE + in_support_zone + vsa_confirmed)
+        - reason: وصف القرار
+        - details: dict فيه:
+            * phase: 'A_SC'|'B_CAUSE'|'C_SPRING'|'D_SOS'|'CHURNING_WASH_TRADE'|'NONE'
+            * phases_detected: list of dicts (لكل مرحلة detailsها)
+            * support, resistance, range_pct, midpoint, lower_third
+            * avg_20d_volume
+            * vsa_confirmed, avg_up_volume, avg_down_volume
+            * in_support_zone
+            * wash_trade_detected
+
+    Rule 27 (NO-FAKE-DATA): كل المدخلات من stocks.db — ما يلعبش ببيانات وهمية.
+    Rule 67 (CALCULATION-CANONICAL): avg_20d_vol محسوب من canonical window.
+    """
+    details = {
+        'phase': 'NONE',
+        'phases_detected': [],
+        'support': None,
+        'resistance': None,
+        'range_pct': None,
+        'midpoint': None,
+        'lower_third': None,
+        'avg_20d_volume': None,
+        'vsa_confirmed': False,
+        'avg_up_volume': 0.0,
+        'avg_down_volume': 0.0,
+        'in_support_zone': False,
+        'wash_trade_detected': False,
+        'signal_count': 0,
+        'signals_met': [],
+        'lookback': lookback,
+    }
+
+    # 0. التحقق من كفاية البيانات
+    needed = max(lookback, WYCKOFF_AVG_VOLUME_WINDOW + 5)
+    if not closes or not volumes or len(closes) < needed or len(volumes) < needed:
+        return False, f'بيانات غير كافية ({len(closes) if closes else 0} < {needed})', details
+
+    # 0.5: تعويض highs/lows لو مش متاحة (proxy من closes)
+    n = len(closes)
+    if not highs or len(highs) < n:
+        highs = [max(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(n)]
+    if not lows or len(lows) < n:
+        lows = [min(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(n)]
+
+    # 1. متوسط حجم 20 يوم (canonical — Rule 67)
+    avg_20d_vol = _wyckoff_avg_volume(volumes, WYCKOFF_AVG_VOLUME_WINDOW)
+    if avg_20d_vol <= 0:
+        return False, 'avg_20d_vol = 0 (لا يمكن حساب النسب)', details
+    details['avg_20d_volume'] = round(avg_20d_vol, 0)
+
+    # 2. تحديد نافذة الفحص (lookback) — آخر `lookback` يوم
+    lb_closes = list(closes[-lookback:])
+    lb_highs = list(highs[-lookback:])
+    lb_lows = list(lows[-lookback:])
+    lb_volumes = list(volumes[-lookback:])
+
+    # 3. تحديد support/resistance من أول (lookback - spring_window) يوم
+    #    (نستثني آخر 5 أيام عشان Spring/SOS يكونوا قادرين يكسروا الـ support)
+    spring_window = WYCKOFF_SPRING_DETECTION_WINDOW
+    if len(lb_lows) > spring_window:
+        support_window_lows = lb_lows[:-spring_window]
+        support_window_highs = lb_highs[:-spring_window]
+    else:
+        support_window_lows = lb_lows
+        support_window_highs = lb_highs
+
+    support = min(support_window_lows) if support_window_lows else 0.0
+    resistance = max(support_window_highs) if support_window_highs else 0.0
+    if support <= 0:
+        return False, 'support ≤ 0 (بيانات غير صالحة)', details
+
+    rng = max(resistance - support, 0.0)
+    range_pct = (rng / support) * 100.0
+    midpoint = (support + resistance) / 2.0
+    lower_third = support + rng / 3.0
+
+    details['support'] = round(support, 4)
+    details['resistance'] = round(resistance, 4)
+    details['range_pct'] = round(range_pct, 2)
+    details['midpoint'] = round(midpoint, 4)
+    details['lower_third'] = round(lower_third, 4)
+
+    last_close = closes[-1]
+    in_support_zone = last_close <= lower_third
+    details['in_support_zone'] = in_support_zone
+
+    # 4. VSA (Volume Spread Analysis): avg_up_vol > avg_down_vol
+    up_vols: List[float] = []
+    down_vols: List[float] = []
+    for i in range(1, len(lb_closes)):
+        if lb_closes[i] > lb_closes[i-1]:
+            up_vols.append(lb_volumes[i])
+        elif lb_closes[i] < lb_closes[i-1]:
+            down_vols.append(lb_volumes[i])
+    avg_up_vol = sum(up_vols) / len(up_vols) if up_vols else 0.0
+    avg_down_vol = sum(down_vols) / len(down_vols) if down_vols else 0.0
+    vsa_confirmed = (avg_down_vol > 0 and avg_up_vol > avg_down_vol)
+    details['avg_up_volume'] = round(avg_up_vol, 0)
+    details['avg_down_volume'] = round(avg_down_vol, 0)
+    details['vsa_confirmed'] = vsa_confirmed
+
+    # 5. Phase A — SC + AR (Selling Climax + Automatic Rally)
+    for i in range(1, len(lb_closes)):
+        prev_c = lb_closes[i-1]
+        cur_c = lb_closes[i]
+        if prev_c <= 0:
+            continue
+        drop_pct = (cur_c - prev_c) / prev_c * 100.0
+        cur_vol = lb_volumes[i]
+        if drop_pct < -WYCKOFF_SC_DROP_PCT_MIN and cur_vol > WYCKOFF_SC_VOLUME_RATIO * avg_20d_vol:
+            # ابحث عن AR في اليوم التالي (close[i+1] > close[i] + volume أقل)
+            if i + 1 < len(lb_closes):
+                ar_close = lb_closes[i+1]
+                ar_vol = lb_volumes[i+1]
+                if ar_close > cur_c and ar_vol < cur_vol:
+                    details['phases_detected'].append({
+                        'phase': 'A_SC',
+                        'day_index': i,
+                        'drop_pct': round(drop_pct, 2),
+                        'sc_vol_ratio': round(cur_vol / avg_20d_vol, 2),
+                        'ar_close': round(ar_close, 4),
+                        'ar_vol_ratio': round(ar_vol / avg_20d_vol, 2),
+                    })
+                    break  # خذ أول SC
+
+    # 6. Phase B — Cause Building (نطاق ضيق + حجم منخفض في 5-10 أيام)
+    for window_size in (WYCKOFF_CAUSE_WINDOW_MAX, 7, WYCKOFF_CAUSE_WINDOW_MIN):
+        if len(lb_closes) < window_size:
+            continue
+        w_closes = lb_closes[-window_size:]
+        w_lows = lb_lows[-window_size:]
+        w_highs = lb_highs[-window_size:]
+        w_vols = lb_volumes[-window_size:]
+        w_min = min(w_lows)
+        w_max = max(w_highs)
+        if w_min <= 0:
+            continue
+        w_range_pct = (w_max - w_min) / w_min * 100.0
+        w_avg_vol = sum(w_vols) / window_size
+        if (w_range_pct < WYCKOFF_CAUSE_RANGE_MAX_PCT
+                and w_avg_vol < WYCKOFF_CAUSE_VOLUME_RATIO_MAX * avg_20d_vol):
+            details['phases_detected'].append({
+                'phase': 'B_CAUSE',
+                'window': window_size,
+                'range_pct': round(w_range_pct, 2),
+                'vol_ratio': round(w_avg_vol / avg_20d_vol, 2),
+            })
+            break  # خذ أكبر نافذة مطابقة
+
+    # 7. Phase C — Spring / Shakeout (كسر وهمي للقاع + إغلاق فوقه)
+    spring_search_start = max(1, len(lb_closes) - WYCKOFF_SPRING_DETECTION_WINDOW)
+    for i in range(spring_search_start, len(lb_closes)):
+        l = lb_lows[i]
+        c = lb_closes[i]
+        if l < support * WYCKOFF_SPRING_BREAK_PCT and c > support:
+            details['phases_detected'].append({
+                'phase': 'C_SPRING',
+                'day_index': i,
+                'low': round(l, 4),
+                'close': round(c, 4),
+                'support': round(support, 4),
+            })
+            break
+
+    # 8. Phase D — SOS (Sign of Strength): آخر شمعة خضراء قوية + volume + close > midpoint
+    if len(closes) >= 2:
+        prev_c = closes[-2]
+        last_c = closes[-1]
+        if prev_c > 0:
+            change_pct = (last_c - prev_c) / prev_c * 100.0
+            last_vol = volumes[-1]
+            if (last_c > prev_c
+                    and change_pct > WYCKOFF_SOS_CHANGE_PCT_MIN
+                    and last_vol > WYCKOFF_SOS_VOLUME_RATIO * avg_20d_vol
+                    and last_c > midpoint):
+                details['phases_detected'].append({
+                    'phase': 'D_SOS',
+                    'change_pct': round(change_pct, 2),
+                    'vol_ratio': round(last_vol / avg_20d_vol, 2),
+                    'close_vs_midpoint': round(last_c - midpoint, 4),
+                })
+
+    # 9. Wash Trade Filter (churning): volume > 3× avg + doji/narrow range
+    wash_search_start = max(0, len(lb_closes) - WYCKOFF_SPRING_DETECTION_WINDOW)
+    for i in range(wash_search_start, len(lb_closes)):
+        if i == 0:
+            open_p = lb_closes[0]
+        else:
+            open_p = lb_closes[i-1]  # proxy open = previous close (لو opens مش متاحة)
+        close_p = lb_closes[i]
+        high_p = lb_highs[i]
+        low_p = lb_lows[i]
+        vol = lb_volumes[i]
+        is_wash, wash_reason = _is_wash_trade_candle(open_p, close_p, high_p, low_p, vol, avg_20d_vol)
+        if is_wash:
+            details['wash_trade_detected'] = True
+            details['phases_detected'].append({
+                'phase': 'CHURNING_WASH_TRADE',
+                'day_index': i,
+                'vol_ratio': round(vol / avg_20d_vol, 2),
+                'reason': wash_reason,
+            })
+            break
+
+    # 10. تحديد الـ phase النهائية بالأولوية
+    phase_priority = ['CHURNING_WASH_TRADE', 'D_SOS', 'C_SPRING', 'B_CAUSE', 'A_SC']
+    detected_phases = [p['phase'] for p in details['phases_detected']]
+    final_phase = 'NONE'
+    for ph in phase_priority:
+        if ph in detected_phases:
+            final_phase = ph
+            break
+    details['phase'] = final_phase
+    details['signals_met'] = detected_phases
+    details['signal_count'] = len(detected_phases)
+
+    # 11. قرار إطلاق الإشارة
+    if final_phase == 'CHURNING_WASH_TRADE':
+        is_signal = False
+        reason = (
+            '⚠️ CHURNING_WASH_TRADE — حجم ضخم (>3× avg) بدون حركة سعرية حقيقية '
+            '(doji أو نطاق ضيق للغاية). تدوير وتصريف محتمل — تم إلغاء إشارة التجميع.'
+        )
+    elif final_phase == 'NONE':
+        is_signal = False
+        reason = f'لا توجد مرحلة Wyckoff واضحة. phases_detected={detected_phases}'
+    else:
+        if in_support_zone and vsa_confirmed:
+            is_signal = True
+            reason = (
+                f'🎯 WYCKOFF_ACCUMULATION — phase={final_phase}. '
+                f'in_support_zone={in_support_zone} (close={last_close:.4f} ≤ lower_third={lower_third:.4f}), '
+                f'vsa_confirmed={vsa_confirmed} (up_vol={avg_up_vol:.0f} > down_vol={avg_down_vol:.0f}). '
+                f'Phases: {detected_phases}. '
+                f'⚠️ position size {WYCKOFF_ACCUMULATION_POSITION_SIZE*100:.1f}%'
+            )
+        else:
+            is_signal = False
+            reasons = []
+            if not in_support_zone:
+                reasons.append(
+                    f'السعر ليس في الثلث السفلي (close={last_close:.4f} > lower_third={lower_third:.4f})'
+                )
+            if not vsa_confirmed:
+                reasons.append(
+                    f'VSA غير مؤكد (avg_up_vol={avg_up_vol:.0f}, avg_down_vol={avg_down_vol:.0f})'
+                )
+            reason = (
+                f'phase={final_phase} لكن الإشارة غير مطلقة: {"; ".join(reasons)}. '
+                f'Phases: {detected_phases}'
+            )
+
+    return is_signal, reason, details
+
+
 __all__ = [
     'DYNAMIC_TURNOVER_THRESHOLDS',
     'PUMP_AND_DUMP_TURNOVER_FLOOR',
@@ -1141,6 +1525,21 @@ __all__ = [
     'detect_life_cycle',
     'check_limit_up_trap',
     'check_kill_switch',
+    # PHASE-5: Wyckoff Accumulation (GLM5.3-S1-WYCKOFF)
+    'WYCKOFF_LOOKBACK_DEFAULT',
+    'WYCKOFF_AVG_VOLUME_WINDOW',
+    'WYCKOFF_SC_DROP_PCT_MIN',
+    'WYCKOFF_SC_VOLUME_RATIO',
+    'WYCKOFF_CAUSE_RANGE_MAX_PCT',
+    'WYCKOFF_CAUSE_VOLUME_RATIO_MAX',
+    'WYCKOFF_SPRING_BREAK_PCT',
+    'WYCKOFF_SOS_CHANGE_PCT_MIN',
+    'WYCKOFF_SOS_VOLUME_RATIO',
+    'WYCKOFF_WASH_VOLUME_RATIO',
+    'WYCKOFF_WASH_DOJI_BODY_PCT',
+    'WYCKOFF_WASH_NARROW_RANGE_PCT',
+    'WYCKOFF_ACCUMULATION_POSITION_SIZE',
+    'detect_wyckoff_accumulation',
     # Helpers
     'classify_price_bucket',
     'dynamic_min_turnover',
