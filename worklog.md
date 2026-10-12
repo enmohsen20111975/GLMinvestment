@@ -78571,3 +78571,90 @@ Stage Summary:
 - Rule 75: commit + push after each file (3 commits, all pushed to main)
 - pre-commit hook: PASS (check_no_hard_delete + check_no_raw_insert + ticker-registry)
 - 0 new TypeScript errors (pre-existing 1664 errors unchanged — none from wyckoff code)
+
+---
+Task ID: FINAL-ALPHA-WYCKOFF-DASHBOARD
+Agent: الفريق المسؤول الأول (GLM5.2-A)
+Task: التقرير النهائي — ماسح وايكوف التفاعلي + تتبع صفقات الحيتان
+
+## ملخص ما تم إنجازه (2 وكلاء بالتوازي)
+
+### S1: Wyckoff Screener API — ✅ مكتمل
+- `vps-service/api/wyckoff_screener_routes.py` (17722 bytes) — Python Flask blueprint
+- `src/app/api/maker-radar/wyckoff-screener/route.ts` (5115 bytes) — Node thin proxy (Rule 20)
+- `vps-service/lightweight_server.py` — updated لـ register الـ blueprint
+- الـ Python endpoint:
+  - يفحص الأسهم النشطة (EGX30/70/100/ALL)
+  - يقرأ آخر 30 يوم من stock_daily_prices
+  - يستدعي `detect_wyckoff_accumulation` (canonical — Rule 67)
+  - يقرأ whale flow من stock_intraday
+  - confidence scoring (0-100): support_zone + vsa + phase + signal_count
+  - phase_distribution aggregate
+- الـ Node proxy: thin HTTP proxy، 503 صريح لما Python unavailable (Rule 27)
+- Commits: `3851731f`, `a0d022e2`, `43986848`, `c8255c6b`
+
+### S2: Wyckoff UI Filters + Phase Tracker — ✅ مكتمل
+في `src/modules/predictions/components/MakerRadarTab.tsx`:
+- **زرّي فلترة** في شريط الفلترة:
+  - 🎯 صيد قيعان وايكوف (Spring Phase C) — يفلتر لـ phase='C_SPRING'
+  - ⚡ علامة القوة (SOS Phase D) — يفلتر لـ phase='D_SOS'
+  - زر إلغاء (✕) للفلتر
+- **state + useEffect**: بـ يستدعي `/api/maker-radar/wyckoff-screener` كل 60s
+- **intersection logic**: يقاطع نتائج الـ screener مع كل radar lists
+- **WyckoffPhaseTracker** component (L4299):
+  - منحنى 5 مراحل (A_SC → B_CAUSE → C_SPRING → D_SOS → EXIT)
+  - كل مرحلة: emoji + label عربي + dot ملون
+  - active phase: scale-125 + shadow + primary color
+  - progress bar ملون
+  - confidence badge
+- integration في StockDetailDrawer بعد IntradayCvdFlow
+- Commits: `c56cabda`, `ae1b0b79`
+
+## التحقق
+
+### API (Node proxy):
+- HTTP 503 + `python_backend_unreachable` لما Python معطل (Rule 27) ✅
+- الـ proxy بـ يمرر query string للـ Python endpoint بشكل صحيح
+- PAYWALL gate متطابق مع parent route
+
+### Python endpoint (blueprint):
+- `detect_wyckoff_accumulation` مستدعى من canonical (Rule 67) ✅
+- confidence scoring: +25 support_zone + +25 vsa + +20 phase + phase bonus + signal_count ✅
+- phase_distribution aggregate ✅
+- whale_flow_egp من stock_intraday ✅
+
+### UI:
+- WyckoffPhaseTracker component موجود (L4299) ✅
+- filter buttons موجود (L896, L1061) ✅
+- API call (L1069) ✅
+- intersection logic (L1388) ✅
+- npx tsc: 0 أخطاء جديدة (6 pre-existing في TradingPlanSection) ✅
+
+### dev server:
+- HTTP 200 على :3000 ✅
+- API 503 لما Python معطل (سلوك صحيح) ✅
+
+## التحقق النهائي
+- npx tsc: 0 أخطاء جديدة ✅
+- dev server: HTTP 200 ✅
+- pre-commit hook: PASS على كل commit ✅
+- Rule 20: Node = proxy، Python = brain ✅
+- Rule 27: 503 صريح، مفيش fallback وهمي ✅
+- Rule 67: detect_wyckoff_accumulation canonical ✅
+- design tokens فقط (مفيش hex colors) ✅
+
+## الـ Commits (6 commits)
+- `3851731f` feat(wyckoff-screener): Python blueprint
+- `a0d022e2` feat(wyckoff-screener): register blueprint in lightweight_server
+- `43986848` feat(wyckoff-screener): Node thin HTTP proxy route
+- `c8255c6b` docs: worklog S1
+- `c56cabda` feat(wyckoff-ui): 2 phase filter buttons + WyckoffPhaseTracker
+- `ae1b0b79` worklog: S2
+
+Stage Summary:
+- ماسح وايكوف متكامل: Python (computation) → Node (proxy) → UI (filters + tracker)
+- 2 filter buttons: C_SPRING (صيد القيعان) + D_SOS (علامة القوة)
+- WyckoffPhaseTracker: منحنى 5 مراحل مع active phase + confidence
+- API 503 صريح لما Python معطل (Rule 27)
+- 0 أخطاء TypeScript جديدة
+- 6 commits مدفوعة لـ origin/main
