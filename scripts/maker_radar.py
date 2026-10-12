@@ -48,6 +48,15 @@ from utils.shared_liquidity import (
 
 
 # ============================================================================
+# LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER — Owner Directive)
+# ============================================================================
+# القاعدة الصارمة: أي سهم يقل متوسط تداوله اليومي (20d) عن 2,000,000 EGP
+# يُصنف فورًا كـ disqualified_illiquid — مستبعد لضعف السيولة وانعدام صانع السوق.
+# الحد معتمد من المالك (سيدي محسن) كحارس مؤسسي صارم.
+LIQUIDITY_FLOOR_EGP = 2_000_000  # 2M EGP/day minimum 20d avg turnover
+
+
+# ============================================================================
 # PORTABLE + MARKET-AWARE DB DETECTION — يشتغل في sandbox + laptop + production
 # ============================================================================
 # Rule 67 (ROOT-CAUSE-FIRST, Task 35-A): the original `_find_radar_db()` was
@@ -262,6 +271,28 @@ def compute_turnover(row):
 
 
 # ============================================================================
+# LIQUIDITY GATEKEEPER — حارس السيولة الصارم (Task BRAVO-LIQUIDITY-GATEKEEPER)
+# ============================================================================
+def is_liquid_enough(avg_turnover_20d: float) -> bool:
+    """Liquidity Gatekeeper: avg 20d turnover must be >= 2,000,000 EGP.
+
+    القاعدة الصارمة (Owner Directive — Task BRAVO-LIQUIDITY-GATEKEEPER):
+      أي سهم يقل متوسط تداوله اليومي عن 2,000,000 EGP يُستبعد فورًا
+      لضعف السيولة وانعدام صانع السوق (لا يوجد maker يضمن تنفيذ الأوامر).
+
+    Args:
+        avg_turnover_20d: متوسط قيمة التداول اليومي آخر 20 يوم (EGP).
+
+    Returns:
+        True لو السهم مؤهل سيولياً (≥ 2M EGP/day)، False لو مستبعد.
+    """
+    try:
+        return float(avg_turnover_20d or 0) >= LIQUIDITY_FLOOR_EGP
+    except (TypeError, ValueError):
+        return False
+
+
+# ============================================================================
 # FRESHNESS GUARD (Task FIX-STALE-DTPP-2026-10-07 — Rule 71)
 # ============================================================================
 # ROOT CAUSE (DTPP case):
@@ -426,6 +457,14 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     avg_volume_20d = statistics.mean(volumes[-20:]) if len(volumes) >= 20 else (statistics.mean(volumes) if volumes else 0)
     avg_volume_10d = statistics.mean(volumes[-10:]) if len(volumes) >= 10 else 0
 
+    # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER — Owner Directive) ──
+    # القاعدة الصارمة: لو متوسط التداول اليومي (20d) < 2,000,000 EGP
+    # → السهم يُصنف فورًا كـ disqualified_illiquid (مستبعد لضعف السيولة).
+    # نحسب العلامة هنا، ويتم تطبيقها في override بعد منطق winner_path.
+    liquid_enough = is_liquid_enough(avg_turnover_20d)
+    disqualified = (not liquid_enough)
+    disqualify_reason = 'illiquid' if disqualified else None
+
     # مقاييس الترتيب: قوة الحجم النسبي + استقرار السعر
     volume_ratio_10d_vs_20d = (avg_volume_10d / avg_volume_20d) if avg_volume_20d > 0 else 0
     # استقرار السعر: 1 - (range_10d_pct / 20) → كل ما range أقل، كل ما stability أعلى
@@ -477,6 +516,20 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         winner_path = 'E_early_break'
         winner_position_size = 0.025  # 2.5%
         winner_reason = break_reason
+
+    # ─── LIQUIDITY GATEKEEPER OVERRIDE (Task BRAVO-LIQUIDITY-GATEKEEPER) ───
+    # القاعدة الصارمة: لو السهم illiquid (avg 20d turnover < 2,000,000 EGP)
+    # → نلغي ترشيحه لأي مسار (winner_path=None) ولا يُصدر له إشارة رادار.
+    # نحتفظ بكل الـ detection logic للرجوع التاريخي والتحليل، لكن لا يصدر
+    # توصية للعميل. الأسهم المستبعدة تُسجّل في DB بـ status=disqualified_illiquid
+    # للشفافية المؤسسية (نعرف كم سهم استبعدنا ولماذا).
+    if disqualified:
+        winner_path = None
+        winner_position_size = 0.0
+        winner_reason = (
+            f'⛔ DISQUALIFIED (illiquid) — Liquidity Gate: '
+            f'avg 20d turnover = {avg_turnover_20d:,.0f} EGP < {LIQUIDITY_FLOOR_EGP:,} EGP floor'
+        )
 
     # ─── PHASE-4: Money Flow + Life Cycle + Kill Switch ──────────────────
     money_flow = compute_money_flow(closes, volumes, highs, lows)
@@ -607,6 +660,12 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'quiet_details': quiet_details if quiet else None,
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,
+        # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ─────────
+        # علامات حارس السيولة — يستخدمها main loop لفلترة under_microscope
+        # وتسجيل المستبعدة في DB بـ status=disqualified_illiquid للشفافية.
+        'liquid_enough': liquid_enough,
+        'disqualified': disqualified,
+        'disqualify_reason': disqualify_reason,
     }
 
 
@@ -614,15 +673,25 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
 # Task IMPROVEMENT-22-2026-10-07: تسجيل إشارات الرادار في DB
 # يكتب كل سهم تحت الميكروسكوب في radar_signal_tracking table
 # ============================================================================
-def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: str = 'EGX'):
+def _track_signals_to_db(
+    under_microscope: list,
+    scan_date: str,
+    market_code: str = 'EGX',
+    disqualified_illiquid: list = None,
+):
     """تسجيل إشارات الرادار في radar_signal_tracking table في stocks.db.
 
     Args:
-        under_microscope: قائمة الأسهم تحت الميكروسكوب
+        under_microscope: قائمة الأسهم تحت الميكروسكوب (status='pending' أو 'stale_data')
         scan_date: تاريخ الفحص (YYYY-MM-DD)
         market_code: كود السوق
+        disqualified_illiquid: قائمة الأسهم المستبعدة لضعف السيولة
+            (Task BRAVO-LIQUIDITY-GATEKEEPER) — تُسجّل بـ status='disqualified_illiquid'
+            للشفافية المؤسسية: نريد أن نعرف كم سهمًا استبعدنا ولماذا، بدلًا من
+            تجاهلها بصمت (Rule 27 — NO-FAKE-DATA: لا اختلاق، ولا تجاهل صامت).
     """
-    if not under_microscope:
+    disqualified_illiquid = disqualified_illiquid or []
+    if not under_microscope and not disqualified_illiquid:
         return
 
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
@@ -728,9 +797,49 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
               data_date, data_quality, staleness_days, price_source, live_price, daily_price))
         inserted += 1
 
+    # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ──────────
+    # تسجيل الأسهم المستبعدة لضعف السيولة بشفافية كاملة:
+    #   - status = 'disqualified_illiquid' (لمرشّح للتنفيذ — مستبعد مؤسسيًا)
+    #   - signal_type = 'disqualified_illiquid' (للتمييز في الـ analytics)
+    #   - path = None (لم يصدر له مسار رادار)
+    #   - reason يوضّح بالأرقام لماذا استُبعد (Rule 27 — NO-FAKE-DATA)
+    #   - entry_price = current_price (للرجوع التاريخي وتتبع ما كان سيحدث)
+    # الهدف: شفافية مؤسسية — نعرف كم سهمًا رفضنا يوميًا ولماذا.
+    disqualified_inserted = 0
+    for stock in disqualified_illiquid:
+        ticker = stock.get('ticker', '')
+        if not ticker:
+            continue
+        entry_price = stock.get('current_price', 0) or 0
+        avg_turnover_20d = stock.get('avg_turnover_20d', 0) or 0
+        liq_reason = (
+            f'Liquidity Gate: avg 20d turnover = {avg_turnover_20d:,.0f} EGP '
+            f'< {LIQUIDITY_FLOOR_EGP:,} EGP floor'
+        )
+        # نضيف معلومات data_quality للسهم المستبعد (للتحليل لاحقًا)
+        dqi_data_date = stock.get('data_date', '') or ''
+        dqi_data_quality = stock.get('data_quality', 'unknown') or 'unknown'
+        dqi_staleness = stock.get('staleness_days')
+        dqi_price_source = stock.get('price_source', 'daily') or 'daily'
+        dqi_live_price = stock.get('live_price')
+        dqi_daily_price = stock.get('daily_price')
+
+        conn.execute("""
+            INSERT INTO radar_signal_tracking
+                (ticker, signal_date, signal_type, entry_price, path, reason, status,
+                 data_date, data_quality, staleness_days, price_source, live_price, daily_price)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            ticker, scan_date, 'disqualified_illiquid', entry_price, None,
+            liq_reason[:500], 'disqualified_illiquid',
+            dqi_data_date, dqi_data_quality, dqi_staleness, dqi_price_source,
+            dqi_live_price, dqi_daily_price,
+        ))
+        disqualified_inserted += 1
+
     conn.commit()
     conn.close()
-    log(f"📝 Signal tracking: {inserted} signals saved to radar_signal_tracking (date={scan_date})")
+    log(f"📝 Signal tracking: {inserted} signals + {disqualified_inserted} disqualified_illiquid saved to radar_signal_tracking (date={scan_date})")
 
 
 def main():
@@ -1158,6 +1267,17 @@ def main():
 
     under_microscope = pre_surge_list + quiet_list + explosive_list + early_break_list
 
+    # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ─────────
+    # اعزل الأسهم المستبعدة لضعف السيولة في قائمة منفصلة للشفافية.
+    # الأسهم دي مش في under_microscope (winner_path=None من scan_ticker)،
+    # لكنها لسه في results — فنفصلها عشان:
+    #   1. نطبع ملخص الـ Liquidity Gate (Total/Liquid/Disqualified).
+    #   2. نمرّرها لـ _track_signals_to_db() عشان تُسجّل بـ status=disqualified_illiquid.
+    disqualified_illiquid_list = [
+        r for r in results
+        if r.get('disqualified') and r.get('disqualify_reason') == 'illiquid'
+    ]
+
     log(f"\n═══ النتايج النظيفة (market={args.market}, price≥{args.min_price}) ═══")
     log(f"  إجمالي المفحوصين (بعد فلتر السعر): {len(results)}")
     log(f"  🔬 تحت الميكروسكوب: {len(under_microscope)}")
@@ -1165,6 +1285,18 @@ def main():
     log(f"    🎯 Quiet Accumulation (≥{args.min_quiet_signals}/6): {len(quiet_list)}")
     log(f"    🔥 Explosive Surge: {len(explosive_list)}")
     log(f"    ⚡ Early Break: {len(early_break_list)}")
+
+    # ─── LIQUIDITY GATE SUMMARY (Task BRAVO-LIQUIDITY-GATEKEEPER) ───────
+    # ملخص حارس السيولة الصارم: كم سهمًا مؤهل vs مستبعد.
+    total_scanned_for_gate = len(results)
+    liquid_count = total_scanned_for_gate - len(disqualified_illiquid_list)
+    disqualified_count = len(disqualified_illiquid_list)
+    liquid_pct = (liquid_count / total_scanned_for_gate * 100) if total_scanned_for_gate else 0.0
+    disqualified_pct = (disqualified_count / total_scanned_for_gate * 100) if total_scanned_for_gate else 0.0
+    log(f"\n=== LIQUIDITY GATE SUMMARY ===")
+    log(f"  Total scanned: {total_scanned_for_gate}")
+    log(f"  Liquid (≥ {LIQUIDITY_FLOOR_EGP:,} EGP): {liquid_count} ({liquid_pct:.1f}%)")
+    log(f"  Disqualified (illiquid): {disqualified_count} ({disqualified_pct:.1f}%)")
 
     # ─── عرض الأسهم تحت الميكروسكوب ────────────────────────────────────
     if quiet_list:
@@ -1235,6 +1367,11 @@ def main():
             'pre_surge_count': len(pre_surge_list),
             'explosive_count': len(explosive_list),
             'early_break_count': len(early_break_list),
+            # ─── LIQUIDITY GATEKEEPER (Task BRAVO-LIQUIDITY-GATEKEEPER) ───
+            'liquidity_floor_egp': LIQUIDITY_FLOOR_EGP,
+            'liquid_count': liquid_count,
+            'disqualified_illiquid_count': len(disqualified_illiquid_list),
+            'disqualified_illiquid_list': disqualified_illiquid_list,
             'quiet_list': quiet_list,
             'pre_surge_list': pre_surge_list,
             'explosive_list': explosive_list,
@@ -1246,8 +1383,15 @@ def main():
 
     # ── Task IMPROVEMENT-22-2026-10-07: تسجيل الإشارات في radar_signal_tracking ──
     # بعد كل تشغيل، سجّل كل سهم تحت الميكروسكوب في DB عشان نقدر نتتبعها
+    # Task BRAVO-LIQUIDITY-GATEKEEPER: نمرّر قائمة المستبعدة لضعف السيولة
+    # عشان تُسجّل بـ status=disqualified_illiquid للشفافية المؤسسية.
     try:
-        _track_signals_to_db(under_microscope, today_iso, market_code)
+        _track_signals_to_db(
+            under_microscope,
+            today_iso,
+            market_code,
+            disqualified_illiquid=disqualified_illiquid_list,
+        )
     except Exception as _track_err:
         log(f"⚠️ Signal tracking failed: {_track_err}")
 

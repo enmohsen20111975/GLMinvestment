@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-12T14:32:56.995888+00:00",
+  "generated_at": "2026-10-12T15:43:26.993094+00:00",
   "data_source": {
     "db": "db/stocks.db",
     "table": "stock_daily_prices",
@@ -21,22 +21,22 @@
     "trailing_stop": "breakeven after target hit"
   },
   "portfolio_metrics": {
-    "total_signals": 1102,
+    "total_signals": 1191,
     "verified_signals": 297,
     "verified_win": 139,
     "verified_loss": 158,
     "verified_neutral": 0,
-    "pending": 292,
+    "pending": 338,
     "stale_data": 513,
     "overall_win_rate_pct": 46.8,
-    "sharpe_ratio": -1.3985,
-    "sortino_ratio": -1.8778,
-    "profit_factor": 0.8378,
-    "max_drawdown_pct": 0.8512,
-    "avg_return_per_trade_pct": -0.4314,
-    "total_return_pct": -0.4314,
+    "sharpe_ratio": -2.6952,
+    "sortino_ratio": -3.3509,
+    "profit_factor": 0.7106,
+    "max_drawdown_pct": 1.113,
+    "avg_return_per_trade_pct": -0.8314,
+    "total_return_pct": -0.8314,
     "starting_equity_egp": 100000.0,
-    "final_equity_egp": 99568.61,
+    "final_equity_egp": 99168.61,
     "n_trades_used": 297,
     "sharpe_note": "Sharpe computed on per-trade realized returns as the daily-return series (documented simplification — signals span only 14 calendar days; true portfolio daily returns would require overlapping position handling).",
     "trade_classification_source": "Stored `status` column in radar_signal_tracking — consistent with verify_all_radar_signals.py output. Signals marked 'pending' or 'stale_data' by the verify script are excluded from the backtest universe."
@@ -116,92 +116,121 @@
       "ticker": "TORA",
       "signals": 6,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "MENA",
       "signals": 5,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "BINV",
       "signals": 5,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "GBCO",
       "signals": 5,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "ALCN",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 4.87
+      "avg_return_pct": 4.47
     },
     {
       "ticker": "ISPH",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 3.51
+      "avg_return_pct": 3.11
     },
     {
       "ticker": "AFDI",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "ORAS",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "EGAS",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "ARVA",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "CLHO",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 3.55
+      "avg_return_pct": 3.15
     },
     {
       "ticker": "APSW",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "MOIN",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "AMOC",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     },
     {
       "ticker": "AJWA",
       "signals": 4,
       "win_rate_pct": 100.0,
-      "avg_return_pct": 5.0
+      "avg_return_pct": 4.6
     }
   ],
+  "liquidity_comparison": {
+    "floor_egp": 2000000,
+    "lookback_days": 20,
+    "turnover_definition": "avg_turnover_20d = mean(turnover) over the trailing 20 trading days before signal_date. turnover column used when present; falls back to close*volume when NULL.",
+    "unfiltered_universe": {
+      "label": "الكون العام (Unfiltered)",
+      "total_signals": 1191,
+      "verified_win": 139,
+      "win_rate_pct": 11.67,
+      "profit_factor": 0.7106,
+      "sharpe_ratio": -2.6952,
+      "note": "كل الإشارات بدون فلتر سيولة — يُظهر نسبة النجاح الحقيقية للأسهم الميتة (pending + stale_data + disqualified_illiquid تُحسب كـ non-win)"
+    },
+    "liquid_universe": {
+      "label": "الكون المؤسسي (Liquid ≥ 2M EGP)",
+      "total_signals": 917,
+      "verified_win": 117,
+      "verified_loss": 141,
+      "verified_neutral": 0,
+      "verified_total": 258,
+      "win_rate_pct": 12.76,
+      "profit_factor": 0.6634,
+      "sharpe_ratio": -3.2407,
+      "note": "الأسهم المؤهلة سيوليًا فقط — النسبة الحقيقية للمستثمر المؤسسي"
+    },
+    "disqualified_illiquid_count": 43,
+    "improvement_pct_points": 1.09,
+    "improvement_note": "+1.09 نقطة تحسن بفضل فلتر السيولة (liquid_win_rate - unfiltered_win_rate)"
+  },
   "disclaimer": "Rule 27 (NO-FAKE-DATA): all metrics computed from real price data only. No data for 2020-2024 — annual_breakdown shows null with note. radar_signal_tracking contains signals from 2026-09-28 onwards only; 2025 has no signals (price data exists Sep-Dec 2025 but no radar signals were generated). Trade classification uses the stored status column from verify_all_radar_signals.py (idempotent) for consistency with the published 46.80% win rate."
 }

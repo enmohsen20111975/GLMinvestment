@@ -125,6 +125,14 @@ TRADING_DAYS_PER_YEAR = 252  # for Sharpe/Sortino annualization
 # Equity curve
 START_EQUITY_EGP = 100_000.0
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Liquidity gate (Task BRAVO-BACKTEST-LIQUIDITY)
+# ─────────────────────────────────────────────────────────────────────────────
+# Same floor as the maker_radar liquidity filter (Agent 1).
+# A signal is classified `is_liquid` when avg_turnover_20d >= this floor.
+LIQUIDITY_FLOOR_EGP = 2_000_000.0
+LIQUIDITY_LOOKBACK_DAYS = 20  # trailing 20 trading days before signal_date
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DB helpers
@@ -199,6 +207,55 @@ def fetch_prices_after(
 
 # Friction: 0.40% round-trip in EGX (brokerage + MCDR + stamp tax + slippage)
 FEES_SLIPPAGE_ROUNDTRIP_PCT = 0.40
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Liquidity classification (Task BRAVO-BACKTEST-LIQUIDITY)
+# ─────────────────────────────────────────────────────────────────────────────
+def compute_avg_turnover_20d(
+    conn: sqlite3.Connection, ticker: str, signal_date: str
+) -> float:
+    """
+    Compute the average daily turnover for the trailing
+    `LIQUIDITY_LOOKBACK_DAYS` trading days STRICTLY BEFORE signal_date.
+
+    Rule 27 — uses REAL stored values only:
+      - Prefer the authoritative `turnover` column when present (>0).
+      - Otherwise fall back to `close * volume` (turnover column is NULL
+        for ~69k of 100k rows — fallback is essential).
+      - Rows with NULL/zero close or NULL volume contribute 0 to the sum
+        but still count toward the divisor (conservative — does not
+        inflate the mean by skipping low-volume days).
+      - Returns 0.0 when the ticker has no price history before the
+        signal date (treated as non-liquid by the caller).
+    """
+    rows = conn.execute(
+        """
+        SELECT turnover AS t, close AS c, volume AS v
+        FROM stock_daily_prices
+        WHERE ticker = ?
+          AND price_date < ?
+          AND close IS NOT NULL
+          AND close > 0
+        ORDER BY price_date DESC
+        LIMIT ?
+        """,
+        (ticker, signal_date, LIQUIDITY_LOOKBACK_DAYS),
+    ).fetchall()
+    if not rows:
+        return 0.0
+    turnovers: List[float] = []
+    for r in rows:
+        t = r['t']
+        if t is not None and float(t) > 0:
+            turnovers.append(float(t))
+        else:
+            close = float(r['c']) if r['c'] is not None else 0.0
+            vol = float(r['v']) if r['v'] is not None else 0.0
+            turnovers.append(close * vol)
+    if not turnovers:
+        return 0.0
+    return sum(turnovers) / len(turnovers)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Realized-return derivation (from stored verify_all_radar_signals output)
@@ -567,6 +624,8 @@ def main() -> int:
     )
 
     # Pending + stale counts (from stored DB, for the metrics block).
+    # Also load ALL signals (incl. pending/stale) to enable the liquidity
+    # comparison (Task BRAVO-BACKTEST-LIQUIDITY).
     conn = open_db_readonly(STOCKS_DB)
     try:
         pending = conn.execute(
@@ -576,8 +635,51 @@ def main() -> int:
             "SELECT COUNT(*) FROM radar_signal_tracking "
             "WHERE status='stale_data'"
         ).fetchone()[0]
+        # Count of signals explicitly disqualified for being illiquid
+        # (status 'disqualified_illiquid' — set by Agent 1 / maker_radar
+        # liquidity gate; 0 today, may become >0 after Agent 1 runs).
+        disqualified_illiquid_count = conn.execute(
+            "SELECT COUNT(*) FROM radar_signal_tracking "
+            "WHERE status='disqualified_illiquid'"
+        ).fetchone()[0]
+        # Pull every signal row (cheap — 1,102 rows).
+        all_signal_rows = conn.execute(
+            """
+            SELECT id, ticker, signal_date, status
+            FROM radar_signal_tracking
+            """
+        ).fetchall()
     finally:
         conn.close()
+
+    # ─── Liquidity classification (Task BRAVO-BACKTEST-LIQUIDITY) ───────────
+    # Compute avg_turnover_20d for EVERY signal in radar_signal_tracking
+    # (1,102 rows) using REAL stored price data (Rule 27). Then classify
+    # each signal as `is_liquid = avg_turnover_20d >= LIQUIDITY_FLOOR_EGP`.
+    signal_liquidity: Dict[int, Dict[str, Any]] = {}
+    conn = open_db_readonly(STOCKS_DB)
+    try:
+        for srow in all_signal_rows:
+            avg_to = compute_avg_turnover_20d(
+                conn, srow['ticker'], srow['signal_date']
+            )
+            signal_liquidity[srow['id']] = {
+                'avg_turnover_20d': avg_to,
+                'is_liquid': avg_to >= LIQUIDITY_FLOOR_EGP,
+                'status': srow['status'],
+            }
+    finally:
+        conn.close()
+
+    # Attach liquidity info to each verified trade.
+    for t in trades:
+        liq = signal_liquidity.get(t['id'])
+        if liq is None:
+            t['avg_turnover_20d'] = 0.0
+            t['is_liquid'] = False
+        else:
+            t['avg_turnover_20d'] = liq['avg_turnover_20d']
+            t['is_liquid'] = liq['is_liquid']
 
     print(f'[backtest universe] verified trades = {verified_total} '
           f'({verified_win} win + {verified_loss} loss + '
@@ -634,6 +736,73 @@ def main() -> int:
     print(f'  total_return_pct                   : {total_return_pct:+.4f}%')
     print(f'  starting_equity_egp                : {START_EQUITY_EGP:,.2f}')
     print(f'  final_equity_egp                   : {final_equity:,.2f}')
+    print()
+
+    # ─── Liquidity comparison metrics (Task BRAVO-BACKTEST-LIQUIDITY) ───────
+    # Compare two universes head-to-head:
+    #   (a) Unfiltered universe = ALL 1,102 signals (incl. pending / stale /
+    #       disqualified_illiquid). Win rate = verified_win / total * 100.
+    #       PF + Sharpe computed on the verified subset (the only subset
+    #       that has realized returns — pending/stale are non-trades).
+    #   (b) Liquid universe   = signals whose avg_turnover_20d >= floor.
+    #       Win rate, PF, Sharpe computed on the liquid subset only.
+    unfiltered_total = n_signals_total  # 1,102
+    unfiltered_verified_win = verified_win  # 139
+    unfiltered_win_rate = (
+        (unfiltered_verified_win / unfiltered_total * 100)
+        if unfiltered_total > 0 else 0.0
+    )
+    # Unfiltered PF + Sharpe are by construction identical to the existing
+    # portfolio metrics (same verified subset — pending/stale excluded).
+    unfiltered_profit_factor = profit_factor
+    unfiltered_sharpe = sharpe
+
+    # (b) Liquid universe.
+    liquid_signal_ids = [
+        sid for sid, info in signal_liquidity.items() if info['is_liquid']
+    ]
+    liquid_total = len(liquid_signal_ids)
+    liquid_verified_win = sum(
+        1 for t in trades
+        if t['is_liquid'] and t['status'] == 'verified_win'
+    )
+    liquid_loss = sum(
+        1 for t in trades
+        if t['is_liquid'] and t['status'] == 'verified_loss'
+    )
+    liquid_neutral = sum(
+        1 for t in trades
+        if t['is_liquid'] and t['status'] == 'verified_neutral'
+    )
+    liquid_verified_total = (
+        liquid_verified_win + liquid_loss + liquid_neutral
+    )
+    liquid_win_rate = (
+        (liquid_verified_win / liquid_total * 100)
+        if liquid_total > 0 else 0.0
+    )
+    liquid_returns_pct: List[float] = [
+        t['realized_return_pct'] for t in trades
+        if t['is_liquid'] and t['realized_return_pct'] is not None
+    ]
+    liquid_returns_dec: List[float] = [
+        r / 100.0 for r in liquid_returns_pct
+    ]
+    liquid_profit_factor = compute_profit_factor(liquid_returns_dec)
+    liquid_sharpe = compute_sharpe(liquid_returns_dec)
+    improvement_pct_points = liquid_win_rate - unfiltered_win_rate
+
+    print('[liquidity comparison — Task BRAVO-BACKTEST-LIQUIDITY]')
+    print(f'  liquidity floor EGP        : {LIQUIDITY_FLOOR_EGP:,.0f}')
+    print(f'  lookback trading days      : {LIQUIDITY_LOOKBACK_DAYS}')
+    print(f'  disqualified_illiquid (DB) : {disqualified_illiquid_count}')
+    print(f'  unfiltered universe        : total={unfiltered_total} '
+          f'win={unfiltered_verified_win} '
+          f'win_rate={unfiltered_win_rate:.2f}%')
+    print(f'  liquid universe (>=floor)  : total={liquid_total} '
+          f'win={liquid_verified_win} '
+          f'win_rate={liquid_win_rate:.2f}%')
+    print(f'  improvement (pp)           : {improvement_pct_points:+.2f}')
     print()
 
     # ─── Annual breakdown ───
@@ -775,6 +944,51 @@ def main() -> int:
         'annual_breakdown': annual,
         'by_signal_type': sig_type_breakdown,
         'top_performers': top_performers,
+        'liquidity_comparison': {
+            'floor_egp': int(LIQUIDITY_FLOOR_EGP),
+            'lookback_days': LIQUIDITY_LOOKBACK_DAYS,
+            'turnover_definition': (
+                'avg_turnover_20d = mean(turnover) over the trailing '
+                '20 trading days before signal_date. turnover column '
+                'used when present; falls back to close*volume when NULL.'
+            ),
+            'unfiltered_universe': {
+                'label': 'الكون العام (Unfiltered)',
+                'total_signals': unfiltered_total,
+                'verified_win': unfiltered_verified_win,
+                'win_rate_pct': safe_round(unfiltered_win_rate, 2),
+                'profit_factor': safe_round(unfiltered_profit_factor, 4),
+                'sharpe_ratio': safe_round(unfiltered_sharpe, 4),
+                'note': (
+                    'كل الإشارات بدون فلتر سيولة — يُظهر نسبة النجاح '
+                    'الحقيقية للأسهم الميتة (pending + stale_data + '
+                    'disqualified_illiquid تُحسب كـ non-win)'
+                ),
+            },
+            'liquid_universe': {
+                'label': 'الكون المؤسسي (Liquid ≥ 2M EGP)',
+                'total_signals': liquid_total,
+                'verified_win': liquid_verified_win,
+                'verified_loss': liquid_loss,
+                'verified_neutral': liquid_neutral,
+                'verified_total': liquid_verified_total,
+                'win_rate_pct': safe_round(liquid_win_rate, 2),
+                'profit_factor': safe_round(liquid_profit_factor, 4),
+                'sharpe_ratio': safe_round(liquid_sharpe, 4),
+                'note': (
+                    'الأسهم المؤهلة سيوليًا فقط — النسبة الحقيقية '
+                    'للمستثمر المؤسسي'
+                ),
+            },
+            'disqualified_illiquid_count': disqualified_illiquid_count,
+            'improvement_pct_points': safe_round(
+                improvement_pct_points, 2
+            ),
+            'improvement_note': (
+                f'{improvement_pct_points:+.2f} نقطة تحسن بفضل فلتر السيولة '
+                '(liquid_win_rate - unfiltered_win_rate)'
+            ),
+        },
         'disclaimer': (
             'Rule 27 (NO-FAKE-DATA): all metrics computed from real price '
             'data only. No data for 2020-2024 — annual_breakdown shows null '
@@ -843,6 +1057,27 @@ def main() -> int:
         print(f'  {tp["ticker"]:8s}  signals={tp["signals"]:3d}  '
               f'win_rate={tp["win_rate_pct"]:6.2f}%  '
               f'avg_ret={tp["avg_return_pct"]:+7.2f}%')
+    print()
+
+    # ───────────────────────────────────────────────────────────────────────
+    # LIQUIDITY COMPARISON (Task BRAVO-BACKTEST-LIQUIDITY)
+    # ───────────────────────────────────────────────────────────────────────
+    print('=== LIQUIDITY COMPARISON ===')
+    print('Unfiltered Universe (all signals):')
+    print(f'  total={unfiltered_total}  '
+          f'win={unfiltered_verified_win}  '
+          f'win_rate={unfiltered_win_rate:.2f}%  '
+          f'PF={("null" if unfiltered_profit_factor is None else f"{unfiltered_profit_factor:.4f}")}  '
+          f'Sharpe={unfiltered_sharpe:.4f}')
+    print('Liquid Universe (≥ 2M EGP):')
+    print(f'  total={liquid_total}   '
+          f'win={liquid_verified_win}  '
+          f'win_rate={liquid_win_rate:.2f}%   '
+          f'PF={("null" if liquid_profit_factor is None else f"{liquid_profit_factor:.4f}")}  '
+          f'Sharpe={liquid_sharpe:.4f}')
+    sign = '+' if improvement_pct_points >= 0 else ''
+    print(f'Improvement: {sign}{improvement_pct_points:.2f} points '
+          'thanks to liquidity filter')
     print()
 
     # ───────────────────────────────────────────────────────────────────────
@@ -948,6 +1183,55 @@ def main() -> int:
     else:
         print(f'  ⚠ Win Rate ({wr_val:.2f}%) does NOT match expected 46.80% '
               '— investigate.')
+
+    # ─── Liquidity comparison reality check (BRAVO-BACKTEST-LIQUIDITY) ─────
+    print()
+    print('--- LIQUIDITY COMPARISON REALITY CHECK ---')
+    # (1) Unfiltered win rate should be near 11.96% (سيدي محسن baseline).
+    #     Accept ±1pp tolerance: 11.96 - 1 = 10.96, 11.96 + 1 = 12.96.
+    if 10.96 <= unfiltered_win_rate <= 12.96:
+        print(f'  ✓ Unfiltered win rate ({unfiltered_win_rate:.2f}%) is '
+              'within ±1pp of 11.96% baseline (سيدي محسن).')
+    else:
+        print(f'  ⚠ Unfiltered win rate ({unfiltered_win_rate:.2f}%) is '
+              'OUTSIDE the ±1pp band around 11.96% — investigate.')
+
+    # (2) Liquid win rate should be >= unfiltered win rate.
+    if liquid_total == 0:
+        print('  ⚠ Liquid universe is EMPTY — no signal qualifies under '
+              f'the {LIQUIDITY_FLOOR_EGP:,.0f} EGP floor. The floor may be '
+              'too high for EGX turnover values.')
+    elif liquid_win_rate >= unfiltered_win_rate:
+        print(f'  ✓ Liquid win rate ({liquid_win_rate:.2f}%) >= unfiltered '
+              f'({unfiltered_win_rate:.2f}%) — institutional filter works.')
+    else:
+        print(f'  ⚠ Liquid win rate ({liquid_win_rate:.2f}%) < unfiltered '
+              f'({unfiltered_win_rate:.2f}%) — liquidity filter does NOT '
+              'improve win rate; investigate (sample size or floor).')
+
+    # (3) Liquid PF + Sharpe should be >= unfiltered (or null with note).
+    if liquid_profit_factor is not None and unfiltered_profit_factor is not None:
+        if liquid_profit_factor >= unfiltered_profit_factor:
+            print(f'  ✓ Liquid PF ({liquid_profit_factor:.4f}) >= unfiltered '
+                  f'({unfiltered_profit_factor:.4f}).')
+        else:
+            print(f'  ⚠ Liquid PF ({liquid_profit_factor:.4f}) < unfiltered '
+                  f'({unfiltered_profit_factor:.4f}).')
+    elif liquid_profit_factor is None:
+        print('  (Liquid PF null — no losing trades in the liquid subset.)')
+    if liquid_sharpe >= unfiltered_sharpe:
+        print(f'  ✓ Liquid Sharpe ({liquid_sharpe:.4f}) >= unfiltered '
+              f'({unfiltered_sharpe:.4f}).')
+    else:
+        print(f'  ⚠ Liquid Sharpe ({liquid_sharpe:.4f}) < unfiltered '
+              f'({unfiltered_sharpe:.4f}).')
+
+    # (4) Sample-size sanity.
+    print(f'  Liquid universe size : {liquid_total} signals '
+          f'({liquid_verified_total} verified trades)')
+    if 0 < liquid_total < 30:
+        print('  ⚠ Small sample (<30 liquid signals) — interpret metrics '
+              'with caution.')
 
     print()
     print(f'JSON written: {REPORT_JSON}')

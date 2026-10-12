@@ -79178,3 +79178,132 @@ Stage Summary:
 - ProofSection: الأسهم الذهبية + مقارنة صادقة (46.8% vs 100%)
 - 0 أخطاء TypeScript جديدة
 
+---
+---
+Task ID: BRAVO-BACKTEST-LIQUIDITY
+Agent: مهندس محرك Python + محلل كمي (فريق GLM 5.2-Bravo)
+Task: تحديث الباك-تيست المؤسسي بإضافة المقارنة بين الكون العام والكون المؤسسي
+
+Work Log:
+- قرأت آخر 100 سطر من worklog.md + scripts/institutional_multi_market_backtest.py (960 → 1,244 سطر بعد التعديل) + src/app/api/maker-radar/institutional-backtest/route.ts (109 سطر).
+- توثّقت من schema: stock_daily_prices لها عمود `turnover` لكنه NULL في ~69k من 100k صف (يحتاج fallback إلى close*volume).
+- توثّقت من توزيع status الحالي: 513 stale_data + 292 pending + 158 verified_loss + 139 verified_win = 1,102 (لا يوجد disqualified_illiquid بعد — Agent 1 قد يضيفه لاحقًا).
+- أضفت `LIQUIDITY_FLOOR_EGP = 2_000_000.0` + `LIQUIDITY_LOOKBACK_DAYS = 20` كثوابت قرب معاملات الـ strategy.
+- أضفت دالة `compute_avg_turnover_20d(conn, ticker, signal_date)` (44 سطر) — تجلب آخر 20 يوم تداول قبل signal_date، تُفضّل عمود turnover، وت fallback إلى close*volume. تعيد 0.0 لو لا توجد بيانات (يُعامَل كـ non-liquid).
+- عدّلت قسم Pending/stale ليشمل أيضًا: (1) count للـ disqualified_illiquid، (2) تحميل كل صفوف radar_signal_tracking (1,102) لتصنيف السيولة.
+- أضفت حلقة compute_avg_turnover_20d على كل الإشارات (1,102 استدعاء SQL) → signal_liquidity dict.
+- أضفت `avg_turnover_20d` + `is_liquid` لكل trade في trades list.
+- بعد حساب portfolio_metrics (sharpe, profit_factor)، أضفت قسم Liquidity Comparison metrics:
+  * Unfiltered: verified_win / total_signals * 100 (12.61%)
+  * Liquid: liquid_verified_win / liquid_total * 100 (13.43%)
+  * PF + Sharpe لكل كون على الـ verified subset.
+- أضفت `liquidity_comparison` section كامل إلى JSON output (floor_egp, lookback_days, turnover_definition, unfiltered_universe, liquid_universe, disqualified_illiquid_count, improvement_pct_points, improvement_note).
+- أضفت stdout block "=== LIQUIDITY COMPARISON ===" يطبع Unfiltered + Liquid + Improvement.
+- أضفت Reality Check للسيولة: (1) unfiltered قرب 11.96%، (2) liquid >= unfiltered، (3) liquid PF/Sharpe، (4) sample-size sanity.
+- شغّلت السكريبت بنجاح (idempotent — re-run produces identical JSON modulo generated_at).
+- تحققت من خلو الـ JSON من NaN/Infinity.
+
+Stage Summary:
+- ✅ السكريبت يعمل بنجاح. JSON file size: 5,327 → 6,713 bytes.
+- ✅ Unfiltered Universe (كل الإشارات):
+  - total_signals = 1,102 | verified_win = 139
+  - win_rate = 12.61% (ضمن ±1pp من 11.96% baseline لسيدي محسن ✓)
+  - Profit Factor = 0.7106 | Sharpe = -2.6952
+- ✅ Liquid Universe (avg_turnover_20d >= 2,000,000 EGP):
+  - total_signals = 871 | verified_win = 117 | verified_loss = 141
+  - win_rate = 13.43% (أعلى من الكون العام بـ +0.82pp ✓)
+  - Profit Factor = 0.6634 | Sharpe = -3.2407
+- ✅ Non-liquid signals = 231 (منها 81 بدون بيانات سعرية سابقة — تُعامَل كـ non-liquid conservatively).
+- ⚠️ ملاحظة Rule 27 (صدق مؤسسي): تحسّن الـ win rate (+0.82pp) لكن PF و Sharpe للكون المؤسسي أقل قليلًا من الكون العام. السبب: على الـ verified trades فقط، الكون المؤسسي لديه نسبة win/loss أقل قليلًا (45.35% vs 46.80%)، لكن الـ non-liquid subset يحتوي على نسبة عالية من stale_data التي تُحسب كـ non-win فتخفض الكون العام. التحسّن الحقيقي يأتي من إقصاء الإشارات الميتة (stale)، لا من تحسين تنفيذ الصفقات.
+- ✅ Reality Check ناجح: unfiltered ضمن النطاق، liquid >= unfiltered لـ win rate، لا NaN/Infinity، idempotent.
+- ⛔ لا commit/push (قرار المدير العام).
+- 🔧 ما يحتاج قرار المدير: (1) هل 2M EGP floor مناسب لسوق EGX؟ (871 من 1,102 qualify = 79% — قد يكون_floor متساهلًا). (2) هل نعتمد الـ win_rate metric على كل الإشارات (12.61%) أم على الـ verified فقط (46.80%) كـ "النسبة الرسمية"؟ (3) هل نضيف disqualified_illiquid status صراحةً في maker_radar.py (Agent 1) ليُقصى قبل الـ backtest؟
+
+---
+Task ID: BRAVO-LIQUIDITY-GATEKEEPER
+Agent: مهندس محرك Python (فريق GLM 5.2-Bravo)
+Task: بناء حارس السيولة الصارم (Liquidity Gatekeeper) في محرك الرادار
+
+Work Log:
+- قرأت آخر 100 سطر من worklog.md + scripts/maker_radar.py بالكامل (1,327 سطر → 1,471 سطر بعد التعديل) + scripts/test_radar_gate.py (87 سطر — يفحص radar_integration module، مش الـ gate الجديد).
+- لاحظت أن Task BRAVO-BACKTEST-LIQUIDITY (في السطر 79,121+) طلب صراحةً من Agent 1 "إضافة disqualified_illiquid status في maker_radar.py ليُقصى قبل الـ backtest" — وهذا هو بالضبط ما نفّذته هنا (تنسيق كامل بين Agent 1 + Agent 2).
+- توثّقت من schema: radar_signal_tracking موجود في db/stocks.db بكل الأعمدة المطلوبة (لا حاجة لمigration).
+- توثّقت من البيانات: stock_daily_prices لـ 2026-10-11 لها turnover=NULL كله — يُحسب عبر fallback إلى close×volume داخل compute_turnover() (Rule 27 — NO-FAKE-DATA، نحسب من البيانات الفعلية).
+- (أ) أضفت constant في أعلى الملف (سطر 56):
+    LIQUIDITY_FLOOR_EGP = 2_000_000  # 2M EGP/day minimum 20d avg turnover
+  مع شرح عربي واضح أن الحد معتمد من المالك (سيدي محسن) كحارس مؤسسي صارم.
+- (ب) أضفت دالة مساعدة is_liquid_enough(avg_turnover_20d) بعد compute_turnover() (سطر 276):
+    - تعيد True لو avg_turnover_20d >= 2,000,000 EGP.
+    - safe-by-design: تعالج None/string بأمان (ترجع False) — لا crash.
+    - اختبارات وحدة: 9 حالات (0, 1M, 1.999M, 2M بالضبط, 2M+1, 5M, 50M, None, string) → ALL PASS.
+- (ج) عدّلت scan_ticker() (سطر 414):
+    - بعد حساب avg_turnover_20d (السطر 456)، أضفت علامات الـ gate:
+        liquid_enough = is_liquid_enough(avg_turnover_20d)
+        disqualified = (not liquid_enough)
+        disqualify_reason = 'illiquid' if disqualified else None
+    - بعد منطق winner_path (السطر 518)، أضفت OVERRIDE (السطر 526):
+        لو disqualified → winner_path=None + winner_position_size=0.0 + winner_reason يوضّح السبب بالأرقام.
+        هذا يضمن أن under_microscope = (winner_path is not None) = False للأسهم illiquid.
+    - أضفت 3 حقول جديدة في الـ return dict:
+        'liquid_enough', 'disqualified', 'disqualify_reason'.
+    - لم ألمس المنطق المالي (ATR/R:R/Trailing Stop) ولا FRESHNESS GUARD (سطر 320+) ولا Maestro (محذوف).
+- (د) عدّلت _track_signals_to_db() (سطر 676):
+    - أضفت parameter رابع: disqualified_illiquid: list = None.
+    - أضفت loop ثاني (السطر 808) يمرّ على الأسهم المستبعدة ويسجلها بـ:
+        status = 'disqualified_illiquid'
+        signal_type = 'disqualified_illiquid'
+        path = None
+        reason = 'Liquidity Gate: avg 20d turnover = {X:,.0f} EGP < 2,000,000 EGP floor'
+        entry_price = current_price (للرجوع التاريخي)
+        + كل أعمدة data_quality للتحليل لاحقًا.
+    - عدّلت رسالة الـ log لتشمل count المنفصل: "X signals + Y disqualified_illiquid saved".
+- (هـ) عدّلت main() (سطر 845):
+    - بعد under_microscope = pre_surge_list + quiet_list + explosive_list + early_break_list (السطر 1268)، أضفت فلتر:
+        disqualified_illiquid_list = [r for r in results if r.get('disqualified') and r.get('disqualify_reason') == 'illiquid']
+    - أضفت LIQUIDITY GATE SUMMARY بعد النتائج النظيفة (السطر 1289):
+        === LIQUIDITY GATE SUMMARY ===
+        Total scanned: X
+        Liquid (≥ 2,000,000 EGP): Y ({pct}%)
+        Disqualified (illiquid): Z ({pct}%)
+    - عدّلت استدعاء _track_signals_to_db() ليمرّر disqualified_illiquid=disqualified_illiquid_list.
+    - أضفت 4 حقول جديدة في JSON output: liquidity_floor_egp, liquid_count, disqualified_illiquid_count, disqualified_illiquid_list — للشفافية الكاملة وتمكين الـ API من عرضها.
+- الاختبار:
+    * python3 -c "import ast; ast.parse(...)" → SYNTAX OK ✓
+    * is_liquid_enough() unit tests (9 حالات) → ALL PASS ✓
+    * تشغيل maker_radar.py --limit 30 → 8 disqualified + 9 pending (Liquidity Gate Summary ظهر صحيح) ✓
+    * إعادة تشغيل (idempotency check) → DELETE FROM radar_signal_tracking WHERE signal_date = ? يمنع التكرار ✓
+    * تشغيل maker_radar.py --limit 200 → 43 disqualified + 46 pending ✓
+    * python3 scripts/test_radar_gate.py → اشتغل بنجاح (يختبر radar_integration module الآخر — مش الـ gate الجديد) ✓
+    * sanity check: لا يوجد ticker يظهر كـ BOTH disqualified_illiquid AND pending في نفس اليوم ✓
+- احترام القواعد:
+    * ⛔ لا اختلاق بيانات (Rule 27) — turnover يُحسب من البيانات الفعلية.
+    * ⛔ لا commit/push (قرار المدير العام).
+    * ⛔ لم ألمس المنطق المالي / FRESHNESS GUARD / Maestro / ملفات أخرى.
+    * ✅ السكريبت idempotent — DELETE WHERE signal_date = ? يضمن عدم التكرار.
+    * ✅ تعليقات بالعربية تشرح الـ logic في كل خطوة.
+
+Stage Summary:
+- ✅ التعديلات المنفّذة في scripts/maker_radar.py (1,327 → 1,471 سطر = +144 سطر):
+    - constant جديد: LIQUIDITY_FLOOR_EGP = 2_000_000 (سطر 56).
+    - دالة جديدة: is_liquid_enough(avg_turnover_20d) (سطر 276، 17 سطر).
+    - تعديل scan_ticker(): +10 سطر (gate check) + 13 سطر (override) + 5 سطر (return fields).
+    - تعديل _track_signals_to_db(): +5 سطر (signature + early return) + 41 سطر (disqualified insert loop).
+    - تعديل main(): +12 سطر (list filter) + 11 سطر (summary print) + 1 سطر (track call) + 4 سطر (JSON fields).
+- ✅ أرقام الـ scan على بيانات EGX الفعلية (db/stocks.db, latest date 2026-10-11):
+    * Sample 30 سهم: 21 liquid (72.4%) + 8 disqualified (27.6%).
+    * Sample 200 سهم (174 بعد فلتر السعر): 131 liquid (75.3%) + 43 disqualified (24.7%) + 46 under microscope.
+    * أمثلة على الأسهم المستبعدة: APRI (9,926 EGP/day), CAPE (1,104), DMNH (8,030), ESGH (3,432), ESRS (0), GTHE (48,233), MNHD (4,118), PIOH (325) — كلها << 2M EGP/day floor بفارق شاسع.
+- ✅ status distribution بعد الـ gate (في db/stocks.db.radar_signal_tracking):
+    stale_data: 513 | pending: 338 | verified_loss: 158 | verified_win: 139 | disqualified_illiquid: 43
+- ✅ JSON output (scripts/output/maker_radar_EGX_20261012.json) يحتوي على:
+    liquidity_floor_egp: 2,000,000 | liquid_count: 131 | disqualified_illiquid_count: 43 | disqualified_illiquid_list: [43 stocks with full metrics].
+- ✅ Integrity checks:
+    * لا يوجد سهم يظهر كـ BOTH pending AND disqualified_illiquid في نفس اليوم (0 conflicts).
+    * كل صف disqualified_illiquid له reason يوضّح الرقم الفعلي للـ turnover (شفافية Rule 27).
+    * entry_price محفوظ لكل سهم مستبعد (للرجوع التاريخي وتتبع ما كان سيحدث).
+- 🔗 تنسيق كامل مع Task BRAVO-BACKTEST-LIQUIDITY (السطر 79,121+): الباك-تيست المؤسسي كان بيتساءل "هل نضيف disqualified_illiquid status صراحةً في maker_radar.py ليُقصى قبل الـ backtest؟" — والإجابة الآن: ✅ نعم، تم. الـ backtest المستقبلي سيجد rows disqualified_illiquid ويعرف أنها مُقصاة من المؤسسي قبل التنفيذ.
+- ⛔ لا commit/push (قرار المدير العام).
+- 🔧 ما يحتاج قرار المدير:
+    (1) هل LIQUIDITY_FLOOR_EGP = 2,000,000 مناسب؟ نسبة الإقصاء ~24.7% — معقولة، لكن المالك وحده يقدر يرفع/يخفض الحد.
+    (2) هل نريد عرض قائمة disqualified_illiquid في الـ Arabic report (.md) أو فقط في الـ JSON؟ حاليًا في JSON فقط.
+    (3) هل نضيف index على (status, signal_date) في radar_signal_tracking للـ analytics الأسرع على disqualified_illiquid؟ (الـ table عندها 1,145+ صف، ما يحتاج urgency).
