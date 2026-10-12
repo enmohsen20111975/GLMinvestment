@@ -197,35 +197,40 @@ def fetch_prices_after(
     return out
 
 
+# Friction: 0.40% round-trip in EGX (brokerage + MCDR + stamp tax + slippage)
+FEES_SLIPPAGE_ROUNDTRIP_PCT = 0.40
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Realized-return derivation (from stored verify_all_radar_signals output)
 # ─────────────────────────────────────────────────────────────────────────────
 def derive_realized_return(row: sqlite3.Row) -> Optional[float]:
     """
-    Derive the realized trade return (%) from the stored verify output.
-    - verified_win with win_date IS NOT NULL → +5.0% (target hit)
-    - verified_win with win_date IS NULL     → outcome_7d (legacy close-based
-                                               win); fallback to outcome_14d,
-                                               then peak_return, then +2.5%.
-    - verified_loss                          → -5.0% (stop hit)
-    - verified_neutral                       → outcome_30d (or 0.0 if NULL)
-    Returns None for non-verified statuses.
+    Derive the realized net trade return (%) from stored verify output,
+    strictly deducting 0.40% round-trip transaction costs & slippage (Rule 27).
     """
     status = row['status']
+    raw_ret: Optional[float] = None
     if status == 'verified_win':
         if row['win_date'] is not None:
-            return TARGET_PCT  # +5% target hit
-        # Legacy close-based win — use the actual outcome.
-        for col in ('outcome_7d', 'outcome_14d', 'peak_return'):
-            v = row[col]
-            if v is not None and v > 0:
-                return float(v)
-        return 2.5  # last-resort fallback (legacy +2.5% threshold)
-    if status == 'verified_loss':
-        return STOP_PCT  # -5% stop hit
-    if status == 'verified_neutral':
+            raw_ret = TARGET_PCT  # +5% target hit
+        else:
+            # Legacy close-based win — use the actual outcome.
+            for col in ('outcome_7d', 'outcome_14d', 'peak_return'):
+                v = row[col]
+                if v is not None and v > 0:
+                    raw_ret = float(v)
+                    break
+            if raw_ret is None:
+                raw_ret = 2.5  # last-resort fallback
+    elif status == 'verified_loss':
+        raw_ret = STOP_PCT  # -5% stop hit
+    elif status == 'verified_neutral':
         v = row['outcome_30d']
-        return float(v) if v is not None else 0.0
+        raw_ret = float(v) if v is not None else 0.0
+
+    if raw_ret is not None:
+        # Deduct realistic trading fees (net realized return)
+        return round(raw_ret - FEES_SLIPPAGE_ROUNDTRIP_PCT, 4)
     return None  # pending, stale_data, or anything else
 
 

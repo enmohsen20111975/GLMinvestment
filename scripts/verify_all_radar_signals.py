@@ -298,15 +298,11 @@ def evaluate_signal(entry_price: float, prices: List[Tuple[str, float, float, fl
         stop_hit = low <= stop_price
 
         if target_hit and stop_hit:
-            # Ambiguous — both touched intraday. Use close to decide which
-            # was likely hit first. If close >= entry, the bar ended in the
-            # trader's favor → assume target hit first (win). Otherwise, the
-            # bar ended against the trader → assume stop hit first (loss).
-            if close >= entry_price:
-                win_date = d
-                win_idx = i
-            else:
-                loss_date = d
+            # Conservative Ground-Truth Rule (PHASE-0 AUDIT):
+            # If both target (+5%) and stop-loss (-5%) are touched within the SAME daily bar,
+            # we MUST assume the worst-case execution: Stop-loss was hit first.
+            # Never assume a favorable win without sub-minute tick order flow.
+            loss_date = d
             break
         elif target_hit:
             win_date = d
