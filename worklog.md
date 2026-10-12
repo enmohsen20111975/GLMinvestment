@@ -77753,3 +77753,51 @@ Stage Summary:
 - Rule 27 محترمة (404 fallback أنيق، مفيش اختلاق)
 - design tokens فقط (مفيش hex colors)
 - 0 أخطاء TypeScript جديدة
+
+---
+
+Task ID: P0-ALPHA-SESSION-PRESERVER
+Agent: Golden Session Preserver Agent (S2)
+
+Work Log:
+- قرأ آخر 40 سطر من worklog.md + src/lib/intraday-flow.ts + intraday-flow route للسياق.
+- فحص db/intraday.db: stock_intraday فاضي (0 rows), intraday_prices فاضي، intraday_meta فيها 3 rows فقط (created_at, last_cleanup, retention_days=7).
+- أنشأ vps-service/jobs/intraday_session_preserver.py — سكريبت cron Python بـ:
+  • يقرأ آخر 3 جلسات (distinct dates) من stock_intraday = "golden sessions".
+  • بـ يـ archive الـ sessions الأقدم لـ stock_intraday_archive جدول جديد
+    (INSERT OR IGNORE على UNIQUE(ticker, timestamp) → idempotent).
+  • Rule 21 محترمة 100%: ما فيش DELETE من stock_intraday.
+  • Rule 27 محترمة 100%: ما بـ يختلق sessions — بـ يحفظ الـ real sessions بس.
+  • حدّث intraday_meta: golden_sessions_retained=3, preserve_policy='last_3_sessions_kept',
+    last_preserve_run=ISO timestamp.
+  • --dry-run truly read-only (مفيش writes — مفيش schema creation، مفيش meta writes).
+- حدّث src/lib/intraday-flow.ts: وثّق GOLDEN SESSION FALLBACK policy في الـ header
+  + على readFromStockIntraday. الـ logic كان موجود بالفعل (يقرأ آخر session
+  regardless of today، بـ يرجع null لو table فاضي → 404 صريح). بس أضفت تعليقات
+  صريحة تربط الـ behavior بالـ preserver cron + Rule 21.
+- شغّل dry-run على real intraday.db: طبع التقرير بنجاح (no sessions — table empty).
+- شغّل live run على real intraday.db:
+  • stock_intraday_archive table created (empty — table stock_intraday فاضي).
+  • intraday_meta: أضاف 3 rows جديدة (الـ total دلوقتي 6 rows).
+- اختبار idempotency على /tmp test DB (5 sessions seeded):
+  • Run #1: archived 12 rows (2 older sessions × 6 rows).
+  • Run #2: inserted=0, skipped_dup=12 — نفس النتيجة بالظبط (no duplicates).
+  • stock_intraday UNCHANGED (30 rows) — Rule 21 ✓.
+- تحقق من الـ 3 meta rows الجديدة:
+  ✓ golden_sessions_retained = '3'
+  ✓ preserve_policy           = 'last_3_sessions_kept'
+  ✓ last_preserve_run          = '2026-10-12T13:55:18.270935Z'
+- pre-commit hook: PASS (check:guards 0 violations, ticker-registry PASS).
+- npx tsc --noEmit على intraday-flow.ts: 0 أخطاء.
+- Commit: 552ccb68 — feat(P0-ALPHA-SESSION-PRESERVER): golden session preserver cron + archive table + meta policy
+- Push: 7eeaabcd..552ccb68 HEAD -> main ✓ (Rule 75)
+
+Stage Summary:
+- vps-service/jobs/intraday_session_preserver.py created (554 LOC, idempotent, --dry-run read-only)
+- intraday_meta policy updated (3 new rows: golden_sessions_retained=3, preserve_policy='last_3_sessions_kept', last_preserve_run=ISO)
+- intraday-flow.ts: golden session fallback documented (logic was already correct — readFromStockIntraday returns latest available session, sets is_historical_session=true, returns null only when both tables empty → 404)
+- archive table created (stock_intraday_archive — full schema mirror + archived_at + archived_reason, UNIQUE(ticker, timestamp))
+- pre-commit hook: PASS
+- Idempotency verified (run #2 → 0 new inserts, all duplicates skipped)
+- Rule 21 (NO Hard DELETE) ✓ — uses INSERT OR IGNORE archive, never DELETE FROM stock_intraday
+- Rule 27 (NO-FAKE-DATA) ✓ — preserver never fabricates sessions; reads real stock_intraday data only
