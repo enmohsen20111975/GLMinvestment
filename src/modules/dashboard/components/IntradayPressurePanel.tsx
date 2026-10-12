@@ -150,6 +150,13 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
           <CardTitle className="text-sm flex items-center gap-2">
             <Gauge className="w-4 h-4 text-purple-500" />
             ضغط الشراء/البيع داخل الجلسة
+            {/* ALPHA-A3: SIMULATED badge (Rule 27 transparency) */}
+            <span
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold border border-amber-300/50 bg-amber-50/80 dark:bg-amber-950/30 dark:border-amber-700/50 text-amber-600 dark:text-amber-400"
+              title="بيانات محاكاة تقديرية — ليست تكات حية مباشرة من شاشة البورصة"
+            >
+              محاكاة تقديرية (SIMULATED)
+            </span>
           </CardTitle>
           <div className="flex items-center gap-1.5">
             <Input

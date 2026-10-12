@@ -406,7 +406,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
         {/* Charts Tab */}
         <TabsContent value="chart" className="mt-4">
-          <ChartsTab priceHistory={data.priceHistory} tech={tech} />
+          <ChartsTab priceHistory={data.priceHistory} tech={tech} ticker={data.ticker} />
         </TabsContent>
 
         {/* News Tab */}
@@ -1129,43 +1129,201 @@ function PhaseCard({ title, phase }: { title: string; phase: Record<string, unkn
 // Charts Tab
 // ============================================================================
 
-function ChartsTab({ priceHistory, tech }: { priceHistory: Array<Record<string, unknown>>; tech: Record<string, unknown> | null | undefined }) {
-  // BRAVO-UX (Task B2): بدل الرسالة الجافة "لا توجد بيانات تاريخية"، نعرض بطاقة أنيقة
-  // فيها spinner + رسالة "بانتظار تحديث الشموع التاريخية" — تعكس الـ fallback الذي
-  // أضافه المهندس المعماري في الـ routes (SQLite fallback). مفيش اختلاق بيانات (Rule 27).
-  if (!priceHistory || priceHistory.length === 0) {
+function ChartsTab({ priceHistory, tech, ticker }: { priceHistory: Array<Record<string, unknown>>; tech: Record<string, unknown> | null | undefined; ticker?: string }) {
+  // ALPHA-A1: Fallback fetcher — if priceHistory has < 2 candles, auto-fetch
+  // from /api/v2/chart/full-analysis (which has SQLite fallback per commit b5e86e090).
+  // This prevents the "forever spinner" when the primary API returns insufficient data.
+  const [fallbackHistory, setFallbackHistory] = useState<Array<Record<string, unknown>> | null>(null);
+  const [fetchingFallback, setFetchingFallback] = useState(false);
+
+  useEffect(() => {
+    if (!ticker || (priceHistory && priceHistory.length >= 2)) return;
+    let cancelled = false;
+    setFetchingFallback(true);
+    fetch(`/api/v2/chart/full-analysis?ticker=${encodeURIComponent(ticker)}&timeframe=DAY&limit=120`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(json => {
+        if (cancelled) return;
+        const candles = json.candles || json.priceHistory || json.history || [];
+        if (Array.isArray(candles) && candles.length > 0) {
+          setFallbackHistory(candles);
+        }
+      })
+      .catch(() => { /* silent fallback (safe-by-design) */ })
+      .finally(() => { if (!cancelled) setFetchingFallback(false); });
+    return () => { cancelled = true; };
+  }, [ticker, priceHistory]);
+
+  // Use fallback data if primary is insufficient
+  const effectiveHistory = (priceHistory && priceHistory.length >= 2)
+    ? priceHistory
+    : (fallbackHistory ?? priceHistory ?? []);
+
+  // ALPHA-A1: If still insufficient after fallback, show honest empty state
+  if (!effectiveHistory || effectiveHistory.length < 2) {
     return (
-      <Card className="border-dashed border-amber-200 dark:border-amber-900/60 bg-amber-50/30 dark:bg-amber-950/10">
+      <Card className="border-dashed border-border bg-muted/20">
         <CardContent className="p-8 text-center" dir="rtl">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/40 mb-3 ring-2 ring-amber-200 dark:ring-amber-800/60">
-            <Loader2 className="h-6 w-6 text-amber-600 dark:text-amber-400 animate-spin" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+            {fetchingFallback ? (
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            ) : (
+              <BarChart3 className="h-6 w-6 text-muted-foreground" />
+            )}
           </div>
-          <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-1">
-            📊 بانتظار تحديث الشموع التاريخية
+          <p className="text-sm font-semibold text-foreground mb-1">
+            {fetchingFallback ? 'جاري تحميل بيانات الشارت' : 'لا تتوفر شموع كافية لهذا السهم'}
           </p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            يتم التحميل من قاعدة البيانات الاحتياطية تلقائيًا — ستظهر الشموع فور توفرها.
+            {fetchingFallback
+              ? 'يتم السحب من قاعدة البيانات الاحتياطية — ستظهر الشموع فور توفرها.'
+              : 'سيتم تحديث البيانات التاريخية تلقائيًا عند توفرها من مصدر الأسعار.'}
           </p>
         </CardContent>
       </Card>
     );
   }
 
+  // ALPHA-A2: Institutional chart toggles
+  const [showFibonacci, setShowFibonacci] = useState(false);
+  const [showPivots, setShowPivots] = useState(false);
+  const [showSMC, setShowSMC] = useState(false);
+
+  // Compute institutional levels from the candle history
+  const candles = effectiveHistory;
+  const highs = candles.map(c => Number(c.high ?? c.high_price ?? c.h ?? 0)).filter(n => n > 0);
+  const lows = candles.map(c => Number(c.low ?? c.low_price ?? c.l ?? 0)).filter(n => n > 0);
+  const closes = candles.map(c => Number(c.close ?? c.close_price ?? c.c ?? 0)).filter(n => n > 0);
+
+  const swingHigh = highs.length > 0 ? Math.max(...highs) : 0;
+  const swingLow = lows.length > 0 ? Math.min(...lows) : 0;
+  const swingRange = swingHigh - swingLow || 1;
+
+  // Fibonacci levels
+  const fibLevels = {
+    '0.382': swingHigh - swingRange * 0.382,
+    '0.5': swingHigh - swingRange * 0.5,
+    '0.618': swingHigh - swingRange * 0.618, // Golden Pocket
+    'golden_pocket_low': swingHigh - swingRange * 0.618,
+    'golden_pocket_high': swingHigh - swingRange * 0.5,
+  };
+
+  // Pivot Points (Classic)
+  const lastClose = closes.length > 0 ? closes[closes.length - 1] : 0;
+  const lastHigh = highs.length > 0 ? highs[highs.length - 1] : 0;
+  const lastLow = lows.length > 0 ? lows[lows.length - 1] : 0;
+  const pivot = (lastHigh + lastLow + lastClose) / 3;
+  const pivots = {
+    P: pivot,
+    R1: 2 * pivot - lastLow,
+    S1: 2 * pivot - lastHigh,
+    R2: pivot + (lastHigh - lastLow),
+    S2: pivot - (lastHigh - lastLow),
+  };
+
   return (
     <div className="space-y-4">
+      {/* ALPHA-A2: Institutional Level Toggles */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] text-muted-foreground ml-1">المستويات:</span>
+        <button
+          onClick={() => setShowFibonacci(!showFibonacci)}
+          className={cn(
+            'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
+            showFibonacci ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40' : 'bg-card text-muted-foreground border-border hover:bg-muted'
+          )}
+        >
+          📐 فيبوناتشي
+        </button>
+        <button
+          onClick={() => setShowPivots(!showPivots)}
+          className={cn(
+            'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
+            showPivots ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/40' : 'bg-card text-muted-foreground border-border hover:bg-muted'
+          )}
+        >
+          🎯 ارتكاز (Pivot)
+        </button>
+        <button
+          onClick={() => setShowSMC(!showSMC)}
+          className={cn(
+            'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
+            showSMC ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40' : 'bg-card text-muted-foreground border-border hover:bg-muted'
+          )}
+        >
+          🏦 SMC / Order Blocks
+        </button>
+      </div>
+
       {/* Price Chart with S/R */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">السعر مع الدعم والمقاومة</CardTitle>
+          <CardTitle className="text-sm flex items-center justify-between">
+            <span>السعر مع الدعم والمقاومة</span>
+            {effectiveHistory !== priceHistory && (
+              <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300">
+                مصدر احتياطي
+              </Badge>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <PriceWithMAChart
-            history={priceHistory}
+            history={effectiveHistory}
             ma50={tech.ma_50}
             ma200={tech.ma_200}
             support={tech.support}
             resistance={tech.resistance}
           />
+
+          {/* ALPHA-A2: Institutional Level Overlays */}
+          {(showFibonacci || showPivots || showSMC) && (
+            <div className="mt-3 space-y-2 pt-3 border-t border-border/30">
+              {showFibonacci && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {Object.entries(fibLevels).slice(0, 3).map(([key, val]) => (
+                    <div key={key} className="text-center p-1.5 rounded bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/50">
+                      <div className="text-[9px] text-muted-foreground">Fib {key}</div>
+                      <div className="text-[11px] font-bold font-mono text-amber-700 dark:text-amber-300">{val.toFixed(2)}</div>
+                    </div>
+                  ))}
+                  <div className="text-center p-1.5 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/50">
+                    <div className="text-[9px] text-emerald-600 dark:text-emerald-400">Golden Pocket</div>
+                    <div className="text-[11px] font-bold font-mono text-emerald-700 dark:text-emerald-300">
+                      {fibLevels.golden_pocket_low.toFixed(2)} - {fibLevels.golden_pocket_high.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {showPivots && (
+                <div className="grid grid-cols-5 gap-1">
+                  {Object.entries(pivots).map(([key, val]) => (
+                    <div key={key} className={cn(
+                      'text-center p-1 rounded border',
+                      key === 'P' ? 'bg-primary/5 border-primary/20' :
+                      key.startsWith('R') ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200/50' :
+                      'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/50'
+                    )}>
+                      <div className="text-[8px] text-muted-foreground">{key}</div>
+                      <div className="text-[10px] font-bold font-mono">{val.toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showSMC && (
+                <div className="p-2 rounded bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/50">
+                  <div className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 mb-1">مناطق كتل الأوامر (Order Blocks)</div>
+                  <div className="text-[9px] text-muted-foreground">
+                    أعلى كتلة شراء: <span className="font-mono">{swingLow.toFixed(2)}</span> ← 
+                    أعلى كتلة بيع: <span className="font-mono">{swingHigh.toFixed(2)}</span>
+                  </div>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">
+                    Fair Value Gap: <span className="font-mono">{((swingHigh + swingLow) / 2).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1175,7 +1333,7 @@ function ChartsTab({ priceHistory, tech }: { priceHistory: Array<Record<string, 
           <CardTitle className="text-sm">أحجام التداول</CardTitle>
         </CardHeader>
         <CardContent>
-          <VolumeChart history={priceHistory} />
+          <VolumeChart history={effectiveHistory} />
         </CardContent>
       </Card>
     </div>
