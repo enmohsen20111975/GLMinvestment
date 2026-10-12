@@ -2834,6 +2834,125 @@ def morning_bell():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ALPHA-2-DEFENSIVE-STOCKS: Safe-haven stocks when market regime = DEFENSIVE.
+# Rather than showing "no opportunities" in the PersonaTab, the engine surfaces
+# low-beta + dividend-paying active stocks. The actual filter logic lives in
+# analyzers.market_regime_engine.MarketRegimeEngine.get_defensive_stocks —
+# this route is a thin Flask wrapper (Rule 20: Python = brain, Node = proxy).
+@market_bp.route('/defensive-stocks', methods=['GET'])
+def get_defensive_stocks():
+    """🛡️ الأسهم الدفاعية (Safe Haven) — لما السوق في وضع DEFENSIVE.
+
+    بيرجّع قائمة بـ الأسهم اللي بـ تحقّق المعايير الدفاعية:
+      - beta < 1.0 (low volatility) — لو beta متاح في الـ DB
+      - dividend_yield > 0 (توزيعات أرباح)
+      - is_active = 1
+      - market = ? (EGX/TADAWUL/KSE/QSE — افتراضياً EGX)
+
+    Query params:
+      ?market=EGX   (default) — one of EGX / TADAWUL / KSE / QSE
+      ?limit=10     (default, capped 1..50)
+
+    Response shape:
+      {
+        "success": true,
+        "market": "EGX",
+        "regime": "DEFENSIVE" | "NORMAL" | "AGGRESSIVE",
+        "stocks": [
+          {
+            "ticker": "PORT",
+            "name_ar": "بورتو جروب القابضة",
+            "sector": "Diversified",
+            "beta": 0.72,              # null لو beta_source = "missing"
+            "dividend_yield": 4.91,
+            "market_cap": 12345678.0,  # null لو العمود غير موجود
+            "current_price": 106.92,
+            "turnover_egp": null,
+            "market": "EGX",
+            "beta_source": "cached"    # or "missing"
+          }
+        ],
+        "count": 5,
+        "beta_source": "cached" | "missing",
+        "source": "market_regime_engine"
+      }
+
+    Rule 27 (NO-FAKE-DATA):
+      - لو مفيش بيانات beta في الـ DB → fallback لـ dividend_yield ranking
+        ونـ mark beta_source = "missing" (beta بـ يفضل null — مفيش اختلاق).
+      - لو مفيش أي صفوف dividend_yield > 0 → رجّع empty array (مش اختلاق).
+    """
+    try:
+        # Lazy import — avoid loading market_regime_engine until needed
+        # (keeps Flask app startup fast and isolates failures).
+        from analyzers.market_regime_engine import (
+            MarketRegimeEngine,
+            MARKET_CONFIG,
+            Regime,
+        )
+
+        market_raw = (request.args.get('market') or 'EGX').upper()
+        # Accept aliases (KSA → TADAWUL, etc.) — same set the regime route accepts
+        market_aliases = {
+            'KSA': 'TADAWUL', 'SA': 'TADAWUL', 'SAUDI': 'TADAWUL',
+            'QATAR': 'QSE', 'PAK': 'KSE',
+        }
+        market = market_aliases.get(market_raw, market_raw)
+        if market not in MARKET_CONFIG:
+            # Unknown market → default to EGX (safe-by-design)
+            market = 'EGX'
+
+        # CRYPTO / GOLD: لا يوجد concept للأسهم الدفاعية — empty list
+        if MARKET_CONFIG[market].get('stocks_market_col') is None:
+            return jsonify({
+                'success': True,
+                'market': market,
+                'regime': None,
+                'stocks': [],
+                'count': 0,
+                'beta_source': 'n/a',
+                'source': 'market_regime_engine',
+                'note_ar': 'الأسواق الفردية (CRYPTO/GOLD) مفيهاش concept للأسهم الدفاعية.',
+            })
+
+        limit = max(1, min(int(request.args.get('limit', 10)), 50))
+
+        engine = MarketRegimeEngine(market=market)
+        stocks = engine.get_defensive_stocks(limit=limit)
+
+        # Read current persisted regime (cheap — already in system_settings)
+        try:
+            current_regime = engine.get_current_regime().value
+        except Exception:
+            current_regime = None
+
+        beta_source = stocks[0].get('beta_source') if stocks else 'n/a'
+
+        return jsonify({
+            'success': True,
+            'market': market,
+            'regime': current_regime,
+            'stocks': stocks,
+            'count': len(stocks),
+            'beta_source': beta_source,
+            'source': 'market_regime_engine',
+            'note_ar': (
+                'قائمة الأسهم الدفاعية (low-beta + dividend) — يتم عرضها في وضع '
+                'السوق الدفاعي بدل رسالة "لا توجد فرص آمنة".'
+            ) if stocks else (
+                'مفيش أسهم دفاعية متاحة حالياً في قاعدة البيانات — لو الـ regime '
+                'مرجّع DEFENSIVE، يبقى السوق فعلاً عالي المخاطر ومفيش safe haven.'
+            ),
+        })
+    except ValueError as ve:
+        # Bad query param (e.g. ?limit=abc)
+        return jsonify({'success': False, 'error': f'invalid parameter: {ve}'}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e), 'stocks': []}), 500
+
+
 # ============================================================================
 # P41 — جرس الصباح اللحظي (Live Morning Bell) + محرك الاستمرار + محرك الخروج
 # ============================================================================
