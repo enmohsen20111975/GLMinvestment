@@ -76108,4 +76108,53 @@ Stage Summary:
 - Rule 35 (ENGINE-UNIFY): يخص prediction writers فقط — V40.2 هو المسموح الوحيد + PREDICTION_WRITE_GUARD. لا يوجد guard مماثل للمؤشرات الفنية (Rule 67) — لا pre-commit hook يمنع inline calc_rsi/calc_atr
 - acceptance test Rule 67: `grep -r "def calc_atr\|def calculate_atr" vps-service/ → 1` — لكن الواقع: 16 تعريف (القاعدة مُخالفة بنسبة 1500%)
 - canonical_signal.py يوحّد 5 metrics فقط (signal/accumulation/money_flow/phase/volume_ratio) — لكن RSI/ATR/MACD/VWAP/OBV لا تزال متعددة المصادر
->>>>>>> dc2299c (feat(pkg1-4): enterprise architecture foundations — 4 packages)
+- لا توجد interface موحدة: analyzers/indicators returns scalars، glminvestment_engines/core/indicators returns pd.Series
+- legacy markers منتشرة: 35+ ملف فيه تعليقات "legacy/deprecated" (opportunity_quality، entry_gate، liquidity_filter، master_analyzer، engine_settings، prediction_optimizer)
+
+---
+Task ID: PKG1-4-ROUND1
+Agent: المنفذ الفني (Z.ai Code) — ميثاق النضوج المؤسسي
+Task: الحزم الأربع (الازدواج اللغوي / الهندسة / SSOT / توحيد المحركات) — Round 1 أساسات
+
+Work Log:
+- قرأت آخر سجلات الجولة 4 (DEV-18..21 + AUDIT) لفهم نقطة الانطلاق
+- أطلقت 4 وكلاء استكشاف متوازيين (PKG1/2/3/4-SCOPE) لرسم خريطة دقيقة لكل حزمة
+- بناءً على التقارير: أنشأت أساسات كل حزمة + إصلاح خلل رياضي حرج + ترحيلات توضيحية
+
+PKG1 (الازدواج اللغوي):
+- i18n-context.tsx: إصلاح سياسة الـ fallback (المفتاح المفقود → اللغة الأخرى → المفتاح) — يمنع ظهور bare keys
+- charts-rtl.tsx: مساعدات RTL لمخططات Recharts (useRtlXAxisProps, ChartCard, useDirection)
+- scripts/i18n_audit.py: مقياس تغطية الترجمة (baseline: 670 ملف، 27965 توارد، 26/29 مخطط بلا RTL)
+
+PKG2 (الهندسة الصارمة):
+- api-response.ts: Unified Response Schema (apiOk/apiErr/wrapHandler — success/data/error/timestamp)
+- global-error.tsx: root-layout error boundary (كان مفقوداً — فجوة حرجة)
+- decimal.ts: floating-point safe math (sumSafe, pctChange, winRate — صفر dependencies)
+- scripts/ts_health.py: مقياس الصحة الهندسية (baseline: 1079 any، 452 مسار بانتظار الترحيل، 177 fp-risk)
+- رحّلت /api/i18n/set-locale لـ apiOk/apiErr (أزلت err:any)
+- رحّلت /api/finance/transactions لـ sumSafe (أزلت تراكم IEEE-754 في الإجماليات المالية)
+
+PKG3 (SSOT):
+- canonical-price.ts: Unified Market Data Adapter (stocks.db → data_engine → vps_api، مع stamp المصدر)
+- cache-manager.ts: مرآة TS لـ Python cache_manager (TTL=60s، LRU، getOrCompute)
+- use-polled-data.ts: hook مركزي للـ polling (4 tiers: fast/medium/slow/vslow، visibility-aware)
+
+PKG4 (توحيد المحركات):
+- enhanced_indicators.py:calc_atr: إصلاح خلل رياضي حرج (SMA → Wilder's smoothing) — مُتحقَّق 1.5=1.5 مطابق canonical
+- ENGINE_INVENTORY.md: جرد كامل (16 ATR/5 RSI/9 MACD) + شهادة توحيد + خطة Round 2
+- pre-commit-engine-unity: hook إنفاذ Rule 54 (يمنع def calc_atr/calc_rsi الجديدة خارج canonical)
+
+التحقق (Agent Browser — إلزامي):
+- الصفحة تُعرض: شاشة تسجيل الدخول بكامل عناصرها ✅
+- لا أخطاء صفحة (فقط خطأ next-auth موجود مسبقاً بسبب Python معطّل) ✅
+- لا تحذيرات i18n missing-key (الـ fallback يعمل) ✅
+- التبديل اللغوي ar→en: lang/dir يتبدّلان، النصوص المترجمة عبر t() تتبدّل (Sign In, Investment Guide) ✅
+- التفاعل: النقر على تبويب "حساب جديد" يبدّل النموذج ✅
+- الاستجابة الموحدة: POST /api/i18n/set-locale يُرجع {success,data,timestamp} ✅
+
+Stage Summary:
+- 11 ملف جديد (أساسات) + 4 ملف مُعدَّل + 3 commit على GitHub
+- baseline metrics مُؤسَّسة وقابلة للقياس: i18n_audit.py + ts_health.py
+- إصلاح خلل ATR الرياضي الحرج (Wilder's) — مُتحقَّق رياضياً
+- المنصة تعمل وتتفاعل وتتبدّل لغوياً
+- المتبقي (Round 2): ترحيل 670 ملف نصوص ثابتة، 452 مسار API، 15 نسخة ATR inline — موثّق في ENGINE_INVENTORY.md
