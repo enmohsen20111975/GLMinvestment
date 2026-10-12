@@ -102,6 +102,11 @@ DISABLED_FILES = {
     'vps-service/scripts/apply_guard_triggers.py':           r'__DEV\d+_TEST__',  # verify INSERTs use __DEV13_TEST__ ticker
     'vps-service/scripts/add_prediction_guard_trigger.py':   r'__DEV\d+_TEST__',  # verify INSERTs use __DEV07_TEST__ ticker
 
+    # ── Test-suite scripts (temp-DB fixture INSERTs, never production) ──
+    # These create a tempfile.MKTEMP temp DB and INSERT test fixtures into it.
+    # The production predictions.db is never touched. GLM5.2-S2 + sibling tests.
+    'scripts/test_partial_tp1_breakeven_GLM5_2_S2.py':       r'tempfile\.mktemp|:memory:',  # temp DB only
+
     # ── Docstring examples (INSERT inside triple-quoted docstring) ──
     # The triple-quote state machine handles these automatically.
     'vps-service/core/db_manager.py':                        r'^\s*"""',  # INSERTs are inside docstrings

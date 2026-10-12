@@ -102,6 +102,50 @@ def validate_prediction_evidence(
     except (TypeError, ValueError):
         ev = 0
 
+    # ─── GLM5.2-S1 §3 (2026-10-13 — HOLD INSERT PREVENTION) ─────────────
+    # HOLD is a TEXTUAL RECOMMENDATION, NOT a prediction row with prices.
+    # Audit found HOLD signals being INSERTed as new prediction rows with
+    # entry_price + target_price + stop_loss — this pollutes the DB with
+    # "no-action" rows that have price geometry (entry/target/stop), which
+    # is misleading: HOLD should display as "لا توجد فرصة واضحة" in the UI,
+    # not as a tradeable setup.
+    #
+    # Rules:
+    #   - HOLD + real entry/target/stop (all > 0) → REJECT (don't INSERT)
+    #   - HOLD + None/0 prices → ALLOW (textual recommendation only,
+    #     but caller should NOT INSERT a new row — display in feed/UI instead)
+    #
+    # Reference: GLM5.2-S1-FANTASY-CAP spec §3
+    _HOLD_SIGNALS = frozenset(('HOLD',))
+    if sig in _HOLD_SIGNALS:
+        try:
+            _has_real_prices = (
+                entry_price is not None and float(entry_price) > 0
+                and target_price is not None and float(target_price) > 0
+                and stop_loss is not None and float(stop_loss) > 0
+            )
+        except (TypeError, ValueError):
+            _has_real_prices = False
+
+        if _has_real_prices:
+            return False, (
+                f'GLM5.2-S1 violation: HOLD signal MUST NOT be INSERTed as a '
+                f'prediction row with prices (entry={entry_price} target={target_price} '
+                f'stop={stop_loss}). HOLD is a textual recommendation only — display '
+                f'it as "لا توجد فرصة واضحة" in the UI, NOT as a tradeable setup. '
+                f'If you want to record the analysis, store it as analysis_json '
+                f'WITHOUT creating a new predictions row. (source={source})'
+            )
+        # HOLD without prices — allowed as textual recommendation.
+        # NOTE: the caller should NOT INSERT this as a new prediction row.
+        # This validation just confirms the signal is "not a fantasy
+        # prediction record". record_prediction() may still skip the INSERT.
+        return True, (
+            f'OK (HOLD textual recommendation, no prices — caller should NOT '
+            f'INSERT as new prediction row; display as recommendation only) '
+            f'(source={source})'
+        )
+
     # ─── DEV-07 (2026-10-12 — FULL INPUT GUARD): None-price hard reject ──
     # The previous guard accepted None for prices (treated as "field not set"),
     # which let rogue callers INSERT rows with NULL prices — a regression
