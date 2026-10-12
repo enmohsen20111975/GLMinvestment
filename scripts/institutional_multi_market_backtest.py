@@ -247,6 +247,31 @@ def fetch_prices_after(
 FEES_SLIPPAGE_ROUNDTRIP_PCT = 0.0
 
 
+def _parse_num(val) -> float:
+    """Robustly parse float numbers that may have commas, unicode spaces, or suffixes (K, M, B)."""
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    s = str(val).strip().replace('\u202f', '').replace('\xa0', '').replace(' ', '').replace(',', '')
+    if not s:
+        return 0.0
+    multiplier = 1.0
+    if s.endswith(('k', 'K')):
+        multiplier = 1e3
+        s = s[:-1]
+    elif s.endswith(('m', 'M')):
+        multiplier = 1e6
+        s = s[:-1]
+    elif s.endswith(('b', 'B')):
+        multiplier = 1e9
+        s = s[:-1]
+    try:
+        return float(s) * multiplier
+    except (ValueError, TypeError):
+        return 0.0
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Liquidity classification (Task BRAVO-BACKTEST-LIQUIDITY)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -256,16 +281,6 @@ def compute_avg_turnover_20d(
     """
     Compute the average daily turnover for the trailing
     `LIQUIDITY_LOOKBACK_DAYS` trading days STRICTLY BEFORE signal_date.
-
-    Rule 27 — uses REAL stored values only:
-      - Prefer the authoritative `turnover` column when present (>0).
-      - Otherwise fall back to `close * volume` (turnover column is NULL
-        for ~69k of 100k rows — fallback is essential).
-      - Rows with NULL/zero close or NULL volume contribute 0 to the sum
-        but still count toward the divisor (conservative — does not
-        inflate the mean by skipping low-volume days).
-      - Returns 0.0 when the ticker has no price history before the
-        signal date (treated as non-liquid by the caller).
     """
     rows = conn.execute(
         """
@@ -285,12 +300,14 @@ def compute_avg_turnover_20d(
     turnovers: List[float] = []
     for r in rows:
         t = r['t']
-        if t is not None and float(t) > 0:
-            turnovers.append(float(t))
-        else:
-            close = float(r['c']) if r['c'] is not None else 0.0
-            vol = float(r['v']) if r['v'] is not None else 0.0
-            turnovers.append(close * vol)
+        if t is not None:
+            parsed_t = _parse_num(t)
+            if parsed_t > 0:
+                turnovers.append(parsed_t)
+                continue
+        close = _parse_num(r['c'])
+        vol = _parse_num(r['v'])
+        turnovers.append(close * vol)
     if not turnovers:
         return 0.0
     return sum(turnovers) / len(turnovers)
@@ -420,20 +437,23 @@ def compute_rvol_at_signal_date(
         """,
         (ticker, signal_date),
     ).fetchone()
-    today_volume = float(today_row['volume']) if today_row and today_row['volume'] else 0.0
+    today_volume = _parse_num(today_row['volume']) if today_row and today_row['volume'] else 0.0
 
     # متوسط حجم آخر 20 يوم قبل signal_date
     rows = conn.execute(
         """
         SELECT volume FROM stock_daily_prices
-        WHERE ticker = ? AND price_date < ? AND volume IS NOT NULL AND volume > 0
+        WHERE ticker = ? AND price_date < ? AND volume IS NOT NULL
         ORDER BY price_date DESC LIMIT ?
         """,
         (ticker, signal_date, days),
     ).fetchall()
     if not rows:
         return (today_volume, 0.0, 0.0)
-    avg_volume_20d = sum(float(r['volume']) for r in rows) / len(rows)
+    parsed_volumes = [_parse_num(r['volume']) for r in rows if _parse_num(r['volume']) > 0]
+    if not parsed_volumes:
+        return (today_volume, 0.0, 0.0)
+    avg_volume_20d = sum(parsed_volumes) / len(parsed_volumes)
     rvol = (today_volume / avg_volume_20d) if avg_volume_20d > 0 else 0.0
     return (today_volume, avg_volume_20d, rvol)
 
