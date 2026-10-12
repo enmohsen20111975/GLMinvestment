@@ -1359,5 +1359,64 @@
         "stocksCount": "{count} stocks"
       }
     }
+  },
+  "academy": {
+    "categories": {
+      "basics": "Basics",
+      "technical": "Technical Analysis",
+      "fundamental": "Fundamental Analysis",
+      "smc": "SMC / ICT",
+      "risk": "Risk Management",
+      "psychology": "Trading Psychology",
+      "islamic": "Islamic Finance"
+    },
+    "levels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "progress": {
+      "title": "Your Academy Progress",
+      "completed": "Completed {completed} of {total} lessons",
+      "allDone": "All lessons completed",
+      "remaining": "{count} lessons remaining",
+      "loading": "Loading your progress…"
+    },
+    "sidebar": {
+      "title": "Lesson Index"
+    },
+    "lesson": {
+      "minutes": "min",
+      "sections": "sections",
+      "completed": "Completed",
+      "noQuiz": "This lesson has no quiz — click \"Done\" to mark complete",
+      "markComplete": "Mark as complete",
+      "markCompleteDone": "Completed ✓",
+      "lessonCompleteToast": "Lesson marked as complete",
+      "quizToast": "Well done! {correct}/{total} — your progress has been saved",
+      "nextLesson": "Next Lesson",
+      "currentLesson": "Current lesson"
+    },
+    "quiz": {
+      "title": "Test your knowledge",
+      "instructions": "Answer the following questions to earn the achievement badge and complete the lesson. You will get instant feedback on each answer.",
+      "submit": "Submit Answers",
+      "correct": "✅ Correct. ",
+      "wrong": "❌ Wrong. ",
+      "question": "Question {n}",
+      "achievementBadge": "Achievement Badge — {correct} / {total}",
+      "score": "Your score: {percent}%",
+      "excellent": " — Well done! You completed the lesson successfully.",
+      "good": " — Good, you can improve.",
+      "retry": " — Review the lesson and try again.",
+      "retake": "Retake Quiz"
+    },
+    "diagram": {
+      "candleAria": "Illustration of Japanese candlesticks",
+      "lineAria": "Illustration of a trend line",
+      "barAria": "Illustration of bars",
+      "pieAria": "Pie chart illustration",
+      "caption": "Figure: {heading}"
+    }
   }
 }

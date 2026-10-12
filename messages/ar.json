@@ -1359,5 +1359,64 @@
         "stocksCount": "{count} أسهم"
       }
     }
+  },
+  "academy": {
+    "categories": {
+      "basics": "الأساسيات",
+      "technical": "التحليل الفني",
+      "fundamental": "التحليل الأساسي",
+      "smc": "SMC / ICT",
+      "risk": "إدارة المخاطر",
+      "psychology": "سيكولوجية التداول",
+      "islamic": "التمويل الإسلامي"
+    },
+    "levels": {
+      "beginner": "مبتدئ",
+      "intermediate": "متوسط",
+      "advanced": "متقدم"
+    },
+    "progress": {
+      "title": "تقدّمك في الأكاديمية",
+      "completed": "أكملت {completed} من {total} درس",
+      "allDone": "أكملت كل الدروس",
+      "remaining": "بقي {count} درس لإكمال الأكاديمية",
+      "loading": "جارٍ تحميل تقدّمك…"
+    },
+    "sidebar": {
+      "title": "فهرس الدروس"
+    },
+    "lesson": {
+      "minutes": "دقيقة",
+      "sections": "أقسام",
+      "completed": "مكتمل",
+      "noQuiz": "هذا الدرس بدون اختبار — اضغط \"تم\" لتسجيل إكماله",
+      "markComplete": "وضع علامة كمكتمل",
+      "markCompleteDone": "تم الإكمال ✓",
+      "lessonCompleteToast": "تم تسجيل إكمال الدرس",
+      "quizToast": "أحسنت! {correct}/{total} — تم تسجيل إنجازك في الدرس",
+      "nextLesson": "الدرس التالي",
+      "currentLesson": "الدرس الحالي"
+    },
+    "quiz": {
+      "title": "اختبر معلوماتك",
+      "instructions": "أجب عن الأسئلة التالية للحصول على شارة الإنجاز وإكمال الدرس. ستحصل على تفسير فوري لكل إجابة.",
+      "submit": "تسليم الإجابات",
+      "correct": "✅ إجابة صحيحة. ",
+      "wrong": "❌ إجابة خاطئة. ",
+      "question": "سؤال {n}",
+      "achievementBadge": "شارة الإنجاز — {correct} / {total}",
+      "score": "نسبتك {percent}%",
+      "excellent": " — أحسنت! أكملت الدرس بنجاح.",
+      "good": " — جيد، يمكنك التحسّن.",
+      "retry": " — راجع الدرس وأعد المحاولة.",
+      "retake": "إعادة الاختبار"
+    },
+    "diagram": {
+      "candleAria": "رسم توضيحي لشموع يابانية",
+      "lineAria": "رسم توضيحي لخط اتجاه",
+      "barAria": "رسم توضيحي لأعمدة",
+      "pieAria": "رسم توضيحي دائري",
+      "caption": "شكل توضيحي: {heading}"
+    }
   }
 }
