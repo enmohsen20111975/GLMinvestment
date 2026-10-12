@@ -974,6 +974,111 @@ def scan_ticker(rows, ticker, regime='NORMAL', percentile_rank=None):
 
 
 # ============================================================================
+# 🤖 LIGHTGBM AI GATEKEEPER (BRAVO-CO-DEPLOYMENT B2 — 2026-10-12)
+# ============================================================================
+# Owner directive: "نفس المنطق في scripts/maker_radar.py" — filter radar
+# signals through the LGBM gatekeeper. If win_probability < 0.65, the
+# signal is marked REJECTED_BY_AI_GATEKEEPER and tracked separately for
+# transparency (status='ai_rejected'). Approved signals are tracked normally.
+#
+# The gatekeeper is FAIL-OPEN: if the model file is missing or joblib is
+# not installed, all signals are approved (with a warning). The radar
+# pipeline must NEVER break because of an ML infrastructure issue.
+# ============================================================================
+
+def _filter_signals_by_lgbm_gatekeeper(
+    under_microscope: list,
+    conn,
+    scan_date: str,
+    market_code: str = 'EGX',
+) -> tuple:
+    """Filter radar signals through the LGBM AI gatekeeper.
+
+    Args:
+        under_microscope: list of radar result dicts (each has `ticker`,
+            `path`, `current_price`, `avg_turnover_20d`, `percentile_rank`).
+        conn: open SQLite connection (used by fetch_ticker_series).
+        scan_date: ISO date string for logging.
+        market_code: market code (used in log messages only).
+
+    Returns:
+        (approved, rejected) tuple of lists.
+        - approved: list of dicts that passed the LGBM filter (or fail-open).
+        - rejected: list of dicts with extra `ai_verdict` key.
+    """
+    if not under_microscope:
+        return [], []
+
+    try:
+        from utils.lgbm_gatekeeper import evaluate_signal as _lgbm_eval, is_available
+    except ImportError:
+        log("⚠️ [AI-GATEKEEPER] utils.lgbm_gatekeeper unavailable — fail-open (all signals approved)")
+        return list(under_microscope), []
+
+    if not is_available():
+        log("⚠️ [AI-GATEKEEPER] model not loaded — fail-open (all signals approved)")
+        return list(under_microscope), []
+
+    approved = []
+    rejected = []
+    for stock in under_microscope:
+        ticker = stock.get('ticker', '')
+        path = stock.get('path', '') or 'unknown'
+        try:
+            # Fetch the candle series for feature computation.
+            # maker_radar uses 40-day lookback; the gatekeeper needs 20+
+            # candles for stable RSI/MFI/Bollinger computation.
+            rows = fetch_ticker_series(conn, ticker, days=40)
+            if not rows or len(rows) < 20:
+                # Insufficient candle data → fail-open (approve + log)
+                stock['ai_gatekeeper_probability'] = None
+                stock['ai_gatekeeper_reason'] = 'AI_GATEKEEPER_INSUFFICIENT_DATA'
+                approved.append(stock)
+                continue
+
+            candles = []
+            for r in rows:
+                candles.append({
+                    "date": str(r.get('price_date') or r.get('date') or '')[:10],
+                    "open": float(r.get('open') or r.get('close') or 0),
+                    "high": float(r.get('high') or r.get('close') or 0),
+                    "low": float(r.get('low') or r.get('close') or 0),
+                    "close": float(r.get('close') or 0),
+                    "volume": int(r.get('volume') or 0),
+                })
+
+            verdict = _lgbm_eval(
+                candles=candles,
+                signal_type=path,
+                avg_turnover_20d=stock.get('avg_turnover_20d'),
+                percentile_rank=stock.get('percentile_rank') or 50.0,
+            )
+            stock['ai_gatekeeper_probability'] = verdict.get('win_probability')
+            stock['ai_gatekeeper_reason'] = verdict.get('reason')
+
+            if verdict['approved']:
+                approved.append(stock)
+                log(f"✅ [AI-GATEKEEPER-OK] {ticker} ({path}) "
+                    f"win_prob={verdict.get('win_probability')} — {verdict.get('reason')}")
+            else:
+                rejected.append(stock)
+                log(f"🚫 [AI-GATEKEEPER-REJECT] {ticker} ({path}) "
+                    f"win_prob={verdict.get('win_probability')} "
+                    f"< {verdict.get('threshold')} → {verdict.get('reason')}")
+        except Exception as _e:
+            # Defensive — never break the radar pipeline because of a single
+            # ticker's gatekeeper error.
+            stock['ai_gatekeeper_probability'] = None
+            stock['ai_gatekeeper_reason'] = f'AI_GATEKEEPER_ERROR: {_e}'
+            approved.append(stock)
+            log(f"⚠️ [AI-GATEKEEPER] {ticker}: error {_e} — fail-open")
+
+    log(f"🤖 [AI-GATEKEEPER] {len(approved)} approved / {len(rejected)} rejected "
+        f"(market={market_code}, date={scan_date})")
+    return approved, rejected
+
+
+# ============================================================================
 # Task IMPROVEMENT-22-2026-10-07: تسجيل إشارات الرادار في DB
 # يكتب كل سهم تحت الميكروسكوب في radar_signal_tracking table
 # ============================================================================
@@ -1972,9 +2077,61 @@ def main():
     # موجودة في under_microscope ويكشفها _track_signals_to_db ويسجلها بـ
     # status='rvol_surge_breakout'. المستبعدة (tier='light' بدون استثناء)
     # تُسجّل بـ status='disqualified_illiquid'.
+    #
+    # ── BRAVO-CO-DEPLOYMENT B2 (2026-10-12): LightGBM AI Gatekeeper ──────────
+    # Before tracking, filter `under_microscope` through the LGBM gatekeeper.
+    # Signals with win_probability < 0.65 are routed to a separate
+    # `ai_rejected` list and tracked with status='ai_rejected' for
+    # transparency. Approved signals are tracked normally (status='pending'
+    # or 'rvol_surge_breakout' etc.).
+    # -------------------------------------------------------------------------
+    try:
+        approved_microscope, rejected_microscope = _filter_signals_by_lgbm_gatekeeper(
+            under_microscope, conn, today_iso, market_code,
+        )
+    except Exception as _lgbm_err:
+        # Defensive — if the gatekeeper crashes entirely, fall back to the
+        # old behaviour (track all under_microscope signals) so the radar
+        # pipeline keeps working.
+        log(f"⚠️ [AI-GATEKEEPER] filter crashed ({_lgbm_err}) — falling back to no-filter mode")
+        approved_microscope, rejected_microscope = list(under_microscope), []
+
+    # Track the rejected signals in DB with status='ai_rejected' for audit.
+    # We reuse _track_signals_to_db by mutating the `path` + adding a marker
+    # to `reason` so the row is clearly distinguishable from `pending`.
+    if rejected_microscope:
+        try:
+            _track_signals_to_db(
+                rejected_microscope,
+                today_iso,
+                market_code,
+            )
+            # Override the status of the just-inserted rejected rows.
+            # _track_signals_to_db inserts with status='pending' (or
+            # 'stale_data' / 'rvol_surge_breakout' depending on the radar
+            # flags). We UPDATE the rows where signal_date=today_iso and
+            # ticker ∈ rejected list to status='ai_rejected'.
+            try:
+                _db_path = PROJECT_ROOT / 'db' / 'stocks.db'
+                _uconn = sqlite3.connect(str(_db_path))
+                _rejected_tickers = [s.get('ticker') for s in rejected_microscope if s.get('ticker')]
+                if _rejected_tickers:
+                    placeholders = ','.join(['?'] * len(_rejected_tickers))
+                    _uconn.execute(
+                        f"UPDATE radar_signal_tracking SET status='ai_rejected' "
+                        f"WHERE signal_date=? AND ticker IN ({placeholders})",
+                        [today_iso] + _rejected_tickers,
+                    )
+                    _uconn.commit()
+                _uconn.close()
+            except Exception as _upd_err:
+                log(f"⚠️ [AI-GATEKEEPER] status UPDATE failed: {_upd_err}")
+        except Exception as _track_err:
+            log(f"⚠️ [AI-GATEKEEPER] rejected tracking failed: {_track_err}")
+
     try:
         _track_signals_to_db(
-            under_microscope,
+            approved_microscope,
             today_iso,
             market_code,
             disqualified_illiquid=disqualified_illiquid_list,
