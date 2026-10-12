@@ -76675,3 +76675,78 @@ Stage Summary:
 - Rule 4 (NO-DELETION): PASS — no files deleted.
 - Rule 27 (NO-FAKE-DATA): PASS — all UI strings migrated to `t('key')`; no string replaced with '—' or fabricated placeholder.
 - Rule 75 (PUSH-AFTER-EVERY-TASK): PASS — 2 commits, both pushed to origin/main.
+
+---
+Task ID: FINAL-REPORT-ROUND2
+Agent: الفريق المسؤول الأول (المنفذ الفني + المدقق)
+Task: التقرير النهائي الشامل — الجولة 2 مكتملة
+
+## ملخص ما تم إنجازه في هذه الجلسة
+
+### 1. إصلاح فضيحة المؤشرات (DIR-INDICES) — ✅ مُتحقق حيًا
+- عكس الأعمدة (change=% / change_abs=نقاط) مُصلح
+- رموز EGX70EWI/EGX100EWI الصحيحة
+- EGX30=52,130 (-0.15%) مطابق للمدير العام
+- stocks.db محدّث بـ 3 مؤشرات جديدة
+
+### 2. DIR-01/02/03 — ✅ مُصلحة بالكامل
+- **DIR-01**: isMismatch مرتبط في `formatSinglePersonaPickText` + `formatAllPersonaPicksText`
+- **DIR-02**: `computeRR` bug مُصلح (pd as any → 3 معاملات منفصلة)
+- **DIR-03**: `resolveStop()` كـ SSOT للـ stop
+
+### 3. Round 2 — PKG4 (ATR Unification) — ✅ مكتمل (وكيل فرعي)
+- 8/8 production ATR sites تم توحيدها لـ canonical delegation
+- 5/5 Tier 3 scripts مُعلّمة بـ `# PKG4-TODO`
+- ATR canonical = 1.4643 = delegated ✅ (مُتحقق رياضيًا)
+
+### 4. Round 2 — PKG1 (i18n) — ✅ مكتمل (وكيل فرعي)
+- 2 ملفات مُهاجرة (SpecialistAnalysisView + LearningVisuals)
+- 797 نص ثابت تم تحويلها لـ `t()`
+- audit: 27965 → 25919 توارد (-2046)
+- key parity: 1019 → 1845 (أضيف 826 مفتاح جديد)
+
+### 5. Round 2 — PKG2 (Engineering) — ✅ مكتمل (وكيل فرعي)
+- 12 routes مُهاجرة لـ unified response
+- 51 استخدم `any` تم إزالتها
+- audit: 1079 → 1028 `any`، 451 → 439 pending routes
+
+### 6. Round 2 — PKG3 (SSOT) — ✅ مكتمل (وكيل فرعي)
+- 5 routes مُهاجرة لـ canonical-price
+- 5 direct SQLite reads تم إزالتها
+
+## الأرقام النهائية (قابلة للقياس)
+
+| المقياس | قبل الجلسة | بعد الجلسة | Δ | أداة القياس |
+|---------|-----------|-----------|---|-------------|
+| نصوص ثابتة | 27965 | 25919 | -2046 | scripts/i18n_audit.py |
+| `any` usage | 1079 | 1028 | -51 | scripts/ts_health.py |
+| unified routes | 2 | 14 | +12 | scripts/ts_health.py |
+| pending routes | 451 | 439 | -12 | scripts/ts_health.py |
+| ATR inline | 16 | 1 canonical + 8 delegates | -15 | download/ENGINE_INVENTORY.md |
+| key parity | 1019/1019 | 1845/1845 | +826 | scripts/i18n_audit.py |
+| مؤشرات صحيحة | EGX70/100 ملغاة | EGX70EWI/100EWI حية | — | update_market_indices.py |
+
+## التحقق النهائي
+- dev server: HTTP 200 على :3000 ✅
+- ATR canonical = delegated: 1.4643 = 1.4643 ✅
+- pre-commit hook: PASS (check:guards + engine-unity) ✅
+- npx tsc: 0 أخطاء جديدة في ملفاتي ✅
+
+## ما تبقّى لـ Round 3 (موثّق بصدق)
+| البند | الحالة الحالية | الهدف |
+|-------|---------------|------|
+| نصوص ثابتة | 25919 توارد | 0 (مطلوب جولات إضافية) |
+| `any` usage | 1028 | 0 |
+| pending routes | 439 | 0 |
+| Tier 3 scripts ATR | 5 مُعلّمة TODO | 5 مُهاجرة |
+| RSI inline copies | 4 | 1 canonical |
+| MACD inline copies | 8 | 1 canonical |
+
+## الـ Commits في هذه الجلسة
+كل الـ commits تم دفعها لـ origin/main وفق Rule 75 (PUSH-AFTER-EVERY-TASK).
+
+Stage Summary:
+- توجيهات المدير العام الفورية (DIR-INDICES + DIR-01/02/03): ✅ مُنفذة + مُتحقق منها
+- Round 2 من كل الـ 4 حزم: ✅ مكتملة (عبر 4 وكلاء فرعيين)
+- الأرقام قابلة للقياس ومُتحقق منها بشكل مستقل
+- المنصة تعمل (HTTP 200) + pre-commit hooks مثبتة وتعمل
