@@ -341,11 +341,6 @@ function OfflineState({ reason }: { reason: string }) {
       <p className="text-xs text-muted-foreground max-w-md">{reason}</p>
       <p className="text-[11px] text-muted-foreground mt-3 max-w-md">
         يتم الآن تحديث مؤشرات الأسواق والبيانات المالية الحية، يرجى إعادة المحاولة بعد لحظات.
-
-      <p className="text-xs text-slate-400 max-w-md">{reason}</p>
-      <p className="text-[11px] text-slate-500 mt-3 max-w-md">
-        جاري تجهيز وتحديث بيانات التقرير ومؤشرات الأسواق المالية.
-
       </p>
     </div>
   );
@@ -651,17 +646,10 @@ export function DailyMarketReport({ printMode = false, market }: DailyMarketRepo
       )}
 
       {/* Footer */}
-
       <div className="text-center pt-3 border-t border-border/40 text-[11px] text-muted-foreground print:pt-2">
         <p className="mb-0.5 font-medium">تم إعداد هذا التقرير آلياً عبر خوارزميات التحليل المالي والكمي المتقدمة</p>
         <p className="text-[10px]">
           دليل الاستثمار — تحليلات كمية ومعالجة فورية للأسواق المالية © 2026
-
-      <div className="text-center pt-3 border-t border-slate-700/40 text-[11px] text-slate-500 print:pt-2">
-        <p className="mb-0.5">تم إنشاء هذا التقرير تلقائياً بواسطة نظام التحليل المالي</p>
-        <p className="text-[10px]">
-          نظام تحليل مالي موحد — جميع البيانات من مصدر معتمد
-
         </p>
       </div>
     </div>

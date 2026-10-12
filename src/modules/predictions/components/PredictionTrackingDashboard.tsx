@@ -817,13 +817,6 @@ export function PredictionTrackingDashboard({
         };
       });
 
-      .map((p) => ({
-        ticker: p.ticker,
-        // GLM5.2-A: use effectiveDate for the chart x-axis
-        closedAt: String(p.closedAt || p.executionDate || p.entryDate).slice(0, 10),
-        returnPct: Number(p.returnPct),
-      }));
-
 
     // تجميع حسب اليوم
     const dayMap = new Map<string, { returnPct: number; ticker: string; isWin: boolean }[]>();

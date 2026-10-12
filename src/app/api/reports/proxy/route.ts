@@ -115,31 +115,6 @@ export async function GET(request: NextRequest) {
         headers: responseHeaders,
       });
     }
-
-  // ─── GLM5.2-A (P0-REPORTS-CACHE): In-Memory Cache (3 minutes) ──────────
-  // Avoids cold-start delays on the Python backend. If the data was fetched
-  // within the last 3 minutes, return it instantly (<5ms). `force=true`
-  // bypasses the cache (admin refresh).
-  const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
-  const cacheKey = `${typeRaw}:${market}`;
-  if (!force && _reportsCache.has(cacheKey)) {
-    const entry = _reportsCache.get(cacheKey)!;
-    const age = Date.now() - entry.ts;
-    if (age < CACHE_TTL_MS) {
-      // Cache hit — return instantly with a cache flag.
-      const cachedBody = entry.body;
-      const cachedHeaders = new Headers(entry.headers);
-      cachedHeaders.set('X-Cache', 'HIT');
-      cachedHeaders.set('X-Cache-Age', String(Math.round(age / 1000)) + 's');
-      return new NextResponse(cachedBody, {
-        status: 200,
-        statusText: 'OK',
-        headers: cachedHeaders,
-      });
-    }
-    // Stale — remove and re-fetch.
-    _reportsCache.delete(cacheKey);
-
   }
 
   const upstream = buildPythonUrl(typeRaw, market, force);
@@ -211,16 +186,7 @@ export async function GET(request: NextRequest) {
         statusText: backendRes.statusText,
         expires: Date.now() + CACHE_TTL_MS,
       });
-
-    // GLM5.2-A: cache successful responses (status 200).
-    if (backendRes.status === 200) {
-      _reportsCache.set(cacheKey, {
-        body: body.slice(0),
-        headers: responseHeaders,
-        ts: Date.now(),
-      });
       responseHeaders.set('X-Cache', 'MISS');
-
     }
 
     return new NextResponse(body, {
@@ -235,19 +201,13 @@ export async function GET(request: NextRequest) {
       `[reports/proxy] ${typeRaw} failed:`,
       aborted ? 'timeout' : err,
     );
-    // GLM5.2-A: client-friendly Arabic messages (no Python/Node.js/Rule refs).
     return NextResponse.json(
       {
         success: false,
-
         error: aborted
           ? 'استغرق تحميل بيانات السوق وقتاً أطول من المعتاد. يرجى إعادة المحاولة.'
-          : 'جاري تحديث بيانات السوق حالياً. يرجى إعادة المحاولة بعد لحظات.',
+          : 'جاري تجهيز وتحديث بيانات التقرير ومؤشرات الأسواق المالية — يرجى المحاولة بعد لحظات.',
         error_code: aborted ? 'timeout' : 'backend_updating',
-
-        error: 'جاري تجهيز وتحديث بيانات التقرير ومؤشرات الأسواق المالية — يرجى المحاولة بعد لحظات',
-        error_code: aborted ? 'timeout' : 'backend_unavailable',
-
         type: typeRaw,
         market,
         data: null,
@@ -258,14 +218,6 @@ export async function GET(request: NextRequest) {
     clearTimeout(timer);
   }
 }
-
-// ─── GLM5.2-A: In-memory cache store (per-server, per-process) ──────────
-interface CacheEntry {
-  body: ArrayBuffer;
-  headers: Headers;
-  ts: number;
-}
-const _reportsCache = new Map<string, CacheEntry>();
 
 export async function OPTIONS() {
   const headers = new Headers();
