@@ -76922,3 +76922,112 @@ Stage Summary:
 - ingestion constraint شغّال لمنع الانتكاس
 - المنصة تعمل (HTTP 200)
 - Rule 27 محترمة: مفيش اختلاق أسماء عربية
+
+---
+Task ID: GLM5.2-S2-PARTIAL-TP-TRAILING
+Agent: Partial TP + Trailing Stop Agent
+
+## الكارثة المؤكدة (السياق)
+- 958 صفقة (61.8%) ماتت EXPIRED → تجميد رأس مال المتداولين.
+- السبب الجذري: غياب Partial TP1 (جني أرباح جزئي) + غياب Trailing/Breakeven Guard.
+- `daily_closer.py` فيه `_mark_closed` بس مفيش partial logic موصول بـ `prediction_tracker.py`.
+
+## Work Log — الملفات المُعدّلة
+
+### 1. `vps-service/analyzers/prediction_tracker.py` (commit `71d50cb2`)
+- أضف migrations لعمودين ناقصين في `_init_table`:
+  - `partial_done INTEGER DEFAULT 0` (flag منطقي: 0=pending | 1=TP1 triggered)
+  - `original_stop_loss REAL` (حفظ الـ stop الأصلي قبل Breakeven Guard)
+  - الـ migrations دي idempotent — بـ skip لو العمود موجود. الـ daily_closer عنده
+    `partial_exit_price` + `partial_exit_date` + `partial_return_pct` في
+    migrations بتاعته، فالـ tracker دلوقتي متوافق معه.
+- أضف class constants:
+  - `_PARTIAL_TP_TARGET_CAP_MULT = 3.0` (matching R4 من `enforce_geometry_guard`)
+  - `_BREAKEVEN_STOP_MULT = 1.005` (entry + 0.5% لتغطية العمولات)
+- أضف `_fetch_current_price_canonical(ticker)`:
+  - Priority: utils.live_price (canonical — Rule 67) → stocks.db.egksco_stocks
+    → stocks.db.stocks. مفيش اختلاق (Rule 27 NO-FAKE-DATA).
+- أضف `check_partial_tp1(prediction_id, current_price=None) -> Dict`:
+  - يجلب prediction (entry, target, stop, partial_done, outcome_date).
+  - **CAP (R4)**: لو target > entry × 3.0 → `effective_target = entry × 3.0`
+    + warning log "UNREALISTIC, capped" (REAC target=161.7 / entry=9.38 = ×17.24).
+  - لو outcome_date IS NOT NULL → `action='already_closed'` (skip — idempotent).
+  - لو partial_done == 1 → `action='already_partial'` (skip — idempotent).
+  - يجلب current_price من canonical source لو مش passed.
+  - لو current_price >= effective_target → UPDATE: `partial_done=1`,
+    `partial_exit_price=effective_target`, `partial_exit_date=today`,
+    `partial_return_pct=(target-entry)/entry*100`. Action=`partial_tp1_filled`
+    أو `capped_unrealistic` لو الـ cap اشتغل.
+  - Returns Dict بالـ action + effective_target + original_target + current_price
+    + partial_return_pct + message.
+- أضف `check_breakeven_move(prediction_id) -> Dict`:
+  - يجلب prediction (entry, stop_loss, partial_done, original_stop_loss).
+  - لو original_stop_loss IS NOT NULL → `action='already_breakeven'` (skip).
+  - لو partial_done != 1 → `action='not_partial_yet'` (skip — call TP1 first).
+  - غير كده → UPDATE: `stop_loss = entry × 1.005`, `original_stop_loss = old stop`.
+    Action=`breakeven_set`. ده يضمن إن الصفقة الرابحة مش هترجع خاسرة أبدًا.
+
+### 2. `vps-service/jobs/daily_closer.py` (commits `7217cf3d` + `296ba4ed`)
+- أضف TIME_EXIT block في `_mark_closed` قبل كتلة الـ DB UPDATE:
+  - لو `status == 'EXPIRED'` AND `holding_days > 15` → status='TIME_EXIT',
+    exit_type='time_exit'. ده بـ يـ:
+    1. يطلق رأس المال (TIME_EXIT = outside PENDING pool)
+    2. يـ record actual_return الحقيقي (موجب/سالب/صفر) بدل ما يتركها EXPIRED
+    3. يميّز الـ exits الزمنية عن الـ EXPIRED الحقيقية (اللي عندها data_quality issues)
+  - Rule 27 (NO-FAKE-DATA): current_price مصدره الـ caller (close من price_history) — مفيش اختلاق.
+- أضف defaults قبل الـ SPLIT/HARD-CEILING try block:
+  - `_entry_price_db = 0.0`, `_stop_loss_db = 0.0`
+  - علشان الـ TIME_EXIT log يـ access _entry_price_db بأمان حتى لو الـ guard lookup فشل.
+- Includes pre-existing GLM5.2-S3 SPLIT GUARD hardening من working tree (progressive_stop_hit
+  + corporate_actions split-history check + notes write).
+
+### 3. `scripts/test_partial_tp1_breakeven_GLM5_2_S2.py` (commit `af1e6fba`)
+- 9-test suite covering:
+  - Test 1: `check_partial_tp1(51439)` caps REAC target=161.7 → 28.14 (entry=9.38 × 3.0).
+    partial_return_pct=200% (28.14 - 9.38) / 9.38 × 100.
+  - Test 2: no_action when current_price < target.
+  - Test 3: already_closed prediction skipped (outcome_date IS NOT NULL).
+  - Test 4: `check_breakeven_move` after partial → stop=entry×1.005.
+    (entry=130.0 → new_stop=130.65, original_stop_loss saved=120.0).
+  - Test 5: breakeven skipped when partial_done=0.
+  - Test 6: breakeven idempotent (no double-write).
+  - Test 7: TIME_EXIT converts EXPIRED → TIME_EXIT when holding_days=20 (> 15).
+    actual_return=-2.5 preserved (not nuked to 0).
+  - Test 8: EXPIRED + holding_days=7 → stays EXPIRED (not converted, ≤ 15).
+  - Test 9: production REAC cap-detection (read-only). Falls back to synthetic
+    (entry=9.38, target=161.7) لو الـ production data اتـ cleaned.
+- All 9 tests PASS.
+
+## الـ Commits
+| Commit | File | Description |
+|--------|------|-------------|
+| `71d50cb2` | `vps-service/analyzers/prediction_tracker.py` | feat: add check_partial_tp1 + check_breakeven_move + migrations |
+| `7217cf3d` | `vps-service/jobs/daily_closer.py` | feat: add TIME_EXIT (>15 sessions) + S3 SPLIT GUARD hardening |
+| `296ba4ed` | `vps-service/jobs/daily_closer.py` | fix: guard _entry_price_db default before TIME_EXIT log |
+| `af1e6fba` | `scripts/test_partial_tp1_breakeven_GLM5_2_S2.py` | test: 9-test suite — all PASS |
+
+## التحقق من القواعد الإلزامية
+- ✅ Rule 27 (NO-FAKE-DATA): current_price من `utils.live_price` (canonical path).
+  partial_exit_price = effective_target (REAL, مش fake).
+- ✅ Rule 67 (CALCULATION-CANONICAL): canonical-price.ts / stocks.db / utils.live_price.
+- ✅ Rule 75 (PUSH-AFTER-EVERY-TASK): commit + push بعد كل ملف (4 commits pushed).
+- ✅ pre-commit hook: PASS على كل commit (`check_no_hard_delete.py` + `check_no_raw_insert.py`
+  + `pre-commit-ticker-registry` — كلها PASS).
+- ✅ Build لا يُكسر: `python3 -c "import ast; ast.parse(open('FILE').read())"` على كل ملف
+  بعد كل تعديل → OK.
+- ✅ Idempotency: `partial_done` + `original_stop_loss` guards تمنع double-write.
+
+## Production Verification (read-only)
+- Production REAC #51439: target=10.5056 (target_price اتـ cleaned/backfilled).
+- Earlier REAC predictions (#51427, #51419, #51394...) كانت target=161.7 —
+  الـ cap logic دلوقتي هيـ catchها لو رجعت.
+- 789 closed EXPIRED + holding_days > 15 → would be converted to TIME_EXIT
+  (going forward, لا retroactive backfill في الـ task ده).
+
+Stage Summary:
+- ✅ `check_partial_tp1()` implemented (with R4 cap for unrealistic targets)
+- ✅ `check_breakeven_move()` implemented (stop → entry+0.5%, original saved)
+- ✅ Time Exit for >15 sessions implemented (EXPIRED → TIME_EXIT)
+- ✅ 9/9 tests PASS (including REAC cap-detection test)
+- ✅ pre-commit hook: PASS
+- ✅ All 4 commits pushed to remote
