@@ -40,11 +40,15 @@ TV_SCANNER_URL = 'https://scanner.tradingview.com/global/scan'
 TV_COLUMNS = ['name', 'description', 'close', 'change', 'change_abs', 'high', 'low', 'volume']
 
 # المؤشرات المطلوبة (tickers في TradingView)
-INDEX_TICKERS = ['EGX:EGX30', 'EGX:EGX70', 'EGX:EGX100']
+# DIR-INDICES (2026-10-12 — GM directive): رموز EWI الرسمية الحية.
+#   - EGX70/EGX100 القديمة ملغاة في TradingView وتُرجع 0 نتائج.
+#   - الصحيح: EGX70EWI / EGX100EWI (متساوي الأوزان Equal-Weight Index).
+#   - يطابق الشاشات الحية: EGX30=52,130(-0.15%), EGX70EWI=19,165(-0.47%), EGX100EWI=25,296(-0.49%).
+INDEX_TICKERS = ['EGX:EGX30', 'EGX:EGX70EWI', 'EGX:EGX100EWI']
 INDEX_MAP = {
     'EGX:EGX30': {'symbol': 'EGX30', 'name_ar': 'مؤشر EGX 30'},
-    'EGX:EGX70': {'symbol': 'EGX70', 'name_ar': 'مؤشر EGX 70'},
-    'EGX:EGX100': {'symbol': 'EGX100', 'name_ar': 'مؤشر EGX 100'},
+    'EGX:EGX70EWI': {'symbol': 'EGX70EWI', 'name_ar': 'مؤشر EGX 70 متساوي الأوزان'},
+    'EGX:EGX100EWI': {'symbol': 'EGX100EWI', 'name_ar': 'مؤشر EGX 100 متساوي الأوزان'},
 }
 
 
@@ -85,6 +89,14 @@ def fetch_indices_from_tv() -> list:
 
         # columns = ['name', 'description', 'close', 'change', 'change_abs', 'high', 'low', 'volume']
         # d[0]=name, d[1]=description, d[2]=close, d[3]=change, d[4]=change_abs, d[5]=high, d[6]=low, d[7]=volume
+        #
+        # DIR-INDICES (2026-10-12 — GM directive): تصحيح عكس الأعمدة.
+        #   TradingView semantics (verified live):
+        #     - columns[3] = 'change'     = النسبة المئوية (%) — مثل -0.15
+        #     - columns[4] = 'change_abs' = التغير المطلق بالنقاط — مثل -76.7
+        #   الكود القديم كان يعكسها: يضع change_abs في change_percent!
+        #   النتيجة: هبوط 32.90 نقطة ظهر للعميل كـ -32.90% (ثلث البورصة تبخّر!).
+        #   التصحيح: change_percent ← d[3]، change (نقاط) ← d[4].
         results = []
         for row in rows:
             if not isinstance(row, dict):
@@ -102,7 +114,9 @@ def fetch_indices_from_tv() -> list:
             if close_val is None or close_val <= 0:
                 continue
 
-            change_pct = d[4] if len(d) > 4 else 0  # change_abs (percentage)
+            # DIR-INDICES: التصحيح — change (نقاط) و change_percent (%) منفصلان.
+            change_points = d[4] if len(d) > 4 and d[4] is not None else 0  # change_abs = نقاط
+            change_pct    = d[3] if len(d) > 3 and d[3] is not None else 0  # change = نسبة مئوية
             high = d[5] if len(d) > 5 else 0
             low = d[6] if len(d) > 6 else 0
             volume = d[7] if len(d) > 7 else 0
@@ -111,13 +125,14 @@ def fetch_indices_from_tv() -> list:
                 'symbol': idx_info['symbol'],
                 'name_ar': idx_info['name_ar'],
                 'value': float(close_val),
-                'change': float(d[3] if len(d) > 3 and d[3] else 0),
+                # DIR-INDICES: change = نقاط (مش %)، change_percent = % (مش نقاط).
+                'change': float(change_points or 0),
                 'change_percent': float(change_pct or 0),
                 'high': float(high or 0),
                 'low': float(low or 0),
                 'volume': float(volume or 0),
             })
-            log(f"  ✅ {idx_info['symbol']}: {close_val:.2f} ({change_pct:+.2f}%)")
+            log(f"  ✅ {idx_info['symbol']}: {close_val:.2f} ({change_pct:+.2f}% | {change_points:+.2f}pts)")
 
         return results
     except Exception as e:

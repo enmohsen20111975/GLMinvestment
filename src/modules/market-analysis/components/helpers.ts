@@ -27,6 +27,25 @@ import type {
   PredictionRow,
 } from './types';
 
+// DIR-03 (2026-10-12 — GM directive / Rule 67 + Rule 73):
+// Single Source of Truth for the stop-loss value shown across table + text + cards.
+// Before this, the table read pd.stop while the text formatter read item.entry?.stopLoss
+// AND mapPredictionToStockData had its own fallback (entryPrice * 0.93). When these
+// diverged (e.g. 4.92 vs 4.97 for IKAZ) users saw two different stop values for the
+// same stock in two screens — a public credibility scandal.
+// This helper centralizes the resolution: ATR-based stop (entry.stopLoss) wins;
+// only fall back to a computed default when the ATR value is missing/invalid.
+export function resolveStop(item: StoredAnalysisItem, pdStop?: number | null): number | null {
+  // 1) ATR-based stop from the backend (canonical — Rule 67).
+  const fromPd = Number(pdStop);
+  if (Number.isFinite(fromPd) && fromPd > 0) return fromPd;
+  // 2) From the StoredAnalysisItem.entry.stopLoss (same DB column, alternate path).
+  const fromEntry = Number(item.entry?.stopLoss);
+  if (Number.isFinite(fromEntry) && fromEntry > 0) return fromEntry;
+  // 3) No fabricated stop (Rule 27 NO-FAKE-DATA). Surface null -> UI renders "—".
+  return null;
+}
+
 // ============================================================================
 // pickValidPrice
 // ============================================================================
@@ -343,26 +362,53 @@ export function formatSinglePersonaPickText(item: StoredAnalysisItem, persona: '
     stop: item.entry?.stopLoss ?? null,
     timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
   };
-  const signalIcon = pd.verdict?.includes('شراء') || pd.verdict?.includes('فرصة') || pd.verdict?.includes('ادخل')
+
+  // DIR-01 (2026-10-12 — GM directive / Rule 73 SINGLE-DISPLAY-SOURCE):
+  // قبل طباعة "🟢 شراء قوي + سعر الدخول"، نفحص isMismatch/isStale.
+  // لو السهم منتهي/قديم → نطبع بادج واضح + نمنع أسعار الدخول الوهمية.
+  // هذا يطابق سلوك الجدول (PersonaTab L847-874) وينهي التضارب العلني.
+  const isMismatch = Boolean(item.priceTargetMismatch);
+  const isStale = Boolean(item.stale);
+  const isExpired = isMismatch || isStale;
+  const staleReason = item.staleReason || (isMismatch ? 'الهدف محقّق — التوقع منتهية' : 'توقع قديمة');
+
+  // الأيقونة: منتهية 🔴 بدل 🟢، عشان العميل يفهم إنها مش فرصة حية.
+  const signalIcon = isExpired
+    ? '🔴'
+    : pd.verdict?.includes('شراء') || pd.verdict?.includes('فرصة') || pd.verdict?.includes('ادخل')
     ? '🟢'
     : pd.verdict?.includes('بيع') || pd.verdict?.includes('تجنب') || pd.verdict?.includes('ابعد') || pd.verdict?.includes('اخرج')
     ? '🔴'
     : '🟡';
 
-  let text = `${signalIcon} *${item.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '')}* - ${pd.verdict || 'متابعة'}\n`;
+  // الـ verdict: لو منتهية → نوضّح كده بدل "شراء قوي"
+  const verdictLabel = isExpired
+    ? (isMismatch ? 'توقع منتهية (الهدف محقّق)' : `توقع قديمة${item.stalePct ? ` ${item.stalePct}%` : ''}`)
+    : (pd.verdict || 'متابعة');
+
+  let text = `${signalIcon} *${item.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '')}* - ${verdictLabel}\n`;
   if (item.nameAr || item.name) {
     text += `🏢 الاسم: ${item.nameAr || item.name}\n`;
   }
-  if (pd.entry) text += `💰 سعر الدخول: ${pd.entry.toFixed(2)}\n`;
-  if (pd.tp1 && pd.tp2) {
-    text += `🎯 الأهداف (TP1 / TP2): ${pd.tp1.toFixed(2)} | ${pd.tp2.toFixed(2)}\n`;
-  } else if (pd.target) {
-    text += `🎯 الهدف: ${pd.target.toFixed(2)}\n`;
+  // DIR-01: لو السهم منتهية → نمنع طباعة أسعار الدخول/الأهداف (ممنوع misleading).
+  // لو السهم لسه حية → نطبع الأسعار كالعادة.
+  if (isExpired) {
+    text += `⚠️ ${staleReason}\n`;
+    text += `📅 آخر تحديث: ${item.updatedAt || 'غير معروف'}\n`;
+  } else {
+    if (pd.entry) text += `💰 سعر الدخول: ${pd.entry.toFixed(2)}\n`;
+    if (pd.tp1 && pd.tp2) {
+      text += `🎯 الأهداف (TP1 / TP2): ${pd.tp1.toFixed(2)} | ${pd.tp2.toFixed(2)}\n`;
+    } else if (pd.target) {
+      text += `🎯 الهدف: ${pd.target.toFixed(2)}\n`;
+    }
+    // DIR-03: مصدر موحّد لـ stop عبر resolveStop() (ATR من item.entry.stopLoss).
+    const _stop = resolveStop(item, pd.stop);
+    if (_stop) text += `🛑 وقف الخسارة (ATR): ${_stop.toFixed(2)}\n`;
+    if (pd.timeframe) text += `⏳ أفق الاستثمار: ${pd.timeframe}\n`;
+    if (pd.reason) text += `📝 التحليل: ${pd.reason}\n`;
   }
-  if (pd.stop) text += `🛑 وقف الخسارة (ATR): ${pd.stop.toFixed(2)}\n`;
-  if (pd.timeframe) text += `⏳ أفق الاستثمار: ${pd.timeframe}\n`;
-  if (pd.reason) text += `📝 التحليل: ${pd.reason}\n`;
-  
+
   text += `\n${OFFICIAL_LINKS_BLOCK}\n`;
   return text;
 }
@@ -392,24 +438,45 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
       stop: it.entry?.stopLoss ?? null,
       timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
     };
-    const signalIcon = pd.verdict?.includes('شراء') || pd.verdict?.includes('فرصة') || pd.verdict?.includes('ادخل')
+
+    // DIR-01 (2026-10-12): نفس منطق formatSinglePersonaPickText —
+    // فحص isMismatch/isStale قبل طباعة أسعار الدخول.
+    const isMismatch = Boolean(it.priceTargetMismatch);
+    const isStale = Boolean(it.stale);
+    const isExpired = isMismatch || isStale;
+    const staleReason = it.staleReason || (isMismatch ? 'الهدف محقّق — التوقع منتهية' : 'توقع قديمة');
+
+    const signalIcon = isExpired
+      ? '🔴'
+      : pd.verdict?.includes('شراء') || pd.verdict?.includes('فرصة') || pd.verdict?.includes('ادخل')
       ? '🟢'
       : pd.verdict?.includes('بيع') || pd.verdict?.includes('تجنب') || pd.verdict?.includes('ابعد') || pd.verdict?.includes('اخرج')
       ? '🔴'
       : '🟡';
 
-    text += `${i + 1}- ${signalIcon} *${it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '')}* - ${pd.verdict || 'متابعة'}\n`;
+    const verdictLabel = isExpired
+      ? (isMismatch ? 'توقع منتهية (الهدف محقّق)' : `توقع قديمة${it.stalePct ? ` ${it.stalePct}%` : ''}`)
+      : (pd.verdict || 'متابعة');
+
+    text += `${i + 1}- ${signalIcon} *${it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '')}* - ${verdictLabel}\n`;
     if (it.nameAr || it.name) {
       text += `   🏢 الاسم: ${it.nameAr || it.name}\n`;
     }
-    if (pd.entry) text += `   💰 سعر الدخول: ${pd.entry.toFixed(2)}\n`;
-    if (pd.tp1 && pd.tp2) {
-      text += `   🎯 الأهداف (TP1 / TP2): ${pd.tp1.toFixed(2)} | ${pd.tp2.toFixed(2)}\n`;
-    } else if (pd.target) {
-      text += `   🎯 الهدف: ${pd.target.toFixed(2)}\n`;
+    if (isExpired) {
+      text += `   ⚠️ ${staleReason}\n`;
+      if (it.updatedAt) text += `   📅 آخر تحديث: ${it.updatedAt}\n`;
+    } else {
+      if (pd.entry) text += `   💰 سعر الدخول: ${pd.entry.toFixed(2)}\n`;
+      if (pd.tp1 && pd.tp2) {
+        text += `   🎯 الأهداف (TP1 / TP2): ${pd.tp1.toFixed(2)} | ${pd.tp2.toFixed(2)}\n`;
+      } else if (pd.target) {
+        text += `   🎯 الهدف: ${pd.target.toFixed(2)}\n`;
+      }
+      // DIR-03: مصدر موحّد لـ stop عبر resolveStop().
+      const _stop = resolveStop(it, pd.stop);
+      if (_stop) text += `   🛑 وقف الخسارة (ATR): ${_stop.toFixed(2)}\n`;
+      if (pd.reason) text += `   📝 التحليل: ${pd.reason}\n`;
     }
-    if (pd.stop) text += `   🛑 وقف الخسارة (ATR): ${pd.stop.toFixed(2)}\n`;
-    if (pd.reason) text += `   📝 التحليل: ${pd.reason}\n`;
     text += `\n`;
   });
 

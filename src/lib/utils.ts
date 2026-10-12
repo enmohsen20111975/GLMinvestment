@@ -158,8 +158,30 @@ export function verdictStyle(verdict: string | undefined): VerdictStyle {
 import { computeRiskReward as _computeRiskReward } from '@/lib/risk-reward';
 
 export function computeRR(pd: Record<string, unknown>): number | null {
-  // Delegate to canonical implementation (Rule 67 - CALCULATION-CANONICAL)
-  return _computeRiskReward(pd as any);
+  // DIR-02 (2026-10-12 - GM directive / Rule 67 CALCULATION-CANONICAL):
+  // CRITICAL FIX: the previous body called `_computeRiskReward(pd as any)` which
+  // passes the WHOLE object as `entry` -> `Number({})` = NaN -> returns fallback 0
+  // -> every pick showed "R/R = 0.00:1" to users (public credibility scandal).
+  // The canonical signature is `computeRiskReward(entry, target, stop)` - three
+  // separate numbers. We must extract them from `pd` before delegating.
+  // Also: prefer stored `risk_reward` if valid (> 0) before re-computing, to honor
+  // backend-computed values when available.
+
+  // 1) Prefer backend-stored risk_reward if it's a valid positive number.
+  const storedRR = Number(pd.risk_reward ?? pd.rr);
+  if (Number.isFinite(storedRR) && storedRR > 0) {
+    return Math.round(storedRR * 100) / 100;
+  }
+  // 2) Otherwise compute from the canonical formula (Rule 67).
+  //    Extract the three separate numeric params from the object.
+  const entry = Number(pd.entry);
+  const target = Number(pd.target);
+  const stop = Number(pd.stop);
+  // computeRiskReward returns 0 on invalid inputs; we surface `null` instead
+  // so the UI can render "---" rather than the misleading "0.00:1".
+  const rr = _computeRiskReward(entry, target, stop, 0);
+  if (!Number.isFinite(rr) || rr <= 0) return null;
+  return rr;
 }
 
 export function rrColor(rr: number | null): string {

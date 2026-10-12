@@ -303,6 +303,21 @@ export interface StoredAnalysisItem {
   entry?: { price?: number; target?: number; stopLoss?: number; riskReward?: number };
   updatedAt?: string;
   analysisJson?: AnalysisJson;
+  // DIR-01 (2026-10-12 — GM directive / Rule 73 SINGLE-DISPLAY-SOURCE):
+  // These flags are computed by the backend (Python) and/or enrichItems()
+  // and MUST be honored by BOTH the table view AND the text formatters
+  // (formatSinglePersonaPickText / formatAllPersonaPicksText) so a stock
+  // never shows "🟢 شراء قوي + سعر الدخول" in the share text while the
+  // table says "منتهية". Previously the text formatters ignored these
+  // fields entirely → public credibility scandal.
+  /** True when current_price ≥ target_price (target realized → pick is stale). */
+  priceTargetMismatch?: boolean;
+  /** True when current_price drifted >20% from entry (pick is too old). */
+  stale?: boolean;
+  /** Human-readable Arabic reason for the stale/mismatch flag. */
+  staleReason?: string;
+  /** Percentage drift from entry (for stale picks). */
+  stalePct?: number;
   // P16-PERSONA-DIVERGENCE: بيانات الأساسيات/المومنتم من stocks.db
   // (محسوبة في الـ backend وعلى الـ frontend يستخدمها pickPersonaDiverged).
   fundamentals?: {

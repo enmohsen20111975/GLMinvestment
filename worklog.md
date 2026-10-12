@@ -76308,3 +76308,111 @@ Stage Summary:
 - 15/16 ادعاء TRUE + 1 خطأ أصلحته (pre-commit hooks)
 - العمل صادق، الأرقام دقيقة، الأساسات متينة
 - جاهز لـ Round 2 كالفريق المسؤول الأول
+
+---
+Task ID: DIR-INDICES+01+02+03
+Agent: الفريق المسؤول الأول (المنفذ الفني + المدقق)
+Task: تنفيذ توجيهات المدير العامة الفورية — فضيحة المؤشرات + DIR-01/02/03
+
+## 1. إصلاح فضيحة المؤشرات (update_market_indices.py) — ✅ مُتحقق حيًا
+
+### المشاكل المُكتشفة والمُصلحة:
+1. **عكس الأعمدة**: 
+   - قبل: `change_pct = d[4]` (change_abs = نقاط) ← النسبة المئوية خاطئة
+   - بعد: `change_pct = d[3]` (change = نسبة مئوية)، `change_points = d[4]` (change_abs = نقاط)
+2. **رموز ملغاة**:
+   - قبل: `EGX:EGX70`, `EGX:EGX100` → TradingView يرجع 0 نتائج
+   - بعد: `EGX:EGX70EWI`, `EGX:EGX100EWI` (متساوي الأوزان)
+
+### التحقق الحي (EGX30):
+```
+EGX30:      52130.40 (-0.15% | -76.30pts)  ← مطابق للمدير العام (52,130 / -0.15%)
+EGX70EWI:   19178.40 (-0.40% | -76.80pts)  ← مطابق
+EGX100EWI:  25314.10 (-0.42% | -107.60pts) ← مطابق
+```
+تم تحديث `stocks.db` بـ 3 مؤشرات جديدة. الأرقام القديمة (EGX70, EGX100) محتفظ بها كأرشيف.
+
+## 2. DIR-01: ربط isMismatch في النصوص — ✅
+
+### قبل: helpers.ts فيه 0 إشارة لـ isMismatch
+### بعد: أضفت فحص كامل في `formatSinglePersonaPickText` و `formatAllPersonaPicksText`:
+
+1. **types.ts**: أضفت 4 حقول اختيارية على `StoredAnalysisItem`:
+   - `priceTargetMismatch?: boolean`
+   - `stale?: boolean`
+   - `staleReason?: string`
+   - `stalePct?: number`
+
+2. **helpers.ts formatSinglePersonaPickText**:
+   - يفحص `item.priceTargetMismatch` و `item.stale` قبل طباعة أي سعر
+   - لو منتهية → 🔴 + "توقع منتهية (الهدف محقّق)" + ⚠️ + منع أسعار الدخول/الأهداف
+   - لو حية → 🟢 + الأسعار كالعادة (بدل ما يطبع "شراء قوي" للأسهم المنتهية)
+
+3. **helpers.ts formatAllPersonaPicksText**: نفس المنطق المُطبّق على القائمة الكاملة.
+
+## 3. DIR-02: إصلاح computeRR bug — ✅
+
+### المشكلة الحرجة المُكتشفة:
+المدير العام كان محقًا 100%! الكود في `utils.ts` L160-163 كان:
+```typescript
+export function computeRR(pd: Record<string, unknown>): number | null {
+  return _computeRiskReward(pd as any);  // ← BUG: يمرر object كامل كـ entry!
+}
+```
+هذا يمرر `{entry, target, stop}` كـ `entry` → `Number({})` = NaN → fallback=0 → "0.00:1" لكل الأسهم!
+
+### الإصلاح:
+```typescript
+export function computeRR(pd: Record<string, unknown>): number | null {
+  // 1) Prefer backend-stored risk_reward if valid (> 0)
+  const storedRR = Number(pd.risk_reward ?? pd.rr);
+  if (Number.isFinite(storedRR) && storedRR > 0) {
+    return Math.round(storedRR * 100) / 100;
+  }
+  // 2) Compute from canonical — extract the THREE separate params
+  const entry = Number(pd.entry);
+  const target = Number(pd.target);
+  const stop = Number(pd.stop);
+  const rr = _computeRiskReward(entry, target, stop, 0);
+  if (!Number.isFinite(rr) || rr <= 0) return null;  // ← null بدل 0
+  return rr;
+}
+```
+الآن `computeRR({entry:10, target:15, stop:8})` بـ يرجع **2.5** (مش 0).
+
+## 4. DIR-03: توحيد مصدر الـ stop — ✅
+
+### المشكلة: 5 مصادر متضاربة للـ stop
+### الحل: أضفت `resolveStop()` كـ Single Source of Truth:
+```typescript
+export function resolveStop(item: StoredAnalysisItem, pdStop?: number | null): number | null {
+  // 1) ATR-based stop from backend (canonical — Rule 67)
+  const fromPd = Number(pdStop);
+  if (Number.isFinite(fromPd) && fromPd > 0) return fromPd;
+  // 2) From item.entry.stopLoss (same DB column, alternate path)
+  const fromEntry = Number(item.entry?.stopLoss);
+  if (Number.isFinite(fromEntry) && fromEntry > 0) return fromEntry;
+  // 3) No fabricated stop (Rule 27 NO-FAKE-DATA) → null → "—"
+  return null;
+}
+```
+الآن `formatSinglePersonaPickText` و `formatAllPersonaPicksText` بـ يستخدموا `resolveStop(item, pd.stop)` بدل `pd.stop` مباشرة.
+
+## التحقق
+- dev server: HTTP 200 ✅
+- npx tsc: 0 أخطاء جديدة في ملفاتي المُعدّلة ✅
+- pre-commit hook: PASS ✅ (check:guards)
+- الأرقام الحية مطابقة للمدير العام ✅
+
+## ما تبقّى لـ Round 2
+- PKG4: إزالة 15 نسخة ATR inline (جرد في ENGINE_INVENTORY.md)
+- PKG1: ترحيل 670 ملف بنصوص ثابتة
+- PKG2: ترحيل 451 route + إزالة 1079 `any`
+- PKG3: توحيد مسارات قراءة السعر (6 → canonical-price.ts)
+
+Stage Summary:
+- فضيحة المؤشرات: ✅ مُصلحة + مُتحقق منها حيًا (EGX30=52,130 -0.15%)
+- DIR-01: ✅ isMismatch مرتبط في النصين (single + all)
+- DIR-02: ✅ computeRR bug مُصلح (pd as any → 3 معاملات منفصلة)
+- DIR-03: ✅ resolveStop() كـ SSOT
+- جاهز لمتابعة Round 2 (PKG4 أولاً)
