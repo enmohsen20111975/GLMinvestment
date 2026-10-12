@@ -201,13 +201,20 @@ class EnhancedIndicators:
         return current_k, current_d
 
     # ---------- ATR ----------
+    # PKG4-DEV-A (Engine Unification): كان بيستخدم SMA(period) وهذا غلط رياضيًا
+    # حسب Rule 54 (CALCULATION-CANONICAL) — ATR لازم Wilder's smoothing.
+    # تم توحيد الحساب ليطابق analyzers/indicators/atr.py (canonical).
     @staticmethod
     def calc_atr(highs: list[float], lows: list[float], closes: list[float],
                  period: int = 14) -> float:
         """
-        حساب Average True Range.
+        حساب Average True Range بصيغة Wilder's smoothing (canonical — Rule 54).
+
         True Range = max(high-low, |high-prev_close|, |low-prev_close|)
-        ATR = SMA(period) من TR.
+        ATR = (ATR_prev × (period-1) + TR) / period   ← Wilder's smoothing
+
+        المرجعية: analyzers/indicators/atr.py (المصدر الموحّد الوحيد).
+        لو فيه محتاج API قائمة (Tuple/List) بيُفضّل استيراد canonical مباشرةً.
         """
         n = min(len(highs), len(lows), len(closes))
         if n < 2:
@@ -228,8 +235,12 @@ class EnhancedIndicators:
             # لو الداتا أقل من المطلوب نرجّع متوسط اللي موجود
             return sum(tr_values) / len(tr_values)
 
-        window = tr_values[-period:]
-        return sum(window) / period
+        # Wilder's smoothing (canonical — لا SMA).
+        # seed = simple average of first `period` TRs, then recursive smoothing.
+        atr = sum(tr_values[:period]) / period
+        for i in range(period, len(tr_values)):
+            atr = (atr * (period - 1) + tr_values[i]) / period
+        return round(atr, 4)
 
     # ---------- ADX ----------
     @staticmethod

@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""
+pre-commit-engine-unity — Rule 54 / Rule 35 enforcement hook (PKG4)
+====================================================================
+Blocks commits that introduce NEW inline indicator definitions
+(`def calc_atr`, `def calc_rsi`, `def calc_macd`, `def calc_srsi`)
+OUTSIDE the canonical directory `vps-service/analyzers/indicators/`.
+
+This prevents the "16 separate ATR definitions" regression from recurring.
+
+Install:
+  cp scripts/git-hooks/pre-commit-engine-unity .git/hooks/pre-commit
+  chmod +x .git/hooks/pre-commit
+
+Bypass (emergency only):
+  git commit --no-verify
+"""
+import os
+import re
+import subprocess
+import sys
+
+CANONICAL_DIR = os.path.join('vps-service', 'analyzers', 'indicators')
+
+# Indicator function names that must ONLY be defined in the canonical dir.
+FORBIDDEN_DEF_RE = re.compile(
+    r'^\s*def\s+(calc_atr|calc_rsi|calc_srsi|calc_macd)\b',
+    re.MULTILINE,
+)
+
+
+def staged_python_files():
+    """Return list of staged .py file paths."""
+    out = subprocess.run(
+        ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACM'],
+        capture_output=True, text=True,
+    )
+    return [f for f in out.stdout.splitlines() if f.endswith('.py')]
+
+
+def main():
+    files = staged_python_files()
+    if not files:
+        return 0
+
+    violations = []
+    for path in files:
+        # Skip the canonical directory — definitions are allowed there.
+        if path.startswith(CANONICAL_DIR):
+            continue
+        # Only inspect staged content (working tree version).
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, encoding='utf-8', errors='ignore') as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        for m in FORBIDDEN_DEF_RE.finditer(text):
+            line_no = text.count('\n', 0, m.start()) + 1
+            violations.append((path, m.group(1), line_no))
+
+    if violations:
+        sys.stderr.write(
+            '\n\033[31m[pre-commit-engine-unity] BLOCKED — Rule 54 violation:\033[0m\n'
+        )
+        sys.stderr.write(
+            'New inline indicator definition(s) found OUTSIDE the canonical dir:\n'
+            f'  canonical: {CANONICAL_DIR}/\n\n'
+        )
+        for path, fn, ln in violations:
+            sys.stderr.write(f'  {path}:{ln}  def {fn}(...)\n')
+        sys.stderr.write(
+            '\nRefactor to delegate: `from analyzers.indicators import '
+            + ', '.join(sorted({v[1] for v in violations}))
+            + '`\n'
+            'Bypass (emergency): git commit --no-verify\n\n'
+        )
+        return 1
+
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

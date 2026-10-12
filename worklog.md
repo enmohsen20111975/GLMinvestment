@@ -75968,4 +75968,144 @@ Stage Summary:
 - AUDIT-19: 0 ألوان ✅ لكن خطأ نحوي في gradient class (from-sl بدل from-[hsl])
 - AUDIT-20: ثغرة case-sensitivity لسه موجودة (3/5 bypass) — لم تُصلح
 - AUDIT-21: لم يبدأ
-- المنفذ الفني ردّ على 1 من 3 توصيات (ExecutiveReportView) لكن فيه خطأ نحوي
+Task ID: PKG3-SCOPE
+Agent: Explore (SSOT scoping)
+Task: تحديد نطاق تضارب البيانات
+
+Work Log:
+- قرأت آخر 4KB من worklog.md (آخر نشاط: AUDIT-21 معلّق ينتظر DEV-21، ExecutiveReportView نسيه DEV-19)
+- بحثت في src/lib عن عملاء DB → 32 ملفًا يستخدمون better-sqlite3 / sql.js / prisma
+- قرأت db.ts (re-export فقط)، db-predictions.ts (Prisma)، finance-db.ts (يستخدم stocks.db عبر egx-db)، data-engine-db.ts (native + data_engine.db + stocks.db)، egx-db.ts (stocks.db + price_history.db)، data-engine-db-sqljs.ts (sql.js WASM)
+- قرأت data-adapter.ts (Twelve→Alpha→Mubasher→WebSearch، 5min TTL cache)، external-data-fetcher.ts (VPS fundamentals)، egxpy-bridge.ts (VPS API → Python tv_fetcher، 3min TTL cache)
+- بحثت عن دوال جلب السعر: 4 ملفات تستورد fetchPrice/getStockPrice/getLastCleanClose (use-live-dashboard, egxpy-bridge, data-engine-db-sqljs, unified-stock-data)
+- بحثت عن price-fetchers: 60+ hit لـ current_price/close_price/entry_price عبر src/lib
+- بحثت عن change_percent: 40+ hit في src (route.ts مختلفة لكل شاشة)
+- بحثت عن setInterval: 50+ نقطة polling في src
+- بحثت عن cache: لا يوجد cache-manager.ts في src/lib؛ 3 Maps منفصلة في data-adapter/multi-source-adapter/egxpy-bridge؛ cache:'no-store' في 25+ موضع؛ لا SWR ولا React Query
+- قرأت vps-service/core/cache_manager.py: طبقة موحدة (AnalysisCache، TTL=60s، max=512) — موجود في Python بس، مفيش مقابل TS
+- قرأت unified-stock-data.ts (Task UNIFIED-API-V3): طبقة canonical موجودة بس لـ 5 routes فقط (/api/stocks/[ticker]، comprehensive، unified، publish-data)
+- قرأت canonical-signal.ts (250 سطر) و canonical-rsi.ts (146 سطر): canonical لـ signal/RSI/accumulation/money_flow/phase — لا يوجد canonical للأسعار ولا %change
+- قرأت format.ts: فيه formatPrice/formatPercent/formatDate/... بس 8+ مكونات في src/components لسه بتستخدم toLocaleDateString مباشرة
+- فحصت db/: data_engine.db = 0 bytes (فارغ!)، price_history.db = 0 bytes (فارغ!)، stocks.db = 29MB، predictions.db = 235MB، intraday.db = 1.8MB
+- تتبعت COMI: 6 مسارات قراءة سعر مستقلة (stocks.db، data_engine.db.stocks، egksco_price_history، historical.db.historical_prices، Python /api/stock/COMI، multi-source-adapter 5 مصادر خارجية)
+
+Stage Summary:
+- 6 قواعد بيانات منفصلة يقرأ منها الواجهة: auth.db + predictions.db + stocks.db + data_engine.db + historical.db + intraday.db (+ price_history.db و data_engine.db = 0 bytes فارغة لكن الكود لسه بـ يشير لها)
+- 3 ملفات adapter منفصلة لجلب الأسعار: data-adapter.ts (5min TTL)، multi-source-adapter.ts (2-5min TTL متفاوت)، egxpy-bridge.ts (3min TTL) — لا توجد طبقة موحدة
+- 50+ نقطة setInterval بدون استراتيجية مركزية؛ فترات متباينة (2s/3s/5s/15s/30s/60s/180s/300s/1800s)
+- 5+ صيغ مختلفة لحساب change_percent (column مباشر / formula في route / SQL aggregate / fallback chain)
+- canonical layer جزئي: canonical-signal.ts + canonical-rsi.ts + unified-stock-data.ts = 5 routes فقط (الباقي ~50 route يلت bypass)
+- لا يوجد canonical-price.ts ولا canonical-percent-change.ts
+- format.ts موجود لكن 8+ مكونات تستخدم toLocaleDateString inline
+- Python cache_manager.py موحّد (60s TTL) — لا يوجد مقابل TS
+- ملفان فارغان لكن الكود يشير إليهما: price_history.db (0 bytes) + data_engine.db (0 bytes) — خطر split-brain
+
+---
+Task ID: PKG2-SCOPE
+Agent: Explore (engineering scoping)
+Task: تحديد نطاق المعايير الهندسية الصارمة (Strict Engineering Standards)
+
+Work Log:
+- قرأت آخر 4KB من worklog.md لفهم سياق المشروع (Next.js 14 + Python backend, منصة استثمار)
+- شغّلت ripgrep على src/ لأنماط `any` الأربعة (`: any`, `as any`, `<any>`, `any[]`) + نمط خامس (`: any[`)
+- جمعت أعلى 15 ملفًا بعدد التكرارات (ترتيب تنازلي)
+- فحصت src/lib بتركيز خاص على الملفات المالية (db, finance-db, format, analytics, api-client, market-data-access, instapay-db, paywall, portfolio-store)
+- عدّت 453 ملف route.ts في src/app/api عبر find
+- شغّلت ripgrep لأنماط الاستجابة الستة: `NextResponse.json({success:true`, `{success:false`, `{data:`, `{error:`, `Response.json(`, إجمالي `NextResponse.json(`
+- بحثت عن unified response helper في src/lib وsrc/utils وsrc/helpers — لا يوجد
+- قرأت `src/lib/safe-error.ts` كاملاً للتأكد إنه فقط ترجمة أخطاء عربية (مش response envelope)
+- قرأت 3 ملفات route.ts عشوائية: `/api/health`, `/api/news`, `/api/finance/transactions`
+- شغّلت ripgrep لأنماط floating-point في src/lib: `* 100`, `/ 100`, `toFixed(`, `Math.round(`
+- فحصت package.json كاملاً بحثًا عن decimal.js/big.js/dinero.js/currency.js/bignumber.js — لا يوجد أي منها
+- بحثت عن src/lib/decimal.ts أو src/lib/money.ts — لا يوجدان (يوجد فقط finance-db.ts للوصول لـ DB)
+- قرأت `src/lib/format.ts` كاملاً (دوال التنسيق) للتأكد إنها format-only بلا decimal-safe math
+- استخدمت find لتحديد ملفات error.tsx, global-error.tsx, loading.tsx, not-found.tsx في src/app
+- شغّلت ripgrep على `componentDidCatch|getDerivedStateFromError|ErrorBoundary` عبر src/
+- قرأت `src/app/error.tsx`, `src/app/loading.tsx`, `src/app/not-found.tsx`, `src/components/shared/ErrorBoundary.tsx` كاملة
+- عدّت 896 ملف .ts/.tsx في src/ عبر find
+- شغّلت `npx tsc --noEmit` بـ timeout 120s — نجح، أنتج 1675 خطأ نوعي
+- استخرجت توزيع أكواد الأخطاء (TS2339 = 421, TS2451 = 262, TS2322 = 172, ...)
+- قرأت `eslint.config.mjs` كاملاً و`tsconfig.json` كاملاً
+- رصدت إن package.json يستخدم `next build --no-lint` (الـ lint معطّل في الـ build)
+
+Stage Summary:
+- `any` usage: 824 تكرار في 249 ملفًا (نمط موحد:`: any` 538، `as any` 246، `any[]` 150، `<any>` 36). أعلى الملفات: WealthCharts.tsx وAdminView.tsx (23 لكلٍ)، SystemControlPanel.tsx (20)، PredictionTrackingDashboard.tsx + market-data-access.ts + comprehensive/route.ts (16 لكلٍ). في src/lib: market-data-access.ts (16) هو الأكثر ثم radar-alerts.ts (8) وinstapay-db.ts (6) وapi-client.ts + paywall.ts (4 لكلٍ)
+- API responses: 453 route.ts، 1923 `NextResponse.json(` عبر 424 ملف (94%)، النمط السائد `{success: true, ...}` (1074+ تكرار) لكن 4 أنماط أخرى متفرقة: `{success:false, error}` (160)، `{error}` بلا success (76)، raw payload بلا envelope (مثل /api/health و/api/news)، `{ok:true/false, ...}` (12 ملف). **لا يوجد unified response helper** — safe-error.ts فقط يترجم رسائل إنجليزي→عربي
+- Floating point: 213 تكرار عبر 35 ملف في src/lib. **لا توجد أي مكتبة decimal** (لا decimal.js/big.js/dinero.js في package.json). **لا يوجد src/lib/decimal.ts أو money.ts**. 5 أمثلة خطرة: change/prevClose*100 في egx-data-sources.ts:286، Math.round(n*100)/100 كـ rounder مكرر في 4+ ملفات، hit_rate بـ *10000/100 في flutter-sqlite-fallback.ts:441، positionSize*100 في unified-stock-data.ts:578، Math.round(x*100)/100 في /api/finance/transactions route (line 86-88) — حساب إجمالي الدخل/المصروفات
+- Error boundaries: ✅ src/app/error.tsx (root، 'use client'، retry+home). ✅ loading.tsx. ✅ not-found.tsx. ✅ src/components/shared/ErrorBoundary.tsx (reusable class + withErrorBoundary HOC، 6 مستهلكين). ❌ **لا يوجد src/app/global-error.tsx** — gap حرج. ❌ لا يوجد route-specific error.tsx (كلها تعتمد على الـ root)
+- Code quality: 896 ملف .ts/.tsx في src/. **tsc --noEmit: 1675 خطأ نوعي**. أبرز الأكواد: TS2339 (Property doesn't exist) 421، TS2451 (Duplicate identifier) 262، TS2322 (Type assignability) 172، TS1117 (Invalid JSX) 137. ESLint معطّل كليًا: 25+ قاعدة "off" بما فيها `no-explicit-any` و`no-unused-vars` و`react-hooks/exhaustive-deps` و`@next/next/no-img-element`. tsconfig: `strict:true` لكن `noImplicitAny:false`. package.json: `next build --no-lint`
+
+---
+Task ID: PKG1-SCOPE
+Agent: Explore (i18n scoping)
+Task: تحديد نطاق حزمة الازدواج اللغوي الشامل 100%
+
+Work Log:
+- قرأتُ آخر ~4KB من worklog.md لفهم سياق الجولة 4 (AUDIT-18..21 + DEV-18..21).
+- قرأتُ src/lib/i18n-context.tsx بالكامل (255 سطر) + src/components/LanguageToggle.tsx (87 سطر) + أول 50 سطر من messages/ar.json.
+- عدّ ملفات .tsx الحاوية على أحرف عربية [\x{0600}-\x{06FF}]:
+  - src/components: 65 ملف، 3,032 سطر
+  - src/modules: 158 ملف، 12,420 سطر
+  - src/app: 14 ملف، 970 سطر
+  - المجموع TSX: 237 ملف، 16,422 سطر
+- عدّ ملفات .ts (lib/api) الحاوية على عربية:
+  - src/lib: 73 ملف، 2,723 سطر
+  - src/app/api: 250 ملف، 2,695 سطر (error messages مرسلة للمستخدم)
+- بحثت عن recharts: 26 ملف تستخدمه. TradingView widget: ملف واحد (TradingViewChart.tsx) يستخدم embed بـ locale=ar_AE.
+- بحثت عن مولدات PDF/PNG: jsPDF+html2canvas في LessonPDFExporter.tsx، SVG في chart-generator.ts، Canvas في ad-card-generator.ts، Playwright في capture-screenshot/route.ts.
+- فحصت استخدام خط Cairo: موجود في globals.css (via Google Fonts @import) + tailwind.config.ts (font-sans = Cairo). يستخدم في 3 image cards فقط (PredictionsImageCard, MarketStatusImageCard, StockInfographicCard) + DailyPicksPoster. لكن chart-generator.ts يستخدم Arial وad-card-generator.ts يستخدم system-ui (مش Cairo).
+- فحصت Recharts RTL: لا يوجد direction="rtl" ولا reversed في أي مكون Recharts. SVG inline direction="rtl" موجود في LearningVisuals.tsx فقط (19 موضع).
+- فحصت aria-label/title: 517 موضع في 126 ملف. منهم 3 فقط يستخدمون t() (Footer, PredictionTrackingView, NewsFeedView). الباقي ~514 موضع hardcoded عربي.
+- تحققت من بنية messages/ar.json: 18 قسم top-level (common, nav, dashboard, alerts, markets, footer, auth, theme, marketAnalysis, stocks, watchlist, portfolio, alertsCenter, news, reports, screener, radar, predictions) + 1019 leaf key في كل من ar.json و en.json (تطابق مثالي).
+- تحققت من آلية fallback في i18n-context.tsx: ترجع المفتاح نفسه (مثلاً "nav.dashboard") وتطبع console.warn في dev mode — ليست fallback للعربية أو الإنجليزية.
+
+Stage Summary:
+- 237 ملف TSX + 323 ملف TS = 560 ملف يحتوي على نصوص عربية hardcoded (أكثر من 21,000 سطر)
+- top 15 violator TSX: AcademyEncyclopedia (599), ExecutiveReportView (428), MakerRadarTab (426), PredictionTrackingDashboard (370), EnhancedPortfolioView (344), SpecialistAnalysisView (332), PersonaTab (322), LearningVisuals (304), AcademyView (289), UnifiedTable (273), DatabaseManagerFull (273), ProfessionalTradingChart (257), SimulationView (254), StrategySandbox (242), SubscriptionView (222)
+- نظام i18n NOT next-intl بل cookie-based custom implementation (التعليق في i18n-context.tsx يوضح أن next-intl plugin فشل)
+- Recharts: 26 ملف، ZERO RTL support (لا direction ولا reversed على أي مكون Recharts)
+- TradingView: widget embed يستخدم locale=ar_AE (دعم Arabic تلقائي) لكن لا توجد آلية للتبديل لـ en_US
+- مولدات PDF/PNG: 3 من 6 تستخدم Cairo font + dir/lang بشكل صحيح (PredictionsImageCard, MarketStatusImageCard, StockInfographicCard)؛ الباقي يستخدم Arial/system-ui بلا lang attribute
+- 514+ aria-label/title hardcoded — فقط 3 تستخدم t()
+- النصوص الإنجليزية الثابتة نادرة جداً (<10 مواضع) لأن كل الواجهة عربية أصلاً
+- خطوط assets/fonts/ (Cairo + NotoSansArabic) لا تُسجَّل في jsPDF ولا canvas — تستخدم Google Fonts CDN فقط
+- ملاحظة: 250 API route + 73 lib file يرمون Arabic error messages للمستخدم بلا أي i18n
+
+---
+Task ID: PKG4-SCOPE
+Agent: Explore (engine unification scoping)
+Task: تحديد نطاق توحيد المحركات
+
+Work Log:
+- قرأت آخر 4KB من worklog.md (آخر مدخل: AUDIT-21-STATUS معلّق)
+- جردت `vps-service/analyzers/`: 124 ملف Python (125 إجمالي مع __pycache__)
+- بحثت عن RSI: 64 ملف يذكر RSI — منها ~30 ملف analyzers فعليًا يحسب/يستخدم
+- بحثت عن MACD: 64+ ملف، عثرت على 9 تعريفات `def calc_macd/macd/compute_macd` منفصلة
+- بحثت عن ATR: 134 ملف يذكر ATR، عثرت على 16 تعريف `def calc_atr/atr/compute_atr` منفصل
+- بحثت عن Volume Profile / Donchian / VCP / Breakout — حددت المواقع الكنسونية والتكرارات
+- قرأت `analyzers/indicators/rsi.py` و `glminvestment_engines/core/indicators.py` و `core_scoring_engine.py` (أول 120 سطر) و `master_analyzer.py` (L4873) و `live_indicator_engine.py` (L350) و `enhanced_indicators.py` (L205) و `technical.py` (L136)
+- قارنت معادلات RSI/ATR/MACD عبر الملفات
+- بحثت عن scoring engines: عثرت على 6+1 scorers منفصلة
+- بحثت عن screeners: عثرت على 10+ screeners منفصلة
+- بحثت عن market_regime: عثرت على 6+ ملفات منفصلة
+- فحصت أدوات rogue في `scripts/` (project root): rocket_detector ×3، volume_surge_hunter، delta_volume_calculator
+- قرأت `download/UNIFIED_DATA_CONTRACT.md` + `download/CANONICAL_CALCULATIONS.md` بالكامل
+- قرأت Rule 35 (ENGINE-UNIFY) + Rule 67 (CALCULATION-CANONICAL) من `00-CONSTITUTION.md`
+- تحققت من existence الـ technical_analyzer.py — مُؤرشف في `archive/wave-2-cleanup-2026-10-01/` (الدستور بيستشهد بيه كـ canonical للـ VWAP/OBV/Regime — drift)
+- تحققت من PREDICTION_WRITE_GUARD — موجود لـ Rule 35 (توقعات فقط، ليس مؤشرات)
+
+Stage Summary:
+- 124 ملف في analyzers/ + 4 محركات فرعية (analyzers/ + engines/ + glminvestment_engines/ + engine/ + strategies_merge/)
+- RSI: 5+ تعريفات منفصلة (canonical: analyzers/indicators/rsi.py Wilder's؛ تكرارات في master_analyzer._inline_rsi، live_indicator_engine.calculate_live_rsi، glminvestment_engines/core/indicators.rsi، enhanced_indicators)
+- ATR: 16 تعريف منفصل (canonical: analyzers/indicators/atr.py Wilder's؛ تكرار حرج: enhanced_indicators.py:205 يستخدم SMA خاطئ)
+- MACD: 9 تعريفات منفصلة (canonical: analyzers/indicators/ma.py؛ تكرارات في core_scoring_engine.calc_macd، enhanced_indicators.calc_macd، sniper_engine.calc_macd، technical_weighted.macd، chart_routes._calc_macd، backtest_sniper، backfill_with_personas، egx_sniper_backtest)
+- محركات scoring متعددة: CoreScoringEngine + FundamentalScorer(×2) + SeasonalityScorer + confluence_scorer + confluence_engine_v3 + confidence_engine + conviction_engine + MasterAnalyzer(THE BRAIN) + board_of_analysts
+- screeners متعددة: screener.py (يقرأ RSI من DB!) + screener_integration + persona_screener + day_trading_scanner + ExplosiveScanner(own formula) + sniper_engine + sniper_detector + golden_hunter + hunting_engine + liquidity_filter + strict_entry_filters + crypto_strict_filters
+- market_regime: 6+ ملفات (engines/market_regime + analyzers/market_regime_engine + hmm_market_regime + regime_detector + regime_filter + crypto_regime + strategies_merge/regime_filter)
+- أدوات rogue في project root: rocket_detector_tuned + rocket_detector_final + rocket_detector_final_v2 + volume_surge_hunter_test + delta_volume_calculator (كلها inline SMA/EMA — تتجاوز canonical)
+- TWO canonical indicator layers لا يعرفان بعضهما: `analyzers/indicators/` (List[float] API، Rule 54/67) + `glminvestment_engines/core/indicators.py` (pd.Series API، math متطابق Wilder's)
+- technical_analyzer.py مُؤرشف لكن الدستور Rule 67 ما زال يدرجه كـ canonical لـ VWAP/OBV/Volume Ratio/Regime (drift)
+- Rule 35 (ENGINE-UNIFY): يخص prediction writers فقط — V40.2 هو المسموح الوحيد + PREDICTION_WRITE_GUARD. لا يوجد guard مماثل للمؤشرات الفنية (Rule 67) — لا pre-commit hook يمنع inline calc_rsi/calc_atr
+- acceptance test Rule 67: `grep -r "def calc_atr\|def calculate_atr" vps-service/ → 1` — لكن الواقع: 16 تعريف (القاعدة مُخالفة بنسبة 1500%)
+- canonical_signal.py يوحّد 5 metrics فقط (signal/accumulation/money_flow/phase/volume_ratio) — لكن RSI/ATR/MACD/VWAP/OBV لا تزال متعددة المصادر
+>>>>>>> dc2299c (feat(pkg1-4): enterprise architecture foundations — 4 packages)

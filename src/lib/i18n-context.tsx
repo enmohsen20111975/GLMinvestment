@@ -116,8 +116,13 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   // very first render (no flash of Arabic when the cookie says 'en').
   // The cookie is read synchronously via `document.cookie` — no async needed.
 
+  // PKG1-DEV-A (Bilingual 100%): cross-locale fallback policy.
+  // We keep BOTH locales loaded so a missing key in the active locale
+  // falls back to the OTHER locale's value BEFORE returning the raw key.
+  // This prevents the user from ever seeing a bare "nav.dashboard" string.
   const [locale, setLocaleState] = useState<Locale>(() => readCookieLocale());
   const [messages, setMessages] = useState<Messages>({});
+  const [fallbackMessages, setFallbackMessages] = useState<Messages>({});
   const [loading, setLoading] = useState(true);
 
   // FOCUS-5-TASKS — i18n Phase 2 Full (2026-10-01):
@@ -131,14 +136,20 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (clientLocale !== locale) {
       setLocaleState(clientLocale);
     } else {
-      loadMessages(locale)
-        .then((msgs) => setMessages(msgs))
+      // PKG1-DEV-A: load BOTH active + fallback locale in parallel so the
+      // cross-locale fallback works on the very first render.
+      Promise.all([
+        loadMessages(locale),
+        loadMessages(locale === 'ar' ? 'en' : 'ar'),
+      ])
+        .then(([msgs, fb]) => {
+          setMessages(msgs);
+          setFallbackMessages(fb);
+        })
         .catch((err) => {
           console.error('[i18n] load failed for locale', locale, err);
-          // Fallback to empty messages so the UI still renders instead of
-          // permanently hanging in loading state (which would white-screen
-          // the whole app — i18n wraps everything in Providers.tsx).
           setMessages({});
+          setFallbackMessages({});
         })
         .finally(() => setLoading(false));
     }
@@ -146,16 +157,21 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // When locale changes (either from the mount effect above or from setLocale):
-  // load the messages for that locale.
+  // load the messages for that locale + the fallback locale (PKG1-DEV-A).
   useEffect(() => {
     if (!locale) return;
-    loadMessages(locale)
-      .then((msgs) => setMessages(msgs))
+    Promise.all([
+      loadMessages(locale),
+      loadMessages(locale === 'ar' ? 'en' : 'ar'),
+    ])
+      .then(([msgs, fb]) => {
+        setMessages(msgs);
+        setFallbackMessages(fb);
+      })
       .catch((err) => {
         console.error('[i18n] load failed for locale', locale, err);
-        // Fallback to empty messages so the UI still renders instead of
-        // permanently hanging in loading state.
         setMessages({});
+        setFallbackMessages({});
       })
       .finally(() => setLoading(false));
   }, [locale]);
@@ -172,8 +188,14 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         setLocaleState(newLocale);
-        const newMessages = await loadMessages(newLocale);
+        // PKG1-DEV-A: load BOTH active + fallback so cross-locale fallback
+        // keeps working immediately after a manual switch.
+        const [newMessages, fb] = await Promise.all([
+          loadMessages(newLocale),
+          loadMessages(newLocale === 'ar' ? 'en' : 'ar'),
+        ]);
         setMessages(newMessages);
+        setFallbackMessages(fb);
         // Update <html lang/dir> directly (avoids full page reload).
         if (typeof document !== 'undefined') {
           document.documentElement.lang = newLocale;
@@ -187,20 +209,38 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, [locale]);
 
-  // The translator function. Returns the key itself if no translation found.
+  // The translator function.
+  // PKG1-DEV-A: cross-locale fallback — if a key is missing in the active
+  // locale, try the OTHER locale before returning the raw key. This means a
+  // missing English translation will show the Arabic value (not "nav.x"),
+  // which is strictly better UX during incremental translation.
   const t = useCallback(
     (key: string, params?: Record<string, string | number>) => {
-      const template = resolveKey(messages, key);
+      let template = resolveKey(messages, key);
+      let usedFallback = false;
+      if (template === undefined) {
+        template = resolveKey(fallbackMessages, key);
+        usedFallback = true;
+      }
       if (template === undefined) {
         // In dev: warn about missing keys so we can spot them in the console.
         if (process.env.NODE_ENV === 'development') {
-          console.warn(`[i18n] missing key: "${key}" for locale "${locale}"`);
+          console.warn(
+            `[i18n] missing key: "${key}" for locale "${locale}" (no fallback)`
+          );
         }
         return key;
       }
+      if (usedFallback && process.env.NODE_ENV === 'development') {
+        console.warn(
+          `[i18n] fallback used for key "${key}" (missing in ${locale}, served from ${
+            locale === 'ar' ? 'en' : 'ar'
+          })`
+        );
+      }
       return interpolate(template, params);
     },
-    [messages, locale]
+    [messages, fallbackMessages, locale]
   );
 
   return (
