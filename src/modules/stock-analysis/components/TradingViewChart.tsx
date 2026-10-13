@@ -63,12 +63,22 @@ interface TradingViewChartProps {
 }
 
 interface OhlcvBar {
-  date: string | number;
+  date?: string | number;          // V-07: optional — fallback to timestamp/time
+  timestamp?: string | number;     // V-07: backend /api/chart sends this
+  time?: string | number;          // V-07: /api/v2/chart/full-analysis sends this
   open: number;
   high: number;
   low: number;
   close: number;
   volume: number;
+}
+
+// V-07 (CHART-BLANK-FIX): resolve bar date from any of the 3 possible fields.
+// Backend /api/chart sends `timestamp`, full-analysis sends `time`, and
+// legacy sends `date`. Without this fallback, sanitizeOhlcBar drops ALL
+// candles as null → chart renders blank.
+function resolveBarDate(bar: OhlcvBar): string | number | undefined {
+  return bar.date ?? bar.timestamp ?? bar.time;
 }
 
 interface IndicatorSettings {
@@ -487,11 +497,15 @@ function parseBarSeconds(date: unknown): number | null {
 }
 
 function barTime(b: OhlcvBar): Time {
-  return (parseBarSeconds(b.date as unknown) ?? Math.floor(Date.now() / 1000)) as Time;
+  // V-07 (CHART-BLANK-FIX): read bar.date ?? bar.timestamp ?? bar.time
+  const rawDate = resolveBarDate(b);
+  return (parseBarSeconds(rawDate as unknown) ?? Math.floor(Date.now() / 1000)) as Time;
 }
 
 function sanitizeOhlcBar(bar: OhlcvBar): OhlcvBar | null {
-  const seconds = parseBarSeconds(bar.date as unknown);
+  // V-07 (CHART-BLANK-FIX): read bar.date ?? bar.timestamp ?? bar.time
+  const rawDate = resolveBarDate(bar);
+  const seconds = parseBarSeconds(rawDate as unknown);
   if (seconds === null) return null;
   let open = Number(bar.open);
   let high = Number(bar.high);
@@ -537,9 +551,10 @@ function sanitizeCandles(candles: OhlcvBar[]): OhlcvBar[] {
   return candles
     .map(sanitizeOhlcBar)
     .filter((bar): bar is OhlcvBar => bar !== null)
-    .sort((a, b) => (parseBarSeconds(a.date as unknown) ?? 0) - (parseBarSeconds(b.date as unknown) ?? 0))
+    // V-07 (CHART-BLANK-FIX): use resolveBarDate for sort + dedup
+    .sort((a, b) => (parseBarSeconds(resolveBarDate(a) as unknown) ?? 0) - (parseBarSeconds(resolveBarDate(b) as unknown) ?? 0))
     .filter((bar) => {
-      const t = parseBarSeconds(bar.date as unknown);
+      const t = parseBarSeconds(resolveBarDate(bar) as unknown);
       if (t === null || seen.has(t)) return false;
       seen.add(t);
       return true;
@@ -696,7 +711,16 @@ export function TradingViewChart({
           if (chartRes.ok) {
             const chartJson = await chartRes.json();
             if (chartJson.success && Array.isArray(chartJson.data) && chartJson.data.length > 0) {
-              json = chartJson;
+              // V-07 (CHART-BLANK-FIX): normalize each candle to ensure `date` field
+              // exists. Backend sends `timestamp` — without this, sanitizeOhlcBar
+              // reads bar.date (undefined) → drops all candles → blank chart.
+              json = {
+                ...chartJson,
+                data: chartJson.data.map((c: any) => ({
+                  ...c,
+                  date: c.date ?? c.timestamp ?? c.time,
+                })),
+              };
               setDataSource(chartJson.source || (isIntraday ? 'intraday' : 'daily'));
             }
           }

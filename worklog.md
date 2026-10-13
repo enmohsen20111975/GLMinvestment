@@ -69406,3 +69406,53 @@ Constraints honored:
 - ❌ NO DB tables deleted (0)
 - ❌ NO scripts executed
 - ✅ File updated ONLY at Documentation/AUDIT_BACKEND_APIS_MAP.md
+
+---
+Task ID: ALPHA-V07-CHART-BLANK-FIX
+Agent: مهندس الواجهات وتجربة المستخدم المؤسسية (Frontend & UI Lead — GLM 5.2 Alpha)
+Task: إصلاح عدم ظهور الشارت في StockDetail.tsx (timestamp vs date field mismatch)
+
+Work Log:
+- قرأت السطور 460-545 (sanitizeOhlcBar + barTime + sanitizeCandles) + 690-705 (primary fetch path).
+- فحصت استجابة /api/chart/COMI: يرجع {date, timestamp, open, high, low, close, volume} — كلا الحقلين موجودان بنفس القيمة.
+- حددت جذر المشكلة: sanitizeOhlcBar و barTime يقرآن bar.date حصراً. لو الباك إند أرسل timestamp فقط (بدون date)، كل الشموع تُرفض كـ null → شاشة فارغة.
+- طبّقت الإصلاح المزدوج كما طلبت البرقية:
+
+1. واجهة OhlcvBar (السطور 65-74):
+   - جعلت date اختيارياً (date?: string | number)
+   - أضفت timestamp?: string | number (يُرسله /api/chart)
+   - أضفت time?: string | number (يُرسله /api/v2/chart/full-analysis)
+
+2. دالة مساعدة جديدة resolveBarDate (السطور 76-82):
+   - ترجع bar.date ?? bar.timestamp ?? bar.time
+   - تستخدم في barTime + sanitizeOhlcBar + sanitizeCandles
+
+3. barTime (السطور 499-503):
+   - قبل: parseBarSeconds(b.date)
+   - بعد: parseBarSeconds(resolveBarDate(b))
+
+4. sanitizeOhlcBar (السطور 505-509):
+   - قبل: parseBarSeconds(bar.date)
+   - بعد: parseBarSeconds(resolveBarDate(bar))
+
+5. sanitizeCandles (السطور 549-562):
+   - sort: parseBarSeconds(resolveBarDate(a)) بدلاً من parseBarSeconds(a.date)
+   - dedup filter: parseBarSeconds(resolveBarDate(bar)) بدلاً من parseBarSeconds(bar.date)
+
+6. تطبيع استجابة /api/chart (السطور 713-723):
+   - قبل: json = chartJson (يستخدم البيانات الخام كما هي)
+   - بعد: json = { ...chartJson, data: chartJson.data.map(c => ({ ...c, date: c.date ?? c.timestamp ?? c.time })) }
+   - يضمن وجود date في كل شمعة قبل تمريرها لـ sanitizeCandles
+
+Stage Summary:
+- ✅ bun run lint → exit 0 (0 errors)
+- ✅ HTTP 200 على /?view=stock-detail&ticker=COMI + AJWA
+- ✅ /api/chart/COMI يرجع 21-22 شمعة مع date + timestamp fields
+- ✅ Agent Browser verification: شارت COMI يرسم بالكامل — 1405 SVG/canvas elements
+- ✅ لا يوجد "خطأ في تحميل الشارت" بعد الإصلاح
+- ✅ لا أخطاء Console
+- ✅ لا iframes (يستخدم Lightweight Canvas المحلي، ليس TradingView widget)
+- ✅ NO Python files modified (Rule 4 محترمة)
+- ✅ NO git push --force (Rule 81 محترمة)
+
+Files touched: فقط src/modules/stock-analysis/components/TradingViewChart.tsx (6 تعديلات جراحية)
