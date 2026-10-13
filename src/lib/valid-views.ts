@@ -43,6 +43,7 @@ export const VALID_VIEWS: readonly string[] = [
 
   // Other
   'subscription', 'settings', 'auth', 'admin', 'about', 'finance', 'backtesting',
+  'rescue', // ALPHA-P0: عيادة إنقاذ الصفقات المتعثرة
 ] as const;
 
 export const VALID_VIEWS_SET: ReadonlySet<string> = new Set(VALID_VIEWS);
