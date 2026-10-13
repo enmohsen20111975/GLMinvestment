@@ -67952,3 +67952,28 @@ Stage Summary:
 - ✅ NIPH (buy=360.0): HOLD / success — توزيعات 6.5% + دعم.
 - ✅ Portfolio clinic: 4 مراكز، 1 CUT_LOSS، 3 HOLD، سيولة مستردة 22,470 ج.م.
 - ✅ py_compile PASS.
+
+---
+Task ID: BRAVO-CHART-HARD-CAP-AND-CONSISTENCY-GATE
+Agent: كبير المهندسين الكميين والرياضيات والذكاء الاصطناعي (Chief Quant & Math Lead — GLM 5.2 Bravo)
+Task: Bear Trend Hard Cap + Risk Profile Gate + Consistency Gate (البرقية 2 + 3)
+
+Work Log:
+- البرقية 2 (chart_routes.py): Bear Trend Hard Cap + Risk Profile Gate
+  * is_structural_downtrend = regime == 'bear_trend' OR cp < last_sma50 * 0.95
+  * لو downtrend + buyer → "محايد - ارتداد في مسار هابط ⏳" أو "خطر - ابتعد ❌"
+  * منع "فرصة شراء قوية" و "دخول فائق الأمان" مهما بلغت النقاط
+  * Risk Profile Gate: لو downtrend + not confirmed buy → target=None, target_2=None, rr_ratio=None
+
+- البرقية 3 (canonical-signal.ts): Consistency Gate
+  * classifyMoneyFlow: buy_pct < 40% أو net_flow < 0 أو phase == "تخفيض" → 🔴 ضغط بيعي قوي / 🔴 سيولة خارجة قوية
+  * منطقة 40-45%: 🟡 سيولة متوازنة فقط (لا "داخلة")
+  * 45%+: يمكن "داخلة" إذا diff >= 10
+  * phase parameter جديد للاتساق مع الطور
+
+Stage Summary:
+- ✅ EGREF (cp=22.47 < sma50*0.95=23.06): Hard Cap → "محايد - ارتداد في مسار هابط ⏳" (لا "فرصة شراء")
+- ✅ COMI (cp=124.65 < sma50*0.95=128.9): Hard Cap → "محايد - ارتداد في مسار هابط ⏳"
+- ✅ ABUK (cp=90 > sma50*0.95=79.3): لا Hard Cap → القرار الطبيعي
+- ✅ classifyMoneyFlow: buy=35%+net<0 → 🔴 ضغط بيعي قوي | buy=38%+تخفيض → 🔴 ضغط بيعي قوي | buy=42% → 🟡 متوازنة
+- ✅ py_compile PASS + tsc clean

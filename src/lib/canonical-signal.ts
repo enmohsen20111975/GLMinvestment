@@ -123,6 +123,7 @@ export function classifyMoneyFlow(
   buyPct: number | null | undefined,
   sellPct: number | null | undefined,
   netFlowEgp?: number | null,
+  phase?: string | null | undefined,
 ): MoneyFlowState {
   if (buyPct === null || buyPct === undefined || sellPct === null || sellPct === undefined) {
     return '🟡 سيولة متوازنة';
@@ -131,14 +132,22 @@ export function classifyMoneyFlow(
   const s = Number(sellPct);
   const diff = b - s;
 
-  // ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 2) ──
-  // حظر التناقض: لو buy_pct < 45% أو net_flow سالب → يُمنع إرجاع "سيولة حارة/داخلة".
-  // التصنيف الإلزامي: 🔴 سيولة خارجة / 🔴 ضغط بيعي.
+  // ── Task BRAVO-QUANT-RESCUE-SMART-FLOW-V2 (Consistency Gate) ──
+  // صمام اتساق السيولة والطور: لو net_flow سالب أو buy_pct < 40% أو
+  // السهم في مرحلة "تخفيض" → يُحظر حظراً تاماً "سيولة حارة" أو "سيولة داخلة".
+  // التصنيف الإلزامي المقفل: 🔴 سيولة خارجة قوية / 🔴 ضغط بيعي وتصريف.
   const netNegative = netFlowEgp !== null && netFlowEgp !== undefined && Number(netFlowEgp) < 0;
-  if (b < 45 || netNegative) {
+  const isMarkdown = phase === 'تخفيض';
+
+  if (b < 40 || netNegative || isMarkdown) {
     // تصنيف ضغط بيعي صارم (لا "سيولة داخلة" أبدًا)
-    if (diff <= -25 || (b < 35)) return '🔴 ضغط بيعي قوي';
-    return '🔴 سيولة خارجة';
+    if (diff <= -25 || (b < 30) || isMarkdown) return '🔴 ضغط بيعي قوي';
+    return '🔴 سيولة خارجة قوية';
+  }
+
+  // منطقة 40-45%: سيولة متوازنة فقط (لا "داخلة" بعد)
+  if (b < 45) {
+    return '🟡 سيولة متوازنة';
   }
 
   if (diff >= 25) return '🟢 سيولة داخلة قوية';
