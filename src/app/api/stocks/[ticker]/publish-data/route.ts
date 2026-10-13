@@ -482,10 +482,10 @@ export async function GET(
   const stopLoss = safe(pred?.stop_loss) ?? undefined;
   const entryMin = safe(pred?.entry_price_min) ?? undefined;
   const entryMax = safe(pred?.entry_price_max) ?? undefined;
-  const support1 = safe(pred?.support_level) ?? safe(stockRow.support_level) ?? undefined;
+  const support1 = safe(pred?.support_level) ?? safe(stockRow.support_level ?? stockRow.support) ?? safe(py.support_level) ?? undefined;
   const support2 = safe(pred?.support_level_2) ?? safe(stockRow.support_level_2) ?? undefined;
-  const resistance1 = safe(pred?.resistance_level) ?? safe(stockRow.resistance_level) ?? targetPrice1;
-  const resistance2 = safe(pred?.resistance_level_2) ?? safe(stockRow.resistance_level_2) ?? targetPrice2;
+  const resistance1 = safe(pred?.resistance_level) ?? safe(stockRow.resistance_level ?? stockRow.resistance) ?? targetPrice1 ?? safe(py.resistance_level) ?? undefined;
+  const resistance2 = safe(pred?.resistance_level_2) ?? safe(stockRow.resistance_level_2) ?? targetPrice2 ?? undefined;
 
   const riskReward =
     targetPrice1 && entryPrice && stopLoss && entryPrice - stopLoss !== 0

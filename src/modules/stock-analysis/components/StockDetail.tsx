@@ -237,11 +237,23 @@ function buildStockInfographicDataFromStock(
     price: Math.max(low, Math.min(high, prices[i])),
   }));
 
-  // Levels — derive from support/resistance with a 3% buffer for the outer bands
-  const res1 = stock.resistance_level || (current > 0 ? Number((current * 1.03).toFixed(2)) : 0);
-  const res2 = (stock as any).resistance_level_2 || (res1 > 0 ? Number((res1 * 1.04).toFixed(2)) : 0);
-  const sup1 = stock.support_level || (current > 0 ? Number((current * 0.97).toFixed(2)) : 0);
-  const sup2 = (stock as any).support_level_2 || (sup1 > 0 ? Number((sup1 * 0.96).toFixed(2)) : 0);
+  // Levels — derive from real technical / prediction levels, fallback to sane outer bands
+  const res1 = unifiedData?.prediction?.target_price
+    || unifiedData?.technical?.resistance
+    || stock.resistance_level
+    || (stock as any).resistance
+    || (current > 0 ? Number((current * 1.03).toFixed(2)) : 0);
+  const res2 = (stock as any).resistance_level_2
+    || (stock as any).resistance_2
+    || (res1 > 0 ? Number((res1 * 1.04).toFixed(2)) : 0);
+  const sup1 = unifiedData?.prediction?.stop_loss
+    || unifiedData?.technical?.support
+    || stock.support_level
+    || (stock as any).support
+    || (current > 0 ? Number((current * 0.97).toFixed(2)) : 0);
+  const sup2 = (stock as any).support_level_2
+    || (stock as any).support_2
+    || (sup1 > 0 ? Number((sup1 * 0.96).toFixed(2)) : 0);
 
   // Technical indicators — derive from deepAnalysis signals or overall_score
   const score = deepAnalysis?.overall_score != null
@@ -280,24 +292,32 @@ function buildStockInfographicDataFromStock(
   const yearlyHigh = (stock.high_52w != null && stock.high_52w >= current)
     ? stock.high_52w
     : Math.max(high, current);
-  const yearlyLow = (stock.low_52w != null && stock.low_52w <= current && stock.low_52w > 0)
+  const yearlyLow = (stock.low_52w != null && stock.low_52w <= current && stock.low_52w > 0 && stock.low_52w >= current * 0.35)
     ? stock.low_52w
     : Math.min(low, current);
 
   // Scenarios — using real price targets and structural support/resistance
   // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 27: NO-FAKE-DATA) ─────
-  // قبل كده: target2 كان بـ يـ fabricate = target1 * 1.05 لو NULL (مخالف للقاعدة 27).
-  // الحل: لو target2 NULL → نستخدم res2 (resistance الفعلي)، مش fabrication.
-  const target1 = deepAnalysis?.price_targets?.upside_target || res1;
-  const target2 = (stock as any).target_price_2 || res2;
-  const stopLoss = (deepAnalysis?.price_targets as any)?.stop_loss || sup1;
+  const target1 = deepAnalysis?.price_targets?.upside_target
+    || unifiedData?.prediction?.target_price
+    || res1;
+  const target2 = (stock as any).target_price_2
+    || unifiedData?.prediction?.target_price_2
+    || res2;
+  const stopLoss = (deepAnalysis?.price_targets as any)?.stop_loss
+    || unifiedData?.prediction?.stop_loss
+    || sup1;
 
-  const bullishTarget = (target1 && target2 && target1 !== target2)
-    ? `${safeToFixed(target1, 2)} - ${safeToFixed(target2, 2)}`
-    : `${safeToFixed(target1 || res1, 2)}`;
-  const bearishTarget = (stopLoss && sup2 && stopLoss !== sup2)
-    ? `${safeToFixed(stopLoss, 2)} - ${safeToFixed(sup2, 2)}`
-    : `${safeToFixed(stopLoss || sup1, 2)}`;
+  // Never allow target to equal current price
+  const finalBullish = (target1 && target1 !== current) ? target1 : (current > 0 ? Number((current * 1.07).toFixed(2)) : res1);
+  const finalBearish = (stopLoss && stopLoss !== current) ? stopLoss : (current > 0 ? Number((current * 0.93).toFixed(2)) : sup1);
+
+  const bullishTarget = (finalBullish && target2 && finalBullish !== target2)
+    ? `${safeToFixed(finalBullish, 2)} - ${safeToFixed(target2, 2)}`
+    : `${safeToFixed(finalBullish, 2)}`;
+  const bearishTarget = (finalBearish && sup2 && finalBearish !== sup2)
+    ? `${safeToFixed(finalBearish, 2)} - ${safeToFixed(sup2, 2)}`
+    : `${safeToFixed(finalBearish, 2)}`;
 
   // Vision bullet points — from deepAnalysis strengths/risks, fallback to generic
   const visionBullets: string[] = [];

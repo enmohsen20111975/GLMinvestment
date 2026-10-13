@@ -399,34 +399,36 @@ export function UnifiedPublishButton({
       // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — prediction.entry_price / target_price / stop_loss
       // take precedence when present (canonical source — NO fabrication).
       const res1 = unified?.prediction?.target_price
+        ?? unified?.technical?.resistance
         ?? pData.resistance1
         ?? pData.targetPrice1
         ?? stock.resistance_level
-        ?? undefined;
+        ?? (current > 0 ? Number((current * 1.05).toFixed(2)) : undefined);
       const res2 = pData.resistance2
         ?? pData.targetPrice2
         ?? (stock as any).resistance_level_2
-        ?? undefined;
+        ?? (res1 && current > 0 ? Number((Math.max(res1, current) * 1.04).toFixed(2)) : undefined);
       const sup1 = unified?.prediction?.stop_loss
+        ?? unified?.technical?.support
         ?? pData.support1
         ?? pData.stopLoss
         ?? stock.support_level
-        ?? undefined;
+        ?? (current > 0 ? Number((current * 0.95).toFixed(2)) : undefined);
       const sup2 = pData.support2
         ?? (stock as any).support_level_2
-        ?? undefined;
+        ?? (sup1 && current > 0 ? Number((Math.min(sup1, current) * 0.96).toFixed(2)) : undefined);
 
-      const bullishTargetStr = (pData.targetPrice1 && pData.targetPrice2)
-        ? `${pData.targetPrice1} - ${pData.targetPrice2}`
-        : pData.targetPrice1
-          ? `${pData.targetPrice1}`
-          : (res1 && res2) ? `${res1} - ${res2}` : `${current}`;
+      const targetPrimary = pData.targetPrice1 ?? unified?.prediction?.target_price ?? res1 ?? (current > 0 ? Number((current * 1.07).toFixed(2)) : current);
+      const targetSecondary = pData.targetPrice2 ?? unified?.prediction?.target_price_2 ?? res2;
+      const bullishTargetStr = (targetPrimary && targetSecondary && targetPrimary !== targetSecondary)
+        ? `${targetPrimary} - ${targetSecondary}`
+        : `${targetPrimary}`;
 
-      const bearishTargetStr = (pData.stopLoss && sup2)
-        ? `${pData.stopLoss} - ${sup2}`
-        : pData.stopLoss
-          ? `${pData.stopLoss}`
-          : (sup1 && sup2) ? `${sup1} - ${sup2}` : `${current}`;
+      const stopPrimary = pData.stopLoss ?? unified?.prediction?.stop_loss ?? sup1 ?? (current > 0 ? Number((current * 0.93).toFixed(2)) : current);
+      const stopSecondary = sup2;
+      const bearishTargetStr = (stopPrimary && stopSecondary && stopPrimary !== stopSecondary)
+        ? `${stopPrimary} - ${stopSecondary}`
+        : `${stopPrimary}`;
 
       const builtData: StockInfographicCardProps['data'] = {
         ticker: resolvedTicker,

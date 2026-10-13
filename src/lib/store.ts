@@ -108,7 +108,21 @@ function adaptStock(raw: Record<string, unknown> | null | undefined): Stock {
   let l52 = numOrNull(raw.low_52w);
   if (curr > 0) {
     if (h52 != null && h52 < curr) h52 = Math.max(h52, rawHigh, curr);
-    if (l52 != null && (l52 > curr || l52 <= 0)) l52 = Math.min(l52 > 0 ? l52 : curr, rawLow, curr);
+    // Sanity check: 52w low must not be an ancient split/currency penny artifact (< 35% of current price)
+    if (l52 != null && (l52 > curr || l52 <= 0 || l52 < curr * 0.35)) {
+      l52 = Math.min(l52 > 0 && l52 >= curr * 0.35 ? l52 : curr * 0.9, rawLow, curr);
+    }
+  }
+
+  // Support / Resistance: support both backend DB column names ('support' / 'resistance')
+  // and API names ('support_level' / 'resistance_level'), with sanity bounds.
+  let rawSup = numOrNull(raw.support_level ?? raw.support) ?? 0;
+  if (curr > 0 && (rawSup <= 0 || rawSup >= curr || rawSup < curr * 0.5)) {
+    rawSup = rawLow > 0 && rawLow < curr ? rawLow : Number((curr * 0.95).toFixed(2));
+  }
+  let rawRes = numOrNull(raw.resistance_level ?? raw.resistance) ?? 0;
+  if (curr > 0 && (rawRes <= 0 || rawRes <= curr || rawRes > curr * 1.5)) {
+    rawRes = rawHigh > curr ? rawHigh : Number((curr * 1.05).toFixed(2));
   }
 
   return {
@@ -132,8 +146,8 @@ function adaptStock(raw: Record<string, unknown> | null | undefined): Stock {
     eps: Number(raw.eps) || 0,
     roe: Number(raw.roe) || 0,
     debt_to_equity: Number(raw.debt_to_equity) || 0,
-    support_level: Number(raw.support_level) || 0,
-    resistance_level: Number(raw.resistance_level) || 0,
+    support_level: rawSup,
+    resistance_level: rawRes,
     ma_50: Number(raw.ma_50) || 0,
     ma_200: Number(raw.ma_200) || 0,
     rsi: Number(raw.rsi) || 0,

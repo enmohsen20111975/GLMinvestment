@@ -1365,9 +1365,9 @@ def build_institutional_decision(
 
         entry = _safe_float(risk_params.get('entry'), current_price)
         sl_base = _safe_float(risk_params.get('stop_loss'), entry - (atr * dynamic_sl_mult))
-        # تأكد إن SL < Entry (BUY)
-        if sl_base >= entry:
-            sl_base = entry - (atr * dynamic_sl_mult)
+        # تأكد إن SL < Entry (BUY) وإن SL مش منهار (مش أقل من entry * 0.70)
+        if sl_base >= entry or sl_base < entry * 0.70:
+            sl_base = entry - (atr * dynamic_sl_mult if atr > 0 else entry * 0.05)
         risk = entry - sl_base
 
         # V39: R:R ديناميكي — لو السهم أقوى من المؤشر → R:R أعلى

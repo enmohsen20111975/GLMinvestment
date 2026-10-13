@@ -2082,21 +2082,21 @@ def chart_full_analysis():
         support_price = levels.get('support')
         sl_candidates = []
 
-        # L1: Support-based (confidence 1.0)
-        if support_price and support_price > 0 and support_price < entry:
+        # L1: Support-based (confidence 1.0) — Must be sane (not ancient currency/split artifact)
+        if support_price and support_price > 0 and support_price < entry and support_price >= entry * 0.70:
             sl_candidates.append((support_price * 0.99, 1.0, 'support'))
-        # L2: Swing Low (confidence 0.9)
-        if nearest_swing_low and nearest_swing_low > 0 and nearest_swing_low < entry:
+        # L2: Swing Low (confidence 0.9) — Must be sane
+        if nearest_swing_low and nearest_swing_low > 0 and nearest_swing_low < entry and nearest_swing_low >= entry * 0.70:
             sl_candidates.append((nearest_swing_low * 0.99, 0.9, 'swing_low'))
         # L3: ATR-based (confidence 0.85)
         sl_candidates.append((entry - safe_atr * stop_mult, 0.85, 'atr'))
         # L4: Fallback (confidence 0.3)
-        sl_candidates.append((entry * 0.90, 0.3, 'fallback'))
+        sl_candidates.append((entry * 0.93, 0.3, 'fallback'))
 
         sl = max(sl_candidates, key=lambda x: x[1])[0]
         sl = round(sl, 4)
-        if sl >= entry:
-            sl = round(entry * 0.97, 4)
+        if sl >= entry or sl < entry * 0.70:
+            sl = round(entry * 0.95, 4)
 
         # ---- 5-Layer Target Selection ----
         swing_highs_list = _swing_highs(highs, lows)
@@ -2105,11 +2105,11 @@ def chart_full_analysis():
         far_resistance = levels.get('far_resistance')
         t1_candidates = []
 
-        # L1: Resistance (confidence 1.0)
-        if resistance_price and resistance_price > entry:
+        # L1: Resistance (confidence 1.0) — Must be within reasonable swing reach (<= entry * 1.35)
+        if resistance_price and resistance_price > entry and resistance_price <= entry * 1.35:
             t1_candidates.append((resistance_price * 0.99, 1.0))
         # L2: Swing High (confidence 0.85)
-        if nearest_swing_high and nearest_swing_high > entry:
+        if nearest_swing_high and nearest_swing_high > entry and nearest_swing_high <= entry * 1.35:
             t1_candidates.append((nearest_swing_high * 0.99, 0.85))
         # L3: ATR-based (confidence 0.75)
         t1_candidates.append((entry + safe_atr * target_mult, 0.75))
@@ -2119,7 +2119,7 @@ def chart_full_analysis():
             min_rr = 1.5 if score >= 50 else 1.2
             t1_candidates.append((entry + risk_dist * min_rr, 0.7))
         # L5: Fallback (confidence 0.3)
-        t1_candidates.append((entry * 1.10, 0.3))
+        t1_candidates.append((entry * 1.08, 0.3))
 
         t1 = max(t1_candidates, key=lambda x: x[1])[0]
         t1 = round(t1, 4)
