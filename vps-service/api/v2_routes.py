@@ -984,25 +984,63 @@ def morning_recommendations():
     """
     try:
         if not master_analyzer:
+            # Task B-11: Fallback ذكي — لا بانر أحمر كسر في وش العميل
+            # بدلاً من 503 error، نرجع استجابة فارغة أنيقة
+            today = datetime.now()
+            day_names = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
+            date_ar = f"{day_names[today.weekday()]} الموافق {today.day}-{today.month}-{today.year}"
             return jsonify({
-                "success": False,
-                "error": "MasterAnalyzer not available"
-            }), 503
-        
+                "success": True,
+                "version": "2.0.0",
+                "timestamp": datetime.now().isoformat(),
+                "date_ar": date_ar,
+                "title": f"صباح الخيرات - توقعات صباحية لجلسة {date_ar} بإذن الله",
+                "summary": {
+                    "total_analyzed": 0,
+                    "opportunities_found": 0,
+                    "recommendations_count": 0,
+                    "message": "المحرك قيد التهيئة — سيتم توليد التوصيات قريبًا"
+                },
+                "recommendations": [],
+                "disclaimer": "هذا تحليل بيانات تعليمي فقط. ليس توقعة استثمارية. استشر مستشار مالي مرخص."
+            })
+
         # Get today's date
         today = datetime.now()
         today_str = today.strftime("%Y-%m-%d")
         day_names = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
         day_name = day_names[today.weekday()]
         date_ar = f"{day_name} الموافق {today.day}-{today.month}-{today.year}"
-        
+
         # Use cached analysis first
         all_analysis = db.get_all_cached_analysis(today_str)
-        
+
         if not all_analysis:
             # Fall back to scan_market (now without strict filters!)
-            results = master_analyzer.scan_market(limit=200)
-            all_analysis = [r.to_dict() for r in results]
+            try:
+                results = master_analyzer.scan_market(limit=200)
+                all_analysis = [r.to_dict() for r in results]
+            except Exception as scan_err:
+                logger.error(f"[morning_recommendations] scan_market failed: {scan_err}")
+                all_analysis = []
+
+        # Task B-11: لو لا توجد تحليلات → fallback ذكي (لا بانر أحمر)
+        if not all_analysis:
+            return jsonify({
+                "success": True,
+                "version": "2.0.0",
+                "timestamp": datetime.now().isoformat(),
+                "date_ar": date_ar,
+                "title": f"صباح الخيرات - توقعات صباحية لجلسة {date_ar} بإذن الله",
+                "summary": {
+                    "total_analyzed": 0,
+                    "opportunities_found": 0,
+                    "recommendations_count": 0,
+                    "message": "لا توجد فرص متاحة حاليًا — يتم تحديث التحليلات تلقائيًا"
+                },
+                "recommendations": [],
+                "disclaimer": "هذا تحليل بيانات تعليمي فقط. ليس توقعة استثمارية. استشر مستشار مالي مرخص."
+            })
         
         # FIX (Aug 2026): Strict EGX market filter — DEFENSE-IN-DEPTH.
         # Without this, Saudi numeric tickers (2120, 3002) and known Kuwaiti/
