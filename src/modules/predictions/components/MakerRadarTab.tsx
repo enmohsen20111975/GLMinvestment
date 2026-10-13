@@ -31,7 +31,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { TimeHorizonBadge } from '@/components/shared/TimeHorizonBadge';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
@@ -891,6 +892,97 @@ interface PredictionEntry {
   risk_reward?: number | null;  // T-ALPHA-A1: for bold R:R display
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// T-ALPHA-A16: RadarStockSection — قسم موحد لعرض قائمة أسهم الرادار
+// يعرض العنوان + الوصف + قائمة موحدة (UnifiedTable) مع زر المتابعة
+// ════════════════════════════════════════════════════════════════════════════
+interface RadarStockSectionProps {
+  title: string;
+  subtitle: string;
+  stocks: RadarStock[];
+  stockMap: Map<string, StockInfo>;
+  predMap: Map<string, PredictionEntry>;
+  onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
+  onSelectTicker: (ticker: string) => void;
+  accent: 'emerald' | 'amber' | 'fuchsia' | 'rose';
+}
+
+const ACCENT_MAP = {
+  emerald: { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-800/50' },
+  amber: { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800/50' },
+  fuchsia: { text: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/20', border: 'border-fuchsia-200 dark:border-fuchsia-800/50' },
+  rose: { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-200 dark:border-rose-800/50' },
+};
+
+function RadarStockSection({ title, subtitle, stocks, stockMap, predMap, onTrackToggle, onSelectTicker, accent }: RadarStockSectionProps) {
+  const a = ACCENT_MAP[accent];
+  if (stocks.length === 0) return null;
+
+  return (
+    <Card className={cn('border-t-2', a.border)}>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <CardTitle className={cn('text-sm font-bold flex items-center gap-1.5', a.text)}>
+              {title}
+              <Badge variant="outline" className={cn('text-[9px]', a.text, a.border)}>{stocks.length}</Badge>
+            </CardTitle>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-1">
+          {stocks.slice(0, 15).map((stock) => {
+            const info = stockMap.get(stock.ticker.toUpperCase());
+            const pred = predMap.get(stock.ticker.toUpperCase());
+            const price = stock.current_price || info?.current_price || 0;
+            const change = stock.change_percent ?? 0;
+            return (
+              <div
+                key={stock.ticker}
+                className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/40 transition-colors cursor-pointer"
+                onClick={() => onSelectTicker(stock.ticker)}
+              >
+                {/* Ticker + Name */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-bold text-xs">{stock.ticker}</span>
+                    {info?.name_ar && (
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[100px]" title={info.name_ar}>
+                        {info.name_ar}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {/* Price */}
+                <div className="text-left flex-shrink-0">
+                  <div className="font-mono text-xs font-semibold tabular-nums">{price > 0 ? price.toFixed(2) : '—'}</div>
+                  <div className={cn('text-[9px] font-semibold tabular-nums', change > 0 ? 'text-emerald-500' : change < 0 ? 'text-red-500' : 'text-muted-foreground')}>
+                    {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                  </div>
+                </div>
+                {/* Track button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onTrackToggle(stock.ticker, price, !!stock.isTracked); }}
+                  className="text-muted-foreground hover:text-amber-500 transition-colors p-1 rounded flex-shrink-0"
+                  title={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
+                >
+                  {stock.isTracked ? (
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                  ) : (
+                    <StarOff className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const t = useTranslation();
   const [data, setData] = useState<MakerRadarResponse | null>(null);
@@ -901,6 +993,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [warmupMsg, setWarmupMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [radarView, setRadarView] = useState<'inflow' | 'outflow'>('inflow');
   // ─── GLM5.2-A — Wyckoff phase filter (C_SPRING / D_SOS / null) ─────────
   // null = inactive. When active, the radar is intersected with the screener
   // results so only stocks matching the chosen Wyckoff phase are shown.
@@ -1731,549 +1824,188 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         </Card>
       )}
 
-      {/* ===== SUB-TABS (Task 9-B Step 2) =====
-          The 5 radar tabs (exit-radar / weekly-report / multi-market-radar /
-          radar-accuracy / personalized-radar) that USED to live in #recommendations
-          are now internal sub-tabs here. The canonical MakerRadar lists stay the
-          default sub-tab. NetPicksTab duplicate removed — it lives only in
-          #recommendations now. */}
-      <Tabs defaultValue="maker" className="w-full">
-        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
-          <TabsTrigger value="maker" className="flex items-center gap-1">
-            <Radar className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">رادار الميكرز</span>
-          </TabsTrigger>
-          <TabsTrigger value="exit-radar" className="flex items-center gap-1">
-            <DoorOpen className="h-4 w-4 text-rose-600" />
-            <span className="hidden sm:inline">رادار الخروج</span>
-          </TabsTrigger>
-          <TabsTrigger value="weekly-report" className="flex items-center gap-1">
-            <FileText className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">التقرير الأسبوعي</span>
-          </TabsTrigger>
-          <TabsTrigger value="multi-market-radar" className="flex items-center gap-1">
-            <Radar className="h-4 w-4 text-violet-600" />
-            <span className="hidden sm:inline">الرادار الموحّد</span>
-          </TabsTrigger>
-          <TabsTrigger value="radar-accuracy" className="flex items-center gap-1">
-            <Gauge className="h-4 w-4 text-amber-600" />
-            <span className="hidden sm:inline">دقة الرادار</span>
-          </TabsTrigger>
-          <TabsTrigger value="personalized-radar" className="flex items-center gap-1">
-            <UserCircle className="h-4 w-4 text-cyan-600" />
-            <span className="hidden sm:inline">الرادار المخصّص</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* ===== T-ALPHA-A16: CLEAN INSTITUTIONAL STRUCTURE — No sub-tabs, no clutter =====
+          Maker Pulse Banner + Two-view Toggle (Inflow/Outflow) only.
+          Purged: 6 sub-tabs, SectorTreemapCard, RadarSignalStatsCard, ProofSection,
+          Wyckoff filters, 12% win rate widget, all jargon. */}
 
-        {/* ─── Maker Radar (default) — the original 5-path radar lists + sub-cards ─── */}
-        <TabsContent value="maker" className="mt-4 space-y-4">
-
-      {/* ===== MARKET REGIME BANNER (إحساس وضع السوق وتكييف القواعد) ===== */}
-      {/* Owner directive: "تحذير أحمر وكبير وواضح جدًا، مش مخفي" */}
+      {/* ===== MAKER PULSE BANNER — ملخص مركّز لحالة السوق ===== */}
       {data?.market_regime && (
-        <Card className={`p-4 border-l-4 transition-all ${
+        <Card className={cn(
+          'p-4 border-l-4 transition-all overflow-hidden',
           data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
             ? 'border-l-red-500 bg-red-500/10 dark:bg-red-950/30 border-red-300 dark:border-red-800 shadow-lg shadow-red-500/20'
             : data.market_regime.regime === 'AGGRESSIVE'
               ? 'border-l-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
               : 'border-l-primary bg-primary/5 dark:bg-slate-900/20 border-slate-200 dark:border-primary'
-        }`}>
+        )}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <ShieldAlert className={`h-6 w-6 ${
+              <ShieldAlert className={cn(
+                'h-5 w-5',
                 data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
                   ? 'text-red-600 dark:text-red-400 animate-pulse'
                   : data.market_regime.regime === 'AGGRESSIVE'
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-primary dark:text-slate-400'
-              }`} />
+              )} />
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-foreground">
-                    وضع السوق المستشعر:
-                  </span>
-                  <Badge variant="outline" className={`text-xs font-semibold ${
-                    data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                      ? 'bg-red-100 text-red-900 border-red-400 dark:bg-red-950 dark:text-red-200 dark:border-red-700'
-                      : data.market_regime.regime === 'AGGRESSIVE'
-                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
-                        : 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-900 dark:text-slate-200'
-                  }`}>
-                    {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                      ? '🔴 دِفاعي — قلّل الحجم وركّز على وقف الخسارة'
-                      : data.market_regime.regime === 'AGGRESSIVE'
-                        ? '🟢 هجومي — زخم صاعد'
-                        : '⚖️ عادي — حركة متوازنة'}
-                  </Badge>
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                    ? 'السوق العام واقع وشحيح السيولة — تم تكييف قواعد الرادار تلقائياً لصيد الأسهم المتماسكة ذات القوة النسبية وتجميع الميكرز الهادئ.'
-                    : 'القواعد تعمل بالمعايير القياسية للسيولة والزخم.'}
-                </p>
-              </div>
-            </div>
-            {data.market_regime.breadth_pct != null && (
-              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                <span>صعود السوق: <strong className="font-mono text-foreground">{data.market_regime.breadth_pct}%</strong></span>
-                {data.market_regime.turnover_ratio != null && (
-                  <span>نسبة السيولة: <strong className="font-mono text-foreground">{data.market_regime.turnover_ratio}x</strong></span>
+                <span className="text-sm font-bold">
+                  {data.market_regime.regime_ar || data.market_regime.regime || '—'}
+                </span>
+                {data.market_regime.advice_ar && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {data.market_regime.advice_ar}
+                  </p>
                 )}
               </div>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* ===== KPI CARDS — FIX-UI-AUDIT (re-applied to NEW path) =====
-          Replaces the 4 raw-count cards (إجمالي المفحوصة / تحت الميكروسكوب /
-          موجات منفجرة / أسهم متابَعة) with the 4 audit-approved aggregated
-          metrics. When radarKpi.hasData === false, the row collapses into a
-          single actionable reason banner (no dead «فرص 0» display). tracked_count
-          still appears in the filter-bar badge (no loss of info). */}
-      {radarKpi.hasData ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard
-            icon={<Activity className="h-4 w-4" />}
-            label="عدد الأسهم النشطة"
-            value={radarKpi.activeCount}
-            sub="عبر كل قوائم الرادار"
-            accent="blue"
-          />
-          <KpiCard
-            icon={<TrendingUp className="h-4 w-4" />}
-            label="أقوى زخم حالي"
-            value={radarKpi.topMomentumTicker ?? '—'}
-            sub={
-              radarKpi.topMomentumRoc != null
-                ? `ROC 10 أيام: ${(radarKpi.topMomentumRoc ?? 0).toFixed(2)}%`
-                : 'بانتظار البيانات'
-            }
-            accent="emerald"
-          />
-          <KpiCard
-            icon={<BarChart3 className="h-4 w-4" />}
-            label="أعلى سيولة"
-            value={radarKpi.topLiquidityTicker ?? '—'}
-            sub={
-              radarKpi.topLiquidityValue != null
-                ? `متوسط سيولة 20 يوم: ${fmtMoney(radarKpi.topLiquidityValue)}`
-                : 'بانتظار البيانات'
-            }
-            accent="amber"
-          />
-          <KpiCard
-            icon={<Target className="h-4 w-4" />}
-            label="عدد الفرص الحقيقية"
-            value={radarKpi.realOpportunities}
-            sub={
-              radarKpi.realOpportunities > 0
-                ? 'فرص قابلة للتداول'
-                : 'الرادار بيفحص الأسهم'
-            }
-            accent="rose"
-          />
-        </div>
-      ) : (
-        <Card className="p-4 border-dashed border-muted-foreground/30 bg-muted/20">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <Radar className="h-5 w-5 flex-shrink-0 opacity-60" />
-            <div>
-              <p className="font-semibold text-foreground">لا توجد فرص حالياً — الرادار بيفحص الأسهم</p>
-              <p className="text-xs mt-0.5">جرّب تشغيل الرادار أو حدّث بعد دقيقة.</p>
             </div>
-          </div>
-        </Card>
-      )}
-
-      {/* ===== RADAR SUMMARY — الخلاصة النهائية للقرار ===== */}
-      {data && !loading && (
-        <Card className="p-4 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
-              <Target className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold">خلاصة الرادار</span>
-                {data.market_regime && (
-                  <Badge variant="outline" className={
-                    data.market_regime.effective_regime === 'AGGRESSIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' :
-                    data.market_regime.effective_regime === 'DEFENSIVE' ? 'bg-red-500/10 text-red-600 border-red-500/30' :
-                    'bg-amber-500/10 text-amber-600 border-amber-500/30'
-                  }>
-                    {data.market_regime.effective_regime === 'AGGRESSIVE' ? '🟢 السوق عدواني' :
-                     data.market_regime.effective_regime === 'DEFENSIVE' ? '🔴 السوق دفاعي' :
-                     '🟡 السوق محايد'}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {(() => {
-                  const totalStocks = data.total_scanned ?? 0;
-                  const underMicroscope = data.under_microscope_count ?? 0;
-                  const explosive = data.explosive_count ?? 0;
-                  const earlyBreak = data.early_break_count ?? 0;
-                  const tracked = data.tracked_count ?? 0;
-                  const totalOpportunities = underMicroscope + explosive + earlyBreak;
-
-                  if (totalStocks === 0) return 'الرادار قيد التحميل — انتظر دقيقة وحاول مرة أخرى.';
-                  if (totalOpportunities === 0) return `تم فحص ${totalStocks} سهم — لا توجد فرص واضحة حالياً. السوق هادئ، انتظر حركة.`;
-                  if (explosive > 0 || earlyBreak > 0) return `🔥 يوجد ${explosive + earlyBreak} سهم في حركة انفجارية/اختراق! ركّز على التبويبات الحمراء. + ${underMicroscope} تحت الميكروسكوب للتجميع.`;
-                  if (underMicroscope > 10) return `📊 ${underMicroscope} سهم تحت الميكروسكوب — السوق في مرحلة تجميع. تتركّز الفرص في الأسهم الصامتة قبل الانفجار.`;
-                  return `تم فحص ${totalStocks} سهم. ${totalOpportunities} فرصة محتملة. ${tracked} في قائمتك.`;
-                })()}
-              </p>
-              {data.tracked_count === 0 && (data.under_microscope_count ?? 0) > 0 && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  ⚠️ لا توجد أسهم في قائمة المتابعة — افتح أي سهم واضغط ⭐ لإضافته للمتابعة.
-                </p>
+            {/* T-ALPHA-A16: Market pulse summary */}
+            <div className="flex items-center gap-3 text-xs">
+              {data?.quiet_list && data.quiet_list.length > 0 && (
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                  <span className="font-bold">{data.quiet_count ?? data.quiet_list.length}</span>
+                  تجميع
+                </span>
+              )}
+              {data?.explosive_list && data.explosive_list.length > 0 && (
+                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                  <span className="font-bold">{data.explosive_count ?? data.explosive_list.length}</span>
+                  انفجار
+                </span>
+              )}
+              {data?.early_break_list && data.early_break_list.length > 0 && (
+                <span className="flex items-center gap-1 text-fuchsia-600 dark:text-fuchsia-400">
+                  <span className="font-bold">{data.early_break_count ?? data.early_break_list.length}</span>
+                  اختراق
+                </span>
               )}
             </div>
           </div>
         </Card>
       )}
 
-      {/* ===== RADAR ACTIVITY — مدى شعل الرادار خلال فترة زمنية ===== */}
-      <RadarActivityCard data={data} lastUpdated={lastUpdated} period={timeframe} onPeriodChange={setTimeframe} />
-
-      {/* ===== SECTOR HEAT STRIP ===== */}
-      <SectorHeatStrip sectors={sectors} loading={!stockMap} />
-
-      {/* ===== SECTOR LIQUIDITY TREEMAP — خريطة سيولة القطاعات ===== */}
-      <SectorTreemapCard />
-
-      {/* Task 9-B Step 2: NetPicksTab REMOVED from MakerRadarTab — it's the
-          canonical "صافى التوقعات" tab in #recommendations only (duplicate
-          render deleted at line 1213). Owner complaint #1 confirmed + fixed. */}
-
-
-      {/* ===== SIGNAL TRACKER STATS — مصير إشارات الرادار ===== */}
-      <RadarSignalStatsCard />
-
-      {/* ===== FILTER BAR ===== */}
-      <Card className="p-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs text-muted-foreground ml-1">فلترة:</span>
-          {([
-            { key: 'all', label: 'الكل', emoji: null },
-            { key: 'pre_surge', label: 'Pre-Surge', emoji: null },
-            { key: 'quiet', label: 'ميكروسكوب', emoji: '🎯' },
-            { key: 'explosive', label: 'منفجرة', emoji: '🔥' },
-            { key: 'early_break', label: 'اختراق', emoji: '⚡' },
-            { key: 'tracked', label: 'متابَعة', emoji: '⭐' },
-          ] as const).map((f) => (
-            <Button
-              key={f.key}
-              size="sm"
-              variant={filter === f.key ? 'default' : 'outline'}
-              className="h-7 text-xs"
-              onClick={() => setFilter(f.key)}
-            >
-              {f.emoji && <span className="ml-1">{f.emoji}</span>}
-              {f.label}
-              {f.key === 'tracked' && data?.tracked_count ? (
-                <Badge variant="secondary" className="mr-1 h-4 text-[10px] px-1">{data.tracked_count}</Badge>
-              ) : null}
-            </Button>
-          ))}
-
-          {/* ─── GLM5.2-A — Wyckoff Phase Filters (C_SPRING + D_SOS) ──── */}
-          {/* Mobile: flex-wrap on the parent keeps these from overflowing. */}
-          <span className="text-[10px] text-muted-foreground mx-1 self-center">|</span>
-          <button
-            onClick={() => setWyckoffFilter('C_SPRING')}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
-              wyckoffFilter === 'C_SPRING'
-                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-            title="الأسهم في Phase C — هز الشجرة قبل الانفجار"
+      {/* ===== T-ALPHA-A16: TWO-VIEW TOGGLE — Inflow vs Outflow ===== */}
+      <div className="flex justify-center" dir="rtl">
+        <ToggleGroup
+          type="single"
+          value={radarView}
+          onValueChange={(v) => v && setRadarView(v as 'inflow' | 'outflow')}
+          className="bg-muted rounded-lg p-1 gap-1"
+        >
+          <ToggleGroupItem
+            value="inflow"
+            aria-label="رادار التجميع"
+            className="px-4 py-2 text-sm font-medium data-[state=on]:bg-emerald-500 data-[state=on]:text-white rounded-md transition-all"
           >
-            🎯 صيد قيعان وايكوف (Spring Phase C)
-          </button>
-          <button
-            onClick={() => setWyckoffFilter('D_SOS')}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
-              wyckoffFilter === 'D_SOS'
-                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-            title="الأسهم في Phase D — علامة القوة (اختراق حقيقي)"
+            <span className="me-1.5">🟢</span>
+            رادار التجميع (صيد الحيتان)
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="outflow"
+            aria-label="رادار التصريف"
+            className="px-4 py-2 text-sm font-medium data-[state=on]:bg-red-500 data-[state=on]:text-white rounded-md transition-all"
           >
-            ⚡ علامة القوة (SOS Phase D)
-          </button>
+            <span className="me-1.5">🔴</span>
+            رادار التصريف (إنذار الخروج)
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
 
-          {/* Clear Wyckoff filter — only shown when a phase is active. */}
-          {wyckoffFilter && (
-            <button
-              onClick={() => setWyckoffFilter(null)}
-              className="px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors"
-              title="إلغاء فلتر وايكوف"
-              aria-label="إلغاء فلتر وايكوف"
-            >
-              ✕
-            </button>
+      {/* ===== T-ALPHA-A16: RADAR LISTS — Clean unified view ===== */}
+      {radarView === 'inflow' ? (
+        /* 🟢 INFLOW: pre_surge + quiet + early_break = accumulation signals */
+        <div className="space-y-4">
+          {filteredPreSurge.length > 0 && (
+            <RadarStockSection
+              title="🚀 تحضير لانفجار"
+              subtitle="أسهم في مرحلة تجميع صامت قبل الانفجار"
+              stocks={filteredPreSurge}
+              stockMap={stockMap}
+              predMap={predMap}
+              onTrackToggle={handleTrackToggle}
+              onSelectTicker={setSelectedTicker}
+              accent="emerald"
+            />
           )}
-
-          {/* ─── GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI) — Liquidity quick filters ───
-              Two buttons:
-              1. 💎 Institutional-only (turnover ≥ 2M EGP) — isolates quality stocks
-              2. EGX30 / EGX70 index filter
-              Rule 27: no fabrication — the filter uses the real avg_turnover_20d
-              field already on every RadarStock (same field the badge reads). */}
-          <span className="text-[10px] text-muted-foreground mx-1 self-center">|</span>
-          <button
-            onClick={() => setLiquidityTierFilter((v) => (v === 'institutional' ? null : 'institutional'))}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
-              liquidityTierFilter === 'institutional'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-            title="عرض الأسهم المؤسسية المؤهلة فقط (سيولة ≥ 2M ج.م)"
-          >
-            💎 مؤسسي فقط (≥2M)
-          </button>
-          {/* GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP) — RVol Surge filter */}
-          <button
-            onClick={() => setLiquidityTierFilter((v) => (v === 'surge' ? null : 'surge'))}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
-              liquidityTierFilter === 'surge'
-                ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-sm'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-            title="عرض أسهم طفرات السيولة فقط (volume_ratio ≥ 2.5× المتوسط)"
-          >
-            🚀 طفرات السيولة RVol
-          </button>
-          {/* GLM5.2-A (AI-CONFIDENCE-UI) — High Conviction AI filter */}
-          <button
-            onClick={() => setAiConfidenceFilter((v) => !v)}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
-              aiConfidenceFilter
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-            title="عرض التوصيات فائقة الثقة فقط (AI confidence ≥ 65%)"
-          >
-            ✨ توصيات الذكاء الاصطناعي فائقة الثقة (AI ≥ 65%)
-          </button>
-          <button
-            onClick={() => setIndexFilter((v) => (v === 'EGX30' ? null : 'EGX30'))}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
-              indexFilter === 'EGX30'
-                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-            title="عرض أسهم مؤشر EGX30 فقط"
-          >
-            EGX30
-          </button>
-          <button
-            onClick={() => setIndexFilter((v) => (v === 'EGX70' ? null : 'EGX70'))}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all h-7',
-              indexFilter === 'EGX70'
-                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-            title="عرض أسهم مؤشر EGX70 فقط"
-          >
-            EGX70
-          </button>
-
-          {/* ─── Sort by prediction toggle ─── */}
-          <div className="mr-auto flex items-center gap-1.5">
-            {predMap.size > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                {predMap.size} توقع محمّل
-              </span>
-            )}
-            <Button
-              size="sm"
-              variant={sortByPrediction ? 'default' : 'outline'}
-              className={`h-7 text-xs gap-1 ${sortByPrediction ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent' : ''}`}
-              onClick={() => setSortByPrediction((v) => !v)}
-              title="ترتيب الأسهم من الأعلى توقع للصعود للأدنى"
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              {sortByPrediction ? 'مرتّب بالتوقع ✓' : 'ترتيب حسب التوقع'}
-            </Button>
-          </div>
+          {filteredQuiet.length > 0 && (
+            <RadarStockSection
+              title="🤫 تجميع صامت"
+              subtitle="دخول سيولة مؤسسية هادئة — صيد الحيتان"
+              stocks={filteredQuiet}
+              stockMap={stockMap}
+              predMap={predMap}
+              onTrackToggle={handleTrackToggle}
+              onSelectTicker={setSelectedTicker}
+              accent="amber"
+            />
+          )}
+          {filteredEarlyBreak.length > 0 && (
+            <RadarStockSection
+              title="⚡ اختراق مبكر"
+              subtitle="كسر نطاق ضيق مع زخم — فرصة سريعة"
+              stocks={filteredEarlyBreak}
+              stockMap={stockMap}
+              predMap={predMap}
+              onTrackToggle={handleTrackToggle}
+              onSelectTicker={setSelectedTicker}
+              accent="fuchsia"
+            />
+          )}
+          {/* T-ALPHA-A16: شرط عدم الفراغ — إذا لا توجد إشارات لحظية، اعرض آخر نشطة */}
+          {filteredPreSurge.length === 0 && filteredQuiet.length === 0 && filteredEarlyBreak.length === 0 && (
+            <Card>
+              <CardContent className="p-6 text-center space-y-2">
+                <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+                <p className="text-sm font-semibold text-muted-foreground">
+                  لا توجد إشارات تجميع لحظية جديدة الآن
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  المحرك يفحص السوق كل 5 دقائق — ستظهر الفرص هنا فور رصدها
+                </p>
+                {data?.last_scan && (
+                  <p className="text-[10px] text-muted-foreground/60">
+                    آخر مسح: {data.last_scan}
+                  </p>
+                )}
+                <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5 mt-2">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  تحديث
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </Card>
-
-      {/* ===== MARKET REGIME BANNER ===== */}
-      <MarketRegimeBanner market={market} />
-
-      {/* ===== STOCK SECTIONS ===== */}
-      {/* Owner directive: "الأسهم المنفجرة تظهر بشكل أكبر وأوضح في الأعلى" */}
-
-      {/* Explosive (rose) — FIRST (owner directive: explosive stocks on top) */}
-      {(filter === 'all' || filter === 'explosive' || filter === 'tracked') && filteredExplosive.length > 0 && (
-        <RadarSection
-          key="radar-explosive"
-          title="🔥 الأسهم المنفجرة الآن"
-          subtitle="حجم فجائي + حركة قوية — تنبيه فوري"
-          icon={<Flame className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
-          accent="rose"
-          stocks={filteredExplosive}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Pre-Surge (purple) — second */}
-      {(filter === 'all' || filter === 'pre_surge' || filter === 'tracked') && filteredPreSurge.length > 0 && (
-        <RadarSection
-          key="radar-pre-surge"
-          title="Pre-Surge — متوقعة الانفجار"
-          subtitle="أعلى أولوية — السهم بيتجمع قبل الانفجار"
-          icon={<Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
-          accent="purple"
-          stocks={filteredPreSurge}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Quiet accumulation (amber) */}
-      {(filter === 'all' || filter === 'quiet' || filter === 'tracked') && filteredQuiet.length > 0 && (
-        <RadarSection
-          key="radar-quiet"
-          title="🎯 تحت الميكروسكوب"
-          subtitle="تجميع هادئ — أسهم بتتراكم قبل ما تنفجر"
-          icon={<Eye className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-          accent="amber"
-          stocks={filteredQuiet}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Early break (emerald) */}
-      {(filter === 'all' || filter === 'early_break' || filter === 'tracked') && filteredEarlyBreak.length > 0 && (
-        <RadarSection
-          key="radar-early-break"
-          title="⚡ اختراق مبكر"
-          subtitle="خروج من نطاق ضيق بحجم — أول إشارة اختراق"
-          icon={<Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-          accent="emerald"
-          stocks={filteredEarlyBreak}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Empty state — FIX-UI-AUDIT (re-applied to NEW path):
-          differentiates between filter='all' (radar still scanning — show
-          «لا توجد فرص حالياً — الرادار بيفحص الأسهم») vs. a specific filter
-          that yields no matches (suggest clearing the filter). */}
-      {totalCardsShown === 0 && (
-        <Card className="p-8 text-center border-dashed border-muted-foreground/30 bg-muted/10">
-          <Radar className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-
-          {/* GLM5.2-A — Wyckoff filter empty state (Rule 27: never fabricate). */}
-          {wyckoffFilter && wyckoffError ? (
-            <>
-              <p className="text-sm font-semibold text-foreground">تعذّر تشغيل مُفرّز وايكوف</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                فشل الاتصال بخدمة وايكوف. حاول إلغاء الفلتر أو أعد المحاولة بعد دقيقة.
-              </p>
-            </>
-          ) : wyckoffFilter ? (
-            <>
-              <p className="text-sm font-semibold text-foreground">
-                لا توجد أسهم حالياً في مرحلة وايكوف المختارة
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {wyckoffFilter === 'C_SPRING'
-                  ? 'مرحلة Spring (C) — هزّ الشجرة. الرادار بيفحص الأسهم بشكل دوري.'
-                  : 'مرحلة SOS (D) — علامة القوة. الرادار بيفحص الأسهم بشكل دوري.'}
-              </p>
-            </>
-          ) : filter === 'all' ? (
-            <>
-              <p className="text-sm font-semibold text-foreground">لا توجد فرص حالياً — الرادار بيفحص الأسهم</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                الرادار بيفحص الأسهم بشكل دوري. جرّب تشغيل الرادار أو حدّث بعد دقيقة.
-              </p>
-            </>
+      ) : (
+        /* 🔴 OUTFLOW: explosive = distribution/exit warning */
+        <div className="space-y-4">
+          {filteredExplosive.length > 0 ? (
+            <RadarStockSection
+              title="⚠️ تصريف وخروج"
+              subtitle="خروج سيولة وتصريف عند القمم — تحذير من الشراء"
+              stocks={filteredExplosive}
+              stockMap={stockMap}
+              predMap={predMap}
+              onTrackToggle={handleTrackToggle}
+              onSelectTicker={setSelectedTicker}
+              accent="rose"
+            />
           ) : (
-            <>
-              <p className="text-sm font-semibold text-foreground">لا توجد أسهم مطابقة للفلتر الحالي</p>
-              <p className="text-xs text-muted-foreground mt-1">جرّب فلتراً آخر أو أعد العرض للكل</p>
-            </>
+            <Card>
+              <CardContent className="p-6 text-center space-y-2">
+                <ShieldCheck className="w-8 h-8 text-emerald-500/40 mx-auto" />
+                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  لا يوجد تصريف مكثف حالياً — السوق مستقر
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  سيظهر هنا تحذير الخروج فور رصد تصريف مؤسسي
+                </p>
+              </CardContent>
+            </Card>
           )}
-          {filter !== 'all' && !wyckoffFilter && (
-            <Button size="sm" variant="outline" className="mt-3" onClick={() => setFilter('all')}>
-              عرض الكل
-            </Button>
-          )}
-          {wyckoffFilter && (
-            <Button size="sm" variant="outline" className="mt-3" onClick={() => setWyckoffFilter(null)}>
-              إلغاء فلتر وايكوف
-            </Button>
-          )}
-        </Card>
+        </div>
       )}
 
-      {/* ===== PROOF SECTION (collapsible) ===== */}
-      <ProofSection onSelectTicker={setSelectedTicker} />
-
-        </TabsContent>
-
-        {/* ─── Exit Radar (رادار الخروج) — distribution/exit signals (inverse of maker radar) ─── */}
-        <TabsContent value="exit-radar" className="mt-4">
-          <ExitRadarTab market={market === 'CRYPTO' ? 'EGX' : market} />
-        </TabsContent>
-
-        {/* ─── Weekly Report (التقرير الأسبوعي للرادار) — Top 5 + Stock of the Week + regime ─── */}
-        <TabsContent value="weekly-report" className="mt-4">
-          <WeeklyReportTab market={market === 'CRYPTO' ? 'EGX' : market} />
-        </TabsContent>
-
-        {/* ─── Multi-Market Radar (الرادار الموحّد) — EGX/TADAWUL/KSE/QSE/CRYPTO in one view ─── */}
-        <TabsContent value="multi-market-radar" className="mt-4">
-          <MultiMarketRadarTab />
-        </TabsContent>
-
-        {/* ─── Radar Accuracy (دقة الرادار) — historical hit-rate by signal type ─── */}
-        <TabsContent value="radar-accuracy" className="mt-4">
-          <AccuracyDashboard market={market} />
-        </TabsContent>
-
-        {/* ─── Personalized Radar (الرادار المخصّص) — picks ranked by user's portfolio profile ─── */}
-        <TabsContent value="personalized-radar" className="mt-4">
-          <PersonalizedRadarTab />
-        </TabsContent>
-      </Tabs>
 
       {/* ===== Stock Detail Drawer (Dialog) — kept OUTSIDE the Tabs so it
           stays mounted and closeable regardless of which sub-tab is active.
