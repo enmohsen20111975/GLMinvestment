@@ -67977,3 +67977,26 @@ Stage Summary:
 - ✅ ABUK (cp=90 > sma50*0.95=79.3): لا Hard Cap → القرار الطبيعي
 - ✅ classifyMoneyFlow: buy=35%+net<0 → 🔴 ضغط بيعي قوي | buy=38%+تخفيض → 🔴 ضغط بيعي قوي | buy=42% → 🟡 متوازنة
 - ✅ py_compile PASS + tsc clean
+
+---
+Task ID: BRAVO-T02-T05-PULSE-SCORECARD
+Agent: كبير المهندسين الكميين والرياضيات والذكاء الاصطناعي (Chief Quant & Math Lead — GLM 5.2 Bravo)
+Task: Market Pulse (0-100) + Evidence Scorecard (6 Proofs) + TP1=2.5×ATR
+
+Work Log:
+- T-02: أضفت compute_market_pulse() في market_regime_engine.py:
+  * 60% اتساع السوق (gainers_pct × 0.60)
+  * 40% حركة المؤشر (idx_score + SMA bonus × 0.40)
+  * Hard Cap: losers_pct > 75% → pulse ≤ 30
+  * ممنوع pulse=0 متجمداً (الحد الأدنى 1)
+- T-05: أضفت build_evidence_scorecard() في core_scoring_engine.py:
+  * 6 براهين: MA position + liquidity flow + accumulation + RS + falling knife + entry decision
+  * verdict: ACCEPTED / REJECTED مع سبب الرفض الصريح
+  * TP1 = 2.5×ATR validation (FANTASY-CAP-RR-REJECT لو فرق > 20%)
+  * RR ≥ 1.5 enforcement
+
+Stage Summary:
+- ✅ Market Pulse: gainers=324 losers=660 → pulse=38/100 (هابط) — يعكس الضغط البيعي الحقيقي.
+- ✅ EGREF: REJECTED — 4 أسباب رفض صريحة (falling knife + سيولة خارجة + تخفيض + RR<1.5).
+- ✅ COMI: ACCEPTED — كل البراهين إيجابية (RR=2.1 ≥ 1.5 + TP1 ≈ 2.5×ATR).
+- ✅ py_compile: 2/2 PASS.

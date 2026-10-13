@@ -753,6 +753,195 @@ class RiskCalculator:
 
 
 # ============================================================================
+# Task T-05: Institutional Evidence Scorecard (6 Proofs)
+# ============================================================================
+# Owner Directive (2026-10-13): كل سهم يتم تحليله يخرج معه payload كامل
+# للبراهين الستة المؤسسية:
+#   1. موقع السعر من المتوسطات (MA50 / MA200)
+#   2. تدفق السيولة الحقيقي (net_flow + buy_pct)
+#   3. حالة التجميع والتصريف (accumulation_distribution)
+#   4. القوة النسبية مقارنة بالمؤشر (RS)
+#   5. فحص السكاكين الساقطة والقمم المكسورة
+#   6. قرار الدخول أو سبب الرفض الصريح
+# ============================================================================
+
+def build_evidence_scorecard(
+    ticker: str,
+    current_price: float,
+    ma50: float = None,
+    ma200: float = None,
+    net_flow: float = 0.0,
+    buy_pct: float = 0.0,
+    accumulation_signal: str = "",
+    index_change_pct: float = 0.0,
+    stock_change_pct: float = 0.0,
+    is_falling_knife: bool = False,
+    bought_near_peak: bool = False,
+    atr: float = 0.0,
+    target_price: float = None,
+    stop_loss: float = None,
+    rr_ratio: float = 0.0,
+    min_rr: float = 1.5,
+) -> dict:
+    """ابنِ مصفوفة البراهين الستة المؤسسية لسهم واحد.
+
+    Rule 27 (NO-FAKE-DATA): كل القيم من بيانات حقيقية — لا اختلاع.
+    Rule 20 (PYTHON = BRAIN): كل المنطق في Python.
+
+    Returns:
+        {
+            "ticker": str,
+            "proofs": {
+                "1_ma_position": {...},
+                "2_liquidity_flow": {...},
+                "3_accumulation": {...},
+                "4_relative_strength": {...},
+                "5_falling_knife": {...},
+                "6_entry_decision": {...},
+            },
+            "verdict": "ACCEPTED" | "REJECTED",
+            "rejection_reason": str | None,
+        }
+    """
+    proofs = {}
+
+    # ── البرهان 1: موقع السعر من المتوسطات ──
+    ma_position = "neutral"
+    ma_detail = ""
+    if ma50 and ma50 > 0 and current_price > 0:
+        if current_price > ma50:
+            ma_position = "above_ma50"
+            ma_detail = f"السعر ({current_price:.2f}) فوق MA50 ({ma50:.2f}) — إيجابي"
+        else:
+            ma_position = "below_ma50"
+            ma_detail = f"السعر ({current_price:.2f}) تحت MA50 ({ma50:.2f}) — سلبي"
+    if ma200 and ma200 > 0 and current_price > 0:
+        if current_price > ma200:
+            ma_position = ma_position.replace("neutral", "above_ma200")
+            ma_detail += f" | فوق MA200 ({ma200:.2f})"
+        else:
+            ma_position = ma_position.replace("neutral", "below_ma200")
+            ma_detail += f" | تحت MA200 ({ma200:.2f})"
+    if ma50 and ma200 and ma50 > 0 and ma200 > 0:
+        if ma50 > ma200:
+            ma_detail += " | MA50 > MA200 (golden cross)"
+        else:
+            ma_detail += " | MA50 < MA200 (death cross)"
+    proofs["1_ma_position"] = {
+        "status": ma_position,
+        "detail": ma_detail or "بيانات المتوسطات غير متاحة",
+        "ma50": ma50,
+        "ma200": ma200,
+        "current_price": current_price,
+    }
+
+    # ── البرهان 2: تدفق السيولة الحقيقي ──
+    net_negative = net_flow < 0
+    liquidity_status = "inflow" if (buy_pct >= 50 and not net_negative) else "outflow"
+    liquidity_detail = (
+        f"buy_pct={buy_pct:.1f}% | net_flow={net_flow:,.0f} — "
+        f"{'سيولة داخلة' if liquidity_status == 'inflow' else 'سيولة خارجة'}"
+    )
+    proofs["2_liquidity_flow"] = {
+        "status": liquidity_status,
+        "detail": liquidity_detail,
+        "buy_pct": buy_pct,
+        "net_flow": net_flow,
+    }
+
+    # ── البرهان 3: حالة التجميع والتصريف ──
+    acc_status = "neutral"
+    if accumulation_signal:
+        acc_lower = accumulation_signal.lower()
+        if "تجميع" in acc_lower or "accumulation" in acc_lower:
+            acc_status = "accumulation"
+        elif "تصريف" in acc_lower or "distribution" in acc_lower:
+            acc_status = "distribution"
+        elif "تخفيض" in acc_lower or "markdown" in acc_lower:
+            acc_status = "markdown"
+    proofs["3_accumulation"] = {
+        "status": acc_status,
+        "detail": accumulation_signal or "غير محدد",
+    }
+
+    # ── البرهان 4: القوة النسبية (RS) ──
+    rs_value = stock_change_pct - index_change_pct
+    rs_status = "strong" if rs_value > 2.0 else ("weak" if rs_value < -2.0 else "neutral")
+    proofs["4_relative_strength"] = {
+        "status": rs_status,
+        "detail": f"RS={rs_value:+.2f}% (سهم {stock_change_pct:+.2f}% vs مؤشر {index_change_pct:+.2f}%)",
+        "rs_value": round(rs_value, 2),
+    }
+
+    # ── البرهان 5: فحص السكاكين الساقطة والقمم المكسورة ──
+    fk_status = "safe"
+    fk_detail = "السهم ليس في مسار هابط حر"
+    if is_falling_knife:
+        fk_status = "falling_knife"
+        fk_detail = "🚨 السهم في مسار هابط حر (Falling Knife) — ممنوع الشراء"
+    if bought_near_peak:
+        fk_status = "bought_near_peak" if not is_falling_knife else fk_status
+        fk_detail += " | الشراء تم قرب قمة تاريخية متضخمة"
+    proofs["5_falling_knife"] = {
+        "status": fk_status,
+        "detail": fk_detail,
+        "is_falling_knife": is_falling_knife,
+        "bought_near_peak": bought_near_peak,
+    }
+
+    # ── البرهان 6: قرار الدخول أو سبب الرفض الصريح ──
+    rejection_reasons = []
+    if is_falling_knife:
+        rejection_reasons.append("السهم في مسار هابط حر — ممنوع التقاط السكاكين الساقطة")
+    if ma_position in ("below_ma50", "below_ma200") and ma_position != "neutral":
+        if "below_ma50" in ma_position and "below_ma200" in ma_position:
+            rejection_reasons.append("السعر تحت MA50 و MA200 — مسار هابط مؤكد")
+    if liquidity_status == "outflow" and buy_pct < 40:
+        rejection_reasons.append(f"سيولة خارجة قوية (buy_pct={buy_pct:.1f}% < 40%)")
+    if acc_status == "markdown":
+        rejection_reasons.append("السهم في مرحلة تخفيض (Mark-down) — تصريف مؤسسي")
+    if rr_ratio < min_rr and target_price and stop_loss:
+        rejection_reasons.append(f"R:R={rr_ratio:.2f} < {min_rr} — نسبة المخاطرة غير كافية")
+
+    # ── التحقق من TP1 = 2.5 × ATR ──
+    tp1_valid = True
+    tp1_detail = ""
+    if atr and atr > 0 and target_price and current_price > 0:
+        expected_tp1 = current_price + (2.5 * atr)
+        tp1_diff_pct = abs(target_price - expected_tp1) / expected_tp1 * 100 if expected_tp1 > 0 else 0
+        if tp1_diff_pct > 20:  # فرق > 20% من المتوقع
+            tp1_valid = False
+            tp1_detail = f"TP1={target_price:.2f} يختلف عن 2.5×ATR={expected_tp1:.2f} بـ {tp1_diff_pct:.1f}%"
+        else:
+            tp1_detail = f"TP1={target_price:.2f} ≈ 2.5×ATR={expected_tp1:.2f} (فرق {tp1_diff_pct:.1f}%)"
+    if not tp1_valid:
+        rejection_reasons.append(f"[FANTASY-CAP-RR-REJECT] {tp1_detail}")
+
+    verdict = "REJECTED" if rejection_reasons else "ACCEPTED"
+    entry_decision_detail = (
+        "✅ مقبول للدخول — كل البراهين إيجابية"
+        if verdict == "ACCEPTED"
+        else "❌ مرفوض — " + " | ".join(rejection_reasons)
+    )
+    proofs["6_entry_decision"] = {
+        "status": verdict,
+        "detail": entry_decision_detail,
+        "rejection_reasons": rejection_reasons,
+        "rr_ratio": rr_ratio,
+        "min_rr": min_rr,
+        "tp1_valid": tp1_valid,
+        "tp1_detail": tp1_detail,
+    }
+
+    return {
+        "ticker": ticker,
+        "proofs": proofs,
+        "verdict": verdict,
+        "rejection_reason": " | ".join(rejection_reasons) if rejection_reasons else None,
+    }
+
+
+# ============================================================================
 # P24-ADAPTIVE-RR (Aug 2026): Adaptive Risk/Reward & Stop multipliers
 # ============================================================================
 # بدل ما تكون الـ Targets و Stops ثابتة (1.5R/3.0R)، بنحسبها ديناميكياً من:
