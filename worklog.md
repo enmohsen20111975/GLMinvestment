@@ -67865,3 +67865,30 @@ Constraints honored:
 
 Stage Summary:
 - 26 changes total across 3 files (6 + 7 + 13)
+
+---
+Task ID: BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE
+Agent: مهندس الأنظمة الكمية (فريق GLM 5.2-Bravo)
+Task: منع مطاردة السكاكين الساقطة + تطهير تصنيفات السيولة + Signal-Target Consistency
+
+Work Log:
+- أنشأت vps-service/analyzers/institutional_levels.py (564 LOC) — جديد (لم يكن في HEAD).
+- أضفت detect_falling_knife() في institutional_levels.py:
+  * يفحص: price < MA50 - 5% + (MA50 < MA200 OR roc_10d < -5%)
+  * لو falling knife → targets_available=False + entry=None + target=None
+  * القمم السابقة = مقاومات تصريف (resistance_zones)، NOT أهداف ربح.
+- أضفت _candle_ohlc fallback لـ close_price/open_price (مشكلة NULL في DB).
+- عدّلت src/lib/canonical-signal.ts:
+  * classifyMoneyFlow: لو buy_pct < 45% أو net_flow < 0 → 🔴 ضغط بيعي/سيولة خارجة (لا "سيولة داخلة").
+  * classifyStockPhase: لو roc_10d < -3 + buy < 50 → "تخفيض" (هبوط مستمر).
+  * أضفت '🔴 ضغط بيعي قوي' لـ MoneyFlowState type.
+- عدّلت vps-service/api/stock_analysis_routes.py:
+  * _compute_hunter_assessment: Falling Knife Guard قبل حساب target.
+  * Step 3: Signal-Target Consistency — لو AVOID/SELL/STRONG_SELL → امسح entry/stop/target.
+
+Stage Summary:
+- ✅ AMES (falling knife حقيقي): is_falling_knife=True, targets_available=False, resistance_zones=[173.78, 166.0, 159.0].
+- ✅ EGREF (ليس falling knife): is_falling_knife=False (السهم صاعد 63% ثم استقر — ROC 10d = +2.37%).
+- ✅ classifyMoneyFlow: buy=30% + net_flow=-1000 → 🔴 ضغط بيعي قوي (لا "سيولة داخلة").
+- ✅ classifyStockPhase: buy=40% + roc=-5 → تخفيض.
+- ✅ Syntax: 3/3 files OK (institutional_levels + stock_analysis_routes + canonical-signal).

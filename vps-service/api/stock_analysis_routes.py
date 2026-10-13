@@ -513,6 +513,54 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
     # Previously fabricated target as ref_high * 1.05 / current * 1.15.
     # Now: use the real 30-day high as the target (resistance ceiling),
     # or NULL when no 30-day high data. Downstream skips risk_reward if None.
+    #
+    # ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 1 — Owner Directive) ──
+    # Falling Knife Guard: لو السهم في مسار هابط (price < MA50 - 5% + MA50 < MA200)
+    # → يُمنع اعتبار القمم السابقة كـ target_price للشراء.
+    # القمم = مقاومات تصريف (Resistance / Exit Zones)، NOT أهداف ربح.
+    ma50 = _safe_float(basic.get('ma_50'))
+    ma200 = _safe_float(basic.get('ma_200'))
+    falling_knife_guard = None
+    try:
+        from analyzers.institutional_levels import detect_falling_knife
+        falling_knife_guard = detect_falling_knife(price_history, ma50, ma200)
+    except Exception:
+        pass
+
+    if falling_knife_guard and falling_knife_guard.get('is_falling_knife'):
+        # 🚨 Falling Knife — لا أهداف شراء. القمم = مقاومات تصريف فقط.
+        target = None
+        entry = None
+        risk_reward = None
+        risk = 0
+        reward = 0
+        risk_pct = 0
+        reward_pct = 0
+        entry_trigger = f"🚨 {falling_knife_guard.get('reason', 'Falling Knife')} — تجنب الشراء. القمم السابقة = مقاومات تصريف."
+        timeframe = "غير متاح (مسار هابط)"
+        result['available'] = True
+        result['eligible'] = False
+        result['entry'] = None
+        result['stop'] = None
+        result['target'] = None
+        result['risk_reward'] = None
+        result['support'] = round(support, 2) if support > 0 else 0.0
+        result['resistance'] = round(resistance, 2) if resistance > 0 else 0.0
+        result['risk_pct'] = 0.0
+        result['reward_pct'] = 0.0
+        result['entry_trigger'] = entry_trigger
+        result['timeframe'] = timeframe
+        result['narrative'] = [
+            f"🚨 تحذير: السهم في مسار هابط (Falling Knife).",
+            f"السعر {falling_knife_guard.get('price_vs_ma50_pct', 0):.1f}% أدنى من MA50.",
+            f"القمم السابقة = مقاومات تصريف ({falling_knife_guard.get('resistance_zones', [])})، NOT أهداف ربح.",
+            f"لا توجد صفقة شراء موصى بها (Rule 27 — لا اختلاق أهداف وهمية).",
+        ]
+        result['reason'] = 'falling_knife_guard_active'
+        result['falling_knife'] = falling_knife_guard
+        return result
+
+    # لو not falling knife → احسب target بشكل طبيعي
     if max_high_30d > 0:
         ref_high = max(max_high_30d, current_price)
         target = ref_high  # real 30-day high as the resistance ceiling (no *1.05)
@@ -880,6 +928,28 @@ def deep_analysis():
 
     # 5) hunter assessment (entry/stop/target/R-R)
     hunter = _compute_hunter_assessment(basic, price_history)
+
+    # ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 3 — Signal-Target Consistency) ──
+    # لو التوصية AVOID/SELL/STRONG_SELL أو لا يوجد نموذج كمي مكتمل:
+    # لا توليد entry_price/stop_loss توحي بصفقة شراء (Rule 27 — لا اختلاق).
+    _signal_upper = str(basic.get('signal', '')).upper()
+    _avoid_signals = ('AVOID', 'SELL', 'STRONG_SELL', 'WAIT', '')
+    if _signal_upper in _avoid_signals:
+        if hunter.get('eligible'):
+            hunter['eligible'] = False
+            hunter['entry'] = None
+            hunter['stop'] = None
+            hunter['target'] = None
+            hunter['risk_reward'] = None
+            hunter['risk_pct'] = 0.0
+            hunter['reward_pct'] = 0.0
+            hunter['entry_trigger'] = f"لا توجد صفقة شراء — الإشارة: {basic.get('signal', 'N/A')}"
+            hunter['timeframe'] = "غير متاح"
+            hunter['reason'] = 'signal_target_consistency_avoid_sell'
+            hunter['narrative'] = [
+                f"الإشارة الفنية: {basic.get('signal', 'N/A')} — لا يوجد نموذج كمي مكتمل لصفقة شراء.",
+                f"Rule 27: لا اختلاق entry_price/stop_loss لواجح للشراء.",
+            ]
 
     elapsed_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
