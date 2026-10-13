@@ -256,6 +256,24 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
     data?.position_warning ||
     (decision && techScore !== null && techScore < 40);
 
+  // ALPHA-P0: شارة تصنيف الطور الديناميكي (Regime Differentiation)
+  // تفرق بوضوح بين: سكين ساقطة / تصحيح صاعد / تذبذب عرضي
+  const regimeBadge = (() => {
+    if (flightState?.state === 'falling_down' || makerState?.state === 'distribution') {
+      return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-300 dark:border-red-800' };
+    }
+    if (flightState?.state === 'taking_off' && chgPct < 0 && chgPct > -5) {
+      return { label: '🟡 تصحيح في مسار صاعد', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-300 dark:border-amber-800' };
+    }
+    if (makerState?.state === 'accumulation' || (chgPct >= -2 && chgPct <= 2)) {
+      return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-300 dark:border-orange-800' };
+    }
+    if (flightState?.state === 'taking_off') {
+      return { label: '🟢 مسار صاعد صحي', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-300 dark:border-emerald-800' };
+    }
+    return null;
+  })();
+
   // ─── Quick-Add Price Alert ──────────────────────────────────────────────────
   const handleQuickAddAlert = useCallback(async () => {
     if (quickAdding) return;
@@ -512,8 +530,13 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════════
-          §2 — تحذير السوق / السيولة (شريط رفيع فقط لو خطر حقيقي)
+          §2 — شارة الطور الديناميكي + تحذير السوق (Regime Differentiation)
       ════════════════════════════════════════════════════════════════════════ */}
+      {regimeBadge && (
+        <div className={cn('px-4 py-1.5 border-b text-xs flex items-center gap-2', regimeBadge.bg, regimeBadge.border)}>
+          <span className={cn('font-bold', regimeBadge.color)}>{regimeBadge.label}</span>
+        </div>
+      )}
       {hasMarketWarning && (
         <div className="px-4 py-1.5 bg-rose-50 dark:bg-rose-950/20 border-b border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
           <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
@@ -576,7 +599,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-              لا توجد بيانات شارت متاحة
+              <div className="text-center space-y-1">
+                <p>بانتظار تحميل الشموع — يتم التحميل تلقائياً</p>
+                <p className="text-[10px]">إذا لم تظهر خلال لحظات، يمكن للسهم غير متوفر على TradingView</p>
+              </div>
             </div>
           )}
         </div>

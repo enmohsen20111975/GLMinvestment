@@ -139,10 +139,18 @@ function fmtVolume(value: number | null | undefined): string {
   return intFmt.format(value);
 }
 
-/** "منذ X ثانية/دقيقة" — نسخة محلية (بدون التأثير على جذر التطبيق). */
+/** "منذ X ثانية/دقيقة" — نسخة محلية (بدون التأثير على جذر التطبيق).
+ *  ALPHA-P0: معالجة الـ UTC offset — إذا كان الـ timestamp بدون 'Z' أو timezone،
+ *  نضيف 'Z' تلقائياً لنتجنب ظهور "منذ 5 ساعات" للبيانات الطازجة.
+ */
 function relTime(dateString: string | null | undefined): string {
   if (!dateString) return '—';
-  const d = new Date(dateString);
+  // ALPHA-P0: لو الـ timestamp بدون timezone marker → نضيف 'Z' (UTC)
+  let normalized = dateString.trim();
+  if (!normalized.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(normalized)) {
+    normalized = normalized + 'Z';
+  }
+  const d = new Date(normalized);
   if (Number.isNaN(d.getTime())) return '—';
   let diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
   if (diffSec < 0) diffSec = 0;
