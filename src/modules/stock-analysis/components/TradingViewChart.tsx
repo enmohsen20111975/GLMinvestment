@@ -4,10 +4,13 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useTheme } from 'next-themes';
 import {
   createChart,
+  createSeriesMarkers,
   ColorType,
   CrosshairMode,
   LineStyle,
   type IChartApi,
+  type IPriceLine,
+  type SeriesMarker,
   type Time,
   type DeepPartial,
   type ChartOptions,
@@ -37,10 +40,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { getEGXMarketStatus } from '@/lib/market-hours';
 import { useAppStore } from '@/lib/store';
-import {
-  computeMultiPersonaScenarios,
-  type PersonaScenario,
-} from '@/lib/persona-dynamic';
+
 import { toast } from 'sonner';
 import {
   ZoomIn,
@@ -52,7 +52,6 @@ import {
   TrendingDown,
   Clock,
   Eye,
-  Users,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -109,12 +108,8 @@ const ATR_COLOR = '#6366F1';     // Indigo
 const OBV_COLOR = '#14B8A6';     // Teal
 
 export const RESOLUTIONS = [
-  { key: '5m', label: '5د', isIntraday: true },
-  { key: '15m', label: '15د', isIntraday: true },
-  { key: '30m', label: '30د', isIntraday: true },
-  { key: '1h', label: '1س', isIntraday: true },
-  { key: '1D', label: 'يومي', isIntraday: false },
-  { key: '1W', label: 'أسبوعي', isIntraday: false },
+  { key: 'D', label: 'يومي', isIntraday: false },
+  { key: 'W', label: 'أسبوعي', isIntraday: false },
 ];
 
 export const RANGES = [
@@ -607,296 +602,6 @@ function filterMarketHours(candles: OhlcvBar[]): OhlcvBar[] {
   return candles;
 }
 
-// P39-PHASE-3: Multi-Persona Dynamic Card — three scenarios on the same chart
-// -----------------------------------------------------------------------------
-// Renders 🛡️ المستثمر / ⚖️ المتوازن / 🔥 المضارب side-by-side using the shared
-// math library `computeMultiPersonaScenarios`. The user can override any input
-// (entry, ATR, regime, portfolio net worth, asset weight) and the three cards
-// recompute live via useMemo. Clicking a card updates the global active persona
-// in the store (with mapping aggressive → gambler for v2 compatibility) and
-// shows a sonner toast.
-function MultiPersonaDynamicCard({
-  ticker,
-  currentPrice,
-  candles,
-}: {
-  ticker: string;
-  currentPrice: number;
-  candles: OhlcvBar[];
-}) {
-  const persona = useAppStore((s) => s.persona);
-  const setPersona = useAppStore((s) => s.setPersona);
-  const v2Regime = useAppStore((s) => s.v2Data?.market?.regime);
-
-  // ATR(14) auto-estimate from recent OHLC (last 50 bars). Fallback = entry*0.03.
-  const autoAtr = useMemo<number | null>(() => {
-    const n = candles.length;
-    if (n < 15) return null;
-    const slice = candles.slice(Math.max(0, n - 50));
-    const trs: number[] = [];
-    for (let i = 1; i < slice.length; i++) {
-      const h = slice[i].high - slice[i].low;
-      const hc = Math.abs(slice[i].high - slice[i - 1].close);
-      const lc = Math.abs(slice[i].low - slice[i - 1].close);
-      trs.push(Math.max(h, hc, lc));
-    }
-    if (trs.length < 14) return null;
-    const last14 = trs.slice(-14);
-    return last14.reduce((a, b) => a + b, 0) / 14;
-  }, [candles]);
-
-  const defaultEntry =
-    currentPrice > 0
-      ? currentPrice
-      : candles.length > 0
-        ? candles[candles.length - 1].close
-        : 0;
-
-  const [entryInput, setEntryInput] = useState<string>(
-    defaultEntry > 0 ? String(defaultEntry.toFixed(3)) : '',
-  );
-  const [atrInput, setAtrInput] = useState<string>('');
-  const [autoAtrEnabled, setAutoAtrEnabled] = useState<boolean>(true);
-  const [regime, setRegime] = useState<'bull' | 'bear' | 'neutral'>(
-    (v2Regime as 'bull' | 'bear' | 'neutral') || 'neutral',
-  );
-  const [portfolioNetWorthEGP, setPortfolioNetWorthEGP] = useState<number>(100000);
-  const [portfolioLoaded, setPortfolioLoaded] = useState(false);
-  const [assetWeightPct, setAssetWeightPct] = useState<number>(10);
-
-  // Fetch portfolio net worth once on mount (default 100000 on failure)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/finance/calculate-values', { cache: 'no-store' });
-        if (res.ok) {
-          const j = await res.json();
-          const v =
-            j?.net_worth_egp ??
-            j?.total_net_worth_egp ??
-            j?.total_egp ??
-            null;
-          if (!cancelled && typeof v === 'number' && v > 0) {
-            setPortfolioNetWorthEGP(v);
-          }
-        }
-      } catch {
-        // keep default 100000
-      } finally {
-        if (!cancelled) setPortfolioLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const entry = useMemo(() => {
-    const parsed = parseFloat(entryInput);
-    return isNaN(parsed) || parsed <= 0 ? defaultEntry : parsed;
-  }, [entryInput, defaultEntry]);
-
-  const atr = useMemo(() => {
-    if (autoAtrEnabled) {
-      return autoAtr ?? entry * 0.03;
-    }
-    const parsed = parseFloat(atrInput);
-    return isNaN(parsed) || parsed < 0
-      ? (autoAtr ?? entry * 0.03)
-      : parsed;
-  }, [atrInput, autoAtrEnabled, autoAtr, entry]);
-
-  const scenarios = useMemo<PersonaScenario[]>(() => {
-    if (entry <= 0) return [];
-    return computeMultiPersonaScenarios(
-      entry,
-      atr,
-      regime,
-      portfolioNetWorthEGP,
-      Math.max(0, Math.min(1, assetWeightPct / 100)),
-    );
-  }, [entry, atr, regime, portfolioNetWorthEGP, assetWeightPct]);
-
-  const activePersonaVector: 'conservative' | 'balanced' | 'aggressive' =
-    (persona as string) === 'conservative'
-      ? 'conservative'
-      : (persona as string) === 'gambler' || (persona as string) === 'aggressive'
-        ? 'aggressive'
-        : 'balanced';
-
-  const arNum = new Intl.NumberFormat('ar-EG');
-  const arNum3 = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 3 });
-
-  const handleCardClick = (s: PersonaScenario) => {
-    const personaToSet = s.persona === 'aggressive' ? 'gambler' : s.persona;
-    setPersona(personaToSet);
-    toast.success(`تم تغيير الشخصية إلى ${s.emoji} ${s.labelAr}`);
-  };
-
-  return (
-    <Card dir="rtl" className="rounded-none border-x-0 border-b-0 border-t bg-muted/5">
-      <CardContent className="px-4 py-3">
-        <div className="mb-3 flex items-center gap-2 flex-wrap">
-          <Users className="size-4 text-primary" />
-          <span className="text-sm font-bold">بطاقة الشخصيات الديناميكية</span>
-          <Badge variant="secondary" className="text-[10px]">{ticker}</Badge>
-          {!portfolioLoaded && (
-            <span className="text-[10px] text-muted-foreground">… جارٍ تحميل صافي المحفظة</span>
-          )}
-        </div>
-
-        {/* Inputs */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">سعر الدخول</Label>
-            <Input
-              type="number"
-              dir="ltr"
-              value={entryInput}
-              onChange={(e) => setEntryInput(e.target.value)}
-              placeholder={defaultEntry > 0 ? (defaultEntry ?? 0).toFixed(3) : '0'}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <Label className="text-[10px] text-muted-foreground">
-                ATR {autoAtr ? `(تلقائي: ${(autoAtr ?? 0).toFixed(3)})` : '(تلقائي: —)'}
-              </Label>
-              <div className="flex items-center gap-1">
-                <Label className="text-[9px] text-muted-foreground">تلقائي</Label>
-                <Switch
-                  checked={autoAtrEnabled}
-                  onCheckedChange={setAutoAtrEnabled}
-                  className="scale-75 origin-right"
-                  aria-label="تفعيل ATR التلقائي"
-                />
-              </div>
-            </div>
-            <Input
-              type="number"
-              dir="ltr"
-              value={atrInput}
-              disabled={autoAtrEnabled}
-              onChange={(e) => setAtrInput(e.target.value)}
-              placeholder={autoAtr ? (autoAtr ?? 0).toFixed(3) : (entry * 0.03).toFixed(3)}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">حالة السوق</Label>
-            <Select
-              value={regime}
-              onValueChange={(v) => setRegime(v as 'bull' | 'bear' | 'neutral')}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="neutral">⚖️ محايد</SelectItem>
-                <SelectItem value="bull">🐂 صاعد</SelectItem>
-                <SelectItem value="bear">🐻 هابط</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">صافي المحفظة (ج.م)</Label>
-            <Input
-              type="number"
-              dir="ltr"
-              value={portfolioNetWorthEGP}
-              onChange={(e) => setPortfolioNetWorthEGP(parseFloat(e.target.value) || 0)}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1 col-span-2 md:col-span-1">
-            <Label className="text-[10px] text-muted-foreground">
-              وزن الأصل: {assetWeightPct}%
-            </Label>
-            <Slider
-              min={1}
-              max={30}
-              step={1}
-              value={[assetWeightPct]}
-              onValueChange={(v) => setAssetWeightPct(v[0] ?? 10)}
-              className="mt-2"
-            />
-          </div>
-        </div>
-
-        {/* Three side-by-side scenario cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-          {scenarios.map((s) => {
-            const isActive = s.persona === activePersonaVector;
-            return (
-              <button
-                key={s.persona}
-                type="button"
-                onClick={() => handleCardClick(s)}
-                className={cn(
-                  'text-right rounded-lg border bg-card p-3 transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                  isActive ? 'ring-2 ring-primary border-primary' : 'border-border',
-                )}
-                style={isActive ? { borderColor: s.color, boxShadow: `0 0 0 1px ${s.color}` } : undefined}
-                aria-pressed={isActive}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">{s.emoji}</span>
-                    <span className="text-sm font-bold" style={{ color: s.color }}>
-                      {s.labelAr}
-                    </span>
-                  </div>
-                  {isActive && (
-                    <Badge className="text-[10px] h-5 px-1.5">نشط</Badge>
-                  )}
-                </div>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">وقف الخسارة</span>
-                    <span className="font-medium text-red-500" dir="ltr">
-                      {arNum3.format(s.stopLoss)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">الهدف</span>
-                    <span className="font-medium text-emerald-500" dir="ltr">
-                      {arNum3.format(s.targetProfit)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">مخاطرة/عائد</span>
-                    <span className="font-medium" dir="ltr">
-                      {arNum3.format(s.riskRewardRatio)}:1
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">أقصى عدد أسهم</span>
-                    <span className="font-medium" dir="ltr">
-                      {arNum.format(s.maxPositionShares)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">قيمة المركز (ج.م)</span>
-                    <span className="font-medium" dir="ltr">
-                      {arNum.format(Math.round(s.maxPositionValueEGP))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">أقصى مخاطرة</span>
-                    <span className="font-medium" dir="ltr">{s.personaMaxRiskPct}%</span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function TradingViewChart({
@@ -910,6 +615,8 @@ export function TradingViewChart({
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const markersRef = useRef<any>(null);
+  const priceLinesRef = useRef<IPriceLine[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -917,7 +624,7 @@ export function TradingViewChart({
   const [lastPrice, setLastPrice] = useState<{ price: number; change: number; changePercent: number } | null>(null);
   const [hoveredPrice, setHoveredPrice] = useState<OhlcvBar | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [timeframe, setTimeframe] = useState<string>('1D');
+  const [timeframe, setTimeframe] = useState<string>('D');
   const [currentRange, setCurrentRange] = useState<string>('1w');
   const [dataSource, setDataSource] = useState<string>('intraday');
   const [chartType, setChartType] = useState<ChartType>('candlestick');
@@ -938,9 +645,12 @@ export function TradingViewChart({
   // Market status & display modes
   const [marketClosed, setMarketClosed] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [multiPersonaOpen, setMultiPersonaOpen] = useState(false);
   const currentMarket = useAppStore((s) => s.currentMarket);
   const [chartEngine, setChartEngine] = useState<'interactive' | 'tradingview_widget'>('tradingview_widget');
+  // GLM5.2-A (ALPHA-MARKERS): toggle states for markers + priceLines
+  const [showMakerMarkers, setShowMakerMarkers] = useState(true);
+  const [showTradeLines, setShowTradeLines] = useState(true);
+  const [showSRZones, setShowSRZones] = useState(false);
 
   const tvSymbol = useMemo(() => {
     const t = (ticker || 'PHDC').toUpperCase().trim();
@@ -957,11 +667,7 @@ export function TradingViewChart({
   }, [ticker, currentMarket]);
 
   const tvInterval = useMemo(() => {
-    if (timeframe === '5m') return '5';
-    if (timeframe === '15m') return '15';
-    if (timeframe === '30m') return '30';
-    if (timeframe === '1h') return '60';
-    if (timeframe === '1W') return 'W';
+    if (timeframe === 'W') return 'W';
     return 'D';
   }, [timeframe]);
 
@@ -1638,12 +1344,123 @@ export function TradingViewChart({
     // fitContent shows ALL candles at optimal zoom level.
     chart.timeScale().fitContent();
 
+    // ─── GLM5.2-A (ALPHA-MARKERS): Candlestick Markers + PriceLines ────────
+    if (candleSeriesRef.current && cleanData.length > 0) {
+      const allHighs = cleanData.map(b => b.high).filter(v => v > 0);
+      const allLows = cleanData.map(b => b.low).filter(v => v > 0);
+      const allCloses = cleanData.map(b => b.close).filter(v => v > 0);
+      const swingHigh = allHighs.length > 0 ? Math.max(...allHighs) : 0;
+      const swingLow = allLows.length > 0 ? Math.min(...allLows) : 0;
+      const lastClose = allCloses.length > 0 ? allCloses[allCloses.length - 1] : 0;
+      const swingRange = swingHigh - swingLow || 1;
+      const targetPrice = swingHigh > 0 ? swingHigh : lastClose * 1.05;
+      const stopPrice = swingLow > 0 ? swingLow : lastClose * 0.95;
+      const fib618 = swingHigh - swingRange * 0.618;
+
+      // ─── Markers (createSeriesMarkers — v5 API) ───────────────────────
+      const markers: SeriesMarker<Time>[] = [];
+      if (showMakerMarkers) {
+        // Entry marker on the last candle
+        markers.push({
+          time: barTime(cleanData[cleanData.length - 1]) as Time,
+          position: 'belowBar',
+          color: '#3b82f6',
+          shape: 'arrowUp',
+          text: 'دخول',
+        });
+
+        // Highest-volume candle (volume climax — maker activity)
+        let maxVolIdx = 0;
+        let maxVol = 0;
+        for (let i = 0; i < cleanData.length; i++) {
+          if (cleanData[i].volume > maxVol) {
+            maxVol = cleanData[i].volume;
+            maxVolIdx = i;
+          }
+        }
+        if (maxVolIdx > 0 && maxVolIdx < cleanData.length - 1) {
+          markers.push({
+            time: barTime(cleanData[maxVolIdx]) as Time,
+            position: 'aboveBar',
+            color: '#f59e0b',
+            shape: 'circle',
+            text: 'ذروة حجم',
+          });
+        }
+
+        // Lowest low (support bounce)
+        let lowestIdx = 0;
+        let lowestVal = Infinity;
+        for (let i = 0; i < cleanData.length; i++) {
+          if (cleanData[i].low < lowestVal && cleanData[i].low > 0) {
+            lowestVal = cleanData[i].low;
+            lowestIdx = i;
+          }
+        }
+        if (lowestIdx > 0) {
+          markers.push({
+            time: barTime(cleanData[lowestIdx]) as Time,
+            position: 'belowBar',
+            color: '#10b981',
+            shape: 'circle',
+            text: 'ارتداد دعم',
+          });
+        }
+
+        markers.sort((a, b) => (a.time as number) - (b.time as number));
+      }
+
+      // Use createSeriesMarkers (v5 API — replaces setMarkers)
+      if (markersRef.current) {
+        try { markersRef.current.setMarkers(markers); } catch { markersRef.current = null; }
+      }
+      if (!markersRef.current && candleSeriesRef.current) {
+        markersRef.current = createSeriesMarkers(candleSeriesRef.current, markers);
+      }
+
+      // ─── PriceLines ──────────────────────────────────────────────────
+      // Remove previous price lines
+      if (priceLinesRef.current.length > 0) {
+        priceLinesRef.current.forEach(pl => {
+          try { candleSeriesRef.current?.removePriceLine(pl); } catch { /* silent */ }
+        });
+        priceLinesRef.current = [];
+      }
+
+      if (candleSeriesRef.current && showTradeLines) {
+        priceLinesRef.current.push(candleSeriesRef.current.createPriceLine({
+          price: targetPrice, color: '#10b981', lineWidth: 2,
+          lineStyle: LineStyle.Solid, axisLabelVisible: true, title: '🎯 هدف الصفقة',
+        }));
+        priceLinesRef.current.push(candleSeriesRef.current.createPriceLine({
+          price: stopPrice, color: '#f23645', lineWidth: 2,
+          lineStyle: LineStyle.Solid, axisLabelVisible: true, title: '🛑 وقف الخسارة',
+        }));
+      }
+
+      if (candleSeriesRef.current && showSRZones) {
+        priceLinesRef.current.push(candleSeriesRef.current.createPriceLine({
+          price: fib618, color: '#f59e0b', lineWidth: 1,
+          lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: 'Fib 0.618',
+        }));
+        priceLinesRef.current.push(candleSeriesRef.current.createPriceLine({
+          price: swingHigh, color: '#ef4444', lineWidth: 1,
+          lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: 'مقاومة',
+        }));
+        priceLinesRef.current.push(candleSeriesRef.current.createPriceLine({
+          price: swingLow, color: '#10b981', lineWidth: 1,
+          lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: 'دعم',
+        }));
+      }
+    }
+
     // Cleanup on unmount
     return () => {
       chart.remove();
       chartRef.current = null;
+      markersRef.current = null;
     };
-  }, [data, indicators, focusMode, height, isFullscreen, isDark, chartType]);
+  }, [data, indicators, focusMode, height, isFullscreen, isDark, chartType, showMakerMarkers, showTradeLines, showSRZones]);
 
   // ─── Controls ──────────────────────────────────────────────────────────────
 
@@ -1871,7 +1688,8 @@ export function TradingViewChart({
 
           <div className="h-4 w-px bg-border hidden sm:block" />
 
-          {/* Chart Types */}
+          {/* Chart Types — only in interactive mode */}
+          {chartEngine === 'interactive' && (
           <div className="flex items-center bg-muted/70 p-0.5 rounded-md border border-border/60">
             {[
               { key: 'candlestick' as const, label: 'شموع' },
@@ -1892,7 +1710,11 @@ export function TradingViewChart({
               </button>
             ))}
           </div>
+          )}
 
+          {/* Resolutions — only in interactive mode */}
+          {chartEngine === 'interactive' && (
+          <>
           <div className="h-4 w-px bg-border hidden sm:block" />
 
           {/* Resolutions (Candle Intervals) — UI-FIX: added gap-1 for spacing */}
@@ -1922,6 +1744,8 @@ export function TradingViewChart({
               );
             })}
           </div>
+          </>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 mr-auto">
@@ -1938,23 +1762,12 @@ export function TradingViewChart({
             وضع التركيز
           </Button>
 
-          {/* Multi-Persona Dynamic Card Toggle */}
-          <Button
-            variant={multiPersonaOpen ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setMultiPersonaOpen((v) => !v)}
-            aria-pressed={multiPersonaOpen}
-            title={multiPersonaOpen ? 'إخفاء بطاقة الشخصيات' : 'إظهار بطاقة الشخصيات الديناميكية'}
-            className="h-7 px-2.5 text-xs gap-1"
-          >
-            <Users className="size-3.5" />
-            شخصيات متعددة
-          </Button>
+
         </div>
       </div>
 
-      {/* Indicator Toggles */}
-      {!focusMode && (
+      {/* Indicator Toggles — only in interactive mode */}
+      {!focusMode && chartEngine === 'interactive' && (
         <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border bg-muted/10 flex-wrap">
           <span className="text-[11px] text-muted-foreground font-medium ml-1">المؤشرات:</span>
           {[
@@ -2076,14 +1889,7 @@ export function TradingViewChart({
         </div>
       </div>
 
-      {/* P39-PHASE-3: Multi-Persona Dynamic Card — three scenarios on the same chart */}
-      {multiPersonaOpen && (
-        <MultiPersonaDynamicCard
-          ticker={ticker}
-          currentPrice={lastPrice?.price || 0}
-          candles={data}
-        />
-      )}
+
     </div>
   );
 }
