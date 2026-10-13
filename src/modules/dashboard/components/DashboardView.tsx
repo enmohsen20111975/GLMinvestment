@@ -28,6 +28,7 @@ import { MarketPulseWidget } from '@/modules/dashboard/components/MarketPulseWid
 import { LiveMonitor } from '@/modules/dashboard/components/LiveMonitor';
 // A11Y-FIX (2026-10-09, Team 8): wrap major widgets في ErrorBoundary
 import { withErrorBoundary, ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { TimeHorizonBadge } from '@/components/shared/TimeHorizonBadge';
 // MARKET-DEPTH-VIEW: InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel
 // اتشالوا من هنا واتنقلوا لشاشة #market-depth المنفصلة (Owner directive: شاشة
 // منفصلة من قائمة الأعلى). الـ Dashboard دلوقتي نضيف بدونها.
@@ -446,9 +447,13 @@ export function DashboardView() {
                             </div>
                             {/* R:R + Confidence */}
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">R/R: <span className="font-mono font-bold">{rr}</span></span>
+                              <span className="text-muted-foreground">R/R: <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{rrDisplay}</span></span>
                               <span className="text-muted-foreground">ثقة: <span className="font-bold">{stock.confidence?.toFixed(0) || '—'}%</span></span>
                             </div>
+                            {/* T-ALPHA-A1: Time Horizon Glowing Badge */}
+                            {(stock as Record<string, unknown>).persona ? (
+                              <TimeHorizonBadge persona={String((stock as Record<string, unknown>).persona)} size="sm" />
+                            ) : null}
                           </CardContent>
                         </Card>
                       );

@@ -144,7 +144,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
     : { label: 'متوازن', tone: 'neutral' };
 
   return (
-    <Card dir="rtl" className="w-full">
+    <Card dir="rtl" className="w-full overflow-x-hidden">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -320,7 +320,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                               />
                             </div>
                           </div>
-                          <div className="text-[9px] text-muted-foreground flex items-center justify-between">
+                          <div className="text-[8px] sm:text-[9px] text-muted-foreground flex items-center justify-between overflow-hidden">
                             <span className="text-red-600/80">{formatNumber(b.sell_volume)}</span>
                             <span>{formatNumber(b.total_volume)} حصة</span>
                             <span className="text-emerald-500/80">{formatNumber(b.buy_volume)}</span>
@@ -404,7 +404,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
             })()}
 
             {/* Volume totals */}
-            <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-[11px] overflow-hidden">
               <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
                 <div className="text-[10px] text-muted-foreground">إجمالي شراء</div>
                 <div className="font-bold text-emerald-500 dark:text-emerald-400">{formatNumber(session!.total_buy_volume)}</div>

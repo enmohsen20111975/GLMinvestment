@@ -33,6 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { TimeHorizonBadge } from '@/components/shared/TimeHorizonBadge';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
 // Task 23-C Deliverable 2 — inline Sharia badge next to each radar pick.
@@ -885,6 +886,8 @@ interface PredictionEntry {
   entry_price: number | null;   // ← FIX: was missing (caused entry column to show '—' / 0)
   target_price: number | null;
   stop_loss: number | null;
+  persona?: string | null;      // T-ALPHA-A1: for time-horizon badge mapping
+  risk_reward?: number | null;  // T-ALPHA-A1: for bold R:R display
 }
 
 export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
@@ -1057,6 +1060,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             entry_price: row.entry_price != null ? Number(row.entry_price) : null, // ← FIX: store entry_price
             target_price: row.target_price != null ? Number(row.target_price) : null,
             stop_loss: row.stop_loss != null ? Number(row.stop_loss) : null,
+            persona: row.persona || null, // T-ALPHA-A1: store persona for badge
+            risk_reward: row.risk_reward != null ? Number(row.risk_reward) : null, // T-ALPHA-A1: store R:R
           });
         }
       }
@@ -3586,9 +3591,21 @@ const StockTable = memo(function StockTable({
         // اعرض canonical signal من prediction (لو متوفر) بدل fabrication.
         if (pred?.signal_ar) {
           return (
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300">
-              {pred.signal_ar}
-            </Badge>
+            <div className="flex flex-col items-center gap-0.5">
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300">
+                {pred.signal_ar}
+              </Badge>
+              {/* T-ALPHA-A1: Time Horizon Glowing Badge */}
+              {pred?.persona && (
+                <TimeHorizonBadge persona={pred.persona} size="sm" />
+              )}
+              {/* T-ALPHA-A1: Bold R:R display */}
+              {pred?.risk_reward != null && Number(pred.risk_reward) > 0 && (
+                <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                  R:R 1:{Number(pred.risk_reward).toFixed(1)}
+                </span>
+              )}
+            </div>
           );
         }
         // لا توقع → لا قرار client-side. اعرض توجيه للـ canonical API.
