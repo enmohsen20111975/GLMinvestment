@@ -13,7 +13,6 @@
  * operation in try/catch — they never throw, they only log + return defaults.
  */
 
-import Database, { type Database as DatabaseType } from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { logger } from '@/lib/logger';
@@ -26,21 +25,56 @@ import type { SnapshotData, Pm2Process } from '@/lib/metrics-collector';
 export type { SnapshotData, Pm2Process };
 
 // ---------------------------------------------------------------------------
+// Lazy better-sqlite3 loader (native module — may be unavailable in some envs)
+// We use createRequire at runtime so Turbopack does NOT try to resolve
+// 'better-sqlite3' at build time. If the module is missing, getDb() returns
+// null and all public functions no-op gracefully.
+// ---------------------------------------------------------------------------
+type DatabaseType = {
+  pragma: (s: string) => void;
+  exec: (s: string) => void;
+  prepare: (s: string) => { run: (...args: unknown[]) => void; all: (...args: unknown[]) => unknown[]; get: (...args: unknown[]) => unknown };
+  close: () => void;
+};
+
+let _DatabaseCtor: ((path: string, opts?: Record<string, unknown>) => DatabaseType) | null | undefined;
+let _db: DatabaseType | null = null;
+
+function loadDatabaseCtor(): ((path: string, opts?: Record<string, unknown>) => DatabaseType) | null {
+  if (_DatabaseCtor !== undefined) return _DatabaseCtor;
+  try {
+    // createRequire lets us load a CJS native module at runtime without
+    // Turbopack statically resolving 'better-sqlite3' at build time.
+    const { createRequire } = require('module');
+    const nodeRequire = createRequire(import.meta.url);
+    const mod = nodeRequire('better-sqlite3');
+    _DatabaseCtor = mod.default || mod;
+    return _DatabaseCtor;
+  } catch (e) {
+    logger.warn('[metrics-db] better-sqlite3 unavailable — metrics collector disabled', {
+      err: e instanceof Error ? e.message : String(e),
+    });
+    _DatabaseCtor = null;
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // DB bootstrap
 // ---------------------------------------------------------------------------
 
 const DB_DIR = path.join(process.cwd(), 'db');
 const DB_PATH = path.join(DB_DIR, 'metrics.db');
 
-let _db: DatabaseType | null = null;
-
 function getDb(): DatabaseType | null {
   if (_db) return _db;
+  const DatabaseCtor = loadDatabaseCtor();
+  if (!DatabaseCtor) return null;
   try {
     if (!fs.existsSync(DB_DIR)) {
       fs.mkdirSync(DB_DIR, { recursive: true });
     }
-    _db = new Database(DB_PATH, { timeout: 5000 });
+    _db = DatabaseCtor(DB_PATH, { timeout: 5000 });
     _db.pragma('journal_mode = WAL');
     _db.pragma('synchronous = NORMAL');
     _db.pragma('busy_timeout = 5000');

@@ -54,35 +54,77 @@ def _to_float(v: Any, default: float = 0.0) -> float:
 
 
 def get_stock_candles(conn: sqlite3.Connection, ticker: str, market: str) -> List[Tuple]:
-    """جلب شموع السهم التاريخية المدمجة من كافة قواعد البيانات المتاحة."""
-    query = """
-        SELECT d, open, high, low, close, volume FROM (
-            SELECT price_date as d,
-                   COALESCE(open, open_price) as open,
-                   COALESCE(high, high_price) as high,
-                   COALESCE(low, low_price) as low,
-                   COALESCE(close, close_price) as close,
-                   volume
-            FROM stock_daily_prices
-            WHERE ticker = ? AND COALESCE(close, close_price) > 0
-            UNION
+    """جلب شموع السهم التاريخية المدمجة من كافة قواعد البيانات المتاحة.
+
+    Task B-17 fix (2026-10-14): بناء الاستعلام ديناميكيًا حسب الجداول
+    المتاحة فعلًا. الساندبوكس قد لا يحتوي على price_history.db أو
+    data_engine.db (فارغ)، فلا نُضمّن UNION لجداول غير موجودة وإلا
+    نحصل على OperationalError. نكتشف الجداول المرفقة (ATTACHed) أولًا.
+    """
+    # اكتشف الجداول المتاحة فعلاً في الـ connection
+    available_tables = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    ).fetchall()}
+    # الجداول المرفقة تظهر بـ prefix.schema_name
+    attached_dbs = {row[1] for row in conn.execute("PRAGMA database_list").fetchall()}
+    has_ph = 'ph' in attached_dbs and bool(conn.execute(
+        "SELECT name FROM ph.sqlite_master WHERE type='table' AND name='price_history'"
+    ).fetchall()) if 'ph' in attached_dbs else False
+    has_de = 'de' in attached_dbs and bool(conn.execute(
+        "SELECT name FROM de.sqlite_master WHERE type='table' AND name='historical_data'"
+    ).fetchall()) if 'de' in attached_dbs else False
+
+    parts = []
+    params: List[Any] = []
+    # المصدر الأساسي دائمًا متاح: stock_daily_prices في stocks.db
+    parts.append("""
+        SELECT price_date as d,
+               COALESCE(open, open_price) as open,
+               COALESCE(high, high_price) as high,
+               COALESCE(low, low_price) as low,
+               COALESCE(close, close_price) as close,
+               volume
+        FROM stock_daily_prices
+        WHERE ticker = ? AND COALESCE(close, close_price) > 0
+    """)
+    params.append(ticker)
+    if has_ph:
+        parts.append("""
             SELECT date as d, open_price as open, high_price as high, low_price as low, close_price as close, volume
             FROM ph.price_history
             WHERE ticker = ? AND close_price > 0
-            UNION
+        """)
+        params.append(ticker)
+    if has_de:
+        parts.append("""
             SELECT date as d, open, high, low, close, volume
             FROM de.historical_data
             WHERE symbol = ? AND close > 0
-        )
-        ORDER BY d DESC LIMIT 30
-    """
-    return conn.execute(query, (ticker, ticker, ticker)).fetchall()
+        """)
+        params.append(ticker)
+
+    union_query = " UNION ".join(parts)
+    query = f"SELECT d, open, high, low, close, volume FROM ({union_query}) ORDER BY d DESC LIMIT 30"
+    return conn.execute(query, params).fetchall()
 
 
 def scan_market(conn: sqlite3.Connection, market: str) -> Tuple[List[Dict[str, Any]], int, int]:
     """افحص سوقًا واحدًا وأرجع الفرص المؤسسية المؤهلة."""
     if market == 'US':
-        # السوق الأمريكي من data_engine.db
+        # السوق الأمريكي من data_engine.db — تحقق من توفره أولًا
+        has_de = 'de' in {row[1] for row in conn.execute("PRAGMA database_list").fetchall()}
+        if has_de:
+            try:
+                de_tables = [r[0] for r in conn.execute(
+                    "SELECT name FROM de.sqlite_master WHERE type='table'"
+                ).fetchall()]
+            except Exception:
+                de_tables = []
+        else:
+            de_tables = []
+        if not has_de or 'historical_data' not in de_tables:
+            log(f"  [{market}] data_engine.db غير متاح أو فارغ — تخطي السوق", "WARN")
+            return [], 0, 0
         rows = conn.execute("""
             SELECT DISTINCT symbol as ticker, name, close as current_price,
                    'US' as market, 'US Equities' as sector,
@@ -294,52 +336,101 @@ def scan_market(conn: sqlite3.Connection, market: str) -> Tuple[List[Dict[str, A
 
 
 def write_predictions_canonical(opportunities: List[Dict[str, Any]]) -> int:
-    """كتابة الفرص المعتمدة مباشرة في SSOT الوحيد: db/predictions.db."""
-    if not PREDICTIONS_DB.exists():
-        log(f"predictions.db غير موجود: {PREDICTIONS_DB}", "ERROR")
+    """كتابة الفرص المعتمدة مباشرة في SSOT الموحد: db/stocks.db.predictions.
+
+    Task B-17 fix (2026-10-14): الكتابة في stocks.db (وليس predictions.db
+    المعزول) لأنها القاعدة التي يقرأ منها الـ frontend والـ commercial_feed.
+    الأعمدة الإضافية (rr, confidence, market, horizon, signal_ar) تُخزَّن
+    في عمود notes كـ JSON مُنسَّق لأن schema stocks.db.predictions لا يحتوي
+    على أعمدة منفصلة لها. هذا يحمي من تعارض schema ويبقي Python هو العقل.
+    """
+    import json as _json
+
+    if not STOCKS_DB.exists():
+        log(f"stocks.db غير موجود: {STOCKS_DB}", "ERROR")
         return 0
 
-    conn_pred = sqlite3.connect(str(PREDICTIONS_DB))
+    conn_pred = sqlite3.connect(str(STOCKS_DB))
     written = 0
     now_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     now_iso = datetime.now(timezone.utc).isoformat()
 
+    # تحقق من أعمدة predictions في stocks.db
+    cols = [r[1] for r in conn_pred.execute("PRAGMA table_info(predictions)").fetchall()]
+    has_highest = 'highest_price_reached' in cols
+    has_lowest = 'lowest_price_reached' in cols
+
     for opp in opportunities:
         try:
-            # حذف أي إشارة سابقة بنفس النوع واليوم لمنع التكرار
+            # حذف أي إشارة سابقة بنفس الـ ticker واليوم ونوع institutional_scan
+            # لمنع التكرار عند إعادة التشغيل (idempotent)
             conn_pred.execute("""
                 DELETE FROM predictions
                 WHERE ticker = ? AND prediction_date = ? AND signal_type = 'institutional_scan'
             """, (opp['ticker'], now_date))
 
-            conn_pred.execute("""
-                INSERT INTO predictions (
-                    ticker, signal, signal_type, signal_ar, prediction_date,
-                    entry_price, target_price, stop_loss, risk_reward, confidence,
-                    master_score, technical_score, fundamental_score, market,
-                    status, horizon, notes, created_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                opp['ticker'],
-                opp['signal'],
-                'institutional_scan',
-                opp['signal_ar'],
-                now_date,
-                opp['entry_price'],
-                opp['target_price'],
-                opp['stop_loss'],
-                opp['rr'],
-                opp['confidence'],
-                opp['confidence'],
-                opp['confidence'],
-                0.0,
-                opp['market'],
-                'ACTIVE',
-                opp['horizon'],
-                f"Institutional Quant Scan (R:R={opp['rr']}, RSI={opp['rsi']}, Vol={opp['vol_ratio']}x)",
-                now_iso,
-            ))
+            # بناء عمود notes يحوي كل المعلومات الكمية الإضافية كـ JSON
+            notes_payload = _json.dumps({
+                'rr': opp['rr'],
+                'confidence': opp['confidence'],
+                'market': opp['market'],
+                'horizon': opp['horizon'],
+                'signal_ar': opp.get('signal_ar', ''),
+                'rsi': opp['rsi'],
+                'vol_ratio': opp['vol_ratio'],
+                'roc_10d': opp.get('roc_10d', 0),
+                'atr': opp.get('atr', 0),
+                'source': 'institutional_quant_scan_v2',
+            }, ensure_ascii=False)
+
+            # إدراج بأعمدة stocks.db.predictions الفعلية
+            if has_highest and has_lowest:
+                conn_pred.execute("""
+                    INSERT INTO predictions (
+                        ticker, signal, signal_type, prediction_date,
+                        entry_price, target_price, stop_loss,
+                        master_score, technical_score, fundamental_score,
+                        notes, created_at,
+                        highest_price_reached, lowest_price_reached
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+                """, (
+                    opp['ticker'],
+                    opp['signal'],
+                    'institutional_scan',
+                    now_date,
+                    opp['entry_price'],
+                    opp['target_price'],
+                    opp['stop_loss'],
+                    opp['confidence'],
+                    opp['confidence'],
+                    0.0,
+                    notes_payload,
+                    now_iso,
+                ))
+            else:
+                conn_pred.execute("""
+                    INSERT INTO predictions (
+                        ticker, signal, signal_type, prediction_date,
+                        entry_price, target_price, stop_loss,
+                        master_score, technical_score, fundamental_score,
+                        notes, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    opp['ticker'],
+                    opp['signal'],
+                    'institutional_scan',
+                    now_date,
+                    opp['entry_price'],
+                    opp['target_price'],
+                    opp['stop_loss'],
+                    opp['confidence'],
+                    opp['confidence'],
+                    0.0,
+                    notes_payload,
+                    now_iso,
+                ))
             written += 1
         except Exception as e:
             log(f"INSERT failed for {opp['ticker']}: {e}", "WARN")
@@ -350,16 +441,39 @@ def write_predictions_canonical(opportunities: List[Dict[str, Any]]) -> int:
 
 
 def main() -> int:
+    global MIN_RR, MIN_CONFIDENCE, TARGET_RR
     parser = argparse.ArgumentParser(description="محرك المسح المؤسسي متعدد الأسواق — النسخة المعتمدة")
-    parser.add_argument("--execute", action="store_true", help="كتابة التوصيات في predictions.db")
+    parser.add_argument("--execute", action="store_true", help="كتابة التوصيات في stocks.db.predictions (SSOT)")
     parser.add_argument("--market", type=str, default=None, help="فحص سوق محدد (EGX, TADAWUL, KSE, QSE, US)")
+    parser.add_argument("--strict", action="store_true",
+                        help="الفلتر المؤسسي الصارم: R:R ≥ 2.0 + الثقة ≥ 78% (STRONG_BUY فقط)")
+    parser.add_argument("--min-rr", type=float, default=None, help="تجاوز الحد الأدنى لـ R:R (default 1.5)")
+    parser.add_argument("--min-confidence", type=float, default=None, help="تجاوز الحد الأدنى للثقة (default 65)")
+    parser.add_argument("--top", type=int, default=0,
+                        help="اقتصر على أعلى N فرصة فقط بعد الترتيب بالثقة ثم R:R (0 = الكل)")
+    parser.add_argument("--strong-only", action="store_true",
+                        help="اكتب STRONG_BUY فقط (confidence ≥ 78%) في الـ DB")
     args = parser.parse_args()
+
+    # تطبيق الفلاتر الصارمة
+    if args.strict:
+        MIN_RR = 2.0
+        MIN_CONFIDENCE = 78.0
+        TARGET_RR = 2.0
+    if args.min_rr is not None:
+        MIN_RR = args.min_rr
+    if args.min_confidence is not None:
+        MIN_CONFIDENCE = args.min_confidence
 
     log("=" * 75)
     log("🌍 محرك المسح المؤسسي متعدد الأسواق — Multi-Market Institutional Quant Engine")
     log("=" * 75)
-    log(f"Mode: {'⚡ EXECUTE (Write to predictions.db)' if args.execute else '🔍 DRY-RUN (Audit Report Only)'}")
+    log(f"Mode: {'⚡ EXECUTE (Write to stocks.db.predictions)' if args.execute else '🔍 DRY-RUN (Audit Report Only)'}")
     log(f"Filters: R:R ≥ {MIN_RR} | Confidence ≥ {MIN_CONFIDENCE}% | Volume ≥ {MIN_VOLUME_RATIO}x | RSI < {MAX_RSI}")
+    if args.strict:
+        log("🔒 STRICT MODE مفعّل — STRONG_BUY فقط (R:R ≥ 2.0 + ثقة ≥ 78%)")
+    if args.top:
+        log(f"🔝 TOP filter: سيتم اقتضاء أعلى {args.top} فرصة فقط")
     log("")
 
     if not STOCKS_DB.exists():
@@ -400,10 +514,21 @@ def main() -> int:
 
     conn.close()
 
-    # كتابة الفرص في قاعدة بيانات predictions المعتمدة
+    # فلترة STRONG_BUY فقط لو طُلب
+    if args.strong_only:
+        all_opportunities = [o for o in all_opportunities if o['signal'] == 'STRONG_BUY']
+        log(f"🔒 فلتر STRONG_BUY فقط: تبقى {len(all_opportunities)} فرصة")
+
+    # اقتضاء أعلى N فرصة بعد الترتيب بالثقة ثم R:R
+    if args.top and args.top > 0 and len(all_opportunities) > args.top:
+        all_opportunities.sort(key=lambda o: (o['confidence'], o['rr']), reverse=True)
+        all_opportunities = all_opportunities[:args.top]
+        log(f"🔝 TOP {args.top}: تم اقتضاء أفضل {len(all_opportunities)} فرصة بالثقة ثم R:R")
+
+    # كتابة الفرص في قاعدة بيانات predictions المعتمدة (stocks.db)
     written_count = 0
     if args.execute and all_opportunities:
-        log("📝 جاري كتابة الفرص في db/predictions.db...")
+        log("📝 جاري كتابة الفرص في db/stocks.db.predictions (SSOT)...")
         written_count = write_predictions_canonical(all_opportunities)
         log(f"تمت كتابة {written_count} فرصة بنجاح في جدول predictions المعتمد!", "OK")
     elif not args.execute:

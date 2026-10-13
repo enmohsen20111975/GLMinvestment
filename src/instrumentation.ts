@@ -27,6 +27,9 @@ export async function register() {
   // retention every ~15 min, and runs anomaly detection every ~1 min.
   // Runs in the Node.js runtime only.
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // metrics-db.ts internally guards the better-sqlite3 native import — if the
+    // module is unavailable (e.g. sandbox), getDb() returns null and all
+    // public functions no-op. Safe to import unconditionally here.
     try {
       const { collectSnapshot } = await import('./lib/metrics-collector');
       const { insertSnapshot, runRetention, detectAnomalies } = await import('./lib/metrics-db');

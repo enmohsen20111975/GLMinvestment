@@ -57,8 +57,8 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
             rows = conn.execute("""
                 SELECT p.ticker, p.signal, p.signal_type, p.entry_price,
                        p.target_price, p.stop_loss,
-                       p.master_score, p.technical_score, p.risk_reward,
-                       p.prediction_date,
+                       p.master_score, p.technical_score,
+                       p.prediction_date, p.notes,
                        s.name, s.name_ar, s.market, s.sector,
                        s.current_price
                 FROM predictions p
@@ -77,21 +77,46 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
                 stop = _to_float(d.get('stop_loss'))
                 target2 = 0.0  # target_price_2 may not exist
                 confidence = _to_float(d.get('master_score'))
-                rr_stored = _to_float(d.get('risk_reward'))
+
+                # Task B-18 fix (2026-10-14): الـ scan script بيخزّن الحقول
+                # الإضافية (rr, confidence, market, horizon, signal_ar) في
+                # عمود notes كـ JSON. استخرجها لو موجودة.
+                notes_meta = {}
+                notes_raw = d.get('notes') or ''
+                if notes_raw and isinstance(notes_raw, str) and notes_raw.strip().startswith('{'):
+                    try:
+                        notes_meta = json.loads(notes_raw)
+                    except Exception:
+                        notes_meta = {}
+
                 risk = entry - stop
                 reward = target - entry
-                rr = rr_stored if rr_stored > 0 else (round(reward / risk, 2) if risk > 0 else 0)
+                rr_notes = _to_float(notes_meta.get('rr'))
+                rr = rr_notes if rr_notes > 0 else (
+                    round(reward / risk, 2) if risk > 0 else 0
+                )
 
-                # الأفق الزمني
-                if rr >= 2.5:
-                    horizon = '⚡ يومية/قصيرة (1-5 أيام)'
-                    horizon_icon = '⚡'
-                elif rr >= 1.5:
-                    horizon = '🎯 أسبوعية/متوسطة (2-4 أسابيع)'
-                    horizon_icon = '🎯'
+                # الأفق الزمني — من notes_meta لو موجود، وإلا احسب من R:R
+                horizon = notes_meta.get('horizon') or ''
+                if horizon:
+                    horizon_icon = horizon[0] if horizon else '🎯'
                 else:
-                    horizon = '🛡️ استراتيجية (شهر+)'
-                    horizon_icon = '🛡️'
+                    if rr >= 2.5:
+                        horizon = '⚡ يومية/قصيرة (1-5 أيام)'
+                        horizon_icon = '⚡'
+                    elif rr >= 1.5:
+                        horizon = '🎯 أسبوعية/متوسطة (2-4 أسابيع)'
+                        horizon_icon = '🎯'
+                    else:
+                        horizon = '🛡️ استراتيجية (شهر+)'
+                        horizon_icon = '🛡️'
+
+                # الثقة: من notes_meta لو master_score = 0
+                if confidence == 0 and notes_meta.get('confidence'):
+                    confidence = _to_float(notes_meta.get('confidence'))
+
+                # السوق: من notes_meta لو stocks table مفيهوش market
+                market_val = d.get('market') or notes_meta.get('market') or 'EGX'
 
                 # الأهداف
                 target1_pct = round((target - entry) / entry * 100, 1) if entry > 0 else 0
@@ -99,9 +124,10 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
                 signals.append({
                     'ticker': d['ticker'],
                     'name': d.get('name_ar') or d.get('name') or d['ticker'],
-                    'market': d.get('market') or 'EGX',
+                    'market': market_val,
                     'sector': d.get('sector') or '',
                     'signal': d.get('signal') or 'BUY',
+                    'signal_ar': notes_meta.get('signal_ar', ''),
                     'signal_type': d.get('signal_type') or 'institutional_scan',
                     'entry_price': round(entry, 4),
                     'target_1': round(target, 4),

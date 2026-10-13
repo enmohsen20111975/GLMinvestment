@@ -69599,3 +69599,117 @@ Stage Summary:
 - ✅ NO Python files modified (Rule 4)
 - ✅ NO git push --force (Rule 81)
 - ⚠️ ملاحظة: CumulativePressureCurve component موجود في الكود لكن لم يظهر في الـ browser verification بسبب dev server cache issues (تم مسح .next/cache + restart). الكود صحيح وسيعمل على الـ VPS الإنتاج.
+
+---
+Task ID: BRAVO-B-17-B-18-B-19
+Agent: كبير المهندسين الكميين والرياضيات والذكاء الاصطناعي (Chief Quant & Math Lead — GLM 5.2 Bravo)
+Task: 3 كوارث حرجة — B-17 (صفقات حية طازجة + تنظيف القيعان الشاذة) + B-18 (API للـ Commercial Feed) + B-19 (رادار الميكرز الكامل)
+
+Work Log:
+
+**B-17a — تشخيص وتنظيف الفضيحة (win_rate=7.4%):**
+- فحصت predictions table في stocks.db: 56 صفقة، 54 مغلقة، 2 نشطة
+- التشخيص الكارثي: كل الـ 54 صفقة المغلقة عندها outcome_date < prediction_date (تواريخ مستحيلة!)
+  - 50 صفقة بـ lowest_price_reached=0.00 (قيعان شاذة قفلت الصفقات ظلمًا على stop-loss)
+  - 4 "انتصارات" أيضًا بتواريخ مستحيلة (outcome في أغسطس/سبتمبر، prediction في أكتوبر)
+  - كلها signal_type='institutional_scan' بتاريخ prediction_date=2026-10-13
+- كتبت scripts/clean_false_stoploss.py (idempotent + نسخة احتياطية):
+  - يحذف الصفقات بتواريخ مستحيلة (outcome < prediction)
+  - يزيل التكرارات في الصفقات النشطة
+- التنفيذ: حُذفت 54 صفقة فاسدة + 1 مكررة (SHUAIBA). بقيت 1 صفقة نشطة نظيفة.
+
+**B-17b — إصلاح multi_market_institutional_scan.py + توليد صفقات حية:**
+- المشكلة: السكريبت كان يكتب في predictions.db (معزول وغير موجود) بأعمدة غير متوافقة مع stocks.db
+- الإصلاحات:
+  1. write_predictions_canonical → يكتب في stocks.db.predictions (SSOT) بأعمدة schema الفعلية
+  2. الحقول الإضافية (rr, confidence, market, horizon, signal_ar) تُخزَّن في notes كـ JSON
+  3. get_stock_candles → بناء UNION ديناميكي حسب الجداول المتاحة (تخطّي data_engine.db الفارغ)
+  4. scan_market('US') → تخطّي آمن لو data_engine.db غير متاح
+  5. أضفت CLI flags: --strict (R:R≥2.0 + ثقة≥78%), --min-rr, --min-confidence, --top N, --strong-only
+- التنفيذ: `python3 scripts/multi_market_institutional_scan.py --execute --strict --top 12`
+  - مسح 1068 سهم (EGX 427 + TADAWUL 395 + KSE 179 + QSE 67)
+  - كُتبت 12 صفقة STRONG_BUY طازجة في stocks.db
+  - متوسط R:R = 2.30 | متوسط الثقة = 86.2%
+  - التوزيع: EGX 7 + TADAWUL 4 + KSE 1 (US تخطّي — data_engine فارغ)
+
+**B-18 — /api/v2/commercial-feed endpoint:**
+- حدّثت commercial_feed.py:
+  - أضفت قراءة notes JSON لاستخراج rr/confidence/market/horizon/signal_ar
+  - أضفت p.notes لـ SELECT
+  - أزلت p.risk_reward (عمود غير موجود في stocks.db)
+- بنيت src/app/api/v2/commercial-feed/route.ts:
+  - ينفّذ `python3 scripts/commercial_feed.py --json` عبر child_process (Python = العقل)
+  - كاش 30 ثانية في الذاكرة
+  - timeout 10 ثواني + fallback آمن (NO-FAKE-DATA)
+  - يعيد: active_live_signals + audited_performance_history + summary
+- اختبار: `curl /api/v2/commercial-feed` → JSON ناجح:
+  - 13 صفقة حية (avg R:R=2.27, avg confidence=85%)
+  - 0 صفقة مغلقة (سجل نظيف — لا بيانات وهمية)
+
+**B-19 — maker_radar.py full EGX scan:**
+- شغّلت `python3 scripts/maker_radar.py --market EGX --limit 0` (خلفية)
+- الناتج: scripts/output/maker_radar_EGX_20261013.json (1.1MB)
+- أنشأت نسخة كنسية: scripts/output/maker_radar.json
+- التحقق: 368 سهم ممسوح، كلهم عندهم net_cash_flow_egp + maker_phase + maker_phase_ar
+- توزيع الميكرز:
+  - 🤫 quiet_accumulation (تجميع صامت): 85 سهم — top: ORAS (434M), KORA (264M), FWRY (186M)
+  - ⚠️ distribution_exit (تصريف): 276 سهم
+  - 🚀 pre_explosion (تحضير لانفجار): 2 سهم
+  - neutral: 5 سهم
+
+**إصلاحات البنية التحتية الإجبارية (كانت بتكسر الـ dev server كله):**
+- postcss.config.mjs: Tailwind v4 → v3 (tailwindcss@3 + autoprefixer) — المشروع كله v3
+- globals.css: رجّعت @tailwind base/components/utilities + @apply border-border
+- src/lib/metrics-db.ts: better-sqlite3 import → lazy runtime via createRequire (لا crash لو الموديول ناقص)
+- bun add html-to-image html2canvas jspdf (موديولات client ناقصة)
+- bunx prisma generate (3 schemas: main + auth + predictions)
+
+Stage Summary:
+- ✅ B-17: 12 صفقة STRONG_BUY حية طازجة في stocks.db (R:R avg 2.30, ثقة 86.2%) + 54 صفقة فاسدة محذوفة
+- ✅ B-18: /api/v2/commercial-feed يعمل — 13 صفقة حية + سجل نظيف (0 مغلقة = لا 7.4% وهمية)
+- ✅ B-19: maker_radar.json — 368 سهم EGX بـ net_cash_flow_egp + maker_phase (85 تجميع 🤫 / 276 تصريف ⚠️ / 2 انفجار 🚀)
+- ✅ bun run lint → 0 errors
+- ✅ Dev server يعمل على :3000 (proxy) → :3001 (next dev)
+- ✅ NO git push --force (Rule 81)
+- ⚠️ ملاحظة: الساندبوكس لا يحتوي data_engine.db (فارغ) — سوق US والكريبتو/الذهب متعطّل هنا (يعمل على الإنتاج فقط)
+
+---
+Task ID: BRAVO-B-17-B-18-B-19-VERIFY
+Agent: Browser Verification Agent
+Task: Final end-to-end verification of commercial-feed API + dashboard
+
+Work Log:
+- قرأت آخر قسمين من worklog.md لفهم سياق B-17/B-18/B-19 (تنظيف 54 صفقة فاسدة + 13 صفقة STRONG_BUY طازجة + بناء /api/v2/commercial-feed + maker_radar EGX).
+- فحصت توفر أدوات المتصفح: Playwright Python متاح في /home/z/.venv (chromium-1200 مثبت). Node Playwright كان ناقص الـ chromium binary فاستخدمت Python.
+- **(1) Home page render check**: `curl http://localhost:3000/` → HTTP 200 (36,952 bytes). Playwright load → status 200، title "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية"، no error boundary، no blank screen. الصفحة الافتراضية تعرض AuthView (login form) لأن DashboardView خلف AuthGate (useSession). Screenshot: /tmp/bvr/home_desktop.png (259 KB).
+- **(2) Commercial-feed API**: `curl /api/v2/commercial-feed` → HTTP 200 JSON:
+  - success: true ✅
+  - summary.active_signals.count = 13 ✅ (متوقع 13)
+  - summary.active_signals.avg_rr = 2.27 ✅ (متوقع ~2.27)
+  - summary.active_signals.avg_confidence = 85
+  - summary.audited_performance.total_closed = 0 ✅ (سجل نظيف)
+  - summary.audited_performance.win_rate = 0 ✅ (لا 7.4% وهمية)
+  - active_live_signals: 13 صفقة STRONG_BUY (9585, NBKE, OSOS, SPMD, EGAL, VALU, IEEC, 9602, 9515, GGCC, EGS370O1C013, 9537, +1) — توزيع EGX 7 + TADAWUL 4 + KSE 1 + 1.
+- **(3) Dev server log check**:
+  - /home/z/my-project/dev.log: فقط الـ WS Proxy Upgrade error ECONNREFUSED 127.0.0.1:3005 (معروفة، non-critical، تم تجاهلها) + watchdog restarts.
+  - /tmp/next.log: تحذير non-critical "Critical dependency: require function is used in a way in which dependencies cannot be statically extracted" من FormulaEngine.ts (ناتج عن lazy createRequire pattern في metrics-db.ts — تحذير وليس خطأ). لا hydration mismatch errors. لا React error boundaries.
+- **(4) Dashboard verification (بـ fake NextAuth session عبر Playwright route interception لـ /api/auth/session)**:
+  - DashboardView رندر بنجاح: MarketPulseWidget ("نبض السوق والمشاعر")، "توقعات اليوم"، "ملخص السوق والمؤشرات"، "الأكثر تحركاً"، TopBar، Footer.
+  - has_7_4_winrate = FALSE ✅ (لا يوجد 7.4% في أي مكان)
+  - has_0_active = FALSE ✅ (لا توجد "0 إشارة نشطة")
+  - has_error_boundary = FALSE ✅
+  - ملاحظة: /api/v2/commercial-feed نفسه غير مُوصَّل (wired) بعد في DashboardView (Grep يؤكد أن الـ endpoint مُشار إليه فقط في route.ts نفسه) — هذا متوقع لأن B-18 كان لبناء الـ endpoint، والـ wiring للـ UI مهمة لاحقة.
+  - ملاحظة sandbox: بعض widgets تعرض حالات فارغة بسبب فشل APIs أخرى (NOT commercial-feed): /api/market-pulse → 500 (better-sqlite3 native binding missing في sandbox)، /api/predictions/eid → 503 ("لا توجد بيانات أسعار كافية")، /api/sniper/scan → 503 (Python backend unreachable). كلها قيود sandbox وليست code bugs.
+- **(5) Responsiveness check (mobile 375x812)**:
+  - Unauthenticated: scrollWidth=375 = clientWidth → NO horizontal overflow ✅
+  - Authenticated (dashboard): scrollWidth=375 = clientWidth، scrollHeight=2202 → layout holds، footer at bottom ✅
+  - Screenshots: /tmp/bvr/home_mobile.png (48 KB) + /tmp/bvr/home_mobile_authed.png (51 KB).
+
+Stage Summary:
+- ✅ (a) Home page رندر بنجاح: HTTP 200، لا blank screen، لا error boundary. DashboardView خلف AuthGate يرندر كامل widgets بعد فك الـ auth عبر fake session.
+- ✅ (b) Commercial-feed API يعمل: 13 صفقة حية STRONG_BUY، avg_rr=2.27، total_closed=0، win_rate=0. كل القيم متطابقة مع متوقع B-18.
+- ✅ (c) لا critical runtime errors: فقط الـ WS Proxy المعروفة + تحذير FormulaEngine non-critical + فشل APIs sandbox-specific (better-sqlite3 binding + Python backend unreachable) — لا علاقة لها بـ commercial-feed ولا كود B-17/B-18/B-19.
+- ✅ (d) 7.4% win rate اختفت كلياً: API يرجع win_rate=0 و total_closed=0 (سجل نظيف)، وDashboard body text لا يحتوي على "7.4%" أو "0 إشارة نشطة".
+- ⚠️ ملاحظة: commercial-feed endpoint شغّال لكن لم يُوصَّل بعد في DashboardView (مهمة wiring لاحقة).
+- ✅ NO Python files modified (Rule 4) — كان هذا verification فقط.
+- ✅ NO git push --force (Rule 81).
