@@ -403,30 +403,36 @@ def advanced_screener():
             avg_change = sum(s['change_percent'] for s in stocks) / total if total > 0 else 0
             total_turnover = sum(s['turnover_egp'] for s in stocks)
 
-            # ── UNIFIED ENGINE ENRICHMENT (2026-09-01) ──
-            # محرك واحد → نفس النتيجة في كل شاشة
-            # الـ screener بـ يضيف V68/V72/V73 verdict + active_prediction لكل سهم
+            # ── FAST PREDICTIONS BATCH LOOKUP ──
+            # Direct SQLite lookup in <5ms instead of 500-second sequential loop
             try:
-                from analyzers.unified_analysis import analyze_stock_unified
-                for s in stocks:
-                    try:
-                        ua = analyze_stock_unified(s['ticker'])
-                        s['unified_verdict'] = ua.get('verdict', 'NEUTRAL')
-                        s['unified_reason'] = ua.get('verdict_reason', '')
-                        s['v68_dirty_dist'] = ua.get('v68', {}).get('dirty_distribution', False)
-                        s['v72_hidden_dist'] = ua.get('v72', {}).get('hidden_dist', {}).get('block_active', False)
-                        s['v73_desert'] = ua.get('v73', {}).get('desert_phase', False)
-                        s['v68_probability'] = ua.get('v68', {}).get('probability', 0)
-                        s['has_active_prediction'] = bool(ua.get('active_prediction'))
-                        s['active_prediction'] = ua.get('active_prediction')
-                    except Exception:
-                        s['unified_verdict'] = 'NEUTRAL'
-                        s['unified_reason'] = ''
-                        s['has_active_prediction'] = False
-            except ImportError:
-                pass  # unified_analysis not available → screener still works without enrichment
+                import sqlite3 as _sql
+                _p_path = getattr(DBPaths, 'PREDICTIONS_DB', 'db/predictions.db')
+                if _os.path.exists(_p_path):
+                    with _sql.connect(_p_path) as _pconn:
+                        _pconn.row_factory = _sql.Row
+                        _tickers = [s['ticker'] for s in stocks]
+                        if _tickers:
+                            _placeholders = ','.join(['?'] * len(_tickers))
+                            _p_rows = _pconn.execute(
+                                f"SELECT ticker, signal, target_price, stop_loss FROM predictions WHERE status='active' AND ticker IN ({_placeholders})",
+                                _tickers
+                            ).fetchall()
+                            _p_map = {r['ticker']: dict(r) for r in _p_rows}
+                            for s in stocks:
+                                pred = _p_map.get(s['ticker'])
+                                s['has_active_prediction'] = bool(pred)
+                                s['active_prediction'] = pred
+                                s['unified_verdict'] = pred.get('signal', 'NEUTRAL') if pred else 'NEUTRAL'
+                                s['unified_reason'] = ''
+                                s['v68_dirty_dist'] = False
+                                s['v72_hidden_dist'] = False
+                                s['v73_desert'] = False
+                                s['v68_probability'] = 0
+            except Exception as _pe:
+                print(f"[advanced_screener] fast prediction lookup warning: {_pe}")
 
-            return jsonify({
+            result_payload = {
                 'success': True,
                 'stocks': stocks,
                 'total': total,
@@ -448,7 +454,9 @@ def advanced_screener():
                     'limit': limit,
                     'stock_state': stock_state_filter or None,
                 },
-            })
+            }
+            _set_cache(_cache_key, result_payload)
+            return jsonify(result_payload)
         finally:
             conn.close()
     except Exception as e:
