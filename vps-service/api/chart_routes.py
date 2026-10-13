@@ -1924,6 +1924,34 @@ def chart_full_analysis():
         signal_adjusted = True
         adjustment_reason = _adjustment_reason + " | " if _adjustment_reason else ''
 
+        # =====================================================================
+        # Task BRAVO-CHART-HARD-CAP: Bear Trend Hard Cap (Owner Directive)
+        # =====================================================================
+        # منع إصدار إشارات شراء للأسهم المنهارة (Falling Knives).
+        # لو السهم في مسار هابط هيكلي → يُحظر "فرصة شراء قوية" و "دخول فائق الأمان"
+        # مهما بلغت نقاطه من التشبع البيعي أو فيبوناتشي.
+        # =====================================================================
+        is_structural_downtrend = (
+            market_regime.get('regime') == 'bear_trend' or
+            (last_sma50 and cp < last_sma50 * 0.95)
+        )
+
+        if is_structural_downtrend and user_state != 'owner':
+            # Hard Cap: السهم في مسار هابط → لا إشارات شراء إطلاقاً
+            if score >= 35:
+                confluence['signal'] = 'محايد - ارتداد في مسار هابط ⏳'
+                confluence['signal_color'] = '#eab308'
+            else:
+                confluence['signal'] = 'خطر - ابتعد ❌'
+                confluence['signal_color'] = '#ef4444'
+            adjustment_reason = (
+                'وضع المشتري: السهم يتداول تحت المتوسطات الرئيسية في مسار هابط. '
+                'يُمنع الشراء أو التقاط السكاكين الساقطة.'
+            )
+            signal_adjusted = True
+            # Risk Profile Gate: لا أهداف صعودية للأسهم الساقطة
+            # (يتم تطبيقه في قسم risk أدناه)
+
         if user_state == 'owner':
             if last_rsi > 75 and is_uptrend:
                 confluence['signal'] = 'بيع جزئي / جني أرباح 💰'
@@ -2137,6 +2165,28 @@ def chart_full_analysis():
         # إعادة حساب R/R بعد الـ Kill Switch
         _ks_denom = risk['entry'] - risk['stop_loss']
         risk['rr_ratio'] = round((risk['target'] - risk['entry']) / _ks_denom, 2) if _ks_denom > 0 else 0
+
+        # =====================================================================
+        # Task BRAVO-CHART-HARD-CAP: Risk Profile Gate (Owner Directive)
+        # =====================================================================
+        # حظر توليد خطط صعودية للأسهم الساقطة.
+        # لو السهم في مسار هابط (is_structural_downtrend) وليست إشارة شراء
+        # حقيقية مؤكدة → لا تصدير أهداف صعودية عشوائية (target, target_2).
+        # القمم = مقاومات خروج فقط (resistance_exit)، NOT أهداف ربح.
+        # =====================================================================
+        _signal_text = confluence.get('signal', '').lower()
+        _is_confirmed_buy = ('شراء' in _signal_text or 'buy' in _signal_text or 'دخول' in _signal_text) and 'ابتعد' not in _signal_text
+
+        if is_structural_downtrend and not _is_confirmed_buy:
+            # امسح الأهداف الصعودية الوهمية
+            risk['target'] = None
+            risk['target_2'] = None
+            risk['rr_ratio'] = None
+            risk['risk_profile_note'] = (
+                'السهم في مسار هابط — لا توجد أهداف صعودية. '
+                'القمم السابقة = مقاومات خروج/تصريف، NOT أهداف ربح.'
+            )
+            logger.info(f"[HARD-CAP] {ticker}: Risk Profile Gate active — targets nulled (downtrend)")
 
         # =====================================================================
         # P16-DELAY-COMPENSATION: تعويض تأخير البيانات 5 دقايق (EGX intraday)
