@@ -73,15 +73,46 @@ STOCKS_DB = PROJECT_ROOT / "db" / "stocks.db"
 INTRADAY_DB = PROJECT_ROOT / "db" / "intraday.db"
 BACKUP_DIR = PROJECT_ROOT / "db" / "backups"
 
-# ─── EGX30 anchor tickers ──────────────────────────────────────────────────
-# Entry price for each ticker is pulled LIVE from stocks.db.stocks.current_price.
-# Order matches the task spec.
+# ─── EGX tickers ──────────────────────────────────────────────────────────
+# Task BRAVO-INTRADAY-EXPAND (Owner Directive 2026-10-13):
+# تم توسيع القائمة من 15 سهماً (EGX30 فقط) لتشمل جميع أسهم EGX النشطة
+# من stocks.db (is_active=1 AND market='EGX') بالإضافة إلى EGX30.
+# هذا يضمن أن أسهم مثل ADPC و COMI تحصل على بيانات لحظية.
 
-EGX30_TICKERS: tuple[str, ...] = (
+# EGX30 anchor tickers (الـ 15 الأصلية)
+_EGX30_ANCHOR: tuple[str, ...] = (
     "EAST", "EFIH", "EGAL", "EMFD", "ETEL",
     "FWRY", "HELI", "ISPH", "MFPC", "PHDC",
     "RAYA", "RMDA", "SCTS", "TMGH", "VLMR",
 )
+
+
+def _load_active_egx_tickers() -> tuple[str, ...]:
+    """تحميل جميع أسهم EGX النشطة من stocks.db.
+
+    يجمع EGX30 + جميع الأسهم النشطة (is_active=1, market='EGX')
+    مع current_price > 0 — بدون تكرار.
+    """
+    import sqlite3 as _sql
+    tickers = set(_EGX30_ANCHOR)
+    try:
+        con = _sql.connect(str(STOCKS_DB))
+        rows = con.execute(
+            "SELECT ticker FROM stocks "
+            "WHERE is_active = 1 AND market = 'EGX' "
+            "AND current_price IS NOT NULL AND current_price > 0 "
+            "ORDER BY ticker"
+        ).fetchall()
+        con.close()
+        for r in rows:
+            tickers.add(r[0])
+    except Exception as e:
+        print(f"[WARN] فشل تحميل الأسهم النشطة من stocks.db: {e}", file=sys.stderr)
+        print("[WARN] استخدام EGX30 فقط كـ fallback", file=sys.stderr)
+    return tuple(sorted(tickers))
+
+
+EGX30_TICKERS: tuple[str, ...] = _load_active_egx_tickers()
 
 MARKET = "EGX"
 
@@ -366,8 +397,8 @@ def verify(rows_count_expected: int) -> dict:
           f"(expected {rows_count_expected}) "
           f"{'✅' if total == rows_count_expected else '❌'}")
     print(f"[VERIFY] distinct tickers              = {len(per_ticker)} "
-          f"(expected 15) "
-          f"{'✅' if len(per_ticker) == 15 else '❌'}")
+          f"(expected {len(EGX30_TICKERS)}) "
+          f"{'✅' if len(per_ticker) == len(EGX30_TICKERS) else '❌'}")
     print(f"[VERIFY] bars per ticker               = "
           f"{', '.join(f'{t}={n}' for t, n in per_ticker)}")
     print(f"[VERIFY] whale blocks (notional > 100K) = {whale_count} "
