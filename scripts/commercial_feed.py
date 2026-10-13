@@ -251,6 +251,8 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
             'confidence': round(confidence, 1),
             'horizon': horizon,
             'horizon_icon': horizon_icon,
+            'catalyst': notes_meta.get('catalyst', ''),
+            'catalyst_ar': notes_meta.get('catalyst_ar', ''),
             'prediction_date': str(d.get('prediction_date') or ''),
             'current_price': round(_to_float(d.get('current_price')), 4) if d.get('current_price') else None,
             'source': 'predictions_table',

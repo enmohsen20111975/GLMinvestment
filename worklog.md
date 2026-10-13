@@ -69794,3 +69794,89 @@ Stage Summary:
 - ✅ bun run lint → 0 errors
 - ✅ /api/v2/commercial-feed endpoint لسه شغّال بعد الـ rebase (13 active signals, avg_rr=2.27, win_rate=0)
 - ✅ Local + remote متزامنين تمامًا (ahead 0 / behind 0)
+
+---
+Task ID: ALPHA-A-17
+Agent: مهندس الواجهات وتجربة المستخدم المؤسسية (Frontend & UI Lead — GLM 5.2 Alpha)
+Task: A-17 — VIPLiveSignalsFeed catalyst + copy button + audited performance view
+
+Work Log:
+
+**1. قرأت آخر 150 سطر من worklog.md لفهم سياق Bravo:**
+- B-17/B-18/B-19: 12 صفقة STRONG_BUY طازجة (R:R avg 2.27, ثقة 85%) في stocks.db.predictions
+- B-20 (الجديد): build_audited_track_record.py ولّد 32 صفقة مغلقة (Win Rate 75%, Avg Return 7.65%, profit_factor 15.0)
+- commercial_feed.py يرجع catalyst + catalyst_ar لكل صفقة + audited_performance_history (32 صفقة)
+- /api/v2/commercial-feed endpoint يعمل
+
+**2. تأكدت من شكل الـ API الفعلي:**
+- `curl http://localhost:3000/api/v2/commercial-feed` → success
+- الحقول الفعلية في active_live_signals: ticker, name (NOT name_ar), market, sector, signal, signal_ar, signal_type, entry_price, target_1, target_1_pct, target_2, target_2_pct, stop_loss, risk_reward, confidence, horizon, horizon_icon, catalyst, catalyst_ar, prediction_date, current_price, source
+- الحقول في audited_performance_history: ticker, name, market, sector, signal, entry_price, exit_price, target_price, stop_loss, highest_price, lowest_price, actual_return_pct, status, status_ar, hit_target, hit_stop, holding_days, outcome_date, prediction_date, confidence
+- summary فيه active_signals {count, avg_rr, avg_confidence} + audited_performance {total_closed, wins, losses, expired, win_rate, avg_return, best_return, worst_return, profit_factor}
+- الكود القديم كان يستخدم حقول غير موجودة (target_price, target_price_2, master_score, persona, upside_pct, downside_pct, name_ar, stats.live_count) — فاصل تام
+
+**3. إعادة كتابة VIPLiveSignalsFeed.tsx بالكامل:**
+- ✅ تحديث LiveSignal interface ليتطابق مع API الفعلي
+- ✅ إضافة AuditedTrade, ActiveSignalsSummary, AuditedPerformanceSummary interfaces
+- ✅ تحديث FeedResponse: active_live_signals + audited_performance_history + summary (بدلاً من stats)
+- ✅ إزالة TimeHorizonBadge (persona لم يعد موجوداً — horizon + horizon_icon من الـ API مباشرة)
+- ✅ إزالة imports غير مستخدمة (Loader2, TrendingUp/Down من النسخة القديمة)
+
+**4. عرض الدافع الفني (Catalyst) ببروز بارز:**
+- صندوق بـ bg-amber-50 dark:bg-amber-950/30 border-amber-200
+- أيقونة Flame + label "الدافع الفني" بـ text-amber-700
+- النص catalyst_ar italic بـ text-amber-900 dark:text-amber-200
+- يظهر فقط إذا وُجد catalyst_ar أو catalyst (لا بيانات وهمية)
+
+**5. زر نسخ التوصية (Copy Recommendation):**
+- بنيت buildCopyMessage(sig) يبني رسالة عربية كاملة جاهزة للإرسال عبر Telegram/WhatsApp
+- الصيغة: 🎯 توصية GLMinvestment + السهم + الإشارة + الدخول + الهدف (+%) + الوقف + R:R + الثقة + الأفق + الدافع الفني + إدارة المخاطر + التاريخ
+- navigator.clipboard.writeText() مع try/catch
+- حالة محلية copiedTicker → تظهر "تم نسخ التوصية ✓" لمدة 2 ثانية (مع أيقونة Check)
+- زر full-width أسفل كل كرت، emerald palette (NO blue/indigo)
+- e.stopPropagation() عشان ما يفتح صفحة السهم
+
+**6. بانر السجل الموثق (Audited Performance Banner):**
+- يظهر فقط لو total_closed > 0 (لا بيانات وهمية — Rule 27)
+- 4 stat boxes في grid-cols-2 md:grid-cols-4:
+  1. إجمالي الصفقات: total_closed
+  2. نسبة النجاح: win_rate% (positive لو ≥70%، negative لو <50%، warning بينهما)
+  3. متوسط الربح: +avg_return% (positive دائماً)
+  4. معامل الربحية: profit_factor× + subtext "الأفضل: +best_return%"
+- لوحة زمردي/تركوازي: from-emerald-50/60 to-teal-50/40 (NO blue/indigo — Rule 30)
+- أيقونة Trophy + بادج "32 صفقة مغلقة"
+
+**7. جدول السجل الموثق (Audited History Table):**
+- يظهر آخر 20 صفقة من audited_performance_history (مع max-h-96 overflow-y-auto)
+- الأعمدة: السهم | تاريخ الدخول | تاريخ الخروج | سعر الدخول | سعر الخروج | الربح/الخسارة | النتيجة
+- Status badge ملوّن: emerald للنصر، red للخسارة، amber للمنتهي
+- الربح/الخسارة ملوّن: emerald للموجب، red للسالب
+- استخدمت Table components من shadcn/ui (TableHeader sticky مع bg-muted/95 backdrop-blur)
+- بادج "من أصل N" لو auditedHistory.length > 20
+
+**8. تحديثات إضافية على كروت الصفقات الحية:**
+- horizon badge بـ amber palette (مكان TimeHorizonBadge القديم)
+- target_1_pct يظهر بدلاً من upside_pct
+- target_2 متاح (target_price_2 سابقاً)
+- Row 5 يحوي سعر السوق + نوع الإشارة (institutional_scan → "مسح مؤسسي")
+- Header strip يعرض متوسط R:R + متوسط الثقة (من summary.active_signals)
+
+**9. التحقق من الجودة:**
+- `bun run lint` → EXIT=0 (0 errors) ✅
+- `bunx tsc --noEmit --skipLibCheck` على الملف فقط → 0 errors في VIPLiveSignalsFeed.tsx (الأخطاء الباقية كلها pre-existing في scripts/ و prisma/ و .next/types)
+- `bun build src/components/shared/VIPLiveSignalsFeed.tsx --target browser` → Bundled 44 modules، EXIT=0 ✅
+- تحققت إن المستهلك الوحيد (UnifiedPredictionsTab.tsx) بيستخدم الـ component بنفس signature قديم (market prop) → لا breakage
+
+Stage Summary:
+- ✅ VIPLiveSignalsFeed.tsx إتُعاد كتابته بالكامل (682 سطر) — interface يطابق API الفعلي 100%
+- ✅ Catalyst display بـ amber palette + Flame icon — بروز بارز داخل كل كرت
+- ✅ Copy button full-width يبني رسالة Telegram/WhatsApp جاهزة + feedback "تم نسخ التوصية ✓" لـ 2 ثانية
+- ✅ Audited Performance Banner (4 stat boxes) بـ emerald/teal palette — يظهر فقط لو total_closed > 0
+- ✅ Audited History Table — آخر 20 صفقة + scroll + status badges ملوّنة
+- ✅ Rule 27 محترمة: كل الحالات الفارغة تعرض رسائل صادقة (لا بيانات وهمية)
+- ✅ Rule 4 محترمة: لا حساب مالي في الـ frontend — كل الأرقام من الـ API
+- ✅ Rule 30 محترمة: لوحة زمردي/تركوازي/أمبر فقط — لا أزرق/إنديغو
+- ✅ bun run lint → 0 errors
+- ✅ tsc → 0 errors في الملف (pre-existing errors في scripts/prisma/Next فقط)
+- ✅ bun build → 44 modules bundled بنجاح
+- ✅ NO git push --force (Rule 81)

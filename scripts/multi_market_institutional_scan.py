@@ -313,6 +313,14 @@ def scan_market(conn: sqlite3.Connection, market: str) -> Tuple[List[Dict[str, A
 
         horizon = '⚡ يومية/قصيرة' if rr >= TARGET_RR else '🎯 أسبوعية/متوسطة'
 
+        # Task B-20b: حساب الدافع الفني (Catalyst) لكل صفقة
+        # يربط شروط الدخول بـ RVOL + ارتداد من دعوم + اختراق مقاومات
+        catalyst_en, catalyst_ar = _build_catalyst(
+            cp=cp, support=support, resistance=resistance,
+            vol_ratio=vol_ratio, rsi=rsi, roc_10d=roc_10d,
+            ma50=ma50, ma200=ma200, atr=atr, rr=rr
+        )
+
         opportunities.append({
             'ticker': ticker,
             'name': d.get('name') or ticker,
@@ -330,9 +338,76 @@ def scan_market(conn: sqlite3.Connection, market: str) -> Tuple[List[Dict[str, A
             'horizon': horizon,
             'signal': signal,
             'signal_ar': signal_ar,
+            'catalyst': catalyst_en,
+            'catalyst_ar': catalyst_ar,
         })
 
     return opportunities, skipped, len(rows)
+
+
+def _build_catalyst(cp: float, support: float, resistance: float,
+                    vol_ratio: float, rsi: float, roc_10d: float,
+                    ma50: float, ma200: float, atr: float, rr: float) -> tuple:
+    """Task B-20b: بناء وصف الدافع الفني (Catalyst) لكل صفقة.
+
+    يربط شروط الدخول بـ:
+      - حجم تداول نسبي مضاعف (RVOL)
+      - ارتداد من دعوم رئيسية
+      - اختراق نطاق تجميعي / مقاومات
+    يرجع tuple (catalyst_en, catalyst_ar).
+    """
+    parts_en = []
+    parts_ar = []
+
+    # RVOL
+    if vol_ratio >= 2.5:
+        parts_en.append(f"RVOL {vol_ratio:.1f}x (institutional surge)")
+        parts_ar.append(f"فوليوم مؤسسي {vol_ratio:.1f}x")
+    elif vol_ratio >= 1.8:
+        parts_en.append(f"RVOL {vol_ratio:.1f}x")
+        parts_ar.append(f"فوليوم {vol_ratio:.1f}x المتوسط")
+
+    # ارتداد من دعم
+    if support > 0 and cp >= support and (cp - support) / cp * 100 <= 5.0:
+        parts_en.append(f"rebound from support {support:.2f}")
+        parts_ar.append(f"ارتداد من دعم {support:.2f}")
+
+    # اختراق مقاومة
+    if resistance > 0 and cp > resistance:
+        parts_en.append(f"breakout above resistance {resistance:.2f}")
+        parts_ar.append(f"اختراق مقاومة {resistance:.2f}")
+
+    # فوق MA50 (تأكيد الاتجاه)
+    if ma50 > 0 and cp > ma50:
+        parts_en.append("above MA50 (uptrend)")
+        parts_ar.append("فوق MA50")
+
+    # فوق MA200 (ترند صاعد طويل الأجل)
+    if ma200 > 0 and cp > ma200:
+        parts_en.append("above MA200 (long-term uptrend)")
+        parts_ar.append("فوق MA200")
+
+    # RSI
+    if rsi < 35:
+        parts_en.append(f"RSI={rsi:.0f} (oversold rebound)")
+        parts_ar.append(f"RSI={rsi:.0f} تشبع بيعي")
+    elif rsi < 55:
+        parts_en.append(f"RSI={rsi:.0f}")
+        parts_ar.append(f"RSI={rsi:.0f}")
+
+    # ROC
+    if roc_10d > 5.0:
+        parts_en.append(f"ROC10d=+{roc_10d:.1f}% (momentum)")
+        parts_ar.append(f"زخم +{roc_10d:.1f}%")
+
+    # fallback لو مفيش عناصر
+    if not parts_en:
+        parts_en.append(f"R:R={rr:.2f} with ATR-based entry")
+        parts_ar.append(f"R:R={rr:.2f} مع دخول مبني على ATR")
+
+    catalyst_en = " | ".join(parts_en[:4])  # أول 4 عناصر عشان الاختصار
+    catalyst_ar = " | ".join(parts_ar[:4])
+    return catalyst_en, catalyst_ar
 
 
 def write_predictions_canonical(opportunities: List[Dict[str, Any]]) -> int:
@@ -343,6 +418,8 @@ def write_predictions_canonical(opportunities: List[Dict[str, Any]]) -> int:
     الأعمدة الإضافية (rr, confidence, market, horizon, signal_ar) تُخزَّن
     في عمود notes كـ JSON مُنسَّق لأن schema stocks.db.predictions لا يحتوي
     على أعمدة منفصلة لها. هذا يحمي من تعارض schema ويبقي Python هو العقل.
+
+    Task B-20b: أضفنا حقل catalyst + catalyst_ar للـ notes JSON.
     """
     import json as _json
 
@@ -376,6 +453,8 @@ def write_predictions_canonical(opportunities: List[Dict[str, Any]]) -> int:
                 'market': opp['market'],
                 'horizon': opp['horizon'],
                 'signal_ar': opp.get('signal_ar', ''),
+                'catalyst': opp.get('catalyst', ''),
+                'catalyst_ar': opp.get('catalyst_ar', ''),
                 'rsi': opp['rsi'],
                 'vol_ratio': opp['vol_ratio'],
                 'roc_10d': opp.get('roc_10d', 0),
