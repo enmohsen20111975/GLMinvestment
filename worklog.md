@@ -69359,3 +69359,50 @@ Constraints honored:
 - ✅ All worklog entries appended (not overwritten)
 
 Note: تم إنشاء ملف مساعد `.zscripts/audit-db.js` بواسطة أحد الوكالة كأداة للتدقيق. هذا ليس تعديل كود للإنتاج.
+
+---
+Task ID: ALPHA-AUDIT-BACKEND-V2-DETAILED
+Agent: كبير مهندسي الواجهات (Backend X-Ray Audit — Detailed Table)
+Task: جرد تشريحي مفصل للباك إند بـ 6 أعمدة + تحليل الجداول المكررة
+
+Work Log:
+- قرأت AUDIT_BACKEND_APIS_MAP.md الموجود (611 سطر من التدقيق السابق).
+- جمعت أعداد الصفوف الفعلية لكل جدول عبر better-sqlite3 readonly mode من /tmp/my-project/db/.
+- فحصت الجداول المشبوهة:
+  * predictions.db.predictions (1,551 rows) vs aiPrediction (2,613 rows) vs prediction_outcomes (0) vs prediction_outcomes_old (0)
+  * stocks.db.stock_daily_prices (100,619) vs stock_price_history (100,619) vs price_history (100,619) — 3 نسخ مكررة بنفس العدد!
+  * price_history.db منفصل — تالف (SQLITE_CORRUPT "database disk image is malformed")
+- فحصت الـ schema لكل جدول مشبوه (predictions: 65 cols vs aiPrediction: 25 cols).
+- تحققت من الـ writers عبر grep على INSERT/UPDATE/DELETE في كل سكربت:
+  * daily_predictor.py يكتب predictions + stored_analyses (SINGLE-WRITER Rule 73)
+  * confluence_routes.py:558 يكتب aiPrediction (legacy)
+  * maker_radar.py يكتب radar_signal_tracking (CREATE+DELETE+INSERT كل 5 دقائق)
+  * market_regime_engine.py يكتب system_settings + market_regime_log
+  * bag_holder_rescue.py READ-ONLY تماماً (mode=ro URI)
+- حدّثت AUDIT_BACKEND_APIS_MAP.md بـ 6 أقسام + الجدول التفصيلي بـ 6 أعمدة.
+
+Stage Summary:
+- ✅ Documentation/AUDIT_BACKEND_APIS_MAP.md محدّث (515 سطر)
+- ✅ الجدول التفصيلي بـ 6 أعمدة (Endpoint | Python File | DB | Table | Row Count | Alive/Dead)
+- ✅ 5 فئات endpoints موثقة:
+  1. Predictions (32 endpoint)
+  2. Chart & History (17 endpoint)
+  3. Radar & Maker (19 endpoint)
+  4. Pulse & Regime (14 endpoint)
+  5. Rescue (6 endpoint)
+- ✅ تحليل الجداول المشبوهة:
+  * predictions vs aiPrediction (1,551 vs 2,613 — legacy أكبر من canonical)
+  * stock_daily_prices vs stock_price_history vs price_history (3 نسخ × 100,619 صف)
+  * price_history.db تالف (SQLITE_CORRUPT)
+- ✅ خريطة الـ writers لكل جدول (Table → Script → Schedule → Operation)
+- ✅ 7 محركات كتابة رئيسية + 8 محركات READ-ONLY موثقة
+- ✅ 63 جدول ميت/مهجور موثق (20 في predictions.db + 34 في stocks.db + 9 في DBs أخرى)
+- ✅ NO Python code modified (0 تعديلات في vps-service/)
+- ✅ NO DB files modified (readonly mode only — SELECT/PRAGMA)
+- ✅ NO scripts executed (no migrations, no DELETE, no INSERT)
+
+Constraints honored:
+- ❌ NO Python files modified (0 in vps-service/)
+- ❌ NO DB tables deleted (0)
+- ❌ NO scripts executed
+- ✅ File updated ONLY at Documentation/AUDIT_BACKEND_APIS_MAP.md
