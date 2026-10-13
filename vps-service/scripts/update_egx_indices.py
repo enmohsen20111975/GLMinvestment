@@ -30,7 +30,7 @@ STOCKS_DB = os.environ.get('STOCKS_DB', str(_PROJECT_ROOT / 'db' / 'stocks.db'))
 class EGXIndicesUpdater:
     """تحديث يومي لمؤشرات EGX30 و EGX100."""
 
-    INDICES = ['EGX30', 'EGX100']
+    INDICES = ['EGX30', 'EGX70', 'EGX100']
 
     def __init__(self):
         self.price_history_db = PRICE_HISTORY_DB
@@ -105,7 +105,7 @@ class EGXIndicesUpdater:
         try:
             import investpy
             # investpy يحتاج اسم مختلف
-            name = 'EGX 30' if ticker == 'EGX30' else 'EGX 70'
+            name = 'EGX 30' if ticker == 'EGX30' else ('EGX 70' if ticker == 'EGX70' else 'EGX 100')
             df = investpy.get_index_recent_data(
                 index=name,
                 country='egypt',
@@ -134,7 +134,7 @@ class EGXIndicesUpdater:
         try:
             import yfinance as yf
             # Yahoo يستخدم رموز مختلفة
-            yahoo_ticker = '^EGX30' if ticker == 'EGX30' else '^EGX100'
+            yahoo_ticker = '^EGX30' if ticker == 'EGX30' else ('^EGX70' if ticker == 'EGX70' else '^EGX100')
             ticker_obj = yf.Ticker(yahoo_ticker)
             df = ticker_obj.history(period='1mo')
             data = []
@@ -223,7 +223,7 @@ class EGXIndicesUpdater:
                 VALUES (?, ?, datetime('now'), ?)
             """, (
                 ticker,
-                'مؤشر EGX 30' if ticker == 'EGX30' else 'مؤشر EGX 100',
+                'مؤشر EGX 30' if ticker == 'EGX30' else ('مؤشر EGX 70' if ticker == 'EGX70' else 'مؤشر EGX 100'),
                 total_records,
             ))
             conn.commit()

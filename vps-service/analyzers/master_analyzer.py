@@ -1591,7 +1591,33 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
                         egksco_conn.close()
                     except Exception:
                         pass
-    
+
+    # ── FIX-2: Final Fallback to stocks.db.stock_daily_prices (CANONICAL) ──
+    if not daily_candles and os.path.exists(stocks_db):
+        try:
+            sconn = sqlite3.connect(stocks_db, timeout=3)
+            scur = sconn.cursor()
+            scur.execute(
+                "SELECT price_date, open, high, low, close, volume FROM stock_daily_prices "
+                "WHERE ticker = ? ORDER BY price_date DESC LIMIT ?",
+                (base_ticker, limit)
+            )
+            srows = scur.fetchall()
+            if srows:
+                for r in reversed(srows):
+                    daily_candles.append({
+                        'date': r[0],
+                        'open': float(r[1] or r[4] or 0),
+                        'high': float(r[2] or r[4] or 0),
+                        'low': float(r[3] or r[4] or 0),
+                        'close': float(r[4] or 0),
+                        'volume': parse_volume(r[5])
+                    })
+                print(f"[MergedHistory] ✅ {base_ticker}: loaded {len(daily_candles)} rows from stocks.db.stock_daily_prices")
+            sconn.close()
+        except Exception as e:
+            print(f"[MergedHistory] Error loading from stock_daily_prices for {ticker}: {e}")
+
     # 3. الحصول على آخر تاريخ متوفر في البيانات اليومية (مع استبعاد تاريخ اليوم إذا كان موجوداً لتفادي حجب البيانات اللحظية)
     today_str = datetime.now().strftime('%Y-%m-%d')
     today_daily_candle = None
