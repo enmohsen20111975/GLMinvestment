@@ -58,6 +58,8 @@
 # 2x يومياً: 07:00 UTC (09:00 Cairo — قبل فتح السوق) + 13:00 UTC (15:00 Cairo — بعد الإغلاق)
 0 7 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_price_updater.py >> /tmp/price_updater_morning.log 2>&1
 0 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_price_updater.py >> /tmp/price_updater_evening.log 2>&1
+# Task B-8: EGX Investors Flow Scraper (مصريين/عرب/أجانب)
+30 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scrappers/egx_investors_scraper.py --days 1 >> /tmp/egx_investors.log 2>&1
 
 # ─── 7. سكرابر TradingView (المسار الصحيح: data_engine/scrapers/) ──────
 # كل 5 دقائق أثناء جلسة السوق (08:00-12:00 UTC = 10:00-14:00 Cairo)
