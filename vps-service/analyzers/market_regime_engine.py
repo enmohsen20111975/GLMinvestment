@@ -970,6 +970,106 @@ class MarketRegimeEngine:
         )
 
     # ════════════════════════════════════════════════════════════════════
+    # Task T-02: Market Pulse (0-100) — Breadth-Weighted Score
+    # ════════════════════════════════════════════════════════════════════
+    # Owner Directive (2026-10-13): pulse يجب أن يعكس الضغط البيعي الحقيقي.
+    # 60% اتساع السوق (Adv/Dec Ratio + نسبة الهابطين)
+    # 40% حركة المؤشر (daily change + SMA position)
+    # لو الهابطين > 75% → pulse ≤ 30 (لا يمكن أن يكون محايد/أخضر)
+    # ممنوع pulse = 0 متجمداً — يجب أن يعكس الواقع الرقمي.
+    # ════════════════════════════════════════════════════════════════════
+    def compute_market_pulse(self, indicators: RegimeIndicators) -> Dict[str, Any]:
+        """حساب نبض السوق اللحظي (0-100) بناءً على اتساع السوق الحقيقي.
+
+        Returns:
+            {
+                "pulse_score": int (0-100),
+                "pulse_label": str,
+                "pulse_label_en": str,
+                "breadth_component": float,
+                "indices_component": float,
+                "losers_pct": float,
+                "is_sharp_decline": bool,
+                "advances": int,
+                "declines": int,
+                "total": int,
+                "latest_date": str,
+            }
+        """
+        adv = indicators.breadth_advances
+        dec = indicators.breadth_declines
+        tot = indicators.breadth_total
+        up_pct = indicators.breadth_pct
+
+        total_active = adv + dec
+        losers_pct = (dec / total_active * 100) if total_active > 0 else 50.0
+        gainers_pct = (adv / total_active * 100) if total_active > 0 else 50.0
+
+        # ── 60% اتساع السوق ──
+        # breadth_score: 0 (كلهم هابطين) → 100 (كلهم صاعدين)
+        breadth_score = gainers_pct  # 0-100
+        breadth_component = breadth_score * 0.60  # 60% weight
+
+        # ── 40% حركة المؤشر ──
+        idx_change = indicators.index_daily_change_pct or 0.0
+        # تحويل idx_change (-5% → 0, 0% → 50, +5% → 100)
+        idx_score = max(0, min(100, 50 + (idx_change * 10)))  # ±5% → 0-100
+        # SMA position bonus: فوق SMA50 → +10, فوق SMA200 → +5
+        sma_bonus = 0
+        if indicators.index_current and indicators.index_sma50:
+            if indicators.index_current > indicators.index_sma50:
+                sma_bonus += 10
+        if indicators.index_current and indicators.index_sma200:
+            if indicators.index_current > indicators.index_sma200:
+                sma_bonus += 5
+        indices_component = min(100, idx_score + sma_bonus) * 0.40  # 40% weight
+
+        # ── Pulse Score النهائي ──
+        pulse_score = int(round(breadth_component + indices_component))
+        pulse_score = max(1, min(100, pulse_score))  # ممنوع 0 المتجمد — الحد الأدنى 1
+
+        # ── Hard Cap: لو الهابطين > 75% → pulse ≤ 30 ──
+        is_sharp_decline = losers_pct > 75.0
+        if is_sharp_decline:
+            pulse_score = min(pulse_score, 30)
+
+        # ── Label ──
+        if pulse_score >= 75:
+            pulse_label = "قوي صاعد"
+            pulse_label_en = "STRONG_BULL"
+        elif pulse_score >= 55:
+            pulse_label = "صاعد"
+            pulse_label_en = "BULL"
+        elif pulse_score >= 40:
+            pulse_label = "محايد"
+            pulse_label_en = "NEUTRAL"
+        elif pulse_score >= 20:
+            pulse_label = "هابط"
+            pulse_label_en = "BEAR"
+        else:
+            pulse_label = "قوي هابط"
+            pulse_label_en = "STRONG_BEAR"
+
+        # Override لو هبوط حاد
+        if is_sharp_decline:
+            pulse_label = "هبوط حاد / بيع مكثف"
+            pulse_label_en = "SHARP_DECLINE"
+
+        return {
+            "pulse_score": pulse_score,
+            "pulse_label": pulse_label,
+            "pulse_label_en": pulse_label_en,
+            "breadth_component": round(breadth_component, 2),
+            "indices_component": round(indices_component, 2),
+            "losers_pct": round(losers_pct, 1),
+            "is_sharp_decline": is_sharp_decline,
+            "advances": adv,
+            "declines": dec,
+            "total": tot,
+            "latest_date": indicators.latest_date or "",
+        }
+
+    # ════════════════════════════════════════════════════════════════════
     # Persistence: engine_settings + market_regime_log
     # ════════════════════════════════════════════════════════════════════
     def _settings_key(self) -> str:
