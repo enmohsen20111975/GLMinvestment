@@ -265,14 +265,15 @@ def _market_pulse_impl(now, cache_key):
     else:
         regime, regime_ar, action, action_ar = "BEAR", "هبوط - السوق كله ينزل", "EXIT", "اقفل"
 
-    # Sector rotation - use CAST for bulletproof numeric handling
+    # Sector rotation - use CAST for bulletproof numeric handling, filtered strictly by EGX market
     sector_rows = cur.execute("""
-        SELECT COALESCE(sector, 'غير محدد') as sector, COUNT(*) as stock_count,
+        SELECT sector, COUNT(*) as stock_count,
                AVG(CAST(change_percent AS REAL)) as avg_change,
                SUM(CAST(volume AS REAL) * CAST(current_price AS REAL)) as turnover,
                SUM(CASE WHEN CAST(change_percent AS REAL) > 0 THEN 1 ELSE 0 END) as gainers,
                SUM(CASE WHEN CAST(change_percent AS REAL) < 0 THEN 1 ELSE 0 END) as losers
-        FROM stocks WHERE current_price > 0 AND is_active = 1
+        FROM stocks WHERE current_price > 0 AND is_active = 1 AND market IN ('EGX', 'مصر')
+             AND sector IS NOT NULL AND TRIM(sector) != '' AND sector != 'غير محدد'
         GROUP BY sector ORDER BY turnover DESC LIMIT 10
     """).fetchall()
 
@@ -297,9 +298,9 @@ def _market_pulse_impl(now, cache_key):
             'status': 'HOT' if avg_chg > 1 else ('COLD' if avg_chg < -1 else 'NEUTRAL'),
         })
 
-    # Market breadth
-    gainers_count = cur.execute("SELECT COUNT(*) FROM stocks WHERE CAST(change_percent AS REAL) > 0 AND current_price > 0 AND is_active = 1").fetchone()[0]
-    losers_count = cur.execute("SELECT COUNT(*) FROM stocks WHERE CAST(change_percent AS REAL) < 0 AND current_price > 0 AND is_active = 1").fetchone()[0]
+    # Market breadth (strictly EGX market)
+    gainers_count = cur.execute("SELECT COUNT(*) FROM stocks WHERE CAST(change_percent AS REAL) > 0 AND current_price > 0 AND is_active = 1 AND market IN ('EGX', 'مصر')").fetchone()[0]
+    losers_count = cur.execute("SELECT COUNT(*) FROM stocks WHERE CAST(change_percent AS REAL) < 0 AND current_price > 0 AND is_active = 1 AND market IN ('EGX', 'مصر')").fetchone()[0]
     adv_dec_ratio = (gainers_count / losers_count) if losers_count > 0 else (gainers_count if gainers_count > 0 else 1)
 
     # =====================================================================

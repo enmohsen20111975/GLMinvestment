@@ -119,7 +119,7 @@ function buildPrediction(
   canonical: ReturnType<typeof getCanonicalPrediction>,
   sr: { support: number | null; resistance: number | null },
 ): EidPrediction {
-  const hasCanonical = canonical && canonical.entry_price && canonical.entry_price > 0;
+  const hasCanonical = Boolean(canonical && canonical.entry_price && canonical.entry_price > 0);
   const target = hasCanonical ? canonical!.target_price : null;
   const stop = hasCanonical ? canonical!.stop_loss : null;
   const confidence = hasCanonical && canonical!.confidence != null
@@ -156,7 +156,7 @@ function buildPrediction(
     id: `pred_${symbol}_${Date.now()}`,
     symbol,
     signal,
-    entryPrice: currentPrice ?? hasCanonical ? canonical!.entry_price : null,
+    entryPrice: currentPrice ?? (hasCanonical && canonical ? canonical.entry_price : null),
     targetPrice: target,
     stopLoss: stop,
     confidence,

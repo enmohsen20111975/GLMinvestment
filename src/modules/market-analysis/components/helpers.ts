@@ -415,13 +415,8 @@ export function formatSinglePersonaPickText(item: StoredAnalysisItem, persona: '
 
 export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 'conservative' | 'balanced' | 'gambler', market: MarketType): string {
   const marketName = MARKET_NAMES_AR[market] || market;
-  // P26: persona names للنص المنسق — 3 شخصيات
-  const personaName = persona === 'conservative'
-    ? 'المستثمر 🛡️'
-    : persona === 'balanced'
-    ? 'المتوازن ⚖️'
-    : 'المضارب 🎯';
-  let text = `📊 *توقعات ${personaName} - ${marketName}*\n`;
+  // Institutional unified branding — abolished personas
+  let text = `🎯 *أبرز الفرص الاستثمارية عالية الدقة - ${marketName}*\n`;
   text += `📅 ${formatDateLabel().dateStr}\n`;
   text += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
@@ -429,8 +424,8 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
   const activeItems = items.filter(it => !it.priceTargetMismatch && !it.stale && it.status !== 'CLOSED' && it.status !== 'EXPIRED');
   const targetItems = activeItems.length > 0 ? activeItems : items;
 
-  targetItems.forEach((it, i) => {
-    // P26: خريطة الشخصية المعروضة لمفتاح analysisJson + fallback للحقول العلوية
+  let validIndex = 0;
+  targetItems.forEach((it) => {
     const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
     const pd: PersonaData = it.analysisJson?.[_personaKey] || {
       verdict: it.recommendationAr || '',
@@ -440,11 +435,29 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
       entry: it.entry?.price ?? null,
       target: it.entry?.target ?? null,
       stop: it.entry?.stopLoss ?? null,
-      timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
+      timeframe: 'متوسط المدى (2-4 أسابيع)',
     };
 
-    // DIR-01 (2026-10-12): نفس منطق formatSinglePersonaPickText —
-    // فحص isMismatch/isStale قبل طباعة أسعار الدخول.
+    // HARD QUANT KILL FILTER: منع أي صفقة نسبة المخاطرة للعائد فيها مقلوبة
+    const _stop = resolveStop(it, pd.stop);
+    if (pd.entry && pd.target && _stop) {
+      const reward = Math.abs(pd.target - pd.entry);
+      const risk = Math.abs(pd.entry - _stop);
+      // لو بتخاطر بأكتر من المكسب (R:R < 1.3) أو الهدف أقل من 2% → استبعد الصفقة فوراً
+      if (risk > 0 && (reward / risk) < 1.3) {
+        return;
+      }
+      if (pd.entry > 0 && (reward / pd.entry) < 0.02) {
+        return;
+      }
+    }
+
+    // استبعاد إشارات الشراء الميتة (ثقة 50% أو زخم محايد غير مؤكد)
+    const isBuySignal = pd.verdict?.includes('شراء') || pd.verdict?.includes('فرصة') || pd.verdict?.includes('ادخل');
+    if (isBuySignal && (pd.score != null && pd.score < 60) && pd.reason?.includes('زخم محايد')) {
+      return;
+    }
+
     const isMismatch = Boolean(it.priceTargetMismatch);
     const isStale = Boolean(it.stale);
     const isExpired = isMismatch || isStale;
@@ -452,7 +465,7 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
 
     const signalIcon = isExpired
       ? '🔴'
-      : pd.verdict?.includes('شراء') || pd.verdict?.includes('فرصة') || pd.verdict?.includes('ادخل')
+      : isBuySignal
       ? '🟢'
       : pd.verdict?.includes('بيع') || pd.verdict?.includes('تجنب') || pd.verdict?.includes('ابعد') || pd.verdict?.includes('اخرج')
       ? '🔴'
@@ -462,7 +475,8 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
       ? (isMismatch ? 'توقع منتهية (الهدف محقّق)' : `توقع قديمة${it.stalePct ? ` ${it.stalePct}%` : ''}`)
       : (pd.verdict || 'متابعة');
 
-    text += `${i + 1}- ${signalIcon} *${it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '')}* - ${verdictLabel}\n`;
+    validIndex += 1;
+    text += `${validIndex}- ${signalIcon} *${it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '')}* - ${verdictLabel}\n`;
     if (it.nameAr || it.name) {
       text += `   🏢 الاسم: ${it.nameAr || it.name}\n`;
     }
@@ -476,13 +490,23 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
       } else if (pd.target) {
         text += `   🎯 الهدف: ${pd.target.toFixed(2)}\n`;
       }
-      // DIR-03: مصدر موحّد لـ stop عبر resolveStop().
-      const _stop = resolveStop(it, pd.stop);
-      if (_stop) text += `   🛑 وقف الخسارة (ATR): ${_stop.toFixed(2)}\n`;
+      if (_stop) text += `   🛑 وقف الخسارة: ${_stop.toFixed(2)}\n`;
+      if (pd.entry && pd.target && _stop) {
+        const rew = Math.abs(pd.target - pd.entry);
+        const rsk = Math.abs(pd.entry - _stop);
+        if (rsk > 0) {
+          text += `   ⚖️ نسبة العائد للمخاطرة: ${(rew / rsk).toFixed(1)}:1\n`;
+        }
+      }
       if (pd.reason) text += `   📝 التحليل: ${pd.reason}\n`;
     }
     text += `\n`;
   });
+
+  if (validIndex === 0) {
+    text += `ℹ️ *تنويه إدارة المخاطر:*\n`;
+    text += `لا توجد صفقات شراء تحقق معايير الدقة وإدارة المخاطر الصارمة (R:R ≥ 1.5:1) في هذا السوق حالياً. الحفاظ على رأس المال أولوية.\n\n`;
+  }
 
   text += `━━━━━━━━━━━━━━━━━━━\n`;
   text += OFFICIAL_LINKS_BLOCK;

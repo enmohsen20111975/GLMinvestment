@@ -373,6 +373,10 @@ export function deleteRow(
   const db = openDb(dbName)
   try {
     validateName(tableName, 'table')
+    const lowerTable = tableName.toLowerCase();
+    if (lowerTable === 'predictions' || lowerTable === 'predictions_history' || lowerTable === 'aiprediction') {
+      return { success: false, error: `جدول ${tableName} محمي تماماً من الحذف عبر Next.js بموجب الحماية القضائية P0` }
+    }
     const schema = db.prepare(`PRAGMA table_info("${tableName}")`).all() as TableSchema[]
     const columns = schema.map((s) => s.name)
 

@@ -48,22 +48,21 @@ function fetchSingleSparkline(t: string, days: number) {
   if (cached) return cached;
 
   const candidates = getCandidateTickers(t);
-  const phPath = join(process.cwd(), 'db', 'price_history.db');
   const stocksPath = join(process.cwd(), 'db', 'stocks.db');
 
-  // 1. price_history.db (canonical)
+  // 1. stocks.db.stock_daily_prices (Canonical SSOT - P0-ISOLATION)
   try {
-    const phDb = new Database(phPath, { readonly: true, timeout: 3000 });
+    const stocksDb = new Database(stocksPath, { readonly: true, timeout: 3000 });
     for (const cand of candidates) {
-      const rows = phDb.prepare(`
-        SELECT date, close_price
-        FROM price_history
-        WHERE ticker = ? AND close_price > 0
-        ORDER BY date DESC
+      const rows = stocksDb.prepare(`
+        SELECT price_date, COALESCE(close, close_price) as close_price
+        FROM stock_daily_prices
+        WHERE ticker = ? AND (close > 0 OR close_price > 0)
+        ORDER BY price_date DESC
         LIMIT ?
-      `).all(cand, days) as { date: string; close_price: number }[];
+      `).all(cand, days) as { price_date: string; close_price: number }[];
       if (rows.length > 0) {
-        phDb.close();
+        stocksDb.close();
         const prices = rows.reverse().map(r => Number(r.close_price));
         const first = prices[0];
         const last = prices[prices.length - 1];
@@ -76,13 +75,13 @@ function fetchSingleSparkline(t: string, days: number) {
           last,
           change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
           days: prices.length,
-          source: 'price_history.db',
+          source: 'stocks.db.stock_daily_prices',
         };
         setCache(key, result);
         return result;
       }
     }
-    phDb.close();
+    stocksDb.close();
   } catch { /* safe-by-design */ }
 
   // 2. stocks.db.stock_daily_prices

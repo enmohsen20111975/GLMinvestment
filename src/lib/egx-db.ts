@@ -198,17 +198,19 @@ let _priceHistoryDb: SqliteDatabase | null = null
 export function getPriceHistoryDb(): SqliteDatabase {
   if (_priceHistoryDb) return _priceHistoryDb
 
-  const dbPath = path.join(process.cwd(), 'db', 'price_history.db')
+  // P0-EXEC-ISOLATION: عزل price_history.db وتوجيه كل القراءات إلى stocks.db
+  // (الجدول السليم stock_daily_prices عبر الـ view price_history الموحد)
+  const dbPath = path.join(process.cwd(), 'db', 'stocks.db')
   if (!existsSync(dbPath)) {
-    console.warn(`[egx-db] price_history.db not found at ${dbPath}`)
-    throw new Error('price_history.db not found')
+    console.warn(`[egx-db] stocks.db not found at ${dbPath}`)
+    throw new Error('stocks.db not found')
   }
 
-  // Robust open via shared-db.
-  const native = openDb('price_history.db')
+  // Robust open via shared-db pointing to stocks.db
+  const native = openDb('stocks.db')
   _priceHistoryDb = wrapNativeDatabase(native)
   try { _priceHistoryDb.pragma('foreign_keys = ON') } catch { /* ignore - safe-by-design */ }
-  console.log('[egx-db] Price History DB loaded [robust]')
+  console.log('[egx-db] Price History DB redirected to canonical stocks.db [P0-ISOLATION]')
   return _priceHistoryDb
 }
 
@@ -661,7 +663,88 @@ export function getAllStocks(): Record<string, unknown>[] {
 }
 
 export function getStockByTicker(ticker: string): Record<string, unknown> | null {
-  // Step 1: Get basic price data from data_engine.db (has all stocks)
+  // Step 1: Query stocks.db FIRST (Canonical SSOT for EGX prices and metrics)
+  try {
+    const stocksDb = getStocksDb();
+    const row = stocksDb
+      .prepare(`
+        SELECT 
+          ticker,
+          name,
+          name_ar,
+          current_price,
+          previous_close,
+          change_percent,
+          volume,
+          market_cap,
+          market,
+          sector,
+          industry,
+          open_price,
+          high_price,
+          low_price,
+          pe_ratio,
+          pb_ratio,
+          dividend_yield,
+          eps,
+          roe,
+          debt_to_equity,
+          support_level,
+          resistance_level,
+          ma_50,
+          ma_200,
+          rsi,
+          is_egx30,
+          is_egx70,
+          is_egx100,
+          compliance_status
+        FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1
+      `)
+      .get(ticker) as Record<string, unknown> | undefined;
+
+    if (row && Number(row.current_price) > 0) {
+      const curr = Number(row.current_price);
+      const prev = Number(row.previous_close) || curr;
+      const changePct = Number(row.change_percent) || 0;
+      const marketCode = arabicToMarketCode(String(row.market || 'EGX'));
+      return {
+        ticker: row.ticker,
+        name: row.name,
+        name_ar: row.name_ar || row.name,
+        current_price: curr,
+        previous_close: prev,
+        open_price: Number(row.open_price) || curr,
+        high_price: Number(row.high_price) || curr,
+        low_price: Number(row.low_price) || curr,
+        price_change: changePct,
+        change_percent: changePct,
+        volume: row.volume,
+        market_cap: row.market_cap,
+        market: marketCode,
+        sector: row.sector || '',
+        industry: row.industry || '',
+        pe_ratio: row.pe_ratio,
+        pb_ratio: row.pb_ratio,
+        dividend_yield: row.dividend_yield,
+        eps: row.eps,
+        roe: row.roe,
+        debt_to_equity: row.debt_to_equity,
+        support_level: row.support_level,
+        resistance_level: row.resistance_level,
+        ma_50: row.ma_50,
+        ma_200: row.ma_200,
+        rsi: row.rsi,
+        is_egx30: row.is_egx30,
+        is_egx70: row.is_egx70,
+        is_egx100: row.is_egx100,
+        compliance_status: row.compliance_status,
+      };
+    }
+  } catch (err) {
+    console.warn('[egx-db] getStockByTicker stocks.db lookup error:', err);
+  }
+
+  // Step 2: Fallback to data_engine.db ONLY for missing / international stocks
   const dataEngineDb = getDataEngineDb()
   
   const basicRow = dataEngineDb
@@ -686,56 +769,15 @@ export function getStockByTicker(ticker: string): Record<string, unknown> | null
   const changePct = Number(basicRow.change_percent) || 0
   const marketCode = arabicToMarketCode(String(basicRow.market || ''))
 
-  // Step 2: Try to get detailed metrics from stocks.db
-  let detailedData: Record<string, unknown> = {}
-  try {
-    const stocksDb = getStocksDb()
-    const detailRow = stocksDb
-      .prepare(`
-        SELECT 
-          name_ar,
-          sector,
-          industry,
-          open_price,
-          high_price,
-          low_price,
-          pe_ratio,
-          pb_ratio,
-          dividend_yield,
-          eps,
-          roe,
-          debt_to_equity,
-          support_level,
-          resistance_level,
-          ma_50,
-          ma_200,
-          rsi,
-          is_egx30,
-          is_egx70,
-          is_egx100,
-          compliance_status
-        FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1
-      `)
-      .get(ticker) as Record<string, unknown> | undefined
-    
-    if (detailRow) {
-      detailedData = detailRow
-    }
-  } catch (err) {
-    // stocks.db might not have this stock, continue with basic data only
-  }
-
-  // Step 3: Merge data - basic data takes precedence for price/volume
   return {
-    // Basic data from data_engine.db
     ticker: basicRow.ticker,
     name: basicRow.name,
-    name_ar: detailedData.name_ar || basicRow.name,
+    name_ar: basicRow.name,
     current_price: curr,
-    previous_close: curr, // data_engine.db doesn't have separate previous_close
-    open_price: detailedData.open_price || curr,
-    high_price: detailedData.high_price || curr,
-    low_price: detailedData.low_price || curr,
+    previous_close: curr,
+    open_price: curr,
+    high_price: curr,
+    low_price: curr,
     price_change: changePct,
     change_percent: changePct,
     volume: basicRow.volume,

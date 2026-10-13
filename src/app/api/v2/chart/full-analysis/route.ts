@@ -61,26 +61,7 @@ function readStockOHLC(ticker: string, limit: number): Record<string, unknown>[]
     }
   }
 
-  // 2. Fallback to price_history.db price_history (6000+ daily candles per ticker)
-  if (existsSync(priceHistoryDbPath)) {
-    try {
-      const db = new Database(priceHistoryDbPath, { readonly: true, timeout: 3000 });
-      const rows = db
-        .prepare(
-          `SELECT date,
-                  open, high, low, close, volume
-           FROM price_history
-           WHERE ticker = ? COLLATE NOCASE
-           ORDER BY date DESC
-           LIMIT ?`
-        )
-        .all(ticker.toUpperCase(), limit) as Record<string, unknown>[];
-      db.close();
-      if (rows && rows.length > 0) return rows.reverse();
-    } catch { // silent fallback (safe-by-design)
-    }
-  }
-
+  // P0-ISOLATION: price_history.db is isolated. stocks.db is the sole canonical source.
   return [];
 }
 

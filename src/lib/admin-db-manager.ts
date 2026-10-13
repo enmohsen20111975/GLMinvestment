@@ -738,6 +738,11 @@ export function dropTable(dbName: string, table: string): { dropped: string } {
 
 export function truncateTable(dbName: string, table: string): { deletedRows: number } {
   validateTableName(table);
+  // P0-EXEC-IMMUTABLE: شل يد أي عملية تفريغ لجداول التوقعات من Next.js
+  const lower = table.toLowerCase();
+  if (lower === 'predictions' || lower === 'predictions_history' || lower === 'aiprediction') {
+    throw new Error(`CRITICAL P0: جدول '${table}' محمي بأمر تنفيذي قضائي. يمنع منعاً باتاً تفريغه من Next.js.`);
+  }
   const abs = resolveDbPath(dbName);
   let db: Database.Database | null = null;
   try {

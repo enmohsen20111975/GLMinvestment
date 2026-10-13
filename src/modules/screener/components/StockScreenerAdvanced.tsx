@@ -572,25 +572,9 @@ export function StockScreenerAdvanced({ initialTab = 'advanced', initialMarket }
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'advanced' | 'top-performers')} className="w-full">
-        <TabsList className="grid grid-cols-2 w-full max-w-md">
-          <TabsTrigger value="advanced" className="gap-1.5">
-            <Filter className="w-3.5 h-3.5" />
-            {t('screener.advanced.tabs.advancedFilters')}
-          </TabsTrigger>
-          <TabsTrigger value="top-performers" className="gap-1.5">
-            <Trophy className="w-3.5 h-3.5" />
-            {t('screener.advanced.tabs.topPerformers')}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="advanced">
-          <AdvancedFiltersTab initialMarket={initialMarket} />
-        </TabsContent>
-        <TabsContent value="top-performers">
-          <TopPerformersTab />
-        </TabsContent>
-      </Tabs>
+      <div className="w-full">
+        <AdvancedFiltersTab initialMarket={initialMarket} />
+      </div>
 
       {/* إخلاء مسؤولية قانوني */}
       <LegalDisclaimerFooter />

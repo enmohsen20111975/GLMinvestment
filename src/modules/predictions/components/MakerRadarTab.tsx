@@ -499,7 +499,7 @@ function pathToStockStatus(path: RadarPath | null | undefined): string {
   if (path === 'A_pre_surge') return 'انطلاق وشيك';
   if (path === 'B_quiet_accumulation_strong') return 'تجميع هادئ قوي';
   if (path === 'C_quiet_accumulation_weak') return 'تجميع هادئ';
-  if (path === 'D_explosive_surge') return 'تصريف ذكي';
+  if (path === 'D_explosive_surge') return 'صعود انفجاري / اختراق حاد';
   if (path === 'E_early_break') return 'انطلاق وشيك';
   return '—';
 }
@@ -511,7 +511,7 @@ function pathToWyckoffPhase(path: RadarPath | null | undefined): string {
   if (path === 'B_quiet_accumulation_strong' || path === 'C_quiet_accumulation_weak') {
     return 'امتصاص العروض / اختبار القاع';
   }
-  if (path === 'D_explosive_surge') return 'اختبار القمة / توزيع';
+  if (path === 'D_explosive_surge') return 'اختراق قمة / زخم صاعد';
   if (path === 'E_early_break') return 'اختراق التجميع';
   return '—';
 }

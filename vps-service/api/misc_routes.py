@@ -2430,11 +2430,11 @@ def _cascading_fallback_select(items, target=5):
     # Tier 2: Moderate (score>=60, R/R>=1.3) — الأسهم القيادية الهادية
     if len(selected) < target:
         _tier_pass(60, 1.3, 'moderate')
-    # Tier 3: Survival (score>=50, R/R>=1.2) — الحد الأدنى المقبول
+    # Tier 3: Survival (score>=55, R/R>=1.3) — الحد الأدنى المقبول رياضياً
     if len(selected) < target:
-        _tier_pass(50, 1.2, 'survival')
-    # Tier 4: Last-Resort fill — أعلى المتبقين (بس مش أسهم ميتة)
-    # ده ضمان إن الشاشة متفضيش أبداً (حتى لو السوق هادي جداً)
+        _tier_pass(55, 1.3, 'survival')
+    # Tier 4: Last-Resort fill — أعلى المتبقين بشرط R/R >= 1.25 وعدم قلب المخاطرة
+    # ممنوع بتاتاً تمرير صفقة تخاطر بأكتر من مكسبها عشان نملى الشاشة
     if len(selected) < target:
         for it in alive:
             if len(selected) >= target:
@@ -2442,6 +2442,13 @@ def _cascading_fallback_select(items, target=5):
             tkr = (it.get('ticker') or '').upper()
             if tkr in seen_tickers:
                 continue
+            try:
+                rr = float(it.get('risk_reward') or it.get('risk_reward_ratio') or 0)
+            except (TypeError, ValueError):
+                rr = 0.0
+            sig = str(it.get('signal') or '').upper()
+            if sig in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and rr < 1.25:
+                continue  # قتل الصفقة غير المتكافئة
             it['_fallback_tier'] = 'last_resort'
             selected.append(it)
             seen_tickers.add(tkr)
@@ -2813,9 +2820,25 @@ def unified_predictions():
                             'lowest_price_reached': round(_ep_min_l, 2) if _ep_min_l else None,
                         }
                         _empty_prev.append(_entry_obj)
-                        # FIX: أي توقع لسه معلق (مش hit_target ولا hit_stop)
-                        # نحطه في الـ predictions list الرئيسي عشان يظهر على الشاشة.
-                        if _ht != 1 and _hs != 1:
+                        # HARD QUANT KILL FILTER (Rule of Positive Asymmetric Expectancy):
+                        # لا نقبل أي صفقة معلقة كـ "توصية شراء نشطة" إذا كانت:
+                        # 1. نسبة العائد للمخاطرة مقلوبة أو أقل من 1.4:1 (مثل كارثة فوري)
+                        # 2. الثقة ضعيفة أو ميتة (score < 60)
+                        # 3. العائد المستهدف تافه (< 2.5%)
+                        _is_buy_act = _sg in ('BUY', 'STRONG_BUY', 'ACCUMULATE')
+                        _valid_trade = True
+                        if _is_buy_act:
+                            if _entry <= 0 or not _target or not _stop:
+                                _valid_trade = False
+                            else:
+                                _rew = _target - _entry
+                                _rsk = _entry - _stop
+                                if _rsk <= 0 or _rew <= 0 or (_rew / _rsk) < 1.4 or (_rew / _entry) < 0.025:
+                                    _valid_trade = False
+                            if _score < 60:
+                                _valid_trade = False
+
+                        if _ht != 1 and _hs != 1 and _valid_trade:
                             _fallback_predictions.append(_entry_obj)
                         if len(_empty_prev) >= 30:
                             break

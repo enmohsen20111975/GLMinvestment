@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCAN_DIRS = ['vps-service', 'scripts']
+SCAN_DIRS = ['vps-service', 'scripts', 'src']
 
 # ════════════════════════════════════════════════════════════════════════════
 # DEV-14 §1 — EXPLICIT ALLOWLIST of disabled files.
@@ -173,13 +173,15 @@ def find_active_violations() -> Tuple[List[str], List[str]]:
         root = PROJECT_ROOT / scan_dir
         if not root.exists():
             continue
-        for py_file in root.rglob('*.py'):
-            rel_path = py_file.relative_to(PROJECT_ROOT).as_posix()
-            if is_path_excluded(rel_path):
-                continue
-            if rel_path in DISABLED_FILES:
-                # Already verified by guard check above — skip.
-                continue
+        patterns = ('*.py', '*.ts', '*.tsx', '*.js')
+        for pat in patterns:
+            for py_file in root.rglob(pat):
+                rel_path = py_file.relative_to(PROJECT_ROOT).as_posix()
+                if is_path_excluded(rel_path):
+                    continue
+                if rel_path in DISABLED_FILES:
+                    # Already verified by guard check above — skip.
+                    continue
             try:
                 text = py_file.read_text(encoding='utf-8', errors='ignore')
             except Exception:
