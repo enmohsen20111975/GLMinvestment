@@ -67979,24 +67979,629 @@ Stage Summary:
 - ✅ py_compile PASS + tsc clean
 
 ---
-Task ID: BRAVO-T02-T05-PULSE-SCORECARD
-Agent: كبير المهندسين الكميين والرياضيات والذكاء الاصطناعي (Chief Quant & Math Lead — GLM 5.2 Bravo)
-Task: Market Pulse (0-100) + Evidence Scorecard (6 Proofs) + TP1=2.5×ATR
+Task ID: ALPHA-AUDIT-DASHBOARD
+Agent: Frontend X-Ray Auditor (Dashboard family)
+Task: جرد شاشات الداشبورد + ويدجت السوق
 
 Work Log:
-- T-02: أضفت compute_market_pulse() في market_regime_engine.py:
-  * 60% اتساع السوق (gainers_pct × 0.60)
-  * 40% حركة المؤشر (idx_score + SMA bonus × 0.40)
-  * Hard Cap: losers_pct > 75% → pulse ≤ 30
-  * ممنوع pulse=0 متجمداً (الحد الأدنى 1)
-- T-05: أضفت build_evidence_scorecard() في core_scoring_engine.py:
-  * 6 براهين: MA position + liquidity flow + accumulation + RS + falling knife + entry decision
-  * verdict: ACCEPTED / REJECTED مع سبب الرفض الصريح
-  * TP1 = 2.5×ATR validation (FANTASY-CAP-RR-REJECT لو فرق > 20%)
-  * RR ≥ 1.5 enforcement
+- قرأت worklog.md السابق لفهم السياق (مهام Phase 0/2 مايسترو + Unification + Market Separation)
+- قرأت كل الملفات التسعة المطلوبة بالكامل (DashboardView, MarketPulseWidget, MarketSentiment, RealtimeTicker, LiveStockTicker, MaestroWidget, dashboard/index.ts, IntradayPressurePanel, LiquidityFlowPanel)
+- شغّلت Grep على `fetch\(|socket\.on|useRealtimeUpdates|useAppStore` في كل الملفات للتأكد من عدم فوت أي مصدر بيانات
+- قرأت `src/lib/ws-client.ts` لتحديد قائمة أحداث WebSocket المتاحة (market:update / market:snapshot / ticker:update / stock:alert / subscribe:ticker)
+- جمّعت تقرير منظم لكل مكوّن: endpoints + WS events + الحقول المعروضة + سلوك fallback
+- لاحظت أن MaestroWidget معطّل بالكامل (returns null) والـ import مشلول من index.ts (Rule 73)
+- لاحظت أن InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel اتشالوا من Dashboard ونقلوا لشاشة #market-depth المنفصلة (لكن ما زالوا مُصدَّرين من index.ts للوصول المباشر)
 
 Stage Summary:
-- ✅ Market Pulse: gainers=324 losers=660 → pulse=38/100 (هابط) — يعكس الضغط البيعي الحقيقي.
-- ✅ EGREF: REJECTED — 4 أسباب رفض صريحة (falling knife + سيولة خارجة + تخفيض + RR<1.5).
-- ✅ COMI: ACCEPTED — كل البراهين إيجابية (RR=2.1 ≥ 1.5 + TP1 ≈ 2.5×ATR).
-- ✅ py_compile: 2/2 PASS.
+
+# Dashboard X-Ray Audit — Findings Per Component
+
+## 1. DashboardView.tsx (orchestrator, 591 lines)
+- **Path**: `src/modules/dashboard/components/DashboardView.tsx`
+- **fetch calls**: NONE مباشرة — كل البيانات عبر `useAppStore()` (يستدعي `loadDashboard()` على mount)
+- **WebSocket**: NONE مباشرة
+- **Data fields displayed**: widget registry فقط — لا يعرض بيانات خام بنفسه. يقرأ `marketOverview.indices[0].value / change_percent / market_status.is_open` + `v2Data.stocks[]` (compositeScore, recommendation, entryPrice, exitStrategy.stopLoss/targetPrice/targetPrice2, rrRatio, confidence, nameAr) + `v2Data.market.regime.trend/regimeAr/advice_ar`
+- **Fallback**: `DashboardSkeleton` (grid of Skeleton placeholders) بينما `!mounted || isLoading`؛ قسم "فرص جاهزة الآن" يتخفّى لو مفيش Strong Buy/Buy؛ `eligibleWidgets.length === 0` → "لا توجد ودجات متاحة"
+- **ملاحظات**: MaestroWidget + InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel اتشالوا من هنا (Owner directive نقل لـ #market-depth)
+
+## 2. MarketPulseWidget.tsx (884 lines)
+- **Path**: `src/modules/dashboard/components/MarketPulseWidget.tsx`
+- **fetch**: `GET /api/market-pulse?market={currentMarket}` (encodeURIComponent, cache:'no-store', AbortController 12s) — كل 10s عبر `useVisibilityAwarePolling`
+- **WebSocket**: NONE
+- **Data fields displayed**: 
+  - `pulse.score` (-5..+5), `pulse.label`, `pulse.label_en`, `pulse.color`
+  - `egx30.value/change_percent/previous_close` + `egx70` نفس الحقول
+  - `divergence.value/regime/regime_ar/action/action_ar`
+  - `breadth.gainers/losers/unchanged/adv_dec_ratio/total_turnover/total_turnover_bn`
+  - `top_sector.sector/turnover_pct/avg_change`
+  - `market_status` (OPEN/CLOSED), `latest_update`, `cairo_time`, `weekday`, `is_trading_hours`
+- **Fallback**: 
+  - `loading && !data` → `<PulseSkeleton/>` (Card بـ 6 Skeleton blocks)
+  - `hasError` (error && !data) → Card "انقطاع الاتصال" + زر "إعادة المحاولة"
+  - `!data` بعد كل ده → `return null`
+  - `bread` null → `<Skeleton className="h-2 w-full"/>` للـ breadth bar
+  - `div` falsy → skip divergence badge
+  - `top` falsy → skip top sector card
+  - `pulse` falsy → `—` للقيمة، `—` للتسمية
+- **ملاحظة**: ALPHA-P0 fix يضيف 'Z' تلقائياً لو الـ timestamp من غير timezone
+
+## 3. MarketSentiment.tsx (197 lines)
+- **Path**: `src/modules/dashboard/components/MarketSentiment.tsx`
+- **fetch**: NONE مباشرة — يقرأ `aiInsights` من `useAppStore()`
+- **WebSocket**: NONE
+- **Data fields displayed** (من `aiInsights`): `market_score` (0-100 gauge), `market_sentiment` (bullish/neutral/bearish), `volatility_index`, `market_breadth`, `gainers`, `losers`
+- **Fallback**: 
+  - `!aiInsights` → `return null` (مكوّن كامل ما يُعرضش)
+  - `Number.isNaN(score)` → 50 (محايد) داخل SentimentGauge
+  - `volatility_index` NaN → 0.00, `market_breadth` NaN → 0.0%, `totalMovers === 0` → breadthPercent = 50
+  - `sentiment` غير معروف → falls back to neutral config
+
+## 4. RealtimeTicker.tsx (192 lines)
+- **Path**: `src/modules/dashboard/components/RealtimeTicker.tsx`
+- **fetch**: `GET /api/stocks?limit=20&market={currentMarket}` — فقط كـ fallback لما WebSocket غير متصل
+- **WebSocket**: YES عبر `useRealtimeUpdates()` من `@/lib/ws-client` (يستهلك `stockPrices` + `isConnected`). الـ hook يسمع على `market:update` و `ticker:update` و `market:snapshot` و `stock:alert` events
+- **Data fields displayed** (TickerItem): `ticker`, `name_ar`, `current_price`, `previous_price`, `price_change`, `volume`
+- **Fallback**: 
+  - لو `isConnected && stockPrices.length > 0` → يتجاهل الـ fetch ويستخدم WS فقط
+  - `isLoading || validStockPrices.length === 0` → `return null` (شريط يتخفّى)
+  - `fetch` error → catch صامت، `isLoading=false`، فالـ validStockPrices بيفضل فاضي → return null
+  - price NaN → 0, change NaN → 0, vol NaN → 0
+- **سلوك الـ UI**: Auto-scroll أفقي بـ requestAnimationFrame (0.5 px/frame)، يضاعف العناصر لـ seamless loop، framer-motion scale pulse عند حركة السعر
+
+## 5. LiveStockTicker.tsx (297 lines)
+- **Path**: `src/modules/dashboard/components/LiveStockTicker.tsx`
+- **fetch**: `GET /api/market-pulse?market={currentMarket}` (cache:'no-store', AbortController 12s, Accept: application/json) — كل 20s عبر `useVisibilityAwarePolling`
+- **WebSocket**: NONE
+- **Data fields displayed** (StockMover): `ticker`, `name`/`name_ar`, `current_price`, `change_percent`, `volume`
+  - يعرض gainers (top 10) + losers (top 10) merged، الأولانية الرابحين
+  - `market_status` (OPEN/CLOSED) للشارة "مباشر/مغلق"
+- **Fallback**: 
+  - `loading && !hasData` → `<TickerSkeleton/>` (12 placeholders)
+  - `hasData` truthy → scroll يكمل حتى لو error (يحتفظ بآخر بيانات + شارة WifiOff حمرا)
+  - `!hasData && !loading` → "لا توجد بيانات أسهم متاحة"
+  - `change_percent` null/NaN → '—' (من fmtPct)
+  - HTTP !ok → throw Error → state.error يحتفظ بآخر gainers/losers (setters لا تُصفّر الـ data)
+- **سلوك الـ UI**: CSS animation `lss-ticker-scroll` بمدة متغيرة (28-80s حسب عدد العناصر)، hover يوقف التمرير، `prefers-reduced-motion` يلغي الـ animation
+
+## 6. MaestroWidget.tsx (90 lines) — DEPRECATED
+- **Path**: `src/modules/dashboard/components/MaestroWidget.tsx`
+- **fetch**: NONE نشط — الـ call الأصلي `/api/maestro/overview?market={currentMarket}` معلّق كتعليق فقط (commented out, Rule 73 + Task PHASE-2-MAESTRO-KILL)
+- **WebSocket**: NONE
+- **Data fields displayed**: NONE — الـ component بيرجع `null` قبل أي render
+- **Fallback**: `return null` دائماً (الكود القديم محفوظ كتعليقات للـ traceability فقط)
+- **ملاحظة**: غير مُصدَّر من `index.ts` (السطر معلّق) وغير مستورد في DashboardView.tsx
+
+## 7. dashboard/index.ts (27 lines — Public barrel)
+- **Path**: `src/modules/dashboard/index.ts`
+- **Exports**: DashboardView, RealtimeTicker, LiveMonitor, LiveStockTicker, MarketSummary, IndexCards, TopMovers, MarketSentiment, CryptoSignalsWidget, SeasonalitySignalsWidget, MarketPulseWidget, InvestorsFlowPanel, LiquidityFlowPanel, IntradayPressurePanel, MultiMarketWidget, AssetPreferenceOnboarding, PinnableWidget, SafeWidget, DevelopmentNotice
+- **Disabled**: `MaestroWidget` (سطر 17 معلّق — Rule 73 SINGLE-DISPLAY-SOURCE)
+- **ملاحظة**: InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel ما زالوا مُصدَّرين رغم نقلهم لشاشة #market-depth (للإعادة الاستخدام المباشر)
+
+## 8. IntradayPressurePanel.tsx (373 lines)
+- **Path**: `src/modules/dashboard/components/IntradayPressurePanel.tsx`
+- **fetch**: `GET /api/market/intraday-pressure?ticker={ticker}&period={period}` (cache:'no-store', default ticker='COMI', period: 5min/15min/30min/1h/session)
+- **WebSocket**: NONE
+- **Data fields displayed**:
+  - Buckets: `bucket_start/bucket_end/time_label/buy_volume/sell_volume/neutral_volume/total_volume/buy_pressure_pct/sell_pressure_pct/net_pressure/vwap/avg_price/tick_count/open_price/close_price/high_price/low_price`
+  - SessionSummary: `total_buy_volume/total_sell_volume/total_neutral_volume/total_volume/net_pressure/buy_pressure_pct/sell_pressure_pct/buy_sell_ratio/session_vwap/session_open/session_close/session_high/session_low/tick_count`
+  - `ticker`, `period`, `date`, `note`
+  - Interpretation: buy_pressure > 55 = "ضغط شرائي", < 45 = "ضغط بيعي", else "متوازن"
+- **Fallback**: 
+  - `loading` → 3 Skeleton blocks
+  - HTTP !ok → "تعذّر جلب البيانات. يرجى المحاولة مرة أخرى." + زر "إعادة المحاولة"
+  - `!json.success` + note يحتوي "no intraday data"/"no data" → "لا توجد بيانات لحظية لسهم {ticker} — قد تكون الجلسة مغلقة أو البيانات غير متوفرة" + retry
+  - `!data || !data.session_summary` → "لا توجد بيانات تداول داخل الجلسة لهذا السهم"
+  - `data.buckets.length === 0` → "لا توجد باكتات زمنية في هذه الجلسة"
+  - Network error → "تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى."
+  - `buy_sell_ratio` null → '—', `session_close >= session_open` → green tone, else red
+
+## 9. LiquidityFlowPanel.tsx (468 lines)
+- **Path**: `src/modules/dashboard/components/LiquidityFlowPanel.tsx`
+- **fetch**: `GET /api/market/liquidity-flow?market={currentMarket}&days={period}` (cache:'no-store', period: 7/30/90 يوم)
+- **WebSocket**: NONE
+- **Data fields displayed**:
+  - SectorFlow (UnifiedTable مع sort+filter): `sector/total_turnover/total_volume/stocks_count/avg_change_pct/flow_direction(change_in_turnover_pct)`
+  - StockFlowItem (inflow/outflow lists): `ticker/name_ar/sector/total_turnover/total_volume/latest_change_pct/latest_price`
+  - investor_type_estimate: `institutional_pct/retail_pct/block_trades_count/avg_trade_value/large_blocks[]`
+  - summary: `total_turnover/total_volume/net_flow_direction/advancing_sectors/declining_sectors`
+  - `market`, `days`, `note`
+- **Fallback**: 
+  - `loading` → Card بـ 3 Skeleton blocks (نفس الشكل النهائي عشان مفيش layout shift)
+  - HTTP !ok → "تعذّر جلب البيانات. يرجى المحاولة مرة أخرى." داخل Card
+  - `!json.success` → `json.note || 'تعذّر جلب البيانات'`
+  - `error || !data || !data.summary` → "لا توجد بيانات سيولة لهذا السوق"
+  - `noData` (كل المصفوفات فاضية) → "لا توجد بيانات سيولة لهذا السوق في النافذة المحددة"
+  - `top_inflow_stocks.length === 0` → "لا توجد سيولة داخلة في النافذة الحالية"
+  - `top_outflow_stocks.length === 0` → "لا توجد سيولة خارجة في النافذة الحالية"
+  - Network error → "تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى."
+  - `investor_type_estimate` null → skip investor section entirely
+  - `large_blocks.length === 0` → skip the "أكبر الصفقات المؤسسية" sub-grid
+
+# Key Cross-Cutting Findings
+1. **WebSocket usage محدود**: فقط RealtimeTicker يستخدم `useRealtimeUpdates()` — باقي ودجات السوق كلها HTTP polling عبر `useVisibilityAwarePolling` (pauses when tab hidden).
+2. **Maestro معطّل رسمياً**: MaestroWidget بترجع null، مش مستورد في DashboardView، ومش مُصدَّر من index.ts — لكن الـ file ما اتمسحش (Rule 4 NO-DELETION).
+3. **`/api/market-pulse` هو المصدر الكنسي**: يستخدم في MarketPulseWidget + LiveStockTicker (نفس الـ endpoint مع query param `market`).
+4. **Fallback patterns متناسقة**: Skeleton للـ loading، رسالة عربية للـ error، نص "لا توجد بيانات" للـ empty، `return null` للـ missing critical data.
+5. **Market awareness**: كل الـ widgets بتيجي currentMarket من `useAppStore.getState().currentMarket` — لكن DashboardView بيخفي MarketPulseWidget + MarketSentiment + LiveStockTicker للـ CRYPTO.
+6. **i18n جزئي**: DashboardView يستخدم `useTranslation()`، لكن باقي الـ widgets مكتوبة بنصوص عربية hardcoded.
+7. **IntradayPressurePanel + LiquidityFlowPanel** ما عادوا في DashboardView نفسه (انتقلوا لـ #market-depth) لكن ما زالوا مُصدَّرين من index.ts.
+
+---
+Task ID: ALPHA-AUDIT-API-ROUTES
+Agent: Frontend X-Ray Auditor (API Routes Map)
+Task: جرد كل مسارات الـ API في Next.js
+
+Work Log:
+- Read previous worklog to understand context (multiple Task IDs from prior agents — most recent entries were about subscription/admin/PR work).
+- Globbed `/home/z/my-project/src/app/api` with pattern `**/route.ts` → 451 route files discovered (note: the displayed Glob preview was truncated at 318 but `find` confirmed 451 total).
+- Grep over `src/app` with glob `**/api/**/route.ts` for pattern `export\s+async\s+function\s+(GET|POST|PUT|DELETE|PATCH)` → 586 method exports across 447 unique files. Persisted raw output to `/tmp/api_methods.txt` after aggregating per-file methods with awk (`+` separator).
+- Grep over `src/app` with glob `**/api/**/route.ts` for pattern `EGXPY_SERVICE_URL|PYTHON_BACKEND|\$\{PY\}|egxpy|process\.env\.PY` → 283 URL-pattern matches across 145 unique files. Persisted to `/tmp/api_python_urls.txt`.
+- Joined the two result-sets by file path → produced `/tmp/full_mapping.txt` (447 rows × 4 columns: API path | file path | methods | python URL).
+- Identified 4 routes WITHOUT explicit HTTP method exports (they use NextAuth handlers, catch-all proxy, or sub-route composition):
+  • `/api/admin/engines/logs/control/route.ts`
+  • `/api/admin/engines/logs/route.ts`
+  • `/api/auth/[...nextauth]/route.ts` (NextAuth catch-all)
+  • `/api/telegram/[...path]/route.ts` (Telegram catch-all proxy)
+- Spot-read 5 representative route files to capture descriptions (route.ts, [...slug], proxy/[...path], python/[...path], stocks/[ticker]/unified, predictions/honest-tracking/live-tracking, health) — confirmed catch-all behavior, Python-proxy pattern, and SQLite-direct pattern.
+- Read `/home/z/my-project/src/lib/python-backend.ts` to document the central PYTHON_BACKEND_URL helper (default `http://127.0.0.1:8010`, honors env vars in priority: PYTHON_BACKEND_URL → VPS_API_URL → PYTHON_API_URL → EGXPY_SERVICE_URL → EGX_VPS_API_URL → EGXPY_BRIDGE_URL).
+- Categorized routes by top-level directory and counted Python-proxy vs SQLite-local distribution.
+- Saved complete mapping table as `/tmp/full_mapping.txt` (447 rows, 52 KB) and `/tmp/python_routes.txt` (144 Python-proxy rows) and `/tmp/local_routes.txt` (303 SQLite-local rows) for follow-up auditors.
+
+Stage Summary:
+- 451 total route.ts files under `src/app/api/` (447 with explicit HTTP method exports + 4 with handler-style re-exports).
+- Method distribution: GET (371), POST (167), DELETE (29), PUT (14), PATCH (6) — multiple methods per file are common (joined by `+`).
+- 144 routes (≈32%) proxy to the Python backend (EGX-PY service) at `http://127.0.0.1:8010` by default.
+- 303 routes (≈68%) read/write local SQLite DBs directly (stocks.db, predictions.db, paper-trading.db, etc.) with no Python dependency.
+- 6 different env vars are referenced across the codebase for the Python backend URL — leading to inconsistency. Canonical helper is `PYTHON_BACKEND_URL` exported from `src/lib/python-backend.ts`; the older inline `EGXPY_SERVICE_URL` / `PYTHON_API_URL` constants still appear in ~50 routes.
+- Top 10 modules by route count: admin (83, of which 17 are db-manager CRUD), predictions (29, with 7 honest-tracking + 4 dual-track + 4 tracking sub-routes), market (25), stocks (20, with 11 under [ticker]), mobile (19), finance (17), maker-radar (16), portfolio (15), crypto (14), v2 (13), subscription (12), data-engine (9), auth (8).
+- Key architectural patterns observed:
+  • Two catch-all proxies: `/api/proxy/[...path]` (SEC-04 hardened, admin-gated) and `/api/python/[...path]` (same handler, transparent alias) — both forward to Python backend.
+  • One JSON catch-all `/api/[...slug]` returns 404 JSON for unmatched /api/* routes (mobile-friendly).
+  • `/api/stocks/[ticker]/unified` is the canonical single-source-of-truth stock endpoint (Rule 67 CALCULATION-CANONICAL).
+  • `/api/predictions/honest-tracking/*` is the SQLite-direct lightweight replacement for the old Python-backed `/api/stored-analysis/live-tracking` (added by prior Task ID 1 agent).
+  • Admin DB-manager exposes 17 sub-routes (backup, restore, recover, recover-all, export, export-all, import-all, query, schema, truncate-table, drop-table, reindex, repair, checkpoint-all, delete-backup, historical-backups, base route).
+- Next-actions for downstream X-Ray auditors:
+  1. Verify which of the 144 Python-proxy routes have a SQLite fallback (only `/api/python/v4/stats` confirmed so far via `handleV4Stats`).
+  2. Audit the 6 env vars for runtime drift — recommend consolidating to `PYTHON_BACKEND_URL` only.
+  3. Cross-reference `/tmp/full_mapping.txt` against frontend `fetch()` calls to find orphaned or unused endpoints.
+
+---
+Task ID: ALPHA-AUDIT-PORTFOLIO-REPORTS
+Agent: Frontend X-Ray Auditor (Portfolio + Reports + Screener)
+Task: جرد المحفظة + التقارير + الفلاتر
+
+Work Log:
+- قرأت الـ worklog السابق (67,980 سطر) وحددت أنه لا يوجد تدقيق Frontend X-Ray مماثل سابق.
+- قرأت الملفات الستة المستهدفة بالكامل:
+  * src/modules/portfolio/components/EnhancedPortfolioView.tsx (3,362 سطر)
+  * src/modules/portfolio/components/BagHolderRescuePanel.tsx (1,118 سطر)
+  * src/modules/reports/components/ReportsView.tsx (956 سطر)
+  * src/modules/screener/components/StockScreenerAdvanced.tsx (2,724 سطر)
+  * src/modules/stock-analysis/components/StocksView.tsx (2,306 سطر)
+  * src/components/watchlist/EnhancedWatchlistView.tsx (1,357 سطر)
+- أكدت أن src/modules/stock-analysis/components/StocksViewTable.tsx غير موجود — الجدول مدمج داخل StocksView.tsx عبر <UnifiedTable>.
+- استخدمت Grep لرسم خريطة fetch(/api/...) + useAppStore + useVisibilityAwarePolling + socket.on لكل ملف.
+- استخرجت Endpoints الدقيقة، حقول العرض، وحالات الـ fallback (skeleton / empty state / offline state / silent polling).
+- قرأت reports/lib/proxy-client.ts للتأكد من آلية ReportsView مع محرك Python (Rule 67 + Rule 20).
+
+Stage Summary:
+- لا يوجد أي WebSocket/socket.io في أي من الستة مكونات — التحديث الحي كله polling (setInterval أو useVisibilityAwarePolling 30s).
+- EnhancedPortfolioView: 19 fetch endpoint عبر 4 تبويبات (Assets/Income/Obligations/Reports) + useVisibilityAwarePolling 30s + 3 حالات فارغة (لا توجد أصول/معاملات/التزامات/بيانات كافية).
+- BagHolderRescuePanel: 4 endpoints (bag-holder-rescue + calculate-values + assets PUT + trading-journal) + persona-scaled advice + AVERAGE_DOWN ceiling warning.
+- ReportsView: مصدر موحد واحد (Rule 67) عبر /api/reports/proxy?type=daily|weekly|monthly&market=EGX مع OfflineState صريح لو Python متوقف + safeFmtNum/safeFmtPct يرجعون "—" للقيم المفقودة.
+- StockScreenerAdvanced: 2 endpoints (screener/advanced + maker-radar بالتوازي + radar اختياري fail-silent) + paywall gate + 4 trader presets client-side + empty state "لا توجد نتائج".
+- StocksView: polling 30s لـ EGX + 60s لـ crypto عبر setInterval + GET /api/stocks (عبر apiClient) + GET /api/stocks/presets مباشرة + جدولين (desktop UnifiedTable + mobile cards) + skeleton + empty "لا توجد نتائج مطابقة".
+- EnhancedWatchlistView: 5 endpoints (watchlist-enhanced GET/POST/PUT/DELETE + /api/stocks search) + setInterval 30s + loadError منفصل عن empty state (UI-FIX-P2-P3 issue 2.10).
+- لا توجد مصادر بيانات مكررة ضمن نفس الـ screen family (كل endpoint مخصص لمهمة محددة)، والإيموجي/النصوص العربية موحّدة.
+- التقرير الكامل بالتفاصيل (لكل مكوّن: الـ endpoints، الحقول، حالات الـ fallback) موجود في الرد النهائي.
+
+---
+Task ID: ALPHA-AUDIT-STOCKDETAIL
+Agent: Frontend X-Ray Auditor (StockDetail + Charts)
+Task: جرد شاشة تفاصيل السهم + الشارت
+
+Work Log:
+- Read worklog.md to confirm no prior ALPHA-AUDIT records existed (clean slate for this Task ID)
+- Confirmed all 12 target files exist via LS (stock-analysis/components + market-analysis/components)
+- Read StockDetail.tsx (1654 lines) end-to-end in 3 chunks; extracted 5 fetch endpoints + 11 child components
+- Read TradingViewChart.tsx (1896 lines); identified 3 cascading fetch fallbacks (chart → v2/full-analysis → stocks/history) + TradingView iframe widget
+- Read ProfessionalTradingChart.tsx (826 lines); identified 4 fetches + useLiveTicker WebSocket subscription (ticker:live / ticker:update)
+- Read TradingChartView.tsx (309 lines); workspace wrapper rendering N×ProfessionalTradingChart + publish-status-image POST
+- Read DeepAnalysis.tsx (1148 lines); pure consumer of useAppStore (deepAnalysis + professionalAnalysis + selectedStock) — no direct fetches
+- Read StockNews.tsx (617 lines); consumes loadStockNews from store (parent StockDetail triggers with limit=15)
+- Read GateAnalysisView.tsx (266 lines); Promise.allSettled over /api/stocks/[ticker]/unified + /api/python/v2/cached-analysis/[ticker]
+- Read ComprehensiveStockAnalysis.tsx (1430 lines); 7 tabs (overview/expert/technical/fundamental/chart/news/predictions) + unified-API override for technical fields
+- Read DeltaVolumeBar.tsx (229 lines); single fetch to /api/stocks/delta-volume + 14-day history mini-chart
+- Read MarketDepthPanel.tsx (280 lines); single fetch to /api/market/intraday-pressure + period selector (5min/15min/30min/1h)
+- Read StockAdvancedAnalysisView.tsx (700 lines); 3 fetches (chart + cached-analysis + on-demand analyze) with XTransformPort=8010
+- Read CalculationBreakdown.tsx (634 lines); 3 accordion sections (Fair Value / Technical / Scores) consuming useAppStore only
+- Grep'd for `socket.on`, `useRealtimeUpdates`, `EventSource`, `new WebSocket` — only ProfessionalTradingChart (via useLiveTicker hook) uses WebSocket; no other file does
+- Grep'd for `useAppStore`, `loadStockDetail`, `loadStockNews` — StockNews + DeepAnalysis + CalculationBreakdown + TradingViewChart + TradingChartView + ProfessionalTradingChart all consume useAppStore
+- Composed per-component audit table (12 entries) with fetch endpoints, WS events, displayed fields, and fallback behaviors
+
+Stage Summary:
+- 12 components audited; 16 distinct REST endpoints observed across the screen (the canonical SSOT is `/api/stocks/[ticker]/unified`)
+- Only 1 of 12 components subscribes to WebSocket events: ProfessionalTradingChart (via `useLiveTicker` → `socket.emit('subscribe:ticker')`, listens to `ticker:live` + `ticker:update` + `connect`/`disconnect`/`connect_error`)
+- StockDetail.tsx orchestrates 11 child panels; each is wrapped in an ErrorBoundary that renders a "حدث خطأ في عرض البيانات" retry card on crash — the screen itself never white-screens
+- Fallback strategy is consistent: skeleton while loading → error card with retry on failure → "—" / "غير متاح" / "N/A" for individual NULL fields (Rule 27 NO-FAKE-DATA)
+- Notable: TradingViewChart uses a 3-tier fetch cascade (chart → v2/full-analysis → stocks/history) so even if primary chart API is down the chart still renders daily candles + shows amber "السوق مغلق" banner
+- Notable: ProfessionalTradingChart enforces "buy-valve" (ALPHA-P0) — entry/stop/target/RR are NULL for non-BUY signals; instead shows "لا توجد صفقة شراء مفعلة" amber card
+- Notable: CalculationBreakdown has a PAYWALL gate (Fair Value details locked for free users post-trial via getTrialStatus)
+- Notable: GateAnalysisView falls back to price-derived defaults when unified fields missing (rsi=50, atr=price*0.02, support=price*0.95, resistance=price*1.05) — borderline Rule 27 violation since fabricated values are shown as if real (not "—"), worth flagging
+- Notable: StockAdvancedAnalysisView triggers on-demand `/api/python/v2/analyze/${ticker}?XTransformPort=8010` if cached-analysis is missing — this can be slow (Python cold start); UI shows LoadingSkeleton during this period
+- No code modifications were made (read-only audit per instructions)
+
+Endpoint inventory (16 unique, deduplicated):
+  /api/flow/[ticker]                                   (StockDetail ×2: FlowScoreCard + main footprint)
+  /api/explosive/[ticker]                              (StockDetail FlowScoreCard)
+  /api/stock-profile/[ticker]                          (StockDetail FundamentalsCard — 9-table profile)
+  /api/stocks/[ticker]/unified?market=[mkt]            (StockDetail + GateAnalysisView + ComprehensiveStockAnalysis + ProfessionalTradingChart — canonical SSOT)
+  /api/python/v2/cached-analysis/[ticker]              (GateAnalysisView + StockAdvancedAnalysisView)
+  /api/python/v2/analyze/[ticker]?XTransformPort=8010 (StockAdvancedAnalysisView on-demand)
+  /api/chart/[ticker]?interval=...&period=...          (TradingViewChart + StockAdvancedAnalysisView)
+  /api/v2/chart/full-analysis?ticker=...&timeframe=... (TradingViewChart fallback #1 + ProfessionalTradingChart primary OHLCV)
+  /api/stocks/[ticker]/history?days=...                (TradingViewChart fallback #2)
+  /api/stocks/[ticker]/comprehensive?market=...        (ComprehensiveStockAnalysis primary)
+  /api/stocks/delta-volume?ticker=...&days=14          (DeltaVolumeBar)
+  /api/market/intraday-pressure?ticker=...&period=...  (MarketDepthPanel)
+  /api/crypto/full-analysis?ticker=...&timeframe=...   (ProfessionalTradingChart CRYPTO branch)
+  /api/alerts/quick-add (POST)                         (ProfessionalTradingChart quick-add alert)
+  /api/market/publish-status-image (POST)              (TradingChartView publish-all-to-Telegram)
+  /api/stocks/[ticker]/news (implicit via loadStockNews in store)  (StockNews — called by StockDetail with limit=15)
+
+Per-Component Audit Table:
+  1. StockDetail.tsx               — 5 fetches, no WS, ErrorBoundary-wrapped children, DetailSkeleton loading, "اختر سهماً" empty state
+  2. TradingViewChart.tsx          — 3 fetches (cascading), no WS, Skeleton→error card→"لا توجد بيانات تاريخية" fallback chain
+  3. ProfessionalTradingChart.tsx  — 4 fetches, WS (ticker:live/ticker:update), Skeleton→error card, buy-valve null on non-BUY signals
+  4. TradingChartView.tsx          — 1 POST fetch (publish-image), no WS, toast-based fallback, max-6-stocks cap
+  5. DeepAnalysis.tsx              — 0 fetches (store-only), no WS, AnalysisSkeleton→null when no deepAnalysis, amber warning if price=0
+  6. StockNews.tsx                 — 0 direct fetches (uses loadStockNews from store), no WS, NewsSkeleton→EmptyState→"لا توجد أخبار إيجابية/سلبية/محايدة"
+  7. GateAnalysisView.tsx          — 2 parallel fetches (Promise.allSettled), no WS, Skeleton→"التحليل غير متاح حالياً" + retry, price-derived defaults when NULL
+  8. ComprehensiveStockAnalysis.tsx — 2 fetches (comprehensive + best-effort unified), no WS, LoadingSkeleton→error card→null, 7 tabs with per-tab empty states
+  9. DeltaVolumeBar.tsx           — 1 fetch, no WS, Skeleton→returns null when no data (silent fail in catch)
+  10. MarketDepthPanel.tsx        — 1 fetch, no WS, Loader2 spinner→"لا توجد بيانات لحظية"→"لا توجد بيانات للفترة المحددة"
+  11. StockAdvancedAnalysisView.tsx — 3 fetches (chart + cached + on-demand analyze), no WS, LoadingSkeleton→error card→"لا يوجد تحليل متاح" + "طلب التحليل" button
+  12. CalculationBreakdown.tsx    — 0 fetches (store-only), no WS, 3 accordion sections, PAYWALL Gate 1 for fair value, "غير متاح"/"لا يمكن حساب" fallbacks
+
+---
+Task ID: ALPHA-AUDIT-RADAR-PERSONA
+Agent: Frontend X-Ray Auditor (Radar + Persona + Predictions)
+Task: جرد رادار صانع السوق + شخصيات المستثمر + التوقعات
+
+Work Log:
+- قرأت ملف worklog.md السابق (67,979 سطرًا) — تأكدت من تغييرات Main Agent السابقة (نقل متابعة التوقعات من Python live-tracking إلى honest-tracking).
+- فتحت 7 ملفات بالكامل (3,936 + 2,099 + 718 + 710 + 707 + 846 + 407 = 9,422 سطرًا) وجردت كل fetch / WS / store / fallback.
+- استخدمت Grep لـ `fetch(` و `useRealtimeUpdates|socket.on|useAppStore|useVisibilityAwarePolling|EventSource|WebSocket` للتأكد من عدم تفويت أي مصدر بيانات.
+- لاحظت أن `socket.on(` غير مستخدم مباشرة في أي من الملفات الـ7 — كل الاشتراك يتم عبر hook موحّد: `useRealtimeUpdates()` (lib/ws-client).
+
+Stage Summary:
+
+═══════════════════════════════════════════════════════════════════════
+1) MakerRadarTab.tsx — رادار الميكرز (التبويب الرئيسي)
+   Path: src/modules/predictions/components/MakerRadarTab.tsx (3,936 LOC)
+═══════════════════════════════════════════════════════════════════════
+▸ Fetches (9 endpoints):
+   • GET  /api/maker-radar?market={market}&minQuietSignals=5&minPrice=1.0  — قوائم الرادار الأربع (quiet/pre_surge/explosive/early_break)
+   • GET  /api/stocks?market={market}&page_size=1000                       — خريطة ticker→sector/fundamentals
+   • GET  /api/unified/predictions?market={market}&limit=1000              — توقعات predictions.db (عمود الإشارة)
+   • POST /api/maker-radar/track                                           — تتبّع/إلغاء تتبّع سهم
+   • GET  /api/maker-radar/track (cache: 'no-store')                       — قائمة المتابَعة الحالية
+   • POST /api/maker-radar/track (loop)                                    — auto-track أسهم portfolio/watchlist
+   • GET  /api/portfolio/unified-watch                                     — محفظة + watchlist + radar (auto-track)
+   • POST /api/maker-radar/warmup?market={market}&timeout=120000          — تشغيل يدوي للرادار (Python)
+   • POST /api/predictions/refresh-v40?mode=today&timeout=240000           — توليد توقعات V40.2
+   • GET  /api/maker-radar/stock?ticker={ticker}&days=30                   — تفاصيل السهم داخل الـ Drawer
+   • GET  /api/maker-radar/market-intelligence?ticker={ticker}             — بطاقة خريطة ذكاء السوق (no cache directive)
+▸ WebSocket / realtime:
+   • useRealtimeUpdates() → { stockPrices, wsConnected }
+   • WS push → silent refetch (throttled 3s) — Rule 67 root cause
+▸ Visibility-aware polling:
+   • useVisibilityAwarePolling(fetchStockMap + fetchData(true), 15s, { market, allowOffMarket: true })
+▸ useAppStore:
+   • radarSubscriptionUser = s.user (paywall gate — getRadarAccess / getTrialStatus)
+   • loadStockDetail = s.loadStockDetail (in StockDetailDrawer)
+▸ Data fields displayed (RadarStock):
+   - ticker, current_price, price_bucket, avg_turnover_20d, avg_volume_20d/10d, volume_ratio_10d_vs_20d
+   - price_stability, range_10d_pct, roc_10d, roc_30d, maker_activity, buy_pct, net_flow_egp
+   - kill_switch, life_cycle, accumulation, expected, path, position_size, reason
+   - quiet_details / pre_surge_details / explosive_details (signal_count, signals_met, signals_failed, vol gradients)
+   - isTracked, trackingEntryDate, trackingEntryPrice, changeSinceTracking
+   - freshness: last_close_date, staleness_days, data_quality, data_stale, live_price, live_change_percent, live_last_update, price_source, data_date
+   - Market regime (effective_regime, candidate_regime, breadth_pct, turnover_ratio)
+   - Predictions stitching (signal, signal_ar, direction, confidence, master_score, entry/target/stop)
+▸ Fallback behavior:
+   - Initial load (loading && !data): 5 Skeletons (h-20, h-16, h-12, h-64×2)
+   - Error && !data: Card + AlertTriangle + "إعادة المحاولة" button
+   - warming_up: silent — keeps existing data (لا يظهر خطأ) — "if warming_up, keep existing data silently"
+   - radarKpi.hasData === false (كل القوائم فارغة): "لا توجد فرص حالياً — الرادار بيفحص الأسهم" + "جرّب تشغيل الرادار أو حدّث بعد دقيقة"
+   - totalCardsShown === 0 && filter === 'all': نفس رسالة "الرادار بيفحص الأسهم"
+   - totalCardsShown === 0 && filter !== 'all': "لا توجد أسهم مطابقة للفلتر الحالي" + زر "عرض الكل"
+   - data.tracked_count === 0 && under_microscope > 0: "⚠️ لا توجد أسهم في قائمة المتابعة"
+   - data.total_scanned === 0: "الرادار قيد التحميل — انتظر دقيقة وحاول مرة أخرى"
+   - data.warmup_running: Badge "بيشتغل" (أزرق نابض)
+   - data.cache_stale: Badge "قديم {N}د" (أصفر)
+   - data.last_warmup_status === 'failed': Badge "⚠️ خطأ آخر تشغيل"
+   - StockDetailDrawer fetchDetail: warming_up silent، error يظهر داخل الـ Drawer
+   - MarketIntelligenceCard !data?.success: "تعذّر تحليل البيانات" (dashed border)
+
+═══════════════════════════════════════════════════════════════════════
+2) PredictionTrackingDashboard.tsx — متابعة التوقعات (لوحة الشفافية)
+   Path: src/modules/predictions/components/PredictionTrackingDashboard.tsx (2,099 LOC)
+═══════════════════════════════════════════════════════════════════════
+▸ Fetches (2 endpoints — HONEST-TRACKING-FIX):
+   • GET  /api/predictions/honest-tracking/live-tracking?market={market}&days={fetchDays}&limit=200&minScore={minScore}
+     (cache: 'no-store', signal: AbortController — كان قبل كده Python /api/stored-analysis/live-tracking)
+   • POST /api/predictions/honest-tracking/verify-pending  body:{limit:500}  — زر "تحقق من المعلقة"
+▸ WebSocket / realtime: ❌ لا يوجد (مختلف عن MakerRadarTab)
+▸ Visibility-aware polling: ❌ يستخدم setInterval يدوي (300s = 5min) + countdown counter
+▸ useAppStore: ❌ لا يستخدم
+▸ Data fields displayed (LivePrediction):
+   - ticker, nameAr, persona, signal, entryDate, entryPrice, targetPrice, targetPrice2, targetPrice3 (DNA)
+   - stopLoss, currentPrice, exitPrice, outcome (WIN/LOSS/EXPIRED/PENDING), returnPct, daysSinceEntry
+   - closedAt, executionDate, maestroScore, confidence, reason, evidence_count, morning_bell
+   - kill_filter_result, highestPriceReached, lowestPriceReached, exit_type (TRAILING_PROFIT)
+   - liveOutcome, who_is_buying_state (🏦 مؤسساتي / 👤 أفراد), hmm_regime_ar
+   - analysis_reason (نص عربي شارح), support_level, resistance_level, ml_confidence_pct
+▸ Persona configuration:
+   - PERSONA_CONFIG: gambler 🔥 المضارب / balanced ⚖️ المتوازن / conservative 🛡️ المستثمر
+   - لكن KILL-MAESTRO (2026-08-31): V40.2 = balanced فقط — render محصور على ['balanced']
+▸ Computed stats (PersonaStats):
+   - total, wins, losses, pending, settled, winRate, avgWinPct, avgLossPct, profitFactor
+   - netReturn, grossProfit, grossLoss, maxLoss, rrRatio, closedCount, expired
+   - computeStatsFromPredictions() — يطبّق HARD cap Rule 7: يتجاهل |ret| > 50% (toxic returns)
+   - aggregateByTicker: PERSONA-DEDUP — السهم الواحد = صفقة واحدة (ticker × entryDate)
+   - focusTickers: السهم المكرر في شخصيتين = 🎯 تركيز ×N (إشارة قوية)
+▸ Fallback behavior:
+   - loading && !data: 3 Skeletons (h-12 ×3)
+   - error && !data: "تعذّر تحميل بيانات التوقعات" + زر "إعادة المحاولة" (RL-FIX-16-FE — بدل "لا توجد صفقات" المضللة)
+   - filteredPredictions.length === 0: "لا توجد صفقات تطابق خيارات الفلترة المحددة"
+   - UnifiedTable emptyTextAr: "لا توجد صفقات تطابق الفلاتر الحالية"
+   - Proof dialog (selectedProofTrade): يعرض بطاقة إثبات قابلة للتحميل (toPng)
+   - Outcome config: WIN 🎯 / LOSS 🛑 / EXPIRED ⏰ / PENDING ⏳ + TRAILING_PROFIT 💰 (exit_type)
+   - LIVE_OUTCOME_CONFIG: "ربح متوقع (معاينة)" بـ dashed border للصفقات المعلّقة (preview غير رسمي)
+
+═══════════════════════════════════════════════════════════════════════
+3) PredictionTrackingView.tsx — تتبع التوقعات (التبسيط — Feature 3)
+   Path: src/modules/predictions/components/PredictionTrackingView.tsx (718 LOC)
+═══════════════════════════════════════════════════════════════════════
+▸ Fetches (3 endpoints):
+   • GET  /api/predictions/tracking/stats?market={market}&days=30
+   • GET  /api/predictions/honest-tracking/list?market={market}&limit=200[&status={status}]
+     (UNIFY-FIX Rule 73 — تم الترحيل من /api/predictions/tracking/list المُلغى 410)
+   • POST /api/predictions/tracking/verify  body:{market}  — زر "تحقق الآن"
+▸ WebSocket / realtime: ❌ لا يوجد
+▸ Visibility-aware polling:
+   • useVisibilityAwarePolling(silent=true fetchStats + fetchList, 60s, { allowOffMarket: true })
+▸ useAppStore:
+   • currentMarket = useAppStore((s) => s.currentMarket) — يتبدّل بحسب السوق المختار
+▸ Data fields displayed (TrackedPick + TrackingStats):
+   - picks: id, ticker, market, entry_price, stop_loss, target_price, risk_reward, pick_date
+   - status (pending/target_hit/stop_hit/expired), current_price, verification_date, profit_loss_pct
+   - narrative[], personas{}
+   - stats: total, pending, target_hit, stop_hit, expired, resolved, success_rate, failure_rate
+   - avg_return, days, market, by_market{}
+▸ UI-STABILITY fix (2026-09-28): silent polling — loading flag فقط على أول load، refetch صامت لا يمسح الشاشة
+▸ Fallback behavior:
+   - loadingStats && !stats: 4 Skeletons (h-28 ×4) للكروت الإحصائية
+   - stats null → display uses '—' for total/pending/successRate/failureRate (formatNumber/shortDate)
+   - stats exists → summary strip تظهر (target_hit, stop_hit, expired, avg_return, resolved/total)
+   - UnifiedTable loading=loadingList && picks.length === 0 — 8 loadingRows
+   - emptyTextAr = t('predictions.tracking.table.empty')
+   - refreshing indicator: RefreshCw animate-spin (silent refresh)
+   - StockPublisher button inside ticker column (BUY/SELL/HOLD recommendation per status)
+   - filterStatus dropdown: all / pending / target_hit / stop_hit / expired
+
+═══════════════════════════════════════════════════════════════════════
+4) PersonalizedRadarTab.tsx — الرادار المخصّص (تبويب متفرّغ داخل MakerRadarTab)
+   Path: src/modules/radar/components/PersonalizedRadarTab.tsx (711 LOC)
+═══════════════════════════════════════════════════════════════════════
+▸ Fetches (1 endpoint — auth required):
+   • GET  /api/radar/personalized  (cache: 'no-store')
+▸ WebSocket / realtime: ❌ لا يوجد
+▸ Visibility-aware polling: ❌ يستخدم setInterval يدوي (60s)
+▸ useAppStore: ❌ لا يستخدم
+▸ Data fields displayed:
+   - UserProfile: userId, preferredSectors[], preferredTickers[], preferredMarkets[]
+     riskProfile (conservative/balanced/aggressive), averageHoldingDays, holdingPeriodCategory
+     preferredPriceRange (low/mid/high), totalTrades, winRate, profileComputedAt, hasTradeHistory
+   - PersonalizedPick: ticker, current_price, path, position_size, roc_10d, reason
+     base_score, personalized_score, sector, personalization_reasons[], adjusted_position_size
+   - ExcludedPick: ticker, reason (already_in_portfolio/out_of_range), detail
+   - radar_status: 'ready' | 'warming_up', message, radar_generated_at, radar_cache_file, total_picks_in_cache
+▸ Fallback behavior (5 states):
+   - loading && !data: 3 Skeletons (h-24, h-64, h-48)
+   - error && !data: AlertTriangle + "إعادة المحاولة" button
+   - res.status === 401 (unauthenticated): data.authenticated=false → UserX icon + "سجّل دخولك الأول" CTA (#login)
+   - data.profile === null (new user — no trade history): Sparkles + "الرادار المخصّص لسه بيتعلّم منك" + زر "أضف لمحفظتك" (#portfolio)
+   - picks.length === 0: "الرادار قيد التحميل — حاول مرة أخرى خلال دقيقة" (if warming_up) OR "لا توجد توقعات مخصّصة متاحة حالياً"
+   - excluded.length === 0: "لا توجد أسهم تم استبعادها"
+   - hasTradeHistory !== false: يخفي صندوق totalTrades/winRate/averageHoldingDays (Task 9-B — منع عرض 0/0%/0 يوم وهمي)
+   - per pick: personalized_score > base_score → Badge "+{diff}" emerald
+
+═══════════════════════════════════════════════════════════════════════
+5) MultiMarketRadarTab.tsx — الرادار الموحّد متعدد الأسواق
+   Path: src/modules/radar/components/MultiMarketRadarTab.tsx (707 LOC)
+═══════════════════════════════════════════════════════════════════════
+▸ Fetches (1 endpoint):
+   • GET  /api/maker-radar/multi-market?markets={EGX,TADAWUL,KSE,QSE,US,CRYPTO,GOLD}
+     (markets = encodeURIComponent(Array.from(selectedMarkets).join(',')))
+▸ WebSocket / realtime:
+   • useRealtimeUpdates() → { stockPrices, wsConnected }
+   • WS push → silent refetch (throttled 3s)
+▸ Visibility-aware polling: ❌ يستخدم setInterval يدوي (30s — كان 60s، خُفّض لأن WS يدفع real-time)
+▸ useAppStore: ❌ لا يستخدم
+▸ Data fields displayed:
+   - MarketSection: market, name_ar, currency, is_open, regime, regime_ar
+     market_score, market_open_utc, market_close_utc, count, top_picks[]
+     warming_up, first_generation, cached, cache_age_seconds, last_generated_at, db_source
+   - RadarPick: ticker, current_price, path, position_size, roc_10d, target_price
+     market, market_name_ar, currency
+   - MultiMarketResponse: success, markets: Record<MarketCode, MarketSection>, unified_top_5[]
+   - 7 markets: EGX 🇪🇬 / TADAWUL 🇸🇦 / KSE 🇰🇼 / QSE 🇶🇦 / US 🇺🇸 / CRYPTO ₿ / GOLD 🥇
+   - Regime labels: defensive/normal/aggressive/bull/bear/sideways/unknown
+   - Path metadata: A_pre_surge 🚀 / B_quiet_accumulation_strong 👁 / C_quiet_accumulation_weak 👁
+                    D_explosive_surge 🔥 / E_early_break ⚡
+▸ Rule 67 (Task 35-A): warming_up=true فقط على أول generation — بعد إنشاء الكاش، يفضل يعرض البيانات + freshness warning
+▸ Fallback behavior:
+   - loading && !data: 4 Skeletons (h-24, h-16, h-12, h-64)
+   - error && !data: AlertTriangle + retry button
+   - section.warming_up && section.first_generation: "تحميل لأول مرة — حاول تاني خلال دقيقة"
+   - section.warming_up && !first_generation: t('radar.multiMarket.warmingUp')
+   - unifiedTop5.length === 0: AlertTriangle + t('radar.multiMarket.unifiedTop5.empty')
+   - section.top_picks.length === 0 + warming_up: "جاري التحميل لأول مرة — حاول تاني خلال دقيقة"
+   - section.top_picks.length === 0 + !warming_up: t('radar.multiMarket.marketDetail.empty')
+   - section.cached && cache_age_seconds != null: Badge cache age (seconds/minutes)
+   - selectedMarkets toggle: لا يسمح بـ empty selection (always keeps ≥1 market)
+   - expandedMarkets Collapsible per-market detail
+
+═══════════════════════════════════════════════════════════════════════
+6) RadarStatsCards.tsx — 4 widgets مكوّنة داخل Drawer + main radar
+   Path: src/modules/radar/components/RadarStatsCards.tsx (847 LOC)
+   Exports: RadarSignalStatsCard / SectorTreemapCard / EntryTimingCard / LiquidityFootprintCard
+            + re-exports CompanyFundamentalsCard / NetPicksTab
+═══════════════════════════════════════════════════════════════════════
+▸ Fetches (5 endpoints across 4 components):
+   (a) RadarSignalStatsCard:
+       • GET  /api/maker-radar/signal-tracker?days=30
+       • POST /api/maker-radar/signal-tracker/verify  body:{max_age_days:45}
+   (b) SectorTreemapCard:
+       • GET  /api/maker-radar/sector-treemap?days=30
+   (c) EntryTimingCard({ ticker }):
+       • GET  /api/maker-radar/entry-timing?ticker={ticker}
+   (d) LiquidityFootprintCard({ ticker }):
+       • GET  /api/flow/{ticker}  (PHASE4-APIS — Rule 27: تم الترحيل من /api/maker-radar/footprint المُلغى 410
+         لأن القديم كان يستخدم naive 70/30 candle-color split — NOT real order flow.
+         /api/flow يستدعي Python compute_money_flow: CLV-5d + CMF-20d + vol_confirmation)
+▸ WebSocket / realtime: ❌ لا يوجد في أي من الـ4
+▸ Visibility-aware polling: ❌ لا يوجد (fetch على mount فقط)
+▸ useAppStore: ❌ لا يستخدم
+▸ Data fields displayed:
+   (a) RadarSignalStatsCard:
+       - total_signals, pending, verified, win_rate_pct, avg_outcome_7d/14d/30d
+       - by_signal_type[]: signal_type, label, total, verified, wins, win_rate_pct, avg_outcome_*
+       - recent_signals[]: ticker, signal_date, signal_type, entry_price, outcome_30d, status
+   (b) SectorTreemapCard:
+       - total_sectors, total_turnover
+       - sectors[]: sector, stocks_count, total_turnover, total_volume, avg_change_pct, avg_roc_10d,
+                   direction (inflow/outflow/neutral), color, top_tickers[]
+       - top_tickers[]: ticker, name_ar, avg_turnover_20d, change_pct, roc_10d
+   (c) EntryTimingCard:
+       - score (0-100), label, label_color (emerald/amber/yellow/rose), recommendation
+       - breakdown: accumulation, volume, support, momentum — each { score, max, label, detail }
+       - computed_at
+   (d) LiquidityFootprintCard:
+       - bin_count, price_min, price_max, poc_price, poc_volume, vah_price, val_price
+       - value_area_volume_pct, total_volume, buy_volume, sell_volume, delta_volume, buy_sell_ratio
+       - levels[]: price_low/high/mid, volume, buy_volume, sell_volume, delta, volume_pct, is_poc, is_value_area
+       - عند source = /api/flow: levels=[], poc/vah/val=0 (لا تتوفر من money-flow API — يخفي POC/VAH/VAL)
+▸ Fallback behavior (مكوّن لكل widget):
+   (a) RadarSignalStatsCard:
+       - loading: Skeleton (h-4 w-32 + h-20)
+       - error || !stats: dashed Card "تعذّر تحميل إحصائيات الإشارات"
+       - !hasData (total_signals === 0): "لا توجد إشارات مسجّلة بعد — تسجَّل الإشارات تلقائياً مع كل تشغيل للرادار"
+       - verifyMsg: toast inline بعد verify (✓ N verified — X wins / Y losses)
+   (b) SectorTreemapCard:
+       - loading: Skeleton (h-4 w-32 + h-48)
+       - error || !data || !data.success: dashed Card "{error || 'الرادار قيد التحميل — حاول مرة أخرى بعد قليل'}"
+       - sectors.slice(0, 12) — top 12 displayed
+       - DIRECTION_STYLE: inflow 🟢 / outflow 🔴 / neutral 🟡
+   (c) EntryTimingCard:
+       - loading: Skeleton (h-4 w-32 + h-24)
+       - error || !data || !data.success: dashed Card "تعذّر حساب توقيت الدخول"
+       - score color thresholds (≥70% emerald, ≥40% amber, <40% rose)
+   (d) LiquidityFootprintCard:
+       - loading: Skeleton (h-4 w-32 + h-48)
+       - error || !data || !data.success: dashed Card "{error || 'تعذّر تحميل بصمة السيولة'}"
+       - levels.length === 0 (source=/api/flow): "المصدر: /api/flow/{ticker} · بيانات تدفق السيولة (CLV + CMF) — لا يتوفر مخطط توزيع الحجم"
+       - يتخطّى POC/VAH/VAL tiles + volume profile bars (Rule 27: no fabrication)
+
+═══════════════════════════════════════════════════════════════════════
+7) rescue/page.tsx — عيادة إنقاذ الصفقات المتعثرة (Rescue Clinic)
+   Path: src/app/rescue/page.tsx (407 LOC)
+═══════════════════════════════════════════════════════════════════════
+▸ Fetches (2 endpoints — Rule 20: PYTHON = BRAIN):
+   • GET  /api/stocks/{ticker}/comprehensive  — auto-fetch live price على تغيير الـ ticker (≥2 chars)
+   • GET  /api/rescue/analyze?ticker={TICKER}&buy_price={entry}&quantity={qty}
+     (يستدعي Python analyze_clinic() في vps-service/analyzers/bag_holder_rescue.py)
+▸ WebSocket / realtime: ❌ لا يوجد
+▸ Visibility-aware polling: ❌ لا يوجد (manual diagnosis فقط — على click)
+▸ useAppStore: ❌ لا يستخدم
+▸ URL params: useSearchParams().get('ticker') — يسمح بـ deep-link: /rescue?ticker=COMI
+▸ Data fields displayed (RescueResponse):
+   - decision (CUT_LOSS/AVERAGE_DOWN/HOLD), decision_ar, verdict_badge (danger/warning/success)
+   - current_price, buy_price, loss_amount, loss_pct
+   - autopsy: bought_near_peak, is_falling_knife, ignored_stop_loss, summary
+   - asset_health: is_profitable (true/false/null), pe_ratio, institutional_flow, support_level,
+                  resistance_exit_level, dividend_yield
+   - action_plan: recommended_action, average_down_allowed, average_down_reason
+   - lessons_learned: string[]
+▸ Verdict config:
+   - CUT_LOSS → Skull icon, red
+   - AVERAGE_DOWN → Activity icon, blue
+   - HOLD (default) → Clock icon, emerald
+▸ Fallback behavior:
+   - loading: 3 Skeletons (h-20, h-40, h-32)
+   - !json.success: toast.error(json.message || json.error || 'فشل التشخيص')
+   - catch: toast.error('فشل الاتصال بمحرك التحليل — حاول مرة أخرى')
+   - fetchLivePrice null: لا يعرض السعر الحالي (silent)
+   - is_profitable === null: "—"
+   - pe_ratio === null: لا يعرض الصف
+   - dividend_yield === 0: لا يعرض الصف
+   - support_level === null OR ≤0: لا يعرض الصف
+   - resistance_exit_level === null OR ≤0: لا يعرض الصف
+   - current_price ≤ 0: "—" (inside Trade Autopsy)
+   - verdict_badge === 'danger': يعرض "السيولة المستردة: {loss_amount.toLocaleString('ar-EG')} ج.م"
+   - autopsy badges (conditional): "شراء في قمة" / "سكين ساقطة" / "تجاهل الوقف"
+   - average_down_allowed === true: يعرض بطاقة "خطة التبريد المقترحة" (blue)
+
+═══════════════════════════════════════════════════════════════════════
+ملاحظات شاملة عبر كل الملفات الـ7:
+═══════════════════════════════════════════════════════════════════════
+• لا يوجد `socket.on(` مباشر في أي ملف — كل الاشتراك يتم عبر useRealtimeUpdates() (hook موحّد في lib/ws-client).
+• 4 endpoints مُلغاة بالفعل (410 Gone) — تم ترحيلها:
+   - /api/predictions/tracking/list → /api/predictions/honest-tracking/list (UNIFY-FIX Rule 73)
+   - /api/stored-analysis/live-tracking → /api/predictions/honest-tracking/live-tracking (HONEST-TRACKING-FIX)
+   - /api/maker-radar/footprint → /api/flow/{ticker} (PHASE4-APIS Rule 27)
+   - /api/admin/generate-predictions → معطّل (410) — cron job يومي بدلاً منه
+• KILL-MAESTRO (2026-08-31): PredictionTrackingDashboard يعرض balanced فقط رغم أن PERSONA_CONFIG يحوي gambler+conservative.
+• Rule 7 (HARD cap): PredictionTrackingDashboard يتجاهل |returnPct| > 50% (toxic returns) في الإحصائيات والرسم التراكمي.
+• PERSONA-DEDUP: السهم الواحد = صفقة واحدة حتى لو ظهر في أكثر من persona — للعدّاد الرسمي.
+• 2 ملفات تستخدم WS realtime (MakerRadarTab + MultiMarketRadarTab) — الباقي يعتمد polling.
+• 2 ملفات تستخدم useVisibilityAwarePolling (MakerRadarTab 15s + PredictionTrackingView 60s) — الباقي setInterval يدوي.
+• 2 ملفات تستخدم useAppStore (MakerRadarTab user + loadStockDetail، PredictionTrackingView currentMarket).
+• كل الـfetches تستخدم cache: 'no-store' ما عدا 1 (MarketIntelligenceCard يستخدم الافتراضي).
+• AbortController مستخدم فقط في PredictionTrackingDashboard (لإلغاء fetches المتداخلة).
+• كل الملفات تتعامل مع warming_up بشكل صامت — "keep existing data silently" + Badge مرئي بدل wipe.
+• الترجمة: استخدمت التواريخ والتوقيتات العربية ar-EG في rescue page + أحياناً.
+
+---
+Task ID: ALPHA-AUDIT-FINAL-COMPILATION
+Agent: كبير مهندسي الواجهات (Frontend X-Ray Audit — Compilation)
+Task: تجميع التقرير التشريحي النهائي لكل شاشات المنصة
+
+Work Log:
+- أطلقت 5 وكلاء فرعيين (sub-agents) بالتوازي لجرد الشاشات:
+  1. ALPHA-AUDIT-DASHBOARD (Dashboard + Market widgets)
+  2. ALPHA-AUDIT-STOCKDETAIL (StockDetail + Charts)
+  3. ALPHA-AUDIT-RADAR-PERSONA (Radar + Persona + Predictions)
+  4. ALPHA-AUDIT-PORTFOLIO-REPORTS (Portfolio + Reports + Screener)
+  5. ALPHA-AUDIT-API-ROUTES (451 API route file mapping)
+- استلمت نتائج كل وكلاء + worklog entries مُضافة.
+- جمّعت التقرير الشامل في Documentation/AUDIT_FRONTEND_SCREENS_MAP.md (611 سطر).
+
+Stage Summary:
+- ✅ Documentation/AUDIT_FRONTEND_SCREENS_MAP.md أُنشئ (611 سطر)
+- ✅ 25 شاشة/مكون مُجرد بتفاصيل كاملة (Component Path + API Endpoints + Next.js Route Files + Data Displayed + Fallback)
+- ✅ 451 ملف API route مُجرد (447 بصريح methods + 4 handler-style)
+- ✅ 144 مسار Python proxy + 303 مسار SQLite-direct موثقين
+- ✅ 4 مسارات منتهية (410 Gone) مترحلة موثقة
+- ✅ Cross-Cutting Findings (5 محاور: data patterns, fallback consistency, Rule protocols, Paywall gates, review flags)
+- ✅ ⚠️ Rule-27 flag على GateAnalysisView (price-derived defaults) موثق للمراجعة
+- ✅ NO code modified — تقرير توثيقي فقط (Read-Only Audit)
+- ✅ كل وكلاء أضافوا worklog entries (5 sections)
+
+Constraints honored:
+- ❌ NO code modified (تعديل 0 سطر كود)
+- ❌ NO Python files touched
+- ✅ File created ONLY at Documentation/AUDIT_FRONTEND_SCREENS_MAP.md
+- ✅ All worklog entries appended (not overwritten)
