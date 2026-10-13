@@ -748,25 +748,82 @@ class BagHolderRescue:
         except Exception:
             pass
 
-        # 4. Decision Matrix الصارم (يعيد كتابة recommendation لو لزم).
+        # 4. Decision Matrix V2 (Correction vs. Structural Breakdown)
+        # Task BRAVO-QUANT-RESCUE-SMART-FLOW-V2 (Owner Directive 2026-10-13)
+        # ممنوع قطع الخسارة الهلع على الأصول القوية في تصحيح سوقي صحي.
+        # القطع الجراحي الصارم فقط للأسهم المكسورة هيكليًا.
         decision = recommendation
         decision_ar = recommendation_ar
         verdict_badge = "low"
 
-        # 🛑 CUT_LOSS: falling knife + خسارة > 5%
-        if is_falling_knife and loss_pct < -5.0:
+        # ── فحص جودة الأصل (Asset Quality) ──
+        # أصل قوي = ربحي (eps>0 أو pe<15) أو توزيعات حقيقية (div>2%)
+        has_real_dividends = dividend_yield >= 2.0
+        is_quality_asset = (
+            is_profitable is True
+            or (pe_ratio is not None and 0 < pe_ratio < 15)
+            or has_real_dividends
+        )
+
+        # ── فحص منطقة الطلب المؤسسية (Institutional Demand Zone) ──
+        # السهم قريب من الدعم التاريخي (ضمن 5% فوق/تحت support)
+        at_institutional_support = False
+        if support > 0 and current_price > 0:
+            distance_to_support_pct = abs(current_price - support) / support * 100
+            at_institutional_support = distance_to_support_pct <= 5.0
+
+        # ── فحص التصحيح الصحي (Healthy Correction) ──
+        # تصحيح = خسارة بين -10% و -25% (ليس انهيار هيكلي)
+        is_healthy_correction = (-25.0 <= loss_pct <= -10.0)
+
+        # ── فحص الانهيار الهيكلي (Structural Breakdown) ──
+        # انهيار = خسارة > 30% أو falling knife مؤكد
+        is_structural_breakdown = is_falling_knife or loss_pct < -30.0
+
+        # ═══════════════════════════════════════════════════════════════════
+        # مصفوفة القرار V2 (Priority Order — first match wins)
+        # ═══════════════════════════════════════════════════════════════════
+
+        # 🛑 CUT_LOSS: القطع الجراحي الصارم للأصول المكسورة هيكليًا
+        if is_structural_breakdown and not is_quality_asset:
             decision = "CUT_LOSS"
-            decision_ar = "اقطع الخسارة فوراً"
-        # 🛑 CUT_LOSS: شركة غير ربحية + خسارة > 10%
-        elif is_profitable is False and loss_pct < -10.0:
+            decision_ar = "اقطع الخسارة فوراً — انهيار هيكلي"
+        # 🛑 CUT_LOSS: شركة غير ربحية + خسارة > 10% + لا توزيعات حقيقية
+        elif is_profitable is False and not has_real_dividends and loss_pct < -10.0:
             decision = "CUT_LOSS"
-            decision_ar = "اقطع الخسارة فوراً"
-        # 🛑 CUT_LOSS: شراء قرب القمة + خسارة > 15%
-        elif purchase_vs_peak in ("AT_PEAK", "NEAR_PEAK") and loss_pct < -15.0:
+            decision_ar = "اقطع الخسارة فوراً — أصل مضاربي خاسر"
+        # 🛑 CUT_LOSS: شراء قرب القمة + خسارة > 15% + لا أساسيات
+        elif purchase_vs_peak in ("AT_PEAK", "NEAR_PEAK") and loss_pct < -15.0 and not is_quality_asset:
             decision = "CUT_LOSS"
-            decision_ar = "اقطع الخسارة فوراً"
-        # 🛑 CUT_LOSS: خسارة عميقة جداً (> 20%) + غير ربحية أو ربحية مجهولة
-        elif loss_pct < -20.0 and is_profitable is not True:
+            decision_ar = "اقطع الخسارة فوراً — دخول قمة متضخمة"
+        # 🛑 CUT_LOSS: خسارة كارثية (> 35%) بغض النظر عن الجودة
+        elif loss_pct < -35.0:
+            decision = "CUT_LOSS"
+            decision_ar = "اقطع الخسارة فوراً — خسارة كارثية"
+
+        # 🔄 AVERAGE_DOWN: تبريد مؤسسي ذكي (No Panic on Quality Assets)
+        # شروط: أصل قوي + تصحيح صحي + عند دعم مؤسسي + NOT falling knife
+        elif (
+            is_quality_asset
+            and is_healthy_correction
+            and at_institutional_support
+            and not is_falling_knife
+        ):
+            decision = "AVERAGE_DOWN"
+            decision_ar = "تبريد مؤسسي ذكي (Average Down)"
+
+        # ⏳ HOLD: السهم مستقر (الخسارة طفيفة < 10%)
+        elif loss_pct > -10.0:
+            decision = "HOLD"
+            decision_ar = "اصبر"
+
+        # ⏳ HOLD: أصل قوي + خسارة متوسطة + دعم مؤسسي (انتظر التعافي)
+        elif is_quality_asset and at_institutional_support and not is_structural_breakdown:
+            decision = "HOLD"
+            decision_ar = "اصبر — أصل قوي عند دعم"
+
+        # 🛑 CUT_LOSS: default للأصول الضعيفة مع خسارة عميقة
+        elif loss_pct < -20.0 and not is_quality_asset:
             decision = "CUT_LOSS"
             decision_ar = "اقطع الخسارة فوراً"
 
@@ -851,25 +908,47 @@ class BagHolderRescue:
                 average_down_reason = "الخسارة عميقة جداً + الشراء كان قرب القمة — التبريد مضاربة غير محسوبة."
 
         elif decision == "AVERAGE_DOWN":
-            # حساب متوسط دقيق: الكمية الإضافية + سعر التنفيذ + الوقف الجديد
-            # القاعدة: تعديل المتوسط لـ target_avg = (buy_price + current_price) / 2
+            # ── تبريد مؤسسي ذكي بحساب بالمليمتر (Task V2) ──
+            # الهدف: تخفيض المتوسط إلى منتصف المسافة نحو منطقة الارتداد المستهدفة
+            # منطقة الارتداد = current_price (السعر الحالي عند الدعم المؤسسي)
+            # target_avg = منتصف المسافة بين buy_price و current_price
             target_avg = (buy_price + current_price) / 2.0
-            # shares_needed = (buy_price - target_avg) / (target_avg - current_price) * quantity
-            if current_price > 0 and target_avg > current_price:
+
+            # الكمية الإضافية المطلوبة بالضبط لتخفيض المتوسط إلى target_avg
+            # Formula: shares_needed = (buy_price - target_avg) / (target_avg - current_price) * quantity
+            if current_price > 0 and target_avg > current_price and buy_price > target_avg:
                 shares_needed = max(
                     0,
                     int(((buy_price - target_avg) / (target_avg - current_price)) * quantity),
                 )
             else:
                 shares_needed = 0
-            new_stop = current_price * 0.95  # وقف صارم 5% تحت السعر الحالي
+
+            # التكلفة الإضافية بالجنيه
+            additional_cost_egp = shares_needed * current_price
+
+            # المتوسط الجديد بعد التبريد
+            new_total_shares = quantity + shares_needed
+            new_total_cost = (buy_price * quantity) + (current_price * shares_needed)
+            new_avg_price = new_total_cost / new_total_shares if new_total_shares > 0 else buy_price
+
+            # ── Invalidation Level (وقف خسارة صارم أسفل الدعم المؤسسي) ──
+            # الوقف = 3% تحت الدعم المؤسسي (لو كُسر الدعم = الهيكل انهار)
+            invalidation_level = support * 0.97 if support > 0 else current_price * 0.95
+
+            # الخسارة المحتملة لو ضُرب الوقف بعد التبريد
+            max_loss_after_avgdown = (new_avg_price - invalidation_level) * new_total_shares
+
             recommended_action = (
-                f"اعمل متوسط بشراء {shares_needed:,} سهم إضافي عند {current_price:.2f} ج.م "
-                f"لتعديل المتوسط إلى {target_avg:.2f} ج.م، مع وقف خسارة صارم عند {new_stop:.2f} ج.م."
+                f"تبريد مؤسسي ذكي: اشترِ {shares_needed:,} سهم إضافي عند {current_price:.2f} ج.م "
+                f"(تكلفة إضافية {additional_cost_egp:,.0f} ج.م) لتخفيض المتوسط من {buy_price:.2f} "
+                f"إلى {new_avg_price:.2f} ج.م. وقف خسارة صارم عند {invalidation_level:.2f} ج.م "
+                f"(أسفل الدعم المؤسسي مباشرة). أقصى خسارة محتملة لو ضُرب الوقف: {max_loss_after_avgdown:,.0f} ج.م."
             )
             average_down_allowed = True
             average_down_reason = (
-                f"الشركة ربحية + السعر يرتكز على دعم تاريخي ({support:.2f}) + توقف النزيف."
+                f"أصل قوي (ربحية/توزيعات) + تصحيح صحي ({loss_pct:.1f}%) + عند دعم مؤسسي ({support:.2f}). "
+                f"التبريد هنا مضاعفة للفرصة وليس مضاعفة للخسارة."
             )
 
         else:  # HOLD
@@ -931,6 +1010,121 @@ class BagHolderRescue:
             "asset_health": asset_health,
             "action_plan": action_plan,
             "lessons_learned": lessons_learned,
+        }
+
+    # ===================================================================
+    # Task BRAVO-QUANT-RESCUE-SMART-FLOW-V2: Batch Portfolio Rescue
+    # ===================================================================
+    def analyze_portfolio_clinic(self, holdings: list) -> Dict[str, Any]:
+        """حلل قائمة أسهم كاملة معاً وأخرج تقرير المحفظة المجمعة.
+
+        Args:
+            holdings: قائمة dicts بصيغة [{ticker, buy_price, quantity, buy_date?}, ...]
+
+        Returns:
+            {
+                "total_holdings": int,
+                "total_capital_locked_egp": float,
+                "total_market_value_egp": float,
+                "total_loss_egp": float,
+                "total_loss_pct": float,
+                "recoverable_cash_egp": float,  # من أسهم CUT_LOSS
+                "priority_queue": [...],  # الأشد خطورة أولاً
+                "summary": str,
+            }
+        """
+        if not holdings:
+            return {
+                "total_holdings": 0,
+                "total_capital_locked_egp": 0.0,
+                "total_market_value_egp": 0.0,
+                "total_loss_egp": 0.0,
+                "total_loss_pct": 0.0,
+                "recoverable_cash_egp": 0.0,
+                "priority_queue": [],
+                "summary": "لا توجد مراكز في المحفظة.",
+            }
+
+        analyses = []
+        total_capital = 0.0
+        total_market_value = 0.0
+        total_loss = 0.0
+        recoverable_cash = 0.0
+
+        for h in holdings:
+            ticker = h.get("ticker", "")
+            buy_price = _safe_float(h.get("buy_price", 0))
+            quantity = _safe_float(h.get("quantity", 0))
+            buy_date = h.get("buy_date", "")
+
+            if not ticker or buy_price <= 0 or quantity <= 0:
+                continue
+
+            analysis = self.analyze_clinic(ticker, buy_price, quantity, buy_date)
+            analyses.append(analysis)
+
+            invested = buy_price * quantity
+            market_value = _safe_float(analysis.get("current_price", 0)) * quantity
+            loss = market_value - invested
+
+            total_capital += invested
+            total_market_value += market_value
+            total_loss += loss
+
+            # لو CUT_LOSS → الكاش المسترد = market_value
+            if analysis.get("decision") == "CUT_LOSS":
+                recoverable_cash += market_value
+
+        # ترتيب الأولويات: الأشد خطورة أولاً
+        # الترتيب: CUT_LOSS (danger) > AVERAGE_DOWN (warning) > HOLD (success)
+        # داخل كل فئة: حسب الخسارة الأكبر أولاً
+        priority_order = {"CUT_LOSS": 0, "AVERAGE_DOWN": 1, "HOLD": 2}
+        analyses_sorted = sorted(
+            analyses,
+            key=lambda a: (priority_order.get(a.get("decision", "HOLD"), 3), a.get("loss_pct", 0)),
+        )
+
+        priority_queue = []
+        for a in analyses_sorted:
+            priority_queue.append({
+                "ticker": a.get("ticker"),
+                "decision": a.get("decision"),
+                "decision_ar": a.get("decision_ar"),
+                "verdict_badge": a.get("verdict_badge"),
+                "loss_pct": a.get("loss_pct"),
+                "loss_amount": a.get("loss_amount"),
+                "current_price": a.get("current_price"),
+                "buy_price": a.get("buy_price"),
+                "action": a.get("action_plan", {}).get("recommended_action", "")[:120],
+            })
+
+        total_loss_pct = (total_loss / total_capital * 100) if total_capital > 0 else 0.0
+
+        cut_loss_count = sum(1 for a in analyses if a.get("decision") == "CUT_LOSS")
+        avg_down_count = sum(1 for a in analyses if a.get("decision") == "AVERAGE_DOWN")
+        hold_count = sum(1 for a in analyses if a.get("decision") == "HOLD")
+
+        summary = (
+            f"المحفظة تحوي {len(analyses)} مركز: "
+            f"{cut_loss_count} للتصفية الفورية، "
+            f"{avg_down_count} للتبريد المؤسسي، "
+            f"{hold_count} للصبر. "
+            f"إجمالي الخسارة {total_loss:,.0f} ج.م ({total_loss_pct:.1f}%). "
+            f"السيولة القابلة للاسترداد فوراً من الأسهم الميتة: {recoverable_cash:,.0f} ج.م."
+        )
+
+        return {
+            "total_holdings": len(analyses),
+            "total_capital_locked_egp": round(total_capital, 2),
+            "total_market_value_egp": round(total_market_value, 2),
+            "total_loss_egp": round(total_loss, 2),
+            "total_loss_pct": round(total_loss_pct, 2),
+            "recoverable_cash_egp": round(recoverable_cash, 2),
+            "cut_loss_count": cut_loss_count,
+            "average_down_count": avg_down_count,
+            "hold_count": hold_count,
+            "priority_queue": priority_queue,
+            "summary": summary,
         }
 
     def _fetch_price_candles(self, ticker: str, limit: int = 60) -> list:
