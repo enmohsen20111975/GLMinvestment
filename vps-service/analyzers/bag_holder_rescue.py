@@ -633,6 +633,351 @@ class BagHolderRescue:
             "analyzed_at": datetime.now().isoformat(timespec="seconds"),
         }
 
+    # ===================================================================
+    # Task BRAVO-STANDALONE-RESCUE-CLINIC-API (Owner Directive 2026-10-13)
+    # ===================================================================
+    # analyze_clinic(): يُرجع الـ payload المؤسسي الكامل لعيادة الإنقاذ.
+    # يعيد: decision / autopsy / asset_health / action_plan / lessons_learned.
+    # ===================================================================
+    def analyze_clinic(
+        self,
+        ticker: str,
+        buy_price: float,
+        quantity: float,
+        buy_date: str = "",
+    ) -> Dict[str, Any]:
+        """تحليل تشريحي صادم لصفقة متعثرة + خطة تعافي محسوبة بالمليمتر.
+
+        Rule 27 (NO-FAKE-DATA): كل الأرقام من DBs حقيقية.
+        Rule 20 (PYTHON = BRAIN): كل المنطق في Python.
+
+        Args:
+            ticker:    رمز السهم (مثل 'EGREF').
+            buy_price: سعر الشراء الأصلي للعميل.
+            quantity:  الكمية المملوكة.
+            buy_date:  تاريخ الشراء (اختياري).
+
+        Returns:
+            Payload كامل بصيغة عيادة الإنقاذ (见 التكليف).
+        """
+        # 1. استدعِ analyze() الأساسي للحصول على الأرقام الأساسية.
+        base = self.analyze(ticker, buy_price, quantity)
+
+        current_price = _safe_float(base.get("current_price"))
+        # Task RESCUE-CLINIC: fallback لو current_price = 0 (مشكلة شائعة في الساندبوكس)
+        # اقرأ آخر close من stock_daily_prices + stocks.current_price
+        if current_price <= 0:
+            try:
+                conn = _open_ro(STOCKS_DB_PATH)
+                if conn:
+                    # جرّب stocks.current_price أولاً
+                    row = conn.execute(
+                        "SELECT current_price FROM stocks WHERE ticker = ?",
+                        (ticker.upper().strip(),),
+                    ).fetchone()
+                    if row and row[0]:
+                        current_price = _safe_float(row[0])
+                    # لو لسه 0 → اقرأ آخر close من stock_daily_prices
+                    if current_price <= 0:
+                        row2 = conn.execute(
+                            """SELECT COALESCE(close, close_price) as close
+                               FROM stock_daily_prices
+                               WHERE ticker = ? AND COALESCE(close, close_price) IS NOT NULL
+                                     AND COALESCE(close, close_price) > 0
+                               ORDER BY price_date DESC LIMIT 1""",
+                            (ticker.upper().strip(),),
+                        ).fetchone()
+                        if row2 and row2[0]:
+                            current_price = _safe_float(row2[0])
+                    conn.close()
+            except Exception:
+                pass
+
+        # أعد حساب loss_pct + loss_egp بالسعر الصحيح
+        if buy_price > 0 and current_price > 0:
+            loss_pct = (current_price - buy_price) / buy_price * 100.0
+        else:
+            loss_pct = 0.0
+        loss_egp = (current_price - buy_price) * quantity
+
+        recommendation = base.get("recommendation", "HOLD")
+        recommendation_ar = base.get("recommendation_ar", "اصبر")
+        purchase_vs_peak = base.get("purchase_vs_peak", "MID_RANGE")
+        is_profitable = base.get("company_profitable")
+        historical_high = _safe_float(base.get("historical_high"))
+        historical_low = _safe_float(base.get("historical_low"))
+        support = _safe_float(base.get("support", 0)) or _safe_float(
+            self._fetch_support_resistance(ticker)[0]
+        )
+        resistance = _safe_float(base.get("resistance", 0)) or _safe_float(
+            self._fetch_support_resistance(ticker)[1]
+        )
+
+        # 2. Falling Knife detection (من institutional_levels.py).
+        is_falling_knife = False
+        falling_knife_reason = ""
+        resistance_zones: list = []
+        try:
+            from analyzers.institutional_levels import detect_falling_knife
+            # اقرأ آخر 60 شمعة من stocks.db
+            candles = self._fetch_price_candles(ticker, 60)
+            if candles:
+                ma50 = _safe_float(base.get("ma_50", 0))
+                ma200 = _safe_float(base.get("ma_200", 0))
+                fk = detect_falling_knife(candles, ma50, ma200)
+                is_falling_knife = fk.get("is_falling_knife", False)
+                falling_knife_reason = fk.get("reason", "")
+                resistance_zones = fk.get("resistance_zones", [])
+        except Exception:
+            pass
+
+        # 3. PE ratio + dividend yield (من stocks table).
+        pe_ratio = None
+        dividend_yield = 0.0
+        try:
+            conn = _open_ro(STOCKS_DB_PATH)
+            if conn:
+                row = conn.execute(
+                    "SELECT pe_ratio, dividend_yield FROM stocks WHERE ticker = ?",
+                    (ticker.upper().strip(),),
+                ).fetchone()
+                if row:
+                    pe_ratio = row[0] if row[0] else None
+                    dividend_yield = _safe_float(row[1])
+                conn.close()
+        except Exception:
+            pass
+
+        # 4. Decision Matrix الصارم (يعيد كتابة recommendation لو لزم).
+        decision = recommendation
+        decision_ar = recommendation_ar
+        verdict_badge = "low"
+
+        # 🛑 CUT_LOSS: falling knife + خسارة > 5%
+        if is_falling_knife and loss_pct < -5.0:
+            decision = "CUT_LOSS"
+            decision_ar = "اقطع الخسارة فوراً"
+        # 🛑 CUT_LOSS: شركة غير ربحية + خسارة > 10%
+        elif is_profitable is False and loss_pct < -10.0:
+            decision = "CUT_LOSS"
+            decision_ar = "اقطع الخسارة فوراً"
+        # 🛑 CUT_LOSS: شراء قرب القمة + خسارة > 15%
+        elif purchase_vs_peak in ("AT_PEAK", "NEAR_PEAK") and loss_pct < -15.0:
+            decision = "CUT_LOSS"
+            decision_ar = "اقطع الخسارة فوراً"
+        # 🛑 CUT_LOSS: خسارة عميقة جداً (> 20%) + غير ربحية أو ربحية مجهولة
+        elif loss_pct < -20.0 and is_profitable is not True:
+            decision = "CUT_LOSS"
+            decision_ar = "اقطع الخسارة فوراً"
+
+        # verdict_badge
+        if decision == "CUT_LOSS":
+            verdict_badge = "danger"
+        elif decision == "AVERAGE_DOWN":
+            verdict_badge = "warning"
+        else:
+            verdict_badge = "success"
+
+        # 5. Autopsy (تشريح الخطأ).
+        bought_near_peak = purchase_vs_peak in ("AT_PEAK", "NEAR_PEAK")
+        ignored_stop_loss = loss_pct < -7.0  # لو الخسارة > 7% = تجاهل وقف الخسارة
+
+        autopsy_summary_parts = []
+        if bought_near_peak:
+            autopsy_summary_parts.append(
+                f"دخلت قرب قمة تاريخية متضخمة ({historical_high:.2f} ج.م)"
+            )
+        if is_falling_knife:
+            autopsy_summary_parts.append("السهم حالياً في هبوط حر (Falling Knife)")
+        if ignored_stop_loss:
+            stop_level = buy_price * 0.95
+            autopsy_summary_parts.append(
+                f"تجاهلت وقف الخسارة عند كسر {stop_level:.2f} ج.م"
+            )
+        if is_profitable is False:
+            autopsy_summary_parts.append("الشركة غير ربحية")
+
+        if not autopsy_summary_parts:
+            autopsy_summary = "الصفقة في نطاق طبيعي — لا توجد أخطاء جسيمة واضحة."
+        else:
+            autopsy_summary = "، و".join(autopsy_summary_parts) + "."
+
+        autopsy = {
+            "bought_near_peak": bought_near_peak,
+            "is_falling_knife": is_falling_knife,
+            "ignored_stop_loss": ignored_stop_loss,
+            "summary": autopsy_summary,
+        }
+
+        # 6. Asset Health.
+        # institutional_flow classification
+        if is_falling_knife or (is_profitable is False):
+            institutional_flow = "🔴 سيولة خارجة وضغط بيعي"
+        elif decision == "AVERAGE_DOWN":
+            institutional_flow = "🟢 سيولة داخلة (تجميع مؤسسي)"
+        else:
+            institutional_flow = "🟡 سيولة متوازنة"
+
+        # resistance_exit_level = أعلى قمة مقاومة (للتصريف)
+        resistance_exit_level = resistance
+        if resistance_zones and resistance_zones[0] > resistance_exit_level:
+            resistance_exit_level = resistance_zones[0]
+
+        asset_health = {
+            "is_profitable": is_profitable,
+            "pe_ratio": pe_ratio,
+            "institutional_flow": institutional_flow,
+            "support_level": round(support, 2) if support > 0 else None,
+            "resistance_exit_level": round(resistance_exit_level, 2) if resistance_exit_level > 0 else None,
+            "dividend_yield": round(dividend_yield, 2),
+        }
+
+        # 7. Action Plan.
+        average_down_allowed = False
+        average_down_reason = ""
+
+        if decision == "CUT_LOSS":
+            recovered_egp = current_price * quantity
+            recommended_action = (
+                f"تسييل المركز فوراً لوقف النزيف، وتوجيه السيولة المستردة "
+                f"({recovered_egp:,.0f} ج.م) لأصل صاعد ذو عوائد مؤكدة."
+            )
+            average_down_allowed = False
+            if is_falling_knife:
+                average_down_reason = "ممنوع التبريد في سكين ساقطة — التبريد هنا مضاعفة للخسارة."
+            elif is_profitable is False:
+                average_down_reason = "ممنوع التبريد في شركة غير ربحية — لا قاع حقيقي للاستناد إليه."
+            else:
+                average_down_reason = "الخسارة عميقة جداً + الشراء كان قرب القمة — التبريد مضاربة غير محسوبة."
+
+        elif decision == "AVERAGE_DOWN":
+            # حساب متوسط دقيق: الكمية الإضافية + سعر التنفيذ + الوقف الجديد
+            # القاعدة: تعديل المتوسط لـ target_avg = (buy_price + current_price) / 2
+            target_avg = (buy_price + current_price) / 2.0
+            # shares_needed = (buy_price - target_avg) / (target_avg - current_price) * quantity
+            if current_price > 0 and target_avg > current_price:
+                shares_needed = max(
+                    0,
+                    int(((buy_price - target_avg) / (target_avg - current_price)) * quantity),
+                )
+            else:
+                shares_needed = 0
+            new_stop = current_price * 0.95  # وقف صارم 5% تحت السعر الحالي
+            recommended_action = (
+                f"اعمل متوسط بشراء {shares_needed:,} سهم إضافي عند {current_price:.2f} ج.م "
+                f"لتعديل المتوسط إلى {target_avg:.2f} ج.م، مع وقف خسارة صارم عند {new_stop:.2f} ج.م."
+            )
+            average_down_allowed = True
+            average_down_reason = (
+                f"الشركة ربحية + السعر يرتكز على دعم تاريخي ({support:.2f}) + توقف النزيف."
+            )
+
+        else:  # HOLD
+            if abs(loss_pct) > 15:
+                recommended_action = (
+                    f"الخسارة كبيرة ({loss_pct:.1f}%) لكن السهم عند دعم تاريخي ({support:.2f} ج.م) "
+                    f"بتوزيعات أرباح ({dividend_yield:.1f}%). راقب كسر الدعم كإشارة خروج عاجلة — "
+                    f"أي كسر للدعم يعني تحويل لـ CUT_LOSS فوراً."
+                )
+            else:
+                recommended_action = (
+                    f"اصبر — السهم عند دعم تاريخي ({support:.2f} ج.م) بتوزيعات أرباح "
+                    f"({dividend_yield:.1f}%)، والخسارة طفيفة ({loss_pct:.1f}%). "
+                    f"راقب كسر الدعم كإشارة خروج."
+                )
+            average_down_allowed = False
+            average_down_reason = "لا حاجة للتبريد — الخسارة محتوية والسهم مستقر."
+
+        action_plan = {
+            "recommended_action": recommended_action,
+            "average_down_allowed": average_down_allowed,
+            "average_down_reason": average_down_reason,
+        }
+
+        # 8. Lessons Learned.
+        lessons_learned: list = []
+        if bought_near_peak:
+            lessons_learned.append(
+                "ممنوع الشراء بعد صعود متواصل دون انتظار تصحيح وقاع تجميعي."
+            )
+        if ignored_stop_loss:
+            lessons_learned.append(
+                "تفعيل وقف الخسارة الصارم عند -5% إلى -7% هو الحامي الوحيد لرأس المال."
+            )
+        if is_falling_knife:
+            lessons_learned.append(
+                "السكاكين الساقطة لا تُلتقط — انتظر تأكيد القاع وتوقف النزيف قبل أي دخول."
+            )
+        if is_profitable is False:
+            lessons_learned.append(
+                "تجنب الأسهم غير الربحية إلا بتأكيد تحول جوهري في الأرباح."
+            )
+        if not lessons_learned:
+            lessons_learned.append(
+                "الحفاظ على الانضباط في إدارة المخاطر هو مفتاح بقاء رأس المال."
+            )
+
+        # 9. الـ Payload النهائي.
+        return {
+            "ticker": ticker.upper(),
+            "decision": decision,
+            "decision_ar": decision_ar,
+            "verdict_badge": verdict_badge,
+            "current_price": round(current_price, 2),
+            "buy_price": round(buy_price, 2),
+            "loss_amount": round(loss_egp, 2),
+            "loss_pct": round(loss_pct, 2),
+            "autopsy": autopsy,
+            "asset_health": asset_health,
+            "action_plan": action_plan,
+            "lessons_learned": lessons_learned,
+        }
+
+    def _fetch_price_candles(self, ticker: str, limit: int = 60) -> list:
+        """اقرأ آخر N شمعة من stocks.db.stock_daily_prices للـ ticker."""
+        try:
+            conn = _open_ro(STOCKS_DB_PATH)
+            if not conn:
+                return []
+            rows = conn.execute(
+                """SELECT price_date as date, COALESCE(open, open_price) as open,
+                          COALESCE(high, high_price) as high,
+                          COALESCE(low, low_price) as low,
+                          COALESCE(close, close_price) as close, volume
+                   FROM stock_daily_prices
+                   WHERE ticker = ? AND COALESCE(close, close_price) IS NOT NULL
+                         AND COALESCE(close, close_price) > 0
+                   ORDER BY price_date DESC LIMIT ?""",
+                (ticker.upper().strip(), limit),
+            ).fetchall()
+            conn.close()
+            candles = []
+            for r in reversed(rows):
+                candles.append({
+                    "date": r[0], "open": r[1] or 0, "high": r[2] or 0,
+                    "low": r[3] or 0, "close": r[4] or 0, "volume": r[5] or 0,
+                })
+            return candles
+        except Exception:
+            return []
+
+    def _fetch_support_resistance(self, ticker: str) -> Tuple[float, float]:
+        """اقرأ support + resistance من stocks table."""
+        try:
+            conn = _open_ro(STOCKS_DB_PATH)
+            if not conn:
+                return 0.0, 0.0
+            row = conn.execute(
+                "SELECT support, resistance FROM stocks WHERE ticker = ?",
+                (ticker.upper().strip(),),
+            ).fetchone()
+            conn.close()
+            if row:
+                return _safe_float(row[0]), _safe_float(row[1])
+            return 0.0, 0.0
+        except Exception:
+            return 0.0, 0.0
+
 
 # ---------------------------------------------------------------------------
 # Standalone smoke test

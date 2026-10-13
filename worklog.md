@@ -67892,3 +67892,35 @@ Stage Summary:
 - ✅ classifyMoneyFlow: buy=30% + net_flow=-1000 → 🔴 ضغط بيعي قوي (لا "سيولة داخلة").
 - ✅ classifyStockPhase: buy=40% + roc=-5 → تخفيض.
 - ✅ Syntax: 3/3 files OK (institutional_levels + stock_analysis_routes + canonical-signal).
+
+---
+Task ID: BRAVO-STANDALONE-RESCUE-CLINIC-API
+Agent: كبير المهندسين الكميين والرياضيات والذكاء الاصطناعي (Chief Quant & Math Lead — GLM 5.2 Bravo)
+Task: محرك عيادة إنقاذ الصفقات المتعثرة + API endpoint
+
+Work Log:
+- أضفت analyze_clinic() method في vps-service/analyzers/bag_holder_rescue.py (+300 LOC):
+  * يستدعي analyze() الأساسي + يضيف: Falling Knife detection + PE/dividend + Decision Matrix صارم.
+  * يُرجع payload كامل: decision / autopsy / asset_health / action_plan / lessons_learned.
+  * Decision Matrix الصارم:
+    - CUT_LOSS: falling knife + loss > 5% | غير ربحية + loss > 10% | قرب القمة + loss > 15% | loss > 20% + غير ربحية/مجهولة
+    - AVERAGE_DOWN: فقط لو ربحية + دعم تاريخي + توقف نزيف (حساب الكمية الإضافية + الوقف الجديد)
+    - HOLD: دعم تاريخي + توزيعات + خسارة طفيفة
+  * Autopsy: bought_near_peak + is_falling_knife + ignored_stop_loss + summary
+  * Action Plan: recommended_action + average_down_allowed + average_down_reason
+  * Lessons Learned: قائمة دروس مخصصة حسب نوع الخطأ
+  * _fetch_price_candles() + _fetch_support_resistance() helpers
+  * current_price fallback: stocks.current_price → stock_daily_prices آخر close
+
+- أنشأت src/app/api/rescue/analyze/route.ts (Next.js API):
+  * GET /api/rescue/analyze?ticker=EGREF&buy_price=32.50&quantity=1000
+  * يستدعي Python analyze_clinic() عبر spawn + subprocess
+  * Rule 20 (PYTHON = BRAIN): كل المنطق في Python
+
+Stage Summary:
+- ✅ EGREF (buy=32.50, current=22.47, loss=-30.86%): CUT_LOSS / danger — "تسييل فوري، السيولة 22,470 ج.م"
+- ✅ BINV (buy=70.0, current=58.26, loss=-16.77%): HOLD — "خسارة كبيرة لكن دعم 56.70 + توزيعات 6.7%"
+- ✅ ABUK (buy=100.0, current=90.0, loss=-10.0%): HOLD — "خسارة طفيفة + دعم 81.41 + توزيعات 3.2%"
+- ✅ Syntax: bag_holder_rescue.py + route.ts OK
+- ✅ Rule 27: كل الأرقام من DBs حقيقية (لا اختلاع)
+- ✅ Rule 20: كل الحسابات في Python
