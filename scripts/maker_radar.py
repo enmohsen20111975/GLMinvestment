@@ -768,6 +768,20 @@ def scan_ticker(rows, ticker, regime='NORMAL', percentile_rank=None):
     # PHASE-3: Pre-Surge (الأولوية الأولى — تجميع مبكر جداً) — متكيف مع الريجيم
     pre_surge, pre_surge_reason, pre_surge_details = detect_pre_surge(closes, volumes, highs, lows, regime=regime)
 
+    # ── Task BRAVO-AJWA-FIX (Consistency Gate): Pre-Surge يتطلب سيولة داخلة موجبة ──
+    # ممنوع تصنيف سهم كـ Pre-Surge إذا كان تدفق السيولة سالباً أو حالة السهم "تصريف".
+    # Pre-Surge يشترط: تجميع هادئ حقيقي + سيولة داخلة موجبة + ثبات سعري.
+    if pre_surge:
+        # احسب money_flow مبكرًا للتحقق
+        _mf_check = compute_money_flow(closes, volumes, highs, lows)
+        _net_flow = _mf_check.get('net_flow_egp', 0)
+        _buy_pct = _mf_check.get('buy_pct', 0)
+        _accumulation_check = _mf_check.get('money_flow_state', '')
+        if _net_flow < 0 or 'تصريف' in str(_accumulation_check) or _buy_pct < 45:
+            pre_surge = False
+            pre_surge_reason = f'Pre-Surge مرفوض: سيولة خارجة (net_flow={_net_flow:,.0f}, buy_pct={_buy_pct:.1f}%, state={_accumulation_check})'
+            pre_surge_details = {**pre_surge_details, 'consistency_gate_rejected': True, 'rejection_reason': pre_surge_reason}
+
     # مسار أ: Quiet Accumulation — متكيف مع الريجيم
     quiet, quiet_reason, quiet_details = detect_quiet_accumulation(closes, volumes, highs, lows, regime=regime)
 
@@ -857,6 +871,47 @@ def scan_ticker(rows, ticker, regime='NORMAL', percentile_rank=None):
     life_cycle = detect_life_cycle(closes, volumes, highs, lows)
     limit_up = check_limit_up_trap(closes)
     kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
+
+    # ── Task BRAVO-AJWA-FIX: Buying Climax — شروط Wyckoff الحقيقية ──
+    # إلغاء الاعتماد على MFI > 80 كدليل على الذروة الشرائية.
+    # Buying Climax يشترط شرطان كميان على الأقل:
+    #   1. حجم تداول ضخم ≥ 2.0x متوسط 20 يوماً
+    #   2. شمعة بظل علوي طويل (Upper Shadow ≥ 40% من طول الشمعة) تعكس رفض الصعود
+    #   3. فشل اختراق مقاومة بإغلاق ضعيف (close < high * 0.97)
+    buying_climax = False
+    buying_climax_reason = ''
+    if len(closes) >= 20 and len(volumes) >= 20 and highs and lows:
+        _last_high = highs[-1] if len(highs) > 0 else closes[-1]
+        _last_low = lows[-1] if len(lows) > 0 else closes[-1]
+        _last_close = closes[-1]
+        _last_open = closes[-2] if len(closes) >= 2 else _last_close
+        _last_vol = volumes[-1]
+        _avg_vol_20 = sum(volumes[-20:]) / 20
+
+        # شرط 1: حجم ضخم ≥ 2.0x
+        _cond_vol = _last_vol >= (_avg_vol_20 * 2.0) if _avg_vol_20 > 0 else False
+
+        # شرط 2: ظل علوي ≥ 40% من طول الشمعة
+        _candle_range = _last_high - _last_low
+        _upper_shadow = _last_high - max(_last_close, _last_open)
+        _upper_shadow_pct = (_upper_shadow / _candle_range * 100) if _candle_range > 0 else 0
+        _cond_upper_shadow = _upper_shadow_pct >= 40.0
+
+        # شرط 3: فشل اختراق (إغلاق ضعيف — close < high * 0.97)
+        _cond_weak_close = _last_close < (_last_high * 0.97) if _last_high > 0 else False
+
+        # Buying Climax = شرطان من 3 على الأقل
+        _climax_conditions = sum([_cond_vol, _cond_upper_shadow, _cond_weak_close])
+        if _climax_conditions >= 2:
+            buying_climax = True
+            _reasons = []
+            if _cond_vol:
+                _reasons.append(f'حجم ضخم ({_last_vol / _avg_vol_20:.1f}x متوسط 20ي)' if _avg_vol_20 > 0 else 'حجم ضخم')
+            if _cond_upper_shadow:
+                _reasons.append(f'ظل علوي {_upper_shadow_pct:.0f}% ≥ 40%')
+            if _cond_weak_close:
+                _reasons.append(f'إغلاق ضعيف ({_last_close:.2f} < {_last_high:.2f} × 0.97)')
+            buying_climax_reason = 'Buying Climax (Wyckoff): ' + ' | '.join(_reasons)
 
     # لو Kill Switch triggered → نقلل الحجم للنص أو نلغي
     if kill_triggered:
@@ -973,6 +1028,9 @@ def scan_ticker(rows, ticker, regime='NORMAL', percentile_rank=None):
         'limit_up_trap': limit_up,
         'kill_switch': kill_triggered,
         'kill_reason': kill_reason if kill_triggered else None,
+        # Task BRAVO-AJWA-FIX: Buying Climax (Wyckoff — شروط حقيقية)
+        'buying_climax': buying_climax,
+        'buying_climax_reason': buying_climax_reason if buying_climax else None,
         'under_microscope': winner_path is not None,
         'path': winner_path,
         'position_size': winner_position_size,
