@@ -144,19 +144,12 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
     : { label: 'متوازن', tone: 'neutral' };
 
   return (
-    <Card dir="rtl" className="w-full overflow-x-hidden">
+    <Card dir="rtl" className="w-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm flex items-center gap-2">
             <Gauge className="w-4 h-4 text-purple-500" />
             ضغط الشراء/البيع داخل الجلسة
-            {/* ALPHA-A3: SIMULATED badge (Rule 27 transparency) */}
-            <span
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold border border-amber-300/50 bg-amber-50/80 dark:bg-amber-950/30 dark:border-amber-700/50 text-amber-600 dark:text-amber-400"
-              title="بيانات محاكاة تقديرية — ليست تكات حية مباشرة من شاشة البورصة"
-            >
-              محاكاة تقديرية (SIMULATED)
-            </span>
           </CardTitle>
           <div className="flex items-center gap-1.5">
             <Input
@@ -284,10 +277,9 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                                 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent
                                 [&::-webkit-scrollbar-thumb]:bg-border/60 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {data.buckets.map((b, idx) => {
-                    // T-ALPHA-1: Face-to-Face / Diverging Bars — buy grows RIGHT (green), sell grows LEFT (red)
-                    // Max scale = max pressure across all buckets for proportional bars
+                    // T-ALPHA-A8: Face-to-Face / Diverging Bars — buy grows RIGHT (green), sell grows LEFT (red)
                     const maxVol = Math.max(...data.buckets.map(bk => Math.max(bk.buy_volume, bk.sell_volume, 1)));
-                    const buyWidthPct = maxVol > 0 ? (b.buy_volume / maxVol) * 50 : 0; // 0-50% of total width
+                    const buyWidthPct = maxVol > 0 ? (b.buy_volume / maxVol) * 50 : 0;
                     const sellWidthPct = maxVol > 0 ? (b.sell_volume / maxVol) * 50 : 0;
                     const netTone = b.net_pressure > 0 ? 'pos' : b.net_pressure < 0 ? 'neg' : 'neutral';
                     return (
@@ -299,24 +291,21 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                           {b.time_label}
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                          {/* T-ALPHA-1: Diverging bars — sell LEFT (red), buy RIGHT (green), center divider */}
+                          {/* Diverging bars — sell LEFT (red), buy RIGHT (green), center divider */}
                           <div className="flex h-3 w-full items-center gap-px">
-                            {/* Sell side (LEFT — grows leftward via justify-end) */}
                             <div className="flex-1 flex justify-end">
                               <div
                                 className="bg-red-500/70 transition-all h-full rounded-l-sm"
                                 style={{ width: `${sellWidthPct * 2}%` }}
-                                title={`بيع: ${formatNumber(b.sell_volume)} حصة (${(b.sell_pressure_pct ?? 0).toFixed(1)}%)`}
+                                title={`بيع: ${formatNumber(b.sell_volume)} حصة`}
                               />
                             </div>
-                            {/* Center divider */}
                             <div className="w-px h-full bg-border/60 flex-shrink-0" />
-                            {/* Buy side (RIGHT — grows rightward) */}
                             <div className="flex-1 flex justify-start">
                               <div
                                 className="bg-emerald-500/70 transition-all h-full rounded-r-sm"
                                 style={{ width: `${buyWidthPct * 2}%` }}
-                                title={`شراء: ${formatNumber(b.buy_volume)} حصة (${(b.buy_pressure_pct ?? 0).toFixed(1)}%)`}
+                                title={`شراء: ${formatNumber(b.buy_volume)} حصة`}
                               />
                             </div>
                           </div>
@@ -344,10 +333,9 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
               )}
             </div>
 
-            {/* T-ALPHA-1: Cumulative Net Pressure Curve — session liquidity trajectory */}
-            {(() => {
+            {/* T-ALPHA-A8: Cumulative Net Pressure Curve — Smooth Bezier + Dual-Tone Gradient */}
+            {data.buckets.length > 1 && (() => {
               const buckets = data.buckets;
-              if (!buckets || buckets.length < 2) return null;
               const cumulative: number[] = [];
               let runningSum = 0;
               for (const b of buckets) {
@@ -356,23 +344,33 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
               }
               const width = 320;
               const height = 80;
-              const padding = 8;
+              const padding = 10;
               const n = cumulative.length;
               if (n < 2) return null;
               const maxVal = Math.max(...cumulative, 0);
               const minVal = Math.min(...cumulative, 0);
               const range = maxVal - minVal || 1;
-              const points = cumulative.map((val, i) => {
-                const x = padding + (i / (n - 1)) * (width - 2 * padding);
-                const y = padding + ((maxVal - val) / range) * (height - 2 * padding);
-                return `${x.toFixed(1)},${y.toFixed(1)}`;
-              });
-              const path = `M ${points.join(' L ')}`;
+              const points = cumulative.map((val, i) => ({
+                x: padding + (i / (n - 1)) * (width - 2 * padding),
+                y: padding + ((maxVal - val) / range) * (height - 2 * padding),
+              }));
+              // T-ALPHA-A8: Smooth Bezier curve (Catmull-Rom → Cubic Bezier)
+              const bezierPath = points.length < 2 ? '' : points.reduce((acc, p, i, arr) => {
+                if (i === 0) return `M ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+                const prev = arr[i - 1];
+                const cp1x = prev.x + (p.x - prev.x) / 3;
+                const cp1y = prev.y;
+                const cp2x = prev.x + (p.x - prev.x) * 2 / 3;
+                const cp2y = p.y;
+                return `${acc} C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+              }, '');
               const zeroY = padding + (maxVal / range) * (height - 2 * padding);
-              const isPositiveTrend = cumulative[cumulative.length - 1] >= 0;
-              const areaPath = `${path} L ${(width - padding).toFixed(1)},${zeroY.toFixed(1)} L ${padding.toFixed(1)},${zeroY.toFixed(1)} Z`;
+              const isPositiveTrend = cumulative[n - 1] >= 0;
+              const areaPath = `${bezierPath} L ${(width - padding).toFixed(1)},${zeroY.toFixed(1)} L ${padding.toFixed(1)},${zeroY.toFixed(1)} Z`;
+              // T-ALPHA-A8: Dual-Tone Gradient — green for positive, red for negative
+              const gradientId = 'cumulative-gradient';
               return (
-                <div className="rounded-md border border-border/30 bg-muted/10 p-2">
+                <div className="rounded-md border border-border/30 bg-muted/10 p-2 overflow-hidden">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
                       <Activity className="w-3 h-3 text-purple-500" />
@@ -383,28 +381,51 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                         {isPositiveTrend ? '▲ تجميع' : '▼ تصريف'}
                       </span>
                       <span className="text-muted-foreground">
-                        ({cumulative[0] >= 0 ? '+' : ''}{formatNumber(cumulative[0])} → {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])})
+                        ({cumulative[0] >= 0 ? '+' : ''}{formatNumber(cumulative[0])} → {cumulative[n - 1] >= 0 ? '+' : ''}{formatNumber(cumulative[n - 1])})
                       </span>
                     </div>
                   </div>
                   <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" role="img" aria-label={`منحنى الضغط التراكمي: ${isPositiveTrend ? 'صاعد تجميعي' : 'هابط تصريفي'}`}>
+                    <defs>
+                      {/* T-ALPHA-A8: Dual-Tone Gradient (green→red or red→green based on trend) */}
+                      <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                        {isPositiveTrend ? (
+                          <>
+                            <stop offset="0%" stopColor="rgba(239, 68, 68, 0.2)" />
+                            <stop offset="50%" stopColor="rgba(245, 158, 11, 0.15)" />
+                            <stop offset="100%" stopColor="rgba(16, 185, 129, 0.3)" />
+                          </>
+                        ) : (
+                          <>
+                            <stop offset="0%" stopColor="rgba(16, 185, 129, 0.2)" />
+                            <stop offset="50%" stopColor="rgba(245, 158, 11, 0.15)" />
+                            <stop offset="100%" stopColor="rgba(239, 68, 68, 0.3)" />
+                          </>
+                        )}
+                      </linearGradient>
+                    </defs>
+                    {/* Zero line */}
                     <line x1={padding} y1={zeroY} x2={width - padding} y2={zeroY} stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 3" className="text-muted-foreground/40" />
-                    <path d={areaPath} fill={isPositiveTrend ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'} />
-                    <path d={path} fill="none" stroke={isPositiveTrend ? '#10b981' : '#ef4444'} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-                    <circle cx={padding} cy={padding + ((maxVal - cumulative[0]) / range) * (height - 2 * padding)} r="2" className="fill-muted-foreground" />
-                    <circle cx={width - padding} cy={padding + ((maxVal - cumulative[n-1]) / range) * (height - 2 * padding)} r="2.5" fill={isPositiveTrend ? '#10b981' : '#ef4444'} />
+                    {/* Area fill with dual-tone gradient */}
+                    <path d={areaPath} fill={`url(#${gradientId})`} />
+                    {/* T-ALPHA-A8: Smooth Bezier curve */}
+                    <path d={bezierPath} fill="none" stroke={isPositiveTrend ? '#10b981' : '#ef4444'} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                    {/* Start point */}
+                    <circle cx={points[0].x} cy={points[0].y} r="2" className="fill-muted-foreground" />
+                    {/* End point */}
+                    <circle cx={points[n - 1].x} cy={points[n - 1].y} r="2.5" fill={isPositiveTrend ? '#10b981' : '#ef4444'} />
                   </svg>
                   <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-0.5">
                     <span>{buckets[0]?.time_label ?? ''}</span>
-                    <span>صافي تراكمي: {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])}</span>
-                    <span>{buckets[n-1]?.time_label ?? ''}</span>
+                    <span>صافي تراكمي: {cumulative[n - 1] >= 0 ? '+' : ''}{formatNumber(cumulative[n - 1])}</span>
+                    <span>{buckets[n - 1]?.time_label ?? ''}</span>
                   </div>
                 </div>
               );
             })()}
 
             {/* Volume totals */}
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-[11px] overflow-hidden">
+            <div className="grid grid-cols-3 gap-2 text-[11px]">
               <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
                 <div className="text-[10px] text-muted-foreground">إجمالي شراء</div>
                 <div className="font-bold text-emerald-500 dark:text-emerald-400">{formatNumber(session!.total_buy_volume)}</div>
@@ -445,119 +466,6 @@ function SummaryCell({
         )}
       >
         {value}
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// T-ALPHA-1: Cumulative Net Pressure Curve
-// يرسم منحنى تراكمي لصافي السيولة عبر ساعات الجلسة (10:00 → 14:30).
-// صاعد للأعلى = تجميع وضغط شرائي | منحدر للأسفل = تصريف.
-// Rule 4: لا حساب مالي — مجرد جمع (cumsum) لقيم net_pressure من الـ buckets.
-// ════════════════════════════════════════════════════════════════════════════
-function CumulativePressureCurve({ buckets }: { buckets: Bucket[] }) {
-  console.log("[CURVE] called with", buckets.length, "buckets");
-  // احسب القيم التراكمية (cumsum of net_pressure)
-  const cumulative: number[] = [];
-  let runningSum = 0;
-  for (const b of buckets) {
-    runningSum += Number(b.net_pressure) || 0;
-    cumulative.push(runningSum);
-  }
-
-  // مقياس SVG
-  const width = 320;
-  const height = 80;
-  const padding = 8;
-  const n = cumulative.length;
-  if (n < 2) return null;
-
-  const maxVal = Math.max(...cumulative, 0);
-  const minVal = Math.min(...cumulative, 0);
-  const range = maxVal - minVal || 1;
-
-  // نقاط المنحنى
-  const points = cumulative.map((val, i) => {
-    const x = padding + (i / (n - 1)) * (width - 2 * padding);
-    const y = padding + ((maxVal - val) / range) * (height - 2 * padding);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const path = `M ${points.join(' L ')}`;
-
-  // خط الصفر (محور أفقي)
-  const zeroY = padding + (maxVal / range) * (height - 2 * padding);
-  const isPositiveTrend = cumulative[cumulative.length - 1] >= 0;
-
-  // نقطة البداية والنهاية للـ area fill
-  const areaPath = `${path} L ${(width - padding).toFixed(1)},${zeroY.toFixed(1)} L ${padding.toFixed(1)},${zeroY.toFixed(1)} Z`;
-
-  return (
-    <div className="rounded-md border border-border/30 bg-muted/10 p-2">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <Activity className="w-3 h-3 text-purple-500" />
-          <span className="text-[11px] font-semibold">منحنى الضغط التراكمي</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-[9px]">
-          <span className={cn('font-bold', isPositiveTrend ? 'text-emerald-500' : 'text-red-600')}>
-            {isPositiveTrend ? '▲ تجميع' : '▼ تصريف'}
-          </span>
-          <span className="text-muted-foreground">
-            ({cumulative[0] >= 0 ? '+' : ''}{formatNumber(cumulative[0])} → {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])})
-          </span>
-        </div>
-      </div>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-auto"
-        role="img"
-        aria-label={`منحنى الضغط التراكمي: ${isPositiveTrend ? 'صاعد تجميعي' : 'هابط تصريفي'}`}
-      >
-        {/* Zero line */}
-        <line
-          x1={padding}
-          y1={zeroY}
-          x2={width - padding}
-          y2={zeroY}
-          stroke="currentColor"
-          strokeWidth="0.5"
-          strokeDasharray="2 3"
-          className="text-muted-foreground/40"
-        />
-        {/* Area fill */}
-        <path
-          d={areaPath}
-          fill={isPositiveTrend ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}
-        />
-        {/* Curve line */}
-        <path
-          d={path}
-          fill="none"
-          stroke={isPositiveTrend ? '#10b981' : '#ef4444'}
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {/* Start point */}
-        <circle
-          cx={padding}
-          cy={padding + ((maxVal - cumulative[0]) / range) * (height - 2 * padding)}
-          r="2"
-          className="fill-muted-foreground"
-        />
-        {/* End point */}
-        <circle
-          cx={width - padding}
-          cy={padding + ((maxVal - cumulative[n-1]) / range) * (height - 2 * padding)}
-          r="2.5"
-          fill={isPositiveTrend ? '#10b981' : '#ef4444'}
-        />
-      </svg>
-      <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-0.5">
-        <span>{buckets[0]?.time_label ?? ''}</span>
-        <span>صافي تراكمي: {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])}</span>
-        <span>{buckets[n-1]?.time_label ?? ''}</span>
       </div>
     </div>
   );

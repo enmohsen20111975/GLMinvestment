@@ -75,11 +75,13 @@ interface LiquidityData {
   note?: string;
 }
 
-type PeriodKey = '7' | '30' | '90';
+type PeriodKey = '1' | '5' | '7' | '30' | '90';
 const PERIOD_LABEL: Record<PeriodKey, string> = {
-  '7': '7 أيام',
-  '30': '30 يوم',
-  '90': '90 يوم',
+  '1': 'اليوم',
+  '5': '5 أيام',
+  '7': 'أسبوع',
+  '30': 'شهر',
+  '90': '3 أشهر',
 };
 
 function FlowDirectionBadge({ direction }: { direction: SectorFlow['flow_direction'] }) {
@@ -367,6 +369,8 @@ export function LiquidityFlowPanel() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="1">{PERIOD_LABEL['1']}</SelectItem>
+              <SelectItem value="5">{PERIOD_LABEL['5']}</SelectItem>
               <SelectItem value="7">{PERIOD_LABEL['7']}</SelectItem>
               <SelectItem value="30">{PERIOD_LABEL['30']}</SelectItem>
               <SelectItem value="90">{PERIOD_LABEL['90']}</SelectItem>

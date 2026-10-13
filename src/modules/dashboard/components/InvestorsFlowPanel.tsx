@@ -256,6 +256,29 @@ export function InvestorsFlowPanel() {
   }
 
   if (error || !data || (data.sector_flow.length === 0 && data.summary.total_turnover === 0)) {
+    // T-ALPHA-A7: حتى لو الـ liquidity-flow API فشل (Python down)، اعرض InvestorsTable
+    // لو في بيانات تدفّق المستثمرين (مصريين/عرب/أجانب) متاحة من /api/egx/investors.
+    if (invData && invData.length > 0) {
+      return (
+        <Card dir="rtl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
+              <Users className="w-4 h-4 text-amber-500" />
+              حركة السيولة وتدفّق المستثمرين
+              <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-400 border-amber-500/30">
+                {marketNameAr}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <InvestorsTable rows={invData} source={invSource} autoSeeded={invAutoSeeded} />
+            <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/50">
+              ⚠️ بيانات تدفّق القطاعات غير متاحة حالياً — يعرض تدفّق المستثمرين فقط
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card dir="rtl" className="p-4">
         <div className="text-center text-xs text-muted-foreground py-4 space-y-1">
@@ -266,7 +289,7 @@ export function InvestorsFlowPanel() {
           <p>لا توجد بيانات سيولة متاحة لهذا السوق حالياً</p>
           <p className="text-[10px]">
             {error
-              ? `سبب التعطّل: ${error}`
+              ? 'محرك السيولة (Python) غير متاح حالياً — جرّب «تحديث» بعد دقيقة'
               : 'بانتظار تحديث بيانات الجلسة — جرّب «تحديث» بعد دقيقة'}
           </p>
         </div>

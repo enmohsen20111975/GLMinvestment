@@ -432,7 +432,7 @@ export function SectorTreemapCard() {
               <div className="text-[10px] font-bold leading-tight truncate">{s.sector}</div>
               <div className="text-[10px] opacity-90">{s.stocks_count} سهم</div>
               <div className="text-xs font-bold mt-0.5">{fmtMoney(s.total_turnover)}</div>
-              <div className="text-[9px] opacity-80">
+              <div className={`text-[9px] opacity-90 font-semibold ${(s.avg_change_pct ?? 0) >= 0 ? 'text-emerald-200' : 'text-red-200'}`}>
                 {(s.avg_change_pct ?? 0) >= 0 ? '+' : ''}{(s.avg_change_pct ?? 0).toFixed(1)}%
               </div>
               <div className="text-[9px] opacity-70 mt-0.5">{dir.label}</div>
