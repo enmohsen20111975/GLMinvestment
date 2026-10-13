@@ -277,11 +277,43 @@ def _market_pulse_impl(now, cache_key):
     losers_count = cur.execute("SELECT COUNT(*) FROM stocks WHERE CAST(change_percent AS REAL) < 0 AND current_price > 0 AND is_active = 1").fetchone()[0]
     adv_dec_ratio = (gainers_count / losers_count) if losers_count > 0 else (gainers_count if gainers_count > 0 else 1)
 
-    # Pulse score
+    # =====================================================================
+    # Task BRAVO-PULSE-FIX: معادلة نبض السوق الجديدة (Owner Directive)
+    # =====================================================================
+    # الخلل السابق: وزن زائد للسيولة الكلية (min(total_turnover/1e9, 2) * 0.5)
+    # كان يرفع القراءة إلى (+0.11 محايد) رغم أن 91% من الأسهم تهبط.
+    #
+    # المعادلة الجديدة:
+    #   60% اتساع السوق الفعلي (Advance/Decline Ratio + نسبة الهابطين)
+    #   40% حركة مؤشري EGX30 و EGX70
+    #   لو الهابطين > 75% → لا يمكن للسيولة نقل القراءة للمنطقة الخضراء/المحايدة
+    # =====================================================================
     egx30_ch = _sf(egx30_change)
     egx70_ch = _sf(egx70_change)
-    pulse_score = (egx30_ch * 0.30) + (egx70_ch * 0.20) + (min(adv_dec_ratio, 3) * 0.5 - 1) + (min(total_turnover / 1e9, 2) * 0.5)
+    total_active = gainers_count + losers_count
+    losers_pct = (losers_count / total_active * 100) if total_active > 0 else 0
+
+    # ── 60% اتساع السوق ──
+    # adv_dec_ratio: 0 = كلهم هابطين, 1 = متساويين, >1 = صاعدين أكثر
+    # breadth_score: -2 (كلهم هابطين) → +2 (كلهم صاعدين)
+    if total_active > 0:
+        gainers_pct = (gainers_count / total_active * 100)
+        breadth_score = (gainers_pct - losers_pct) / 50.0  # -2 → +2
+    else:
+        breadth_score = 0.0
+    breadth_component = breadth_score * 3.0  # 60% weight → ×3 (max ±6)
+
+    # ── 40% مؤشرات EGX30 + EGX70 ──
+    indices_component = (egx30_ch * 0.25) + (egx70_ch * 0.15)  # 40% weight
+
+    pulse_score = breadth_component + indices_component
     pulse_score = max(-5, min(5, pulse_score))
+
+    # ── Hard Cap: لو الهابطين > 75% → لا يمكن للقراءة أن تكون خضراء/محايدة ──
+    is_sharp_decline = losers_pct > 75.0
+    if is_sharp_decline:
+        # إجبار القراءة لمنطقة الهبوط الحاد على الأقل
+        pulse_score = min(pulse_score, -2.0)  # لا يمكن أن يرتفع فوق -2
 
     if pulse_score >= 2:
         pulse_label, pulse_label_en, pulse_color = "قوي صاعد", "STRONG_BULL", "emerald"
@@ -293,6 +325,12 @@ def _market_pulse_impl(now, cache_key):
         pulse_label, pulse_label_en, pulse_color = "هابط", "BEAR", "orange"
     else:
         pulse_label, pulse_label_en, pulse_color = "قوي هابط", "STRONG_BEAR", "rose"
+
+    # ── Override لو هبوط حاد: تصنيف صريح ──
+    if is_sharp_decline:
+        pulse_label = "هبوط حاد / بيع مكثف"
+        pulse_label_en = "SHARP_DECLINE"
+        pulse_color = "rose"
 
     # Gainers/losers — P19-HOTFIX: schema-aware (name_ar/rsi might not exist)
     gainers = cur.execute(f"""
@@ -324,6 +362,7 @@ def _market_pulse_impl(now, cache_key):
             signals.append({'ticker': s['ticker'], 'name': s['name_ar'], 'price': s['current_price'], 'change': s['change_percent'], 'rsi': round(rsi_val, 1) if rsi_val else None, 'signal': 'OVERSOLD', 'signal_ar': 'تشبع بيعي', 'action': 'BUY', 'action_ar': 'شراء'})
 
     # P19-HOTFIX: latest_update — schema-aware (updated_at might not exist)
+    # Task BRAVO-PULSE-FIX: إرجاع بصيغة ISO 8601 UTC مع Z
     if 'updated_at' in stocks_cols:
         latest_update = cur.execute("SELECT MAX(updated_at) as latest FROM stocks WHERE updated_at IS NOT NULL").fetchone()['latest']
     elif 'last_updated' in stocks_cols:
@@ -333,6 +372,23 @@ def _market_pulse_impl(now, cache_key):
     else:
         latest_update = None
     conn.close()
+
+    # تحويل latest_update لـ ISO 8601 UTC مع Z
+    if latest_update:
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+            for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S.%f'):
+                try:
+                    parsed = _dt.strptime(str(latest_update), fmt)
+                    latest_update = parsed.replace(tzinfo=_tz.utc).isoformat().replace('+00:00', 'Z')
+                    break
+                except ValueError:
+                    continue
+        except Exception:
+            pass
+    else:
+        from datetime import datetime as _dt, timezone as _tz
+        latest_update = _dt.now(_tz.utc).isoformat().replace('+00:00', 'Z')
 
     weekday = cairo_now.weekday()
     is_trading_day = weekday in (6, 0, 1, 2, 3)
