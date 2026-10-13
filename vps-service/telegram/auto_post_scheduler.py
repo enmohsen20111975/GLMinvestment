@@ -82,11 +82,16 @@ except Exception:
 
 # Import market hours (للتحقق من أيام العمل والعطلات)
 try:
-    # نضيف data-engine للمسار
-    _data_engine_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data-engine')
-    if _data_engine_path not in sys.path:
-        sys.path.insert(0, _data_engine_path)
-    from market_config.market_hours import is_market_open, get_egypt_time, MARKET_HOURS
+    _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    _data_engine_config = os.path.join(_root, 'data_engine', 'config')
+    _data_engine_path = os.path.join(_root, 'data_engine')
+    for p in [_data_engine_config, _data_engine_path]:
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    try:
+        from market_hours import is_market_open, get_egypt_time, MARKET_HOURS_LOCAL as MARKET_HOURS
+    except ImportError:
+        from config.market_hours import is_market_open, get_egypt_time, MARKET_HOURS_LOCAL as MARKET_HOURS
     MARKET_HOURS_AVAILABLE = True
 except Exception as e:
     print(f"⚠️ Market hours not available: {e}")
