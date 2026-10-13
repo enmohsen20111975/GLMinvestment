@@ -69456,3 +69456,104 @@ Stage Summary:
 - ✅ NO git push --force (Rule 81 محترمة)
 
 Files touched: فقط src/modules/stock-analysis/components/TradingViewChart.tsx (6 تعديلات جراحية)
+
+---
+Task ID: ALPHA-HOUSEKEEPING-SCAN
+Agent: Frontend Housekeeping Auditor
+Task: مسح بيت الواجهات للملفات الميتة والاستيرادات المعطوبة
+
+Work Log:
+- Scanned src/ for *.test.*, *.spec.*, *.demo.*, *.example.*, *_test.*, *_demo.* — only legitimate vitest files under src/__tests__/ (proper structure, no stray test files inside modules). test_phase_a_hotfix.test.ts has unusual name but is a real SEC-01/SEC-03 regression test (keep, optional rename).
+- Scanned for temp/debug/scratch/old_/_old/_backup/_deprecated/_unused/*.bak/*.orig/*.disabled/*.tmp/*.copy patterns inside src/ — none found.
+- Scanned all imports (static + dynamic `import(...)` + require) for references to _old/_backup/_deprecated/archive/.preserved/.bak/.old/.copy paths — 0 broken imports.
+- Verified all dynamic imports in src/app/page.tsx, AdminView.tsx, MakerRadarTab.tsx, MarketAnalysisView.tsx, UnifiedPredictionsTab.tsx resolve to existing files (incl. @/app/rescue/page, @/lib/patch-html2pdf, @/lib/data-engine-db-sqljs, @/lib/paper-trading-v2-db, @/lib/schedulers/radar-alerts).
+- Verified .zscripts/ directory exists at project root (audit/build-agent artifact): 8 shell scripts (build.sh, dev.sh, start.sh, mini-services-{build,install,start}.sh, python-runtime-build.sh, database-runtime-build.sh) + dev.log (131 lines) + dev.pid ("1075"). Chinese comments + runtime .log/.pid artifacts confirm agent provenance — should not be in production codebase.
+- Found 1 stale backup file: src/app/api/deal-advisor/[ticker]/route.ts.preserved (39KB old Node-side impl). New route.ts is a 3KB thin Python proxy; its own header comment confirms "VERIFY-BEFORE-DELETE" intent.
+- Found no src/archive/, src/_temp/, src/__tests__-as-non-test-dir issues — src/__tests__/ is the legitimate vitest root.
+- Audited every module index.ts + every component file in src/components/*/, src/modules/*/components/. Confirmed 6 entirely-unused component files + 2 partially-dead files (file kept because one co-located export is still imported).
+
+Stage Summary:
+- Total dead files found: 9 (1 preserved backup + 6 entirely-unused components + 2 partially-dead component files)
+- Total broken imports: 0
+- Total unused components: 8 (6 entire-file orphans + 2 dead exports inside still-needed files)
+
+Findings detail (for cleanup agent):
+
+[dead file] src/app/api/deal-advisor/[ticker]/route.ts.preserved
+  Why: 39KB pre-unification Node-side implementation, replaced by thin Python proxy. New route.ts header literally says "الكود القديم محفوظ في route.ts.preserved (VERIFY-BEFORE-DELETE)".
+  Action: delete (after quick diff-vs-new-route sanity check)
+
+[unused component — entire file] src/modules/market-analysis/components/CryptoPredictionsTab.tsx
+  Why: exported in index.ts:19 but never imported as a value; only mentioned in dead-code comments inside MarketAnalysisView.tsx (lines 67, 78). Replaced by UnifiedPredictionsTab.
+  Action: delete (also remove export from modules/market-analysis/index.ts:19)
+
+[unused component — entire file] src/modules/market-analysis/components/ExpertPredictionsTab.tsx
+  Why: exported in index.ts:26 but never imported as a value; only mentioned in dead-code comment MarketAnalysisView.tsx:76. Same UnifiedPredictionsTab replacement.
+  Action: delete (also remove export from index.ts:26)
+
+[unused component — entire file] src/modules/market-analysis/components/LiveTrackingTab.tsx
+  Why: exported in index.ts:21 but never imported as a value; only mentioned in dead-code comments MarketAnalysisView.tsx (lines 68, 81). Replaced by UnifiedPredictionsTab.
+  Action: delete (also remove export from index.ts:21)
+
+[unused component — entire file] src/modules/market-analysis/components/LearnedLessonsDashboard.tsx
+  Why: exported in index.ts:16 but ZERO imports anywhere in codebase. True orphan.
+  Action: delete (also remove export from index.ts:16)
+
+[unused component — entire file] src/modules/crypto/components/CryptoLearningView.tsx
+  Why: page.tsx:254 + page.tsx:270 comments confirm it was supposed to be archived to "archive/dead-components-2026-10-08/" but the archive dir was deleted while the file itself was left behind. crypto/index.ts does not even export it. Zero imports.
+  Action: delete
+
+[unused component — entire file] src/modules/sharia/components/ShariaStockCard.tsx
+  Why: exported in sharia/index.ts:7 but never imported as a value. The file's only external reference is a comment in ShariaBadge.tsx:174 ("hook so ShariaStockCard can reuse the same cache") — that's just a doc comment, not an import. Self-referencing file.
+  Action: delete (also remove export from sharia/index.ts:7 and clean up the now-stale comment in ShariaBadge.tsx:174)
+
+[unused component — partially dead] src/modules/market-analysis/components/PredictionsTab.tsx
+  Why: file is KEPT because PersonaTab.tsx:54 imports PreviousPredictionsArchive from it. But the PredictionsTab named export (line 476) is never imported — ComprehensiveStockAnalysis.tsx has its own LOCAL PredictionsTab function (line 1495), unrelated. Only the dead PredictionsTab export + its supporting helpers are dead code in this file.
+  Action: investigate — keep the file, but delete the dead `PredictionsTab` function (line 476+) and remove it from index.ts:25 export. Audit dead-helper symbols inside the same file before pruning.
+
+[unused component — partially dead] src/modules/market-analysis/components/MorningBellSection.tsx
+  Why: file is KEPT because MarketAnalysisView.tsx:22 imports HorizontalSectorsBar from it. But the MorningBellSection named export (line 175) is never imported — MarketAnalysisView.tsx:201 comment literally says "MorningBellSection — UNIFIED-BALANCED-ONLY: متعطل" (= DISABLED).
+  Action: investigate — keep the file, but delete the dead `MorningBellSection` function (line 175+) and remove it from index.ts:20 export.
+
+[stale dir] /home/z/my-project/.zscripts/
+  Why: Audit/build-agent artifact (Chinese-commented shell scripts + runtime .log/.pid). dev.log + dev.pid are runtime artifacts that must never be in source control. The 8 shell scripts are agent-created tooling that doesn't belong in production codebase.
+  Action: investigate — at minimum delete .zscripts/dev.log and .zscripts/dev.pid. Decide with team whether the .sh scripts should be migrated to a proper scripts/ dir or deleted.
+
+[legitimate, keep] src/__tests__/ — proper vitest directory. Includes ErrorBoundary.test.tsx, radar/*, api/*, security/*, db/*, regime/*, alerts/*, predictions/*. test_phase_a_hotfix.test.ts has odd name but content is real SEC-01 + SEC-03 regression tests (backdoor creds + Paymob HMAC bypass). Keep all.
+
+[legitimate, keep] src/__tests__/test_phase_a_hotfix.test.ts — recommend optional rename to src/__tests__/security/phase-a-hotfix.test.ts for consistency with the security/ sub-folder convention.
+---
+
+---
+Task ID: ALPHA-CHART-PUSH-MARKETDEPTH-HOUSEKEEPING
+Agent: مهندس الواجهات وتجربة المستخدم المؤسسية (Frontend & UI Lead — GLM 5.2 Alpha)
+Task: دفع كود الشارت + فحص شاشة عمق السوق + تنظيف بيت الواجهات
+
+Work Log:
+- Task 1 (Git Push):
+  * git stash --include-untracked → git pull --rebase origin main (حل تعارض worklog.md + AUDIT_BACKEND_APIS_MAP.md)
+  * git push origin main: 84d1ef2b..9fb721e0 main -> main ✅ (4 commits pushed, Rule 81 محترمة — لا force push)
+
+- Task 2 (Market-Depth Browser Verification):
+  * /api/market/intraday-pressure?ticker=COMI → success: true, 9 buckets, session_summary present
+  * IntradayPressurePanel renders: ضغط الشراء/البيع، شراء:بيع = 1.74، VWAP=123.79، متوازن badge
+  * 9 time labels (10:00, 10:05, ... 10:40) مع buy/sell percentages لكل bucket
+  * "محاكاة تقديرية (SIMULATED)" badge present (Rule 27)
+  * لا أخطاء IntradayPressurePanel في الـ Console
+
+- Task 3 (Frontend Housekeeping):
+  * Sub-agent ALPHA-HOUSEKEEPING-SCAN scan completed
+  * 7 dead files found + 2 partially-dead + 0 broken imports + 8 unused components
+  * .zscripts/ directory (audit agent artifact) identified for cleanup
+  * route.ts.preserved (39 KB stale backup) identified for deletion
+  * 6 entirely-unused component files identified
+  * No stray test/demo/temp files in src/
+
+Stage Summary:
+- ✅ Git push: 4 commits pushed to origin/main (9fb721e0) — no force push (Rule 81)
+- ✅ Market-Depth: IntradayPressurePanel reads 9 buckets + buy/sell ratio 1.74 + VWAP + session summary
+- ✅ Housekeeping: 7 dead files + 8 unused components + 0 broken imports + .zscripts/ artifact identified
+- ✅ bun run lint → 0 errors
+- ✅ HTTP 200 على جميع المسارات
+- ✅ NO Python files modified
+- ✅ NO git push --force
