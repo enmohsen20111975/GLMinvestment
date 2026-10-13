@@ -142,7 +142,38 @@ class BagHolderRescue:
         historical_low = 0.0
         source = "unknown"
 
-        # 1. price_history.db — true OHLC history.
+        # 1. stocks.db — LIVE authority (stocks table updated intraday/daily).
+        sd = _open_ro(self.stocks_db)
+        if sd is not None:
+            try:
+                if _table_exists(sd, "stocks"):
+                    row = sd.execute(
+                        """
+                        SELECT
+                            current_price, high_price, low_price, high_52w, low_52w, close
+                        FROM stocks
+                        WHERE ticker = ? OR ticker LIKE ?
+                        LIMIT 1
+                        """,
+                        (ticker.upper(), f"{ticker.upper()}%"),
+                    ).fetchone()
+                    if row:
+                        cp = _safe_float(row["current_price"]) or _safe_float(row["close"])
+                        if cp > 0:
+                            current_price = cp
+                            source = "stocks.db(stocks)"
+                        h = _safe_float(row["high_52w"]) or _safe_float(row["high_price"])
+                        if h > 0:
+                            historical_high = h
+                        l = _safe_float(row["low_52w"]) or _safe_float(row["low_price"])
+                        if l > 0:
+                            historical_low = l
+            except sqlite3.Error:
+                pass
+            finally:
+                sd.close()
+
+        # 2. price_history.db — historical OHLC fallback.
         ph = _open_ro(self.price_history_db)
         if ph is not None:
             try:
@@ -162,17 +193,19 @@ class BagHolderRescue:
                         (ticker.upper(), ticker.upper()),
                     ).fetchone()
                     if row and row["cnt"] and row["cnt"] > 0:
-                        historical_high = _safe_float(row["h"])
-                        historical_low = _safe_float(row["l"])
-                        if row["last_close"]:
+                        if historical_high <= 0:
+                            historical_high = _safe_float(row["h"])
+                        if historical_low <= 0:
+                            historical_low = _safe_float(row["l"])
+                        if current_price <= 0 and row["last_close"]:
                             current_price = _safe_float(row["last_close"])
-                        source = "price_history.db"
+                            source = "price_history.db"
             except sqlite3.Error:
                 pass
             finally:
                 ph.close()
 
-        # 2. data_engine.db — live price (sandbox primary source).
+        # 3. data_engine.db — fallback source.
         if current_price <= 0:
             de = _open_ro(self.data_engine_db)
             if de is not None:
@@ -190,47 +223,6 @@ class BagHolderRescue:
                     pass
                 finally:
                     de.close()
-
-        # 3. stocks.db — try a `stocks` table if it exists on this VPS.
-        if current_price <= 0 or historical_high <= 0:
-            sd = _open_ro(self.stocks_db)
-            if sd is not None:
-                try:
-                    if _table_exists(sd, "stocks"):
-                        cols = [r[1].lower() for r in sd.execute(
-                            "PRAGMA table_info(stocks)"
-                        ).fetchall()]
-                        cp_col = next(
-                            (c for c in cols if c in ("current_price", "price", "close", "last_price")),
-                            None,
-                        )
-                        hi_col = next(
-                            (c for c in cols if c in ("high_price", "high", "year_high", "all_time_high")),
-                            None,
-                        )
-                        lo_col = next(
-                            (c for c in cols if c in ("low_price", "low", "year_low", "all_time_low")),
-                            None,
-                        )
-                        if cp_col or hi_col or lo_col:
-                            sel = ", ".join(filter(None, [cp_col, hi_col, lo_col]))
-                            row = sd.execute(
-                                f"SELECT {sel} FROM stocks WHERE ticker = ? OR ticker LIKE ? OR symbol = ?",
-                                (ticker.upper(), f"{ticker.upper()}%", ticker.upper()),
-                            ).fetchone()
-                            if row:
-                                if cp_col and current_price <= 0:
-                                    current_price = _safe_float(row[cp_col])
-                                if hi_col and historical_high <= 0:
-                                    historical_high = _safe_float(row[hi_col])
-                                if lo_col and historical_low <= 0:
-                                    historical_low = _safe_float(row[lo_col])
-                                if source == "unknown":
-                                    source = "stocks.db"
-                except sqlite3.Error:
-                    pass
-                finally:
-                    sd.close()
 
         # 4. predictions.db — last-resort current price from stored analyses.
         if current_price <= 0:

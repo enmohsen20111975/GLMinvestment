@@ -60,77 +60,54 @@ export default function RescuePage() {
     setResult(null);
 
     try {
-      // Fetch current price from /api/stocks/[ticker]/comprehensive
-      const res = await fetch(`/api/stocks/${encodeURIComponent(ticker.trim())}/comprehensive`, { cache: 'no-store' });
+      const quantity = Number(qty) || 100;
+      const res = await fetch(
+        `/api/rescue/analyze?ticker=${encodeURIComponent(ticker.trim())}&buy_price=${encodeURIComponent(entryPrice)}&quantity=${quantity}`,
+        { cache: 'no-store' }
+      );
       const json = await res.json();
 
-      const currentPrice = Number(json?.stock?.current_price ?? json?.stats?.lastClose ?? 0);
-      const entry = Number(entryPrice);
-      const quantity = Number(qty) || 1;
-
-      if (currentPrice <= 0) {
-        toast.error('تعذر جلب السعر الحالي — تأكد من رمز السهم');
+      if (!json.success) {
+        toast.error(json.message || json.error || 'تعذر تشخيص الصفقة — تأكد من رمز السهم');
         setLoading(false);
         return;
       }
 
-      const lossPct = ((currentPrice - entry) / entry) * 100;
-      const lossEgp = (currentPrice - entry) * quantity;
+      const verdict: RescueResult['verdict'] = json.decision || 'HOLD';
+      const lossPct = json.loss_pct ?? 0;
+      const lossEgp = json.loss_amount ?? 0;
+      const currentPrice = json.current_price ?? 0;
+      const entry = json.buy_price ?? Number(entryPrice);
 
-      // Determine verdict
-      let verdict: RescueResult['verdict'] = 'HOLD';
-      let diagnosis = '';
+      const diagnosis = json.autopsy?.summary || (lossPct < 0 ? `خسارة ${lossPct.toFixed(1)}%` : 'الصفقة مستقرة');
 
-      if (lossPct <= -15) {
-        verdict = 'CUT_LOSS';
-        diagnosis = `خسارة حادة (${lossPct.toFixed(1)}%) — السهم كسر مستويات الدعم الرئيسية والمخاطرة تتصاعد مع استمرار الهبوط.`;
-      } else if (lossPct <= -7) {
-        verdict = 'AVERAGE_DOWN';
-        diagnosis = `خسارة متوسطة (${lossPct.toFixed(1)}%) — يمكن تخفيض متوسط التكلفة بشروط استقرار السهم عند الدعم الحالي.`;
-      } else if (lossPct < 0) {
-        verdict = 'HOLD';
-        diagnosis = `خسارة محدودة (${lossPct.toFixed(1)}%) — السهم في نطاق تذبذب طبيعي. الصبر مبرر.`;
-      } else {
-        verdict = 'HOLD';
-        diagnosis = `الصفقة رابحة (${lossPct.toFixed(1)}%) — لا حاجة لإنقاذ. راقب الهدف.`;
-      }
+      const health = json.asset_health || {};
+      const supportLevel = health.support_level ?? null;
+      const exitLevel = health.resistance_exit_level ?? null;
+      const flowStr = health.institutional_flow || '';
+      const liquidity: 'high' | 'medium' | 'low' = flowStr.includes('خارجة') ? 'low' : flowStr.includes('داخلة') ? 'high' : 'medium';
+      const trend: 'up' | 'down' | 'sideways' = json.autopsy?.is_falling_knife ? 'down' : lossPct < -10 ? 'down' : 'sideways';
 
-      // Asset health (from API data)
-      const stockInfo = json?.stock || {};
-      const turnover = Number(stockInfo.turnover_egp ?? stockInfo.avg_turnover_20d ?? 0);
-      const liquidity: 'high' | 'medium' | 'low' =
-        turnover > 5_000_000 ? 'high' : turnover > 1_000_000 ? 'medium' : 'low';
-
-      const supportLevel = Number(stockInfo.support ?? stockInfo.low_52w ?? 0) || null;
-      const exitLevel = Number(stockInfo.resistance ?? stockInfo.high_52w ?? 0) || null;
-
-      const changePct = Number(stockInfo.change_percent ?? 0);
-      const trend: 'up' | 'down' | 'sideways' = changePct > 1 ? 'up' : changePct < -1 ? 'down' : 'sideways';
-
-      // Action plan
       const actionPlan: { step: string; detail: string }[] = [];
-      if (verdict === 'CUT_LOSS') {
-        actionPlan.push({ step: '1️⃣ اقطع الخسارة', detail: `بِع ${quantity} سهم عند ${currentPrice.toFixed(2)} ج.م — الخسارة ${lossEgp.toFixed(2)} ج.م` });
-        actionPlan.push({ step: '2️⃣ أعد توجيه الكاش', detail: `استثمر ${Math.abs(lossEgp).toFixed(0)} ج.م المتبقية في سهم صاعد ذي سيولة عالية` });
-        actionPlan.push({ step: '3️⃣ تعافى نفسياً', detail: 'لا تطارد الخسارة — انتظر فرصة مؤكدة قبل العودة للسوق' });
-      } else if (verdict === 'AVERAGE_DOWN') {
-        const avgPrice = (entry + currentPrice) / 2;
-        actionPlan.push({ step: '1️⃣ اشتر دفعة تبريد', detail: `اشترِ ${quantity} سهم إضافي عند ${currentPrice.toFixed(2)} لتخفيض المتوسط إلى ${avgPrice.toFixed(2)}` });
-        actionPlan.push({ step: '2️⃣ ضع وقفاً صارماً', detail: `وقف عند ${supportLevel ? supportLevel.toFixed(2) : (currentPrice * 0.95).toFixed(2)} ج.م` });
-        actionPlan.push({ step: '3️⃣ راقب الدعم', detail: `إذا كسر ${supportLevel ? supportLevel.toFixed(2) : 'الدعم الحالي'} — اقطع فوراً` });
-      } else {
-        actionPlan.push({ step: '1️⃣ اصبر', detail: 'الصفقة في نطاق آمن — راقب الأداء دون توتر' });
-        actionPlan.push({ step: '2️⃣ راقب الهدف', detail: `الهدف القريب: ${exitLevel ? exitLevel.toFixed(2) : '—'} ج.م` });
-        actionPlan.push({ step: '3️⃣ حدّث الوقف', detail: 'ارفع وقف الخسارة تدريجياً مع ارتقاء السعر' });
+      if (json.action_plan?.recommended_action) {
+        actionPlan.push({ step: '⚡ الإجراء الموصى به', detail: json.action_plan.recommended_action });
+      }
+      if (json.action_plan?.average_down_reason) {
+        actionPlan.push({
+          step: json.action_plan.average_down_allowed ? '🔄 شروط التبريد' : '🚫 موقف التبريد',
+          detail: json.action_plan.average_down_reason,
+        });
+      }
+      if (exitLevel) {
+        actionPlan.push({ step: '🎯 مستوى الخروج المستهدف', detail: `${exitLevel.toFixed(2)} ج.م` });
       }
 
-      // Lessons
-      const lessons = [
-        verdict === 'CUT_LOSS' ? '🧠 الخسارة جزء من التداول — القطع المبكر أفضل من الانتظار حتى القاع' : '✅ الصبر على الصفقات الرابحة أساس النجاح',
-        '📊 لا تشتري أبداً في قمة شمعة انفجارية (ذروة شراء)',
-        '🛑 ضع وقف الخسارة قبل الدخول — وليس بعد فوات الأوان',
-        '💡 حجم الصفقة لا يتجاوز 5% من رأس المال',
-      ];
+      const lessons = (json.lessons_learned && json.lessons_learned.length > 0)
+        ? json.lessons_learned
+        : [
+            '🛑 وضع وقف الخسارة الصارم عند -5% إلى -7% هو الحامي الوحيد لرأس المال.',
+            '💡 حجم الصفقة لا يتجاوز 5% من رأس المال.',
+          ];
 
       setResult({
         verdict,
