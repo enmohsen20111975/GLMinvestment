@@ -69713,3 +69713,53 @@ Stage Summary:
 - ⚠️ ملاحظة: commercial-feed endpoint شغّال لكن لم يُوصَّل بعد في DashboardView (مهمة wiring لاحقة).
 - ✅ NO Python files modified (Rule 4) — كان هذا verification فقط.
 - ✅ NO git push --force (Rule 81).
+
+---
+Task ID: BRAVO-B-17-REFACTOR
+Agent: كبير المهندسين الكميين (Chief Quant & Math Lead — GLM 5.2 Bravo)
+Task: إعادة تأكيد B-17 — refactor commercial_feed.py بـ ATTACH DATABASE + إعادة تشغيل السكانر + تأكيد نظافة Win Rate
+
+Work Log:
+
+**1. refactor commercial_feed.py (ATTACH DATABASE approach):**
+- المشكلة القديمة: السكريبت كان بيفتح predictions.db وبيعمل JOIN مع stocks table اللي مش موجودة فيه → "no such table: stocks"
+- الحل المعماري (كما طلب المالك):
+  * بنيت `_open_predictions_connection()` helper بـ 3 سيناريوهات:
+    (أ) predictions.db موجود + فيه predictions table → افتحه و ATTACH stocks.db عليه، JOIN بـ stocks_db.stocks
+    (ب) predictions.db مش موجود → افتح stocks.db مباشرة (فيه الجدولين معًا)
+    (ج) predictions.db موجود بس مفيهوش predictions → skip صامت
+  * بنيت `_stocks_table_ref(source_label)` → يرجع "stocks_db.stocks" أو "stocks" حسب المصدر
+  * الـ JOIN بيبقى صحيح في كل الحالات من غير أخطاء
+- أضفت فلتر القيعان الشاذة في get_audited_performance():
+  * `WHERE p.outcome_date >= p.prediction_date` (استبعد التواريخ المستحيلة)
+  * `AND (lowest_price_reached > 0 OR lowest_price_reached IS NULL OR p.hit_target = 1)` (استبعد القيعان الصفرية)
+  * + فلتر بايثوني إضافي: `if d.get('hit_stop') == 1 and lowest == 0: continue` (مضاعف)
+
+**2. إعادة تشغيل السكانر المؤسسي:**
+- `python3 scripts/multi_market_institutional_scan.py --execute --strict --top 12`
+- مسح 1068 سهم (EGX 427 + TADAWUL 395 + KSE 179 + QSE 67)
+- كُتبت 12 صفقة STRONG_BUY طازجة في stocks.db.predictions (idempotent — حذف القديم + إدراج الجديد)
+- متوسط R:R = 2.30 | متوسط الثقة = 86.2%
+- توزيع الأسواق: EGX 7 + TADAWUL 4 + KSE 1
+
+**3. تأكيد نظافة Win Rate:**
+- شغّلت `clean_false_stoploss.py` (idempotent) → 0 صفقات فاسدة للحذف (الـ DB نظيف من المرة السابقة)
+- الحالة النهائية: 13 نشطة (12 STRONG_BUY + 1 BUY) | 0 مغلقة | 0 false stops | win_rate=0 (صادق)
+
+**4. دليل التسليم النهائي:**
+- `python3 scripts/commercial_feed.py --json` → stderr EMPTY (لا أخطاء) + stdout JSON ناجح:
+  * success: true
+  * active_signals.count: 13 (12 STRONG_BUY بـ R:R ≥ 2.0 + 1 BUY بـ R:R=1.87)
+  * avg_rr: 2.27 | avg_confidence: 85%
+  * audited_performance.total_closed: 0 | win_rate: 0 (لا بيانات وهمية)
+- API endpoint /api/v2/commercial-feed → نفس النتيجة بالضبط
+
+Stage Summary:
+- ✅ commercial_feed.py refactored بـ ATTACH DATABASE — stderr نظيف 100%
+- ✅ 12 صفقة STRONG_BUY حية (R:R ≥ 2.0, ثقة ≥ 78%) في stocks.db.predictions
+- ✅ Win Rate نظيف (0 false stops, 0% من 0 صفقة مغلقة — لا 7.4% وهمية)
+- ✅ `python3 scripts/commercial_feed.py --json` بيشتغل بدون أخطاء
+- ✅ /api/v2/commercial-feed endpoint بيخدم نفس البيانات
+- ✅ bun run lint → 0 errors
+- ✅ NO Python files in vps-service/ modified (Rule 4)
+- ✅ NO git push --force (Rule 81)
