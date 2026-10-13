@@ -401,12 +401,22 @@ export function adaptAiInsights(raw: Record<string, unknown>): AiInsights {
     ? sectors.reduce((sum, s) => sum + parseNum(s.avg_change || 0), 0) / sectors.length
     : 0;
 
+  // ALPHA-P0: معايرة pulseScore من نطاق [-5, +5] إلى [0, 100]
+  // كان: market_score = Math.round(pulseScore * 100) — خاطئ لو pulseScore في [-5,+5]
+  // الآن: market_score = ((pulseScore + 5) / 10) * 100 — معايرة صحيحة
+  const calibratedScore = Math.round(((pulseScore + 5) / 10) * 100);
+  const clampedScore = Math.max(0, Math.min(100, calibratedScore));
+
+  // ALPHA-P0: حساب نسبة الصاعدين الفعلية من gainers/losers
+  const totalStocks = gainersCount + losersCount + unchangedCount;
+  const advancersPct = totalStocks > 0 ? (gainersCount / totalStocks) * 100 : 50;
+
   return {
     market_sentiment,
-    market_score: Math.round(pulseScore * 100),
+    market_score: clampedScore,
     market_breadth: Math.round(market_breadth * 100) / 100,
     avg_change_percent: avgChange,
-    volatility_index: Math.round((1 - pulseScore) * 100) / 100,
+    volatility_index: Math.round((1 - (clampedScore / 100)) * 100) / 100,
     gainers: gainersCount,
     losers: losersCount,
     unchanged: unchangedCount,
