@@ -48,28 +48,24 @@ def get_active_intraday_tickers(min_volume: int = 10000) -> List[Dict[str, Any]]
     if not INTRADAY_DB.exists():
         return []
     try:
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.connection('intraday', writable=False).__enter__()
-        except Exception:
-            conn = sqlite3.connect(str(INTRADAY_DB), timeout=5.0)
-        today_str = datetime.now().strftime('%Y-%m-%d')
-        # تحقق من وجود بيانات اليوم أو أحدث يوم متاح
-        latest_date_row = conn.execute("SELECT MAX(SUBSTR(timestamp, 1, 10)) FROM stock_intraday").fetchone()
-        scan_date = latest_date_row[0] if latest_date_row and latest_date_row[0] else today_str
-        
-        rows = conn.execute('''
-            SELECT ticker, COUNT(*) as bars_count, MAX(price) as high_p, 
-                   MIN(price) as low_p, MAX(volume) as max_vol,
-                   (SELECT price FROM stock_intraday s2 WHERE s2.ticker = s1.ticker ORDER BY timestamp DESC LIMIT 1) as last_p,
-                   (SELECT price FROM stock_intraday s3 WHERE s3.ticker = s1.ticker ORDER BY timestamp ASC LIMIT 1) as first_p
-            FROM stock_intraday s1
-            WHERE SUBSTR(timestamp, 1, 10) = ?
-            GROUP BY ticker
-            HAVING max_vol >= ? AND bars_count >= 5
-            ORDER BY max_vol DESC
-        ''', (scan_date, min_volume)).fetchall()
-        conn.close()
+        from core.db_manager import db_manager
+        with db_manager.connection('intraday', writable=False) as conn:
+            today_str = datetime.now().strftime('%Y-%m-%d')
+            # تحقق من وجود بيانات اليوم أو أحدث يوم متاح
+            latest_date_row = conn.execute("SELECT MAX(SUBSTR(timestamp, 1, 10)) FROM stock_intraday").fetchone()
+            scan_date = latest_date_row[0] if latest_date_row and latest_date_row[0] else today_str
+            
+            rows = conn.execute('''
+                SELECT ticker, COUNT(*) as bars_count, MAX(price) as high_p, 
+                       MIN(price) as low_p, MAX(volume) as max_vol,
+                       (SELECT price FROM stock_intraday s2 WHERE s2.ticker = s1.ticker ORDER BY timestamp DESC LIMIT 1) as last_p,
+                       (SELECT price FROM stock_intraday s3 WHERE s3.ticker = s1.ticker ORDER BY timestamp ASC LIMIT 1) as first_p
+                FROM stock_intraday s1
+                WHERE SUBSTR(timestamp, 1, 10) = ?
+                GROUP BY ticker
+                HAVING max_vol >= ? AND bars_count >= 5
+                ORDER BY max_vol DESC
+            ''', (scan_date, min_volume)).fetchall()
 
         result = []
         for r in rows:
@@ -128,13 +124,9 @@ def analyze_intraday_opportunity(ticker_info: Dict[str, Any]) -> Optional[Dict[s
     sector_name = None
     sector_perf = {}
     try:
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.connection('stocks', writable=False).__enter__()
-        except Exception:
-            conn = sqlite3.connect(str(STOCKS_DB), timeout=3.0)
-        s_row = conn.execute("SELECT sector FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
-        conn.close()
+        from core.db_manager import db_manager
+        with db_manager.connection('stocks', writable=False) as conn:
+            s_row = conn.execute("SELECT sector FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
         if s_row and s_row[0]:
             sector_name = s_row[0]
             sector_perf = get_sector_performance(sector_name)
@@ -305,173 +297,143 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                 if pid:
                     saved_count += 1
                     try:
-                        try:
-                            from core.db_manager import db_manager
-                            conn_p = db_manager.connection('predictions', writable=True).__enter__()
-                        except Exception:
-                            conn_p = sqlite3.connect(str(PREDICTIONS_DB), timeout=5.0)
-                        conn_p.execute("""
-                            UPDATE predictions 
-                            SET entry_price_min = ?, entry_price_max = ?, support_level = ?, support_level_2 = ?, resistance_level = ?, resistance_level_2 = ?
-                            WHERE id = ?
-                        """, (
-                            p.get('entry_price_min'), p.get('entry_price_max'),
-                            p.get('support_level'), p.get('support_level_2'),
-                            p.get('resistance_level'), p.get('resistance_level_2'),
-                            pid
-                        ))
-                        conn_p.commit()
-                        conn_p.close()
+                        from core.db_manager import db_manager
+                        with db_manager.connection('predictions', writable=True) as conn_p:
+                            conn_p.execute("""
+                                UPDATE predictions 
+                                SET entry_price_min = ?, entry_price_max = ?, support_level = ?, support_level_2 = ?, resistance_level = ?, resistance_level_2 = ?
+                                WHERE id = ?
+                            """, (
+                                p.get('entry_price_min'), p.get('entry_price_max'),
+                                p.get('support_level'), p.get('support_level_2'),
+                                p.get('resistance_level'), p.get('resistance_level_2'),
+                                pid
+                            ))
+                            conn_p.commit()
                     except Exception:
                         pass
             print(f"  💾 تم حفظ {saved_count} توقع لحظي في {PREDICTIONS_DB}", flush=True)
 
             # مزامنة الفرص اللحظية فوراً في stored_analyses ليراها المستخدم في شاشة التوقعات مباشرة
             # SINGLE-WRITER (Task PHASE-3, Rule 73) — only daily_predictor.py should write to stored_analyses.
-            # The INSERT below is DISABLED to prevent conflicting decisions (last-writer-wins).
-            # The cached_analysis (stocks.db) update that follows still runs (different table).
             SKIP_STORED_ANALYSES_WRITE = True
             try:
-                try:
-                    from core.db_manager import db_manager
-                    conn_sa = db_manager.connection('predictions', writable=True).__enter__()
-                except Exception:
-                    conn_sa = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
-                cur_sa = conn_sa.cursor()
-                # ضمان وجود جميع الأعمدة اللازمة في سيرفر الإنتاج بدون أخطاء schema
-                for col_name, col_type in [
-                    ("prediction_date", "TEXT"),
-                    ("is_gambler_opportunity", "INTEGER DEFAULT 1"),
-                    ("is_investor_opportunity", "INTEGER DEFAULT 1"),
-                    ("analysis_json", "TEXT"),
-                    ("logo_url", "TEXT")
-                ]:
-                    try:
-                        cur_sa.execute(f"ALTER TABLE stored_analyses ADD COLUMN {col_name} {col_type}")
-                    except Exception:
-                        pass
-                now_iso = datetime.now().isoformat()
-                today_str = datetime.now().strftime('%Y-%m-%d')
-                for p in top_picks:
-                    # جلب اللوجو والاسم العربي من stocks.db
-                    logo_url = ''
-                    name_ar = p['ticker']
-                    try:
-                        try:
-                            from core.db_manager import db_manager
-                            conn_s = db_manager.connection('stocks', writable=False).__enter__()
-                        except Exception:
-                            conn_s = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
-                        s_r = conn_s.execute("SELECT logo_url, name_ar FROM stocks WHERE ticker = ?", (p['ticker'],)).fetchone()
-                        conn_s.close()
-                        if s_r:
-                            logo_url = s_r[0] or ''
-                            name_ar = s_r[1] or p['ticker']
-                    except Exception:
-                        pass
-
-                    analysis_dict = {
-                        'ticker': p['ticker'],
-                        'name_ar': name_ar,
-                        'logo_url': logo_url,
-                        'signal': p['signal'],
-                        'entry_price': p['entry_price'],
-                        'entry_price_min': p.get('entry_price_min'),
-                        'entry_price_max': p.get('entry_price_max'),
-                        'entry_range_str': p.get('entry_range_str'),
-                        'target_price': p['target_price'],
-                        'target_price_2': p.get('target_price_2'),
-                        'stop_loss': p['stop_loss'],
-                        'support_level': p.get('support_level'),
-                        'support_level_2': p.get('support_level_2'),
-                        'resistance_level': p.get('resistance_level'),
-                        'resistance_level_2': p.get('resistance_level_2'),
-                        'risk_reward': p.get('risk_reward', 2.0),
-                        'advice': p.get('advice'),
-                        'reasons': p.get('reasons', []),
-                        'maker_flow': p.get('maker_flow', 'ACCUMULATION'),
-                        'score': p['score'],
-                        'source': 'V40.2_INTRADAY_5M'
-                    }
-                    sa_id = f"v40_{p['ticker']}_EGX"
-                    # SINGLE-WRITER (Task PHASE-3, Rule 73) — guard wraps the actual INSERT.
-                    if not SKIP_STORED_ANALYSES_WRITE:
-                        cur_sa.execute('''
-                            INSERT INTO stored_analyses (
-                                id, ticker, market, maestro_score, recommendation, recommendation_ar,
-                                confidence, entry_price, target_price, stop_loss, risk_reward,
-                                prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity, logo_url
-                            ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)
-                            ON CONFLICT(ticker, market) DO UPDATE SET
-                                maestro_score = excluded.maestro_score,
-                                recommendation = excluded.recommendation,
-                                recommendation_ar = excluded.recommendation_ar,
-                                confidence = excluded.confidence,
-                                entry_price = excluded.entry_price,
-                                target_price = excluded.target_price,
-                                stop_loss = excluded.stop_loss,
-                                risk_reward = excluded.risk_reward,
-                                prediction_date = excluded.prediction_date,
-                                updated_at = excluded.updated_at,
-                                analysis_json = excluded.analysis_json,
-                                is_gambler_opportunity = 1,
-                                is_investor_opportunity = 1,
-                                logo_url = excluded.logo_url
-                        ''', (
-                            sa_id, p['ticker'], p['score'], p['signal'], 'شراء قوي' if 'STRONG' in p['signal'] else 'شراء',
-                            p.get('maker_confidence', 80), p['entry_price'], p['target_price'], p['stop_loss'],
-                            p.get('risk_reward', 2.0), today_str, now_iso, json.dumps(analysis_dict, ensure_ascii=False),
-                            logo_url
-                        ))
-                    else:
-                        # SINGLE-WRITER skip — no INSERT executed; transaction stays empty.
-                        pass
                 if not SKIP_STORED_ANALYSES_WRITE:
-                    conn_sa.commit()
-                    conn_sa.close()
-                    print(f"  ⚡ تم مزامنة {len(top_picks)} فرصة لحظية في stored_analyses لشاشة التوقعات", flush=True)
+                    from core.db_manager import db_manager
+                    with db_manager.connection('predictions', writable=True) as conn_sa:
+                        cur_sa = conn_sa.cursor()
+                        for col_name, col_type in [
+                            ("prediction_date", "TEXT"),
+                            ("is_gambler_opportunity", "INTEGER DEFAULT 1"),
+                            ("is_investor_opportunity", "INTEGER DEFAULT 1"),
+                            ("analysis_json", "TEXT"),
+                            ("logo_url", "TEXT")
+                        ]:
+                            try:
+                                cur_sa.execute(f"ALTER TABLE stored_analyses ADD COLUMN {col_name} {col_type}")
+                            except Exception:
+                                pass
+                        now_iso = datetime.now().isoformat()
+                        today_str = datetime.now().strftime('%Y-%m-%d')
+                        for p in top_picks:
+                            logo_url = ''
+                            name_ar = p['ticker']
+                            try:
+                                with db_manager.connection('stocks', writable=False) as conn_s:
+                                    s_r = conn_s.execute("SELECT logo_url, name_ar FROM stocks WHERE ticker = ?", (p['ticker'],)).fetchone()
+                                if s_r:
+                                    logo_url = s_r[0] or ''
+                                    name_ar = s_r[1] or p['ticker']
+                            except Exception:
+                                pass
+
+                            analysis_dict = {
+                                'ticker': p['ticker'],
+                                'name_ar': name_ar,
+                                'logo_url': logo_url,
+                                'signal': p['signal'],
+                                'entry_price': p['entry_price'],
+                                'entry_price_min': p.get('entry_price_min'),
+                                'entry_price_max': p.get('entry_price_max'),
+                                'entry_range_str': p.get('entry_range_str'),
+                                'target_price': p['target_price'],
+                                'target_price_2': p.get('target_price_2'),
+                                'stop_loss': p['stop_loss'],
+                                'support_level': p.get('support_level'),
+                                'support_level_2': p.get('support_level_2'),
+                                'resistance_level': p.get('resistance_level'),
+                                'resistance_level_2': p.get('resistance_level_2'),
+                                'risk_reward': p.get('risk_reward', 2.0),
+                                'advice': p.get('advice'),
+                                'reasons': p.get('reasons', []),
+                                'maker_flow': p.get('maker_flow', 'ACCUMULATION'),
+                                'score': p['score'],
+                                'source': 'V40.2_INTRADAY_5M'
+                            }
+                            sa_id = f"v40_{p['ticker']}_EGX"
+                            cur_sa.execute('''
+                                INSERT INTO stored_analyses (
+                                    id, ticker, market, maestro_score, recommendation, recommendation_ar,
+                                    confidence, entry_price, target_price, stop_loss, risk_reward,
+                                    prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity, logo_url
+                                ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)
+                                ON CONFLICT(ticker, market) DO UPDATE SET
+                                    maestro_score = excluded.maestro_score,
+                                    recommendation = excluded.recommendation,
+                                    recommendation_ar = excluded.recommendation_ar,
+                                    confidence = excluded.confidence,
+                                    entry_price = excluded.entry_price,
+                                    target_price = excluded.target_price,
+                                    stop_loss = excluded.stop_loss,
+                                    risk_reward = excluded.risk_reward,
+                                    prediction_date = excluded.prediction_date,
+                                    updated_at = excluded.updated_at,
+                                    analysis_json = excluded.analysis_json,
+                                    is_gambler_opportunity = 1,
+                                    is_investor_opportunity = 1,
+                                    logo_url = excluded.logo_url
+                            ''', (
+                                sa_id, p['ticker'], p['score'], p['signal'], 'شراء قوي' if 'STRONG' in p['signal'] else 'شراء',
+                                p.get('maker_confidence', 80), p['entry_price'], p['target_price'], p['stop_loss'],
+                                p.get('risk_reward', 2.0), today_str, now_iso, json.dumps(analysis_dict, ensure_ascii=False),
+                                logo_url
+                            ))
+                        conn_sa.commit()
+                        print(f"  ⚡ تم مزامنة {len(top_picks)} فرصة لحظية في stored_analyses لشاشة التوقعات", flush=True)
                 else:
-                    try:
-                        conn_sa.close()
-                    except Exception:
-                        pass
                     print(f"  ⚡ [SINGLE-WRITER] Skipping stored_analyses sync for {len(top_picks)} picks — use daily_predictor.py", flush=True)
 
                 # تحديث cached_analysis في stocks.db لإزالة تحذير الكاش القديم
                 try:
-                    try:
-                        from core.db_manager import db_manager
-                        conn_ca = db_manager.connection('stocks', writable=True).__enter__()
-                    except Exception:
-                        conn_ca = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
-                    cur_ca = conn_ca.cursor()
-                    for p in top_picks:
-                        cur_ca.execute('''
-                            INSERT INTO cached_analysis (
-                                ticker, current_price, entry_price, target_price, stop_loss,
-                                signal, recommendation, confidence, master_score, risk_reward,
-                                created_at, updated_at, analysis_date, is_tradeable
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), date('now'), 1)
-                            ON CONFLICT(ticker) DO UPDATE SET
-                                current_price = excluded.current_price,
-                                entry_price = excluded.entry_price,
-                                target_price = excluded.target_price,
-                                stop_loss = excluded.stop_loss,
-                                signal = excluded.signal,
-                                recommendation = excluded.recommendation,
-                                confidence = excluded.confidence,
-                                master_score = excluded.master_score,
-                                risk_reward = excluded.risk_reward,
-                                created_at = datetime('now'),
-                                updated_at = datetime('now'),
-                                analysis_date = date('now'),
-                                is_tradeable = 1
-                        ''', (
-                            p['ticker'], p['entry_price'], p['entry_price'], p['target_price'], p['stop_loss'],
-                            p['signal'], p['signal'], p.get('maker_confidence', 80), p['score'], p.get('risk_reward', 2.0)
-                        ))
-                    conn_ca.commit()
-                    conn_ca.close()
+                    from core.db_manager import db_manager
+                    with db_manager.connection('stocks', writable=True) as conn_ca:
+                        cur_ca = conn_ca.cursor()
+                        for p in top_picks:
+                            cur_ca.execute('''
+                                INSERT INTO cached_analysis (
+                                    ticker, current_price, entry_price, target_price, stop_loss,
+                                    signal, recommendation, confidence, master_score, risk_reward,
+                                    created_at, updated_at, analysis_date, is_tradeable
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), date('now'), 1)
+                                ON CONFLICT(ticker) DO UPDATE SET
+                                    current_price = excluded.current_price,
+                                    entry_price = excluded.entry_price,
+                                    target_price = excluded.target_price,
+                                    stop_loss = excluded.stop_loss,
+                                    signal = excluded.signal,
+                                    recommendation = excluded.recommendation,
+                                    confidence = excluded.confidence,
+                                    master_score = excluded.master_score,
+                                    risk_reward = excluded.risk_reward,
+                                    created_at = datetime('now'),
+                                    updated_at = datetime('now'),
+                                    analysis_date = date('now'),
+                                    is_tradeable = 1
+                            ''', (
+                                p['ticker'], p['entry_price'], p['entry_price'], p['target_price'], p['stop_loss'],
+                                p['signal'], p['signal'], p.get('maker_confidence', 80), p['score'], p.get('risk_reward', 2.0)
+                            ))
+                        conn_ca.commit()
                 except Exception as _ca_e:
                     print(f"  ⚠️ خطأ في مزامنة cached_analysis: {_ca_e}", flush=True)
             except Exception as _sa_e:

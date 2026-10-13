@@ -1639,6 +1639,28 @@ def v2_list_predictions():
             LIMIT ?
         """
         predictions = query_db(PREDICTIONS_DB, query, tuple(params + [limit]))
+        if not predictions:
+            pred_where_clauses = []
+            pred_params = []
+            if signal and signal.upper() != 'ALL':
+                pred_where_clauses.append("(signal = ? OR signal_type = ?)")
+                pred_params.extend([signal.upper(), signal.upper()])
+            if market:
+                db_market = MARKET_MAP.get(market.upper(), market.upper())
+                pred_where_clauses.append("market = ?")
+                pred_params.append(db_market)
+            pred_where = "WHERE " + " AND ".join(pred_where_clauses) if pred_where_clauses else ""
+            pred_query = f"""
+                SELECT id, ticker, ticker AS stock_symbol, signal, signal AS signal_type,
+                       entry_price, target_price, target_price_2, stop_loss,
+                       prediction_date, status, confidence, master_score, risk_reward, market,
+                       outcome_date, exit_price, actual_return, is_correct, hit_target, hit_stop
+                FROM predictions
+                {pred_where}
+                ORDER BY prediction_date DESC, id DESC
+                LIMIT ?
+            """
+            predictions = query_db(PREDICTIONS_DB, pred_query, tuple(pred_params + [limit]))
         
         # FIX (Aug 2026): Strict market filter on the Python side too.
         # aiPrediction.market may be polluted (NULL or wrong) which leaks

@@ -3284,10 +3284,12 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     #  it now runs even in dry-run mode so users see the picks)
 
     for scan_date in sorted(signals_by_date.keys()):
-        day_signals = signals_by_date[scan_date]
+        all_day_signals = signals_by_date[scan_date]
+        # Only tradeable BUY signals can be candidate picks (Rule GLM5.2-S1: HOLD is not a trade)
+        buy_signals = [s for s in all_day_signals if s.get('signal') in ('BUY', 'STRONG_BUY', 'INSTITUTIONAL_BUY')]
         # Sort: evidence DESC → R-multiple DESC → tech_score DESC
-        day_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
-        picks = day_signals[:max_picks]
+        buy_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
+        picks = buy_signals[:max_picks]
 
         # REGIME-ENGINE (2026-09-27): apply regime-aware min_score filter
         # DEFENSIVE → min_score=75 (was 60). AGGRESSIVE → min_score=70.
@@ -3300,13 +3302,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 print(f"🌐 [REGIME] {scan_date}: dropped {_picks_before - len(picks)} picks "
                       f"(score < {_regime_min_score} for {_regime_name} regime)", flush=True)
 
-        # RADAR FALLBACK (2026-10-05): لو DEFENSIVE regime و مفيش picks → استخدم radar explosive_list
+        # RADAR FALLBACK (2026-10-05): لو DEFENSIVE regime و مفيش picks → استخدم radar candidates
         if len(picks) == 0 and _regime_cfg is not None and _regime_name == 'DEFENSIVE':
             try:
                 from utils.shared_liquidity import detect_pre_surge, detect_quiet_accumulation
                 # Get tickers with radar signals for this date
                 _radar_candidates = []
-                for sig in day_signals:
+                for sig in all_day_signals:
                     ticker = sig['ticker']
                     # Re-check radar for this ticker
                     _ticker_closes = sig.get('_closes_for_radar')
@@ -3330,6 +3332,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                 'evidence': sig['evidence'],
                                 'r_multiple': sig['r_multiple'],
                                 'atr': sig.get('atr', 0),
+                                'target_2': sig.get('target_2') or (round(sig['target'] * 1.5, 2) if sig.get('target') else 0),
                                 'exit_price': sig['exit_price'],
                                 'exit_date': sig['exit_date'],
                                 'exit_reason': sig['exit_reason'],
@@ -3475,15 +3478,16 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 # technical_score = tech_score (الدرجة الفنية الخام من V38)
                 # ده بـ يخلي master_score مختلف عن technical_score و يعكس الدرجة الكلية الحقيقية
                 _master_score = sig.get('combined_score', sig['tech_score'])
+                _tp2 = sig.get('target_2') or (round(sig['target'] * 1.5, 2) if sig.get('target') else None)
                 pred_id = tracker.record_prediction(
                     ticker=sig['ticker'], signal=sig['signal'],
                     entry_price=sig['entry'], target_price=sig['target'],
                     stop_loss=sig['stop'], master_score=_master_score,
                     technical_score=sig['tech_score'], persona='balanced',
                     fundamental_score=sig.get('fundamental_score'),  # REAL DATA ONLY — no placeholder (per owner directive + Rule 24) — None when missing
-                    atr_at_entry=sig['atr'], target_price_2=sig['target_2'],
+                    atr_at_entry=sig.get('atr', 0), target_price_2=_tp2,
                     prediction_date=scan_date, evidence_count=sig['evidence'],
-                    morning_bell=sig['morning_bell'],
+                    morning_bell=sig.get('morning_bell', 0),
                     risk_reward=sig.get('r_multiple'),  # P0 FIX (V402-DIAGNOSIS R5): كان محسوب لكن غير مكتوب
                     who_is_buying_state=sig.get('who_is_buying_state', ''),  # P0 FIX (V402-DIAGNOSIS R6)
                     # FIX (PREDICTION-INTEGRITY 2026-10-11): S/R levels من الـ analysis result

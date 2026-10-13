@@ -760,9 +760,10 @@ class PredictionTracker:
                             _chk_conn.commit()
                         return _existing_id
 
-                    # (2) CAP: count PENDING for this persona
+                    # (2) CAP: count truly open/active predictions for this persona
                     _pending_count = _chk_cur.execute(
                         "SELECT COUNT(*) FROM predictions WHERE persona = ? "
+                        "AND (status IN ('active', 'ACTIVE', 'pending', 'PENDING') OR status IS NULL) "
                         "AND outcome_date IS NULL",
                         (_persona,)
                     ).fetchone()[0]

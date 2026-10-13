@@ -1062,13 +1062,28 @@ def _filter_signals_by_lgbm_gatekeeper(
 
             candles = []
             for r in rows:
+                _v_raw = r.get('volume') or 0
+                _v_val = 0
+                if isinstance(_v_raw, (int, float)):
+                    _v_val = int(_v_raw)
+                else:
+                    _s = str(_v_raw).strip().replace(',', '').replace('\u202f', '')
+                    try:
+                        if 'M' in _s:
+                            _v_val = int(float(_s.replace('M', '').strip()) * 1_000_000)
+                        elif 'K' in _s:
+                            _v_val = int(float(_s.replace('K', '').strip()) * 1_000)
+                        else:
+                            _v_val = int(float(_s))
+                    except Exception:
+                        _v_val = 0
                 candles.append({
                     "date": str(r.get('price_date') or r.get('date') or '')[:10],
                     "open": float(r.get('open') or r.get('close') or 0),
                     "high": float(r.get('high') or r.get('close') or 0),
                     "low": float(r.get('low') or r.get('close') or 0),
                     "close": float(r.get('close') or 0),
-                    "volume": int(r.get('volume') or 0),
+                    "volume": _v_val,
                 })
 
             verdict = _lgbm_eval(
@@ -1855,7 +1870,7 @@ def main():
             results.append(result)
         if i % 100 == 0:
             log(f"    {i}/{len(tickers)} — {sum(1 for r in results if r['under_microscope'])} تحت الميكروسكوب")
-    conn.close()
+    # Note: conn is kept open for _filter_signals_by_lgbm_gatekeeper and closed before return
 
     # ─── تصنيف + تنظيف النتايج ────────────────────────────────────────
     # 1. فلتر: السعر >= args.min_price (استبعاد penny stocks)
@@ -2176,6 +2191,11 @@ def main():
         )
     except Exception as _track_err:
         log(f"⚠️ Signal tracking failed: {_track_err}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
     if args.json_only:
         return 0

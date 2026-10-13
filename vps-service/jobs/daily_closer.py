@@ -277,13 +277,13 @@ class DailyCloser:
         }
 
     def _conn(self, db_path: str) -> sqlite3.Connection:
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=True).__enter__()
-        except Exception:
-            conn = sqlite3.connect(db_path, timeout=30.0)
+        conn = sqlite3.connect(str(db_path), timeout=30.0)
         conn.row_factory = sqlite3.Row
-        conn.execute('PRAGMA busy_timeout=30000')
+        try:
+            conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute('PRAGMA busy_timeout=30000')
+        except Exception:
+            pass
         return conn
 
     def _ensure_columns(self):

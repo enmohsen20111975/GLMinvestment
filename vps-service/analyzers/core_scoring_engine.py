@@ -147,17 +147,19 @@ def calc_atr(highs: List[float], lows: List[float], closes: List[float],
 # Even high-momentum rockets cannot print +1623% targets in a single row.
 _HARD_TARGET_CAP_MULT = 1.30
 
-# TP1 caps (per spec):
-#   - regular stocks:        +12% gain OR +1.5×ATR (whichever is smaller)
-#   - high-momentum stocks:  +20% gain OR +2.0×ATR (whichever is smaller)
-_TP1_REGULAR_PCT_MULT   = 1.12
-_TP1_REGULAR_ATR_MULT   = 1.5
-_TP1_MOMENTUM_PCT_MULT  = 1.20
-_TP1_MOMENTUM_ATR_MULT  = 2.0
+# TP1 caps:
+# In balanced/V40.2 engines, initial stop is set to 1.5×ATR.
+# To satisfy the GLM5.2-S1 rule requiring R:R >= 1.5, TP1 must allow at least
+# 1.5 × 1.5×ATR = 2.25×ATR (or +18% gain). Setting ATR multiplier to 2.5 ensures
+# realistic targets without mathematically forcing R:R < 1.5 rejection.
+_TP1_REGULAR_PCT_MULT   = 1.18
+_TP1_REGULAR_ATR_MULT   = 2.5
+_TP1_MOMENTUM_PCT_MULT  = 1.25
+_TP1_MOMENTUM_ATR_MULT  = 3.5
 
-# TP2 cap: +25% gain OR +3.0×ATR (whichever is smaller)
-_TP2_PCT_MULT = 1.25
-_TP2_ATR_MULT = 3.0
+# TP2 cap: +30% gain OR +4.5×ATR
+_TP2_PCT_MULT = 1.30
+_TP2_ATR_MULT = 4.5
 
 # Minimum R:R ratio — anything below this is "gambling", not "trading".
 _MIN_RR_RATIO = 1.5

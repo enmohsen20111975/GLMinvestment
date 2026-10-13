@@ -311,17 +311,20 @@ export async function GET(request: NextRequest) {
     if (response.ok) {
       const data = await response.json();
       const predictions = data.predictions || data.data || [];
-      return NextResponse.json({
-        success: true,
-        authenticated: isAuthenticated,
-        limited: !isAuthenticated,
-        data: predictions,
-        stats: {
-          total: predictions.length,
-          avgScore: data.stats?.avg_score || 0,
-        },
-        source: 'python_backend',
-      });
+      if (Array.isArray(predictions) && predictions.length > 0) {
+        return NextResponse.json({
+          success: true,
+          authenticated: isAuthenticated,
+          limited: !isAuthenticated,
+          data: predictions,
+          stats: {
+            total: predictions.length,
+            avgScore: data.stats?.avg_score || 0,
+          },
+          source: 'python_backend',
+        });
+      }
+      // If Python returned empty array, fall through to fallback (predictions.db)
     }
   } catch (e) {
     console.warn('[/api/predictions] Python backend error:', e);

@@ -25,7 +25,7 @@
     "min_conviction": {
       "value": 70.0,
       "regime": "range",
-      "updated_at": "2026-08-12T22:37:54.404881",
+      "updated_at": "2026-10-13T15:06:39.323036",
       "source": "immediate_learning"
     }
   }
