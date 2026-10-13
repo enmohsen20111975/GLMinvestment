@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertTriangle, Activity, TrendingDown, Clock,
   HeartPulse, FileSearch, Lightbulb, Target, Loader2,
-  ListChecks, ShieldAlert,
+  ListChecks, ShieldAlert, Stethoscope,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -180,7 +180,10 @@ export default function RescuePage() {
   }, [result]);
 
   const numericMismatch =
-    clientLossPct !== null && Math.abs(clientLossPct - result?.loss_pct) > 0.5;
+    result !== null
+    && clientLossPct !== null
+    && result.loss_pct != null
+    && Math.abs(clientLossPct - result.loss_pct) > 0.5;
 
   const isConflict = !!(result?.data_conflict || numericMismatch);
   const conflictReasons = useMemo(() => {
@@ -528,10 +531,10 @@ export default function RescuePage() {
                       <span className="font-mono font-semibold">{result.asset_health.pe_ratio.toFixed(2)}</span>
                     </div>
                   )}
-                  {result.asset_health?.dividend_yield > 0 && (
+                  {(result.asset_health?.dividend_yield ?? 0) > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">عائد التوزيعات</span>
-                      <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{result.asset_health.dividend_yield.toFixed(2)}%</span>
+                      <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{(result.asset_health?.dividend_yield ?? 0).toFixed(2)}%</span>
                     </div>
                   )}
                   {result.asset_health?.support_level != null && result.asset_health.support_level > 0 && (

@@ -3,12 +3,15 @@
  *
  * Task BRAVO-STANDALONE-RESCUE-CLINIC-API (Owner Directive 2026-10-13)
  *
- * عيادة إنقاذ الصفقات المتعثرة — تحليل تشريحي صادم + خطة تعافي.
+ * عيادة إنقاذ الصفقات المتعثرة — تحليل محايد + خطة تعافي بخيارات مرتبة.
+ * اتساق رقمي إلزامي، وإيقاف التوصية عند تعارض البيانات.
  *
  * Rule 20 (PYTHON = BRAIN): كل المنطق في Python (bag_holder_rescue.py).
  * Rule 27 (NO-FAKE-DATA): كل الأرقام من DBs حقيقية.
  *
- * Response: { decision, decision_ar, verdict_badge, autopsy, asset_health, action_plan, lessons_learned }
+ * Response: { decision, decision_ar, verdict_badge, diagnosis, autopsy,
+ *   asset_health, action_plan (3 options), lessons_learned }
+ *   أو { data_conflict: true, conflict_reasons } عند تعارض البيانات.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
