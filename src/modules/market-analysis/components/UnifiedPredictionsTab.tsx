@@ -45,8 +45,9 @@ const ExecutiveReportView = lazy(() =>
 
 type SubView = 'current' | 'performance' | 'summary';
 
+// T-ALPHA-5: دفن مسميات الشخصيات — تحويل لـ High-Conviction Signals بالأفق الزمني
 const SUB_VIEWS: Array<{ value: SubView; label: string; icon: string }> = [
-  { value: 'current', label: 'الحالية', icon: '⚡' },
+  { value: 'current', label: 'الفرص المؤكدة', icon: '⚡' },
   { value: 'performance', label: 'الأداء', icon: '📊' },
   { value: 'summary', label: 'الملخص', icon: '📋' },
 ];

@@ -345,9 +345,63 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
             </div>
 
             {/* T-ALPHA-1: Cumulative Net Pressure Curve — session liquidity trajectory */}
-            {data.buckets.length > 1 && (
-              <CumulativePressureCurve buckets={data.buckets} />
-            )}
+            {(() => {
+              const buckets = data.buckets;
+              if (!buckets || buckets.length < 2) return null;
+              const cumulative: number[] = [];
+              let runningSum = 0;
+              for (const b of buckets) {
+                runningSum += Number(b.net_pressure) || 0;
+                cumulative.push(runningSum);
+              }
+              const width = 320;
+              const height = 80;
+              const padding = 8;
+              const n = cumulative.length;
+              if (n < 2) return null;
+              const maxVal = Math.max(...cumulative, 0);
+              const minVal = Math.min(...cumulative, 0);
+              const range = maxVal - minVal || 1;
+              const points = cumulative.map((val, i) => {
+                const x = padding + (i / (n - 1)) * (width - 2 * padding);
+                const y = padding + ((maxVal - val) / range) * (height - 2 * padding);
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+              });
+              const path = `M ${points.join(' L ')}`;
+              const zeroY = padding + (maxVal / range) * (height - 2 * padding);
+              const isPositiveTrend = cumulative[cumulative.length - 1] >= 0;
+              const areaPath = `${path} L ${(width - padding).toFixed(1)},${zeroY.toFixed(1)} L ${padding.toFixed(1)},${zeroY.toFixed(1)} Z`;
+              return (
+                <div className="rounded-md border border-border/30 bg-muted/10 p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="w-3 h-3 text-purple-500" />
+                      <span className="text-[11px] font-semibold">منحنى الضغط التراكمي</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[9px]">
+                      <span className={cn('font-bold', isPositiveTrend ? 'text-emerald-500' : 'text-red-600')}>
+                        {isPositiveTrend ? '▲ تجميع' : '▼ تصريف'}
+                      </span>
+                      <span className="text-muted-foreground">
+                        ({cumulative[0] >= 0 ? '+' : ''}{formatNumber(cumulative[0])} → {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])})
+                      </span>
+                    </div>
+                  </div>
+                  <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" role="img" aria-label={`منحنى الضغط التراكمي: ${isPositiveTrend ? 'صاعد تجميعي' : 'هابط تصريفي'}`}>
+                    <line x1={padding} y1={zeroY} x2={width - padding} y2={zeroY} stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 3" className="text-muted-foreground/40" />
+                    <path d={areaPath} fill={isPositiveTrend ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'} />
+                    <path d={path} fill="none" stroke={isPositiveTrend ? '#10b981' : '#ef4444'} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                    <circle cx={padding} cy={padding + ((maxVal - cumulative[0]) / range) * (height - 2 * padding)} r="2" className="fill-muted-foreground" />
+                    <circle cx={width - padding} cy={padding + ((maxVal - cumulative[n-1]) / range) * (height - 2 * padding)} r="2.5" fill={isPositiveTrend ? '#10b981' : '#ef4444'} />
+                  </svg>
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-0.5">
+                    <span>{buckets[0]?.time_label ?? ''}</span>
+                    <span>صافي تراكمي: {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])}</span>
+                    <span>{buckets[n-1]?.time_label ?? ''}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Volume totals */}
             <div className="grid grid-cols-3 gap-2 text-[11px]">
@@ -403,6 +457,7 @@ function SummaryCell({
 // Rule 4: لا حساب مالي — مجرد جمع (cumsum) لقيم net_pressure من الـ buckets.
 // ════════════════════════════════════════════════════════════════════════════
 function CumulativePressureCurve({ buckets }: { buckets: Bucket[] }) {
+  console.log("[CURVE] called with", buckets.length, "buckets");
   // احسب القيم التراكمية (cumsum of net_pressure)
   const cumulative: number[] = [];
   let runningSum = 0;

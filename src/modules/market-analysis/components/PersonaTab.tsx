@@ -169,18 +169,19 @@ function PersonaCard({
   const subscriptionUser = useAppStore((s) => s.user);
   const colors = getVerdictColor(data.verdict);
   const score = data.score ?? 0;
-  // P26: isInvestor بقى معناها "أفق طويل" = conservative (conservative = alias قديم لـ investor)
+  // T-ALPHA-5: دفن مسميات الشخصيات — تحويل لـ High-Conviction Signals بالأفق الزمني
+  // isInvestor بقى معناها "أفق استراتيجي" = conservative (conservative = alias قديم لـ investor)
   const isInvestor = persona === 'conservative' || persona === 'investor';
   // PAYWALL Gate 1: fair value locked for free users post-trial
   const fairValueSubStatus = getTrialStatus(subscriptionUser);
   const fairValueLocked = fairValueSubStatus.isFreeUser && fairValueSubStatus.isTrialExpired;
 
-  // ألوان البرسونا — emerald للمستثمر، amber للمتوازن، fuchsia للمضارب (تجنّب blue/indigo)
+  // T-ALPHA-5: ألوان الأفق الزمني — emerald للاستراتيجي، amber للأسبوعي، fuchsia لليومي
   const personaTheme = isInvestor
-    ? { emoji: '🛡️', label: 'المستثمر', accent: 'text-emerald-700 dark:text-emerald-400', accentBg: 'bg-emerald-50 dark:bg-emerald-950/40', accentBorder: 'border-emerald-200 dark:border-emerald-900' }
+    ? { emoji: '🛡️', label: 'فرصة استراتيجية', accent: 'text-emerald-700 dark:text-emerald-400', accentBg: 'bg-emerald-50 dark:bg-emerald-950/40', accentBorder: 'border-emerald-200 dark:border-emerald-900' }
     : persona === 'balanced'
-    ? { emoji: '⚖️', label: 'المتوازن', accent: 'text-amber-700 dark:text-amber-400', accentBg: 'bg-amber-50 dark:bg-amber-950/40', accentBorder: 'border-amber-200 dark:border-amber-900' }
-    : { emoji: '🎯', label: 'المضارب', accent: 'text-fuchsia-700 dark:text-fuchsia-400', accentBg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40', accentBorder: 'border-fuchsia-200 dark:border-fuchsia-900' };
+    ? { emoji: '🎯', label: 'فرصة أسبوعية', accent: 'text-amber-700 dark:text-amber-400', accentBg: 'bg-amber-50 dark:bg-amber-950/40', accentBorder: 'border-amber-200 dark:border-amber-900' }
+    : { emoji: '⚡', label: 'فرصة يومية', accent: 'text-fuchsia-700 dark:text-fuchsia-400', accentBg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40', accentBorder: 'border-fuchsia-200 dark:border-fuchsia-900' };
 
   const targetPct = data.entry && data.target && data.entry > 0
     ? ((data.target - data.entry) / data.entry) * 100
@@ -306,7 +307,7 @@ function PersonaCard({
               {data.verdict || 'قيد التحليل'}
             </Badge>
             {/* DYNAMIC-SYSTEM-001: شارة "مراقبة" صفراء للأسهم اللي إشارتها HOLD
-                بس درجتها عالية (>= 50%) — عشان تبويب المستثمر ميفضلش فاضي.
+                بس درجتها عالية (>= 50%) — عشان تبويب الفرص الاستراتيجية ميفضلش فاضي.
                 المستخدم طلب: "لو السهم إشارته HOLD بس درجته عالية، اعرضه
                 واكتب تحته بـ Badge لونه أصفر: مراقبة - انتظر كسر المقاومة" */}
             {isInvestor && data.signal && String(data.signal).toUpperCase() === 'HOLD' && (data.score ?? 0) >= 50 && (
@@ -345,7 +346,7 @@ function PersonaCard({
           )}>
             {isInvestor ? (
               <>
-                <span className={cn('font-bold', personaTheme.accent)}>🏦 توقيع المستثمر:</span>
+                <span className={cn('font-bold', personaTheme.accent)}>🛡️ توقيع استراتيجي:</span>
                 {fundamentals.pe_ratio ? <span>P/E {(fundamentals.pe_ratio ?? 0).toFixed(1)}</span> : null}
                 {fundamentals.roe ? <span>• ROE {(fundamentals.roe ?? 0).toFixed(0)}%</span> : null}
                 {fundamentals.fair_value_upside ? (
@@ -357,7 +358,7 @@ function PersonaCard({
               </>
             ) : (
               <>
-                <span className={cn('font-bold', personaTheme.accent)}>🎯 توقيع المضارب:</span>
+                <span className={cn('font-bold', personaTheme.accent)}>⚡ توقيع يومي:</span>
                 {fundamentals.volume_ratio && fundamentals.volume_ratio >= 1.0 ? (
                   <span>حجم {(fundamentals.volume_ratio ?? 0).toFixed(1)}x</span>
                 ) : null}
@@ -522,7 +523,7 @@ function PersonaCard({
           </div>
         </div>
 
-        {/* Momentum / Performance (for المضارب) */}
+        {/* Momentum / Performance (للفرص اليومية/الأسبوعية) */}
         {!isInvestor && (data.perf_1w !== undefined || data.perf_1m !== undefined) && (
           <div className="flex items-center gap-3 px-1 text-xs">
             {data.perf_1w !== undefined && (
@@ -543,7 +544,7 @@ function PersonaCard({
           </div>
         )}
 
-        {/* Fundamentals (for المستثمر) */}
+        {/* Fundamentals (للفرص الاستراتيجية) */}
         {isInvestor && (data.pe_ratio || data.roe || data.net_margin) && (
           <div className="flex items-center gap-3 px-1 text-xs flex-wrap">
             {data.pe_ratio && data.pe_ratio > 0 && (
@@ -814,7 +815,7 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
               entry: it.entry?.price ?? null,
               target: it.entry?.target ?? null,
               stop: it.entry?.stopLoss ?? null,
-              timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
+              timeframe: persona === 'balanced' ? '🎯 أسبوعية (2-4 أسابيع)' : (persona === 'conservative' ? '🛡️ استراتيجية (شهر+)' : '⚡ يومية (1-5 أيام)'),
             };
             const cleanTicker = it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
             const stockInfo = stocksMap.get(cleanTicker) || stocksMap.get(it.ticker.toUpperCase());
@@ -943,7 +944,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
     entry: item.entry?.price ?? null,
     target: item.entry?.target ?? null,
     stop: item.entry?.stopLoss ?? null,
-    timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
+    timeframe: persona === 'balanced' ? '🎯 أسبوعية (2-4 أسابيع)' : (persona === 'conservative' ? '🛡️ استراتيجية (شهر+)' : '⚡ يومية (1-5 أيام)'),
   };
   const ticker = item.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '');
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -1221,7 +1222,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
                 {ticker} · {item.nameAr || item.name || ticker}
               </div>
               <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)' }}>
-                تحليل شامل · المستثمر + المضارب
+                تحليل شامل · فرص يومية + استراتيجية
               </div>
             </div>
             <div style={{ textAlign: 'left' }}>
@@ -1482,8 +1483,8 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         // P26: isLongTerm = conservative (أفق طويل) — للـ balanced و gambler نعرض كل التوقعات.
         const isLongTerm = persona === 'conservative' || persona === 'investor';
         // فلترة خفيفة حسب البرسونا:
-        // - المستثمر: يهتم بالأسهم الشرائية (BUY/STRONG_BUY/ACCUMULATE/HOLD).
-        // - المتوازن/المضارب: يشوف كل التوقعات بما فيها البيع (SELL/STRONG_SELL/REDUCE).
+        // - الفرص الاستراتيجية: تهتم بالأسهم الشرائية (BUY/STRONG_BUY/ACCUMULATE/HOLD).
+        // - الفرص اليومية/الأسبوعية: تشوف كل التوقعات بما فيها البيع (SELL/STRONG_SELL/REDUCE).
         const investorSignals = new Set(['BUY', 'STRONG_BUY', 'ACCUMULATE', 'HOLD']);
         const filtered = isLongTerm
           ? prev.filter((p: Record<string, unknown>) => investorSignals.has(String(p.signal || '').toUpperCase()))
@@ -1595,7 +1596,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         // الـ backend بيرجّع قوائم مختلفة جذرياً لكل persona بدل ما يرجّع نفس
         // الأسهم بتغيير الـ verdict بس.
         // P42-NO-FREEZE: limit=20 (كان 400) — مفيش فايدة نعمل sort على 400 سهم
-        // في المتصفح والمستثمر مش هيفتح 50. محرك التصطاد بيرجّع كام سهم بس.
+        // في المتصفح والفرص الاستراتيجية مش هيفتح 50. محرك التصطاد بيرجّع كام سهم بس.
         const storedRes = await fetch(`/api/stored-analysis/results?market=${marketCode}&limit=20&persona=${persona}`, {
           cache: 'no-store',
         });
@@ -1663,7 +1664,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               target: p.target_price !== null && p.target_price !== undefined ? Number(p.target_price) : null,
               stop: p.stop_loss !== null && p.stop_loss !== undefined ? Number(p.stop_loss) : null,
               signal: p.signal,
-              timeframe: isLongTerm ? '6-12 شهر' : (persona === 'balanced' ? '2-6 أسابيع' : 'يومي-أسبوعي'),
+              timeframe: isLongTerm ? '🛡️ استراتيجية (شهر+)' : (persona === 'balanced' ? '🎯 أسبوعية (2-4 أسابيع)' : '⚡ يومية (1-5 أيام)'),
               fair_value: null,
             };
             return {
@@ -1774,12 +1775,12 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
   // P42-NO-FREEZE: ترقيم الصفحات — نرسم 5 كروت بس في كل لحظة عشان المتصفح مايموتش
   const personaTotalPages = Math.max(1, Math.ceil(items.length / PERSONA_PAGE_SIZE));
   const personaPageItems = items.slice(personaPage * PERSONA_PAGE_SIZE, (personaPage + 1) * PERSONA_PAGE_SIZE);
-  // P26: ألوان/عناوين 3 شخصيات — 🛡️ مستثمر / ⚖️ متوازن / 🎯 مضارب
+  // T-ALPHA-5: دفن مسميات الشخصيات — تحويل لـ High-Conviction Signals بالأفق الزمني
   const headerTheme = isLongTerm
-    ? { emoji: '🛡️', title: 'المستثمر', subtitle: 'فرص طويلة المدى — محرك التصطاد يختار الأسهم اللي تناسبك (6-12 شهر)', accent: 'text-emerald-700 dark:text-emerald-400' }
+    ? { emoji: '🛡️', title: 'الفرص الاستراتيجية', subtitle: 'أفق استراتيجي (شهر فأكثر) — أسهم قوية الأساسيات عند دعم تاريخي', accent: 'text-emerald-700 dark:text-emerald-400' }
     : persona === 'balanced'
-    ? { emoji: '⚖️', title: 'المتوازن', subtitle: 'فرص متوسطة المدى — توازن بين الزخم والقيمة (2-6 أسابيع)', accent: 'text-amber-700 dark:text-amber-400' }
-    : { emoji: '🎯', title: 'المضارب', subtitle: 'فرص قصيرة المدى — محرك التصطاد يصطاد الزخم والسيولة والارتداد (يومي-أسبوعي)', accent: 'text-fuchsia-700 dark:text-fuchsia-400' };
+    ? { emoji: '🎯', title: 'الفرص الأسبوعية', subtitle: 'أفق متوسط (2-4 أسابيع) — توازن بين الزخم والقيمة', accent: 'text-amber-700 dark:text-amber-400' }
+    : { emoji: '⚡', title: 'الفرص اليومية', subtitle: 'أفق قصير (1-5 أيام) — زخم وسيولة وارتداد', accent: 'text-fuchsia-700 dark:text-fuchsia-400' };
 
   if (loading) {
     return (
@@ -1822,10 +1823,10 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
           : 'جاري تحليل الفرص — سيتم التحديث خلال دقائق';
     const subtext = loading
       ? (isLongTerm
-          ? 'محرك المستثمر يبحث عن فرص تناسب الشخصية طويلة المدى (6-12 شهر). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
+          ? 'محرك الفرص الاستراتيجية يبحث عن أسهم قوية الأساسيات عند دعم تاريخي (شهر+). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
           : persona === 'balanced'
-            ? 'محرك المتوازن يبحث عن فرص متوسطة المدى (2-6 أسابيع). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
-            : 'محرك المضارب يبحث عن فرص زخم قصيرة المدى (يومي-أسبوعي). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.')
+            ? 'محرك الفرص الأسبوعية يبحث عن فرص متوسطة المدى (2-4 أسابيع). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
+            : 'محرك الفرص اليومية يبحث عن زخم قصير المدى (1-5 أيام). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.')
       : isDefensive
         ? 'يعمل محرك التوقعات حالياً بنظام الحماية الدفاعية الصارمة نظراً لظروف وضغوط السوق العام. يتم تشديد فلاتر الدخول تلقائياً وتجنب المخاطرة العالية لتفادي المصائد السعرية، وتعود إشارات الدخول تدريجياً فور تأكيد استقرار مؤشرات السيولة وعودة الزخم المؤسسي.'
         : hasRegimeData
@@ -2152,7 +2153,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               entry: it.entry?.price ?? null,
               target: it.entry?.target ?? null,
               stop: it.entry?.stopLoss ?? null,
-              timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
+              timeframe: persona === 'balanced' ? '🎯 أسبوعية (2-4 أسابيع)' : (persona === 'conservative' ? '🛡️ استراتيجية (شهر+)' : '⚡ يومية (1-5 أيام)'),
             };
             return {
               ticker: it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, ''),
@@ -2240,7 +2241,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
             entry: it.entry?.price ?? null,
             target: it.entry?.target ?? null,
             stop: it.entry?.stopLoss ?? null,
-            timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
+            timeframe: persona === 'balanced' ? '🎯 أسبوعية (2-4 أسابيع)' : (persona === 'conservative' ? '🛡️ استراتيجية (شهر+)' : '⚡ يومية (1-5 أيام)'),
           };
           return (
             <PersonaCard
@@ -2280,7 +2281,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               entry: it.entry?.price ?? null,
               target: it.entry?.target ?? null,
               stop: it.entry?.stopLoss ?? null,
-              timeframe: persona === 'balanced' ? '2-6 أسابيع' : (persona === 'conservative' ? '6-12 شهر' : '1-5 أيام'),
+              timeframe: persona === 'balanced' ? '🎯 أسبوعية (2-4 أسابيع)' : (persona === 'conservative' ? '🛡️ استراتيجية (شهر+)' : '⚡ يومية (1-5 أيام)'),
             };
             const ticker = it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '');
             const singleText = formatSinglePersonaPickText(it, persona, market);
