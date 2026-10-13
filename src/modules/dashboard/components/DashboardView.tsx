@@ -389,11 +389,11 @@ export function DashboardView() {
                 Owner directive: "لوحة فرص حقيقية" — فوق كل حاجة
                 ═══════════════════════════════════════════════════════════════ */}
             {v2Data?.stocks && v2Data.stocks.length > 0 && (() => {
-              // فلتر: Strong Buy + Buy بس (مفيش Hold/Avoid للمستثمر)
+              // T-ALPHA-A11: أفضل 3 فرص حقيقية فقط (Top 3) — بدون إزعاج أو أخطاء
               const opportunities = v2Data.stocks
                 .filter(s => s.recommendation === 'Strong Buy' || s.recommendation === 'Buy')
                 .sort((a, b) => b.compositeScore - a.compositeScore)
-                .slice(0, 5);
+                .slice(0, 3);
               if (opportunities.length === 0) return null;
               return (
                 <section aria-label="فرص جاهزة الآن" className="space-y-2">

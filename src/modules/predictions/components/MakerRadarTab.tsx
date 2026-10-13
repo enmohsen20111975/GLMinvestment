@@ -505,15 +505,15 @@ function pathToStockStatus(path: RadarPath | null | undefined): string {
   return '—';
 }
 
-/** Resolve a human-readable Arabic Wyckoff phase label from the radar path. */
-function pathToWyckoffPhase(path: RadarPath | null | undefined): string {
+/** T-ALPHA-A13: دفن طلاسم وايكوف — استبدال بلغة المال والاستثمار */
+function pathToMarketPhase(path: RadarPath | null | undefined): string {
   if (!path) return '—';
-  if (path === 'A_pre_surge') return 'مرحلة التجميع';
+  if (path === 'A_pre_surge') return 'تجميع صامت 🤫';
   if (path === 'B_quiet_accumulation_strong' || path === 'C_quiet_accumulation_weak') {
-    return 'امتصاص العروض / اختبار القاع';
+    return 'تحضير لانفجار 🚀';
   }
-  if (path === 'D_explosive_surge') return 'اختراق قمة / زخم صاعد';
-  if (path === 'E_early_break') return 'اختراق التجميع';
+  if (path === 'D_explosive_surge') return 'انفجار زخمي 🔥';
+  if (path === 'E_early_break') return 'اختراق مبكر ⚡';
   return '—';
 }
 
@@ -645,7 +645,7 @@ export function formatProfessionalAnalysis(
 
   const lastClose = detail?.stats?.lastClose;
   const status = pathToStockStatus(radarStock?.path);
-  const wyckoff = pathToWyckoffPhase(radarStock?.path);
+  const marketPhase = pathToMarketPhase(radarStock?.path);
   const flow = liquidityFlowLabel(detail?.stats);
   // GLM5.2-A: MFI now reads from detail.stats.mfi (team Bravo) with a real
   // interpretation band. Falls back to "—" when the API omits it (Rule 27).
@@ -686,14 +686,15 @@ export function formatProfessionalAnalysis(
     }
   }
 
-  // Wyckoff contextual explanation (if overbought MFI + distribution)
-  let wyckoffExplained = wyckoff;
+  // T-ALPHA-A13: دفن طلاسم وايكوف — لغة المال والاستثمار
+  const makerPhase = marketPhase;
+  let phaseExplained = makerPhase;
   if (
     detail?.stats?.mfi != null &&
     detail.stats.mfi >= 80 &&
-    (wyckoff.includes('توزيع') || wyckoff.includes('تصريف') || wyckoff.includes('قمة'))
+    (makerPhase.includes('توزيع') || makerPhase.includes('تصريف') || makerPhase.includes('قمة'))
   ) {
-    wyckoffExplained = `${wyckoff} — (ذروة شرائية Buying Climax واستغلال السيولة المفرطة للتصريف عند القمة)`;
+    phaseExplained = `${makerPhase} — تصريف وخروج ⚠️ (ذروة شرائية واستغلال السيولة عند القمة)`;
   }
 
   const lines: string[] = [];
@@ -701,8 +702,8 @@ export function formatProfessionalAnalysis(
   lines.push('━━━━━━━━━━━━━━━━━━━━');
   lines.push(`🔹 السعر الحالي: ${fmtPrice(lastClose)} ج.م`);
   lines.push(`🔹 حالة السهم: ${status}`);
-  lines.push(`🔹 سلوك صانع السوق (Wyckoff): ${wyckoffExplained}`);
-  lines.push(`🔹 مؤشر تدفق السيولة MFI: ${mfiLabel} - ${flow}`);
+  lines.push(`🔹 مرحلة السهم: ${phaseExplained}`);
+  lines.push(`🔹 تدفق السيولة: ${mfiLabel} - ${flow}`);
   lines.push(`🔹 القطاع: ${sectorAr}`);
 
   // Entry zone rendering: never output "من X إلى X" for identical numbers!
