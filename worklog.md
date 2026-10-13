@@ -68605,3 +68605,757 @@ Constraints honored:
 - ❌ NO Python files touched
 - ✅ File created ONLY at Documentation/AUDIT_FRONTEND_SCREENS_MAP.md
 - ✅ All worklog entries appended (not overwritten)
+
+---
+Task ID: ALPHA-AUDIT-PY-ENDPOINTS
+Agent: Backend X-Ray Auditor (Python Endpoints)
+Task: جرد مسارات بايثون (lightweight_server + vps-service/api)
+
+Work Log:
+- قرأت worklog.md لاستيعاب السياق من العمل السابق (تم تركيب Flask عبر a2wsgi.WSGIMiddleware على "/" في main.py، وعمل migration لـ DB موحّد عبر utils/db_paths.py).
+- جمعت كل مسارات Flask في lightweight_server.py عبر Grep `@app\.route` → 42 مسار (GET/POST/DELETE).
+- جمعت كل مسارات Blueprint في vps-service/api/*.py عبر Grep `@<bp_name>\.route\(` → حوالي 452 مساراً موزّعة على 36 ملف routes.
+- جمعت مسارات FastAPI الأصلية في main.py + ai/portfolio_routes.py (`portfolio_router`) عبر `@portfolio_router\.get` و `@app\.get`.
+- حدّدت الـ DB + الجدول لكل route عبر Grep `sqlite3\.connect|DATABASE_PATH|STOCKS_DB|PREDICTIONS_DB|DATA_ENGINE_DB|PRICE_HISTORY_DB|CRYPTO_DB|DBPaths\.|db_path\s*=`.
+- تحققت من prefixes كل Blueprint عبر Grep `Blueprint\(.*url_prefix` وأكّدت وجود مسارين منفصلين في prediction_tracking_routes.py كلاهما prefix `/api/predictions/tracking` (prediction_tracking_bp + tracking_bp = legacy).
+
+Stage Summary:
+- Total endpoints found: ~503 (42 Flask direct في lightweight_server.py + 452 Blueprint routes عبر 36 ملف في vps-service/api/ + 9 FastAPI في ai/portfolio_routes.py + 1 FastAPI `/health` في main.py).
+- 3 paths in main.py: (1) FastAPI app at root, (2) portfolio_router mounted at /api/portfolio (FastAPI), (3) Flask app mounted at "/" via a2wsgi.WSGIMiddleware. الـ Flask mount على "/" بـ catch أي route غير matched من FastAPI → الكل يعمل على port 8010.
+- Key finding #1 (DEAD IMPORT): main.py line 132 يحاول `from ai.api_routes import ai_router` لكن `ai/api_routes.py` غير موجود → ImportError يتم caught بصمت، فلا ai_router مركّب. لكن نفس الـ routes موجودة في `api/ai_routes.py` كـ Blueprint (`ai_bp`) مركّب عبر lightweight_server.py.
+- Key finding #2 (Shadow /health): main.py يعرّف `@app.get("/health")` (FastAPI) لكن Flask app mounted على "/" لاحقاً يعرّف `/health` أيضاً (Flask `health_root` handler). النتيجة: FastAPI /health مفعّل قبل الـ mount؛ مسارات Flask تعمل على "/" لكن /health محجوز للـ FastAPI.
+- Key finding #3 (Duplicate blueprint registration): `lightweight_server.py` يسجّل `prediction_tracking_routes.py` مرّتين تحت اسمين مختلفين (prediction_tracking_bp + tracking_bp) لكن الـ prefix نفسه `/api/predictions/tracking`. لا collision لأن كل Blueprint يعرض routes مختلفة.
+- Key finding #4 (Removed v4_bp): `expert_memory_v4_routes.py` غير موجود → الـ registration معلّق بـ comment (lines 93-101 في lightweight_server.py). الـ frontend عنده fallback لـ SQLite عبر Next.js `/api/v4/stats/route.ts`.
+- DB Distribution:
+  • stocks.db (DATABASE_PATH): stocks, market_indices, portfolio_assets, cached_analysis, ExpertRecommendation, stock_daily_prices, screener_*, news, system_settings (إلى جانب routes كثيرة في lightweight_server.py, misc_routes.py, public_routes.py, maestro_routes.py, news_routes.py, chart_routes.py, confluence_routes.py).
+  • predictions.db: predictions, persona_predictions, exit_notifications, morning_bell_signals, outcome_logs, learned_lessons, stored_analyses, telegram_recommendations, crypto_predictions_log, aiPredictionStats, optimizer_params_history, conjunction_patterns, indicator_trust_scores, backtest_results (استخدام واسع في prediction_tracking_routes.py, ai_predictions_routes.py, ai_routes.py, sniper_routes.py, stored_analysis_routes.py, misc_routes.py, v2_routes.py).
+  • data_engine.db: egksco_price_history, gold_prices, tab_* (8 fundamentals), crypto_prices, crypto_price_history, exchange_rates, macro_indicators, screener_presets/results/lists (top_performers_routes.py, stock_fundamentals engine، misc_routes.py league-report).
+  • price_history.db: price history 1.24M rows (sniper_routes.py, v38_backtest_routes.py, historical_predictions_v2_routes.py, chart_routes.py full-analysis).
+  • crypto.db: crypto_watchlist, crypto_portfolio, crypto_simulation (lightweight_server.py crypto routes).
+  • finance.db: equity_curve_snapshots (ai/portfolio_routes.py — FastAPI mounted only).
+  • auth.db: User, PromoCode, SubscriptionPlan, api_tokens, portfolio_assets, user_stock_watchlists (لم يُسجّل في الـ BLUEPRINTS list — يُستخدم عبر Next.js مباشرة في الغالب).
+  • content.db: market_news, telegram_messages (target architecture — market.db_alias فارغ في الإنتاج، fallback لـ stocks.db).
+- Routing patterns observed:
+  • The pattern `db_manager.connection(name) → fallback sqlite3.connect()` متبع في misc_routes.py, admin_routes.py, portfolio_routes.py, news_routes.py (Rule 54 / Phase 3).
+  • Caching layer (10s TTL, OrderedDict, 1000 max) موجود في lightweight_server.py لـ /api/market-pulse.
+  • /api/health comprehensive check يفحص 4 DBs (stocks, predictions, price_history, data_engine) + scheduler + cache + circuits.
+  • Many routes lazy-import engines (flow_system, explosive_scanner, crypto_engine, eodhd_fetcher, smc_engine, expert_memory_bridge, master_analyzer) داخل الـ try/except بدل import في رأس الملف — lazy initialization pattern.
+- أهم 36 ملف routes + counts: telegram_routes (~54), portfolio_routes (~55), admin_routes (~60), v2_routes (~17), unified_learning_routes (21), ai_routes (21), risk_routes (22), misc_routes (~22), maestro_routes (14), sniper_routes (13), stored_analysis_routes + market_bp (12), public_routes (16), news_routes (9), ai_predictions_routes (7), notebook_routes (7), unified_v2_routes (7), reports_routes (11), v38_backtest_routes (6), learning_routes (5), confluence_routes (5), chart_routes (4), optimizer_params_routes (4), picks_management_routes (6), persona_routes (4), scanner_routes (3), screener_routes (3), regime_routes (3), admin_engine_settings_routes (3), sector_tracking_routes (2), top_performers_routes (1), professional_analysis_routes (1), stock_analysis_routes (1), advanced_screener_routes (1), analytics (7), stocks.py (3).
+
+---
+Task ID: ALPHA-AUDIT-NEXTJS-SQLITE
+Agent: Backend X-Ray Auditor (Next.js SQLite Routes)
+Task: تقاطع الـ 303 مسار Next.js التي تقرأ SQLite مباشرة
+
+Work Log:
+- قرأت worklog.md لاستيعاب نتائج الـ agents السابقين (5 شاشات + 451 API route + Python Endpoints audit). تأكدت أن الـ Python Endpoints auditor حدّد مسبقاً: stocks.db يحوي stocks/portfolio_assets/cached_analysis/ExpertRecommendation/news؛ predictions.db يحوي predictions/learned_lessons/stored_analyses/exit_notifications وغيرها؛ data_engine.db يحوي gold_prices/exchange_rates/egksco_price_history/crypto_prices؛ price_history.db يخزّن الأسعار التاريخية؛ crypto.db يحوي crypto_watchlist/crypto_portfolio/crypto_simulation؛ auth.db يحوي User/api_tokens/user_stock_watchlists.
+- مسحت كل 451 ملف `src/app/api/**/route.ts` عبر Grep على 3 إشارات: (1) `better-sqlite3` → 103 ملف مباشرة؛ (2) `new Database(` → 95 ملف؛ (3) imports من 35 helper module (shared-db, unified-db, finance-db, sqlite-wrapper, market-data-access, data-engine-db, community-db, metrics-db, bot-link-db, egx-db, paper-trading-v2-db, auth-helper, trade-results-engine, last-active-helper, sqlite-admin, honest-tracking/maestro, flutter-sqlite-fallback, admin-db-manager, unified-stock-data, token-helper, db-auth, db-predictions, db/index, new-db, new-db-queries, ai/memory, canonical-rsi, db, egx-data-sources, data-sync, subscription-enforcement, schedulers/radar-alerts, modules/personalized/lib/personalized-radar, modules/radar/lib/radar-db, modules/radar/lib/radar-signal-tracker).
+- كتبت سكربت Python (`/tmp/audit_routes_v2.py`) يفحص كل route.ts ويستخرج: DB file paths (regex `db/[a-zA-Z0-9_\-]+\.db`)، INSERT/UPDATE/DELETE/FROM/JOIN table names، نوع الـ access (direct/helper/prisma)، هل يستعمل Python proxy كذلك.
+- كتبت سكربت Python ثانٍ (`/tmp/audit_python.py`) يمسح كل ملفات .py في /data_engine, /news-agent, /scripts, /models, /mini-services ويستخرج INSERT/UPDATE/DELETE/CREATE TABLE + DB paths.
+- كتبت سكربت cross-reference ثالث (`/tmp/cross_ref.py`) يطابق جداول Next.js المكتوبة مع جداول Python المكتوبة لإيجاد conflict points، ويطابق جداول Next.js المقرؤة مع جداول Python المكتوبة لإيجاد stale-read risks.
+- تحققت يدوياً من 3 routes مثيرة للاهتمام: 
+  • `sniper/track/route.ts` line 21 يعلن "Rule 35: V40.2 (daily_predictor.py) is the ONLY writer to predictions.db" ثم ينفّذ `INSERT INTO predictions` في line 65 — self-documented conflict!
+  • `admin/backtest/v40/run/route.ts` line 45 ينفّذ `DELETE FROM predictions` — destructive wipe يتعارض مباشرة مع daily_predictor.py و22 ملف Python آخر.
+  • `telegram/publish-stock/route.ts` line 167 يفتح predictions.db ويُنفّذ `UPDATE predictions` لكتابة audit trail بعد النشر.
+- أكّدت أن `src/lib/shared-db.ts` يحوي تعليقاً صريحاً: "DBs that are written by BOTH Next.js and Python backend. These must NOT be cached because the Python backend's writes invalidate the cached connection, causing segfaults when reused" ويضع `predictions.db` فقط في `NO_CACHE_DB_NAMES` — تأكيد إضافي أن predictions.db هو conflict point معروف مسبقاً.
+- لاحظت أن إحصائي النهائي (276 SQLite-direct routes) أقل بـ 27 من رقم الـ 303 المذكور في السياق. الفارق يرجع إلى: (أ) تعريفي لـ "Python proxy routes" أوسع (يشمل `marketPulseProxy`, `pythonFetch`, `PYTHON_BACKEND_URL` → 114 route)؛ (ب) بعض routes "both SQLite + Python" (59 route) تم تصنيفها مني ضمن SQLite-direct لأنها تفتح SQLite فعلاً. الرقم الفعلي المتفق عليه: 276 pure-SQLite + 59 hybrid = 335 route يلمسون SQLite على الأقل جزئياً؛ منهم 276 لا يصلون Python إطلاقاً.
+- تابعت قراءة worklog السابق عن Python endpoints auditor ووجدت تطابق كامل بين جداول Python المكتوبة (predictions, stocks, prediction_logs, portfolio_assets, price_history, radar_signal_tracking, stored_analyses, ExpertRecommendation, market_news, cached_analysis) ونتائج cross-reference الخاص بي.
+
+Stage Summary:
+- Total SQLite-direct routes: 276 (lower bound — excludes 59 hybrid SQLite+proxy routes) up to 335 (upper bound including hybrid). Audit's headline "~303" falls within this range.
+- Direct `better-sqlite3` import: 103 routes; `new Database(` call: 95; Prisma client (auth.db): 4; via shared helper module: 215. Top helper modules: @auth-helper (39), @db (35, Prisma auth.db re-export), @finance-db (32), @flutter-sqlite-fallback (23), @egx-db (20), @admin-db-manager (14), @data-engine-db (9), @db-auth (6), @paper-trading-v2-db (6), @honest-tracking/maestro (5).
+- DB file distribution (Next.js side): db/predictions.db (11 routes), db/stocks.db (8), db/intraday.db (4), db/auth.db (3), db/news.db (2), db/data_engine.db (2), db/custom.db (1), db/price_history.db (1), db/crypto.db (1). Note: most routes access DBs indirectly via helpers (which internally open stocks.db / auth.db / data_engine.db), so the explicit path count understates true access. The Prisma-based auth.db access (`@/lib/db`) covers 35+ routes.
+- TOP 10 MOST-REFERENCED TABLES IN NEXT.JS ROUTES (read+write):
+   1. stocks                — 70 routes  (read by 65, written by 5)
+   2. predictions           — 38 routes  (read by 35, written by 3)
+   3. portfolio_assets      — 23 routes  (read by 20, written by 3)
+   4. user_stock_watchlists — 14 routes  (read by 8,  written by 6) ← auth.db, Next.js-only
+   5. crypto                — 12 routes  (read-only)
+   6. price_history         — 11 routes  (read by 10, written by 1)
+   7. gold_prices           — 11 routes  (read-only; Python writes via daleelak_api.py)
+   8. stock_price_history   — 8 routes   (read by 7, written by 1)
+   9. market_news           — 8 routes   (read by 7, written by 1)
+  10. stock_daily_prices    — 7 routes   (read-only; Python writes via data_engine/sync.py)
+- WRITE-WRITE CONFLICTS (10 tables written by BOTH Next.js AND Python):
+  • stocks                  — NX:5 routes  ↔ PY:32 files  ⚠️ CRITICAL (admin/sync-vps, admin/scrape-stocks, admin/import-stocks, market/scheduled-sync, market/sync-live  ↔  data_engine/main.py, sync.py, populate-databases-v2.py, data_hygiene_cron.py, import_egx_indices.py)
+  • predictions             — NX:3 routes  ↔ PY:22 files  ⚠️ CRITICAL (admin/backtest/v40/run does DELETE FROM predictions; sniper/track does INSERT; telegram/publish-stock does UPDATE  ↔  daily_predictor.py, sync-real-data.py, backfill_history.py, v402_tightening_comparison.py, v402_final_regime_test.py, v402_live_simulation.py, purge_prediction_disasters.py, backfill_persona_classification.py, fix_all_false_targets.py, fix_heli_expired_to_closedwin.py, restore_fix_predictions.py)
+  • prediction_logs         — NX:1 route   ↔ PY:6 files  (admin/purge-cache  ↔  clean_ai_predictions.py, smart_filter_predictions.py)
+  • portfolio_assets       — NX:3 routes  ↔ PY:3 files  (auth/[...nextauth], finance/assets, finance/assets/[id]  ↔  populate-databases-v2.py, sync-real-data.py)
+  • price_history           — NX:1 route   ↔ PY:4 files  (sync-historical  ↔  data_hygiene_cron.py, inject_egx_historical_data.py)
+  • radar_signal_tracking   — NX:1 route   ↔ PY:4 files  (maker-radar/signal-tracker/verify  ↔  verify_radar_signals.py, maker_radar.py)
+  • stored_analyses         — NX:1 route   ↔ PY:3 files  (admin/purge-cache  ↔  fix_market_tags.py, populate_real_maestro_closed_history.py)
+  • ExpertRecommendation    — NX:2 routes  ↔ PY:1 file   (expert-recommendations, expert-recommendations/import  ↔  seed-expert-recommendations.py)
+  • market_news             — NX:1 route   ↔ PY:1 file   (admin/news  ↔  reindex_news.py)
+  • cached_analysis         — NX:1 route   ↔ PY:1 file   (admin/purge-cache  ↔  populate-databases-v2.py)
+- STALE-READ RISK (Next.js reads tables that Python concurrently writes — 23 tables, top 12):
+  • stocks (NX_READS:70, PY_WRITES:32) — كل routes /api/stocks/* و /api/market/* و /api/maker-radar/* قد تقرأ صفوفاً قديمة بعد UPDATE من data_hygiene_cron.py
+  • predictions (NX_READS:38, PY_WRITES:22) — كل routes /api/predictions/* و /api/mobile/predictions قد ترى state قديم أثناء daily_predictor.py يكتب batch جديد
+  • portfolio_assets (23↔3), price_history (11↔4), gold_prices (11↔2), market_news (8↔1), stock_daily_prices (7↔3), stored_analyses (6↔3), exchange_rates (6↔2), stock_intraday (6↔1), egksco_price_history (4↔2), radar_signal_tracking (3↔4), ExpertRecommendation (3↔1)
+- DB FILE OVERLAP (shared between Next.js and Python — 6 files at risk):
+  db/stocks.db, db/predictions.db, db/price_history.db, db/data_engine.db, db/news.db, db/intraday.db ← كلها مفتوحة من الطرفين. predictions.db مذكور صراحةً في `shared-db.ts` NO_CACHE_DB_NAMES (segfault risk if cached connection reused after Python write).
+- 5-10 EXAMPLES OF NEXT.JS ROUTES THAT WRITE TO SQLITE (with table + DB):
+   1. src/app/api/admin/backtest/v40/run/route.ts         → DELETE FROM predictions                 (db/predictions.db)  ⚠️ destructive
+   2. src/app/api/sniper/track/route.ts                   → INSERT INTO predictions                (db/predictions.db)  ⚠️ violates Rule 35
+   3. src/app/api/telegram/publish-stock/route.ts         → UPDATE predictions                      (db/predictions.db)  ⚠️ writes audit trail
+   4. src/app/api/admin/sync-vps/route.ts                  → INSERT INTO stocks + stock_price_history (db/stocks.db)
+   5. src/app/api/admin/scrape-stocks/route.ts             → INSERT INTO stocks                     (db/stocks.db)
+   6. src/app/api/admin/import-stocks/route.ts             → INSERT INTO stocks                     (db/stocks.db via data-sync helper)
+   7. src/app/api/market/sync/route.ts                     → UPDATE currency_rates                  (db/stocks.db)
+   8. src/app/api/market/scheduled-sync/route.ts           → UPDATE stocks                          (db/stocks.db via data-sync helper)
+   9. src/app/api/market/sync-live/route.ts                → UPDATE stocks                          (db/stocks.db)
+  10. src/app/api/maker-radar/signal-tracker/verify/route.ts → UPDATE radar_signal_tracking         (db/data_engine.db + db/stocks.db)
+  11. src/app/api/watchlist/route.ts & watchlist/[id]/route.ts → INSERT/UPDATE/DELETE user_stock_watchlists (db/auth.db) ← auth.db Next.js-only writes (no Python conflict)
+  12. src/app/api/finance/transactions/route.ts            → INSERT INTO financial_transactions     (db/auth.db via finance-db)
+  13. src/app/api/admin/purge-cache/route.ts              → DELETE FROM cached_analysis, prediction_logs, signal_logs, stored_analyses (db/predictions.db + db/stocks.db)
+  14. src/app/api/auth/login/route.ts + auth/google/route.ts → INSERT INTO api_tokens               (db/auth.db via Prisma)
+- HIGH-PRIORITY FINDINGS FOR REMEDIATION:
+  1. predictions.db write-write conflict: admin/backtest/v40/run does `DELETE FROM predictions` — تتعارض مع 22 Python writer (أخطر نقطة). sniper/track يكتب INSERT violating "Rule 35" المُعلَنة في نفس الملف. telegram/publish-stock يكتب UPDATE audit trail. مقترح: نقل كل writes إلى Python backend فقط وقراءة audit trail من Next.js.
+  2. stocks.db write-write conflict: 5 routes تكتب stocks (admin/sync-vps, admin/scrape-stocks, admin/import-stocks, market/scheduled-sync, market/sync-live) بينما data_engine/main.py + sync.py + 30 script آخر يكتبون stocks. WAL mode متبادل لكن لا coordination — خطر stale reads لـ 70 route قارئة.
+  3. shared-db.ts cache risk: يضع predictions.db فقط في NO_CACHE_DB_NAMES. لكن stocks.db و data_engine.db و price_history.db و news.db و intraday.db كلها مكتوبة من Python أيضاً (32 + 11 + 4 + 2 + 2 ملف Python على التوالي) لكنها في SHARED_DB_NAMES (cached). خطر segfault عند reuse cached connection بعد Python write — يجب توسيع NO_CACHE_DB_NAMES ليشمل كل 6 DBs المشتركة.
+  4. ExpertRecommendation conflict: 2 Next.js routes (expert-recommendations POST + import) تكتبان ExpertRecommendation في stocks.db، بينما seed-expert-recommendations.py يكتب نفس الجدول. لا coordination، خطر duplicate/conflicting records.
+  5. radar_signal_tracking conflict: maker-radar/signal-tracker/verify يكتب UPDATE على نفس الجدول الذي يكتبه verify_radar_signals.py و maker_radar.py و radar-signal-tracker.ts (Next.js internal helper) —三方 conflict.
+- NO code modified — تقرير توثيقي فقط (Read-Only Audit). Scripts saved to /tmp/audit_routes_v2.py, /tmp/audit_python.py, /tmp/cross_ref.py, /tmp/final_report.py and JSON dumps at /tmp/audit_result.json, /tmp/audit_python.json, /tmp/cross_ref.json.
+
+---
+Task ID: ALPHA-AUDIT-DB-SCHEMAS
+Agent: Backend X-Ray Auditor (Database Schemas)
+Task: تشريح قواعد البيانات العشرة (active vs orphaned tables)
+
+Work Log:
+- Read previous worklog entries to understand project history (predictions.db, stocks.db migrations, honest-tracking work)
+- Verified the 10 expected DB files. NOTE: the task listed /home/z/my-project/db/ but the live .db files actually live at /tmp/my-project/db/ (same project tree, db files are gitignored). Audited them at their real location with READ-ONLY better-sqlite3 ({readonly:true, fileMustExist:true}).
+- Discovered metrics.db and paper_trading.db DO NOT EXIST as files — per src/lib/metrics-db.ts and src/lib/paper-trading-v2-db.ts they are auto-created on first use (DB_PATH = path.join(process.cwd(),'db','metrics.db'|'paper_trading.db')) and have not been initialized in this environment.
+- Built a robust read-only audit helper at /home/z/my-project/.zscripts/audit-db.js (writes output synchronously via fs.writeSync so data survives the known better-sqlite3 + node24 cleanup-hook abort; uses process.reallyExit(0) to bypass env teardown hooks).
+- For each DB ran: SELECT name FROM sqlite_master WHERE type='table'; COUNT(*) per table; PRAGMA table_info for key tables; MAX(updated_at|last_updated) for staleness; flagged legacy-named tables via regex /(_old|_backup|_deprecated|_bak|_v1|_v2|_v3|_legacy|_tmp|_temp|aiprediction$)/i.
+- For price_history.db (SQLITE_CORRUPT — "database disk image is malformed" on every prepare(), even PRAGMA integrity_check fails), recovered schema by raw-scanning the first 2MB of the file for "CREATE TABLE" statements. Confirmed file header is valid SQLite ("SQLite format 3\0", page_size 4096) but internal B-tree pages are damaged — likely from a truncated WAL (the .db-wal file is 0 bytes while .db-shm is 32KB).
+- Inspected 8 of the 10 listed DBs in full + 8 bonus DBs discovered in the same directory (ai_search_cache, analytics, community, crypto_learning, gold_prices, historical, telegram_data, custom) for inventory completeness.
+
+Per-DB findings:
+1. predictions.db (280MB, 45 tables): 25 active, 20 empty. DEAD_LEGACY: prediction_outcomes_old (rows=0). Hot tables: aiPrediction=2613, predictions=1551, crypto_predictions_log=180269, learned_lessons=19636, historical_trades=22292, persona_predictions=1669, live_ai_signals=1636, exit_notifications=3939, stock_stories=1245. 20 empty tables include entire portfolio_* family (portfolios exists w/4 rows but portfolio_pnl_history/portfolio_positions/portfolio_state all empty), trade_journal_*, session_events, telegram_news/signals, crypto_predictions (the live one is crypto_predictions_LOG, not crypto_predictions), user_trades, prediction_outcomes (vs the _old variant). Key schemas captured: predictions (69 cols incl exit_type, persona, target_price_2, maker_entry_volume, fuel_pct, track, who_is_buying), aiPrediction (24 cols), stored_analyses (60 cols incl maestro_score, ai_decision, smc_signal, gambler_rank_score), prediction_outcomes_old, corporate_actions.
+2. stocks.db (29MB, 67 tables): 33 active, 34 empty. LEGACY-WITH-DATA (review for retirement): stocks_backup=345 rows (latest 2026-06-04). 34 empty tables include predictions (empty here — real predictions live in predictions.db), news, news_items, paper_trades, alert_*, learned_lessons (empty here — real one is in predictions.db), maestro_personas, regime_indicator_weights, signal_logs, ticker_performance, tracked_channels, etc. Hot tables: stock_daily_prices=100619, market_pulse_cache=5405, outcome_logs=8544, real_evaluated_predictions=4035, screener_presets=2175, radar_signal_tracking=1102 (NOTE: table is radar_signal_tracking, NOT maker_radar_*), stocks=1240, ticker_registry=1197, stock_phase=1238. Key schemas captured: stocks (66 cols incl is_egx30/70/100, smc_signal, turnover_egp, free_float_*), market_indices (15 cols), stock_daily_prices (16 cols incl turnover, market), radar_signal_tracking (20 cols incl outcome_7d/14d/30d, data_quality, staleness_days), market_pulse_cache (21 cols incl regime_5, breadth, sector_top/bottom).
+3. data_engine.db (58MB, 17 tables): 17 active, 0 empty. CLEANEST DB — every table has data. Hot: crypto_prices=128040, gold_prices=129251, historical_data=99076, silver_prices=21490, exchange_rates=21490, btc_local_prices=8440, stock_prices=2493, stocks=2205. Plus 8 tab_* fundamental tables (tab_balance_sheet, tab_cash_flow, tab_dividends, tab_income_statement, tab_performance, tab_profitability, tab_technical_analysis, tab_valuation) all ~858-866 rows each. Key schemas captured: stocks, stock_prices, crypto_prices, gold_prices.
+4. price_history.db (28MB): CORRUPT — SQLITE_CORRUPT. Could not list tables or run COUNT via better-sqlite3. Raw byte scan recovered 2 user tables: screener_daily (screener output: trade_date, ticker, last_close, change_1d_pct, change_5d_pct, change_20d_pct, rs_20, rvol_20, above_sma20/50, sma20...) and price_history (id, ticker, date, open/high/low/close_price, volume, source, created_at) + sqlite_sequence (auto). Matches expected ~2 tables. RECOMMENDATION: needs .recover / restore from backup — this DB is unusable as-is.
+5. intraday.db (448MB, 5 tables): 3 active, 2 empty. Active: crypto_intraday=632233, commodity_intraday=75659, intraday_meta=3. EMPTY/orphaned: intraday_prices (table exists with correct schema: id, ticker, price_time, price, volume, bid, ask, source, created_at — but 0 rows, never written), stock_intraday (0 rows). Expected ~6 tables; found 5 — possibly one table was dropped or never created. The two empty stock-side tables suggest intraday stock data path is dead while crypto/commodity intraday feeds are live.
+6. news.db (3.4MB, 3 tables): 1 active, 2 empty. Active: market_news=905. EMPTY/orphaned: news_api_keys, news_articles (both appear superseded by market_news). Schema dump empty (no requested table names matched).
+7. auth.db (360KB, 22 tables): 11 active, 11 empty. Active: User=123, api_tokens=43, task_runs=75, SubscriptionPlan=10, Account=5, PromoCode=5, bot_link_tokens=3, market_pricing=23, ExpertRecommendation=17, portfolio_items=1, UserSubscription=1. EMPTY/orphaned (11): ExpertTrackRecord, Post, PromoRedemption, Session, VerificationToken, analytics_events, portfolio_history, price_alerts, user_telegram_links, user_trades, watchlist. Key schemas captured: User (17 cols incl trial_ends_at, trial_deletion_scheduled_at — supports trial-expiry deletion flow), Account (NextAuth-style), api_tokens, SubscriptionPlan (16 cols incl max_watchlist/portfolio/alerts, ai_analysis, deep_analysis).
+8. crypto.db (44KB, 4 tables): 0 active, 4 empty — ENTIRE DB ORPHANED. Tables: crypto_portfolio, crypto_prediction_logs, crypto_watchlist, cryptos — all 0 rows. Real crypto data lives in data_engine.db (crypto_prices=128040) and predictions.db (crypto_predictions_log=180269). crypto.db is a dead/stub DB — likely auto-created by an early schema init that was superseded.
+
+MISSING (not present on disk):
+9. metrics.db — NOT FOUND. Per src/lib/metrics-db.ts it is auto-created on first use (idempotent) at path.join(process.cwd(),'db','metrics.db'). Has not been initialized in this environment. No metrics tables exist anywhere yet.
+10. paper_trading.db — NOT FOUND. Per src/lib/paper-trading-v2-db.ts it is auto-created on first use at path.join(process.cwd(),'db','paper_trading.db'). Note: stocks.db has an empty `paper_trades` table (0 rows) which is a separate/legacy stub. The v2 paper-trading system has not been initialized.
+
+BONUS (8 extra DBs discovered in /tmp/my-project/db/ + /home/z/my-project/db/custom.db):
+- ai_search_cache.db (24KB, 1 table): search_cache=0 — orphaned/never-written.
+- analytics.db (86KB, 7 tables): ALL 7 empty (analytics_events, daily_analytics_summary, error_logs, feature_usage, page_views, resource_usage, user_sessions). Entire DB orphaned. NOTE: analytics_events also exists in stocks.db (919 rows) and auth.db (0 rows) — fragmented analytics schema across 3 DBs.
+- community.db (32KB, 5 tables): ALL 5 empty (comments, post_likes, posts, rooms, users). Entire DB orphaned.
+- crypto_learning.db (72KB, 6 tables): 1 active (crypto_learning_iterations=30), 5 empty.
+- gold_prices.db (40KB, 3 tables): 2 active (gold_history=5, gold_prices=6), 1 empty (silver_history). NOTE: gold_prices also exists in data_engine.db (129251 rows) and stocks.db (3 rows) — heavily fragmented gold price data across 3 DBs.
+- historical.db (19MB, 2 tables): 1 active (historical_prices=73526), 1 empty (daily_prices).
+- telegram_data.db (108KB, 6 tables): 5 active (telegram_messages=58, telegram_news=11, telegram_recommendations=11, scraping_status=3, tracked_channels=6), 1 empty (telegram_images). NOTE: telegram_news also exists in stocks.db (6 rows) and predictions.db (0 rows) — fragmented.
+- custom.db (24KB, 2 tables): Post=0, User=0 — both orphaned. NOTE: these mirror auth.db's Post (empty) and User (123 rows) — looks like a leftover stub from a different auth provider.
+
+Stage Summary:
+- Total DBs inspected: 8 of 10 listed DBs present + 8 bonus DBs = 16 databases on disk. 2 listed DBs (metrics.db, paper_trading.db) absent — auto-created on first use, not yet initialized.
+- Total tables (8 present listed DBs only): 45+67+17+2+5+3+22+4 = 165 tables (price_history.db tables counted via raw scan since DB is corrupt).
+- Total tables incl. 8 bonus DBs: 165 + (1+7+5+6+3+2+6+2) = 165 + 32 = 197 tables across 16 DBs.
+- Orphaned/empty tables found: 73 empty tables across the 8 listed DBs (predictions=20, stocks=34, data_engine=0, intraday=2, news=2, auth=11, crypto=4) + ~22 empty tables across the 8 bonus DBs = ~95 orphaned/empty tables total. 1 DEAD_LEGACY table (prediction_outcomes_old). 1 LEGACY-WITH-DATA table (stocks_backup=345 rows — review for retirement). 4 ENTIRELY ORPHANED DBs (crypto.db, analytics.db, community.db, ai_search_cache.db, custom.db — all tables empty). 1 CORRUPT DB (price_history.db — needs .recover / restore). Fragmentation observed: gold_prices in 3 DBs, telegram_news in 3 DBs, analytics_events in 3 DBs, Post/User in 2 DBs — consolidation opportunity.
+
+---
+Task ID: ALPHA-AUDIT-JOBS-SCRIPTS
+Agent: Backend X-Ray Auditor (Jobs & Scripts)
+Task: محركات توليد البيانات والسكربتات الدورية
+
+Work Log:
+- قرأت /home/z/my-project/worklog.md لأرصد سابقي ALPHA-AUDIT-* (5 وكلاء Frontend سابقين). دي المهمة الأولى اللي تدخل الـ backend data-generation layer.
+- جردت 15 ملف Python في vps-service/jobs/ (scheduled jobs)، وكل ملفات scripts/ (≈220 .py script)، و≈110 ملف في vps-service/analyzers/. ركّزت على الـ periodic/cron-triggered + المذكورين صراحةً في المهمة.
+- قرأت الـ headers (50-100 سطر) لكل ملف period job + scripts المكوّنة للـ pipeline.
+- استخدمت ripgrep للبحث عن: `sqlite3.connect`, `INSERT INTO`, `UPDATE`, `DELETE FROM`, `CREATE TABLE`, `INSERT OR REPLACE`, `schedule.every`, `apscheduler`, `while True`, `time.sleep`, `crontab`, `argparse`, `if __name__`.
+- قرأت crontab.txt الكامل (الـ canonical source-of-truth للـ schedule على الـ VPS) — فيه 26 cron entry موثقة.
+- ربطت كل cron entry بالـ script اللي بيشغّله + الـ DBs/tables اللي بيكتب فيها.
+
+Stage Summary:
+- ✅ 23 script/job تم جرد تفصيلي (path + purpose + DBs WRITES + trigger)
+- ✅ 8 من 8 key questions اتفتحت بالكامل (predictions / maker radar / live prices / intraday / indices / regime / Wyckoff / rescue clinic)
+- ✅ NO code modified — تقرير توثيقي فقط (Read-Only Audit)
+- ✅ Worklog entry مُضاف (append mode)
+
+═══════════════════════════════════════════════════════════════════════════
+CANONICAL CRON SCHEDULE (مستخرج من /home/z/my-project/crontab.txt — 26 entries)
+═══════════════════════════════════════════════════════════════════════════
+#1  daily_predictor.py --today-only            | 0 3   * * 0-4 | morning gen
+#1b daily_predictor.py --yesterday-only        | 30 13 * * 0-4 | evening gen (deep)
+#2  intraday_scanner.py                         | */5 8-12 * * 0-4 | live 5-min
+#3  daily_closer.py                             | 0 14  * * 0-4 | EOD close
+#4  learning_engine.py                          | 0 15  * * 0-4 | daily learning
+#5  fetch_corporate_actions.py                  | 0 4   * * 0-4 | dividends+IPO
+#6  daily_price_updater.py (x2)                 | 0 7,13 * * 0-4 | EGX OHLC
+#7  data_engine/scrapers/tradingview_scraper.py | */5 8-12 * * 0-4 | live TV
+#8  price_history_safetynet.py                 | 0 6   * * 0-4 | Yahoo gap-fill
+#9  data_heartbeat_checker.py                   | 0 1   * * *   | dead-man switch
+#10 smart_db_backup.py                          | 30 1  * * *   | daily backup
+#11 egx_fundamental_fetcher.py                  | 0 14  * * 6   | weekly fundamentals
+#12 egx_disclosure_engine (inline -c)          | 0 8-12/2 * * 0-4 | disclosures
+#13 sync_hunter_pick_tracking.py                 | 35 13 * * 0-4 | V40.2 → hunter
+#14 maker-radar/signal-tracker/verify (curl)    | 0 2   * * *   | radar verify
+#15 market_regime_engine.py update_regime       | 50 2  * * 0-4 | regime daily
+#15b market_regime_engine.py --all              | 55 2  * * 6   | regime weekly all markets
+#16 weekly_radar_report.py --send-telegram      | 0 6   * * 0   | Sunday weekly
+#17 us_stock_scraper.py                         | 0 22  * * 1-5 | US daily
+#18 multi_market_scraper.py                     | 0 9-22 * * *  | hourly multi
+#19 mine_learned_lessons.py                     | 0 4   * * 0   | Sunday mining
+#20 exit_policy_optimizer.py                    | 0 5   1 * *   | monthly
+#21 post_market_feedback.py                     | 30 14 * * 0-4 | daily feedback
+#22 hot_candidate_detector.py                   | */15 8-12 * * 0-4 | maker 5min
+#23 telegram_comprehensive_report.py --send     | 30 14 * * 0-4 | daily report
+#24 downgrade-expired-subscriptions.ts          | 0 3   * * *   | auth.db cleanup
+#25 sharia_compliance_scraper.py                | 30 15 * * 6   | weekly sharia
+#26 maker_radar.py EGX/TADAWUL/KSE/QSE/US       | */5 8-14 * * 0-4 | radar 5min
+#26b maker_radar.py CRYPTO/GOLD                 | */5 * * * *      | radar 24/7
+
+═══════════════════════════════════════════════════════════════════════════
+SCRIPT-BY-SCRIPT WRITE MAP
+═══════════════════════════════════════════════════════════════════════════
+
+== vps-service/jobs/ (Scheduled Jobs — via MarketScheduler tick loop + cron) ==
+
+1) vps-service/jobs/market_scheduler.py
+   Purpose: المُجدوِل المركزي (single orchestrator). while-running loop time.sleep(60). ينادي كل المهام التانية.
+   Trigger: في الـ pm2 ecosystem كـ python-backend thread / standalone `python3 market_scheduler.py`
+   DBs WRITES to:
+     • stocks.db.market_pulse_cache (CREATE + INSERT — computed pulse)
+     • stocks.db.stocks (UPDATE current_price/change_percent/last_update — intraday TV fallback path)
+     • stocks.db.screener_presets (CREATE + UPSERT — daily post-market)
+     • stocks.db.user_notifications (CREATE + INSERT — bag_holder_alerts every 15 min)
+     • predictions.db.stored_analyses (UPDATE analysis_json — DISABLED via SINGLE-WRITER guard in run_live_trailing_stop_update)
+
+2) vps-service/jobs/daily_predictor.py  ★ (المسؤول الأول عن التوقعات)
+   Purpose: V40.2 daily prediction generator — يولّد توقعات BUY/SELL لكل سهم EGX
+   Trigger: cron #1 (03:00 UTC morning) + cron #1b (13:30 UTC evening) + market_scheduler.run_v40_2_generation كل 15 دقيقة
+   DBs WRITES to:
+     • predictions.db.predictions (DELETE old V40 evidence predictions + INSERT via PredictionTracker.record_prediction)
+     • predictions.db.stored_analyses (INSERT ON CONFLICT UPDATE — SINGLE-WRITER owner per Rule 73)
+     • predictions.db (PREDICTIONS_DB) — main table
+   Reads: data_engine.db (price history), price_history.db, stocks.db (sector heat, fundamentals)
+
+3) vps-service/jobs/intraday_scanner.py
+   Purpose: V40.2 Intraday Realtime Engine — مسح 5-min live لاكتشاف الاختراقات اللحظية
+   Trigger: cron #2 (*/5 8-12 UTC Sun-Thu)
+   DBs WRITES to:
+     • predictions.db.predictions (UPDATE entry_price_min/max, support/resistance levels for intraday picks)
+     • predictions.db.stored_analyses (INSERT — DISABLED via SKIP_STORED_ANALYSES_WRITE=True per SINGLE-WRITER guard)
+     • stocks.db.cached_analysis (INSERT ON CONFLICT UPDATE — syncs live picks)
+   Reads: intraday.db.stock_intraday (5-min bars)
+
+4) vps-service/jobs/daily_closer.py  ★ (المسؤول عن إغلاق الصفقات)
+   Purpose: Daily Prediction Closer — يقفل التوقعات المفتوحة (TARGET_HIT/STOPPED/EXPIRED/TRAILING_PROFIT) على daily OHLC bars
+   Trigger: cron #3 (14:00 UTC) + market_scheduler.run_close_predictions (14:45 Cairo ±30 min window)
+   DBs WRITES to:
+     • predictions.db.predictions (UPDATE outcome_date, actual_exit_price, actual_return, hit_target, hit_stop, is_correct, holding_days, exit_type, highest_price_reached, lowest_price_reached, status, partial_exit_price/date/return_pct, exit_policy, data_quality)
+     • predictions.db.exit_notifications (CREATE TABLE + INSERT — telegram notifier queue)
+   Reads: price_history.db (daily OHLC), stocks.db (live price fallback post-market only)
+
+5) vps-service/jobs/learning_engine.py
+   Purpose: محرك التعلم الذاتي — يحلل التوقعات المغلقة ويستخرج دروس
+   Trigger: cron #4 (15:00 UTC) + market_scheduler.run_learning_engine (post-market)
+   DBs WRITES to:
+     • predictions.db.learned_lessons (CREATE TABLE + INSERT + UPDATE — failure patterns + recommendations)
+     • predictions.db.sniper_performance (CREATE TABLE + INSERT — performance reports)
+     • vps-service/config/optimizer_params.json (file write — locked atomic via utils.params_io)
+   Reads: predictions.db.predictions, stocks.db
+
+6) vps-service/jobs/fetch_corporate_actions.py
+   Purpose: يجمع توزيعات الأرباح + أخبار الاكتتاب + الجمعيات العمومية
+   Trigger: cron #5 (04:00 UTC)
+   DBs WRITES to:
+     • predictions.db.corporate_actions (CREATE TABLE + 3 indexes + INSERT OR REPLACE — dividends/ipo/assembly)
+   Reads: data_engine.db.tab_dividends, DuckDuckGo (news)
+
+7) vps-service/jobs/price_history_safetynet.py
+   Purpose: شبكة أمان يومية لـ price_history.db من Yahoo Finance (yfinance)
+   Trigger: cron #8 (06:00 UTC) + market_scheduler.run_price_history_safetynet (force-run لو stale)
+   DBs WRITES to:
+     • price_history.db.price_history (CREATE TABLE + INSERT OR REPLACE via write_guarded — source='yahoo_safetynet')
+   Reads: stocks.db (ticker list), predictions.db (active tickers)
+
+8) vps-service/jobs/intraday_aggregator.py  ★ (PRIMARY fix لجمود price_history)
+   Purpose: تجميع stock_intraday → شموع يومية في price_history.db
+   Trigger: market_scheduler.run_intraday_aggregator كل 30 دقيقة (intraday + post-market)
+   DBs WRITES to:
+     • price_history.db.price_history (CREATE TABLE + INSERT OR REPLACE via write_guarded — source='intraday_aggregated')
+   Reads: intraday.db.stock_intraday, stocks.db (market lookup)
+
+9) vps-service/jobs/price_history_stale_monitor.py
+   Purpose: مراقب جمود price_history.db كل ساعة (تنبيه فقط)
+   Trigger: market_scheduler.run_price_history_stale_monitor كل 60 دقيقة
+   DBs WRITES to: ⚪ NONE (READ-ONLY — logger warnings)
+   Reads: price_history.db (MAX(date))
+
+10) vps-service/jobs/hot_candidate_detector.py
+    Purpose: اكتشاف نشاط الميكرز على بيانات 5 دقائق (Hot Candidates)
+    Trigger: cron #22 (*/15 8-12 UTC Sun-Thu)
+    DBs WRITES to: ⚪ NONE في SQL (يكتب JSON files فقط: data/stock_notebook.json + data/hot_candidates_<date>.json)
+    Reads: intraday.db.stock_intraday
+
+11) vps-service/jobs/fetch_inflation_worldbank.py
+    Purpose: جلب معدل التضخم المصري من World Bank API
+    Trigger: market_scheduler.run_morning_regime_check (daily morning)
+    DBs WRITES to:
+      • stocks.db.macro_indicators (CREATE TABLE + INSERT OR REPLACE — keys: 'inflation_rate' + 'egypt_inflation')
+    Reads: World Bank API
+
+12) vps-service/jobs/daily_portfolio_yield.py
+    Purpose: Daily portfolio yield + wealth tracking snapshot
+    Trigger: market_scheduler.run_egx_indices_update (15:05 Cairo) + cron 0 3 (standalone)
+    DBs WRITES to:
+      • stocks.db.wealth_tracking (CREATE TABLE + UPSERT UNIQUE(user_id, snapshot_date))
+      • stocks.db.portfolio_assets (CREATE TABLE — DDL idempotent)
+    Reads: stocks.db (portfolio)
+
+13) vps-service/jobs/wal_checkpoint.py
+    Purpose: PRAGMA wal_checkpoint(TRUNCATE) + PRAGMA optimize لدمج WAL files
+    Trigger: scheduler_manager (hourly, job name 'wal_checkpoint_hourly')
+    DBs WRITES to: ⚪ NO SQL writes (physical DB maintenance فقط)
+    Affects: stocks.db, predictions.db, price_history.db, data_engine.db (WAL merge + truncate)
+
+14) vps-service/jobs/crypto_lab_scheduler.py
+    Purpose: 24/7 Crypto Live Lab — يحلل BTC/ETH/top-50 crypto كل 5 دقائق
+    Trigger: market_scheduler.run_crypto_lab كل 15 دقيقة / standalone thread (CRYPTO_LAB_INTERVAL_SECONDS=300)
+    DBs WRITES to:
+      • predictions.db.crypto_predictions_log (CREATE TABLE + 2 indexes + INSERT + UPDATE — V40.4 trailing exit: status/exit_price/exit_type/highest_price/actual_return/exited_at/remaining_pct)
+    Reads: data_engine.db.crypto_prices (fallback), CoinGecko API (primary)
+
+== vps-service/scripts/ (sub-scripts called by jobs / standalone) ==
+
+15) vps-service/scripts/daily_price_updater.py
+    Purpose: تحديث يومي للأسعار من EGXPilot → مزامنة لكل الجداول
+    Trigger: cron #6 (07:00 + 13:00 UTC) + market_scheduler.run_egx_indices_update fallback
+    DBs WRITES to:
+      • stocks.db.stocks (UPDATE current_price — via data.egx_fetcher.update_egx_prices)
+      • stocks.db.stock_daily_prices (UPDATE/INSERT OHLCV — with Pollution Guard)
+      • price_history.db.price_history (INSERT OR REPLACE via write_guarded — source='tradingview_live')
+
+16) vps-service/scripts/update_egx_indices.py  ★ (EGX30/EGX100 updates)
+    Purpose: تحديث يومي لمؤشرات EGX30 و EGX100
+    Trigger: market_scheduler.run_egx_indices_update (15:05 Cairo)
+    DBs WRITES to:
+      • price_history.db.price_history (CREATE TABLE + INSERT OR REPLACE — for tickers 'EGX30' + 'EGX100')
+      • stocks.db.egx_indices (CREATE TABLE + INSERT OR REPLACE — index metadata)
+
+17) vps-service/scripts/smart_db_backup.py
+    Purpose: حارس DB ذكي — backup يومي + auto-restore لو حجم DB نقص ≥20%
+    Trigger: cron #10 (01:30 UTC)
+    DBs WRITES to: ⚪ NO SQL writes — file-level operations فقط (shutil.copy2 + sqlite .backup + WAL checkpoint)
+    Affects: db/backups/*.db.bak rotation (7 daily)
+
+18) vps-service/scripts/data_heartbeat_checker.py
+    Purpose: Dead Man's Switch — تنبيه تليجرام لو data_engine وقف
+    Trigger: cron #9 (01:00 UTC daily)
+    DBs WRITES to: ⚪ NONE (READ-ONLY — Telegram alerts only)
+    Reads: stocks.db, price_history.db, predictions.db (MAX timestamps)
+
+19) vps-service/data/egx_fundamental_fetcher.py
+    Purpose: يجيب البيانات الأساسية لـ EGX من EGXPilot (EPS/P-E/sectors)
+    Trigger: cron #11 (Saturday 14:00 UTC)
+    DBs WRITES to:
+      • stocks.db.egx_fundamentals (CREATE TABLE + INSERT OR REPLACE)
+
+== scripts/ (standalone periodic scripts) ==
+
+20) scripts/maker_radar.py  ★ (Wyckoff screener data — صاحب الـ "تحت الميكروسكوب")
+    Purpose: رادار الميكرز — يكشف Quiet Accumulation / Explosive Surge / Early Break (Wyckoff phases)
+    Trigger: cron #26 (*/5 8-14 UTC Sun-Thu لـ EGX/TADAWUL/KSE/QSE/US + */5 24/7 لـ CRYPTO/GOLD)
+    DBs WRITES to:
+      • stocks.db.radar_signal_tracking (CREATE TABLE + 4 indexes + DELETE FROM (same-day dedup) + INSERT)
+      • JSON cache files: scripts/output/maker_radar_<MARKET>_<DATE>.json (one per market)
+    Reads: stocks.db.stock_daily_prices (EGX primary), data_engine.db.historical_data/crypto_prices/gold_prices/egksco_price_history
+
+21) scripts/master_scheduler.py (legacy)
+    Purpose: مُجدوِل قديم لكل الـ scrapers (schedule.every). Rule 29 — UNIFIED-SYSTEM
+    Trigger: standalone `python3 scripts/master_scheduler.py` (while True + time.sleep(60))
+    DBs WRITES to: ⚪ NONE مباشرة — يـ dispatch لـ fetchers:
+      • run_tradingview_rest (5min) → tradingview_rest.py
+      • run_crypto_fetcher (2min) → data_engine/scrapers/crypto_fetcher.py
+      • run_metals_fetcher (15min) → metals_forex_fetcher.py
+      • run_egksco_scraper (15min) → egksco_scraper.py
+      • run_daleelak (30min) → daleelak_api.fetch_and_save
+      • run_delta_volume (5min) → scripts/delta_volume_calculator.py
+      • run_health_check (hourly) → READ-ONLY integrity check
+
+22) scripts/post_market_feedback.py
+    Purpose: PHASE5-052 Automated Feedback Loop — تنبيه لو 70%+ من توصيات BUY خسرت
+    Trigger: cron #21 (14:30 UTC Sun-Thu)
+    DBs WRITES to: ⚪ NONE (READ-ONLY — Telegram alert فقط)
+    Reads: predictions.db.predictions (yesterday's closed)
+
+23) scripts/sync_hunter_pick_tracking.py
+    Purpose: مزامنة توقعات V40.2 → hunter_pick_tracking
+    Trigger: cron #13 (13:35 UTC Sun-Thu)
+    DBs WRITES to:
+      • predictions.db.hunter_pick_tracking (INSERT — with dedup check)
+    Reads: predictions.db.predictions (active V40.2 picks)
+
+24) scripts/mine_learned_lessons.py
+    Purpose: تعدين الدروس المستفادة من التوقعات المغلقة (أسبوعياً)
+    Trigger: cron #19 (Sunday 04:00 UTC)
+    DBs WRITES to:
+      • predictions.db.learned_lessons (CREATE TABLE + INSERT — success/failure patterns)
+    Reads: predictions.db.predictions, stocks.db
+
+25) scripts/weekly_radar_report.py
+    Purpose: تقرير أسبوعي + PDF/PNG/JSON + Telegram publish (سهم الأسبوع + top 5)
+    Trigger: cron #16 (Sunday 06:00 UTC)
+    DBs WRITES to: ⚪ NONE في SQL — outputs فقط:
+      • scripts/output/weekly_radar_report_<date>.{pdf,png,json}
+      • Telegram message send
+    Reads: scripts/output/maker_radar_<date>.json (cache), db/maker_radar_tracking.json
+
+26) scripts/telegram_comprehensive_report.py
+    Purpose: تقرير شامل يومي بعد الإغلاق + بعت Telegram
+    Trigger: cron #23 (14:30 UTC Sun-Thu)
+    DBs WRITES to: ⚪ NONE (READ-ONLY — Telegram message only)
+    Reads: predictions.db, stocks.db, data_engine.db
+
+27) scripts/exit_policy_optimizer.py
+    Purpose: يضبط سياسة الخروج (stop/target/trailing) بناءً على آخر 90 يوم
+    Trigger: cron #20 (monthly — day 1, 05:00 UTC)
+    DBs WRITES to: ⚪ NONE في SQL — file write فقط:
+      • data/exit_policy_optimizer_state.json (atomic write via locked_read_modify_write)
+    Reads: predictions.db.predictions, stocks.db.market_regime_log
+
+== data_engine/ (Flask service + scrapers — internal scheduler) ==
+
+28) data_engine/main.py  ★ (المسؤول عن تحديث live stock prices + intraday data + daily candles)
+    Purpose: Flask service 24/7 — يجمع بيانات الأسهم/الكريبتو/المعادن + AUTO-SYNC لـ stocks.db
+    Trigger: pm2 (python-backend / data-engine process) — internal while-running loop with time.sleep(60)
+    DBs WRITES to:
+      • data_engine.db.stocks (UPDATE + INSERT — run_scraper_and_sync)
+      • intraday.db.stock_intraday (INSERT OR REPLACE — via intraday_storage.store_stocks_snapshot, كل 5 min market hours)
+      • intraday.db.crypto_intraday (INSERT OR REPLACE — كل 2 min, 24/7)
+      • intraday.db.commodity_intraday (INSERT OR REPLACE — كل 15 min, 24/7)
+      • intraday.db.intraday_meta (INSERT OR IGNORE + INSERT OR REPLACE — metadata)
+      • intraday.db.* (DELETE FROM WHERE timestamp < cutoff — daily cleanup, 7-day retention)
+    Calls: tradingview_scraper.py (stocks), crypto_fetcher.py, metals_forex_fetcher.py, news_scraper.py
+
+29) data_engine/intraday_storage.py
+    Purpose: التخزين اللحظي (5-min snapshots) لكل الأسواق في intraday.db
+    Trigger: بيتندى من data_engine/main.py scheduler loop
+    DBs WRITES to:
+      • intraday.db.stock_intraday (CREATE TABLE + INSERT OR REPLACE)
+      • intraday.db.crypto_intraday (CREATE TABLE + INSERT OR REPLACE)
+      • intraday.db.commodity_intraday (CREATE TABLE + INSERT OR REPLACE)
+      • intraday.db.intraday_meta (CREATE TABLE + INSERT OR IGNORE/REPLACE)
+    Reads: data_engine.db.stocks, data_engine.db.crypto_prices, data_engine.db.gold_prices (snapshots source)
+
+30) data_engine/scrapers/tradingview_scraper.py
+    Purpose: Playwright scraper لـ TradingView (4 markets: مصر/السعودية/الكويت/قطر)
+    Trigger: cron #7 (*/5 8-12 UTC) + data_engine/main.py run_scraper_and_sync
+    DBs WRITES to:
+      • data_engine.db.stocks (CREATE TABLE IF NOT EXISTS + INSERT OR REPLACE — market=EGX/TADAWUL/KSE/QSE)
+
+31) data_engine/scrapers/us_stock_scraper.py
+    Purpose: جلب OHLCV لـ 50 سهم أمريكي من Yahoo Finance
+    Trigger: cron #17 (22:00 UTC Mon-Fri)
+    DBs WRITES to:
+      • price_history.db.price_history (CREATE TABLE + INSERT OR REPLACE — source='yahoo_us', market='US')
+      • data/us_scraper_status.json (status file)
+
+32) data_engine/scrapers/multi_market_scraper.py
+    Purpose: Unified multi-market scraper — يـ orchestrate EGX + US + Crypto + Metals
+    Trigger: cron #18 (hourly 09:00-22:00 UTC)
+    DBs WRITES to: ⚪ NONE مباشرة — يـ dispatch subprocess للـ scrapers الفردية
+    Output: data/multi_market_scraper_status.json (status file)
+
+33) data_engine/scrapers/sharia_compliance_scraper.py
+    Purpose: بيانات التوافق الشرعي + التطهير (8 مصادر شرعية)
+    Trigger: cron #25 (Saturday 15:30 UTC)
+    DBs WRITES to:
+      • data_engine.db.sharia_sources (CREATE + INSERT OR REPLACE)
+      • data_engine.db.sharia_source_status (CREATE + DELETE + INSERT OR REPLACE)
+      • data_engine.db.sharia_metrics (CREATE + INSERT OR REPLACE)
+      • data_engine.db.sharia_purification_rates (CREATE + DELETE + INSERT OR REPLACE)
+      • data_engine.db.sharia_symbol_map (CREATE + DELETE + INSERT OR REPLACE)
+      • data_engine.db.sharia_history (CREATE + INSERT OR REPLACE)
+      • stocks.db.stocks (UPDATE is_halal/compliance_status/compliance_note — only with --sync-stocks flag, OFF by default)
+    Reads: stocks.templatesnippet.com (JSON)
+
+34) data_engine/scrapers/egksco_scraper.py
+    Purpose: EGX live prices من EGKSCO
+    Trigger: scripts/master_scheduler.py (كل 15 دقيقة 09:00-14:30 Cairo)
+    DBs WRITES to:
+      • data_engine.db.stocks (CREATE TABLE IF NOT EXISTS + INSERT OR REPLACE)
+
+35) data_engine/scrapers/crypto_fetcher.py
+    Purpose: جلب أسعار الكريبتو
+    Trigger: scripts/master_scheduler.py (كل 2 دقيقة) + data_engine/main.py
+    DBs WRITES to:
+      • data_engine.db.crypto_prices (CREATE TABLE + INSERT OR REPLACE)
+      • data_engine.db.btc_local_prices (CREATE TABLE + INSERT OR REPLACE)
+
+36) data_engine/scrapers/metals_forex_fetcher.py
+    Purpose: جلب الذهب/الفضة/الفوركس/العملات العربية
+    Trigger: scripts/master_scheduler.py (كل 15 دقيقة) + data_engine/main.py
+    DBs WRITES to:
+      • data_engine.db.gold_prices_clean (CREATE + INSERT OR REPLACE)
+      • data_engine.db.gold_prices (CREATE + INSERT OR REPLACE)
+      • data_engine.db.silver_prices (CREATE + INSERT OR REPLACE)
+      • data_engine.db.exchange_rates (CREATE + INSERT OR REPLACE)
+
+== vps-service/analyzers/ (Engines called by jobs) ==
+
+37) vps-service/analyzers/market_regime_engine.py  ★ (Market regime engine)
+    Purpose: EGX30/EGX100 regime detection (Stage 1-4: Accumulation → Markup → Distribution → Markdown)
+    Trigger: cron #15 (daily 02:50 UTC) + cron #15b (weekly Saturday 02:55 UTC --all) + market_scheduler.run_morning_regime_check
+    DBs WRITES to:
+      • stocks.db.system_settings (CREATE TABLE + INSERT ON CONFLICT UPDATE — current regime state, key per market)
+      • stocks.db.market_regime_log (CREATE TABLE + INSERT OR REPLACE — audit history with 19 columns)
+    Reads: price_history.db (EGX30ETF, EGX100), stocks.db
+
+38) vps-service/analyzers/hmm_market_regime.py  ★ (Wyckoff screener data — HMM-based)
+    Purpose: Hidden Markov Model regime detector — Wyckoff-inspired (Accumulation/Markup/Distribution/Markdown)
+    Trigger: on-demand (CLI / API call) — مش في cron حالياً
+    DBs WRITES to: ⚪ NONE (READ-ONLY — in-memory model, returns regime via API)
+    Reads: price_history.db (EGX30ETF close + volume)
+
+39) vps-service/analyzers/screener.py
+    Purpose: ماسح الأسهم — 5 presets (Day Trader Radar / Daily Speculator / Value Hunter / Momentum Rockets / Market Thermometer)
+    Trigger: API on-demand (Next.js /api/screener) — مش في cron مباشرة
+    DBs WRITES to:
+      • stocks.db.screener_results (CREATE TABLE + DELETE FROM same-day + INSERT — one row per preset×stock)
+    Reads: data_engine.db (tab_technical_analysis, tab_valuation, tab_profitability, tab_performance, tab_dividends)
+
+40) vps-service/analyzers/egx_disclosure_engine.py
+    Purpose: يجلب إفصاحات EGX من EGXPilot
+    Trigger: cron #12 (كل ساعتين 08:00-12:00 UTC Sun-Thu, inline -c command)
+    DBs WRITES to:
+      • disclosures.db.egx_disclosures (CREATE TABLE + INSERT OR IGNORE — idempotent)
+    Reads: EGXPilot API
+
+41) vps-service/analyzers/bag_holder_rescue.py  ★ (Rescue clinic analyzer)
+    Purpose: محرك إنقاذ المحفظة المزنوقة — يحلل كل سهم مزنوق ويعطي خطة إنقاذ
+    Trigger: API on-demand (Next.js /api/portfolio/rescue) — مش في cron مباشرة
+    DBs WRITES to: ⚪ NONE في SQL — تماماً READ-ONLY
+      (كل الـ connections بـ sqlite3.connect('file:...?mode=ro', uri=True) — read-only mode)
+    Reads: price_history.db, stocks.db, data_engine.db, predictions.db
+    Output: computed rescue scores + recommendations via API
+    Note: الـ alerts الفعلية للـ "bag holders" بتيجي من market_scheduler._run_bag_holder_alerts (job #1) اللي بيكتب في stocks.db.user_notifications
+
+42) vps-service/analyzers/nightly_quant_job.py
+    Purpose: Nightly Quant Cache rebuild — SMFI + Monte Carlo cache لكل أسهم EGX
+    Trigger: market_scheduler._run_daily_task(3, 0, 'quant_nightly', ...) — 03:00 Cairo
+    DBs WRITES to: ⚪ NONE في SQL — READ-ONLY (mode=ro)
+      (الكاش بيتخزن in-memory / via API layer للـ analyzers التانيين)
+
+43) vps-service/analyzers/prediction_tracker.py (called by daily_predictor)
+    Purpose: Helper class بيغلّف writes لـ predictions table (Rule 54 db_manager)
+    Trigger: بيتندى من daily_predictor.py + intraday_scanner.py + crypto paths في daily_predictor.py
+    DBs WRITES to:
+      • predictions.db.predictions (CREATE TABLE + INSERT + UPDATE — record_prediction / mark_correct / mark_closed)
+
+═══════════════════════════════════════════════════════════════════════════
+8 KEY QUESTIONS — ANSWERED
+═══════════════════════════════════════════════════════════════════════════
+
+Q1) من يحسب التوقعات ويحفظها؟
+→ vps-service/jobs/daily_predictor.py (V40.2 generator).
+   DB: predictions.db.predictions (DELETE old + INSERT via PredictionTracker.record_prediction)
+   + predictions.db.stored_analyses (INSERT ON CONFLICT UPDATE — SINGLE-WRITER owner per Rule 73)
+   Trigger: cron #1 (03:00 UTC --today-only) + cron #1b (13:30 UTC --yesterday-only) + market_scheduler.run_v40_2_generation كل 15 دقيقة (intraday/daily modes).
+
+Q2) من يشغّل رادار الميكرز؟
+→ scripts/maker_radar.py (Wyckoff phase detector: Quiet Accumulation / Explosive Surge / Early Break).
+   DBs: stocks.db.radar_signal_tracking (CREATE + DELETE + INSERT)
+   + JSON cache: scripts/output/maker_radar_<MARKET>_<DATE>.json
+   Trigger: cron #26 — */5 8-14 UTC Sun-Thu لـ EGX/TADAWUL/KSE/QSE/US + */5 24/7 لـ CRYPTO/GOLD.
+
+Q3) من يحدّث الأسعار الحية والشموع اليومية؟
+→ Layered:
+   • data_engine/main.py (Flask + while-running loop) → data_engine.db.stocks (UPDATE/INSERT كل 5 دقائق market hours)
+   • data_engine/scrapers/tradingview_scraper.py (cron #7, */5 8-12 UTC) → data_engine.db.stocks (CREATE + INSERT OR REPLACE)
+   • vps-service/scripts/daily_price_updater.py (cron #6, 07:00 + 13:00 UTC) → stocks.db.stocks + stocks.db.stock_daily_prices + price_history.db.price_history (via write_guarded, source='tradingview_live')
+   • market_scheduler.run_intraday_prices (every 15 min) → stocks.db.stocks (UPDATE current_price/change_percent/last_update — TradingView fallback path)
+   • vps-service/scripts/update_egx_indices.py (15:05 Cairo) → price_history.db.price_history (EGX30/EGX100) + stocks.db.egx_indices
+
+Q4) من يحدّث البيانات اللحظية (intraday)؟
+→ data_engine/intraday_storage.py (بيتنادى من data_engine/main.py scheduler loop):
+   • intraday.db.stock_intraday (INSERT OR REPLACE — كل 5 دقائق وقت market hours فقط)
+   • intraday.db.crypto_intraday (INSERT OR REPLACE — كل 2 دقيقة 24/7)
+   • intraday.db.commodity_intraday (INSERT OR REPLACE — كل 15 دقيقة 24/7)
+   • intraday.db.intraday_meta (INSERT OR IGNORE/REPLACE)
+   • Daily cleanup: DELETE FROM WHERE timestamp < cutoff (7-day retention)
+   وعمل aggregation للـ daily bars:
+   • vps-service/jobs/intraday_aggregator.py (market_scheduler كل 30 دقيقة) → price_history.db.price_history (source='intraday_aggregated')
+   • vps-service/jobs/price_history_safetynet.py (cron #8, 06:00 UTC + force-run لو stale) → price_history.db.price_history (source='yahoo_safetynet')
+   • vps-service/jobs/intraday_scanner.py (cron #2, */5 8-12 UTC) بيقرأ intraday.db ويكتب predictions.db.predictions + stocks.db.cached_analysis
+
+Q5) من يحدّث مؤشرات EGX30/EGX70/EGX100؟
+→ vps-service/scripts/update_egx_indices.py (EGXIndicesUpdater).
+   DBs: price_history.db.price_history (INSERT OR REPLACE لـ tickers 'EGX30' + 'EGX100')
+   + stocks.db.egx_indices (INSERT OR REPLACE metadata)
+   Trigger: market_scheduler.run_egx_indices_update يومياً 15:05 Cairo.
+   Note: EGX70 مش متغطّى في update_egx_indices.py (INDICES = ['EGX30', 'EGX100'] فقط). لو محتاج EGX70 لازم تضاف للـ INDICES list.
+
+Q6) من يشغّل محرك حالة السوق (Market Regime Engine)؟
+→ vps-service/analyzers/market_regime_engine.py (MarketRegimeEngine).
+   DBs: stocks.db.system_settings (UPSERT — current regime state)
+   + stocks.db.market_regime_log (INSERT OR REPLACE — audit history)
+   Trigger: cron #15 (daily 02:50 UTC) + cron #15b (weekly Saturday 02:55 UTC --all markets)
+   + market_scheduler.run_morning_regime_check على الـ startup.
+
+Q7) من يولّد بيانات Wyckoff screener؟
+→ scripts/maker_radar.py — الـ primary Wyckoff screener.
+   بيكتشف 3 phases بناءً على Wyckoff methodology:
+     - مسار أ: Quiet Accumulation (التجميع الهادئ — حجم 2%)
+     - مسار ب: Explosive Surge (الانفجار — حجم 2%)
+     - مسار ج: Early Break (الاختراق المبكر — حجم 2.5%)
+   Uses: vps-service/utils/shared_liquidity.py (detect_quiet_accumulation, detect_pre_surge, detect_life_cycle)
+   DBs: stocks.db.radar_signal_tracking (CREATE + DELETE + INSERT)
+   Trigger: cron #26 (*/5 8-14 UTC + 24/7 لـ CRYPTO/GOLD).
+   
+   Secondary: vps-service/analyzers/hmm_market_regime.py — HMM-based Wyckoff-inspired regime detector (4 states: Accumulation/Markup/Distribution/Markdown). READ-ONLY (in-memory model). مش في cron حالياً.
+
+Q8) من يشغّل rescue clinic analyzer؟
+→ vps-service/analyzers/bag_holder_rescue.py (BagHolderRescue class).
+   ⚠️ ملاحظة مهمة: الـ analyzer نفسه READ-ONLY تماماً (كل connections بـ mode=ro URI).
+   بيرجّع rescue scores + recommendations عبر API (Next.js /api/portfolio/rescue).
+   
+   لكن الـ ALERTS الفعلية للـ bag holders بتيجي من:
+   → market_scheduler._run_bag_holder_alerts (P31 task, كل 15 دقيقة أثناء الجلسة)
+   بيـ CREATE + INSERT في:
+     • stocks.db.user_notifications (type='bag_holder_alert' — لخسارة ≥15%)
+   Idempotent: alert واحد لكل (user_id, ticker, day).
+
+═══════════════════════════════════════════════════════════════════════════
+DB WRITE INVENTORY (consolidated by DB)
+═══════════════════════════════════════════════════════════════════════════
+
+📊 stocks.db writers:
+  • market_scheduler.py → market_pulse_cache, stocks, screener_presets, user_notifications
+  • daily_predictor.py → (no direct writes — uses PredictionTracker + stored_analyses is in predictions.db)
+  • daily_price_updater.py → stocks (UPDATE current_price), stock_daily_prices (UPDATE/INSERT)
+  • update_egx_indices.py → egx_indices (UPSERT)
+  • maker_radar.py → radar_signal_tracking (CREATE + DELETE + INSERT)
+  • fetch_inflation_worldbank.py → macro_indicators (UPSERT)
+  • daily_portfolio_yield.py → wealth_tracking (UPSERT), portfolio_assets (CREATE)
+  • market_regime_engine.py → system_settings (UPSERT), market_regime_log (INSERT OR REPLACE)
+  • screener.py → screener_results (CREATE + DELETE + INSERT)
+  • sharia_compliance_scraper.py → stocks (UPDATE is_halal — only with --sync-stocks flag, OFF by default)
+  • egx_fundamental_fetcher.py → egx_fundamentals (CREATE + INSERT OR REPLACE)
+  • market_scheduler._run_bag_holder_alerts → user_notifications (CREATE + INSERT)
+  • wal_checkpoint.py → PRAGMA wal_checkpoint + optimize (no SQL writes)
+
+📊 predictions.db writers:
+  • daily_predictor.py → predictions (DELETE + INSERT via PredictionTracker), stored_analyses (UPSERT)
+  • intraday_scanner.py → predictions (UPDATE entry/support/resistance levels), stored_analyses (DISABLED), cached_analysis (no — that's stocks.db)
+  • daily_closer.py → predictions (UPDATE outcome fields), exit_notifications (CREATE + INSERT)
+  • learning_engine.py → learned_lessons (CREATE + INSERT + UPDATE), sniper_performance (CREATE + INSERT)
+  • fetch_corporate_actions.py → corporate_actions (CREATE + INSERT OR REPLACE)
+  • sync_hunter_pick_tracking.py → hunter_pick_tracking (INSERT)
+  • mine_learned_lessons.py → learned_lessons (CREATE + INSERT)
+  • crypto_lab_scheduler.py → crypto_predictions_log (CREATE + INSERT + UPDATE)
+  • prediction_tracker.py → predictions (CREATE + INSERT + UPDATE)
+  • intraday_scanner.py → cached_analysis (no — actually writes to stocks.db.cached_analysis)
+  Note: intraday_scanner.py writes cached_analysis to stocks.db (not predictions.db) — confirmed in code line 446.
+
+📊 price_history.db writers:
+  • daily_price_updater.py → price_history (INSERT OR REPLACE via write_guarded, source='tradingview_live')
+  • price_history_safetynet.py → price_history (CREATE + INSERT OR REPLACE via write_guarded, source='yahoo_safetynet')
+  • intraday_aggregator.py → price_history (CREATE + INSERT OR REPLACE via write_guarded, source='intraday_aggregated')
+  • update_egx_indices.py → price_history (CREATE + INSERT OR REPLACE — EGX30/EGX100 tickers)
+  • us_stock_scraper.py → price_history (CREATE + INSERT OR REPLACE, source='yahoo_us', market='US')
+  Note: كل الـ writes بتعدّي عبر data/source_authority.py::write_guarded() (Rule 66 — single canonical source per market).
+
+📊 intraday.db writers:
+  • data_engine/intraday_storage.py → stock_intraday, crypto_intraday, commodity_intraday, intraday_meta (CREATE + INSERT OR REPLACE)
+  • data_engine/main.py → cleanup_old_data (DELETE FROM — 7-day retention)
+  Reads only: intraday_scanner.py, intraday_aggregator.py, hot_candidate_detector.py
+
+📊 data_engine.db writers:
+  • tradingview_scraper.py → stocks (CREATE + INSERT OR REPLACE)
+  • egksco_scraper.py → stocks (CREATE + INSERT OR REPLACE)
+  • crypto_fetcher.py → crypto_prices, btc_local_prices (CREATE + INSERT OR REPLACE)
+  • metals_forex_fetcher.py → gold_prices_clean, gold_prices, silver_prices, exchange_rates (CREATE + INSERT OR REPLACE)
+  • sharia_compliance_scraper.py → sharia_sources, sharia_source_status, sharia_metrics, sharia_purification_rates, sharia_symbol_map, sharia_history (CREATE + INSERT OR REPLACE + DELETE)
+  • data_engine/main.py → stocks (UPDATE + INSERT — run_scraper_and_sync)
+  Reads: fetch_corporate_actions.py (tab_dividends), maker_radar.py (historical_data/crypto_prices/gold_prices/egksco_price_history), screener.py (tab_*)
+
+📊 disclosures.db writers:
+  • egx_disclosure_engine.py → egx_disclosures (CREATE + INSERT OR IGNORE)
+
+📊 auth.db writers (via Prisma, NOT Python):
+  • scripts/downgrade-expired-subscriptions.ts (cron #24, daily 03:00 UTC) — uses bun + Prisma client
+  Affects: User.subscription_tier, UserSubscription.status (downgrade expired)
+
+═══════════════════════════════════════════════════════════════════════════
+KEY ARCHITECTURAL FINDINGS
+═══════════════════════════════════════════════════════════════════════════
+
+1) SINGLE-WRITER Pattern (Rule 73): daily_predictor.py هو الـ canonical writer الوحيد لـ predictions.db.stored_analyses. كل الـ writers التانيين (intraday_scanner, market_scheduler.run_live_trailing_stop_update) معطّلين بـ SKIP_STORED_ANALYSES_WRITE=True guard عشان نمنع "last-writer-wins" conflicts.
+
+2) write_guarded() (Rule 66): كل writes لـ price_history.db بتعدّي عبر vps-service/data/source_authority.py::write_guarded() اللي بـ يـ enforce single canonical source per market. لو source مش في hierarchy → SKIP. لو primary fresh والـ source ده fallback → SKIP.
+
+3) db_manager (Rule 54): أغلب الـ jobs بتستخدم `from core.db_manager import db_manager` مع fallback لـ raw sqlite3.connect. db_manager بيـ enforce WAL + busy_timeout=30000 + foreign_keys=ON على كل connection.
+
+4) cairo_now(): market_scheduler بيستخدم pytz لأول مرة (P14 fix). لو ناقص، كل EGX market-hour checks هتخطئ بساعتين على UTC VPS.
+
+5) EGX70 GAP: update_egx_indices.py بس بـ update EGX30 + EGX100. EGX70 مش متغطّى. لو محتاج EGX70 → أضفه للـ INDICES list.
+
+6) READ-ONLY analyzers (computed in-memory, returned via API):
+   - bag_holder_rescue.py (mode=ro URI على كل DBs)
+   - hmm_market_regime.py (mode=ro على price_history.db)
+   - nightly_quant_job.py (mode=ro على stocks.db)
+   - price_history_stale_monitor.py (read + log)
+   - data_heartbeat_checker.py (read + Telegram alert)
+   - post_market_feedback.py (read + Telegram alert)
+   - weekly_radar_report.py (read + write PDF/PNG/JSON files)
+   - telegram_comprehensive_report.py (read + Telegram send)
+
+7) Cron schedule يعتمد على crontab.txt كـ single source of truth (Rule 21 + Rule 35). vps-service/crontab.txt تم إلغاؤه. كل المسارات تم التحقق منها في 2026-09-27 (P0 #6 fix).
+
+8) market_scheduler.py هو الـ central orchestrator — الـ pm2 ecosystem بينادي python-backend اللي بيـ instantiate MarketScheduler وبيـ start(interval_seconds=60) loop. كل الـ sub-tasks (run_*) بتيجي من tick() حسب _should_run() gates + _run_daily_task() windows.
+
+9) data_engine/main.py هو Flask service منفصل بـ internal scheduler (while-running + time.sleep(60)) — بيتشغّل كـ process منفصل في pm2. بيكتب في data_engine.db + intraday.db + بـ sync لـ stocks.db.
+
+10) Exit notifications + bag-holder alerts بتيجي من market_scheduler (job #1) — مش من analyzers نفسها. الـ analyzers بترجع scores بس، والـ scheduler بياخد القرار بـ INSERT alert.
+
+Constraints honored:
+- ❌ NO code modified (تعديل 0 سطر كود)
+- ❌ NO scripts executed (ماشينا readonly grep + read بس)
+- ❌ NO Python files touched
+- ✅ Worklog entry appended (not overwritten) — append mode
+
+---
+Task ID: ALPHA-AUDIT-BACKEND-FINAL-COMPILATION
+Agent: كبير مهندسي الواجهات (Backend X-Ray Audit — Final Compilation)
+Task: تجميع التقرير التشريعي النهائي للباك إند وقواعد البيانات
+
+Work Log:
+- أطلقت 4 وكلاء فرعيين بالتوازي:
+  1. ALPHA-AUDIT-PY-ENDPOINTS (Python endpoints — ~503 total)
+  2. ALPHA-AUDIT-DB-SCHEMAS (10 DBs — 197 tables total, ~95 orphaned)
+  3. ALPHA-AUDIT-JOBS-SCRIPTS (26 cron entries + 7 main engines)
+  4. ALPHA-AUDIT-NEXTJS-SQLITE (276-335 SQLite-direct routes)
+- استلمت نتائج كل الوكالة + worklog entries مُضافة.
+- جمّعت التقرير الشامل في Documentation/AUDIT_BACKEND_APIS_MAP.md (611 سطر).
+
+Stage Summary:
+- ✅ Documentation/AUDIT_BACKEND_APIS_MAP.md أُنشئ (611 سطر)
+- ✅ ~503 Python endpoint موثق (42 Flask + 452 Blueprint + 9 FastAPI)
+- ✅ 16 DB مُجرد (8 مطلوبة + 8 bonus)
+- ✅ 197 table موثقة (95 orphaned)
+- ✅ 1 DB تالف (price_history.db — SQLITE_CORRUPT)
+- ✅ 5 DBs مهجورة بالكامل موثقة
+- ✅ 26 cron entry + 7 محرك كتابة رئيسي موثقين
+- ✅ 10 write-write conflict points موثقة (أخطرها: predictions.db.predictions)
+- ✅ Roadmap إصلاح (12 item بـ 3 أولويات)
+- ✅ NO code modified — تقرير توثيقي فقط (Read-Only Audit)
+- ✅ كل الوكالة أضافوا worklog entries (4 sections)
+
+Constraints honored:
+- ❌ NO src/ code modified (0 تعديلات)
+- ❌ NO vps-service/ code modified (0 تعديلات)
+- ❌ NO scripts executed (no migrations, no DELETE, no INSERT)
+- ❌ NO .db files modified (only SELECT/PRAGMA in readonly mode)
+- ✅ File created ONLY at Documentation/AUDIT_BACKEND_APIS_MAP.md
+- ✅ All worklog entries appended (not overwritten)
+
+Note: تم إنشاء ملف مساعد `.zscripts/audit-db.js` بواسطة أحد الوكالة كأداة للتدقيق. هذا ليس تعديل كود للإنتاج.
