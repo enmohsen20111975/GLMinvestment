@@ -381,22 +381,36 @@ def _get_recent_news(ticker: str, name_ar: str = '', limit: int = 5) -> List[Dic
 
 
 def _get_predictions(ticker: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """آخر `limit` توقع للسهم من predictions.db (aiPrediction) مع outcome."""
+    """آخر `limit` توقع للسهم من predictions.db (الجدول الكنسي predictions ثم aiPrediction) مع outcome."""
     conn = _connect(PREDICTIONS_DB)
     if not conn:
         return []
     try:
         cur = conn.cursor()
+        # أولاً: فحص جدول predictions الحي (Single Source of Truth)
         cur.execute(
-            "SELECT stock_symbol, stock_name_ar, signal_type, entry_price, "
-            "target_price, stop_loss, regime, prediction_date, status, "
-            "final_price, profit_loss_percent, hit_target, hit_stop_loss, "
-            "days_to_target, market, created_at, updated_at "
-            "FROM aiPrediction WHERE stock_symbol = ? "
-            "ORDER BY prediction_date DESC, created_at DESC LIMIT ?",
+            "SELECT ticker AS stock_symbol, signal AS signal_type, entry_price, "
+            "target_price, stop_loss, prediction_date, status, "
+            "exit_price AS final_price, actual_return AS profit_loss_percent, "
+            "hit_target, hit_stop AS hit_stop_loss, master_score, market, created_at, updated_at "
+            "FROM predictions WHERE ticker = ? "
+            "ORDER BY prediction_date DESC, id DESC LIMIT ?",
             (ticker, limit)
         )
         rows = cur.fetchall()
+
+        # ثانياً: Fallback لجدول aiPrediction إذا كان جدول predictions لا يحتوي على السهم
+        if not rows:
+            cur.execute(
+                "SELECT stock_symbol, stock_name_ar, signal_type, entry_price, "
+                "target_price, stop_loss, regime, prediction_date, status, "
+                "final_price, profit_loss_percent, hit_target, hit_stop_loss, "
+                "days_to_target, market, created_at, updated_at "
+                "FROM aiPrediction WHERE stock_symbol = ? "
+                "ORDER BY prediction_date DESC, created_at DESC LIMIT ?",
+                (ticker, limit)
+            )
+            rows = cur.fetchall()
         results: List[Dict[str, Any]] = []
         for r in rows:
             d = _row_to_dict(r)
@@ -411,9 +425,9 @@ def _get_predictions(ticker: str, limit: int = 5) -> List[Dict[str, Any]]:
             elif status == 'CLOSED':
                 outcome = 'CLOSED'
                 outcome_ar = 'مُغلقة'
-            elif status == 'PENDING':
-                outcome = 'PENDING'
-                outcome_ar = 'قيد التنفيذ'
+            elif status in ('PENDING', 'ACTIVE'):
+                outcome = 'ACTIVE' if status == 'ACTIVE' else 'PENDING'
+                outcome_ar = 'نشطة قيد المتابعة ⏳' if status == 'ACTIVE' else 'قيد التنفيذ'
             else:
                 outcome = status or 'UNKNOWN'
                 outcome_ar = 'غير معروف'
