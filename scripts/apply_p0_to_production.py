@@ -287,6 +287,46 @@ def step4_isolate_bad_dbs(dry_run: bool = False) -> bool:
 
 
 # ============================================================================
+# Step 5: Multi-Market Institutional Scan
+# ============================================================================
+def step5_multi_market_scan(dry_run: bool = False) -> bool:
+    """تشغيل محرك المسح المؤسسي متعدد الأسواق."""
+    log("Step 5: محرك المسح المؤسسي متعدد الأسواق")
+    scan_script = PROJECT_ROOT / "scripts" / "multi_market_institutional_scan.py"
+    if not scan_script.exists():
+        log(f"scan script غير موجود: {scan_script}", "ERROR")
+        return False
+
+    cmd = [sys.executable, str(scan_script)]
+    if not dry_run:
+        cmd.append("--execute")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.split('\n'):
+                if 'الملخص' in line or 'فرص مقبولة' in line or 'كتابة' in line or 'متوسط' in line:
+                    log(f"  {line.strip()}")
+            log("Step 5 complete — المسح المؤسسي تم", "OK")
+            return True
+        else:
+            log(f"Step 5 failed (exit {result.returncode}): {result.stderr[-300:]}", "ERROR")
+            return False
+    except subprocess.TimeoutExpired:
+        log("Step 5 timeout (300s)", "ERROR")
+        return False
+    except Exception as e:
+        log(f"Step 5 failed: {e}", "ERROR")
+        return False
+
+
+# ============================================================================
 # Verification
 # ============================================================================
 def verify_all() -> bool:
@@ -385,6 +425,8 @@ def main() -> int:
     if not args.skip_seed:
         steps.append(("Step 3: Seed intraday", lambda: step3_seed_intraday(args.dry_run)))
     steps.append(("Step 4: Isolate bad DBs", lambda: step4_isolate_bad_dbs(args.dry_run)))
+    # Step 5: Multi-market institutional scan (Task BRAVO-MULTI-MARKET)
+    steps.append(("Step 5: Multi-market scan", lambda: step5_multi_market_scan(args.dry_run)))
 
     results = {}
     for name, func in steps:
