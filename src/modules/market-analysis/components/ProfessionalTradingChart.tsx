@@ -219,6 +219,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   const target2 = pred?.target_price_2 ?? decision?.risk_profile?.tp2 ?? data?.risk?.target_2 ?? null;
   const rr = pred?.risk_reward ?? decision?.risk_profile?.rr_ratio_tp1 ?? data?.risk?.rr_ratio ?? null;
   const techScore = masterScore; // UNIFY-FIX: tech_score = master_score (canonical)
+  // ALPHA-P0: Only show trade plans for genuine BUY signals (not HOLD/WAIT/SELL/AVOID)
+  const isBuySignal = signalFinal?.toUpperCase().includes('BUY') || signalFinal?.toUpperCase().includes('ACCUMULATE');
 
   // السعر الحالي
   const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
@@ -399,7 +401,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {signalAr}
             </Badge>
 
-            {/* مستويات الدخول/الوقف/الهدف/R:R — أرقام بارزة ثابتة */}
+            {/* مستويات الدخول/الوقف/الهدف/R:R — أرقام بارزة ثابتة
+                ALPHA-P0: تُعرض فقط للإشارات الصاعدة الحقيقية (BUY/ACCUMULATE).
+                للإشارات الأخرى (HOLD/WAIT/SELL/AVOID) تُخفى تماماً. */}
+            {isBuySignal ? (
             <div className="flex items-center gap-2 text-xs">
               {entry !== null && entry > 0 && (
                 <div className="flex flex-col items-center">
@@ -432,6 +437,12 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                 </div>
               )}
             </div>
+            ) : (
+              <div className="p-2 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً</span>
+              </div>
+            )}
           </div>
 
           {/* يسار: الأدوات */}
@@ -556,8 +567,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
       {/* ════════════════════════════════════════════════════════════════════════
           §4 — ملخص خطة الصفقة (Trade Plan Card)
+          ALPHA-P0: تُعرض فقط للإشارات الصاعدة (BUY/ACCUMULATE).
+          للإشارات الأخرى: تحذير مؤسسي أنيق بدلاً من خطة وهمية.
       ════════════════════════════════════════════════════════════════════════ */}
-      {(entry !== null || target1 !== null || stop !== null) && (
+      {isBuySignal && (entry !== null || target1 !== null || stop !== null) ? (
         <div className="px-4 py-3 border-t border-border">
           <div className="rounded-xl border border-border bg-muted/30 p-3">
             <div className="flex items-center justify-between mb-2">
@@ -588,7 +601,14 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             )}
           </div>
         </div>
-      )}
+      ) : !isBuySignal ? (
+        <div className="px-4 py-3 border-t border-border">
+          <div className="p-3 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي.</span>
+          </div>
+        </div>
+      ) : null}
 
       {/* ════════════════════════════════════════════════════════════════════════
           §5 — لماذا هذا القرار؟ (الأدلة)
@@ -682,9 +702,16 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           §7 — أدوات إضافية (Deal Advisor + AlertPanel)
       ════════════════════════════════════════════════════════════════════════ */}
       <CardContent className="pt-3 border-t border-border">
+        {/* ALPHA-P0: تمرير livePrice إذا لم يتوفر entryPrice من الـ prefill */}
+        {!isBuySignal && (
+          <div className="mb-2 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+            <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+            تنبيه: السهم حالياً خارج نطاق الشراء المؤسسي الآمن
+          </div>
+        )}
         <DealAdvisorPanel
           ticker={ticker}
-          initialEntryPrice={dealAdvisorPrefill?.entryPrice}
+          initialEntryPrice={dealAdvisorPrefill?.entryPrice ?? (livePrice > 0 ? livePrice : undefined)}
           initialEntryQty={dealAdvisorPrefill?.entryQty}
         />
       </CardContent>
