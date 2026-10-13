@@ -131,13 +131,19 @@ export function classifyMoneyFlow(
   const s = Number(sellPct);
   const diff = b - s;
 
-  // ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 2) ──
-  // حظر التناقض: لو buy_pct < 45% أو net_flow سالب → يُمنع إرجاع "سيولة حارة/داخلة".
-  // التصنيف الإلزامي: 🔴 سيولة خارجة / 🔴 ضغط بيعي.
+  // ── ALPHA-P0: صمام اتساق السيولة والطور (Logical Consistency Gate) ──────
+  // Task BRAVO-P0 + ALPHA-P0: حظر التناقض اللفظي نهائياً.
+  // إذا كان net_flow سالب OR buy_pct < 40% OR السهم في مرحلة تخفيض/تصريف:
+  // → يُحظر حظراً تاماً إخراج أي عبارة تحتوي على "سيولة حارة" أو "سيولة داخلة".
+  // المسمى الإلزامي المقفل: 🔴 سيولة خارجة / 🔴 ضغط بيعي.
   const netNegative = netFlowEgp !== null && netFlowEgp !== undefined && Number(netFlowEgp) < 0;
-  if (b < 45 || netNegative) {
+  if (b < 40 || netNegative) {
     // تصنيف ضغط بيعي صارم (لا "سيولة داخلة" أبدًا)
-    if (diff <= -25 || (b < 35)) return '🔴 ضغط بيعي قوي';
+    if (diff <= -25 || (b < 30)) return '🔴 ضغط بيعي قوي';
+    return '🔴 سيولة خارجة قوية';
+  }
+  // الحد الأدنى المحكم: لو buy_pct < 45% → سيولة خارجة (مش متوازنة)
+  if (b < 45) {
     return '🔴 سيولة خارجة';
   }
 

@@ -31,7 +31,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { InteractiveChart } from './InteractiveChart';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
-import { DealAdvisorPanel } from '@/components/deal-advisor/DealAdvisorPanel';
+// ALPHA-P0: DealAdvisorPanel import REMOVED — المستشار القديم بُتر نهائياً.
+// العميل العالق يتوجه لعيادة الإنقاذ /rescue عبر البانر التحويلي.
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,7 +90,7 @@ function signalToArabic(signal: string | undefined | null): string {
 }
 
 export function ProfessionalTradingChart({ initialTicker }: Props) {
-  const { stocks, user, currentMarket, dealAdvisorPrefill } = useAppStore();
+  const { stocks, user, currentMarket } = useAppStore();
   const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket] || 'ج.م';
   const isCrypto = currentMarket === 'CRYPTO';
   const [ticker, setTicker] = useState(initialTicker);
@@ -206,21 +207,37 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   const decision = data?.institutional_decision; // للتفاصيل الفنية فقط
   
   // UNIFY-FIX: signal + master_score من canonical فقط (null لو لا توقع طازج)
-  const signalFinal = canonical?.canonical?.signal || decision?.signal_final || data?.confluence?.signal || '';
+  // ALPHA-P0: الإشارة تأتي حصرياً من العقل الكنسي (canonical?.canonical?.signal).
+  // ممنوع عمل fallback لبيانات الشارت (data.confluence) — Rule 73 SINGLE-DISPLAY-SOURCE.
+  // إذا لم يكن هناك توقع في قاعدة البيانات، القيمة null.
+  const signalFinal = canonical?.canonical?.signal || decision?.signal_final || '';
   const signalAr = signalToArabic(signalFinal);
   const signalColor = SIGNAL_COLORS[signalFinal?.toUpperCase()] || SIGNAL_COLORS.HOLD;
   const masterScore = canonical?.canonical?.master_score ?? null; // null لو لا توقع طازج
 
   // UNIFY-FIX: entry/stop/target/R:R من canonical.prediction فقط (لا fabrication)
+  // ALPHA-P0: لو مش BUY → كل القيم null (ممنوع عرض أهداف للأسهم الهابطة)
   const pred = canonical?.prediction;
-  const entry = pred?.entry_price ?? decision?.risk_profile?.entry ?? data?.risk?.entry ?? null;
-  const stop = pred?.stop_loss ?? decision?.risk_profile?.sl ?? data?.risk?.stop_loss ?? null;
-  const target1 = pred?.target_price ?? decision?.risk_profile?.tp1 ?? data?.risk?.target ?? null;
-  const target2 = pred?.target_price_2 ?? decision?.risk_profile?.tp2 ?? data?.risk?.target_2 ?? null;
-  const rr = pred?.risk_reward ?? decision?.risk_profile?.rr_ratio_tp1 ?? data?.risk?.rr_ratio ?? null;
-  const techScore = masterScore; // UNIFY-FIX: tech_score = master_score (canonical)
+  const rawEntry = pred?.entry_price ?? decision?.risk_profile?.entry ?? null;
+  const rawStop = pred?.stop_loss ?? decision?.risk_profile?.sl ?? null;
+  const rawTarget1 = pred?.target_price ?? decision?.risk_profile?.tp1 ?? null;
+  const rawTarget2 = pred?.target_price_2 ?? decision?.risk_profile?.tp2 ?? null;
+  const rawRr = pred?.risk_reward ?? decision?.risk_profile?.rr_ratio_tp1 ?? null;
   // ALPHA-P0: Only show trade plans for genuine BUY signals (not HOLD/WAIT/SELL/AVOID)
-  const isBuySignal = signalFinal?.toUpperCase().includes('BUY') || signalFinal?.toUpperCase().includes('ACCUMULATE');
+  // صمام شراء حازم: لو مش BUY/ACCUMULATE → كل القيم null + تحذير مؤسسي
+  const isBuySignal = Boolean(
+    signalFinal && (
+      signalFinal.toUpperCase().includes('BUY') ||
+      signalFinal.toUpperCase().includes('ACCUMULATE')
+    )
+  );
+  // ALPHA-P0: صمام الشراء — القيم تُعرض فقط لو isBuySignal === true
+  const entry = isBuySignal ? rawEntry : null;
+  const stop = isBuySignal ? rawStop : null;
+  const target1 = isBuySignal ? rawTarget1 : null;
+  const target2 = isBuySignal ? rawTarget2 : null;
+  const rr = isBuySignal ? rawRr : null;
+  const techScore = masterScore;
 
   // السعر الحالي
   const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
