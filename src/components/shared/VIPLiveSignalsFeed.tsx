@@ -20,8 +20,9 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import {
   Zap, Target, ShieldAlert, TrendingUp, TrendingDown,
-  ArrowRight, Loader2, RefreshCw, Activity,
+  ArrowRight, Loader2, RefreshCw, Activity, Copy, Check, Flame,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LiveSignal {
   ticker: string;
@@ -42,6 +43,8 @@ interface LiveSignal {
   current_price: number | null;
   upside_pct: number | null;
   downside_pct: number | null;
+  catalyst?: string | null;          // T-ALPHA-A17: الدافع الفني لكل صفقة
+  analysis_reason?: string | null;   // T-ALPHA-A17: سبب الدخول من Python
 }
 
 interface FeedResponse {
@@ -323,11 +326,97 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
                     <span className="text-muted-foreground/60">{sig.prediction_date}</span>
                   )}
                 </div>
+
+                {/* T-ALPHA-A17: الدافع الفني (Catalyst) — سبب الدخول البارز */}
+                {(() => {
+                  const catalyst = sig.catalyst || sig.analysis_reason;
+                  if (!catalyst) return null;
+                  return (
+                    <div className="flex items-start gap-1.5 rounded-md bg-amber-500/5 border border-amber-500/20 p-1.5">
+                      <Flame className="w-3 h-3 text-amber-500 shrink-0 mt-px" />
+                      <span className="text-[10px] text-amber-700 dark:text-amber-300 leading-relaxed flex-1">
+                        {catalyst}
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* T-ALPHA-A17: زر نسخ تفاصيل التوصية */}
+                <CopyRecommendationButton signal={sig} />
               </CardContent>
             </Card>
           );
         })}
       </div>
     </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// T-ALPHA-A17: CopyRecommendationButton — ينسخ رسالة تليجرام/واتساب جاهزة
+// ════════════════════════════════════════════════════════════════════════════
+function CopyRecommendationButton({ signal }: { signal: LiveSignal }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // منع فتح stock-detail
+
+    const lines: string[] = [];
+    lines.push('📊 توصية استثمارية — منصة دليل الاستثمار');
+    lines.push('━━━━━━━━━━━━━━━━━━━━');
+    lines.push(`السهم: ${signal.ticker}${signal.name_ar ? ` (${signal.name_ar})` : ''}`);
+    lines.push(`الإشارة: ${signal.signal_ar || signal.signal || '—'}`);
+    if (signal.entry_price != null) lines.push(`💰 سعر الدخول: ${fmtPrice(signal.entry_price)} ج.م`);
+    if (signal.target_price != null) {
+      lines.push(`🎯 الهدف الأول: ${fmtPrice(signal.target_price)} ج.م${signal.upside_pct != null ? ` (+${signal.upside_pct.toFixed(1)}%)` : ''}`);
+    }
+    if (signal.target_price_2 != null && signal.target_price_2 > 0) {
+      lines.push(`🎯 الهدف الثاني: ${fmtPrice(signal.target_price_2)} ج.م`);
+    }
+    if (signal.stop_loss != null) {
+      lines.push(`🛑 وقف الخسارة: ${fmtPrice(signal.stop_loss)} ج.م${signal.downside_pct != null ? ` (${signal.downside_pct.toFixed(1)}%)` : ''}`);
+    }
+    if (signal.risk_reward != null && Number(signal.risk_reward) > 0) {
+      lines.push(`⚖️ نسبة العائد/المخاطرة: 1:${Number(signal.risk_reward).toFixed(1)}`);
+    }
+    if (signal.confidence != null && Number(signal.confidence) > 0) {
+      lines.push(`🔐 نسبة الثقة: ${Math.round(Number(signal.confidence))}%`);
+    }
+    const catalyst = signal.catalyst || signal.analysis_reason;
+    if (catalyst) lines.push(`🔥 الدافع الفني: ${catalyst}`);
+    lines.push('━━━━━━━━━━━━━━━━━━━━');
+    lines.push('📌 منصة GLM Investment — نظام كشف السيولة الذكية');
+    lines.push('⚠️ إخلاء مسؤولية: التوصيات للأغراض التعليمية فقط');
+
+    const text = lines.join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success('تم نسخ تفاصيل التوصية', { duration: 2000 });
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error('تعذّر نسخ التوصية');
+    });
+  }, [signal]);
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleCopy}
+      className="w-full h-7 text-[10px] gap-1.5 mt-1"
+    >
+      {copied ? (
+        <>
+          <Check className="w-3 h-3 text-emerald-500" />
+          <span className="text-emerald-500">تم النسخ</span>
+        </>
+      ) : (
+        <>
+          <Copy className="w-3 h-3" />
+          <span>📋 نسخ تفاصيل التوصية</span>
+        </>
+      )}
+    </Button>
   );
 }

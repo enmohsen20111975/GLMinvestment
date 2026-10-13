@@ -23,6 +23,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { VIPLiveSignalsFeed } from '@/components/shared/VIPLiveSignalsFeed';
+import { AuditedPerformanceView } from '@/components/shared/AuditedPerformanceView';
 import type { MarketType } from '@/lib/store';
 
 // Lazy-load the heavy sub-views so each ships as its own JS chunk.
@@ -92,8 +93,8 @@ export function UnifiedPredictionsTab({ market }: UnifiedPredictionsTabProps) {
         {/* T-ALPHA-A15: الصفقات الحية — VIP Live Signals Feed (replaces PersonaTab) */}
         {subView === 'live' && <VIPLiveSignalsFeed market={market} />}
 
-        {/* T-ALPHA-A12: الأداء الموثق — Audited Performance (closed trades only) */}
-        {subView === 'performance' && <PredictionTrackingDashboard market={market} />}
+        {/* T-ALPHA-A17: الأداء الموثق — Audited Performance View (closed trades + stats banner) */}
+        {subView === 'performance' && <AuditedPerformanceView market={market} />}
 
         {/* T-ALPHA-A12: دوران القطاعات — Sectors Tracking (separated from predictions) */}
         {subView === 'sectors' && <SectorTrackingTab market={market} />}
