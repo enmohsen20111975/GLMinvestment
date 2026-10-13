@@ -244,8 +244,8 @@ export function insertPriceHistory(
   }
 ): number {
   const insertStmt = db.prepare(`
-    INSERT INTO stock_price_history (ticker, date, open_price, high_price, low_price, close_price, volume, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO stock_daily_prices (ticker, price_date, open_price, high_price, low_price, close_price, volume)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `) as { run: (...args: unknown[]) => { changes: number; lastInsertRowid: number } };
 
   try {
@@ -278,7 +278,7 @@ export function priceHistoryExists(
   date: string
 ): boolean {
   const stmt = db.prepare(
-    'SELECT 1 FROM stock_price_history WHERE ticker = ? AND date = ? LIMIT 1'
+    'SELECT 1 FROM stock_daily_prices WHERE ticker = ? AND price_date = ? LIMIT 1'
   ) as { get: (...args: unknown[]) => unknown };
   const row = stmt.get(ticker.toUpperCase(), date);
   return row !== undefined;
@@ -301,8 +301,8 @@ export function upsertPriceHistory(
   }
 ): { inserted: boolean; id: number } {
   const insertStmt = db.prepare(`
-    INSERT OR IGNORE INTO stock_price_history (ticker, date, open_price, high_price, low_price, close_price, volume, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT OR IGNORE INTO stock_daily_prices (ticker, price_date, open_price, high_price, low_price, close_price, volume)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `) as { run: (...args: unknown[]) => { changes: number; lastInsertRowid: number } };
 
   const result = insertStmt.run(

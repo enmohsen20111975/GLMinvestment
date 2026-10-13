@@ -23,7 +23,7 @@ from typing import Optional, Dict, List
 logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-PRICE_HISTORY_DB = os.environ.get('PRICE_HISTORY_DB', str(_PROJECT_ROOT / 'db' / 'price_history.db'))
+# Task P0-PRODUCTION: تحويل الكتابة من price_history.db التالفة إلى stocks.db.stock_daily_prices
 STOCKS_DB = os.environ.get('STOCKS_DB', str(_PROJECT_ROOT / 'db' / 'stocks.db'))
 
 
@@ -33,7 +33,7 @@ class EGXIndicesUpdater:
     INDICES = ['EGX30', 'EGX70', 'EGX100']
 
     def __init__(self):
-        self.price_history_db = PRICE_HISTORY_DB
+        # Task P0: الكتابة الآن في stocks.db.stock_daily_prices (وليس price_history.db)
         self.stocks_db = STOCKS_DB
 
     def update_all(self) -> Dict[str, Dict]:
@@ -155,35 +155,20 @@ class EGXIndicesUpdater:
             return []
 
     def _store_data(self, ticker: str, data: List[Dict]) -> int:
-        """تخزين البيانات في price_history.db."""
+        """تخزين البيانات في stocks.db.stock_daily_prices (وليس price_history.db التالفة)."""
         if not data:
             return 0
 
-        conn = sqlite3.connect(self.price_history_db)
+        # Task P0: الكتابة في stock_daily_prices (الجدول الفيزيائي) وليس price_history (view)
+        conn = sqlite3.connect(self.stocks_db)
         inserted = 0
         try:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS price_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ticker TEXT NOT NULL,
-                    date TEXT NOT NULL,
-                    open_price REAL,
-                    high_price REAL,
-                    low_price REAL,
-                    close_price REAL,
-                    volume INTEGER DEFAULT 0,
-                    source TEXT DEFAULT 'auto_update',
-                    created_at TEXT DEFAULT (datetime('now')),
-                    UNIQUE(ticker, date)
-                )
-            """)
-
             for row in data:
                 try:
                     conn.execute("""
-                        INSERT OR REPLACE INTO price_history
-                        (ticker, date, open_price, high_price, low_price, close_price, volume, source)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'auto_update')
+                        INSERT OR REPLACE INTO stock_daily_prices
+                        (ticker, price_date, open_price, high_price, low_price, close_price, volume)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, (
                         ticker,
                         row.get('date'),
@@ -234,14 +219,15 @@ class EGXIndicesUpdater:
     def get_status(self) -> Dict:
         """حالة المؤشرات."""
         status = {}
-        conn = sqlite3.connect(self.price_history_db)
+        # Task P0: قراءة من stock_daily_prices (وليس price_history.db)
+        conn = sqlite3.connect(self.stocks_db)
         for ticker in self.INDICES:
             try:
                 count = conn.execute(
-                    "SELECT COUNT(*) FROM price_history WHERE ticker = ?", (ticker,)
+                    "SELECT COUNT(*) FROM stock_daily_prices WHERE ticker = ?", (ticker,)
                 ).fetchone()[0]
                 last = conn.execute(
-                    "SELECT date FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 1",
+                    "SELECT price_date FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT 1",
                     (ticker,)
                 ).fetchone()
                 status[ticker] = {
