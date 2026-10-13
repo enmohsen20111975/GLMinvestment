@@ -125,7 +125,7 @@ interface StockDNA {
   confidence: string;
 }
 
-interface FullAnalysisResponse {
+export interface FullAnalysisResponse {
   success?: boolean;
   error?: string;
   ticker: string;

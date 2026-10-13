@@ -1946,10 +1946,21 @@ def chart_full_analysis():
                 confluence['signal_color'] = '#ef4444'
                 adjustment_reason = 'وضع المالك: مؤشرات السهم سلبية للغاية وهناك ضغط بيعي. يُنصح بتفعيل وقف الخسارة أو التخفيف لحماية رأس المال.'
         else:
+            is_bear_downtrend = (market_regime.get('regime') == 'bear_trend') or (last_sma50 and cp < last_sma50 * 0.95)
             if last_rsi > 75:
                 confluence['signal'] = 'ابتعد / تشبع شرائي ⛔'
                 confluence['signal_color'] = '#ef4444'
                 adjustment_reason = f'وضع المشتري: السهم صعد بقوة وهو الآن في منطقة تشبع شرائي (RSI={last_rsi:.1f}). الدخول الآن يعتبر مخاطرة عالية، يُفضل انتظار تصحيح سعري.'
+            elif is_bear_downtrend:
+                # صمام أمان حاسم: يُحظر إعطاء إشارة شراء أو دخول لسهم يتداول في مسار هابط أو تحت متوسط 50
+                if score >= 65:
+                    confluence['signal'] = 'محايد - ارتداد في مسار هابط ⏳'
+                    confluence['signal_color'] = '#eab308'
+                    adjustment_reason = 'وضع المشتري: السهم يتداول تحت متوسط 50 يوماً في مسار هابط عام. أي صعود حالي يعتبر ارتداداً مضاربياً عالي المخاطر — الأفضل التريث حتى تأكيد اختراق المسار الهابط واستعادة القوة.'
+                else:
+                    confluence['signal'] = 'خطر - ابتعد ❌'
+                    confluence['signal_color'] = '#ef4444'
+                    adjustment_reason = 'وضع المشتري: المسار العام هابط والمؤشرات سلبية جداً. لا تحاول التقاط السكين الساقطة، ابتعد تماماً عن السهم حالياً.'
             elif score >= 80:
                 confluence['signal'] = 'دخول فائق الأمان 🔥'
                 confluence['signal_color'] = '#22c55e'
@@ -2097,10 +2108,18 @@ def chart_full_analysis():
         t2 = round(t2, 4)
 
         # ---- R/R calculation ----
-        rr = round((t1 - entry) / (entry - sl), 2) if (entry - sl) > 0 else 0
-        risk = {'entry': round(entry, 4), 'target': t1, 'target_2': t2,
-                'stop_loss': sl, 'rr_ratio': rr, 'atr': round(safe_atr, 4),
-                'atr_pct': round(atr_pct, 2)}
+        _sig_str = confluence.get('signal', '')
+        _is_buy_act = ('شراء' in _sig_str or 'buy' in _sig_str.lower() or 'دخول' in _sig_str)
+        rr = round((t1 - entry) / (entry - sl), 2) if (_is_buy_act and (entry - sl) > 0) else 0
+        risk = {
+            'entry': round(entry, 4) if _is_buy_act else None,
+            'target': t1 if _is_buy_act else None,
+            'target_2': t2 if _is_buy_act else None,
+            'stop_loss': sl if _is_buy_act else None,
+            'rr_ratio': rr,
+            'atr': round(safe_atr, 4),
+            'atr_pct': round(atr_pct, 2)
+        }
 
         # =====================================================================
         # P0-KILLSWITCH-050: Target Validation Gate (منع الأهداف الخرافية)
@@ -2111,7 +2130,7 @@ def chart_full_analysis():
         _ks_is_buy = 'شراء' in _ks_signal or 'buy' in _ks_signal or 'دخول' in _ks_signal
         _ks_is_sell = 'بيع' in _ks_signal or 'sell' in _ks_signal or 'ابعد' in _ks_signal
 
-        if _ks_is_buy:
+        if _ks_is_buy and risk.get('entry') is not None and risk.get('target') is not None and risk.get('stop_loss') is not None:
             # target لازم يكون > entry
             if risk['target'] <= risk['entry']:
                 risk['target'] = round(risk['entry'] * 1.015, 4)
@@ -2124,7 +2143,7 @@ def chart_full_analysis():
             if risk['target_2'] <= risk['target']:
                 risk['target_2'] = round(risk['target'] * 1.05, 4)
                 logger.warning(f"[KILLSWITCH] {ticker}: target_2 was <= target! Fixed to {risk['target_2']}")
-        elif _ks_is_sell:
+        elif _ks_is_sell and risk.get('entry') is not None and risk.get('target') is not None and risk.get('stop_loss') is not None:
             # في البيع: target لازم يكون < entry
             if risk['target'] >= risk['entry']:
                 risk['target'] = round(risk['entry'] * 0.985, 4)
@@ -2135,8 +2154,11 @@ def chart_full_analysis():
                 logger.warning(f"[KILLSWITCH] {ticker}: stop_loss was <= entry for SELL! Fixed to {risk['stop_loss']}")
 
         # إعادة حساب R/R بعد الـ Kill Switch
-        _ks_denom = risk['entry'] - risk['stop_loss']
-        risk['rr_ratio'] = round((risk['target'] - risk['entry']) / _ks_denom, 2) if _ks_denom > 0 else 0
+        if risk.get('entry') is not None and risk.get('stop_loss') is not None and risk.get('target') is not None:
+            _ks_denom = risk['entry'] - risk['stop_loss']
+            risk['rr_ratio'] = round((risk['target'] - risk['entry']) / _ks_denom, 2) if _ks_denom > 0 else 0
+        else:
+            risk['rr_ratio'] = 0
 
         # =====================================================================
         # P16-DELAY-COMPENSATION: تعويض تأخير البيانات 5 دقايق (EGX intraday)

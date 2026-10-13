@@ -23,12 +23,9 @@ Endpoint:
 
 import os
 import sys as _sys
-import threading
-import time
-from collections import OrderedDict
 from pathlib import Path as _Path
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from flask import Blueprint, request, jsonify
 
@@ -145,7 +142,6 @@ def _row_to_dict(row) -> Dict[str, Any]:
         return dict(row)
     except Exception:
         return {}
-
 
 
 def _get_data_engine_scraped_info(ticker: str) -> Dict[str, Any]:
@@ -517,6 +513,54 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
     # Previously fabricated target as ref_high * 1.05 / current * 1.15.
     # Now: use the real 30-day high as the target (resistance ceiling),
     # or NULL when no 30-day high data. Downstream skips risk_reward if None.
+    #
+    # ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 1 — Owner Directive) ──
+    # Falling Knife Guard: لو السهم في مسار هابط (price < MA50 - 5% + MA50 < MA200)
+    # → يُمنع اعتبار القمم السابقة كـ target_price للشراء.
+    # القمم = مقاومات تصريف (Resistance / Exit Zones)، NOT أهداف ربح.
+    ma50 = _safe_float(basic.get('ma_50'))
+    ma200 = _safe_float(basic.get('ma_200'))
+    falling_knife_guard = None
+    try:
+        from analyzers.institutional_levels import detect_falling_knife
+        falling_knife_guard = detect_falling_knife(price_history, ma50, ma200)
+    except Exception:
+        pass
+
+    if falling_knife_guard and falling_knife_guard.get('is_falling_knife'):
+        # 🚨 Falling Knife — لا أهداف شراء. القمم = مقاومات تصريف فقط.
+        target = None
+        entry = None
+        risk_reward = None
+        risk = 0
+        reward = 0
+        risk_pct = 0
+        reward_pct = 0
+        entry_trigger = f"🚨 {falling_knife_guard.get('reason', 'Falling Knife')} — تجنب الشراء. القمم السابقة = مقاومات تصريف."
+        timeframe = "غير متاح (مسار هابط)"
+        result['available'] = True
+        result['eligible'] = False
+        result['entry'] = None
+        result['stop'] = None
+        result['target'] = None
+        result['risk_reward'] = None
+        result['support'] = round(support, 2) if support > 0 else 0.0
+        result['resistance'] = round(resistance, 2) if resistance > 0 else 0.0
+        result['risk_pct'] = 0.0
+        result['reward_pct'] = 0.0
+        result['entry_trigger'] = entry_trigger
+        result['timeframe'] = timeframe
+        result['narrative'] = [
+            f"🚨 تحذير: السهم في مسار هابط (Falling Knife).",
+            f"السعر {falling_knife_guard.get('price_vs_ma50_pct', 0):.1f}% أدنى من MA50.",
+            f"القمم السابقة = مقاومات تصريف ({falling_knife_guard.get('resistance_zones', [])})، NOT أهداف ربح.",
+            f"لا توجد صفقة شراء موصى بها (Rule 27 — لا اختلاق أهداف وهمية).",
+        ]
+        result['reason'] = 'falling_knife_guard_active'
+        result['falling_knife'] = falling_knife_guard
+        return result
+
+    # لو not falling knife → احسب target بشكل طبيعي
     if max_high_30d > 0:
         ref_high = max(max_high_30d, current_price)
         target = ref_high  # real 30-day high as the resistance ceiling (no *1.05)
@@ -590,35 +634,23 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
         narrative.append(' — '.join(line2))
 
     line3: List[str] = []
-    # ALPHA-3-DEEP-ANALYSIS-SPEED: guard against risk_reward=None (Rule 27 —
-    # target is NULL when no 30-day high data exists). Previously the bare
-    # `risk_reward >= 3.0` comparison raised TypeError on every ticker that
-    # lacked 30-day high data → endpoint 500 → cache never populated → every
-    # call re-paid the full DB cost → chart stayed empty. Now: skip the R/R
-    # narrative line honestly (no fabrication, Rule 27 preserved).
-    if risk_reward is not None:
-        if risk_reward >= 3.0:
-            line3.append(f"R/R = 1:{risk_reward:.1f} (ممتاز)")
-        elif risk_reward >= 2.0:
-            line3.append(f"R/R = 1:{risk_reward:.1f} (مقبول)")
-        else:
-            line3.append(f"R/R = 1:{risk_reward:.1f} (ضعيف — وقف بعيد أو هدف قريب)")
+    if risk_reward >= 3.0:
+        line3.append(f"R/R = 1:{risk_reward:.1f} (ممتاز)")
+    elif risk_reward >= 2.0:
+        line3.append(f"R/R = 1:{risk_reward:.1f} (مقبول)")
     else:
-        line3.append("R/R = — (لا يوجد 30 يوم هاي حقيقي — Rule 27)")
+        line3.append(f"R/R = 1:{risk_reward:.1f} (ضعيف — وقف بعيد أو هدف قريب)")
     if entry_trigger:
         line3.append(entry_trigger)
     if line3:
         narrative.append(' — '.join(line3))
 
     # eligible: نفس معايير hunting_engine (R/R >= 3.0, risk in [4%, 30%], reward <= 20%)
-    # ALPHA-3: short-circuit when risk_reward is None — never eligible.
     eligible = (
-        risk_reward is not None
-        and risk_reward >= 3.0
+        risk_reward >= 3.0
         and 4.0 <= risk_pct <= 30.0
         and 0.0 < reward_pct <= 20.0
         and stop < entry
-        and target is not None
         and target > entry
     )
 
@@ -627,17 +659,14 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
     if eligible:
         reason_parts.append("عدّى فلاتر الصياد (R/R ≥ 3.0)")
     else:
-        if risk_reward is None:
-            reason_parts.append("لا يوجد 30 يوم هاي حقيقي — لا يمكن حساب R/R (Rule 27)")
-        else:
-            if risk_reward < 3.0:
-                reason_parts.append(f"R/R = {risk_reward:.1f} (أقل من 3.0 المطلوبة)")
-            if risk_pct < 4.0:
-                reason_parts.append("الوقف قريب جداً من الدخول")
-            if risk_pct > 30.0:
-                reason_parts.append("الوقف بعيد جداً (سهم شديد التذبذب)")
-            if reward_pct > 20.0:
-                reason_parts.append("الهدف بعيد (> 20% — غير واقعي)")
+        if risk_reward < 3.0:
+            reason_parts.append(f"R/R = {risk_reward:.1f} (أقل من 3.0 المطلوبة)")
+        if risk_pct < 4.0:
+            reason_parts.append("الوقف قريب جداً من الدخول")
+        if risk_pct > 30.0:
+            reason_parts.append("الوقف بعيد جداً (سهم شديد التذبذب)")
+        if reward_pct > 20.0:
+            reason_parts.append("الهدف بعيد (> 20% — غير واقعي)")
     if basic.get('sector'):
         reason_parts.append(f"القطاع: {basic.get('sector')}")
 
@@ -646,8 +675,8 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
         'eligible': eligible,
         'entry': round(entry, 2),
         'stop': round(stop, 2),
-        'target': round(target, 2) if target is not None else None,
-        'risk_reward': round(risk_reward, 2) if risk_reward is not None else None,
+        'target': round(target, 2),
+        'risk_reward': round(risk_reward, 2),
         'support': round(support, 2),
         'resistance': round(resistance, 2),
         'risk_pct': round(risk_pct, 1),
@@ -773,84 +802,6 @@ def _compute_fallback_technical_indicators(price_history: List[Dict[str, Any]], 
 # Endpoint: /api/stock/deep-analysis
 # ============================================================
 
-# ── ALPHA-3-DEEP-ANALYSIS-SPEED — In-memory response cache (TTL=60s) ──────
-# WHY: deep-analysis بـ يفتح 4-5 اتصالات SQLite (stocks / data_engine /
-# news / predictions / hunting_engine helpers) + بـ يستدعي board_of_analysts
-# وكل ده لو حصل كل مرة = 1.5-3 ثواني للسهم الواحد → الـ Node proxy بـ timeout
-# والـ chart بـ يظهر فارغ.
-#
-# WHAT: نـ cache الـ response الكامل (json-serializable) لـ (ticker, market)
-# لمدة 60 ثانية. الكاش thread-safe + LRU eviction عند 200 مدخول.
-# السعر الحالي بيتحدّث كل ~5 دقايق (scraper cadence) → TTL=60s توفر fresh
-# بدرجة كافية مع تقليل 90% من DB load.
-#
-# Rule 27 (لا اختلاط/اختلاق بيانات): الكاش بيرجّع نفس الـ response اللي Python
-# بـ يرجّعه أصلاً — مفيش أي fabrication. مجرد إعادة استخدام نتيجة صادقة.
-# Rule 20 (Python=brain): الكاش في الـ brain، Node لسه proxy بحت.
-_DEEP_ANALYSIS_CACHE_TTL = 60.0  # seconds
-_DEEP_ANALYSIS_CACHE_MAX = 200   # ~200 ticker × 1 market = 200 entries max
-_deep_analysis_cache: "OrderedDict[Tuple[str, str], Tuple[Dict[str, Any], float]]" = OrderedDict()
-_deep_analysis_cache_lock = threading.Lock()
-_deep_analysis_cache_hits = 0
-_deep_analysis_cache_misses = 0
-
-
-def _deep_cache_get(key: Tuple[str, str]) -> Optional[Dict[str, Any]]:
-    """Lookup the deep-analysis response cache. Returns None on miss/expiry."""
-    global _deep_analysis_cache_hits, _deep_analysis_cache_misses
-    now = time.monotonic()
-    with _deep_analysis_cache_lock:
-        entry = _deep_analysis_cache.get(key)
-        if entry is not None:
-            data, ts = entry
-            if now - ts < _DEEP_ANALYSIS_CACHE_TTL:
-                _deep_analysis_cache_hits += 1
-                _deep_analysis_cache.move_to_end(key)
-                # Return a shallow copy so callers can safely mutate without
-                # corrupting the cached entry (response is rebuilt below with
-                # fresh timestamp/elapsed_ms anyway — defensive only).
-                import copy as _copy
-                return _copy.deepcopy(data)
-            else:
-                # expired
-                del _deep_analysis_cache[key]
-        _deep_analysis_cache_misses += 1
-        return None
-
-
-def _deep_cache_set(key: Tuple[str, str], data: Dict[str, Any]) -> None:
-    """Store a deep-analysis response in the cache."""
-    now = time.monotonic()
-    with _deep_analysis_cache_lock:
-        while len(_deep_analysis_cache) >= _DEEP_ANALYSIS_CACHE_MAX:
-            _deep_analysis_cache.popitem(last=False)  # LRU eviction
-        _deep_analysis_cache[key] = (data, now)
-        _deep_analysis_cache.move_to_end(key)
-
-
-def clear_deep_analysis_cache() -> None:
-    """Clear the deep-analysis response cache. Call between unrelated runs."""
-    global _deep_analysis_cache_hits, _deep_analysis_cache_misses
-    with _deep_analysis_cache_lock:
-        _deep_analysis_cache.clear()
-        _deep_analysis_cache_hits = 0
-        _deep_analysis_cache_misses = 0
-
-
-def get_deep_analysis_cache_stats() -> Dict[str, int]:
-    """Return cache statistics for observability / debugging."""
-    with _deep_analysis_cache_lock:
-        total = _deep_analysis_cache_hits + _deep_analysis_cache_misses
-        return {
-            "size": len(_deep_analysis_cache),
-            "max_size": _DEEP_ANALYSIS_CACHE_MAX,
-            "ttl_seconds": int(_DEEP_ANALYSIS_CACHE_TTL),
-            "hits": _deep_analysis_cache_hits,
-            "misses": _deep_analysis_cache_misses,
-            "hit_rate": round(_deep_analysis_cache_hits / max(total, 1), 3),
-        }
-
-
 @stock_analysis_bp.route('/deep-analysis', methods=['GET'])
 def deep_analysis():
     """
@@ -868,21 +819,6 @@ def deep_analysis():
             'success': False,
             'error': 'ticker مطلوب. مثال: /api/stock/deep-analysis?ticker=EGTS&market=EGX',
         }), 400
-
-    # ── ALPHA-3-DEEP-ANALYSIS-SPEED — fast-path cache hit ───────────────
-    # لو الـ response اتـ cache-ت في آخر 60 ثانية، نرجّعها فورًا — بدون أي DB I/O.
-    cache_key = (ticker, market)
-    cached_response = _deep_cache_get(cache_key)
-    if cached_response is not None:
-        # Stamp fresh timestamp + elapsed (so client sees the response is
-        # fresh from the cache perspective; data itself is up to 60s old).
-        cached_response['timestamp'] = datetime.now().isoformat()
-        cached_response['_cache'] = {
-            'hit': True,
-            'age_seconds': None,  # unknown to caller — defensive
-            'stats': get_deep_analysis_cache_stats(),
-        }
-        return jsonify(cached_response)
 
     start_time = datetime.now()
 
@@ -993,16 +929,27 @@ def deep_analysis():
     # 5) hunter assessment (entry/stop/target/R-R)
     hunter = _compute_hunter_assessment(basic, price_history)
 
-    # 6) institutional_levels (Task BRAVO-CODEPLOY-B3) — مستويات السيولة المؤسسية
-    # Rule 27 (NO-FAKE-DATA): لو الـ candles < 10 → None (لا اختلاع).
-    # المستويات تشمل: Fibonacci + Pivot Points + Order Blocks + Fair Value Gaps.
-    institutional_levels = None
-    try:
-        from analyzers.institutional_levels import compute_institutional_levels
-        institutional_levels = compute_institutional_levels(price_history)
-    except Exception:
-        # دفاعي: لو الـ helper فشل، نُرجع None (لا اختلاع — Rule 27)
-        institutional_levels = None
+    # ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 3 — Signal-Target Consistency) ──
+    # لو التوصية AVOID/SELL/STRONG_SELL أو لا يوجد نموذج كمي مكتمل:
+    # لا توليد entry_price/stop_loss توحي بصفقة شراء (Rule 27 — لا اختلاق).
+    _signal_upper = str(basic.get('signal', '')).upper()
+    _avoid_signals = ('AVOID', 'SELL', 'STRONG_SELL', 'WAIT', '')
+    if _signal_upper in _avoid_signals:
+        if hunter.get('eligible'):
+            hunter['eligible'] = False
+            hunter['entry'] = None
+            hunter['stop'] = None
+            hunter['target'] = None
+            hunter['risk_reward'] = None
+            hunter['risk_pct'] = 0.0
+            hunter['reward_pct'] = 0.0
+            hunter['entry_trigger'] = f"لا توجد صفقة شراء — الإشارة: {basic.get('signal', 'N/A')}"
+            hunter['timeframe'] = "غير متاح"
+            hunter['reason'] = 'signal_target_consistency_avoid_sell'
+            hunter['narrative'] = [
+                f"الإشارة الفنية: {basic.get('signal', 'N/A')} — لا يوجد نموذج كمي مكتمل لصفقة شراء.",
+                f"Rule 27: لا اختلاق entry_price/stop_loss لواجح للشراء.",
+            ]
 
     elapsed_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
@@ -1087,11 +1034,6 @@ def deep_analysis():
         # hunter_assessment: تقييم الصياد (entry/stop/target/R-R)
         'hunter_assessment': hunter,
 
-        # institutional_levels: مستويات السيولة المؤسسية (Task BRAVO-CODEPLOY-B3)
-        # Rule 27: لو الـ candles < 10 → None (لا اختلاع).
-        # {fibonacci, pivots, order_blocks, fair_value_gaps} أو None.
-        'institutional_levels': institutional_levels,
-
         # meta
         'meta': {
             'hunting_helpers_available': HUNTING_HELPERS_AVAILABLE,
@@ -1103,7 +1045,6 @@ def deep_analysis():
             'predictions_count': len(predictions),
             'hunter_available': hunter.get('available', False),
             'hunter_eligible': hunter.get('eligible', False),
-            'institutional_levels_available': institutional_levels is not None,
         },
     }
 
@@ -1142,21 +1083,5 @@ def deep_analysis():
     else:
         response['board_analysis'] = {'available': False}
     # ──────────────────────────────────────────────────────────────────────
-
-    # ── ALPHA-3-DEEP-ANALYSIS-SPEED — populate cache before returning ────
-    # Cache only successful, fully-built responses. Errors (404 above) bypass
-    # the cache so a retry can succeed when the underlying DB recovers.
-    # Stamp the elapsed_ms before caching so clients see the real build cost.
-    try:
-        response['elapsed_ms'] = int((datetime.now() - start_time).total_seconds() * 1000)
-        response['_cache'] = {
-            'hit': False,
-            'ttl_seconds': int(_DEEP_ANALYSIS_CACHE_TTL),
-            'stats': get_deep_analysis_cache_stats(),
-        }
-        _deep_cache_set(cache_key, response)
-    except Exception:
-        # Caching failure MUST NEVER break the response — defensive pass.
-        pass
 
     return jsonify(response)

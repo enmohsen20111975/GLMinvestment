@@ -31,7 +31,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { InteractiveChart } from './InteractiveChart';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
-import { DealAdvisorPanel } from '@/components/deal-advisor/DealAdvisorPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,7 +90,7 @@ function signalToArabic(signal: string | undefined | null): string {
 }
 
 export function ProfessionalTradingChart({ initialTicker }: Props) {
-  const { stocks, user, currentMarket, dealAdvisorPrefill } = useAppStore();
+  const { stocks, user, currentMarket } = useAppStore();
   const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket] || 'ج.م';
   const isCrypto = currentMarket === 'CRYPTO';
   const [ticker, setTicker] = useState(initialTicker);
@@ -109,7 +108,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   const [extraIndicators, setExtraIndicators] = useState(false); // RSI/MACD
   const [technicalDetailsOpen, setTechnicalDetailsOpen] = useState(false);
   // CHART-ENRICH (2026-10-10): تبويبات بدل الأكوردين الميت
-  const [activeTab, setActiveTab] = useState<'liquidity' | 'smc' | 'advisor' | 'technical'>('liquidity');
+  const [activeTab, setActiveTab] = useState<'liquidity' | 'smc' | 'technical'>('liquidity');
   const [quickAdding, setQuickAdding] = useState(false);
   const [quickAdded, setQuickAdded] = useState(false);
 
@@ -211,20 +210,30 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   // data.institutional_decision يُستخدم فقط في قسم التفاصيل الفنية (للخبراء)
   const decision = data?.institutional_decision; // للتفاصيل الفنية فقط
   
-  // UNIFY-FIX: signal + master_score من canonical فقط (null لو لا توقع طازج)
-  const signalFinal = canonical?.canonical?.signal || decision?.signal_final || data?.confluence?.signal || '';
-  const signalAr = signalToArabic(signalFinal);
+  // UNIFY-FIX: signal + master_score من canonical فقط (Rule 73 — Single Line of Truth)
+  // حظر أي fallback لبيانات الشارت القديمة (data.confluence) للأسهم لمنع الإشارات الوهمية
+  const signalFinal = canonical?.canonical?.signal || (isCrypto ? (decision?.signal_final || data?.confluence?.signal || '') : '');
+  const signalAr = signalFinal ? signalToArabic(signalFinal) : (canonical?.canonical?.signal_ar || '— لا يوجد توقع طازج');
   const signalColor = SIGNAL_COLORS[signalFinal?.toUpperCase()] || SIGNAL_COLORS.HOLD;
-  const masterScore = canonical?.canonical?.master_score ?? null; // null لو لا توقع طازج
+  const masterScore = canonical?.canonical?.master_score ?? null;
 
-  // UNIFY-FIX: entry/stop/target/R:R من canonical.prediction فقط (لا fabrication)
+  // ALPHA-P0: Only show trade plans for genuine BUY signals (not HOLD/WAIT/SELL/AVOID)
+  const isBuySignal = Boolean(
+    signalFinal && (
+      signalFinal.toUpperCase().includes('BUY') ||
+      signalFinal.toUpperCase().includes('ACCUMULATE') ||
+      signalFinal.toUpperCase().includes('STRONG_BUY')
+    )
+  );
+
+  // UNIFY-FIX: entry/stop/target/R:R تُعرض فقط لإشارات الشراء الحقيقية (لا fabrication)
   const pred = canonical?.prediction;
-  const entry = pred?.entry_price ?? decision?.risk_profile?.entry ?? data?.risk?.entry ?? null;
-  const stop = pred?.stop_loss ?? decision?.risk_profile?.sl ?? data?.risk?.stop_loss ?? null;
-  const target1 = pred?.target_price ?? decision?.risk_profile?.tp1 ?? data?.risk?.target ?? null;
-  const target2 = pred?.target_price_2 ?? decision?.risk_profile?.tp2 ?? data?.risk?.target_2 ?? null;
-  const rr = pred?.risk_reward ?? decision?.risk_profile?.rr_ratio_tp1 ?? data?.risk?.rr_ratio ?? null;
-  const techScore = masterScore; // UNIFY-FIX: tech_score = master_score (canonical)
+  const entry = isBuySignal ? (pred?.entry_price ?? (isCrypto ? (decision?.risk_profile?.entry ?? null) : null)) : null;
+  const stop = isBuySignal ? (pred?.stop_loss ?? (isCrypto ? (decision?.risk_profile?.sl ?? null) : null)) : null;
+  const target1 = isBuySignal ? (pred?.target_price ?? (isCrypto ? (decision?.risk_profile?.tp1 ?? null) : null)) : null;
+  const target2 = isBuySignal ? (pred?.target_price_2 ?? (isCrypto ? (decision?.risk_profile?.tp2 ?? null) : null)) : null;
+  const rr = isBuySignal ? (pred?.risk_reward ?? (isCrypto ? (decision?.risk_profile?.rr_ratio_tp1 ?? null) : null)) : null;
+  const techScore = masterScore;
 
   // ─── CHART-ENRICH (2026-10-10): قيم ReasonsForDecision المحسوبة من canonical ───
   // ملء الشرطات الفارغة (—) بقيم حقيقية من unified API
@@ -315,26 +324,22 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       summary += `تدفق السيولة: ${moneyFlow}.`;
     }
     
-    // التوصية: من signal + entry + target
-    if (signalFinal && entry && target1) {
-      if (signalFinal.includes('BUY') || signalFinal.includes('STRONG')) {
-        action = `الدخول الموصى به عند ${(entry ?? 0).toFixed(2)} ${currencyLabel}، الهدف ${(target1 ?? 0).toFixed(2)} ${(stop ? `مع وقف خسارة عند ${(stop ?? 0).toFixed(2)}` : '')}.`;
-      } else if (signalFinal === 'HOLD' || signalFinal === 'WAIT') {
-        action = `الانتظار حتى تأكد الإشارة. مستوى الدخول المحتمل ${(entry ?? 0).toFixed(2)} ${currencyLabel}.`;
-      } else {
-        action = `تجنب الدخول حالياً — الإشارة ${signalAr}.`;
+    // التوصية والمخاطرة: محكومة حصرياً بإشارة الشراء الحقيقية (لا تناقض)
+    if (isBuySignal && entry && target1) {
+      action = `الدخول الموصى به عند ${(entry ?? 0).toFixed(2)} ${currencyLabel}، الهدف ${(target1 ?? 0).toFixed(2)} ${(stop ? `مع وقف خسارة عند ${(stop ?? 0).toFixed(2)}` : '')}.`;
+      if (stop && entry && rr) {
+        const stopPct = ((entry - stop) / entry * 100);
+        risk = `وقف الخسارة عند ${(stop ?? 0).toFixed(2)} (${stopPct.toFixed(1)}% تحت الدخول)، نسبة المخاطرة/العائد 1:${(rr ?? 0).toFixed(2)}.`;
       }
+    } else if (signalFinal === 'HOLD' || signalFinal === 'WAIT') {
+      action = 'الانتظار حتى تأكد الإشارة — لا توجد مراكز شراء مفعلة حالياً.';
+      risk = '';
+    } else if (signalFinal && (signalFinal.includes('SELL') || signalFinal.includes('REDUCE'))) {
+      action = `تجنب الشراء حالياً — الإشارة تصريفية (${signalAr}).`;
+      risk = 'مسار هابط أو تصريفي — حماية رأس المال أولى من البحث عن قيعان.';
     } else {
-      action = 'لا توجد توصية دخول طازجة من النظام حالياً. راجع المؤشرات الفنية بالأسفل.';
-    }
-    
-    // المخاطرة: من stop + rr
-    if (stop && entry && rr) {
-      const stopPct = ((entry - stop) / entry * 100);
-      risk = `وقف الخسارة عند ${(stop ?? 0).toFixed(2)} (${stopPct.toFixed(1)}% تحت الدخول)، نسبة المخاطرة/العائد 1:${(rr ?? 0).toFixed(2)}.`;
-    } else if (stop && entry) {
-      const stopPct = ((entry - stop) / entry * 100);
-      risk = `وقف الخسارة عند ${(stop ?? 0).toFixed(2)} (${stopPct.toFixed(1)}% تحت الدخول).`;
+      action = 'لا توجد توصية دخول طازجة من النظام حالياً. راجع المؤشرات الفنية والسيولة بالأسفل.';
+      risk = '';
     }
     
     // من يشتري؟
@@ -344,7 +349,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
     const pythonReason = analysisReason ? `\n\n ${analysisReason}` : '';
     
     return { summary: summary + who, action, risk, pythonReason };
-  }, [pred, canonical, signalFinal, signalAr, entry, target1, stop, rr, currencyLabel]);
+  }, [pred, canonical, signalFinal, signalAr, isBuySignal, entry, target1, stop, rr, currencyLabel]);
 
   // (السعر الحالي declarations اتقلت لـ سطر 237 — قبل الـ useMemo عشان تتجنب TDZ)
 
@@ -519,7 +524,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {signalAr}
             </Badge>
 
-            {/* مستويات الدخول/الوقف/الهدف/R:R — أرقام بارزة ثابتة */}
+            {/* مستويات الدخول/الوقف/الهدف/R:R — أرقام بارزة ثابتة
+                ALPHA-P0: تُعرض فقط للإشارات الصاعدة الحقيقية (BUY/ACCUMULATE).
+                للإشارات الأخرى (HOLD/WAIT/SELL/AVOID) تُخفى تماماً. */}
+            {isBuySignal ? (
             <div className="flex items-center gap-2 text-xs">
               {entry !== null && entry > 0 && (
                 <div className="flex flex-col items-center">
@@ -552,6 +560,12 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                 </div>
               )}
             </div>
+            ) : (
+              <div className="p-2 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً</span>
+              </div>
+            )}
           </div>
 
           {/* يسار: الأدوات */}
@@ -666,9 +680,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               indicators={data.indicators || {}}
               visibleIndicators={visibleIndicators}
               levels={data.levels}
-              marketRegime={data.market_regime}
+              regimeColor={data.market_regime?.color}
               bosEvents={data.bos_events}
-              bbSqueeze={data.bb_squeeze}
+              bbSqueezeLevel={data.bb_squeeze?.state}
               entryPrice={entry ?? undefined}
               targetPrice={target1 ?? undefined}
               stopLossPrice={stop ?? undefined}
@@ -683,213 +697,11 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════════
-          §3-A — A2-EXPANDED: Multi-Timeframe Radar + Institutional Toggles + Indicators
-          غرفة التداول المؤسسية الدسمة — توافق الفريمات + المستويات + المؤشرات
-      ════════════════════════════════════════════════════════════════════════ */}
-      {/* Multi-Timeframe Radar Bar */}
-      <div className="px-4 py-2 border-t border-border bg-muted/20">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold text-muted-foreground ml-1">توافق الفريمات:</span>
-          {[
-            { tf: '15د', signal: data?.tf_15m_signal, key: '15m' },
-            { tf: 'ساعة', signal: data?.tf_1h_signal, key: '1h' },
-            { tf: 'يومي', signal: data?.tf_1d_signal || signalFinal, key: '1d' },
-            { tf: 'أسبوعي', signal: data?.tf_1w_signal, key: '1w' },
-          ].map(({ tf, signal, key }) => {
-            const sig = String(signal || '').toUpperCase();
-            const isBuy = sig.includes('BUY') || sig.includes('ACCUMULATE') || sig.includes('STRONG');
-            const isSell = sig.includes('SELL') || sig.includes('AVOID') || sig.includes('REDUCE');
-            const tone = isBuy ? 'buy' : isSell ? 'sell' : 'neutral';
-            return (
-              <div key={key} className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold',
-                tone === 'buy' && 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300',
-                tone === 'sell' && 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300',
-                tone === 'neutral' && 'bg-muted border-border text-muted-foreground',
-              )}>
-                <span>{tone === 'buy' ? '🟢' : tone === 'sell' ? '🔴' : '⚪'}</span>
-                <span>{tf}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Institutional Overlay Toggles */}
-      <div className="px-4 py-2 border-t border-border">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold text-muted-foreground ml-1">المستويات المؤسسية:</span>
-          <button
-            onClick={() => setVisibleIndicators((v) => ({ ...v, fibonacci: !v.fibonacci }))}
-            className={cn(
-              'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
-              visibleIndicators?.fibonacci
-                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-          >
-            📐 فيبوناتشي
-          </button>
-          <button
-            onClick={() => setVisibleIndicators((v) => ({ ...v, pivots: !v.pivots }))}
-            className={cn(
-              'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
-              visibleIndicators?.pivots
-                ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/40'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-          >
-            🎯 ارتكاز (Pivot)
-          </button>
-          <button
-            onClick={() => setVisibleIndicators((v) => ({ ...v, order_blocks: !v.order_blocks }))}
-            className={cn(
-              'px-2 py-1 rounded text-[10px] font-semibold border transition-all',
-              visibleIndicators?.order_blocks
-                ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40'
-                : 'bg-card text-muted-foreground border-border hover:bg-muted'
-            )}
-          >
-            🏦 SMC / Order Blocks
-          </button>
-        </div>
-      </div>
-
-      {/* Institutional Levels Display (when toggles are on) */}
-      {(visibleIndicators?.fibonacci || visibleIndicators?.pivots || visibleIndicators?.order_blocks) && data?.ohlcv && data.ohlcv.length > 0 && (
-        <div className="px-4 py-2 border-t border-border bg-muted/10">
-          {(() => {
-            const ohlcv = data.ohlcv;
-            const highs = ohlcv.map((c: Record<string, unknown>) => Number(c.high ?? c.h ?? 0)).filter((n: number) => n > 0);
-            const lows = ohlcv.map((c: Record<string, unknown>) => Number(c.low ?? c.l ?? 0)).filter((n: number) => n > 0);
-            const closes = ohlcv.map((c: Record<string, unknown>) => Number(c.close ?? c.c ?? 0)).filter((n: number) => n > 0);
-            const swingHigh = highs.length ? Math.max(...highs) : 0;
-            const swingLow = lows.length ? Math.min(...lows) : 0;
-            const range = swingHigh - swingLow || 1;
-            const lastC = closes.length ? closes[closes.length - 1] : 0;
-            const lastH = highs.length ? highs[highs.length - 1] : 0;
-            const lastL = lows.length ? lows[lows.length - 1] : 0;
-            const pivot = (lastH + lastL + lastC) / 3;
-            return (
-              <div className="space-y-2">
-                {visibleIndicators?.fibonacci && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-                    {[
-                      { label: 'Fib 0.382', val: swingHigh - range * 0.382 },
-                      { label: 'Fib 0.5', val: swingHigh - range * 0.5 },
-                      { label: 'Fib 0.618', val: swingHigh - range * 0.618 },
-                      { label: 'Golden Pocket', val: (swingHigh - range * 0.618 + swingHigh - range * 0.5) / 2 },
-                    ].map(f => (
-                      <div key={f.label} className="text-center p-1.5 rounded bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/50">
-                        <div className="text-[8px] text-muted-foreground">{f.label}</div>
-                        <div className="text-[10px] font-bold font-mono text-amber-700 dark:text-amber-300">{f.val.toFixed(2)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {visibleIndicators?.pivots && (
-                  <div className="grid grid-cols-5 gap-1">
-                    {[
-                      { label: 'P', val: pivot, cls: 'bg-primary/5 border-primary/20' },
-                      { label: 'R1', val: 2 * pivot - lastL, cls: 'bg-rose-50 dark:bg-rose-950/20 border-rose-200/50' },
-                      { label: 'S1', val: 2 * pivot - lastH, cls: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/50' },
-                      { label: 'R2', val: pivot + (lastH - lastL), cls: 'bg-rose-50 dark:bg-rose-950/20 border-rose-200/50' },
-                      { label: 'S2', val: pivot - (lastH - lastL), cls: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/50' },
-                    ].map(p => (
-                      <div key={p.label} className={cn('text-center p-1 rounded border', p.cls)}>
-                        <div className="text-[7px] text-muted-foreground">{p.label}</div>
-                        <div className="text-[9px] font-bold font-mono">{p.val.toFixed(2)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {visibleIndicators?.order_blocks && (
-                  <div className="p-2 rounded bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/50">
-                    <div className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 mb-1">مناطق كتل الأوامر (SMC)</div>
-                    <div className="flex gap-4 text-[9px] text-muted-foreground">
-                      <span>كتلة شراء: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{swingLow.toFixed(2)}</span></span>
-                      <span>كتلة بيع: <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{swingHigh.toFixed(2)}</span></span>
-                      <span>FVG: <span className="font-mono font-bold text-purple-600 dark:text-purple-400">{((swingHigh + swingLow) / 2).toFixed(2)}</span></span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* Institutional Indicators Strip (RSI / MFI / MACD / Momentum) */}
-      <div className="px-4 py-2 border-t border-border bg-muted/10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {(() => {
-            const ind = data?.indicators || {};
-            const rsi = Number(ind.rsi_14 ?? ind.rsi ?? data?.rsi ?? 0);
-            const mfi = Number(ind.mfi_14 ?? ind.mfi ?? 0);
-            const macd = Number(ind.macd ?? ind.macd_line ?? 0);
-            const macdSignal = Number(ind.macd_signal ?? 0);
-            const momentum = Number(ind.momentum ?? ind.roc_10d ?? 0);
-            return [
-              { label: 'RSI', val: rsi, suffix: '', color: rsi > 70 ? 'text-rose-600' : rsi < 30 ? 'text-emerald-600' : 'text-foreground', sub: rsi > 70 ? 'تشبع شرائي' : rsi < 30 ? 'تشبع بيعي' : 'محايد' },
-              { label: 'MFI', val: mfi, suffix: '', color: mfi > 80 ? 'text-rose-600' : mfi < 20 ? 'text-emerald-600' : 'text-foreground', sub: mfi > 80 ? 'تدفق مفرط' : mfi > 60 ? 'تدفق قوي' : 'متوازن' },
-              { label: 'MACD', val: macd, suffix: '', color: macd > macdSignal ? 'text-emerald-600' : 'text-rose-600', sub: macd > macdSignal ? 'صاعد' : 'هابط' },
-              { label: 'الزخم', val: momentum, suffix: '%', color: momentum >= 0 ? 'text-emerald-600' : 'text-rose-600', sub: momentum >= 0 ? 'إيجابي' : 'سلبي' },
-            ].map(m => (
-              <div key={m.label} className="text-center p-1.5 rounded-lg bg-card border border-border/50">
-                <div className="text-[8px] text-muted-foreground">{m.label}</div>
-                <div className={cn('text-[11px] font-bold font-mono', m.color)}>
-                  {m.val.toFixed(m.label === 'MACD' ? 3 : 1)}{m.suffix}
-                </div>
-                <div className="text-[7px] text-muted-foreground">{m.sub}</div>
-              </div>
-            ));
-          })()}
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════════════════════════
-          §3.5 — AI Executive Stock Story (CHART-ENRICH 2026-10-10)
-          لوحة التشخيص المالي والسرد التنفيذي — من prediction.analysis_reason + canonical
-      ════════════════════════════════════════════════════════════════════════ */}
-      {(aiStory.summary || aiStory.action) && (
-        <div className="px-4 py-3 border-t border-border bg-gradient-to-l from-emerald-50/50 to-card dark:from-emerald-950/10">
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-card p-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Brain className="w-4 h-4 text-emerald-600" />
-              <span className="text-xs font-bold">تشخيص ومسار السهم</span>
-              <Badge variant="outline" className="text-[9px] ml-auto">AI Executive</Badge>
-            </div>
-            {aiStory.summary && (
-              <div className="text-xs text-foreground mb-2 leading-relaxed">
-                <strong>الحالة:</strong> {aiStory.summary}
-              </div>
-            )}
-            {aiStory.action && (
-              <div className="text-xs text-foreground mb-2 leading-relaxed">
-                <strong className="text-emerald-700 dark:text-emerald-400">التوصية:</strong> {aiStory.action}
-              </div>
-            )}
-            {aiStory.risk && (
-              <div className="text-xs text-rose-700 dark:text-rose-300 mb-2 leading-relaxed">
-                <ShieldAlert className="w-3 h-3 inline ml-1" />
-                {aiStory.risk}
-              </div>
-            )}
-            {aiStory.pythonReason && (
-              <div className="text-[11px] text-muted-foreground mt-2 pt-2 border-t border-border/50 leading-relaxed whitespace-pre-line">
-                {aiStory.pythonReason}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════════════════
           §4 — ملخص خطة الصفقة (Trade Plan Card)
-          CHART-FIX (2026-10-10): إخفاء خطة الشراء الوهمية لو مفيش توقع حقيقي
+          ALPHA-P0: تُعرض فقط للإشارات الصاعدة (BUY/ACCUMULATE).
+          للإشارات الأخرى: تحذير مؤسسي أنيق بدلاً من خطة وهمية.
       ════════════════════════════════════════════════════════════════════════ */}
-      {/* CHART-FIX: بس اعرض خطة الصفقة لو فيه إشارة BUY حقيقية (مش null/—) */}
-      {decision?.signal && decision.signal !== '—' && (entry !== null || target1 !== null || stop !== null) && (
+      {isBuySignal && (entry !== null || target1 !== null || stop !== null) ? (
         <div className="px-4 py-3 border-t border-border">
           <div className="rounded-xl border border-border bg-muted/30 p-3">
             <div className="flex items-center justify-between mb-2">
@@ -920,7 +732,14 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             )}
           </div>
         </div>
-      )}
+      ) : !isBuySignal ? (
+        <div className="px-4 py-3 border-t border-border">
+          <div className="p-3 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي.</span>
+          </div>
+        </div>
+      ) : null}
 
       {/* ════════════════════════════════════════════════════════════════════════
           §5 — لماذا هذا القرار؟ (الأدلة) — CHART-ENRICH: ملء الشرطات الفارغة
@@ -933,8 +752,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
           <ReasonCard
             label="الاتجاه"
-            value={flightState?.state ? (flightState.state === 'taking_off' ? 'صاعد' : flightState.state === 'falling_down' ? 'هابط' : 'عرضي') : (canonical?.technical?.trend === 'UP' ? 'صاعد' : canonical?.technical?.trend === 'DOWN' ? 'هابط' : '— بيانات غير متاحة')}
-            positive={flightState?.state === 'taking_off' || canonical?.technical?.trend === 'UP'}
+            value={flightState?.state ? (flightState.state === 'flying_up' ? 'صاعد' : flightState.state === 'falling_down' ? 'هابط' : 'عرضي') : (canonical?.technical?.trend === 'UP' ? 'صاعد' : canonical?.technical?.trend === 'DOWN' ? 'هابط' : '— بيانات غير متاحة')}
+            positive={flightState?.state === 'flying_up' || canonical?.technical?.trend === 'UP'}
             negative={flightState?.state === 'falling_down' || canonical?.technical?.trend === 'DOWN'}
           />
           <ReasonCard
@@ -951,7 +770,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           />
           <ReasonCard
             label="التجميع"
-            value={canonical?.canonical?.accumulation ?? (makerState?.state === 'accumulation' ? 'تجميع مؤسسي' : 'محايد')}
+            value={canonical?.canonical?.accumulation ?? (makerState?.state === 'absorption' ? 'تجميع مؤسسي' : 'محايد')}
             positive={(canonical?.canonical?.accumulation ?? '').includes('تجميع')}
             negative={(canonical?.canonical?.accumulation ?? '').includes('تصريف')}
           />
@@ -978,7 +797,6 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           {[
             { id: 'liquidity', label: 'نبض السيولة والمؤسسات', icon: Waves },
             { id: 'smc', label: 'مستويات التداول و SMC', icon: Layers },
-            { id: 'advisor', label: 'مستشار الدخول والصفقة', icon: Target },
             { id: 'technical', label: 'التفاصيل الفنية', icon: Gauge },
           ].map((tab) => (
             <button
@@ -1058,47 +876,6 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                   )}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* ─── Tab 3: مستشار الدخول والصفقة ─── */}
-          {activeTab === 'advisor' && (
-            <div className="space-y-3">
-              {/* خطة الصفقة الكاملة */}
-              {(entry !== null || target1 !== null || stop !== null) && (
-                <div className="rounded-xl border border-border bg-muted/30 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <Target className="w-4 h-4 text-emerald-600" />
-                      <span className="text-xs font-bold">خطة الصفقة</span>
-                    </div>
-                    {rr !== null && rr > 0 && (
-                      <Badge variant="outline" className="text-[10px] font-mono">
-                        R:R 1:{(rr ?? 0).toFixed(2)}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground" />
-                    <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600 dark:text-rose-400" />
-                    <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
-                    <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  {data?.suggested_position_size_pct && (
-                    <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Wallet className="w-3 h-3" />
-                      حجم المحفظة المقترح: <strong className="font-mono text-emerald-600">{data.suggested_position_size_pct}%</strong>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Deal Advisor */}
-              <DealAdvisorPanel
-                ticker={ticker}
-                initialEntryPrice={dealAdvisorPrefill?.entryPrice}
-                initialEntryQty={dealAdvisorPrefill?.entryQty}
-              />
             </div>
           )}
 

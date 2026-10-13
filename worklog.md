@@ -67924,3 +67924,31 @@ Stage Summary:
 - ✅ Syntax: bag_holder_rescue.py + route.ts OK
 - ✅ Rule 27: كل الأرقام من DBs حقيقية (لا اختلاع)
 - ✅ Rule 20: كل الحسابات في Python
+
+---
+Task ID: BRAVO-QUANT-RESCUE-SMART-FLOW-V2
+Agent: كبير المهندسين الكميين والرياضيات والذكاء الاصطناعي (Chief Quant & Math Lead — GLM 5.2 Bravo)
+Task: محرك الإنقاذ الرياضي V2 — Correction vs. Structural Breakdown + Batch Portfolio Rescue
+
+Work Log:
+- طوّرت مصفوفة القرار V2 في analyze_clinic():
+  * No Panic Cut-Loss: ممنوع قطع الخسارة الهلع على الأصول القوية في تصحيح صحي.
+  * Strict Cut-Loss: قطع جراحي صارم للأصول المكسورة هيكليًا فقط.
+  * AVERAGE_DOWN: تبريد مؤسسي ذكي بحساب بالمليمتر (الكمية + التكلفة + المتوسط الجديد + Invalidation Level).
+  * فحص جودة الأصل: is_quality_asset = ربحي (eps>0 أو pe<15) أو توزيعات حقيقية (div>2%).
+  * فحص منطقة الطلب المؤسسية: at_institutional_support (ضمن 5% من الدعم).
+  * فحص التصحيح الصحي: is_healthy_correction (-10% to -25%).
+  * فحص الانهيار الهيكلي: is_structural_breakdown (falling knife أو loss > 30%).
+
+- أضفت analyze_portfolio_clinic(holdings) للفحص المجمج للمحفظة:
+  * إجمالي رأس المال المحتجز + السيولة المستردة + جدول الأولويات.
+  * ترتيب: CUT_LOSS (خطر) → AVERAGE_DOWN (تحذير) → HOLD (نجاح).
+  * داخل كل فئة: حسب الخسارة الأكبر أولاً.
+
+Stage Summary:
+- ✅ EGREF (buy=32.50): CUT_LOSS / danger — انهيار هيكلي + غير ربحي.
+- ✅ COMI (buy=150.0): HOLD / success — falling knife تقنيًا لكن ربحي + دعم + توزيعات 6.4%.
+- ✅ ABUK (buy=100.0): HOLD / success — خسارة -10% + ربحي + دعم + توزيعات 3.2%.
+- ✅ NIPH (buy=360.0): HOLD / success — توزيعات 6.5% + دعم.
+- ✅ Portfolio clinic: 4 مراكز، 1 CUT_LOSS، 3 HOLD، سيولة مستردة 22,470 ج.م.
+- ✅ py_compile PASS.

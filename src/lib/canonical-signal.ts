@@ -116,12 +116,13 @@ export type MoneyFlowState =
   | '🟢 سيولة داخلة'
   | '🟡 سيولة متوازنة'
   | '🔴 سيولة خارجة'
-  | '🔴 سيولة خارجة قوية';
+  | '🔴 سيولة خارجة قوية'
+  | '🔴 ضغط بيعي قوي';
 
 export function classifyMoneyFlow(
   buyPct: number | null | undefined,
   sellPct: number | null | undefined,
-  _netFlowEgp?: number | null,
+  netFlowEgp?: number | null,
 ): MoneyFlowState {
   if (buyPct === null || buyPct === undefined || sellPct === null || sellPct === undefined) {
     return '🟡 سيولة متوازنة';
@@ -129,6 +130,16 @@ export function classifyMoneyFlow(
   const b = Number(buyPct);
   const s = Number(sellPct);
   const diff = b - s;
+
+  // ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 2) ──
+  // حظر التناقض: لو buy_pct < 45% أو net_flow سالب → يُمنع إرجاع "سيولة حارة/داخلة".
+  // التصنيف الإلزامي: 🔴 سيولة خارجة / 🔴 ضغط بيعي.
+  const netNegative = netFlowEgp !== null && netFlowEgp !== undefined && Number(netFlowEgp) < 0;
+  if (b < 45 || netNegative) {
+    // تصنيف ضغط بيعي صارم (لا "سيولة داخلة" أبدًا)
+    if (diff <= -25 || (b < 35)) return '🔴 ضغط بيعي قوي';
+    return '🔴 سيولة خارجة';
+  }
 
   if (diff >= 25) return '🟢 سيولة داخلة قوية';
   if (diff >= 10) return '🟢 سيولة داخلة';
@@ -175,6 +186,11 @@ export function classifyStockPhase(
   }
   const b = Number(buyPct);
   const r10 = roc10d !== null && roc10d !== undefined ? Number(roc10d) : 0;
+
+  // ── Task BRAVO-P0-QUANT-LOGIC-NO-FALLING-KNIFE (Step 2) ──
+  // لو السهم في هبوط متواصل (roc10d < -3) وقيعان جديدة → الطور حصريًا "تخفيض / هبوط مستمر".
+  // لا يمكن أن يكون "تجميع" أو "تصاعد" والسهم يهبط.
+  if (r10 < -3 && b < 50) return 'تخفيض';
 
   if (b >= 60 && r10 >= -3 && r10 <= 5) return 'تجميع';
   if (b >= 55 && r10 > 5) return 'تصاعد';
