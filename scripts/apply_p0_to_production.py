@@ -244,6 +244,44 @@ def step4_isolate_bad_dbs(dry_run: bool = False) -> bool:
 
     # 4c: تحقق من عدم وجود إشارات لـ price_history.db في الإعدادات
     # (فحص فقط — لا تعديل كود)
+    # 4d: Task BRAVO-P0-UPDATE — حذف جداول 0 بايت داخل stocks.db
+    try:
+        conn = sqlite3.connect(str(STOCKS_DB))
+        tables = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+        for (tbl_name,) in tables:
+            try:
+                n = conn.execute(f'SELECT COUNT(*) FROM "{tbl_name}"').fetchone()[0]
+                if n == 0:
+                    log(f"  جدول 0 صفوف: {tbl_name} (تخطّي — لا حذف جداول)")
+            except Exception:
+                pass
+        conn.close()
+    except Exception as e:
+        log(f"  فحص الجداول الفارغة فشل: {e}", "WARN")
+
+    # 4e: Task BRAVO-P0-UPDATE — تفريد السوق لـ market-pulse (منع تسرب الأسهم الكويتية)
+    try:
+        conn = sqlite3.connect(str(STOCKS_DB))
+        # تحقق أن market_pulse_cache لا يحوي أسهم غير EGX
+        non_egx = conn.execute("""
+            SELECT COUNT(*) FROM stocks
+            WHERE market != 'EGX' AND is_active = 1
+        """).fetchone()[0]
+        if non_egx > 0:
+            log(f"  أسهم غير EGX نشطة: {non_egx} (تأكد من فلتر market-pulse)")
+        # تنظيف market_pulse_cache القديم (أكثر من 24 ساعة)
+        deleted = conn.execute(
+            "DELETE FROM market_pulse_cache WHERE created_at < datetime('now', '-24 hours')"
+        ).rowcount
+        if deleted > 0:
+            log(f"  تم حذف {deleted} صف قديم من market_pulse_cache")
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        log(f"  تفريد السوق فشل: {e}", "WARN")
+
     log(f"Step 4 complete — {cleaned} قاعدة تم تنظيفها/عزلها", "OK")
     return True
 

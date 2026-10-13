@@ -1643,9 +1643,13 @@ def rebuild_predictions():
             try:
                 # predictions table (لو موجودة) — فيها التوقعات المتقيّمة فعلاً
                 # 🔥 P0-fix v2: schema-safe data_quality + HARD return cap (defense-in-depth).
-                # الـ toxic rows (actual_return ≈ -10814%) بقت تـ exclude من win/loss COUNT
-                # + averages عبر HARD cap |actual_return| <= 50 في WHERE نفسها. data_quality
-                # clause اختياري (schema-aware) — لو العمود مش موجود الـ route ما بـ يكسرش.
+                #
+                # Task BRAVO-PERFORMANCE-FIX (Owner Directive 2026-10-13):
+                # المشكلة: شاشة الأداء عارضة 8.9% فقط لـ 20 صفقة (عينة ميتة).
+                # السبب: predictions table في stocks.db فارغة (0 rows) — المصدر الكنسي
+                # في predictions.db. لكن predictions.db غير متاح في الساندبوكس.
+                # الحل: ندمج real_evaluated_predictions (4,035 صف حقيقي) + predictions
+                # (لو موجودة) + outcome_logs لنحصل على سجل أداء حقيقي شامل.
                 try:
                     _has_dq = 'data_quality' in {
                         r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()
@@ -1655,6 +1659,8 @@ def rebuild_predictions():
                 _dq_sel = ", data_quality" if _has_dq else ""
                 _dq_where = " AND (data_quality = 'clean' OR data_quality IS NULL)" if _has_dq else ""
                 _cap_where = " AND (actual_return IS NULL OR ABS(actual_return) <= 50)"
+
+                # ── المصدر 1: predictions table (لو فيها بيانات) ──
                 closed_rows = conn.execute(f"""
                     SELECT ticker, signal, signal_type, prediction_date,
                            entry_price, target_price, stop_loss, master_score,
@@ -1665,16 +1671,63 @@ def rebuild_predictions():
                     ORDER BY outcome_date DESC
                     LIMIT 100
                 """).fetchall()
+
+                # ── المصدر 2: real_evaluated_predictions (لو predictions فارغة) ──
+                # Task BRAVO-PERFORMANCE-FIX: نستخدم 4,035 صفقة حقيقية مُقيّمة
+                if len(closed_rows) < 20:
+                    try:
+                        rep_rows = conn.execute("""
+                            SELECT ticker, signal, entry_price, exit_price,
+                                   return_pct, hit_target, hit_stop, holding_days,
+                                   evaluated_at
+                            FROM real_evaluated_predictions
+                            WHERE return_pct IS NOT NULL
+                            ORDER BY evaluated_at DESC
+                            LIMIT 500
+                        """).fetchall()
+                        # لو real_evaluated_predictions فيه بيانات أكثر، نستخدمه
+                        if len(rep_rows) > len(closed_rows):
+                            closed_rows = rep_rows
+                            # تعليم أن المصدر real_evaluated_predictions
+                            _using_rep = True
+                        else:
+                            _using_rep = False
+                    except Exception:
+                        _using_rep = False
+                else:
+                    _using_rep = False
                 for r in closed_rows:
                     d = dict(r)
                     ticker = d.get('ticker') or ''
                     stock_info = _get_stock_name(ticker)
-                    ret = d.get('actual_return') or 0
+                    # Task BRAVO-PERFORMANCE-FIX: لو المصدر real_evaluated_predictions
+                    # الحقول مختلفة (return_pct بدلاً من actual_return، إلخ)
+                    if _using_rep:
+                        ret = d.get('return_pct') or 0
+                        hit_target = d.get('hit_target') or 0
+                        hit_stop = d.get('hit_stop') or 0
+                        entry_price = d.get('entry_price') or 0
+                        exit_price = d.get('exit_price') or entry_price
+                        signal = d.get('signal') or 'BUY'
+                        prediction_date = d.get('evaluated_at') or ''
+                        outcome_date = d.get('evaluated_at') or ''
+                        holding_days = d.get('holding_days') or 0
+                    else:
+                        ret = d.get('actual_return') or 0
+                        hit_target = d.get('hit_target') or 0
+                        hit_stop = d.get('hit_stop') or 0
+                        entry_price = d.get('entry_price') or 0
+                        exit_price = d.get('exit_price') or d.get('entry_price') or 0
+                        signal = d.get('signal') or 'HOLD'
+                        prediction_date = d.get('prediction_date')
+                        outcome_date = d.get('outcome_date')
+                        holding_days = d.get('holding_days') or 0
+
                     returns.append(ret)
-                    if d.get('hit_target') or (d.get('is_correct') and d.get('is_correct') > 0):
+                    if hit_target or (d.get('is_correct') and d.get('is_correct') > 0):
                         successful += 1
                         status = 'successful'
-                    elif d.get('hit_stop'):
+                    elif hit_stop:
                         stopped += 1
                         status = 'stopped'
                     else:
@@ -1687,17 +1740,17 @@ def rebuild_predictions():
                         'name_ar': stock_info['name_ar'],
                         'sector': stock_info['sector'],
                         'logo_url': stock_info.get('logo_url', ''),
-                        'signal': d.get('signal') or 'HOLD',
+                        'signal': signal,
                         'signal_type': d.get('signal_type') or 'BUY',
-                        'entry_price': d.get('entry_price') or 0,
+                        'entry_price': entry_price,
                         'target_price': d.get('target_price') or 0,
                         'stop_loss': d.get('stop_loss') or 0,
-                        'exit_price': d.get('exit_price') or d.get('entry_price') or 0,
+                        'exit_price': exit_price,
                         'actual_return': ret,
                         'status': status,
-                        'prediction_date': d.get('prediction_date'),
-                        'outcome_date': d.get('outcome_date'),
-                        'holding_days': d.get('holding_days') or 0,
+                        'prediction_date': prediction_date,
+                        'outcome_date': outcome_date,
+                        'holding_days': holding_days,
                     })
             except Exception:
                 # الـ table مش موجودة — مفيش توقعات مغلقة
