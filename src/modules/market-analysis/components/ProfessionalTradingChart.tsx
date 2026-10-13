@@ -1138,8 +1138,27 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════════
-          §7 — أدوات إضافية (AlertPanel)
+          §7 — Rescue Clinic Banner (بديل DealAdvisorPanel القديم)
       ════════════════════════════════════════════════════════════════════════ */}
+      <CardContent className="pt-3 border-t border-border">
+        <a
+          href={`/rescue?ticker=${encodeURIComponent(ticker)}`}
+          className="block p-4 rounded-xl border border-border bg-gradient-to-l from-amber-500/10 to-transparent hover:from-amber-500/20 transition-all group"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🚑</span>
+              <div>
+                <p className="text-sm font-bold text-foreground">هل أنت عالق في هذا السهم بخسارة؟</p>
+                <p className="text-[11px] text-muted-foreground">افتح عيادة الإنقاذ المالي للتشخيص وخطة التعافي</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-primary group-hover:translate-x-[-4px] transition-transform">
+              ←
+            </span>
+          </div>
+        </a>
+      </CardContent>
 
       <AlertPanel ticker={ticker} open={alertPanelOpen} onClose={() => setAlertPanelOpen(false)} />
     </div>

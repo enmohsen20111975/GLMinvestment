@@ -243,6 +243,8 @@ const MarketDepthIntradayPressure = withErrorBoundary(
   'ضغط الشراء والبيع',
 );
 const AboutView = dynamicImport(() => import('@/components/about/AboutView').then(m => ({ default: m.AboutView })), { ssr: false });
+// ALPHA-P0: Rescue Clinic standalone page
+const RescuePage = dynamicImport(() => import('@/app/rescue/page'), { ssr: false, loading: () => <LazyTabLoader label="عيادة الإنقاذ" /> });
 // SniperView removed — merged into MarketAnalysisView persona tabs
 
 // Crypto additional views - loaded as a batch
@@ -785,6 +787,9 @@ function AppShell() {
       // === مخفية/قديمة ===
       case 'backtesting':
         return <EGXBacktestDashboard />;
+
+      case 'rescue':
+        return <RescuePage />;
 
       default:
         return <DashboardView />;

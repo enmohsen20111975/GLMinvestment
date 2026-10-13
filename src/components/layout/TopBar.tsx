@@ -40,7 +40,8 @@ import {
   Crown, Sparkles, FileBarChart, Newspaper, GraduationCap, Gamepad2,
   Wallet, Eye, HandCoins, Shield, RadioTower, Brain,
   Activity, BarChart3, Settings, Menu, X, ChevronDown,
-  Bell, Sun, Moon, DollarSign, Search, Globe, LogIn, LogOut, UserCircle, ShieldCheck, type LucideIcon,
+  Bell, Sun, Moon, DollarSign, Search, Globe, LogIn, LogOut, UserCircle, ShieldCheck,
+  Stethoscope, type LucideIcon,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
@@ -160,6 +161,7 @@ const navSections: NavSection[] = [
       // المستخدم بيبدّل لسوق CRYPTO من هناك، وكل شاشات السوق (stocks/trading-chart/إلخ)
       // بتعمل mirror تلقائياً وتعرض بيانات الكريبتو. مفيش حاجة لـ 8 إدخالات crypto منفصلة.
       { id: 'sharia', label: 'التوافق الشرعي', icon: ShieldCheck, highlight: true },
+      { id: 'rescue', label: 'عيادة الإنقاذ', icon: Stethoscope, highlight: true },
       { id: 'zakat', label: 'حاسبة الزكاة', icon: HandCoins },
       { id: 'tithes', label: 'حاسبة العُشر', icon: HandCoins },
       { id: 'subscription', label: 'الباقات والاشتراكات', icon: Crown, highlight: true },
