@@ -225,9 +225,49 @@ export function LiquidityFlowPanel() {
         setData(null);
         return;
       }
-      const json = (await res.json()) as LiquidityData;
-      if (!json.success) {
-        setError(json.note || 'تعذّر جلب البيانات');
+      const raw = await res.json();
+
+      // T-ALPHA-2: Normalize response — API may return:
+      //   (a) Object { success, sector_flow, summary, ... } (canonical Python shape)
+      //   (b) Array [{ sector, ... }, ...] (legacy/raw array shape)
+      //   (c) Object { success: false, error } (Python down — Rule 27)
+      // Without normalization, Array responses fail the `!json.success` check → red error card.
+      let json: LiquidityData;
+      if (Array.isArray(raw)) {
+        // Legacy Array shape — wrap + synthesize summary from array
+        const sectorFlow = raw as unknown as SectorFlow[];
+        const totalTurnover = sectorFlow.reduce((s, sf) => s + (Number(sf.total_turnover) || 0), 0);
+        const totalVolume = sectorFlow.reduce((s, sf) => s + (Number(sf.total_volume) || 0), 0);
+        const advancing = sectorFlow.filter(sf => sf.flow_direction === 'inflow').length;
+        const declining = sectorFlow.filter(sf => sf.flow_direction === 'outflow').length;
+        json = {
+          success: true,
+          market: currentMarket,
+          days: Number(period),
+          sector_flow: sectorFlow,
+          top_inflow_stocks: [],
+          top_outflow_stocks: [],
+          investor_type_estimate: null,
+          summary: {
+            total_turnover: totalTurnover,
+            total_volume: totalVolume,
+            net_flow_direction: advancing > declining ? 'inflow' : declining > advancing ? 'outflow' : 'neutral',
+            advancing_sectors: advancing,
+            declining_sectors: declining,
+          },
+        };
+      } else if (raw && typeof raw === 'object') {
+        // Object shape — check success flag
+        if (raw.success === false) {
+          setError(raw.message || raw.note || raw.error || 'تعذّر جلب البيانات');
+          setData(null);
+          return;
+        }
+        json = raw as LiquidityData;
+        // Ensure success flag is set if missing (some Python responses omit it)
+        if (json.success === undefined) json.success = true;
+      } else {
+        setError('استجابة غير صالحة من الخادم');
         setData(null);
         return;
       }

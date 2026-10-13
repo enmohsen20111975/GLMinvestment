@@ -4,5 +4,4 @@
 
 export { ShariaView } from './components/ShariaView';
 export { ShariaBadge } from './components/ShariaBadge';
-export { ShariaStockCard } from './components/ShariaStockCard';
 export { useShariaDetail, deriveShariaSummary } from './components/ShariaBadge';

@@ -257,7 +257,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
               <SummaryCell label="أعلى / أدنى" value={`${(session!.session_high ?? 0).toFixed(2)} / ${(session!.session_low ?? 0).toFixed(2)}`} />
             </div>
 
-            {/* Buy/Sell pressure bars per bucket */}
+            {/* Buy/Sell pressure bars per bucket — Face-to-Face (Diverging Bars) */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-1.5">
@@ -266,10 +266,11 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-sm bg-emerald-500/70" /> شراء
-                  </span>
-                  <span className="flex items-center gap-1">
                     <span className="inline-block w-2 h-2 rounded-sm bg-red-500/70" /> بيع
+                  </span>
+                  <span className="text-muted-foreground/50">|</span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 rounded-sm bg-emerald-500/70" /> شراء
                   </span>
                 </div>
               </div>
@@ -283,39 +284,51 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                                 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent
                                 [&::-webkit-scrollbar-thumb]:bg-border/60 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {data.buckets.map((b, idx) => {
-                    const total = Math.max(b.buy_pressure_pct + b.sell_pressure_pct, 0.0001);
-                    const buyWidth = (b.buy_pressure_pct / total) * 100;
-                    const sellWidth = (b.sell_pressure_pct / total) * 100;
+                    // T-ALPHA-1: Face-to-Face / Diverging Bars — buy grows RIGHT (green), sell grows LEFT (red)
+                    // Max scale = max pressure across all buckets for proportional bars
+                    const maxVol = Math.max(...data.buckets.map(bk => Math.max(bk.buy_volume, bk.sell_volume, 1)));
+                    const buyWidthPct = maxVol > 0 ? (b.buy_volume / maxVol) * 50 : 0; // 0-50% of total width
+                    const sellWidthPct = maxVol > 0 ? (b.sell_volume / maxVol) * 50 : 0;
                     const netTone = b.net_pressure > 0 ? 'pos' : b.net_pressure < 0 ? 'neg' : 'neutral';
                     return (
                       <div
                         key={b.bucket_start + idx}
-                        className="flex items-center gap-2 py-1.5 px-2 border-b border-border/20 last:border-0 hover:bg-muted/30"
+                        className="flex items-center gap-1 py-1.5 px-2 border-b border-border/20 last:border-0 hover:bg-muted/30"
                       >
-                        <div className="text-[10px] text-muted-foreground w-12 flex-shrink-0 font-mono" title={b.bucket_start}>
+                        <div className="text-[10px] text-muted-foreground w-10 flex-shrink-0 font-mono" title={b.bucket_start}>
                           {b.time_label}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex h-4 w-full overflow-hidden rounded-sm border border-border/40">
-                            <div
-                              className="bg-emerald-500/70 transition-all"
-                              style={{ width: `${buyWidth}%` }}
-                              title={`شراء: ${(b.buy_pressure_pct ?? 0).toFixed(1)}%`}
-                            />
-                            <div
-                              className="bg-red-500/70 transition-all"
-                              style={{ width: `${sellWidth}%` }}
-                              title={`بيع: ${(b.sell_pressure_pct ?? 0).toFixed(1)}%`}
-                            />
+                        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                          {/* T-ALPHA-1: Diverging bars — sell LEFT (red), buy RIGHT (green), center divider */}
+                          <div className="flex h-3 w-full items-center gap-px">
+                            {/* Sell side (LEFT — grows leftward via justify-end) */}
+                            <div className="flex-1 flex justify-end">
+                              <div
+                                className="bg-red-500/70 transition-all h-full rounded-l-sm"
+                                style={{ width: `${sellWidthPct * 2}%` }}
+                                title={`بيع: ${formatNumber(b.sell_volume)} حصة (${(b.sell_pressure_pct ?? 0).toFixed(1)}%)`}
+                              />
+                            </div>
+                            {/* Center divider */}
+                            <div className="w-px h-full bg-border/60 flex-shrink-0" />
+                            {/* Buy side (RIGHT — grows rightward) */}
+                            <div className="flex-1 flex justify-start">
+                              <div
+                                className="bg-emerald-500/70 transition-all h-full rounded-r-sm"
+                                style={{ width: `${buyWidthPct * 2}%` }}
+                                title={`شراء: ${formatNumber(b.buy_volume)} حصة (${(b.buy_pressure_pct ?? 0).toFixed(1)}%)`}
+                              />
+                            </div>
                           </div>
-                          <div className="text-[9px] text-muted-foreground mt-0.5 flex items-center justify-between">
+                          <div className="text-[9px] text-muted-foreground flex items-center justify-between">
+                            <span className="text-red-600/80">{formatNumber(b.sell_volume)}</span>
                             <span>{formatNumber(b.total_volume)} حصة</span>
-                            <span>شراء {(b.buy_pressure_pct ?? 0).toFixed(0)}% / بيع {(b.sell_pressure_pct ?? 0).toFixed(0)}%</span>
+                            <span className="text-emerald-500/80">{formatNumber(b.buy_volume)}</span>
                           </div>
                         </div>
                         <div
                           className={cn(
-                            'text-[10px] font-bold w-16 text-left whitespace-nowrap',
+                            'text-[10px] font-bold w-14 text-left whitespace-nowrap',
                             netTone === 'pos' ? 'text-emerald-500 dark:text-emerald-400' :
                             netTone === 'neg' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
                           )}
@@ -330,6 +343,11 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 </div>
               )}
             </div>
+
+            {/* T-ALPHA-1: Cumulative Net Pressure Curve — session liquidity trajectory */}
+            {data.buckets.length > 1 && (
+              <CumulativePressureCurve buckets={data.buckets} />
+            )}
 
             {/* Volume totals */}
             <div className="grid grid-cols-3 gap-2 text-[11px]">
@@ -373,6 +391,118 @@ function SummaryCell({
         )}
       >
         {value}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// T-ALPHA-1: Cumulative Net Pressure Curve
+// يرسم منحنى تراكمي لصافي السيولة عبر ساعات الجلسة (10:00 → 14:30).
+// صاعد للأعلى = تجميع وضغط شرائي | منحدر للأسفل = تصريف.
+// Rule 4: لا حساب مالي — مجرد جمع (cumsum) لقيم net_pressure من الـ buckets.
+// ════════════════════════════════════════════════════════════════════════════
+function CumulativePressureCurve({ buckets }: { buckets: Bucket[] }) {
+  // احسب القيم التراكمية (cumsum of net_pressure)
+  const cumulative: number[] = [];
+  let runningSum = 0;
+  for (const b of buckets) {
+    runningSum += Number(b.net_pressure) || 0;
+    cumulative.push(runningSum);
+  }
+
+  // مقياس SVG
+  const width = 320;
+  const height = 80;
+  const padding = 8;
+  const n = cumulative.length;
+  if (n < 2) return null;
+
+  const maxVal = Math.max(...cumulative, 0);
+  const minVal = Math.min(...cumulative, 0);
+  const range = maxVal - minVal || 1;
+
+  // نقاط المنحنى
+  const points = cumulative.map((val, i) => {
+    const x = padding + (i / (n - 1)) * (width - 2 * padding);
+    const y = padding + ((maxVal - val) / range) * (height - 2 * padding);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const path = `M ${points.join(' L ')}`;
+
+  // خط الصفر (محور أفقي)
+  const zeroY = padding + (maxVal / range) * (height - 2 * padding);
+  const isPositiveTrend = cumulative[cumulative.length - 1] >= 0;
+
+  // نقطة البداية والنهاية للـ area fill
+  const areaPath = `${path} L ${(width - padding).toFixed(1)},${zeroY.toFixed(1)} L ${padding.toFixed(1)},${zeroY.toFixed(1)} Z`;
+
+  return (
+    <div className="rounded-md border border-border/30 bg-muted/10 p-2">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <Activity className="w-3 h-3 text-purple-500" />
+          <span className="text-[11px] font-semibold">منحنى الضغط التراكمي</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[9px]">
+          <span className={cn('font-bold', isPositiveTrend ? 'text-emerald-500' : 'text-red-600')}>
+            {isPositiveTrend ? '▲ تجميع' : '▼ تصريف'}
+          </span>
+          <span className="text-muted-foreground">
+            ({cumulative[0] >= 0 ? '+' : ''}{formatNumber(cumulative[0])} → {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])})
+          </span>
+        </div>
+      </div>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-auto"
+        role="img"
+        aria-label={`منحنى الضغط التراكمي: ${isPositiveTrend ? 'صاعد تجميعي' : 'هابط تصريفي'}`}
+      >
+        {/* Zero line */}
+        <line
+          x1={padding}
+          y1={zeroY}
+          x2={width - padding}
+          y2={zeroY}
+          stroke="currentColor"
+          strokeWidth="0.5"
+          strokeDasharray="2 3"
+          className="text-muted-foreground/40"
+        />
+        {/* Area fill */}
+        <path
+          d={areaPath}
+          fill={isPositiveTrend ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}
+        />
+        {/* Curve line */}
+        <path
+          d={path}
+          fill="none"
+          stroke={isPositiveTrend ? '#10b981' : '#ef4444'}
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {/* Start point */}
+        <circle
+          cx={padding}
+          cy={padding + ((maxVal - cumulative[0]) / range) * (height - 2 * padding)}
+          r="2"
+          className="fill-muted-foreground"
+        />
+        {/* End point */}
+        <circle
+          cx={width - padding}
+          cy={padding + ((maxVal - cumulative[n-1]) / range) * (height - 2 * padding)}
+          r="2.5"
+          fill={isPositiveTrend ? '#10b981' : '#ef4444'}
+        />
+      </svg>
+      <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-0.5">
+        <span>{buckets[0]?.time_label ?? ''}</span>
+        <span>صافي تراكمي: {cumulative[n-1] >= 0 ? '+' : ''}{formatNumber(cumulative[n-1])}</span>
+        <span>{buckets[n-1]?.time_label ?? ''}</span>
       </div>
     </div>
   );

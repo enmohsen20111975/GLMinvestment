@@ -12,7 +12,7 @@ import { Header } from '@/components/layout/Header';
 import { MarketSummary } from '@/modules/dashboard/components/MarketSummary';
 import { IndexCards } from '@/modules/dashboard/components/IndexCards';
 import { TopMovers } from '@/modules/dashboard/components/TopMovers';
-import { MarketSentiment } from '@/modules/dashboard/components/MarketSentiment';
+import { RealtimeTicker } from '@/modules/dashboard/components/RealtimeTicker';
 
 import { CryptoSignalsWidget } from '@/modules/dashboard/components/CryptoSignalsWidget';
 import { SeasonalitySignalsWidget } from '@/modules/dashboard/components/SeasonalitySignalsWidget';
@@ -217,12 +217,11 @@ export function DashboardView() {
       title: 'نبض السوق والمشاعر',
       visible: () => currentMarket === 'EGX',
       render: () => (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ErrorBoundary title="نبض السوق">
-            <MarketPulseWidget />
-          </ErrorBoundary>
-          <MarketSentiment />
-        </div>
+        // T-ALPHA-3: Removed dead <MarketSentiment /> (was showing 50 neutral + 0/0).
+        // <MarketPulseWidget /> now takes full width — it's the real, working pulse gauge.
+        <ErrorBoundary title="نبض السوق">
+          <MarketPulseWidget />
+        </ErrorBoundary>
       ),
     },
     // 2. توقعات اليوم (تتبع السوق المختار — Owner directive)

@@ -6,7 +6,7 @@
 //   screen is now #academy (AcademyView) which already hosts the
 //   encyclopedia + 3 simulators + LessonPDFExporter.
 
-// Reusable visual primitives (still consumed by AcademyEncyclopedia + CryptoLearningView)
+// Reusable visual primitives (still consumed by AcademyEncyclopedia)
 export { MathText } from './components/MathRenderer';
 export { DiagramRenderer, CalloutBox, ExampleCard } from './components/LearningVisuals';
 
