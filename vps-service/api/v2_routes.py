@@ -1025,7 +1025,76 @@ def morning_recommendations():
                 all_analysis = []
 
         # Task B-11: لو لا توجد تحليلات → fallback ذكي (لا بانر أحمر)
+        # Task B-14: fallback صلب من predictions.db مباشرة
         if not all_analysis:
+            # B-14: اقرأ من predictions table (stocks.db أو predictions.db)
+            import sqlite3 as _b14_sql
+            from pathlib import Path as _B14Path
+            _b14_root = Path(__file__).resolve().parent.parent.parent
+            _b14_stocks_db = str(_b14_root / 'db' / 'stocks.db')
+            _b14_preds_db = str(_b14_root / 'db' / 'predictions.db')
+            _b14_today = datetime.now().strftime('%Y-%m-%d')
+
+            _b14_recs = []
+            for _b14_db_path in [_b14_preds_db, _b14_stocks_db]:
+                if not _b14_recs and Path(_b14_db_path).exists():
+                    try:
+                        _b14_conn = _b14_sql.connect(f"file:{_b14_db_path}?mode=ro", uri=True)
+                        _b14_conn.row_factory = _b14_sql.Row
+                        _b14_rows = _b14_conn.execute("""
+                            SELECT p.ticker, p.signal, p.entry_price, p.target_price,
+                                   p.stop_loss, p.master_score, p.signal_type,
+                                   s.name, s.name_ar, s.market, s.sector
+                            FROM predictions p
+                            LEFT JOIN stocks s ON p.ticker = s.ticker
+                            WHERE p.entry_price IS NOT NULL AND p.entry_price > 0
+                              AND p.target_price IS NOT NULL AND p.target_price > 0
+                              AND p.stop_loss IS NOT NULL AND p.stop_loss > 0
+                              AND p.outcome_date IS NULL
+                            ORDER BY p.master_score DESC
+                            LIMIT 5
+                        """).fetchall()
+                        _b14_conn.close()
+                        for _r in _b14_rows:
+                            _d = dict(_r)
+                            _entry = float(_d['entry_price'] or 0)
+                            _target = float(_d['target_price'] or 0)
+                            _stop = float(_d['stop_loss'] or 0)
+                            _risk = _entry - _stop
+                            _rr = round((_target - _entry) / _risk, 2) if _risk > 0 else 0
+                            _b14_recs.append({
+                                "rank": len(_b14_recs) + 1,
+                                "ticker": _d['ticker'],
+                                "name_ar": _d.get('name_ar') or _d.get('name') or _d['ticker'],
+                                "current_price": round(_entry, 3),
+                                "signal": _d.get('signal') or 'BUY',
+                                "signal_ar": 'شراء',
+                                "signal_strength": "فرصة من قاعدة التوقعات",
+                                "signal_emoji": "📊",
+                                "master_score": round(float(_d.get('master_score') or 50), 1),
+                                "confidence": round(float(_d.get('master_score') or 50), 1),
+                                "entry": {"primary": round(_entry, 3), "range_low": round(_entry * 0.99, 3), "range_high": round(_entry * 1.01, 3), "description": f"شراء من {round(_entry*0.99,3)} إلى {round(_entry*1.01,3)}"},
+                                "targets": {"target_1": {"price": round(_target, 3), "pct": round((_target-_entry)/_entry*100, 1) if _entry>0 else 0, "description": "هدف البيع الأول"}},
+                                "stop_loss": {"price": round(_stop, 3), "pct": round((_entry-_stop)/_entry*100, 1) if _entry>0 else 0, "description": "وقف الخسارة"},
+                                "risk_reward": _rr,
+                                "source": "predictions_db_fallback"
+                            })
+                    except Exception as _b14_err:
+                        logger.warning(f"[morning_recommendations] B-14 fallback failed ({_b14_db_path}): {_b14_err}")
+
+            if _b14_recs:
+                return jsonify({
+                    "success": True,
+                    "version": "2.0.0",
+                    "timestamp": datetime.now().isoformat(),
+                    "date_ar": date_ar,
+                    "title": f"صباح الخيرات - توقعات صباحية لجلسة {date_ar} بإذن الله",
+                    "summary": {"total_analyzed": len(_b14_recs), "opportunities_found": len(_b14_recs), "recommendations_count": len(_b14_recs), "source": "predictions_db"},
+                    "recommendations": _b14_recs,
+                    "disclaimer": "هذا تحليل بيانات تعليمي فقط. ليس توقعة استثمارية. استشر مستشار مالي مرخص."
+                })
+
+            # B-14: لو حتى predictions فارغة → fallback أنيق
             return jsonify({
                 "success": True,
                 "version": "2.0.0",

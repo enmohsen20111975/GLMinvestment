@@ -1052,7 +1052,42 @@ def scan_ticker(rows, ticker, regime='NORMAL', percentile_rank=None):
         'liquidity_tier_label': LIQUIDITY_TIERS.get(tier, {}).get('label', '❓ غير معروف') if tier != 'unknown' else '❓ غير معروف (لا بيانات)',
         'rvol_surge_exception': rvol_surge_exception,
         'rvol_value': round((volumes[-1] / avg_volume_20d) if (volumes and avg_volume_20d > 0) else 0, 2),
+        # ─── Task B-16: تصنيف مرحلة السهم + صافي الكاش المليوني ──
+        'net_cash_flow_egp': round(money_flow.get('net_flow_egp', 0), 0),
+        'buy_value_m_egp': round(money_flow.get('buy_value_m', 0), 2),
+        'sell_value_m_egp': round(money_flow.get('sell_value_m', 0), 2),
+        'maker_phase': _classify_maker_phase(money_flow, life_cycle, winner_path, accumulation),
+        'maker_phase_ar': _classify_maker_phase_ar(money_flow, life_cycle, winner_path, accumulation),
     }
+
+
+def _classify_maker_phase(money_flow: dict, life_cycle: str, winner_path: str, accumulation: str) -> str:
+    """Task B-16: تصنيف مرحلة السهم بناءً على صافي الكاش + التجميع/التصريف."""
+    net_flow = money_flow.get('net_flow_egp', 0)
+    buy_pct = money_flow.get('buy_pct', 0)
+    # تصنيف المرحلة
+    if net_flow > 0 and buy_pct >= 55 and ('تجميع' in str(accumulation) or winner_path and 'accumulation' in winner_path):
+        return 'quiet_accumulation'  # 🤫 تجميع صامت
+    elif net_flow > 0 and buy_pct >= 50 and winner_path and 'pre_surge' in winner_path:
+        return 'pre_explosion'  # 🚀 تحضير لانفجار
+    elif net_flow < 0 or 'تصريف' in str(accumulation) or 'تخفيض' in str(accumulation):
+        return 'distribution_exit'  # ⚠️ تصريف وخروج
+    elif net_flow > 0 and buy_pct >= 50:
+        return 'quiet_accumulation'  # 🤫 تجميع صامت (default positive)
+    else:
+        return 'neutral'
+
+
+def _classify_maker_phase_ar(money_flow: dict, life_cycle: str, winner_path: str, accumulation: str) -> str:
+    """Task B-16: التسمية العربية لمرحلة السهم."""
+    phase = _classify_maker_phase(money_flow, life_cycle, winner_path, accumulation)
+    phase_map = {
+        'quiet_accumulation': '🤫 تجميع صامت',
+        'pre_explosion': '🚀 تحضير لانفجار',
+        'distribution_exit': '⚠️ تصريف وخروج',
+        'neutral': '📊 محايد',
+    }
+    return phase_map.get(phase, '📊 محايد')
 
 
 # ============================================================================
