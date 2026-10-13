@@ -375,10 +375,12 @@ def _load_stocks_fundamentals_batch() -> dict:
             except (ValueError, TypeError):
                 fair_value = 0.0
 
-            # حساب volume_ratio لو مش موجود صراحة
+            # حساب volume_ratio مع فحص وتصحيح الشذوذ
             volume_ratio = 1.0
             if avg_volume and avg_volume > 0 and volume > 0:
-                volume_ratio = round(volume / avg_volume, 2)
+                _eff_avg = avg_volume * 1000.0 if (avg_volume < 1000 and volume > 10000) else avg_volume
+                _raw_ratio = volume / _eff_avg if _eff_avg > 0 else 1.0
+                volume_ratio = min(round(_raw_ratio, 2), 10.0)
 
             # حساب fair_value_upside:
             # Method 1: من fair_value column (لو موجود)
@@ -870,10 +872,10 @@ def _derive_persona_action(persona: str, row: dict, fund: dict = None) -> dict:
     # المستثمر بيفكر بـ: أساسيات (P/E, ROE) + قيمة عادلة + استقرار.
     def _gambler_signature_reason(prefix: str = '') -> str:
         momentum_parts = []
-        if vr_fund and vr_fund >= 1.5:
-            momentum_parts.append(f"زخم قوي (حجم {vr_fund:.1f}x)")
-        elif vol_ratio_val and vol_ratio_val >= 1.5:
-            momentum_parts.append(f"زخم قوي (حجم {vol_ratio_val:.1f}x)")
+        _raw_vr = vr_fund or vol_ratio_val or 1.0
+        _capped_vr = min(_raw_vr, 10.0)
+        if _capped_vr >= 1.5:
+            momentum_parts.append(f"زخم قوي (حجم {_capped_vr:.1f}x)")
         if abs(chg_1d) >= 2.0:
             direction = 'صاعد' if chg_1d > 0 else 'هابط'
             momentum_parts.append(f"حركة سعرية {direction}ة ({chg_1d:+.1f}%)")

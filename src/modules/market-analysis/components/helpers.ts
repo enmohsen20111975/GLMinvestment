@@ -425,7 +425,11 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
   text += `📅 ${formatDateLabel().dateStr}\n`;
   text += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  items.forEach((it, i) => {
+  // إظهار الصفقات النشطة القابلة للتداول فقط وتجنب إدراج التوقعات المنتهية
+  const activeItems = items.filter(it => !it.priceTargetMismatch && !it.stale && it.status !== 'CLOSED' && it.status !== 'EXPIRED');
+  const targetItems = activeItems.length > 0 ? activeItems : items;
+
+  targetItems.forEach((it, i) => {
     // P26: خريطة الشخصية المعروضة لمفتاح analysisJson + fallback للحقول العلوية
     const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
     const pd: PersonaData = it.analysisJson?.[_personaKey] || {
