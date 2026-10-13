@@ -2009,8 +2009,6 @@ def evidence_scorecard():
             "ORDER BY price_date DESC LIMIT 20",
             (ticker,)
         ).fetchall()
-        conn.close()
-
         atr = 0.0
         if len(candles) >= 14:
             highs = [float(c['high'] or 0) for c in reversed(candles)]
@@ -2057,14 +2055,13 @@ def evidence_scorecard():
         rr_ratio = round((target_price - current_price) / (current_price - stop_loss), 2) if (target_price and stop_loss and current_price - stop_loss > 0) else 0.0
 
         # 7. index change (EGX30)
-        idx_row = cur.execute("SELECT change_percent FROM market_indices WHERE symbol = 'EGX30'").fetchone() if conn else None
-        # fallback: conn may be closed, re-open
         try:
-            conn2 = sqlite3.connect(DATABASE_PATH)
-            idx_row = conn2.execute("SELECT change_percent FROM market_indices WHERE symbol = 'EGX30'").fetchone()
-            conn2.close()
+            idx_row = cur.execute("SELECT change_percent FROM market_indices WHERE symbol = 'EGX30'").fetchone()
         except Exception:
             idx_row = None
+        finally:
+            conn.close()
+
         index_change_pct = _safe_float(idx_row[0]) if idx_row else 0.0
 
         # 8. Build scorecard
