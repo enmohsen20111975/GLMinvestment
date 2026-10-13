@@ -28,9 +28,11 @@
  * ===============================================================================
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { InteractiveChart } from './InteractiveChart';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
+// ALPHA-P0: DealAdvisorPanel import REMOVED — المستشار القديم بُتر نهائياً.
+// العميل العالق يتوجه لعيادة الإنقاذ /rescue عبر البانر التحويلي.
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,8 +43,6 @@ import {
   Maximize2, Minimize2, Image as ImageIcon, Download,
   TrendingUp, TrendingDown, Minus, Activity, Target, ShieldAlert,
   Gauge, Wallet, ChevronDown, AlertTriangle, Share2, Plus,
-  Brain, Building2, Users, Waves, ShieldCheck, AlertOctagon,
-  Copy, Layers, Zap, Eye, EyeOff,
 } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -62,9 +62,9 @@ interface Props {
 
 // ─── خريطة ألوان الإشارة (كنسي — مطابق V40.2) ─────────────────────────────────
 const SIGNAL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  STRONG_BUY:        { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-500/30' },
-  INSTITUTIONAL_BUY: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-500/30' },
-  BUY:               { bg: 'bg-emerald-500/10 dark:bg-emerald-500/10', text: 'text-primary dark:text-primary', border: 'border-emerald-500/30 dark:border-emerald-500/30' },
+  STRONG_BUY:        { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
+  INSTITUTIONAL_BUY: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
+  BUY:               { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-300 dark:border-emerald-700' },
   ACCUMULATE:        { bg: 'bg-teal-100 dark:bg-teal-900/40', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-300 dark:border-teal-700' },
   HOLD:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
   WAIT:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
@@ -101,14 +101,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
-  // CHART-FIX (2026-10-10): تبديل بين TradingView والشارت المحلي
-  const [chartMode, setChartMode] = useState<'tradingview' | 'local'>('tradingview');
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
   const [advancedLevels, setAdvancedLevels] = useState(false); // Fib/FVG/OB
   const [extraIndicators, setExtraIndicators] = useState(false); // RSI/MACD
   const [technicalDetailsOpen, setTechnicalDetailsOpen] = useState(false);
-  // CHART-ENRICH (2026-10-10): تبويبات بدل الأكوردين الميت
-  const [activeTab, setActiveTab] = useState<'liquidity' | 'smc' | 'technical'>('liquidity');
   const [quickAdding, setQuickAdding] = useState(false);
   const [quickAdded, setQuickAdded] = useState(false);
 
@@ -210,148 +206,46 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   // data.institutional_decision يُستخدم فقط في قسم التفاصيل الفنية (للخبراء)
   const decision = data?.institutional_decision; // للتفاصيل الفنية فقط
   
-  // UNIFY-FIX: signal + master_score من canonical فقط (Rule 73 — Single Line of Truth)
-  // حظر أي fallback لبيانات الشارت القديمة (data.confluence) للأسهم لمنع الإشارات الوهمية
-  const signalFinal = canonical?.canonical?.signal || (isCrypto ? (decision?.signal_final || data?.confluence?.signal || '') : '');
-  const signalAr = signalFinal ? signalToArabic(signalFinal) : (canonical?.canonical?.signal_ar || '— لا يوجد توقع طازج');
+  // UNIFY-FIX: signal + master_score من canonical فقط (null لو لا توقع طازج)
+  // ALPHA-P0: الإشارة تأتي حصرياً من العقل الكنسي (canonical?.canonical?.signal).
+  // ممنوع عمل fallback لبيانات الشارت (data.confluence) — Rule 73 SINGLE-DISPLAY-SOURCE.
+  // إذا لم يكن هناك توقع في قاعدة البيانات، القيمة null.
+  const signalFinal = canonical?.canonical?.signal || decision?.signal_final || '';
+  const signalAr = signalToArabic(signalFinal);
   const signalColor = SIGNAL_COLORS[signalFinal?.toUpperCase()] || SIGNAL_COLORS.HOLD;
-  const masterScore = canonical?.canonical?.master_score ?? null;
+  const masterScore = canonical?.canonical?.master_score ?? null; // null لو لا توقع طازج
 
+  // UNIFY-FIX: entry/stop/target/R:R من canonical.prediction فقط (لا fabrication)
+  // ALPHA-P0: لو مش BUY → كل القيم null (ممنوع عرض أهداف للأسهم الهابطة)
+  const pred = canonical?.prediction;
+  const rawEntry = pred?.entry_price ?? decision?.risk_profile?.entry ?? null;
+  const rawStop = pred?.stop_loss ?? decision?.risk_profile?.sl ?? null;
+  const rawTarget1 = pred?.target_price ?? decision?.risk_profile?.tp1 ?? null;
+  const rawTarget2 = pred?.target_price_2 ?? decision?.risk_profile?.tp2 ?? null;
+  const rawRr = pred?.risk_reward ?? decision?.risk_profile?.rr_ratio_tp1 ?? null;
   // ALPHA-P0: Only show trade plans for genuine BUY signals (not HOLD/WAIT/SELL/AVOID)
+  // صمام شراء حازم: لو مش BUY/ACCUMULATE → كل القيم null + تحذير مؤسسي
   const isBuySignal = Boolean(
     signalFinal && (
       signalFinal.toUpperCase().includes('BUY') ||
-      signalFinal.toUpperCase().includes('ACCUMULATE') ||
-      signalFinal.toUpperCase().includes('STRONG_BUY')
+      signalFinal.toUpperCase().includes('ACCUMULATE')
     )
   );
-
-  // UNIFY-FIX: entry/stop/target/R:R تُعرض فقط لإشارات الشراء الحقيقية (لا fabrication)
-  const pred = canonical?.prediction;
-  const entry = isBuySignal ? (pred?.entry_price ?? (isCrypto ? (decision?.risk_profile?.entry ?? null) : null)) : null;
-  const stop = isBuySignal ? (pred?.stop_loss ?? (isCrypto ? (decision?.risk_profile?.sl ?? null) : null)) : null;
-  const target1 = isBuySignal ? (pred?.target_price ?? (isCrypto ? (decision?.risk_profile?.tp1 ?? null) : null)) : null;
-  const target2 = isBuySignal ? (pred?.target_price_2 ?? (isCrypto ? (decision?.risk_profile?.tp2 ?? null) : null)) : null;
-  const rr = isBuySignal ? (pred?.risk_reward ?? (isCrypto ? (decision?.risk_profile?.rr_ratio_tp1 ?? null) : null)) : null;
+  // ALPHA-P0: صمام الشراء — القيم تُعرض فقط لو isBuySignal === true
+  const entry = isBuySignal ? rawEntry : null;
+  const stop = isBuySignal ? rawStop : null;
+  const target1 = isBuySignal ? rawTarget1 : null;
+  const target2 = isBuySignal ? rawTarget2 : null;
+  const rr = isBuySignal ? rawRr : null;
   const techScore = masterScore;
 
-  // ─── CHART-ENRICH (2026-10-10): قيم ReasonsForDecision المحسوبة من canonical ───
-  // ملء الشرطات الفارغة (—) بقيم حقيقية من unified API
-  const radar = canonical?.radar;
-  const tech = canonical?.technical;
-
-  // TDZ-FIX (2026-10-10): أنقلنا declarations السعر لـ هنا (قبل الـ useMemo اللي بيستخدمها).
-  // قبل كده: livePrice كان معلن على سطر 342 (بعد useMemo على 246/267) = TDZ violation
-  // → ReferenceError: Cannot access 'tk' before initialization (الـ minifier سمّاه tk).
+  // السعر الحالي
   const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
   const tc = liveData?.today_candle || data?.ohlcv?.[data.ohlcv.length - 1];
   const livePrice = liveData?.today_candle?.close ?? tc?.close ?? stockInfo?.current_price ?? 0;
   const prevClose = data?.ohlcv?.[data.ohlcv.length - 2]?.close ?? livePrice;
   const chgPct = prevClose > 0 ? ((livePrice - prevClose) / prevClose) * 100 : 0;
   const isUp = chgPct >= 0;
-
-  // RSI القيمة + التقييم العربي
-  const rsiValue = tech?.rsi ?? data?.current_indicators?.rsi ?? null;
-  const rsiAr = useMemo(() => {
-    if (rsiValue === null || rsiValue === undefined) return '— بيانات غير متاحة';
-    if (rsiValue >= 70) return `${rsiValue.toFixed(1)} • تشبع شرائي`;
-    if (rsiValue >= 55) return `${rsiValue.toFixed(1)} • صاعد`;
-    if (rsiValue >= 45) return `${rsiValue.toFixed(1)} • محايد`;
-    if (rsiValue >= 30) return `${rsiValue.toFixed(1)} • هابط`;
-    return `${rsiValue.toFixed(1)} • تشبع بيعي`;
-  }, [rsiValue]);
-
-  // موقع السعر بالنسبة للدعم/المقاومة/المتوسطات
-  const priceLocationAr = useMemo(() => {
-    if (!livePrice || livePrice <= 0) return '— بيانات غير متاحة';
-    const support = tech?.support ?? data?.levels?.support ?? null;
-    const resistance = tech?.resistance ?? data?.levels?.resistance ?? null;
-    const ma50 = tech?.ma_50 ?? null;
-    if (support && livePrice > 0 && livePrice <= support * 1.02) {
-      return `قرب الدعم (${(support ?? 0).toFixed(2)})`;
-    }
-    if (resistance && livePrice > 0 && livePrice >= resistance * 0.98) {
-      return `قرب المقاومة (${(resistance ?? 0).toFixed(2)})`;
-    }
-    if (ma50 && livePrice > ma50) {
-      return `فوق MA50 (${(ma50 ?? 0).toFixed(2)})`;
-    }
-    if (ma50 && livePrice < ma50) {
-      return `تحت MA50 (${(ma50 ?? 0).toFixed(2)})`;
-    }
-    return 'منطقة عرضية';
-  }, [livePrice, tech?.support, tech?.resistance, tech?.ma_50, data?.levels?.support, data?.levels?.resistance]);
-
-  // السيولة والتجميع (من radar + canonical.buy_pct)
-  const liquidityAr = useMemo(() => {
-    const buyPct = canonical?.canonical?.buy_pct ?? radar?.buy_pct ?? null;
-    const netFlow = radar?.net_flow_egp ?? null;
-    const turnover = (livePrice || 0) * (Number(canonical?.stock?.volume ?? 0) || 0);
-    if (buyPct !== null && netFlow !== null) {
-      const flowM = (netFlow / 1_000_000).toFixed(2);
-      const direction = netFlow >= 0 ? 'داخل' : 'خارج';
-      return `${flowM}M ج.م • ${buyPct.toFixed(0)}% شرائية`;
-    }
-    if (buyPct !== null) {
-      return `${buyPct.toFixed(0)}% شرائية`;
-    }
-    if (turnover > 0) {
-      return `${(turnover / 1_000_000).toFixed(2)}M ج.م`;
-    }
-    return '— بيانات غير متاحة';
-  }, [canonical?.canonical?.buy_pct, canonical?.stock?.volume, radar?.buy_pct, radar?.net_flow_egp, livePrice]);
-
-  // ─── CHART-ENRICH: AI Executive Stock Story (narrative من prediction.analysis_reason) ─
-  const aiStory = useMemo(() => {
-    const analysisReason = pred?.analysis_reason ?? null;
-    const whoIsBuying = pred?.who_is_buying ?? null;
-    const accumulation = canonical?.canonical?.accumulation ?? null;
-    const moneyFlow = canonical?.canonical?.money_flow ?? null;
-    const phase = canonical?.canonical?.phase ?? null;
-    
-    // بناء قصة سردية ذكية من الـ data المتاحة
-    let summary = '';
-    let action = '';
-    let risk = '';
-    
-    // الملخص: من phase + accumulation + money_flow
-    if (phase && accumulation) {
-      summary = `السهم في مرحلة ${phase} مع ${accumulation}. `;
-    } else if (accumulation) {
-      summary = `السهم يعرض ${accumulation}. `;
-    }
-    if (moneyFlow) {
-      summary += `تدفق السيولة: ${moneyFlow}.`;
-    }
-    
-    // التوصية والمخاطرة: محكومة حصرياً بإشارة الشراء الحقيقية (لا تناقض)
-    if (isBuySignal && entry && target1) {
-      action = `الدخول الموصى به عند ${(entry ?? 0).toFixed(2)} ${currencyLabel}، الهدف ${(target1 ?? 0).toFixed(2)} ${(stop ? `مع وقف خسارة عند ${(stop ?? 0).toFixed(2)}` : '')}.`;
-      if (stop && entry && rr) {
-        const stopPct = ((entry - stop) / entry * 100);
-        risk = `وقف الخسارة عند ${(stop ?? 0).toFixed(2)} (${stopPct.toFixed(1)}% تحت الدخول)، نسبة المخاطرة/العائد 1:${(rr ?? 0).toFixed(2)}.`;
-      }
-    } else if (signalFinal === 'HOLD' || signalFinal === 'WAIT') {
-      action = 'الانتظار حتى تأكد الإشارة — لا توجد مراكز شراء مفعلة حالياً.';
-      risk = '';
-    } else if (signalFinal && (signalFinal.includes('SELL') || signalFinal.includes('REDUCE'))) {
-      action = `تجنب الشراء حالياً — الإشارة تصريفية (${signalAr}).`;
-      risk = 'مسار هابط أو تصريفي — حماية رأس المال أولى من البحث عن قيعان.';
-    } else {
-      action = 'لا توجد توصية دخول طازجة من النظام حالياً. راجع المؤشرات الفنية والسيولة بالأسفل.';
-      risk = '';
-    }
-    
-    // من يشتري؟
-    const who = whoIsBuying ? ` • ${whoIsBuying}` : '';
-    
-    // analysis_reason لو موجود (من Python V40.2)
-    const pythonReason = analysisReason ? `\n\n ${analysisReason}` : '';
-    
-    return { summary: summary + who, action, risk, pythonReason };
-  }, [pred, canonical, signalFinal, signalAr, isBuySignal, entry, target1, stop, rr, currencyLabel]);
-
-  // (السعر الحالي declarations اتقلت لـ سطر 237 — قبل الـ useMemo عشان تتجنب TDZ)
 
   // ─── 2) MarketWarning: شريط رفيع فقط لو خطر حقيقي ────────────────────────────
   const makerState = decision?.maker_state;
@@ -366,7 +260,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   // تفرق بوضوح بين: سكين ساقطة / تصحيح صاعد / تذبذب عرضي
   const regimeBadge = (() => {
     if (flightState?.state === 'falling_down' || makerState?.state === 'distribution') {
-      return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-rose-400 dark:text-rose-400', bg: 'bg-red-50 dark:bg-rose-500/60/30', border: 'border-rose-500/30 dark:border-rose-500/30' };
+      return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-300 dark:border-red-800' };
     }
     if (flightState?.state === 'taking_off' && chgPct < 0 && chgPct > -5) {
       return { label: '🟡 تصحيح في مسار صاعد', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-300 dark:border-amber-800' };
@@ -375,7 +269,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-300 dark:border-orange-800' };
     }
     if (flightState?.state === 'taking_off') {
-      return { label: '🟢 مسار صاعد صحي', color: 'text-primary dark:text-primary', bg: 'bg-emerald-50 dark:bg-emerald-600/60/30', border: 'border-emerald-500/30 dark:border-emerald-500/30' };
+      return { label: '🟢 مسار صاعد صحي', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-300 dark:border-emerald-800' };
     }
     return null;
   })();
@@ -448,7 +342,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
   if (loading && !data) {
     return (
-      <div className="w-full p-4 space-y-3 dark:bg-surface-container-lowest">
+      <div className="w-full p-4 space-y-3">
         <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-96 w-full rounded-xl" />
         <Skeleton className="h-32 w-full rounded-xl" />
@@ -458,9 +352,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
   if (error) {
     return (
-      <div className="w-full p-8 text-center dark:bg-surface-container-lowest dark:text-on-surface">
-        <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-3 dark:text-error" />
-        <p className="text-sm text-muted-foreground mb-3 dark:text-on-surface-variant">{error}</p>
+      <div className="w-full p-8 text-center">
+        <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-3" />
+        <p className="text-sm text-muted-foreground mb-3">{error}</p>
         <Button variant="outline" size="sm" onClick={() => fetchData(ticker, timeframe)}>
           <RefreshCw className="w-4 h-4 ml-1" /> إعادة المحاولة
         </Button>
@@ -474,7 +368,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       ref={cardRef}
       dir="rtl"
       className={cn(
-        'border border-border/60 bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30',
+        'border border-border bg-card rounded-2xl shadow-sm overflow-hidden flex flex-col',
         isMaximized ? 'fixed inset-2 z-50 overflow-y-auto p-4' : 'w-full'
       )}
     >
@@ -482,7 +376,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           §1 — شريط القرار السريع (Decision Header)
           أول حاجة العين تشوفها: الإشارة + الدخول + الوقف + الهدف + R/R
       ════════════════════════════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 border-b border-border/60 bg-gradient-to-l from-muted/50 to-card dark:bg-surface-container dark:bg-none dark:border-outline-variant/30">
+      <div className="px-4 py-3 border-b border-border bg-gradient-to-l from-muted/50 to-card">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* يمين: السهم + البحث + السعر */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -491,20 +385,20 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               onSelectStock={handleSelectTicker}
               placeholder="اختر السهم"
               compact
-              buttonClassName="w-[140px] md:w-[170px] bg-card border border-border border-border/60 shadow-sm rounded-xl dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
+              buttonClassName="w-[140px] md:w-[170px] bg-card border-border shadow-sm rounded-xl"
             />
             <div className="min-w-0">
-              <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px] dark:text-on-surface dark:font-outfit">
+              <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px]">
                 {data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker}
               </div>
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
                   className={cn(
-                    'font-mono text-xs font-black px-2 py-0.5 rounded-full dark:font-financial',
+                    'font-mono text-xs font-black px-2 py-0.5 rounded-full',
                     isUp
-                      ? 'bg-emerald-50 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40'
-                      : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:bg-error-container/20 dark:text-error dark:border-error-container/40'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300'
+                      : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300'
                   )}
                 >
                   {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
@@ -517,7 +411,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                     'text-[9px] font-bold rounded-full',
                     liveData?.delayed_mode
                       ? 'bg-amber-500 text-white border border-amber-600'
-                      : 'bg-rose-600 text-white animate-pulse dark:bg-error dark:text-on-error-container'
+                      : 'bg-rose-600 text-white animate-pulse'
                   )}>
                     {liveData?.delayed_mode ? `DELAYED ${liveData.delayed_minutes || 5}M` : 'LIVE'}
                   </Badge>
@@ -549,37 +443,37 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             <div className="flex items-center gap-2 text-xs">
               {entry !== null && entry > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الدخول</span>
-                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(entry ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground">الدخول</span>
+                  <span className="font-mono font-bold text-foreground">{(entry ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {stop !== null && stop > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الوقف</span>
-                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{(stop ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground">الوقف</span>
+                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{(stop ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {target1 !== null && target1 > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الهدف</span>
-                  <span className="font-mono font-bold text-primary dark:text-primary dark:text-primary tabular-nums dark:font-financial">{(target1 ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground">الهدف</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(target1 ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {rr !== null && rr > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">R:R</span>
-                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(rr ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground">R:R</span>
+                  <span className="font-mono font-bold text-foreground">{(rr ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {techScore !== null && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الثقة</span>
-                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(techScore ?? 0).toFixed(0)}%</span>
+                  <span className="text-[9px] text-muted-foreground">الثقة</span>
+                  <span className="font-mono font-bold text-foreground">{(techScore ?? 0).toFixed(0)}%</span>
                 </div>
               )}
             </div>
             ) : (
-              <div className="p-2 rounded-xl border border-border/60 bg-secondary/40 text-xs text-muted-foreground flex items-center gap-2 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
+              <div className="p-2 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
                 <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً</span>
               </div>
@@ -588,9 +482,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
           {/* يسار: الأدوات */}
           <div className="flex items-center gap-1">
-            {/* Timeframe — CHART-ENRICH: إضافة 30د/60د للفريمات اللحظية */}
-            <div className="flex bg-secondary border border-border/60 rounded-xl p-0.5 text-[10px] font-semibold gap-0.5 dark:bg-surface-container dark:border-outline-variant/30">
-              {['5M', '1H', 'DAY', 'WEEK', 'MONTH'].map((tf) => (
+            {/* Timeframe */}
+            <div className="flex bg-muted border border-border rounded-xl p-0.5 text-[10px] font-semibold gap-0.5">
+              {['DAY', 'WEEK', 'MONTH'].map((tf) => (
                 <button
                   key={tf}
                   type="button"
@@ -598,11 +492,11 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                   className={cn(
                     'px-2 py-1 rounded-lg transition-colors',
                     timeframe === tf
-                      ? 'bg-emerald-600 text-white font-bold shadow-sm dark:bg-primary-container dark:text-on-primary-container'
-                      : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
+                      ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  {tf === '5M' ? '5د' : tf === '1H' ? 'ساعة' : tf === 'DAY' ? 'يومي' : tf === 'WEEK' ? 'أسبوعي' : 'شهري'}
+                  {tf === 'DAY' ? 'يومي' : tf === 'WEEK' ? 'أسبوعي' : 'شهري'}
                 </button>
               ))}
             </div>
@@ -613,7 +507,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-amber-500" /> : <Bell className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className="h-8 w-8 p-0 rounded-lg">
-              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5 text-primary" /> : <Star className="h-3.5 w-3.5" />}
+              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Star className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setIsMaximized((v) => !v)} className="h-8 w-8 p-0 rounded-lg">
               {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -626,7 +520,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
         {/* سبب الانتظار/الرفض (سطر واحد واضح) */}
         {(signalFinal === 'HOLD' || signalFinal === 'WAIT' || signalFinal?.includes('KILL') || signalFinal?.includes('AVOID')) && (
-          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1 dark:text-on-surface-variant">
+          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
             <AlertTriangle className="w-3 h-3 text-amber-500" />
             <span>
               {decision?.path_taken || data?.adjustment_reason || 'السهم في مرحلة انتظار — راجع التفاصيل بالأسفل'}
@@ -657,62 +551,54 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
       {/* ════════════════════════════════════════════════════════════════════════
           §3 — شارت TradingView (القسم الرئيسي — بطل الصفحة)
-          CHART-FIX (2026-10-10): إضافة TradingView widget كافتراضي + تبديل للشارت المحلي
+          عرض افتراضي نظيف: Price + MA20/50/200 + S/R + Volume
       ════════════════════════════════════════════════════════════════════════ */}
       <div className="px-4 py-3">
         {/* شريط أدوات الشارت */}
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider dark:text-on-surface-variant dark:font-financial">
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             شارت الأسعار
           </div>
           <div className="flex items-center gap-1.5">
-            {/* CHART-FIX: زر تبديل بين TradingView الأصلي والشارت المحلي */}
             <Button
-              variant={chartMode === 'tradingview' ? 'default' : 'outline'}
+              variant={advancedLevels ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setChartMode('tradingview')}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'tradingview' && 'bg-emerald-600 text-white dark:bg-primary-container dark:text-on-primary-container')}
-            >
-              TradingView
-            </Button>
-            <Button
-              variant={chartMode === 'local' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setChartMode('local')}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'local' && 'bg-emerald-600 text-white dark:bg-primary-container dark:text-on-primary-container')}
+              onClick={toggleAdvancedLevels}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', advancedLevels && 'bg-emerald-600 text-white')}
             >
               <Activity className="w-3 h-3 ml-1" />
-              شارت محلي
+              مستويات متقدمة
+            </Button>
+            <Button
+              variant={extraIndicators ? 'default' : 'outline'}
+              size="sm"
+              onClick={toggleExtraIndicators}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', extraIndicators && 'bg-sky-600 text-white')}
+            >
+              <Gauge className="w-3 h-3 ml-1" />
+              مؤشرات
             </Button>
           </div>
         </div>
 
         {/* الشارت — كبير + نظيف */}
-        <div className={cn('rounded-xl overflow-hidden border border-border/60 dark:border-outline-variant/30 dark:bg-surface-container-low', isMaximized ? 'h-[600px]' : 'h-[400px] md:h-[500px]')}>
-          {chartMode === 'tradingview' ? (
-            /* CHART-FIX: TradingView widget — بيجيب الشموع الحية مباشرة بدون فجوات */
-            <iframe
-              src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(`EGX:${ticker}`)}&interval=D&theme=dark&style=1&timezone=Africa%2FCairo&locale=ar_AE&enable_publishing=false&allow_symbol_change=1&save_image=1&hide_side_toolbar=0&utm_source=invist.m2y.net`}
-              className="w-full h-full border-0"
-              title={`TradingView ${ticker}`}
-              allowFullScreen
-            />
-          ) : data?.ohlcv && data.ohlcv.length > 0 ? (
+        <div className={cn('rounded-xl overflow-hidden border border-border', isMaximized ? 'h-[600px]' : 'h-[400px] md:h-[500px]')}>
+          {data?.ohlcv && data.ohlcv.length > 0 ? (
             <InteractiveChart
               ohlcv={data.ohlcv}
               indicators={data.indicators || {}}
               visibleIndicators={visibleIndicators}
               levels={data.levels}
-              regimeColor={data.market_regime?.color}
+              marketRegime={data.market_regime}
               bosEvents={data.bos_events}
-              bbSqueezeLevel={data.bb_squeeze?.state}
+              bbSqueeze={data.bb_squeeze}
               entryPrice={entry ?? undefined}
               targetPrice={target1 ?? undefined}
               stopLossPrice={stop ?? undefined}
               target2Price={target2 ?? undefined}
             />
           ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground text-sm dark:text-on-surface-variant dark:bg-surface-container-low">
+            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
               <div className="text-center space-y-1">
                 <p>بانتظار تحميل الشموع — يتم التحميل تلقائياً</p>
                 <p className="text-[10px]">إذا لم تظهر خلال لحظات، يمكن للسهم غير متوفر على TradingView</p>
@@ -728,29 +614,29 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           للإشارات الأخرى: تحذير مؤسسي أنيق بدلاً من خطة وهمية.
       ════════════════════════════════════════════════════════════════════════ */}
       {isBuySignal && (entry !== null || target1 !== null || stop !== null) ? (
-        <div className="px-4 py-3 border-t border-border/60 dark:border-outline-variant/30">
-          <div className="rounded-xl border border-border/60 bg-secondary/30 p-3 dark:bg-surface-container-low dark:border-outline-variant/30">
+        <div className="px-4 py-3 border-t border-border">
+          <div className="rounded-xl border border-border bg-muted/30 p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-primary dark:text-primary" />
-                <span className="text-xs font-bold dark:text-on-surface dark:font-outfit">خطة الصفقة</span>
+                <Target className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs font-bold">خطة الصفقة</span>
               </div>
               {rr !== null && rr > 0 && (
-                <Badge variant="outline" className="text-[10px] font-mono dark:font-financial">
+                <Badge variant="outline" className="text-[10px] font-mono">
                   R:R 1:{(rr ?? 0).toFixed(2)}
                 </Badge>
               )}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground dark:text-on-surface" />
-              <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600 dark:text-rose-400 dark:text-error" />
-              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-primary dark:text-primary dark:text-primary" />
-              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-primary dark:text-primary dark:text-primary" />
+              <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground" />
+              <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600 dark:text-rose-400" />
+              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
+              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
             </div>
             {data?.suggested_position_size_pct && (
               <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1">
                 <Wallet className="w-3 h-3" />
-                حجم المحفظة المقترح: <strong className="font-mono text-primary">{data.suggested_position_size_pct}%</strong>
+                حجم المحفظة المقترح: <strong className="font-mono text-emerald-600">{data.suggested_position_size_pct}%</strong>
                 {data?.analysis_text && (
                   <span className="text-muted-foreground mr-2">• {data.analysis_text.slice(0, 80)}</span>
                 )}
@@ -759,254 +645,109 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           </div>
         </div>
       ) : !isBuySignal ? (
-        <div className="px-4 py-3 border-t border-border/60">
-          {(() => {
-            // Rule 78 (TradePlanCard filter): For SELL/STRONG_SELL/AVOID signals,
-            // show an EXPLICIT red warning panel. For HOLD/WAIT/REDUCE, show an
-            // amber "no actionable buy" panel. Never fabricate entry/stop/target.
-            const s = (signalFinal || '').toUpperCase();
-            const isSellSignal =
-              s.includes('SELL') ||
-              s.includes('AVOID') ||
-              s.includes('KILL') ||
-              s.includes('REJECT');
-            const isReduce = s.includes('REDUCE');
-            const isHoldWait = s === 'HOLD' || s === 'WAIT' || s.includes('ACCUMULATE') === false && !isSellSignal && !isReduce;
-
-            if (isSellSignal) {
-              return (
-                <div className="p-3 rounded-xl border-2 border-rose-500/30 dark:border-rose-500/30 bg-red-50 dark:bg-rose-500/60/30">
-                  <div className="flex items-center gap-2 mb-1">
-                    <ShieldAlert className="w-4 h-4 text-rose-400 dark:text-rose-400 shrink-0" />
-                    <span className="text-xs font-bold text-rose-400 dark:text-rose-400">
-                      تحذير صريح — إشارة تجنّب/بيع
-                    </span>
-                    <Badge className="text-[9px] bg-rose-500 text-white">لا توجد خطة صفقة</Badge>
-                  </div>
-                  <p className="text-[11px] text-rose-400 dark:text-rose-400 leading-relaxed">
-                    هذا السهم يحمل إشارة تجنّب/بيع ({signalAr}). يمنع نظاميّاً عرض خطة صفقة (دخول/وقف/أهداف) لإشارات
-                    البيع/التجنّب. راجع سبب الرفض بالأسفل وتجنّب الدخول حتى تتغير الإشارة إلى شراء حقيقية.
-                  </p>
-                </div>
-              );
-            }
-
-            if (isReduce) {
-              return (
-                <div className="p-3 rounded-xl border-2 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
-                  <div className="flex items-center gap-2 mb-1">
-                    <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                      إشارة تقليل — لا صفقة شراء جديدة
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
-                    الإشارة الحالية «تقليل» ({signalAr}). لا تُعرض خطة صفقة شراء في هذه الحالة. لو لديك مركز، راجع
-                    سياسة تقليل المخاطر ولا تُضِف كميات جديدة.
-                  </p>
-                </div>
-              );
-            }
-
-            // HOLD / WAIT / no-signal
-            return (
-              <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/20">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
-                    {isHoldWait ? 'إشارة انتظار' : 'لا توجد إشارة شراء'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي/عرضي.
-                  خطة الصفقة (دخول + وقف + أهداف) تُعرض فقط لإشارات الشراء الحقيقية (BUY / STRONG_BUY).
-                </p>
-              </div>
-            );
-          })()}
+        <div className="px-4 py-3 border-t border-border">
+          <div className="p-3 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي.</span>
+          </div>
         </div>
       ) : null}
 
       {/* ════════════════════════════════════════════════════════════════════════
-          §5 — لماذا هذا القرار؟ (الأدلة) — CHART-ENRICH: ملء الشرطات الفارغة
+          §5 — لماذا هذا القرار؟ (الأدلة)
       ════════════════════════════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 border-t border-border/60 dark:border-outline-variant/30">
-        <div className="text-xs font-bold mb-2 flex items-center gap-1 dark:text-on-surface dark:font-outfit">
-          <Activity className="w-3.5 h-3.5 text-primary dark:text-primary" />
+      <div className="px-4 py-3 border-t border-border">
+        <div className="text-xs font-bold mb-2 flex items-center gap-1">
+          <Activity className="w-3.5 h-3.5 text-emerald-600" />
           أسباب القرار
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
           <ReasonCard
             label="الاتجاه"
-            value={flightState?.state ? (flightState.state === 'flying_up' ? 'صاعد' : flightState.state === 'falling_down' ? 'هابط' : 'عرضي') : (canonical?.technical?.trend === 'UP' ? 'صاعد' : canonical?.technical?.trend === 'DOWN' ? 'هابط' : '— بيانات غير متاحة')}
-            positive={flightState?.state === 'flying_up' || canonical?.technical?.trend === 'UP'}
-            negative={flightState?.state === 'falling_down' || canonical?.technical?.trend === 'DOWN'}
+            value={flightState?.state ? (flightState.state === 'taking_off' ? 'صاعد' : flightState.state === 'falling_down' ? 'هابط' : 'عرضي') : '—'}
+            positive={flightState?.state === 'taking_off'}
+            negative={flightState?.state === 'falling_down'}
           />
           <ReasonCard
-            label="القوة النسبية (RSI)"
-            value={rsiAr}
-            positive={rsiValue !== null && rsiValue >= 55 && rsiValue < 70}
-            negative={rsiValue !== null && (rsiValue >= 70 || rsiValue < 30)}
+            label="القوة النسبية"
+            value={data?.confluence?.breakdown?.trend?.detail || '—'}
+            positive={data?.confluence?.breakdown?.trend?.passed}
+            negative={!data?.confluence?.breakdown?.trend?.passed && data?.confluence?.breakdown?.trend !== undefined}
           />
           <ReasonCard
             label="السيولة"
-            value={liquidityAr}
-            positive={(canonical?.canonical?.buy_pct ?? 0) >= 60}
-            negative={(radar?.net_flow_egp ?? 0) < 0}
+            value={makerState?.state === 'accumulation' ? 'جيدة' : makerState?.state === 'distribution' ? 'ضعيفة' : 'متوازنة'}
+            positive={makerState?.state === 'accumulation'}
+            negative={makerState?.state === 'distribution'}
           />
           <ReasonCard
             label="التجميع"
-            value={canonical?.canonical?.accumulation ?? (makerState?.state === 'absorption' ? 'تجميع مؤسسي' : 'محايد')}
-            positive={(canonical?.canonical?.accumulation ?? '').includes('تجميع')}
-            negative={(canonical?.canonical?.accumulation ?? '').includes('تصريف')}
+            value={makerState?.state === 'accumulation' ? 'موجود' : 'غير موجود'}
+            positive={makerState?.state === 'accumulation'}
           />
           <ReasonCard
             label="موقع السعر"
-            value={priceLocationAr}
-            positive={priceLocationAr.includes('قرب الدعم') || priceLocationAr.includes('فوق MA50')}
-            negative={priceLocationAr.includes('قرب المقاومة') || priceLocationAr.includes('تحت MA50')}
+            value={data?.stock_dna?.typical_range?.current_position || '—'}
+            positive={data?.stock_dna?.typical_range?.current_position?.includes('قرب دعم')}
+            negative={data?.stock_dna?.typical_range?.current_position?.includes('قرب مقاومة')}
           />
         </div>
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════════
-          §6 — لوحة الأدوات المتقدمة (CHART-ENRICH 2026-10-10)
-          استبدال الأكوردين الميت بـ 4 تبويبات حية:
-            1. نبض السيولة والمؤسسات (Who Is Buying + Money Flow)
-            2. مستويات التداول و SMC (SMC Key Levels)
-            3. مستشار الدخول والصفقة (Trade Plan + Deal Advisor)
-            4. التفاصيل الفنية (للخبراء)
+          §6 — التفاصيل الفنية (قابلة للطي — مطوي افتراضيًا)
       ════════════════════════════════════════════════════════════════════════ */}
-      <div className="border-t border-border/60 dark:border-outline-variant/30">
-        {/* شريط التبويبات */}
-        <div className="flex border-b border-border/60 bg-secondary/30 overflow-x-auto dark:bg-surface-container dark:border-outline-variant/30">
-          {[
-            { id: 'liquidity', label: 'نبض السيولة والمؤسسات', icon: Waves },
-            { id: 'smc', label: 'مستويات التداول و SMC', icon: Layers },
-            { id: 'technical', label: 'التفاصيل الفنية', icon: Gauge },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold whitespace-nowrap border-b-2 transition-colors',
-                activeTab === tab.id
-                  ? 'border-emerald-500/30 text-primary dark:text-primary dark:border-primary dark:text-primary bg-card border border-border dark:bg-surface-container-low'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/50 dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high'
-              )}
-            >
-              <tab.icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* محتوى التبويبات */}
-        <div className="px-4 py-3">
-          {/* ─── Tab 1: نبض السيولة والمؤسسات (Who Is Buying + Money Flow) ─── */}
-          {activeTab === 'liquidity' && (
-            <div className="space-y-3">
-              {/* أداة: من يشتري؟ (Institutional vs Retail) */}
-              <WhoIsBuyingPanel
-                buyPct={canonical?.canonical?.buy_pct ?? radar?.buy_pct ?? null}
-                sellPct={canonical?.canonical?.sell_pct ?? radar?.sell_pct ?? null}
-                whoIsBuying={pred?.who_is_buying ?? null}
-                accumulation={canonical?.canonical?.accumulation ?? null}
-              />
-
-              {/* أداة: تدفق السيولة والـ Money Flow */}
-              <MoneyFlowPanel
-                netFlowEgp={radar?.net_flow_egp ?? null}
-                buyValueM={radar?.buy_value_m ?? null}
-                sellValueM={radar?.sell_value_m ?? null}
-                moneyFlow={canonical?.canonical?.money_flow ?? null}
-                volumeRatio={radar?.volume_ratio_10d_vs_20d ?? null}
-              />
-
-              {/* أداة: كشف المصائد والصعود الوهمي (Trap & Fakeout Radar) */}
-              <TrapDetectorPanel
-                candlestickPatterns={data?.candlestick_patterns ?? null}
-                positionWarning={data?.position_warning ?? null}
-                signalFinal={signalFinal}
-                makerState={makerState?.state ?? null}
-              />
+      <Collapsible open={technicalDetailsOpen} onOpenChange={setTechnicalDetailsOpen} className="border-t border-border">
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-2">
+              <Gauge className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-bold">التفاصيل الفنية</span>
+              <span className="text-[10px] text-muted-foreground">(للخبراء)</span>
             </div>
-          )}
+            <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', technicalDetailsOpen && 'rotate-180')} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-4 py-3 space-y-3 border-t border-border/50 bg-muted/20">
+            {/* المؤشرات الفنية */}
+            {data?.current_indicators && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <DetailItem label="RSI (14)" value={data.current_indicators.rsi?.toFixed(1)} />
+                <DetailItem label="MACD" value={data.current_indicators.macd?.toFixed(3)} />
+                <DetailItem label="ATR" value={data.current_indicators.atr?.toFixed(3)} />
+                <DetailItem label="Tech Score" value={techScore?.toFixed(0)} />
+              </div>
+            )}
 
-          {/* ─── Tab 2: مستويات التداول و SMC ─── */}
-          {activeTab === 'smc' && (
-            <div className="space-y-3">
-              <SMCKeyLevelsPanel
-                support={tech?.support ?? data?.levels?.support ?? null}
-                resistance={tech?.resistance ?? data?.levels?.resistance ?? null}
-                farSupport={data?.levels?.far_support ?? null}
-                farResistance={data?.levels?.far_resistance ?? null}
-                pivot={data?.levels?.pivot ?? null}
-                entry={entry}
-                target1={target1}
-                target2={target2}
-                stop={stop}
-                livePrice={livePrice}
+            {/* InstitutionalDecisionPanel (المحرك الكامل — للخبراء) */}
+            {decision && (
+              <InstitutionalDecisionPanel
+                decision={decision}
+                ticker={ticker}
                 currencyLabel={currencyLabel}
-                smcAnalysis={data?.smc_analysis ?? null}
+                onPositionUpdate={() => {}}
               />
+            )}
 
-              {/* SMC Analysis التفصيلي */}
-              {data?.smc_analysis && (
-                <div className="text-xs rounded-lg border border-border/60 bg-secondary/30 p-2">
-                  <div className="font-bold mb-1 text-muted-foreground">تحليل SMC:</div>
-                  <div className="text-foreground">{data.smc_analysis.bias_ar || '—'}</div>
-                  {data.smc_analysis.summary_ar && (
-                    <div className="text-muted-foreground mt-1">{data.smc_analysis.summary_ar}</div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ─── Tab 4: التفاصيل الفنية (للخبراء) ─── */}
-          {activeTab === 'technical' && (
-            <div className="space-y-3">
-              {/* المؤشرات الفنية */}
-              {data?.current_indicators && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <DetailItem label="RSI (14)" value={data.current_indicators.rsi?.toFixed(1)} />
-                  <DetailItem label="MACD" value={data.current_indicators.macd?.toFixed(3)} />
-                  <DetailItem label="ATR" value={data.current_indicators.atr?.toFixed(3)} />
-                  <DetailItem label="Tech Score" value={techScore?.toFixed(0)} />
-                </div>
-              )}
-
-              {/* InstitutionalDecisionPanel (المحرك الكامل — للخبراء) */}
-              {decision && (
-                <InstitutionalDecisionPanel
-                  decision={decision}
-                  ticker={ticker}
-                  currencyLabel={currencyLabel}
-                  onPositionUpdate={() => {}}
-                />
-              )}
-
-              {/* SMC / Fusion / Candlestick (للخبراء) */}
-              {data?.smc_analysis && (
-                <div className="text-xs">
-                  <div className="font-bold mb-1 text-muted-foreground">تحليل SMC:</div>
-                  <div className="text-foreground">{data.smc_analysis.bias_ar || '—'}</div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+            {/* SMC / Fusion / Candlestick (للخبراء) */}
+            {data?.smc_analysis && (
+              <div className="text-xs">
+                <div className="font-bold mb-1 text-muted-foreground">تحليل SMC:</div>
+                <div className="text-foreground">{data.smc_analysis.bias_ar || '—'}</div>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* ════════════════════════════════════════════════════════════════════════
           §7 — Rescue Clinic Banner (بديل DealAdvisorPanel القديم)
       ════════════════════════════════════════════════════════════════════════ */}
-      <CardContent className="pt-3 border-t border-border/60">
+      <CardContent className="pt-3 border-t border-border">
         <a
           href={`/rescue?ticker=${encodeURIComponent(ticker)}`}
-          className="block p-4 rounded-xl border border-border/60 bg-gradient-to-l from-amber-500/10 to-transparent hover:from-amber-500/20 transition-all group"
+          className="block p-4 rounded-xl border border-border bg-gradient-to-l from-amber-500/10 to-transparent hover:from-amber-500/20 transition-all group"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -1037,9 +778,9 @@ function PlanLevel({ label, value, currencyLabel, color }: {
   color: string;
 }) {
   return (
-    <div className="flex flex-col items-center p-2 rounded-lg bg-card border border-border border border-border/60/50 dark:bg-surface-container dark:border-outline-variant/30">
-      <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">{label}</span>
-      <span className={cn('font-mono font-bold text-sm tabular-nums dark:font-financial', color)}>
+    <div className="flex flex-col items-center p-2 rounded-lg bg-card border border-border/50">
+      <span className="text-[9px] text-muted-foreground">{label}</span>
+      <span className={cn('font-mono font-bold text-sm', color)}>
         {value !== null && value !== undefined && value > 0
           ? `${(value ?? 0).toFixed(2)} ${currencyLabel}`
           : '— بيانات غير متاحة'}
@@ -1058,15 +799,15 @@ function ReasonCard({ label, value, positive, negative }: {
     <div className={cn(
       'p-2 rounded-lg border text-center',
       positive
-        ? 'bg-emerald-50 dark:bg-emerald-600/60/30 border-emerald-500/30 dark:border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary-container/40'
+        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
         : negative
-        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 dark:bg-error-container/20 dark:border-error-container/40'
-        : 'bg-secondary/30 border-border/60 dark:bg-surface-container dark:border-outline-variant/30'
+        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800'
+        : 'bg-muted/30 border-border'
     )}>
-      <div className="text-[9px] text-muted-foreground mb-0.5 dark:text-on-surface-variant">{label}</div>
+      <div className="text-[9px] text-muted-foreground mb-0.5">{label}</div>
       <div className={cn(
         'text-[11px] font-bold',
-        positive ? 'text-primary dark:text-primary dark:text-primary' : negative ? 'text-rose-700 dark:text-rose-300 dark:text-error' : 'text-foreground dark:text-on-surface'
+        positive ? 'text-emerald-700 dark:text-emerald-300' : negative ? 'text-rose-700 dark:text-rose-300' : 'text-foreground'
       )}>
         {value}
       </div>
@@ -1076,401 +817,9 @@ function ReasonCard({ label, value, positive, negative }: {
 
 function DetailItem({ label, value }: { label: string; value: string | undefined | null }) {
   return (
-    <div className="flex justify-between p-1.5 rounded bg-secondary/30 border border-border/60/50 dark:bg-surface-container dark:border-outline-variant/30">
-      <span className="text-muted-foreground dark:text-on-surface-variant">{label}:</span>
-      <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{value || '—'}</span>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// CHART-ENRICH (2026-10-10): الأدوات الـ 4 المستوحاة من Pine Scripts
-// مرجع: V82 + V60.2 (Who Is Buying) + V55 (Money Flow)
-// المصدر: canonical + radar + prediction (من /api/stocks/[ticker]/unified)
-// ════════════════════════════════════════════════════════════════════════════
-
-// ─── 1) WhoIsBuyingPanel — من يشتري؟ (Institutional vs Retail) ─────────────
-// مرجع: EGX_Pro_Institutional_Engine_V60_2_Who_Is_Buying.pine
-function WhoIsBuyingPanel({ buyPct, sellPct, whoIsBuying, accumulation }: {
-  buyPct: number | null;
-  sellPct: number | null;
-  whoIsBuying: string | null;
-  accumulation: string | null;
-}) {
-  const institutionalPct = buyPct ?? null;
-  const retailPct = sellPct ?? null;
-  
-  // تحديد الحالة
-  let statusBadge = '';
-  let statusColor = '';
-  if (institutionalPct !== null) {
-    if (institutionalPct >= 70) {
-      statusBadge = 'تجميع مؤسسي قوي';
-      statusColor = 'bg-emerald-500/10 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary';
-    } else if (institutionalPct >= 55) {
-      statusBadge = 'تجميع مؤسسي هادئ';
-      statusColor = 'bg-teal-100 text-teal-700 border-teal-300 dark:bg-teal-950/40 dark:text-teal-300';
-    } else if (institutionalPct >= 45) {
-      statusBadge = 'توازن بين المؤسسات والأفراد';
-      statusColor = 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300';
-    } else if (institutionalPct >= 30) {
-      statusBadge = 'تصريف مؤسسي — احذر';
-      statusColor = 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950/40 dark:text-orange-300';
-    } else {
-      statusBadge = 'مضاربات أفراد عالية المخاطر';
-      statusColor = 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300';
-    }
-  }
-
-  return (
-    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Building2 className="w-4 h-4 text-primary" />
-          <span className="text-xs font-bold">من يشتري؟ (مؤسسات vs أفراد)</span>
-        </div>
-        {statusBadge && (
-          <Badge variant="outline" className={cn('text-[9px]', statusColor)}>
-            {statusBadge}
-          </Badge>
-        )}
-      </div>
-      
-      {/* شريط بياني ثنائي (Progress Bar) */}
-      {institutionalPct !== null && retailPct !== null ? (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-[10px]">
-            <Building2 className="w-3 h-3 text-primary" />
-            <span className="text-muted-foreground">مؤسسات</span>
-            <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 transition-all"
-                style={{ width: `${institutionalPct}%` }}
-              />
-            </div>
-            <span className="font-mono font-bold text-primary dark:text-primary">
-              {institutionalPct.toFixed(0)}%
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-[10px]">
-            <Users className="w-3 h-3 text-amber-500" />
-            <span className="text-muted-foreground">أفراد</span>
-            <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden">
-              <div
-                className="h-full bg-amber-500 transition-all"
-                style={{ width: `${retailPct}%` }}
-              />
-            </div>
-            <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
-              {retailPct.toFixed(0)}%
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="text-xs text-muted-foreground text-center py-2">
-          — بيانات تدفق المؤسسات غير متاحة لهذا السهم
-        </div>
-      )}
-      
-      {/* من يشتري؟ من prediction.who_is_buying */}
-      {whoIsBuying && (
-        <div className="mt-2 pt-2 border-t border-border/60/50 text-[10px] text-muted-foreground">
-          <strong>تحليل Python:</strong> {whoIsBuying}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── 2) MoneyFlowPanel — تدفق السيولة والـ Money Flow ──────────────────────
-// مرجع: V55_Money_Flow.pine + V82_Ultimate_EGX_Engine.pine
-function MoneyFlowPanel({ netFlowEgp, buyValueM, sellValueM, moneyFlow, volumeRatio }: {
-  netFlowEgp: number | null;
-  buyValueM: number | null;
-  sellValueM: number | null;
-  moneyFlow: string | null;
-  volumeRatio: number | null;
-}) {
-  const netFlowM = netFlowEgp !== null ? netFlowEgp / 1_000_000 : null;
-  const isPositive = netFlowM !== null && netFlowM >= 0;
-  
-  // إشارة تدفق السيولة
-  let flowSignal = '';
-  let flowColor = '';
-  if (netFlowM !== null) {
-    if (netFlowM > 5) {
-      flowSignal = 'سيولة ذكية فائقة الدخول';
-      flowColor = 'text-primary dark:text-primary';
-    } else if (netFlowM > 0) {
-      flowSignal = 'سيولة داخلة';
-      flowColor = 'text-primary dark:text-primary';
-    } else if (netFlowM > -5) {
-      flowSignal = 'تسرب سيولة خارجة';
-      flowColor = 'text-amber-600 dark:text-amber-400';
-    } else {
-      flowSignal = 'تصريف قوي — خطر';
-      flowColor = 'text-rose-700 dark:text-rose-300';
-    }
-  }
-
-  return (
-    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Waves className="w-4 h-4 text-blue-600" />
-          <span className="text-xs font-bold">تدفق السيولة (Smart Money Flow)</span>
-        </div>
-        {flowSignal && (
-          <Badge variant="outline" className={cn('text-[9px]', flowColor)}>
-            {flowSignal}
-          </Badge>
-        )}
-      </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-        <div className="rounded-lg bg-secondary/30 p-2 border border-border/60/50">
-          <div className="text-[9px] text-muted-foreground">التدفق الصافي</div>
-          <div className={cn('font-mono font-bold', isPositive ? 'text-primary dark:text-primary' : 'text-rose-600 dark:text-rose-400')}>
-            {netFlowM !== null
-              ? `${isPositive ? '+' : ''}${netFlowM.toFixed(2)}M ج.م`
-              : '— بيانات غير متاحة'}
-          </div>
-        </div>
-        <div className="rounded-lg bg-secondary/30 p-2 border border-border/60/50">
-          <div className="text-[9px] text-muted-foreground">شراء (مليون)</div>
-          <div className="font-mono font-bold text-primary dark:text-primary">
-            {buyValueM !== null ? `${buyValueM.toFixed(2)}M` : '—'}
-          </div>
-        </div>
-        <div className="rounded-lg bg-secondary/30 p-2 border border-border/60/50">
-          <div className="text-[9px] text-muted-foreground">بيع (مليون)</div>
-          <div className="font-mono font-bold text-rose-600 dark:text-rose-400">
-            {sellValueM !== null ? `${sellValueM.toFixed(2)}M` : '—'}
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-2 flex items-center gap-3 text-[10px]">
-        {moneyFlow && (
-          <span className="text-muted-foreground">
-            <strong>الحالة:</strong> {moneyFlow}
-          </span>
-        )}
-        {volumeRatio !== null && (
-          <span className="text-muted-foreground">
-            <strong>نسبة الحجم (10d/20d):</strong>{' '}
-            <span className={cn('font-mono font-bold', volumeRatio > 1.5 ? 'text-primary' : volumeRatio < 0.7 ? 'text-rose-600' : 'text-foreground')}>
-              {volumeRatio.toFixed(2)}×
-            </span>
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── 3) TrapDetectorPanel — كشف المصائد والصعود الوهمي ──────────────────────
-// مرجع: فلاتر V82 (Fake Breakout / Bull Trap / Liquidity Grab)
-function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, makerState }: {
-  candlestickPatterns: Array<{ name: string; signal: string; name_ar: string }> | null;
-  positionWarning: string | null;
-  signalFinal: string;
-  makerState: string | null;
-}) {
-  // كشف المصائد
-  const traps: string[] = [];
-  const bullishSignals: string[] = [];
-  
-  if (candlestickPatterns && candlestickPatterns.length > 0) {
-    for (const p of candlestickPatterns) {
-      if (p.signal === 'bearish' || p.signal === 'SELL') {
-        traps.push(p.name_ar || p.name);
-      } else if (p.signal === 'bullish' || p.signal === 'BUY') {
-        bullishSignals.push(p.name_ar || p.name);
-      }
-    }
-  }
-  
-  if (positionWarning) {
-    traps.push(positionWarning);
-  }
-  
-  // كشف التصريف
-  if (makerState === 'distribution') {
-    traps.push('تصريف مؤسسي — السهم بـ يتعرض لضغط بيع مؤسسي');
-  }
-  
-  const isClean = traps.length === 0;
-  const hasBullish = bullishSignals.length > 0;
-  
-  return (
-    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-primary" />
-          <span className="text-xs font-bold">كشف المصائد والصعود الوهمي</span>
-        </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            'text-[9px]',
-            isClean
-              ? 'bg-emerald-500/10 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary'
-              : 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300'
-          )}
-        >
-          {isClean ? '✅ خالٍ من المصائد' : '⚠️ تحذير: مصائد مكتشفة'}
-        </Badge>
-      </div>
-      
-      {isClean ? (
-        <div className="text-xs text-primary dark:text-primary text-center py-2">
-          لا توجد مصائد أو أنماط سلبية مكتشفة في السهم حالياً
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {traps.map((trap, i) => (
-            <div key={i} className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-300">
-              <AlertOctagon className="w-3 h-3 mt-0.5 shrink-0" />
-              <span>{trap}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {hasBullish && (
-        <div className="mt-2 pt-2 border-t border-border/60/50">
-          <div className="text-[10px] text-muted-foreground mb-1">إشارات إيجابية:</div>
-          <div className="flex flex-wrap gap-1">
-            {bullishSignals.map((sig, i) => (
-              <Badge key={i} variant="outline" className="text-[9px] bg-emerald-50 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary">
-                {sig}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── 4) SMCKeyLevelsPanel — مستويات الدعم والمقاومة المؤسسية ─────────────────
-// مرجع: V82 SMC + Key Levels (S1, S2, R1, R2)
-function SMCKeyLevelsPanel({ support, resistance, farSupport, farResistance, pivot, entry, target1, target2, stop, livePrice, currencyLabel, smcAnalysis }: {
-  support: number | null;
-  resistance: number | null;
-  farSupport: number | null;
-  farResistance: number | null;
-  pivot: number | null;
-  entry: number | null;
-  target1: number | null;
-  target2: number | null;
-  stop: number | null;
-  livePrice: number;
-  currencyLabel: string;
-  smcAnalysis: { score?: number; score_pct?: number; bias_ar?: string; summary_ar?: string; nearest_ob?: { type: string; price: number; quality: string } | null; nearest_fvg?: { type: string; top: number; bottom: number } | null } | null;
-}) {
-  const fmt = (v: number | null) => v !== null && v > 0 ? v.toFixed(2) : '—';
-  const fmtPct = (level: number | null) => {
-    if (!level || !livePrice || livePrice <= 0) return null;
-    const pct = ((level - livePrice) / livePrice) * 100;
-    return `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`;
-  };
-
-  const handleCopy = (value: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(value).then(() => {
-        toast.success(`تم نسخ: ${value}`);
-      }).catch(() => {});
-    }
-  };
-
-  const levels = [
-    { label: 'مقاومة بعيدة (R2)', value: farResistance, color: 'text-rose-600 dark:text-rose-400' },
-    { label: 'مقاومة (R1)', value: resistance, color: 'text-rose-600 dark:text-rose-400' },
-    { label: 'الهدف 2', value: target2, color: 'text-primary dark:text-primary' },
-    { label: 'الهدف 1', value: target1, color: 'text-primary dark:text-primary' },
-    { label: 'نقطة الدخول', value: entry, color: 'text-blue-600 dark:text-blue-400' },
-    { label: 'السعر الحالي', value: livePrice > 0 ? livePrice : null, color: 'text-foreground font-black' },
-    { label: 'نقطة Pivot', value: pivot, color: 'text-muted-foreground' },
-    { label: 'وقف الخسارة', value: stop, color: 'text-rose-600 dark:text-rose-400' },
-    { label: 'دعم (S1)', value: support, color: 'text-primary dark:text-primary' },
-    { label: 'دعم بعيد (S2)', value: farSupport, color: 'text-primary dark:text-primary' },
-  ];
-
-  return (
-    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Layers className="w-4 h-4 text-purple-600" />
-          <span className="text-xs font-bold">مستويات الدعم والمقاومة المؤسسية (SMC)</span>
-        </div>
-        {smcAnalysis?.score_pct !== undefined && (
-          <Badge variant="outline" className="text-[9px]">
-            SMC Score: {(smcAnalysis.score_pct ?? 0).toFixed(0)}%
-          </Badge>
-        )}
-      </div>
-      
-      {/* بطاقة أفقية بمستويات الأسعار */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-        {levels.map((lvl, i) => {
-          const pct = fmtPct(lvl.value);
-          return (
-            <div
-              key={i}
-              className={cn(
-                'flex items-center justify-between p-1.5 rounded-lg border text-xs',
-                lvl.value === null ? 'opacity-40' : 'bg-secondary/30 border-border/60/50'
-              )}
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-muted-foreground">{lvl.label}</span>
-                {lvl.value !== null && (
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(fmt(lvl.value))}
-                    className="text-muted-foreground hover:text-foreground"
-                    title="نسخ القيمة"
-                  >
-                    <Copy className="w-2.5 h-2.5" />
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={cn('font-mono font-bold', lvl.color)}>
-                  {fmt(lvl.value)} {lvl.value !== null && currencyLabel}
-                </span>
-                {pct && (
-                  <span className="text-[9px] text-muted-foreground">{pct}</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      
-      {/* SMC: Nearest Order Block + FVG */}
-      {smcAnalysis && (smcAnalysis.nearest_ob || smcAnalysis.nearest_fvg) && (
-        <div className="mt-2 pt-2 border-t border-border/60/50 grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px]">
-          {smcAnalysis.nearest_ob && (
-            <div className="rounded bg-secondary/30 p-1.5">
-              <div className="text-muted-foreground">أقرب Order Block:</div>
-              <div className="font-mono font-bold">
-                {smcAnalysis.nearest_ob.type} @ {smcAnalysis.nearest_ob.price.toFixed(2)} ({smcAnalysis.nearest_ob.quality})
-              </div>
-            </div>
-          )}
-          {smcAnalysis.nearest_fvg && (
-            <div className="rounded bg-secondary/30 p-1.5">
-              <div className="text-muted-foreground">أقرب FVG (Fair Value Gap):</div>
-              <div className="font-mono font-bold">
-                {smcAnalysis.nearest_fvg.type}: {smcAnalysis.nearest_fvg.bottom.toFixed(2)} → {smcAnalysis.nearest_fvg.top.toFixed(2)}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+    <div className="flex justify-between p-1.5 rounded bg-muted/30 border border-border/50">
+      <span className="text-muted-foreground">{label}:</span>
+      <span className="font-mono font-bold text-foreground">{value || '—'}</span>
     </div>
   );
 }
