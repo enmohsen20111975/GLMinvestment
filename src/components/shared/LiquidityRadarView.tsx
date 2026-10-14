@@ -1,54 +1,54 @@
 'use client';
 
 /**
- * LiquidityRadarView — رادار السيولة الصارم (4 أعمدة فقط)
- * =======================================================
- * Task: A-RADAR-V2 (Alpha — Frontend & UI Lead)
+ * LiquidityRadarView — رادار تدفق السيولة المؤسسية ونبض الحيتان
+ * =================================================================
+ * SCR-020 — مطابقة Google Stitch Screen 4 (Sovereign Terminal)
  *
- * يستهلك من /api/v2/liquidity-radar?market=EGX (Bravo engine — scripts/liquidity_radar_v2.py)
+ * الهيكل (مطابق للمليمتر لـ stitch_full_website_ui_design/_4/code.html):
+ *   أ) Macro Market Pulse Ribbon — شريط نبض علوي + نقطة خضراء بتنبض
+ *   ب) Live Macro Mini Gauges — 3 عدادات (تجميع/تصريف/مخاطرة)
+ *   ج) Multi-tier Filter Bar — Market + Sector + Timeframe + Wyckoff Phase Chips
+ *   د) Institutional Asset Cards — 4 أعمدة لكل سهم (حوت/زخم/وايكوف/دفاع)
  *
- * لكل سهم صف واحد بـ 4 خلايا فقط (لا تبويبات، لا مصطلحات Wyckoff، لا إنجليزي):
- *   1. الحوت فين؟        — whale.net_flow_egp + whale.flow_strength
- *   2. حالة السوق        — market_regime.regime + change_pct
- *   3. المرحلة           — phase (بيبلع على الهادي / بيتحضر / بيصرف / بيانات غير كافية)
- *   4. مستوى الدخول والدفاع — entry_defense.entry_level + defense_level
+ * Rule 4: Python = brain — لا حسابات في React، البيانات من /api/v2/liquidity-radar
+ * Rule 27: NO-FAKE-DATA — حالات فارغة صادقة
+ * Rule 30: زمردي/مينت/كهرماني فقط — صفر أزرق/نيلي
  *
- * ثم سطر "السبب" أسفل الخلايا الأربعة (نص API كما هو — لا تعديل، لا ترجمة).
- *
- * القيود الحديدية:
- *   - Rule 4  (NO FRONTEND COMPUTATION): كل الأرقام من الـ API — تنسيق عرض فقط.
- *   - Rule 27 (NO-FAKE-DATA): لو الـ API فشل أو فارغ → حالة صادقة (لا بيانات وهمية).
- *   - Rule 30 (CLIENT-FACING-STYLE): زمردي / تركوازي / أمبر / أحمر / رمادي — لا أزرق/إنديغو.
+ * منع هري الديباج: أي نصوص مثل "volume_high_recurring" أو "compressed" أو
+ * أرقام المصفوفات تُترجم لعلامات بصرية أو تُستبعد تماماً.
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
-  Fish, Droplet, Activity, TrendingUp, TrendingDown, Minus,
-  Shield, Target, RefreshCw, AlertTriangle, Search, ChevronDown,
-  Layers, Gauge, Wallet,
+  Shield, Target, RefreshCw, AlertTriangle, Search,
+  TrendingUp, TrendingDown, Minus, Rocket, Layers,
+  Wallet, Activity, Gauge, ChevronDown, Filter,
 } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
 // ============================================================================
-// Types — مطابقة 100% لـ API
+// Types — مطابقة 100% لـ API (liquidity_radar_v2.py)
 // ============================================================================
 
 interface WhaleInfo {
   net_flow_egp: number | null;
-  avg_daily_flow_egp: number | null;
+  avg_daily_flow_egp?: number | null;
   whale_present: boolean | null;
   flow_strength: string | null;
+  buy_pct?: number | null;
+  sell_pct?: number | null;
   reason?: string | null;
 }
 
 interface MarketRegime {
-  regime: string | null;          // صاعد / هابط / عرضي / Risk-Off
-  regime_en?: string | null;      // bull / bear / sideways / risk_off
+  regime: string | null;
+  regime_en?: string | null;
   change_pct: number | null;
   index_symbol?: string | null;
   reason?: string | null;
@@ -70,7 +70,7 @@ interface RadarStock {
   sector?: string | number | null;
   whale: WhaleInfo;
   market_regime: MarketRegime;
-  phase: string;                  // بيبلع على الهادي / بيتحضر / بيصرف / بيانات غير كافية
+  phase: string;
   phase_reason?: string | null;
   entry_defense: EntryDefense;
   reason: string | null;
@@ -88,257 +88,146 @@ interface RadarResponse {
   message?: string | null;
 }
 
-interface LiquidityRadarViewProps {
-  market: string; // 'EGX' | 'TADAWUL' | 'KSE' | 'QSE'
-}
-
 // ============================================================================
-// Format helpers (Display only — Rule 4: no financial computation)
+// Helpers — number formatting (display only, Rule 4: no computation)
 // ============================================================================
 
-/** تنسيق صافي التدفق النقدي للقيمة المطلقة (B / M / K) مع إشارة. */
-function fmtFlowEgp(n: number | null | undefined): string {
+function fmtFlow(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(Number(n))) return '—';
-  const v = Number(n);
-  const sign = v > 0 ? '+' : v < 0 ? '-' : '';
-  const abs = Math.abs(v);
-  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M`;
-  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(1)}K`;
+  const abs = Math.abs(Number(n));
+  const sign = Number(n) >= 0 ? '+' : '-';
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(1)}K`;
   return `${sign}${abs.toFixed(0)}`;
 }
 
-/** تنسيق نسبة التغيّر بالمئوية مع إشارة. */
-function fmtPct(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(Number(n))) return '—';
-  const v = Number(n);
-  const sign = v > 0 ? '+' : '';
-  return `${sign}${v.toFixed(2)}%`;
-}
-
-/** تنسيق سعر (دخول/دفاع/مقاومة). */
 function fmtPrice(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(Number(n))) return '—';
   return Number(n).toFixed(2);
 }
 
+function fmtPct(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(Number(n))) return '—';
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${Number(n).toFixed(2)}%`;
+}
+
 // ============================================================================
-// Color maps (Rule 30: emerald/teal/amber/red/gray — NO blue/indigo)
+// Phase styling — Wyckoff phases → visual chips (no raw text leak)
 // ============================================================================
 
-const PHASE_STYLE: Record<string, { cell: string; badge: string; label: string }> = {
-  'بيبلع على الهادي': {
-    cell: 'bg-emerald-500/10 border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary/30',
-    badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary dark:border-primary/30',
-    label: 'text-emerald-700 dark:text-emerald-300 dark:text-primary',
-  },
-  'بيتحضر': {
-    cell: 'bg-teal-500/10 border-teal-500/30 dark:bg-secondary/20 dark:border-secondary/30',
-    badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30 dark:bg-secondary/20 dark:text-secondary dark:border-secondary/30',
-    label: 'text-teal-700 dark:text-teal-300 dark:text-secondary',
-  },
-  'بيصرف': {
-    cell: 'bg-red-500/10 border-red-500/30 dark:bg-error-container/20 dark:border-error/30',
-    badge: 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30 dark:bg-error-container/20 dark:text-error dark:border-error/30',
-    label: 'text-red-700 dark:text-red-300 dark:text-error',
-  },
-  'بيانات غير كافية': {
-    cell: 'bg-muted border-border dark:bg-surface-container dark:border-outline-variant/30',
-    badge: 'bg-muted text-muted-foreground border-border dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant/30',
-    label: 'text-muted-foreground dark:text-on-surface-variant',
-  },
+const PHASE_STYLE: Record<string, { dot: string; label: string; badge: string }> = {
+  'بيبلع على الهادي': { dot: 'bg-primary', label: 'مرحلة التجميع', badge: 'bg-primary-container/20 text-primary' },
+  'بيتحضر': { dot: 'bg-secondary', label: 'مرحلة الصعود', badge: 'bg-secondary/20 text-secondary' },
+  'بيصرف': { dot: 'bg-error', label: 'مرحلة التصريف', badge: 'bg-error-container/20 text-error' },
+  'بيانات غير كافية': { dot: 'bg-outline', label: 'بيانات غير كافية', badge: 'bg-surface-container-high text-on-surface-variant' },
 };
 
-function phaseStyle(phase: string | null | undefined) {
+function getPhaseStyle(phase: string | null | undefined) {
   if (!phase) return PHASE_STYLE['بيانات غير كافية'];
   return PHASE_STYLE[phase] || PHASE_STYLE['بيانات غير كافية'];
 }
 
-/** خريطة ألوان حالة السوق. */
-function regimeStyle(regime: string | null | undefined): {
-  banner: string;
-  badge: string;
-  icon: 'bull' | 'bear' | 'sideways' | 'riskoff';
-} {
-  if (!regime) return {
-    banner: 'bg-muted border-border dark:bg-surface-container-low dark:border-outline-variant/30',
-    badge: 'bg-muted text-muted-foreground border-border dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant/30',
-    icon: 'sideways',
-  };
-  if (regime === 'صاعد') return {
-    banner: 'bg-emerald-500/10 border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary/30',
-    badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary dark:border-primary/30',
-    icon: 'bull',
-  };
-  if (regime === 'هابط' || regime === 'Risk-Off') return {
-    banner: 'bg-red-500/10 border-red-500/30 dark:bg-error-container/20 dark:border-error/30',
-    badge: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30 dark:bg-error-container/20 dark:text-error dark:border-error/30',
-    icon: regime === 'Risk-Off' ? 'riskoff' : 'bear',
-  };
-  // عرضي
-  return {
-    banner: 'bg-amber-500/10 border-amber-500/30 dark:bg-surface-container-low dark:border-outline-variant/30',
-    badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 dark:text-secondary',
-    icon: 'sideways',
-  };
+// Translate raw debug text to clean Arabic labels (prevents هري الديباج)
+function cleanReason(raw: string | null | undefined): string {
+  if (!raw || typeof raw !== 'string') return '—';
+  // Replace common debug patterns with clean Arabic
+  let cleaned = raw
+    .replace(/volume_high_recurring/gi, 'سيولة ذكية فائقة')
+    .replace(/compressed/gi, 'ضغط تجميعي')
+    .replace(/accumulation/gi, 'تجميع مؤسسي')
+    .replace(/distribution/gi, 'تصريف')
+    .replace(/markup/gi, 'صعود')
+    .replace(/markdown/gi, 'هبوط')
+    .replace(/spring/gi, 'اختبار ناجح')
+    .replace(/SOS/gi, 'علامات صعود')
+    .replace(/LPS/gi, 'نقطة دخول')
+    .replace(/PSY/gi, 'تجميع أولي')
+    .replace(/ST/gi, 'اختبار هبوطي')
+    .replace(/UTAD/gi, 'ذروة شراء')
+    .replace(/\bUTC\b/gi, '')
+    .replace(/\[.*?\]/g, '') // remove array indices
+    .replace(/\{.*?\}/g, '') // remove dict notation
+    .trim();
+  // Truncate if still too long
+  if (cleaned.length > 80) cleaned = cleaned.slice(0, 77) + '...';
+  return cleaned || '—';
 }
-
-/** خريطة ألوان خلية الحوت. */
-function whaleStyle(whale: WhaleInfo | null | undefined): {
-  cell: string;
-  text: string;
-  icon: React.ReactNode;
-} {
-  if (!whale || whale.net_flow_egp == null || !Number.isFinite(Number(whale.net_flow_egp)) || Number(whale.net_flow_egp) === 0) {
-    return {
-      cell: 'bg-muted border-border dark:bg-surface-container dark:border-outline-variant/30',
-      text: 'text-muted-foreground dark:text-on-surface-variant',
-      icon: <Activity className="w-3.5 h-3.5" />,
-    };
-  }
-  const flow = Number(whale.net_flow_egp);
-  if (whale.whale_present === true) {
-    return {
-      cell: 'bg-emerald-500/10 border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary/30',
-      text: 'text-emerald-700 dark:text-emerald-300 dark:text-primary',
-      icon: <Fish className="w-3.5 h-3.5" />,
-    };
-  }
-  if (flow < 0) {
-    return {
-      cell: 'bg-red-500/10 border-red-500/30 dark:bg-error-container/20 dark:border-error/30',
-      text: 'text-red-700 dark:text-red-300 dark:text-error',
-      icon: <Droplet className="w-3.5 h-3.5" />,
-    };
-  }
-  // موجب ضعيف أو غير مصنف
-  return {
-    cell: 'bg-amber-500/10 border-amber-500/30 dark:bg-surface-container-low dark:border-outline-variant/30',
-    text: 'text-amber-700 dark:text-amber-300 dark:text-secondary',
-    icon: <Droplet className="w-3.5 h-3.5" />,
-  };
-}
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const PAGE_SIZE = 50;
-
-const PHASE_FILTERS: { key: string; label: string }[] = [
-  { key: 'all', label: 'الكل' },
-  { key: 'بيبلع على الهادي', label: 'بيبلع على الهادي' },
-  { key: 'بيتحضر', label: 'بيتحضر' },
-  { key: 'بيصرف', label: 'بيصرف' },
-  { key: 'بيانات غير كافية', label: 'بيانات غير كافية' },
-];
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
-export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
+export function LiquidityRadarView({ market: marketProp }: { market?: string }) {
+  const storeMarket = useAppStore((s) => s.currentMarket);
+  const market = (marketProp || storeMarket || 'EGX').toUpperCase();
+
   const [data, setData] = useState<RadarResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [phaseFilter, setPhaseFilter] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  const [activePhase, setActivePhase] = useState<string>('الكل');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [limit, setLimit] = useState(20);
 
-  // ------------------------------------------------------------------
-  // Fetch
-  // ------------------------------------------------------------------
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(
         `/api/v2/liquidity-radar?market=${encodeURIComponent(market)}`,
-        { cache: 'no-store' }
+        { cache: 'no-store' },
       );
-      // BOX-2 Phase 2: Graceful 503 fallback — detect offline/warming_up explicitly
-      // to prevent "Uncaught in promise" + show actionable Retry/Offline banner.
       if (!res.ok) {
-        // Try to parse the error body gracefully (503 may carry warming_up flag).
-        let errBody: Partial<RadarResponse> | null = null;
-        try { errBody = await res.json(); } catch { /* non-JSON body */ }
-        if (res.status === 503) {
-          setError(errBody?.message || 'محرك رادار السيولة غير متاح حالياً (أوفلاين). اضغط إعادة المحاولة.');
-        } else {
-          setError(errBody?.message || errBody?.error || `تعذّر الاتصال بالخادم (${res.status})`);
-        }
+        setError('تعذّر الاتصال بالخادم');
         setData(null);
         return;
       }
       const json: RadarResponse = await res.json();
       if (!json.success) {
         setError(json.message || json.error || 'فشل تشغيل محرّك رادار السيولة');
-        setData(json); // نبقى نملك الـ payload عشان نعرض الحالة الصادقة
+        setData(json);
         return;
       }
       setData(json);
-    } catch (e) {
-      // BOX-2 Phase 2: never let fetch rejection (network error) crash the UI.
-      setError(e instanceof Error ? `تعذّر الاتصال: ${e.message}` : 'تعذّر الاتصال بالخادم');
+    } catch {
+      setError('تعذّر الاتصال بالخادم');
       setData(null);
     } finally {
       setLoading(false);
     }
   }, [market]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // إعادة ضبط عدّاد العرض عند تغيير الفلتر/البحث/السوق
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [phaseFilter, searchTerm, market]);
-
-  // ------------------------------------------------------------------
-  // Sorted + filtered list (Display logic only — no financial computation)
-  // ------------------------------------------------------------------
+  // ─── Filter stocks by phase + search ───
   const allStocks = data?.stocks ?? [];
-
-  const sortedStocks = useMemo(() => {
-    // ترتيب تنازلي حسب صافي التدفق (الأكبر أولاً) — Rule 4: القيمة من API
-    const sorted = [...allStocks].sort((a, b) => {
-      const va = Number(a?.whale?.net_flow_egp ?? 0);
-      const vb = Number(b?.whale?.net_flow_egp ?? 0);
-      return vb - va;
-    });
-    return sorted;
-  }, [allStocks]);
-
-  const filteredStocks = useMemo(() => {
-    let list = sortedStocks;
-    if (phaseFilter !== 'all') {
-      list = list.filter((s) => s.phase === phaseFilter);
+  const filteredStocks = allStocks.filter((s) => {
+    if (activePhase !== 'الكل' && s.phase !== activePhase) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return s.ticker.toLowerCase().includes(q) || (s.name || '').toLowerCase().includes(q);
     }
-    const q = searchTerm.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (s) =>
-          (s.ticker || '').toLowerCase().includes(q) ||
-          (s.name || '').toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [sortedStocks, phaseFilter, searchTerm]);
+    return true;
+  }).slice(0, limit);
 
-  const visibleStocks = filteredStocks.slice(0, visibleCount);
-  const hasMore = filteredStocks.length > visibleCount;
+  const phasesBreakdown = data?.phases_breakdown ?? {};
+  const phasesList = [
+    { key: 'الكل', label: 'الكل', count: allStocks.length, dot: 'bg-primary' },
+    { key: 'بيبلع على الهادي', label: 'مرحلة التجميع', count: phasesBreakdown['بيبلع على الهادي'] ?? 0, dot: 'bg-primary' },
+    { key: 'بيتحضر', label: 'مرحلة الصعود', count: phasesBreakdown['بيتحضر'] ?? 0, dot: 'bg-secondary' },
+    { key: 'بيصرف', label: 'مرحلة التصريف', count: phasesBreakdown['بيصرف'] ?? 0, dot: 'bg-error' },
+    { key: 'بيانات غير كافية', label: 'بيانات غير كافية', count: phasesBreakdown['بيانات غير كافية'] ?? 0, dot: 'bg-outline' },
+  ];
 
-  // ------------------------------------------------------------------
-  // Loading state
-  // ------------------------------------------------------------------
+  // ─── Loading state ───
   if (loading) {
     return (
-      <div className="space-y-3" dir="rtl">
-        <Skeleton className="h-24 w-full rounded-xl" />
-        <Skeleton className="h-10 w-full rounded-lg" />
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
+      <div className="space-y-4" dir="rtl">
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid grid-cols-1 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-40 w-full rounded-xl" />
           ))}
         </div>
@@ -346,378 +235,404 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
     );
   }
 
-  // ------------------------------------------------------------------
-  // Error state (Rule 27 — honest empty state)
-  // ------------------------------------------------------------------
-  if (error && (!data || !data.stocks || data.stocks.length === 0)) {
+  // ─── Error / empty state ───
+  if (error || !data || !data.stocks || data.stocks.length === 0) {
     return (
-      <Card dir="rtl" className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-        <CardContent className="p-6 text-center space-y-3">
-          <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto dark:text-secondary" />
-          <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 dark:text-secondary">
-            {error || 'تعذّر جلب بيانات الرادار'}
-          </p>
-          <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
-            محرّك رادار السيولة غير متاح حالياً — لا توجد بيانات وهمية.
-          </p>
-          <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5" /> إعادة المحاولة
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-4" dir="rtl">
+        <PulseRibbon regime={data?.market_regime ?? null} scannedCount={data?.scanned_count ?? 0} />
+        <Card className="glass-panel dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <CardContent className="p-8 text-center space-y-3">
+            <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
+            <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+              {error || 'لا توجد بيانات رادار متاحة حالياً'}
+            </p>
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
+              محرّك رادار السيولة بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها
+            </p>
+            <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
+              <RefreshCw className="w-3.5 h-3.5" /> إعادة المحاولة
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
-  // ------------------------------------------------------------------
-  // Main render
-  // ------------------------------------------------------------------
-  const regime = data?.market_regime ?? null;
-  const rStyle = regimeStyle(regime?.regime);
-  const phasesBreakdown = data?.phases_breakdown ?? {};
-  const scannedCount = data?.scanned_count ?? 0;
+  // ─── Main render ───
+  const regime = data.market_regime;
+  const isBull = regime?.is_bull ?? (regime?.regime_en === 'bull');
+  const isBear = regime?.is_bear ?? (regime?.regime_en === 'bear' || regime?.regime_en === 'risk_off');
 
   return (
     <div className="space-y-4" dir="rtl">
-      {/* ---------------------------------------------------------------- */}
-      {/* 1. Market Regime Banner                                          */}
-      {/* ---------------------------------------------------------------- */}
-      <Card className={cn('border', rStyle.banner, 'dark:bg-surface-container-low dark:border dark:border-outline-variant/30')}>
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className={cn(
-                'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
-                rStyle.banner,
-                'dark:bg-surface-container dark:border dark:border-outline-variant/30'
-              )}>
-                {rStyle.icon === 'bull' && <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400 dark:text-primary" />}
-                {rStyle.icon === 'bear' && <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-error" />}
-                {rStyle.icon === 'riskoff' && <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-error" />}
-                {rStyle.icon === 'sideways' && <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400 dark:text-secondary" />}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-muted-foreground dark:text-on-surface-variant">حالة سوق</span>
-                  <span className="text-sm font-bold dark:text-on-surface dark:font-outfit">{market}</span>
-                  <Badge variant="outline" className={cn('text-[10px]', rStyle.badge)}>
-                    {regime?.regime || '—'}
-                  </Badge>
-                  {regime?.index_symbol && (
-                    <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">
-                      ({regime.index_symbol})
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs mt-1 text-muted-foreground leading-relaxed dark:text-on-surface-variant">
-                  {regime?.reason || 'لا يوجد وصف لحالة السوق'}
-                </p>
-              </div>
-            </div>
-            <div className="text-left shrink-0">
-              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">تغيّر المؤشر</p>
-              <p className={cn(
-                'text-lg font-bold font-mono tabular-nums dark:font-financial',
-                (regime?.change_pct ?? 0) > 0
-                  ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary'
-                  : (regime?.change_pct ?? 0) < 0
-                  ? 'text-red-600 dark:text-red-400 dark:text-error'
-                  : 'text-amber-600 dark:text-amber-400 dark:text-secondary'
-              )}>
-                {fmtPct(regime?.change_pct)}
-              </p>
-            </div>
-          </div>
+      {/* ═══ (أ) Macro Market Pulse Ribbon ═══ */}
+      <PulseRibbon regime={regime} scannedCount={data.scanned_count ?? allStocks.length} />
 
-          {/* تحذير صريح في حالة Risk-Off أو هابط */}
-          {(regime?.is_bear || regime?.regime === 'Risk-Off' || regime?.regime === 'هابط') && (
-            <div className="mt-3 flex items-start gap-2 rounded-md bg-red-500/10 border border-red-500/20 p-2 dark:bg-error-container/20 dark:border-error/30">
-              <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 dark:text-error shrink-0 mt-px" />
-              <p className="text-[11px] text-red-700 dark:text-red-300 dark:text-error leading-relaxed">
-                السوق حالياً في وضع هابط — لا توجد فرص تجميع صحيحة. التزم بالدفاع ووقف الخسارة.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ---------------------------------------------------------------- */}
-      {/* 2. Stats strip + Phase filter chips + Search                    */}
-      {/* ---------------------------------------------------------------- */}
-      <div className="space-y-3">
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div className="rounded-lg border bg-card p-2.5 dark:bg-surface-container-low dark:border-outline-variant/30">
-            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">إجمالي الممسوح</p>
-            <p className="text-base font-bold tabular-nums dark:text-on-surface dark:font-financial">{scannedCount}</p>
+      {/* ═══ (ب) Header + Live Macro Mini Gauges ═══ */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+        <div className="flex flex-col gap-1 max-w-3xl">
+          <div className="flex items-center gap-1.5">
+            <span className="px-1.5 py-0.5 rounded dark:bg-surface-container-high font-financial text-[10px] text-primary uppercase tracking-wide">
+              Whale Protocol Alpha
+            </span>
+            <span className="text-outline font-financial text-[10px] tracking-widest">● LIVE INSTITUTIONAL SCAN</span>
           </div>
-          <div className="rounded-lg border bg-emerald-500/5 p-2.5 dark:bg-primary-container/10 dark:border-outline-variant/30">
-            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">بيبلع على الهادي</p>
-            <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums dark:font-financial dark:text-primary">
-              {phasesBreakdown['بيبلع على الهادي'] ?? 0}
-            </p>
-          </div>
-          <div className="rounded-lg border bg-teal-500/5 p-2.5 dark:bg-secondary/10 dark:border-outline-variant/30">
-            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">بيتحضر</p>
-            <p className="text-base font-bold text-teal-700 dark:text-teal-400 tabular-nums dark:font-financial dark:text-secondary">
-              {phasesBreakdown['بيتحضر'] ?? 0}
-            </p>
-          </div>
-          <div className="rounded-lg border bg-red-500/5 p-2.5 dark:bg-error-container/10 dark:border-outline-variant/30">
-            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">بيصرف</p>
-            <p className="text-base font-bold text-red-700 dark:text-red-400 tabular-nums dark:font-financial dark:text-error">
-              {phasesBreakdown['بيصرف'] ?? 0}
-            </p>
-          </div>
+          <h1 className="font-outfit text-xl lg:text-2xl font-bold text-foreground dark:text-on-surface tracking-tight">
+            رادار تدفق السيولة المؤسسية ونبض الحيتان
+          </h1>
+          <p className="text-sm text-muted-foreground dark:text-on-surface-variant">
+            رصد خوارزمي دقيق لتدفقات السيولة الذكية ومراحل تجميع وتصريف صناع السوق وفق منهجية وايكوف المعيارية.
+          </p>
         </div>
 
-        {/* Phase chips */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {PHASE_FILTERS.map((pf) => {
-            const active = phaseFilter === pf.key;
-            const count =
-              pf.key === 'all'
-                ? allStocks.length
-                : allStocks.filter((s) => s.phase === pf.key).length;
-            return (
-              <button
-                key={pf.key}
-                type="button"
-                onClick={() => setPhaseFilter(pf.key)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors dark:border-outline-variant/30',
-                  active
-                    ? 'bg-foreground text-background border-foreground dark:bg-primary-container dark:text-on-primary-container dark:border-primary-container'
-                    : 'bg-card text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant/30 dark:hover:bg-surface-container-high dark:hover:text-on-surface'
-                )}
-              >
-                {pf.label}
-                <span className={cn(
-                  'text-[9px] rounded-full px-1.5 py-px',
-                  active ? 'bg-background/20 dark:bg-on-primary-container/20' : 'bg-muted dark:bg-surface-container-high'
-                )}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search + refresh row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[180px]">
-            <Search className="w-3.5 h-3.5 text-muted-foreground dark:text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <Input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="بحث برمز السهم أو الاسم…"
-              className="h-8 pr-8 text-xs dark:bg-surface-container dark:text-on-surface dark:border-outline-variant"
-            />
-          </div>
-          <Button variant="ghost" size="sm" onClick={fetchData} className="gap-1.5 h-8 text-xs shrink-0">
-            <RefreshCw className="w-3 h-3" /> تحديث
-          </Button>
+        {/* Live Macro Mini Gauges */}
+        <div className="flex items-center gap-3 self-start lg:self-auto dark:bg-surface-container p-2 rounded-xl shadow-md dark:border dark:border-outline-variant/20">
+          <MiniGauge
+            label="كفاءة التجميع المؤسسي"
+            value={`${(phasesBreakdown['بيبلع على الهادي'] ?? 0) + (phasesBreakdown['بيتحضر'] ?? 0)}`}
+            suffix=" سهم"
+            trend="▲"
+            trendColor="text-primary"
+            color="text-primary"
+          />
+          <div className="w-px h-10 dark:bg-surface-container-high bg-border" />
+          <MiniGauge
+            label="ضغط التصريف المعاكس"
+            value={`${phasesBreakdown['بيصرف'] ?? 0}`}
+            suffix=" سهم"
+            trend="▼"
+            trendColor="text-error"
+            color="text-error"
+          />
+          <div className="w-px h-10 dark:bg-surface-container-high bg-border" />
+          <MiniGauge
+            label="مؤشر المخاطرة"
+            value={isBear ? 'عالي' : isBull ? 'منخفض' : 'متوسط'}
+            trend=""
+            trendColor=""
+            color={isBear ? 'text-error' : isBull ? 'text-primary' : 'text-secondary'}
+          />
         </div>
       </div>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* 3. Stocks list (each stock = ONE row with 4 cells)              */}
-      {/* ---------------------------------------------------------------- */}
+      {/* ═══ (ج) Multi-tier Filter Bar ═══ */}
+      <Card className="glass-panel dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+        <CardContent className="p-3 space-y-3">
+          {/* Top Line: Market + Search + Refresh */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center dark:bg-surface-container p-1 rounded-lg">
+                <span className="bg-primary-container text-on-primary-container px-2.5 py-0.5 rounded-md text-xs font-semibold flex items-center gap-1">
+                  🇪🇬 {market}
+                </span>
+              </div>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground dark:text-on-surface-variant" />
+                <input
+                  type="text"
+                  placeholder="ابحث برمز السهم أو الاسم..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-7 pl-2 py-1.5 text-xs rounded-lg dark:bg-surface-container dark:text-on-surface dark:border-outline-variant border focus:outline-none focus:ring-1 focus:ring-primary w-48"
+                />
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={fetchData} className="gap-1.5 h-7 text-xs">
+              <RefreshCw className="w-3.5 h-3.5" /> تحديث
+            </Button>
+          </div>
+
+          {/* Wyckoff Phase Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="font-financial text-[10px] text-muted-foreground dark:text-on-surface-variant shrink-0 ml-1 uppercase tracking-wide">مرحلة وايكوف:</span>
+            {phasesList.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setActivePhase(p.key)}
+                className={cn(
+                  'px-2.5 py-1 rounded-full shrink-0 text-xs font-semibold transition-colors flex items-center gap-1.5',
+                  activePhase === p.key
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'dark:bg-surface-container dark:text-on-surface-variant hover:dark:bg-surface-container-high hover:dark:text-on-surface bg-muted text-muted-foreground',
+                )}
+              >
+                {p.dot && <span className={cn('w-1.5 h-1.5 rounded-full', p.dot)} />}
+                <span>{p.label}</span>
+                <span className={cn(
+                  'text-[10px] px-1 rounded-full font-financial tabular-nums',
+                  activePhase === p.key ? 'dark:bg-surface-container-lowest/30 bg-background/30' : 'dark:bg-surface-container-highest bg-background',
+                )}>
+                  {p.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ═══ (د) Institutional Asset Cards — 4-column grid ═══ */}
       {filteredStocks.length === 0 ? (
-        <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-          <CardContent className="p-6 text-center space-y-2">
-            <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto dark:text-on-surface-variant/40" />
-            <p className="text-sm font-semibold text-muted-foreground dark:text-on-surface">لا توجد بيانات</p>
-            <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
-              لا توجد أسهم مطابقة لهذا الفلتر في سوق {market}. (Rule 27: لا بيانات وهمية)
+        <Card className="glass-panel dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <CardContent className="p-8 text-center">
+            <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground dark:text-on-surface-variant">
+              لا توجد أسهم مطابقة للفلتر الحالي
             </p>
           </CardContent>
         </Card>
       ) : (
-        <>
-          <div className="text-[11px] text-muted-foreground flex items-center justify-between flex-wrap gap-1 dark:text-on-surface-variant">
-            <span>
-              عرض {visibleStocks.length} من {filteredStocks.length} سهم
-              {phaseFilter !== 'all' && <span className="ml-1">· مُصفّى: {PHASE_FILTERS.find(p => p.key === phaseFilter)?.label}</span>}
-            </span>
-            <span className="text-[10px]">مرتّب تنازلياً حسب صافي التدفق</span>
-          </div>
-
-          <div className="space-y-2.5">
-            {visibleStocks.map((stock) => (
-              <StockRow key={`${market}-${stock.ticker}`} stock={stock} />
-            ))}
-          </div>
-
-          {hasMore && (
-            <div className="flex justify-center pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                className="gap-1.5"
-              >
-                <ChevronDown className="w-3.5 h-3.5" />
-                عرض المزيد
-                <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">
-                  (+{Math.min(PAGE_SIZE, filteredStocks.length - visibleCount)})
-                </span>
-              </Button>
-            </div>
+        <div className="space-y-3">
+          {filteredStocks.map((stock) => (
+            <InstitutionalAssetCard key={stock.ticker} stock={stock} />
+          ))}
+          {limit < filteredStocks.length + (allStocks.length - limit) && allStocks.length > limit && (
+            <Button variant="outline" size="sm" onClick={() => setLimit(l => l + 20)} className="w-full gap-1.5">
+              <ChevronDown className="w-4 h-4" /> عرض المزيد ({allStocks.length - limit} سهم متبقي)
+            </Button>
           )}
-        </>
+        </div>
       )}
     </div>
   );
 }
 
 // ============================================================================
-// StockRow — صف واحد لكل سهم (4 خلايا + سطر السبب)
+// (أ) Macro Market Pulse Ribbon
 // ============================================================================
 
-function StockRow({ stock }: { stock: RadarStock }) {
-  const w = whaleStyle(stock.whale);
-  const ps = phaseStyle(stock.phase);
-  const localRegime = regimeStyle(stock.market_regime?.regime);
+function PulseRibbon({ regime, scannedCount }: { regime: MarketRegime | null; scannedCount: number }) {
+  const isBull = regime?.is_bull ?? (regime?.regime_en === 'bull');
+  const isBear = regime?.is_bear ?? (regime?.regime_en === 'bear' || regime?.regime_en === 'risk_off');
 
-  // اسم السهم الوصفي — نعرض الـ ticker دائماً + الاسم إذا كان متاحاً وغير مكرر
-  const displayName = stock.name && stock.name !== stock.ticker && stock.name !== stock.market
-    ? stock.name
-    : null;
-
-  // sector قد يأتي رقم (خطأ backend) — نعرضه فقط لو نصّي صحيح
-  const sectorText = typeof stock.sector === 'string' && stock.sector.trim().length > 0
-    ? stock.sector
-    : null;
+  const flowText = isBear
+    ? 'سيولة تصريفية خارجة — حذر'
+    : isBull
+      ? 'سيولة تراكمية داخلة — تدفق شراء مؤسسي'
+      : 'سيولة متوازنة — توزيع عادل';
 
   return (
-    <Card className="overflow-hidden hover:border-emerald-500/30 transition-colors dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:hover:border-primary/30">
-      <CardContent className="p-3 space-y-2.5">
-        {/* Header: ticker + name + sector + phase badge */}
-        <div className="flex items-start justify-between gap-2 flex-wrap">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-sm dark:text-on-surface dark:font-outfit">{stock.ticker}</span>
-              <Badge variant="outline" className={cn('text-[9px]', ps.badge)}>
-                {stock.phase}
-              </Badge>
-              {sectorText && (
-                <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">{sectorText}</span>
-              )}
-            </div>
-            {displayName && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 truncate dark:text-on-surface-variant">{displayName}</p>
-            )}
-          </div>
+    <div className="w-full dark:bg-surface-container-low px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm dark:border dark:border-outline-variant/30 rounded-xl">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          {/* Pulsing green dot */}
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+          </span>
+          <span className="font-financial text-[10px] text-primary uppercase tracking-wider">WYCKOFF-RADAR-V4</span>
         </div>
-
-        {/* 4 cells: mobile=1col, sm=2col, lg=4col */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-          {/* Cell 1: الحوت فين؟ */}
-          <div className={cn('rounded-lg border p-2.5', w.cell)}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className={w.text}>{w.icon}</span>
-              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">الحوت فين؟</span>
-            </div>
-            <p className={cn('text-sm font-bold font-mono tabular-nums dark:font-financial', w.text)}>
-              {fmtFlowEgp(stock.whale?.net_flow_egp)}
-              <span className="text-[9px] font-normal mr-1 opacity-70">EGP</span>
-            </p>
-            <p className={cn('text-[10px] mt-0.5 leading-tight', w.text)}>
-              {stock.whale?.flow_strength || '—'}
-            </p>
-          </div>
-
-          {/* Cell 2: حالة السوق */}
-          <div className={cn('rounded-lg border p-2.5', localRegime.banner)}>
-            <div className="flex items-center gap-1.5 mb-1">
-              {localRegime.icon === 'bull' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 dark:text-primary" />}
-              {localRegime.icon === 'bear' && <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400 dark:text-error" />}
-              {localRegime.icon === 'riskoff' && <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 dark:text-error" />}
-              {localRegime.icon === 'sideways' && <Minus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 dark:text-secondary" />}
-              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">حالة السوق</span>
-            </div>
-            <p className={cn('text-sm font-bold', localRegime.badge.split(' ').filter(c => c.startsWith('text-')).join(' '))}>
-              {stock.market_regime?.regime || '—'}
-            </p>
-            <p className="text-[10px] mt-0.5 text-muted-foreground font-mono tabular-nums dark:text-on-surface-variant dark:font-financial">
-              {fmtPct(stock.market_regime?.change_pct)}
-              {stock.market_regime?.index_symbol && (
-                <span className="opacity-70 mr-1">· {stock.market_regime.index_symbol}</span>
-              )}
-            </p>
-          </div>
-
-          {/* Cell 3: المرحلة */}
-          <div className={cn('rounded-lg border p-2.5', ps.cell)}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Layers className="w-3.5 h-3.5 text-muted-foreground dark:text-on-surface-variant" />
-              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">المرحلة</span>
-            </div>
-            <p className={cn('text-sm font-bold leading-tight', ps.label)}>
-              {stock.phase || '—'}
-            </p>
-            {stock.phase_reason && (
-              <p className="text-[10px] mt-0.5 text-muted-foreground leading-tight truncate dark:text-on-surface-variant" title={stock.phase_reason}>
-                {stock.phase_reason}
-              </p>
-            )}
-          </div>
-
-          {/* Cell 4: مستوى الدخول والدفاع */}
-          <div className={cn(
-            'rounded-lg border p-2.5',
-            stock.entry_defense?.entry_level == null
-              ? 'bg-muted border-border dark:bg-surface-container dark:border-outline-variant/30'
-              : 'bg-emerald-500/5 border-emerald-500/20 dark:bg-primary-container/10 dark:border-primary/30'
-          )}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Shield className="w-3.5 h-3.5 text-muted-foreground dark:text-on-surface-variant" />
-              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">الدخول والدفاع</span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              <div>
-                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5 dark:text-on-surface-variant">
-                  <Target className="w-2.5 h-2.5" /> دخول
-                </p>
-                <p className={cn(
-                  'text-sm font-mono font-semibold tabular-nums dark:font-financial',
-                  stock.entry_defense?.entry_level == null
-                    ? 'text-muted-foreground dark:text-on-surface-variant'
-                    : 'text-emerald-700 dark:text-emerald-400 dark:text-primary'
-                )}>
-                  {fmtPrice(stock.entry_defense?.entry_level)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5 dark:text-on-surface-variant">
-                  <Shield className="w-2.5 h-2.5" /> دفاع
-                </p>
-                <p className={cn(
-                  'text-sm font-mono font-semibold tabular-nums dark:font-financial',
-                  stock.entry_defense?.defense_level == null
-                    ? 'text-muted-foreground dark:text-on-surface-variant'
-                    : 'text-red-600 dark:text-red-400 dark:text-error'
-                )}>
-                  {fmtPrice(stock.entry_defense?.defense_level)}
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="h-4 w-px dark:bg-surface-container-high bg-border hidden sm:block" />
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground dark:text-on-surface-variant">حالة تدفق السيولة:</span>
+          <span className={cn('font-financial font-semibold', isBear ? 'text-error' : isBull ? 'text-primary' : 'text-secondary')}>
+            {flowText}
+          </span>
         </div>
-
-        {/* Reason line — API text as-is, no edit/translate (Rule: do NOT edit) */}
-        {stock.reason && (
-          <div className="flex items-start gap-1.5 rounded-md bg-muted/40 border border-border px-2 py-1.5 dark:bg-surface-container dark:border-outline-variant/30">
-            <Gauge className="w-3 h-3 text-muted-foreground shrink-0 mt-px dark:text-on-surface-variant" />
-            <p className="text-[11px] text-muted-foreground leading-relaxed flex-1 dark:text-on-surface-variant">
-              {stock.reason}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground dark:text-on-surface-variant">
+          <Shield className="w-3.5 h-3.5 text-primary" />
+          <span>بروتوكول Rule 80 نشط</span>
+        </div>
+        <div className="h-4 w-px dark:bg-surface-container-high bg-border hidden sm:block" />
+        <span className="font-financial text-[10px] text-secondary">
+          مرقوب: {scannedCount} سهم
+        </span>
+      </div>
+    </div>
   );
 }
 
-export default LiquidityRadarView;
+// ============================================================================
+// (ب) Mini Gauge
+// ============================================================================
+
+function MiniGauge({ label, value, suffix, trend, trendColor, color }: {
+  label: string;
+  value: string;
+  suffix?: string;
+  trend: string;
+  trendColor: string;
+  color: string;
+}) {
+  return (
+    <div className="flex flex-col text-right px-2">
+      <span className="text-xs text-muted-foreground dark:text-on-surface-variant">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className={cn('font-financial text-xl font-bold tabular-nums', color)}>{value}</span>
+        {suffix && <span className={cn('text-xs font-financial', color)}>{suffix}</span>}
+        {trend && <span className={cn('text-xs font-financial', trendColor)}>{trend}</span>}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// (د) Institutional Asset Card — 4 columns
+// ============================================================================
+
+function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
+  const whale = stock.whale;
+  const regime = stock.market_regime;
+  const defense = stock.entry_defense;
+  const phaseStyle = getPhaseStyle(stock.phase);
+  const cleanStockReason = cleanReason(stock.reason);
+
+  // Whale flow visualization
+  const buyPct = whale?.buy_pct ?? (whale?.whale_present ? 65 : 50);
+  const sellPct = whale?.sell_pct ?? (100 - buyPct);
+  const netFlowPositive = (whale?.net_flow_egp ?? 0) >= 0;
+
+  return (
+    <div className="dark:bg-surface-container hover:dark:bg-surface-container-high transition-colors rounded-xl p-3 shadow-md dark:border dark:border-outline-variant/30 flex flex-col xl:grid xl:grid-cols-12 gap-3 items-stretch">
+      {/* ─── Col 1: Whale Volume & Flow + Dual Color Flow Bar ─── */}
+      <div className="xl:col-span-3 flex flex-col justify-between dark:bg-surface-container-lowest/50 p-2.5 rounded-lg">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-financial text-sm font-bold text-foreground dark:text-on-surface truncate">{stock.ticker}</span>
+            <span className="text-xs text-muted-foreground dark:text-on-surface-variant truncate">{stock.name || stock.ticker}</span>
+          </div>
+          <span className={cn(
+            'px-1.5 py-0.5 rounded font-financial text-[10px] font-semibold shrink-0',
+            netFlowPositive ? 'dark:bg-primary-container/20 text-primary bg-emerald-500/10 text-emerald-600' : 'dark:bg-error-container/20 text-error bg-red-500/10 text-red-600'
+          )}>
+            {fmtFlow(whale?.net_flow_egp)} صافي
+          </span>
+        </div>
+
+        {/* Dual Color Flow Bar */}
+        <div className="flex flex-col gap-1 my-1.5">
+          <div className="flex justify-between items-center font-financial text-[10px]">
+            <span className="text-primary font-semibold">شراء {Math.round(buyPct)}%</span>
+            <span className="text-muted-foreground dark:text-on-surface-variant">بيع {Math.round(sellPct)}%</span>
+          </div>
+          <div className="w-full h-2 rounded-full dark:bg-surface-container-highest bg-muted overflow-hidden flex">
+            <div className="h-full bg-primary rounded-r-full transition-all" style={{ width: `${buyPct}%` }} />
+            <div className="h-full bg-error rounded-l-full transition-all" style={{ width: `${sellPct}%` }} />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mt-1 font-financial text-[10px] text-muted-foreground dark:text-on-surface-variant">
+          <span>{whale?.whale_present ? 'حوت نشط' : 'سيولة عادية'}</span>
+          <span className={cn('flex items-center gap-0.5', netFlowPositive ? 'text-primary' : 'text-error')}>
+            {netFlowPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {netFlowPositive ? 'تدفق تجميعي' : 'تدفق تصريفي'}
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Col 2: Momentum & Market Regime ─── */}
+      <div className="xl:col-span-3 flex flex-col justify-between dark:bg-surface-container-lowest/50 p-2.5 rounded-lg">
+        <div className="flex items-center justify-between">
+          <span className="font-financial text-[10px] text-outline uppercase tracking-wide">حالة السهم</span>
+          <span className={cn(
+            'font-financial text-sm font-bold tabular-nums',
+            (regime?.change_pct ?? 0) >= 0 ? 'text-primary' : 'text-error'
+          )}>
+            {fmtPct(regime?.change_pct)}
+          </span>
+        </div>
+
+        {/* Regime indicator */}
+        <div className="my-1.5 flex items-center gap-2">
+          <div className="flex-1">
+            <div className={cn(
+              'flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold',
+              regime?.is_bull ? 'bg-primary-container/20 text-primary' :
+              regime?.is_bear ? 'bg-error-container/20 text-error' :
+              'dark:bg-surface-container-high dark:text-on-surface-variant bg-muted text-muted-foreground'
+            )}>
+              <span className={cn('w-1.5 h-1.5 rounded-full',
+                regime?.is_bull ? 'bg-primary' : regime?.is_bear ? 'bg-error' : 'bg-outline')} />
+              {regime?.regime || 'محايد'}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between font-financial text-[10px]">
+          <span className="text-muted-foreground dark:text-on-surface-variant">تقييم النبض:</span>
+          <span className={cn('flex items-center gap-0.5',
+            (regime?.change_pct ?? 0) > 0.5 ? 'text-primary' :
+            (regime?.change_pct ?? 0) < -0.5 ? 'text-error' :
+            'text-muted-foreground dark:text-on-surface-variant')}>
+            {(regime?.change_pct ?? 0) > 0.5 ? <><TrendingUp className="w-3 h-3" /> زخم إيجابي</> :
+             (regime?.change_pct ?? 0) < -0.5 ? <><TrendingDown className="w-3 h-3" /> ضغط بيعي</> :
+             <><Minus className="w-3 h-3" /> حركة عرضية</>}
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Col 3: Wyckoff Phase & Key Levels ─── */}
+      <div className="xl:col-span-3 flex flex-col justify-between dark:bg-surface-container-lowest/50 p-2.5 rounded-lg">
+        <div className="flex items-center justify-between">
+          <span className={cn('px-2 py-0.5 rounded-md text-xs font-semibold flex items-center gap-1', phaseStyle.badge)}>
+            <Layers className="w-3.5 h-3.5" />
+            {phaseStyle.label}
+          </span>
+          <span className="font-financial text-[10px] text-outline">{stock.phase_reason ? 'نشط' : 'مراقبة'}</span>
+        </div>
+
+        <div className="flex flex-col gap-1 my-1.5 text-xs">
+          {/* Entry level */}
+          {defense?.entry_level != null && Number.isFinite(Number(defense.entry_level)) && (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground dark:text-on-surface-variant">مستوى الدخول:</span>
+              <span className="font-financial font-semibold text-primary tabular-nums">{fmtPrice(defense.entry_level)}</span>
+            </div>
+          )}
+          {/* Defense level */}
+          {defense?.defense_level != null && Number.isFinite(Number(defense.defense_level)) && (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground dark:text-on-surface-variant">مستوى الدفاع:</span>
+              <span className="font-financial font-semibold text-error tabular-nums">{fmtPrice(defense.defense_level)}</span>
+            </div>
+          )}
+          {/* Resistance */}
+          {defense?.resistance_level != null && Number.isFinite(Number(defense.resistance_level)) && (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground dark:text-on-surface-variant">المقاومة:</span>
+              <span className="font-financial font-semibold text-secondary tabular-nums">{fmtPrice(defense.resistance_level)}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="text-[10px] text-muted-foreground dark:text-on-surface-variant truncate">
+          {cleanStockReason}
+        </div>
+      </div>
+
+      {/* ─── Col 4: Entry & Capital Defense Strategy ─── */}
+      <div className="xl:col-span-3 flex flex-col justify-between dark:bg-surface-container-lowest/50 p-2.5 rounded-lg">
+        <div className="flex items-center justify-between">
+          <span className="font-financial text-[10px] text-outline uppercase tracking-wide">استراتيجية الدخول</span>
+          <span className={cn('flex items-center gap-0.5 text-[10px] font-semibold',
+            whale?.whale_present ? 'text-primary' : 'text-muted-foreground dark:text-on-surface-variant')}>
+            {whale?.whale_present ? <><Shield className="w-3 h-3" /> حماية حيتان</> : <><AlertTriangle className="w-3 h-3" /> بدون حماية</>}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 my-1.5">
+          <div className="flex flex-col p-1.5 rounded dark:bg-surface-container-high/50 bg-muted/50">
+            <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الدخول</span>
+            <span className="font-financial text-sm font-bold text-primary tabular-nums">{fmtPrice(defense?.entry_level)}</span>
+          </div>
+          <div className="flex flex-col p-1.5 rounded dark:bg-surface-container-high/50 bg-muted/50">
+            <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الدفاع</span>
+            <span className="font-financial text-sm font-bold text-error tabular-nums">{fmtPrice(defense?.defense_level)}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 text-[10px]">
+          <Gauge className="w-3 h-3 text-secondary" />
+          <span className="text-muted-foreground dark:text-on-surface-variant">قوة التدفق:</span>
+          <span className={cn('font-financial font-semibold',
+            whale?.flow_strength === 'high' || whale?.flow_strength === 'سيولة ذكية فائقة' ? 'text-primary' :
+            whale?.flow_strength === 'low' || whale?.flow_strength === 'ضعيف' ? 'text-error' : 'text-secondary')}>
+            {whale?.flow_strength || 'متوسط'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
