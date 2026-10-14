@@ -80,18 +80,18 @@ import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 // (2) `ag-theme-quartz` uses its OWN color palette, ignores the app's HSL
 // variables — theme mismatch even after CSS var mapping (commit 9ac8817);
 // (3) Range selection + clipboard + XLSX export are Enterprise-only — the
-// community "Excel export" was CSV-only.
+// community"Excel export" was CSV-only.
 // Owner directive (EXACT QUOTE): «الجدول الجديد الى انت عملتة دة بجد مش أحسن
 // حاجة خالص هو مكتبة جاهزة بس زبالة بصراحة ممكن انت تستعمل الجدول الموحد
 // بس هنا هاتعمل فية نفس التحكم الى فى المكتبة ويكون بتعنا احنا ونسمى
 // المكون دة الجدول المتقدم»
 // Translation: AG Grid is garbage — use UnifiedTable instead, add the same
-// controls, call it "الجدول المتقدم" (Advanced Table). Done.
+// controls, call it"الجدول المتقدم" (Advanced Table). Done.
 // UnifiedTable now has: column resize by drag + inline edit + copy/paste to
 // Excel + multi-sort + AutoFilter + column pinning + drag-drop reorder +
 // calculated columns + saved presets + CSV export + conditional formatting.
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
-// StockPublisher اتشال من عمود الـ ticker (Owner directive: "أسلوب إن انت
+// StockPublisher اتشال من عمود الـ ticker (Owner directive:"أسلوب إن انت
 // حاط زرار للنشر جنب كل سهم ده وحش جدا"). الجدول دلوقتي نضيف زي الـ radar table.
 import { useTranslation } from '@/lib/i18n-context';
 
@@ -215,15 +215,15 @@ interface TopPerformersResponse {
 // ─── State Colors (mirrors vps-service/utils/stock_state.py STATE_COLORS) ────
 
 const STATE_BADGE_COLORS: Record<string, string> = {
-  CORRECTION_END: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-  BALANCED_MOMENTUM: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800',
-  NEAR_BREAKOUT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
-  AT_PEAK: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
-  NEAR_PEAK: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  NEUTRAL: 'bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300 border-gray-200 dark:border-gray-700',
-  CORRECTION: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  DECLINING: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
-  INSUFFICIENT_DATA: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+  CORRECTION_END: 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30',
+  BALANCED_MOMENTUM: 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30',
+  NEAR_BREAKOUT: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+  AT_PEAK: 'bg-red-500/10 text-stitch-error border-red-500/30',
+  NEAR_PEAK: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  NEUTRAL: 'bg-[#182030] text-stitch-on-surface border-white/[0.06]',
+  CORRECTION: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  DECLINING: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  INSUFFICIENT_DATA: 'bg-[#182030] text-stitch-muted border-white/[0.06]',
 };
 
 function getStateLabels(t: (k: string, p?: any) => string): Record<string, string> {
@@ -314,7 +314,7 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className={className}>
+      <Card className={cn('stitch-glass', className)}>
         <CardHeader className="pb-2">
           <CollapsibleTrigger asChild>
             <button
@@ -326,7 +326,7 @@ function CollapsibleSection({
                 {icon}
                 {title}
               </CardTitle>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 text-xs text-stitch-muted">
                 {open ? (
                   <>
                     <ChevronUp className="w-4 h-4" />
@@ -374,9 +374,9 @@ function formatEGP(v: number): string {
 }
 
 function getChangeColor(change: number): string {
-  if (change > 0) return 'text-emerald-600 dark:text-emerald-400';
-  if (change < 0) return 'text-red-600 dark:text-red-400';
-  return 'text-muted-foreground';
+  if (change > 0) return 'text-stitch-primary';
+  if (change < 0) return 'text-stitch-error';
+  return 'text-stitch-muted';
 }
 
 // ─── Export text generators ────────────────────────────────────────────────────
@@ -398,7 +398,7 @@ function generateScreenerText(
       `• ${s.ticker} — ${s.name_ar || s.name}`,
       t('screener.advanced.shareText.stockLine', { price: formatNumber(s.current_price), sign: pct, changePercent: formatNumber(s.change_percent) }),
       t('screener.advanced.shareText.stockLineLiquidity', { volume: formatVolume(s.volume), liquidity: formatEGP(s.turnover_egp) }),
-      `  📈 P/E: ${formatNumber(s.pe_ratio, 1)} | 🏦 ROE: ${s.roe !== null ? formatNumber(s.roe, 1) : '—'}% | 📍 RSI: ${formatNumber(s.rsi, 0)}`,
+      ` 📈 P/E: ${formatNumber(s.pe_ratio, 1)} | 🏦 ROE: ${s.roe !== null ? formatNumber(s.roe, 1) : '—'}% | 📍 RSI: ${formatNumber(s.rsi, 0)}`,
       t('screener.advanced.shareText.stockLineExtra', { state: s.stock_state_ar || s.stock_state, momentum: s.momentum_score }),
     );
   });
@@ -524,7 +524,7 @@ function computeStopDistancePct(s: ScreenerStock): number {
   if (stop <= 0) return -1;
   return ((s.current_price - stop) / s.current_price) * 100;
 }
-/** يتحقق لو السهم عليه نشاط ميكر "عالي" */
+/** يتحقق لو السهم عليه نشاط ميكر"عالي" */
 function isHighMakerActivity(s: ScreenerStock): boolean {
   const a = s.maker_activity;
   if (!a) return false;
@@ -558,16 +558,16 @@ export function StockScreenerAdvanced({ initialTab = 'advanced', initialMarket }
   }, []);
 
   return (
-    <div className="space-y-4 p-4 md:p-6" dir="rtl">
+    <div className="stitch-canvas space-y-4 p-4 md:p-6" dir="rtl">
       {/* ── SCR-003: Institutional Glass Panel (Bloomberg terminal feel) ── */}
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2 rounded-xl border border-emerald-500/20 bg-card/80 backdrop-blur-sm p-4 shadow-sm">
+      <div className="stitch-glass flex items-center justify-between flex-wrap gap-2 p-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Activity className="w-5 h-5 text-emerald-600" />
+          <h1 className="text-xl font-bold text-stitch-on-surface flex items-center gap-2">
+            <Activity className="w-5 h-5 text-stitch-primary" />
             {t('screener.advanced.title')}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-stitch-muted mt-1">
             {t('screener.advanced.subtitle')}
           </p>
         </div>
@@ -1081,20 +1081,20 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
    ];
 
    const colorMap: Record<string, string> = {
-     emerald: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300',
-     teal: 'border-teal-500/40 bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 dark:text-teal-300',
-     amber: 'border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300',
-     orange: 'border-orange-500/40 bg-orange-500/10 text-orange-700 hover:bg-orange-500/20 dark:text-orange-300',
-     red: 'border-red-500/40 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-300',
-     gray: 'border-gray-500/40 bg-gray-500/10 text-gray-700 hover:bg-gray-500/20 dark:text-gray-300',
-     purple: 'border-purple-500/40 bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 dark:text-purple-300',
-     rose: 'border-rose-500/40 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:text-rose-300',
-     green: 'border-green-500/40 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-300',
-     yellow: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 dark:text-yellow-300',
-     gold: 'border-yellow-600/40 bg-yellow-600/10 text-yellow-800 hover:bg-yellow-600/20 dark:text-yellow-400',
-     cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 hover:bg-cyan-500/20 dark:text-cyan-300',
-     violet: 'border-violet-500/40 bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 dark:text-violet-300',
-     slate: 'border-slate-500/40 bg-slate-500/10 text-slate-700 hover:bg-slate-500/20 dark:text-slate-300',
+     emerald: 'border-emerald-500/40 bg-emerald-500/10 text-stitch-primary hover:bg-emerald-500/20',
+     teal: 'border-teal-500/40 bg-teal-500/10 text-teal-400 hover:bg-teal-500/20',
+     amber: 'border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20',
+     orange: 'border-orange-500/40 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20',
+     red: 'border-red-500/40 bg-red-500/10 text-stitch-error hover:bg-red-500/20',
+     gray: 'border-gray-500/40 bg-gray-500/10 text-stitch-on-surface hover:bg-gray-500/20',
+     purple: 'border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20',
+     rose: 'border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20',
+     green: 'border-green-500/40 bg-green-500/10 text-stitch-primary hover:bg-green-500/20',
+     yellow: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20',
+     gold: 'border-yellow-600/40 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-600/20',
+     cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20',
+     violet: 'border-violet-500/40 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20',
+     slate: 'border-white/[0.08] bg-white/[0.04] text-stitch-on-surface hover:bg-white/[0.04]',
    };
 
    const applyPreset = (preset: typeof presets[0]) => {
@@ -1215,11 +1215,11 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         filterValue: (s) => s.ticker,
         render: (s) => (
           <div>
-            <div className="font-mono font-bold text-sm">{s.ticker}</div>
-            <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+            <div className="stitch-latin font-bold text-sm">{s.ticker}</div>
+            <div className="text-xs text-stitch-muted truncate max-w-[150px]">
               {s.name_ar || s.name}
             </div>
-            <div className="text-xs text-muted-foreground">{s.sector}</div>
+            <div className="text-xs text-stitch-muted">{s.sector}</div>
           </div>
         ),
       },
@@ -1233,7 +1233,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: current_price (0/null → -1)
         sortValue: (s) => s.current_price > 0 ? s.current_price : -1,
         render: (s) => (
-          <span className="font-mono text-sm tabular-nums">{formatNumber(s.current_price)}</span>
+          <span className="stitch-num text-sm tabular-nums">{formatNumber(s.current_price)}</span>
         ),
       },
       {
@@ -1246,7 +1246,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: change_percent (null → -Infinity to bottom)
         sortValue: (s) => Number.isFinite(s.change_percent) ? s.change_percent : -Infinity,
         render: (s) => (
-          <span className={cn('font-mono text-sm font-medium tabular-nums', getChangeColor(s.change_percent))}>
+          <span className={cn('stitch-num text-sm font-medium tabular-nums', getChangeColor(s.change_percent))}>
             {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
           </span>
         ),
@@ -1259,7 +1259,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           <MiniSparkline ticker={s.ticker} height={24} width={80} showArea={false} />
         ),
       },
-      // ── Owner directive: "حط أعمدة Entry / Stop / Target / R/R في المقدمة" ──
+      // ── Owner directive:"حط أعمدة Entry / Stop / Target / R/R في المقدمة" ──
       {
         key: 'entry',
         header: 'دخول',
@@ -1269,7 +1269,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => computeScreenerEntry(s),
         render: (s) => {
           const entry = computeScreenerEntry(s);
-          return <span className="font-mono text-xs font-semibold text-foreground">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</span>;
+          return <span className="stitch-num text-xs tabular-nums font-semibold text-stitch-on-surface">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1281,7 +1281,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => computeScreenerStop(s),
         render: (s) => {
           const stop = computeScreenerStop(s);
-          return <span className="font-mono text-xs font-semibold text-red-600 dark:text-red-400">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</span>;
+          return <span className="stitch-num text-xs tabular-nums font-semibold text-stitch-error">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1293,7 +1293,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => computeScreenerTarget(s),
         render: (s) => {
           const target = computeScreenerTarget(s);
-          return <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</span>;
+          return <span className="stitch-num text-xs tabular-nums font-semibold text-stitch-primary">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1306,10 +1306,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         render: (s) => {
           const rr = computeScreenerRR(s);
           if (rr > 0) {
-            const rrColor = rr >= 2 ? 'text-emerald-600 dark:text-emerald-400' : rr >= 1.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
-            return <span className={`font-mono text-xs font-bold ${rrColor}`}>{(rr ?? 0).toFixed(2)}</span>;
+            const rrColor = rr >= 2 ? 'text-stitch-primary' : rr >= 1.5 ? 'text-amber-400' : 'text-stitch-error';
+            return <span className={`stitch-num text-xs tabular-nums font-bold ${rrColor}`}>{(rr ?? 0).toFixed(2)}</span>;
           }
-          return <span className="text-muted-foreground">—</span>;
+          return <span className="text-stitch-muted">—</span>;
         },
       },
       {
@@ -1321,8 +1321,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => computeOpportunityQuality(s),
         render: (s) => {
           const quality = computeOpportunityQuality(s);
-          const color = quality >= 70 ? 'text-emerald-600 dark:text-emerald-400' : quality >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground';
-          return <span className={`font-mono text-xs font-bold ${color}`}>{quality}</span>;
+          const color = quality >= 70 ? 'text-stitch-primary' : quality >= 50 ? 'text-amber-400' : 'text-stitch-muted';
+          return <span className={`stitch-num text-xs tabular-nums font-bold ${color}`}>{quality}</span>;
         },
       },
       {
@@ -1335,9 +1335,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: volume (-1 if invalid)
         sortValue: (s) => s.volume > 0 ? s.volume : -1,
         render: (s) => (
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="stitch-num text-xs tabular-nums text-stitch-muted">
             {formatVolume(s.volume)}
-            {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}
+            {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-400 mr-1" />}
           </span>
         ),
       },
@@ -1351,7 +1351,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: turnover_egp (-1 if invalid)
         sortValue: (s) => s.turnover_egp > 0 ? s.turnover_egp : -1,
         render: (s) => (
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="stitch-num text-xs tabular-nums text-stitch-muted">
             {formatEGP(s.turnover_egp)}
           </span>
         ),
@@ -1366,7 +1366,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: pe_ratio (-1 if null/0/15 placeholder)
         sortValue: (s) => (s.pe_ratio !== null && s.pe_ratio > 0 && s.pe_ratio !== 15.0) ? s.pe_ratio : -1,
         render: (s) => (
-          <span className="font-mono text-xs">
+          <span className="stitch-num text-xs tabular-nums">
             {s.pe_ratio !== null ? formatNumber(s.pe_ratio, 1) : '—'}
           </span>
         ),
@@ -1380,10 +1380,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: ROE (-1 if null/0/15 placeholder)
         sortValue: (s) => (s.roe !== null && s.roe !== undefined && s.roe !== 0 && s.roe !== 15.0) ? s.roe : -1,
         render: (s) => {
-          // Owner directive: "متظهرش أرقام وهمية" — ROE=15.0 placeholder أو 0 = "—"
+          // Owner directive:"متظهرش أرقام وهمية" — ROE=15.0 placeholder أو 0 ="—"
           const val = s.roe;
           const isValid = val !== null && val !== undefined && val !== 0 && val !== 15.0;
-          return <span className="font-mono text-xs">{isValid ? formatNumber(val, 1) : '—'}</span>;
+          return <span className="stitch-num text-xs tabular-nums">{isValid ? formatNumber(val, 1) : '—'}</span>;
         },
       },
       {
@@ -1396,10 +1396,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: RSI (-1 if null/0)
         sortValue: (s) => (s.rsi !== null && s.rsi !== undefined && s.rsi > 0) ? s.rsi : -1,
         render: (s) => {
-          // Owner directive: "متظهرش أرقام وهمية" — RSI=0 = "—"
+          // Owner directive:"متظهرش أرقام وهمية" — RSI=0 ="—"
           const val = s.rsi;
           const isValid = val !== null && val !== undefined && val > 0;
-          return <span className="font-mono text-xs">{isValid ? formatNumber(val, 0) : '—'}</span>;
+          return <span className="stitch-num text-xs tabular-nums">{isValid ? formatNumber(val, 0) : '—'}</span>;
         },
       },
       {
@@ -1424,7 +1424,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         filterValue: (s) => s.above_ma_50 ? 'above' : 'below',
         render: (s) =>
           s.above_ma_50 ? (
-            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-xs px-2 py-0.5">
+            <Badge className="bg-emerald-500/10 text-stitch-primary border-emerald-500/30 text-xs px-2 py-0.5">
               {t('screener.advanced.stockStateColumn.above')}
             </Badge>
           ) : (
@@ -1465,7 +1465,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: buy_pct (-1 if null)
         sortValue: (s) => (s.buy_pct !== null && s.buy_pct !== undefined) ? s.buy_pct : -1,
         render: (s) => (
-          <span className={cn('font-mono text-xs', (s.buy_pct ?? 0) >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+          <span className={cn('stitch-num text-xs tabular-nums', (s.buy_pct ?? 0) >= 50 ? 'text-stitch-primary' : 'text-stitch-muted')}>
             {s.buy_pct !== null && s.buy_pct !== undefined ? formatNumber(s.buy_pct, 1) + '%' : '—'}
           </span>
         ),
@@ -1479,7 +1479,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: net_flow_egp (-Infinity if null)
         sortValue: (s) => (s.net_flow_egp !== null && s.net_flow_egp !== undefined && Number.isFinite(s.net_flow_egp)) ? s.net_flow_egp : -Infinity,
         render: (s) => (
-          <span className={cn('font-mono text-xs', (s.net_flow_egp ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : (s.net_flow_egp ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground')}>
+          <span className={cn('stitch-num text-xs tabular-nums', (s.net_flow_egp ?? 0) > 0 ? 'text-stitch-primary' : (s.net_flow_egp ?? 0) < 0 ? 'text-stitch-error' : 'text-stitch-muted')}>
             {s.net_flow_egp !== null && s.net_flow_egp !== undefined ? formatEGP(s.net_flow_egp) : '—'}
           </span>
         ),
@@ -1531,13 +1531,13 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => s.expected || '',
         filterValue: (s) => s.expected || '—',
         render: (s) => (
-          <span className="text-xs text-muted-foreground truncate block max-w-[180px]">
+          <span className="text-xs text-stitch-muted truncate block max-w-[180px]">
             {s.expected || '—'}
           </span>
         ),
       },
       // Entry/Stop/Target/R:R/Opportunity_Quality moved to front (after sparkline)
-      // — duplicates removed (Owner directive: "حط Entry/Stop/Target/R/R في المقدمة")
+      // — duplicates removed (Owner directive:"حط Entry/Stop/Target/R/R في المقدمة")
     ],
     []
   );
@@ -1622,7 +1622,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           a shadcn DropdownMenu «المزيد (N)». Reduces 20+ buttons → 8. */}
       <CollapsibleSection
         title={t('screener.advanced.collapsible.readyFilters')}
-        icon={<Zap className="w-4 h-4 text-amber-600" />}
+        icon={<Zap className="w-4 h-4 text-amber-400" />}
       >
         <div className="flex flex-wrap gap-2 items-center">
           {presets.filter(p => p.primary).map((preset) => {
@@ -1649,7 +1649,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 border-slate-400/40 bg-slate-50/50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800/60"
+                    className="gap-1.5 border-white/[0.08] bg-[#182030] text-stitch-on-surface hover:bg-[#182030]"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                     {t('screener.advanced.presets.more')}
@@ -1689,8 +1689,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           أزرار فلترة سريعة للمتداول المحترف (فوق الجدول مباشرة). كل زر يطبّق
           تركيبة فلاتر متخصصة على الـ clientExtraFilter + يضبط ما يقدر عليه
           من الـ server filter state. Rule 27: لا fabrication. */}
-      <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-950/10">
-        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">قوالب المتداول المحترف</span>
+      <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10">
+        <span className="text-[10px] font-bold text-stitch-primary uppercase tracking-wide">قوالب المتداول المحترف</span>
         {traderPresets.map((preset) => {
           const isActive = clientExtraFilter?.label === preset.label;
           return (
@@ -1717,7 +1717,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                 'h-8 text-xs gap-1.5 transition-all',
                 isActive
                   ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  : 'border-emerald-500/40 bg-background text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30',
+                  : 'border-emerald-500/40 bg-stitch-canvas text-stitch-primary hover:bg-emerald-500/20',
               )}
               title={isActive ? 'إزالة الفلتر' : 'تطبيق القالب'}
             >
@@ -1728,7 +1728,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         {clientExtraFilter && (
           <button
             onClick={() => setClientExtraFilter(null)}
-            className="text-[10px] text-rose-500 hover:text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+            className="text-[10px] text-rose-400 hover:text-rose-400 px-1.5 py-0.5 rounded hover:bg-rose-500/10 transition-colors"
             title="مسح فلتر القالب"
           >
             ✕ مسح القالب
@@ -1746,7 +1746,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         >
             {/* Search row */}
             <div className="relative max-w-sm">
-              <Search className="absolute right-2 top-2.5 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute right-2 top-2.5 w-4 h-4 text-stitch-muted" />
               <Input
                 placeholder={t('screener.advanced.filters.searchPlaceholder')}
                 value={searchQuery}
@@ -2005,7 +2005,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             </div>
 
             {/* Checkboxes row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-border">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/[0.06]">
               <CheckboxField
                 label={t('screener.advanced.filters.volumeSurge')}
                 help={FILTER_HELP.volume_surge}
@@ -2027,10 +2027,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             </div>
 
             {/* State legend / explanations */}
-            <div className="border-t border-border pt-3">
+            <div className="border-t border-white/[0.06] pt-3">
               <button
                 onClick={() => setShowStateHelp((s) => !s)}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 text-xs text-stitch-muted hover:text-stitch-on-surface transition-colors"
               >
                 <HelpCircle className="w-3.5 h-3.5" />
                 {(showStateHelp ? t('screener.advanced.collapsible.hideStateHelp') : t('screener.advanced.collapsible.showStateHelp')) + ' ' + t('screener.advanced.collapsible.stateHelpLabel')}
@@ -2038,9 +2038,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
               {showStateHelp && (
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {Object.entries(getStateExplanations(t)).map(([key, text]) => (
-                    <div key={key} className="flex items-start gap-2 p-2 rounded bg-muted/30">
+                    <div key={key} className="flex items-start gap-2 p-2 rounded bg-[#182030]/30">
                       <StateBadge state={key} />
-                      <p className="text-xs text-muted-foreground leading-relaxed flex-1">{text}</p>
+                      <p className="text-xs text-stitch-muted leading-relaxed flex-1">{text}</p>
                     </div>
                   ))}
                 </div>
@@ -2056,14 +2056,14 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
       {derivedSummary ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
           <KPIBox label={t('screener.advanced.kpi.totalResults')} value={derivedSummary.total} />
-          <KPIBox label={t('screener.advanced.kpi.gainers')} value={derivedSummary.gainers} color="text-emerald-600 dark:text-emerald-400" />
-          <KPIBox label={t('screener.advanced.kpi.losers')} value={derivedSummary.losers} color="text-red-600 dark:text-red-400" />
-          <KPIBox label={t('screener.advanced.kpi.avgChange')} value={`${derivedSummary.avgChange > 0 ? '+' : ''}${(derivedSummary.avgChange ?? 0).toFixed(2)}%`} color={derivedSummary.avgChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} />
+          <KPIBox label={t('screener.advanced.kpi.gainers')} value={derivedSummary.gainers} color="text-stitch-primary" />
+          <KPIBox label={t('screener.advanced.kpi.losers')} value={derivedSummary.losers} color="text-stitch-error" />
+          <KPIBox label={t('screener.advanced.kpi.avgChange')} value={`${derivedSummary.avgChange > 0 ? '+' : ''}${(derivedSummary.avgChange ?? 0).toFixed(2)}%`} color={derivedSummary.avgChange >= 0 ? 'text-stitch-primary' : 'text-stitch-error'} />
           <KPIBox label={t('screener.advanced.kpi.totalLiquidity')} value={`${formatEGP(derivedSummary.totalLiquidity)} ${t('screener.advanced.kpi.egpSuffix')}`} />
-          <KPIBox label={t('screener.advanced.kpi.volumeMomentum')} value={derivedSummary.volumeMomentum} color="text-amber-600 dark:text-amber-400" />
+          <KPIBox label={t('screener.advanced.kpi.volumeMomentum')} value={derivedSummary.volumeMomentum} color="text-amber-400" />
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-4 py-3 text-center text-xs text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-white/[0.06] bg-[#182030]/20 px-4 py-3 text-center text-xs text-stitch-muted">
           لا توجد أسهم تحقق شروط الفلتر الحالي — جرّب فلتراً آخر أو وسّع النطاق
         </div>
       )}
@@ -2071,16 +2071,16 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
       {/* Results Table — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       <CollapsibleSection
         title={t('screener.advanced.kpi.filterResults')}
-        icon={<BarChart3 className="w-4 h-4 text-emerald-600" />}
+        icon={<BarChart3 className="w-4 h-4 text-stitch-primary" />}
         contentClassName="p-0 space-y-0"
       >
         {loading ? (
-          <div className="p-8 text-center text-muted-foreground">
+          <div className="p-8 text-center text-stitch-muted">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
             {t('screener.advanced.loading.loadingStocks')}
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">
+          <div className="p-8 text-center text-stitch-error">
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
             {error}
             <div className="mt-3">
@@ -2091,7 +2091,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             </div>
           </div>
         ) : filteredStocks.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
+          <div className="p-8 text-center text-stitch-muted">
             <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
             {t('screener.advanced.empty.noResults')}
           </div>
@@ -2128,15 +2128,15 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             />
             {/* PAYWALL Gate 5: lock CTA — free users see first 5 only */}
             {screenerLocked && hiddenResultsCount > 0 && (
-              <div className="border-t border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20 p-4 text-center">
+              <div className="border-t border-amber-500/30 bg-amber-500/10 p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <div className="flex items-center gap-2 text-amber-400">
                     <Lock className="h-4 w-4" />
                     <span className="text-sm font-semibold">
                       {hiddenResultsCount} نتائج أخرى — اشترك لعرض الكل
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground max-w-md">
+                  <p className="text-xs text-stitch-muted max-w-md">
                     النتائج المعروضة حالياً ({visibleStocks.length} من {filteredStocks.length}) كافية لتلمّس الفرص.
                     اشترك في Premium لعرض جميع النتائج + فلتر متقدم + تصدير PDF.
                   </p>
@@ -2160,7 +2160,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
       </CollapsibleSection>
 
       {/* Footer hint */}
-      <div className="text-xs text-muted-foreground text-center pt-1">
+      <div className="text-xs text-stitch-muted text-center pt-1">
         {t('screener.advanced.subtitleAuto')}
       </div>
     </div>
@@ -2245,8 +2245,8 @@ function TopPerformersTab() {
         filterable: true,
         render: (s) => (
           <div>
-            <div className="font-mono font-bold text-sm">{s.ticker}</div>
-            <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+            <div className="stitch-latin font-bold text-sm">{s.ticker}</div>
+            <div className="text-xs text-stitch-muted truncate max-w-[180px]">
               {s.name_ar || s.name}
             </div>
           </div>
@@ -2259,7 +2259,7 @@ function TopPerformersTab() {
         sortable: true,
         filterable: true,
         render: (s) => (
-          <span className="text-xs text-muted-foreground">{s.sector || '—'}</span>
+          <span className="text-xs text-stitch-muted">{s.sector || '—'}</span>
         ),
       },
       {
@@ -2268,7 +2268,7 @@ function TopPerformersTab() {
         align: 'left',
         sortable: true,
         filterable: true,
-        render: (s) => <span className="font-mono text-sm">{formatNumber(s.start_price)}</span>,
+        render: (s) => <span className="stitch-num text-sm tabular-nums">{formatNumber(s.start_price)}</span>,
       },
       {
         key: 'end_price',
@@ -2276,7 +2276,7 @@ function TopPerformersTab() {
         align: 'left',
         sortable: true,
         filterable: true,
-        render: (s) => <span className="font-mono text-sm">{formatNumber(s.end_price)}</span>,
+        render: (s) => <span className="stitch-num text-sm tabular-nums">{formatNumber(s.end_price)}</span>,
       },
       {
         key: 'change_pct',
@@ -2287,8 +2287,8 @@ function TopPerformersTab() {
         render: (s) => (
           <span
             className={cn(
-              'font-mono font-bold',
-              s.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600',
+              'stitch-num font-bold tabular-nums',
+              s.change_pct >= 0 ? 'text-stitch-primary' : 'text-stitch-error',
             )}
           >
             {s.change_pct >= 0 ? '+' : ''}{s.change_pct}%
@@ -2302,7 +2302,7 @@ function TopPerformersTab() {
         sortable: true,
         filterable: true,
         render: (s) => (
-          <span className="font-mono text-xs text-muted-foreground">{s.period_days} يوم</span>
+          <span className="stitch-num text-xs tabular-nums text-stitch-muted">{s.period_days} يوم</span>
         ),
       },
       {
@@ -2312,7 +2312,7 @@ function TopPerformersTab() {
         sortable: true,
         filterable: true,
         render: (s) => (
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="stitch-num text-xs tabular-nums text-stitch-muted">
             {formatVolume(s.end_volume)}
           </span>
         ),
@@ -2339,7 +2339,7 @@ function TopPerformersTab() {
       {/* Filters Card — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       <CollapsibleSection
         title={t('screener.advanced.performers.topPerformersTitle')}
-        icon={<Trophy className="w-4 h-4 text-amber-600" />}
+        icon={<Trophy className="w-4 h-4 text-amber-400" />}
       >
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <FilterField label={t('screener.advanced.performers.filters.period')}>
@@ -2387,15 +2387,15 @@ function TopPerformersTab() {
             </FilterField>
           </div>
 
-          <div className="flex items-center justify-between mt-3 pt-2 border-t border-border flex-wrap gap-2">
-            <div className="text-xs text-muted-foreground">
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/[0.06] flex-wrap gap-2">
+            <div className="text-xs text-stitch-muted">
               {t('screener.advanced.performers.periodLabel')} <span className="font-medium">{periodLabel}</span>
               {data && (
                 <>
                   {' • ' + t('screener.advanced.performers.fromWord') + ' '}
-                  <span className="font-mono">{data.start_date}</span>
+                  <span className="stitch-num tabular-nums">{data.start_date}</span>
                   {' ' + t('screener.advanced.performers.toWord') + ' '}
-                  <span className="font-mono">{data.end_date}</span>
+                  <span className="stitch-num tabular-nums">{data.end_date}</span>
                 </>
               )}
             </div>
@@ -2411,12 +2411,12 @@ function TopPerformersTab() {
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <KPIBox label={t('screener.advanced.performers.kpi.totalStocks')} value={summary.total_stocks} />
-          <KPIBox label={t('screener.advanced.performers.kpi.gainers')} value={summary.gainers} color="text-emerald-600" />
-          <KPIBox label={t('screener.advanced.performers.kpi.losers')} value={summary.losers} color="text-red-600" />
+          <KPIBox label={t('screener.advanced.performers.kpi.gainers')} value={summary.gainers} color="text-stitch-primary" />
+          <KPIBox label={t('screener.advanced.performers.kpi.losers')} value={summary.losers} color="text-stitch-error" />
           <KPIBox
             label={t('screener.advanced.performers.kpi.avgChange')}
             value={`${summary.avg_change >= 0 ? '+' : ''}${summary.avg_change}%`}
-            color={summary.avg_change >= 0 ? 'text-emerald-600' : 'text-red-600'}
+            color={summary.avg_change >= 0 ? 'text-stitch-primary' : 'text-stitch-error'}
           />
         </div>
       )}
@@ -2425,15 +2425,15 @@ function TopPerformersTab() {
       {summary && (summary.best_performer || summary.worst_performer) && (
         <CollapsibleSection
           title={t('screener.advanced.performers.kpi.bestWorst')}
-          icon={<Trophy className="w-4 h-4 text-amber-500" />}
+          icon={<Trophy className="w-4 h-4 text-amber-400" />}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {summary.best_performer && (
-              <Card className="border-emerald-500/30 bg-emerald-500/5">
+              <Card className="stitch-glass border-emerald-500/30 bg-emerald-500/5">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <Trophy className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span className="text-sm font-semibold text-stitch-primary">
                       {t('screener.advanced.performers.topGainer', { period: periodLabel })}
                     </span>
                   </div>
@@ -2442,17 +2442,17 @@ function TopPerformersTab() {
                     onClick={() => loadStockDetail(summary.best_performer!.ticker)}
                   >
                     <div>
-                      <div className="font-mono font-bold text-lg">{summary.best_performer.ticker}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="stitch-latin font-bold text-lg">{summary.best_performer.ticker}</div>
+                      <div className="text-xs text-stitch-muted">
                         {summary.best_performer.name_ar || summary.best_performer.name}
                         {summary.best_performer.sector && ` • ${summary.best_performer.sector}`}
                       </div>
                     </div>
                     <div className="text-left">
-                      <div className="text-emerald-600 font-mono font-bold text-xl">
+                      <div className="text-stitch-primary stitch-num font-bold tabular-nums text-xl">
                         +{summary.best_performer.change_pct}%
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-stitch-muted">
                         {formatNumber(summary.best_performer.start_price)} → {formatNumber(summary.best_performer.end_price)}
                       </div>
                     </div>
@@ -2461,11 +2461,11 @@ function TopPerformersTab() {
               </Card>
             )}
             {summary.worst_performer && (
-              <Card className="border-red-500/30 bg-red-500/5">
+              <Card className="stitch-glass border-red-500/30 bg-red-500/5">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <TrendingDown className="w-4 h-4 text-red-500" />
-                    <span className="text-sm font-semibold text-red-700 dark:text-red-300">
+                    <TrendingDown className="w-4 h-4 text-stitch-error" />
+                    <span className="text-sm font-semibold text-stitch-error">
                       {t('screener.advanced.performers.topLoser', { period: periodLabel })}
                     </span>
                   </div>
@@ -2474,17 +2474,17 @@ function TopPerformersTab() {
                     onClick={() => loadStockDetail(summary.worst_performer!.ticker)}
                   >
                     <div>
-                      <div className="font-mono font-bold text-lg">{summary.worst_performer.ticker}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="stitch-latin font-bold text-lg">{summary.worst_performer.ticker}</div>
+                      <div className="text-xs text-stitch-muted">
                         {summary.worst_performer.name_ar || summary.worst_performer.name}
                         {summary.worst_performer.sector && ` • ${summary.worst_performer.sector}`}
                       </div>
                     </div>
                     <div className="text-left">
-                      <div className="text-red-600 font-mono font-bold text-xl">
+                      <div className="text-stitch-error stitch-num font-bold tabular-nums text-xl">
                         {summary.worst_performer.change_pct}%
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-stitch-muted">
                         {formatNumber(summary.worst_performer.start_price)} → {formatNumber(summary.worst_performer.end_price)}
                       </div>
                     </div>
@@ -2499,16 +2499,16 @@ function TopPerformersTab() {
       {/* Results Table — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       <CollapsibleSection
         title={t('screener.advanced.performers.filters.resultsTable')}
-        icon={<BarChart3 className="w-4 h-4 text-emerald-600" />}
+        icon={<BarChart3 className="w-4 h-4 text-stitch-primary" />}
         contentClassName="p-0 space-y-0"
       >
         {loading && !data ? (
-          <div className="p-8 text-center text-muted-foreground">
+          <div className="p-8 text-center text-stitch-muted">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
             {t('screener.advanced.loading.loadingPerformers')}
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">
+          <div className="p-8 text-center text-stitch-error">
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
             {error}
             <div className="mt-3">
@@ -2519,7 +2519,7 @@ function TopPerformersTab() {
             </div>
           </div>
         ) : sortedResults.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
+          <div className="p-8 text-center text-stitch-muted">
             {t('screener.advanced.performers.empty')}
           </div>
         ) : (
@@ -2538,7 +2538,7 @@ function TopPerformersTab() {
       </CollapsibleSection>
 
       {/* Footer hint */}
-      <div className="text-xs text-muted-foreground text-center pt-1">
+      <div className="text-xs text-stitch-muted text-center pt-1">
         {t('screener.advanced.performers.footer')}
       </div>
     </div>
@@ -2564,7 +2564,7 @@ function FilterField({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="w-3 h-3 text-muted-foreground/70 cursor-help" />
+                <HelpCircle className="w-3 h-3 text-stitch-muted/70 cursor-help" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[260px] text-right">
                 {help}
@@ -2574,7 +2574,7 @@ function FilterField({
         )}
       </Label>
       {children}
-      {help && <p className="text-[10px] text-muted-foreground leading-tight">{help}</p>}
+      {help && <p className="text-[10px] text-stitch-muted leading-tight">{help}</p>}
     </div>
   );
 }
@@ -2601,7 +2601,7 @@ function CheckboxField({
         <Label className="text-xs cursor-pointer" onClick={() => onChange(!checked)}>
           {label}
         </Label>
-        {help && <p className="text-[10px] text-muted-foreground leading-tight">{help}</p>}
+        {help && <p className="text-[10px] text-stitch-muted leading-tight">{help}</p>}
       </div>
     </div>
   );
@@ -2609,9 +2609,9 @@ function CheckboxField({
 
 function KPIBox({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
   return (
-    <div className="border border-border rounded-lg p-2 bg-card">
-      <div className="text-[11px] text-muted-foreground truncate">{label}</div>
-      <div className={cn('text-base font-bold font-mono', color)}>{value}</div>
+    <div className="border border-white/[0.06] rounded-lg p-2 stitch-glass">
+      <div className="text-[11px] text-stitch-muted truncate">{label}</div>
+      <div className={cn('text-base font-bold stitch-num tabular-nums', color)}>{value}</div>
     </div>
   );
 }
@@ -2682,7 +2682,7 @@ export function ExportDropdown({
         <DropdownMenuLabel>{t('screener.advanced.share.exportResults')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleCopyText} className="gap-2 cursor-pointer">
-          {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-stitch-mint" /> : <Copy className="w-4 h-4" />}
           {t('screener.advanced.share.copyText')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleShareWhatsApp} className="gap-2 cursor-pointer">
