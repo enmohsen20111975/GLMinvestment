@@ -151,6 +151,40 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
   }
+  /* === BOX-2 Phase 3: Glassmorphism utilities (ready for new design/makeup) ===
+     Premium frosted-glass surfaces for the upcoming institutional redesign.
+     Usage: <Card className="glass-panel"> or <div className="glass-strong">.
+     Uses backdrop-blur + semi-transparent background. NO blue/indigo (Rule 30). */
+  .glass-panel {
+    background: hsl(var(--card) / 0.72);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+  .glass-strong {
+    background: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+  .glass-subtle {
+    background: hsl(var(--card) / 0.55);
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    border: 1px solid hsl(var(--border) / 0.4);
+  }
+  .dark .glass-panel {
+    background: hsl(var(--card) / 0.65);
+    border-color: hsl(var(--border) / 0.5);
+  }
+  .dark .glass-strong {
+    background: hsl(var(--card) / 0.78);
+    border-color: hsl(var(--border) / 0.6);
+  }
+  .dark .glass-subtle {
+    background: hsl(var(--card) / 0.45);
+    border-color: hsl(var(--border) / 0.35);
+  }
 }
 
 /* === Card + Surface polish (Task 24 Step 3) ===

@@ -49,6 +49,31 @@ const config: Config = {
                                 DEFAULT: 'hsl(var(--destructive))',
                                 foreground: 'hsl(var(--destructive-foreground))'
                         },
+                        // BOX-2 Phase 3: semantic financial tokens (emerald/amber/red)
+                        // defined as CSS vars in globals.css — now wired into Tailwind
+                        // so utilities like bg-success / text-warning / border-danger work.
+                        success: {
+                                DEFAULT: 'hsl(var(--success))',
+                                foreground: 'hsl(var(--success-foreground))',
+                        },
+                        warning: {
+                                DEFAULT: 'hsl(var(--warning))',
+                                foreground: 'hsl(var(--warning-foreground))',
+                        },
+                        danger: {
+                                DEFAULT: 'hsl(var(--danger))',
+                                foreground: 'hsl(var(--danger-foreground))',
+                        },
+                        sidebar: {
+                                DEFAULT: 'hsl(var(--sidebar))',
+                                foreground: 'hsl(var(--sidebar-foreground))',
+                                primary: 'hsl(var(--sidebar-primary))',
+                                'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+                                accent: 'hsl(var(--sidebar-accent))',
+                                'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+                                border: 'hsl(var(--sidebar-border))',
+                                ring: 'hsl(var(--sidebar-ring))',
+                        },
                         border: 'hsl(var(--border))',
                         input: 'hsl(var(--input))',
                         ring: 'hsl(var(--ring))',

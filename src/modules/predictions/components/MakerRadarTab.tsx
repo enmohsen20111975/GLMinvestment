@@ -23,7 +23,7 @@ import {
   Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, ShieldAlert, Info, Sparkles,
   DoorOpen, FileText, UserCircle, Loader2,
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -184,6 +184,8 @@ interface MakerRadarResponse {
   market?: string;
   market_regime?: {
     regime: string;
+    regime_ar?: string;   // BOX-2 Phase 4: optional Arabic label (Python may provide)
+    advice_ar?: string;  // BOX-2 Phase 4: optional Arabic advice (Python may provide)
     raw_regime: string;
     effective_regime?: string;
     candidate_regime?: string;
@@ -628,6 +630,22 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         minPrice: '1.0',
       });
       const res = await fetch(`/api/maker-radar?${params}`, { cache: 'no-store' });
+      // BOX-2 Phase 2: Graceful 503 fallback — detect offline/warming_up BEFORE
+      // parsing JSON (prevents "Uncaught in promise" when body is non-JSON).
+      if (!res.ok) {
+        // Try to parse the error body gracefully; fall back to status code.
+        let json: Partial<MakerRadarResponse> | null = null;
+        try { json = await res.json(); } catch { /* non-JSON body */ }
+        if (json?.warming_up) {
+          // First-ever warmup — show retry banner, keep existing data.
+          setError('الرادار بيتسخن لأول مرة — حاول تاني خلال دقيقة');
+        } else if (res.status === 503) {
+          setError('محرك الرادار غير متاح حالياً (أوفلاين). اضغط إعادة المحاولة.');
+        } else {
+          setError(json?.error || `فشل الاتصال (${res.status})`);
+        }
+        return;
+      }
       const json: MakerRadarResponse = await res.json();
       // The API cache layer sometimes omits the `success` flag — treat presence of
       // any radar list as success.
@@ -640,7 +658,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       }
       // if warming_up, keep existing data silently
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'خطأ في الاتصال');
+      // BOX-2 Phase 2: never let fetch rejection crash the UI.
+      setError(e instanceof Error ? `خطأ في الاتصال: ${e.message}` : 'خطأ في الاتصال');
     } finally {
       if (silent) setRefreshing(false); else setLoading(false);
     }
@@ -1357,7 +1376,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 <p className="text-xs text-muted-foreground">
                   المحرك يفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها
                 </p>
-                <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5 mt-2">
+                <Button variant="outline" size="sm" onClick={() => fetchData()} className="gap-1.5 mt-2">
                   <RefreshCw className="w-3.5 h-3.5" /> تحديث
                 </Button>
               </CardContent>
@@ -3199,7 +3218,10 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
   const vol_ratio = avg_20_vol > 0 ? last_volume / avg_20_vol : 0;
 
   // Range 10d % = (max_high - min_low) / min_low * 100
-  const range_10d_pct = support_1 > 0 ? ((resistance_1 - support_1) / support_1) * 100 : 0;
+  // BOX-2 Phase 4: null-safe (support_1/resistance_1 may be null from API)
+  const range_10d_pct = (support_1 != null && resistance_1 != null && support_1 > 0)
+    ? ((resistance_1 - support_1) / support_1) * 100
+    : 0;
 
   // ─── RADAR-QUICK-WINS (Priority 1): Smart Entry Card inputs ───────────────
   // Path description (emoji + plain Arabic) — falls back to "تحت الميكروسكوب"
@@ -3217,8 +3239,8 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
   const signalCount = resolveSignalCount(radarStock);
   const maxSignals = resolveMaxSignals(path);
 
-  // Entry zone from SSOT (or support_1 → lastClose)
-  const entryZoneLow = pred?.entry_price_min || Math.min(support_1, lastClose);
+  // Entry zone from SSOT (or support_1 → lastClose) — BOX-2 Phase 4: null-safe
+  const entryZoneLow = pred?.entry_price_min || (support_1 != null ? Math.min(support_1, lastClose) : lastClose);
   const entryZoneHigh = pred?.entry_price_max || lastClose;
 
   // Build dynamic Arabic analysis — changes based on real data, not a fixed string
@@ -3252,7 +3274,8 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
   // كان الكود يحسب قرار تداول من above_ma10 + vol_ratio (client-side — مخالف Rule 20).
   // الآن: recommendation تأتي ONLY من prediction.signal_ar (Python V40.2).
   // لو لا توقع → "راجع التوصية الرسمية" (لا fabrication).
-  const recommendation = pred?.signal_ar || 'راجع التوصية الرسمية من المحرك';
+  // BOX-2 Phase 4: signal_ar may not exist on the type — fall back to signal.
+  const recommendation = (pred as any)?.signal_ar || pred?.signal || 'راجع التوصية الرسمية من المحرك';
 
   // Gain / loss percentages — only if prediction values exist (no fabrication)
   const t1Gain = (entry_price && target_1) ? ((target_1 - entry_price) / entry_price) * 100 : null;

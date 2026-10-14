@@ -256,8 +256,17 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
         `/api/v2/liquidity-radar?market=${encodeURIComponent(market)}`,
         { cache: 'no-store' }
       );
+      // BOX-2 Phase 2: Graceful 503 fallback — detect offline/warming_up explicitly
+      // to prevent "Uncaught in promise" + show actionable Retry/Offline banner.
       if (!res.ok) {
-        setError(`تعذّر الاتصال بالخادم (${res.status})`);
+        // Try to parse the error body gracefully (503 may carry warming_up flag).
+        let errBody: Partial<RadarResponse> | null = null;
+        try { errBody = await res.json(); } catch { /* non-JSON body */ }
+        if (res.status === 503) {
+          setError(errBody?.message || 'محرك رادار السيولة غير متاح حالياً (أوفلاين). اضغط إعادة المحاولة.');
+        } else {
+          setError(errBody?.message || errBody?.error || `تعذّر الاتصال بالخادم (${res.status})`);
+        }
         setData(null);
         return;
       }
@@ -268,8 +277,9 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
         return;
       }
       setData(json);
-    } catch {
-      setError('تعذّر الاتصال بالخادم');
+    } catch (e) {
+      // BOX-2 Phase 2: never let fetch rejection (network error) crash the UI.
+      setError(e instanceof Error ? `تعذّر الاتصال: ${e.message}` : 'تعذّر الاتصال بالخادم');
       setData(null);
     } finally {
       setLoading(false);
