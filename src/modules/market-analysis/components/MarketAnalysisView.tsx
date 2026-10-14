@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, Layers, Target, History } from 'lucide-react';
+import { Activity, Layers, Target, History, Trophy, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { useTranslation } from '@/lib/i18n-context';
@@ -98,6 +99,47 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
   // V40.4 §5: derive the currency label dynamically (EGP/SAR/KWD/QAR/USDT)
   // so the same shell renders the correct currency for every market.
   const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket];
+
+  // ── SCR-007: Track Record banner data from /api/v2/commercial-feed ──
+  // (Rule 20: كل الأرقام من Python — لا حسابات في الواجهة)
+  const [trackStats, setTrackStats] = useState<{
+    winRate: number | null;
+    totalClosed: number | null;
+    wins: number | null;
+    losses: number | null;
+    profitFactor: number | null;
+    avgReturn: number | null;
+    activeCount: number | null;
+    top5Count: number | null;
+  }>({
+    winRate: null, totalClosed: null, wins: null, losses: null,
+    profitFactor: null, avgReturn: null, activeCount: null, top5Count: null,
+  });
+
+  const fetchTrackStats = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/v2/commercial-feed?market=${encodeURIComponent(currentMarket)}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.success) return;
+      const s = json.summary || {};
+      const ap = s.audited_performance || {};
+      setTrackStats({
+        winRate: ap.win_rate ?? null,
+        totalClosed: ap.total_closed ?? null,
+        wins: ap.wins ?? null,
+        losses: ap.losses ?? null,
+        profitFactor: ap.profit_factor ?? null,
+        avgReturn: ap.avg_return ?? null,
+        activeCount: s.active_count ?? null,
+        top5Count: s.top_5_count ?? null,
+      });
+    } catch {
+      // silent — لا نعرض أخطاء للمستخدم (Rule 27 NO-FAKE-DATA)
+    }
+  }, [currentMarket]);
+
+  useEffect(() => { fetchTrackStats(); }, [fetchTrackStats]);
 
   // V40.4 §5 UI Mirror Protocol: sync the initialMarket prop → store so all
   // sub-tabs (MarketStatusTab, PersonaTab, PredictionTrackingDashboard, …)
@@ -200,6 +242,79 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       {/* 🔔 P17 جرس الصباح — أعلى 3 فرص EGX فوق التبويبات */}
       {/* MorningBellSection — UNIFIED-BALANCED-ONLY: متعطل */}
       <HorizontalSectorsBar marketCode={marketCode} />
+
+      {/* ── SCR-007: Track Record Banner (أرقام حقيقية من Python) ── */}
+      {trackStats.totalClosed !== null && trackStats.totalClosed > 0 && (
+        <Card className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20 overflow-hidden">
+          <CardContent className="p-3 sm:p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+              {/* Win Rate */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
+                  <Trophy className="w-3 h-3" />
+                  <span>نسبة النجاح</span>
+                </div>
+                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {trackStats.winRate !== null ? `${trackStats.winRate}%` : '—'}
+                </p>
+              </div>
+              {/* Total Closed */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
+                  <BarChart3 className="w-3 h-3" />
+                  <span>الصفقات المغلقة</span>
+                </div>
+                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums">
+                  {trackStats.totalClosed ?? '—'}
+                </p>
+              </div>
+              {/* Wins */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
+                  <TrendingUp className="w-3 h-3 text-emerald-500" />
+                  <span>رابحة</span>
+                </div>
+                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {trackStats.wins ?? '—'}
+                </p>
+              </div>
+              {/* Losses */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
+                  <TrendingDown className="w-3 h-3 text-red-500" />
+                  <span>خاسرة</span>
+                </div>
+                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums text-red-500">
+                  {trackStats.losses ?? '—'}
+                </p>
+              </div>
+              {/* Profit Factor */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
+                  <Target className="w-3 h-3" />
+                  <span>معامل الربحية</span>
+                </div>
+                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums">
+                  {trackStats.profitFactor !== null ? trackStats.profitFactor : '—'}
+                </p>
+              </div>
+              {/* Active + Top 5 */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
+                  <Activity className="w-3 h-3" />
+                  <span>صفقات نشطة</span>
+                </div>
+                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums">
+                  {trackStats.activeCount ?? '—'}
+                  {trackStats.top5Count !== null && (
+                    <span className="text-[10px] text-muted-foreground ms-1">(أقوى {trackStats.top5Count})</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Task 9-B Step 2: 5 radar tabs (exit-radar / weekly-report /
