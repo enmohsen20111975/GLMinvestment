@@ -470,6 +470,73 @@ def compute_entry_defense(
     }
 
 
+
+
+# ─── Task BRAVO-FALLING-KNIFE: فحص السكين الساقط (Rule 78/79) ──────────
+
+
+def check_falling_knife(
+    candles: List[Dict[str, Any]],
+    stock_info: Dict[str, Any],
+    market_regime: Dict[str, Any],
+) -> Dict[str, Any]:
+    """فحص السكين الساقط — Rule 78/79 (CONDITIONAL-TRADE-EXPOSURE).
+
+    سهم "سكين ساقط" = تحت MA50 بـ >5% + MA50 < MA200.
+    في هذه الحالة: targets_available = False (لا أهداف صاعدة).
+
+    أيضاً: لو السوق هابط (Risk-Off) + السهم هابط → targets_available = False.
+
+    Rule 79: Falling-Knife-Quant-Guard
+      - السهم تحت MA50 بـ >5% + MA50 < MA200 → targets_available = False
+      - القمم = مقاومات تصريفية (لا أهداف شراء)
+
+    Returns:
+        {
+            'is_falling_knife': bool,
+            'targets_available': bool,  # False لو falling knife أو سوق هابط
+            'reason': str,               # سبب عربي مختصر
+        }
+    """
+    ma_50 = _to_float(stock_info.get('ma_50'))
+    ma_200 = _to_float(stock_info.get('ma_200'))
+    current_price = _to_float(stock_info.get('current_price'))
+    change_pct = _to_float(stock_info.get('change_percent'))
+
+    # Rule 79: Falling Knife — سهم تحت MA50 بـ >5% + MA50 < MA200
+    if ma_50 > 0 and ma_200 > 0 and current_price > 0:
+        deviation_from_ma50 = ((current_price - ma_50) / ma_50) * 100.0
+        if deviation_from_ma50 < -5.0 and ma_50 < ma_200:
+            return {
+                'is_falling_knife': True,
+                'targets_available': False,
+                'reason': f'سكين ساقط: السعر تحت MA50 بـ {deviation_from_ma50:.1f}% + MA50 < MA200 — لا أهداف صاعدة (Rule 79)',
+            }
+
+    # Rule 78: سوق هابط + السهم هابط → لا أهداف
+    if market_regime.get('is_bear') and change_pct < 0:
+        return {
+            'is_falling_knife': False,
+            'targets_available': False,
+            'reason': f'سوق هابط ({market_regime["change_pct"]:.2f}%) + السهم هابط ({change_pct:.2f}%) — لا أهداف صاعدة (Rule 78)',
+        }
+
+    # لو مفيش MA50 أو MA200 → محافظ: targets_available = False
+    if ma_50 <= 0 or ma_200 <= 0:
+        return {
+            'is_falling_knife': False,
+            'targets_available': False,
+            'reason': 'بيانات MA50/MA200 غير متاحة — محافظ: لا أهداف',
+        }
+
+    # سهم سليم → أهداف متاحة
+    return {
+        'is_falling_knife': False,
+        'targets_available': True,
+        'reason': 'السهم فوق MA50 + MA50 > MA200 — أهداف متاحة',
+    }
+
+
 # ─── فحص السيولة الأدنى ──────────────────────────────────────────────────
 
 
@@ -575,10 +642,27 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
     # 4. مستوى الدخول والدفاع
     entry_defense = compute_entry_defense(candles, stock_info)
 
+    # 5. Task BRAVO-FALLING-KNIFE: فحص السكين الساقط (Rule 78/79)
+    falling_knife = check_falling_knife(candles, stock_info, market_regime)
+
+    # Rule 78/79: لو targets_available = False → تعطيل entry_level
+    if not falling_knife['targets_available']:
+        entry_defense = {
+            'entry_level': None,
+            'defense_level': entry_defense.get('defense_level'),
+            'resistance_level': entry_defense.get('resistance_level'),
+            'reason': f'الأهداف معطّلة — {falling_knife["reason"]}',
+            'targets_available': False,
+        }
+    else:
+        entry_defense['targets_available'] = True
+
     # السبب المختصر (جملة واحدة)
     short_reason = (
         f"{phase_info['reason']} | {whale['reason']}"
     )
+    if falling_knife['is_falling_knife']:
+        short_reason += f" | ⚠️ {falling_knife['reason']}"
 
     return {
         'ticker': ticker,
@@ -590,6 +674,8 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         'phase': phase_info['phase'],
         'phase_reason': phase_info['reason'],
         'entry_defense': entry_defense,
+        'falling_knife': falling_knife,
+        'targets_available': falling_knife['targets_available'],
         'reason': short_reason,
     }
 
@@ -597,7 +683,25 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
 def scan_market(market: str, tickers: Optional[List[str]] = None) -> Dict[str, Any]:
     """امسح سوق كامل ورجّع الـ 4 أعمدة لكل سهم."""
     if not STOCKS_DB.exists():
-        return {'success': False, 'error': f'stocks.db غير موجود: {STOCKS_DB}'}
+        return {
+            'success': False,
+            'error': f'stocks.db غير موجود: {STOCKS_DB}',
+            'market': market,
+            'market_regime': None,
+            'scanned_count': 0,
+            'phases_breakdown': {},
+            'macro_summary': {
+                'total_net_institutional_buy_egp_m': 0,
+                'positive_flow_ratio_pct': 0,
+                'positive_flow_count': 0,
+                'targets_available_count': 0,
+                'falling_knife_count': 0,
+                'currency': 'ج.م',
+                'currency_ar': 'جنيه مصري',
+            },
+            'generated_at': datetime.now(timezone.utc).isoformat(),
+            'stocks': [],
+        }
 
     conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
@@ -634,12 +738,49 @@ def scan_market(market: str, tickers: Optional[List[str]] = None) -> Dict[str, A
         p = r['phase']
         phases[p] = phases.get(p, 0) + 1
 
+    # Task BRAVO-MACRO: حقول الماكرو الإجمالية لشريط النبض العلوي
+    # 1. إجمالي صافي الشراء المؤسسي اليوم بالمليون (مجموع net_flow_egp لكل الأسهم)
+    total_net_flow_egp = sum(
+        r.get('whale', {}).get('net_flow_egp', 0) for r in results
+    )
+    total_net_institutional_buy_egp_m = round(total_net_flow_egp / 1e6, 1)
+
+    # 2. نسبة سيولة الأسهم الإيجابية (نسبة الأسهم ذات التدفق الموجب)
+    positive_flow_count = sum(
+        1 for r in results
+        if r.get('whale', {}).get('net_flow_egp', 0) > 0
+    )
+    positive_flow_ratio_pct = round(
+        (positive_flow_count / len(results) * 100) if results else 0, 1
+    )
+
+    # 3. عدد الأسهم المتاحة للأهداف (targets_available = True)
+    targets_available_count = sum(
+        1 for r in results if r.get('targets_available', False)
+    )
+
+    # 4. عدد الأسهم المحذورة (falling knife)
+    falling_knife_count = sum(
+        1 for r in results
+        if r.get('falling_knife', {}).get('is_falling_knife', False)
+    )
+
     return {
         'success': True,
         'market': market,
         'market_regime': market_regime,
         'scanned_count': len(results),
         'phases_breakdown': phases,
+        # Task BRAVO-MACRO: حقول الماكرو لشريط النبض العلوي
+        'macro_summary': {
+            'total_net_institutional_buy_egp_m': total_net_institutional_buy_egp_m,
+            'positive_flow_ratio_pct': positive_flow_ratio_pct,
+            'positive_flow_count': positive_flow_count,
+            'targets_available_count': targets_available_count,
+            'falling_knife_count': falling_knife_count,
+            'currency': market_regime.get('currency', 'ج.م'),
+            'currency_ar': market_regime.get('currency_ar', 'جنيه مصري'),
+        },
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'stocks': results,
     }
