@@ -150,8 +150,8 @@ def _stocks_table_ref(source_label: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def get_active_live_signals() -> List[Dict[str, Any]]:
-    """المسار الأول: الصفقات الحية الصالحة للشراء الآن فقط."""
+def get_active_live_signals(market: Optional[str] = None) -> List[Dict[str, Any]]:
+    """المسار الأول: الصفقات الحية الصالحة للشراء الآن فقط — معزولة حسب السوق."""
     result = _open_predictions_connection()
     if result is None:
         log("❌ مفيش مصدر predictions متاح — returning empty active signals")
@@ -160,15 +160,17 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
     conn, source_label = result
     stocks_ref = _stocks_table_ref(source_label)
 
+    # فحص إذا عمود market موجود في جدول predictions
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()]
+    mkt_col = 'p.market as pred_market,' if 'market' in cols else ''
+
     try:
-        # استخدم الـ stocks_ref الصحيح في الـ JOIN
-        # لو stocks_ref = "stocks_db.stocks" → JOIN stocks_db.stocks s
-        # لو stocks_ref = "stocks" → JOIN stocks s
         rows = conn.execute(f"""
             SELECT p.ticker, p.signal, p.signal_type, p.entry_price,
                    p.target_price, p.stop_loss,
                    p.master_score, p.technical_score,
                    p.prediction_date, p.notes,
+                   {mkt_col}
                    s.name, s.name_ar, s.market, s.sector,
                    s.current_price
             FROM predictions p
@@ -185,6 +187,9 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
         return []
 
     signals: List[Dict[str, Any]] = []
+    seen_tickers: set = set()
+    target_market = market.strip().upper() if market and market.strip().upper() != 'ALL' else None
+
     for r in rows:
         d = dict(r)
         entry = _to_float(d.get('entry_price'))
@@ -200,6 +205,26 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
                 notes_meta = json.loads(notes_raw)
             except Exception:
                 notes_meta = {}
+
+        # استخراج السوق بدقة (من stocks أولاً، ثم predictions، ثم notes)
+        stock_mkt = (d.get('market') or d.get('pred_market') or notes_meta.get('market') or '').strip().upper()
+        if not stock_mkt:
+            # تخمين ذكي حسب نمط الـ ticker لو مجهول
+            t = str(d.get('ticker') or '')
+            if t.isdigit() and len(t) == 4:
+                stock_mkt = 'TADAWUL'
+            else:
+                stock_mkt = 'EGX'
+
+        # عزل الأسواق عزل كامل: لو مطلوب سوق محدد ومطابقش → استبعد فوراً!
+        if target_market and stock_mkt != target_market:
+            continue
+
+        # منع التكرار: سهم واحد = توصية واحدة نشطة (الأحدث/الأعلى ثقة)
+        ticker_key = str(d.get('ticker') or '').strip().upper()
+        if not ticker_key or ticker_key in seen_tickers:
+            continue
+        seen_tickers.add(ticker_key)
 
         risk = entry - stop
         reward = target - entry
@@ -227,8 +252,8 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
         if confidence == 0 and notes_meta.get('confidence'):
             confidence = _to_float(notes_meta.get('confidence'))
 
-        # السوق: من notes_meta لو stocks table مفيهوش market
-        market_val = d.get('market') or notes_meta.get('market') or 'EGX'
+        # السوق المعزول
+        market_val = stock_mkt
 
         # الأهداف
         target1_pct = round((target - entry) / entry * 100, 1) if entry > 0 else 0
@@ -267,8 +292,8 @@ def get_active_live_signals() -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-def get_audited_performance() -> List[Dict[str, Any]]:
-    """المسار الثاني: سجل الأداء الموثق للصفقات المغلقة.
+def get_audited_performance(market: Optional[str] = None) -> List[Dict[str, Any]]:
+    """المسار الثاني: سجل الأداء الموثق للصفقات المغلقة — معزول حسب السوق.
 
     Task B-17 fix: استبعد الصفقات ذات القيعان الشاذة (lowest_price_reached=0)
     اللي قفلت ظلمًا على stop-loss. دي كانت السبب في win_rate=7.4% الوهمي.
@@ -286,6 +311,7 @@ def get_audited_performance() -> List[Dict[str, Any]]:
         cols = [r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()]
         has_hpr = 'highest_price_reached' in cols
         has_lpr = 'lowest_price_reached' in cols
+        mkt_col = 'p.market as pred_market,' if 'market' in cols else ''
 
         hpr_col = 'highest_price_reached' if has_hpr else '0 as highest_price_reached'
         lpr_col = 'lowest_price_reached' if has_lpr else '0 as lowest_price_reached'
@@ -296,6 +322,7 @@ def get_audited_performance() -> List[Dict[str, Any]]:
                    p.hit_target, p.hit_stop, p.is_correct,
                    p.holding_days, p.outcome_date, p.prediction_date,
                    p.master_score,
+                   {mkt_col}
                    {hpr_col}, {lpr_col},
                    s.name, s.name_ar, s.market, s.sector
             FROM predictions p
@@ -304,7 +331,7 @@ def get_audited_performance() -> List[Dict[str, Any]]:
               AND p.outcome_date >= p.prediction_date
               AND ({lpr_col} > 0 OR {lpr_col} IS NULL OR p.hit_target = 1)
             ORDER BY p.outcome_date DESC
-            LIMIT 200
+            LIMIT 500
         """).fetchall()
     except Exception as e:
         log(f"❌ query audited history فشل: {e}")
@@ -312,8 +339,23 @@ def get_audited_performance() -> List[Dict[str, Any]]:
         return []
 
     history: List[Dict[str, Any]] = []
+    target_market = market.strip().upper() if market and market.strip().upper() != 'ALL' else None
+
     for r in rows:
         d = dict(r)
+
+        # عزل الأسواق بدقة
+        stock_mkt = (d.get('market') or d.get('pred_market') or '').strip().upper()
+        if not stock_mkt:
+            t = str(d.get('ticker') or '')
+            if t.isdigit() and len(t) == 4:
+                stock_mkt = 'TADAWUL'
+            else:
+                stock_mkt = 'EGX'
+
+        if target_market and stock_mkt != target_market:
+            continue
+
         entry = _to_float(d.get('entry_price'))
         exit_price = _to_float(d.get('exit_price'))
         actual_return = _to_float(d.get('actual_return'))
@@ -339,7 +381,7 @@ def get_audited_performance() -> List[Dict[str, Any]]:
         history.append({
             'ticker': d['ticker'],
             'name': d.get('name_ar') or d.get('name') or d['ticker'],
-            'market': d.get('market') or 'EGX',
+            'market': stock_mkt,
             'sector': d.get('sector') or '',
             'signal': d.get('signal') or 'BUY',
             'entry_price': round(entry, 4),
@@ -405,10 +447,11 @@ def compute_summary(active: List[Dict], audited: List[Dict]) -> Dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Single Commercial Feed")
     parser.add_argument('--json', action='store_true', help='JSON output')
+    parser.add_argument('--market', type=str, default=None, help='Filter by market (EGX, TADAWUL, etc.)')
     args = parser.parse_args()
 
-    active = get_active_live_signals()
-    audited = get_audited_performance()
+    active = get_active_live_signals(market=args.market)
+    audited = get_audited_performance(market=args.market)
     summary = compute_summary(active, audited)
 
     result = {

@@ -22,7 +22,7 @@ import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, MARKET_CURRENCY_LABEL, type MarketType } from '@/lib/store';
 import {
   Zap, Target, ShieldAlert, ArrowRight, RefreshCw, Activity,
   Copy, Check, Flame, History, Trophy, TrendingUp, BarChart3,
@@ -135,17 +135,17 @@ function fmtRR(n: number | null | undefined): string {
  * Copy message builder — جاهز للإرسال عبر Telegram/WhatsApp
  * ============================================================================ */
 
-function buildCopyMessage(sig: LiveSignal): string {
+function buildCopyMessage(sig: LiveSignal, currency: string = 'ج.م'): string {
   const lines: string[] = [];
   lines.push('🎯 توصية GLMinvestment');
   lines.push('');
   lines.push(`📈 السهم: ${sig.ticker} — ${sig.name || ''}`);
   lines.push(`🎯 نوع الإشارة: ${sig.signal_ar || sig.signal || ''}`);
-  lines.push(`💰 سعر الدخول: ${fmtPrice(sig.entry_price)}`);
+  lines.push(`💰 سعر الدخول: ${fmtPrice(sig.entry_price)} ${currency}`);
   lines.push(
-    `🎯 الهدف: ${fmtPrice(sig.target_1)} (+${Number(sig.target_1_pct ?? 0).toFixed(1)}%)`,
+    `🎯 الهدف: ${fmtPrice(sig.target_1)} ${currency} (+${Number(sig.target_1_pct ?? 0).toFixed(1)}%)`,
   );
-  lines.push(`🛑 وقف الخسارة: ${fmtPrice(sig.stop_loss)}`);
+  lines.push(`🛑 وقف الخسارة: ${fmtPrice(sig.stop_loss)} ${currency}`);
   lines.push(`⚖️ نسبة المخاطرة/العائد: 1:${fmtRR(sig.risk_reward).replace('1:', '')}`);
   lines.push(`📊 الثقة: ${sig.confidence != null ? Math.round(Number(sig.confidence)) : '—'}%`);
   lines.push(`⏱️ الأفق: ${sig.horizon || '—'}`);
@@ -163,6 +163,7 @@ function buildCopyMessage(sig: LiveSignal): string {
  * ============================================================================ */
 
 export function VIPLiveSignalsFeed({ market }: { market: string }) {
+  const currency = MARKET_CURRENCY_LABEL[market as MarketType] || 'ج.م';
   const [data, setData] = useState<FeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -209,7 +210,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
   const handleCopy = async (e: React.MouseEvent, sig: LiveSignal) => {
     e.stopPropagation();
     try {
-      const msg = buildCopyMessage(sig);
+      const msg = buildCopyMessage(sig, currency);
       await navigator.clipboard.writeText(msg);
       setCopiedTicker(sig.ticker);
       setTimeout(() => setCopiedTicker((t) => (t === sig.ticker ? null : t)), 2000);
@@ -425,7 +426,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
                       <div className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5">
                         <ArrowRight className="w-2.5 h-2.5" /> دخول
                       </div>
-                      <div className="font-mono font-bold text-xs">{fmtPrice(sig.entry_price)}</div>
+                      <div className="font-mono font-bold text-xs">{fmtPrice(sig.entry_price)} <span className="text-[8px] font-normal text-muted-foreground">{currency}</span></div>
                     </div>
                     {/* Target */}
                     <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-1.5 text-center">
@@ -433,7 +434,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
                         <Target className="w-2.5 h-2.5" /> هدف
                       </div>
                       <div className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                        {fmtPrice(sig.target_1)}
+                        {fmtPrice(sig.target_1)} <span className="text-[8px] font-normal text-muted-foreground">{currency}</span>
                       </div>
                       {sig.target_1_pct != null && (
                         <div className="text-[8px] text-emerald-500 font-semibold">
@@ -447,7 +448,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
                         <ShieldAlert className="w-2.5 h-2.5" /> وقف
                       </div>
                       <div className="font-mono font-bold text-xs text-red-600 dark:text-red-400">
-                        {fmtPrice(sig.stop_loss)}
+                        {fmtPrice(sig.stop_loss)} <span className="text-[8px] font-normal text-muted-foreground">{currency}</span>
                       </div>
                     </div>
                   </div>
@@ -570,8 +571,8 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
                     <TableHead className="text-right text-[10px]">السهم</TableHead>
                     <TableHead className="text-right text-[10px]">تاريخ الدخول</TableHead>
                     <TableHead className="text-right text-[10px]">تاريخ الخروج</TableHead>
-                    <TableHead className="text-right text-[10px]">سعر الدخول</TableHead>
-                    <TableHead className="text-right text-[10px]">سعر الخروج</TableHead>
+                    <TableHead className="text-right text-[10px]">سعر الدخول ({currency})</TableHead>
+                    <TableHead className="text-right text-[10px]">سعر الخروج ({currency})</TableHead>
                     <TableHead className="text-right text-[10px]">الربح/الخسارة</TableHead>
                     <TableHead className="text-right text-[10px]">النتيجة</TableHead>
                   </TableRow>

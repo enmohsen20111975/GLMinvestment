@@ -32,23 +32,30 @@ const execFileAsync = promisify(execFile);
  * stderr نظيف — لا أخطاء "no such table: stocks".
  */
 const CACHE_TTL_MS = 30_000; // 30 ثانية
-let cachedPayload: { data: unknown; ts: number } | null = null;
+const cachedPayloads: Record<string, { data: unknown; ts: number }> = {};
 
 const SCRIPT_PATH = path.join(process.cwd(), 'scripts', 'commercial_feed.py');
 const PROJECT_ROOT = process.cwd();
 
-export async function GET() {
-  // 1. تحقق من الكاش
-  if (cachedPayload && Date.now() - cachedPayload.ts < CACHE_TTL_MS) {
-    return NextResponse.json(cachedPayload.data, {
+export async function GET(req: Request) {
+  // 1. استخراج السوق المطلوب بدقة
+  const { searchParams } = new URL(req.url);
+  const rawMarket = searchParams.get('market') || 'EGX';
+  const market = rawMarket.trim().toUpperCase();
+
+  // 2. تحقق من الكاش الخاص بهذا السوق
+  const cached = cachedPayloads[market];
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return NextResponse.json(cached.data, {
       headers: {
         'Cache-Control': 'no-store, max-age=0',
         'X-Commercial-Feed-Source': 'memory-cache',
+        'X-Commercial-Feed-Market': market,
       },
     });
   }
 
-  // 2. تحقق إن السكريبت موجود
+  // 3. تحقق إن السكريبت موجود
   if (!fs.existsSync(SCRIPT_PATH)) {
     return NextResponse.json(
       {
@@ -63,11 +70,11 @@ export async function GET() {
     );
   }
 
-  // 3. نفّذ Python (العقل) مع timeout 10 ثواني
+  // 4. نفّذ Python (العقل) مع timeout 10 ثواني وعزل السوق
   try {
     const { stdout } = await execFileAsync(
       'python3',
-      [SCRIPT_PATH, '--json'],
+      [SCRIPT_PATH, '--json', '--market', market],
       {
         cwd: PROJECT_ROOT,
         timeout: 10_000,
@@ -76,7 +83,7 @@ export async function GET() {
       }
     );
 
-    // 4. parse JSON output
+    // 5. parse JSON output
     let data: unknown;
     try {
       data = JSON.parse(stdout);
@@ -94,13 +101,14 @@ export async function GET() {
       );
     }
 
-    // 5. خزّن في الكاش
-    cachedPayload = { data, ts: Date.now() };
+    // 6. خزّن في الكاش الخاص بالسوق
+    cachedPayloads[market] = { data, ts: Date.now() };
 
     return NextResponse.json(data, {
       headers: {
         'Cache-Control': 'no-store, max-age=0',
         'X-Commercial-Feed-Source': 'python-live',
+        'X-Commercial-Feed-Market': market,
       },
     });
   } catch (err: unknown) {

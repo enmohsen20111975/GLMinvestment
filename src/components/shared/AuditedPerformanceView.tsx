@@ -109,8 +109,9 @@ export function AuditedPerformanceView({ market }: { market: string }) {
     );
   }
 
-  const trades = data.audited_performance;
-  const stats = data.stats;
+  const rawData = data as any;
+  const trades: any[] = rawData.audited_performance_history || rawData.audited_performance || [];
+  const stats: any = rawData.summary?.audited_performance || rawData.stats || {};
 
   if (trades.length === 0) {
     return (
