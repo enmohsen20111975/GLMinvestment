@@ -21,20 +21,15 @@ import {
   Layers, Target, Zap, Gauge, Award, Crosshair, Clock,
   BarChart3, Eye as MicroscopeIcon, Flame as FlameIcon,
   Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, ShieldAlert, Info, Sparkles,
-  DoorOpen, FileText, UserCircle, Loader2, Copy,
-  Waves, Banknote, Radio, LineChart as LineChartIcon,
+  DoorOpen, FileText, UserCircle, Loader2,
 } from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { TimeHorizonBadge } from '@/components/shared/TimeHorizonBadge';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
 // Task 23-C Deliverable 2 — inline Sharia badge next to each radar pick.
@@ -48,7 +43,7 @@ import {
 } from '@/components/ui/collapsible';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { useRealtimeUpdates } from '@/lib/ws-client';
-import { useAppStore, MARKET_CURRENCY_LABEL } from '@/lib/store';
+import { useAppStore } from '@/lib/store';
 import { getMarketStatus } from '@/lib/market-hours';
 import { getRadarAccess, getTrialStatus } from '@/lib/subscription-gate';
 import { useTranslation } from '@/lib/i18n-context';
@@ -180,13 +175,6 @@ interface RadarStock {
   live_last_update?: string | null;      // ISO timestamp آخر تحديث لـ stocks
   price_source?: 'live' | 'daily' | null; // مصدر current_price
   data_date?: string | null;             // التاريخ الفعلي للسعر المعروض
-  // GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI): index membership + live liquidity.
-  // Optional — backend may omit them; the filters fall back gracefully.
-  is_egx30?: number | boolean | null;
-  is_egx70?: number | boolean | null;
-  is_egx100?: number | boolean | null;
-  liquidity_state?: string | null;
-  turnover_egp?: number | null;
 }
 
 interface MakerRadarResponse {
@@ -252,9 +240,6 @@ interface StockStats {
   min20: number;
   range20Pct: number;
   dataPoints: number;
-  // GLM5.2-A (P0-ALPHA-ALERTS-MFI): team Bravo exposes detail.stats.mfi.
-  // Optional for backward-compat — older API responses may omit it.
-  mfi?: number | null;
 }
 
 interface StockInfoRow {
@@ -262,9 +247,6 @@ interface StockInfoRow {
   name?: string;
   name_ar?: string;
   sector?: string | null;
-  // GLM5.2-A (P0-ALPHA-ALERTS-MFI): team Bravo exposes sector_ar (Arabic sector).
-  // Optional for backward-compat — falls back to translateSector() if absent.
-  sector_ar?: string | null;
   industry?: string | null;
   market_cap?: number | null;
   pe_ratio?: number | null;
@@ -390,12 +372,12 @@ const bucketLabel: Record<string, string> = {
 // via t(`predictions.makerRadar.paths.${path}.label`) at render time.
 const pathMeta: Record<RadarPath, { short: string; accent: AccentKey; icon: React.ReactNode }> = {
   A_pre_surge: {
-    short: 'Pre-Surge',
+    short: 'تحضير لانفجار',
     accent: 'purple',
     icon: <Rocket className="h-4 w-4" />,
   },
   B_quiet_accumulation_strong: {
-    short: 'Microscope',
+    short: 'ميكروسكوب',
     accent: 'amber',
     icon: <Eye className="h-4 w-4" />,
   },
@@ -405,12 +387,12 @@ const pathMeta: Record<RadarPath, { short: string; accent: AccentKey; icon: Reac
     icon: <Eye className="h-4 w-4" />,
   },
   D_explosive_surge: {
-    short: 'Explosive',
+    short: 'منفجر',
     accent: 'rose',
     icon: <Flame className="h-4 w-4" />,
   },
   E_early_break: {
-    short: 'Breakout',
+    short: 'اختراق',
     accent: 'emerald',
     icon: <Zap className="h-4 w-4" />,
   },
@@ -484,306 +466,6 @@ const shortSignal = (s: string): string => {
   }
   return s;
 };
-
-// ============================================================================
-// GLM5.3-S2-COPY-ANALYSIS — Copy Professional Analysis button helpers
-// ============================================================================
-// formatProfessionalAnalysis() builds the canonical Arabic share-ready text
-// shown in the spec. It NEVER fabricates fields (Rule 27 NO-FAKE-DATA):
-// missing values (e.g. MFI) are rendered as "—" instead of fake numbers.
-// copyToClipboardWithFallback() prefers navigator.clipboard.writeText, then
-// falls back to document.execCommand('copy') for HTTP dev + legacy browsers.
-// ============================================================================
-
-/** Resolve a human-readable Arabic status from the radar path. */
-function pathToStockStatus(path: RadarPath | null | undefined): string {
-  if (!path) return '—';
-  if (path === 'A_pre_surge') return 'انطلاق وشيك';
-  if (path === 'B_quiet_accumulation_strong') return 'تجميع هادئ قوي';
-  if (path === 'C_quiet_accumulation_weak') return 'تجميع هادئ';
-  if (path === 'D_explosive_surge') return 'صعود انفجاري / اختراق حاد';
-  if (path === 'E_early_break') return 'انطلاق وشيك';
-  return '—';
-}
-
-/** T-ALPHA-A13: دفن طلاسم وايكوف — استبدال بلغة المال والاستثمار */
-function pathToMarketPhase(path: RadarPath | null | undefined): string {
-  if (!path) return '—';
-  if (path === 'A_pre_surge') return 'تجميع صامت 🤫';
-  if (path === 'B_quiet_accumulation_strong' || path === 'C_quiet_accumulation_weak') {
-    return 'تحضير لانفجار 🚀';
-  }
-  if (path === 'D_explosive_surge') return 'انفجار زخمي 🔥';
-  if (path === 'E_early_break') return 'اختراق مبكر ⚡';
-  return '—';
-}
-
-/** Resolve a human-readable Arabic liquidity-flow label from turnover + ROC. */
-function liquidityFlowLabel(stats: StockStats | undefined): string {
-  if (!stats) return '—';
-  // MFI is NOT available in StockDetail API (no fabrication per Rule 27).
-  // We surface avgTurnover20 + ROC10d as a real liquidity proxy instead.
-  const turnover = stats.avgTurnover20;
-  const roc = stats.roc10d;
-  if (turnover == null && roc == null) return '—';
-  const rocNum = roc ?? 0;
-  const flow = rocNum >= 0 ? 'تدفق إيجابي' : 'تدفق سلبي';
-  return `${flow}`;
-}
-
-// GLM5.2-A (P0-ALPHA-ALERTS-MFI): English sector → Arabic sector mapping.
-// Used as a fallback when stock_info.sector_ar is not yet provided by team
-// Bravo's API. Rule 27: when neither sector_ar nor a known mapping exists,
-// we return '—' rather than fabricating a fake Arabic sector name.
-const SECTOR_AR_MAP: Record<string, string> = {
-  'Communications': 'الاتصالات',
-  'Telecom': 'الاتصالات',
-  'Finance': 'التمويل',
-  'Financials': 'التمويل',
-  'Banks': 'البنوك',
-  'Banking': 'البنوك',
-  'Real Estate': 'العقارات',
-  'Real Estate & Development': 'العقارات والتعمير',
-  'Healthcare': 'الرعاية الصحية',
-  'Pharmaceuticals': 'الأدوية',
-  'Energy': 'الطاقة',
-  'Oil & Gas': 'البترول والغاز',
-  'Telecom & Media': 'الاتصالات والإعلام',
-  'Materials': 'المواد الأساسية',
-  'Basic Materials': 'المواد الأساسية',
-  'Chemicals': 'الكيمياويات',
-  'Industrials': 'الصناعات',
-  'Industrial': 'الصناعات',
-  'Consumer Discretionary': 'السلع الاستهلاكية التقديرية',
-  'Consumer Staples': 'السلع الاستهلاكية الأساسية',
-  'Consumer': 'الاستهلاكي',
-  'Utilities': 'المرافق',
-  'Information Technology': 'تكنولوجيا المعلومات',
-  'Technology': 'التكنولوجيا',
-  'Agri & Fisheries': 'الزراعة والثروة السمكية',
-  'Agriculture': 'الزراعة',
-  'Construction': 'التشييد',
-  'Construction & Materials': 'التشييد والمواد',
-  'Travel & Leisure': 'السياحة والترفيه',
-  'Tourism': 'السياحة',
-  'Transportation': 'النقل',
-  'Logistics': 'الخدمات اللوجستية',
-  'Education': 'التعليم',
-  'Financial Services': 'الخدمات المالية',
-  'Food & Beverage': 'الأغذية والمشروبات',
-  'Metals & Mining': 'المعادن والتعدين',
-  'Mining': 'التعدين',
-  'Petrochemicals': 'البتر وكيماويات',
-  'Power': 'الكهرباء',
-  'Retail': 'التجزئة',
-  'Services': 'الخدمات',
-  'Textiles': 'الغزل والنسيج',
-};
-
-/** Translate an English sector name to Arabic (with sector_ar override). */
-function resolveSectorAr(
-  sector: string | null | undefined,
-  sectorAr: string | null | undefined,
-): string {
-  // 1) Prefer the Arabic sector from team Bravo's API (Rule 67 SSOT).
-  if (sectorAr && sectorAr.trim()) return sectorAr.trim();
-  // 2) Fallback to the English→Arabic map.
-  if (sector && sector.trim()) {
-    const mapped = SECTOR_AR_MAP[sector.trim()];
-    if (mapped) return mapped;
-  }
-  // 3) No fabrication (Rule 27).
-  return '—';
-}
-
-/** Resolve the MFI label with a directional interpretation. */
-function resolveMfiLabel(stats: StockStats | undefined): string {
-  if (!stats) return '—';
-  const mfi = stats.mfi;
-  if (mfi == null || !Number.isFinite(mfi)) return '—';
-  const rounded = Math.round(mfi);
-  // Interpretation bands (standard MFI semantics):
-  //   ≥ 80 → overbought (تدفق شرائي مفرط)
-  //   60-79 → strong buy-side institutional flow
-  //   40-59 → balanced
-  //   20-39 → weak / distribution pressure
-  //   < 20 → oversold (تدفق بيعي مفرط)
-  let interpretation = '';
-  if (rounded >= 80) interpretation = 'تدفق شرائي مفرط (تشبع شرائي)';
-  else if (rounded >= 60) interpretation = 'تدفق شرائي مؤسسي قوي';
-  else if (rounded >= 40) interpretation = 'تدفق متوازن';
-  else if (rounded >= 20) interpretation = 'تدفق بيعي ضعيف';
-  else interpretation = 'تدفق بيعي مفرط (تشبع بيعي)';
-  return `${rounded}% (${interpretation})`;
-}
-
-/**
- * Build the canonical "Professional Analysis" share text for a stock drawer.
- * Rule 27 (NO-FAKE-DATA): missing fields render as "—" instead of fake values.
- * Sources:
- *   • stock name → detail.stock_info?.name_ar || .name
- *   • price → detail.stats.lastClose
- *   • status / Wyckoff → radarStock.path
- *   • entry / target1 / target2 / stop_loss → detail.prediction
- *   • MFI → detail.stats.mfi (team Bravo) → resolveMfiLabel() → "—" if absent
- *   • sector (Arabic) → stock_info.sector_ar (team Bravo) → SECTOR_AR_MAP fallback
- *
- * GLM5.2-A (P0-ALPHA-ALERTS-MFI): the MFI line now uses the real value from
- * detail.stats.mfi when available (e.g. "68% (تدفق شرائي مؤسسي قوي)"), and the
- * header includes the Arabic sector name (e.g. "الاتصالات") when available.
- */
-export function formatProfessionalAnalysis(
-  ticker: string,
-  stockInfo: StockInfoRow | null | undefined,
-  detail: StockDetail | null,
-  radarStock: RadarStock | null | undefined,
-): string {
-  const name = stockInfo?.name_ar || stockInfo?.name || '';
-  // GLM5.2-A: header now includes the Arabic sector when available.
-  const sectorAr = resolveSectorAr(stockInfo?.sector, stockInfo?.sector_ar);
-  const headerName = name ? `${name} (${ticker})` : ticker;
-  const headerSuffix = sectorAr !== '—' ? ` — ${sectorAr}` : '';
-
-  const lastClose = detail?.stats?.lastClose;
-  const status = pathToStockStatus(radarStock?.path);
-  const marketPhase = pathToMarketPhase(radarStock?.path);
-  const flow = liquidityFlowLabel(detail?.stats);
-  // GLM5.2-A: MFI now reads from detail.stats.mfi (team Bravo) with a real
-  // interpretation band. Falls back to "—" when the API omits it (Rule 27).
-  const mfiLabel = resolveMfiLabel(detail?.stats);
-
-  const pred = detail?.prediction;
-  const entryLow =
-    pred?.entry_price_min ?? pred?.entry_price ?? null;
-  const entryHigh =
-    pred?.entry_price_max ?? pred?.entry_price ?? null;
-  const target1 = pred?.target_price ?? null;
-  const target2 = pred?.target_price_2 ?? null;
-  const stopLoss = pred?.stop_loss ?? null;
-
-  // Recommendation: prefer prediction.signal; fall back to "—" if missing
-  const recommendation = pred?.signal || '—';
-
-  const fmtPrice = (n: number | null | undefined): string =>
-    n == null || isNaN(n as number) ? '—' : (Number(n)).toFixed(2);
-
-  // ─── Financial Realism & No-Chase Guard (Fixed by GM) ─────────────
-  // If price has already moved past entry by >3%, or recommendation is HOLD,
-  // do NOT present historical entry as a "safe current buy zone"!
-  const isPastEntry =
-    lastClose != null && entryHigh != null && lastClose > entryHigh * 1.03;
-  const gainFromEntry =
-    lastClose != null && entryLow != null && entryLow > 0
-      ? ((lastClose - entryLow) / entryLow) * 100
-      : null;
-
-  // Compute live Risk:Reward from current price (to protect traders from chasing)
-  let rrFromCurrent: string | null = null;
-  if (lastClose != null && target1 != null && stopLoss != null) {
-    const upside = target1 - lastClose;
-    const downside = lastClose - stopLoss;
-    if (upside > 0 && downside > 0) {
-      rrFromCurrent = (upside / downside).toFixed(2);
-    }
-  }
-
-  // T-ALPHA-A13: دفن طلاسم وايكوف — لغة المال والاستثمار
-  const makerPhase = marketPhase;
-  let phaseExplained = makerPhase;
-  if (
-    detail?.stats?.mfi != null &&
-    detail.stats.mfi >= 80 &&
-    (makerPhase.includes('توزيع') || makerPhase.includes('تصريف') || makerPhase.includes('قمة'))
-  ) {
-    phaseExplained = `${makerPhase} — تصريف وخروج ⚠️ (ذروة شرائية واستغلال السيولة عند القمة)`;
-  }
-
-  const lines: string[] = [];
-  lines.push(`📊 تقرير رادار السيولة وصانع السوق | ${headerName}${headerSuffix}`);
-  lines.push('━━━━━━━━━━━━━━━━━━━━');
-  lines.push(`🔹 السعر الحالي: ${fmtPrice(lastClose)} ج.م`);
-  lines.push(`🔹 حالة السهم: ${status}`);
-  lines.push(`🔹 مرحلة السهم: ${phaseExplained}`);
-  lines.push(`🔹 تدفق السيولة: ${mfiLabel} - ${flow}`);
-  lines.push(`🔹 القطاع: ${sectorAr}`);
-
-  // Entry zone rendering: never output "من X إلى X" for identical numbers!
-  if (isPastEntry || recommendation === 'HOLD') {
-    lines.push(
-      `🔹 حالة الدخول: تجاوز نقطة الشراء ${gainFromEntry != null ? `(+${gainFromEntry.toFixed(1)}% من سعر الدخول ${fmtPrice(entryLow)} ج.م)` : `(${fmtPrice(entryLow)} ج.م)`} — لا يُنصح بفتح صفقات جديدة (احتفاظ فقط)`,
-    );
-  } else if (entryLow != null && entryHigh != null) {
-    if (Math.abs(entryLow - entryHigh) < 0.01) {
-      lines.push(
-        `🔹 سعر الارتكاز للدخول: ${fmtPrice(entryLow)} ج.م (نطاق آمن ${fmtPrice(entryLow * 0.99)} — ${fmtPrice(entryLow * 1.01)} ج.م)`,
-      );
-    } else {
-      lines.push(`🔹 نطاق الدخول الآمن: من ${fmtPrice(entryLow)} إلى ${fmtPrice(entryHigh)} ج.م`);
-    }
-  } else {
-    lines.push(`🔹 نطاق الدخول: —`);
-  }
-
-  lines.push(`🔹 مستهدفات الحركة: هدف أول ${fmtPrice(target1)} ج.م | هدف ثانٍ ${fmtPrice(target2)} ج.م`);
-  lines.push(`🔹 وقف الخسارة الفولاذي: ${fmtPrice(stopLoss)} ج.م (كسر بإغلاق)`);
-
-  if (rrFromCurrent != null && isPastEntry) {
-    lines.push(`⚠️ نسبة العائد للمخاطرة الحالية: ${rrFromCurrent} : 1 (مخاطرة غير متكافئة للمشتري الجديد عند ${fmtPrice(lastClose)} ج.م)`);
-  }
-
-  lines.push('━━━━━━━━━━━━━━━━━━━━');
-  lines.push(`💡 رؤية المحلل: ${recommendation}`);
-  lines.push('📌 منصة GLM Investment — نظام كشف السيولة الذكية');
-
-  return lines.join('\n');
-}
-
-/**
- * Copy text to clipboard with a legacy execCommand fallback.
- * Handles HTTP dev environments where navigator.clipboard is unavailable
- * (it requires a secure context / HTTPS) and old browsers that lack it.
- * Returns true on success, false on failure.
- */
-export async function copyToClipboardWithFallback(text: string): Promise<boolean> {
-  // 1) Modern API — only available in secure contexts (HTTPS / localhost)
-  if (
-    typeof navigator !== 'undefined' &&
-    navigator.clipboard &&
-    typeof navigator.clipboard.writeText === 'function' &&
-    (typeof window === 'undefined' || window.isSecureContext)
-  ) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (err) {
-      console.warn('[copyToClipboard] navigator.clipboard failed, falling back to execCommand:', err);
-    }
-  }
-
-  // 2) Legacy fallback — works on HTTP dev + older browsers
-  if (typeof document !== 'undefined') {
-    try {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'fixed';
-      textarea.style.top = '-9999px';
-      textarea.style.left = '-9999px';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(textarea);
-      return ok;
-    } catch (err) {
-      console.error('[copyToClipboard] execCommand fallback failed:', err);
-      return false;
-    }
-  }
-
-  return false;
-}
 
 // ============================================================================
 // RADAR-QUICK-WINS (Priority 1): Smart Entry Card — Path descriptions
@@ -866,18 +548,6 @@ interface MakerRadarTabProps {
 
 type FilterKey = 'all' | 'pre_surge' | 'quiet' | 'explosive' | 'early_break' | 'tracked';
 
-// ─── GLM5.2-A — Wyckoff Phase Filter ────────────────────────────────────
-// Two phases surfaced to the user (C_SPRING / D_SOS). The Wyckoff screener
-// runs server-side (Python detect_wyckoff_accumulation) and the Node route
-// is a transparent proxy (Rule 20). UI never fabricates — Rule 27.
-type WyckoffPhase = 'C_SPRING' | 'D_SOS';
-interface WyckoffStockEntry {
-  ticker: string;
-  phase: string;
-  confidence: number;
-  whale_flow_egp: number;
-}
-
 /** Lightweight prediction entry stitched from predictions.db active rows */
 interface PredictionEntry {
   signal: string;          // e.g. 'BUY', 'SELL', 'NEUTRAL'
@@ -888,99 +558,6 @@ interface PredictionEntry {
   entry_price: number | null;   // ← FIX: was missing (caused entry column to show '—' / 0)
   target_price: number | null;
   stop_loss: number | null;
-  persona?: string | null;      // T-ALPHA-A1: for time-horizon badge mapping
-  risk_reward?: number | null;  // T-ALPHA-A1: for bold R:R display
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// T-ALPHA-A16: RadarStockSection — قسم موحد لعرض قائمة أسهم الرادار
-// يعرض العنوان + الوصف + قائمة موحدة (UnifiedTable) مع زر المتابعة
-// ════════════════════════════════════════════════════════════════════════════
-interface RadarStockSectionProps {
-  title: string;
-  subtitle: string;
-  stocks: RadarStock[];
-  stockMap: Map<string, StockInfo>;
-  predMap: Map<string, PredictionEntry>;
-  onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
-  onSelectTicker: (ticker: string) => void;
-  accent: 'emerald' | 'amber' | 'fuchsia' | 'rose';
-}
-
-const ACCENT_MAP = {
-  emerald: { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-800/50' },
-  amber: { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/20', border: 'border-amber-200 dark:border-amber-800/50' },
-  fuchsia: { text: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/20', border: 'border-fuchsia-200 dark:border-fuchsia-800/50' },
-  rose: { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-200 dark:border-rose-800/50' },
-};
-
-function RadarStockSection({ title, subtitle, stocks, stockMap, predMap, onTrackToggle, onSelectTicker, accent }: RadarStockSectionProps) {
-  const a = ACCENT_MAP[accent];
-  if (stocks.length === 0) return null;
-
-  return (
-    <Card className={cn('border-t-2', a.border)}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <CardTitle className={cn('text-sm font-bold flex items-center gap-1.5', a.text)}>
-              {title}
-              <Badge variant="outline" className={cn('text-[9px]', a.text, a.border)}>{stocks.length}</Badge>
-            </CardTitle>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-1">
-          {stocks.slice(0, 15).map((stock) => {
-            const info = stockMap.get(stock.ticker.toUpperCase());
-            const pred = predMap.get(stock.ticker.toUpperCase());
-            const price = stock.current_price || info?.current_price || 0;
-            const change = stock.change_percent ?? 0;
-            return (
-              <div
-                key={stock.ticker}
-                className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/40 transition-colors cursor-pointer"
-                onClick={() => onSelectTicker(stock.ticker)}
-              >
-                {/* Ticker + Name */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono font-bold text-xs">{stock.ticker}</span>
-                    {info?.name_ar && (
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[100px]" title={info.name_ar}>
-                        {info.name_ar}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {/* Price */}
-                <div className="text-left flex-shrink-0">
-                  <div className="font-mono text-xs font-semibold tabular-nums">{price > 0 ? price.toFixed(2) : '—'}</div>
-                  <div className={cn('text-[9px] font-semibold tabular-nums', change > 0 ? 'text-emerald-500' : change < 0 ? 'text-red-500' : 'text-muted-foreground')}>
-                    {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                  </div>
-                </div>
-                {/* Track button */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); onTrackToggle(stock.ticker, price, !!stock.isTracked); }}
-                  className="text-muted-foreground hover:text-amber-500 transition-colors p-1 rounded flex-shrink-0"
-                  title={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
-                >
-                  {stock.isTracked ? (
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  ) : (
-                    <StarOff className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
@@ -993,23 +570,6 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [warmupMsg, setWarmupMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [radarView, setRadarView] = useState<'inflow' | 'outflow'>('inflow');
-  // ─── GLM5.2-A — Wyckoff phase filter (C_SPRING / D_SOS / null) ─────────
-  // null = inactive. When active, the radar is intersected with the screener
-  // results so only stocks matching the chosen Wyckoff phase are shown.
-  const [wyckoffFilter, setWyckoffFilter] = useState<WyckoffPhase | null>(null);
-  const [wyckoffData, setWyckoffData] = useState<Record<string, WyckoffStockEntry> | null>(null);
-  const [wyckoffError, setWyckoffError] = useState<boolean>(false);
-  // ─── GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI) — liquidity tier filter ────
-  // null = show all tiers. 'institutional' = only ≥ 2M EGP turnover (the
-  // quick-filter button the manager asked for — isolates quality stocks).
-  // 'surge' = only stocks with volume_ratio >= 2.5 (sudden liquidity spikes).
-  const [liquidityTierFilter, setLiquidityTierFilter] = useState<'institutional' | 'surge' | null>(null);
-  // GLM5.2-A (AI-CONFIDENCE-UI): High Conviction AI filter.
-  // null = show all. 'high_conviction' = only stocks with AI confidence >= 65%.
-  const [aiConfidenceFilter, setAiConfidenceFilter] = useState<boolean>(false);
-  // EGX30 / EGX70 index filter (the manager's second quick-filter button).
-  const [indexFilter, setIndexFilter] = useState<'EGX30' | 'EGX70' | null>(null);
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('7d');
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
 
@@ -1095,7 +655,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         }
         setStockMap(map);
       }
-    } catch { // silent fallback (safe-by-design)
+    } catch {
       // silent — sector strip will just hide
     }
   }, [market]);
@@ -1154,13 +714,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             entry_price: row.entry_price != null ? Number(row.entry_price) : null, // ← FIX: store entry_price
             target_price: row.target_price != null ? Number(row.target_price) : null,
             stop_loss: row.stop_loss != null ? Number(row.stop_loss) : null,
-            persona: row.persona || null, // T-ALPHA-A1: store persona for badge
-            risk_reward: row.risk_reward != null ? Number(row.risk_reward) : null, // T-ALPHA-A1: store R:R
           });
         }
       }
       setPredMap(map);
-    } catch { // silent fallback (safe-by-design)
+    } catch {
       // silent — prediction column stays empty
     }
   }, [market]);
@@ -1168,58 +726,6 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchStockMap(); }, [fetchStockMap]);
   useEffect(() => { fetchPredictions(); }, [fetchPredictions]);
-
-  // ─── GLM5.2-A — Wyckoff Screener fetch (Python via Node proxy) ────────
-  // Calls /api/maker-radar/wyckoff-screener every 60s while the user has a
-  // Wyckoff filter active. On failure we surface a flag (Rule 27: NO fake
-  // data) — the filter just shows an empty state with a clear explanation.
-  useEffect(() => {
-    if (!wyckoffFilter) {
-      setWyckoffData(null);
-      setWyckoffError(false);
-      return;
-    }
-    let cancelled = false;
-    const fetchWyckoff = async () => {
-      try {
-        const url = `/api/maker-radar/wyckoff-screener?market=${encodeURIComponent(market)}&phase_filter=${wyckoffFilter}&limit=20`;
-        const res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (cancelled) return;
-
-
-        // GLM5.2-A (P0-WYCKOFF-FIX): relaxed check — Python may omit success:true
-        // but still return a valid stocks array. Accept if stocks is an array
-        // regardless of the success flag (fixes the SOS Phase D empty table bug).
-
-        if ((json.success ?? Array.isArray(json.stocks)) && Array.isArray(json.stocks)) {
-          const map: Record<string, WyckoffStockEntry> = {};
-          for (const s of json.stocks) {
-            if (s && s.ticker) map[String(s.ticker).toUpperCase()] = s as WyckoffStockEntry;
-          }
-          setWyckoffData(map);
-          setWyckoffError(false);
-        } else {
-          // Server reported failure (Python error / DB empty / no matches).
-          // Rule 27: surface the empty state — never fabricate entries.
-          setWyckoffData({});
-          setWyckoffError(!json.success && !!json.error);
-        }
-      } catch (e) {
-        if (cancelled) return;
-        console.warn('[wyckoff] fetch failed', e);
-        setWyckoffData({});
-        setWyckoffError(true);
-      }
-    };
-    fetchWyckoff();
-    const id = setInterval(fetchWyckoff, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [wyckoffFilter, market]);
 
   // Live real-time polling: refresh both stock quotes (for live prices & flashes) and radar data
   useVisibilityAwarePolling(
@@ -1503,86 +1009,37 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
     return { allow };
   }, [filter]);
 
-  // ─── GLM5.2-A — Wyckoff intersection set ───────────────────────────────
-  // When the user picks a Wyckoff phase (C_SPRING / D_SOS), every radar
-  // section is intersected with the screener results. `null` = inactive.
-  const wyckoffTickers = useMemo(() => {
-    if (!wyckoffFilter || !wyckoffData) return null;
-    return new Set(Object.keys(wyckoffData));
-  }, [wyckoffFilter, wyckoffData]);
-
-  // GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI): apply liquidity + index filters
-  // to every radar list. Both filters use fields already on RadarStock.
-  // Rule 67: avg_turnover_20d + is_egx30/is_egx70 are backend-computed SSOT.
-  function applyLiquidityAndIndexFilters(list: RadarStock[]): RadarStock[] {
-    let filtered = list;
-    if (liquidityTierFilter === 'institutional') {
-      filtered = filtered.filter((s) => {
-        const t = s.avg_turnover_20d ?? (s.current_price && s.avg_volume_20d ? s.current_price * s.avg_volume_20d : 0);
-        return Number(t) >= 2_000_000;
-      });
-    } else if (liquidityTierFilter === 'surge') {
-      // 🚀 RVol surge: volume_ratio >= 2.5x — sudden liquidity spike
-      filtered = filtered.filter((s) => Number(s.volume_ratio_10d_vs_20d ?? 0) >= 2.5);
-    }
-    // GLM5.2-A (AI-CONFIDENCE-UI): High Conviction AI filter.
-    // Only stocks with AI confidence >= 65% (prediction.confidence or master_score).
-    if (aiConfidenceFilter) {
-      filtered = filtered.filter((s) => {
-        const p = predictionForTicker(s.ticker);
-        const conf = p?.confidence != null ? Number(p.confidence)
-          : p?.master_score != null ? Number(p.master_score)
-          : null;
-        return conf != null && conf >= 65;
-      });
-    }
-    if (indexFilter === 'EGX30') {
-      filtered = filtered.filter((s) => s.is_egx30 === 1 || s.is_egx30 === true);
-    } else if (indexFilter === 'EGX70') {
-      filtered = filtered.filter((s) => s.is_egx70 === 1 || s.is_egx70 === true);
-    }
-    return filtered;
-  }
-
   const filteredPreSurge = useMemo(() => {
     let list = (data?.pre_surge_list || []).filter(s => dedupSet.allow(s, 'pre_surge'));
-    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
-    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'pre_surge') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
 
   const filteredQuiet = useMemo(() => {
     let list = (data?.quiet_list || []).filter(s => dedupSet.allow(s, 'quiet'));
-    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
-    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'quiet') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
 
   const filteredExplosive = useMemo(() => {
     let list = (data?.explosive_list || []).filter(s => dedupSet.allow(s, 'explosive'));
-    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
-    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'explosive') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
 
   const filteredEarlyBreak = useMemo(() => {
     let list = (data?.early_break_list || []).filter(s => dedupSet.allow(s, 'early_break'));
-    if (wyckoffTickers) list = list.filter(s => wyckoffTickers.has(s.ticker.toUpperCase()));
-    list = applyLiquidityAndIndexFilters(list);
     if (filter !== 'all' && filter !== 'early_break') {
       list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
     }
     return [...list].sort(sortFn);
-  }, [data, filter, sortByPrediction, sortFn, dedupSet, wyckoffTickers, liquidityTierFilter, indexFilter, aiConfidenceFilter, predictionForTicker]);
+  }, [data, filter, sortByPrediction, sortFn, dedupSet]);
 
   // FIX-UI-AUDIT (re-applied to NEW path): radarKpi aggregates the four
   // lists into the 4 audit-approved metrics (replaces the raw-count cards
@@ -1737,8 +1194,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 </Badge>
               )}
               {data?.warmup_running && (
-                <Badge variant="outline" className="text-[10px] text-primary border-slate-200 bg-slate-50 dark:text-slate-400 dark:bg-slate-900/40">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse mr-1" />
+                <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-200 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse mr-1" />
                   بيشتغل
                 </Badge>
               )}
@@ -1824,188 +1281,413 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         </Card>
       )}
 
-      {/* ===== T-ALPHA-A16: CLEAN INSTITUTIONAL STRUCTURE — No sub-tabs, no clutter =====
-          Maker Pulse Banner + Two-view Toggle (Inflow/Outflow) only.
-          Purged: 6 sub-tabs, SectorTreemapCard, RadarSignalStatsCard, ProofSection,
-          Wyckoff filters, 12% win rate widget, all jargon. */}
+      {/* ===== SUB-TABS (Task 9-B Step 2) =====
+          The 5 radar tabs (exit-radar / weekly-report / multi-market-radar /
+          radar-accuracy / personalized-radar) that USED to live in #recommendations
+          are now internal sub-tabs here. The canonical MakerRadar lists stay the
+          default sub-tab. NetPicksTab duplicate removed — it lives only in
+          #recommendations now. */}
+      <Tabs defaultValue="maker" className="w-full">
+        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
+          <TabsTrigger value="maker" className="flex items-center gap-1">
+            <Radar className="h-4 w-4 text-emerald-600" />
+            <span className="hidden sm:inline">رادار الميكرز</span>
+          </TabsTrigger>
+          <TabsTrigger value="exit-radar" className="flex items-center gap-1">
+            <DoorOpen className="h-4 w-4 text-rose-600" />
+            <span className="hidden sm:inline">رادار الخروج</span>
+          </TabsTrigger>
+          <TabsTrigger value="weekly-report" className="flex items-center gap-1">
+            <FileText className="h-4 w-4 text-emerald-600" />
+            <span className="hidden sm:inline">التقرير الأسبوعي</span>
+          </TabsTrigger>
+          <TabsTrigger value="multi-market-radar" className="flex items-center gap-1">
+            <Radar className="h-4 w-4 text-violet-600" />
+            <span className="hidden sm:inline">الرادار الموحّد</span>
+          </TabsTrigger>
+          <TabsTrigger value="radar-accuracy" className="flex items-center gap-1">
+            <Gauge className="h-4 w-4 text-amber-600" />
+            <span className="hidden sm:inline">دقة الرادار</span>
+          </TabsTrigger>
+          <TabsTrigger value="personalized-radar" className="flex items-center gap-1">
+            <UserCircle className="h-4 w-4 text-cyan-600" />
+            <span className="hidden sm:inline">الرادار المخصّص</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* ===== MAKER PULSE BANNER — ملخص مركّز لحالة السوق ===== */}
+        {/* ─── Maker Radar (default) — the original 5-path radar lists + sub-cards ─── */}
+        <TabsContent value="maker" className="mt-4 space-y-4">
+
+      {/* ===== MARKET REGIME BANNER (إحساس وضع السوق وتكييف القواعد) ===== */}
+      {/* Owner directive: "تحذير أحمر وكبير وواضح جدًا، مش مخفي" */}
       {data?.market_regime && (
-        <Card className={cn(
-          'p-4 border-l-4 transition-all overflow-hidden',
+        <Card className={`p-4 border-l-4 transition-all ${
           data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
             ? 'border-l-red-500 bg-red-500/10 dark:bg-red-950/30 border-red-300 dark:border-red-800 shadow-lg shadow-red-500/20'
             : data.market_regime.regime === 'AGGRESSIVE'
               ? 'border-l-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
-              : 'border-l-primary bg-primary/5 dark:bg-slate-900/20 border-slate-200 dark:border-primary'
-        )}>
+              : 'border-l-blue-500 bg-blue-500/5 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+        }`}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <ShieldAlert className={cn(
-                'h-5 w-5',
+              <ShieldAlert className={`h-6 w-6 ${
                 data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
                   ? 'text-red-600 dark:text-red-400 animate-pulse'
                   : data.market_regime.regime === 'AGGRESSIVE'
                     ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-primary dark:text-slate-400'
-              )} />
+                    : 'text-blue-600 dark:text-blue-400'
+              }`} />
               <div>
-                <span className="text-sm font-bold">
-                  {data.market_regime.regime_ar || data.market_regime.regime || '—'}
-                </span>
-                {data.market_regime.advice_ar && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {data.market_regime.advice_ar}
-                  </p>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground">
+                    وضع السوق المستشعر:
+                  </span>
+                  <Badge variant="outline" className={`text-xs font-semibold ${
+                    data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+                      ? 'bg-red-100 text-red-900 border-red-400 dark:bg-red-950 dark:text-red-200 dark:border-red-700'
+                      : data.market_regime.regime === 'AGGRESSIVE'
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
+                        : 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200'
+                  }`}>
+                    {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+                      ? '🔴 دِفاعي — قلّل الحجم وركّز على وقف الخسارة'
+                      : data.market_regime.regime === 'AGGRESSIVE'
+                        ? '🟢 هجومي — زخم صاعد'
+                        : '⚖️ عادي — حركة متوازنة'}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+                    ? 'السوق العام واقع وشحيح السيولة — تم تكييف قواعد الرادار تلقائياً لصيد الأسهم المتماسكة ذات القوة النسبية وتجميع الميكرز الهادئ.'
+                    : 'القواعد تعمل بالمعايير القياسية للسيولة والزخم.'}
+                </p>
               </div>
             </div>
-            {/* T-ALPHA-A16: Market pulse summary */}
-            <div className="flex items-center gap-3 text-xs">
-              {data?.quiet_list && data.quiet_list.length > 0 && (
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                  <span className="font-bold">{data.quiet_count ?? data.quiet_list.length}</span>
-                  تجميع
-                </span>
-              )}
-              {data?.explosive_list && data.explosive_list.length > 0 && (
-                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                  <span className="font-bold">{data.explosive_count ?? data.explosive_list.length}</span>
-                  انفجار
-                </span>
-              )}
-              {data?.early_break_list && data.early_break_list.length > 0 && (
-                <span className="flex items-center gap-1 text-fuchsia-600 dark:text-fuchsia-400">
-                  <span className="font-bold">{data.early_break_count ?? data.early_break_list.length}</span>
-                  اختراق
-                </span>
+            {data.market_regime.breadth_pct != null && (
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span>صعود السوق: <strong className="font-mono text-foreground">{data.market_regime.breadth_pct}%</strong></span>
+                {data.market_regime.turnover_ratio != null && (
+                  <span>نسبة السيولة: <strong className="font-mono text-foreground">{data.market_regime.turnover_ratio}x</strong></span>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* ===== KPI CARDS — FIX-UI-AUDIT (re-applied to NEW path) =====
+          Replaces the 4 raw-count cards (إجمالي المفحوصة / تحت الميكروسكوب /
+          موجات منفجرة / أسهم متابَعة) with the 4 audit-approved aggregated
+          metrics. When radarKpi.hasData === false, the row collapses into a
+          single actionable reason banner (no dead «فرص 0» display). tracked_count
+          still appears in the filter-bar badge (no loss of info). */}
+      {radarKpi.hasData ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard
+            icon={<Activity className="h-4 w-4" />}
+            label="عدد الأسهم النشطة"
+            value={radarKpi.activeCount}
+            sub="عبر كل قوائم الرادار"
+            accent="blue"
+          />
+          <KpiCard
+            icon={<TrendingUp className="h-4 w-4" />}
+            label="أقوى زخم حالي"
+            value={radarKpi.topMomentumTicker ?? '—'}
+            sub={
+              radarKpi.topMomentumRoc != null
+                ? `ROC 10 أيام: ${(radarKpi.topMomentumRoc ?? 0).toFixed(2)}%`
+                : 'بانتظار البيانات'
+            }
+            accent="emerald"
+          />
+          <KpiCard
+            icon={<BarChart3 className="h-4 w-4" />}
+            label="أعلى سيولة"
+            value={radarKpi.topLiquidityTicker ?? '—'}
+            sub={
+              radarKpi.topLiquidityValue != null
+                ? `متوسط سيولة 20 يوم: ${fmtMoney(radarKpi.topLiquidityValue)}`
+                : 'بانتظار البيانات'
+            }
+            accent="amber"
+          />
+          <KpiCard
+            icon={<Target className="h-4 w-4" />}
+            label="عدد الفرص الحقيقية"
+            value={radarKpi.realOpportunities}
+            sub={
+              radarKpi.realOpportunities > 0
+                ? 'فرص قابلة للتداول'
+                : 'الرادار بيفحص الأسهم'
+            }
+            accent="rose"
+          />
+        </div>
+      ) : (
+        <Card className="p-4 border-dashed border-muted-foreground/30 bg-muted/20">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Radar className="h-5 w-5 flex-shrink-0 opacity-60" />
+            <div>
+              <p className="font-semibold text-foreground">لا توجد فرص حالياً — الرادار بيفحص الأسهم</p>
+              <p className="text-xs mt-0.5">جرّب تشغيل الرادار أو حدّث بعد دقيقة.</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* ===== RADAR SUMMARY — الخلاصة النهائية للقرار ===== */}
+      {data && !loading && (
+        <Card className="p-4 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+              <Target className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold">خلاصة الرادار</span>
+                {data.market_regime && (
+                  <Badge variant="outline" className={
+                    data.market_regime.effective_regime === 'AGGRESSIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' :
+                    data.market_regime.effective_regime === 'DEFENSIVE' ? 'bg-red-500/10 text-red-600 border-red-500/30' :
+                    'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                  }>
+                    {data.market_regime.effective_regime === 'AGGRESSIVE' ? '🟢 السوق عدواني' :
+                     data.market_regime.effective_regime === 'DEFENSIVE' ? '🔴 السوق دفاعي' :
+                     '🟡 السوق محايد'}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {(() => {
+                  const totalStocks = data.total_scanned ?? 0;
+                  const underMicroscope = data.under_microscope_count ?? 0;
+                  const explosive = data.explosive_count ?? 0;
+                  const earlyBreak = data.early_break_count ?? 0;
+                  const tracked = data.tracked_count ?? 0;
+                  const totalOpportunities = underMicroscope + explosive + earlyBreak;
+
+                  if (totalStocks === 0) return 'الرادار قيد التحميل — انتظر دقيقة وحاول مرة أخرى.';
+                  if (totalOpportunities === 0) return `تم فحص ${totalStocks} سهم — لا توجد فرص واضحة حالياً. السوق هادئ، انتظر حركة.`;
+                  if (explosive > 0 || earlyBreak > 0) return `🔥 يوجد ${explosive + earlyBreak} سهم في حركة انفجارية/اختراق! ركّز على التبويبات الحمراء. + ${underMicroscope} تحت الميكروسكوب للتجميع.`;
+                  if (underMicroscope > 10) return `📊 ${underMicroscope} سهم تحت الميكروسكوب — السوق في مرحلة تجميع. تتركّز الفرص في الأسهم الصامتة قبل الانفجار.`;
+                  return `تم فحص ${totalStocks} سهم. ${totalOpportunities} فرصة محتملة. ${tracked} في قائمتك.`;
+                })()}
+              </p>
+              {data.tracked_count === 0 && (data.under_microscope_count ?? 0) > 0 && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  ⚠️ لا توجد أسهم في قائمة المتابعة — افتح أي سهم واضغط ⭐ لإضافته للمتابعة.
+                </p>
               )}
             </div>
           </div>
         </Card>
       )}
 
-      {/* ===== T-ALPHA-A16: TWO-VIEW TOGGLE — Inflow vs Outflow ===== */}
-      <div className="flex justify-center" dir="rtl">
-        <ToggleGroup
-          type="single"
-          value={radarView}
-          onValueChange={(v) => v && setRadarView(v as 'inflow' | 'outflow')}
-          className="bg-muted rounded-lg p-1 gap-1"
-        >
-          <ToggleGroupItem
-            value="inflow"
-            aria-label="رادار التجميع"
-            className="px-4 py-2 text-sm font-medium data-[state=on]:bg-emerald-500 data-[state=on]:text-white rounded-md transition-all"
-          >
-            <span className="me-1.5">🟢</span>
-            رادار التجميع (صيد الحيتان)
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="outflow"
-            aria-label="رادار التصريف"
-            className="px-4 py-2 text-sm font-medium data-[state=on]:bg-red-500 data-[state=on]:text-white rounded-md transition-all"
-          >
-            <span className="me-1.5">🔴</span>
-            رادار التصريف (إنذار الخروج)
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+      {/* ===== RADAR ACTIVITY — مدى شعل الرادار خلال فترة زمنية ===== */}
+      <RadarActivityCard data={data} lastUpdated={lastUpdated} period={timeframe} onPeriodChange={setTimeframe} />
 
-      {/* ===== T-ALPHA-A16: RADAR LISTS — Clean unified view ===== */}
-      {radarView === 'inflow' ? (
-        /* 🟢 INFLOW: pre_surge + quiet + early_break = accumulation signals */
-        <div className="space-y-4">
-          {filteredPreSurge.length > 0 && (
-            <RadarStockSection
-              title="🚀 تحضير لانفجار"
-              subtitle="أسهم في مرحلة تجميع صامت قبل الانفجار"
-              stocks={filteredPreSurge}
-              stockMap={stockMap}
-              predMap={predMap}
-              onTrackToggle={handleTrackToggle}
-              onSelectTicker={setSelectedTicker}
-              accent="emerald"
-            />
-          )}
-          {filteredQuiet.length > 0 && (
-            <RadarStockSection
-              title="🤫 تجميع صامت"
-              subtitle="دخول سيولة مؤسسية هادئة — صيد الحيتان"
-              stocks={filteredQuiet}
-              stockMap={stockMap}
-              predMap={predMap}
-              onTrackToggle={handleTrackToggle}
-              onSelectTicker={setSelectedTicker}
-              accent="amber"
-            />
-          )}
-          {filteredEarlyBreak.length > 0 && (
-            <RadarStockSection
-              title="⚡ اختراق مبكر"
-              subtitle="كسر نطاق ضيق مع زخم — فرصة سريعة"
-              stocks={filteredEarlyBreak}
-              stockMap={stockMap}
-              predMap={predMap}
-              onTrackToggle={handleTrackToggle}
-              onSelectTicker={setSelectedTicker}
-              accent="fuchsia"
-            />
-          )}
-          {/* T-ALPHA-A16: شرط عدم الفراغ — إذا لا توجد إشارات لحظية، اعرض آخر نشطة */}
-          {filteredPreSurge.length === 0 && filteredQuiet.length === 0 && filteredEarlyBreak.length === 0 && (
-            <Card>
-              <CardContent className="p-6 text-center space-y-2">
-                <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto" />
-                <p className="text-sm font-semibold text-muted-foreground">
-                  لا توجد إشارات تجميع لحظية جديدة الآن
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  المحرك يفحص السوق كل 5 دقائق — ستظهر الفرص هنا فور رصدها
-                </p>
-                {data?.last_scan && (
-                  <p className="text-[10px] text-muted-foreground/60">
-                    آخر مسح: {data.last_scan}
-                  </p>
-                )}
-                <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5 mt-2">
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  تحديث
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+      {/* ===== SECTOR HEAT STRIP ===== */}
+      <SectorHeatStrip sectors={sectors} loading={!stockMap} />
+
+      {/* ===== SECTOR LIQUIDITY TREEMAP — خريطة سيولة القطاعات ===== */}
+      <SectorTreemapCard />
+
+      {/* Task 9-B Step 2: NetPicksTab REMOVED from MakerRadarTab — it's the
+          canonical "صافى التوقعات" tab in #recommendations only (duplicate
+          render deleted at line 1213). Owner complaint #1 confirmed + fixed. */}
+
+
+      {/* ===== SIGNAL TRACKER STATS — مصير إشارات الرادار ===== */}
+      <RadarSignalStatsCard />
+
+      {/* ===== FILTER BAR ===== */}
+      <Card className="p-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs text-muted-foreground ml-1">فلترة:</span>
+          {([
+            { key: 'all', label: 'الكل', emoji: null },
+            { key: 'pre_surge', label: 'تحضير لانفجار', emoji: null },
+            { key: 'quiet', label: 'ميكروسكوب', emoji: '🎯' },
+            { key: 'explosive', label: 'منفجرة', emoji: '🔥' },
+            { key: 'early_break', label: 'اختراق', emoji: '⚡' },
+            { key: 'tracked', label: 'متابَعة', emoji: '⭐' },
+          ] as const).map((f) => (
+            <Button
+              key={f.key}
+              size="sm"
+              variant={filter === f.key ? 'default' : 'outline'}
+              className="h-7 text-xs"
+              onClick={() => setFilter(f.key)}
+            >
+              {f.emoji && <span className="ml-1">{f.emoji}</span>}
+              {f.label}
+              {f.key === 'tracked' && data?.tracked_count ? (
+                <Badge variant="secondary" className="mr-1 h-4 text-[10px] px-1">{data.tracked_count}</Badge>
+              ) : null}
+            </Button>
+          ))}
+          {/* ─── Sort by prediction toggle ─── */}
+          <div className="mr-auto flex items-center gap-1.5">
+            {predMap.size > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                {predMap.size} توقع محمّل
+              </span>
+            )}
+            <Button
+              size="sm"
+              variant={sortByPrediction ? 'default' : 'outline'}
+              className={`h-7 text-xs gap-1 ${sortByPrediction ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent' : ''}`}
+              onClick={() => setSortByPrediction((v) => !v)}
+              title="ترتيب الأسهم من الأعلى توقع للصعود للأدنى"
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              {sortByPrediction ? 'مرتّب بالتوقع ✓' : 'ترتيب حسب التوقع'}
+            </Button>
+          </div>
         </div>
-      ) : (
-        /* 🔴 OUTFLOW: explosive = distribution/exit warning */
-        <div className="space-y-4">
-          {filteredExplosive.length > 0 ? (
-            <RadarStockSection
-              title="⚠️ تصريف وخروج"
-              subtitle="خروج سيولة وتصريف عند القمم — تحذير من الشراء"
-              stocks={filteredExplosive}
-              stockMap={stockMap}
-              predMap={predMap}
-              onTrackToggle={handleTrackToggle}
-              onSelectTicker={setSelectedTicker}
-              accent="rose"
-            />
-          ) : (
-            <Card>
-              <CardContent className="p-6 text-center space-y-2">
-                <ShieldCheck className="w-8 h-8 text-emerald-500/40 mx-auto" />
-                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                  لا يوجد تصريف مكثف حالياً — السوق مستقر
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  سيظهر هنا تحذير الخروج فور رصد تصريف مؤسسي
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      </Card>
+
+      {/* ===== MARKET REGIME BANNER ===== */}
+      <MarketRegimeBanner market={market} />
+
+      {/* ===== STOCK SECTIONS ===== */}
+      {/* Owner directive: "الأسهم المنفجرة تظهر بشكل أكبر وأوضح في الأعلى" */}
+
+      {/* Explosive (rose) — FIRST (owner directive: explosive stocks on top) */}
+      {(filter === 'all' || filter === 'explosive' || filter === 'tracked') && filteredExplosive.length > 0 && (
+        <RadarSection
+          key="radar-explosive"
+          title="🔥 الأسهم المنفجرة الآن"
+          subtitle="حجم فجائي + حركة قوية — تنبيه فوري"
+          icon={<Flame className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
+          accent="rose"
+          stocks={filteredExplosive}
+          market={market}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
+          onSelect={handleSelectStock}
+          onTrackToggle={handleTrackToggle}
+        />
       )}
 
+      {/* Pre-Surge (purple) — second */}
+      {(filter === 'all' || filter === 'pre_surge' || filter === 'tracked') && filteredPreSurge.length > 0 && (
+        <RadarSection
+          key="radar-pre-surge"
+          title="Pre-Surge — متوقعة الانفجار"
+          subtitle="أعلى أولوية — السهم بيتجمع قبل الانفجار"
+          icon={<Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+          accent="purple"
+          stocks={filteredPreSurge}
+          market={market}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
+          onSelect={handleSelectStock}
+          onTrackToggle={handleTrackToggle}
+        />
+      )}
+
+      {/* Quiet accumulation (amber) */}
+      {(filter === 'all' || filter === 'quiet' || filter === 'tracked') && filteredQuiet.length > 0 && (
+        <RadarSection
+          key="radar-quiet"
+          title="🎯 تحت الميكروسكوب"
+          subtitle="تجميع هادئ — أسهم بتتراكم قبل ما تنفجر"
+          icon={<Eye className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+          accent="amber"
+          stocks={filteredQuiet}
+          market={market}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
+          onSelect={handleSelectStock}
+          onTrackToggle={handleTrackToggle}
+        />
+      )}
+
+      {/* Early break (emerald) */}
+      {(filter === 'all' || filter === 'early_break' || filter === 'tracked') && filteredEarlyBreak.length > 0 && (
+        <RadarSection
+          key="radar-early-break"
+          title="⚡ اختراق مبكر"
+          subtitle="خروج من نطاق ضيق بحجم — أول إشارة اختراق"
+          icon={<Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+          accent="emerald"
+          stocks={filteredEarlyBreak}
+          market={market}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
+          onSelect={handleSelectStock}
+          onTrackToggle={handleTrackToggle}
+        />
+      )}
+
+      {/* Empty state — FIX-UI-AUDIT (re-applied to NEW path):
+          differentiates between filter='all' (radar still scanning — show
+          «لا توجد فرص حالياً — الرادار بيفحص الأسهم») vs. a specific filter
+          that yields no matches (suggest clearing the filter). */}
+      {totalCardsShown === 0 && (
+        <Card className="p-8 text-center border-dashed border-muted-foreground/30 bg-muted/10">
+          <Radar className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+          {filter === 'all' ? (
+            <>
+              <p className="text-sm font-semibold text-foreground">لا توجد فرص حالياً — الرادار بيفحص الأسهم</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                الرادار بيفحص الأسهم بشكل دوري. جرّب تشغيل الرادار أو حدّث بعد دقيقة.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-foreground">لا توجد أسهم مطابقة للفلتر الحالي</p>
+              <p className="text-xs text-muted-foreground mt-1">جرّب فلتراً آخر أو أعد العرض للكل</p>
+            </>
+          )}
+          {filter !== 'all' && (
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => setFilter('all')}>
+              عرض الكل
+            </Button>
+          )}
+        </Card>
+      )}
+
+      {/* ===== PROOF SECTION (collapsible) ===== */}
+      <ProofSection />
+
+        </TabsContent>
+
+        {/* ─── Exit Radar (رادار الخروج) — distribution/exit signals (inverse of maker radar) ─── */}
+        <TabsContent value="exit-radar" className="mt-4">
+          <ExitRadarTab market={market === 'CRYPTO' ? 'EGX' : market} />
+        </TabsContent>
+
+        {/* ─── Weekly Report (التقرير الأسبوعي للرادار) — Top 5 + Stock of the Week + regime ─── */}
+        <TabsContent value="weekly-report" className="mt-4">
+          <WeeklyReportTab market={market === 'CRYPTO' ? 'EGX' : market} />
+        </TabsContent>
+
+        {/* ─── Multi-Market Radar (الرادار الموحّد) — EGX/TADAWUL/KSE/QSE/CRYPTO in one view ─── */}
+        <TabsContent value="multi-market-radar" className="mt-4">
+          <MultiMarketRadarTab />
+        </TabsContent>
+
+        {/* ─── Radar Accuracy (دقة الرادار) — historical hit-rate by signal type ─── */}
+        <TabsContent value="radar-accuracy" className="mt-4">
+          <AccuracyDashboard market={market} />
+        </TabsContent>
+
+        {/* ─── Personalized Radar (الرادار المخصّص) — picks ranked by user's portfolio profile ─── */}
+        <TabsContent value="personalized-radar" className="mt-4">
+          <PersonalizedRadarTab />
+        </TabsContent>
+      </Tabs>
 
       {/* ===== Stock Detail Drawer (Dialog) — kept OUTSIDE the Tabs so it
           stays mounted and closeable regardless of which sub-tab is active.
@@ -2028,7 +1710,6 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
               }}
               onClose={() => { setSelectedTicker(null); setSelectedStock(null); }}
               onTrackToggle={handleTrackToggle}
-              wyckoffData={wyckoffData}
             />
           )}
         </DialogContent>
@@ -2197,7 +1878,7 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
 
 function KpiCard({ icon, label, value, sub, accent }: KpiCardProps) {
   const colors: Record<KpiCardProps['accent'], { bg: string; text: string; ring: string }> = {
-    blue:   { bg: 'bg-slate-50 dark:bg-slate-900/40',     text: 'text-primary dark:text-slate-400',     ring: 'ring-slate-100 dark:ring-slate-800/40' },
+    blue:   { bg: 'bg-blue-50 dark:bg-blue-950/40',     text: 'text-blue-600 dark:text-blue-400',     ring: 'ring-blue-100 dark:ring-blue-900/40' },
     amber:  { bg: 'bg-amber-50 dark:bg-amber-950/40',  text: 'text-amber-600 dark:text-amber-400',   ring: 'ring-amber-100 dark:ring-amber-900/40' },
     rose:   { bg: 'bg-rose-50 dark:bg-rose-950/40',    text: 'text-rose-600 dark:text-rose-400',     ring: 'ring-rose-100 dark:ring-rose-900/40' },
     emerald:{ bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400', ring: 'ring-emerald-100 dark:ring-emerald-900/40' },
@@ -2506,13 +2187,20 @@ function resolveLevels(
   const dbStop = (typeof supportRaw === 'number' && supportRaw > 0 && supportRaw < current) ? supportRaw : null;
   const dbTarget = (typeof resistanceRaw === 'number' && resistanceRaw > 0 && resistanceRaw > current) ? resistanceRaw : null;
 
-  // 3) P0-FIX (2026-10-12, Rule 27): شيلنا Mathematical Volatility Model fabrication.
-  // قبل كده: DEEP-DIRECTIVE كان بـ يفبرك stop=price×0.975, target=price×1.05.
-  // دلوقتي: لو مفيش DB support/resistance → source='none' + null (Rule 27).
-  // الـ UI بـ يعرض "—" بدل مستويات مصطنعة.
-  const stop = dbStop;
-  const target = dbTarget;
-  const source: 'ai' | 'technical' | 'none' = (dbStop != null || dbTarget != null) ? 'technical' : 'none';
+  // 3) Mathematical Volatility Model — احسب من range_10d_pct أو نسبة ثابتة
+  // Task DEEP-DIRECTIVE: ممنوع إرجاع source='none' — كل سهم لازم يكون له مستويات
+  const rangePctRaw = (stock as unknown as Record<string, unknown>).range_10d_pct;
+  const rangePct = (typeof rangePctRaw === 'number' && rangePctRaw > 0) ? rangePctRaw : 5.0; // default 5%
+  // stop = price × (1 - max(2.5%, rangePct × 0.75 / 100))
+  const stopPct = Math.max(2.5, rangePct * 0.75) / 100;
+  const mathStop = current * (1 - stopPct);
+  // target = entry + 2.0 × (entry - stop)  [R:R = 2.0 minimum]
+  const mathTarget = current + 2.0 * (current - mathStop);
+
+  // اختر الأفضل: DB levels لو متوفرة، وإلا mathematical
+  const stop = dbStop ?? mathStop;
+  const target = dbTarget ?? mathTarget;
+  const source = (dbStop != null || dbTarget != null) ? 'technical' : 'math';
 
   // R:R
   let rr: number | null = null;
@@ -2540,172 +2228,6 @@ const StockTable = memo(function StockTable({
   }, [stocks, predictionForTicker]);
 
   // إعداد الـ columns للجدول الموحّد
-
-  // ─── GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP) — Dynamic Liquidity Tiers ──────
-  // 4-tier classification with SURGE detection. Uses avg_turnover_20d (the
-  // canonical 20-day average daily turnover) + volume_ratio_10d_vs_20d
-  // (the Relative Volume — RVol — comparing today's volume vs the 20d average).
-  // Falls back to current_price × avg_volume_20d when avg_turnover_20d is missing.
-  // Rule 67: SSOT — the backend computes turnover + volume_ratio.
-  //
-  // GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP §4): currency symbol is now dynamic
-  // (EGP for EGX, SAR for TADAWUL, USD for US/CRYPTO, etc.) via
-  // MARKET_CURRENCY_LABEL — no hardcoded "ج.م" in tooltips.
-  //
-  // Tier priority (manager directive P0-ALPHA-TITAN-HEAVY-PUMP):
-  //   🚀 SURGE          : volume_ratio >= 2.5  (sudden liquidity spike — highest priority)
-  //   💎 INSTITUTIONAL  : turnover ≥ 5,000,000 /day  (top 25% by turnover)
-  //   🔷 ACTIVE         : 2,000,000 – 5,000,000 (medium liquidity, tradable)
-  //   ⚠️ LOW / RISK     : < 2,000,000 /day  (low liquidity — slippage warning)
-  const currencyLabel = MARKET_CURRENCY_LABEL[market] || 'ج.م';
-  function getLiquidityTier(
-    turnoverEgp: number | null | undefined,
-    volumeRatio?: number | null | undefined,
-  ): {
-    tier: 'surge' | 'institutional' | 'active' | 'low';
-    emoji: string;
-    label: string;
-    color: string;
-    bg: string;
-    border: string;
-    tooltip: string;
-  } {
-    const t = Number(turnoverEgp ?? 0);
-    const vr = Number(volumeRatio ?? 0);
-
-    // 🚀 SURGE: volume_ratio >= 2.5x — takes priority over everything else.
-    // This is the "sudden liquidity spike" badge — the most actionable signal.
-    if (Number.isFinite(vr) && vr >= 2.5) {
-      return {
-        tier: 'surge',
-        emoji: '🚀',
-        label: 'طفرة سيولة',
-        color: 'text-fuchsia-700 dark:text-fuchsia-300',
-        bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40',
-        border: 'border-fuchsia-200 dark:border-fuchsia-800',
-        tooltip: `طفرة سيولة مفاجئة — حجم التداول ${vr.toFixed(1)}× المتوسط (RVol). تداول ${formatMillion(t)} ${currencyLabel}/يوم`,
-      };
-    }
-
-    if (!Number.isFinite(t) || t <= 0) {
-      return {
-        tier: 'low',
-        emoji: '⚠️',
-        label: 'منخفض',
-        color: 'text-rose-600 dark:text-rose-400',
-        bg: 'bg-rose-50 dark:bg-rose-950/40',
-        border: 'border-rose-200 dark:border-rose-800',
-        tooltip: 'بيانات السيولة غير متاحة — تعامل بحذر',
-      };
-    }
-    if (t >= 5_000_000) {
-      return {
-        tier: 'institutional',
-        emoji: '💎',
-        label: 'مؤسسي',
-        color: 'text-emerald-700 dark:text-emerald-300',
-        bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-        border: 'border-emerald-200 dark:border-emerald-800',
-        tooltip: `مؤسسي عالي السيولة (أعلى 25% تداولاً) — ${formatMillion(t)} ${currencyLabel}/يوم${vr > 1 ? ` · RVol ${vr.toFixed(1)}×` : ''}`,
-      };
-    }
-    if (t >= 2_000_000) {
-      return {
-        tier: 'active',
-        emoji: '🔷',
-        label: 'نشط',
-        color: 'text-primary',
-        bg: 'bg-primary/5',
-        border: 'border-primary/20',
-        tooltip: `نشط متوسط السيولة — ${formatMillion(t)} ${currencyLabel}/يوم${vr > 1 ? ` · RVol ${vr.toFixed(1)}×` : ''}`,
-      };
-    }
-    return {
-      tier: 'low',
-      emoji: '⚠️',
-      label: 'منخفض',
-      color: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-950/40',
-      border: 'border-amber-200 dark:border-amber-800',
-      tooltip: `سيولة خفيفة — ${formatMillion(t)} ${currencyLabel}/يوم. انزلاق سعري ومخاطرة تسييل`,
-    };
-  }
-
-  /** Format a number as millions (e.g. 5,200,000 → "5.2M"). */
-  function formatMillion(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-    return String(n);
-  }
-
-  // ─── GLM5.2-A (AI-CONFIDENCE-UI) — AI Confidence Badge Helper ──────────
-  // Classifies the AI model's confidence score (0-100) into 3 tiers.
-  // Uses prediction.confidence (preferred) → master_score (fallback).
-  // Rule 27: if both are null, shows a neutral gray badge (no fabrication).
-  function getAiConfidenceBadge(
-    confidence: number | null | undefined,
-    masterScore: number | null | undefined,
-  ): {
-    tier: 'high' | 'medium' | 'low' | 'none';
-    emoji: string;
-    label: string;
-    full_label: string;
-    color: string;
-    bg: string;
-    border: string;
-    value: number | null;
-  } {
-    const val = confidence != null ? Number(confidence)
-      : masterScore != null ? Number(masterScore)
-      : null;
-    if (val == null || !Number.isFinite(val)) {
-      return {
-        tier: 'none',
-        emoji: '⚠️',
-        label: 'محايد',
-        full_label: '⚠️ ذكاء اصطناعي: محايد / عالي المخاطر',
-        color: 'text-muted-foreground',
-        bg: 'bg-muted/50',
-        border: 'border-border/50',
-        value: null,
-      };
-    }
-    if (val >= 70) {
-      return {
-        tier: 'high',
-        emoji: '🤖',
-        label: 'ثقة عالية',
-        full_label: `🤖 ذكاء اصطناعي: ثقة عالية (${Math.round(val)}%)`,
-        color: 'text-emerald-700 dark:text-emerald-300',
-        bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-        border: 'border-emerald-200 dark:border-emerald-800',
-        value: val,
-      };
-    }
-    if (val >= 55) {
-      return {
-        tier: 'medium',
-        emoji: '🤖',
-        label: 'ثقة متوسطة',
-        full_label: `🤖 ذكاء اصطناعي: ثقة متوسطة (${Math.round(val)}%)`,
-        color: 'text-blue-600 dark:text-blue-400',
-        bg: 'bg-blue-50 dark:bg-blue-950/40',
-        border: 'border-blue-200 dark:border-blue-800',
-        value: val,
-      };
-    }
-    return {
-      tier: 'low',
-      emoji: '⚠️',
-      label: 'محايد / عالي المخاطر',
-      full_label: `⚠️ ذكاء اصطناعي: محايد / عالي المخاطر (${Math.round(val)}%)`,
-      color: 'text-muted-foreground',
-      bg: 'bg-muted/50',
-      border: 'border-border/50',
-      value: val,
-    };
-  }
-
   const columns: Column<RadarStockRow>[] = useMemo(() => [
     {
       key: '_idx',
@@ -2724,18 +2246,6 @@ const StockTable = memo(function StockTable({
       hideable: true,
       render: (stock) => {
         const sInfo = stockInfoForTicker(stock.ticker);
-        // GLM5.2-A (P0-ALPHA-LIQUIDITY-TIERS-UI): liquidity tier badge.
-        // Uses avg_turnover_20d (falls back to current_price × avg_volume_20d).
-        const turnover =
-          stock.avg_turnover_20d ??
-          (stock.current_price && stock.avg_volume_20d
-            ? stock.current_price * stock.avg_volume_20d
-            : null);
-        const liq = getLiquidityTier(turnover, stock.volume_ratio_10d_vs_20d);
-        // GLM5.2-A (AI-CONFIDENCE-UI): AI confidence badge.
-        // Uses prediction.confidence → master_score fallback (Rule 67 SSOT).
-        const pred = predictionForTicker(stock.ticker);
-        const aiBadge = getAiConfidenceBadge(pred?.confidence, pred?.master_score);
         return (
           <div className="flex items-center gap-2">
             <StockIconMini
@@ -2746,7 +2256,7 @@ const StockTable = memo(function StockTable({
               className="w-6 h-6"
             />
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm leading-tight">{stock.ticker}</span>
                 {/* Task 23-C Deliverable 2 — inline Sharia badge next to each
                     radar pick. EGX-only: badge shows "غير متاح" for other
@@ -2754,23 +2264,6 @@ const StockTable = memo(function StockTable({
                 {market === 'EGX' && (
                   <ShariaBadge ticker={stock.ticker} variant="compact" />
                 )}
-                {/* GLM5.2-A — Liquidity Tier Badge (💎/🔷/⚠️) */}
-                <span
-                  title={liq.tooltip}
-                  className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold border ${liq.bg} ${liq.color} ${liq.border}`}
-                >
-                  <span>{liq.emoji}</span>
-                </span>
-                {/* GLM5.2-A (AI-CONFIDENCE-UI) — AI Confidence Badge (🤖/⚠️) */}
-                <span
-                  title={aiBadge.full_label}
-                  className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-semibold border ${aiBadge.bg} ${aiBadge.color} ${aiBadge.border} ${aiBadge.tier === 'high' ? 'shadow-sm shadow-emerald-500/20' : ''}`}
-                >
-                  <span>{aiBadge.emoji}</span>
-                  {aiBadge.value != null && (
-                    <span className="font-mono">{Math.round(aiBadge.value)}%</span>
-                  )}
-                </span>
               </div>
               {sInfo?.name_ar && (
                 <span className="text-[10px] text-muted-foreground truncate max-w-[110px]">{sInfo.name_ar}</span>
@@ -3324,21 +2817,9 @@ const StockTable = memo(function StockTable({
         // اعرض canonical signal من prediction (لو متوفر) بدل fabrication.
         if (pred?.signal_ar) {
           return (
-            <div className="flex flex-col items-center gap-0.5">
-              <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300">
-                {pred.signal_ar}
-              </Badge>
-              {/* T-ALPHA-A1: Time Horizon Glowing Badge */}
-              {pred?.persona && (
-                <TimeHorizonBadge persona={pred.persona} size="sm" />
-              )}
-              {/* T-ALPHA-A1: Bold R:R display */}
-              {pred?.risk_reward != null && Number(pred.risk_reward) > 0 && (
-                <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
-                  R:R 1:{Number(pred.risk_reward).toFixed(1)}
-                </span>
-              )}
-            </div>
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300">
+              {pred.signal_ar}
+            </Badge>
           );
         }
         // لا توقع → لا قرار client-side. اعرض توجيه للـ canonical API.
@@ -3418,15 +2899,10 @@ interface StockDetailDrawerProps {
   sectorChangeForTicker: (ticker: string) => number | null;
   onClose: () => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
-  /** GLM5.2-A — Wyckoff screener map (ticker → phase/confidence). Optional:
-   *  when present and the drawer's ticker is in the map, the Wyckoff
-   *  Phase Tracker renders below IntradayCvdFlow. */
-  wyckoffData?: Record<string, WyckoffStockEntry> | null;
 }
 
 function StockDetailDrawer({
   ticker, radarStock, sectorForTicker, sectorChangeForTicker, onClose, onTrackToggle,
-  wyckoffData,
 }: StockDetailDrawerProps) {
   const t = useTranslation();
   const [detail, setDetail] = useState<StockDetail | null>(null);
@@ -3457,39 +2933,11 @@ function StockDetailDrawer({
 
   useEffect(() => { fetchDetail(); }, [fetchDetail]);
 
-  // stockInfo must be resolved BEFORE handleCopyProfessionalAnalysis so the
-  // useCallback deps array can reference it without TDZ errors.
-  const stockInfo = detail?.stock_info;
-
   const handleTrack = async () => {
     if (!detail?.stats?.lastClose) return;
     await onTrackToggle(ticker, detail.stats.lastClose, !!detail?.tracking?.isTracked);
     fetchDetail();
   };
-
-  // ─── GLM5.3-S2-COPY-ANALYSIS — "Copy Professional Analysis" button ────────
-  // Builds the canonical share-ready Arabic text via formatProfessionalAnalysis()
-  // then writes to clipboard (with execCommand fallback for HTTP dev / legacy
-  // browsers). Shows a sonner toast on success or failure.
-  const [copyingAnalysis, setCopyingAnalysis] = useState(false);
-  const handleCopyProfessionalAnalysis = useCallback(async () => {
-    if (!detail) return;
-    setCopyingAnalysis(true);
-    try {
-      const text = formatProfessionalAnalysis(ticker, stockInfo, detail, radarStock);
-      const ok = await copyToClipboardWithFallback(text);
-      if (ok) {
-        toast.success('تم نسخ التحليل بنجاح!');
-      } else {
-        toast.error('تعذّر نسخ التحليل — حاول مرة أخرى');
-      }
-    } catch (err) {
-      console.error('[StockDetailDrawer] copy professional analysis failed:', err);
-      toast.error('حدث خطأ غير متوقع أثناء النسخ');
-    } finally {
-      setCopyingAnalysis(false);
-    }
-  }, [detail, ticker, stockInfo, radarStock]);
 
   // sparkline geometry
   const sparkline = useMemo(() => {
@@ -3515,7 +2963,7 @@ function StockDetailDrawer({
 
   const sector = sectorForTicker(ticker);
   const sectorChange = sectorChangeForTicker(ticker);
-  // (stockInfo is declared earlier — before handleCopyProfessionalAnalysis)
+  const stockInfo = detail?.stock_info;
 
   return (
     <>
@@ -3558,25 +3006,6 @@ function StockDetailDrawer({
           })()}
         </div>
         <div className="flex items-center gap-1">
-          {/* GLM5.3-S2-COPY-ANALYSIS — Copy Professional Analysis (prominent) */}
-          {detail && (
-            <Button
-              size="sm"
-              variant="default"
-              onClick={handleCopyProfessionalAnalysis}
-              disabled={copyingAnalysis || loading}
-              className="h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm font-semibold"
-              title="نسخ تقرير الرادار الاحترافي إلى الحافظة"
-            >
-              {copyingAnalysis ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden sm:inline">نسخ التحليل الاحترافي</span>
-              <span className="sm:hidden">نسخ</span>
-            </Button>
-          )}
           {detail && (
             <UnifiedPublishButton
               content={buildStockDetailShareText(
@@ -3758,7 +3187,7 @@ function StockDetailDrawer({
               <Card className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-primary dark:text-slate-400" />
+                    <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <div>
                       <div className="text-xs font-semibold">قطاع: {sector}</div>
                       <div className="text-[10px] text-muted-foreground">أداء القطاع اليوم</div>
@@ -3779,20 +3208,8 @@ function StockDetailDrawer({
                   <span className="text-xs font-semibold">البيانات الأساسية</span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  {/* GLM5.2-A (UI-FINANCIAL-POLISH): P/E shows "غير منطبق (خسائر مرحلية)"
-                      when null/negative instead of '—' — makes it clear this is a
-                      financial N/A (phase losses), not a data bug. P/B is highlighted
-                      as the alternative valuation metric. */}
-                  <FundamentalField
-                    label="P/E"
-                    value={stockInfo.pe_ratio != null && stockInfo.pe_ratio > 0 ? stockInfo.pe_ratio.toFixed(2) : null}
-                    naLabel="غير منطبق (خسائر مرحلية)"
-                  />
-                  <FundamentalField
-                    label="P/B"
-                    value={stockInfo.pb_ratio != null ? stockInfo.pb_ratio.toFixed(2) : null}
-                    highlight
-                  />
+                  <FundamentalField label="P/E" value={stockInfo.pe_ratio != null ? stockInfo.pe_ratio.toFixed(2) : null} />
+                  <FundamentalField label="P/B" value={stockInfo.pb_ratio != null ? stockInfo.pb_ratio.toFixed(2) : null} />
                   <FundamentalField label="P/S" value={stockInfo.ps_ratio != null ? stockInfo.ps_ratio.toFixed(2) : null} />
                   <FundamentalField label="ROE" value={stockInfo.roe != null ? `${stockInfo.roe.toFixed(1)}%` : null} />
                   <FundamentalField label="ROA" value={stockInfo.roa != null ? `${stockInfo.roa.toFixed(1)}%` : null} />
@@ -3862,30 +3279,6 @@ function StockDetailDrawer({
                 Card — path description, entry zone, target_1/target_2/stop_loss
                 grid, position-size badge, and the SignalStrengthMeter. */}
             <TradingPlanSection detail={detail} radarStock={radarStock} />
-
-            {/* === GLM5.2-A — Maker Radar Snapshot (SSOT parity with the table) ===
-                Horizontal strip of 5 institutional cards: دورة الصانع، نشاط
-                المشترين، حجم نسبي، سيولة %، صافي السيولة. Every value comes
-                from `radarStock` — the SAME object the radar table reads from
-                (Rule 73 SINGLE-DISPLAY-SOURCE). */}
-            <MakerRadarSnapshot radarStock={radarStock} />
-
-            {/* === GLM5.2-A — Intraday CVD Flow (live liquidity visualization) ===
-                Calls /api/stocks/[ticker]/intraday-flow. If data available:
-                SVG sparkline (price + CVD + POC line). If no data (market
-                closed / DB empty): graceful fallback card. Rule 27 respected. */}
-            <IntradayCvdFlow ticker={ticker} />
-
-            {/* === GLM5.2-A — Wyckoff Phase Tracker ===
-                Renders only when the screener has detected a Wyckoff phase for
-                this ticker (via wyckoffData). Shows the 5-phase horizontal
-                curve with the active phase highlighted. Rule 27: when no entry
-                exists, the tracker is omitted (no fabricated phase). */}
-            {(() => {
-              const wd = wyckoffData?.[ticker.toUpperCase()] ?? wyckoffData?.[ticker];
-              if (!wd) return null;
-              return <WyckoffPhaseTracker phase={wd.phase} confidence={wd.confidence} />;
-            })()}
 
             {/* === Entry Timing Signal — توقيت الدخول الذكي (0-100) === */}
             <EntryTimingCard ticker={ticker} />
@@ -4092,7 +3485,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
       <div className="bg-background/60 rounded-md p-2 border border-border/40 mb-2">
         <div className="flex items-baseline justify-between flex-wrap gap-1">
           <span className="text-[11px] text-muted-foreground">💰 الدخول</span>
-          <span className="font-mono text-sm font-bold text-primary dark:text-slate-400" dir="ltr">
+          <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400" dir="ltr">
             {fmtNum(entryZoneLow)} → {fmtNum(entryZoneHigh)}
           </span>
         </div>
@@ -4176,7 +3569,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
 
       {/* ─── Dynamic analysis text — changes based on MA10 / volume / range ─── */}
       <div className="pt-2 border-t border-border/50">
-        <div className="text-[11px] font-semibold text-primary dark:text-slate-300 mb-1">💡 التحليل:</div>
+        <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 mb-1">💡 التحليل:</div>
         <div className="space-y-0.5 text-[11px] text-muted-foreground leading-relaxed">
           {analysis_lines.map((line, i) => (
             <p key={i}>{line}</p>
@@ -4189,566 +3582,6 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
 }
 
 // ============================================================================
-// GLM5.2-A — Maker Radar Snapshot (SSOT Parity with the radar table)
-// ============================================================================
-// Renders a horizontal strip of institutional cards at the top of the Drawer
-// body. Every number comes from `radarStock` (the SAME object the radar table
-// reads from), guaranteeing Single-Source-of-Truth parity (Rule 73):
-//   • دورة الصانع       → life_cycle (matches table "دورة الصعود" column)
-//   • نشاط المشترين     → maker_activity (matches table copy-button tooltip)
-//   • حجم نسبي          → volume_ratio_10d_vs_20d (matches table column)
-//   • سيولة %           → buy_pct (matches table "تجميع/تصريف" column)
-//   • صافي السيولة Net  → net_flow_egp (matches table column)
-// ----------------------------------------------------------------------------
-function MakerRadarSnapshot({ radarStock }: { radarStock?: RadarStock | null }) {
-  if (!radarStock) return null;
-
-  // ─── 1) دورة الصانع (Maker Cycle) — matches table L2719-2725 ─────────
-  let cycle = radarStock.life_cycle && radarStock.life_cycle !== 'عادي'
-    ? radarStock.life_cycle
-    : null;
-  if (!cycle) {
-    if (radarStock.path === 'A_pre_surge') cycle = 'بداية انطلاق';
-    else if (radarStock.path === 'D_explosive_surge') cycle = '🔥 انفجار نشط';
-    else if (radarStock.path === 'E_early_break') cycle = '⚡ اختراق مبكر';
-    else cycle = '🎯 تجميع قاع';
-  }
-  if (radarStock.kill_switch) cycle = '⚠️ تدوير وهمي';
-
-  // ─── 2) نشاط المشترين (Maker Activity) — matches table tooltip ──────
-  const activity = radarStock.maker_activity || '—';
-
-  // ─── 3) حجم نسبي (Relative Volume) — matches table L2538 ────────────
-  const volRatio = radarStock.volume_ratio_10d_vs_20d;
-  const volRatioDisplay = volRatio != null ? `${volRatio.toFixed(1)}×` : '—';
-  const volRatioColor =
-    volRatio == null ? 'text-muted-foreground'
-    : volRatio >= 2.0 ? 'text-emerald-600 dark:text-emerald-400'
-    : volRatio >= 1.3 ? 'text-primary'
-    : 'text-amber-600 dark:text-amber-400';
-
-  // ─── 4) سيولة % (Liquidity %) — matches table L2672 ─────────────────
-  const liqPct = radarStock.buy_pct ?? 50;
-  const liqColor =
-    liqPct >= 70 ? 'text-emerald-600 dark:text-emerald-400'
-    : liqPct >= 50 ? 'text-primary'
-    : 'text-rose-600 dark:text-rose-400';
-
-  // ─── 5) صافي السيولة Net Flow EGP — matches table L2616-2617 ────────
-  const flowVal = (radarStock.net_flow_egp && radarStock.net_flow_egp !== 0)
-    ? radarStock.net_flow_egp
-    : null;
-  const flowDisplay = flowVal != null
-    ? `${flowVal >= 0 ? '+' : ''}${(flowVal / 1_000_000).toFixed(2)}M`
-    : '—';
-  const flowColor = flowVal == null
-    ? 'text-muted-foreground'
-    : flowVal >= 0 ? 'text-emerald-600 dark:text-emerald-400'
-    : 'text-rose-600 dark:text-rose-400';
-
-  // ─── progress bar for liquidity % ────────────────────────────────────
-  const liqBarPct = Math.max(0, Math.min(100, liqPct));
-  const liqBarColor =
-    liqPct >= 70 ? 'bg-emerald-500'
-    : liqPct >= 50 ? 'bg-primary'
-    : 'bg-rose-500';
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-2" role="group" aria-label="Maker Radar Snapshot">
-      {/* 1) دورة الصانع */}
-      <Card className="p-2.5 bg-card/60">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Radio className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[10px] text-muted-foreground">دورة الصانع</span>
-        </div>
-        <div className="text-xs font-bold text-foreground truncate" title={cycle}>
-          {cycle}
-        </div>
-      </Card>
-
-      {/* 2) نشاط المشترين */}
-      <Card className="p-2.5 bg-card/60">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Activity className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[10px] text-muted-foreground">نشاط المشترين</span>
-        </div>
-        <div className="text-xs font-bold text-foreground truncate" title={activity}>
-          {activity}
-        </div>
-      </Card>
-
-      {/* 3) حجم نسبي */}
-      <Card className="p-2.5 bg-card/60">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Gauge className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[10px] text-muted-foreground">حجم نسبي</span>
-        </div>
-        <div className={`text-sm font-bold font-mono ${volRatioColor}`}>
-          {volRatioDisplay}
-        </div>
-      </Card>
-
-      {/* 4) سيولة % */}
-      <Card className="p-2.5 bg-card/60">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Waves className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[10px] text-muted-foreground">سيولة %</span>
-        </div>
-        <div className={`text-sm font-bold font-mono ${liqColor}`}>
-          {liqPct.toFixed(1)}%
-        </div>
-        <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
-          <div
-            className={`h-full ${liqBarColor} transition-all`}
-            style={{ width: `${liqBarPct}%` }}
-          />
-        </div>
-      </Card>
-
-      {/* 5) صافي السيولة Net Flow */}
-      <Card className="p-2.5 bg-card/60">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Banknote className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[10px] text-muted-foreground">صافي السيولة</span>
-        </div>
-        <div className={`text-sm font-bold font-mono ${flowColor}`}>
-          {flowDisplay}
-        </div>
-        <div className="text-[9px] text-muted-foreground">EGP</div>
-      </Card>
-    </div>
-  );
-}
-
-// ============================================================================
-// GLM5.2-A — Intraday CVD Flow (calls /api/stocks/[ticker]/intraday-flow)
-// ============================================================================
-// Visualizes intraday liquidity:
-//   • If data available: SVG sparkline of price + CVD + POC horizontal line.
-//   • If no data (market closed / DB empty): graceful fallback card.
-// Rule 27 (NO-FAKE-DATA): every point comes from the API. No fabrication.
-// ----------------------------------------------------------------------------
-interface IntradayFlowData {
-  ticker: string;
-  session_date: string;
-  is_historical_session: boolean;
-  bar_count: number;
-  session_start: string | null;
-  session_end: string | null;
-  last_price: number | null;
-  cvd_series: Array<{ timestamp: string; cvd: number }>;
-  cvd_final: number;
-  cvd_signal: 'accumulation' | 'distribution' | 'neutral';
-  volume_profile: Array<{
-    price: number;
-    price_high: number;
-    volume: number;
-    buy_volume: number;
-    sell_volume: number;
-    bar_count: number;
-    is_poc: boolean;
-  }>;
-  poc_price: number | null;
-  blocks: {
-    count: number;
-    total_volume: number;
-    total_notional: number;
-    buy_volume: number;
-    sell_volume: number;
-  };
-  retail: {
-    count: number;
-    total_volume: number;
-    total_notional: number;
-    buy_volume: number;
-    sell_volume: number;
-  };
-  source: 'stock_intraday' | 'intraday_prices';
-  computed_at: string;
-}
-
-// ============================================================================
-// GLM5.2-A — Wyckoff Phase Tracker (drawer widget)
-// ============================================================================
-// Renders a horizontal 5-phase curve (A_SC → B_CAUSE → C_SPRING → D_SOS → EXIT)
-// with the active phase highlighted. Confidence is shown as a Badge.
-// Design tokens only (bg-primary / bg-card / bg-muted) — no hex colors.
-// Responsive: the 5 phase nodes flex equally and shrink gracefully on mobile.
-// ============================================================================
-const WYCKOFF_PHASES: ReadonlyArray<{ key: string; label: string; label_ar: string; emoji: string }> = [
-  { key: 'A_SC', label: 'A', label_ar: 'ذروة بيع', emoji: '📉' },
-  { key: 'B_CAUSE', label: 'B', label_ar: 'بناء القاع', emoji: '🏗️' },
-  { key: 'C_SPRING', label: 'C', label_ar: 'هز الشجرة', emoji: '🎯' },
-  { key: 'D_SOS', label: 'D', label_ar: 'علامة القوة', emoji: '⚡' },
-  { key: 'EXIT', label: 'E', label_ar: 'خروج', emoji: '🚀' },
-];
-
-function WyckoffPhaseTracker({ phase, confidence }: { phase: string; confidence: number }) {
-  const activeIdx = WYCKOFF_PHASES.findIndex(p => p.key === phase);
-  const safeIdx = activeIdx < 0 ? -1 : activeIdx;
-  const progressPct = safeIdx >= 0 ? ((safeIdx + 1) / WYCKOFF_PHASES.length) * 100 : 0;
-
-  return (
-    <Card className="p-3">
-      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-        <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-          <Activity className="h-3.5 w-3.5 text-primary" />
-          مخطط وايكوف — مراحل التجميع
-        </span>
-        <Badge variant="outline" className="text-[10px] tabular-nums">
-          ثقة: {Math.round(confidence)}%
-        </Badge>
-      </div>
-      {/* Phase curve */}
-      <div className="relative flex items-end justify-between h-16 px-1 gap-1">
-        {WYCKOFF_PHASES.map((p, i) => {
-          const isActive = i === safeIdx;
-          const isPast = safeIdx >= 0 && i < safeIdx;
-          return (
-            <div key={p.key} className="flex flex-col items-center gap-1 flex-1 min-w-0">
-              <div
-                className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                  isActive && 'bg-primary text-primary-foreground scale-125 shadow-lg',
-                  !isActive && isPast && 'bg-primary/20 text-primary',
-                  !isActive && !isPast && 'bg-muted text-muted-foreground'
-                )}
-                aria-label={`Phase ${p.label}: ${p.label_ar}`}
-              >
-                {p.emoji}
-              </div>
-              <span
-                className={cn(
-                  'text-[9px] leading-tight text-center',
-                  isActive ? 'font-bold text-foreground' : 'text-muted-foreground'
-                )}
-              >
-                {p.label_ar}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      {/* Connecting progress bar */}
-      <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-        <div
-          className="h-full bg-primary transition-all"
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
-    </Card>
-  );
-}
-
-function IntradayCvdFlow({ ticker }: { ticker: string }) {
-  const [data, setData] = useState<IntradayFlowData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [noData, setNoData] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchData = async () => {
-      setLoading(true);
-      setNoData(false);
-      try {
-        const res = await fetch(
-          `/api/stocks/${encodeURIComponent(ticker)}/intraday-flow`,
-          { cache: 'no-store' },
-        );
-        const json = await res.json();
-        if (cancelled) return;
-        if (res.status === 404 || json.success === false) {
-          // Rule 27: no data → graceful fallback (not fabrication).
-          setNoData(true);
-          setData(null);
-          return;
-        }
-        setData(json.data ?? null);
-      } catch {
-        if (cancelled) return;
-        setNoData(true);
-        setData(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchData();
-    return () => { cancelled = true; };
-  }, [ticker]);
-
-  // ─── Loading skeleton ─────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <Card className="p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <LineChartIcon className="h-4 w-4 text-primary" />
-          <span className="text-xs font-semibold text-foreground">
-            الرادار اللحظي — تدفق السيولة (CVD)
-          </span>
-        </div>
-        <Skeleton className="h-32 w-full" />
-      </Card>
-    );
-  }
-
-  // ─── Fallback: no intraday data (market closed / DB empty) ────────────
-  if (noData || !data) {
-    return (
-      <Card className="p-4 bg-muted/20 border-dashed">
-        <div className="flex items-start gap-3">
-          <div className="rounded-full bg-primary/10 p-2">
-            <Radio className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-foreground mb-1">
-              📡 الرادار اللحظي: بانتظار افتتاح الجلسة القادمة
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              بانتظار افتتاح الجلسة القادمة لتسجيل تدفق السيولة وتحديد نقطة تحكم الصانع (POC).
-            </p>
-            <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-              <Clock className="h-3 w-3" />
-              متوسط السيولة اليومية متاح عبر بيانات الجلسة السابقة
-            </div>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  // ─── Build SVG sparkline: price + CVD ─────────────────────────────────
-  // We map cvd_series timestamps → x, and use last_price per bar (reconstruct
-  // from volume_profile is not ideal — but cvd_series alone gives CVD shape).
-  // For price line we use the volume_profile buckets' prices sorted by time.
-  const W = 320, H = 120, PAD = 8;
-  const cvdSeries = data.cvd_series;
-  const cvdValues = cvdSeries.map((p) => p.cvd);
-  const cvdMin = cvdValues.length ? Math.min(...cvdValues) : 0;
-  const cvdMax = cvdValues.length ? Math.max(...cvdValues) : 0;
-  const cvdRange = cvdMax - cvdMin || 1;
-
-  const volBuckets = data.volume_profile;
-  const prices = volBuckets.map((b) => b.price);
-  const priceMin = prices.length ? Math.min(...prices) : 0;
-  const priceMax = prices.length ? Math.max(...prices) : 0;
-  const priceRange = priceMax - priceMin || 1;
-
-  // CVD polyline points (scaled to bottom half of SVG)
-  const cvdPoints = cvdSeries.map((p, i) => {
-    const x = PAD + (i / Math.max(cvdSeries.length - 1, 1)) * (W - 2 * PAD);
-    const y = H - PAD - ((p.cvd - cvdMin) / cvdRange) * ((H / 2) - PAD);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-
-  // Price line from volume_profile (sorted by price → x by index)
-  const pricePoints = volBuckets.map((b, i) => {
-    const x = PAD + (i / Math.max(volBuckets.length - 1, 1)) * (W - 2 * PAD);
-    const y = PAD + ((priceMax - b.price) / priceRange) * ((H / 2) - PAD);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-
-  // POC horizontal line
-  const pocY = data.poc_price != null && priceRange > 0
-    ? PAD + ((priceMax - data.poc_price) / priceRange) * ((H / 2) - PAD)
-    : null;
-
-  const signalLabel =
-    data.cvd_signal === 'accumulation' ? '🟢 تجميع'
-    : data.cvd_signal === 'distribution' ? '🔴 تصريف'
-    : '⚪ محايد';
-  const signalColor =
-    data.cvd_signal === 'accumulation' ? 'text-emerald-600 dark:text-emerald-400'
-    : data.cvd_signal === 'distribution' ? 'text-rose-600 dark:text-rose-400'
-    : 'text-muted-foreground';
-
-  // ─── GLM5.2-A — Institutional Divergence Badge (P0-ALPHA-ALERTS-MFI) ───────
-  // Detects hidden accumulation / distribution by comparing PRICE direction
-  // vs CVD direction over the session:
-  //   • Price DOWN + CVD UP   → bullish divergence (maker stealth accumulation)
-  //   • Price UP   + CVD DOWN → bearish divergence (maker stealth distribution)
-  //   • Otherwise              → no divergence
-  // Price direction is inferred from volume_profile buckets (first vs last close).
-  // CVD direction is inferred from cvd_series (first vs last value).
-  const priceTrendDown =
-    volBuckets.length >= 2
-      ? volBuckets[volBuckets.length - 1].price < volBuckets[0].price
-      : false;
-  const priceTrendUp =
-    volBuckets.length >= 2
-      ? volBuckets[volBuckets.length - 1].price > volBuckets[0].price
-      : false;
-  const cvdTrendUp =
-    cvdSeries.length >= 2
-      ? cvdSeries[cvdSeries.length - 1].cvd > cvdSeries[0].cvd
-      : false;
-  const cvdTrendDown =
-    cvdSeries.length >= 2
-      ? cvdSeries[cvdSeries.length - 1].cvd < cvdSeries[0].cvd
-      : false;
-
-  const bullishDivergence = priceTrendDown && cvdTrendUp;   // تجميع خفي
-  const bearishDivergence = priceTrendUp && cvdTrendDown;   // تصريف خفي
-
-  return (
-    <Card className="p-3">
-      {/* GLM5.2-A (P0-ALPHA-TITAN-HEAVY-PUMP) — Rule 27 Transparency Badge.
-          Honest disclosure that the intraday data is estimated/synthetic for
-          EGX30 sessions (seeder pipeline) — institutional integrity in front
-          of the client. Always shown, not just when data is synthetic. */}
-      <div className="mb-2 px-2.5 py-1 rounded-md bg-primary/5 border border-primary/20 flex items-center gap-1.5">
-        <Info className="h-3 w-3 text-primary shrink-0" />
-        <span className="text-[10px] text-primary/90 font-medium leading-tight">
-          📊 تدفق لحظي تقديري (جلسات مؤشر EGX30)
-        </span>
-      </div>
-
-      {/* header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <LineChartIcon className="h-4 w-4 text-primary" />
-          <span className="text-xs font-semibold text-foreground">
-            الرادار اللحظي — تدفق السيولة (CVD)
-          </span>
-        </div>
-        <Badge variant="outline" className="text-[10px]">
-          {data.is_historical_session ? `جلسة ${data.session_date}` : 'جلسة اليوم'}
-        </Badge>
-      </div>
-
-      {/* GLM5.2-A — Institutional Divergence Badge */}
-      {bullishDivergence && (
-        <div
-          role="alert"
-          className="mb-2 px-3 py-2 rounded-lg border border-emerald-300/50 bg-emerald-50/80 dark:bg-emerald-950/40 dark:border-emerald-700/50 flex items-center gap-2 animate-pulse"
-        >
-          <Flame className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 leading-snug">
-            🔥 دايفرجنس شرائي: تجميع خفي لصانع السوق وامتصاص للعروض
-          </span>
-        </div>
-      )}
-      {bearishDivergence && (
-        <div
-          role="alert"
-          className="mb-2 px-3 py-2 rounded-lg border border-amber-300/50 bg-amber-50/80 dark:bg-amber-950/40 dark:border-amber-700/50 flex items-center gap-2 animate-pulse"
-        >
-          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 leading-snug">
-            ⚠️ دايفرجنس بيعي: تصريف خفي وقوة شرائية منهكة
-          </span>
-        </div>
-      )}
-
-      {/* SVG chart */}
-      <div className="relative">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="w-full h-32"
-          preserveAspectRatio="none"
-          role="img"
-          aria-label={`مخطط CVD لـ ${ticker}`}
-        >
-          <defs>
-            <linearGradient id="cvdGrad" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {/* mid divider */}
-          <line
-            x1={PAD} y1={H / 2} x2={W - PAD} y2={H / 2}
-            stroke="hsl(var(--border))" strokeWidth="0.5" strokeDasharray="2,2"
-          />
-
-          {/* POC horizontal line (top half) */}
-          {pocY != null && (
-            <g>
-              <line
-                x1={PAD} y1={pocY} x2={W - PAD} y2={pocY}
-                stroke="hsl(var(--warning))" strokeWidth="1" strokeDasharray="4,2"
-              />
-              <text x={W - PAD - 4} y={pocY - 3} textAnchor="end" fontSize="8" fill="hsl(var(--warning))">
-                POC
-              </text>
-            </g>
-          )}
-
-          {/* Price line (top half) */}
-          {pricePoints && (
-            <polyline
-              points={pricePoints}
-              fill="none"
-              stroke="hsl(var(--chart-2))"
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
-          )}
-
-          {/* CVD area (bottom half) */}
-          {cvdPoints && (
-            <>
-              <polyline
-                points={`${PAD},${H - PAD} ${cvdPoints} ${W - PAD},${H - PAD}`}
-                fill="url(#cvdGrad)"
-                stroke="none"
-              />
-              <polyline
-                points={cvdPoints}
-                fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-            </>
-          )}
-        </svg>
-      </div>
-
-      {/* stats row */}
-      <div className="grid grid-cols-4 gap-2 mt-2 text-center">
-        <div>
-          <div className="text-[9px] text-muted-foreground">CVD نهائي</div>
-          <div className={`text-xs font-bold font-mono ${signalColor}`}>
-            {data.cvd_final >= 0 ? '+' : ''}{data.cvd_final.toLocaleString('ar-EG')}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] text-muted-foreground">الإشارة</div>
-          <div className={`text-xs font-bold ${signalColor}`}>{signalLabel}</div>
-        </div>
-        <div>
-          <div className="text-[9px] text-muted-foreground">POC</div>
-          <div className="text-xs font-bold font-mono text-warning">
-            {data.poc_price != null ? data.poc_price.toFixed(2) : '—'}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] text-muted-foreground">حيتان</div>
-          <div className="text-xs font-bold font-mono text-foreground">
-            {data.blocks.count}
-          </div>
-        </div>
-      </div>
-
-      {/* blocks vs retail summary */}
-      <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-[10px]">
-        <span className="text-muted-foreground">
-          🐋 حيتان: <span className="font-mono font-semibold text-foreground">
-            {(data.blocks.total_notional / 1_000_000).toFixed(2)}M
-          </span> EGP
-          <span className="text-emerald-600 dark:text-emerald-400"> (شراء {data.blocks.buy_volume.toLocaleString('ar-EG')})</span>
-          <span className="text-rose-600 dark:text-rose-400"> (بيع {data.blocks.sell_volume.toLocaleString('ar-EG')})</span>
-        </span>
-        <span className="text-muted-foreground">
-          👥 صغار: <span className="font-mono font-semibold text-foreground">
-            {(data.retail.total_notional / 1_000).toFixed(0)}K
-          </span> EGP
-        </span>
-      </div>
-    </Card>
-  );
-}
 // Stat Card (inside drawer)
 // ============================================================================
 interface StatCardProps {
@@ -4772,36 +3605,11 @@ function StatCard({ label, value, sub, valueClass, icon }: StatCardProps) {
   );
 }
 
-function FundamentalField({
-  label,
-  value,
-  naLabel = '—',
-  highlight = false,
-}: {
-  label: string;
-  value: string | null;
-  /** Custom label to display when value is null/empty (replaces the default '—').
-   *  GLM5.2-A (UI-FINANCIAL-POLISH): used for P/E when companies have phase losses
-   *  (negative or null EPS) — shows "غير منطبق (خسائر مرحلية)" instead of '—'
-   *  to make it clear this is a financial N/A, not a data bug. */
-  naLabel?: string;
-  /** Highlight the field as an alternative valuation metric (P/B, market_cap)
-   *  when P/E is N/A. Renders with a subtle primary accent. */
-  highlight?: boolean;
-}) {
+function FundamentalField({ label, value }: { label: string; value: string | null }) {
   return (
-    <div className={`bg-background/50 rounded-md px-2 py-1.5 border ${highlight ? 'border-primary/40 bg-primary/5' : 'border-border/30'}`}>
-      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-        {highlight && <span className="text-primary text-[8px]">★</span>}
-        {label}
-      </div>
-      <div
-        className={`font-mono font-semibold ${
-          value == null ? 'text-muted-foreground italic text-xs font-normal' : (highlight ? 'text-primary' : '')
-        }`}
-      >
-        {value ?? naLabel}
-      </div>
+    <div className="bg-background/50 rounded-md px-2 py-1.5 border border-border/30">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="font-mono font-semibold">{value ?? '—'}</div>
     </div>
   );
 }
@@ -4809,80 +3617,13 @@ function FundamentalField({
 // ============================================================================
 // Proof Section (collapsible)
 // ============================================================================
-function ProofSection({ onSelectTicker }: { onSelectTicker?: (ticker: string) => void }) {
+function ProofSection() {
   const [open, setOpen] = useState(false);
-  // GLM5.2-A (UI-FINANCIAL-POLISH): live institutional backtest metrics.
-  // Replaces the old placeholder with real numbers from
-  // GET /api/maker-radar/institutional-backtest (team Bravo's API).
-  // Rule 27: every number comes from the API — no fabrication.
-  const [backtestData, setBacktestData] = useState<{
-    portfolio_metrics?: {
-      total_signals?: number;
-      verified_signals?: number;
-      verified_win?: number;
-      verified_loss?: number;
-      overall_win_rate_pct?: number;
-      max_drawdown_pct?: number;
-      avg_return_per_trade_pct?: number;
-      profit_factor?: number;
-      total_return_pct?: number;
-      final_equity_egp?: number;
-      n_trades_used?: number;
-    };
-    data_source?: {
-      total_candles?: number;
-      total_tickers?: number;
-      date_range?: { start?: string; end?: string };
-    };
-    by_signal_type?: Array<{
-      signal_type: string;
-      count: number;
-      win_rate_pct: number;
-    }>;
-    top_performers?: Array<{
-      ticker: string;
-      signals?: number;
-      win_rate_pct?: number;
-      avg_return_pct?: number;
-    }>;
-    disclaimer?: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open || backtestData) return;
-    let cancelled = false;
-    const fetchBacktest = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch('/api/maker-radar/institutional-backtest', {
-          cache: 'no-store',
-        });
-        const json = await res.json();
-        if (cancelled) return;
-        if (json.success) {
-          setBacktestData(json.data ?? null);
-        } else {
-          setError(json.error || 'فشل تحميل بيانات الباك-تست');
-        }
-      } catch {
-        if (cancelled) return;
-        setError('فشل الاتصال بـ API الباك-تست');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchBacktest();
-    return () => { cancelled = true; };
-  }, [open, backtestData]);
-
-  const pm = backtestData?.portfolio_metrics;
-  const ds = backtestData?.data_source;
-  const signals = backtestData?.by_signal_type ?? [];
-  const topPerformers = backtestData?.top_performers ?? [];
-  const disclaimer = backtestData?.disclaimer;
+  // P0-3 FIX (RADAR-AUDIT-UI): PROOF_METRICS كانت قيم ثابتة (precision=24.20%،
+  // recall=21.08%، avg_rr=0.014) تُعرَض كأنها live. هذا fabrication مخالف لـ
+  // Rule 27 (NO-FAKE-DATA). القيم الحقيقية متاحة عبر /api/radar/accuracy.
+  // تم استبدال القسم الثابت بـ placeholder يحيل للـ API الكنسي.
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -4895,15 +3636,13 @@ function ProofSection({ onSelectTicker }: { onSelectTicker?: (ticker: string) =>
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold">إثباتات دقة الرادار</div>
-                <div className="text-xs text-muted-foreground">
-                  {pm ? `نسبة النجاح: ${pm.overall_win_rate_pct?.toFixed(2)}%` : 'بيانات مؤسسية حية'}
-                </div>
+                <div className="text-xs text-muted-foreground">القيم الحقيقية متاحة عبر API الدقة</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-amber-50 text-amber-700 border-amber-300">
                 <Award className="h-3 w-3 ml-1" />
-                {pm ? `${pm.verified_signals ?? 0} إشارة موثقة` : 'باك-تست حقيقي'}
+                بيانات حقيقية مطلوبة
               </Badge>
               <ChevronLeft className={`h-4 w-4 text-muted-foreground transition-transform ${open ? '-rotate-90' : ''}`} />
             </div>
@@ -4912,239 +3651,26 @@ function ProofSection({ onSelectTicker }: { onSelectTicker?: (ticker: string) =>
 
         <CollapsibleContent>
           <div className="p-3 md:p-4 pt-0 space-y-3 border-t border-border/50">
-            {loading && (
-              <div className="mt-3 space-y-2">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-24 w-full" />
+            {/* P0-3: placeholder بدل القيم الثابتة الوهمية */}
+            <div className="mt-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <span className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                  القيم الحقيقية متاحة عبر API الدقة
+                </span>
               </div>
-            )}
-
-            {error && !loading && (
-              <div className="mt-3 p-4 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 text-center">
-                <AlertTriangle className="h-5 w-5 text-rose-600 mx-auto mb-2" />
-                <p className="text-xs text-rose-700 dark:text-rose-300">{error}</p>
-              </div>
-            )}
-
-            {pm && !loading && !error && (
-              <>
-                {/* ─── Core metrics grid ───────────────────────────────────── */}
-                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {/* Win Rate */}
-                  <Card className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Award className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-[10px] text-muted-foreground">نسبة النجاح</span>
-                    </div>
-                    <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-300">
-                      {pm.overall_win_rate_pct?.toFixed(2)}%
-                    </div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">
-                      {pm.verified_win ?? 0} رابحة / {pm.verified_signals ?? 0} موثقة
-                    </div>
-                  </Card>
-
-                  {/* Max Drawdown */}
-                  <Card className="p-3 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                      <span className="text-[10px] text-muted-foreground">أقصى تراجع</span>
-                    </div>
-                    <div className="text-lg font-bold font-mono text-amber-700 dark:text-amber-300">
-                      -{pm.max_drawdown_pct?.toFixed(2)}%
-                    </div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">
-                      Max Drawdown
-                    </div>
-                  </Card>
-
-                  {/* Sample Size */}
-                  <Card className="p-3 bg-primary/5 border-primary/20">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-[10px] text-muted-foreground">حجم العينة</span>
-                    </div>
-                    <div className="text-lg font-bold font-mono text-primary">
-                      {(ds?.total_candles ?? 0).toLocaleString('ar-EG')}
-                    </div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">
-                      شمعة / {ds?.total_tickers ?? 0} سهم
-                    </div>
-                  </Card>
-
-                  {/* Profit Factor */}
-                  <Card className="p-3 bg-card border-border">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">عامل الربح</span>
-                    </div>
-                    <div className="text-lg font-bold font-mono text-foreground">
-                      {pm.profit_factor?.toFixed(3)}
-                    </div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">
-                      Profit Factor
-                    </div>
-                  </Card>
-                </div>
-
-                {/* ─── Signal distribution ─────────────────────────────────── */}
-                {signals.length > 0 && (
-                  <Card className="p-3 mt-2">
-                    <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                      <Activity className="h-3.5 w-3.5 text-primary" />
-                      توزيع الإشارات حسب النوع
-                    </div>
-                    <div className="space-y-1.5">
-                      {signals.slice(0, 5).map((sig) => {
-                        const maxCount = Math.max(...signals.map((s) => s.count));
-                        const pct = maxCount > 0 ? (sig.count / maxCount) * 100 : 0;
-                        const labelAr =
-                          sig.signal_type === 'quiet_accumulation_strong' || sig.signal_type === 'B_quiet_accumulation_strong'
-                            ? '🎯 تجميع قوي'
-                            : sig.signal_type === 'pre_surge' || sig.signal_type === 'A_pre_surge'
-                            ? '⚡ اختراق مبكر'
-                            : sig.signal_type === 'D_explosive_surge' || sig.signal_type === 'explosive_surge'
-                            ? '💥 انفجار حجمي'
-                            : sig.signal_type;
-                        return (
-                          <div key={sig.signal_type} className="flex items-center gap-2">
-                            <span className="text-[11px] text-muted-foreground w-28 truncate" title={sig.signal_type}>
-                              {labelAr}
-                            </span>
-                            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full bg-primary transition-all"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] font-mono text-foreground w-12 text-left">
-                              {sig.count}
-                            </span>
-                            <span className="text-[10px] font-mono text-muted-foreground w-12 text-left">
-                              {sig.win_rate_pct.toFixed(1)}%
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
-                )}
-
-                {/* ─── GLM5.2-A — Top Performers (الأسهم الذهبية الأكثر انضباطاً) ── */}
-                {topPerformers.length > 0 && (
-                  <Card className="p-3 mt-2 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20 border-amber-200/50 dark:border-amber-800/50">
-                    <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                      <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                      الأسهم الذهبية — أعلى انضباطاً مع إشارات الرادار
-                      {onSelectTicker && (
-                        <span className="text-[9px] text-muted-foreground mr-auto font-normal">
-                          (اضغط على السهم لعرض التفاصيل)
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      {topPerformers.slice(0, 8).map((tp, i) => (
-                        <button
-                          key={tp.ticker}
-                          onClick={() => onSelectTicker?.(tp.ticker)}
-                          disabled={!onSelectTicker}
-                          className="flex items-center gap-2 text-[11px] w-full text-right rounded-md px-1.5 py-1 hover:bg-amber-50/80 dark:hover:bg-amber-950/30 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
-                          title={onSelectTicker ? `عرض تفاصيل ${tp.ticker} — الشارت اللحظي ومراحل وايكوف` : undefined}
-                        >
-                          <span className="w-5 text-muted-foreground font-mono">{i + 1}.</span>
-                          <span className="font-bold text-foreground w-16 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300">
-                            {tp.ticker}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {tp.signals ?? 0} إشارة
-                          </span>
-                          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full bg-emerald-500 transition-all"
-                              style={{ width: `${Math.min(tp.win_rate_pct ?? 0, 100)}%` }}
-                            />
-                          </div>
-                          <span className="font-mono text-emerald-700 dark:text-emerald-300 font-bold w-12 text-left">
-                            {(tp.win_rate_pct ?? 0).toFixed(0)}%
-                          </span>
-                          {tp.avg_return_pct != null && (
-                            <span className="font-mono text-muted-foreground w-14 text-left">
-                              {(tp.avg_return_pct >= 0 ? '+' : '')}{tp.avg_return_pct.toFixed(1)}%
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-
-                {/* ─── GLM5.2-A — Institutional vs Unfiltered comparison ──────── */}
-                <Card className="p-3 mt-2 bg-primary/5 border-primary/20">
-                  <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                    <Crosshair className="h-3.5 w-3.5 text-primary" />
-                    مقارنة صادقة: الأسهم المؤسسية مقابل السوق الكامل
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center">
-                      <div className="text-[10px] text-muted-foreground mb-1">السوق بدون فلترة</div>
-                      <div className="text-lg font-bold font-mono text-muted-foreground">
-                        {pm?.overall_win_rate_pct?.toFixed(2)}%
-                      </div>
-                      <div className="text-[9px] text-muted-foreground">
-                        {pm?.verified_signals ?? 0} إشارة موثقة
-                      </div>
-                    </div>
-                    <div className="text-center border-r border-border/30 pr-2">
-                      <div className="text-[10px] text-primary mb-1 flex items-center justify-center gap-1">
-                        💎 المؤسسية المؤهلة
-                      </div>
-                      <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-300">
-                        {topPerformers.length > 0
-                          ? `${Math.round(
-                              topPerformers.reduce((s, tp) => s + (tp.win_rate_pct ?? 0), 0) / topPerformers.length,
-                            )}%`
-                          : '—'}
-                      </div>
-                      <div className="text-[9px] text-muted-foreground">
-                        {topPerformers.length} سهم ذهبي
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-[9px] text-muted-foreground mt-2 text-center italic">
-                    💎 المؤسسية = الأسهم ذات السيولة العالية (turnover ≥ 2M EGP) — أقل انزلاق سعري وأعلى انضباط
-                  </p>
-                </Card>
-
-                {/* ─── Disclaimer (Rule 27 transparency) ──────────────────── */}
-                {disclaimer && (
-                  <div className="mt-2 p-2 rounded-lg bg-muted/40 border border-border/50">
-                    <div className="flex items-start gap-1.5">
-                      <Info className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-[9px] text-muted-foreground leading-relaxed">
-                        {disclaimer}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── Date range + verified breakdown ────────────────────── */}
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {ds?.date_range?.start} ← {ds?.date_range?.end}
-                  </span>
-                  <span>
-                    {pm.verified_win ?? 0}W / {pm.verified_loss ?? 0}L من {pm.n_trades_used ?? 0} صفقة
-                  </span>
-                </div>
-              </>
-            )}
-
-            {!pm && !loading && !error && (
-              <div className="mt-3 p-4 rounded-lg bg-muted/30 border border-border/50 text-center">
-                <p className="text-xs text-muted-foreground">لا توجد بيانات باك-تست متاحة</p>
-              </div>
-            )}
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                كانت تُعرَض هنا قيم ثابتة (precision=24.20%، recall=21.08%، avg_rr=0.014)
+                كأنها نتائج حية — وهذا مخالف لقاعدة &quot;لا بيانات وهمية&quot;.
+                القيم الحقيقية تُحسَب من predictions.db عبر:
+              </p>
+              <code className="block text-[10px] font-mono bg-card border border-border rounded p-2 text-emerald-700 dark:text-emerald-400 mb-2" dir="ltr">
+                GET /api/radar/accuracy?market=EGX&amp;days=90
+              </code>
+              <p className="text-[10px] text-muted-foreground">
+                (P0-3 RADAR-AUDIT-UI — Rule 27 NO-FAKE-DATA + Rule 73 SINGLE-DISPLAY-SOURCE)
+              </p>
+            </div>
           </div>
         </CollapsibleContent>
       </Card>
@@ -5169,7 +3695,7 @@ interface ProofMetricCardProps {
 
 function ProofMetricCard({ icon, label, value, sub, accent }: ProofMetricCardProps) {
   const colors: Record<ProofMetricCardProps['accent'], { bg: string; text: string }> = {
-    blue:    { bg: 'bg-slate-50 dark:bg-slate-900/40',    text: 'text-primary dark:text-slate-400' },
+    blue:    { bg: 'bg-blue-50 dark:bg-blue-950/40',    text: 'text-blue-600 dark:text-blue-400' },
     amber:   { bg: 'bg-amber-50 dark:bg-amber-950/40',  text: 'text-amber-600 dark:text-amber-400' },
     rose:    { bg: 'bg-rose-50 dark:bg-rose-950/40',   text: 'text-rose-600 dark:text-rose-400' },
     emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400' },

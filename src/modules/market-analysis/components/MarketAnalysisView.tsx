@@ -207,14 +207,15 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             #liquidity-radar (MakerRadarTab) as internal sub-tabs. #recommendations
             now has 5 tabs only: predictions / status / sectors-tracking /
             historical-trades / net-picks. */}
-        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 h-auto gap-1">
-          {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل الـ 3 المنفصلة */}
+        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-2 h-auto gap-1">
+          {/* T-ALPHA-18: تبويب واحد نظيف — الصفقات + الأداء + القطاعات + الملخص جواه */}
           <TabsTrigger value="predictions" className="flex items-center gap-1">
             <Target className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">{t('marketAnalysis.tabs.predictions')}</span>
+            <span className="hidden sm:inline">غرفة الصفقات والأداء</span>
           </TabsTrigger>
           <TabsTrigger value="status" className="flex items-center gap-1">
             <Activity className="h-4 w-4" />
+<<<<<<< HEAD
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.marketStatus')}</span>
           </TabsTrigger>
           {/* Phase P5: تتبع حركة القطاعات */}
@@ -229,6 +230,9 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <TabsTrigger value="net-picks" className="flex items-center gap-1">
             <Target className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.netPicks')}</span>
+=======
+            <span className="hidden sm:inline">حالة السوق</span>
+>>>>>>> 0a55727 (feat(ui): A-18: Null safety + unified Arabic tabs + English purge)
           </TabsTrigger>
         </TabsList>
 
@@ -243,15 +247,8 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <MarketStatusTab market={currentMarket} />
         </TabsContent>
 
-        {/* Phase P5: تتبع حركة القطاعات */}
-        <TabsContent value="sectors-tracking" className="mt-4">
-          <SectorTrackingTab market={currentMarket} />
-        </TabsContent>
-
-        {/* P1-GEMS-WIRING: الصفقات التاريخية (13,117 صف) */}
-        <TabsContent value="historical-trades" className="mt-4">
-          <HistoricalTradesTable market={currentMarket} />
-        </TabsContent>
+        {/* T-ALPHA-18: sectors-tracking + historical-trades + net-picks
+            تم دمجها داخل UnifiedPredictionsTab كـ sub-views */}
 
         {/* Task 9-B Step 2: 5 radar tabs (exit-radar / weekly-report /
             multi-market-radar / radar-accuracy / personalized-radar) moved to

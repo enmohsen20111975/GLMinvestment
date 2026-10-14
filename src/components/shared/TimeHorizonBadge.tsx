@@ -1,4 +1,5 @@
 'use client';
+<<<<<<< HEAD
 
 /**
  * TimeHorizonBadge — شارة الأفق الزمني المتوهجة (Glowing Badge)
@@ -102,3 +103,25 @@ export function formatRR(rr: number | null | undefined): string {
   const val = Number(rr);
   return `R:R 1:${val.toFixed(1)}`;
 }
+=======
+import React from 'react';
+import { cn } from '@/lib/utils';
+type Persona = string | null | undefined;
+interface Props { persona?: Persona; size?: 'sm' | 'md'; className?: string; }
+const MAP: Record<string, { emoji: string; label: string; glow: string; bg: string; text: string; border: string }> = {
+  conservative: { emoji: '🛡️', label: 'استراتيجية', glow: 'shadow-[0_0_8px_rgba(16,185,129,0.4)]', bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/40' },
+  investor: { emoji: '🛡️', label: 'استراتيجية', glow: 'shadow-[0_0_8px_rgba(16,185,129,0.4)]', bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/40' },
+  balanced: { emoji: '🎯', label: 'أسبوعية', glow: 'shadow-[0_0_8px_rgba(59,130,246,0.4)]', bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/40' },
+  gambler: { emoji: '⚡', label: 'يومية', glow: 'shadow-[0_0_8px_rgba(245,158,11,0.4)]', bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/40' },
+};
+const DEF = { emoji: '⏳', label: 'مرنة', glow: '', bg: 'bg-muted/30', text: 'text-muted-foreground', border: 'border-border/40' };
+export function TimeHorizonBadge({ persona, size = 'sm', className }: Props) {
+  const c = (persona && MAP[persona]) || DEF;
+  const sc = size === 'sm' ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1';
+  return (
+    <span className={cn('inline-flex items-center gap-0.5 rounded-full border font-bold transition-all', sc, c.bg, c.text, c.border, c.glow, className)} title={`أفق زمني: ${c.label}`}>
+      <span className="text-[10px]">{c.emoji}</span>{c.label}
+    </span>
+  );
+}
+>>>>>>> 0a55727 (feat(ui): A-18: Null safety + unified Arabic tabs + English purge)
