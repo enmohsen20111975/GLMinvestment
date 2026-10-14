@@ -3473,6 +3473,69 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     )
 
             try:
+                # ── HARD QUANT KILL FILTER (Task B-22, 2026-10-14) ─────────────
+                # حارس كمي صارم قبل أي كتابة في predictions.db/stocks.db.
+                # القواعد القطعية (Zero-Tolerance — Owner Directive):
+                #   1. R:R ≥ 1.5 (المستهدف ≥ 2.0) — أي صفقة تخاطر بأكثر من مكسبها تُقتل
+                #   2. الثقة ≥ 65% — ثقة 50% رمية عملة ممنوعة
+                #   3. Falling Knife Prevention: لو السعر تحت MA50 بـ ≥5% والمسار هابط
+                #      صريح (MA50 < MA200) → ممنوع إعطاء أهداف صاعدة للشراء
+                # المنطق: skip كامل للصفقة (continue) — لا تُكتب في DB إطلاقًا.
+                _sig_rr = float(sig.get('r_multiple', 0) or 0)
+                _sig_master_raw = float(sig.get('combined_score', sig.get('tech_score', 0)) or 0)
+                _sig_conf = _sig_master_raw
+                _sig_entry = float(sig.get('entry', 0) or 0)
+                _sig_target = float(sig.get('target', 0) or 0)
+                _sig_stop = float(sig.get('stop', 0) or 0)
+
+                # 1. R:R ≥ 1.5 check (احتياطي لو r_multiple محسوب غلط — نحسب من entry/target/stop)
+                _computed_rr = 0.0
+                if _sig_entry > 0 and _sig_target > _sig_entry and _sig_entry > _sig_stop:
+                    _risk = _sig_entry - _sig_stop
+                    _reward = _sig_target - _sig_entry
+                    _computed_rr = _reward / _risk if _risk > 0 else 0.0
+                _effective_rr = max(_sig_rr, _computed_rr)
+
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _effective_rr < 1.5:
+                    print(
+                        f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
+                        f"R:R={_effective_rr:.2f} < 1.5 (computed={_computed_rr:.2f}, stored={_sig_rr:.2f}) "
+                        f"→ SKIP (Rule: R:R ≥ 1.5 إلزامي)",
+                        flush=True,
+                    )
+                    continue
+
+                # 2. الثقة ≥ 65% check
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _sig_conf < 65.0:
+                    print(
+                        f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
+                        f"confidence={_sig_conf:.1f}% < 65% → SKIP "
+                        f"(Rule: الثقة ≥ 65% إلزامي)",
+                        flush=True,
+                    )
+                    continue
+
+                # 3. Falling Knife Prevention: لو السعر تحت MA50 بـ ≥5% + MA50 < MA200
+                #    → ممنوع أهداف صاعدة للشراء
+                try:
+                    _ma50 = float(sig.get('ma_50', 0) or 0)
+                    _ma200 = float(sig.get('ma_200', 0) or 0)
+                    _current = _sig_entry if _sig_entry > 0 else float(sig.get('current_price', 0) or 0)
+                    if _ma50 > 0 and _ma200 > 0 and _current > 0:
+                        _below_ma50_pct = ((_ma50 - _current) / _ma50) * 100
+                        _is_falling_knife = (_current < _ma50 * 0.95) and (_ma50 < _ma200)
+                        if _is_falling_knife and _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _sig_target > _sig_entry:
+                            print(
+                                f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
+                                f"FALLING KNIFE: price={_current:.2f} < MA50({_ma50:.2f})×0.95 "
+                                f"AND MA50 < MA200({_ma200:.2f}) → SKIP ascending target "
+                                f"(Rule: لا أهداف صاعدة على سكين ساقط)",
+                                flush=True,
+                            )
+                            continue
+                except Exception:
+                    pass  # safe-by-design: لو MA غير متاح → نكمّل
+
                 # Rule 54 BUG FIX: master_score كان = tech_score (نفس القيمة في العمودين)
                 # دلوقتي master_score = combined_score (يشمل تأثير الأخبار + كل التعديلات)
                 # technical_score = tech_score (الدرجة الفنية الخام من V38)
