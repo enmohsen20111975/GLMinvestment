@@ -1,8 +1,26 @@
+/**
+ * GET /api/maker-radar/net-picks?market=EGX
+ * ===========================================
+ * CANONICAL net-picks route — pure Python proxy with cache fallback.
+ *
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `db/predictions.db` directly (`new Database(...)`) to enrich radar
+ * picks with active V40.2 prediction targets (entry/target/stop_loss).
+ * That bypassed the canonical Python engine. Now it:
+ *   1. Proxies to Python `/api/maker-radar/net-picks?market=X` (primary).
+ *   2. Falls back to the cached radar JSON (Python-written cache via
+ *      background warmup) — picks are still built from cache, but the
+ *      prediction enrichment is set to NULL (Rule 27: no fabricated
+ *      targets — Python is the canonical source for predictions).
+ *   3. Returns honest empty (Rule 27 NO-FAKE-DATA) if both are unavailable.
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA).
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { readRadarCache } from '@/modules/radar/lib/radar-cache';
 import { applyValidatedTargets } from '@/lib/targets-validator';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,9 +37,54 @@ export async function GET(req: NextRequest) {
   const market = url.searchParams.get('market') || 'EGX';
 
   try {
-    const cache = readRadarCache();
+    // ─── 1. PRIMARY: Python canonical endpoint ────────────────────────────────
+    const qs = `market=${encodeURIComponent(market)}`;
+    const targetUrls = [
+      `${PYTHON_BACKEND_URL}/api/maker-radar/net-picks?${qs}`,
+      `http://127.0.0.1:8010/api/maker-radar/net-picks?${qs}`,
+    ];
+
+    for (const targetUrl of targetUrls) {
+      try {
+        const res = await fetch(targetUrl, {
+          signal: AbortSignal.timeout(8000),
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && (json.success === true || Array.isArray(json.picks))) {
+            // Pass through Python response verbatim (Rule 4: mirror only).
+            return NextResponse.json({
+              success: true,
+              market,
+              picks: json.picks ?? [],
+              stats: json.stats ?? {
+                total_picks: (json.picks ?? []).length,
+                by_source: [],
+                with_predictions: 0,
+                high_confidence: 0,
+              },
+              generated_at: json.generated_at ?? new Date().toISOString(),
+              source: 'python',
+            });
+          }
+        }
+      } catch { // silent fallback (safe-by-design)
+      }
+    }
+
+    // ─── 2. FALLBACK: cached radar JSON (Python-written via background warmup) ─
+    // NOTE (Directive P1): previously this branch opened `db/predictions.db`
+    // directly to enrich picks with V40.2 targets. That DB access has been
+    // removed (Rule 4 / Rule 27). The `prediction` field on each pick is
+    // NULL when Python is unreachable — the UI must treat this as
+    // "prediction data missing" (Rule 27 honest empty, NOT fabricated targets).
+    const cache = readRadarCache(market);
     if (!cache || !cache.data) {
-      return NextResponse.json({ success: false, warming_up: true }, { status: 503 });
+      return NextResponse.json(
+        { success: false, warming_up: true },
+        { status: 503 },
+      );
     }
 
     const data = cache.data;
@@ -82,23 +145,9 @@ export async function GET(req: NextRequest) {
       return (b.avg_turnover_20d || 0) - (a.avg_turnover_20d || 0);
     });
 
-    // Enrich with prediction data if available
-    let predictionsMap: Record<string, any> = {};
-    try {
-      const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      const db = new Database(dbPath, { readonly: true });
-      const activePreds = db.prepare(
-        "SELECT ticker, entry_price, target_price, target_price_2, stop_loss, signal, confidence, risk_reward, prediction_date FROM predictions WHERE status IN ('active','ACTIVE') ORDER BY id DESC"
-      ).all() as any[];
-      for (const p of activePreds) {
-        predictionsMap[p.ticker] = p;
-      }
-      db.close();
-    } catch { /* safe-by-design */ }
-
-    // Build enriched picks
+    // Build enriched picks — prediction field is NULL (Rule 27 honest empty,
+    // because we no longer read predictions.db directly; Python owns that).
     const enrichedPicks = picks.map((p, idx) => {
-      const pred = predictionsMap[p.ticker];
       const signalCount = p.quiet_details?.signal_count || p.pre_surge_details?.signal_count || 0;
       return {
         rank: idx + 1,
@@ -116,33 +165,11 @@ export async function GET(req: NextRequest) {
         max_signals: 6,
         position_size: p.position_size,
         reason: p.reason,
-        // Prediction enrichment (if V40.2 has a prediction for this ticker)
-        // TARGETS-VALIDATOR: نتأكد إن الـ targets منطقية قبل ما نرجّعها
-        // FIX-P4-TARGETS: signal-aware — pred.signal بيحدد اتجاه الـ validation.
-        // FIX-P4-TARGETS: ما بـ نعملش `?? pred.X` fallback للقيمة الأصلية المكسورة.
-        //   بنستخدم القيم المُتحقَّق منها مباشرة. لو الـ validator رجّع null، بـ ينتقل
-        //   زي ما هو علشان الـ consumer يـ يعرف إن الـ data غير صالحة.
-        prediction: pred ? (() => {
-          const v = applyValidatedTargets({
-            signal: pred.signal || 'BUY',
-            entry_price: pred.entry_price,
-            current_price: p.current_price || pred.entry_price,
-            target1: pred.target_price,
-            target2: pred.target_price_2,
-            stop_loss: pred.stop_loss,
-            risk_reward_ratio: pred.risk_reward,
-          });
-          return {
-            entry_price: v.entry_price,
-            target_price: v.target1,
-            target_price_2: v.target2,
-            stop_loss: v.stop_loss,
-            signal: pred.signal,
-            confidence: pred.confidence,
-            risk_reward: v.risk_reward_ratio,
-            prediction_date: pred.prediction_date,
-          };
-        })() : null,
+        // Rule 27: prediction is NULL when Python (canonical source for
+        // predictions) is unreachable. The validator wrapper is kept so
+        // that when Python DOES return a prediction, we can sanitize it
+        // before passing it through.
+        prediction: null,
       };
     });
 
@@ -152,10 +179,10 @@ export async function GET(req: NextRequest) {
       by_source: Object.entries(PATH_LABELS_AR).map(([path, label]) => ({
         path,
         label,
-        count: enrichedPicks.filter(p => p.source_path === path).length,
+        count: enrichedPicks.filter((p) => p.source_path === path).length,
       })),
-      with_predictions: enrichedPicks.filter(p => p.prediction).length,
-      high_confidence: enrichedPicks.filter(p => (p.signal_count || 0) >= 5).length,
+      with_predictions: enrichedPicks.filter((p) => p.prediction).length,
+      high_confidence: enrichedPicks.filter((p) => (p.signal_count || 0) >= 5).length,
     };
 
     return NextResponse.json({
@@ -164,9 +191,13 @@ export async function GET(req: NextRequest) {
       picks: enrichedPicks.slice(0, 50), // Top 50
       stats,
       generated_at: new Date().toISOString(),
+      source: 'cache',
     });
   } catch (error: any) {
     console.error('[maker-radar:net-picks]', error);
-    return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'internal_error' },
+      { status: 500 },
+    );
   }
 }

@@ -3,198 +3,70 @@
  * =============================
  * Global market predictions for the Flutter Android app.
  *
- * Reads from `db/predictions.db` (market='US' or any non-EGX) + `db/crypto.db`
- * → crypto_prediction_logs. Public (no auth — taste content, like news).
+ * Directive P1 (API Routes Decoupling): NO direct SQLite access in Next.js
+ * routes. This route proxies to Python `/api/global-predictions` ONLY. If
+ * Python is unreachable → honest empty (Rule 27 NO-FAKE-DATA).
  *
- * Returns:
+ * Previously this route opened `db/predictions.db` (US/global predictions),
+ * `db/crypto.db` (crypto predictions), and `db/gold_prices.db` (gold signal)
+ * directly. All three reads have been removed — Python is the canonical
+ * source for all of them (Rule 4: Python = brain).
+ *
+ * Response shape is preserved for the Flutter Android app consumer:
  *   {
- *     success, generated_at,
- *     us_predictions: [{ ticker, signal, entry_price, target_price, stop_loss, ... }],
- *     crypto_predictions: [{ symbol, signal, entry_price, target_price, ... }],
- *     gold_signal: { price_per_gram, change, signal },
- *     summary: { us_count, crypto_count, last_updated }
+ *     success, source, generated_at,
+ *     us_predictions:       [{ ticker, signal, entry_price, target_price, stop_loss, ... }],
+ *     crypto_predictions:   [{ symbol, signal, entry_price, target_price, ... }],
+ *     gold_signal:          { price_per_gram, change, signal } | null,
+ *     summary:              { us_count, crypto_count, us_last_date, crypto_last_date, gold_signal_present }
  *   }
  *
- * Failure mode: never 500. If a DB is unavailable, the matching section is
- * returned as an empty array.
+ * Rule 4  (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA) — empty arrays + null when Python is unreachable.
  */
-
 import { NextRequest, NextResponse } from 'next/server';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
-
-function openRo(p: string): Database.Database | null {
-  try {
-    if (!fs.existsSync(p)) return null;
-    return new Database(p, { readonly: true });
-  } catch { // silent fallback (safe-by-design)
-    return null;
-  }
-}
-
-function num(v: unknown, fallback = 0): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
 export async function GET(_req: NextRequest) {
-  try {
-    const cwd = process.cwd();
+  const targetUrls = [
+    `${PYTHON_BACKEND_URL}/api/global-predictions`,
+    `http://127.0.0.1:8010/api/global-predictions`,
+  ];
 
-    // 1. US / global market predictions from predictions.db.
-    const predictionsDbPath = path.join(cwd, 'db', 'predictions.db');
-    const pdb = openRo(predictionsDbPath);
-    let usPredictions: Array<Record<string, unknown>> = [];
-    let usLastDate: string | null = null;
-    if (pdb) {
-      try {
-        const rows = pdb
-          .prepare(
-            `SELECT id, ticker, signal, signal_type, prediction_date,
-                    entry_price, target_price, stop_loss, master_score,
-                    confidence, market, created_at
-             FROM predictions
-             WHERE UPPER(IFNULL(market,'EGX')) IN ('US','GLOBAL')
-             ORDER BY prediction_date DESC, created_at DESC
-             LIMIT 50`
-          )
-          .all() as Array<Record<string, unknown>>;
-        usPredictions = rows.map((r) => ({
-          ticker: r.ticker,
-          signal: r.signal,
-          signal_type: r.signal_type || null,
-          prediction_date: r.prediction_date,
-          entry_price: r.entry_price != null ? num(r.entry_price) : null,
-          target_price:
-            r.target_price != null ? num(r.target_price) : null,
-          stop_loss: r.stop_loss != null ? num(r.stop_loss) : null,
-          master_score:
-            r.master_score != null ? num(r.master_score) : null,
-          confidence: r.confidence != null ? num(r.confidence) : null,
-          market: r.market || 'US',
-          created_at: r.created_at || null,
-        }));
-        if (rows.length > 0) {
-          usLastDate = (rows[0].prediction_date as string) || null;
+  for (const targetUrl of targetUrls) {
+    try {
+      const res = await fetch(targetUrl, {
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success) {
+          return NextResponse.json(data);
         }
-      } catch (e) {
-        console.error('[global-predictions] predictions.db query:', e);
       }
-      try {
-        pdb.close();
-      } catch { // silent fallback (safe-by-design)
-        /* ignore */
-      }
+    } catch { // silent fallback (safe-by-design) → try next URL
+      // Try next fallback URL.
     }
-
-    // 2. Crypto predictions from crypto.db.
-    const cryptoDbPath = path.join(cwd, 'db', 'crypto.db');
-    const cdb = openRo(cryptoDbPath);
-    let cryptoPredictions: Array<Record<string, unknown>> = [];
-    let cryptoLastDate: string | null = null;
-    if (cdb) {
-      try {
-        const rows = cdb
-          .prepare(
-            `SELECT id, coin_id, symbol, signal, score, confidence,
-                    entry_price, target_price, stop_loss, rationale, created_at
-             FROM crypto_prediction_logs
-             ORDER BY created_at DESC
-             LIMIT 50`
-          )
-          .all() as Array<Record<string, unknown>>;
-        cryptoPredictions = rows.map((r) => ({
-          symbol: r.symbol || r.coin_id,
-          signal: r.signal,
-          score: r.score != null ? num(r.score) : null,
-          confidence: r.confidence != null ? num(r.confidence) : null,
-          entry_price: r.entry_price != null ? num(r.entry_price) : null,
-          target_price:
-            r.target_price != null ? num(r.target_price) : null,
-          stop_loss: r.stop_loss != null ? num(r.stop_loss) : null,
-          rationale: r.rationale || null,
-          created_at: r.created_at || null,
-        }));
-        if (rows.length > 0) {
-          cryptoLastDate = (rows[0].created_at as string) || null;
-        }
-      } catch (e) {
-        console.error('[global-predictions] crypto.db query:', e);
-      }
-      try {
-        cdb.close();
-      } catch { // silent fallback (safe-by-design)
-        /* ignore */
-      }
-    }
-
-    // 3. Gold signal (latest gold price row).
-    const goldDbPath = path.join(cwd, 'db', 'gold_prices.db');
-    const gdb = openRo(goldDbPath);
-    let goldSignal: Record<string, unknown> | null = null;
-    if (gdb) {
-      try {
-        const row = gdb
-          .prepare(
-            `SELECT date, karat, price_per_gram, change, currency, name_ar
-             FROM gold_prices
-             ORDER BY date DESC
-             LIMIT 1`
-          )
-          .get() as Record<string, unknown> | undefined;
-        if (row) {
-          const change = num(row.change, 0);
-          const signal =
-            change > 0.5 ? 'BULLISH' : change < -0.5 ? 'BEARISH' : 'NEUTRAL';
-          goldSignal = {
-            date: row.date,
-            karat: row.karat,
-            price_per_gram: num(row.price_per_gram, 0),
-            change,
-            currency: row.currency || 'EGP',
-            name_ar: row.name_ar || null,
-            signal,
-          };
-        }
-      } catch (e) {
-        console.error('[global-predictions] gold_prices.db query:', e);
-      }
-      try {
-        gdb.close();
-      } catch { // silent fallback (safe-by-design)
-        /* ignore */
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      source: 'multi_db',
-      generated_at: new Date().toISOString(),
-      us_predictions: usPredictions,
-      crypto_predictions: cryptoPredictions,
-      gold_signal: goldSignal,
-      summary: {
-        us_count: usPredictions.length,
-        crypto_count: cryptoPredictions.length,
-        us_last_date: usLastDate,
-        crypto_last_date: cryptoLastDate,
-        gold_signal_present: !!goldSignal,
-      },
-    });
-  } catch (err) {
-    console.error('[global-predictions] fatal:', err);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'internal_error',
-        error_en: 'internal error',
-      },
-      { status: 500 }
-    );
   }
+
+  // Rule 27: honest empty — never 500, never fabricate predictions/signals.
+  return NextResponse.json({
+    success: true,
+    source: 'python_proxy_empty',
+    generated_at: new Date().toISOString(),
+    us_predictions: [],
+    crypto_predictions: [],
+    gold_signal: null,
+    summary: {
+      us_count: 0,
+      crypto_count: 0,
+      us_last_date: null,
+      crypto_last_date: null,
+      gold_signal_present: false,
+    },
+  });
 }

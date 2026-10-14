@@ -1,6 +1,21 @@
+/**
+ * GET /api/maker-radar/fundamentals?ticker=COMI
+ * =================================================
+ * CANONICAL fundamentals route — pure Python proxy with honest empty fallback.
+ *
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `db/data_engine.db` directly (`new Database(...)`) and read 8 tab_*
+ * tables (tab_valuation, tab_profitability, ...). That bypassed the
+ * canonical Python engine. Now it:
+ *   1. Proxies to Python `/api/maker-radar/fundamentals?ticker=X` (primary).
+ *   2. Returns honest empty fundamentals (Rule 27 NO-FAKE-DATA) preserving
+ *      the exact response shape so consumers don't break.
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA).
+ */
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,49 +41,59 @@ const TAB_LABELS_AR: Record<string, string> = {
   tab_technical_analysis: 'التحليل الفني',
 };
 
-// Format display value — convert string numbers to readable format
-function fmtVal(v: string | number | null): string | null {
-  if (v == null) return null;
-  if (typeof v === 'number') return v.toString();
-  const s = v.toString().trim();
-  if (!s || s === '—' || s === 'null') return null;
-  return s;
+function emptyFundamentals(): Record<string, { label: string; data: Record<string, string | null> | null }> {
+  const out: Record<string, { label: string; data: Record<string, string | null> | null }> = {};
+  for (const t of TAB_TABLES) {
+    out[t] = { label: TAB_LABELS_AR[t], data: null };
+  }
+  return out;
 }
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const ticker = (url.searchParams.get('ticker') || '').toUpperCase();
-  if (!ticker) return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
-
-  const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-  try {
-    const db = new Database(dbPath, { readonly: true });
-    const result: Record<string, { label: string; data: Record<string, string | null> | null }> = {};
-
-    for (const table of TAB_TABLES) {
-      try {
-        // The tab_* tables use 'ticker+arabic_name' format (e.g., 'COMIالبنك')
-        // So we search with LIKE 'TICKER%' to match
-        const row = db.prepare(`SELECT * FROM ${table} WHERE symbol LIKE ? LIMIT 1`).get(ticker + '%') as Record<string, unknown> | undefined;
-        if (row) {
-          const cleaned: Record<string, string | null> = {};
-          for (const [k, v] of Object.entries(row)) {
-            if (['id', 'symbol', 'market', 'data', 'fiscal_period', 'fiscal_end'].includes(k)) continue;
-            cleaned[k] = fmtVal(v as string | number | null);
-          }
-          result[table] = { label: TAB_LABELS_AR[table], data: cleaned };
-        } else {
-          result[table] = { label: TAB_LABELS_AR[table], data: null };
-        }
-      } catch { // silent fallback (safe-by-design)
-        result[table] = { label: TAB_LABELS_AR[table], data: null };
-      }
-    }
-
-    db.close();
-    return NextResponse.json({ success: true, ticker, fundamentals: result });
-  } catch (error: any) {
-    console.error('[maker-radar:fundamentals]', error);
-    return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
+  if (!ticker) {
+    return NextResponse.json(
+      { success: false, error: 'ticker required' },
+      { status: 400 },
+    );
   }
+
+  // ─── 1. PRIMARY: Python canonical endpoint ────────────────────────────────
+  const qs = `ticker=${encodeURIComponent(ticker)}`;
+  const targetUrls = [
+    `${PYTHON_BACKEND_URL}/api/maker-radar/fundamentals?${qs}`,
+    `http://127.0.0.1:8010/api/maker-radar/fundamentals?${qs}`,
+  ];
+
+  for (const targetUrl of targetUrls) {
+    try {
+      const res = await fetch(targetUrl, {
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && (json.success === true || json.fundamentals)) {
+          // Pass through Python response verbatim (Rule 4: mirror only).
+          // Guarantee fundamentals shape (empty dict if Python omits it).
+          return NextResponse.json({
+            success: true,
+            ticker,
+            fundamentals: json.fundamentals ?? emptyFundamentals(),
+          });
+        }
+      }
+    } catch { // silent fallback (safe-by-design)
+    }
+  }
+
+  // ─── 2. FALLBACK: honest empty (Rule 27 NO-FAKE-DATA) ────────────────────
+  return NextResponse.json({
+    success: false,
+    error: 'fundamentals_data_unavailable',
+    ticker,
+    fallback: true,
+    fundamentals: emptyFundamentals(),
+  }, { status: 200 });
 }

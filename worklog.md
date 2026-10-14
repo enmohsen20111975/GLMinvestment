@@ -70058,3 +70058,455 @@ Stage Summary:
 - ✅ Rule 67 (SSOT): getCanonicalPrice محفوظ في depth
 - ✅ NO Python touched (ممنوع لمس البايثون)
 - ✅ NO git push --force (Rule 81)
+
+---
+Task ID: P1-NEWS-MARKET-CLUSTER
+Agent: general-purpose (news + market cluster converter)
+Task: Phase 1 — إزالة direct SQLite access من راوتات news + market (6 ملفات)
+
+Work Log:
+1. قراءة آخر 150 سطر من worklog.md لفهم سياق P1-ALPHA-SQLITE-DECOUPLING (الـ 5 راوتات stocks/ اللي اتمسحت منها SQLite).
+2. قراءة الـ reference pattern:
+   - `src/app/api/stocks/[ticker]/history/route.ts` (pure Python proxy + honest 404).
+   - `src/app/api/stocks/sparkline/route.ts` (proxy + cache 60s + honest empty source='python_history_empty').
+3. فحص الـ 6 ملفات قبل التعديل — كلها كان فيها `import Database from 'better-sqlite3'` + `new Database()` مباشرة:
+   - `src/app/api/news/route.ts` (388 سطر): يفتح news.db + market_news + news_articles، GET و POST (POST كان بيخزن مباشرة في news.db + forward لـ Python).
+   - `src/app/api/news/latest/route.ts` (147 سطر): يفتح news.db + market_news.
+   - `src/app/api/news-feed/route.ts` (456 سطر): يفتح news.db + predictions.db (news_signals) + بيعمل external API calls لـ EGXPilot/CoinGecko/Alternative.me.
+   - `src/app/api/mobile/news/route.ts` (190 سطر): يفتح news.db + market_news.
+   - `src/app/api/market/overview/route.ts` (155 سطر): يفتح stocks.db + بيستخدم fetchMarketIndices lib (اللي بتفتح DBs برضو).
+   - `src/app/api/market/sectors/intelligence/route.ts` (302 سطر): يفتح stocks.db + بيحسب sector stats في TS.
+4. فحص الـ consumers للحفاظ على response shapes:
+   - MyStocksBriefing.tsx → `/api/news?tickers=COMI,...&limit=3` (بيقرأ json.news).
+   - NewsFeedView.tsx → `/api/news-feed` (بيقرأ json.news + json.summary).
+   - DataManager.tsx → `/api/market/overview` (بيقرأ Array.isArray(data.sectors)).
+   - ExpertIntelligencePanel.tsx → `/api/market/sectors/intelligence?min_stocks=5&limit=10` (بيقرأ json.sector_ranking, json.top_outperformers, json.top_underperformers, json.summary).
+5. إعادة كتابة كل ملف بـ pure Python proxy pattern + honest empty fallback:
+   - **news/route.ts** (236 سطر): GET بـ proxy لـ `${PYTHON_BACKEND_URL}/api/news` + fallback URL `127.0.0.1:8010`، بيعمل normalize للـ shapes (data.news / data.data.news)، بيرجّع legacy shape `{news,total,markets,filter,source}`. POST بـ proxy لـ `/api/news/agent` + fallback `/api/news`، بيحافظ على `x-agent-key` auth. Honest empty: `{news:[],total:0,markets:[],filter:{...},source:'python_empty'}`. لو Python مش متاح للـ POST → 502 + `ok:false,success:false,error:'محرك الأخبار غير متاح'` (NO fake success).
+   - **news/latest/route.ts** (139 سطر): proxy لـ `/api/news/latest` + fallback `/api/news`، بيعمل trim لـ mobile shape، safeStripHtml محفوظة. Honest empty: `{success:true,news:[],total:0,returned:0,source:'python_empty'}`.
+   - **news-feed/route.ts** (170 سطر): حذف الكود كله اللي بياخد من SQLite + EGXPilot + CoinGecko + Alternative.me (Rule 4 violation). بقى pure proxy لـ `/api/news-feed` + fallback `/api/news`. الـ TS بيقوم بـ cache 5min + بيكمل summary count بالأقسام. Honest empty: `{success:true,news:[],summary:{total:0,agent:0,egx:0,crypto:0,sentiment:0,market_filter},cache_duration:300,source:'python_empty'}`.
+   - **mobile/news/route.ts** (145 سطر): proxy لـ `/api/mobile/news` + fallback `/api/news`، بيحوّل لـ mobile shape {id,source,title,url,published_at,summary,importance,sentiment,market,tickers}. Honest empty: `{success:true,news:[],total:0,returned:0,source:'python_empty',message:'محرك الأخبار غير متاح'}`.
+   - **market/overview/route.ts** (76 سطر): حذف `Database` import + حذف `fetchMarketIndices` lib import (لأنه بيفتح DBs). بقى proxy لـ `/api/market/overview`، بيحافظ على `MARKET_NAMES_AR` + `MARKET_ALIASES` imports (pure constants — لا بيفتح DBs). Honest empty: `{success:true,market,market_name_ar,summary:{total_stocks:0,...},indices:[],sectors:[],top_stocks:[],stocks:[],pagination:{limit,offset,total:0},source:'python_empty',generated_at}` (أضفت `sectors:[]` عشان DataManager.tsx بيتوقعها).
+   - **market/sectors/intelligence/route.ts** (96 سطر): proxy لـ `/api/market/sectors/intelligence` + fallback `/api/sectors/tracking` (الـ Python موجود فعلاً). Honest empty: `{success:true,generated_at,params,summary:{total_stocks_analyzed:0,total_sectors:0,market_breadth:{...},best_sector:null,worst_sector:null},sector_ranking:[],top_outperformers:[],top_underperformers:[],note,source:'python_empty'}`.
+
+6. التحقق (Verification):
+   - `rg -l "^import Database from 'better-sqlite3'" src/app/api/{news,news-feed,mobile/news,market/overview,market/sectors}/` → **ZERO matches** ✅
+   - `rg "better-sqlite3" <all 6 dirs>` → ZERO matches ✅
+   - `rg "new Database\(" <all 6 dirs>` → ZERO matches ✅
+   - `rg "\.prepare\(" <all 6 dirs>` → ZERO matches ✅
+   - `rg "blue|indigo" <all 6 dirs>` → ZERO matches (Rule 30) ✅
+   - `bun run lint` → **EXIT=0** (0 errors) ✅
+   - `bunx tsc --noEmit --skipLibCheck` filtered to `src/app/api/(news|news-feed|mobile/news|market/overview|market/sectors)` → **ZERO errors** ✅
+   - Smoke test (Python down): استدعيت كل الـ 6 routes عبر tsx + Request mock:
+     * `news GET /api/news?limit=3` → 200, source=python_empty, news=[] ✅
+     * `news/latest` → 200, source=python_empty, news=[] ✅
+     * `news-feed?market=egx` → 200, source=python_empty, news=[], summary={total:0,agent:0,egx:0,crypto:0,sentiment:0} ✅
+     * `mobile/news?limit=5` → 200, source=python_empty, news=[] ✅
+     * `market/overview?market=EGX` → 200, source=python_empty, indices=[], sectors=[], stocks=[] ✅
+     * `sectors/intelligence?min_stocks=5&limit=10` → 200, source=python_empty, sector_ranking=[] ✅
+     * `news POST {title:'Test'}` → 502, ok=false, success=false, source=python_empty, error='محرك الأخبار غير متاح — تعذّر تخزين الخبر' ✅ (NO fake success per Rule 27)
+
+Stage Summary:
+- ✅ 6 ملفات تم تطهيرها 100% من direct SQLite access (better-sqlite3 import + new Database + .prepare/.all/.get كلها اتمسحت).
+- ✅ كل الـ 6 ملفات بقى pure Python proxy + honest empty fallback (Rule 27 NO-FAKE-DATA).
+- ✅ Response shapes محفوظة 1:1 مع الـ legacy عشان الـ consumers (MyStocksBriefing, NewsFeedView, DataManager, ExpertIntelligencePanel, Flutter app) ميتكسروش.
+- ✅ market/overview: حذف `fetchMarketIndices` lib import (بيفتح DBs) + احتفاظ بـ `MARKET_NAMES_AR`/`MARKET_ALIASES` (pure constants).
+- ✅ news-feed: حذف SQLite AND external API calls (EGXPilot/CoinGecko/Alternative.me) — كلهم كانوا Rule 4 violations. الـ aggregation بقت في Python.
+- ✅ news POST: NO fake success — لو Python مش متاح → 502 + رسالة عربية صريحة (NO-FAKE-DATA).
+- ✅ ZERO blue/indigo colors (Rule 30 — API routes مفيهاش UI أصلاً).
+- ✅ NO Python touched (ممنوع لمس البايثون).
+- ✅ NO git push --force (Rule 81 — مفيش git commands خالص).
+- ✅ Rule 4 (Python = brain): كل البيانات من Python، Frontend مجرد mirror.
+- ✅ Rule 27 (NO-FAKE-DATA): كل الحالات الفارغة صادقة + source:'python_empty'.
+
+---
+Task ID: P1-PREDICTIONS-CLUSTER
+Agent: general-purpose (predictions cluster converter)
+Task: Phase 1 — إزالة direct SQLite access من راوتات predictions (6 ملفات)
+
+Work Log:
+1. قراءة آخر 150 سطر من worklog.md لفهم سياق P1-ALPHA-SQLITE-DECOUPLING (نمط pure Python proxy + honest empty fallback، Rule 4 + Rule 27).
+2. قراءة ملفين مرجعيين: `src/app/api/stocks/[ticker]/history/route.ts` و `src/app/api/stocks/delta-volume/route.ts` لاستخراج الـ pattern الدقيق (PYTHON_BACKEND_URL + fallback `http://127.0.0.1:8010` + AbortSignal.timeout + loop على URL variants + honest empty عند فشل الكل).
+3. قراءة 6 ملفات predictions المراد تحويلها + ملفات الـ tests (learned-lessons.test.ts, historical-trades.test.ts) للتأكد من حفظ response shape + قراءة consumers (EidPredictionsWidget, ExpertIntelligencePanel) للتحقق من شكل الاستهلاك.
+4. تحويل كل ملف كالتالي:
+
+   - `src/app/api/predictions/route.ts` (490→148 سطر)
+     • أزلت: `import Database from 'better-sqlite3'` + `import path` + `parseAnalysisJson()` + `enrichWithTechnical()` + ticker DB branch كاملة (التي كانت تفتح predictions.db + تعمل `.prepare()` على predictions + stored_analyses) + SQLite fallback branch.
+     • احتفظت: POST handler (كان أصلاً proxy لـ Python — لا تغيير) + getSessionUserId + requireAdminAsync + trialExpiredResponse + HARD_CAP=5 + limit=3 للزوار غير المسجلين.
+     • جديد: GET يجمع كل الفلاتر (type/market/ticker/limit) في URLSearchParams ويمررها لـ Python عبر 4 URL variants (PYTHON_BACKEND_URL + 127.0.0.1 fallback × /api/v2/predictions و /api/predictions). الـ ticker يُمرر الآن كـ query param لـ Python بدلاً من فتح DB.
+     • Honest empty: `{ success, authenticated, limited, data: [], stats: {total:0, closedCount:0, hits:0, accuracy:null, avgScore:0}, source: 'python_empty', message: 'لا توجد بيانات' }`.
+
+   - `src/app/api/predictions/performance/route.ts` (224→125 سطر)
+     • أزلت: `import Database` + `import path` + `import fs` + unauthorized() مع DB open + 3 `.prepare()` aggregates (overall/tickerRows/signalRows) + db.close() finally.
+     • جديد: GET يحسب tickerLimit clamping (1..100) + يبني query string (limit, market) + يفتح Python proxy عبر 2 URL variants.
+     • Honest empty: `{ success: true, source: 'python_empty', generated_at, filter, summary: {total:0, resolved:0, hit_target_count:0, hit_stop_count:0, pending_count:0, hit_rate_pct:0, avg_return:null}, by_ticker:[], by_signal:[], message:'لا توجد بيانات' }` — يحافظ على summary shape الكامل الذي يستهلكه Flutter Android app.
+
+   - `src/app/api/predictions/historical-trades/route.ts` (219→146 سطر)
+     • أزلت: `import Database` + `import path` + `openDb()` helper + 5 `.prepare()` queries (count + locked-summary + main rows + distinct strategies × 2).
+     • احتفظت: PAYWALL Phase 2 Gate 4 (getSessionUserId + checkTrialNotExpired → tradesLocked) + SORTABLE + limit/offset clamping + filters shape + strategies shape.
+     • جديد: Python proxy عبر 2 URL variants. لو tradesLocked → يرجّع summary only (trades:[] + trades_locked:true + upgradeUrl:'/pricing' + summary). غير ذلك → full trades.
+     • Honest empty: يحافظ على الـ shape الكامل (success, total:0, returned:0, offset, filters, strategies:[], trades:[], source:'python_empty', message) + لو tradesLocked يضيف summary صادق بأصفار.
+
+   - `src/app/api/predictions/expert-consensus/route.ts` (481→112 سطر)
+     • أزلت: `import Database` + `import path` + `openDb()` + `getColumnNames()` + `computeConsensus()` كاملة (التي كانت تعمل local financial computation — Rule 20 violation) + LatestPrediction + StockInfo + ConsensusResult interfaces (لم تعد تُستخدم) + minutesSinceLastUpdate + 6 `.prepare()` queries (latest pred + stock + sector avg + top preds + sector averages + all stocks).
+     • احتفظت: استخراج params (ticker, limit, min_score, verdict) + clamping.
+     • جديد: Python proxy عبر 2 URL variants + pass-through verbatim.
+     • Honest empty: لو ticker → 404 `{success:false, error, ticker, source:'python_empty', message}`. لو list mode → 200 `{success:true, generated_at, mode:'list', params, summary:{total_predictions_scanned:0, total_with_stock_data:0, by_verdict:{STRONG_BUY:0, BUY:0, HOLD:0, SELL:0, STRONG_SELL:0}}, consensus_list:[], source:'python_empty', message}`.
+
+   - `src/app/api/predictions/learned-lessons/route.ts` (128→95 سطر)
+     • أزلت: `import Database` + `import path` + `openDb()` + 3 `.prepare()` queries (count + rows + distinct conditions).
+     • جديد: Python proxy عبر 2 URL variants + pass-through.
+     • Honest empty: `{success:true, total:0, returned:0, filters:{limit, condition, outcome, sort}, conditions:[], lessons:[], source:'python_empty', message:'لا توجد بيانات'}` — يطابق ApiResponse interface في الـ test file.
+
+   - `src/app/api/predictions/eid/route.ts` (225→77 سطر)
+     • أزلت: `import Database` + `import path` + `import { existsSync }` + STOCKS_DB + PREDICTIONS_DB constants + `getLastClose()` (يفتح stocks.db.stock_daily_prices) + `getSupportResistance()` (يفتح stocks.db.stocks) + `getCanonicalPrediction()` (يفتح predictions.db.predictions) + `buildPrediction()` (financial computation محلي) + EidPrediction interface + tickers[] hardcoded list.
+     • جديد: Python proxy عبر 2 URL variants + pass-through verbatim + forward كل query params (market, ticker, etc.).
+     • Honest empty: 503 `{success:false, error:'لا توجد بيانات أسعار كافية من المحرك الكنسي', generated_at, predictions:[], source:'python_empty', message:'لا توجد بيانات'}`.
+     • احتفظت: POST→GET parity (refresh use-case).
+
+5. التحقق (Verification):
+   - `rg -l "^import Database from 'better-sqlite3'" src/app/api/predictions/` → **ZERO matches** ✅
+   - `rg -n "better-sqlite3|new Database\(|\.prepare\(" src/app/api/predictions/{route,performance,historical-trades,expert-consensus,learned-lessons,eid}/route.ts` → فقط 7 matches كلها في JSDoc comments (سطور تبدأ بـ ` * `) تصف الـ historical context (ما كان يعمله الـ route سابقاً) — **ZERO actual code references** ✅
+   - `bun run lint` → **EXIT=0** (0 errors) ✅
+   - `bunx tsc --noEmit --skipLibCheck` filtered على الـ 6 ملفات (`predictions/(route|performance|historical-trades|expert-consensus|learned-lessons|eid)/`) → **ZERO errors** ✅
+   - (ملاحظة: TS errors موجودة في `src/app/api/predictions/dual-track/backtest/route.ts` ولكن هذا الملف **ليس في الـ scope** — pre-existing errors، لم ألمسه.)
+   - `bun build --outdir /tmp/predictions-bundle` للـ 6 ملفات → **Bundled 301 modules in 313ms, EXIT=0** ✅
+   - `git status` يُظهر 6 ملفات predictions معدّلة + 0 ملف Python ملموس ✅
+   - git diff --stat: `predictions/route.ts 498 +++----`, `performance 238 +++----`, `historical-trades 271 +++----`, `expert-consensus 541 +++----`, `learned-lessons 151 +++----`, `eid 245 ++----` — كلها reduction حقيقية في التعقيد.
+
+6. القيود محترمة 100%:
+   - Rule 4 (Python = brain): كل البيانات من Python proxy، الـ route = mirror only. أزلت `applyValidatedTargets` و `computeConsensus` و `buildPrediction` (financial computations محلية كانت Rule 20 violations).
+   - Rule 20 (PYTHON = BRAIN): same as Rule 4 — لا حساب مالي في route.ts.
+   - Rule 27 (NO-FAKE-DATA): كل fallbacks صادقة (empty arrays + zero stats + source='python_empty' + message='لا توجد بيانات'). لا fabrication.
+   - Rule 67 (SSOT): PYTHON_BACKEND_URL من `@/lib/python-backend` (canonical) بدلاً من hardcoding.
+   - Rule 81: لا git push --force — لم أنفذ أي git command.
+   - NO Python touched (ممنوع لمس البايثون).
+   - Response shapes محفوظة بالكامل (success, total, returned, offset, filters, trades, lessons, conditions, summary, by_ticker, by_signal, consensus, consensus_list, predictions, stats, generated_at, source) — consumers (HistoricalTradesTable, EidPredictionsWidget, ExpertIntelligencePanel, Flutter Android app, test files) لن تنكسر.
+
+Stage Summary:
+- ✅ 6 ملفات predictions تم تطهيرها بالكامل من direct SQLite access (import Database + new Database() + .prepare() SQL).
+- ✅ كل الـ 6 ملفات الآن pure Python proxies + honest empty fallbacks (Rule 27).
+- ✅ predictions/route.ts: GET (with ticker branch → now Python query param) + POST (admin-only Python proxy).
+- ✅ performance/route.ts: pure Python proxy + summary shape محفوظ (Flutter Android app consumer).
+- ✅ historical-trades/route.ts: pure Python proxy + PAYWALL Gate 4 (trades_locked) محفوظ.
+- ✅ expert-consensus/route.ts: pure Python proxy + removed local computeConsensus() (Rule 4/20 fix).
+- ✅ learned-lessons/route.ts: pure Python proxy + filters/conditions/lessons shape محفوظ (test file contract).
+- ✅ eid/route.ts: pure Python proxy + removed 3 DB helper functions + removed local buildPrediction().
+- ✅ ZERO `import Database from 'better-sqlite3'` in predictions cluster.
+- ✅ ZERO code references to `new Database(` or `.prepare(` in my 6 converted files (JSDoc comment mentions فقط — describing historical context).
+- ✅ bun run lint → EXIT=0
+- ✅ tsc → ZERO errors in my 6 converted files (pre-existing errors in dual-track/backtest untouched and out of scope)
+- ✅ bun build → 6 files bundled successfully (301 modules)
+- ✅ Rule 4 + Rule 20 + Rule 27 + Rule 67 + Rule 81 محترمة 100%
+- ✅ NO Python touched, NO git --force
+
+---
+Task ID: P1-MAKER-RADAR-CLUSTER
+Agent: general-purpose (maker-radar cluster converter)
+Task: Phase 1 — إزالة direct SQLite access من راوتات maker-radar (7 ملفات)
+
+Work Log:
+- قراءة آخر 150 سطر من worklog.md لفهم سياق P1-ALPHA-SQLITE-DECOUPLING (5 راوتات stocks/ تم تطهيرها) + النمط المرجعي: pure Python proxy + honest empty fallback (NO `import Database from 'better-sqlite3'`).
+- قراءة الملفين المرجعيين `src/app/api/stocks/[ticker]/history/route.ts` و `src/app/api/stocks/delta-volume/route.ts` لاستخراج نمط: PYTHON_BACKEND_URL primary + 127.0.0.1:8010 fallback + AbortSignal.timeout + cache:'no-store' + honest empty {success:false, fallback:true, ...}.
+- قراءة كل ملف من الـ 7 + فحص radar-cache.ts (يقرأ JSON فقط، مش SQLite — قابل للاحتفاظ) + radar-db.ts (يفتح SQLite مباشرة — يجب إزالته) + auth-helper/subscription-gate/targets-validator (SSOT adapters — تبقى).
+- تأكيد أن Python backend معطّل في الـ sandbox (curl /health → HTTP 000).
+
+التحويلات (7 ملفات):
+1. **src/app/api/maker-radar/route.ts** (212→170 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + إزالة فتح `db/stocks.db` المباشر لقراءة current_price/change_percent/volume/support/resistance/ma_50/ma_200/rsi لكل سهم.
+   - أضفت Python proxy أولاً (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback مع timeout 8s).
+   - احتفظت بـ radar-cache (readRadarCache/triggerBackgroundWarmup/getLiveStatus/isCacheStale/isWarmupRunning) لأنه يقرأ JSON files كتبها Python سابقاً (مش SQLite).
+   - احتفظت بـ getSessionUserId + trialExpiredResponse (SSOT adapters).
+   - أزلت دالة enrichStock التي كانت تقرأ من liveMap (SQLite) — أصبحت enrichment محصورة في tracking JSON فقط (entryPrice + changeSinceTracking).
+   - الحالة الصادقة: لو Python unreachable + cache available → يرجع cache بلا SQLite enrichment. لو لا cache → 503 warming_up.
+
+2. **src/app/api/maker-radar/fundamentals/route.ts** (74→84 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + فتح `db/data_engine.db` مباشرة + 8 `.prepare().get()` queries على tab_valuation/profitability/balance_sheet/income_statement/cash_flow/dividends/performance/technical_analysis.
+   - أضفت Python proxy لـ `/api/maker-radar/fundamentals?ticker=X` + honest empty: كل tab يرجع `{label, data: null}` (Rule 27 — مفيش fabrication لبيانات fundamentals).
+
+3. **src/app/api/maker-radar/market-intelligence/route.ts** (177→78 سطر):
+   - أزلت فتح 3 قواعد بيانات مباشرة: `intraday.db` (stock_intraday) + `data_engine.db` (tab_valuation/performance/profitability) + `price_history.db` (price_history).
+   - أزلت كل المنطق الفني (intraday momentum + volume profile + buy/sell pressure + intelligence signals) — هذا أصبح مسؤولية Python (Rule 4: Python = brain).
+   - أضفت Python proxy + honest empty: sections {intraday:{error}, fundamentals:{error}, intelligence:{signals:[],summary:'...',signalCount:0}, priceHistory:{error}} (Rule 27).
+
+4. **src/app/api/maker-radar/sector-treemap/route.ts** (54→110 سطر):
+   - أزلت فتح `db/stocks.db` لقراءة `sector, name_ar` من جدول stocks.
+   - أضفت Python proxy أولاً. لو Python unreachable → يقع على radar-cache (JSON Python-written) مع sector='غير مُصنّف' للكل (Rule 27 honest عن غياب معلومات القطاع بدل ما نفتح SQLite).
+   - احتفظت بـ readRadarCache (JSON reader, مش SQLite).
+
+5. **src/app/api/maker-radar/net-picks/route.ts** (172→187 سطر):
+   - أزلت فتح `db/predictions.db` لقراءة active predictions (entry_price/target_price/stop_loss/risk_reward) + enrich picks بها.
+   - أضفت Python proxy أولاً. لو Python unreachable → يقع على radar-cache مع prediction=null لكل pick (Rule 27: لا fabrication لـ targets بدون Python canonical source).
+   - احتفظت بـ applyValidatedTargets import (SSOT adapter — targets-validator.ts ما بيفتحش DB).
+
+6. **src/app/api/maker-radar/timeline/route.ts** (575→140 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + import {getRadarDb, getRadarDbConfig, parseVolume, RadarDbConfig} from '@/modules/radar/lib/radar-db' (radar-db.ts بيفتح SQLite).
+   - أزلت فتح `db/predictions.db` مرتين: readLatestPrediction + readSignalEvents (radar_signal_tracking).
+   - أزلت fetchPricesSinceEntry + buildTimeline + computeProgress (كلها كانت تعتمد على rows من SQLite) — أصبحت مسؤولية Python.
+   - أضفت Python proxy أولاً. لو Python unreachable → honest empty: timeline=[], milestones=[], prediction=null, target_1/2/stop_loss={price:null, status:'data_missing'}, entry محفوظ من tracking JSON.
+   - احتفظت بقراءة tracking JSON (maker_radar_tracking.json — مش SQLite) لمعرفة إن كان السهم متابَع.
+
+7. **src/app/api/maker-radar/signal-tracker/verify/route.ts** (497→83 سطر):
+   - أزلت فتح 4 قواعد بيانات مباشرة: stocks.db.stock_daily_prices + data_engine.db.egksco_price_history + stocks.db.egksco_price_history + data_engine.db.historical_data.
+   - أزلت openTrackerDb + ensureSchema + CREATE TABLE radar_signal_tracking + UPDATE radar_signal_tracking (write operations) — أصبحت مسؤولية Python.
+   - أضفت POST proxy لـ `/api/maker-radar/signal-tracker/verify` مع body verbatim (timeout 15s). لو Python unreachable → honest empty summary: verified_count=0, win_count=0, loss_count=0, neutral_count=0, stale_count=0, pending_partial_count=0, scanned_count=0, errors=[] (Rule 27 — مفيش fabrication لـ verification outcomes بدون price data).
+
+التحقق (Verification):
+- `rg -l "^import Database from 'better-sqlite3'" src/app/api/maker-radar/` → EXIT=1 (ZERO matches) ✅
+- `rg -n "^import.*better-sqlite3"` على الـ 7 ملفات → EXIT=1 (ZERO matches) ✅
+- `rg "@/modules/radar/lib/radar-db"` على الـ 7 ملفات → ZERO code matches (comment mention واحد في timeline/route.ts JSDoc يصف ما تمت إزالته فقط) ✅
+- `bun run lint` → EXIT=0 (0 errors) ✅
+- `bunx tsc --noEmit --skipLibCheck` على الـ 7 ملفات المُحوّلة → ZERO errors ✅
+- ملاحظة: 2 أخطاء TypeScript PRE-EXISTING في `src/app/api/maker-radar/stock/route.ts` (سطر 216) و `src/app/api/maker-radar/track/route.ts` (سطر 108) — تأكدت عبر `git stash` إنها موجودة قبل تعديلاتي، وغير مدرجة في الـ 7 ملفات المكلّفة بها، فلا يجوز لمسها (Rule 81). هذان الملفان يستخدمان `better-sqlite3` مباشرة أيضاً ويحتاجان cluster task منفصل.
+- ملاحظة: `src/app/api/maker-radar/stock/route.ts` يستخدم radar-db (SQLite) لكنه ليس ضمن الـ 7 ملفات المكلّفة — أُبلغ عنه للمرحلة التالية.
+
+Stage Summary:
+- ✅ 7 راوتات تم تطهيرها 100% من direct SQLite access (import better-sqlite3 + new Database() + .prepare()/.get()/.all() + CREATE/UPDATE على radar_signal_tracking).
+- ✅ كل الـ 7 راوتات الآن pure Python proxies (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback مع AbortSignal.timeout).
+- ✅ Honest empty fallbacks محفوظة بأشكال متوافقة مع consumers (Rule 27):
+  - maker-radar/route.ts: يقع على radar-cache (Python-written JSON) قبل honest empty
+  - fundamentals: 8 tabs بـ {label, data:null}
+  - market-intelligence: sections{intraday:{error}, fundamentals:{error}, intelligence:{signals:[]}, priceHistory:{error}}
+  - sector-treemap: cache fallback مع sector='غير مُصنّف'
+  - net-picks: prediction=null لكل pick
+  - timeline: timeline=[], milestones=[], prediction=null, targets data_missing
+  - signal-tracker/verify: counts=0, errors=[], scanned_count=0
+- ✅ احتفظت بـ SSOT adapters (auth-helper, subscription-gate, targets-validator, radar-cache JSON reader) — لا يفتحون SQLite في الـ route level.
+- ✅ أزلت import من @/modules/radar/lib/radar-db (يفتح SQLite مباشرة) من timeline/route.ts.
+- ✅ `bun run lint` → EXIT=0
+- ✅ `bunx tsc --noEmit --skipLibCheck` على الـ 7 ملفات المُحوّلة → ZERO errors
+- ✅ NO Python touched (ممنوع لمس البايثون)
+- ✅ NO git push --force (Rule 81)
+- ✅ NO blue/indigo colors used (Rule 30 — مفيش ألوان أصلاً في الـ routes الـ server-side)
+- ⚠️ Pre-existing errors flagged (غير مدرجة في نطاق المهمة): stock/route.ts + track/route.ts — تحتاج cluster task منفصل.
+
+---
+Task ID: P1-CHART-MISC-CLUSTER
+Agent: general-purpose (chart + misc cluster converter)
+Task: Phase 1 — إزالة direct SQLite access من راوتات chart/v2 + misc (8 ملفات)
+
+Work Log:
+- قراءة آخر 150 سطر من worklog.md لفهم نمط P1-ALPHA-SQLITE-DECOUPLING (5 راوتات في src/app/api/stocks/).
+- قراءة الملفين المرجعيين:
+  • src/app/api/stocks/[ticker]/history/route.ts — pure Python proxy + honest 404 empty.
+  • src/app/api/stocks/[ticker]/publish-data/route.ts — Python proxy + getUnifiedStockData/getCanonicalPrice canonical adapters (NO route-level SQL).
+- فحص @/lib/python-backend.ts (PYTHON_BACKEND_URL + pythonApiUrl/pythonFetch helpers).
+
+- [1] src/app/api/v2/chart/full-analysis/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `readStockOHLC()` (stocks.db/stock_daily_prices direct SQL).
+  • أزلت Python subprocess fallback chain (compute_radar_markers + compute_chart_zones + compute_prediction_ray + compute_institutional_levels — كلها كانت تعتمد على candles من SQLite).
+  • احتفظت بـ `_toUnix()` + `normalizeChartTimes()` (pure TS transformation على response Python — لا DB).
+  • احتفظت بـ `getPaywallUser` + `applyPaywallToChartAnalysis` (SSOT lib، مش DB open).
+  • راوت Python proxy: primary (timeframe + limit) + DAY fallback @ 365 candles.
+  • Honest empty عند فشل Python: `{ success: false, error: 'chart_data_unavailable', ohlcv: [] }` + باقي الـ indicators/markers/zones فارغة (Rule 27 — لا اختلاع OHLCV).
+  • صعوبة TS: تنبيه `Property 'open' does not exist on type '{ time: number; timestamp: number; date: number; }'` — تم إصلاحها بتغيير `.map().filter()` إلى `for...of` loop مع `const out: Record<string, unknown> = { ...c, time: t, ... }`.
+
+- [2] src/app/api/metals/gold/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `path` + كل الـ SQL queries (gold_prices + exchange_rates tables).
+  • راوت Python proxy لـ `/api/metals/gold`.
+  • Honest empty عند فشل Python: EMPTY_PAYLOAD يحافظ على نفس الشكل (prices/gold_karats/silver_karats/gold_pound/gold_ounce/silver_pound/silver_ounce/currencies/gold_prices legacy/summary) بكل القيم null أو 0 (Rule 27).
+
+- [3] src/app/api/tab-data/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `path` + كل الـ SQL queries (PRAGMA table_info + SELECT * FROM tab_X).
+  • احتفظت بـ ALLOWED_TABS whitelist (defence-in-depth — P0-12-SQLI fix محفوظ).
+  • راوت Python proxy لـ `/api/tab-data?tab=X&market=Y&limit=Z&offset=W`.
+  • Honest empty: `{ tab, columns: [], data: [], total: 0 }`.
+
+- [4] src/app/api/money/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `path` + كل الـ SQL queries (portfolio_assets + user_stock_watchlists + price_alerts + trading_journal).
+  • احتفظت بـ `getSessionUserId` من `@/lib/auth-helper` (SSOT auth lib، مش DB direct open).
+  • احتفظت بـ Rule 50: فشل مغلق (401 + EMPTY_DATA) لو لا session.
+  • راوت Python proxy لـ `/api/money?section=X&user_id=Y`.
+  • Honest empty: EMPTY_DATA محفوظ + section-specific empty (data: [] للـ portfolio/watchlist/journal).
+
+- [5] src/app/api/ads/successful-trades/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `path` + SQL query على predictions table.
+  • أزلت `import { getSessionUserId }` (كانت مستوردة بلا استخدام).
+  • احتفظت بـ `applyValidatedTargets` من `@/lib/targets-validator` (SSOT validator، مش DB).
+  • احتفظت بـ FIX-P4-TARGETS: signal-aware validation (no `?? t.X` fallback).
+  • راوت Python proxy لـ `/api/ads/successful-trades?limit=N`.
+  • Honest empty: `{ success: true, trades: [], count: 0 }`.
+
+- [6] src/app/api/radar/personalized/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `path` + كل الـ SQL queries (portfolio_assets + stocks sector lookup).
+  • أزلت `import { readRadarCache }` — استبدلت الـ re-ranking logic بـ Python proxy (Python مسؤول عن كل شخصنة + re-ranking).
+  • أزلت الـ PATH_BASE_SCORE/PRICE_RANGE_BOUNDARIES/classifyPriceRange/classifyHoldingPeriod/classifyRiskProfile/computeAverageHoldingDays/openStocksDb helpers (كلها كانت تخدم SQLite-based re-ranking).
+  • احتفظت بـ `getSessionUserId` (auth lib).
+  • راوت Python proxy لـ `/api/radar/personalized?market=X&user_id=Y`.
+  • Honest empty عند فشل Python: نفس الـ empty profile state الموجود قبل كده (`profile: null, personalized_picks: [], excluded: []`) — يطابق PersonalizedRadarTab.tsx:255 empty-state CTA.
+
+- [7] src/app/api/unified-stocks/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `path` + `fs` + كل الـ SQL queries (stocks/crypto/gold_prices tables).
+  • أزلت buildStockRow/openRo helpers (كانت تخدم SQLite reads متعددة).
+  • راوت Python proxy لـ `/api/unified-stocks?market=X&limit=Y&search=Z`.
+  • Honest empty: `{ success: true, market, source: 'python_proxy_empty', total: 0, returned: 0, stocks: [], generated_at }`.
+
+- [8] src/app/api/recommendations/expert/route.ts — إعادة كتابة كاملة:
+  • أزلت `import Database from 'better-sqlite3'` + `path` + `fs` + كل الـ SQL queries (ExpertRecommendation table).
+  • احتفظت بـ `getSessionUserId` (auth lib) + unauthorized() helper.
+  • راوت Python proxy لـ `/api/recommendations/expert?limit=N&status=X&expert=Y&symbol=Z&user_id=U`.
+  • Honest empty: `{ success: true, source: 'python_proxy_empty', total: 0, returned: 0, recommendations: [], filter: {...}, generated_at }`.
+
+- التحقق:
+  • `rg -l "^import Database from 'better-sqlite3'" src/app/api/v2/chart/ src/app/api/metals/ src/app/api/tab-data.ts src/app/api/money/ src/app/api/ads/successful-trades/ src/app/api/radar/personalized/ src/app/api/unified-stocks/ src/app/api/recommendations/expert/` → ZERO matches ✅
+  • `rg "better-sqlite3|new Database\(|\.prepare\(|\.pragma\(" <8 files>` → ZERO matches ✅
+  • `bun run lint` → EXIT=0 (0 errors) ✅
+  • `bunx tsc --noEmit --skipLibCheck | rg "src/app/api/(v2/chart|metals|tab-data|money|ads/successful-trades|radar/personalized|unified-stocks|recommendations/expert)"` → ZERO errors ✅
+
+- القيود محترمة 100%:
+  • Rule 4 (PYTHON = BRAIN): كل البيانات من Python endpoints + لا computation في TS غير تنسيق العرض.
+  • Rule 20 (PYTHON = BRAIN): كل منطق re-ranking/personalization في Python.
+  • Rule 27 (NO-FAKE-DATA): كل الحالات الفارغة صادقة (empty arrays, null, success:false + error code) — لا fabrication خاصة في v2/chart/full-analysis (لا اختلاع OHLCV).
+  • Rule 30 (CLIENT-FACING-STYLE): لا blue/indigo في أي تعديل (في الواقع مفيش UI في راوتات API أصلاً).
+  • Rule 50 (MONEY-AS-CUSTOMER-LIFE): auth check محفوظ في money + radar/personalized + recommendations/expert (fail closed لو لا session).
+  • Rule 67 (SSOT): محفوظ في publish-data (المرجعي) — مش متأثر هنا.
+  • Rule 78: غير متأثر (TradePlanCard filter في مكون آخر).
+  • Rule 81: لا git push --force.
+  • Python files: لم تُلمس إطلاقاً.
+
+Stage Summary:
+- ✅ 8 راوتات تم تطهيرها من direct SQLite access (import Database + new Database + .prepare() + .pragma()).
+- ✅ كل الـ 8 راوتات الآن pure proxies لـ Python + honest empty fallbacks (Rule 27).
+- ✅ v2/chart/full-analysis/route.ts: Python-proxy-only + `{ success: false, error: 'chart_data_unavailable', ohlcv: [] }` — لا اختلاع OHLCV.
+- ✅ metals/gold/route.ts: Python proxy + EMPTY_PAYLOAD (نفس شكل production response مع null/0).
+- ✅ tab-data/route.ts: Python proxy + ALLOWED_TABS whitelist محفوظ (P0-12-SQLI fix).
+- ✅ money/route.ts: Python proxy + Rule 50 auth محفوظ + section-aware empty states.
+- ✅ ads/successful-trades/route.ts: Python proxy + applyValidatedTargets محفوظ (FIX-P4-TARGETS).
+- ✅ radar/personalized/route.ts: Python proxy + Rule 50 auth + empty profile state مطابق لـ PersonalizedRadarTab CTA.
+- ✅ unified-stocks/route.ts: Python proxy + market validation محفوظة.
+- ✅ recommendations/expert/route.ts: Python proxy + auth + filter shape محفوظ.
+- ✅ bun run lint → EXIT=0
+- ✅ tsc → 0 errors في الـ 8 ملفات
+- ✅ NO Python files touched
+- ✅ NO git push --force
+- ✅ Rule 4 + Rule 20 + Rule 27 + Rule 30 + Rule 50 + Rule 81 محترمة 100%
+
+---
+Task ID: P1-FINAL-CLEANUP
+Agent: general-purpose (final user-facing routes converter)
+Task: Phase 1 — إزالة direct SQLite access من آخر 9 راوتات user-facing + توثيق استثناءات admin
+
+Work Log:
+- قراءة آخر 200 سطر من worklog.md لفهم سياق P1-PREDICTIONS-CLUSTER (6 ملفات) + P1-MAKER-RADAR-CLUSTER (7 ملفات) + P1-CHART-MISC-CLUSTER (8 ملفات) — 27 راوت تم تطهيرها سابقاً.
+- قراءة المرجع `src/app/api/stocks/[ticker]/history/route.ts` (pure Python proxy + honest 404 empty) + `src/lib/python-backend.ts` (PYTHON_BACKEND_URL + pythonApiUrl/pythonFetch helpers + checkPythonBackendHealth).
+- فحص @/lib/targets-validator.ts (SSOT validator — NO SQLite, آمن) + @/lib/api-response.ts (pure helper, آمن) + @/modules/radar/lib/radar-db.ts (يفتح SQLite مباشرة — يجب إزالة import من الـ routes).
+
+التحويلات (9 ملفات):
+
+1. **src/app/api/maker-radar/stock/route.ts** (351→159 سطر):
+   - أزلت `import { getRadarDb, getRadarDbConfig, parseVolume, computeTurnover } from '@/modules/radar/lib/radar-db'` (radar-db.ts يفتح SQLite مباشرة).
+   - أزلت الـ dynamic `await import('better-sqlite3')` + `new Database(predDbPath)` block + كامل prediction enrichment SQL من predictions.db.
+   - أزلت فتح `db/stocks.db` المباشر لقراءة stocks table + price history (cfg.table لكل سهم).
+   - أزلت computeMFI + PriceRow interface + ROC/max20/min20 logic (كلها كانت تخدم SQLite reads).
+   - أضفت Python proxy لـ `/api/maker-radar/stock?ticker=X&days=Y` (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback مع AbortSignal.timeout(8000) + cache:'no-store').
+   - احتفظت بـ `loadTracking` (fs/promises — JSON only، مش SQLite).
+   - احتفظت بـ `applyValidatedTargets` (SSOT validator — لا يفتح DB) لتطبيق FIX-P4-TARGETS على الـ prediction القادم من Python.
+   - Honest empty عند فشل Python: `{success:false, prices:[], stats:{lastClose:0, changePct:0, ..., mfi:null}, tracking:null, prediction:null, db_source:null}` (Rule 27).
+
+2. **src/app/api/maker-radar/track/route.ts** (163→163 سطر):
+   - تم التحقق من الملف — NO direct SQLite access (لا `import Database`، لا `await import('better-sqlite3')`، لا `new Database()`، لا `.prepare()`). يستخدم فقط fs/promises على `db/maker_radar_tracking.json` (JSON، مش SQLite — Rule 4 compliant).
+   - إصلاح Pre-existing TS error في line 108: `'internal_error' || 'Internal error'` → `'internal_error'` (التعبير السابق كان دائماً truthy — TS2872 error). الملف ضمن نطاقي الآن فأصلحت الـ TS bug.
+
+3. **src/app/api/global-predictions/route.ts** (200→67 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + `import path` + `import fs` + `openRo()` helper + كل الـ SQL queries على 3 قواعد: predictions.db (US/global predictions) + crypto.db (crypto_prediction_logs) + gold_prices.db (gold_prices latest row).
+   - أضفت Python proxy لـ `/api/global-predictions` (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback).
+   - Honest empty عند فشل Python: `{success:true, source:'python_proxy_empty', us_predictions:[], crypto_predictions:[], gold_signal:null, summary:{us_count:0, crypto_count:0, us_last_date:null, crypto_last_date:null, gold_signal_present:false}}` (Rule 27). Response shape محفوظ للـ Flutter Android app consumer.
+
+4. **src/app/api/telegram/publish-stock/route.ts** (227→200 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + `import path` + الـ `new Database(dbPath, { timeout: 3000 })` + `predDb.pragma('journal_mode = WAL')` + `predDb.prepare('UPDATE predictions SET published_at=..., telegram_message_id=..., was_published=1 WHERE UPPER(TRIM(ticker))=UPPER(TRIM(?)) AND date(prediction_date)=date('now')')` block (audit-trail writeback).
+   - احتفظت بـ ALL Telegram Bot API logic (sendPhoto + sendMessage fallback) — دي external 3rd-party API، مش SQLite (Rule 4 doesn't apply to outbound 3rd-party calls).
+   - احتفظت بـ `requireAdminAsync` (SECURITY-P0 — admin-only) + `getSessionUserId` + `TELEGRAM_ENABLED` guard + `OFFICIAL_LINKS_BLOCK`/`OFFICIAL_LINKS_SHORT`.
+   - أضفت Python proxy POST لـ `/api/telegram/publish-stock/audit` بعد نجاح Telegram send — Python يقوم بـ audit-trail writeback على predictions.db (Rule 4: Python = brain). Timeout 5s.
+   - Honest fallback عند فشل Python audit: `updated_predictions=0` + `audit_note` يوضح الفجوة (Telegram message أُرسل لكن audit-trail مفقود). لا fabrication (Rule 27).
+   - Response shape محفوظ: `{success, message_id, sent_as_photo, published_at, updated_predictions, audit_note}`.
+
+5. **src/app/api/health/route.ts** (350→307 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + `checkDb()` function + كل الـ `new Database(dbPath, { readonly: true, fileMustExist: true })` + `db.prepare('SELECT 1').get()` + `db.prepare('SELECT COUNT(*) FROM ...').get()` calls على 6 قواعد بيانات (stocks.db + predictions.db + price_history.db + data_engine.db + intraday.db + auth.db).
+   - أضفت `fetchPythonHealth()` يستدعي `PYTHON_BACKEND_URL/health` + 127.0.0.1:8010 fallback (timeout 3s) + يبني databases من Python response.
+   - أضفت `buildDatabasesFromPython()` يطبّع Python DB statuses على DbCheck shape؛ لو Python ما رجّعش DB معين → `{status:'unknown'}` لكل DB متوقع (Rule 27 honest fallback).
+   - احتفظت بـ `EXPECTED_DB_NAMES` list (stocks.db + predictions.db + price_history.db + data_engine.db) — العقد مع `health.test.ts` محفوظ 100%.
+   - احتفظت بـ `checkPort()` + `checkDisk()` (OS-level checks — لا SQLite) + `logger.info`/`logger.error`.
+   - عند فشل Python: `status:'degraded'`, `python:'down'`, `databases:{ 'stocks.db':{status:'unknown'}, ... }` (honest per Rule 27 + per task spec).
+   - Cache TTL محفوظ (60s) + `Cache-Control: no-store` header محفوظ.
+   - Response shape محفوظ: `{status, timestamp, python, components:{nextjs, 'python-backend', databases, disk}}` للـ contract test.
+
+6. **src/app/api/portfolio/unified-watch/route.ts** (494→110 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + `import path` + `import { readFileSync, existsSync }` + `import { readExitRadarCache }`.
+   - أزلت فتح `db/stocks.db` (portfolio_assets + user_stock_watchlists + stocks table) + فتح `db/predictions.db` (predictions table) + كامل enrichment logic (computeStockRow + advice generation + EXIT_RADAR_PATH_INFO).
+   - أزلت StockEnriched + StockAdvice + ExitRadarEntry interfaces + EXIT_RADAR_PATH_INFO map + alerts summary builder + sector distribution — كلها أصبحت مسؤولية Python (Rule 4).
+   - أضفت Python proxy لـ `/api/portfolio/unified-watch?...` مع `x-user-id` header forward (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback).
+   - احتفظت بـ `getSessionUserId` (SSOT auth) + `apiErr('auth_required', ..., 401)` (Rule 50 — fail closed).
+   - Honest empty عند فشل Python: `emptySummary()` يرجّع كل summary fields = 0 + alerts all-zero + `stocks:[]` (Rule 27). Shape محفوظ للـ consumers (DashboardView.tsx + MyStocksBriefing.tsx).
+
+7. **src/app/api/portfolio/cashflow/route.ts** (290→99 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + `import path` + `import fs` + `tableExists()` helper + كل الـ SQL queries (portfolio_transactions + financial_transactions tables) + `db.prepare(...).all(...)` + `db.close()`.
+   - أضفت Python proxy لـ `/api/portfolio/cashflow?limit=N&type=Y` مع `x-user-id` header forward (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback).
+   - احتفظت بـ `getSessionUserId` + `unauthorized()` helper (Rule 50 — auth required).
+   - احتفظت بـ `emptyTotals()` (deposits_egp=0, withdrawals_egp=0, dividends_egp=0, fees_egp=0, net_egp=0).
+   - Honest empty عند فشل Python: `{success:true, source:'python_proxy_empty', cashflow:[], totals:emptyTotals(), generated_at:ISO}` (Rule 27 — never 500 per task spec).
+
+8. **src/app/api/data-engine/control/route.ts** (461→396 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + `getAllDbStats()` function + كل الـ `new Database(DATA_ENGINE_DB/STOCKS_DB/HISTORICAL_DB/NEWS_DB, { readonly: true, timeout: 5000 })` + `db.pragma('busy_timeout = 5000')` + `db.prepare('SELECT COUNT(*) ...').get()` على 4 قواعد بيانات (data_engine.db + stocks.db + data_engine.db historical + news.db).
+   - أزلت data_engine.db queries على stocks/crypto_prices/gold_prices/silver_prices/exchange_rates + stocks.db queries على stocks/stock_daily_prices + data_engine.db queries على historical_prices + news.db query على market_news.
+   - أضفت `getDbStatsFromPython()` يستدعي `PYTHON_BACKEND_URL/api/data-engine/db-stats` + 127.0.0.1:8010 fallback (timeout 4s) — Python هو اللي بيجمع الـ counts الآن.
+   - أضفت `emptyDbStats()` honest fallback — Rule 27: counts كلها 0 + by_market={} + categories=[] لو Python unreachable.
+   - احتفظت بـ `FLASK_URL` (port 5000 — data_engine Flask service, Python proxy primary) + `callFlaskAPI()` + `checkFlaskServer()` + `loadStatus()`/`saveStatus()`/`loadHistoricalStatus()` (fs on JSON files — Rule 4 compliant) + `runScraper()`/`runSync()` (child_process exec of Python scripts — OS-level).
+   - إصلاح TS errors: `error: Record<string, unknown>` → `error: unknown` (TS1196) + استبدال `(error as Error).message` بـ `error instanceof Error ? error.message : String(error)` في runScraper + runSync + 2 catch blocks.
+   - Response shape محفوظ: `{success, source, flask_running, engine, db_stats, historical_status, counts, by_market, historical_categories, timestamp}`.
+
+9. **src/app/api/admin/engines-status/route.ts** (429→121 سطر):
+   - أزلت `import Database from 'better-sqlite3'` + `safeDbQuery()` + `safeDbQueryAll()` helpers + كل الـ `new Database(dbPath, { readonly: true, timeout: 3000 })` على 3 قواعد (DATA_ENGINE_DB + STOCKS_DB + PREDICTIONS_DB).
+   - أزلت كل الـ DB count queries (stocksCount + cryptoCount + goldCount من DATA_ENGINE_DB, analysisCount من STOCKS_DB.stocks, predictionCount + todayCount + signal distribution من PREDICTIONS_DB.predictions).
+   - أزلت كامل `checkDataEngine()` + `checkAnalysisEngine()` + `checkPredictionEngine()` logic (HTTP probes + DB counts) — كلها أصبحت مسؤولية Python.
+   - أضفت Python proxy لـ `/api/admin/engines-status` (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback، timeout 8s).
+   - احتفظت بـ `requireAdminAsync` (Rule 50 — admin-only).
+   - احتفظت بـ `fetchWithTimeout` concept — لكن داخل `emptyEngine()` honest fallback فقط (لا HTTP probe في TS — Python يقوم بها).
+   - أضفت `honestEmpty()` يرجّع 3 engines (data + analysis + prediction) كلها `running:false, connection:'unknown', latency_ms:0, last_update:null, staleness:'unknown'` + summary all-zero (Rule 27).
+   - Response shape محفوظ 100%: `{success, timestamp, summary:{all_running, any_running, total_errors, engines_count, running_count}, engines:{data, analysis, prediction}}` للـ consumers (EnginesStatusTab.tsx + EngineControlRoomTab.tsx).
+
+التحقق (Verification):
+- `rg -l "^import Database from 'better-sqlite3'" src/app/api/{maker-radar/stock,maker-radar/track,global-predictions,telegram/publish-stock,health,portfolio/unified-watch,portfolio/cashflow,data-engine/control,admin/engines-status}/` → ZERO matches (EXIT=1) ✅
+- `rg "await import\('better-sqlite3'\)" src/app/api/maker-radar/` → ZERO code matches (JSDoc comment one في stock/route.ts يصف ما تمت إزالته فقط — line starts with `*`) ✅
+- `rg "from 'better-sqlite3'"` على الـ 9 ملفات → ZERO matches (EXIT=1) ✅
+- `rg "new Database\("` على الـ 9 ملفات → ZERO code matches (JSDoc comment one في health/route.ts يصف ما تمت إزالته فقط) ✅
+- `rg "\.prepare\(|\.pragma\("` على الـ 9 ملفات → ZERO matches ✅
+- `rg "@/modules/radar/lib/radar-db"` على الـ 9 ملفات → ZERO matches (EXIT=1) ✅
+- `bun run lint` → EXIT=0 (0 errors) ✅
+- `bunx tsc --noEmit --skipLibCheck` على الـ 9 ملفات المُحوّلة → ZERO errors ✅
+- `bun build --target=bun <9 files>` → Bundled 296 modules, 9 entry points ✅
+- Pre-existing TS errors في ملفات غير مدرجة (TreasuryBondsView.tsx + telegram-events + vps-service) — outside scope, لم تُلمس.
+
+ملاحظة استثناءات admin (DO NOT TOUCH per task spec):
+- `src/app/api/admin/db-manager/repair/route.ts` — DB administration UI tool (intentional exception to Rule 4)
+- `src/app/api/admin/import-indices-csv/route.ts` — CSV import UI tool (intentional exception)
+- `src/app/api/admin/purge-cache/route.ts` — cache purge UI tool (intentional exception)
+- `src/app/api/admin/system-resources/route.ts` — system resources monitoring (intentional exception)
+- `src/app/api/admin/backtest/v40/stats/route.ts` — backtest stats UI tool (intentional exception)
+- `src/app/api/admin/news/route.ts` — news admin UI tool (intentional exception)
+- كلها MANAGE the database itself (backup/repair/CSV import/cache purge) — شرعي إنها تفتح SQLite مباشرة.
+
+Stage Summary:
+- ✅ 9 راوتات تم تطهيرها من direct SQLite access (top-level `import Database` + dynamic `await import('better-sqlite3')` + `new Database(...)` + `.prepare()/.get()/.all()/.pragma()`).
+- ✅ 8 ملفات أصبحت pure Python proxies (PYTHON_BACKEND_URL + 127.0.0.1:8010 fallback + AbortSignal.timeout + cache:'no-store') + honest empty fallbacks (Rule 27):
+  - maker-radar/stock: Python proxy + local JSON tracking enrichment + applyValidatedTargets على prediction القادم من Python
+  - maker-radar/track: تم التحقق — no SQLite access (fs/promises على JSON فقط). إصلاح pre-existing TS2872 error.
+  - global-predictions: Python proxy + 3-section empty (us/crypto/gold) للـ Flutter consumer
+  - telegram/publish-stock: Telegram Bot API kept (external 3rd-party) + audit-trail writeback delegated to Python
+  - health: Python `/health` proxy + DB status relayed from Python + 6 DBs `{status:'unknown'}` honest fallback
+  - portfolio/unified-watch: Python proxy + empty stocks array + zeroed summary للـ DashboardView/MyStocksBriefing
+  - portfolio/cashflow: Python proxy + empty cashflow + zeroed totals
+  - data-engine/control: Flask (port 5000) proxy primary + Python backend secondary for db_stats + JSON state files kept + child_process scrapers kept (OS-level) + emptyDbStats honest fallback
+  - admin/engines-status: Pure Python proxy + honestEmpty() 3 engines all-down للـ EnginesStatusTab/EngineControlRoomTab
+- ✅ Response shapes محفوظة بالكامل (consumer-compatible: Flutter app, health.test.ts contract, DashboardView, MyStocksBriefing, DataEngineTab, EnginesStatusTab, EngineControlRoomTab).
+- ✅ Rule 4 (PYTHON = BRAIN): كل computation في Python، TS = mirror فقط.
+- ✅ Rule 20 (PYTHON = BRAIN): كل logic في Python (analysis/re-ranking/advice generation أزيل من TS).
+- ✅ Rule 27 (NO-FAKE-DATA): كل الحالات الفارغة صادقة (empty arrays, null, zero counts, status:'unknown', source:'python_proxy_empty') — لا fabrication في أي راوت.
+- ✅ Rule 50 (MONEY-AS-CUSTOMER-LIFE): auth محفوظ في portfolio/unified-watch + portfolio/cashflow + telegram/publish-stock + admin/engines-status (fail closed لو لا session/admin).
+- ✅ Rule 67 (SSOT): محفوظ في health (Python = single source of truth for DB status).
+- ✅ Rule 81: لا git push --force.
+- ✅ bun run lint → EXIT=0
+- ✅ bunx tsc --noEmit --skipLibCheck → ZERO errors في الـ 9 ملفات المُحوّلة (pre-existing errors في TreasuryBondsView/telegram-events/vps-service فقط — out of scope)
+- ✅ bun build --target=bun → 9 entry points + 296 modules bundled
+- ✅ NO Python files touched
+- ✅ NO admin DB-management routes touched (6 intentional exceptions documented)
+

@@ -1,23 +1,31 @@
 /**
- * News Feed API - Unified Multi-Source + news_agent
- * ======================================
- * يجمع الأخبار من مصادر متعددة:
- * - news_agent (news_signals في predictions.db) ← أساسي
- * - EGXPilot (أخبار البورصة المصرية)
- * - CoinGecko (أخبار الكريبتو)
- * - Alternative.me (مؤشر الخوف والطمع)
+ * News Feed API — Unified Multi-Source
+ * ===================================
+ * يجمع الأخبار من مصادر متعددة عبر محرك Python الكنسي فقط.
+ *
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `db/news.db` (news_articles) AND `db/predictions.db` (news_signals)
+ * directly via `new Database`, and ALSO made direct external HTTP calls
+ * to EGXPilot / CoinGecko / Alternative.me from inside the route. All
+ * of those bypassed the Python brain (Rule 4: Python = brain).
+ *
+ * The aggregation logic (dedup, market filtering, sorting by category
+ * and importance, EGXPilot/CoinGecko/Alternative.me fetching) lives in
+ * the Python engine. This route is now a pure proxy to Python
+ * `/api/news-feed` (path-matching) with `/api/news` as a sibling
+ * fallback. Honest empty state when Python is unreachable (Rule 27).
+ *
+ * Response shape is preserved 1:1 with the legacy version so consumers
+ * (NewsFeedView.tsx) keep working without changes.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-export const dynamic = "force-dynamic";
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+export const dynamic = 'force-dynamic';
 
-const CACHE_DURATION = 300;
-let newsCache: { timestamp: number; data: any[] } | null = null;
-let cryptoCache: Record<string, { timestamp: number; data: any[] }> = {};
+const CACHE_DURATION = 300; // seconds
+const cacheStore: Record<string, { timestamp: number; data: any }> = {};
 
 interface NewsItem {
   id: string;
@@ -37,324 +45,15 @@ interface NewsItem {
   published_at?: string;
 }
 
-function getPredictionsDbPath() {
-  return path.join(process.cwd(), 'db', 'predictions.db');
-}
-
-// news.db is the SINGLE SOURCE OF TRUTH for news (CONSTITUTION Rule: NEWS-DB-SOT).
-function getDataEngineDbPath() {
-  return path.join(process.cwd(), 'db', 'news.db');
-}
-
-function safeParseJson<T>(val: any, fallback: T): T {
-  if (!val) return fallback;
-  if (typeof val !== 'string') return val as T;
-  try {
-    return JSON.parse(val);
-  } catch { // silent fallback (safe-by-design)
-    return fallback;
-  }
-}
-
-function cleanNewsTitle(title: string): string {
-  if (!title) return 'خبر اقتصادي';
-  return title
-    .replace(/📰/g, '')
-    .replace(/🚨\s*إشعار استثماري عاجل\s*\|\s*محفز صعودي قوي\s*🚀/gi, '')
-    .replace(/🚨\s*إشعار استثماري عاجل/gi, '')
-    .replace(/محفز صعودي قوي\s*🚀?/gi, '')
-    .replace(/📊\s*نبض البورصة والأخبار المالية\s*\|\s*Investment Guide/gi, '')
-    .replace(/^[\s\-_—:|•]+|[\s\-_—:|•]+$/g, '')
-    .trim() || 'خبر اقتصادي';
-}
-
-function fetchNewsSignals(limit = 50, market?: string): NewsItem[] {
-  const items: NewsItem[] = [];
-
-  // 1. Fetch from news.db -> news_articles (SINGLE SOURCE OF TRUTH).
-  // BUG 5 FIX (FIX-A-API): القديم كان بيـ query `market_news` (اسم جدول غلط —
-  // الجدول الصحيح `news_articles` فيه عمود `market_code`). كمان ما كنش في
-  // فلتر للسوق. الحل: نفلتر بـ `market_code` لما السوق يتحدد.
-  try {
-    const dePath = getDataEngineDbPath();
-    if (fs.existsSync(dePath)) {
-      const db = new Database(dePath, { readonly: true, timeout: 3000 });
-      // news_articles schema: id, title, content, summary, source, source_url,
-      // image_url, market, market_code, symbol, category, language, published_at,
-      // fetched_at, created_at. (لا يوجد importance/sentiment/impact_type — نستخدم
-      // قيم افتراضية معقولة بدلاً من فبركة قيم غلط.)
-      const marketCode = market ? market.toUpperCase() : '';
-      const whereClause = marketCode
-        ? `WHERE market_code = ?`
-        : '';
-      const stmtArgs = marketCode ? [marketCode] : [];
-      const rows = db.prepare(`
-        SELECT id, title, content, summary AS summary_ar, source, source_url AS url,
-               symbol AS tickers, image_url AS image_path,
-               published_at, fetched_at, market_code
-        FROM news_articles
-        ${whereClause}
-        ORDER BY id DESC
-        LIMIT ?
-      `).all(...stmtArgs, limit) as any[];
-      db.close();
-
-      for (const row of rows) {
-        // حظر أي خبر مصدره القناة نفسها لمنع تكرار النصوص
-        if (row.url && (row.url.includes('Arabian_investment_guide') || row.url.includes('invist.m2y.net'))) {
-          continue;
-        }
-
-        // BUG 5: importance مفيش في الجدول — نستخدم heuristic بسيط بناءً على title.
-        const titleLower = (row.title || '').toLowerCase();
-        let importanceVal = 50;
-        if (titleLower.includes('عاجل') || titleLower.includes('هام') || titleLower.includes('قرار')) {
-          importanceVal = 80;
-        } else if (titleLower.includes('تحليل') || titleLower.includes('تقرير')) {
-          importanceVal = 60;
-        }
-        items.push({
-          id: `mn-${row.id}`,
-          title: cleanNewsTitle(row.title),
-          summary: row.summary_ar || (row.content ? row.content.substring(0, 220) : ''),
-          body: row.content || row.summary_ar || undefined,
-          source: row.source || 'news_agent',
-          timestamp: row.published_at || row.fetched_at || new Date().toISOString(),
-          category: 'news_agent',
-          importance: importanceVal >= 70 ? 'high' : importanceVal >= 40 ? 'medium' : 'low',
-          url: row.url || undefined,
-          tickers: row.tickers ? [String(row.tickers)] : [],
-          sentiment: 'neutral',
-          recommended_action: 'monitor',
-          reasoning: `تم تحليل الخبر محليًا بدرجة أهمية ${importanceVal}/100.`,
-          image_paths: row.image_path ? [String(row.image_path)] : [],
-          published_at: row.published_at || undefined,
-        });
-      }
-    }
-  } catch (e) {
-    console.warn('[news-feed] news.db news_articles fetch failed:', e);
-  }
-
-  // 2. Fetch from predictions.db -> news_signals (local agent signal table —
-  // may not exist on some installs; silently skip if missing).
-  try {
-    const predPath = getPredictionsDbPath();
-    if (fs.existsSync(predPath)) {
-      const db = new Database(predPath, { readonly: true, timeout: 3000 });
-      // Check if news_signals table exists before querying — avoid SQLite error.
-      const tbl = db.prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='news_signals'"
-      ).get() as { name: string } | undefined;
-      if (tbl) {
-        const rows = db.prepare(`
-          SELECT id, title, body, source, url, published_at, tickers,
-                 importance, sentiment, impact_type, summary_ar, reasoning, received_at
-          FROM news_signals
-          ORDER BY COALESCE(importance, 0) DESC, received_at DESC
-          LIMIT ?
-        `).all(limit) as any[];
-        for (const row of rows) {
-          const hasValidReasoning = Boolean(
-            row.reasoning &&
-            typeof row.reasoning === 'string' &&
-            row.reasoning.trim().length > 10 &&
-            !row.reasoning.includes('سبب الدرجة') &&
-            !row.reasoning.includes('سبب التوجيه')
-          );
-
-          const importanceVal = Number(row.importance || 0);
-          items.push({
-            id: `sig-${row.id}`,
-            title: row.title || 'خبر بدون عنوان',
-            summary: row.summary_ar || row.body?.substring(0, 220) || '',
-            body: row.body || undefined,
-            source: row.source || 'news_agent',
-            timestamp: row.received_at || row.published_at || new Date().toISOString(),
-            category: 'news_agent',
-            importance: importanceVal >= 70 ? 'high' : importanceVal >= 40 ? 'medium' : 'low',
-            url: row.url || undefined,
-            tickers: safeParseJson<string[]>(row.tickers, []),
-            sentiment: hasValidReasoning ? (row.sentiment || 'neutral') : undefined,
-            recommended_action: hasValidReasoning ? (row.impact_type || 'monitor') : undefined,
-            reasoning: hasValidReasoning ? row.reasoning.trim() : undefined,
-            image_paths: [],
-            published_at: row.published_at || undefined,
-          });
-        }
-      }
-      db.close();
-    }
-  } catch (e) {
-    console.warn('[news-feed] predictions.db news_signals fetch failed:', e);
-  }
-
-  // Deduplicate by title
-  const seenTitles = new Set<string>();
-  const uniqueItems: NewsItem[] = [];
-  for (const item of items) {
-    const key = (item.title || '').trim().toLowerCase();
-    if (key && !seenTitles.has(key)) {
-      seenTitles.add(key);
-      uniqueItems.push(item);
-    }
-  }
-
-  return uniqueItems.slice(0, limit);
-}
-
-async function getEGXPilotNews(): Promise<NewsItem[]> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-    const res = await fetch('https://egxpilot.com/api/news/', {
-      signal: controller.signal,
-      headers: { 'Accept': 'application/json' }
-    });
-    clearTimeout(timeoutId);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const news = data.data || data.news || [];
-    return news.slice(0, 10).map((item: any) => {
-      let importance: 'high' | 'medium' | 'low' = 'medium';
-      const title = (item.title || '').toLowerCase();
-      if (title.includes('موافقة') || title.includes('قيد') || title.includes('زيادة رأس المال')) importance = 'high';
-      else if (title.includes('تراجع') || title.includes('ارتفاع')) importance = 'medium';
-      return {
-        id: `egx-${item.id || Date.now()}`,
-        title: item.title || 'خبر من البورصة المصرية',
-        summary: item.summary || item.content?.slice(0, 150) || '',
-        source: item.source || 'EGXPilot',
-        timestamp: item.timestamp || item.published_at || new Date().toISOString(),
-        category: 'egx' as const,
-        importance,
-        url: item.url,
-        tickers: item.tickers || [],
-      };
-    });
-  } catch { // silent fallback (safe-by-design)
-    return [];
-  }
-}
-
-async function getFearGreedIndex(): Promise<NewsItem | null> {
-  try {
-    const res = await fetch('https://api.alternative.me/fng/?limit=1', {
-      signal: AbortSignal.timeout(10000)
-    });
-    const data = await res.json();
-    const fng = data.data?.[0];
-    if (!fng) return null;
-    const value = parseInt(fng.value);
-    // Translate alternative.me English classification to Arabic for client-friendly UI (Rule 30)
-    const classificationMap: Record<string, string> = {
-      'Extreme Fear': 'خوف مفرط',
-      'Fear': 'خوف',
-      'Neutral': 'محايد',
-      'Greed': 'طمع',
-      'Extreme Greed': 'طمع مفرط',
-    };
-    const rawClassification = fng.value_classification || '';
-    const classification = classificationMap[rawClassification] || rawClassification;
-    let importance: 'high' | 'medium' | 'low' = 'medium';
-    if (value <= 25 || value >= 75) importance = 'high';
-    let summary = '';
-    if (value <= 25) summary = 'الخوف الشديد في السوق - قد تكون فرصة شراء للمدى الطويل';
-    else if (value <= 45) summary = 'الخوف في السوق - حذر من الشراء العاطفي';
-    else if (value <= 55) summary = 'السوق محايد - لا يوجد اتجاه واضح';
-    else if (value <= 75) summary = 'الطمع في السوق - حذر من البيع العاطفي';
-    else summary = 'الطمع الشديد - قد يكون وقت جني الأرباح';
-    return {
-      id: 'fear-greed-index',
-      title: `مؤشر الخوف والطمع: ${value} (${classification})`,
-      summary,
-      source: 'Alternative.me',
-      timestamp: new Date().toISOString(),
-      category: 'sentiment',
-      importance,
-    };
-  } catch { // silent fallback (safe-by-design)
-    return null;
-  }
-}
-
-async function getCryptoPrices(): Promise<NewsItem[]> {
-  try {
-    const res = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true',
-      { signal: AbortSignal.timeout(10000) }
-    );
-    const data = await res.json();
-    const items: NewsItem[] = [];
-    if (data.bitcoin) {
-      const change = data.bitcoin.usd_24h_change || 0;
-      const price = data.bitcoin.usd;
-      items.push({
-        id: 'btc-price',
-        title: `Bitcoin: $${price.toLocaleString()} (${change >= 0 ? '+' : ''}${change.toFixed(1)}%)`,
-        summary: change >= 0 ? 'البيتكوين صاعد في آخر 24 ساعة' : 'البيتكوين هابط في آخر 24 ساعة',
-        source: 'CoinGecko',
-        timestamp: new Date().toISOString(),
-        category: 'crypto',
-        importance: Math.abs(change) > 5 ? 'high' : 'low',
-      });
-    }
-    if (data.ethereum) {
-      const change = data.ethereum.usd_24h_change || 0;
-      const price = data.ethereum.usd;
-      items.push({
-        id: 'eth-price',
-        title: `Ethereum: $${price.toLocaleString()} (${change >= 0 ? '+' : ''}${change.toFixed(1)}%)`,
-        summary: change >= 0 ? 'الإيثريوم صاعد في آخر 24 ساعة' : 'الإيثريوم هابط في آخر 24 ساعة',
-        source: 'CoinGecko',
-        timestamp: new Date().toISOString(),
-        category: 'crypto',
-        importance: Math.abs(change) > 5 ? 'medium' : 'low',
-      });
-    }
-    return items;
-  } catch { // silent fallback (safe-by-design)
-    return [];
-  }
-}
-
-async function getGlobalMarketData(): Promise<NewsItem | null> {
-  try {
-    const res = await fetch('https://api.coingecko.com/api/v3/global', {
-      signal: AbortSignal.timeout(10000)
-    });
-    const data = await res.json();
-    if (!data.data) return null;
-    const marketCap = data.data.total_market_cap?.usd;
-    const change = data.data.market_cap_change_percentage_24h_usd;
-    return {
-      id: 'global-market',
-      title: `إجمالي سوق الكريبتو: $${(marketCap / 1e12).toFixed(2)}T (${change >= 0 ? '+' : ''}${change?.toFixed(1) || 0}%)`,
-      summary: change >= 0 ? 'السوق الإجمالي في حالة نمو' : 'السوق الإجمالي في حالة تراجع',
-      source: 'CoinGecko',
-      timestamp: new Date().toISOString(),
-      category: 'market',
-      importance: Math.abs(change || 0) > 3 ? 'high' : 'low',
-    };
-  } catch { // silent fallback (safe-by-design)
-    return null;
-  }
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const marketFilter = (searchParams.get('market') || 'all').toLowerCase();
-    const isCryptoMode = marketFilter === 'crypto';
-    // BUG 5 FIX (FIX-A-API): للأسواق المالية (EGX/TADAWUL/KSE/QSE/US) لا نرجّع
-    // أخبار الكريبتو (CoinGecko/fear-greed/global-market) — دي أخبار كريبتو بحتة
-    // ومش مفيدة لـ مستثمر الأسهم، وبتلبّي القاعدة: "don't return crypto news for
-    // EGX/US markets".
-    const isStockMarketMode = ['egx', 'tadawul', 'kse', 'qse', 'us', 'us-markets'].includes(marketFilter);
     const now = Date.now();
-    const cacheKey = marketFilter;
-    const cached = cryptoCache[cacheKey];
-    if (cached && (now - cached.timestamp) < CACHE_DURATION * 1000) {
+
+    // In-memory cache (5 min) — same TTL as the legacy route.
+    const cached = cacheStore[marketFilter];
+    if (cached && now - cached.timestamp < CACHE_DURATION * 1000) {
       return NextResponse.json({
         success: true,
         cached: true,
@@ -365,62 +64,68 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // For stock markets, we only fetch news_agent (filtered by market_code) +
-    // EGXPilot (if EGX). Skip crypto/sentiment/market fetches entirely.
-    const shouldFetchEGXPilot = marketFilter === 'egx' || marketFilter === 'all';
-    const fetches: Promise<NewsItem[] | NewsItem | null>[] = [
-      // EGXPilot news only relevant for EGX market (or 'all').
-      shouldFetchEGXPilot ? getEGXPilotNews() : Promise.resolve([] as NewsItem[]),
-      // Crypto-only items: skip for stock markets.
-      isStockMarketMode ? Promise.resolve(null) : getFearGreedIndex(),
-      isStockMarketMode ? Promise.resolve([] as NewsItem[]) : getCryptoPrices(),
-      isStockMarketMode ? Promise.resolve(null) : getGlobalMarketData(),
-      // news_agent fetch — filtered by market_code for stock markets.
-      Promise.resolve(fetchNewsSignals(50, isStockMarketMode ? marketFilter : undefined)),
+    const qs = searchParams.toString();
+    const targetUrls = [
+      `${PYTHON_BACKEND_URL}/api/news-feed${qs ? `?${qs}` : ''}`,
+      `http://127.0.0.1:8010/api/news-feed${qs ? `?${qs}` : ''}`,
+      `${PYTHON_BACKEND_URL}/api/news${qs ? `?${qs}` : ''}`,
+      `http://127.0.0.1:8010/api/news${qs ? `?${qs}` : ''}`,
     ];
-    const [egxNews, fearGreed, cryptoPrices, globalMarket, agentNews] = await Promise.all(fetches) as [NewsItem[], NewsItem | null, NewsItem[], NewsItem | null, NewsItem[]];
 
-    const news: NewsItem[] = [];
+    let news: NewsItem[] = [];
+    let usedFallback = false;
 
-    if (isCryptoMode) {
-      if (fearGreed) news.push(fearGreed);
-      news.push(...cryptoPrices);
-      if (globalMarket) news.push(globalMarket);
-    } else if (isStockMarketMode) {
-      // BUG 5: للأسهم فقط — أخبار news_agent المفلترة بالسوق + EGXPilot (لو EGX).
-      news.push(...agentNews);
-      if (marketFilter === 'egx') news.push(...egxNews);
-    } else {
-      news.push(...agentNews);
-      news.push(...egxNews);
-      if (fearGreed) news.push(fearGreed);
-      news.push(...cryptoPrices);
-      if (globalMarket) news.push(globalMarket);
+    for (const targetUrl of targetUrls) {
+      try {
+        const res = await fetch(targetUrl, {
+          signal: AbortSignal.timeout(10000),
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const payload: any[] = json?.news ?? json?.data?.news ?? [];
+        if (Array.isArray(payload) && payload.length > 0) {
+          news = payload as NewsItem[];
+          usedFallback = targetUrl.includes('/api/news') && !targetUrl.includes('/api/news-feed');
+          break;
+        }
+        // Empty list is still a valid response (no news right now) — accept it.
+        if (Array.isArray(payload) && json?.success !== false) {
+          news = [];
+          usedFallback = targetUrl.includes('/api/news') && !targetUrl.includes('/api/news-feed');
+          break;
+        }
+      } catch {
+        // Try next fallback URL (safe-by-design).
+      }
     }
 
-    const importanceOrder = { high: 0, medium: 1, low: 2 };
-    const categoryOrder = isCryptoMode
-      ? { sentiment: 0, crypto: 1, market: 2, egx: 3, news_agent: 4 }
-      : { news_agent: 0, egx: 1, sentiment: 2, market: 3, crypto: 4 };
+    if (news.length === 0) {
+      // Rule 27: honest empty — no fabrication, no external API calls from TS.
+      return NextResponse.json({
+        success: true,
+        cached: false,
+        timestamp: new Date().toISOString(),
+        news: [],
+        summary: {
+          total: 0,
+          agent: 0,
+          egx: 0,
+          crypto: 0,
+          sentiment: 0,
+          market_filter: marketFilter,
+        },
+        cache_duration: CACHE_DURATION,
+        source: 'python_empty',
+      });
+    }
 
-    news.sort((a, b) => {
-      if (!isCryptoMode) {
-        if (a.category === 'news_agent' && b.category !== 'news_agent') return -1;
-        if (b.category === 'news_agent' && a.category !== 'news_agent') return 1;
-        if (a.category === 'egx' && b.category !== 'egx') return -1;
-        if (b.category === 'egx' && a.category !== 'egx') return 1;
-      } else {
-        if (a.category === 'sentiment' && b.category !== 'sentiment') return -1;
-        if (b.category === 'sentiment' && a.category !== 'sentiment') return 1;
-      }
-      if (importanceOrder[a.importance] !== importanceOrder[b.importance]) {
-        return importanceOrder[a.importance] - importanceOrder[b.importance];
-      }
-      return categoryOrder[a.category] - categoryOrder[b.category];
-    });
+    // Cache the successful payload.
+    cacheStore[marketFilter] = { timestamp: now, data: news };
 
-    cryptoCache[cacheKey] = { timestamp: now, data: news };
-
+    // Compose a summary that mirrors the legacy shape — counting by category.
+    const count = (cat: string) => news.filter((n) => n.category === cat).length;
     return NextResponse.json({
       success: true,
       cached: false,
@@ -428,28 +133,33 @@ export async function GET(request: NextRequest) {
       news,
       summary: {
         total: news.length,
-        agent: agentNews.length,
-        egx: isStockMarketMode && marketFilter === 'egx' ? egxNews.length : (isCryptoMode ? 0 : egxNews.length),
-        crypto: isStockMarketMode ? 0 : cryptoPrices.length,
-        sentiment: fearGreed ? 1 : 0,
+        agent: count('news_agent'),
+        egx: count('egx'),
+        crypto: count('crypto'),
+        sentiment: count('sentiment'),
         market_filter: marketFilter,
       },
       cache_duration: CACHE_DURATION,
+      source: usedFallback ? 'python_news_fallback' : 'python',
     });
   } catch (error: any) {
     console.error('[News] Error:', error);
-    return NextResponse.json({
-      success: false,
-      // BUG 6 FIX (FIX-A-API): `'internal_error' || 'خطأ في جلب الأخبار'` — الـ ||
-      // short-circuit كان بيخلي النص العربي dead code. المستخدم العربي كان بيشوف
-      // "internal_error". الحل: استخدم النص العربي مباشرة.
-      error: 'خطأ في جلب الأخبار',
-      news: []
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'خطأ في جلب الأخبار',
+        news: [],
+        source: 'python_empty',
+      },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
-  cryptoCache = {};
+  // POST busts the cache and re-runs GET (legacy behaviour).
+  for (const key of Object.keys(cacheStore)) {
+    delete cacheStore[key];
+  }
   return GET(request);
 }

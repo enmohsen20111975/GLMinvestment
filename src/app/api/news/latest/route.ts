@@ -2,8 +2,13 @@
  * GET /api/news/latest
  * =====================
  * Lightweight latest-news endpoint (no summary field — client renders title
- * + source + URL only). Mirrors the same `market_news` table used by
- * /api/news and /api/mobile/news.
+ * + source + URL only). Pure proxy to the Python canonical engine.
+ *
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `db/news.db` directly (`new Database`) and queried `market_news`. That
+ * bypassed the canonical Python engine (Rule 4). Now it proxies to Python
+ * `/api/news/latest` (with `/api/news` as a sibling fallback that we trim
+ * down to the lightweight mobile shape). Honest empty when Python is down.
  *
  * Public (no auth). Designed for landing-page news tickers / push-preview
  * lists on mobile.
@@ -18,13 +23,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
 
 function safeStripHtml(raw: unknown): string {
   if (typeof raw !== 'string') return '';
@@ -41,96 +43,76 @@ function safeStripHtml(raw: unknown): string {
     .trim();
 }
 
+function toLightweight(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: safeStripHtml(row.title) || '',
+    source: row.source || 'news_agent',
+    url: row.url || '',
+    published_at: row.published_at || row.fetched_at || null,
+    importance: Number(row.importance) || 0,
+    sentiment: row.sentiment || 'neutral',
+    market: row.market || 'EGX',
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const market = searchParams.get('market');
     const reqLimit = parseInt(searchParams.get('limit') || '20', 10);
-    const limit =
-      Number.isFinite(reqLimit) ? Math.min(Math.max(reqLimit, 1), 100) : 20;
+    const limit = Number.isFinite(reqLimit) ? Math.min(Math.max(reqLimit, 1), 100) : 20;
 
-    const dbPath = path.join(process.cwd(), 'db', 'news.db');
-    if (!fs.existsSync(dbPath)) {
-      return NextResponse.json({
-        success: true,
-        news: [],
-        total: 0,
-        source: 'sqlite_fallback_empty',
-      });
-    }
+    const qs = new URLSearchParams();
+    qs.set('limit', String(limit));
+    if (market) qs.set('market', market);
 
-    let db: Database.Database | null = null;
-    try {
-      db = new Database(dbPath, { readonly: true });
-    } catch { // silent fallback (safe-by-design)
-      return NextResponse.json({
-        success: true,
-        news: [],
-        total: 0,
-        source: 'sqlite_fallback_empty',
-      });
-    }
+    // Primary path: Python /api/news/latest (canonical lightweight endpoint).
+    // Fallback: Python /api/news (full shape — we trim to the lightweight form).
+    const targetUrls = [
+      `${PYTHON_BACKEND_URL}/api/news/latest?${qs.toString()}`,
+      `http://127.0.0.1:8010/api/news/latest?${qs.toString()}`,
+      `${PYTHON_BACKEND_URL}/api/news?${qs.toString()}`,
+      `http://127.0.0.1:8010/api/news?${qs.toString()}`,
+    ];
 
-    try {
-      const conditions: string[] = [];
-      const params: unknown[] = [];
-      if (market) {
-        conditions.push('market = ?');
-        params.push(market);
-      }
-      const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-      const rows = db
-        .prepare(
-          `SELECT id, title, source, url, published_at, fetched_at,
-                  importance, sentiment, market
-           FROM market_news
-           ${where}
-           ORDER BY fetched_at DESC
-           LIMIT ?`
-        )
-        .all(...params, limit) as Array<Record<string, unknown>>;
-
-      const totalRow = db
-        .prepare(`SELECT COUNT(*) AS c FROM market_news ${where}`)
-        .get(...params) as { c: number };
-
-      db.close();
-
-      const news = rows.map((r) => ({
-        id: r.id,
-        title: safeStripHtml(r.title) || '',
-        source: r.source || 'news_agent',
-        url: r.url || '',
-        published_at:
-          (r.published_at as string) || (r.fetched_at as string) || null,
-        importance: Number(r.importance) || 0,
-        sentiment: r.sentiment || 'neutral',
-        market: r.market || 'EGX',
-      }));
-
-      return NextResponse.json({
-        success: true,
-        news,
-        total: totalRow.c,
-        returned: news.length,
-        source: 'news.db',
-        generated_at: new Date().toISOString(),
-      });
-    } catch (queryErr) {
+    for (const targetUrl of targetUrls) {
       try {
-        db.close();
-      } catch { // silent fallback (safe-by-design)
-        /* ignore */
+        const res = await fetch(targetUrl, {
+          signal: AbortSignal.timeout(8000),
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const rawNews: any[] = json?.news ?? json?.data?.news ?? [];
+        if (Array.isArray(rawNews)) {
+          const news = rawNews.map(toLightweight).filter(Boolean);
+          const total = json?.total ?? json?.data?.total ?? news.length;
+          return NextResponse.json({
+            success: true,
+            news,
+            total,
+            returned: news.length,
+            source: 'python',
+            generated_at: new Date().toISOString(),
+          });
+        }
+      } catch {
+        // Try next fallback URL (safe-by-design).
       }
-      console.error('[news/latest] query error:', queryErr);
-      return NextResponse.json({
-        success: true,
-        news: [],
-        total: 0,
-        source: 'sqlite_fallback_empty',
-      });
     }
+
+    // Rule 27: honest empty — Python unreachable.
+    return NextResponse.json({
+      success: true,
+      news: [],
+      total: 0,
+      returned: 0,
+      source: 'python_empty',
+      generated_at: new Date().toISOString(),
+    });
   } catch (err) {
     console.error('[news/latest] fatal:', err);
     return NextResponse.json(
@@ -140,7 +122,7 @@ export async function GET(req: NextRequest) {
         error_en: 'internal error',
         news: [],
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

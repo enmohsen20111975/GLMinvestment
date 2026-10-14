@@ -3,21 +3,24 @@
  * =================================
  * Aggregated performance metrics for AI predictions (Flutter Android app).
  *
- * Reads from `db/predictions.db` → table `predictions` (see
- * prisma/predictions-schema.prisma for the full column list). Returns:
- *   - total count
- *   - hit rate % (target_hit + stop_hit resolved)
- *   - avg return % (actual_return column)
- *   - by-ticker breakdown (top N by count)
- *   - by-signal distribution
+ * Phase 1 (P1-PREDICTIONS-CLUSTER): pure Python proxy — NO direct SQLite
+ * access. This route previously opened `db/predictions.db` directly
+ * (`new Database(...)`) and ran three `.prepare()` aggregates against the
+ * `predictions` table. That violated Rule 4. Now it proxies to
+ * `${PYTHON_BACKEND_URL}/api/predictions/performance` and passes the
+ * response through verbatim. If Python is unreachable → honest empty
+ * (Rule 27 NO-FAKE-DATA).
  *
- * Auth: required. Uses getSessionUserId() from @/lib/auth-helper. Returns 401
- * if no userId (without auth the Android client gets the proper "login
- * required" status instead of a 404).
+ * Response shape is preserved (summary + by_ticker + by_signal).
+ *
+ * Auth: required. Returns 401 if no userId.
  *
  * Query params:
- *   ?market=EGX   — optional market filter (column: market)
+ *   ?market=EGX   — optional market filter
  *   ?limit=N      — by-ticker limit (default 20)
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,9 +28,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 import { getSessionUserId } from '@/lib/auth-helper';
 
 function unauthorized() {
@@ -54,161 +55,70 @@ export async function GET(req: NextRequest) {
         ? Math.min(Math.max(reqTickerLimit, 1), 100)
         : 20;
 
-    const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (!fs.existsSync(dbPath)) {
-      return NextResponse.json({
-        success: true,
-        source: 'sqlite_fallback_empty',
-        total: 0,
-        message: 'predictions.db غير متاح',
-      });
-    }
+    // Build query string for Python.
+    const qs = new URLSearchParams({ limit: String(tickerLimit) });
+    if (market) qs.set('market', market);
 
-    let db: Database.Database | null = null;
-    try {
-      db = new Database(dbPath, { readonly: true });
-    } catch { // silent fallback (safe-by-design)
-      return NextResponse.json({
-        success: true,
-        source: 'sqlite_fallback_empty',
-        total: 0,
-        message: 'تعذّر فتح predictions.db',
-      });
-    }
+    // Python canonical endpoints (primary + direct fallback).
+    const targetUrls = [
+      `${PYTHON_BACKEND_URL}/api/predictions/performance?${qs.toString()}`,
+      `http://127.0.0.1:8010/api/predictions/performance?${qs.toString()}`,
+    ];
 
-    try {
-      const conditions: string[] = [];
-      const params: unknown[] = [];
-      if (market) {
-        conditions.push('market = ?');
-        params.push(market);
-      }
-      const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-      const overall = db
-        .prepare(
-          `SELECT
-             COUNT(*) AS total,
-             SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS hit_target_count,
-             SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS hit_stop_count,
-             SUM(CASE WHEN hit_target = 0 AND hit_stop = 0 THEN 1 ELSE 0 END) AS pending_count,
-             AVG(actual_return) AS avg_return
-           FROM predictions ${where}`
-        )
-        .get(...params) as {
-        total: number;
-        hit_target_count: number;
-        hit_stop_count: number;
-        pending_count: number;
-        avg_return: number | null;
-      };
-
-      const resolved =
-        (overall.hit_target_count || 0) + (overall.hit_stop_count || 0);
-      const hitRate =
-        resolved > 0
-          ? ((overall.hit_target_count || 0) / resolved) * 100
-          : 0;
-
-      const tickerRows = db
-        .prepare(
-          `SELECT
-             ticker,
-             COUNT(*) AS count,
-             SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
-             SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses,
-             AVG(actual_return) AS avg_return
-           FROM predictions ${where}
-           GROUP BY ticker
-           ORDER BY count DESC
-           LIMIT ?`
-        )
-        .all(...params, tickerLimit) as Array<{
-        ticker: string;
-        count: number;
-        wins: number;
-        losses: number;
-        avg_return: number | null;
-      }>;
-
-      const signalRows = db
-        .prepare(
-          `SELECT
-             signal,
-             COUNT(*) AS count,
-             SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
-             AVG(actual_return) AS avg_return
-           FROM predictions ${where}
-           GROUP BY signal
-           ORDER BY count DESC`
-        )
-        .all(...params) as Array<{
-        signal: string;
-        count: number;
-        wins: number;
-        avg_return: number | null;
-      }>;
-
-      db.close();
-
-      const by_ticker = tickerRows.map((r) => ({
-        ticker: r.ticker,
-        total: r.count,
-        wins: r.wins,
-        losses: r.losses,
-        pending: Math.max(0, r.count - r.wins - r.losses),
-        hit_rate:
-          r.wins + r.losses > 0
-            ? Number(((r.wins / (r.wins + r.losses)) * 100).toFixed(2))
-            : 0,
-        avg_return:
-          r.avg_return != null ? Number(r.avg_return.toFixed(2)) : null,
-      }));
-
-      const by_signal = signalRows.map((r) => ({
-        signal: r.signal,
-        total: r.count,
-        wins: r.wins,
-        hit_rate:
-          r.count > 0 ? Number(((r.wins / r.count) * 100).toFixed(2)) : 0,
-        avg_return:
-          r.avg_return != null ? Number(r.avg_return.toFixed(2)) : null,
-      }));
-
-      return NextResponse.json({
-        success: true,
-        source: 'predictions.db',
-        generated_at: new Date().toISOString(),
-        filter: { market: market || null },
-        summary: {
-          total: overall.total || 0,
-          resolved,
-          hit_target_count: overall.hit_target_count || 0,
-          hit_stop_count: overall.hit_stop_count || 0,
-          pending_count: overall.pending_count || 0,
-          hit_rate_pct: Number(hitRate.toFixed(2)),
-          avg_return:
-            overall.avg_return != null
-              ? Number(overall.avg_return.toFixed(2))
-              : null,
-        },
-        by_ticker,
-        by_signal,
-      });
-    } catch (queryErr) {
+    for (const targetUrl of targetUrls) {
       try {
-        db.close();
-      } catch { // silent fallback (safe-by-design)
-        /* ignore */
+        const res = await fetch(targetUrl, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && data.success !== false) {
+          // Pass through Python response verbatim (Rule 4: mirror only).
+          // Normalize the shape so consumers see a stable contract:
+          //   { success, source, generated_at, filter, summary, by_ticker, by_signal }
+          return NextResponse.json({
+            success: true,
+            source: data.source || 'python_backend',
+            generated_at: data.generated_at || new Date().toISOString(),
+            filter: data.filter || { market: market || null },
+            summary: data.summary || {
+              total: 0,
+              resolved: 0,
+              hit_target_count: 0,
+              hit_stop_count: 0,
+              pending_count: 0,
+              hit_rate_pct: 0,
+              avg_return: null,
+            },
+            by_ticker: Array.isArray(data.by_ticker) ? data.by_ticker : [],
+            by_signal: Array.isArray(data.by_signal) ? data.by_signal : [],
+          });
+        }
+      } catch {
+        // Try next fallback URL (safe-by-design).
       }
-      console.error('[predictions/performance] query error:', queryErr);
-      return NextResponse.json({
-        success: true,
-        source: 'sqlite_fallback_empty',
-        total: 0,
-        message: 'تعذّر قراءة جدول التوقعات',
-      });
     }
+
+    // Rule 27: honest empty — no fabricated performance stats.
+    return NextResponse.json({
+      success: true,
+      source: 'python_empty',
+      generated_at: new Date().toISOString(),
+      filter: { market: market || null },
+      summary: {
+        total: 0,
+        resolved: 0,
+        hit_target_count: 0,
+        hit_stop_count: 0,
+        pending_count: 0,
+        hit_rate_pct: 0,
+        avg_return: null,
+      },
+      by_ticker: [],
+      by_signal: [],
+      message: 'لا توجد بيانات',
+    });
   } catch (err) {
     console.error('[predictions/performance] fatal:', err);
     return NextResponse.json(

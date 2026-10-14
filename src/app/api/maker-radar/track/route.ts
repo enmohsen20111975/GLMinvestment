@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('[maker-radar/track] POST error:', error);
     return NextResponse.json(
-      { success: false, error: 'internal_error' || 'Internal error' },
+      { success: false, error: 'internal_error' },
       { status: 500 }
     );
   }

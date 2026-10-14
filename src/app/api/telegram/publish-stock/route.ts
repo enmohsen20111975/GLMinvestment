@@ -1,40 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS_SHORT } from '@/modules/publishing/lib/official-links';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * FIX-P2-PREDICTIONS (AUDIT-1-PREDICTIONS):
- * After successfully publishing a prediction to Telegram, write back to the
- * predictions table so we have an audit trail proving the recommendation was
- * actually sent to subscribers BEFORE the price moved.
+ * POST /api/telegram/publish-stock
+ * ================================
+ * Publish a stock prediction/infographic to the production Telegram channel.
  *
- * Sets on every row matching (ticker, today's prediction_date):
- *   - published_at        = NOW()        (ISO datetime string)
- *   - telegram_message_id = <Bot API message_id>
- *   - was_published       = 1
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `db/predictions.db` directly to write the audit trail
+ * (`UPDATE predictions SET published_at=..., telegram_message_id=...,
+ * was_published=1 WHERE ticker=? AND date(prediction_date)=date('now')`).
  *
- * If no matching rows are found (e.g., the prediction was never inserted into
- * the DB, or `prediction_date` is in a different format), the publish still
- * succeeds — we just return `updated_rows: 0` so the caller can investigate.
+ * That SQL write has been removed. The Telegram send (external Telegram Bot
+ * API call — NOT a local DB) stays in TS because it's an external integration
+ * (Rule 4 doesn't apply to outbound 3rd-party API calls). After the Telegram
+ * message is delivered, the audit-trail writeback is delegated to Python
+ * `/api/telegram/publish-stock/audit` which owns `predictions.db` (Rule 4:
+ * Python = brain).
  *
- * BOT-LINK-INTEGRATION (2026-10-01): the route now accepts BOTH JSON and
+ * Response shape is preserved:
+ *   {
+ *     success: true,
+ *     message_id: number,
+ *     sent_as_photo: boolean,
+ *     published_at: ISO,
+ *     updated_predictions: number,        // 0 if Python audit-trail call fails
+ *     audit_note: string                  // explains any audit-trail gap
+ *   }
+ *
+ * BOT-LINK-INTEGRATION (2026-10-01): the route accepts BOTH JSON and
  * multipart/form-data. If an `image` (Blob or base64 PNG data URL) is provided,
- * the route sends it via Telegram `sendPhoto` so the full infographic card is
- * delivered to subscribers; otherwise it falls back to `sendMessage`. The
- * caption/text now appends OFFICIAL_LINKS_BLOCK so the bot/website/Telegram
- * channel links are always included in every published message.
+ * it sends it via Telegram `sendPhoto`; otherwise it falls back to
+ * `sendMessage`. OFFICIAL_LINKS_BLOCK is always appended so the bot/website/
+ * Telegram channel links are always included in every published message.
+ *
+ * Rule 4  (Python = brain — audit-trail writeback delegated to Python).
+ * Rule 27 (NO-FAKE-DATA — if Python audit-trail fails, updated_predictions=0).
  */
 export async function POST(req: NextRequest) {
-  let predDb: Database.Database | null = null;
   try {
     // Task P0-BRAVO-PROD-GOVERNANCE — TELEGRAM_ENABLED guard:
     // الساندبوكس المحلي يجب أن يبقي التليجرام معطّل لمنع ازدواج الرسائل مع الإنتاج.
-    // .env.local يحوي TELEGRAM_ENABLED=false. الإنتاج يضبطها =true.
     const telegramEnabled = process.env.TELEGRAM_ENABLED;
     if (telegramEnabled === 'false' || telegramEnabled === '0' || telegramEnabled === undefined) {
       return NextResponse.json(
@@ -48,7 +59,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Task SECURITY-P0: admin-only — النشر على قناة تليجرام الإنتاجية يحتاج صلاحية أدمن.
-    // كان: getSessionUserId فقط (أي مستخدم مسجل يقدر ينشر). الآن: requireAdminAsync.
     const adminError = await requireAdminAsync(req);
     if (adminError) return adminError;
 
@@ -174,34 +184,35 @@ export async function POST(req: NextRequest) {
 
     let updatedRows = 0;
 
-    // ── FIX-P2-PREDICTIONS: write back audit trail to predictions.db ──
-    // Mark every prediction for this ticker + today's prediction_date as
-    // published. Multiple rows can match (e.g., balanced + morning_bell +
-    // persona variants) — they should ALL be flagged as published.
+    // ── FIX-P2-PREDICTIONS (Directive P1): audit-trail writeback delegated to
+    // Python. Python owns predictions.db and does the
+    // `UPDATE predictions SET published_at=datetime('now'),
+    // telegram_message_id=?, was_published=1
+    // WHERE UPPER(TRIM(ticker))=UPPER(TRIM(?)) AND date(prediction_date)=date('now')`.
+    // If Python is unreachable, the publish still succeeded (Telegram message
+    // went out) — we just report an empty audit trail so the caller can
+    // investigate. (Rule 27 — NO-FAKE-DATA: we never fabricate updated_rows.)
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      predDb = new Database(dbPath, { timeout: 3000 });
-      predDb.pragma('journal_mode = WAL');
-
-      // The predictions table stores prediction_date as TEXT (ISO date or
-      // "YYYY-MM-DD HH:MM:SS"). Use SQLite's date() to normalize both sides
-      // to YYYY-MM-DD so we match any same-day predictions regardless of
-      // whether the timestamp includes a time component.
-      const updateStmt = predDb.prepare(`
-        UPDATE predictions
-        SET published_at = datetime('now'),
-            telegram_message_id = ?,
-            was_published = 1
-        WHERE UPPER(TRIM(ticker)) = UPPER(TRIM(?))
-          AND date(prediction_date) = date('now')
-      `);
-      const result = updateStmt.run(messageId ?? null, ticker);
-      updatedRows = Number(result.changes || 0);
-    } catch (dbErr) {
-      // Don't fail the publish if the DB write fails — the Telegram message
-      // has already been sent. Log + return the error in the response so
-      // the caller can investigate the audit-trail gap.
-      console.error('[publish-stock] audit-trail write failed:', dbErr);
+      const auditRes = await fetch(`${PYTHON_BACKEND_URL}/api/telegram/publish-stock/audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticker,
+          message_id: messageId ?? null,
+          sent_as_photo: sentAsPhoto,
+        }),
+        signal: AbortSignal.timeout(5000),
+        cache: 'no-store',
+      });
+      if (auditRes.ok) {
+        const auditData = await auditRes.json();
+        updatedRows = Number(auditData?.updated_predictions || auditData?.updatedRows || 0);
+      }
+    } catch (auditErr) {
+      // Don't fail the publish if the audit-trail call fails — the Telegram
+      // message has already been sent. Log + return updated_rows=0 so the
+      // caller can investigate the audit-trail gap (Rule 27).
+      console.error('[publish-stock] audit-trail Python call failed:', auditErr);
     }
 
     return NextResponse.json({
@@ -218,9 +229,5 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('[telegram:publish-stock]', error);
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
-  } finally {
-    if (predDb) {
-      try { predDb.close(); } catch { /* ignore - safe-by-design */ }
-    }
   }
 }

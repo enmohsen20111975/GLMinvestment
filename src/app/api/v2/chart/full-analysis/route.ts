@@ -1,20 +1,20 @@
 /**
  * GET /api/v2/chart/full-analysis?ticker=X&timeframe=DAY&limit=120
  *
- * Primary: Python /api/chart/full-analysis (OHLC + indicators + markers).
- * Fallback (FLUTTER-FULL-AUDIT): stocks.db stock_daily_prices — return
- *   OHLC candles with empty indicators/markers arrays. Flutter's chart
- *   component handles empty indicator arrays cleanly — but if the whole
- *   endpoint 503s, the chart shows "loading error" which is worse.
+ * CANONICAL chart route — pure proxy to Python /api/chart/full-analysis.
+ *
+ *Directive P1 (API Routes Decoupling): NO direct SQLite access in Next.js
+ * routes. This route proxies to Python ONLY. If Python is unreachable →
+ * honest empty `{ success: false, error: 'chart_data_unavailable', ohlcv: [] }`
+ * (Rule 27 NO-FAKE-DATA).
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA): never fabricate OHLCV candles.
  */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaywallUser, applyPaywallToChartAnalysis } from '@/lib/paywall';
-import Database from 'better-sqlite3';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
-const PYTHON_PORT = process.env.PYTHON_PORT || '8010';
 export const dynamic = 'force-dynamic';
 
 function _toUnix(raw: unknown): number {
@@ -33,36 +33,55 @@ function _toUnix(raw: unknown): number {
   return 0;
 }
 
-function readStockOHLC(ticker: string, limit: number): Record<string, unknown>[] {
-  const stocksDbPath = join(process.cwd(), 'db', 'stocks.db');
-  const priceHistoryDbPath = join(process.cwd(), 'db', 'price_history.db');
-
-  // 1. Try stocks.db stock_daily_prices
-  if (existsSync(stocksDbPath)) {
-    try {
-      const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
-      const rows = db
-        .prepare(
-          `SELECT price_date as date,
-                  COALESCE(open, open_price) as open,
-                  COALESCE(high, high_price) as high,
-                  COALESCE(low, low_price) as low,
-                  COALESCE(close, close_price) as close,
-                  COALESCE(volume, 0) as volume
-           FROM stock_daily_prices
-           WHERE ticker = ? COLLATE NOCASE
-           ORDER BY price_date DESC
-           LIMIT ?`
-        )
-        .all(ticker.toUpperCase(), limit) as Record<string, unknown>[];
-      db.close();
-      if (rows && rows.length > 0) return rows.reverse();
-    } catch { // silent fallback (safe-by-design)
+// Normalize chart times to UNIX int + drop null candles (kept from original
+// route — pure TS transformation on Python's response, NOT a DB read).
+function normalizeChartTimes(data: Record<string, unknown>): Record<string, unknown> {
+  if (!data || !Array.isArray(data.ohlcv)) return data;
+  const validTimes = new Set<number>();
+  const ohlcvIn = data.ohlcv as Record<string, unknown>[];
+  const ohlcvOut: Record<string, unknown>[] = [];
+  for (const c of ohlcvIn) {
+    const t = _toUnix(c?.time ?? c?.timestamp ?? c?.date);
+    const out: Record<string, unknown> = { ...c, time: t, timestamp: t, date: t };
+    if (
+      !t || t <= 0 ||
+      out.open == null || out.high == null || out.low == null || out.close == null
+    ) {
+      continue;
+    }
+    validTimes.add(t as number);
+    ohlcvOut.push(out);
+  }
+  data.ohlcv = ohlcvOut;
+  if (data.indicators && typeof data.indicators === 'object') {
+    const indicators = data.indicators as Record<string, unknown>;
+    for (const key of Object.keys(indicators)) {
+      const arr = indicators[key];
+      if (Array.isArray(arr)) {
+        indicators[key] = (arr as Record<string, unknown>[])
+          .map((p) => ({ ...p, time: _toUnix(p?.time) }))
+          .filter((p) => validTimes.has(p.time as number));
+      }
     }
   }
-
-  // P0-ISOLATION: price_history.db is isolated. stocks.db is the sole canonical source.
-  return [];
+  for (const k of ['cmf_data', 'vol_z_score_arr', 'macd_projection']) {
+    if (Array.isArray(data[k])) {
+      data[k] = (data[k] as Record<string, unknown>[])
+        .map((p) => ({ ...p, time: _toUnix(p?.time) }))
+        .filter((p) => validTimes.has(p.time as number));
+    }
+  }
+  if (Array.isArray(data.smart_markers)) {
+    data.smart_markers = (data.smart_markers as Record<string, unknown>[])
+      .map((m) => ({ ...m, time: _toUnix(m?.time) }))
+      .filter((m) => validTimes.has(m.time as number));
+  }
+  if (Array.isArray(data.bos_events)) {
+    data.bos_events = (data.bos_events as Record<string, unknown>[]).map((e) =>
+      e?.time != null ? { ...e, time: _toUnix(e.time) } : e
+    );
+  }
+  return data;
 }
 
 export async function GET(request: NextRequest) {
@@ -73,235 +92,70 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('user_id') || '';
   const userState = searchParams.get('state') || 'buyer';
 
-  let pythonUrl = `http://127.0.0.1:${PYTHON_PORT}/api/chart/full-analysis?ticker=${encodeURIComponent(ticker)}&timeframe=${encodeURIComponent(timeframe)}&limit=${encodeURIComponent(limit)}&state=${encodeURIComponent(userState)}`;
-  if (userId) pythonUrl += `&user_id=${encodeURIComponent(userId)}`;
+  // Build Python canonical endpoint URLs (primary + DAY fallback).
+  const buildUrl = (tf: string, lim: number): string => {
+    const u = new URL(`${PYTHON_BACKEND_URL}/api/chart/full-analysis`);
+    u.searchParams.set('ticker', ticker);
+    u.searchParams.set('timeframe', tf);
+    u.searchParams.set('limit', String(lim));
+    u.searchParams.set('state', userState);
+    if (userId) u.searchParams.set('user_id', userId);
+    return u.toString();
+  };
 
-  // 1. Try Python
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    let res = await fetch(pythonUrl, {
-      signal: controller.signal,
-      cache: 'no-store',
-      headers: { Accept: 'application/json' },
-    });
+  const targetUrls: string[] = [
+    buildUrl(timeframe, limit),
+    // FALLBACK-FIX: if 15M/5M unavailable, try DAY @ 365 candles.
+    timeframe !== 'DAY' ? buildUrl('DAY', 365) : '',
+  ].filter(Boolean);
 
-    // FALLBACK-FIX: if 15M/5M unavailable, try DAY
-    if (!res.ok && timeframe !== 'DAY') {
-      const fallbackUrl = `http://127.0.0.1:${PYTHON_PORT}/api/chart/full-analysis?ticker=${encodeURIComponent(ticker)}&timeframe=DAY&limit=365&state=${encodeURIComponent(userState)}${userId ? `&user_id=${encodeURIComponent(userId)}` : ''}`;
-      res = await fetch(fallbackUrl, {
-        signal: controller.signal,
+  for (const targetUrl of targetUrls) {
+    try {
+      const res = await fetch(targetUrl, {
+        signal: AbortSignal.timeout(8000),
         cache: 'no-store',
         headers: { Accept: 'application/json' },
       });
-    }
-    clearTimeout(timeout);
-
-    if (res.ok) {
-      const data = await res.json();
-      // Normalize chart times to UNIX int + drop null candles
-      if (data && data.ohlcv && Array.isArray(data.ohlcv)) {
-        const validTimes = new Set<number>();
-        data.ohlcv = data.ohlcv
-          .map((c: Record<string, unknown>) => {
-            const t = _toUnix(c?.time ?? c?.timestamp ?? c?.date);
-            return { ...c, time: t, timestamp: t, date: t };
-          })
-          .filter((c: Record<string, unknown>) => {
-            const t = c.time as number;
-            if (
-              !t || t <= 0 ||
-              c.open == null || c.high == null || c.low == null || c.close == null
-            ) {
-              return false;
-            }
-            validTimes.add(t);
-            return true;
-          });
-        if (data.indicators && typeof data.indicators === 'object') {
-          for (const key of Object.keys(data.indicators)) {
-            const arr = data.indicators[key];
-            if (Array.isArray(arr)) {
-              data.indicators[key] = arr
-                .map((p: Record<string, unknown>) => ({ ...p, time: _toUnix(p?.time) }))
-                .filter((p: Record<string, unknown>) => validTimes.has(p.time as number));
-            }
-          }
-        }
-        for (const k of ['cmf_data', 'vol_z_score_arr', 'macd_projection']) {
-          if (Array.isArray(data[k])) {
-            data[k] = data[k]
-              .map((p: Record<string, unknown>) => ({ ...p, time: _toUnix(p?.time) }))
-              .filter((p: Record<string, unknown>) => validTimes.has(p.time as number));
-          }
-        }
-        if (Array.isArray(data.smart_markers)) {
-          data.smart_markers = data.smart_markers
-            .map((m: Record<string, unknown>) => ({ ...m, time: _toUnix(m?.time) }))
-            .filter((m: Record<string, unknown>) => validTimes.has(m.time as number));
-        }
-        if (Array.isArray(data.bos_events)) {
-          data.bos_events = data.bos_events.map((e: Record<string, unknown>) =>
-            e?.time != null ? { ...e, time: _toUnix(e.time) } : e
-          );
-        }
-      }
+      if (!res.ok) continue;
+      const data = (await res.json()) as Record<string, unknown>;
+      if (!data || !Array.isArray(data.ohlcv) || data.ohlcv.length === 0) continue;
+      const normalized = normalizeChartTimes(data);
       const user = await getPaywallUser(request);
-      const paywalledData = applyPaywallToChartAnalysis(data, user.is_premium);
-      paywalledData._paywall = { is_premium: user.is_premium };
+      const paywalledData = applyPaywallToChartAnalysis(normalized, user.is_premium);
+      (paywalledData as Record<string, unknown>)._paywall = { is_premium: user.is_premium };
       return NextResponse.json(paywalledData);
-    }
-  } catch { // silent fallback (safe-by-design)
-    // fall through to SQLite
-  }
-
-  // 2. SQLite fallback — stocks.db stock_daily_prices
-  const ohlcvRaw = readStockOHLC(ticker, limit);
-  const ohlcv = ohlcvRaw.map((c) => {
-    const t = _toUnix(c.date);
-    return {
-      time: t,
-      timestamp: t,
-      date: t,
-      open: Number(c.open) || 0,
-      high: Number(c.high) || 0,
-      low: Number(c.low) || 0,
-      close: Number(c.close) || 0,
-      volume: Number(c.volume) || 0,
-    };
-  });
-
-  // ── Task CHART-MARKERS: markers + zones + prediction_ray من Python canonical ──
-  // Rule 20 (PYTHON = BRAIN): نستدعي Python module عبر subprocess لاستخراج
-  // markers (radar signals) + zones (order blocks + fibonacci) + prediction_ray.
-  // Rule 27 (NO-FAKE-DATA): كل البيانات من radar_signal_tracking + predictions.db.
-  let markers: Record<string, unknown>[] = [];
-  let zones: Record<string, unknown>[] = [];
-  let prediction_ray: Record<string, unknown> | null = null;
-  let institutional_levels: Record<string, unknown> | null = null;
-
-  if (ohlcv.length >= 10) {
-    try {
-      const { execFile } = await import('child_process');
-      const { promisify } = await import('util');
-      const execFileAsync = promisify(execFile);
-      const projectRoot = process.cwd();
-
-      // مرر candles عبر stdin (آمن من shell escaping issues)
-      // تحويل unix timestamp → 'YYYY-MM-DD' string لأن Python يتوقع date string
-      const candlesJson = JSON.stringify(ohlcvRaw.map((c) => {
-        const rawDate = c.date;
-        let dateStr = '';
-        if (typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(rawDate)) {
-          dateStr = rawDate.substring(0, 10);
-        } else if (typeof rawDate === 'number' && rawDate > 0) {
-          // unix timestamp → YYYY-MM-DD (UTC)
-          dateStr = new Date(rawDate * 1000).toISOString().substring(0, 10);
-        }
-        return {
-          date: dateStr,
-          open: Number(c.open) || 0,
-          high: Number(c.high) || 0,
-          low: Number(c.low) || 0,
-          close: Number(c.close) || 0,
-          volume: Number(c.volume) || 0,
-        };
-      }));
-
-      const script = `
-import sys, json, os
-sys.path.insert(0, os.path.join(${JSON.stringify(projectRoot)}, 'vps-service'))
-from analyzers.institutional_levels import (
-    compute_institutional_levels,
-    compute_radar_markers,
-    compute_chart_zones,
-    compute_prediction_ray,
-)
-stocks_db = os.path.join(${JSON.stringify(projectRoot)}, 'db', 'stocks.db')
-predictions_db = os.path.join(${JSON.stringify(projectRoot)}, 'db', 'predictions.db')
-candles = json.loads(sys.stdin.read())
-inst = compute_institutional_levels(candles)
-m = compute_radar_markers(${JSON.stringify(ticker)}, candles, stocks_db)
-z = compute_chart_zones(candles, inst)
-pr = compute_prediction_ray(${JSON.stringify(ticker)}, stocks_db, predictions_db)
-print(json.dumps({
-  'institutional_levels': inst,
-  'markers': m,
-  'zones': z,
-  'prediction_ray': pr,
-}, ensure_ascii=False, default=str))
-`;
-      // استخدم spawn مع stdin pipe (execFile لا يدعم input بشكل موثوق)
-      const { spawn } = await import('child_process');
-      const child = spawn('python3', ['-c', script], {
-        cwd: projectRoot,
-        env: { ...process.env, PROJECT_ROOT: projectRoot },
-      });
-      let stdout = '';
-      let stderr = '';
-      child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
-      child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-      child.stdin.write(candlesJson);
-      child.stdin.end();
-      await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(() => {
-          child.kill();
-          reject(new Error('Python subprocess timeout'));
-        }, 8000);
-        child.on('close', (code) => {
-          clearTimeout(timer);
-          if (code === 0) resolve();
-          else reject(new Error(`Python exit ${code}: ${stderr}`));
-        });
-        child.on('error', (err) => {
-          clearTimeout(timer);
-          reject(err);
-        });
-      });
-      const parsed = JSON.parse(stdout.trim().split('\n').filter((l: string) => l.trim().startsWith('{')).pop() || '{}');
-      markers = (parsed.markers || []).map((m: Record<string, unknown>) => ({
-        ...m,
-        time: _toUnix(m.time),
-      })).filter((m: Record<string, unknown>) => {
-        const t = m.time as number;
-        return t > 0 && ohlcv.some((c) => c.time === t);
-      });
-      zones = parsed.zones || [];
-      prediction_ray = parsed.prediction_ray || null;
-      institutional_levels = parsed.institutional_levels || null;
-    } catch (e) { // silent fallback (safe-by-design — Rule 27)
-      // لو فشل Python، نُرجع arrays فارغة (لا اختلاع)
-      console.error('[chart/full-analysis] Python markers subprocess failed:', e);
+    } catch {
+      // Try next fallback URL (safe-by-design).
     }
   }
 
-  const data: Record<string, unknown> = {
-    success: true,
-    source: 'sqlite_fallback',
+  // Rule 27: honest empty — no fabricated OHLCV candles.
+  const emptyData: Record<string, unknown> = {
+    success: false,
+    error: 'chart_data_unavailable',
+    ohlcv: [],
     ticker,
     timeframe: timeframe === '1D' ? 'DAY' : timeframe,
-    ohlcv,
     indicators: {},
-    smart_markers: markers,
-    markers, // Task CHART-MARKERS: قائمة إشارات صانع السوق
-    zones, // Task CHART-MARKERS: مناطق الطلب والعرض (Order Blocks + Fibonacci)
-    prediction_ray, // Task CHART-MARKERS: خط الهدف ووقف الخسارة
-    institutional_levels, // Task CHART-MARKERS: المستويات المؤسسية الكاملة
+    smart_markers: [],
+    markers: [],
+    zones: [],
+    prediction_ray: null,
+    institutional_levels: null,
     bos_events: [],
     sweeps: [],
     cmf_data: [],
     vol_z_score_arr: [],
     macd_projection: [],
-    count: ohlcv.length,
-    warning: 'Python backend unreachable — OHLC candles from stocks.db (no indicators)',
+    count: 0,
   };
 
   try {
     const user = await getPaywallUser(request);
-    const paywalledData = applyPaywallToChartAnalysis(data, user.is_premium);
-    paywalledData._paywall = { is_premium: user.is_premium };
+    const paywalledData = applyPaywallToChartAnalysis(emptyData, user.is_premium);
+    (paywalledData as Record<string, unknown>)._paywall = { is_premium: user.is_premium };
     return NextResponse.json(paywalledData);
   } catch { // silent fallback (safe-by-design)
-    return NextResponse.json(data);
+    return NextResponse.json(emptyData);
   }
 }

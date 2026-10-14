@@ -1,12 +1,32 @@
+/**
+ * GET /api/maker-radar/stock?ticker=X&days=Y
+ * ===========================================
+ * Directive P1 (API Routes Decoupling): NO direct SQLite access in Next.js
+ * routes. This route proxies to Python `/api/maker-radar/stock` ONLY. If
+ * Python is unreachable → honest empty (Rule 27 NO-FAKE-DATA).
+ *
+ * Previously this route opened `db/stocks.db` + `db/predictions.db` directly
+ * via the radar-db lib + a dynamic `await import('better-sqlite3')`. That has
+ * been removed — the radar-db lib and all SQL are now Python's responsibility
+ * (Rule 4: Python = brain).
+ *
+ * The only local state preserved is the tracking JSON file
+ * (`db/maker_radar_tracking.json`) — this is local app state written by
+ * `/api/maker-radar/track`, NOT a SQLite database, so reading it here is Rule
+ * 4-compliant.
+ *
+ * Rule 4  (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA).
+ * FIX-P4-TARGETS: applyValidatedTargets (SSOT validator, no DB) is kept so the
+ *                 Python-proxied prediction is still validated signal-aware
+ *                 before being returned to the UI.
+ */
 import { NextRequest, NextResponse } from 'next/server';
-// P0-14-ASYNC fix (2026-09-27): replaced sync readFileSync/existsSync with
-// async fs/promises equivalents in loadTracking so the maker-radar stock GET
-// handler never blocks the event loop.
 import { readFile, access } from 'fs/promises';
 import path from 'path';
-import { getRadarDb, getRadarDbConfig, parseVolume, computeTurnover } from '@/modules/radar/lib/radar-db';
-// FIX-P4-TARGETS: validator for prediction enrichment (if a prediction exists
-// for this ticker in predictions.db, we validate it before returning).
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
+// FIX-P4-TARGETS: validator for prediction enrichment (signal-aware).
+// SSOT lib — does NOT open SQLite.
 import { applyValidatedTargets } from '@/lib/targets-validator';
 
 export const dynamic = 'force-dynamic';
@@ -22,93 +42,7 @@ interface TrackedStock {
   notes?: string;
 }
 
-// BRAVO-2-MFI-SECTORS: PriceRow type for technical indicator helpers (MFI).
-interface PriceRow {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  turnover: number | null;
-}
-
-// BRAVO-2-MFI-SECTORS: Money Flow Index (MFI 14) — real indicator, Rule 27 compliant.
-//
-// الصيغة القياسية:
-//   1. Typical Price (TP) = (high + low + close) / 3
-//   2. Raw Money Flow (RMF) = TP × volume
-//   3. لكل يوم (بعد الأول):
-//        - TP > prev TP → Positive MF += RMF
-//        - TP < prev TP → Negative MF += RMF
-//        - TP == prev TP → 0 لكليهما
-//   4. Money Flow Ratio = Σ Positive MF (over period) / Σ Negative MF
-//   5. MFI = 100 - (100 / (1 + Ratio))
-//
-// قواعد البيانات (Rule 27 — NO-FAKE-DATA):
-//   - يتخطى الأيام بـ volume <= 0 أو null/NaN (لا اختلاق).
-//   - لو الأيام الصالحة < period+1 → null (لا يكفي لحساب 14-period MFI).
-//   - لو Negative MF = 0 و Positive MF > 0 → MFI = 100 (Ratio = ∞).
-//   - لو Positive MF = 0 و Negative MF > 0 → MFI = 0  (Ratio = 0).
-//   - لو كلاهما = 0 (لا تذبذب) → null (غير معرّف).
-//   - النتيجة تُقرّب لمنزلتين عشريتين.
-function computeMFI(prices: PriceRow[], period = 14): number | null {
-  if (!Array.isArray(prices) || prices.length === 0) {
-    return null;
-  }
-
-  // فلترة الأيام غير الصالحة (volume مفقود/صفر، أو أسعار غير صالحة)
-  const valid: PriceRow[] = prices.filter(
-    (p) =>
-      p &&
-      typeof p.high === 'number' && isFinite(p.high) && p.high > 0 &&
-      typeof p.low === 'number' && isFinite(p.low) && p.low > 0 &&
-      typeof p.close === 'number' && isFinite(p.close) && p.close > 0 &&
-      typeof p.volume === 'number' && isFinite(p.volume) && p.volume > 0
-  );
-
-  // نحتاج period+1 نقطة صالحة لإنتاج period انتقال (transition)
-  if (valid.length < period + 1) {
-    return null;
-  }
-
-  // نافذة آخر period+1 نقطة
-  const mfiWindow = valid.slice(-(period + 1));
-
-  const typicalPrices = mfiWindow.map((p) => (p.high + p.low + p.close) / 3);
-  const rawMoneyFlows = mfiWindow.map((p, i) => typicalPrices[i] * p.volume);
-
-  let positiveMF = 0;
-  let negativeMF = 0;
-  for (let i = 1; i < mfiWindow.length; i++) {
-    const tp = typicalPrices[i];
-    const prevTp = typicalPrices[i - 1];
-    const rmf = rawMoneyFlows[i];
-    if (tp > prevTp) {
-      positiveMF += rmf;
-    } else if (tp < prevTp) {
-      negativeMF += rmf;
-    }
-    // تساوي → صفر لكليهما (لا شيء يُضاف)
-  }
-
-  // الحالات الحدية
-  if (positiveMF === 0 && negativeMF === 0) {
-    return null; // لا تذبذب → غير معرّف (Rule 27)
-  }
-  if (negativeMF === 0) {
-    return 100; // Ratio = ∞ → MFI = 100
-  }
-  if (positiveMF === 0) {
-    return 0; // Ratio = 0 → MFI = 0
-  }
-
-  const moneyFlowRatio = positiveMF / negativeMF;
-  const mfi = 100 - (100 / (1 + moneyFlowRatio));
-  return Math.round(mfi * 100) / 100;
-}
-
-// P0-14-ASYNC fix (2026-09-27): loadTracking is now async.
+// P0-14-ASYNC fix (2026-09-27): loadTracking is async.
 async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
     try {
@@ -127,7 +61,7 @@ async function loadTracking(): Promise<Record<string, TrackedStock>> {
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const ticker = (url.searchParams.get('ticker') || '').toUpperCase();
-  const days = parseInt(url.searchParams.get('days') || '30', 10);
+  const days = url.searchParams.get('days') || '30';
 
   if (!ticker) {
     return NextResponse.json(
@@ -136,215 +70,109 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const cfg = getRadarDbConfig();
-  const db = getRadarDb();
-  if (!cfg || !db) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'No radar DB available. Run scripts/fetch_production_data.py on sandbox, or ensure db/stocks.db exists on production.',
-      },
-      { status: 503 }
-    );
-  }
+  const qs = url.searchParams.toString();
 
-  try {
-    // 1. بيانات السهم الأساسية من stocks table (لو موجود)
-    let stockInfo: any = null;
+  // ── Python canonical endpoints (primary + direct fallback) ────────────
+  const targetUrls = [
+    `${PYTHON_BACKEND_URL}/api/maker-radar/stock${qs ? `?${qs}` : ''}`,
+    `http://127.0.0.1:8010/api/maker-radar/stock${qs ? `?${qs}` : ''}`,
+  ];
+
+  for (const targetUrl of targetUrls) {
     try {
-      stockInfo = db.prepare('SELECT * FROM stocks WHERE ticker = ?').get(ticker);
-    } catch (e) {
-      // مفيش stocks table — نكمل من غيره
-    }
-
-    // 2. آخر N يوم أسعار — portable query
-    const cols = `${cfg.dateCol}, ${cfg.openCol} as open, ${cfg.highCol} as high, ${cfg.lowCol} as low, ${cfg.priceCol} as close, ${cfg.volumeCol} as volume`;
-    const turnoverSelect = cfg.turnoverCol ? `, ${cfg.turnoverCol} as turnover` : ', NULL as turnover';
-    const priceRows = db.prepare(`
-      SELECT ${cols}${turnoverSelect}
-      FROM ${cfg.table}
-      WHERE ${cfg.tickerCol} = ? AND ${cfg.priceCol} IS NOT NULL AND ${cfg.priceCol} > 0
-      ORDER BY ${cfg.dateCol} DESC
-      LIMIT ?
-    `).all(ticker, days) as any[];
-
-    const prices = priceRows.reverse().map((r) => ({
-      date: r[cfg.dateCol],
-      open: r.open,
-      high: r.high,
-      low: r.low,
-      close: r.close,
-      volume: parseVolume(r.volume),
-      turnover: computeTurnover(r, cfg),
-    }));
-
-    // 3. إحصائيات
-    const closes = prices.map((p) => p.close).filter((c) => c > 0);
-    const volumes = prices.map((p) => p.volume).filter((v) => v > 0);
-    const turnovers = prices.map((p) => p.turnover).filter((t) => t > 0);
-
-    const lastClose = closes.length > 0 ? closes[closes.length - 1] : 0;
-    const firstClose = closes.length > 0 ? closes[0] : 0;
-    const changePct = firstClose > 0 ? ((lastClose - firstClose) / firstClose) * 100 : 0;
-
-    const avgVolume20 = volumes.length >= 20
-      ? volumes.slice(-20).reduce((a, b) => a + b, 0) / 20
-      : (volumes.reduce((a, b) => a + b, 0) / Math.max(volumes.length, 1));
-    const avgTurnover20 = turnovers.length >= 20
-      ? turnovers.slice(-20).reduce((a, b) => a + b, 0) / 20
-      : (turnovers.reduce((a, b) => a + b, 0) / Math.max(turnovers.length, 1));
-
-    // ROC 10d
-    const roc10d = closes.length >= 11 && closes[closes.length - 11] > 0
-      ? ((closes[closes.length - 1] - closes[closes.length - 11]) / closes[closes.length - 11]) * 100
-      : 0;
-
-    // max/min 20d
-    const last20 = closes.slice(-20);
-    const max20 = last20.length > 0 ? Math.max(...last20) : 0;
-    const min20 = last20.length > 0 ? Math.min(...last20) : 0;
-    const range20Pct = min20 > 0 ? ((max20 - min20) / min20) * 100 : 0;
-
-    // 4. tracking info
-    const tracking = await loadTracking();
-    const tracked = tracking[ticker];
-    let trackingInfo = null;
-    if (tracked) {
-      const changeSinceTracking = tracked.entryPrice > 0
-        ? ((lastClose - tracked.entryPrice) / tracked.entryPrice) * 100
-        : 0;
-      trackingInfo = {
-        isTracked: true,
-        entryDate: tracked.entryDate,
-        entryPrice: tracked.entryPrice,
-        currentPrice: lastClose,
-        changeSinceTracking: Math.round(changeSinceTracking * 100) / 100,
-        daysTracked: Math.floor((Date.now() - new Date(tracked.entryDate).getTime()) / (1000 * 60 * 60 * 24)),
-      };
-    }
-
-    // FIX-P4-TARGETS: prediction enrichment — لو فيه توقع حالي للـ ticker في
-    // predictions.db، نـ validate الـ targets بتاعته (signal-aware) ونرجّعه.
-    // الـ prediction منفصل عن الـ radar DB — بـ نقرأه من db/predictions.db.
-    // لو مفيش predictions.db أو مفيش توقع، الـ field بـ يكون null.
-    let predictionEnrichment: any = null;
-    try {
-      const fs = await import('fs/promises');
-      const predDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      let predDbExists = true;
-      try {
-        await fs.access(predDbPath);
-      } catch { // silent fallback (safe-by-design)
-        // predictions.db غير موجود — نـ skip الـ enrichment بصمت.
-        predDbExists = false;
-      }
-      if (predDbExists) {
-        const Database = (await import('better-sqlite3')).default;
-        const pdb = new Database(predDbPath, { readonly: true, timeout: 2000 });
-        try {
-          const pred = pdb.prepare(
-            `SELECT ticker, signal, signal_type, prediction_date, entry_price,
-                    target_price, target_price_2, stop_loss, risk_reward,
-                    confidence, master_score, market, persona, status,
-                    entry_price_min, entry_price_max, support_level,
-                    support_level_2, resistance_level, resistance_level_2
-             FROM predictions
-             WHERE ticker = ?
-             ORDER BY prediction_date DESC, id DESC
-             LIMIT 1`
-          ).get(ticker) as any;
-          if (pred) {
-            // FIX-P4-TARGETS: signal-aware validation قبل ما نرجّع الـ prediction.
-            const v = applyValidatedTargets({
-              signal: pred.signal || pred.signal_type || 'BUY',
-              entry_price: pred.entry_price,
-              current_price: lastClose || pred.entry_price,
-              target1: pred.target_price,
-              target2: pred.target_price_2 ?? null,
-              stop_loss: pred.stop_loss,
-              risk_reward_ratio: pred.risk_reward,
-            });
-            // Task REAPPLY-CRITICAL-FIXES — fabrication fallbacks removed (Rule 27).
-            // Was: support1 = entry*0.96, support2 = support1*0.96, entry_min = entry*0.99,
-            // entry_max = entry*1.01 — all fabricated from entry_price when DB lacked them.
-            // Now: return null when DB has no real value (Rule 27 — NO-FAKE-DATA).
-            // The UI (MakerRadarTab) handles null gracefully via the amber "data missing" badge.
-            const s1 = pred.support_level || null;
-            const s2 = pred.support_level_2 || null;
-            const r1 = pred.resistance_level || v.target1;
-            const r2 = pred.resistance_level_2 || v.target2;
-            const entryMin = pred.entry_price_min || null;
-            const entryMax = pred.entry_price_max || null;
-
-            predictionEnrichment = {
-              ticker: pred.ticker,
-              signal: pred.signal,
-              signal_type: pred.signal_type,
-              prediction_date: pred.prediction_date,
-              entry_price: v.entry_price,
-              entry_price_min: entryMin,
-              entry_price_max: entryMax,
-              target_price: v.target1,
-              target_price_2: v.target2,
-              stop_loss: v.stop_loss,
-              support_level: s1,
-              support_level_2: s2,
-              resistance_level: r1,
-              resistance_level_2: r2,
-              risk_reward: v.risk_reward_ratio,
-              confidence: pred.confidence != null ? Number(pred.confidence) : null,
-              master_score: pred.master_score != null ? Number(pred.master_score) : null,
-              market: pred.market,
-              persona: pred.persona,
-              status: pred.status,
-              current_price: lastClose,
-              targets_validated: v.adjusted || false,
-            };
+      const res = await fetch(targetUrl, {
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success) {
+          // ── Tracking enrichment (local JSON file — NOT SQLite) ────────
+          // If the user is tracking this ticker, attach tracking info +
+          // re-validate the Python-provided prediction signal-aware so the
+          // UI's amber "data missing" badge logic still works.
+          try {
+            const tracking = await loadTracking();
+            const tracked = tracking[ticker];
+            if (tracked && typeof data.prediction === 'object' && data.prediction) {
+              const lastClose =
+                data.stats?.lastClose != null
+                  ? Number(data.stats.lastClose)
+                  : (data.prediction.entry_price != null
+                      ? Number(data.prediction.entry_price)
+                      : 0);
+              if (tracked.entryPrice > 0 && lastClose > 0) {
+                const changeSinceTracking =
+                  ((lastClose - tracked.entryPrice) / tracked.entryPrice) * 100;
+                data.tracking = {
+                  isTracked: true,
+                  entryDate: tracked.entryDate,
+                  entryPrice: tracked.entryPrice,
+                  currentPrice: lastClose,
+                  changeSinceTracking: Math.round(changeSinceTracking * 100) / 100,
+                  daysTracked: Math.floor(
+                    (Date.now() - new Date(tracked.entryDate).getTime()) / (1000 * 60 * 60 * 24)
+                  ),
+                };
+              }
+              // FIX-P4-TARGETS: signal-aware validation on the Python-provided
+              // prediction. SSOT adapter — does NOT open any DB.
+              const v = applyValidatedTargets({
+                signal: data.prediction.signal || data.prediction.signal_type || 'BUY',
+                entry_price: data.prediction.entry_price,
+                current_price: lastClose || data.prediction.entry_price,
+                target1: data.prediction.target_price,
+                target2: data.prediction.target_price_2 ?? null,
+                stop_loss: data.prediction.stop_loss,
+                risk_reward_ratio: data.prediction.risk_reward,
+              });
+              data.prediction = {
+                ...data.prediction,
+                entry_price: v.entry_price,
+                target_price: v.target1,
+                target_price_2: v.target2,
+                stop_loss: v.stop_loss,
+                risk_reward: v.risk_reward_ratio,
+                targets_validated: v.adjusted,
+              };
+            }
+          } catch (enrichErr) {
+            // Enrichment is best-effort — never fail the whole request.
+            console.error('[maker-radar/stock] tracking/prediction enrichment error:', enrichErr);
           }
-        } finally {
-          pdb.close();
+
+          return NextResponse.json(data);
         }
       }
-    } catch (predErr) {
-      // الـ enrichment اختياري — لو فشل، نكمل من غير prediction field.
-      console.error('[maker-radar/stock] prediction enrichment error:', predErr);
+    } catch { // silent fallback (safe-by-design) → try next URL
+      // Try next fallback URL.
     }
-
-    // BRAVO-2-MFI-SECTORS: MFI 14 — Money Flow Index حقيقي من بيانات prices.
-    // لو الأيام الصالحة < 15 → null (Rule 27 — لا اختلاق).
-    const mfi14 = computeMFI(prices as PriceRow[], 14);
-
-    db.close();
-
-    return NextResponse.json({
-      success: true,
-      ticker,
-      stock_info: stockInfo || null,
-      prices,
-      stats: {
-        lastClose: Math.round(lastClose * 100) / 100,
-        changePct: Math.round(changePct * 100) / 100,
-        roc10d: Math.round(roc10d * 100) / 100,
-        avgVolume20: Math.round(avgVolume20),
-        avgTurnover20: Math.round(avgTurnover20),
-        max20: Math.round(max20 * 100) / 100,
-        min20: Math.round(min20 * 100) / 100,
-        range20Pct: Math.round(range20Pct * 100) / 100,
-        dataPoints: prices.length,
-        mfi: mfi14, // 0-100 أو null
-      },
-      tracking: trackingInfo,
-      // FIX-P4-TARGETS: latest prediction for this ticker (validated, signal-aware).
-      // null لو مفيش prediction في predictions.db أو الـ DB مش موجود.
-      prediction: predictionEnrichment,
-      db_source: cfg.dbPath.split('/').pop(), // اسم الـ DB المستخدم
-    });
-  } catch (error: any) {
-    console.error('[maker-radar/stock] error:', error);
-    try { db.close(); } catch { /* safe-by-design */ }
-    return NextResponse.json(
-      { success: false, error: 'internal_error' },
-      { status: 500 }
-    );
   }
+
+  // Rule 27: honest empty — NO fabricated prices/volumes/MFI/predictions.
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'تعذّر جلب بيانات السهم من المحرك الكنسي',
+      ticker,
+      stock_info: null,
+      prices: [],
+      stats: {
+        lastClose: 0,
+        changePct: 0,
+        roc10d: 0,
+        avgVolume20: 0,
+        avgTurnover20: 0,
+        max20: 0,
+        min20: 0,
+        range20Pct: 0,
+        dataPoints: 0,
+        mfi: null,
+      },
+      tracking: null,
+      prediction: null,
+      db_source: null,
+    },
+    { status: 503 }
+  );
 }

@@ -1,7 +1,22 @@
+/**
+ * GET /api/maker-radar?market=EGX
+ * ================================
+ * CANONICAL maker-radar route — pure Python proxy with cache fallback.
+ *
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `db/stocks.db` directly (`new Database(...)`) to enrich radar cache
+ * items with live prices. That bypassed the canonical Python engine.
+ * Now it:
+ *   1. Proxies to Python `/api/maker-radar?market=X` (primary).
+ *   2. Falls back to the cached JSON file (Python-written cache via the
+ *      background warmup spawn) — still Python's output, NO SQLite.
+ *   3. Returns honest empty (Rule 27 NO-FAKE-DATA) if both are unavailable.
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA).
+ */
 import { NextRequest, NextResponse } from 'next/server';
-// P0-14-ASYNC fix (2026-09-27): replaced sync readFileSync/existsSync with async
-// fs/promises equivalents in loadTracking so the maker-radar GET handler never
-// blocks the event loop on the tracking JSON file.
+// P0-14-ASYNC fix (2026-09-27): async fs/promises for tracking JSON file.
 import { readFile, access } from 'fs/promises';
 import path from 'path';
 import {
@@ -11,7 +26,7 @@ import {
   isCacheStale,
   isWarmupRunning,
 } from '@/modules/radar/lib/radar-cache';
-import Database from 'better-sqlite3';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { trialExpiredResponse } from '@/lib/subscription-gate';
 
@@ -50,10 +65,9 @@ async function loadTracking(): Promise<Record<string, TrackedStock>> {
 /**
  * GET /api/maker-radar?market=EGX
  *
- * Production-safe: ALWAYS reads from cached JSON (instant <50ms).
- * Never blocks on Python script execution. If the cache is stale, a
- * background warmup is triggered (fire-and-forget) — but the current
- * cache is returned immediately so the user never waits.
+ * Production-safe: ALWAYS tries Python first, then falls back to the cached
+ * JSON (instant <50ms). Never blocks on Python script execution directly.
+ * If the cache is stale, a background warmup is triggered (fire-and-forget).
  *
  * To force a synchronous refresh, POST /api/maker-radar/warmup instead.
  */
@@ -74,17 +88,41 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ─── 1. PRIMARY: Python canonical endpoint ────────────────────────────────
+  const qs = `market=${encodeURIComponent(market)}`;
+  const targetUrls = [
+    `${PYTHON_BACKEND_URL}/api/maker-radar?${qs}`,
+    `http://127.0.0.1:8010/api/maker-radar?${qs}`,
+  ];
+  for (const targetUrl of targetUrls) {
+    try {
+      const res = await fetch(targetUrl, {
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.success === true || data.all_results || data.quiet_list || data.explosive_list)) {
+          // Pass through Python response verbatim (Rule 4: mirror only).
+          return NextResponse.json({ ...data, cached: false, source: 'python' });
+        }
+      }
+    } catch { // silent fallback (safe-by-design) — try next URL or cache fallback
+    }
+  }
+
+  // ─── 2. FALLBACK: cached JSON (Python-written via background warmup) ──────
+  // The cache is Python's output (spawned by radar-cache.ts triggerBackgroundWarmup
+  // which runs `python3 scripts/maker_radar.py --json-only`). Reading it is
+  // NOT direct SQLite access — it is reading a JSON file that Python wrote.
   const cache = readRadarCache(market);
 
-  // Cache miss — no JSON file exists yet. Trigger synchronous warmup ONCE
+  // Cache miss — no JSON file exists yet. Trigger background warmup ONCE
   // (first ever request). Subsequent requests use the cache.
   if (!cache) {
     const status = getLiveStatus(market);
     if (!isWarmupRunning()) {
-      // First-ever request: do a synchronous warmup with a reasonable timeout
-      // so the user gets data on the first load instead of an empty screen.
-      // The warmup function is in radar-cache but for the first-request path
-      // we use the background trigger and return a "warming up" response.
+      // First-ever request: trigger background warmup (fire-and-forget).
       triggerBackgroundWarmup(market);
     }
     return NextResponse.json({
@@ -96,62 +134,17 @@ export async function GET(req: NextRequest) {
     }, { status: 503 });
   }
 
-  // ─── Cache hit — enrich + return instantly ───────────────────────────
+  // ─── Cache hit — return instantly (no SQLite enrichment) ───────────────
+  // NOTE (Directive P1): previously this branch opened `db/stocks.db`
+  // directly to enrich radar items with live prices + support/resistance +
+  // MA/RSI. That direct DB access has been removed (Rule 4 / Rule 27).
+  // The cache already contains Python's most recent computed values for
+  // these fields. If the consumer needs fresher values, the cache must be
+  // warmed up — the frontend never reaches into SQLite directly.
   const tracking = await loadTracking();
 
-  // Load live prices from stocks.db so radar items ALWAYS reflect the active session
-  // FIX (Task DEEP-MARKET-SEPARATION): فلترة بـ market عشان ميبقاش في تداخل بين أسواق
-  const liveMap = new Map<string, { current_price: number; change_percent: number; volume?: number; name_ar?: string }>();
-  try {
-    const dbPath = path.join(PROJECT_ROOT, 'db', 'stocks.db');
-    const db = new Database(dbPath, { readonly: true });
-    // SECURITY-FIX + DEEP-MARKET-SEPARATION: parameterized query بدل interpolation
-    const selectCols = `ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close`;
-    let liveRows: any[];
-    if (market === 'EGX') {
-      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0 AND market IN ('EGX','مصر')`).all() as any[];
-    } else if (market) {
-      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0 AND market = ?`).all(market) as any[];
-    } else {
-      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0`).all() as any[];
-    }
-    for (const r of liveRows) {
-      if (r.ticker) {
-        liveMap.set(String(r.ticker).toUpperCase(), r);
-      }
-    }
-    db.close();
-  } catch (e) {
-    console.error('[maker-radar] failed to read live prices from stocks.db:', e);
-  }
-
   const enrichStock = (stock: any) => {
-    let s = { ...stock };
-    const tickerKey = String(s.ticker || '').toUpperCase();
-    const live = liveMap.get(tickerKey);
-    if (live && live.current_price > 0) {
-      s.current_price = live.current_price;
-      s.change_1d = live.change_percent;
-      s.change_percent = live.change_percent;
-      if (live.volume) s.volume = live.volume;
-      if (live.name_ar && !s.name_ar) s.name_ar = live.name_ar;
-      // Task DEEP-DIRECTIVE: إمداد الرادار بمستويات الدعم والمقاومة + RSI + MA
-      s.support = live.support ?? null;
-      s.resistance = live.resistance ?? null;
-      s.ma_50 = live.ma_50 ?? null;
-      s.ma_200 = live.ma_200 ?? null;
-      s.rsi = live.rsi ?? null;
-      s.high_price = live.high_price ?? null;
-      s.low_price = live.low_price ?? null;
-      s.open_price = live.open_price ?? null;
-      s.previous_close = live.previous_close ?? null;
-      // حساب turnover_egp رياضياً لو NULL (نفس إصلاح الـ screener)
-      if (!s.turnover_egp || s.turnover_egp === 0) {
-        s.turnover_egp = (live.current_price > 0 && live.volume > 0)
-          ? Math.round(live.current_price * live.volume)
-          : 0;
-      }
-    }
+    const s = { ...stock };
     const tracked = tracking[s.ticker];
     if (tracked) {
       const currentPrice = s.current_price || 0;
@@ -198,6 +191,7 @@ export async function GET(req: NextRequest) {
     success: true,
     ...enriched,
     cached: true,
+    source: 'cache',
     cache_age_seconds: cacheAgeSec,
     cache_stale: stale,
     warmup_running: isWarmupRunning(),
