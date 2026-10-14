@@ -433,9 +433,9 @@ def select_top_conviction_signals(active: List[Dict[str, Any]], top_n: int = 5) 
       الأولوية 3: ترتيب تنازلي بـ (R:R ثم الثقة ثم target_1_pct)
 
     Returns:
-        {'top_5_signals': [...], 'secondary_signals': [...]}
+        {'top_5_signals': [...], 'extra_signals': [...]}
         - top_5_signals: max 5 (أو top_n) — الأقوى مؤسسياً
-        - secondary_signals: باقي الصفقات المؤهلة (اختياري للتوسع)
+        - extra_signals: باقي الصفقات النشطة المؤهلة (للتوسع)
     """
     qualified: List[Dict[str, Any]] = []
 
@@ -493,11 +493,11 @@ def select_top_conviction_signals(active: List[Dict[str, Any]], top_n: int = 5) 
 
     top_n_actual = min(top_n, len(qualified))
     top_signals = qualified[:top_n_actual]
-    secondary_signals = qualified[top_n_actual:]
+    extra_signals = qualified[top_n_actual:]
 
     return {
         'top_5_signals': top_signals,
-        'secondary_signals': secondary_signals,
+        'extra_signals': extra_signals,
     }
 
 
@@ -564,16 +564,20 @@ def main() -> int:
     audited = get_audited_performance(market=args.market)
     summary = compute_summary(active, audited)
 
-    # Task B-23: فرز واختيار أقوى 5 صفقات مؤسسية في الصدارة
+    # Task B-23/B-24: بايثون يفرز ويحدد أقوى 5 صفقات مؤسسية (Rule 20 PYTHON=BRAIN)
+    # الواجهة لا تقرر — القرار يخرج محسوباً من هنا.
     conviction = select_top_conviction_signals(active, top_n=5)
     top_5_signals = conviction['top_5_signals']
-    secondary_signals = conviction['secondary_signals']
+    extra_signals = conviction['extra_signals']
+
+    # إضافة top_5_count لكائن summary (Task B-24)
+    summary['top_5_count'] = len(top_5_signals)
 
     result = {
         'success': True,
         'summary': summary,
         'top_5_signals': top_5_signals,
-        'secondary_signals': secondary_signals,
+        'extra_signals': extra_signals,
         'active_live_signals': active,
         'audited_performance_history': audited,
     }
@@ -586,7 +590,7 @@ def main() -> int:
         log("=" * 60)
         log(f"Active Live Signals: {len(active)}")
         log(f"  Top 5 Conviction: {len(top_5_signals)}")
-        log(f"  Secondary: {len(secondary_signals)}")
+        log(f"  Extra: {len(extra_signals)}")
         log(f"  avg R:R = {summary['active_signals']['avg_rr']}")
         log(f"  avg confidence = {summary['active_signals']['avg_confidence']}%")
         log(f"Audited Performance: {len(audited)} closed")
