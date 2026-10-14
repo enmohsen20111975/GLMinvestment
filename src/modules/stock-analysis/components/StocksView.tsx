@@ -1752,6 +1752,7 @@ export function StocksView() {
         subtitle={pageSubtitle}
       />
       <main className="flex-1 p-3 md:p-6 max-w-7xl mx-auto w-full space-y-3 md:space-y-4">
+        {/* ── SCR-002 Institutional Glass Panel (Bloomberg terminal feel) ── */}
         {/* ── Tabs ── */}
         <div className="flex gap-2">
           <button

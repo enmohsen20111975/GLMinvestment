@@ -559,8 +559,9 @@ export function StockScreenerAdvanced({ initialTab = 'advanced', initialMarket }
 
   return (
     <div className="space-y-4 p-4 md:p-6" dir="rtl">
+      {/* ── SCR-003: Institutional Glass Panel (Bloomberg terminal feel) ── */}
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2 rounded-xl border border-emerald-500/20 bg-card/80 backdrop-blur-sm p-4 shadow-sm">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Activity className="w-5 h-5 text-emerald-600" />

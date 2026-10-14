@@ -154,8 +154,9 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
       dir="rtl"
       className="w-full min-h-screen overflow-y-auto bg-background text-foreground p-2 md:p-5 pb-28 space-y-5"
     >
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="border-b border-border bg-gradient-to-r from-emerald-50 via-background to-sky-50 dark:from-emerald-950/20 dark:via-card dark:to-sky-950/20 px-4 py-4 md:px-5 md:py-5">
+      {/* ── SCR-004: Institutional Glass Panel (Bloomberg terminal feel) ── */}
+      <div className="rounded-2xl border border-emerald-500/20 bg-card/80 backdrop-blur-sm shadow-lg overflow-hidden">
+        <div className="border-b border-emerald-500/10 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5 px-4 py-4 md:px-5 md:py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-emerald-500">
