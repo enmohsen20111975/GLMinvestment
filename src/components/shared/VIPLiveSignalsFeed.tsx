@@ -25,8 +25,86 @@ import {
 import type {
   LiveSignal,
   CommercialFeedResponse,
+  AuditedPerformance,
+  MarketCode,
 } from '@/types/commercial-feed';
-import { safeFeedResponse, safeTop5Signals, safeAuditedPerformance, marketCurrencySymbol } from '@/types/commercial-feed';
+import { safeFeedResponse, safeTop5Signals, safeAuditedPerformance, marketCurrencySymbol, EMPTY_AUDITED_PERFORMANCE } from '@/types/commercial-feed';
+
+// ============================================================================
+// Directive A-P4: Elite Market Switcher Bar — 4 أسواق + بطاقة أداء موثقة لكل سوق
+// ============================================================================
+
+const ELITE_MARKETS: MarketCode[] = ['EGX', 'TADAWUL', 'KSE', 'QSE'];
+
+interface MarketSummaryBadge {
+  loading: boolean;
+  audited: AuditedPerformance;
+}
+
+function MarketSwitcherBar({
+  activeMarket,
+  onSelect,
+  summaries,
+}: {
+  activeMarket: string;
+  onSelect: (m: MarketCode) => void;
+  summaries: Record<string, MarketSummaryBadge>;
+}) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" dir="rtl">
+      {ELITE_MARKETS.map((m) => {
+        const isActive = activeMarket.toUpperCase() === m;
+        const badge = summaries[m];
+        const currency = marketCurrencySymbol(m);
+        const wr = badge?.audited?.win_rate ?? null;
+        const closed = badge?.audited?.total_closed ?? 0;
+        return (
+          <button
+            key={m}
+            onClick={() => onSelect(m)}
+            className={cn(
+              'rounded-xl border p-2.5 text-right transition-all min-w-0',
+              isActive
+                ? 'border-emerald-500/60 bg-emerald-500/5 shadow-sm ring-1 ring-emerald-500/20'
+                : 'border-border/50 hover:border-emerald-500/30 hover:bg-muted/30',
+            )}
+          >
+            <div className="flex items-center justify-between gap-1 min-w-0">
+              <span className={cn(
+                'text-xs font-bold truncate',
+                isActive ? 'text-emerald-700 dark:text-emerald-300' : 'text-foreground',
+              )}>
+                {m}
+              </span>
+              <span className="text-[9px] text-muted-foreground shrink-0">{currency}</span>
+            </div>
+            <div className="mt-1 min-w-0">
+              {badge?.loading ? (
+                <div className="h-3 w-12 bg-muted/50 rounded animate-pulse" />
+              ) : closed > 0 ? (
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className={cn(
+                    'text-[10px] font-bold',
+                    wr != null && wr >= 70
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : wr != null && wr >= 50
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-muted-foreground',
+                  )}>
+                    {wr != null ? `${wr}%` : '—'}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground truncate">· {closed} صفقة</span>
+                </div>
+              ) : (
+                <span className="text-[9px] text-muted-foreground/60">لا سجل بعد</span>
+              )}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function fmtPrice(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(Number(n))) return '—';
@@ -178,31 +256,82 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
 }
 
 export function VIPLiveSignalsFeed({ market }: { market: string }) {
+  // Directive A-P4: internal active market state (defaults to parent prop).
+  // Allows instant market switching without touching the global TopBar switcher.
+  const [activeMarket, setActiveMarket] = useState<string>(market);
   const [data, setData] = useState<CommercialFeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedTicker, setCopiedTicker] = useState<string | null>(null);
   const [showExtra, setShowExtra] = useState(false);
+  // Per-market audited performance badges (for the switcher bar)
+  const [summaries, setSummaries] = useState<Record<string, MarketSummaryBadge>>({});
 
-  const fetchData = useCallback(async () => {
+  // Sync active market when parent prop changes
+  useEffect(() => { setActiveMarket(market); }, [market]);
+
+  const fetchData = useCallback(async (mkt: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v2/commercial-feed?market=${encodeURIComponent(market)}`, { cache: 'no-store' });
+      const res = await fetch(`/api/v2/commercial-feed?market=${encodeURIComponent(mkt)}`, { cache: 'no-store' });
       if (!res.ok) { setError('تعذّر جلب التوصيات'); setData(null); return; }
       const raw = await res.json();
       const json = safeFeedResponse(raw); // defensive — never crashes on malformed payload
       if (!json.success) { setError(json.message || json.error || 'تعذّر جلب التوصيات'); setData(null); return; }
       setData(json);
+      // Update the summary badge for this market
+      setSummaries((prev) => ({
+        ...prev,
+        [mkt.toUpperCase()]: { loading: false, audited: safeAuditedPerformance(json) },
+      }));
     } catch {
       setError('تعذّر الاتصال بالخادم');
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [market]);
+  }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Fetch the active market's feed on mount + when activeMarket changes
+  useEffect(() => { fetchData(activeMarket); }, [fetchData, activeMarket]);
+
+  // Directive A-P4: pre-fetch all 4 markets' audited summaries in the background
+  // (lightweight — populates the switcher bar badges without blocking the main feed)
+  useEffect(() => {
+    const missing = ELITE_MARKETS.filter((m) => !summaries[m]);
+    if (missing.length === 0) return;
+    // Mark as loading
+    setSummaries((prev) => {
+      const next = { ...prev };
+      for (const m of missing) next[m] = { loading: true, audited: EMPTY_AUDITED_PERFORMANCE };
+      return next;
+    });
+    // Fetch each missing market's summary in parallel
+    missing.forEach(async (m) => {
+      try {
+        const res = await fetch(`/api/v2/commercial-feed?market=${m}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('fetch failed');
+        const raw = await res.json();
+        const feed = safeFeedResponse(raw);
+        setSummaries((prev) => ({
+          ...prev,
+          [m]: { loading: false, audited: safeAuditedPerformance(feed) },
+        }));
+      } catch {
+        setSummaries((prev) => ({
+          ...prev,
+          [m]: { loading: false, audited: EMPTY_AUDITED_PERFORMANCE },
+        }));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleMarketSelect = useCallback((m: MarketCode) => {
+    setActiveMarket(m);
+    setShowExtra(false);
+  }, []);
 
   const handleCopy = async (e: React.MouseEvent, sig: LiveSignal) => {
     e.stopPropagation();
@@ -218,6 +347,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
   if (loading) {
     return (
       <div className="space-y-3">
+        <MarketSwitcherBar activeMarket={activeMarket} onSelect={handleMarketSelect} summaries={summaries} />
         <Skeleton className="h-24 w-full rounded-xl" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -230,15 +360,18 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
 
   if (error || !data) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center space-y-3">
-          <Activity className="w-8 h-8 text-amber-500 mx-auto" />
-          <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">{error || 'لا توجد بيانات'}</p>
-          <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5" /> إعادة المحاولة
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        <MarketSwitcherBar activeMarket={activeMarket} onSelect={handleMarketSelect} summaries={summaries} />
+        <Card>
+          <CardContent className="p-6 text-center space-y-3">
+            <Activity className="w-8 h-8 text-amber-500 mx-auto" />
+            <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">{error || 'لا توجد بيانات'}</p>
+            <Button variant="outline" size="sm" onClick={() => fetchData(activeMarket)} className="gap-1.5">
+              <RefreshCw className="w-3.5 h-3.5" /> إعادة المحاولة
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -252,33 +385,39 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
 
   if (topSignals.length === 0 && extraSignals.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center space-y-2">
-          <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto" />
-          <p className="text-sm font-semibold text-muted-foreground">
-            لا توجد صفقات حية حالياً في {market}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            سيتم عرض الفرص الجديدة فور توفرها (Rule 27: لا بيانات وهمية)
-          </p>
-          <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5 mt-2">
-            <RefreshCw className="w-3.5 h-3.5" /> تحديث
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        <MarketSwitcherBar activeMarket={activeMarket} onSelect={handleMarketSelect} summaries={summaries} />
+        <Card>
+          <CardContent className="p-6 text-center space-y-2">
+            <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+            <p className="text-sm font-semibold text-muted-foreground">
+              لا توجد صفقات حية حالياً في {activeMarket}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              سيتم عرض الفرص الجديدة فور توفرها (Rule 27: لا بيانات وهمية)
+            </p>
+            <Button variant="outline" size="sm" onClick={() => fetchData(activeMarket)} className="gap-1.5 mt-2">
+              <RefreshCw className="w-3.5 h-3.5" /> تحديث
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {/* Directive A-P4: Elite Market Switcher Bar — 4 أسواق + بطاقة أداء موثقة */}
+      <MarketSwitcherBar activeMarket={activeMarket} onSelect={handleMarketSelect} summaries={summaries} />
+
       {/* Header strip */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-emerald-500" />
-          <span className="text-sm font-semibold">الصفقات الحية</span>
+          <span className="text-sm font-semibold">الصفقات الحية — {activeMarket}</span>
           <Badge variant="outline" className="text-[10px]">{topSignals.length + extraSignals.length} صفقة</Badge>
         </div>
-        <Button variant="ghost" size="sm" onClick={fetchData} className="gap-1.5 h-7 text-xs">
+        <Button variant="ghost" size="sm" onClick={() => fetchData(activeMarket)} className="gap-1.5 h-7 text-xs">
           <RefreshCw className="w-3.5 h-3.5" /> تحديث
         </Button>
       </div>
