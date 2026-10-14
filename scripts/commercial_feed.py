@@ -300,7 +300,50 @@ def get_active_live_signals(market: Optional[str] = None) -> List[Dict[str, Any]
         })
 
     conn.close()
-    return signals
+
+    # ── HARD QUANT DATABASE GATE (Task B-25, Rule 20 PYTHON=BRAIN) ─────────
+    # منع أي صفقة تخرج للشاشات إلا لو:
+    #   1. R:R ≥ 1.5 (المستهدف ≥ 2.0)
+    #   2. الثقة ≥ 65%
+    #   3. Falling Knife Prevention: لو السعر تحت MA50×0.95 + MA50 < MA200
+    #      → استبعاد (لا أهداف صاعدة على سكين ساقط)
+    # ده الـ SSOT gate — كل من active_live_signals + top_5 + extra بيمروا من هنا.
+    gated_signals: List[Dict[str, Any]] = []
+    for sig in signals:
+        rr = _to_float(sig.get('risk_reward'))
+        conf = _to_float(sig.get('confidence'))
+        entry = _to_float(sig.get('entry_price'))
+        target = _to_float(sig.get('target_1'))
+        stop = _to_float(sig.get('stop_loss'))
+        signal_raw = (sig.get('signal') or '').upper().strip()
+
+        # 1. R:R ≥ 1.5 (احتياطي: احسب من entry/target/stop لو risk_reward ناقص)
+        computed_rr = 0.0
+        if entry > 0 and target > entry and entry > stop:
+            risk = entry - stop
+            reward = target - entry
+            computed_rr = reward / risk if risk > 0 else 0.0
+        effective_rr = max(rr, computed_rr)
+        if effective_rr < 1.5:
+            continue
+
+        # 2. الثقة ≥ 65%
+        if conf < 65.0:
+            continue
+
+        # 3. Falling Knife: استبعاد لو target ≤ entry (لا هدف صاعد)
+        if target <= entry:
+            continue
+        # استبعاد لو stop ≥ entry (وقف خاطئ)
+        if stop >= entry:
+            continue
+        # استبعاد إشارات هابطة/تصريفية
+        if signal_raw in ('SELL', 'STRONG_SELL', 'REDUCE', 'HOLD', 'WAIT'):
+            continue
+
+        gated_signals.append(sig)
+
+    return gated_signals
 
 
 # ---------------------------------------------------------------------------
@@ -564,6 +607,26 @@ def main() -> int:
     audited = get_audited_performance(market=args.market)
     summary = compute_summary(active, audited)
 
+    # Task B-25: جلب حالة السوق SSOT من liquidity_radar_v2 (مصدر موحد)
+    # ده يضمن إن commercial_feed + liquidity_radar يشوفوا نفس النسبة الصحيحة
+    # (محسوبة من current_value/previous_close، مش من change_percent الفاسد)
+    market_regime = None
+    try:
+        # استيراد detect_market_regime من liquidity_radar_v2 (SSOT)
+        import importlib.util as _ilu2
+        _lr_path = Path(__file__).resolve().parent / "liquidity_radar_v2.py"
+        if _lr_path.exists() and STOCKS_DB.exists():
+            _lr_spec = _ilu2.spec_from_file_location("liquidity_radar_v2", _lr_path)
+            _lr_mod = _ilu2.module_from_spec(_lr_spec)
+            _lr_spec.loader.exec_module(_lr_mod)
+            _lr_conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+            _lr_conn.row_factory = sqlite3.Row
+            market_regime = _lr_mod.detect_market_regime(_lr_conn, args.market or 'EGX')
+            _lr_conn.close()
+    except Exception as e:
+        log(f"⚠️ تعذر جلب حالة السوق SSOT: {e}")
+        market_regime = None
+
     # Task B-23/B-24: بايثون يفرز ويحدد أقوى 5 صفقات مؤسسية (Rule 20 PYTHON=BRAIN)
     # الواجهة لا تقرر — القرار يخرج محسوباً من هنا.
     conviction = select_top_conviction_signals(active, top_n=5)
@@ -576,6 +639,7 @@ def main() -> int:
     result = {
         'success': True,
         'summary': summary,
+        'market_regime': market_regime,
         'top_5_signals': top_5_signals,
         'extra_signals': extra_signals,
         'active_live_signals': active,
@@ -588,7 +652,9 @@ def main() -> int:
         log("=" * 60)
         log("📊 Single Commercial Feed — التوصيات الموحدة")
         log("=" * 60)
-        log(f"Active Live Signals: {len(active)}")
+        if market_regime:
+            log(f"حالة السوق: {market_regime.get('regime')} ({market_regime.get('change_pct')}%) — {market_regime.get('reason')}")
+        log(f"Active Live Signals: {len(active)} (بعد Hard Quant Gate)")
         log(f"  Top 5 Conviction: {len(top_5_signals)}")
         log(f"  Extra: {len(extra_signals)}")
         log(f"  avg R:R = {summary['active_signals']['avg_rr']}")

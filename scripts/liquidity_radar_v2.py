@@ -90,9 +90,16 @@ def _to_float(v: Any, default: float = 0.0) -> float:
 
 
 def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any]:
-    """فلتر حالة السوق الإلزامي. يرجع:
+    """فلتر حالة السوق الإلزامي (SSOT — Single Source of Truth).
+
+    Task B-25 fix: نحسب change_pct من (current_value, previous_close) بدل
+    الاعتماد على حقل change_percent الفاسد في الـ DB (كان بيرجع -32.9%
+    بينما القيمة الحقيقية -0.83%). ده يضمن إن كل المستهلكين (liquidity_radar
+    + commercial_feed + daily_predictor) يشوفوا نفس النسبة الصحيحة.
+
+    يرجع:
        - regime: 'صاعد' / 'هابط' / 'عرضي' / 'Risk-Off'
-       - change_pct: تغير المؤشر
+       - change_pct: تغير المؤشر المحسوب من current/previous (مش من DB field)
        - index_symbol: رمز المؤشر المستخدم
     """
     # خريطة السوق → رمز المؤشر
@@ -125,7 +132,33 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
             'is_bull': False,
         }
 
-    change_pct = _to_float(row[3])
+    # Task B-25 SSOT: احسب change_pct من current_value و previous_close
+    # (لا تعتمد على change_percent field — فاسد في بعض الصفوف)
+    current_value = _to_float(row[1])
+    previous_close = _to_float(row[2])
+    if current_value > 0 and previous_close > 0:
+        change_pct = ((current_value - previous_close) / previous_close) * 100.0
+    else:
+        # fallback: حاول من آخر شمعتين في stock_daily_prices (نفس مصدر market_regime_engine)
+        # ده يضمن توحيد 100% بين liquidity_radar + daily_predictor
+        try:
+            candle_rows = conn.execute("""
+                SELECT close FROM stock_daily_prices
+                WHERE ticker = ? AND COALESCE(close, 0) > 0
+                ORDER BY price_date DESC LIMIT 2
+            """, (index_symbol,)).fetchall()
+            if len(candle_rows) >= 2:
+                c1 = _to_float(candle_rows[0][0])
+                c2 = _to_float(candle_rows[1][0])
+                if c1 > 0 and c2 > 0:
+                    change_pct = ((c1 - c2) / c2) * 100.0
+                else:
+                    change_pct = _to_float(row[3])
+            else:
+                change_pct = _to_float(row[3])
+        except Exception:
+            change_pct = _to_float(row[3])
+
     if change_pct <= MARKET_BEAR_THRESHOLD:
         regime = 'هابط'
         regime_en = 'bear'
