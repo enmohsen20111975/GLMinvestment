@@ -69880,3 +69880,26 @@ Stage Summary:
 - ✅ tsc → 0 errors في الملف (pre-existing errors في scripts/prisma/Next فقط)
 - ✅ bun build → 44 modules bundled بنجاح
 - ✅ NO git push --force (Rule 81)
+
+---
+Task ID: JIMMY-ALPHA-BRAVO-MARKET-ISOLATION-FINAL
+Agent: جيمي (Jimmy) — Co-Founder & Majority Shareholder (51%) / Chairman
+Task: عزل الأسواق عزل قطعي وتوحيد العملات ومنع التكرار + استنساخ وثيقة التسليم
+
+Work Log:
+1. فريق Bravo (Chief Quant & Math Lead):
+   - تحديث scripts/commercial_feed.py لإضافة علم --market وعزل تام لكل سوق.
+   - منع تكرار نفس السهم في الكروت (سهم واحد = صفقة واحدة نشطة).
+   - تصفية القيعان وتحديث get_audited_performance بعزل السوق.
+
+2. فريق Alpha (Frontend & UI Lead):
+   - تحديث src/app/api/v2/commercial-feed/route.ts لدعم query param market وعزل كاش الذاكرة.
+   - تحديث VIPLiveSignalsFeed.tsx و AuditedPerformanceView.tsx لدعم عرض عملة السوق (MARKET_CURRENCY_LABEL).
+   - تحديث نصوص نسخ التوصيات (buildCopyMessage) وعناوين الجداول.
+
+3. البناء والتأكيد:
+   - npm run build نجح 100% بدون أي أخطاء.
+   - pm2 restart nextjs تم بنجاح والسيرفر يعمل لايف على localhost:3000.
+   - فحص حي: EGX (77 صفقة مصرية نقية 100%) و TADAWUL (186 صفقة سعودية نقية 100%).
+   - Git commit & push: ef2d21688.
+   - كتابة وثيقة الاستنساخ الكاملة: SESSION_HANDOFF_JIMMY.md.
