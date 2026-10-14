@@ -114,7 +114,7 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
     <div className="my-4">
       {/* Featured Primary Image */}
       <div
-        className="relative group rounded-lg overflow-hidden border border-border/70 bg-muted/20 cursor-pointer max-h-[380px]"
+        className="relative group rounded-lg overflow-hidden border border-border/70 bg-muted/20 cursor-pointer max-h-[380px] dark:bg-surface-container-low dark:border-outline-variant/30"
         onClick={() => setSelectedImage(validImages[0])}
       >
         <img
@@ -156,11 +156,11 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] bg-background/95 rounded-xl p-2 border border-border shadow-2xl">
+          <div className="relative max-w-4xl max-h-[90vh] bg-background/95 rounded-xl p-2 border border-border shadow-2xl dark:bg-surface-container-low dark:border-outline-variant/30">
             <button
               type="button"
               onClick={() => setSelectedImage(null)}
-              className="absolute top-4 left-4 z-10 bg-background/80 hover:bg-background border border-border rounded-full p-1.5 text-foreground transition-colors shadow"
+              className="absolute top-4 left-4 z-10 bg-background/80 hover:bg-background border border-border rounded-full p-1.5 text-foreground transition-colors shadow dark:bg-surface-container-high dark:text-on-surface dark:border-outline-variant/30"
               aria-label={t('news.feed.closeAriaLabel')}
             >
               <X className="w-4 h-4" />
@@ -170,7 +170,7 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
               alt={title}
               className="max-w-full max-h-[82vh] object-contain rounded-lg mx-auto"
             />
-            <p className="text-xs text-muted-foreground text-center mt-2 px-4 truncate">{title}</p>
+            <p className="text-xs text-muted-foreground text-center mt-2 px-4 truncate dark:text-on-surface-variant">{title}</p>
           </div>
         </div>
       )}
@@ -219,18 +219,18 @@ function InvestmentDecisionInsight({
   };
 
   return (
-    <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5 space-y-3">
-      <div className="flex items-center justify-between pb-2 border-b border-border/50">
+    <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5 space-y-3 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+      <div className="flex items-center justify-between pb-2 border-b border-border/50 dark:border-outline-variant/30">
         <div className="flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs font-bold text-foreground">{t('news.feed.insight.title')}</span>
+          <span className="text-xs font-bold text-foreground dark:text-on-surface">{t('news.feed.insight.title')}</span>
         </div>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={handleCopyAnalysis}
-          className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
+          className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface"
         >
           {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
           <span>{copied ? t('news.feed.insight.copied') : t('news.feed.insight.copy')}</span>
@@ -240,19 +240,19 @@ function InvestmentDecisionInsight({
       <div className="flex flex-wrap items-center gap-1.5">
         {/* Sentiment Badge */}
         {sentimentKey === 'positive' && (
-          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs gap-1">
+          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs gap-1 dark:bg-primary-container/20 dark:text-primary dark:border-primary/30">
             <ArrowUpRight className="w-3 h-3" />
             {t('news.feed.insight.sentimentPositive')}
           </Badge>
         )}
         {sentimentKey === 'negative' && (
-          <Badge className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 text-xs gap-1">
+          <Badge className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 text-xs gap-1 dark:bg-error-container/20 dark:text-error dark:border-error/30">
             <ArrowDownRight className="w-3 h-3" />
             {t('news.feed.insight.sentimentNegative')}
           </Badge>
         )}
         {sentimentKey === 'neutral' && (
-          <Badge variant="outline" className="text-muted-foreground text-xs gap-1">
+          <Badge variant="outline" className="text-muted-foreground text-xs gap-1 dark:bg-surface-container-high dark:text-on-surface-variant dark:border-outline-variant/30">
             <Minus className="w-3 h-3" />
             {t('news.feed.insight.sentimentNeutral')}
           </Badge>
@@ -277,20 +277,20 @@ function InvestmentDecisionInsight({
       </div>
 
       {/* Analysis Reasoning Text */}
-      <p className="text-xs text-foreground/85 leading-relaxed font-normal">
+      <p className="text-xs text-foreground/85 leading-relaxed font-normal dark:text-on-surface">
         {item.reasoning}
       </p>
 
       {/* Related Tickers */}
       {item.tickers && item.tickers.length > 0 && (
-        <div className="flex items-center gap-1 pt-2 border-t border-border/40 flex-wrap">
-          <span className="text-[10px] text-muted-foreground">{t('news.feed.insight.stocksLabel')}</span>
+        <div className="flex items-center gap-1 pt-2 border-t border-border/40 flex-wrap dark:border-outline-variant/30">
+          <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">{t('news.feed.insight.stocksLabel')}</span>
           {item.tickers.map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => onTickerClick?.(t)}
-              className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+              className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors dark:font-financial tabular-nums dark:text-primary dark:bg-primary-container/20 dark:border-primary/30"
             >
               {t}
             </button>
@@ -418,7 +418,7 @@ function ShareAndActions({ item }: { item: NewsItem }) {
 
   return (
     <div className="space-y-2 pt-2">
-      <span className="text-[11px] font-medium text-muted-foreground block">{t('news.feed.share.label')}</span>
+      <span className="text-[11px] font-medium text-muted-foreground block dark:text-on-surface-variant">{t('news.feed.share.label')}</span>
       {/* UnifiedPublishButton — يوحد كل منصات النشر + النسخ في زر واحد */}
       <UnifiedPublishButton
         content={fullTextToShare}
@@ -437,7 +437,7 @@ function ShareAndActions({ item }: { item: NewsItem }) {
           size="sm"
           onClick={() => window.open(item.url, '_blank')}
           title={t('news.feed.share.sourceLinkTitle')}
-          className="h-8 w-full text-xs gap-1.5 justify-center hover:bg-muted text-muted-foreground hover:text-foreground"
+          className="h-8 w-full text-xs gap-1.5 justify-center hover:bg-muted text-muted-foreground hover:text-foreground dark:hover:bg-surface-container-high dark:text-on-surface-variant dark:hover:text-on-surface"
         >
           <ExternalLink className="w-3.5 h-3.5" />
           <span>{t('news.feed.share.sourceLink')}</span>
@@ -508,7 +508,7 @@ function NewsCard({ item }: { item: NewsItem }) {
   };
 
   return (
-    <Card className="overflow-hidden border border-border/70 hover:border-border transition-all duration-200 bg-card shadow-sm hover:shadow-md">
+    <Card className="overflow-hidden border border-border/70 hover:border-border transition-all duration-200 bg-card shadow-sm hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
       <CardContent className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
           {/* Main Content Area (الجزء الأكبر للخبر - 8 أعمدة) */}
@@ -518,14 +518,14 @@ function NewsCard({ item }: { item: NewsItem }) {
               <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap text-xs text-muted-foreground">
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Source */}
-                  <Badge variant="secondary" className="font-normal text-xs gap-1">
+                  <Badge variant="secondary" className="font-normal text-xs gap-1 dark:bg-surface-container-high dark:text-on-surface-variant">
                     <Building2 className="w-3 h-3" />
                     {item.source}
                   </Badge>
 
                   {/* Importance */}
                   {item.importance === 'high' && (
-                    <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs">
+                    <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs dark:bg-error-container/20 dark:text-error dark:border-error/30">
                       {t('news.feed.importanceHigh')}
                     </Badge>
                   )}
@@ -538,7 +538,7 @@ function NewsCard({ item }: { item: NewsItem }) {
                           key={t}
                           type="button"
                           onClick={() => handleTickerClick(t)}
-                          className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                          className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors dark:font-financial tabular-nums dark:text-primary"
                         >
                           {t}
                         </button>
@@ -548,7 +548,7 @@ function NewsCard({ item }: { item: NewsItem }) {
                 </div>
 
                 {/* Date & Time */}
-                <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                <div className="flex items-center gap-1.5 text-muted-foreground text-xs dark:text-on-surface-variant">
                   <Clock className="w-3.5 h-3.5" />
                   <span>{formatDate(item.timestamp)}</span>
                   {formatTime(item.timestamp) && (
@@ -562,7 +562,7 @@ function NewsCard({ item }: { item: NewsItem }) {
 
               {/* Title — UI-FIX-P2-P3 issue 2.12: market-data items (sentiment/market) are H3 inside the news list, news items stay H2 */}
               {item.category === 'sentiment' || item.category === 'market' ? (
-                <h3 className="text-base md:text-lg font-semibold text-foreground leading-snug tracking-tight mb-3">
+                <h3 className="text-base md:text-lg font-semibold text-foreground leading-snug tracking-tight mb-3 dark:text-on-surface">
                   {item.url ? (
                     <a
                       href={item.url}
@@ -577,7 +577,7 @@ function NewsCard({ item }: { item: NewsItem }) {
                   )}
                 </h3>
               ) : (
-                <h2 className="text-base md:text-xl font-bold text-foreground leading-snug tracking-tight mb-3">
+                <h2 className="text-base md:text-xl font-bold text-foreground leading-snug tracking-tight mb-3 dark:text-on-surface dark:font-outfit">
                   {item.url ? (
                     <a
                       href={item.url}
@@ -597,7 +597,7 @@ function NewsCard({ item }: { item: NewsItem }) {
               <SourceImageViewer images={item.image_paths} title={item.title} source={item.source} />
 
               {/* Full Article Content */}
-              <div className="text-sm md:text-base text-foreground/90 leading-relaxed font-normal mt-3 space-y-2 whitespace-pre-line">
+              <div className="text-sm md:text-base text-foreground/90 leading-relaxed font-normal mt-3 space-y-2 whitespace-pre-line dark:text-on-surface">
                 {isLong && !expanded ? (
                   <>
                     <p>{fullText.slice(0, 750)}...</p>
@@ -618,7 +618,7 @@ function NewsCard({ item }: { item: NewsItem }) {
                         variant="link"
                         size="sm"
                         onClick={() => setExpanded(false)}
-                        className="p-0 h-auto text-xs font-semibold text-muted-foreground mt-1"
+                        className="p-0 h-auto text-xs font-semibold text-muted-foreground mt-1 dark:text-on-surface-variant"
                       >
                         {t('news.feed.hidePartialText')}
                       </Button>
@@ -723,17 +723,17 @@ export function NewsFeedView() {
   const hasMore = filteredNews.length > visibleNews.length;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6" dir="rtl">
+    <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6 dark:bg-surface-container-lowest" dir="rtl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4 dark:border-outline-variant/30">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary dark:bg-primary-container/20 dark:text-primary">
               <Newspaper className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-foreground">{t('news.feed.title')}</h1>
-              <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground dark:text-on-surface dark:font-outfit">{t('news.feed.title')}</h1>
+              <p className="text-xs md:text-sm text-muted-foreground mt-0.5 dark:text-on-surface-variant">
                 {t('news.feed.subtitle')}
               </p>
             </div>
@@ -747,7 +747,7 @@ export function NewsFeedView() {
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing || loading}
-            className="gap-1.5 h-9 text-xs"
+            className="gap-1.5 h-9 text-xs dark:border-outline-variant/30 dark:text-on-surface dark:hover:bg-surface-container-high"
           >
             <RotateCw className={cn('h-3.5 w-3.5', (refreshing || loading) && 'animate-spin')} />
             <span>{t('news.feed.refresh')}</span>
@@ -765,12 +765,12 @@ export function NewsFeedView() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('news.feed.searchPlaceholder')}
-            className="pr-9 h-10 text-sm bg-card border-border"
+            className="pr-9 h-10 text-sm bg-card border-border dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface"
             >
               {t('news.feed.clear')}
             </button>
@@ -778,15 +778,15 @@ export function NewsFeedView() {
         </div>
 
         {/* Market Filter Tabs */}
-        <div className="flex items-center gap-1 bg-muted p-1 rounded-lg w-full sm:w-auto self-stretch">
+        <div className="flex items-center gap-1 bg-muted p-1 rounded-lg w-full sm:w-auto self-stretch dark:bg-surface-container dark:border dark:border-outline-variant/30">
           <button
             type="button"
             onClick={() => setMarketFilter('all')}
             className={cn(
               'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
               marketFilter === 'all'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-card text-foreground shadow-sm dark:bg-primary-container dark:text-on-primary-container'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             {t('news.feed.filterAll', { count: data?.news?.length || 0 })}
@@ -797,8 +797,8 @@ export function NewsFeedView() {
             className={cn(
               'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
               marketFilter === 'EGX'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-card text-foreground shadow-sm dark:bg-primary-container dark:text-on-primary-container'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             {t('news.feed.filterEGX')}
@@ -809,8 +809,8 @@ export function NewsFeedView() {
             className={cn(
               'flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
               marketFilter === 'global'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-card text-foreground shadow-sm dark:bg-primary-container dark:text-on-primary-container'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             {t('news.feed.filterGlobal')}
@@ -822,7 +822,7 @@ export function NewsFeedView() {
       {loading && !data && (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="border-border/60 bg-card">
+            <Card key={i} className="border-border/60 bg-card dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <Skeleton className="h-5 w-24 rounded" />
@@ -842,9 +842,9 @@ export function NewsFeedView() {
 
       {/* Error state */}
       {error && !loading && (
-        <Card className="border-rose-500/30 bg-rose-500/5">
+        <Card className="border-rose-500/30 bg-rose-500/5 dark:bg-surface-container-low dark:border-error/30">
           <CardContent className="p-6 text-center space-y-2">
-            <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">{error}</p>
+            <p className="text-sm font-semibold text-rose-600 dark:text-rose-400 dark:text-error">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchNews}>
               {t('news.feed.retry')}
             </Button>
@@ -854,11 +854,11 @@ export function NewsFeedView() {
 
       {/* Empty State */}
       {!loading && filteredNews.length === 0 && (
-        <Card className="border-border/60 bg-card">
+        <Card className="border-border/60 bg-card dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardContent className="p-12 text-center space-y-3">
-            <Newspaper className="w-10 h-10 mx-auto text-muted-foreground/50" />
-            <p className="text-sm font-medium text-foreground">{t('news.feed.emptyTitle')}</p>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            <Newspaper className="w-10 h-10 mx-auto text-muted-foreground/50 dark:text-on-surface-variant" />
+            <p className="text-sm font-medium text-foreground dark:text-on-surface">{t('news.feed.emptyTitle')}</p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto dark:text-on-surface-variant">
               {t('news.feed.emptyBody')}
             </p>
           </CardContent>

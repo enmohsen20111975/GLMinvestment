@@ -89,19 +89,19 @@ import { getTrialStatus } from '@/lib/subscription-gate';
 
 export function AcademyView() {
   return (
-    <div className="flex min-h-screen flex-col" dir="rtl">
+    <div className="flex min-h-screen flex-col dark:bg-surface-container-lowest" dir="rtl">
       {/* Sticky header */}
-      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 dark:bg-surface-container-lowest dark:border-outline-variant/30">
         <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
             <span className="text-2xl" role="img" aria-label="أكاديمية">
               🎓
             </span>
-            <h1 className="text-lg font-bold leading-tight sm:text-xl">
+            <h1 className="text-lg font-bold leading-tight sm:text-xl dark:text-on-surface dark:font-outfit">
               أكاديمية دليل الاستثمار التعليمية ومحاكي التداول الحي
             </h1>
           </div>
-          <p className="text-xs text-muted-foreground sm:text-sm">
+          <p className="text-xs text-muted-foreground sm:text-sm dark:text-on-surface-variant">
             تعلّم الأساسيات، تدرّب على التداول الورقي بالأسعار الحقيقية، وابنِ استراتيجيتك
             بثقة — كل ذلك في مكان واحد.
           </p>
@@ -111,19 +111,19 @@ export function AcademyView() {
       {/* Main content */}
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:px-6">
         <Tabs defaultValue="encyclopedia" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-            <TabsTrigger value="encyclopedia">📚 الموسوعة</TabsTrigger>
-            <TabsTrigger value="paper-trading">💻 التداول الورقي</TabsTrigger>
-            <TabsTrigger value="candle-sim">🕯️ محاكي الشموع</TabsTrigger>
-            <TabsTrigger value="strategy-lab">📊 مختبر الاستراتيجيات</TabsTrigger>
-            <TabsTrigger value="advanced-lessons">🎓 دروس متقدمة</TabsTrigger>
-            <TabsTrigger value="trading-floor">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+            <TabsTrigger value="encyclopedia" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">📚 الموسوعة</TabsTrigger>
+            <TabsTrigger value="paper-trading" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">💻 التداول الورقي</TabsTrigger>
+            <TabsTrigger value="candle-sim" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">🕯️ محاكي الشموع</TabsTrigger>
+            <TabsTrigger value="strategy-lab" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">📊 مختبر الاستراتيجيات</TabsTrigger>
+            <TabsTrigger value="advanced-lessons" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">🎓 دروس متقدمة</TabsTrigger>
+            <TabsTrigger value="trading-floor" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">
               <span className="text-emerald-600 dark:text-emerald-400">📈</span> أرض التداول
             </TabsTrigger>
-            <TabsTrigger value="practical-tools">
+            <TabsTrigger value="practical-tools" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">
               <span className="text-amber-600 dark:text-amber-400">🧮</span> الأدوات العملية
             </TabsTrigger>
-            <TabsTrigger value="advanced-lab">
+            <TabsTrigger value="advanced-lab" className="dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">
               <span className="text-emerald-600 dark:text-emerald-400">🔬</span> المختبر المتقدم
             </TabsTrigger>
           </TabsList>
@@ -156,8 +156,8 @@ export function AcademyView() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/30" dir="rtl">
-        <div className="mx-auto max-w-7xl px-4 py-3 text-center text-xs text-muted-foreground sm:px-6">
+      <footer className="border-t bg-muted/30 dark:bg-surface-container-lowest dark:border-outline-variant/30" dir="rtl">
+        <div className="mx-auto max-w-7xl px-4 py-3 text-center text-xs text-muted-foreground sm:px-6 dark:text-on-surface-variant">
           أكاديمية دليل الاستثمار — تعلّم، تدرّب، ثم استثمر بثقة
         </div>
       </footer>
@@ -285,7 +285,7 @@ function AdvancedLessonsTab() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center text-muted-foreground">
+      <div className="flex min-h-[400px] items-center justify-center text-muted-foreground dark:text-on-surface-variant">
         <Loader2 className="ml-2 h-5 w-5 animate-spin" />
         جارٍ تحميل الدروس المتقدمة…
       </div>
@@ -327,7 +327,7 @@ function AdvancedLessonsTab() {
 
   if (!active) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30">
         لا توجد دروس متاحة.
       </div>
     );
@@ -336,16 +336,16 @@ function AdvancedLessonsTab() {
   const fullContent = fullCache[active.id];
 
   return (
-    <div dir="rtl" className="flex min-h-[600px] flex-col gap-4">
+    <div dir="rtl" className="flex min-h-[600px] flex-col gap-4 dark:bg-surface-container-lowest">
       {/* Header banner */}
-      <div className="rounded-lg border bg-gradient-to-l from-amber-50/50 to-transparent p-4 dark:from-amber-950/20">
+      <div className="rounded-lg border bg-gradient-to-l from-amber-50/50 to-transparent p-4 dark:from-amber-950/20 dark:bg-surface-container-low dark:border-outline-variant/30">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-xl dark:bg-amber-950/50">
             <GraduationCap className="h-5 w-5 text-amber-700 dark:text-amber-400" />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-bold sm:text-lg">دروس متقدمة — من محتوى المالك</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+            <h2 className="text-base font-bold sm:text-lg dark:text-on-surface dark:font-outfit">دروس متقدمة — من محتوى المالك</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm dark:text-on-surface-variant">
               21 درساً مؤسسياً مُعَدّاً بمستوى احترافي يغطي التمويل السلوكي، تحليل المراحل،
               CAN SLIM، الانعكاس المتوسط، إدارة المخاطر الكمية، قراءة السعر، القصص التاريخية،
               الكريبتو (مبتدئ + متقدم)، البنية الدقيقة للسوق، الاقتصاد الكلي، التداول الكمي،
@@ -365,9 +365,9 @@ function AdvancedLessonsTab() {
       <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
         {/* Sidebar: lesson list */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <div className="rounded-lg border bg-card">
-            <div className="border-b px-4 py-3">
-              <div className="flex items-center gap-2 font-semibold">
+          <div className="rounded-lg border bg-card dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+            <div className="border-b px-4 py-3 dark:border-outline-variant/30">
+              <div className="flex items-center gap-2 font-semibold dark:text-on-surface">
                 <BookOpen className="h-4 w-4 text-amber-600" />
                 فهرس الدروس المتقدمة
               </div>
@@ -376,7 +376,7 @@ function AdvancedLessonsTab() {
               {/* Task 29 Fix 5 — Mobile UX: removed the Accordion wrapper that forced an
                   extra click to expand the lesson list. The sidebar is already inside
                   a ScrollArea, so the lessons are directly accessible. */}
-              <div className="border-b px-4 py-2 text-xs text-muted-foreground">
+              <div className="border-b px-4 py-2 text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30">
                 الكل ({lessons.length})
               </div>
               <ul className="space-y-1 p-2">
@@ -413,7 +413,7 @@ function AdvancedLessonsTab() {
 
         {/* Main lesson area */}
         <main className="min-w-0">
-          <article className="rounded-lg border bg-card">
+          <article className="rounded-lg border bg-card dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             {/* Lesson header */}
             <header className="border-b bg-gradient-to-l from-amber-50/50 to-transparent p-5 dark:from-amber-950/20">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -429,7 +429,7 @@ function AdvancedLessonsTab() {
                       <span>·</span>
                       <span className="font-mono">{active.filename}</span>
                     </div>
-                    <h2 className="text-xl font-bold leading-tight sm:text-2xl">
+                    <h2 className="text-xl font-bold leading-tight sm:text-2xl dark:text-on-surface dark:font-outfit">
                       {active.title}
                     </h2>
                     {active.tagline ? (
@@ -565,9 +565,9 @@ function AdvancedLessonsTab() {
             </div>
 
             {/* Footer: next lesson */}
-            <section className="flex flex-wrap items-center justify-between gap-3 border-t p-5 pt-5">
-              <div className="text-sm text-muted-foreground">
-                الدرس الحالي: <span className="font-semibold text-foreground">{active.title}</span>
+            <section className="flex flex-wrap items-center justify-between gap-3 border-t p-5 pt-5 dark:border-outline-variant/30">
+              <div className="text-sm text-muted-foreground dark:text-on-surface-variant">
+                الدرس الحالي: <span className="font-semibold text-foreground dark:text-on-surface">{active.title}</span>
               </div>
               <Button
                 onClick={() => {
@@ -608,7 +608,7 @@ function AdvancedMarkdownRenderer({
   const blocks = React.useMemo(() => parseMarkdown(content), [content]);
 
   return (
-    <div className={cn('space-y-3 leading-relaxed text-foreground/90', compact ? 'text-sm' : 'text-sm sm:text-base')}>
+    <div className={cn('space-y-3 leading-relaxed text-foreground/90 dark:text-on-surface', compact ? 'text-sm' : 'text-sm sm:text-base')}>
       {blocks.map((block, i) => {
         switch (block.kind) {
           case 'h1':
@@ -1135,16 +1135,16 @@ function LiveMarketScanner() {
     : '—';
 
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 via-card to-card">
-      <CardHeader className="gap-3 border-b bg-emerald-950/30 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-3 border-b bg-emerald-950/30 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-emerald-600 dark:text-emerald-400">
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base sm:text-lg">ماسح السوق الحي</CardTitle>
-              <CardDescription className="text-xs">
+              <CardTitle className="text-base sm:text-lg dark:text-on-surface dark:font-outfit">ماسح السوق الحي</CardTitle>
+              <CardDescription className="text-xs dark:text-on-surface-variant">
                 أعلى الأسهم نشاطاً · تحديث تلقائي كل ٦٠ ثانية
               </CardDescription>
             </div>
@@ -1164,7 +1164,7 @@ function LiveMarketScanner() {
               size="sm"
               onClick={() => fetchStocks()}
               disabled={refreshing}
-              className="border-emerald-600/40 text-emerald-700 hover:bg-emerald-600/10 dark:text-emerald-400"
+              className="border-emerald-600/40 text-emerald-700 hover:bg-emerald-600/10 dark:text-emerald-400 dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
             >
               <RefreshCw className={cn('ml-1 h-4 w-4', refreshing && 'animate-spin')} />
               تحديث
@@ -1178,7 +1178,7 @@ function LiveMarketScanner() {
           </div>
         )}
         {!error && lastUpdated && (
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground dark:text-on-surface-variant">
             <Clock className="h-3.5 w-3.5" />
             آخر تحديث: {timeLabel}
           </div>
@@ -1186,12 +1186,12 @@ function LiveMarketScanner() {
       </CardHeader>
       <CardContent className="p-0">
         {loading ? (
-          <div className="flex h-64 items-center justify-center text-muted-foreground">
+          <div className="flex h-64 items-center justify-center text-muted-foreground dark:text-on-surface-variant">
             <Loader2 className="ml-2 h-5 w-5 animate-spin" />
             جارٍ تحميل بيانات السوق…
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground dark:text-on-surface-variant">
             لا توجد نتائج مطابقة لبحثك.
           </div>
         ) : (
@@ -1221,7 +1221,7 @@ function LiveMarketScanner() {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-left font-mono tabular-nums" dir="ltr">
+                        <TableCell className="text-left font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">
                           {(s.current_price ?? 0).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-left">
@@ -1244,7 +1244,7 @@ function LiveMarketScanner() {
                           </span>
                         </TableCell>
                         <TableCell
-                          className="text-left font-mono text-xs tabular-nums text-muted-foreground"
+                          className="text-left font-mono text-xs tabular-nums text-muted-foreground dark:font-financial dark:text-on-surface-variant"
                           dir="ltr"
                         >
                           {formatVolume(s.volume)}
@@ -1321,7 +1321,7 @@ function LiveMarketScanner() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAll((v) => !v)}
-                  className="text-emerald-700 hover:bg-emerald-600/10 dark:text-emerald-400"
+                  className="text-emerald-700 hover:bg-emerald-600/10 dark:text-emerald-400 dark:hover:bg-surface-container-high"
                 >
                   {showAll
                     ? `عرض أقل (١٥ من ${filtered.length})`
@@ -1656,15 +1656,15 @@ function ScenarioToneIcon({ tone }: { tone: ScenarioTone }) {
 /* ---------- Section 2 component ---------- */
 function ScenarioDecisionTree() {
   return (
-    <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-amber-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-2 border-b bg-amber-950/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-600/15 text-amber-600 dark:text-amber-400">
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base sm:text-lg">شجرة قرارات السيناريوهات</CardTitle>
-            <CardDescription className="text-xs">
+            <CardTitle className="text-base sm:text-lg dark:text-on-surface dark:font-outfit">شجرة قرارات السيناريوهات</CardTitle>
+            <CardDescription className="text-xs dark:text-on-surface-variant">
               مشغّل السوق → فروع قرار (إجراء / انتظار / تجنّب) · ٦ سيناريوهات شائعة
             </CardDescription>
           </div>
@@ -1962,15 +1962,15 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
 
 function ActionPlaybooks() {
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-emerald-600 dark:text-emerald-400">
             <ListChecks className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base sm:text-lg">كتيبات الإجراءات</CardTitle>
-            <CardDescription className="text-xs">
+            <CardTitle className="text-base sm:text-lg dark:text-on-surface dark:font-outfit">كتيبات الإجراءات</CardTitle>
+            <CardDescription className="text-xs dark:text-on-surface-variant">
               خطط جاهزة لكل موقف · انقر على البطاقة لتوسيعها
             </CardDescription>
           </div>
@@ -1991,7 +1991,7 @@ function TradingFloorView() {
   return (
     <div className="space-y-6">
       {/* Owner intent banner — sets the tone that this is a desk, not a textbook */}
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6">
+      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
         <span className="font-semibold">📊 أرض التداول —</span> مكتب عملي للقرارات المباشرة:
         شاشة أسعار حية، شجرة قرارات سيناريوهات، وكتيبات إجراءات جاهزة.
       </div>
@@ -2001,14 +2001,14 @@ function TradingFloorView() {
           Validation → Signal → Risk Gate → Execution → Journal → Review) with a feedback
           loop. Placed at the top of the Trading Floor so investors see HOW the system
           thinks before they act on the live prices below. */}
-      <section aria-labelledby="pipeline-heading" className="rounded-xl border border-slate-200 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60 sm:p-6">
+      <section aria-labelledby="pipeline-heading" className="rounded-xl border border-slate-200 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60 sm:p-6 dark:bg-surface-container-lowest dark:border-outline-variant/30">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-lg" role="img" aria-label="خريطة">🗺️</span>
-          <h3 id="pipeline-heading" className="text-base font-bold text-slate-800 dark:text-slate-100 sm:text-lg">
+          <h3 id="pipeline-heading" className="text-base font-bold text-slate-800 dark:text-slate-100 sm:text-lg dark:text-on-surface dark:font-outfit">
             الخريطة المنطقية لنظام التداول
           </h3>
         </div>
-        <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
+        <p className="mb-4 text-xs text-muted-foreground sm:text-sm dark:text-on-surface-variant">
           كيف يتدفّق قرارك من البيانات الخام حتى التنفيذ والمراجعة — فهم هذه الخريطة هو الفرق بين
           المستثمر المنضبط والمقامر العاطفي.
         </p>
@@ -2125,15 +2125,15 @@ function PositionSizeCalculator() {
   }, [capital, riskPct, entryPrice, stopPrice]);
 
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-emerald-600 dark:text-emerald-400">
             <Calculator className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base sm:text-lg">حاسبة حجم الصفقة</CardTitle>
-            <CardDescription className="text-xs">
+            <CardTitle className="text-base sm:text-lg dark:text-on-surface dark:font-outfit">حاسبة حجم الصفقة</CardTitle>
+            <CardDescription className="text-xs dark:text-on-surface-variant">
               احسب الحجم الأقصى لصفقتك بناءً على المخاطرة المسموحة — قبل ما تدخل
             </CardDescription>
           </div>
@@ -2209,35 +2209,35 @@ function PositionSizeCalculator() {
         ) : result ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 dark:text-on-surface-variant">
                   المخاطرة (جنيه)
                 </div>
-                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200" dir="ltr">
+                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200 dark:text-primary dark:font-financial tabular-nums" dir="ltr">
                   {result.maxLoss.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 dark:text-on-surface-variant">
                   الحجم الأقصى (سهم)
                 </div>
-                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200" dir="ltr">
+                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200 dark:text-primary dark:font-financial tabular-nums" dir="ltr">
                   {result.maxShares.toLocaleString('en-US')}
                 </div>
               </div>
-              <div className="rounded-md border border-slate-500/30 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+              <div className="rounded-md border border-slate-500/30 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300 dark:text-on-surface-variant">
                   القيمة الإجمالية
                 </div>
-                <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200" dir="ltr">
+                <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200 dark:text-on-surface dark:font-financial tabular-nums" dir="ltr">
                   {result.totalValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="rounded-md border border-slate-500/30 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+              <div className="rounded-md border border-slate-500/30 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300 dark:text-on-surface-variant">
                   % من المحفظة
                 </div>
-                <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200" dir="ltr">
+                <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200 dark:text-on-surface dark:font-financial tabular-nums" dir="ltr">
                   {(result.positionPct ?? 0).toFixed(1)}%
                 </div>
               </div>
@@ -2297,15 +2297,15 @@ function BiasDetectorQuiz() {
   };
 
   return (
-    <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-amber-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-2 border-b bg-amber-950/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-600/15 text-amber-600 dark:text-amber-400">
             <Brain className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base sm:text-lg">كاشف التحيز السلوكي</CardTitle>
-            <CardDescription className="text-xs">
+            <CardTitle className="text-base sm:text-lg dark:text-on-surface dark:font-outfit">كاشف التحيز السلوكي</CardTitle>
+            <CardDescription className="text-xs dark:text-on-surface-variant">
               7 أسئلة بسيطة — جاوب بصراحة لاكتشاف تحيزك المهيمن
             </CardDescription>
           </div>
@@ -2368,7 +2368,7 @@ function BiasDetectorQuiz() {
             <RefreshCw className="ml-2 h-4 w-4" />
             إعادة
           </Button>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground dark:text-on-surface-variant dark:font-financial tabular-nums">
             ({answeredCount}/{BIAS_QUESTIONS.length} مجاب)
           </span>
         </div>
@@ -2403,14 +2403,14 @@ function BiasDetectorQuiz() {
 
             {scores.sorted.length > 1 && (
               <div className="rounded-md border border-slate-500/30 bg-muted/30 p-3">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground dark:text-on-surface-variant">
                   تحيزات أخرى مكتشفة ({scores.sorted.length})
                 </div>
                 <ul className="space-y-1.5">
                   {scores.sorted.map(([bias, info]) => (
                     <li key={bias} className="flex items-center justify-between text-xs">
-                      <span className="font-medium">{bias}</span>
-                      <span className="text-muted-foreground">
+                      <span className="font-medium dark:text-on-surface">{bias}</span>
+                      <span className="text-muted-foreground dark:text-on-surface-variant dark:font-financial tabular-nums">
                         {info.count} &middot; درس #{info.lessonNum}
                       </span>
                     </li>
@@ -2437,7 +2437,7 @@ function BiasDetectorQuiz() {
 function PracticalToolsView() {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-xs text-amber-800 dark:text-amber-200 sm:px-6">
+      <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-xs text-amber-800 dark:text-amber-200 sm:px-6 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
         <span className="font-semibold">🧮 الأدوات العملية —</span> حاسبتان عمليتان لكل مستثمر: الأولى
         تحسب حجم الصفقة المثالي بناءً على المخاطرة المسموحة، والثانية تكشف تحيزاتك السلوكية المهيمنة
         وتوجّهك للدرس المناسب.
@@ -2459,7 +2459,7 @@ function PracticalToolsView() {
 function AdvancedLabView() {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6" dir="rtl">
+      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant" dir="rtl">
         <span className="font-semibold">🔬 المختبر المتقدم —</span> 5 رسوم بيانية تفاعلية + محاكيان
         متقدمان. كل أداة بتعلمك مفهوم محدد: مراحل السوق، تدفّق الأوامر، أنماط الشموع،
         حاسبة المخاطرة/العائد، توزيع المحفظة، محاكاة Monte Carlo، ومقارنة استراتيجيات

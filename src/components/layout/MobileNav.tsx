@@ -52,7 +52,7 @@ export function MobileNav() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border"
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-sm border-t border-border dark:bg-surface-container-low dark:border-outline-variant/30 dark:backdrop-blur-xl"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div
@@ -70,7 +70,9 @@ export function MobileNav() {
               onClick={() => setCurrentView(item.id)}
               className={cn(
                 'flex flex-col items-center justify-center gap-0.5 px-2 sm:px-3 py-2 rounded-lg transition-colors min-w-[48px] min-h-[48px] flex-1',
-                isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                isActive
+                  ? 'text-emerald-600 dark:text-emerald-400 dark:bg-primary-container dark:text-on-primary'
+                  : 'text-muted-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
               )}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}

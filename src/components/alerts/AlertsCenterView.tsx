@@ -119,35 +119,35 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
 
   return (
     <Card className={cn(
-      'transition-all duration-200 hover:shadow-md',
-      alert.triggered && 'border-emerald-500 dark:border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20'
+      'transition-all duration-200 hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30',
+      alert.triggered && 'border-emerald-500 dark:border-primary bg-emerald-50/50 dark:bg-primary-container/20'
     )}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className={cn(
-              'w-10 h-10 rounded-lg flex items-center justify-center',
+              'w-10 h-10 rounded-lg flex items-center justify-center dark:bg-surface-container-high',
               alert.type === 'crypto' 
-                ? 'bg-orange-100 dark:bg-orange-900/30' 
-                : 'bg-emerald-100 dark:bg-emerald-900/30'
+                ? 'bg-orange-100 dark:bg-surface-container-high' 
+                : 'bg-emerald-100 dark:bg-surface-container-high'
             )}>
               {alert.type === 'crypto' 
-                ? <Bitcoin className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                : <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                ? <Bitcoin className="w-5 h-5 text-orange-600 dark:text-primary" />
+                : <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-primary" />
               }
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm">{alert.ticker}</span>
-                <Badge variant="outline" className="text-[10px]">
+                <span className="font-bold text-sm dark:text-on-surface dark:font-financial tabular-nums">{alert.ticker}</span>
+                <Badge variant="outline" className="text-[10px] dark:border-outline-variant dark:text-on-surface-variant">
                   {alert.type === 'crypto' ? 'عملة رقمية' : 'سهم'}
                 </Badge>
               </div>
-              <span className="text-xs text-muted-foreground">{alert.name_ar}</span>
+              <span className="text-xs text-muted-foreground dark:text-on-surface-variant">{alert.name_ar}</span>
             </div>
           </div>
           {alert.triggered && (
-            <Badge className="bg-emerald-500 text-white text-[10px]">
+            <Badge className="bg-emerald-500 text-white text-[10px] dark:bg-primary-container dark:text-on-primary">
               <CheckCircle2 className="w-3 h-3 ml-1" />
               تم التفعيل
             </Badge>
@@ -155,26 +155,26 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div className="p-2 rounded-lg bg-muted/50">
-            <span className="text-xs text-muted-foreground">السعر الحالي</span>
-            <p className="font-semibold" dir="ltr">{formatCurrency(alert.current_price, alert.type === 'crypto')}</p>
+          <div className="p-2 rounded-lg bg-muted/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+            <span className="text-xs text-muted-foreground dark:text-on-surface-variant">السعر الحالي</span>
+            <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatCurrency(alert.current_price, alert.type === 'crypto')}</p>
           </div>
-          <div className="p-2 rounded-lg bg-muted/50">
-            <span className="text-xs text-muted-foreground">
+          <div className="p-2 rounded-lg bg-muted/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+            <span className="text-xs text-muted-foreground dark:text-on-surface-variant">
               {isAbove ? 'السعر المستهدف (أعلى)' : 'السعر المستهدف (أقل)'}
             </span>
-            <p className="font-semibold" dir="ltr">{formatCurrency(alert.target_price, alert.type === 'crypto')}</p>
+            <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatCurrency(alert.target_price, alert.type === 'crypto')}</p>
           </div>
         </div>
 
         <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground dark:text-on-surface-variant">
             <Clock className="w-3.5 h-3.5" />
             {formatTimeAgo(alert.created_at)}
           </div>
           <div className={cn(
-            'flex items-center gap-1 text-xs font-medium',
-            distance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+            'flex items-center gap-1 text-xs font-medium tabular-nums dark:font-financial',
+            distance > 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error'
           )}>
             {isAbove ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
             المسافة: {formatPercent(Math.abs(distance))}
@@ -208,11 +208,11 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
   };
 
   return (
-    <Card className={cn('transition-all duration-200 hover:shadow-md', severityColors[alert.severity])}>
+    <Card className={cn('transition-all duration-200 hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30', severityColors[alert.severity])}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+            'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 dark:bg-surface-container-high',
             severityIconColors[alert.severity]
           )}>
             {alert.alert_type === 'profit' ? (
@@ -225,18 +225,18 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-sm">{alert.name}</span>
-              <Badge variant="outline" className="text-[10px]">{typeLabels[alert.asset_type]}</Badge>
+              <span className="font-semibold text-sm dark:text-on-surface">{alert.name}</span>
+              <Badge variant="outline" className="text-[10px] dark:border-outline-variant dark:text-on-surface-variant">{typeLabels[alert.asset_type]}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{alert.message}</p>
+            <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{alert.message}</p>
             <div className="mt-2 flex items-center gap-3">
               <span className={cn(
-                'font-bold text-lg',
-                alert.percent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                'font-bold text-lg tabular-nums dark:font-financial',
+                alert.percent >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error'
               )}>
                 {formatPercent(alert.percent)}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground tabular-nums dark:font-financial dark:text-on-surface-variant">
                 {formatCurrency(alert.value)}
               </span>
             </div>
@@ -255,19 +255,19 @@ function MarketAlertCard({ alert }: { alert: MarketAlert }) {
   };
 
   return (
-    <Card className={cn('transition-all duration-200 hover:shadow-md', severityColors[alert.severity])}>
+    <Card className={cn('transition-all duration-200 hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30', severityColors[alert.severity])}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted flex-shrink-0">
-            <Bell className="w-5 h-5 text-muted-foreground" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted flex-shrink-0 dark:bg-surface-container-high">
+            <Bell className="w-5 h-5 text-muted-foreground dark:text-on-surface-variant" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-sm mb-1">{alert.title}</h4>
-            <p className="text-sm text-muted-foreground">{alert.message}</p>
+            <h4 className="font-semibold text-sm mb-1 dark:text-on-surface">{alert.title}</h4>
+            <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{alert.message}</p>
             {alert.related_ticker && (
-              <Badge variant="outline" className="mt-2 text-[10px]">{alert.related_ticker}</Badge>
+              <Badge variant="outline" className="mt-2 text-[10px] dark:border-outline-variant dark:text-on-surface-variant">{alert.related_ticker}</Badge>
             )}
-            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+            <div className="mt-2 text-xs text-muted-foreground dark:text-on-surface-variant flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatTimeAgo(alert.created_at)}
             </div>
@@ -310,38 +310,38 @@ function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
   } catch { /* keep raw - safe-by-design */ }
 
   return (
-    <Card className={cn('transition-all duration-200 hover:shadow-md', severityColors[alert.severity])}>
+    <Card className={cn('transition-all duration-200 hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30', severityColors[alert.severity])}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted flex-shrink-0">
-              <CreditCard className="w-5 h-5 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted flex-shrink-0 dark:bg-surface-container-high">
+              <CreditCard className="w-5 h-5 text-muted-foreground dark:text-on-surface-variant" />
             </div>
             <div>
-              <span className="font-bold text-sm">{alert.name}</span>
+              <span className="font-bold text-sm dark:text-on-surface">{alert.name}</span>
               {alert.creditor && (
-                <span className="block text-xs text-muted-foreground">{alert.creditor}</span>
+                <span className="block text-xs text-muted-foreground dark:text-on-surface-variant">{alert.creditor}</span>
               )}
             </div>
           </div>
-          <Badge className={cn('text-[10px]', severityBadge[alert.severity])}>
+          <Badge className={cn('text-[10px] dark:font-financial tabular-nums', severityBadge[alert.severity])}>
             <Clock className="w-3 h-3 ml-1" />
             {dueLabel}
           </Badge>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div className="p-2 rounded-lg bg-muted/50">
-            <span className="text-xs text-muted-foreground">القسط الشهري</span>
-            <p className="font-semibold" dir="ltr">{formatCurrency(alert.monthly_payment)}</p>
+          <div className="p-2 rounded-lg bg-muted/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+            <span className="text-xs text-muted-foreground dark:text-on-surface-variant">القسط الشهري</span>
+            <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatCurrency(alert.monthly_payment)}</p>
           </div>
-          <div className="p-2 rounded-lg bg-muted/50">
-            <span className="text-xs text-muted-foreground">المتبقي</span>
-            <p className="font-semibold" dir="ltr">{formatCurrency(alert.remaining_amount)}</p>
+          <div className="p-2 rounded-lg bg-muted/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+            <span className="text-xs text-muted-foreground dark:text-on-surface-variant">المتبقي</span>
+            <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatCurrency(alert.remaining_amount)}</p>
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground dark:text-on-surface-variant">
           <Calendar className="w-3.5 h-3.5" />
           تاريخ الاستحقاق القادم: {formattedDate}
         </div>
@@ -497,31 +497,31 @@ export function AlertsCenterView() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 space-y-4" dir="rtl">
+      <div className="p-4 md:p-6 space-y-4 dark:bg-surface-container-lowest" dir="rtl">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i}><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
+            <Card key={i} className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30"><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
           ))}
         </div>
-        <Card><CardContent className="p-4"><Skeleton className="h-40 w-full" /></CardContent></Card>
+        <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30"><CardContent className="p-4"><Skeleton className="h-40 w-full" /></CardContent></Card>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 min-h-screen pb-20" dir="rtl">
+    <div className="p-4 md:p-6 space-y-6 min-h-screen pb-20 dark:bg-surface-container-lowest" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-surface-container-high flex items-center justify-center">
+            <Shield className="w-5 h-5 text-amber-600 dark:text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">{t('alertsCenter.title')}</h1>
-            <p className="text-sm text-muted-foreground">{t('alertsCenter.subtitle')}</p>
+            <h1 className="text-xl font-bold dark:text-on-surface dark:font-outfit">{t('alertsCenter.title')}</h1>
+            <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('alertsCenter.subtitle')}</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={loadAlerts}>
+        <Button variant="outline" size="sm" onClick={loadAlerts} className="dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">
           <RefreshCw className="w-4 h-4 ml-1.5" />
           {t('alertsCenter.buttons.refresh')}
         </Button>
@@ -529,60 +529,60 @@ export function AlertsCenterView() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1 dark:text-on-surface-variant">
             <Bell className="w-4 h-4" />
             <span className="text-xs font-medium">{t('alertsCenter.stats.total')}</span>
           </div>
-          <p className="text-2xl font-bold">{stats.total}</p>
+          <p className="text-2xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{stats.total}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1 dark:text-on-surface-variant">
+            <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-primary" />
             <span className="text-xs font-medium">{t('alertsCenter.stats.stocks')}</span>
           </div>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.stocks}</p>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-primary tabular-nums dark:font-financial">{stats.stocks}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1 dark:text-on-surface-variant">
             <Bitcoin className="w-4 h-4 text-orange-500" />
             <span className="text-xs font-medium">{t('alertsCenter.stats.crypto')}</span>
           </div>
-          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.crypto}</p>
+          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 tabular-nums dark:font-financial">{stats.crypto}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Target className="w-4 h-4 text-teal-500" />
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1 dark:text-on-surface-variant">
+            <Target className="w-4 h-4 text-teal-500 dark:text-secondary" />
             <span className="text-xs font-medium">{t('alertsCenter.stats.portfolio')}</span>
           </div>
-          <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">{stats.portfolio}</p>
+          <p className="text-2xl font-bold text-teal-600 dark:text-secondary tabular-nums dark:font-financial">{stats.portfolio}</p>
         </Card>
       </div>
 
       {/* Alerts Tabs */}
       <Tabs defaultValue="price" className="w-full">
-        <TabsList className="flex w-full">
-          <TabsTrigger value="price" className="flex-1 gap-1 md:gap-2">
+        <TabsList className="flex w-full dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <TabsTrigger value="price" className="flex-1 gap-1 md:gap-2 dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">
             <DollarSign className="w-4 h-4" />
             <span className="hidden sm:inline">{t('alertsCenter.tabs.price')}</span>
             <span className="sm:hidden">{t('alertsCenter.tabs.priceShort')}</span>
-            <Badge variant="secondary" className="ml-1">{stats.price}</Badge>
+            <Badge variant="secondary" className="ml-1 tabular-nums dark:font-financial">{stats.price}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="portfolio" className="flex-1 gap-1 md:gap-2">
+          <TabsTrigger value="portfolio" className="flex-1 gap-1 md:gap-2 dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">
             <Target className="w-4 h-4" />
             <span className="hidden sm:inline">{t('alertsCenter.tabs.portfolio')}</span>
-            <Badge variant="secondary" className="ml-1">{stats.portfolio}</Badge>
+            <Badge variant="secondary" className="ml-1 tabular-nums dark:font-financial">{stats.portfolio}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="market" className="flex-1 gap-1 md:gap-2">
+          <TabsTrigger value="market" className="flex-1 gap-1 md:gap-2 dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">
             <Bell className="w-4 h-4" />
             <span className="hidden sm:inline">{t('alertsCenter.tabs.market')}</span>
-            <Badge variant="secondary" className="ml-1">{stats.market}</Badge>
+            <Badge variant="secondary" className="ml-1 tabular-nums dark:font-financial">{stats.market}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="obligations" className="flex-1 gap-1 md:gap-2">
+          <TabsTrigger value="obligations" className="flex-1 gap-1 md:gap-2 dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container">
             <Calendar className="w-4 h-4" />
             <span className="hidden sm:inline">{t('alertsCenter.tabs.obligations')}</span>
             <span className="sm:hidden">{t('alertsCenter.tabs.obligationsShort')}</span>
-            <Badge variant="secondary" className="ml-1">{stats.obligations}</Badge>
+            <Badge variant="secondary" className="ml-1 tabular-nums dark:font-financial">{stats.obligations}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -593,6 +593,7 @@ export function AlertsCenterView() {
               size="sm" 
               variant={filter === 'all' ? 'default' : 'outline'}
               onClick={() => setFilter('all')}
+              className="dark:data-[variant=default]:bg-primary-container dark:data-[variant=default]:text-on-primary-container dark:data-[variant=outline]:border-outline-variant dark:data-[variant=outline]:text-on-surface-variant"
             >
               {t('alertsCenter.buttons.all')}
             </Button>
@@ -600,6 +601,7 @@ export function AlertsCenterView() {
               size="sm" 
               variant={filter === 'stocks' ? 'default' : 'outline'}
               onClick={() => setFilter('stocks')}
+              className="dark:data-[variant=default]:bg-primary-container dark:data-[variant=default]:text-on-primary-container dark:data-[variant=outline]:border-outline-variant dark:data-[variant=outline]:text-on-surface-variant"
             >
               {t('alertsCenter.buttons.stocks')}
             </Button>
@@ -607,6 +609,7 @@ export function AlertsCenterView() {
               size="sm" 
               variant={filter === 'crypto' ? 'default' : 'outline'}
               onClick={() => setFilter('crypto')}
+              className="dark:data-[variant=default]:bg-primary-container dark:data-[variant=default]:text-on-primary-container dark:data-[variant=outline]:border-outline-variant dark:data-[variant=outline]:text-on-surface-variant"
             >
               {t('alertsCenter.buttons.crypto')}
             </Button>
@@ -614,11 +617,11 @@ export function AlertsCenterView() {
 
           {/* Alerts List */}
           {filteredPriceAlerts.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant/30">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Eye className="w-10 h-10 text-muted-foreground mb-3" />
-                <h3 className="text-lg font-semibold mb-1">{t('alertsCenter.empty.priceTitle')}</h3>
-                <p className="text-sm text-muted-foreground">{t('alertsCenter.empty.priceBody')}</p>
+                <Eye className="w-10 h-10 text-muted-foreground mb-3 dark:text-on-surface-variant" />
+                <h3 className="text-lg font-semibold mb-1 dark:text-on-surface">{t('alertsCenter.empty.priceTitle')}</h3>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('alertsCenter.empty.priceBody')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -632,11 +635,11 @@ export function AlertsCenterView() {
 
         <TabsContent value="portfolio" className="space-y-4 mt-4">
           {portfolioAlerts.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant/30">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Target className="w-10 h-10 text-muted-foreground mb-3" />
-                <h3 className="text-lg font-semibold mb-1">{t('alertsCenter.empty.portfolioTitle')}</h3>
-                <p className="text-sm text-muted-foreground">{t('alertsCenter.empty.portfolioBody')}</p>
+                <Target className="w-10 h-10 text-muted-foreground mb-3 dark:text-on-surface-variant" />
+                <h3 className="text-lg font-semibold mb-1 dark:text-on-surface">{t('alertsCenter.empty.portfolioTitle')}</h3>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('alertsCenter.empty.portfolioBody')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -650,11 +653,11 @@ export function AlertsCenterView() {
 
         <TabsContent value="market" className="space-y-4 mt-4">
           {marketAlerts.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant/30">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Bell className="w-10 h-10 text-muted-foreground mb-3" />
-                <h3 className="text-lg font-semibold mb-1">{t('alertsCenter.empty.marketTitle')}</h3>
-                <p className="text-sm text-muted-foreground">{t('alertsCenter.empty.marketBody')}</p>
+                <Bell className="w-10 h-10 text-muted-foreground mb-3 dark:text-on-surface-variant" />
+                <h3 className="text-lg font-semibold mb-1 dark:text-on-surface">{t('alertsCenter.empty.marketTitle')}</h3>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('alertsCenter.empty.marketBody')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -668,11 +671,11 @@ export function AlertsCenterView() {
 
         <TabsContent value="obligations" className="space-y-4 mt-4">
           {obligationAlerts.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant/30">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-3" />
-                <h3 className="text-lg font-semibold mb-1">{t('alertsCenter.empty.obligationsTitle')}</h3>
-                <p className="text-sm text-muted-foreground">{t('alertsCenter.empty.obligationsBody')}</p>
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-3 dark:text-primary" />
+                <h3 className="text-lg font-semibold mb-1 dark:text-on-surface">{t('alertsCenter.empty.obligationsTitle')}</h3>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('alertsCenter.empty.obligationsBody')}</p>
               </CardContent>
             </Card>
           ) : (

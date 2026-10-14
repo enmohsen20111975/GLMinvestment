@@ -40,7 +40,7 @@ export function Header({ title, subtitle }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border dark:bg-surface-container-lowest/95 dark:backdrop-blur-xl dark:shadow-[0_1px_8px_rgba(0,0,0,0.45)] dark:border-outline-variant/30">
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3">
         {/* Mobile "More" sections button — replaces the bottom bar's 6th item (P5-MOBILE-UX) */}
         <MobileMoreButton />
@@ -58,9 +58,9 @@ export function Header({ title, subtitle }: HeaderProps) {
 
         {/* Title */}
         <div className="min-w-0 mr-auto">
-          <h2 className="text-base sm:text-lg font-bold text-foreground truncate">{title}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-foreground truncate dark:text-on-surface dark:font-outfit">{title}</h2>
           {subtitle && (
-            <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+            <p className="text-xs text-muted-foreground truncate dark:text-primary">{subtitle}</p>
           )}
         </div>
 
@@ -93,7 +93,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             role="group"
             aria-label="عملة العرض"
             title="عملة العرض"
-            className="flex items-center rounded-md border border-border overflow-hidden flex-shrink-0"
+            className="flex items-center rounded-md border border-border overflow-hidden flex-shrink-0 dark:border-outline-variant/30"
           >
             {([
               { code: 'EGP' as DisplayCurrency, label: 'ج.م', title: 'الجنيه المصري' },
@@ -112,8 +112,8 @@ export function Header({ title, subtitle }: HeaderProps) {
                   className={
                     'h-7 px-2 text-xs font-medium leading-none transition-colors ' +
                     (active
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground')
+                      ? 'bg-primary text-primary-foreground dark:bg-primary-container dark:text-on-primary'
+                      : 'bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high')
                   }
                 >
                   {opt.label}
@@ -217,7 +217,7 @@ function HeaderNotificationBell() {
     >
       <Bell className="w-4 h-4" />
       {unreadCount > 0 && (
-        <Badge className="absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-red-500 text-white border-0 animate-pulse">
+        <Badge className="absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-red-500 text-white border-0 animate-pulse dark:bg-error">
           {unreadCount > 99 ? '99+' : unreadCount}
         </Badge>
       )}

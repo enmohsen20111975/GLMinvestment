@@ -787,7 +787,7 @@ export function SimulationView() {
       header: 'السهم',
       sortable: true,
       filterable: true,
-      className: 'font-medium',
+      className: 'font-medium dark:text-on-surface',
       render: (s) => s.name_ar,
     },
     {
@@ -796,14 +796,14 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-24',
-      render: (s) => <Badge variant="outline" className="font-mono">{s.ticker}</Badge>,
+      render: (s) => <Badge variant="outline" className="font-mono dark:font-financial dark:text-on-surface dark:border-outline-variant">{s.ticker}</Badge>,
     },
     {
       key: 'sector',
       header: 'القطاع',
       sortable: true,
       filterable: true,
-      className: 'text-muted-foreground text-sm',
+      className: 'text-muted-foreground text-sm dark:text-on-surface-variant',
     },
     {
       key: 'price',
@@ -812,7 +812,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-24',
-      className: 'font-mono font-bold',
+      className: 'font-mono font-bold tabular-nums dark:font-financial dark:text-on-surface',
       render: (s) => formatNumber(s.price),
     },
     {
@@ -823,7 +823,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-28',
       render: (s) => (
-        <span className={cn('font-mono inline-flex items-center gap-1', s.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+        <span className={cn('font-mono inline-flex items-center gap-1 tabular-nums dark:font-financial', s.change >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error')}>
           {s.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
           {s.change >= 0 ? '+' : ''}{formatNumber(s.change)}
         </span>
@@ -839,7 +839,7 @@ export function SimulationView() {
       render: (s) => (
         <Badge
           variant={s.changePercent >= 0 ? 'default' : 'destructive'}
-          className={cn(s.changePercent >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}
+          className={cn(s.changePercent >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary dark:border dark:border-primary-container/40' : '', 'tabular-nums dark:font-financial')}
         >
           {s.changePercent >= 0 ? '+' : ''}{(s.changePercent ?? 0).toFixed(2)}%
         </Badge>
@@ -853,11 +853,11 @@ export function SimulationView() {
       hideable: false,
       render: (s) => (
         <div className="flex items-center justify-center gap-1">
-          <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'buy'); }}>
+          <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'buy'); }}>
             <Plus className="h-3 w-3" />
             شراء
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'sell'); }}>
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1 dark:bg-error-container dark:text-on-error-container dark:border-transparent dark:hover:bg-error-container/90" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'sell'); }}>
             <Minus className="h-3 w-3" />
             بيع
           </Button>
@@ -874,8 +874,8 @@ export function SimulationView() {
       filterable: true,
       render: (p) => (
         <div>
-          <p className="font-medium">{p._stock?.name_ar || p.ticker}</p>
-          <Badge variant="outline" className="font-mono text-xs">{p.ticker}</Badge>
+          <p className="font-medium dark:text-on-surface">{p._stock?.name_ar || p.ticker}</p>
+          <Badge variant="outline" className="font-mono text-xs dark:font-financial dark:text-on-surface-variant dark:border-outline-variant">{p.ticker}</Badge>
         </div>
       ),
     },
@@ -886,7 +886,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-24',
-      className: 'font-mono',
+      className: 'font-mono tabular-nums dark:font-financial dark:text-on-surface',
     },
     {
       key: 'avgCost',
@@ -895,7 +895,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-28',
-      className: 'font-mono',
+      className: 'font-mono tabular-nums dark:font-financial dark:text-on-surface',
       render: (p) => formatNumber(p.avgCost),
     },
     {
@@ -905,7 +905,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-28',
-      className: 'font-mono',
+      className: 'font-mono tabular-nums dark:font-financial dark:text-on-surface',
       render: (p) => formatNumber(p._stock?.price ?? 0),
     },
     {
@@ -915,7 +915,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-32',
-      className: 'font-mono font-bold',
+      className: 'font-mono font-bold tabular-nums dark:font-financial dark:text-on-surface',
       render: (p) => formatCurrency(p._currentValue ?? 0, currencyLabel),
     },
     {
@@ -926,7 +926,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-36',
       render: (p) => (
-        <div className={cn('font-mono font-medium', (p._pnl ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+        <div className={cn('font-mono font-medium tabular-nums dark:font-financial', (p._pnl ?? 0) >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error')}>
           <p>{(p._pnl ?? 0) >= 0 ? '+' : ''}{formatCurrency(p._pnl ?? 0, currencyLabel)}</p>
           <p className="text-xs">({(p._pnlPercent ?? 0) >= 0 ? '+' : ''}{(p._pnlPercent ?? 0).toFixed(2)}%)</p>
         </div>
@@ -943,7 +943,7 @@ export function SimulationView() {
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+            className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 dark:bg-error-container dark:text-on-error-container dark:border-transparent dark:hover:bg-error-container/90"
             onClick={(e) => { if (p._stock) { e.stopPropagation(); openTradeDialog(p._stock, 'sell'); } }}
           >
             <Minus className="h-3 w-3" />
@@ -962,7 +962,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-32',
       render: (t) => (
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground whitespace-nowrap dark:text-on-surface-variant">
           {new Date(t.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
         </span>
       ),
@@ -975,7 +975,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-24',
       render: (t) => (
-        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}>
+        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary dark:border dark:border-primary-container/40' : 'dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/40')}>
           {t.type === 'buy' ? (
             <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
           ) : (
@@ -991,8 +991,8 @@ export function SimulationView() {
       filterable: true,
       render: (t) => (
         <div>
-          <p className="font-medium text-sm">{t._stockName || t.ticker}</p>
-          <Badge variant="outline" className="font-mono text-xs">{t.ticker}</Badge>
+          <p className="font-medium text-sm dark:text-on-surface">{t._stockName || t.ticker}</p>
+          <Badge variant="outline" className="font-mono text-xs dark:font-financial dark:text-on-surface-variant dark:border-outline-variant">{t.ticker}</Badge>
         </div>
       ),
     },
@@ -1003,7 +1003,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-20',
-      className: 'font-mono',
+      className: 'font-mono tabular-nums dark:font-financial dark:text-on-surface',
     },
     {
       key: 'price',
@@ -1012,7 +1012,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-24',
-      className: 'font-mono',
+      className: 'font-mono tabular-nums dark:font-financial dark:text-on-surface',
       render: (t) => formatNumber(t.price),
     },
     {
@@ -1022,7 +1022,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-24',
-      className: 'font-mono text-muted-foreground text-xs',
+      className: 'font-mono text-muted-foreground text-xs dark:font-financial dark:text-on-surface-variant tabular-nums',
       render: (t) => formatNumber(t.commission),
     },
     {
@@ -1032,7 +1032,7 @@ export function SimulationView() {
       sortable: true,
       filterable: true,
       width: 'w-28',
-      className: 'font-mono font-bold',
+      className: 'font-mono font-bold tabular-nums dark:font-financial dark:text-on-surface',
       render: (t) => formatCurrency(t.total, currencyLabel),
     },
     {
@@ -1044,11 +1044,11 @@ export function SimulationView() {
       width: 'w-28',
       render: (t) => (
         t.pnl !== undefined ? (
-          <span className={cn('font-mono font-medium text-sm', t.pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+          <span className={cn('font-mono font-medium text-sm tabular-nums dark:font-financial', t.pnl >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error')}>
             {t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl, currencyLabel)}
           </span>
         ) : (
-          <span className="text-muted-foreground text-sm">-</span>
+          <span className="text-muted-foreground text-sm dark:text-on-surface-variant">-</span>
         )
       ),
     },
@@ -1079,26 +1079,26 @@ export function SimulationView() {
 
   if (stocks.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[60vh] dark:bg-surface-container-lowest">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground">جاري تحميل المحاكاة...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary dark:border-primary mx-auto" />
+          <p className="text-muted-foreground dark:text-on-surface-variant">جاري تحميل المحاكاة...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="space-y-6 p-4 md:p-6">
+    <div dir="rtl" className="space-y-6 p-4 md:p-6 dark:bg-surface-container-lowest">
       {/* ─── Header ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
-            <Gamepad2 className="h-6 w-6 text-white" />
+          <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg dark:bg-primary-container dark:from-primary-container dark:to-primary-container dark:shadow-primary-container/30">
+            <Gamepad2 className="h-6 w-6 text-white dark:text-on-primary-container" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">محاكاة التداول الافتراضي</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold tracking-tight dark:text-on-surface dark:font-outfit">محاكاة التداول الافتراضي</h1>
+            <p className="text-sm text-muted-foreground dark:text-on-surface-variant">
               تدرّب على التداول بأموال افتراضية بدون أي مخاطر — {marketNameAr}
             </p>
           </div>
@@ -1107,12 +1107,12 @@ export function SimulationView() {
           <MarketSelector size="sm" />
           <Badge
             variant={marketOpen ? 'default' : 'secondary'}
-            className={cn('gap-1.5 px-3 py-1', marketOpen ? 'bg-emerald-600 hover:bg-emerald-600' : 'bg-red-600 hover:bg-red-600')}
+            className={cn('gap-1.5 px-3 py-1', marketOpen ? 'bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90' : 'bg-red-600 hover:bg-red-600 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90')}
           >
-            <span className={cn('h-2 w-2 rounded-full', marketOpen ? 'bg-white animate-pulse' : 'bg-red-200')} />
+            <span className={cn('h-2 w-2 rounded-full', marketOpen ? 'bg-white animate-pulse dark:bg-on-primary-container' : 'bg-red-200 dark:bg-on-error-container')} />
             {marketOpen ? 'السوق مفتوح' : 'السوق مغلق'}
           </Badge>
-          <Badge variant="outline" className="gap-1.5">
+          <Badge variant="outline" className="gap-1.5 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface-variant">
             <Clock className="h-3.5 w-3.5" />
             {getCairoTime()} - القاهرة
           </Badge>
@@ -1120,12 +1120,12 @@ export function SimulationView() {
             variant="outline"
             size="sm"
             onClick={() => setIsSimulationRunning((p) => !p)}
-            className="gap-1.5"
+            className="gap-1.5 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
           >
             {isSimulationRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             {isSimulationRunning ? 'إيقاف' : 'تشغيل'}
           </Button>
-          <Button variant="outline" size="sm" onClick={exportPDF} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={exportPDF} className="gap-1.5 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">
             <Download className="h-4 w-4" />
             تصدير التقرير
           </Button>
@@ -1149,7 +1149,7 @@ export function SimulationView() {
             variant="destructive"
             size="sm"
             onClick={() => setResetDialogOpen(true)}
-            className="gap-1.5"
+            className="gap-1.5 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent"
           >
             <RotateCcw className="h-4 w-4" />
             إعادة تعيين
@@ -1159,24 +1159,24 @@ export function SimulationView() {
 
       {/* ─── Tabs ─────────────────────────────────────────────────── */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="dashboard" className="gap-1.5">
+        <TabsList className="flex flex-wrap h-auto gap-1 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <TabsTrigger value="dashboard" className="gap-1.5 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container dark:text-on-surface-variant">
             <BarChart3 className="h-4 w-4" />
             لوحة التحكم
           </TabsTrigger>
-          <TabsTrigger value="trading" className="gap-1.5">
+          <TabsTrigger value="trading" className="gap-1.5 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container dark:text-on-surface-variant">
             <ShoppingCart className="h-4 w-4" />
             التداول
           </TabsTrigger>
-          <TabsTrigger value="portfolio" className="gap-1.5">
+          <TabsTrigger value="portfolio" className="gap-1.5 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container dark:text-on-surface-variant">
             <Wallet className="h-4 w-4" />
             المحفظة
           </TabsTrigger>
-          <TabsTrigger value="transactions" className="gap-1.5">
+          <TabsTrigger value="transactions" className="gap-1.5 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container dark:text-on-surface-variant">
             <History className="h-4 w-4" />
             سجل المعاملات
           </TabsTrigger>
-          <TabsTrigger value="watchlist" className="gap-1.5">
+          <TabsTrigger value="watchlist" className="gap-1.5 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container dark:text-on-surface-variant">
             <Eye className="h-4 w-4" />
             قائمة الرغبات
           </TabsTrigger>
@@ -1188,75 +1188,75 @@ export function SimulationView() {
         <TabsContent value="dashboard" className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card className="relative overflow-hidden">
+            <Card className="relative overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">الرصيد النقدي</p>
-                    <p className="text-xl font-bold">{formatCurrency(simState.balance, currencyLabel)}</p>
+                    <p className="text-sm text-muted-foreground dark:text-on-surface-variant">الرصيد النقدي</p>
+                    <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-primary">{formatCurrency(simState.balance, currencyLabel)}</p>
                   </div>
-                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                    <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/40 rounded-lg">
+                    <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400 dark:text-primary" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden">
+            <Card className="relative overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">قيمة المحفظة</p>
-                    <p className="text-xl font-bold">{formatCurrency(portfolioValue, currencyLabel)}</p>
+                    <p className="text-sm text-muted-foreground dark:text-on-surface-variant">قيمة المحفظة</p>
+                    <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(portfolioValue, currencyLabel)}</p>
                   </div>
-                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                    <DollarSign className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 dark:bg-surface-container-high rounded-lg">
+                    <DollarSign className="h-5 w-5 text-teal-600 dark:text-teal-400 dark:text-primary" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={cn('relative overflow-hidden', totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800' : 'border-red-200 dark:border-red-800')}>
+            <Card className={cn('relative overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30', totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800 dark:border-primary-container/40' : 'border-red-200 dark:border-red-800 dark:border-error-container/40')}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">إجمالي الربح/الخسارة</p>
-                    <p className={cn('text-xl font-bold', totalPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    <p className="text-sm text-muted-foreground dark:text-on-surface-variant">إجمالي الربح/الخسارة</p>
+                    <p className={cn('text-xl font-bold tabular-nums dark:font-financial', totalPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                       {totalPnL >= 0 ? '+' : ''}{formatCurrency(totalPnL, currencyLabel)}
                     </p>
                   </div>
-                  <div className={cn('p-2 rounded-lg', totalPnL >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
-                    {totalPnL >= 0 ? <TrendingUp className="h-5 w-5 text-emerald-600" /> : <TrendingDown className="h-5 w-5 text-red-600" />}
+                  <div className={cn('p-2 rounded-lg', totalPnL >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/40' : 'bg-red-100 dark:bg-red-900/30 dark:bg-error-container/40')}>
+                    {totalPnL >= 0 ? <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-primary" /> : <TrendingDown className="h-5 w-5 text-red-600 dark:text-error" />}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden">
+            <Card className="relative overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">نسبة الربح/الخسارة</p>
-                    <p className={cn('text-xl font-bold', totalPnLPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    <p className="text-sm text-muted-foreground dark:text-on-surface-variant">نسبة الربح/الخسارة</p>
+                    <p className={cn('text-xl font-bold tabular-nums dark:font-financial', totalPnLPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                       {totalPnLPercent >= 0 ? '+' : ''}{(totalPnLPercent ?? 0).toFixed(2)}%
                     </p>
                   </div>
-                  <div className={cn('p-2 rounded-lg', totalPnLPercent >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
-                    <Target className="h-5 w-5" />
+                  <div className={cn('p-2 rounded-lg', totalPnLPercent >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/40' : 'bg-red-100 dark:bg-red-900/30 dark:bg-error-container/40')}>
+                    <Target className="h-5 w-5 dark:text-on-surface-variant" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden">
+            <Card className="relative overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">عدد الصفقات</p>
-                    <p className="text-xl font-bold">{tradeCount}</p>
+                    <p className="text-sm text-muted-foreground dark:text-on-surface-variant">عدد الصفقات</p>
+                    <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{tradeCount}</p>
                   </div>
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                    <Zap className="h-5 w-5 text-amber-600" />
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/30 dark:bg-surface-container-high rounded-lg">
+                    <Zap className="h-5 w-5 text-amber-600 dark:text-on-surface-variant" />
                   </div>
                 </div>
               </CardContent>
@@ -1265,10 +1265,10 @@ export function SimulationView() {
 
           {/* Chart + Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
+                <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+                  <TrendingUp className="h-4 w-4 dark:text-primary" />
                   أداء المحفظة
                 </CardTitle>
               </CardHeader>
@@ -1307,24 +1307,24 @@ export function SimulationView() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="h-4 w-4" />
+                <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+                  <Zap className="h-4 w-4 dark:text-primary" />
                   إجراءات سريعة
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">الرصيد المتاح</p>
-                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(simState.balance, currencyLabel)}</p>
-                  <Progress value={((INITIAL_BALANCE - simState.balance) / INITIAL_BALANCE) * 100} className="h-2" />
-                  <p className="text-xs text-muted-foreground">مستثمر: {formatCurrency(investedAmount, currencyLabel)} من {formatCurrency(INITIAL_BALANCE, currencyLabel)}</p>
+                  <p className="text-sm text-muted-foreground dark:text-on-surface-variant">الرصيد المتاح</p>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums dark:font-financial dark:text-primary">{formatCurrency(simState.balance, currencyLabel)}</p>
+                  <Progress value={((INITIAL_BALANCE - simState.balance) / INITIAL_BALANCE) * 100} className="h-2 dark:bg-surface-container-highest" />
+                  <p className="text-xs text-muted-foreground dark:text-on-surface-variant">مستثمر: {formatCurrency(investedAmount, currencyLabel)} من {formatCurrency(INITIAL_BALANCE, currencyLabel)}</p>
                 </div>
-                <Separator />
+                <Separator className="dark:bg-outline-variant" />
                 <div className="space-y-2">
                   <Button
-                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90"
                     onClick={() => setActiveTab('trading')}
                   >
                     <ShoppingCart className="h-4 w-4" />
@@ -1332,27 +1332,27 @@ export function SimulationView() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full gap-2"
+                    className="w-full gap-2 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                     onClick={() => setActiveTab('portfolio')}
                   >
                     <Wallet className="h-4 w-4" />
                     عرض المحفظة
                   </Button>
                 </div>
-                <Separator />
-                <div className="rounded-lg bg-muted/50 p-3 space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">إحصائيات سريعة</p>
+                <Separator className="dark:bg-outline-variant" />
+                <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+                  <p className="text-xs font-medium text-muted-foreground dark:text-on-surface-variant">إحصائيات سريعة</p>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">القيمة الإجمالية</span>
-                    <span className="font-medium">{formatCurrency(totalValue, currencyLabel)}</span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant">القيمة الإجمالية</span>
+                    <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(totalValue, currencyLabel)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">المركز المفتوحة</span>
-                    <span className="font-medium">{simState.positions.length}</span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant">المركز المفتوحة</span>
+                    <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{simState.positions.length}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">العمولة</span>
-                    <span className="font-medium">0.15%</span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant">العمولة</span>
+                    <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">0.15%</span>
                   </div>
                 </div>
               </CardContent>
@@ -1360,10 +1360,10 @@ export function SimulationView() {
           </div>
 
           {/* Market Overview */}
-          <Card>
+          <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
+              <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+                <RefreshCw className="h-4 w-4 dark:text-primary" />
                 نظرة على السوق
               </CardTitle>
             </CardHeader>
@@ -1373,20 +1373,20 @@ export function SimulationView() {
                   <div
                     key={stock.ticker}
                     className={cn(
-                      'rounded-lg border p-3 cursor-pointer transition-all hover:shadow-md',
-                      flashingTickers[stock.ticker] === 'up' && 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200',
-                      flashingTickers[stock.ticker] === 'down' && 'bg-red-50 dark:bg-red-950/30 border-red-200'
+                      'rounded-lg border p-3 cursor-pointer transition-all hover:shadow-md dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high',
+                      flashingTickers[stock.ticker] === 'up' && 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:bg-primary-container/20 dark:border-primary-container/40',
+                      flashingTickers[stock.ticker] === 'down' && 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:bg-error-container/20 dark:border-error-container/40'
                     )}
                     onClick={() => openTradeDialog(stock, 'buy')}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-sm">{stock.ticker}</span>
-                      <span className={cn('text-xs font-medium', stock.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      <span className="font-bold text-sm dark:font-financial dark:text-on-surface">{stock.ticker}</span>
+                      <span className={cn('text-xs font-medium tabular-nums dark:font-financial', stock.change >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error')}>
                         {stock.change >= 0 ? '+' : ''}{stock.changePercent}%
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{stock.name_ar}</p>
-                    <p className="text-sm font-bold mt-1">{formatNumber(stock.price)} {currencyLabel}</p>
+                    <p className="text-xs text-muted-foreground truncate dark:text-on-surface-variant">{stock.name_ar}</p>
+                    <p className="text-sm font-bold mt-1 tabular-nums dark:font-financial dark:text-on-surface">{formatNumber(stock.price)} {currencyLabel}</p>
                   </div>
                 ))}
               </div>
@@ -1400,17 +1400,17 @@ export function SimulationView() {
         <TabsContent value="trading" className="space-y-6">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-on-surface-variant" />
             <Input
               placeholder="ابحث عن سهم بالرمز أو الاسم أو القطاع..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10 text-right"
+              className="pr-10 text-right dark:bg-surface-container dark:border-outline-variant dark:text-on-surface"
             />
           </div>
 
           {/* Stock List */}
-          <Card>
+          <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-0">
               <div className="max-h-[600px] overflow-y-auto">
                 <UnifiedTable<EGXStock>
@@ -1438,28 +1438,28 @@ export function SimulationView() {
         <TabsContent value="portfolio" className="space-y-6">
           {/* Portfolio Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+            <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">الرصيد النقدي</p>
-                <p className="text-lg font-bold">{formatCurrency(simState.balance, currencyLabel)}</p>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">الرصيد النقدي</p>
+                <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-primary">{formatCurrency(simState.balance, currencyLabel)}</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">إجمالي الاستثمار</p>
-                <p className="text-lg font-bold">{formatCurrency(investedAmount, currencyLabel)}</p>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">إجمالي الاستثمار</p>
+                <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(investedAmount, currencyLabel)}</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">القيمة الحالية</p>
-                <p className="text-lg font-bold">{formatCurrency(portfolioValue, currencyLabel)}</p>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">القيمة الحالية</p>
+                <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(portfolioValue, currencyLabel)}</p>
               </CardContent>
             </Card>
-            <Card className={cn(totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800' : 'border-red-200 dark:border-red-800')}>
+            <Card className={cn(totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800 dark:bg-surface-container-low dark:border dark:border-primary-container/40' : 'border-red-200 dark:border-red-800 dark:bg-surface-container-low dark:border dark:border-error-container/40')}>
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">الربح/الخسارة غير المحقق</p>
-                <p className={cn('text-lg font-bold', totalPnL >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">الربح/الخسارة غير المحقق</p>
+                <p className={cn('text-lg font-bold tabular-nums dark:font-financial', totalPnL >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error')}>
                   {totalPnL >= 0 ? '+' : ''}{formatCurrency(portfolioValue - investedAmount, currencyLabel)}
                 </p>
               </CardContent>
@@ -1468,23 +1468,23 @@ export function SimulationView() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Holdings */}
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Wallet className="h-4 w-4" />
+                <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+                  <Wallet className="h-4 w-4 dark:text-primary" />
                   الأصول المحتفظ بها
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {simState.positions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground space-y-3">
-                    <Trophy className="h-12 w-12 text-muted-foreground/30" />
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground dark:text-on-surface-variant space-y-3">
+                    <Trophy className="h-12 w-12 text-muted-foreground/30 dark:text-on-surface-variant/30" />
                     <p>لا توجد أصول محتفظ بها حالياً</p>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setActiveTab('trading')}
-                      className="gap-1.5"
+                      className="gap-1.5 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                     >
                       <ShoppingCart className="h-4 w-4" />
                       ابدأ التداول
@@ -1507,17 +1507,17 @@ export function SimulationView() {
             </Card>
 
             {/* Sector Allocation */}
-            <Card>
+            <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <PieChart className="h-4 w-4" />
+                <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+                  <PieChart className="h-4 w-4 dark:text-primary" />
                   توزيع القطاعات
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {sectorAllocation.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-2">
-                    <PieChart className="h-8 w-8 text-muted-foreground/30" />
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground dark:text-on-surface-variant space-y-2">
+                    <PieChart className="h-8 w-8 text-muted-foreground/30 dark:text-on-surface-variant/30" />
                     <p className="text-sm">لا توجد بيانات للعرض</p>
                   </div>
                 ) : (
@@ -1562,9 +1562,9 @@ export function SimulationView() {
                         <div key={item.sector} className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: SECTOR_COLORS[item.sector] || '#888' }} />
-                            <span className="text-xs truncate">{item.sector}</span>
+                            <span className="text-xs truncate dark:text-on-surface-variant">{item.sector}</span>
                           </div>
-                          <span className="text-xs font-mono font-medium whitespace-nowrap">{(item.percent ?? 0).toFixed(1)}%</span>
+                          <span className="text-xs font-mono font-medium whitespace-nowrap dark:font-financial dark:text-on-surface tabular-nums">{(item.percent ?? 0).toFixed(1)}%</span>
                         </div>
                       ))}
                     </div>
@@ -1580,15 +1580,15 @@ export function SimulationView() {
         {/* ═══════════════════════════════════════════════════════════ */}
         <TabsContent value="transactions" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <History className="h-5 w-5" />
+            <h3 className="text-lg font-semibold flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+              <History className="h-5 w-5 dark:text-primary" />
               سجل المعاملات
             </h3>
             <Select value={transactionFilter} onValueChange={(v) => setTransactionFilter(v as 'all' | 'buy' | 'sell')}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-36 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-surface-container dark:border-outline-variant">
                 <SelectItem value="all">الكل</SelectItem>
                 <SelectItem value="buy">الشراء فقط</SelectItem>
                 <SelectItem value="sell">البيع فقط</SelectItem>
@@ -1596,13 +1596,13 @@ export function SimulationView() {
             </Select>
           </div>
 
-          <Card>
+          <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-0">
               {filteredTransactions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground space-y-3">
-                  <History className="h-12 w-12 text-muted-foreground/30" />
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground dark:text-on-surface-variant space-y-3">
+                  <History className="h-12 w-12 text-muted-foreground/30 dark:text-on-surface-variant/30" />
                   <p>لا توجد معاملات بعد</p>
-                  <Button variant="outline" size="sm" onClick={() => setActiveTab('trading')} className="gap-1.5">
+                  <Button variant="outline" size="sm" onClick={() => setActiveTab('trading')} className="gap-1.5 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">
                     <ShoppingCart className="h-4 w-4" />
                     ابدأ التداول
                   </Button>
@@ -1629,20 +1629,20 @@ export function SimulationView() {
         {/* ═══════════════════════════════════════════════════════════ */}
         <TabsContent value="watchlist" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Eye className="h-5 w-5" />
+            <h3 className="text-lg font-semibold flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+              <Eye className="h-5 w-5 dark:text-primary" />
               قائمة الرغبات
-              <Badge variant="outline">{simState.watchlist.length}</Badge>
+              <Badge variant="outline" className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface-variant">{simState.watchlist.length}</Badge>
             </h3>
           </div>
 
           {simState.watchlist.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground space-y-3">
-                <Star className="h-12 w-12 text-muted-foreground/30" />
+            <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground dark:text-on-surface-variant space-y-3">
+                <Star className="h-12 w-12 text-muted-foreground/30 dark:text-on-surface-variant/30" />
                 <p>قائمة الرغبات فارغة</p>
                 <p className="text-sm">أضف الأسهم التي تريد مراقبتها من صفحة التداول</p>
-                <Button variant="outline" size="sm" onClick={() => setActiveTab('trading')} className="gap-1.5">
+                <Button variant="outline" size="sm" onClick={() => setActiveTab('trading')} className="gap-1.5 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">
                   <Search className="h-4 w-4" />
                   استعراض الأسهم
                 </Button>
@@ -1657,34 +1657,34 @@ export function SimulationView() {
                   <Card
                     key={ticker}
                     className={cn(
-                      'transition-all hover:shadow-md cursor-pointer',
-                      flashingTickers[ticker] === 'up' && 'border-emerald-300 bg-emerald-50/30',
-                      flashingTickers[ticker] === 'down' && 'border-red-300 bg-red-50/30'
+                      'transition-all hover:shadow-md cursor-pointer dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:hover:bg-surface-container',
+                      flashingTickers[ticker] === 'up' && 'border-emerald-300 bg-emerald-50/30 dark:bg-primary-container/20 dark:border-primary-container/40',
+                      flashingTickers[ticker] === 'down' && 'border-red-300 bg-red-50/30 dark:bg-error-container/20 dark:border-error-container/40'
                     )}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
+                            <Badge variant="outline" className="font-mono dark:font-financial dark:text-on-surface dark:border-outline-variant">{stock.ticker}</Badge>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                              className="h-7 w-7 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-primary-container/30"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleWatchlist(ticker);
                               }}
                             >
-                              <Star className="h-4 w-4 fill-amber-500" />
+                              <Star className="h-4 w-4 fill-amber-500 dark:fill-primary dark:text-primary" />
                             </Button>
                           </div>
-                          <p className="font-medium mt-1">{stock.name_ar}</p>
-                          <p className="text-xs text-muted-foreground">{stock.sector}</p>
+                          <p className="font-medium mt-1 dark:text-on-surface">{stock.name_ar}</p>
+                          <p className="text-xs text-muted-foreground dark:text-on-surface-variant">{stock.sector}</p>
                         </div>
                         <div className="text-left">
-                          <p className="text-lg font-bold font-mono">{formatNumber(stock.price)}</p>
-                          <div className={cn('flex items-center gap-0.5 justify-end text-sm font-medium', stock.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                          <p className="text-lg font-bold font-mono dark:font-financial dark:text-on-surface tabular-nums">{formatNumber(stock.price)}</p>
+                          <div className={cn('flex items-center gap-0.5 justify-end text-sm font-medium tabular-nums dark:font-financial', stock.change >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-red-600 dark:text-error')}>
                             {stock.change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
                             {stock.change >= 0 ? '+' : ''}{(stock.changePercent ?? 0).toFixed(2)}%
                           </div>
@@ -1693,7 +1693,7 @@ export function SimulationView() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          className="flex-1 h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+                          className="flex-1 h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90"
                           onClick={() => openTradeDialog(stock, 'buy')}
                         >
                           <Plus className="h-3 w-3" />
@@ -1702,7 +1702,7 @@ export function SimulationView() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 h-8 text-xs gap-1"
+                          className="flex-1 h-8 text-xs gap-1 dark:bg-error-container dark:text-on-error-container dark:border-transparent dark:hover:bg-error-container/90"
                           onClick={() => openTradeDialog(stock, 'sell')}
                         >
                           <Minus className="h-3 w-3" />
@@ -1717,21 +1717,21 @@ export function SimulationView() {
           )}
 
           {/* Add from search */}
-          <Card>
+          <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Plus className="h-4 w-4" />
+              <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+                <Plus className="h-4 w-4 dark:text-primary" />
                 إضافة أسهم لقائمة الرغبات
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-on-surface-variant" />
                 <Input
                   placeholder="ابحث عن سهم..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-10"
+                  className="pr-10 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto">
@@ -1741,16 +1741,16 @@ export function SimulationView() {
                   .map((stock) => (
                     <div
                       key={stock.ticker}
-                      className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
                     >
                       <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{stock.name_ar}</p>
-                        <p className="text-xs text-muted-foreground">{stock.ticker}</p>
+                        <p className="font-medium text-sm truncate dark:text-on-surface">{stock.name_ar}</p>
+                        <p className="text-xs text-muted-foreground dark:text-on-surface-variant">{stock.ticker}</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-amber-500"
+                        className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-amber-500 dark:text-on-surface-variant dark:hover:text-primary"
                         onClick={() => toggleWatchlist(stock.ticker)}
                       >
                         <Star className="h-4 w-4" />
@@ -1765,16 +1765,16 @@ export function SimulationView() {
 
       {/* ─── Trade Dialog ──────────────────────────────────────────── */}
       <Dialog open={tradeDialogOpen} onOpenChange={setTradeDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 dark:text-on-surface dark:font-outfit">
               {tradeType === 'buy' ? (
-                <span className="flex items-center gap-2 text-emerald-600">
+                <span className="flex items-center gap-2 text-emerald-600 dark:text-primary">
                   <ArrowDownRight className="h-5 w-5" />
                   شراء سهم
                 </span>
               ) : (
-                <span className="flex items-center gap-2 text-red-600">
+                <span className="flex items-center gap-2 text-red-600 dark:text-error">
                   <ArrowUpRight className="h-5 w-5" />
                   بيع سهم
                 </span>
@@ -1784,37 +1784,37 @@ export function SimulationView() {
 
           {selectedStock && (
             <div className="space-y-4">
-              <div className="rounded-lg bg-muted/50 p-3 space-y-1.5">
+              <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 dark:bg-surface-container dark:border dark:border-outline-variant/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">السهم</span>
-                  <span className="font-medium">{selectedStock.name_ar} ({selectedStock.ticker})</span>
+                  <span className="text-sm text-muted-foreground dark:text-on-surface-variant">السهم</span>
+                  <span className="font-medium dark:text-on-surface">{selectedStock.name_ar} ({selectedStock.ticker})</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">السعر الحالي</span>
-                  <span className="font-mono font-bold">{formatNumber(selectedStock.price)} {currencyLabel}</span>
+                  <span className="text-sm text-muted-foreground dark:text-on-surface-variant">السعر الحالي</span>
+                  <span className="font-mono font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatNumber(selectedStock.price)} {currencyLabel}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">رصيدك</span>
-                  <span className="font-mono">{formatCurrency(simState.balance, currencyLabel)}</span>
+                  <span className="text-sm text-muted-foreground dark:text-on-surface-variant">رصيدك</span>
+                  <span className="font-mono tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(simState.balance, currencyLabel)}</span>
                 </div>
                 {tradeType === 'sell' && (() => {
                   const pos = simState.positions.find((p) => p.ticker === selectedStock.ticker);
                   return pos ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">أسهمك</span>
-                      <span className="font-mono">{pos.shares} سهم</span>
+                      <span className="text-sm text-muted-foreground dark:text-on-surface-variant">أسهمك</span>
+                      <span className="font-mono tabular-nums dark:font-financial dark:text-on-surface">{pos.shares} سهم</span>
                     </div>
                   ) : null;
                 })()}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">عدد الأسهم</label>
+                <label className="text-sm font-medium dark:text-on-surface">عدد الأسهم</label>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 w-9 p-0"
+                    className="h-9 w-9 p-0 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                     onClick={() => setTradeQuantity((q) => Math.max(0, q - 1))}
                   >
                     <Minus className="h-4 w-4" />
@@ -1824,13 +1824,13 @@ export function SimulationView() {
                     min={1}
                     value={tradeQuantity || ''}
                     onChange={(e) => setTradeQuantity(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="text-center font-mono"
+                    className="text-center font-mono dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:font-financial tabular-nums"
                     placeholder="0"
                   />
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 w-9 p-0"
+                    className="h-9 w-9 p-0 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                     onClick={() => setTradeQuantity((q) => q + 1)}
                   >
                     <Plus className="h-4 w-4" />
@@ -1839,7 +1839,7 @@ export function SimulationView() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 text-xs"
+                      className="h-9 text-xs dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                       onClick={() => {
                         const maxShares = Math.floor(simState.balance / (selectedStock.price * (1 + COMMISSION_RATE)));
                         setTradeQuantity(maxShares);
@@ -1854,7 +1854,7 @@ export function SimulationView() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 text-xs"
+                        className="h-9 text-xs dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                         onClick={() => setTradeQuantity(pos.shares)}
                       >
                         الكل
@@ -1865,27 +1865,27 @@ export function SimulationView() {
               </div>
 
               {tradeQuantity > 0 && (
-                <div className="rounded-lg border p-3 space-y-1.5">
+                <div className="rounded-lg border p-3 space-y-1.5 dark:bg-surface-container dark:border-outline-variant/30">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">سعر السهم</span>
-                    <span className="font-mono">{formatNumber(selectedStock.price)} {currencyLabel}</span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant">سعر السهم</span>
+                    <span className="font-mono tabular-nums dark:font-financial dark:text-on-surface">{formatNumber(selectedStock.price)} {currencyLabel}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">عدد الأسهم</span>
-                    <span className="font-mono">{tradeQuantity}</span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant">عدد الأسهم</span>
+                    <span className="font-mono tabular-nums dark:font-financial dark:text-on-surface">{tradeQuantity}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">المجموع الفرعي</span>
-                    <span className="font-mono">{formatCurrency(tradeQuantity * selectedStock.price, currencyLabel)}</span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant">المجموع الفرعي</span>
+                    <span className="font-mono tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(tradeQuantity * selectedStock.price, currencyLabel)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">العمولة ({(COMMISSION_RATE * 100).toFixed(2)}%)</span>
-                    <span className="font-mono text-amber-600">{formatNumber(tradeQuantity * selectedStock.price * COMMISSION_RATE)} {currencyLabel}</span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant">العمولة ({(COMMISSION_RATE * 100).toFixed(2)}%)</span>
+                    <span className="font-mono text-amber-600 tabular-nums dark:font-financial dark:text-on-surface-variant">{formatNumber(tradeQuantity * selectedStock.price * COMMISSION_RATE)} {currencyLabel}</span>
                   </div>
-                  <Separator />
-                  <div className="flex items-center justify-between font-bold">
+                  <Separator className="dark:bg-outline-variant" />
+                  <div className="flex items-center justify-between font-bold dark:text-on-surface">
                     <span>{tradeType === 'buy' ? 'الإجمالي' : 'صافي الإيرادات'}</span>
-                    <span className="font-mono">
+                    <span className="font-mono tabular-nums dark:font-financial dark:text-primary">
                       {tradeType === 'buy'
                         ? formatCurrency(tradeQuantity * selectedStock.price * (1 + COMMISSION_RATE), currencyLabel)
                         : formatCurrency(tradeQuantity * selectedStock.price * (1 - COMMISSION_RATE), currencyLabel)}
@@ -1895,7 +1895,7 @@ export function SimulationView() {
               )}
 
               {tradeType === 'buy' && tradeQuantity > 0 && tradeQuantity * selectedStock.price * (1 + COMMISSION_RATE) > simState.balance && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <span>رصيدك غير كافي لإتمام هذه الصفقة</span>
                 </div>
@@ -1904,13 +1904,13 @@ export function SimulationView() {
               {tradeType === 'sell' && (() => {
                 const pos = simState.positions.find((p) => p.ticker === selectedStock.ticker);
                 if (!pos) return (
-                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>ليس لديك أسهم من هذا السهم لبيعها</span>
                   </div>
                 );
                 if (tradeQuantity > pos.shares) return (
-                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>عدد الأسهم المطلوبة أكبر مما تملك ({pos.shares})</span>
                   </div>
@@ -1921,13 +1921,13 @@ export function SimulationView() {
           )}
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setTradeDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setTradeDialogOpen(false)} className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">
               إلغاء
             </Button>
             <Button
               className={cn(
                 'gap-1.5',
-                tradeType === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
+                tradeType === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent' : 'bg-red-600 hover:bg-red-700 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent'
               )}
               onClick={handleTradeSubmit}
               disabled={tradeQuantity <= 0}
@@ -1944,50 +1944,50 @@ export function SimulationView() {
 
       {/* ─── Confirm Dialog ────────────────────────────────────────── */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <AlertDialogHeader>
-            <AlertDialogTitle>
+            <AlertDialogTitle className="dark:text-on-surface dark:font-outfit">
               تأكيد {pendingTrade?.type === 'buy' ? 'الشراء' : 'البيع'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingTrade && (
                 <div className="space-y-2 mt-2 text-right" dir="rtl">
-                  <p>
+                  <p className="dark:text-on-surface-variant">
                     هل أنت متأكد من{' '}
-                    <span className="font-bold text-foreground">
+                    <span className="font-bold text-foreground dark:text-on-surface">
                       {pendingTrade.type === 'buy' ? 'شراء' : 'بيع'}
                     </span>{' '}
-                    <span className="font-bold text-foreground">
+                    <span className="font-bold text-foreground dark:text-on-surface">
                       {pendingTrade.quantity} سهم
                     </span>{' '}
                     من{' '}
-                    <span className="font-bold text-foreground">
+                    <span className="font-bold text-foreground dark:text-on-surface">
                       {pendingTrade.stock.name_ar} ({pendingTrade.stock.ticker})
                     </span>{' '}
                     بسعر{' '}
-                    <span className="font-mono font-bold text-foreground">
+                    <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-primary">
                       {formatNumber(pendingTrade.stock.price)} {currencyLabel}
                     </span>
                     ؟
                   </p>
-                  <Separator />
-                  <div className="flex justify-between text-sm">
+                  <Separator className="dark:bg-outline-variant" />
+                  <div className="flex justify-between text-sm dark:text-on-surface-variant">
                     <span>الإجمالي (شامل العمولة)</span>
-                    <span className="font-mono font-bold">{formatCurrency(pendingTrade.total, currencyLabel)}</span>
+                    <span className="font-mono font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(pendingTrade.total, currencyLabel)}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex justify-between text-sm text-muted-foreground dark:text-on-surface-variant">
                     <span>العمولة</span>
-                    <span className="font-mono">{formatNumber(pendingTrade.commission)} {currencyLabel}</span>
+                    <span className="font-mono tabular-nums dark:font-financial">{formatNumber(pendingTrade.commission)} {currencyLabel}</span>
                   </div>
                 </div>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={executeTrade}
-              className={cn(pendingTrade?.type === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700')}
+              className={cn(pendingTrade?.type === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent' : 'bg-red-600 hover:bg-red-700 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent')}
             >
               تأكيد التنفيذ
             </AlertDialogAction>
@@ -1997,13 +1997,13 @@ export function SimulationView() {
 
       {/* ─── Reset Dialog ──────────────────────────────────────────── */}
       <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+            <AlertDialogTitle className="flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+              <AlertTriangle className="h-5 w-5 text-destructive dark:text-error" />
               إعادة تعيين المحاكاة
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="dark:text-on-surface-variant">
               هل أنت متأكد من إعادة تعيين المحاكاة؟ سيتم حذف جميع البيانات بما في ذلك:
               <ul className="mt-2 space-y-1 text-right mr-4 list-disc">
                 <li>جميع المعاملات السابقة</li>
@@ -2011,12 +2011,12 @@ export function SimulationView() {
                 <li>سجل الأداء</li>
                 <li>قائمة الرغبات</li>
               </ul>
-              <p className="mt-2 font-bold text-foreground">لا يمكن التراجع عن هذا الإجراء.</p>
+              <p className="mt-2 font-bold text-foreground dark:text-on-surface">لا يمكن التراجع عن هذا الإجراء.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={resetSimulation} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogCancel className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={resetSimulation} className="bg-destructive hover:bg-destructive/90 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent">
               <span className="flex items-center gap-1.5"><RotateCcw className="h-4 w-4" /> إعادة تعيين</span>
             </AlertDialogAction>
           </AlertDialogFooter>

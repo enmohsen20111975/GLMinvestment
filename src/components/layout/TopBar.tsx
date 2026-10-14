@@ -253,7 +253,7 @@ export function TopBar() {
   return (
     <>
       <header
-        className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 shadow-[0_1px_0_0_hsl(var(--primary)/0.06)]"
+        className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 shadow-[0_1px_0_0_hsl(var(--primary)/0.06)] dark:bg-surface-container-lowest/95 dark:backdrop-blur-xl dark:shadow-[0_1px_8px_rgba(0,0,0,0.45)] dark:border-outline-variant/30"
         dir="rtl"
       >
         <div className="flex h-14 items-center justify-between px-3 md:px-6">
@@ -261,15 +261,15 @@ export function TopBar() {
           <div className="flex items-center gap-2 md:gap-3">
             <button
               onClick={() => handleNavClick('dashboard')}
-              className="flex items-center gap-2 font-bold text-sm md:text-base hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 font-bold text-sm md:text-base hover:opacity-80 transition-opacity dark:text-on-surface dark:font-outfit"
               aria-label="الرئيسية"
             >
               <img
                 src="/logo-square.png"
                 alt="دليل الاستثمار"
-                className="h-8 w-8 rounded-lg object-contain shadow-sm border border-border/40 bg-card"
+                className="h-8 w-8 rounded-lg object-contain shadow-sm border border-border/40 bg-card dark:border-outline-variant/30 dark:bg-surface-container-low"
               />
-              <span className="hidden sm:inline">دليل الاستثمار</span>
+              <span className="hidden sm:inline dark:text-on-surface">دليل الاستثمار</span>
             </button>
 
             {/* Market Switcher (UNIFIED-MARKET-UX Task 1) */}
@@ -277,10 +277,10 @@ export function TopBar() {
               <button
                 onClick={() => setMarketMenuOpen(!marketMenuOpen)}
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-xs font-medium transition-colors',
+                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-xs font-medium transition-colors dark:border-outline-variant/30',
                   marketMenuOpen
-                    ? 'bg-primary/10 text-primary border-primary/30'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    ? 'bg-primary/10 text-primary border-primary/30 dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:text-on-surface-variant dark:hover:bg-surface-container-high dark:hover:text-on-surface'
                 )}
                 aria-expanded={marketMenuOpen}
                 aria-haspopup="true"
@@ -290,7 +290,7 @@ export function TopBar() {
                 <Globe className="h-3.5 w-3.5" />
                 <span className="text-base leading-none">{activeMarketOption.flag}</span>
                 <span className="hidden sm:inline">{activeMarketOption.label}</span>
-                <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded dark:bg-surface-container dark:text-secondary dark:font-financial">
                   {activeMarketCurrency}
                 </span>
                 <ChevronDown
@@ -302,8 +302,8 @@ export function TopBar() {
               </button>
 
               {marketMenuOpen && (
-                <div className="absolute top-full right-0 mt-1 w-52 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95 z-50">
-                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-b border-border mb-1">
+                <div className="absolute top-full right-0 mt-1 w-52 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95 z-50 dark:bg-surface-container dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6)] dark:border-outline-variant/30">
+                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-b border-border mb-1 dark:text-on-surface-variant dark:border-outline-variant/30">
                     اختر السوق
                   </div>
                   {MARKET_OPTIONS.map((opt) => (
@@ -313,17 +313,17 @@ export function TopBar() {
                       className={cn(
                         'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs transition-colors',
                         currentMarket === opt.value
-                          ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                          ? 'bg-primary/10 text-primary font-medium dark:bg-primary-container dark:text-on-primary'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:text-on-surface-variant dark:hover:bg-surface-container-high dark:hover:text-on-surface'
                       )}
                     >
                       <span className="text-base leading-none">{opt.flag}</span>
                       <span className="flex-1 text-right">{opt.label}</span>
-                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded dark:bg-surface-container dark:text-secondary dark:font-financial">
                         {opt.currency}
                       </span>
                       {currentMarket === opt.value && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary dark:bg-primary" />
                       )}
                     </button>
                   ))}
@@ -343,8 +343,8 @@ export function TopBar() {
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-2 text-xs md:text-sm font-medium rounded-md transition-colors',
                     activeSec === section.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      ? 'bg-primary/10 text-primary dark:bg-primary-container/20 dark:text-primary'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:text-on-surface-variant dark:hover:bg-surface-container-high dark:hover:text-on-surface'
                   )}
                   aria-expanded={activeSection === section.id}
                   aria-haspopup="true"
@@ -361,7 +361,7 @@ export function TopBar() {
 
                 {/* Dropdown */}
                 {activeSection === section.id && (
-                  <div className="absolute top-full right-0 mt-1 w-56 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95">
+                  <div className="absolute top-full right-0 mt-1 w-56 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95 dark:bg-surface-container dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6)] dark:border-outline-variant/30">
                     {section.items.map((item) => (
                       <button
                         key={item.id}
@@ -369,8 +369,8 @@ export function TopBar() {
                         className={cn(
                           'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs transition-colors',
                           currentView === item.id
-                            ? 'bg-primary/10 text-primary font-medium'
-                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                            ? 'bg-primary/10 text-primary font-medium dark:bg-primary-container dark:text-on-primary'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:text-on-surface-variant dark:hover:bg-surface-container-high dark:hover:text-on-surface',
                           item.highlight && 'text-amber-600 dark:text-amber-400 font-medium'
                         )}
                       >
@@ -389,7 +389,7 @@ export function TopBar() {
             {/* Mobile menu trigger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+              className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent dark:text-on-surface-variant dark:hover:bg-surface-container-high"
               aria-label="القائمة"
               aria-expanded={mobileMenuOpen}
             >
@@ -408,7 +408,7 @@ export function TopBar() {
             {mounted && (
               <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-background transition-all hover:bg-accent hover:border-primary/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+                className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-background transition-all hover:bg-accent hover:border-primary/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background dark:bg-surface-container dark:border-outline-variant dark:hover:bg-surface-container-high"
                 aria-label={isDark ? t('theme.light') : t('theme.dark')}
                 title={isDark ? t('theme.light') : t('theme.dark')}
               >
@@ -429,26 +429,26 @@ export function TopBar() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5 text-xs transition-all hover:bg-accent hover:border-primary/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5 text-xs transition-all hover:bg-accent hover:border-primary/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background dark:bg-surface-container dark:border-outline-variant dark:hover:bg-surface-container-high"
                   aria-label="حساب المستخدم"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm ring-2 ring-primary/20">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm ring-2 ring-primary/20 dark:bg-primary-container dark:text-on-primary-container">
                     {userInitial}
                   </span>
-                  <span className="hidden sm:inline font-medium text-foreground max-w-[120px] truncate">
+                  <span className="hidden sm:inline font-medium text-foreground max-w-[120px] truncate dark:text-on-surface">
                     {userDisplayName}
                   </span>
                   <ChevronDown className={cn('h-3 w-3 text-muted-foreground transition-transform', userMenuOpen && 'rotate-180')} />
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute left-0 mt-2 w-48 rounded-lg border border-border bg-popover p-1 shadow-lg z-50" dir="rtl">
-                    <div className="px-3 py-2 border-b border-border mb-1">
-                      <p className="text-xs font-semibold text-foreground truncate">{userDisplayName}</p>
-                      <p className="text-[10px] text-muted-foreground">مسجّل الدخول</p>
+                  <div className="absolute left-0 mt-2 w-48 rounded-lg border border-border bg-popover p-1 shadow-lg z-50 dark:bg-surface-container dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6)] dark:border-outline-variant/30" dir="rtl">
+                    <div className="px-3 py-2 border-b border-border mb-1 dark:border-outline-variant/30">
+                      <p className="text-xs font-semibold text-foreground truncate dark:text-on-surface">{userDisplayName}</p>
+                      <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">مسجّل الدخول</p>
                     </div>
                     <button
                       onClick={() => { setCurrentView('settings' as AppView); setUserMenuOpen(false); window.location.hash = 'settings'; }}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-foreground hover:bg-accent transition-colors"
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-foreground hover:bg-accent transition-colors dark:text-on-surface dark:hover:bg-surface-container-high"
                     >
                       <Settings className="h-3.5 w-3.5" />
                       {t('nav.settings')}
@@ -477,11 +477,11 @@ export function TopBar() {
 
         {/* Mobile Menu (collapsible) */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border bg-background">
+          <div className="md:hidden border-t border-border bg-background dark:bg-surface-container-low dark:border-t dark:border-outline-variant/30">
             <nav className="grid gap-1 p-3" dir="rtl">
               {/* Market Switcher (mobile) */}
-              <div className="space-y-1 pb-2 border-b border-border mb-2">
-                <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              <div className="space-y-1 pb-2 border-b border-border mb-2 dark:border-outline-variant/30">
+                <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 dark:text-on-surface-variant">
                   <Globe className="h-3 w-3" />
                   اختر السوق
                 </div>
@@ -493,13 +493,13 @@ export function TopBar() {
                       className={cn(
                         'flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors',
                         currentMarket === opt.value
-                          ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:bg-accent'
+                          ? 'bg-primary/10 text-primary font-medium dark:bg-primary-container dark:text-on-primary'
+                          : 'text-muted-foreground hover:bg-accent dark:text-on-surface-variant dark:hover:bg-surface-container-high'
                       )}
                     >
                       <span className="text-base leading-none">{opt.flag}</span>
                       <span className="flex-1 text-right">{opt.label}</span>
-                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded dark:bg-surface-container dark:text-secondary dark:font-financial">
                         {opt.currency}
                       </span>
                     </button>
@@ -508,7 +508,7 @@ export function TopBar() {
               </div>
               {navSections.map((section) => (
                 <div key={section.id} className="space-y-1">
-                  <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 dark:text-on-surface-variant">
                     <section.icon className="h-3 w-3" />
                     {section.label}
                   </div>
@@ -519,8 +519,8 @@ export function TopBar() {
                       className={cn(
                         'flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors',
                         currentView === item.id
-                          ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:bg-accent'
+                          ? 'bg-primary/10 text-primary font-medium dark:bg-primary-container dark:text-on-primary'
+                          : 'text-muted-foreground hover:bg-accent dark:text-on-surface-variant dark:hover:bg-surface-container-high'
                       )}
                     >
                       <item.icon className="h-3.5 w-3.5" />
@@ -532,14 +532,14 @@ export function TopBar() {
 
               {/* Theme toggle في قائمة الموبايل */}
               {mounted && (
-                <div className="space-y-1 pt-2 border-t border-border">
-                  <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                <div className="space-y-1 pt-2 border-t border-border dark:border-outline-variant/30">
+                  <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 dark:text-on-surface-variant">
                     {isDark ? <Moon className="h-3 w-3" /> : <Sun className="h-3 w-3" />}
                     المظهر
                   </div>
                   <button
                     onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-accent transition-colors"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-accent transition-colors dark:text-on-surface-variant dark:hover:bg-surface-container-high"
                   >
                     {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                     <span className="flex-1 text-right">{isDark ? t('theme.light') : t('theme.dark')}</span>

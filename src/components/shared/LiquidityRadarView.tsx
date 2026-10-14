@@ -128,24 +128,24 @@ function fmtPrice(n: number | null | undefined): string {
 
 const PHASE_STYLE: Record<string, { cell: string; badge: string; label: string }> = {
   'بيبلع على الهادي': {
-    cell: 'bg-emerald-500/10 border-emerald-500/30',
-    badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-    label: 'text-emerald-700 dark:text-emerald-300',
+    cell: 'bg-emerald-500/10 border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary/30',
+    badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary dark:border-primary/30',
+    label: 'text-emerald-700 dark:text-emerald-300 dark:text-primary',
   },
   'بيتحضر': {
-    cell: 'bg-teal-500/10 border-teal-500/30',
-    badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30',
-    label: 'text-teal-700 dark:text-teal-300',
+    cell: 'bg-teal-500/10 border-teal-500/30 dark:bg-secondary/20 dark:border-secondary/30',
+    badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30 dark:bg-secondary/20 dark:text-secondary dark:border-secondary/30',
+    label: 'text-teal-700 dark:text-teal-300 dark:text-secondary',
   },
   'بيصرف': {
-    cell: 'bg-red-500/10 border-red-500/30',
-    badge: 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30',
-    label: 'text-red-700 dark:text-red-300',
+    cell: 'bg-red-500/10 border-red-500/30 dark:bg-error-container/20 dark:border-error/30',
+    badge: 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30 dark:bg-error-container/20 dark:text-error dark:border-error/30',
+    label: 'text-red-700 dark:text-red-300 dark:text-error',
   },
   'بيانات غير كافية': {
-    cell: 'bg-muted border-border',
-    badge: 'bg-muted text-muted-foreground border-border',
-    label: 'text-muted-foreground',
+    cell: 'bg-muted border-border dark:bg-surface-container dark:border-outline-variant/30',
+    badge: 'bg-muted text-muted-foreground border-border dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant/30',
+    label: 'text-muted-foreground dark:text-on-surface-variant',
   },
 };
 
@@ -161,24 +161,24 @@ function regimeStyle(regime: string | null | undefined): {
   icon: 'bull' | 'bear' | 'sideways' | 'riskoff';
 } {
   if (!regime) return {
-    banner: 'bg-muted border-border',
-    badge: 'bg-muted text-muted-foreground border-border',
+    banner: 'bg-muted border-border dark:bg-surface-container-low dark:border-outline-variant/30',
+    badge: 'bg-muted text-muted-foreground border-border dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant/30',
     icon: 'sideways',
   };
   if (regime === 'صاعد') return {
-    banner: 'bg-emerald-500/10 border-emerald-500/30',
-    badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+    banner: 'bg-emerald-500/10 border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary/30',
+    badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary dark:border-primary/30',
     icon: 'bull',
   };
   if (regime === 'هابط' || regime === 'Risk-Off') return {
-    banner: 'bg-red-500/10 border-red-500/30',
-    badge: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30',
+    banner: 'bg-red-500/10 border-red-500/30 dark:bg-error-container/20 dark:border-error/30',
+    badge: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30 dark:bg-error-container/20 dark:text-error dark:border-error/30',
     icon: regime === 'Risk-Off' ? 'riskoff' : 'bear',
   };
   // عرضي
   return {
-    banner: 'bg-amber-500/10 border-amber-500/30',
-    badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+    banner: 'bg-amber-500/10 border-amber-500/30 dark:bg-surface-container-low dark:border-outline-variant/30',
+    badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 dark:text-secondary',
     icon: 'sideways',
   };
 }
@@ -191,30 +191,30 @@ function whaleStyle(whale: WhaleInfo | null | undefined): {
 } {
   if (!whale || whale.net_flow_egp == null || !Number.isFinite(Number(whale.net_flow_egp)) || Number(whale.net_flow_egp) === 0) {
     return {
-      cell: 'bg-muted border-border',
-      text: 'text-muted-foreground',
+      cell: 'bg-muted border-border dark:bg-surface-container dark:border-outline-variant/30',
+      text: 'text-muted-foreground dark:text-on-surface-variant',
       icon: <Activity className="w-3.5 h-3.5" />,
     };
   }
   const flow = Number(whale.net_flow_egp);
   if (whale.whale_present === true) {
     return {
-      cell: 'bg-emerald-500/10 border-emerald-500/30',
-      text: 'text-emerald-700 dark:text-emerald-300',
+      cell: 'bg-emerald-500/10 border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary/30',
+      text: 'text-emerald-700 dark:text-emerald-300 dark:text-primary',
       icon: <Fish className="w-3.5 h-3.5" />,
     };
   }
   if (flow < 0) {
     return {
-      cell: 'bg-red-500/10 border-red-500/30',
-      text: 'text-red-700 dark:text-red-300',
+      cell: 'bg-red-500/10 border-red-500/30 dark:bg-error-container/20 dark:border-error/30',
+      text: 'text-red-700 dark:text-red-300 dark:text-error',
       icon: <Droplet className="w-3.5 h-3.5" />,
     };
   }
   // موجب ضعيف أو غير مصنف
   return {
-    cell: 'bg-amber-500/10 border-amber-500/30',
-    text: 'text-amber-700 dark:text-amber-300',
+    cell: 'bg-amber-500/10 border-amber-500/30 dark:bg-surface-container-low dark:border-outline-variant/30',
+    text: 'text-amber-700 dark:text-amber-300 dark:text-secondary',
     icon: <Droplet className="w-3.5 h-3.5" />,
   };
 }
@@ -351,13 +351,13 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
   // ------------------------------------------------------------------
   if (error && (!data || !data.stocks || data.stocks.length === 0)) {
     return (
-      <Card dir="rtl">
+      <Card dir="rtl" className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
         <CardContent className="p-6 text-center space-y-3">
-          <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-          <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto dark:text-secondary" />
+          <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 dark:text-secondary">
             {error || 'تعذّر جلب بيانات الرادار'}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
             محرّك رادار السيولة غير متاح حالياً — لا توجد بيانات وهمية.
           </p>
           <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
@@ -381,46 +381,47 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
       {/* ---------------------------------------------------------------- */}
       {/* 1. Market Regime Banner                                          */}
       {/* ---------------------------------------------------------------- */}
-      <Card className={cn('border', rStyle.banner)}>
+      <Card className={cn('border', rStyle.banner, 'dark:bg-surface-container-low dark:border dark:border-outline-variant/30')}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className={cn(
                 'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
-                rStyle.banner
+                rStyle.banner,
+                'dark:bg-surface-container dark:border dark:border-outline-variant/30'
               )}>
-                {rStyle.icon === 'bull' && <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-                {rStyle.icon === 'bear' && <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />}
-                {rStyle.icon === 'riskoff' && <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />}
-                {rStyle.icon === 'sideways' && <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+                {rStyle.icon === 'bull' && <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400 dark:text-primary" />}
+                {rStyle.icon === 'bear' && <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-error" />}
+                {rStyle.icon === 'riskoff' && <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-error" />}
+                {rStyle.icon === 'sideways' && <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400 dark:text-secondary" />}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-muted-foreground">حالة سوق</span>
-                  <span className="text-sm font-bold">{market}</span>
+                  <span className="text-xs text-muted-foreground dark:text-on-surface-variant">حالة سوق</span>
+                  <span className="text-sm font-bold dark:text-on-surface dark:font-outfit">{market}</span>
                   <Badge variant="outline" className={cn('text-[10px]', rStyle.badge)}>
                     {regime?.regime || '—'}
                   </Badge>
                   {regime?.index_symbol && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">
                       ({regime.index_symbol})
                     </span>
                   )}
                 </div>
-                <p className="text-xs mt-1 text-muted-foreground leading-relaxed">
+                <p className="text-xs mt-1 text-muted-foreground leading-relaxed dark:text-on-surface-variant">
                   {regime?.reason || 'لا يوجد وصف لحالة السوق'}
                 </p>
               </div>
             </div>
             <div className="text-left shrink-0">
-              <p className="text-[10px] text-muted-foreground">تغيّر المؤشر</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">تغيّر المؤشر</p>
               <p className={cn(
-                'text-lg font-bold font-mono',
+                'text-lg font-bold font-mono tabular-nums dark:font-financial',
                 (regime?.change_pct ?? 0) > 0
-                  ? 'text-emerald-600 dark:text-emerald-400'
+                  ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary'
                   : (regime?.change_pct ?? 0) < 0
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-amber-600 dark:text-amber-400'
+                  ? 'text-red-600 dark:text-red-400 dark:text-error'
+                  : 'text-amber-600 dark:text-amber-400 dark:text-secondary'
               )}>
                 {fmtPct(regime?.change_pct)}
               </p>
@@ -429,9 +430,9 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
 
           {/* تحذير صريح في حالة Risk-Off أو هابط */}
           {(regime?.is_bear || regime?.regime === 'Risk-Off' || regime?.regime === 'هابط') && (
-            <div className="mt-3 flex items-start gap-2 rounded-md bg-red-500/10 border border-red-500/20 p-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0 mt-px" />
-              <p className="text-[11px] text-red-700 dark:text-red-300 leading-relaxed">
+            <div className="mt-3 flex items-start gap-2 rounded-md bg-red-500/10 border border-red-500/20 p-2 dark:bg-error-container/20 dark:border-error/30">
+              <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 dark:text-error shrink-0 mt-px" />
+              <p className="text-[11px] text-red-700 dark:text-red-300 dark:text-error leading-relaxed">
                 السوق حالياً في وضع هابط — لا توجد فرص تجميع صحيحة. التزم بالدفاع ووقف الخسارة.
               </p>
             </div>
@@ -445,25 +446,25 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
       <div className="space-y-3">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div className="rounded-lg border bg-card p-2.5">
-            <p className="text-[10px] text-muted-foreground">إجمالي الممسوح</p>
-            <p className="text-base font-bold">{scannedCount}</p>
+          <div className="rounded-lg border bg-card p-2.5 dark:bg-surface-container-low dark:border-outline-variant/30">
+            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">إجمالي الممسوح</p>
+            <p className="text-base font-bold tabular-nums dark:text-on-surface dark:font-financial">{scannedCount}</p>
           </div>
-          <div className="rounded-lg border bg-emerald-500/5 p-2.5">
-            <p className="text-[10px] text-muted-foreground">بيبلع على الهادي</p>
-            <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
+          <div className="rounded-lg border bg-emerald-500/5 p-2.5 dark:bg-primary-container/10 dark:border-outline-variant/30">
+            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">بيبلع على الهادي</p>
+            <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums dark:font-financial dark:text-primary">
               {phasesBreakdown['بيبلع على الهادي'] ?? 0}
             </p>
           </div>
-          <div className="rounded-lg border bg-teal-500/5 p-2.5">
-            <p className="text-[10px] text-muted-foreground">بيتحضر</p>
-            <p className="text-base font-bold text-teal-700 dark:text-teal-400">
+          <div className="rounded-lg border bg-teal-500/5 p-2.5 dark:bg-secondary/10 dark:border-outline-variant/30">
+            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">بيتحضر</p>
+            <p className="text-base font-bold text-teal-700 dark:text-teal-400 tabular-nums dark:font-financial dark:text-secondary">
               {phasesBreakdown['بيتحضر'] ?? 0}
             </p>
           </div>
-          <div className="rounded-lg border bg-red-500/5 p-2.5">
-            <p className="text-[10px] text-muted-foreground">بيصرف</p>
-            <p className="text-base font-bold text-red-700 dark:text-red-400">
+          <div className="rounded-lg border bg-red-500/5 p-2.5 dark:bg-error-container/10 dark:border-outline-variant/30">
+            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">بيصرف</p>
+            <p className="text-base font-bold text-red-700 dark:text-red-400 tabular-nums dark:font-financial dark:text-error">
               {phasesBreakdown['بيصرف'] ?? 0}
             </p>
           </div>
@@ -483,16 +484,16 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
                 type="button"
                 onClick={() => setPhaseFilter(pf.key)}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors',
+                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors dark:border-outline-variant/30',
                   active
-                    ? 'bg-foreground text-background border-foreground'
-                    : 'bg-card text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground'
+                    ? 'bg-foreground text-background border-foreground dark:bg-primary-container dark:text-on-primary-container dark:border-primary-container'
+                    : 'bg-card text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant/30 dark:hover:bg-surface-container-high dark:hover:text-on-surface'
                 )}
               >
                 {pf.label}
                 <span className={cn(
                   'text-[9px] rounded-full px-1.5 py-px',
-                  active ? 'bg-background/20' : 'bg-muted'
+                  active ? 'bg-background/20 dark:bg-on-primary-container/20' : 'bg-muted dark:bg-surface-container-high'
                 )}>
                   {count}
                 </span>
@@ -504,13 +505,13 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
         {/* Search + refresh row */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[180px]">
-            <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-muted-foreground dark:text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <Input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="بحث برمز السهم أو الاسم…"
-              className="h-8 pr-8 text-xs"
+              className="h-8 pr-8 text-xs dark:bg-surface-container dark:text-on-surface dark:border-outline-variant"
             />
           </div>
           <Button variant="ghost" size="sm" onClick={fetchData} className="gap-1.5 h-8 text-xs shrink-0">
@@ -523,18 +524,18 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
       {/* 3. Stocks list (each stock = ONE row with 4 cells)              */}
       {/* ---------------------------------------------------------------- */}
       {filteredStocks.length === 0 ? (
-        <Card>
+        <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardContent className="p-6 text-center space-y-2">
-            <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto" />
-            <p className="text-sm font-semibold text-muted-foreground">لا توجد بيانات</p>
-            <p className="text-xs text-muted-foreground">
+            <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto dark:text-on-surface-variant/40" />
+            <p className="text-sm font-semibold text-muted-foreground dark:text-on-surface">لا توجد بيانات</p>
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
               لا توجد أسهم مطابقة لهذا الفلتر في سوق {market}. (Rule 27: لا بيانات وهمية)
             </p>
           </CardContent>
         </Card>
       ) : (
         <>
-          <div className="text-[11px] text-muted-foreground flex items-center justify-between flex-wrap gap-1">
+          <div className="text-[11px] text-muted-foreground flex items-center justify-between flex-wrap gap-1 dark:text-on-surface-variant">
             <span>
               عرض {visibleStocks.length} من {filteredStocks.length} سهم
               {phaseFilter !== 'all' && <span className="ml-1">· مُصفّى: {PHASE_FILTERS.find(p => p.key === phaseFilter)?.label}</span>}
@@ -558,7 +559,7 @@ export function LiquidityRadarView({ market }: LiquidityRadarViewProps) {
               >
                 <ChevronDown className="w-3.5 h-3.5" />
                 عرض المزيد
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">
                   (+{Math.min(PAGE_SIZE, filteredStocks.length - visibleCount)})
                 </span>
               </Button>
@@ -590,22 +591,22 @@ function StockRow({ stock }: { stock: RadarStock }) {
     : null;
 
   return (
-    <Card className="overflow-hidden hover:border-emerald-500/30 transition-colors">
+    <Card className="overflow-hidden hover:border-emerald-500/30 transition-colors dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:hover:border-primary/30">
       <CardContent className="p-3 space-y-2.5">
         {/* Header: ticker + name + sector + phase badge */}
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-sm">{stock.ticker}</span>
+              <span className="font-bold text-sm dark:text-on-surface dark:font-outfit">{stock.ticker}</span>
               <Badge variant="outline" className={cn('text-[9px]', ps.badge)}>
                 {stock.phase}
               </Badge>
               {sectorText && (
-                <span className="text-[10px] text-muted-foreground">{sectorText}</span>
+                <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">{sectorText}</span>
               )}
             </div>
             {displayName && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{displayName}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 truncate dark:text-on-surface-variant">{displayName}</p>
             )}
           </div>
         </div>
@@ -616,9 +617,9 @@ function StockRow({ stock }: { stock: RadarStock }) {
           <div className={cn('rounded-lg border p-2.5', w.cell)}>
             <div className="flex items-center gap-1.5 mb-1">
               <span className={w.text}>{w.icon}</span>
-              <span className="text-[10px] text-muted-foreground">الحوت فين؟</span>
+              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">الحوت فين؟</span>
             </div>
-            <p className={cn('text-sm font-bold font-mono', w.text)}>
+            <p className={cn('text-sm font-bold font-mono tabular-nums dark:font-financial', w.text)}>
               {fmtFlowEgp(stock.whale?.net_flow_egp)}
               <span className="text-[9px] font-normal mr-1 opacity-70">EGP</span>
             </p>
@@ -630,16 +631,16 @@ function StockRow({ stock }: { stock: RadarStock }) {
           {/* Cell 2: حالة السوق */}
           <div className={cn('rounded-lg border p-2.5', localRegime.banner)}>
             <div className="flex items-center gap-1.5 mb-1">
-              {localRegime.icon === 'bull' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
-              {localRegime.icon === 'bear' && <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
-              {localRegime.icon === 'riskoff' && <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
-              {localRegime.icon === 'sideways' && <Minus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
-              <span className="text-[10px] text-muted-foreground">حالة السوق</span>
+              {localRegime.icon === 'bull' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 dark:text-primary" />}
+              {localRegime.icon === 'bear' && <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400 dark:text-error" />}
+              {localRegime.icon === 'riskoff' && <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 dark:text-error" />}
+              {localRegime.icon === 'sideways' && <Minus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 dark:text-secondary" />}
+              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">حالة السوق</span>
             </div>
             <p className={cn('text-sm font-bold', localRegime.badge.split(' ').filter(c => c.startsWith('text-')).join(' '))}>
               {stock.market_regime?.regime || '—'}
             </p>
-            <p className="text-[10px] mt-0.5 text-muted-foreground font-mono">
+            <p className="text-[10px] mt-0.5 text-muted-foreground font-mono tabular-nums dark:text-on-surface-variant dark:font-financial">
               {fmtPct(stock.market_regime?.change_pct)}
               {stock.market_regime?.index_symbol && (
                 <span className="opacity-70 mr-1">· {stock.market_regime.index_symbol}</span>
@@ -650,14 +651,14 @@ function StockRow({ stock }: { stock: RadarStock }) {
           {/* Cell 3: المرحلة */}
           <div className={cn('rounded-lg border p-2.5', ps.cell)}>
             <div className="flex items-center gap-1.5 mb-1">
-              <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">المرحلة</span>
+              <Layers className="w-3.5 h-3.5 text-muted-foreground dark:text-on-surface-variant" />
+              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">المرحلة</span>
             </div>
             <p className={cn('text-sm font-bold leading-tight', ps.label)}>
               {stock.phase || '—'}
             </p>
             {stock.phase_reason && (
-              <p className="text-[10px] mt-0.5 text-muted-foreground leading-tight truncate" title={stock.phase_reason}>
+              <p className="text-[10px] mt-0.5 text-muted-foreground leading-tight truncate dark:text-on-surface-variant" title={stock.phase_reason}>
                 {stock.phase_reason}
               </p>
             )}
@@ -667,36 +668,36 @@ function StockRow({ stock }: { stock: RadarStock }) {
           <div className={cn(
             'rounded-lg border p-2.5',
             stock.entry_defense?.entry_level == null
-              ? 'bg-muted border-border'
-              : 'bg-emerald-500/5 border-emerald-500/20'
+              ? 'bg-muted border-border dark:bg-surface-container dark:border-outline-variant/30'
+              : 'bg-emerald-500/5 border-emerald-500/20 dark:bg-primary-container/10 dark:border-primary/30'
           )}>
             <div className="flex items-center gap-1.5 mb-1">
-              <Shield className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">الدخول والدفاع</span>
+              <Shield className="w-3.5 h-3.5 text-muted-foreground dark:text-on-surface-variant" />
+              <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">الدخول والدفاع</span>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               <div>
-                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5 dark:text-on-surface-variant">
                   <Target className="w-2.5 h-2.5" /> دخول
                 </p>
                 <p className={cn(
-                  'text-sm font-mono font-semibold',
+                  'text-sm font-mono font-semibold tabular-nums dark:font-financial',
                   stock.entry_defense?.entry_level == null
-                    ? 'text-muted-foreground'
-                    : 'text-emerald-700 dark:text-emerald-400'
+                    ? 'text-muted-foreground dark:text-on-surface-variant'
+                    : 'text-emerald-700 dark:text-emerald-400 dark:text-primary'
                 )}>
                   {fmtPrice(stock.entry_defense?.entry_level)}
                 </p>
               </div>
               <div>
-                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5 dark:text-on-surface-variant">
                   <Shield className="w-2.5 h-2.5" /> دفاع
                 </p>
                 <p className={cn(
-                  'text-sm font-mono font-semibold',
+                  'text-sm font-mono font-semibold tabular-nums dark:font-financial',
                   stock.entry_defense?.defense_level == null
-                    ? 'text-muted-foreground'
-                    : 'text-red-600 dark:text-red-400'
+                    ? 'text-muted-foreground dark:text-on-surface-variant'
+                    : 'text-red-600 dark:text-red-400 dark:text-error'
                 )}>
                   {fmtPrice(stock.entry_defense?.defense_level)}
                 </p>
@@ -707,9 +708,9 @@ function StockRow({ stock }: { stock: RadarStock }) {
 
         {/* Reason line — API text as-is, no edit/translate (Rule: do NOT edit) */}
         {stock.reason && (
-          <div className="flex items-start gap-1.5 rounded-md bg-muted/40 border border-border px-2 py-1.5">
-            <Gauge className="w-3 h-3 text-muted-foreground shrink-0 mt-px" />
-            <p className="text-[11px] text-muted-foreground leading-relaxed flex-1">
+          <div className="flex items-start gap-1.5 rounded-md bg-muted/40 border border-border px-2 py-1.5 dark:bg-surface-container dark:border-outline-variant/30">
+            <Gauge className="w-3 h-3 text-muted-foreground shrink-0 mt-px dark:text-on-surface-variant" />
+            <p className="text-[11px] text-muted-foreground leading-relaxed flex-1 dark:text-on-surface-variant">
               {stock.reason}
             </p>
           </div>

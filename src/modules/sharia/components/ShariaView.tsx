@@ -272,9 +272,9 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
   compliant:
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 dark:bg-primary-container/20 dark:text-primary',
   non_compliant:
-    'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800',
+    'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800 dark:bg-error-container/20 dark:text-error',
   doubtful:
     'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
   not_available:
@@ -318,7 +318,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
 
   return (
     <Card
-      className="relative overflow-hidden border border-border hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors cursor-pointer group"
+      className="relative overflow-hidden border border-border hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors cursor-pointer group dark:bg-surface-container-low dark:border-outline-variant/30"
       onClick={() => onOpenDetail(row.symbol)}
     >
       <IslamicPattern />
@@ -326,7 +326,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-emerald-700 dark:text-emerald-400 text-base">
+              <span className="font-bold text-emerald-700 dark:text-emerald-400 text-base font-financial tabular-nums dark:text-primary">
                 {row.symbol}
               </span>
               <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full border', STATUS_BADGE_CLASS[status])}>
@@ -487,9 +487,9 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
   return (
     <>
       {/* Headline */}
-      <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 space-y-1">
+      <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 space-y-1 dark:bg-surface-container-low dark:border-outline-variant/30">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-emerald-700 dark:text-emerald-400 text-lg">{symbol}</span>
+          <span className="font-bold text-emerald-700 dark:text-emerald-400 text-lg font-financial tabular-nums dark:text-primary">{symbol}</span>
           <Badge
             className={cn(
               'border',
@@ -549,7 +549,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
               {data.sources.map((s) => {
                 const st = (s.status || 'not_available') as ShariaStatus;
                 return (
-                  <TableRow key={`${symbol}-${s.source_key}`} className="text-xs">
+                  <TableRow key={`${symbol}-${s.source_key}`} className="text-xs dark:bg-surface-container-low">
                     <TableCell className="font-medium">{s.source_name_ar}</TableCell>
                     <TableCell className="text-center">
                       <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px]', STATUS_BADGE_CLASS[st])}>
@@ -727,7 +727,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
               placeholder="مثال: ABUK"
-              className="font-mono"
+              className="font-mono dark:bg-surface-container dark:border-outline-variant"
               dir="ltr"
             />
           </div>
@@ -738,6 +738,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="مثال: 500"
+              className="dark:bg-surface-container dark:border-outline-variant"
               dir="ltr"
             />
           </div>
@@ -748,6 +749,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
               value={buyPrice}
               onChange={(e) => setBuyPrice(e.target.value)}
               placeholder="اختياري"
+              className="dark:bg-surface-container dark:border-outline-variant"
               dir="ltr"
             />
           </div>
@@ -758,6 +760,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
               value={sellPrice}
               onChange={(e) => setSellPrice(e.target.value)}
               placeholder="اختياري"
+              className="dark:bg-surface-container dark:border-outline-variant"
               dir="ltr"
             />
           </div>
@@ -832,7 +835,7 @@ function PurificationResultCard({ result }: { result: PurificationResponse }) {
           <p className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">
             قيمة التطهير الواجبة
           </p>
-          <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums" dir="ltr">
+          <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums font-financial dark:text-primary" dir="ltr">
             {amount != null ? `${amount.toFixed(2)} ج.م` : '—'}
           </p>
         </div>
@@ -929,6 +932,7 @@ function PortfolioPurificationCalculator() {
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               placeholder="معرّف حسابك في المنصة"
+              className="dark:bg-surface-container dark:border-outline-variant"
               dir="ltr"
             />
           </div>
@@ -998,7 +1002,7 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
           <p className="text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold">
             إجمالي التطهير للمحفظة
           </p>
-          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums" dir="ltr">
+          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums font-financial dark:text-primary" dir="ltr">
             {totalPurification != null ? `${totalPurification.toFixed(2)} ج.م` : '—'}
           </p>
         </div>
@@ -1037,8 +1041,8 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
               </TableHeader>
               <TableBody>
                 {perSymbol.map((row, i) => (
-                  <TableRow key={String(row.symbol || i)} className="text-xs">
-                    <TableCell className="font-mono font-medium">
+                  <TableRow key={String(row.symbol || i)} className="text-xs dark:bg-surface-container-low">
+                    <TableCell className="font-mono font-medium font-financial tabular-nums dark:text-primary">
                       {String(row.symbol || row.ticker || '—')}
                     </TableCell>
                     <TableCell className="text-center tabular-nums" dir="ltr">
@@ -1334,7 +1338,7 @@ function StatPill({
   return (
     <div
       className={cn(
-        'rounded-lg border p-2 flex items-center gap-2',
+        'rounded-lg border p-2 flex items-center gap-2 dark:bg-surface-container-low dark:border dark:border-outline-variant/30',
         accent === 'emerald'
           ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20'
           : 'border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20',
@@ -1389,7 +1393,7 @@ export function ShariaView() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-background to-background dark:from-emerald-950/10">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-background to-background dark:from-emerald-950/10 dark:bg-surface-container-lowest">
       <div className="max-w-6xl mx-auto p-3 sm:p-4 space-y-4" dir="rtl">
         {/* Hero header */}
         <Card className="relative overflow-hidden border-emerald-300 dark:border-emerald-900 bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-emerald-50">

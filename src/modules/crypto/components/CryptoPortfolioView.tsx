@@ -145,14 +145,14 @@ function AllocationPieChart({ positions }: { positions: PositionWithLive[] }) {
   return (
     <div className="flex flex-col md:flex-row items-center gap-6 p-4">
       <div
-        className="w-40 h-40 rounded-full flex-shrink-0 relative shadow-inner"
+        className="w-40 h-40 rounded-full flex-shrink-0 relative shadow-inner dark:shadow-none"
         style={{ background: `conic-gradient(${gradientStops})` }}
         aria-label="توزيع المحفظة"
       >
-        <div className="absolute inset-6 rounded-full bg-background flex items-center justify-center">
+        <div className="absolute inset-6 rounded-full bg-background dark:bg-surface-container-low flex items-center justify-center">
           <div className="text-center">
-            <p className="text-[10px] text-muted-foreground">إجمالي</p>
-            <p className="text-xs font-bold" dir="ltr">{formatPrice(total)}</p>
+            <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant">إجمالي</p>
+            <p className="text-xs font-bold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatPrice(total)}</p>
           </div>
         </div>
       </div>
@@ -164,9 +164,9 @@ function AllocationPieChart({ positions }: { positions: PositionWithLive[] }) {
               className="w-3 h-3 rounded-sm flex-shrink-0"
               style={{ backgroundColor: s.color }}
             />
-            <span className="font-semibold font-mono">{s.symbol}</span>
-            <span className="text-muted-foreground mr-auto">{(s.pct ?? 0).toFixed(1)}%</span>
-            <span className="text-muted-foreground" dir="ltr">{formatPrice(positions.find(p => p.symbol === s.symbol)?.currentValue)}</span>
+            <span className="font-semibold font-mono dark:font-financial dark:text-on-surface">{s.symbol}</span>
+            <span className="text-muted-foreground mr-auto dark:text-on-surface-variant">{(s.pct ?? 0).toFixed(1)}%</span>
+            <span className="text-muted-foreground dark:text-on-surface-variant tabular-nums dark:font-financial" dir="ltr">{formatPrice(positions.find(p => p.symbol === s.symbol)?.currentValue)}</span>
           </div>
         ))}
       </div>
@@ -344,22 +344,22 @@ export function CryptoPortfolioView() {
     .sort((a, b) => a.market_cap_rank - b.market_cap_rank);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-surface-container-lowest" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border dark:bg-surface-container-lowest/95 dark:border-outline-variant/30">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 dark:bg-primary-container flex items-center justify-center">
                 <Wallet className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">محفظة العملات الرقمية</h1>
-                <p className="text-xs text-muted-foreground">Crypto Portfolio · أسعار حية</p>
+                <h1 className="text-xl font-bold text-foreground dark:text-on-surface dark:font-outfit">محفظة العملات الرقمية</h1>
+                <p className="text-xs text-muted-foreground dark:text-on-surface-variant">Crypto Portfolio · أسعار حية</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+              <Button onClick={() => setAddDialogOpen(true)} className="gap-2 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90">
                 <Plus className="w-4 h-4" />
                 إضافة عملة
               </Button>
@@ -368,6 +368,7 @@ export function CryptoPortfolioView() {
                 size="icon"
                 onClick={() => fetchPrices(true)}
                 disabled={refreshing}
+                className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
               >
                 <RefreshCw className={cn('w-4 h-4', refreshing && 'animate-spin')} />
               </Button>
@@ -379,12 +380,12 @@ export function CryptoPortfolioView() {
       {/* Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-5">
         {error && (
-          <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" />
+          <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3 dark:bg-error-container/30 dark:border-error-container/50">
+            <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0 dark:text-error" />
             <div>
-              <p className="text-sm font-medium text-rose-800 dark:text-rose-200">خطأ في تحميل الأسعار</p>
-              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">{error}</p>
-              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">
+              <p className="text-sm font-medium text-rose-800 dark:text-rose-200 dark:text-error">خطأ في تحميل الأسعار</p>
+              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 dark:text-on-surface-variant">{error}</p>
+              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 dark:text-on-surface-variant">
                 يتم استخدام آخر سعر محفوظ مؤقتاً. اضغط زر التحديث لإعادة المحاولة.
               </p>
             </div>
@@ -393,56 +394,56 @@ export function CryptoPortfolioView() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="border-border/60">
+          <Card className="border-border/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
-              <DollarSign className="w-5 h-5 text-emerald-500" />
-              <span className="text-lg font-bold" dir="ltr">{formatPrice(summary.totalValue)}</span>
-              <span className="text-xs text-muted-foreground">إجمالي القيمة</span>
+              <DollarSign className="w-5 h-5 text-emerald-500 dark:text-primary" />
+              <span className="text-lg font-bold tabular-nums dark:font-financial dark:text-primary" dir="ltr">{formatPrice(summary.totalValue)}</span>
+              <span className="text-xs text-muted-foreground dark:text-on-surface-variant">إجمالي القيمة</span>
             </CardContent>
           </Card>
-          <Card className="border-border/60">
+          <Card className="border-border/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               <BarChart3 className="w-5 h-5 text-amber-500" />
-              <span className="text-lg font-bold" dir="ltr">{formatPrice(summary.totalCost)}</span>
-              <span className="text-xs text-muted-foreground">إجمالي التكلفة</span>
+              <span className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatPrice(summary.totalCost)}</span>
+              <span className="text-xs text-muted-foreground dark:text-on-surface-variant">إجمالي التكلفة</span>
             </CardContent>
           </Card>
-          <Card className="border-border/60">
+          <Card className="border-border/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               {summary.totalProfitLoss >= 0 ? (
-                <TrendingUp className="w-5 h-5 text-emerald-500" />
+                <TrendingUp className="w-5 h-5 text-emerald-500 dark:text-primary" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-rose-500" />
+                <TrendingDown className="w-5 h-5 text-rose-500 dark:text-error" />
               )}
               <span className={cn(
-                'text-lg font-bold',
-                summary.totalProfitLoss >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                'text-lg font-bold tabular-nums dark:font-financial',
+                summary.totalProfitLoss >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-rose-600 dark:text-error'
               )} dir="ltr">
                 {summary.totalProfitLoss >= 0 ? '+' : '-'}{formatPrice(Math.abs(summary.totalProfitLoss))}
               </span>
-              <span className="text-xs text-muted-foreground">الربح/الخسارة</span>
+              <span className="text-xs text-muted-foreground dark:text-on-surface-variant">الربح/الخسارة</span>
             </CardContent>
           </Card>
-          <Card className="border-border/60">
+          <Card className="border-border/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               <Percent className="w-5 h-5 text-orange-500" />
               <span className={cn(
-                'text-lg font-bold',
-                summary.totalProfitLossPercent >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                'text-lg font-bold tabular-nums dark:font-financial',
+                summary.totalProfitLossPercent >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-rose-600 dark:text-error'
               )}>
                 {summary.totalProfitLossPercent >= 0 ? '+' : ''}{(summary.totalProfitLossPercent ?? 0).toFixed(2)}%
               </span>
-              <span className="text-xs text-muted-foreground">نسبة التغير</span>
+              <span className="text-xs text-muted-foreground dark:text-on-surface-variant">نسبة التغير</span>
             </CardContent>
           </Card>
         </div>
 
         {/* Allocation Pie Chart */}
         {livePositions.length > 0 && (
-          <Card>
+          <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <PieChart className="w-5 h-5" />
+              <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
+                <PieChart className="w-5 h-5 dark:text-primary" />
                 توزيع المحفظة
               </CardTitle>
             </CardHeader>
@@ -453,23 +454,23 @@ export function CryptoPortfolioView() {
         )}
 
         {/* Positions List */}
-        <Card>
+        <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-base flex items-center gap-2 dark:text-on-surface dark:font-outfit">
               <Bitcoin className="w-5 h-5 text-orange-500" />
               العملات في المحفظة ({positions.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {positions.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-12 text-muted-foreground dark:text-on-surface-variant">
                 <Bitcoin className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>لا توجد عملات في المحفظة</p>
                 <p className="text-sm mt-1">اضغط "إضافة عملة" للبدء</p>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-4"
+                  className="mt-4 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                   onClick={() => setAddDialogOpen(true)}
                 >
                   <Plus className="w-4 h-4 ml-1" />
@@ -483,30 +484,30 @@ export function CryptoPortfolioView() {
                   return (
                     <div
                       key={position.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors"
+                      className="flex items-center justify-between p-4 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center dark:bg-primary-container/40">
                           <Bitcoin className="w-5 h-5 text-orange-500" />
                         </div>
                         <div>
-                          <p className="font-bold">{position.symbol}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="font-bold tabular-nums dark:font-financial dark:text-on-surface">{position.symbol}</p>
+                          <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
                             {position.quantity} عملة @ {formatPrice(position.avgBuyPrice)}
                           </p>
                         </div>
                       </div>
 
                       <div className="text-left">
-                        <p className="font-semibold" dir="ltr">{formatPrice(position.currentValue)}</p>
+                        <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatPrice(position.currentValue)}</p>
                         <p className={cn(
-                          'text-xs flex items-center gap-1 justify-end',
-                          isProfit ? 'text-emerald-600' : 'text-rose-600'
+                          'text-xs flex items-center gap-1 justify-end tabular-nums dark:font-financial',
+                          isProfit ? 'text-emerald-600 dark:text-primary' : 'text-rose-600 dark:text-error'
                         )} dir="ltr">
                           {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                           {isProfit ? '+' : '-'}{formatPrice(Math.abs(position.profitLoss))} ({isProfit ? '+' : ''}{(position.profitLossPercent ?? 0).toFixed(2)}%)
                         </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5" dir="ltr">
+                        <p className="text-[10px] text-muted-foreground mt-0.5 dark:text-on-surface-variant tabular-nums dark:font-financial" dir="ltr">
                           سعر: {formatPrice(position.currentPrice)} ({position.change24h >= 0 ? '+' : ''}{(position.change24h ?? 0).toFixed(2)}%)
                         </p>
                       </div>
@@ -515,7 +516,7 @@ export function CryptoPortfolioView() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemovePosition(position.id)}
-                        className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                        className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:text-error dark:hover:bg-error-container/30"
                         title="حذف المركز"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -529,14 +530,14 @@ export function CryptoPortfolioView() {
         </Card>
 
         {/* Disclaimer */}
-        <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 dark:bg-surface-container-low dark:border-outline-variant/30">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200 dark:text-on-surface">
                 تنبيه هام
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 dark:text-on-surface-variant">
                 هذه المحفظة للأغراض التعليمية فقط ولا تمثل نصيحة استثمارية. استشر مستشار مالي قبل اتخاذ أي قرارات استثمارية.
               </p>
             </div>
@@ -546,40 +547,40 @@ export function CryptoPortfolioView() {
 
       {/* Add Position Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent dir="rtl" className="max-w-md">
+        <DialogContent dir="rtl" className="max-w-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <DialogHeader>
-            <DialogTitle>إضافة عملة للمحفظة</DialogTitle>
+            <DialogTitle className="dark:text-on-surface dark:font-outfit">إضافة عملة للمحفظة</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">ابحث عن عملة</label>
+              <label className="text-sm font-medium dark:text-on-surface">ابحث عن عملة</label>
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-on-surface-variant" />
                 <Input
                   placeholder="مثال: BTC, ETH, Bitcoin..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pr-9"
+                  className="pr-9 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">اختر العملة ({availableCoins.length} متاحة)</label>
+              <label className="text-sm font-medium dark:text-on-surface">اختر العملة ({availableCoins.length} متاحة)</label>
               <Select
                 value={newCoin.symbol}
                 onValueChange={handleSymbolSelect}
               >
-                <SelectTrigger>
+                <SelectTrigger className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface">
                   <SelectValue placeholder="اختر من قائمة العملات" />
                 </SelectTrigger>
-                <SelectContent className="max-h-72">
+                <SelectContent className="max-h-72 dark:bg-surface-container dark:border-outline-variant">
                   {availableCoins.slice(0, 111).map((coin) => (
                     <SelectItem key={coin.symbol} value={coin.symbol}>
-                      <span className="font-mono font-semibold">{coin.symbol}</span>
-                      <span className="text-muted-foreground mx-2">·</span>
-                      <span className="text-xs">{coin.name}</span>
-                      <span className="ml-auto text-xs text-muted-foreground" dir="ltr">
+                      <span className="font-mono font-semibold dark:font-financial dark:text-on-surface">{coin.symbol}</span>
+                      <span className="text-muted-foreground mx-2 dark:text-on-surface-variant">·</span>
+                      <span className="text-xs dark:text-on-surface-variant">{coin.name}</span>
+                      <span className="ml-auto text-xs text-muted-foreground dark:text-on-surface-variant tabular-nums dark:font-financial" dir="ltr">
                         {formatPrice(coin.price_usd)}
                       </span>
                     </SelectItem>
@@ -590,29 +591,31 @@ export function CryptoPortfolioView() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">الكمية</label>
+                <label className="text-sm font-medium dark:text-on-surface">الكمية</label>
                 <Input
                   type="number"
                   placeholder="0.00"
                   value={newCoin.quantity}
                   onChange={(e) => setNewCoin(prev => ({ ...prev, quantity: e.target.value }))}
+                  className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:font-financial tabular-nums"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">سعر الشراء ($)</label>
+                <label className="text-sm font-medium dark:text-on-surface">سعر الشراء ($)</label>
                 <Input
                   type="number"
                   placeholder="0.00"
                   value={newCoin.avgBuyPrice}
                   onChange={(e) => setNewCoin(prev => ({ ...prev, avgBuyPrice: e.target.value }))}
+                  className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:font-financial tabular-nums"
                 />
               </div>
             </div>
 
             {newCoin.symbol && livePriceMap[newCoin.symbol] && (
-              <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/30">
-                السعر الحالي لـ {newCoin.symbol}: <span className="font-semibold" dir="ltr">{formatPrice(livePriceMap[newCoin.symbol].price)}</span>
-                <span className={cn('mr-2', livePriceMap[newCoin.symbol].change >= 0 ? 'text-emerald-600' : 'text-rose-600')} dir="ltr">
+              <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/30 dark:text-on-surface-variant dark:bg-surface-container dark:border dark:border-outline-variant/30">
+                السعر الحالي لـ {newCoin.symbol}: <span className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatPrice(livePriceMap[newCoin.symbol].price)}</span>
+                <span className={cn('mr-2 tabular-nums dark:font-financial', livePriceMap[newCoin.symbol].change >= 0 ? 'text-emerald-600 dark:text-primary' : 'text-rose-600 dark:text-error')} dir="ltr">
                   ({livePriceMap[newCoin.symbol].change >= 0 ? '+' : ''}{(livePriceMap[newCoin.symbol].change ?? 0).toFixed(2)}%)
                 </span>
               </div>
@@ -628,7 +631,7 @@ export function CryptoPortfolioView() {
             <Button
               onClick={handleAddPosition}
               disabled={!newCoin.symbol || !newCoin.quantity || !newCoin.avgBuyPrice}
-              className="w-full"
+              className="w-full dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90"
             >
               <Plus className="w-4 h-4 ml-1" />
               إضافة للمحفظة
