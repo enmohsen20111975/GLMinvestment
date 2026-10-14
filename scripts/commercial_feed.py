@@ -36,6 +36,22 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STOCKS_DB = PROJECT_ROOT / "db" / "stocks.db"
 PREDICTIONS_DB = PROJECT_ROOT / "db" / "predictions.db"
 
+# Task B-21: استيراد قاموس تعريب القطاعات
+# المسار النسبي آمن لأن sector_arabic.py في نفس مجلد commercial_feed.py
+import importlib.util as _ilu
+_sector_arabic_path = Path(__file__).resolve().parent / "sector_arabic.py"
+if _sector_arabic_path.exists():
+    _spec = _ilu.spec_from_file_location("sector_arabic", _sector_arabic_path)
+    _sector_mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_sector_mod)
+    arabize_sector = _sector_mod.arabize_sector
+else:
+    # fallback آمن لو الملف مش موجود
+    def arabize_sector(sector: Any) -> str:
+        if not sector or not isinstance(sector, str):
+            return 'متفرقات'
+        return sector.strip()
+
 
 def log(msg: str) -> None:
     print(f"[commercial_feed] {msg}", flush=True)
@@ -262,7 +278,7 @@ def get_active_live_signals(market: Optional[str] = None) -> List[Dict[str, Any]
             'ticker': d['ticker'],
             'name': d.get('name_ar') or d.get('name') or d['ticker'],
             'market': market_val,
-            'sector': d.get('sector') or '',
+            'sector': arabize_sector(d.get('sector')),
             'signal': d.get('signal') or 'BUY',
             'signal_ar': notes_meta.get('signal_ar', ''),
             'signal_type': d.get('signal_type') or 'institutional_scan',
@@ -382,7 +398,7 @@ def get_audited_performance(market: Optional[str] = None) -> List[Dict[str, Any]
             'ticker': d['ticker'],
             'name': d.get('name_ar') or d.get('name') or d['ticker'],
             'market': stock_mkt,
-            'sector': d.get('sector') or '',
+            'sector': arabize_sector(d.get('sector')),
             'signal': d.get('signal') or 'BUY',
             'entry_price': round(entry, 4),
             'exit_price': round(exit_price, 4) if exit_price else None,
@@ -406,7 +422,13 @@ def get_audited_performance(market: Optional[str] = None) -> List[Dict[str, Any]
 
 
 def compute_summary(active: List[Dict], audited: List[Dict]) -> Dict[str, Any]:
-    """احسب ملخص إحصائي شامل."""
+    """احسب ملخص إحصائي شامل.
+
+    Task B-21 hardening: نضمن إن win_rate + total_closed + avg_return دائمًا
+    موجودين كـ top-level keys في summary (مش بس تحت audited_performance)
+    عشان أي consumer يقدر يوصلهم من غير undefined risk.
+    القيم بترجع 0 (صفر) لما مفيش صفقات — أبدًا null/undefined.
+    """
     wins = [a for a in audited if a['status'] == 'win']
     losses = [a for a in audited if a['status'] == 'loss']
     expired = [a for a in audited if a['status'] == 'expired']
@@ -424,6 +446,14 @@ def compute_summary(active: List[Dict], audited: List[Dict]) -> Dict[str, Any]:
     avg_conf = round(sum(s['confidence'] for s in active) / len(active), 1) if active else 0
 
     return {
+        # ── Top-level aliases (Task B-21 hardening) ──
+        # أي consumer يقدر يوصلهم مباشرة من غير ما يغوص في audited_performance
+        # القيم دائمًا رقم (0 لو مفيش بيانات) — أبدًا null/undefined
+        'win_rate': win_rate,
+        'total_closed': total_closed,
+        'avg_return': avg_return,
+        'active_count': len(active),
+        # ── Nested objects (backward compatibility) ──
         'active_signals': {
             'count': len(active),
             'avg_rr': avg_rr,

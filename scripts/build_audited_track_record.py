@@ -283,7 +283,23 @@ def write_backtest_trades(trades: List[Dict[str, Any]]) -> int:
     conn.commit()
     log(f"🗑️ حذف {deleted} صفقة backtest_track_record قديمة")
 
-    # تحقق من أعمدة predictions
+    # تحقق من أعمدة predictions — أضف الأعمدة الناقصة لو مش موجودة
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()]
+    if 'highest_price_reached' not in cols:
+        try:
+            conn.execute("ALTER TABLE predictions ADD COLUMN highest_price_reached REAL DEFAULT 0")
+            conn.commit()
+            log("✅ added highest_price_reached column")
+        except Exception as e:
+            log(f"⚠️ could not add highest_price_reached: {e}", "WARN")
+    if 'lowest_price_reached' not in cols:
+        try:
+            conn.execute("ALTER TABLE predictions ADD COLUMN lowest_price_reached REAL DEFAULT 0")
+            conn.commit()
+            log("✅ added lowest_price_reached column")
+        except Exception as e:
+            log(f"⚠️ could not add lowest_price_reached: {e}", "WARN")
+    # re-check
     cols = [r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()]
     has_hpr = 'highest_price_reached' in cols
     has_lpr = 'lowest_price_reached' in cols
@@ -338,6 +354,39 @@ def write_backtest_trades(trades: List[Dict[str, Any]]) -> int:
                     t['holding_days'],
                     t['highest_price_reached'],
                     t['lowest_price_reached'],
+                    notes_payload,
+                    now_iso,
+                ))
+            else:
+                # fallback: INSERT بدون أعمدة highest/lowest (schema قديم)
+                conn.execute("""
+                    INSERT INTO predictions (
+                        ticker, signal, signal_type, prediction_date,
+                        entry_price, target_price, stop_loss,
+                        master_score, technical_score, fundamental_score,
+                        outcome_date, exit_price, actual_return,
+                        hit_target, hit_stop, is_correct, holding_days,
+                        notes, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    t['ticker'],
+                    t['signal'],
+                    SIGNAL_TYPE,
+                    t['prediction_date'],
+                    t['entry_price'],
+                    t['target_price'],
+                    t['stop_loss'],
+                    t['confidence'],
+                    t['confidence'],
+                    0.0,
+                    t['outcome_date'],
+                    t['exit_price'],
+                    t['actual_return'],
+                    t['hit_target'],
+                    t['hit_stop'],
+                    t['is_correct'],
+                    t['holding_days'],
                     notes_payload,
                     now_iso,
                 ))
