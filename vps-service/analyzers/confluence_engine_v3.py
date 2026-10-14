@@ -1,4 +1,26 @@
 """
+⚠️  P1-ENGINE-DISABLED (2026-10-14): This engine is DISABLED.
+================================================================
+Engine: confluence_engine_v3
+Status: SUB_ENGINE_DISABLED = True (line 40)
+
+This engine has been disabled (returns short-circuit "disabled" signal).
+However, its TS routes and UI components are still wired in:
+  - /api/v82/* endpoints
+  - V82DecisionPanel.tsx component
+  - case 'v82' in page.tsx
+
+Rule 73 (SINGLE-DISPLAY-SOURCE): canonical signal comes from
+master_analyzer.py only. This disabled engine should be REMOVED entirely
+in Phase P2 (including its TS routes + UI components).
+
+See AUDIT_REPORT_FULL.md Section 4.5 (AUDIT-D) for details.
+
+DO NOT re-enable this engine. If you need its functionality, port it
+to master_analyzer.py instead.
+"""
+
+"""
 Confluence Engine v3 - Production Safe
 =======================================
 محرك التوحيد - النسخة الآمنة للإنتاج

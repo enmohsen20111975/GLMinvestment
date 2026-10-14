@@ -27,6 +27,7 @@ export const dynamic = "force-dynamic";
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import { hashToken } from '@/lib/token-hash';
 import { checkAuthRateLimit } from '@/lib/rate-limiter'; // FIX-WAVE-1-SECURITY (AUDIT-DEEP-4 #2)
 
 // Token expiry: 30 days
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
         VALUES (
           ${randomUUID()},
           ${user.id},
-          ${token},
+          ${hashToken(token)},
           ${userAgent},
           ${ipAddress},
           ${expiresAtISO},
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
           data: {
             id: randomUUID(),
             user_id: user.id,
-            token,
+            token: hashToken(token),
             expires_at: expiresAt,
           },
         });

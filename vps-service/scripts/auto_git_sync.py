@@ -286,33 +286,35 @@ def auto_sync():
         }
 
         # Legacy force-with-lease path REMOVED — would have violated Rule 81.
+        # The entire rebase-fallback block below was part of the old --force path.
+        # Since Rule 81 forbids --force, this block is unreachable (we return above)
+        # and is kept commented-out for historical reference only.
         # if push_result.returncode != 0:
         #     log('⚠️ Force-with-lease failed — trying rebase...', 'WARN')
-            # rebase fallback
-            run_git('rebase', 'origin/main', check=False)
-            
-            # لو فيه conflicts بعد rebase
-            conflicted = get_conflicted_files()
-            if conflicted:
-                for filepath in conflicted:
-                    if 'worklog' in filepath or 'CHANGELOG' in filepath:
-                        resolve_conflict(filepath, 'merge')
-                    elif filepath.startswith('data/') or filepath.startswith('db/'):
-                        resolve_conflict(filepath, 'ours')
-                    else:
-                        resolve_conflict(filepath, 'theirs')
-                run_git('rebase', '--continue', check=False)
-            
-            # push بعد rebase
-            push_result = run_git('push', 'origin', f'HEAD:{branch}', check=False)
-            
-            if push_result.returncode != 0:
-                log(f'❌ Push failed even after rebase: {push_result.stderr.strip()}', 'ERROR')
-                # pop stash قبل ما نخرج
-                if stashed:
-                    pop_stash()
-                return {'success': False, 'error': f'push_failed: {push_result.stderr.strip()}'}
-    
+        #     # rebase fallback
+        #     run_git('rebase', 'origin/main', check=False)
+        #
+        #     # لو فيه conflicts بعد rebase
+        #     conflicted = get_conflicted_files()
+        #     if conflicted:
+        #         for filepath in conflicted:
+        #             if 'worklog' in filepath or 'CHANGELOG' in filepath:
+        #                 resolve_conflict(filepath, 'merge')
+        #             elif filepath.startswith('data/') or filepath.startswith('db/'):
+        #                 resolve_conflict(filepath, 'ours')
+        #             else:
+        #                 resolve_conflict(filepath, 'theirs')
+        #         run_git('rebase', '--continue', check=False)
+        #
+        #     # push بعد rebase
+        #     push_result = run_git('push', 'origin', f'HEAD:{branch}', check=False)
+        #
+        #     if push_result.returncode != 0:
+        #         log(f'❌ Push failed even after rebase: {push_result.stderr.strip()}', 'ERROR')
+        #         # pop stash قبل ما نخرج
+        #         if stashed:
+        #             pop_stash()
+        #         return {'success': False, 'error': f'push_failed: {push_result.stderr.strip()}'}    
     log('✅ Push successful')
     
     # 6) Pop stash

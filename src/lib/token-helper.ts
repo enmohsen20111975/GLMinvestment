@@ -11,6 +11,11 @@
 import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 
+// P1-CRIT FIX (2026-10-14): Bearer tokens are now SHA-256 hashed in DB.
+// This module supports both hashed (new) and plaintext (legacy) tokens for
+// graceful migration. See src/lib/token-hash.ts for hashing utilities.
+import { hashToken, isHashedToken } from '@/lib/token-hash';
+
 interface TokenData {
   id: string;
   user_id: string;
@@ -39,24 +44,47 @@ interface UserInfo {
 export async function validateToken(token: string): Promise<{ userId: string } | null> {
   if (!token) return null;
 
-  console.log('[Token Helper] Validating token:', token.substring(0, 20) + '...');
+  // P1-CRIT FIX: Never log raw tokens — only log hash for debugging.
+  const tokenHash = hashToken(token);
+  console.log('[Token Helper] Validating token hash:', tokenHash.substring(0, 16) + '...');
 
   try {
-    // Try normal Prisma query first
+    // P1-CRIT FIX: Look up by SHA-256 hash (canonical) first.
+    // New tokens are stored as hashes. Legacy tokens (pre-P1) are plaintext —
+    // we try the raw token as a fallback for backward compatibility (30-day expiry).
     const apiToken = await db.apiToken.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       select: { user_id: true, expires_at: true },
     });
-    
-    console.log('[Token Helper] Prisma query result:', apiToken ? 'FOUND' : 'NOT FOUND');
-    
-    if (apiToken && apiToken.expires_at > new Date()) {
-      console.log('[Token Helper] Token valid, userId:', apiToken.user_id);
-      return { userId: apiToken.user_id };
+
+    // Backward compatibility: if hashed lookup failed, try plaintext (legacy token).
+    // This path will be hit for tokens created before P1 migration. Once all such
+    // tokens expire (30 days), this fallback can be removed.
+    const legacyToken = !apiToken ? await db.apiToken.findUnique({
+      where: { token },
+      select: { id: true, user_id: true, expires_at: true },
+    }) : null;
+
+    // If we found a legacy plaintext token, migrate it to hashed in the background.
+    if (legacyToken && !isHashedToken(legacyToken.token || '')) {
+      console.log('[Token Helper] Migrating legacy plaintext token to hashed:', legacyToken.id);
+      migrateLegacyTokenToHashed(legacyToken.id, token, tokenHash).catch(() => {});
     }
+
+    const effectiveToken = apiToken || (legacyToken ? {
+      user_id: legacyToken.user_id,
+      expires_at: legacyToken.expires_at,
+    } : null);
     
-    if (apiToken) {
-      console.log('[Token Helper] Token expired, expires_at:', apiToken.expires_at);
+    console.log('[Token Helper] Prisma query result:', effectiveToken ? 'FOUND' : 'NOT FOUND');
+
+    if (effectiveToken && effectiveToken.expires_at > new Date()) {
+      console.log('[Token Helper] Token valid, userId:', effectiveToken.user_id);
+      return { userId: effectiveToken.user_id };
+    }
+
+    if (effectiveToken) {
+      console.log('[Token Helper] Token expired, expires_at:', effectiveToken.expires_at);
     }
     
     return null;
@@ -76,9 +104,9 @@ export async function validateToken(token: string): Promise<{ userId: string } |
           user_id: string;
           expires_at: string;
         }>>`
-          SELECT id, user_id, expires_at 
-          FROM api_tokens 
-          WHERE token = ${token}
+          SELECT id, user_id, expires_at
+          FROM api_tokens
+          WHERE token = ${tokenHash} OR token = ${token}
           LIMIT 1
         `;
         
@@ -117,26 +145,40 @@ export async function validateTokenWithUser(token: string): Promise<{
   if (!token) return null;
 
   try {
-    // Try normal Prisma query first
+    // P1-CRIT FIX: Look up by SHA-256 hash (canonical) first.
     const apiToken = await db.apiToken.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       include: { User: true },
     });
+
+    // Backward compatibility: legacy plaintext fallback.
+    const legacyApiToken = !apiToken ? await db.apiToken.findUnique({
+      where: { token },
+      include: { User: true },
+    }) : null;
+
+    // Migrate legacy token in background if found.
+    if (legacyApiToken && !isHashedToken(legacyApiToken.token || '')) {
+      console.log('[Token Helper] Migrating legacy plaintext token (validateTokenWithUser):', legacyApiToken.id);
+      migrateLegacyTokenToHashed(legacyApiToken.id, token, tokenHash).catch(() => {});
+    }
+
+    const effectiveApiToken = apiToken || legacyApiToken;
     
-    if (!apiToken) return null;
-    if (apiToken.expires_at < new Date()) return null;
-    if (!apiToken.User?.is_active) return null;
+    if (!effectiveApiToken) return null;
+    if (effectiveApiToken.expires_at < new Date()) return null;
+    if (!effectiveApiToken.User?.is_active) return null;
     
     return {
-      token: apiToken,
+      token: effectiveApiToken,
       user: {
-        id: apiToken.User.id,
-        email: apiToken.User.email,
-        username: apiToken.User.username,
-        name: apiToken.User.name,
-        image: apiToken.User.image,
-        subscription_tier: apiToken.User.subscription_tier || 'free',
-        is_active: apiToken.User.is_active,
+        id: effectiveApiToken.User.id,
+        email: effectiveApiToken.User.email,
+        username: effectiveApiToken.User.username,
+        name: effectiveApiToken.User.name,
+        image: effectiveApiToken.User.image,
+        subscription_tier: effectiveApiToken.User.subscription_tier || 'free',
+        is_active: effectiveApiToken.User.is_active,
       },
     };
   } catch (prismaError) {
@@ -164,12 +206,12 @@ export async function validateTokenWithUser(token: string): Promise<{
           subscription_tier: string | null;
           is_active: number | null;
         }>>`
-          SELECT t.*, 
-                 u.email, u.username, u.name as user_name, u.image, 
+          SELECT t.*,
+                 u.email, u.username, u.name as user_name, u.image,
                  u.subscription_tier, u.is_active
           FROM api_tokens t
           LEFT JOIN User u ON t.user_id = u.id
-          WHERE t.token = ${token}
+          WHERE t.token = ${tokenHash} OR t.token = ${token}
           LIMIT 1
         `;
         
@@ -319,5 +361,35 @@ export async function fixAllCorruptedDates(): Promise<{ fixed: number }> {
   } catch (error) {
     console.error('[Token Helper] Error fixing dates:', error);
     return { fixed: 0 };
+  }
+}
+
+
+/**
+ * P1-CRIT FIX (2026-10-14): Migrate a legacy plaintext token to hashed form.
+ * Called in the background when validateToken() finds a plaintext token.
+ * Idempotent: if the token was already migrated, this is a no-op.
+ *
+ * @param tokenId - The api_tokens.id
+ * @param rawToken - The plaintext token (from client)
+ * @param tokenHash - The SHA-256 hash of the token
+ */
+async function migrateLegacyTokenToHashed(
+  tokenId: string,
+  rawToken: string,
+  tokenHash: string
+): Promise<void> {
+  try {
+    // Only migrate if the stored value is NOT already hashed.
+    // Use a raw query to avoid Prisma's unique constraint error on the token column.
+    await db.$executeRaw`
+      UPDATE api_tokens
+      SET token = ${tokenHash}
+      WHERE id = ${tokenId}
+        AND token = ${rawToken}
+    `;
+    console.log('[Token Helper] Migrated legacy token to hashed:', tokenId);
+  } catch (error) {
+    console.error('[Token Helper] Migration error for token', tokenId, ':', error);
   }
 }

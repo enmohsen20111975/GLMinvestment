@@ -1,3 +1,13 @@
+# ====================================================================
+# ⚠️  P1-ENGINE-DISABLED (2026-10-14): This engine is DISABLED.
+# Engine: sniper_engine
+# Status: SUB_ENGINE_DISABLED = True (line 95)
+#
+# This engine is disabled but its TS routes (/api/sniper/*) + UI (CentralAlertMonitor
+# polling) are still wired. Rule 73 (SINGLE-DISPLAY-SOURCE) requires removal in Phase P2.
+# See AUDIT_REPORT_FULL.md Section 4.5 (AUDIT-D). DO NOT re-enable.
+# ====================================================================
+
 """
 SniperEngine — محرك القناص الموحد
 ====================================

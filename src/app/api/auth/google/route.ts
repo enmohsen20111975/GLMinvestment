@@ -27,6 +27,7 @@ export const dynamic = "force-dynamic";
 import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { hashToken } from '@/lib/token-hash';
 import { isServerAdmin } from '@/lib/admin-identities'; // P0.1 (SEC-01)
 
 // Token expiry: 30 days
@@ -411,7 +412,7 @@ export async function POST(request: NextRequest) {
         VALUES (
           ${randomUUID()},
           ${user.id},
-          ${token},
+          ${hashToken(token)},
           ${userAgent},
           ${ipAddress},
           ${expiresAtISO},
@@ -427,7 +428,7 @@ export async function POST(request: NextRequest) {
           data: {
             id: randomUUID(),
             user_id: user.id,
-            token,
+            token: hashToken(token),
             expires_at: expiresAtISO,
           },
         });
