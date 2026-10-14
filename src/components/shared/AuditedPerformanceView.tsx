@@ -2,8 +2,8 @@
 
 /**
  * AuditedPerformanceView — سجل الأداء الموثق (Audited Track Record)
- * ==================================================================
- * T-ALPHA-A17: يعرض الصفقات المغلقة بشفافية كاملة:
+ * ============================================================
+ * يعرض الصفقات المغلقة بشفافية كاملة:
  *   - بانر إحصائي فخم (إجمالي / Win Rate / متوسط الربح / أفضل صفقة)
  *   - جدول الصفقات المغلقة (تاريخ دخول/خروج، ربح/خسارة، نتيجة)
  *
@@ -11,6 +11,56 @@
  * Rule 27: لا بيانات وهمية — إذا الـ API فارغ، اعرض رسالة واضحة.
  */
 
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import {
+  Trophy, TrendingUp, TrendingDown, Target, ShieldAlert,
+  RefreshCw, Activity, Award, BarChart3,
+} from 'lucide-react';
+
+interface AuditedTrade {
+  ticker: string;
+  signal: string;
+  signal_ar: string;
+  entry_price: number | null;
+  target_price: number | null;
+  stop_loss: number | null;
+  exit_price: number | null;
+  actual_return: number | null;
+  pnl_pct: number | null;
+  hit_target: number | null;
+  hit_stop: number | null;
+  holding_days: number | null;
+  market: string;
+  prediction_date: string | null;
+  closed_at: string | null;
+}
+
+interface FeedResponse {
+  success: boolean;
+  audited_performance: AuditedTrade[];
+  stats: {
+    live_count: number;
+    audited_count: number;
+    win_rate: number | null;
+    avg_return: number | null;
+  };
+}
+
+function fmtPct(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(Number(n))) return '—';
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${Number(n).toFixed(1)}%`;
+}
+
+function fmtPrice(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(Number(n))) return '—';
+  return Number(n).toFixed(2);
+}
 
 export function AuditedPerformanceView({ market }: { market: string }) {
   const [data, setData] = useState<FeedResponse | null>(null);

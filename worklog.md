@@ -69903,3 +69903,46 @@ Work Log:
    - فحص حي: EGX (77 صفقة مصرية نقية 100%) و TADAWUL (186 صفقة سعودية نقية 100%).
    - Git commit & push: ef2d21688.
    - كتابة وثيقة الاستنساخ الكاملة: SESSION_HANDOFF_JIMMY.md.
+
+---
+Task ID: ALPHA-RADAR-V2
+Agent: مهندس الواجهات وتجربة المستخدم المؤسسية (Frontend & UI Lead — GLM 5.2 Alpha)
+Task: A-RADAR-V2 — LiquidityRadarView (4 أعمدة فقط)
+
+Work Log:
+1. قراءة آخر 60 سطر من worklog.md لفهم سياق Bravo (liquidity_radar_v2.py + /api/v2/liquidity-radar).
+2. فحص API الفعلي بتشغيل `python3 scripts/liquidity_radar_v2.py --market EGX --json` — تأكدت من الهيكل: success/market/market_regime/scanned_count/phases_breakdown/stocks[]، وكل سهم فيه whale/market_regime/phase/phase_reason/entry_defense/reason.
+3. مراجعة VIPLiveSignalsFeed.tsx و AuditedPerformanceView.tsx لاستخراج نمط التصميم (Card/Badge/Button/Skeleton + emerald/teal/amber/red/gray + dir=rtl + Arabic).
+4. إنشاء `src/components/shared/LiquidityRadarView.tsx` (712 سطر) — 'use client' + interface LiquidityRadarViewProps { market: string }.
+5. تصميم الـ 4 خلايا لكل سهم في grid responsive (grid-cols-1 sm:grid-cols-2 lg:grid-cols-4):
+   - الحوت فين؟ → fmtFlowEgp (B/M/K) + flow_strength + Fish/Droplet/Activity icons، لون emerald لو whale_present، red لو net<0، gray لو insufficient.
+   - حالة السوق → regime + change_pct + TrendingUp/TrendingDown/AlertTriangle/Minus icons.
+   - المرحلة → phase + phase_reason + Layers icon + خريطة ألوان (emerald/teal/red/gray).
+   - مستوى الدخول والدفاع → entry_level (emerald) + defense_level (red) + Target/Shield icons + grid-cols-2 داخلي.
+6. سطر "السبب" (stock.reason) أسفل الخلايا الأربعة كما هو من API — لا تعديل ولا ترجمة (Rule).
+7. Market Regime Banner في الأعلى: أيقونة + regime + index_symbol + change_pct + reason + تحذير صريح بالأحمر لو Risk-Off أو هابط.
+8. Stats strip (إجمالي الممسوح + بيانات phases_breakdown الأربعة بألوان مطابقة) + Phase filter chips (الكل / بيبلع على الهادي / بيتحضر / بيصرف / بيانات غير كافية) مع عدّاد لكل شريحة + حقل بحث برمز/اسم السهم + زر تحديث.
+9. ترتيب تنازلي حسب whale.net_flow_egp (القيمة من API — Rule 4) + Limit 50 + زر "عرض المزيد" يضيف 50.
+10. الحالات الصادقة (Rule 27): لو success=false → Card بأيقونة AlertTriangle + زر إعادة المحاولة. لو stocks=[] → "لا توجد بيانات". لو phase="بيانات غير كافية" → رمادي فقط بلا أخضر.
+11. التحقق:
+    - `bun run lint` → EXIT=0 (0 errors) ✅
+    - `bunx tsc --noEmit --skipLibCheck -p tsconfig.json` → 0 errors في الملف ✅
+    - `bun build src/components/shared/LiquidityRadarView.tsx --target browser` → Bundled 38 modules، EXIT=0 ✅
+12. القيود محترمة 100%:
+    - Rule 4  (NO FRONTEND COMPUTATION): كل الأرقام من API — fmtFlowEgp/fmtPct/fmtPrice تنسيق عرض فقط.
+    - Rule 27 (NO-FAKE-DATA): حالات فارغة/خطأ صادقة بدون بيانات وهمية.
+    - Rule 30 (CLIENT-FACING-STYLE): emerald/teal/amber/red/gray فقط — لا أزرق/إنديغو.
+    - 100% Arabic لكل الـ headings/buttons/labels/phase names.
+    - 'use client' + mobile-first responsive (grid-cols-1 → sm:grid-cols-2 → lg:grid-cols-4).
+
+Stage Summary:
+- ✅ LiquidityRadarView.tsx (712 سطر) — مكون رادار السيولة الصارم بـ 4 أعمدة فقط، يعتمد على /api/v2/liquidity-radar.
+- ✅ لكل سهم: 4 خلايا (الحوت فين؟ / حالة السوق / المرحلة / الدخول والدفاع) + سطر السبب أسفلها — بدون أي تبويبات أو مصطلحات Wyckoff أو English.
+- ✅ Market Regime Banner بارز في الأعلى بألوان حذرية (red/amber) لو السوق هابط/Risk-Off + سبب عربي من API.
+- ✅ Phase filter chips (5 خيارات) + بحث + عدّادات لكل شريحة + ترتيب تنازلي حسب صافي التدفق + Limit 50 + "عرض المزيد".
+- ✅ الحالات الصادقة: empty/error/insufficient data — لا بيانات وهمية إطلاقاً.
+- ✅ bun run lint → 0 errors
+- ✅ tsc → 0 errors في الملف
+- ✅ bun build → 38 modules bundled بنجاح
+- ✅ Rule 4 + Rule 27 + Rule 30 محترمة 100%
+- ✅ NO git push --force (Rule 81)
