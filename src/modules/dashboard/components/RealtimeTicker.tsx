@@ -112,6 +112,8 @@ export function RealtimeTicker() {
     ? stockPrices.filter((item): item is TickerItem =>
         item != null && item.ticker && Number(item.current_price) > 0)
     : staticStocks.filter((s) => Number(s.current_price) > 0);
+    ? stockPrices.filter((item): item is TickerItem => item != null && Boolean(item.ticker))
+    : staticStocks;
 
   // Auto-scroll the ticker
   useEffect(() => {
@@ -154,7 +156,7 @@ export function RealtimeTicker() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="relative overflow-hidden bg-muted/50 border-b border-border"
+        className="relative overflow-hidden glass-subtle border-b border-border"
         dir="ltr"
       >
         <div className="flex items-center h-10">

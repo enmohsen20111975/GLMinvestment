@@ -56,17 +56,17 @@ export function MarketSummary() {
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.label} className="overflow-hidden border-0 shadow-sm">
+          <Card key={stat.label} className="glass-panel overflow-hidden border-0 shadow-sm">
             <CardContent className="p-2.5">
               <div className="flex items-start justify-between gap-1.5">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-medium text-muted-foreground mb-0.5 truncate">
                     {stat.label}
                   </p>
-                  <p className={cn('text-lg font-bold tabular-nums', stat.color)}>
+                  <p className={cn('text-lg font-bold tabular-nums font-mono', stat.color)}>
                     {stat.value}
                   </p>
-                  {stat.badge && <div className="mt-1.5">{stat.badge}</div>}
+                  {/* SCR-001: badge property removed — stat objects have no badge field */}
                 </div>
                 <div className={cn('flex-shrink-0 p-1.5 rounded-md', stat.bg)}>
                   <Icon className={cn('w-3.5 h-3.5', stat.color)} />

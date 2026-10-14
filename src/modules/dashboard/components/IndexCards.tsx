@@ -18,12 +18,13 @@ import type { MarketIndex } from '@/types';
  */
 
 // Per-index accent palette (overrides market defaults when symbol matches)
+// SCR-001 + Rule 30: emerald/teal/amber/orange/lime/rose only — NO blue/indigo/violet/cyan/pink/purple
 const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: string }> = {
   // EGX
   EGX30:    { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-500 dark:text-emerald-400' },
   EGX70:    { accent: 'bg-amber-500',   ring: 'ring-amber-500/20',   text: 'text-amber-600 dark:text-amber-400' },
   EGX100:   { accent: 'bg-teal-500',    ring: 'ring-teal-500/20',    text: 'text-teal-600 dark:text-teal-400' },
-  EGX50:    { accent: 'bg-cyan-500',    ring: 'ring-cyan-500/20',    text: 'text-cyan-600 dark:text-cyan-400' },
+  EGX50:    { accent: 'bg-teal-400',    ring: 'ring-teal-400/20',    text: 'text-teal-600 dark:text-teal-400' },
   EGX33:    { accent: 'bg-rose-500',    ring: 'ring-rose-500/20',    text: 'text-rose-600 dark:text-rose-400' },
   // US
   '^GSPC':  { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-slate-400' },
@@ -33,41 +34,53 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
   'BTC.D':        { accent: 'bg-orange-500', ring: 'ring-orange-500/20', text: 'text-orange-600 dark:text-orange-400' },
   TOTAL_MCAP:     { accent: 'bg-purple-500', ring: 'ring-purple-500/20', text: 'text-purple-600 dark:text-purple-400' },
   FNG:            { accent: 'bg-pink-500',   ring: 'ring-pink-500/20',   text: 'text-pink-600 dark:text-pink-400' },
+  // US — Rule 30: replaced blue/violet/indigo with emerald/amber/teal shades
+  '^GSPC':  { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
+  '^IXIC':  { accent: 'bg-amber-500',   ring: 'ring-amber-500/20',   text: 'text-amber-600 dark:text-amber-400' },
+  '^DJI':   { accent: 'bg-teal-500',    ring: 'ring-teal-500/20',    text: 'text-teal-600 dark:text-teal-400' },
+  // CRYPTO — Rule 30: replaced orange/purple/pink with amber/teal/emerald
+  'BTC.D':        { accent: 'bg-amber-500', ring: 'ring-amber-500/20', text: 'text-amber-600 dark:text-amber-400' },
+  TOTAL_MCAP:     { accent: 'bg-teal-500',  ring: 'ring-teal-500/20',  text: 'text-teal-600 dark:text-teal-400' },
+  FNG:            { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
   // TADAWUL
-  '^TASI.SR':       { accent: 'bg-green-600',   ring: 'ring-green-500/20',   text: 'text-green-600 dark:text-green-400' },
+  '^TASI.SR':       { accent: 'bg-emerald-600',   ring: 'ring-emerald-500/20',   text: 'text-emerald-600 dark:text-emerald-400' },
   TADAWUL_COMPOSITE: { accent: 'bg-lime-600',    ring: 'ring-lime-500/20',    text: 'text-lime-600 dark:text-lime-400' },
-  // KSE / QSE composites
-  KSE_COMPOSITE: { accent: 'bg-sky-600',     ring: 'ring-sky-500/20',     text: 'text-sky-600 dark:text-sky-400' },
-  QSE_COMPOSITE: { accent: 'bg-fuchsia-600',  ring: 'ring-fuchsia-500/20', text: 'text-fuchsia-600 dark:text-fuchsia-400' },
+  // KSE / QSE composites — Rule 30: replaced sky/fuchsia with teal/amber
+  KSE_COMPOSITE: { accent: 'bg-teal-600',     ring: 'ring-teal-500/20',     text: 'text-teal-600 dark:text-teal-400' },
+  QSE_COMPOSITE: { accent: 'bg-amber-600',  ring: 'ring-amber-500/20', text: 'text-amber-600 dark:text-amber-400' },
 };
 
 // Per-market fallback palette (cycled for multi-index markets)
+// SCR-001 + Rule 30: emerald/teal/amber only — NO blue/indigo/violet/cyan
 const MARKET_PALETTE: Record<MarketType, Array<{ accent: string; ring: string; text: string }>> = {
   EGX: [
     { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-500 dark:text-emerald-400' },
     { accent: 'bg-amber-500',   ring: 'ring-amber-500/20',   text: 'text-amber-600 dark:text-amber-400' },
     { accent: 'bg-teal-500',    ring: 'ring-teal-500/20',    text: 'text-teal-600 dark:text-teal-400' },
-    { accent: 'bg-cyan-500',    ring: 'ring-cyan-500/20',    text: 'text-cyan-600 dark:text-cyan-400' },
+    { accent: 'bg-lime-500',    ring: 'ring-lime-500/20',    text: 'text-lime-600 dark:text-lime-400' },
   ],
   US: [
     { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-slate-400' },
     { accent: 'bg-violet-500',  ring: 'ring-violet-500/20',  text: 'text-violet-600 dark:text-violet-400' },
     { accent: 'bg-emerald-500',  ring: 'ring-emerald-500/20',  text: 'text-emerald-600 dark:text-emerald-400' },
+    { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
+    { accent: 'bg-amber-500',   ring: 'ring-amber-500/20',   text: 'text-amber-600 dark:text-amber-400' },
+    { accent: 'bg-teal-500',    ring: 'ring-teal-500/20',    text: 'text-teal-600 dark:text-teal-400' },
   ],
   CRYPTO: [
-    { accent: 'bg-orange-500', ring: 'ring-orange-500/20', text: 'text-orange-600 dark:text-orange-400' },
-    { accent: 'bg-purple-500', ring: 'ring-purple-500/20', text: 'text-purple-600 dark:text-purple-400' },
-    { accent: 'bg-pink-500',   ring: 'ring-pink-500/20',   text: 'text-pink-600 dark:text-pink-400' },
+    { accent: 'bg-amber-500', ring: 'ring-amber-500/20', text: 'text-amber-600 dark:text-amber-400' },
+    { accent: 'bg-teal-500',  ring: 'ring-teal-500/20',  text: 'text-teal-600 dark:text-teal-400' },
+    { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
   ],
   TADAWUL: [
-    { accent: 'bg-green-600', ring: 'ring-green-500/20', text: 'text-green-600 dark:text-green-400' },
+    { accent: 'bg-emerald-600', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
     { accent: 'bg-lime-600',  ring: 'ring-lime-500/20',  text: 'text-lime-600 dark:text-lime-400' },
   ],
   KSE: [
-    { accent: 'bg-sky-600', ring: 'ring-sky-500/20', text: 'text-sky-600 dark:text-sky-400' },
+    { accent: 'bg-teal-600', ring: 'ring-teal-500/20', text: 'text-teal-600 dark:text-teal-400' },
   ],
   QSE: [
-    { accent: 'bg-fuchsia-600', ring: 'ring-fuchsia-500/20', text: 'text-fuchsia-600 dark:text-fuchsia-400' },
+    { accent: 'bg-amber-600', ring: 'ring-amber-500/20', text: 'text-amber-600 dark:text-amber-400' },
   ],
 };
 
@@ -88,13 +101,13 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
   const isPositive = index.change >= 0;
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-200 group">
+    <Card className="glass-panel relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-200 group">
       <IndexSymbolBadge symbol={index.symbol} />
       <CardContent className="p-2.5 relative z-10">
         {/* Index identifier pill */}
         <div className="flex items-center justify-between mb-1.5">
           <span className={cn(
-            'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide',
+            'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide font-mono',
             colors.ring,
             isPositive
               ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300'
@@ -110,12 +123,12 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
         </div>
 
         {/* Index Arabic name */}
-        <p className="text-[10px] font-medium text-muted-foreground mb-0.5 truncate">
+        <p className="text-[10px] font-medium text-muted-foreground mb-0.5 truncate" dir="rtl">
           {index.name_ar}
         </p>
 
-        {/* Current value */}
-        <p className="text-base font-bold tabular-nums text-foreground mb-1">
+        {/* Current value — tabular-nums + font-mono for Bloomberg feel */}
+        <p className="text-base font-bold tabular-nums font-mono text-foreground mb-1">
           {index.value.toLocaleString('ar-EG', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -125,7 +138,7 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
         {/* Change row */}
         <div className="flex items-center gap-1.5">
           <span className={cn(
-            'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums',
+            'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums font-mono',
             isPositive
               ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/50 dark:text-emerald-300'
               : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
@@ -134,7 +147,7 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
             {safeNum(index.change_percent).toFixed(2)}%
           </span>
           <span className={cn(
-            'text-[11px] font-medium tabular-nums',
+            'text-[11px] font-medium tabular-nums font-mono',
             isPositive
               ? 'text-emerald-500 dark:text-emerald-400'
               : 'text-red-600 dark:text-red-400'

@@ -9,6 +9,11 @@
  *
  * Rule 4: شاشة عرض فقط — لا sort، لا filter، لا slice في الفرونت.
  * Rule 27: لا بيانات وهمية.
+ * SCR-001: Bloomberg Terminal Feel + Glassmorphism + Elite Top 5
+ *
+ * Rule 4: شاشة عرض فقط — لا sort، لا filter، لا slice في الفرونت.
+ * Rule 27: لا بيانات وهمية.
+ * Rule 30: زمردي/تركوازي/أمبر فقط — NO blue/indigo.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -18,6 +23,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import {
   Zap, Target, ShieldAlert, ArrowRight, RefreshCw, Activity,
   Copy, Check, Flame, ChevronDown, ChevronUp, Search,
@@ -33,6 +40,11 @@ import { safeFeedResponse, safeTop5Signals, safeAuditedPerformance, marketCurren
 
 // ============================================================================
 // Directive A-P4: Elite Market Switcher Bar — 4 أسواق + بطاقة أداء موثقة لكل سوق
+import type { LiveSignal, CommercialFeedResponse, AuditedPerformance, MarketCode } from '@/types/commercial-feed';
+import { safeFeedResponse, safeTop5Signals, safeAuditedPerformance, marketCurrencySymbol, EMPTY_AUDITED_PERFORMANCE } from '@/types/commercial-feed';
+
+// ============================================================================
+// SCR-001: Elite Market Switcher Bar — 4 أسواق + بطاقة أداء موثقة
 // ============================================================================
 
 const ELITE_MARKETS: MarketCode[] = ['EGX', 'TADAWUL', 'KSE', 'QSE'];
@@ -78,6 +90,15 @@ function MarketSwitcherBar({
             <div className="flex items-center justify-between gap-1 min-w-0">
               <span className={cn(
                 'text-xs font-bold truncate',
+              'glass-panel rounded-xl border p-2.5 text-right transition-all min-w-0',
+              isActive
+                ? 'border-emerald-500/60 shadow-sm ring-1 ring-emerald-500/20'
+                : 'border-border/50 hover:border-emerald-500/30',
+            )}
+          >
+            <div className="flex items-center justify-between gap-1 min-w-0">
+              <span className={cn(
+                'text-xs font-bold truncate font-mono',
                 isActive ? 'text-emerald-700 dark:text-emerald-300' : 'text-foreground',
               )}>
                 {m}
@@ -103,6 +124,13 @@ function MarketSwitcherBar({
                         : wr != null && wr >= 40
                           ? 'text-amber-600 dark:text-amber-400'
                           : 'text-muted-foreground',
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <span className="text-[8px] text-muted-foreground shrink-0">الفوز</span>
+                    <span className={cn(
+                      'text-[10px] font-bold tabular-nums font-mono',
+                      wr != null && wr >= 60 ? 'text-emerald-600 dark:text-emerald-400'
+                        : wr != null && wr >= 40 ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-muted-foreground',
                     )}>
                       {wr != null ? `${wr}%` : '—'}
                     </span>
@@ -117,6 +145,13 @@ function MarketSwitcherBar({
                         : pf != null && pf >= 1.0
                           ? 'text-amber-600 dark:text-amber-400'
                           : 'text-muted-foreground',
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <span className="text-[8px] text-muted-foreground shrink-0">ربحية</span>
+                    <span className={cn(
+                      'text-[9px] font-semibold tabular-nums font-mono',
+                      pf != null && pf >= 1.3 ? 'text-emerald-600 dark:text-emerald-400'
+                        : pf != null && pf >= 1.0 ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-muted-foreground',
                     )}>
                       {pf != null ? pf.toFixed(2) : '—'}
                     </span>
@@ -127,6 +162,8 @@ function MarketSwitcherBar({
                       'text-[9px] font-semibold tabular-nums',
                       ar != null && ar >= 0
                         ? 'text-emerald-600 dark:text-emerald-400'
+                      'text-[9px] font-semibold tabular-nums font-mono',
+                      ar != null && ar >= 0 ? 'text-emerald-600 dark:text-emerald-400'
                         : 'text-red-500 dark:text-red-400',
                     )}>
                       {ar != null ? `${ar >= 0 ? '+' : ''}${ar}%` : '—'}
@@ -147,6 +184,10 @@ function MarketSwitcherBar({
     </div>
   );
 }
+
+// ============================================================================
+// Helpers
+// ============================================================================
 
 function fmtPrice(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(Number(n))) return '—';
@@ -192,12 +233,20 @@ function buildCopyMessage(sig: LiveSignal): string {
 function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: React.MouseEvent, sig: LiveSignal) => void; copied: boolean }) {
   return (
     <Card key={`${sig.ticker}-${sig.prediction_date}`} className="overflow-hidden hover:border-emerald-500/40 transition-colors">
+// ============================================================================
+// SignalCard — Premium emerald card with glassmorphism
+// ============================================================================
+
+function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: React.MouseEvent, sig: LiveSignal) => void; copied: boolean }) {
+  return (
+    <Card className="glass-panel overflow-hidden hover:border-emerald-500/40 transition-colors">
       <CardContent className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between gap-2 min-w-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-bold text-base shrink-0">{sig.ticker}</span>
+              <span className="font-bold text-base shrink-0 font-mono">{sig.ticker}</span>
               {sig.signal && (
                 <Badge variant="outline" className={cn(
                   'text-[9px] shrink-0',
@@ -220,6 +269,7 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
             <div className="text-left shrink-0">
               <p className="text-[9px] text-muted-foreground">الثقة</p>
               <p className="text-sm font-bold text-emerald-600">{Math.round(Number(sig.confidence))}%</p>
+              <p className="text-sm font-bold text-emerald-600 font-mono tabular-nums">{Math.round(Number(sig.confidence))}%</p>
             </div>
           )}
         </div>
@@ -231,12 +281,14 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
               <Target className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">الدخول</span>
             </p>
             <p className="font-mono font-semibold truncate">{fmtPrice(sig.entry_price)}</p>
+            <p className="font-mono font-semibold truncate tabular-nums">{fmtPrice(sig.entry_price)}</p>
           </div>
           <div className="min-w-0">
             <p className="text-[9px] text-muted-foreground flex items-center gap-1">
               <ArrowRight className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">الهدف</span>
             </p>
             <p className="font-mono font-semibold text-emerald-600 truncate">
+            <p className="font-mono font-semibold text-emerald-600 truncate tabular-nums">
               {fmtPrice(sig.target_1)}
               {sig.target_1_pct != null && (
                 <span className="text-[9px] ml-1">({fmtPct(sig.target_1_pct)})</span>
@@ -244,6 +296,7 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
             </p>
             {sig.target_2 != null && (
               <p className="font-mono text-[10px] text-emerald-500 truncate">
+              <p className="font-mono text-[10px] text-emerald-500 truncate tabular-nums">
                 هدف 2: {fmtPrice(sig.target_2)}
               </p>
             )}
@@ -255,6 +308,9 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
             <p className="font-mono font-semibold text-red-500 truncate">{fmtPrice(sig.stop_loss)}</p>
             {sig.stop_loss_pct != null && (
               <p className="text-[9px] text-red-400">{fmtPct(sig.stop_loss_pct)}</p>
+            <p className="font-mono font-semibold text-red-500 truncate tabular-nums">{fmtPrice(sig.stop_loss)}</p>
+            {sig.stop_loss_pct != null && (
+              <p className="text-[9px] text-red-400 tabular-nums">{fmtPct(sig.stop_loss_pct)}</p>
             )}
           </div>
         </div>
@@ -263,6 +319,7 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
         <div className="flex items-center justify-between text-[10px]">
           <span className="text-muted-foreground">
             R:R <span className="font-bold text-foreground">{fmtRR(sig.risk_reward)}</span>
+            R:R <span className="font-bold text-foreground font-mono tabular-nums">{fmtRR(sig.risk_reward)}</span>
           </span>
           {sig.horizon && (
             <span className="text-muted-foreground">{sig.horizon_icon} {sig.horizon}</span>
@@ -290,6 +347,7 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
             <><Check className="w-3 h-3 text-emerald-500" /> تم نسخ التوصية ✓</>
           ) : (
             <><Copy className="w-3 h-3" /> 📋 نسخ تفاصيل التوصية</>
+            <><Copy className="w-3 h-3" /> 📋 نسخ التوصية للتليجرام/واتساب</>
           )}
         </Button>
       </CardContent>
@@ -300,6 +358,11 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
 export function VIPLiveSignalsFeed({ market }: { market: string }) {
   // Directive A-P4: internal active market state (defaults to parent prop).
   // Allows instant market switching without touching the global TopBar switcher.
+// ============================================================================
+// Main Component
+// ============================================================================
+
+export function VIPLiveSignalsFeed({ market }: { market: string }) {
   const [activeMarket, setActiveMarket] = useState<string>(market);
   const [data, setData] = useState<CommercialFeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -310,6 +373,8 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
   const [summaries, setSummaries] = useState<Record<string, MarketSummaryBadge>>({});
 
   // Sync active market when parent prop changes
+  const [summaries, setSummaries] = useState<Record<string, MarketSummaryBadge>>({});
+
   useEffect(() => { setActiveMarket(market); }, [market]);
 
   const fetchData = useCallback(async (mkt: string) => {
@@ -323,6 +388,9 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
       if (!json.success) { setError(json.message || json.error || 'تعذّر جلب التوصيات'); setData(null); return; }
       setData(json);
       // Update the summary badge for this market
+      const json = safeFeedResponse(raw);
+      if (!json.success) { setError(json.message || json.error || 'تعذّر جلب التوصيات'); setData(null); return; }
+      setData(json);
       setSummaries((prev) => ({
         ...prev,
         [mkt.toUpperCase()]: { loading: false, audited: safeAuditedPerformance(json) },
@@ -344,6 +412,12 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
     const missing = ELITE_MARKETS.filter((m) => !summaries[m]);
     if (missing.length === 0) return;
     // Mark as loading
+  useEffect(() => { fetchData(activeMarket); }, [fetchData, activeMarket]);
+
+  // Pre-fetch all 4 markets' audited summaries in the background
+  useEffect(() => {
+    const missing = ELITE_MARKETS.filter((m) => !summaries[m]);
+    if (missing.length === 0) return;
     setSummaries((prev) => {
       const next = { ...prev };
       for (const m of missing) next[m] = { loading: true, audited: EMPTY_AUDITED_PERFORMANCE };
@@ -434,6 +508,8 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
   const extraSignals: LiveSignal[] = data?.extra_signals ?? [];
 
   // Audited Performance Banner (null safety مطلقة — via safe accessor)
+  const topSignals: LiveSignal[] = safeTop5Signals(data);
+  const extraSignals: LiveSignal[] = data?.extra_signals ?? [];
   const audited = safeAuditedPerformance(data);
   const showBanner = audited != null && audited.total_closed > 0;
 
@@ -462,6 +538,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
   return (
     <div className="space-y-4">
       {/* Directive A-P4: Elite Market Switcher Bar — 4 أسواق + بطاقة أداء موثقة */}
+      {/* SCR-001: Elite Market Switcher Bar */}
       <MarketSwitcherBar activeMarket={activeMarket} onSelect={handleMarketSelect} summaries={summaries} />
 
       {/* Header strip */}
@@ -483,6 +560,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
         const pf = audited?.profit_factor ?? null;
         return (
           <Card className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20">
+          <Card className="glass-panel bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20">
             <CardContent className="p-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
@@ -492,18 +570,25 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
                 <div>
                   <p className="text-[10px] text-muted-foreground">نسبة النجاح</p>
                   <p className={cn('text-lg font-bold', wr != null && wr >= 70 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}>
+                  <p className="text-lg font-bold font-mono tabular-nums">{audited?.total_closed ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">نسبة النجاح</p>
+                  <p className={cn('text-lg font-bold font-mono tabular-nums', wr != null && wr >= 70 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}>
                     {wr != null ? `${wr}%` : '—'}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground">متوسط الربح</p>
                   <p className={cn('text-lg font-bold', ar != null && ar >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                  <p className={cn('text-lg font-bold font-mono tabular-nums', ar != null && ar >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                     {ar != null ? `${ar >= 0 ? '+' : ''}${ar}%` : '—'}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground">معامل الربحية</p>
                   <p className="text-lg font-bold">{pf ?? '—'}</p>
+                  <p className="text-lg font-bold font-mono tabular-nums">{pf ?? '—'}</p>
                 </div>
               </div>
             </CardContent>
@@ -512,6 +597,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
       })()}
 
       {/* T-ALPHA-A21: 🎯 أقوى 5 فرص استثمارية مؤكدة اليوم */}
+      {/* 🎯 أقوى 5 فرص استثمارية مؤكدة */}
       {topSignals.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1" dir="rtl">
@@ -534,6 +620,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
       )}
 
       {/* Marathon Phase 1: 🔍 فرص استثمارية إضافية تحت المراقبة — Accordion مطوي افتراضياً */}
+      {/* 🔍 فرص استثمارية إضافية تحت المراقبة — Accordion */}
       {extraSignals.length > 0 && (
         <div className="space-y-3">
           <button
@@ -543,6 +630,7 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
             aria-expanded={showExtra}
           >
             {showExtra ? <ChevronUp className="w-4 h-4 shrink-0 transition-transform" /> : <ChevronDown className="w-4 h-4 shrink-0 transition-transform" />}
+            {showExtra ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
             <Search className="w-3.5 h-3.5 shrink-0" />
             <span className="flex-1 text-right">
               فرص استثمارية إضافية تحت المراقبة ({extraSignals.length} سهم)

@@ -24,6 +24,8 @@ import { AutoAnalysisWidget } from '@/components/auto-analysis-widget';
 // import { MaestroWidget } from '@/modules/dashboard/components/MaestroWidget';
 import { LiveStockTicker } from '@/modules/dashboard/components/LiveStockTicker';
 import { MarketPulseWidget } from '@/modules/dashboard/components/MarketPulseWidget';
+// SCR-001: VIP Live Signals Feed — أعلى الـ Dashboard (Bloomberg Terminal Feel)
+import { VIPLiveSignalsFeed } from '@/components/shared/VIPLiveSignalsFeed';
 // PORTFOLIO-INTEGRATION: ربط المحفظة بالدashboard — عمود من أعمدة المنصة
 import { LiveMonitor } from '@/modules/dashboard/components/LiveMonitor';
 // A11Y-FIX (2026-10-09, Team 8): wrap major widgets في ErrorBoundary
@@ -385,6 +387,15 @@ export function DashboardView() {
           <div id="dashboard-export" ref={dashboardRef} className="space-y-4 p-3 md:p-4" dir="rtl">
 
             {/* ═══════════════════════════════════════════════════════════════
+                🏛️ SCR-001: VIP Live Signals Feed (Bloomberg Terminal Feel)
+                أعلى الـ Dashboard — أفضل 5 فرص استثمارية لحظية + محول الأسواق
+                (EGX, TADAWUL, KSE, QSE). Glassmorphism + emerald/amber palette.
+                ═══════════════════════════════════════════════════════════════ */}
+            <SafeWidget name="VIP Live Signals">
+              <VIPLiveSignalsFeed market={currentMarket} />
+            </SafeWidget>
+
+            {/* ═══════════════════════════════════════════════════════════════
                 🎯 فرص جاهزة الآن (Top 3-5 opportunities for investors)
                 Owner directive: "لوحة فرص حقيقية" — فوق كل حاجة
                 ═══════════════════════════════════════════════════════════════ */}
@@ -408,9 +419,10 @@ export function DashboardView() {
                       const entry = stock.entryPrice || stock.currentPrice;
                       const stop = stock.exitStrategy?.stopLoss || 0;
                       const target = stock.exitStrategy?.targetPrice || 0;
-                      const target2 = stock.exitStrategy?.targetPrice2 || 0;
+                      // SCR-001: targetPrice2 may not exist on ExitStrategy type — cast safely
+                      const target2 = (stock.exitStrategy as unknown as Record<string, unknown> | undefined)?.targetPrice2 as number | undefined || 0;
                       // UNIFY-FIX (Rule 20): R:R من Python (stock.rrRatio) — لا حساب client-side
-                      const rr = (stock as Record<string, unknown>).rrRatio as number | undefined;
+                      const rr = (stock as unknown as Record<string, unknown>).rrRatio as number | undefined;
                       const rrDisplay = rr != null ? rr.toFixed(2) : '—';
                       const isStrong = stock.recommendation === 'Strong Buy';
                       return (
@@ -418,6 +430,8 @@ export function DashboardView() {
                           key={stock.ticker}
                           className={`border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-primary'} cursor-pointer hover:shadow-md transition-shadow`}
                           onClick={() => useAppStore.getState().setCurrentView('stock-detail') || useAppStore.getState().setSelectedTicker(stock.ticker)}
+                          className={`glass-panel border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-teal-500'} cursor-pointer hover:shadow-md transition-shadow`}
+                          onClick={() => { useAppStore.getState().setCurrentView('stock-detail'); useAppStore.getState().setSelectedTicker(stock.ticker); }}
                         >
                           <CardContent className="p-3 space-y-2">
                             {/* Header: ticker + signal */}
@@ -427,6 +441,7 @@ export function DashboardView() {
                                 <div className="text-xs text-muted-foreground truncate max-w-[120px]">{stock.nameAr || stock.name}</div>
                               </div>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-100 text-primary dark:bg-slate-800/40 dark:text-slate-300'}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'}`}>
                                 {stock.recommendationAr || stock.recommendation}
                               </span>
                             </div>
@@ -467,15 +482,15 @@ export function DashboardView() {
                 📊 حالة السوق (one sentence — owner directive)
                 ═══════════════════════════════════════════════════════════════ */}
             {v2Data?.market && (() => {
-              const regime = v2Data.market.regime;
-              // UNIFY-FIX (Rule 20): isDefensive من regime.trend فقط (لا regimeMultiplier client-side)
-              const isDefensive = regime?.trend === 'bear' || regime?.trend === 'distribution';
-              const regimeText = regime?.regimeAr || regime?.trend || 'محايد';
-              // UNIFY-FIX: advice من Python (regime.advice_ar) أو fallback نصي بسيط (لا حساب)
-              const advice = regime?.advice_ar
+              const regime = v2Data.market.regime as unknown as Record<string, unknown> | undefined;
+              // SCR-001: cast regime to Record for flexible property access (MarketRegime type varies)
+              const trend = String(regime?.trend ?? regime?.regime ?? 'neutral');
+              const isDefensive = trend === 'bear' || trend === 'distribution';
+              const regimeText = String(regime?.regimeAr ?? regime?.regime_ar ?? trend ?? 'محايد');
+              const advice = String(regime?.advice_ar ?? regime?.adviceAr ?? '')
                 || (isDefensive
                   ? 'السوق دفاعي — قلل الحجم وركّز على وقف الخسارة'
-                  : regime?.trend === 'bull'
+                  : trend === 'bull'
                   ? 'السوق صاعد — ركّز على الأسهم ذات الـ RS العالي'
                   : 'السوق عرضي — انتظر فرص أوضح');
               return (
