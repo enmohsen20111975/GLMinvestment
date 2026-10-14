@@ -1233,7 +1233,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: current_price (0/null → -1)
         sortValue: (s) => s.current_price > 0 ? s.current_price : -1,
         render: (s) => (
-          <span className="font-mono text-sm">{formatNumber(s.current_price)}</span>
+          <span className="font-mono text-sm tabular-nums">{formatNumber(s.current_price)}</span>
         ),
       },
       {
@@ -1246,7 +1246,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: change_percent (null → -Infinity to bottom)
         sortValue: (s) => Number.isFinite(s.change_percent) ? s.change_percent : -Infinity,
         render: (s) => (
-          <span className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
+          <span className={cn('font-mono text-sm font-medium tabular-nums', getChangeColor(s.change_percent))}>
             {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
           </span>
         ),

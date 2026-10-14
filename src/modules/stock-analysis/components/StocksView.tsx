@@ -1311,7 +1311,7 @@ export function StocksView() {
           return (
             <div
               className={cn(
-                'flex items-center gap-1 justify-end text-sm font-medium tabular-nums',
+                'flex items-center gap-1 justify-end text-sm font-mono font-medium tabular-nums',
                 isPositive
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : isNegative
@@ -1342,7 +1342,7 @@ export function StocksView() {
           const low = safeNum(row.low_price as number);
           if (high <= 0 && low <= 0) return <span className="text-muted-foreground">—</span>;
           return (
-            <span className="text-xs tabular-nums text-muted-foreground" dir="ltr">
+            <span className="text-xs font-mono tabular-nums text-muted-foreground" dir="ltr">
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">{(high ?? 0).toFixed(2)}</span>
               <span className="mx-1 text-muted-foreground/60">/</span>
               <span className="text-red-600 dark:text-red-400 font-medium">{(low ?? 0).toFixed(2)}</span>
@@ -1377,7 +1377,7 @@ export function StocksView() {
         render: (row) => {
           const change1w = row.change_1w ?? null;
           return (
-            <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1w))}>
+            <span className={cn('text-xs font-mono tabular-nums font-medium', changeColorClass(change1w))}>
               {formatPercent(change1w)}
             </span>
           );
@@ -1396,7 +1396,7 @@ export function StocksView() {
         render: (row) => {
           const change1m = row.change_1m ?? null;
           return (
-            <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1m))}>
+            <span className={cn('text-xs font-mono tabular-nums font-medium', changeColorClass(change1m))}>
               {formatPercent(change1m)}
             </span>
           );
@@ -1469,7 +1469,7 @@ export function StocksView() {
             return (
               <span
                 className={cn(
-                  'text-xs tabular-nums font-medium',
+                  'text-xs font-mono tabular-nums font-medium',
                   fairValue != null && currentPrice && fairValue > currentPrice
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : fairValue != null && currentPrice && fairValue < currentPrice
@@ -1494,7 +1494,7 @@ export function StocksView() {
             return (
               <span
                 className={cn(
-                  'text-xs tabular-nums font-medium',
+                  'text-xs font-mono tabular-nums font-medium',
                   upside != null && upside > 5 ? 'text-emerald-600 dark:text-emerald-400' :
                   upside != null && upside < -5 ? 'text-red-600 dark:text-red-400' :
                   'text-muted-foreground',
@@ -1515,7 +1515,7 @@ export function StocksView() {
           render: (row) => {
             const peRatio = row.pe_ratio ?? null;
             return (
-              <span className="text-xs tabular-nums">
+              <span className="text-xs font-mono tabular-nums">
                 {peRatio != null && peRatio > 0 ? peRatio.toFixed(1) : '—'}
               </span>
             );
@@ -1752,7 +1752,8 @@ export function StocksView() {
         subtitle={pageSubtitle}
       />
       <main className="flex-1 p-3 md:p-6 max-w-7xl mx-auto w-full space-y-3 md:space-y-4">
-        {/* ── SCR-002 Institutional Glass Panel (Bloomberg terminal feel) ── */}
+        {/* ── SCR-002: Institutional Glass Panel (Bloomberg terminal feel) ── */}
+        <div className="rounded-2xl border border-emerald-500/20 bg-card/80 backdrop-blur-sm shadow-lg p-4 md:p-6 space-y-4">
         {/* ── Tabs ── */}
         <div className="flex gap-2">
           <button
@@ -2044,7 +2045,7 @@ export function StocksView() {
             {presetScanDate && (
               <div className="flex items-center gap-1.5 bg-muted/60 rounded-lg px-3 py-1.5">
                 <span className="text-xs font-medium text-muted-foreground">{t('stocks.footer.lastUpdate')}</span>
-                <span className="text-xs tabular-nums">{new Date(presetScanDate).toLocaleString('ar-EG')}</span>
+                <span className="text-xs font-mono tabular-nums">{new Date(presetScanDate).toLocaleString('ar-EG')}</span>
               </div>
             )}
             {presetLoading && (
@@ -2300,6 +2301,7 @@ export function StocksView() {
         )}
           </React.Fragment>
         )}
+        </div>{/* end SCR-002 glass-panel */}
       </main>
     </div>
   );

@@ -175,11 +175,11 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
               <ExchangeSelector compact className="h-9 text-xs rounded-xl border-border bg-card" />
               {marketOverview && (
                 <div className="hidden lg:flex items-center gap-2 text-[10px]">
-                  <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 px-2.5 py-1">
+                  <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono tabular-nums">
                     <TrendingUp className="w-3 h-3 ml-0.5" />
                     ارتفاعات: {marketOverview.summary.gainers}
                   </Badge>
-                  <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50 px-2.5 py-1">
+                  <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50 px-2.5 py-1 font-mono tabular-nums">
                     <TrendingDown className="w-3 h-3 ml-0.5" />
                     خسائر: {marketOverview.summary.losers}
                   </Badge>
