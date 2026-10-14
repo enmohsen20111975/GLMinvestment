@@ -220,14 +220,15 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
   }, []);
 
   return (
-    <div className="space-y-4 p-4 dark:bg-surface-container-lowest dark:text-on-surface">
+    <div className="stitch-canvas space-y-4 p-4 relative">
+      <div className="relative z-10 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 dark:text-on-surface dark:font-outfit">
-          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 flex-shrink-0 dark:text-primary" />
+        <h2 className="stitch-latin text-xl sm:text-2xl font-bold flex items-center gap-2 text-stitch-on-surface">
+          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-stitch-primary flex-shrink-0" />
           <span>{t('marketAnalysis.title')}</span>
           {/* v3.66.9 LIVE badge — بيتحدث تلقائياً خلال جلسة EGX */}
           {isLive && (
-            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 dark:bg-primary-container/20 dark:text-on-primary-container animate-pulse">
+            <span className="stitch-num inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-stitch-primary animate-pulse">
               <Activity className="h-3 w-3" />
               LIVE · {liveCountdown}s
             </span>
@@ -245,69 +246,69 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
 
       {/* ── SCR-007: Track Record Banner (أرقام حقيقية من Python) ── */}
       {trackStats.totalClosed !== null && trackStats.totalClosed > 0 && (
-        <Card className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20 overflow-hidden dark:bg-surface-container-low dark:bg-none dark:border dark:border-outline-variant/30">
+        <Card className="stitch-glass overflow-hidden">
           <CardContent className="p-3 sm:p-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               {/* Win Rate */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1 dark:text-on-surface-variant">
+                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
                   <Trophy className="w-3 h-3" />
                   <span>نسبة النجاح</span>
                 </div>
-                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 dark:text-primary dark:font-financial">
+                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-primary">
                   {trackStats.winRate !== null ? `${trackStats.winRate}%` : '—'}
                 </p>
               </div>
               {/* Total Closed */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1 dark:text-on-surface-variant">
+                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
                   <BarChart3 className="w-3 h-3" />
                   <span>الصفقات المغلقة</span>
                 </div>
-                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums dark:text-on-surface dark:font-financial">
+                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-on-surface">
                   {trackStats.totalClosed ?? '—'}
                 </p>
               </div>
               {/* Wins */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1 dark:text-on-surface-variant">
-                  <TrendingUp className="w-3 h-3 text-emerald-500 dark:text-primary" />
+                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
+                  <TrendingUp className="w-3 h-3 text-stitch-primary" />
                   <span>رابحة</span>
                 </div>
-                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 dark:text-primary dark:font-financial">
+                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-primary">
                   {trackStats.wins ?? '—'}
                 </p>
               </div>
               {/* Losses */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1 dark:text-on-surface-variant">
-                  <TrendingDown className="w-3 h-3 text-red-500 dark:text-error" />
+                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
+                  <TrendingDown className="w-3 h-3 text-rose-400" />
                   <span>خاسرة</span>
                 </div>
-                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums text-red-500 dark:text-error dark:font-financial">
+                <p className="stitch-num text-lg sm:text-xl font-bold text-rose-400">
                   {trackStats.losses ?? '—'}
                 </p>
               </div>
               {/* Profit Factor */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1 dark:text-on-surface-variant">
+                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
                   <Target className="w-3 h-3" />
                   <span>معامل الربحية</span>
                 </div>
-                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums dark:text-on-surface dark:font-financial">
+                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-on-surface">
                   {trackStats.profitFactor !== null ? trackStats.profitFactor : '—'}
                 </p>
               </div>
               {/* Active + Top 5 */}
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1 dark:text-on-surface-variant">
+                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
                   <Activity className="w-3 h-3" />
                   <span>صفقات نشطة</span>
                 </div>
-                <p className="text-lg sm:text-xl font-bold font-mono tabular-nums dark:text-on-surface dark:font-financial">
+                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-on-surface">
                   {trackStats.activeCount ?? '—'}
                   {trackStats.top5Count !== null && (
-                    <span className="text-[10px] text-muted-foreground ms-1 dark:text-on-surface-variant">(أقوى {trackStats.top5Count})</span>
+                    <span className="stitch-ar text-[10px] text-stitch-muted ms-1">(أقوى {trackStats.top5Count})</span>
                   )}
                 </p>
               </div>
@@ -317,18 +318,12 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* Task 9-B Step 2: 5 radar tabs (exit-radar / weekly-report /
-            multi-market-radar / radar-accuracy / personalized-radar) moved to
-            #liquidity-radar (MakerRadarTab) as internal sub-tabs. #recommendations
-            now has 5 tabs only: predictions / status / sectors-tracking /
-            historical-trades / net-picks. */}
-        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-2 h-auto gap-1 dark:bg-surface-container">
-          {/* T-ALPHA-A20: تبويب واحد نظيف — الصفقات + الأداء + القطاعات + الملخص جواه */}
-          <TabsTrigger value="predictions" className="flex items-center gap-1 dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container dark:data-[state=active]:shadow-sm">
-            <Target className="h-4 w-4 text-emerald-600 dark:text-primary" />
+        <TabsList className="stitch-glass flex w-full overflow-x-auto sm:grid sm:grid-cols-2 h-auto gap-1">
+          <TabsTrigger value="predictions" className="stitch-ar flex items-center gap-1 text-stitch-muted data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
+            <Target className="h-4 w-4 text-stitch-primary" />
             <span className="hidden sm:inline">غرفة الصفقات والأداء</span>
           </TabsTrigger>
-          <TabsTrigger value="status" className="flex items-center gap-1 dark:text-on-surface-variant dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary-container dark:data-[state=active]:shadow-sm">
+          <TabsTrigger value="status" className="stitch-ar flex items-center gap-1 text-stitch-muted data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">حالة السوق ونبضه</span>
           </TabsTrigger>
@@ -346,32 +341,33 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       </Tabs>
 
       {/* Social Share Footer */}
-      <Card className="mt-4 bg-muted/50 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-        <CardContent className="p-3 text-center text-sm text-muted-foreground dark:text-on-surface-variant">
+      <Card className="stitch-glass mt-4">
+        <CardContent className="p-3 text-center text-sm text-stitch-muted stitch-ar">
           <p>{t('marketAnalysis.socialFollow')}</p>
           <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
-            <a href={OFFICIAL_LINKS.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={OFFICIAL_LINKS.website} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
               invist.m2y.net
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.android} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={OFFICIAL_LINKS.android} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
               Android
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={OFFICIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
               Telegram
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={OFFICIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
               Facebook
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={OFFICIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
               WhatsApp
             </a>
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
