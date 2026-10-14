@@ -114,7 +114,7 @@ async function getPortfolioSummary() {
   }
 }
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   // MULTI-MARKET-FIX (2026-10-09, Team 7): إضافة market param بدل hardcoded EGX
   const url = request ? new URL(request.url) : null;
   const market = url?.searchParams.get('market') || 'EGX';
