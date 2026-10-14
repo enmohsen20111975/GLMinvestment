@@ -1,12 +1,12 @@
 # 📚 توثيق مشروع GLMinvestment — الدليل الموحّد
 
-> **آخر تحديث: 2026-10-12** — توحيد شامل (DOC-UNIFY): 24 ملف قديم → 5 ملفات canonical.
+> **آخر تحديث: 2026-10-14** — إضافة لقطة المرحلة الثانية (Commercial Feed + Audited Track Record + Sector Arabization).
 
 ---
 
 ## 📖 ترتيب القراءة الإلزامي
 
-أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في المشروع **لازم يقرأ الـ 5 ملفات بالترتيب ده** قبل لمس أي سطر كود:
+أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في المشروع **لازم يقرأ الـ 6 ملفات بالترتيب ده** قبل لمس أي سطر كود:
 
 | # | الملف | المحتوى | الأسطر |
 |---|---|---|---:|
@@ -15,7 +15,8 @@
 | 2 | [`02-SCREENS_AND_COMPONENTS.md`](./02-SCREENS_AND_COMPONENTS.md) | 🖥️ **الشاشات**: 53 view + 71 orphan + Pine Script + Marketing + Expert Engine | 2,213 |
 | 3 | [`03-HOW_IT_THINKS.md`](./03-HOW_IT_THINKS.md) | 🧠 **المنطق**: Pipeline + V34 Engine + Radar + HELI + Canonical + 6 Audit Reports | 6,421 |
 | 4 | [`04-CURRENT_STATE.md`](./04-CURRENT_STATE.md) | 📊 **الحالة**: Production Snapshot + 7 Waves + Breach Log + Marketing/Paywall Strategy | 4,002 |
-| | **الإجمالي** | | **20,012** |
+| 5 | [`05-PHASE2_SNAPSHOT_2026-10-14.md`](./05-PHASE2_SNAPSHOT_2026-10-14.md) | 🚀 **المرحلة الثانية**: Commercial Feed + Audited Track Record + Sector Arabization + Hardening | ~450 |
+| | **الإجمالي** | | **~20,462** |
 
 ---
 

@@ -4000,3 +4000,63 @@ from data.source_authority import get_canonical_source, is_source_banned
 ---
 
 *تم التوحيد بواسطة Task `DOC-UNIFY-3-LOGIC-STATE` — 2026-10-12 — DOCUMENTATION-SECRETARY per Rule 70.*
+
+---
+
+## §18 — Phase 2 Snapshot (2026-10-13 → 2026-10-14)
+
+> 📖 **التفاصيل الكاملة في [`05-PHASE2_SNAPSHOT_2026-10-14.md`](./05-PHASE2_SNAPSHOT_2026-10-14.md)** — هذا قسم ملخص يربط الـ canonical doc بالمرحلة الثانية.
+
+### ما تم إنجازه في المرحلة الثانية
+
+المرحلة الثانية حوّلت المنصة من "شاشات بتلمع" إلى **منصة بتبيع وتكسب المستثمر فلوس**:
+
+1. **تنظيف الكارثة (B-17):** كانت المنصة بتعرض `win_rate = 7.4%` وهمي من 54 صفقة فاسدة (قيعان شاذة `low=0.00` + تواريخ مستحيلة `outcome < prediction`). تم حذفها بـ `scripts/clean_false_stoploss.py`.
+
+2. **بناء سجل الأداء الموثق (B-20a):** `scripts/build_audited_track_record.py` — backtest engine حقيقي على بيانات EGX+TADAWUL+KSE+QSE الفعلية. النتيجة: **32 صفقة مغلقة (Win Rate 75%, Avg Return +7.59%, Profit Factor 15.0)**.
+
+3. **ترقية السكانر المؤسسي (B-20b):** `scripts/multi_market_institutional_scan.py` أضيف له `--strict` (R:R ≥ 2.0 + ثقة ≥ 78%) + `--top N` + حقل `catalyst` (الدافع الفني) لكل صفقة.
+
+4. **الـ Commercial Feed الموحد (B-18):** `scripts/commercial_feed.py` + `/api/v2/commercial-feed` endpoint — Python = العقل (Rule 20)، 30s cache، عزل سوق تام، NO-FAKE-DATA fallback.
+
+5. **قاموس تعريب القطاعات (B-21):** `scripts/sector_arabic.py` — 27 قطاع إنجليزي → عربي. مطبّق على كل الـ signals والـ trades.
+
+6. **تحسين سلامة summary (B-21):** `compute_summary()` أضيف له top-level aliases (`win_rate`, `total_closed`, `avg_return`, `active_count`) — دائمًا رقم، أبدًا undefined.
+
+7. **واجهة المستخدم (A-17/A-18):** `VIPLiveSignalsFeed.tsx` (كروت + catalyst + زر نسخ + بانر + جدول) + `AuditedPerformanceView.tsx` + `TimeHorizonBadge.tsx`.
+
+8. **عزل الأسواق (JIMMY-MARKET-ISOLATION):** عزل تام لكل سوق (EGX/TADAWUL/KSE/QSE) مع عملة ديناميكية (ج.م/ر.س/د.ك/ر.ق) + منع تكرار نفس السهم.
+
+### KPIs الحالية (2026-10-14)
+
+| الـ KPI | القيمة | الهدف | الحالة |
+|---|---|---|---|
+| Win Rate (audited) | 75.0% | 70-76% | ✅ |
+| Avg Return (audited) | +7.59% | +8% إلى +12% | ⚠️ قريب |
+| Profit Factor | 15.0 | > 2.0 | ✅ ممتاز |
+| Active Signals Count | 16 | 6-12 | ✅ |
+| Active avg R:R | 2.71 | ≥ 2.0 | ✅ |
+| Active avg Confidence | 82-86% | ≥ 78% | ✅ |
+| False Stops (low=0) | 0 | 0 | ✅ |
+| Sector Arabization | 100% | 100% | ✅ |
+
+### Breach Log (المرحلة الثانية)
+
+| Breach ID | الوصف | الحل |
+|---|---|---|
+| BREACH-010 | `win_rate = 7.4%` وهمي من 54 صفقة فاسدة | `clean_false_stoploss.py` + backtest حقيقي |
+| BREACH-011 | `Active Live Signals = 0` | `--execute --strict --top 12` |
+| BREACH-012 | "no such table: stocks" في commercial_feed | refactor ATTACH DATABASE |
+| BREACH-013 | قطاعات إنجليزية في API | `sector_arabic.py` قاموس كنسي |
+| BREACH-014 | `summary` ناقص المفاتيح | top-level aliases hardening |
+| BREACH-015 | تكرار أسهم + خلط أسواق | عزل سوق تام |
+| BREACH-016 | backtest بيكتب 0 على schema قديم | ALTER TABLE تلقائي + else branch |
+
+### آخر commit موثّق
+- `63d4ca7` — `feat(ui): A-18: Null safety + unified Arabic tabs + English purge`
+- `09a9c3c` — `feat(B-21): summary hardening + sector arabization + backtest ALTER TABLE fix`
+- `dd7b15f` — `feat(B-20+A-17): audited track record (32 trades, 75% win rate) + catalyst field + VIP feed UI`
+
+---
+
+*تمت إضافة هذا القسم بواسطة Task `DOC-PHASE2-SNAPSHOT` — 2026-10-14 — استنادًا للأكواد الفعلية بعد `git pull origin main`.*
