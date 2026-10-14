@@ -279,8 +279,13 @@ def main() -> int:
     # ── 3. تأكيد أن predictions هو المصدر الوحيد ──
     log("")
     log("📊 تأكيد أن predictions هو المصدر الوحيد:")
-    predictions_count = conn.execute("SELECT COUNT(*) FROM predictions").fetchone()[0]
-    log(f"  ✅ predictions: {predictions_count} صف (المصدر الكنسي الوحيد)")
+    pred_db_path = DB_DIR / "predictions.db"
+    if pred_db_path.exists():
+        with sqlite3.connect(str(pred_db_path)) as pred_conn:
+            predictions_count = pred_conn.execute("SELECT COUNT(*) FROM predictions").fetchone()[0]
+            log(f"  ✅ predictions.db -> predictions: {predictions_count} صف (المصدر الكنسي الوحيد)")
+    else:
+        log("  ⚠️ predictions.db غير موجود!", "WARN")
 
     # فحص لو فيه جداول تانية فيها توقعات
     prediction_like_tables = []

@@ -554,6 +554,33 @@ def step10_daily_pipeline_dryrun(dry_run: bool = False) -> bool:
         return False
 
 
+def step11_db_sanitation(dry_run: bool = False) -> bool:
+    """Step 11: تطهير وضغط قواعد البيانات والباك-أب (production_db_sanitation.py)."""
+    log("Step 11: تطهير وضغط قواعد البيانات (production_db_sanitation.py)")
+    script = PROJECT_ROOT / "scripts" / "production_db_sanitation.py"
+    if not script.exists():
+        log(f"  ⚠️ {script.name} غير موجود — skip", "WARN")
+        return True
+    cmd = ["python3", str(script)]
+    if dry_run:
+        cmd.append("--dry-run")
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        lines = (result.stdout or "").strip().split('\n')
+        for line in lines[-8:]:
+            if line.strip():
+                log(f"  {line.strip()}")
+        if result.returncode == 0:
+            log("  ✅ تطهير وفحص نزاهة قواعد البيانات نجح 100%", "OK")
+            return True
+        else:
+            log(f"  ❌ exit={result.returncode}", "ERROR")
+            return False
+    except Exception as e:
+        log(f"  ❌ exception: {e}", "ERROR")
+        return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="P0 Production Automation Script")
     parser.add_argument("--dry-run", action="store_true", help="فحص فقط بدون كتابة")
@@ -562,6 +589,7 @@ def main() -> int:
     parser.add_argument("--skip-archive", action="store_true", help="تخطي أرشفة الجداول الميتة")
     parser.add_argument("--skip-audit", action="store_true", help="تخطي تدقيق الصفقات")
     parser.add_argument("--skip-radar", action="store_true", help="تخطي رادار السيولة متعدد الأسواق")
+    parser.add_argument("--skip-sanitation", action="store_true", help="تخطي ضغط وتطهير قواعد البيانات")
     args = parser.parse_args()
 
     log("=" * 60)
@@ -593,11 +621,15 @@ def main() -> int:
     steps.append(("Step 9: Populate audited", lambda: step9_populate_audited(args.dry_run)))
     # Step 10: Daily pipeline dry-run (Task B-MARATHON-P3)
     steps.append(("Step 10: Daily pipeline check", lambda: step10_daily_pipeline_dryrun(args.dry_run)))
+    # Step 11: Production DB Sanitation & Compression (Task B-DATA-SANITATION)
+    if not args.skip_sanitation:
+        steps.append(("Step 11: DB Sanitation & Compression", lambda: step11_db_sanitation(args.dry_run)))
 
     results = {}
     for name, func in steps:
         log("")
         results[name] = func()
+
 
     log("")
     ok = verify_all()

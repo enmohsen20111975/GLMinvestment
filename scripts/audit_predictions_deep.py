@@ -32,6 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STOCKS_DB = PROJECT_ROOT / "db" / "stocks.db"
+PREDICTIONS_DB = PROJECT_ROOT / "db" / "predictions.db"
 STALE_DAYS = 30  # الصفقات المعلقة أكتر من 30 يوم → EXPIRED
 
 
@@ -53,16 +54,21 @@ def _to_float(v: Any, default: float = 0.0) -> float:
 def get_candles_in_range(conn: sqlite3.Connection, ticker: str, start_date: str, end_date: str) -> List[Dict[str, Any]]:
     """جلب الشموع بين تاريخ الدخول والخروج (شامل)."""
     rows = conn.execute("""
-        SELECT price_date, high, low, close, open
-        FROM stock_daily_prices
+        SELECT price_date,
+               COALESCE(high_price, high, 0) as high,
+               COALESCE(low_price, low, 0) as low,
+               COALESCE(close_price, close, 0) as close,
+               COALESCE(open_price, open, 0) as open
+        FROM stocks_db.stock_daily_prices
         WHERE ticker = ?
           AND price_date >= ?
           AND price_date <= ?
-          AND COALESCE(high, 0) > 0
-          AND COALESCE(low, 0) > 0
+          AND (COALESCE(high_price, high, 0) > 0)
+          AND (COALESCE(low_price, low, 0) > 0)
         ORDER BY price_date ASC
     """, (ticker, start_date, end_date)).fetchall()
     return [dict(zip(['price_date', 'high', 'low', 'close', 'open'], r)) for r in rows]
+
 
 
 def audit_trade(
@@ -249,20 +255,25 @@ def main() -> int:
         log(f"Market filter: {args.market}")
     log("")
 
+    if not PREDICTIONS_DB.exists():
+        log(f"predictions.db غير موجود: {PREDICTIONS_DB}", "ERROR")
+        return 1
     if not STOCKS_DB.exists():
         log(f"stocks.db غير موجود: {STOCKS_DB}", "ERROR")
         return 1
 
     # نسخة احتياطية قبل أي تعديل
     if not args.dry_run:
-        backup_path = STOCKS_DB.parent / "backups" / f"stocks_db_before_audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+        backup_path = PREDICTIONS_DB.parent / "backups" / f"predictions_db_before_audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
         backup_path.parent.mkdir(parents=True, exist_ok=True)
         import shutil
-        shutil.copy2(STOCKS_DB, backup_path)
+        shutil.copy2(PREDICTIONS_DB, backup_path)
         log(f"💾 نسخة احتياطية: {backup_path.name}", "OK")
 
-    conn = sqlite3.connect(str(STOCKS_DB))
+    conn = sqlite3.connect(str(PREDICTIONS_DB))
     conn.row_factory = sqlite3.Row
+    conn.execute(f"ATTACH DATABASE '{STOCKS_DB}' AS stocks_db")
+
 
     # جلب كل الصفقات
     rows = conn.execute("""
