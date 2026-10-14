@@ -136,14 +136,18 @@ def scan_market(conn: sqlite3.Connection, market: str) -> Tuple[List[Dict[str, A
             ORDER BY symbol
         """).fetchall()
     else:
-        # الأسواق العربية من جدول stocks في stocks.db
+        # الأسواق العربية من جدول stocks في stocks.db (فلترة حديدية لمنع أكواد الـ ISIN والأسهم المجهولة وسوق نمو)
         rows = conn.execute("""
-            SELECT ticker, name, current_price, ma_50, ma_200, support, resistance,
+            SELECT ticker, name, name_ar, current_price, ma_50, ma_200, support, resistance,
                    change_percent, volume, rsi, pe_ratio, sector, market
             FROM stocks
             WHERE is_active = 1 AND market = ?
-            AND current_price IS NOT NULL AND current_price > 0
-            ORDER BY ticker
+              AND current_price IS NOT NULL AND current_price > 0
+              AND ticker NOT LIKE 'EGS%' AND ticker NOT LIKE 'EGX%'
+              AND length(ticker) <= 6
+              AND (market != 'TADAWUL' OR (ticker NOT LIKE '95%' AND ticker NOT LIKE '96%'))
+              AND (name_ar IS NOT NULL AND trim(name_ar) != '' AND name_ar != ticker)
+            ORDER BY COALESCE(volume, 0) DESC, ticker
         """, (market,)).fetchall()
 
     opportunities = []
@@ -427,12 +431,22 @@ def write_predictions_canonical(opportunities: List[Dict[str, Any]]) -> int:
         log(f"stocks.db غير موجود: {STOCKS_DB}", "ERROR")
         return 0
 
-    conn_pred = sqlite3.connect(str(STOCKS_DB))
+    target_db = PREDICTIONS_DB if PREDICTIONS_DB.exists() else STOCKS_DB
+    try:
+        test_conn = sqlite3.connect(str(target_db))
+        has_pred = bool(test_conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='predictions'").fetchall())
+        test_conn.close()
+        if not has_pred and target_db == PREDICTIONS_DB and STOCKS_DB.exists():
+            target_db = STOCKS_DB
+    except Exception:
+        target_db = STOCKS_DB
+
+    conn_pred = sqlite3.connect(str(target_db))
     written = 0
     now_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    # تحقق من أعمدة predictions في stocks.db
+    # تحقق من أعمدة predictions في قاعدة البيانات الهدف
     cols = [r[1] for r in conn_pred.execute("PRAGMA table_info(predictions)").fetchall()]
     has_highest = 'highest_price_reached' in cols
     has_lowest = 'lowest_price_reached' in cols
