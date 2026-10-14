@@ -71,6 +71,20 @@ export function isValidView(view: string): boolean {
 // لأن العميل طلب دمج الشاشات في الـ unified experience:
 //   crypto-portfolio, crypto-watchlist, crypto-prediction-tracking — بتفضل على
 //   الـ components المتخصصة بتاعتها في page.tsx (مش هتتبدل).
+// P2-ARCH-A5 FIX (2026-10-14): Alias view redirects.
+// These 3 hash routes all pointed to the same <MarketAnalysisView /> component.
+// Now they redirect to the canonical #recommendations view.
+// The redirect happens in UrlHashSync (page.tsx) before the switch statement.
+export const ALIAS_VIEW_REDIRECTS: Readonly<Record<string, string>> = {
+  'analysis': 'recommendations',
+  'advanced-analysis': 'recommendations',
+  'v2-analysis': 'recommendations',
+};
+
+export function resolveAliasRedirect(view: string): string | null {
+  return ALIAS_VIEW_REDIRECTS[view] ?? null;
+}
+
 export const CRYPTO_VIEW_REDIRECTS: Readonly<Record<string, string>> = {
   'crypto': 'dashboard',
   'crypto-live': 'stocks',

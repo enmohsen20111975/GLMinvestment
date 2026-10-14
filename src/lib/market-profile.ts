@@ -36,6 +36,7 @@
  *
  * Usage in engines:
  *   import { getMarketProfile } from '@/lib/market-profile';
+import { cache as centralCache } from '@/lib/cache-manager';
  *   const profile = getMarketProfile(market);
  *   const rsiOverbought = profile.rsi_overbought; // 70 (EGX), 75 (CRYPTO), 70 (US)
  *

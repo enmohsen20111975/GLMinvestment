@@ -9,6 +9,7 @@
  */
 
 import Database from 'better-sqlite3';
+import { cache as centralCache } from '@/lib/cache-manager';
 import * as path from 'path';
 import { existsSync } from 'fs';
 

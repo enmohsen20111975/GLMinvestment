@@ -1,45 +1,25 @@
 /**
- * GET /api/crypto/watchlist
- * Returns crypto watchlist items for the authenticated user
+ * GET /api/crypto/watchlist — DELEGATES to canonical /api/watchlist
+ * ============================================================================
+ * P2-ARCH-A2 FIX (2026-10-14): This route previously had its own copy of the
+ * watchlist SQL. Now it delegates to the canonical route with ?market=CRYPTO.
+ *
+ * Frontend callers (EnhancedWatchlistView with CRYPTO market) continue to work.
+ * Future Phase: replace this route with a 308 redirect.
  */
+import { NextRequest } from 'next/server';
 
-import { NextResponse } from 'next/server';
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-import { getSessionUserId } from '@/lib/auth-helper';
-import { pythonFetch } from '@/lib/python-backend';
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  url.pathname = '/api/watchlist';
+  url.searchParams.set('market', 'CRYPTO');
 
-export async function GET() {
-  try {
-    const { userId } = await getSessionUserId();
-    
-    if (!userId) {
-      return NextResponse.json({ success: true, items: [], total: 0 });
-    }
-
-    // Try to fetch from Python backend
-    try {
-      const result = await pythonFetch<any>('/api/crypto/watchlist', { timeout: 5000 });
-      
-      if (result.success && result.data) {
-        return NextResponse.json(result.data);
-      }
-    } catch (error) {
-      console.log('[crypto/watchlist] Python backend not available, returning empty');
-    }
-
-    // Return empty list if Python backend not available
-    return NextResponse.json({ 
-      success: true, 
-      items: [], 
-      total: 0,
-      message: 'Crypto watchlist not available' 
-    });
-  } catch (error) {
-    console.error('[GET /api/crypto/watchlist] Error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Error reading crypto watchlist' },
-      { status: 500 }
-    );
-  }
+  const forwarded = new NextRequest(url, {
+    method: request.method,
+    headers: request.headers,
+  });
+  const { GET: canonicalGet } = await import('@/app/api/watchlist/route');
+  return canonicalGet(forwarded);
 }

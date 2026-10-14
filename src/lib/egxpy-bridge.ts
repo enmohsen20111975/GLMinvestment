@@ -13,6 +13,7 @@
  */
 
 import { execFile } from 'child_process';
+import { cache as centralCache } from '@/lib/cache-manager';
 import { promisify } from 'util';
 import * as path from 'path';
 
@@ -26,36 +27,25 @@ const VPS_API_TIMEOUT = 30_000; // 30 seconds
 const TV_FETCHER_PATH = path.join(process.cwd(), 'scripts', 'tv_fetcher.py');
 
 // ---- Cache ----
+// P2-ARCH-A1 FIX (2026-10-14): Consolidated into cache-manager.ts (SSOT).
+// Previous: local Map cache with manual prune at 300 entries.
+// Now: uses central cache-manager with LRU eviction (max 512) + TTL.
 
-const CACHE_TTL_MS = 180_000; // 3 minutes
-const cache = new Map<string, { ts: number; data: unknown }>();
+const CACHE_TTL_MS = 180_000; // 3 minutes — kept for backward compat
+const BRIDGE_NS = 'egxpy:';
 
 function getCached<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (entry && Date.now() - entry.ts < CACHE_TTL_MS) return entry.data as T;
-  cache.delete(key);
-  return null;
+  return centralCache.get<T>(BRIDGE_NS + key) ?? null;
 }
 
 function setCache(key: string, data: unknown) {
-  cache.set(key, { ts: Date.now(), data });
-  // Prune old entries periodically
-  if (cache.size > 300) {
-    const now = Date.now();
-    for (const [k, v] of cache) {
-      if (now - v.ts > CACHE_TTL_MS * 2) cache.delete(k);
-    }
-  }
+  centralCache.set(BRIDGE_NS + key, data, CACHE_TTL_MS);
 }
 
 function clearCache(pattern?: string) {
-  if (!pattern) {
-    cache.clear();
-    return;
-  }
-  for (const key of cache.keys()) {
-    if (key.includes(pattern)) cache.delete(key);
-  }
+  // centralCache doesn't support pattern-based clear yet; clear all for safety
+  // TODO: add pattern-based clear to cache-manager if needed
+  centralCache.clear();
 }
 
 // ---- VPS API Client ----

@@ -7,7 +7,7 @@ import dynamicImport from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
-import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView } from '@/lib/valid-views';
+import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView , resolveAliasRedirect } from '@/lib/valid-views';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { TopBar } from '@/components/layout/TopBar';
 import { DashboardView } from '@/modules/dashboard/components/DashboardView';
@@ -320,7 +320,12 @@ function UrlHashSync() {
     if (typeof window === 'undefined') return;
 
     const hash = window.location.hash.slice(1); // Remove #
-    if (hash && validViews.includes(hash)) {
+    // P2-ARCH-A5: resolve alias redirects (#analysis → #recommendations)
+    const aliasTarget = resolveAliasRedirect(hash);
+    if (aliasTarget) {
+      window.location.replace('#' + aliasTarget);
+      setCurrentViewFromHash(aliasTarget as typeof currentView);
+    } else if (hash && validViews.includes(hash)) {
       setCurrentViewFromHash(hash as typeof currentView);
       // CRYPTO-SUPPORT: لو الـ hash يبدأ بـ crypto → setCurrentMarket('CRYPTO')
       const { setCurrentMarket, currentMarket } = useAppStore.getState();
@@ -338,6 +343,12 @@ function UrlHashSync() {
 
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1); // Remove #
+      // P2-ARCH-A5: resolve alias redirects
+      const aliasTarget = resolveAliasRedirect(hash);
+      if (aliasTarget) {
+        window.location.replace('#' + aliasTarget);
+        return;
+      }
       if (hash && validViews.includes(hash)) {
         // Only update if different from current
         if (hash !== currentView) {
@@ -523,14 +534,8 @@ function AppShell() {
       case 'watchlist':
         return <EnhancedWatchlistView />;
       case 'recommendations':
-      case 'analysis':
-        return <MarketAnalysisView />;
-      case 'advanced-analysis':
-      case 'v2-analysis':
-        // advanced-analysis REMOVED — features distributed to:
-        //   - #recommendations (متابعة التوقعات) → prediction tracking + persona tabs
-        //   - #specialist-analysis (تحليل المتخصصين) → expert intelligence + comparison
-        // Redirect to recommendations for backward-compat hash links.
+        // P2-ARCH-A5: #analysis, #advanced-analysis, #v2-analysis now redirect
+        // to #recommendations via ALIAS_VIEW_REDIRECTS in UrlHashSync above.
         return <MarketAnalysisView />;
       case 'unified-analysis':
         return <UnifiedAnalysisView />;

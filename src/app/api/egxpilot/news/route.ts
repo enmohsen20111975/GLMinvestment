@@ -1,53 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-export const dynamic = "force-dynamic";
+/**
+ * GET /api/egxpilot/news — 308 PERMANENT REDIRECT to /api/news
+ * ============================================================================
+ * P2-ARCH-A3 FIX (2026-10-14): This route was a STUB returning empty news
+ * (53 LOC of dead code). Now it 308-redirects to the canonical /api/news
+ * with ?shape=egxpilot so callers get real news data instead of empty arrays.
+ *
+ * Rule 27 (NO-FAKE-DATA): returning empty arrays was misleading.
+ */
+import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface NewsItem {
-  title: string;
-  summary: string;
-  source: string;
-  url: string;
-  timestamp: number;
-  sentiment: 'positive' | 'negative' | 'neutral';
-}
-
-interface NewsResponse {
-  success: boolean;
-  count: number;
-  news: NewsItem[];
-}
-
-// ---------------------------------------------------------------------------
-// Main GET handler - Returns empty news (no fake data)
-// ---------------------------------------------------------------------------
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const limit = Math.min(20, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
-
-    // Return empty news - no fake data
-    const response: NewsResponse = {
-      success: true,
-      count: 0,
-      news: [],
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('[GET /api/egxpilot/news] Error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        count: 0,
-        news: [],
-        error: 'Failed to fetch news',
-      },
-      { status: 500 }
-    );
-  }
+export async function GET() {
+  return NextResponse.redirect(
+    new URL('/api/news?shape=egxpilot', process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+    308
+  );
 }

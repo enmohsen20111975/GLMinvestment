@@ -23,6 +23,7 @@
 
 // FIX-WAVE-3-HIGH / AUDIT-DEEP-4 #15 (Rule 58): structured logger replaces console.log/error
 import { logger } from '@/lib/logger';
+import { cache as centralCache } from '@/lib/cache-manager';
 
 // ---------------------------------------------------------------------------
 // Configuration & API Keys
@@ -141,35 +142,29 @@ export interface SourceHealth {
 // In-Memory Cache
 // ---------------------------------------------------------------------------
 
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  source: string;
-}
+// P2-ARCH-A1 FIX (2026-10-14): Consolidated into cache-manager.ts (SSOT).
+// Previous: local Map cache with manual TTL checking.
+// Now: uses central cache-manager with LRU eviction + per-entry TTL.
+// Note: 'source' field is dropped (not needed for caching semantics).
 
-const cache = new Map<string, CacheEntry<unknown>>();
+const MSA_NS = 'msa:';
 const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const STOCK_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes for stocks
 const GOLD_CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes for gold
 const CURRENCY_CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes for currency
 
 function getCached<T>(key: string, ttlMs: number = DEFAULT_CACHE_TTL_MS): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.timestamp > ttlMs) {
-    cache.delete(key);
-    return null;
-  }
-  return entry.data as T;
+  // central cache-manager handles TTL internally via set(key, value, ttlMs)
+  return centralCache.get<T>(MSA_NS + key) ?? null;
 }
 
-function setCache<T>(key: string, data: T, source: string): void {
-  cache.set(key, { data, timestamp: Date.now(), source });
+function setCache<T>(key: string, data: T, source: string, ttlMs: number = DEFAULT_CACHE_TTL_MS): void {
+  centralCache.set(MSA_NS + key, data, ttlMs);
 }
 
 export function clearCache(): void {
-  cache.clear();
-  console.log('[MultiSourceAdapter] Cache cleared');
+  centralCache.clear();
+  console.log('[MultiSourceAdapter] Cache cleared (via central cache-manager)');
 }
 
 // ---------------------------------------------------------------------------

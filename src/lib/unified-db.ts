@@ -6,6 +6,7 @@
  */
 
 import { createDatabase, initialize, isInitialized, type SqliteDatabase } from '@/lib/sqlite-wrapper';
+import { cache as centralCache } from '@/lib/cache-manager';
 import * as path from 'path';
 import { existsSync } from 'fs';
 import { getLiveEgyptGoldPrices } from '@/lib/data-engine-db';

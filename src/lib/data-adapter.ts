@@ -21,6 +21,7 @@ import { validateStockData, isDataFresh, type StockDataPoint } from './data-vali
 import { fetchFromMubasher, fetchFromWebSearch } from './egx-data-sources';
 import { getWritableDatabase, upsertPriceHistory, parseNumber } from './data-sync';
 import ZAI from 'z-ai-web-dev-sdk';
+import { cache as centralCache } from '@/lib/cache-manager';
 
 // ---------------------------------------------------------------------------
 // Unified Data Types — أنواع البيانات الموحدة
@@ -68,40 +69,32 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes (5 دقائق)
-
-const stockCache = new Map<string, CacheEntry<UnifiedStockData>>();
-const historicalCache = new Map<string, CacheEntry<HistoricalPrice[]>>();
+// P2-ARCH-A1 FIX (2026-10-14): Consolidated into cache-manager.ts (SSOT).
+// Previous: two separate Map caches (stockCache + historicalCache) with manual TTL.
+// Now: uses the canonical cache-manager with LRU eviction + per-entry TTL.
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes (5 دقائق) — kept for backward compat
+const STOCK_NS = 'da:stock:';       // data-adapter stock namespace
+const HIST_NS = 'da:hist:';         // data-adapter historical namespace
 
 function getCachedStock(ticker: string): UnifiedStockData | null {
-  const key = ticker.toUpperCase();
-  const entry = stockCache.get(key);
-  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
-    return entry.data;
-  }
-  // Remove stale entries
-  if (entry) stockCache.delete(key);
-  return null;
+  // P2-ARCH-A1: use central cache-manager (LRU + TTL handled internally)
+  const key = STOCK_NS + ticker.toUpperCase();
+  return centralCache.get<UnifiedStockData>(key) ?? null;
 }
 
 function setCachedStock(ticker: string, data: UnifiedStockData): void {
-  const key = ticker.toUpperCase();
-  stockCache.set(key, { data, timestamp: Date.now() });
+  const key = STOCK_NS + ticker.toUpperCase();
+  centralCache.set(key, data, CACHE_TTL_MS);
 }
 
 function getCachedHistorical(ticker: string): HistoricalPrice[] | null {
-  const key = `hist_${ticker.toUpperCase()}`;
-  const entry = historicalCache.get(key);
-  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
-    return entry.data;
-  }
-  if (entry) historicalCache.delete(key);
-  return null;
+  const key = HIST_NS + ticker.toUpperCase();
+  return centralCache.get<HistoricalPrice[]>(key) ?? null;
 }
 
 function setCachedHistorical(ticker: string, data: HistoricalPrice[]): void {
-  const key = `hist_${ticker.toUpperCase()}`;
-  historicalCache.set(key, { data, timestamp: Date.now() });
+  const key = HIST_NS + ticker.toUpperCase();
+  centralCache.set(key, data, CACHE_TTL_MS);
 }
 
 /**
@@ -109,8 +102,8 @@ function setCachedHistorical(ticker: string, data: HistoricalPrice[]): void {
  * مسح جميع البيانات المخزنة مؤقتاً
  */
 export function clearDataCache(): void {
-  stockCache.clear();
-  historicalCache.clear();
+  centralCache.clear();
+  centralCache.clear();
   console.log('[DataAdapter] Cache cleared');
 }
 
@@ -1118,8 +1111,8 @@ export async function refreshStockData(
     console.log(`[DataAdapter] Refreshing ${normalizedTicker} (stockId: ${stockId})...`);
 
     // Fetch fresh data (bypass cache by clearing first)
-    stockCache.delete(normalizedTicker);
-    historicalCache.delete(normalizedTicker);
+    centralCache.delete(STOCK_NS + normalizedTicker.toUpperCase());
+    centralCache.delete(HIST_NS + normalizedTicker.toUpperCase());
 
     const data = await fetchStockData(normalizedTicker);
     if (!data) {
@@ -1170,7 +1163,7 @@ export async function refreshStockData(
           const db = getWritableDatabase();
 
           for (const point of historical) {
-            upsertPriceHistory(db, stockId, point.date, {
+            upsertPriceHistory(db, normalizedTicker, point.date, {
               open_price: point.open,
               high_price: point.high,
               low_price: point.low,
@@ -1318,7 +1311,7 @@ export function logAdapterStatus(): void {
   const alphaVantageKey = !!process.env.ALPHA_VANTAGE_API_KEY;
   const twelveDataEnv = !!process.env.TWELVE_DATA_API_KEY;
   const alphaVantageEnv = !!process.env.ALPHA_VANTAGE_API_KEY;
-  const cacheSize = stockCache.size + historicalCache.size;
+  const cacheSize = centralCache.stats().entries;
 
   console.log(`
 [DataAdapter] ═══════════════════════════════════════════

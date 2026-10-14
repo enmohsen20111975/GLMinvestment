@@ -11,6 +11,7 @@
  */
 
 import { enrichStockData, enrichStocksData } from './stock-names';
+import { cache as centralCache } from '@/lib/cache-manager';
 // FIX-WAVE-3-HIGH / AUDIT-DEEP-4 #15 (Rule 58): structured logger replaces console.error
 import { logger } from '@/lib/logger';
 

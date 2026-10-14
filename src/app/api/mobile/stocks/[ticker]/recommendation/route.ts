@@ -1,22 +1,25 @@
 /**
- * ⚠️ ALIAS ROUTE — This endpoint is an alias for /api/market-pulse.
+ * ⚠️ 308 PERMANENT REDIRECT to /api/market-pulse
+ * ============================================================================
+ * P2-ARCH-A4 FIX (2026-10-14): This route was an alias for /api/market-pulse
+ * (used marketPulseProxy helper). Now it 308-redirects to the canonical
+ * endpoint to eliminate duplicate processing + unify the entry point.
  *
- * P1-CRIT-C-2 FIX (2026-10-14): This route uses marketPulseProxy helper which
- * forwards all requests to Python /api/market-pulse. The route name does not
- * reflect the actual response data. See AUDIT_REPORT_FULL.md Section 3.2.
+ * 308 preserves the HTTP method (GET stays GET, POST stays POST).
+ * Query params are forwarded verbatim.
  *
- * Future Phase P2: replace this route with a 308 redirect to /api/market-pulse.
+ * See AUDIT_REPORT_FULL.md Section 3.2 (CRIT-C-2) for details.
  */
-
-/**
- * mobile/stocks/[ticker]/recommendation — thin proxy to /api/market-pulse (canonical).
- * Task P1-CLEANUP (2026-10-08): unified from 29-LOC copy-paste to 1-line delegation.
- * The route name is kept for backward compat with frontend callers.
- */
-import { NextRequest } from 'next/server';
-import { marketPulseProxy } from '@/lib/market-pulse-proxy';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) { return marketPulseProxy(req); }
+function redirectToMarketPulse(request: NextRequest): NextResponse {
+  const url = new URL(request.url);
+  url.pathname = '/api/market-pulse';
+  return NextResponse.redirect(url, 308);
+}
 
+export async function GET(request: NextRequest) {
+  return redirectToMarketPulse(request);
+}
