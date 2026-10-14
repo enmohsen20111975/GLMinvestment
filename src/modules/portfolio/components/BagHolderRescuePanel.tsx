@@ -45,6 +45,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+// Marathon Phase 2: dynamic currency based on stock's market
+import { marketCurrencySymbol, type MarketCode } from '@/types/commercial-feed';
 
 // ─── Types (matching Python API response) ────────────────────────────────
 
@@ -173,9 +175,9 @@ const fmtPct = (n: number | null | undefined): string => {
   return `${sign}${n.toFixed(2)}%`;
 };
 
-const fmtMoney = (n: number | null | undefined): string => {
+const fmtMoney = (n: number | null | undefined, currency = 'ج.م'): string => {
   if (n == null || !Number.isFinite(n)) return '—';
-  return `${Math.abs(n).toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م`;
+  return `${Math.abs(n).toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ${currency}`;
 };
 
 // Rule 30 palette: emerald/teal/amber/red/gray only — NO blue/indigo
@@ -234,6 +236,9 @@ export function BagHolderRescuePanel({
   const [result, setResult] = useState<RescueResponse | null>(null);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [fetchingPrice, setFetchingPrice] = useState(false);
+  // Marathon Phase 2: dynamic market currency (detected from stock's market)
+  const [stockMarket, setStockMarket] = useState<MarketCode | null>(null);
+  const currency = marketCurrencySymbol(stockMarket);
 
   // ── Pre-fill from props ──────────────────────────────────────────────
   useEffect(() => {
@@ -266,8 +271,14 @@ export function BagHolderRescuePanel({
       const json = await res.json();
       const price = Number(json?.stock?.current_price ?? json?.stats?.lastClose ?? json?.price?.current_price ?? 0);
       setLivePrice(price > 0 ? price : null);
+      // Marathon Phase 2: detect market from stock.market field
+      const marketRaw = String(json?.stock?.market ?? json?.market ?? '').toUpperCase();
+      const validMarkets: MarketCode[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO'];
+      const detected = validMarkets.includes(marketRaw as MarketCode) ? (marketRaw as MarketCode) : null;
+      setStockMarket(detected);
     } catch {
       setLivePrice(null);
+      setStockMarket(null);
     } finally {
       setFetchingPrice(false);
     }
@@ -396,12 +407,12 @@ export function BagHolderRescuePanel({
               {fetchingPrice && <span className="text-[10px] text-muted-foreground">جاري جلب السعر...</span>}
               {livePrice !== null && !fetchingPrice && (
                 <span className="text-[10px] text-muted-foreground">
-                  السعر الحالي: <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{fmtPrice(livePrice)} ج.م</span>
+                  السعر الحالي: <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{fmtPrice(livePrice)} {currency}</span>
                 </span>
               )}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">سعر الشراء الأصلي (ج.م)</Label>
+              <Label className="text-xs font-semibold">سعر الشراء الأصلي ({currency})</Label>
               <Input
                 type="number"
                 value={entryPrice}
@@ -423,7 +434,7 @@ export function BagHolderRescuePanel({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">إجمالي التكلفة (ج.م) — اختياري</Label>
+              <Label className="text-xs font-semibold">إجمالي التكلفة ({currency}) — اختياري</Label>
               <Input
                 type="number"
                 value={totalCost}
@@ -565,7 +576,33 @@ export function BagHolderRescuePanel({
 
 // ─── Result view: 3 decisions + diagnosis + recovery plan ────────────────
 
+// Marathon Phase 2: shared hook to detect market currency from a ticker
+function useMarketCurrency(ticker: string | null | undefined): string {
+  const [currency, setCurrency] = useState('ج.م');
+  useEffect(() => {
+    if (!ticker || ticker.trim().length < 2) { setCurrency('ج.م'); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/stocks/${encodeURIComponent(ticker.trim())}/comprehensive`, { cache: 'no-store' });
+        const json = await res.json();
+        if (cancelled) return;
+        const marketRaw = String(json?.stock?.market ?? json?.market ?? '').toUpperCase();
+        const validMarkets: MarketCode[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO'];
+        const detected = validMarkets.includes(marketRaw as MarketCode) ? (marketRaw as MarketCode) : null;
+        setCurrency(marketCurrencySymbol(detected));
+      } catch {
+        if (!cancelled) setCurrency('ج.م');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [ticker]);
+  return currency;
+}
+
 function ResultView({ result }: { result: RescueResponse }) {
+  // Marathon Phase 2: detect currency from the result's ticker
+  const currency = useMarketCurrency(result?.ticker);
   const decisions: DecisionView[] = result.decisions && result.decisions.length === 3
     ? result.decisions
     : buildFallbackDecisions(result.decision);
@@ -621,7 +658,7 @@ function ResultView({ result }: { result: RescueResponse }) {
                   <Wallet className="w-3.5 h-3.5" />
                   <span>قيمة المركز الحالية:</span>
                   <span className="font-mono font-bold text-foreground">
-                    {fmtMoney(result.market_value_egp)}
+                    {fmtMoney(result.market_value_egp, currency)}
                   </span>
                 </div>
               )}
@@ -764,7 +801,7 @@ function ResultView({ result }: { result: RescueResponse }) {
             <div className="flex justify-between">
               <span className="text-muted-foreground">قيمة الخسارة</span>
               <span className={cn('font-bold font-mono', (result.loss_pct ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400')}>
-                {fmtMoney(result.loss_amount)}
+                {fmtMoney(result.loss_amount, currency)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -881,6 +918,8 @@ function ResultView({ result }: { result: RescueResponse }) {
 // ─── Capital Recovery Plan (timeline + financial) ────────────────────────
 
 function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
+  // Marathon Phase 2: detect currency from the result's ticker
+  const currency = useMarketCurrency(result?.ticker);
   // All numbers come from Python (Rule 4). We just present them clearly.
   const invested = result.invested_egp;
   const marketValue = result.market_value_egp;
@@ -928,11 +967,11 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
       <CardContent className="space-y-4">
         {/* Financial summary grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <FinanceCell label="رأس المال المستثمر" value={fmtMoney(invested)} tone="emerald" />
-          <FinanceCell label="القيمة السوقية الحالية" value={fmtMoney(marketValue)} tone="teal" />
+          <FinanceCell label="رأس المال المستثمر" value={fmtMoney(invested, currency)} tone="emerald" />
+          <FinanceCell label="القيمة السوقية الحالية" value={fmtMoney(marketValue, currency)} tone="teal" />
           <FinanceCell
             label="قيمة الخسارة"
-            value={fmtMoney(lossAmount)}
+            value={fmtMoney(lossAmount, currency)}
             tone={(lossPct ?? 0) < 0 ? 'red' : 'emerald'}
           />
           <FinanceCell
@@ -972,7 +1011,7 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
               <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
               مستوى الخروج المالي (أقرب مقاومة)
             </span>
-            <span className="font-mono font-bold text-amber-700 dark:text-amber-400">{fmtPrice(exitLevel)} ج.م</span>
+            <span className="font-mono font-bold text-amber-700 dark:text-amber-400">{fmtPrice(exitLevel)} {currency}</span>
           </div>
         )}
 

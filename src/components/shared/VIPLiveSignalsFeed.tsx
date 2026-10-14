@@ -16,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   Zap, Target, ShieldAlert, ArrowRight, RefreshCw, Activity,
@@ -56,8 +57,12 @@ function MarketSwitcherBar({
         const isActive = activeMarket.toUpperCase() === m;
         const badge = summaries[m];
         const currency = marketCurrencySymbol(m);
-        const wr = badge?.audited?.win_rate ?? null;
-        const closed = badge?.audited?.total_closed ?? 0;
+        const audited = badge?.audited;
+        const wr = audited?.win_rate ?? null;
+        const pf = audited?.profit_factor ?? null;
+        const ar = audited?.avg_return ?? null;
+        const closed = audited?.total_closed ?? 0;
+        const hasHistory = closed > 0;
         return (
           <button
             key={m}
@@ -69,6 +74,7 @@ function MarketSwitcherBar({
                 : 'border-border/50 hover:border-emerald-500/30 hover:bg-muted/30',
             )}
           >
+            {/* Row 1: market code + currency */}
             <div className="flex items-center justify-between gap-1 min-w-0">
               <span className={cn(
                 'text-xs font-bold truncate',
@@ -78,25 +84,61 @@ function MarketSwitcherBar({
               </span>
               <span className="text-[9px] text-muted-foreground shrink-0">{currency}</span>
             </div>
+            {/* Row 2: audited performance badge or "قيد التدقيق المؤسسي" */}
             <div className="mt-1 min-w-0">
               {badge?.loading ? (
-                <div className="h-3 w-12 bg-muted/50 rounded animate-pulse" />
-              ) : closed > 0 ? (
-                <div className="flex items-center gap-1 min-w-0">
-                  <span className={cn(
-                    'text-[10px] font-bold',
-                    wr != null && wr >= 70
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : wr != null && wr >= 50
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-muted-foreground',
-                  )}>
-                    {wr != null ? `${wr}%` : '—'}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground truncate">· {closed} صفقة</span>
+                <div className="space-y-1">
+                  <div className="h-2.5 w-10 bg-muted/50 rounded animate-pulse" />
+                  <div className="h-2 w-14 bg-muted/40 rounded animate-pulse" />
+                </div>
+              ) : hasHistory ? (
+                <div className="space-y-0.5 min-w-0">
+                  {/* Win rate — emerald if ≥60%, amber if 40-59%, muted if <40% */}
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <span className="text-[8px] text-muted-foreground shrink-0">الفوز</span>
+                    <span className={cn(
+                      'text-[10px] font-bold tabular-nums',
+                      wr != null && wr >= 60
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : wr != null && wr >= 40
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-muted-foreground',
+                    )}>
+                      {wr != null ? `${wr}%` : '—'}
+                    </span>
+                  </div>
+                  {/* Profit factor + avg return compact row */}
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <span className="text-[8px] text-muted-foreground shrink-0">ربحية</span>
+                    <span className={cn(
+                      'text-[9px] font-semibold tabular-nums',
+                      pf != null && pf >= 1.3
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : pf != null && pf >= 1.0
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-muted-foreground',
+                    )}>
+                      {pf != null ? pf.toFixed(2) : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <span className="text-[8px] text-muted-foreground shrink-0">عائد</span>
+                    <span className={cn(
+                      'text-[9px] font-semibold tabular-nums',
+                      ar != null && ar >= 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-red-500 dark:text-red-400',
+                    )}>
+                      {ar != null ? `${ar >= 0 ? '+' : ''}${ar}%` : '—'}
+                    </span>
+                  </div>
                 </div>
               ) : (
-                <span className="text-[9px] text-muted-foreground/60">لا سجل بعد</span>
+                /* No closed trades → honest "قيد التدقيق المؤسسي" badge (Rule 27: no fake 0%) */
+                <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 text-[8px] font-medium text-amber-600 dark:text-amber-400">
+                  <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                  قيد التدقيق المؤسسي
+                </span>
               )}
             </div>
           </button>
@@ -339,8 +381,20 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
       await navigator.clipboard.writeText(buildCopyMessage(sig));
       setCopiedTicker(sig.ticker);
       setTimeout(() => setCopiedTicker(null), 2000);
+      // Marathon Phase 1: emerald Toast تأكيد أنيق
+      toast.success('تم نسخ التوصية', {
+        description: `${sig.ticker} — جاهزة للمشاركة عبر تليجرام/واتساب ✓`,
+        style: {
+          background: 'rgb(6 95 70 / 0.08)',
+          border: '1px solid rgb(6 95 70 / 0.25)',
+          color: 'rgb(6 95 70)',
+        },
+        icon: <Check className="w-4 h-4 text-emerald-600" />,
+      });
     } catch {
-      // silent
+      toast.error('تعذّر النسخ', {
+        description: 'حاول مرة أخرى أو انسخ النص يدوياً',
+      });
     }
   };
 
@@ -479,22 +533,24 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
         </div>
       )}
 
-      {/* T-ALPHA-A21: 🔍 استعراض باقي فرص الرادار الإضافية */}
+      {/* Marathon Phase 1: 🔍 فرص استثمارية إضافية تحت المراقبة — Accordion مطوي افتراضياً */}
       {extraSignals.length > 0 && (
         <div className="space-y-3">
           <button
             onClick={() => setShowExtra(!showExtra)}
-            className="flex items-center gap-2 px-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+            className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-lg transition-all w-full"
             dir="rtl"
+            aria-expanded={showExtra}
           >
-            {showExtra ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            <Search className="w-3.5 h-3.5" />
-            <span>
-              استعراض باقي فرص الرادار الإضافية ({extraSignals.length} سهم)
+            {showExtra ? <ChevronUp className="w-4 h-4 shrink-0 transition-transform" /> : <ChevronDown className="w-4 h-4 shrink-0 transition-transform" />}
+            <Search className="w-3.5 h-3.5 shrink-0" />
+            <span className="flex-1 text-right">
+              فرص استثمارية إضافية تحت المراقبة ({extraSignals.length} سهم)
             </span>
+            <Badge variant="outline" className="text-[9px] shrink-0 bg-muted/40">{showExtra ? 'طي' : 'عرض'}</Badge>
           </button>
           {showExtra && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
               {extraSignals.map((sig) => (
                 <SignalCard
                   key={`${sig.ticker}-${sig.prediction_date}`}
