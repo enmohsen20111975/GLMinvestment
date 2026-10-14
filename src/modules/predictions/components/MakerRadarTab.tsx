@@ -26,6 +26,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -1321,7 +1322,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {/* ===== فلتر السوق (Market Filter) ===== */}
       <div className="flex items-center gap-2 flex-wrap" dir="rtl">
         <span className="text-xs text-muted-foreground">السوق:</span>
-        <Select value={market} onValueChange={() => {}}>
+        <Select value={market} onValueChange={(v) => { if (v) window.location.hash = `#liquidity-radar`; }}>
           <SelectTrigger className="h-7 w-[100px] text-xs">
             <SelectValue />
           </SelectTrigger>
