@@ -404,11 +404,109 @@ def verify_all() -> bool:
 # ============================================================================
 # Main
 # ============================================================================
+def step6_archive_dead_tables(dry_run: bool = False) -> bool:
+    """Step 6: أرشفة الجداول الميتة (Task BRAVO-PURGE-2)."""
+    log("Step 6: أرشفة الجداول الميتة (archive_dead_tables.py)")
+    script = PROJECT_ROOT / "scripts" / "archive_dead_tables.py"
+    if not script.exists():
+        log(f"  ⚠️ {script.name} غير موجود — skip", "WARN")
+        return True
+    cmd = ["python3", str(script)]
+    if dry_run:
+        cmd.append("--dry-run")
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        # طباعة آخر 10 أسطر
+        lines = (result.stdout or "").strip().split('\n')
+        for line in lines[-10:]:
+            if line.strip():
+                log(f"  {line.strip()}")
+        if result.returncode == 0:
+            log("  ✅ archive_dead_tables نجح", "OK")
+            return True
+        else:
+            log(f"  ❌ exit={result.returncode}", "ERROR")
+            return False
+    except Exception as e:
+        log(f"  ❌ exception: {e}", "ERROR")
+        return False
+
+
+def step7_audit_predictions(dry_run: bool = False) -> bool:
+    """Step 7: تدقيق قضائي للصفقات المغلقة (Task BRAVO-PURGE-1)."""
+    log("Step 7: تدقيق الصفقات المغلقة (audit_predictions_deep.py)")
+    script = PROJECT_ROOT / "scripts" / "audit_predictions_deep.py"
+    if not script.exists():
+        log(f"  ⚠️ {script.name} غير موجود — skip", "WARN")
+        return True
+    cmd = ["python3", str(script)]
+    if dry_run:
+        cmd.append("--dry-run")
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        lines = (result.stdout or "").strip().split('\n')
+        for line in lines[-8:]:
+            if line.strip():
+                log(f"  {line.strip()}")
+        if result.returncode == 0:
+            log("  ✅ audit_predictions_deep نجح", "OK")
+            return True
+        else:
+            log(f"  ❌ exit={result.returncode}", "ERROR")
+            return False
+    except Exception as e:
+        log(f"  ❌ exception: {e}", "ERROR")
+        return False
+
+
+def step8_liquidity_radar_multi_market(dry_run: bool = False) -> bool:
+    """Step 8: تشغيل رادار السيولة لكل الأسواق (Task B-26 Multi-Market)."""
+    log("Step 8: رادار السيولة متعدد الأسواق (liquidity_radar_v2.py)")
+    script = PROJECT_ROOT / "scripts" / "liquidity_radar_v2.py"
+    if not script.exists():
+        log(f"  ⚠️ {script.name} غير موجود — skip", "WARN")
+        return True
+    markets = ['EGX', 'TADAWUL', 'KSE', 'QSE']
+    all_ok = True
+    for mkt in markets:
+        if dry_run:
+            log(f"  ℹ️ {mkt}: would-scan (dry-run)")
+            continue
+        try:
+            result = subprocess.run(
+                ["python3", str(script), "--market", mkt, "--json"],
+                capture_output=True, text=True, timeout=180,
+                env={**os.environ, "PYTHONUNBUFFERED": "1"}
+            )
+            if result.returncode == 0:
+                # استخراج scanned_count
+                import json as _json
+                try:
+                    lines = (result.stdout or "").split('\n')
+                    json_start = next((i for i, l in enumerate(lines) if l.strip().startswith('{')), 0)
+                    data = _json.loads('\n'.join(lines[json_start:]))
+                    scanned = data.get('scanned_count', 0)
+                    phases = data.get('phases_breakdown', {})
+                    log(f"  ✅ {mkt}: {scanned} سهم | phases={phases}", "OK")
+                except Exception:
+                    log(f"  ✅ {mkt}: scanned (JSON parse skipped)", "OK")
+            else:
+                log(f"  ❌ {mkt}: exit={result.returncode}", "ERROR")
+                all_ok = False
+        except Exception as e:
+            log(f"  ❌ {mkt}: exception: {e}", "ERROR")
+            all_ok = False
+    return all_ok
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="P0 Production Automation Script")
     parser.add_argument("--dry-run", action="store_true", help="فحص فقط بدون كتابة")
     parser.add_argument("--execute", action="store_true", help="تنفيذ فعلي (افتراضي)")
     parser.add_argument("--skip-seed", action="store_true", help="تخطي سيد السيولة اللحظية")
+    parser.add_argument("--skip-archive", action="store_true", help="تخطي أرشفة الجداول الميتة")
+    parser.add_argument("--skip-audit", action="store_true", help="تخطي تدقيق الصفقات")
+    parser.add_argument("--skip-radar", action="store_true", help="تخطي رادار السيولة متعدد الأسواق")
     args = parser.parse_args()
 
     log("=" * 60)
@@ -427,6 +525,15 @@ def main() -> int:
     steps.append(("Step 4: Isolate bad DBs", lambda: step4_isolate_bad_dbs(args.dry_run)))
     # Step 5: Multi-market institutional scan (Task BRAVO-MULTI-MARKET)
     steps.append(("Step 5: Multi-market scan", lambda: step5_multi_market_scan(args.dry_run)))
+    # Step 6: Archive dead tables (Task BRAVO-PURGE-2)
+    if not args.skip_archive:
+        steps.append(("Step 6: Archive dead tables", lambda: step6_archive_dead_tables(args.dry_run)))
+    # Step 7: Audit predictions deep (Task BRAVO-PURGE-1)
+    if not args.skip_audit:
+        steps.append(("Step 7: Audit predictions", lambda: step7_audit_predictions(args.dry_run)))
+    # Step 8: Liquidity radar multi-market (Task B-26)
+    if not args.skip_radar:
+        steps.append(("Step 8: Liquidity radar multi-market", lambda: step8_liquidity_radar_multi_market(args.dry_run)))
 
     results = {}
     for name, func in steps:

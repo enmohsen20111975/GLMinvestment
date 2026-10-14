@@ -62,9 +62,37 @@ else:
 LOOKBACK_DAYS = 20              # متوسط الفترة لصافي التدفق
 MIN_CANDLES = 30                # أقل عدد شموع لازم للحكم
 MIN_TURNOVER_EGP = 3_000_000    # حد السيولة الأدنى (3M EGP) — أقل من كده = ضعيف
-MARKET_BEAR_THRESHOLD = -2.0    # لو EGX30 change% ≤ -2% → سوق هابط واضح
-MARKET_BULL_THRESHOLD = 1.0     # لو EGX30 change% ≥ +1% → سوق صاعد
+MARKET_BEAR_THRESHOLD = -2.0    # لو المؤشر change% ≤ -2% → سوق هابط واضح
+MARKET_BULL_THRESHOLD = 1.0     # لو المؤشر change% ≥ +1% → سوق صاعد
 # لو بين -2% و +1% → عرضي
+
+# ─── Task B-26: خريطة العملات + المؤشرات لكل سوق (Multi-Market SSOT) ──
+# كل سوق ليه عملته الحقيقية + رمز مؤشره (مع fallbacks لو المؤشر مش في DB)
+MARKET_CURRENCY_MAP = {
+    'EGX': {'currency': 'ج.م', 'currency_ar': 'جنيه مصري', 'currency_en': 'EGP'},
+    'TADAWUL': {'currency': 'ر.س', 'currency_ar': 'ريال سعودي', 'currency_en': 'SAR'},
+    'KSE': {'currency': 'د.ك', 'currency_ar': 'دينار كويتي', 'currency_en': 'KWD'},
+    'QSE': {'currency': 'ر.ق', 'currency_ar': 'ريال قطري', 'currency_en': 'QAR'},
+    'US': {'currency': '$', 'currency_ar': 'دولار أمريكي', 'currency_en': 'USD'},
+    'CRYPTO': {'currency': '$', 'currency_ar': 'دولار', 'currency_en': 'USD'},
+    'GOLD': {'currency': '$', 'currency_ar': 'دولار', 'currency_en': 'USD'},
+}
+
+# خريطة السوق → قائمة مؤشرات محتملة (نجرّبهم بالترتيب لواحد لواحد)
+MARKET_INDEX_FALLBACKS = {
+    'EGX': ['EGX30', 'EGX70', 'EGX100', 'EGX50'],
+    'TADAWUL': ['TASI', 'TADAWUL', 'Saudi', 'SPSI'],
+    'KSE': ['KSE', 'Boursa Kuwait', 'Kuwait', 'KPW'],
+    'QSE': ['QSE', 'QE', 'Qatar', 'QSI'],
+    'US': ['SPX', 'DJI', 'IXIC', 'US'],
+    'CRYPTO': ['BTC', 'CRYPTO'],
+    'GOLD': ['XAU', 'GOLD'],
+}
+
+
+def get_market_currency(market: str) -> Dict[str, str]:
+    """رجّع عملة السوق الحقيقية (SSOT)."""
+    return MARKET_CURRENCY_MAP.get(market.upper(), MARKET_CURRENCY_MAP['EGX'])
 
 # 3 مراحل بس (ممنوع أي تسميات تانية)
 PHASE_ABSORBING = "بيبلع على الهادي"      # صافي تدفق موجب قوي + حجم فوق المتوسط
@@ -102,23 +130,28 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
        - change_pct: تغير المؤشر المحسوب من current/previous (مش من DB field)
        - index_symbol: رمز المؤشر المستخدم
     """
-    # خريطة السوق → رمز المؤشر
-    index_map = {
-        'EGX': 'EGX30',
-        'TADAWUL': 'TASI',  # لو مش موجود، fallback
-        'KSE': 'KSE',
-        'QSE': 'QSE',
-    }
-    index_symbol = index_map.get(market, 'EGX30')
+    # Task B-26: جرّب كل المؤشرات في قائمة fallbacks بالترتيب
+    index_candidates = MARKET_INDEX_FALLBACKS.get(market, ['EGX30'])
+    row = None
+    index_symbol_used = index_candidates[0] if index_candidates else 'EGX30'
 
-    # جلب آخر قيمة للمؤشر
-    row = conn.execute("""
-        SELECT symbol, current_value, previous_close, change_percent
-        FROM market_indices
-        WHERE symbol = ? OR name LIKE ?
-        ORDER BY last_update DESC
-        LIMIT 1
-    """, (index_symbol, f'%{market}%')).fetchone()
+    for cand in index_candidates:
+        try:
+            row = conn.execute("""
+                SELECT symbol, current_value, previous_close, change_percent
+                FROM market_indices
+                WHERE symbol = ? OR name LIKE ?
+                ORDER BY last_update DESC
+                LIMIT 1
+            """, (cand, f'%{cand}%')).fetchone()
+            if row is not None:
+                index_symbol_used = row[0] if row[0] else cand
+                break
+        except Exception:
+            continue
+
+    # العملة الحقيقية للسوق
+    currency_info = get_market_currency(market)
 
     if row is None:
         # fallback: لو مفيش مؤشر، اعتبر السوق "عرضي" (محايد)
@@ -126,8 +159,10 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
             'regime': 'عرضي',
             'regime_en': 'sideways',
             'change_pct': 0.0,
-            'index_symbol': index_symbol,
-            'reason': 'مؤشر السوق غير متاح — افتراض عرضي محايد',
+            'index_symbol': index_symbol_used,
+            'currency': currency_info['currency'],
+            'currency_ar': currency_info['currency_ar'],
+            'reason': f'مؤشر {market} غير متاح في DB — افتراض عرضي محايد (عملة: {currency_info["currency_ar"]})',
             'is_bear': False,
             'is_bull': False,
         }
@@ -146,7 +181,7 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
                 SELECT close FROM stock_daily_prices
                 WHERE ticker = ? AND COALESCE(close, 0) > 0
                 ORDER BY price_date DESC LIMIT 2
-            """, (index_symbol,)).fetchall()
+            """, (index_symbol_used,)).fetchall()
             if len(candle_rows) >= 2:
                 c1 = _to_float(candle_rows[0][0])
                 c2 = _to_float(candle_rows[1][0])
@@ -188,6 +223,8 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
         'regime_en': regime_en,
         'change_pct': round(change_pct, 2),
         'index_symbol': row[0],
+        'currency': currency_info['currency'],
+        'currency_ar': currency_info['currency_ar'],
         'reason': reason,
         'is_bear': is_bear,
         'is_bull': is_bull,
