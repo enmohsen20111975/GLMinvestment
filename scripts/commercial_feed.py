@@ -388,9 +388,11 @@ def get_audited_performance(market: Optional[str] = None) -> List[Dict[str, Any]
             LEFT JOIN {stocks_ref} s ON p.ticker = s.ticker
             WHERE p.outcome_date IS NOT NULL
               AND p.outcome_date >= p.prediction_date
+              AND p.signal_type IN ('backtest_track_record', 'institutional_scan')
               AND ({lpr_col} > 0 OR {lpr_col} IS NULL OR p.hit_target = 1)
+              AND p.actual_return BETWEEN -50 AND 50
             ORDER BY p.outcome_date DESC
-            LIMIT 500
+            LIMIT 200
         """).fetchall()
     except Exception as e:
         log(f"❌ query audited history فشل: {e}")
