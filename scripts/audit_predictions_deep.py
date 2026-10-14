@@ -238,12 +238,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="التدقيق القضائي للصفقات المغلقة")
     parser.add_argument('--dry-run', action='store_true', help='تقرير فقط بدون تعديل الـ DB')
     parser.add_argument('--json', action='store_true', help='JSON output')
+    parser.add_argument('--market', type=str, default=None, help='فلتر حسب السوق (EGX, TADAWUL, KSE, QSE) — يقرأ من notes JSON')
     args = parser.parse_args()
 
     log("=" * 70)
     log("🔍 التدقيق القضائي للصفقات المغلقة — Audit Predictions Deep")
     log("=" * 70)
     log(f"Mode: {'🔍 DRY-RUN' if args.dry_run else '⚡ EXECUTE'}")
+    if args.market:
+        log(f"Market filter: {args.market}")
     log("")
 
     if not STOCKS_DB.exists():
@@ -266,21 +269,62 @@ def main() -> int:
         SELECT id, ticker, signal_type, prediction_date, outcome_date,
                entry_price, target_price, stop_loss, exit_price, actual_return,
                hit_target, hit_stop, is_correct, holding_days,
-               highest_price_reached, lowest_price_reached
+               highest_price_reached, lowest_price_reached, notes
         FROM predictions
         ORDER BY id ASC
     """).fetchall()
 
-    log(f"📊 إجمالي الصفقات: {len(rows)}")
+    # Task B-27: فلتر حسب السوق لو --market محدد (نقرأ market من notes JSON)
+    if args.market:
+        target_market = args.market.strip().upper()
+        filtered_rows = []
+        for trade in rows:
+            notes_raw = trade['notes'] if 'notes' in trade.keys() else ''
+            trade_market = 'EGX'  # default
+            if notes_raw and isinstance(notes_raw, str) and notes_raw.strip().startswith('{'):
+                try:
+                    nm = json.loads(notes_raw)
+                    trade_market = (nm.get('market') or 'EGX').upper()
+                except Exception:
+                    pass
+            if trade_market == target_market:
+                filtered_rows.append(trade)
+        log(f"📊 فلتر السوق: {target_market} — {len(filtered_rows)}/{len(rows)} صفقة")
+        rows = filtered_rows
+
+    log(f"📊 إجمالي الصفقات للفحص: {len(rows)}")
 
     # تدقيق كل صفقة
     verdicts: List[Dict[str, Any]] = []
     corrections: List[Dict[str, Any]] = []
     stale_closures: List[Dict[str, Any]] = []
+    market_breakdown: Dict[str, Dict[str, int]] = {}  # Task B-27: تفصيل حسب السوق
 
     for trade in rows:
         result = audit_trade(conn, trade)
         verdicts.append(result)
+
+        # Task B-27: استخراج market من notes
+        notes_raw = trade['notes'] if 'notes' in trade.keys() else ''
+        trade_market = 'EGX'
+        if notes_raw and isinstance(notes_raw, str) and notes_raw.strip().startswith('{'):
+            try:
+                nm = json.loads(notes_raw)
+                trade_market = (nm.get('market') or 'EGX').upper()
+            except Exception:
+                pass
+        result['market'] = trade_market
+
+        # تفصيل حسب السوق
+        if trade_market not in market_breakdown:
+            market_breakdown[trade_market] = {'total': 0, 'wins': 0, 'losses': 0, 'expired': 0}
+        market_breakdown[trade_market]['total'] += 1
+        if result.get('new_hit_target') == 1:
+            market_breakdown[trade_market]['wins'] += 1
+        elif result.get('new_hit_stop') == 1:
+            market_breakdown[trade_market]['losses'] += 1
+        else:
+            market_breakdown[trade_market]['expired'] += 1
 
         verdict = result['verdict']
         if verdict in ('INVALID_WIN', 'INVALID_STOP'):
@@ -292,6 +336,13 @@ def main() -> int:
     verdict_counts: Dict[str, int] = {}
     for v in verdicts:
         verdict_counts[v['verdict']] = verdict_counts.get(v['verdict'], 0) + 1
+
+    # Task B-27: تقرير تفصيلي حسب السوق
+    log("")
+    log("📊 تفصيل حسب السوق:")
+    for mkt, stats in sorted(market_breakdown.items()):
+        wr = round(stats['wins'] / stats['total'] * 100, 1) if stats['total'] > 0 else 0
+        log(f"  {mkt}: total={stats['total']} wins={stats['wins']} losses={stats['losses']} expired={stats['expired']} win_rate={wr}%")
 
     log("")
     log("📊 توزيع الأحكام:")
