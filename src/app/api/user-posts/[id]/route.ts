@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+import { requireAuthAsync } from '@/lib/auth-helper';
+
+// P0-CRIT-4 FIX (2026-10-14): DELETE now requires authenticated session via requireAuthAsync().
+// Removed the previous user_id query-string approach (IDOR: anyone knowing user_id could delete).
 
 // GET - جلب منشور محدد
 export async function GET(
@@ -57,20 +61,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const user_id = searchParams.get('user_id');
-
-    if (!user_id) {
+    // P0-CRIT-4 FIX: Require authenticated session (no more user_id from query string).
+    const authenticatedUserId = await requireAuthAsync();
+    if (!authenticatedUserId) {
       return NextResponse.json({ error: 'مطلوب تسجيل الدخول' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     const post = await db.userPost.findUnique({ where: { id } });
     if (!post) {
       return NextResponse.json({ error: 'المنشور غير موجود' }, { status: 404 });
     }
 
-    if (post.user_id !== user_id) {
+    // Authorization: only the owner can delete.
+    if (post.user_id !== authenticatedUserId) {
       return NextResponse.json({ error: 'غير مصرح لك بحذف هذا المنشور' }, { status: 403 });
     }
 

@@ -1,0 +1,101 @@
+# ============================================================================
+# GLMinvestment — Production Caddyfile
+# ============================================================================
+# P0-AUDIT-H FIX (2026-10-14): Production Caddyfile enforcing HTTPS + TLS.
+#
+# The sandbox Caddyfile (port :81) remains unchanged for dev. This file
+# is the production template — copy to /etc/caddy/Caddyfile on the VPS.
+#
+# Features:
+#   - Auto-TLS via Let's Encrypt (Caddy auto-manages certs)
+#   - HTTP :80 → HTTPS :443 redirect
+#   - Security headers (HSTS, X-Frame-Options, X-Content-Type-Options, CSP)
+#   - XTransformPort gateway for mini-services (WS, telegram-events)
+#   - Reverse proxy to Next.js on :3000
+# ============================================================================
+
+# ─── Production domain ────────────────────────────────────────────────────
+invist.m2y.net {
+	# ─── Security headers ──────────────────────────────────────────────────
+	header {
+		# HSTS — force HTTPS for 1 year (include subdomains)
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		# Prevent clickjacking
+		X-Frame-Options "DENY"
+		# Prevent MIME-type sniffing
+		X-Content-Type-Options "nosniff"
+		# Referrer policy (only send origin to same origin)
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Permissions policy (disable dangerous browser features)
+		Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+		# Content Security Policy (adjust as needed for your app)
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sentry.io https://*.sentry.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://sentry.io https://*.sentry.io wss: ws:; frame-ancestors 'none';"
+		# Remove server fingerprint
+		-Server
+		# CORS (same-origin only — do NOT use wildcard)
+		Access-Control-Allow-Origin "https://invist.m2y.net"
+		Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+		Access-Control-Allow-Headers "Content-Type, Authorization, X-Admin-Token, X-Bot-Secret"
+		Access-Control-Allow-Credentials "true"
+	}
+
+	# ─── XTransformPort gateway (mini-services on other ports) ────────────
+	@transform_port_query {
+		query XTransformPort=*
+	}
+
+	handle @transform_port_query {
+		reverse_proxy localhost:{query.XTransformPort} {
+			header_up Host {host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# ─── Main reverse proxy → Next.js on :3000 ────────────────────────────
+	handle {
+		reverse_proxy localhost:3000 {
+			header_up Host {host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# ─── WebSocket support (for ws-service on :3005 via XTransformPort) ─────
+	# WebSocket upgrades are automatically handled by Caddy's reverse_proxy.
+	# No additional config needed — Caddy detects Upgrade: websocket header.
+
+	# ─── Compression ──────────────────────────────────────────────────────
+	encode gzip zstd
+
+	# ─── Logging ──────────────────────────────────────────────────────────
+	log {
+		output file /var/log/caddy/invist.m2y.net.access.log {
+			roll_size 100mb
+			roll_keep 10
+			roll_keep_for 720h
+		}
+		format json
+	}
+}
+
+# ─── HTTP :80 → HTTPS redirect (catches plain HTTP requests) ────────────────
+http://invist.m2y.net, http://www.invist.m2y.net {
+	redir https://invist.m2y.net{uri} permanent
+}
+
+# ─── Optional: www → non-www redirect ───────────────────────────────────────
+www.invist.m2y.net {
+	redir https://invist.m2y.net{uri} permanent
+}
+
+# ============================================================================
+# Deployment notes:
+# 1. Copy this file to /etc/caddy/Caddyfile on the VPS.
+# 2. Ensure DNS A records point invist.m2y.net + www.invist.m2y.net to VPS IP.
+# 3. Open ports 80 + 443 in firewall (Caddy auto-manages Let's Encrypt certs).
+# 4. Reload Caddy: sudo systemctl reload caddy
+# 5. Verify: curl -I https://invist.m2y.net/api/health
+# ============================================================================

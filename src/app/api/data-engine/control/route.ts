@@ -5,6 +5,10 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
+import { requireAdminAsync } from '@/lib/admin-auth-server';
+
+// P0-CRIT-6 FIX (2026-10-14): POST now requires admin authentication.
+// GET remains public (status reporting only, no state mutation).
 
 // Database paths — kept ONLY for size_mb reporting (file stat, no SQL).
 // All count queries are delegated to Python (Rule 4: Python = brain).
@@ -296,6 +300,12 @@ export async function GET(request: NextRequest) {
 // POST - Control actions
 export async function POST(request: NextRequest) {
   try {
+    // P0-CRIT-6 FIX: Require admin authentication for all control actions.
+    const adminCheck = await requireAdminAsync();
+    if (!adminCheck.ok) {
+      return NextResponse.json({ success: false, error: 'Admin authentication required' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { action, scraper } = body;
 

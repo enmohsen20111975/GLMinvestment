@@ -162,6 +162,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# P0-AUDIT-H FIX (2026-10-14): Allow .env.example (template with no real secrets)
+!.env.example
 
 # vercel
 .vercel

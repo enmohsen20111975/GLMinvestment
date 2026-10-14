@@ -6,8 +6,10 @@
 **بيئة التشغيل المحلية:** http://localhost:3000 (Next.js + PM2)  
 **السيرفر الإنتاجي:** https://invist.m2y.net (VPS)  
 **بيانات دخول المالك للاختبار:**
-- **المستخدم:** mohseny
-- **كلمة المرور:** M2y@01287644099
+- **المستخدم:** [REDACTED — see .env.production ADMIN_USERNAME]
+- **كلمة المرور:** [REDACTED — see .env.production ADMIN_PASSWORD]
+
+> P0-CRIT-2 FIX (2026-10-14): Credentials removed from source. Use environment variables only.
 
 ---
 

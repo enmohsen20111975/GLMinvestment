@@ -165,10 +165,25 @@ export async function POST(request: NextRequest) {
     console.log('[Google Signin] Valid Client IDs:', VALID_CLIENT_IDS);
     console.log('[Google Signin] Token audience:', googleUser.aud);
 
+    // P0-CRIT-5 FIX (2026-10-14): Fail-closed audience verification.
+    // If VALID_CLIENT_IDS is empty (env vars unset), reject ALL tokens instead of allowing all.
+    // This prevents OAuth bypass when env vars are misconfigured.
+    if (VALID_CLIENT_IDS.length === 0) {
+      console.error('[Google Signin] ❌ NO VALID_CLIENT_IDS configured — rejecting all tokens (fail-closed)');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'OAuth not configured',
+          error_en: 'Server OAuth client IDs are not configured. Set GOOGLE_CLIENT_ID env var.',
+        },
+        { status: 500 }
+      );
+    }
+
     // Verify the audience matches one of our client IDs
     const audienceMatch = VALID_CLIENT_IDS.includes(googleUser.aud);
-    
-    if (VALID_CLIENT_IDS.length > 0 && !audienceMatch) {
+
+    if (!audienceMatch) {
       console.error('[Google Signin] ❌ INVALID AUDIENCE');
       console.error('[Google Signin] Token aud:', googleUser.aud);
       console.error('[Google Signin] Expected one of:', VALID_CLIENT_IDS);

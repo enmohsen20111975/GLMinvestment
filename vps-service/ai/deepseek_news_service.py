@@ -21,11 +21,13 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
-# Load DeepSeek key from .env if not in os.environ
+# P0-CRIT-1 FIX (2026-10-14): Removed hardcoded DeepSeek API key fallback.
+# DeepSeek key must be provided via environment variable only (no hardcoded fallback).
+# Accepts both DEEPSEEK_KEY (canonical) and DeepSeek_key (legacy alias) env vars.
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_KEY") or os.getenv("DeepSeek_key")
 
 if not DEEPSEEK_KEY:
-    # Try finding in root .env
+    # Try finding in root .env (development only — production must use real env vars)
     root_env = Path(__file__).resolve().parents[2] / ".env"
     if root_env.exists():
         try:
@@ -37,9 +39,8 @@ if not DEEPSEEK_KEY:
         except Exception:
             pass
 
-# Default to the known working key if available
-if not DEEPSEEK_KEY:
-    DEEPSEEK_KEY = "sk-4dc7a88a9a214d10b3ad88ee4ea36615"
+# NO hardcoded fallback — fail safe (rule_based_fallback will be used if key missing)
+# If DEEPSEEK_KEY is None, the rule_based_fallback function will handle enrichment.
 
 API_URL = "https://api.deepseek.com/chat/completions"
 

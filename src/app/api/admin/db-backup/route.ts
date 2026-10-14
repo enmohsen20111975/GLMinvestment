@@ -575,11 +575,10 @@ export async function POST(req: NextRequest) {
         }
 
         try {
+          // P0-Rule81 FIX (2026-10-14): --force push strategy REMOVED (forbidden by Rule 81).
+          // Any caller requesting strategy='force_push' will be rejected with an error.
           if (strategy === 'force_push') {
-            await runGit(['push', '--force', 'origin', `HEAD:${currentBranch}`], cwd, 900_000);
-            gitResult.pushed = true;
-            gitResult.message = `تم الرفع بالـ force push (${archivesToPush.length} ملف). ⚠️ أي تعديلات على الـ remote اتمسحت.`;
-            gitResult.warnings?.push('⚠️ تم استخدام --force — تأكد إن مفيش حد بيرفع على نفس الـ branch');
+            throw new Error('Rule 81 FORBIDS --force push. Use strategy=fetch_rebase or no_pull instead.');
           } else if (strategy === 'no_pull') {
             await runGit(['push', 'origin', `HEAD:${currentBranch}`], cwd, 900_000);
             gitResult.pushed = true;
@@ -648,6 +647,7 @@ export async function POST(req: NextRequest) {
               await runGit(['merge', '--abort'], cwd, 15_000).catch(() => {});
               gitResult.warnings?.push('⚠️ merge failed — trying auto_git_sync.py...');
               
+              // P0-Rule81 FIX (2026-10-14): auto_git_sync.py has been patched to refuse --force.
               // تشغيل auto_git_sync.py
               try {
                 const { execSync } = require('child_process');

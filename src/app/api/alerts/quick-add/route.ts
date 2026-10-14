@@ -32,6 +32,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { getWritableStocksDb } from '@/lib/egx-db';
+import { requireAuthAsync } from '@/lib/auth-helper';
+
+// P0-CRIT-7 FIX (2026-10-14): POST + GET now require authenticated session.
+// user_id is taken from the session, NOT from the request body.
 
 // ---------------------------------------------------------------------------
 // Schema: price_alerts table (idempotent CREATE IF NOT EXISTS)
@@ -92,11 +96,17 @@ interface QuickAddBody {
 
 export async function POST(request: NextRequest) {
   try {
+    // P0-CRIT-7 FIX: Require authenticated session — user_id taken from session, NOT body.
+    const userId = await requireAuthAsync();
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+
     const body: QuickAddBody = await request.json().catch(() => ({}));
     const ticker = (body.ticker || '').toString().trim().toUpperCase();
     const currentPrice = Number(body.current_price);
     const dropPct = Number(body.drop_pct ?? -3); // default: -3%
-    const userId = body.user_id ? String(body.user_id) : null;
+    // userId is now from session (requireAuthAsync), not from body.
     const label = body.label ? String(body.label) : null;
     const notes = body.notes ? String(body.notes) : null;
 

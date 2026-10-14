@@ -274,12 +274,20 @@ def auto_sync():
     push_result = run_git('push', 'origin', f'HEAD:{branch}', check=False)
     
     if push_result.returncode != 0:
-        log('⚠️ Push failed — trying force-with-lease...', 'WARN')
-        # force-with-lease = آمن (بيpush بس لو الـ remote ما اتغيرش من حد تاني)
-        push_result = run_git('push', '--force-with-lease', 'origin', f'HEAD:{branch}', check=False)
-        
-        if push_result.returncode != 0:
-            log('⚠️ Force-with-lease failed — trying rebase...', 'WARN')
+        # P0-Rule81 FIX (2026-10-14): --force-with-lease REMOVED (forbidden by Rule 81).
+        # Fail safe: abort + notify. Do NOT force push under any circumstance.
+        log('❌ Push failed — Rule 81 FORBIDS --force / --force-with-lease.', 'ERROR')
+        log('⚠️ Aborting sync. Manual intervention required (pull --rebase by human).', 'WARN')
+        return {
+            'success': False,
+            'error': 'push_failed_no_force_allowed',
+            'message': 'Push failed and Rule 81 forbids force push. Manual git pull --rebase required.',
+            'stderr': push_result.stderr.strip()[:500],
+        }
+
+        # Legacy force-with-lease path REMOVED — would have violated Rule 81.
+        # if push_result.returncode != 0:
+        #     log('⚠️ Force-with-lease failed — trying rebase...', 'WARN')
             # rebase fallback
             run_git('rebase', 'origin/main', check=False)
             
@@ -400,10 +408,17 @@ def push_only():
     
     result = run_git('push', 'origin', f'HEAD:{get_current_branch()}', check=False)
     
+    # P0-Rule81 FIX (2026-10-14): --force-with-lease REMOVED (forbidden by Rule 81).
     if result.returncode != 0:
-        log('⚠️ Push failed — trying force-with-lease...', 'WARN')
-        result = run_git('push', '--force-with-lease', 'origin', f'HEAD:{get_current_branch()}', check=False)
-    
+        log('❌ Push failed — Rule 81 FORBIDS --force / --force-with-lease.', 'ERROR')
+        log('⚠️ Aborting push_only. Manual intervention required.', 'WARN')
+        return {
+            'success': False,
+            'error': 'push_failed_no_force_allowed',
+            'message': 'Push failed and Rule 81 forbids force push. Manual git pull --rebase required.',
+            'stderr': result.stderr.strip()[:500],
+        }
+
     if result.returncode == 0:
         log('✅ Push successful')
         return {'success': True, 'action': 'pushed'}

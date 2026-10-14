@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFinanceDb } from '@/lib/finance-db';
+import { requireAuthAsync } from '@/lib/auth-helper';
 
 export const dynamic = 'force-dynamic';
+
+// P0-CRIT-3 FIX (2026-10-14): Removed hardcoded default userId (IDOR vulnerability).
+// All routes now require authenticated session via requireAuthAsync().
+// No fallback to any hardcoded userId — fail closed with 401 if no session.
 
 function ensurePortfoliosTable(db: any) {
   db.prepare(`
@@ -36,8 +41,12 @@ function ensureMasterPortfolio(db: any, userId: string) {
 
 export async function GET(req: NextRequest) {
   try {
-    const url = new URL(req.url);
-    const userId = url.searchParams.get('user_id') || '48457b7f-40f2-4a7e-8955-d4d2cd1d79bd';
+    // P0-CRIT-3 FIX: Require authenticated session — no fallback to hardcoded userId.
+    const userId = await requireAuthAsync();
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+
     const db = await getFinanceDb();
     ensurePortfoliosTable(db);
     const masterId = ensureMasterPortfolio(db, userId);
@@ -63,11 +72,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // P0-CRIT-3 FIX: Require authenticated session — no fallback to hardcoded userId.
+    const userId = await requireAuthAsync();
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+
     const db = await getFinanceDb();
     ensurePortfoliosTable(db);
 
     const body = await req.json();
-    const userId = body.user_id || '48457b7f-40f2-4a7e-8955-d4d2cd1d79bd';
     const action = body.action || 'create';
 
     ensureMasterPortfolio(db, userId);
