@@ -130,6 +130,116 @@
   --stitch-error-container: 0 100% 30%; /* #93000a */
 }
 
+/* ========================================================================
+   SOVEREIGN TERMINAL FOUNDATION (Stitch Structural Rebuild Directive)
+   ========================================================================
+   Rule 1: Canvas & Backdrop — deep charcoal #0B0E14 + ambient emerald glow
+   Rule 2: Glassmorphic Cards — #111622/80 + backdrop-blur-md + border-white/[0.06]
+   Rule 3: Unified Typography — Cairo (Arabic) + Outfit (Latin) + JetBrains Mono (numbers)
+   Rule 4: Breadcrumb Live Telemetry — animate-ping green dot on every screen header
+   ======================================================================== */
+
+/* Canvas — applied to <main> or page wrappers */
+.stitch-canvas {
+  background-color: #0B0E14;
+  position: relative;
+}
+.stitch-canvas::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 320px;
+  background: radial-gradient(ellipse 80% 100% at 50% 0%, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glassmorphic Card — the unified card surface for ALL components */
+.stitch-glass {
+  background-color: rgba(17, 22, 34, 0.80);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+/* Glass variant — stronger for modals/overlays */
+.stitch-glass-strong {
+  background-color: rgba(17, 22, 34, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+/* Glass variant — subtle for nested panels */
+.stitch-glass-subtle {
+  background-color: rgba(17, 22, 34, 0.50);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+}
+
+/* Live Telemetry Pulse — green dot that pings (Breadcrumb sub-bar) */
+.stitch-pulse-dot {
+  position: relative;
+  display: inline-flex;
+  height: 0.5rem;
+  width: 0.5rem;
+}
+.stitch-pulse-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: #10B981;
+  opacity: 0.75;
+  animation: stitch-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.stitch-pulse-dot::after {
+  content: '';
+  position: relative;
+  display: inline-flex;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background-color: #10B981;
+}
+@keyframes stitch-ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+/* Financial numbers — JetBrains Mono + tabular-nums (mandatory) */
+.stitch-num {
+  font-family: 'JetBrains Mono', 'Outfit', monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Arabic text — Cairo medium/bold */
+.stitch-ar {
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+}
+/* Latin headings/tickers — Outfit */
+.stitch-latin {
+  font-family: 'Outfit', 'Cairo', sans-serif;
+}
+
+/* Sovereign Terminal color utilities (raw hex — for structural rebuild) */
+.bg-stitch-canvas { background-color: #0B0E14; }
+.bg-stitch-card { background-color: #111622; }
+.bg-stitch-card-80 { background-color: rgba(17, 22, 34, 0.80); }
+.bg-stitch-surface { background-color: #182030; }
+.text-stitch-primary { color: #10B981; }
+.text-stitch-mint { color: #4EDEA3; }
+.text-stitch-error { color: #FF6B6B; }
+.text-stitch-on-surface { color: #E1E3E1; }
+.text-stitch-muted { color: #BBCABF; }
+.text-stitch-outline { color: #86948A; }
+.border-stitch-glass { border-color: rgba(255, 255, 255, 0.06); }
+
+
 @layer base {
   * {
     @apply border-border;
