@@ -499,6 +499,61 @@ def step8_liquidity_radar_multi_market(dry_run: bool = False) -> bool:
     return all_ok
 
 
+def step9_populate_audited(dry_run: bool = False) -> bool:
+    """Step 9: تثبيت السجل الموثق الحقيقي (populate_audited_track_record.py)."""
+    log("Step 9: تثبيت السجل الموثق (populate_audited_track_record.py)")
+    script = PROJECT_ROOT / "scripts" / "populate_audited_track_record.py"
+    if not script.exists():
+        log(f"  ⚠️ {script.name} غير موجود — skip", "WARN")
+        return True
+    cmd = ["python3", str(script)]
+    if dry_run:
+        cmd.append("--dry-run")
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        lines = (result.stdout or "").strip().split('\n')
+        for line in lines[-8:]:
+            if line.strip():
+                log(f"  {line.strip()}")
+        if result.returncode == 0:
+            log("  ✅ populate_audited نجح", "OK")
+            return True
+        else:
+            log(f"  ❌ exit={result.returncode}", "ERROR")
+            return False
+    except Exception as e:
+        log(f"  ❌ exception: {e}", "ERROR")
+        return False
+
+
+def step10_daily_pipeline_dryrun(dry_run: bool = False) -> bool:
+    """Step 10: فحص الـ Daily Pipeline (dry-run فقط)."""
+    log("Step 10: فحص الـ Daily Pipeline (dry-run)")
+    script = PROJECT_ROOT / "scripts" / "daily_orchestrator.py"
+    if not script.exists():
+        log(f"  ⚠️ {script.name} غير موجود — skip", "WARN")
+        return True
+    try:
+        result = subprocess.run(
+            ["python3", str(script), "--dry-run"],
+            capture_output=True, text=True, timeout=60,
+            cwd=str(PROJECT_ROOT)
+        )
+        lines = (result.stdout or "").strip().split('\n')
+        for line in lines[-5:]:
+            if line.strip():
+                log(f"  {line.strip()}")
+        if result.returncode == 0:
+            log("  ✅ daily pipeline dry-run نجح", "OK")
+            return True
+        else:
+            log(f"  ❌ exit={result.returncode}", "ERROR")
+            return False
+    except Exception as e:
+        log(f"  ❌ exception: {e}", "ERROR")
+        return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="P0 Production Automation Script")
     parser.add_argument("--dry-run", action="store_true", help="فحص فقط بدون كتابة")
@@ -534,6 +589,10 @@ def main() -> int:
     # Step 8: Liquidity radar multi-market (Task B-26)
     if not args.skip_radar:
         steps.append(("Step 8: Liquidity radar multi-market", lambda: step8_liquidity_radar_multi_market(args.dry_run)))
+    # Step 9: Populate audited track record (Task B-MARATHON-P1)
+    steps.append(("Step 9: Populate audited", lambda: step9_populate_audited(args.dry_run)))
+    # Step 10: Daily pipeline dry-run (Task B-MARATHON-P3)
+    steps.append(("Step 10: Daily pipeline check", lambda: step10_daily_pipeline_dryrun(args.dry_run)))
 
     results = {}
     for name, func in steps:
