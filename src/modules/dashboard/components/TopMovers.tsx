@@ -27,7 +27,7 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
       <StockIcon
         ticker={stock.ticker}
         name={stock.name_ar}
-        sector={stock.sector}
+        sector={""}
         size="sm"
         className={cn(
           'flex-shrink-0 ring-2',

@@ -109,9 +109,6 @@ export function RealtimeTicker() {
   // T-ALPHA-A15: Use WebSocket data if connected, otherwise use static data
   // Filter: prevent dead stocks (price=0) and fake zeros (Rule 27)
   const validStockPrices = isConnected && stockPrices.length > 0
-    ? stockPrices.filter((item): item is TickerItem =>
-        item != null && item.ticker && Number(item.current_price) > 0)
-    : staticStocks.filter((s) => Number(s.current_price) > 0);
     ? stockPrices.filter((item): item is TickerItem => item != null && Boolean(item.ticker))
     : staticStocks;
 

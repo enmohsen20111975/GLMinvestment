@@ -27,13 +27,6 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
   EGX50:    { accent: 'bg-teal-400',    ring: 'ring-teal-400/20',    text: 'text-teal-600 dark:text-teal-400' },
   EGX33:    { accent: 'bg-rose-500',    ring: 'ring-rose-500/20',    text: 'text-rose-600 dark:text-rose-400' },
   // US
-  '^GSPC':  { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-slate-400' },
-  '^IXIC':  { accent: 'bg-violet-500',  ring: 'ring-violet-500/20',  text: 'text-violet-600 dark:text-violet-400' },
-  '^DJI':   { accent: 'bg-emerald-500',  ring: 'ring-emerald-500/20',  text: 'text-emerald-600 dark:text-emerald-400' },
-  // CRYPTO
-  'BTC.D':        { accent: 'bg-orange-500', ring: 'ring-orange-500/20', text: 'text-orange-600 dark:text-orange-400' },
-  TOTAL_MCAP:     { accent: 'bg-purple-500', ring: 'ring-purple-500/20', text: 'text-purple-600 dark:text-purple-400' },
-  FNG:            { accent: 'bg-pink-500',   ring: 'ring-pink-500/20',   text: 'text-pink-600 dark:text-pink-400' },
   // US — Rule 30: replaced blue/violet/indigo with emerald/amber/teal shades
   '^GSPC':  { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
   '^IXIC':  { accent: 'bg-amber-500',   ring: 'ring-amber-500/20',   text: 'text-amber-600 dark:text-amber-400' },

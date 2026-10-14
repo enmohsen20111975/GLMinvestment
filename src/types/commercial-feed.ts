@@ -14,6 +14,7 @@
 // Market + Currency
 // ============================================================================
 
+/**
  * Matches Python commercial_feed.py output shape.
  * Rule 27: NO-FAKE-DATA — all defaults are honest empty.
  */
@@ -29,67 +30,6 @@ export const MARKET_CURRENCY: Record<MarketCode, { symbol: string; label: string
   CRYPTO: { symbol: '$', label: 'الدولار الأمريكي', code: 'USD' },
 };
 
-export const MARKET_NAMES_AR: Record<MarketCode, string> = {
-  EGX: 'البورصة المصرية',
-  TADAWUL: 'السوق السعودي',
-  KSE: 'بورصة الكويت',
-  QSE: 'بورصة قطر',
-  US: 'الأسواق الأمريكية',
-  CRYPTO: 'العملات الرقمية',
-};
-
-// ============================================================================
-// LiveSignal — matches Python commercial_feed.py signal dict EXACTLY
-// ============================================================================
-
-export interface LiveSignal {
-  /** Ticker symbol (e.g. 'COMI', '2222') */
-  ticker: string;
-  /** Stock display name (Arabic preferred, falls back to ticker) */
-  name: string | null;
-  /** Market code (EGX/TADAWUL/KSE/QSE/US/CRYPTO) */
-  market: string | null;
-  /** Sector name (Arabic, from arabize_sector) */
-  sector: string | null;
-  /** Signal type (BUY/STRONG_BUY/SELL/HOLD) */
-  signal: string | null;
-  /** Arabic signal label (from notes_meta.signal_ar) */
-  signal_ar: string | null;
-  /** Signal classification (institutional_scan, etc.) */
-  signal_type: string | null;
-  /** Entry price (rounded 4 decimals) */
-  entry_price: number | null;
-  /** Target price 1 (rounded 4 decimals) */
-  target_1: number | null;
-  /** Target 1 percentage from entry */
-  target_1_pct: number | null;
-  /** Target price 2 (null if not set) */
-  target_2: number | null;
-  /** Target 2 percentage from entry */
-  target_2_pct: number | null;
-  /** Stop loss price (rounded 4 decimals) */
-  stop_loss: number | null;
-  /** Stop loss percentage from entry */
-  stop_loss_pct: number | null;
-  /** Risk:Reward ratio (e.g. 2.5 means 1:2.5) */
-  risk_reward: number | null;
-  /** Confidence score (0-100, rounded 1 decimal) */
-  confidence: number | null;
-  /** Time horizon label (Arabic: يومية/أسبوعية/استراتيجية) */
-  horizon: string | null;
-  /** Horizon emoji (⚡/🎯/🛡️) */
-  horizon_icon: string | null;
-  /** Catalyst reason (English, from notes_meta) */
-  catalyst: string | null;
-  /** Catalyst reason (Arabic, from notes_meta) */
-  catalyst_ar: string | null;
-  /** Prediction date (ISO string) */
-  prediction_date: string | null;
-  /** Current market price (null if unavailable — Rule 27) */
-  current_price: number | null;
-  /** Data source tag ('predictions_table') */
-  source: string | null;
-}
 
 // ============================================================================
 // Audited Performance — matches Python summary.audited_performance
@@ -170,7 +110,6 @@ export interface ClosedTrade {
   hit_stop?: number | null;
   holding_days?: number | null;
   status: string | null; // 'target_hit' | 'stop_hit' | 'expired'
-  status: string | null;
   market: string | null;
   prediction_date?: string | null;
   closed_at?: string | null;
@@ -200,17 +139,6 @@ export interface CommercialFeedResponse {
 
 // ============================================================================
 // Market Regime — defensive (Python may return null)
-// ============================================================================
-
-export interface MarketRegimeInfo {
-  regime: string | null; // 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE'
-  index_symbol: string | null;
-  change_pct: number | null;
-  reason: string | null;
-}
-
-// ============================================================================
-// DEFAULT FALLBACKS — defensive (prevent "cannot read properties of undefined")
 // ============================================================================
 
 export const EMPTY_AUDITED_PERFORMANCE: AuditedPerformance = {
@@ -262,29 +190,6 @@ export const EMPTY_FEED_RESPONSE: CommercialFeedResponse = {
  * Returns EMPTY_FEED_RESPONSE if the payload is malformed.
  * (Defensive — prevents "cannot read properties of undefined".)
  */
-export const EMPTY_AUDITED_PERFORMANCE: AuditedPerformance = {
-  total_closed: 0, wins: 0, losses: 0, expired: 0,
-  win_rate: null, avg_return: null, best_return: null,
-  worst_return: null, profit_factor: null,
-};
-
-export const EMPTY_ACTIVE_SIGNALS: ActiveSignalsSummary = {
-  count: 0, avg_rr: null, avg_confidence: null,
-};
-
-export const EMPTY_FEED_SUMMARY: FeedSummary = {
-  win_rate: null, total_closed: 0, avg_return: null,
-  active_count: 0, active_signals: EMPTY_ACTIVE_SIGNALS,
-  audited_performance: EMPTY_AUDITED_PERFORMANCE,
-  generated_at: null, top_5_count: 0,
-};
-
-export const EMPTY_FEED_RESPONSE: CommercialFeedResponse = {
-  success: false, summary: EMPTY_FEED_SUMMARY, market_regime: null,
-  top_5_signals: [], extra_signals: [], active_live_signals: [],
-  audited_performance_history: [], error: 'feed_unavailable',
-};
-
 export function safeFeedResponse(raw: unknown): CommercialFeedResponse {
   if (!raw || typeof raw !== 'object') return EMPTY_FEED_RESPONSE;
   const r = raw as Partial<CommercialFeedResponse>;
@@ -307,10 +212,6 @@ export function safeFeedResponse(raw: unknown): CommercialFeedResponse {
  * Safely extract the top 5 signals from a feed response.
  * (Rule 4: no sort/filter/slice in frontend — reads Python order as-is.)
  */
-      ? r.audited_performance_history : [],
-    error: r.error, message: r.message,
-  };
-}
 
 export function safeTop5Signals(feed: CommercialFeedResponse | null | undefined): LiveSignal[] {
   if (!feed) return [];

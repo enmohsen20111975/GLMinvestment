@@ -223,7 +223,7 @@ export function DashboardView() {
       render: () => (
         // T-ALPHA-3: Removed dead <MarketSentiment /> (was showing 50 neutral + 0/0).
         // <MarketPulseWidget /> now takes full width — it's the real, working pulse gauge.
-        <ErrorBoundary title="نبض السوق">
+        <ErrorBoundary>
           <MarketPulseWidget />
         </ErrorBoundary>
       ),
@@ -251,14 +251,14 @@ export function DashboardView() {
       id: 'live-monitor',
       title: 'محفظتي',
       visible: () => true,
-      render: () => <ErrorBoundary title="المراقبة اللحظية"><LiveMonitor /></ErrorBoundary>,
+      render: () => <ErrorBoundary><LiveMonitor /></ErrorBoundary>,
     },
     // 9. إشارات الكريبتو → CRYPTO فقط (Owner directive)
     {
       id: 'crypto-signals',
       title: 'إشارات الكريبتو',
       visible: (p) => p === 'crypto',
-      render: () => <ErrorBoundary title="إشارات الكريبتو"><CryptoSignalsWidget /></ErrorBoundary>,
+      render: () => <ErrorBoundary><CryptoSignalsWidget /></ErrorBoundary>,
     },
     // 10. إشارات الموسمية — تم إزالتها (Owner directive: "شيلها خالص")
   ], []);
@@ -430,8 +430,6 @@ export function DashboardView() {
                       return (
                         <Card
                           key={stock.ticker}
-                          className={`border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-primary'} cursor-pointer hover:shadow-md transition-shadow`}
-                          onClick={() => useAppStore.getState().setCurrentView('stock-detail') || useAppStore.getState().setSelectedTicker(stock.ticker)}
                           className={`glass-panel border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-teal-500'} cursor-pointer hover:shadow-md transition-shadow`}
                           onClick={() => { useAppStore.getState().setCurrentView('stock-detail'); useAppStore.getState().setSelectedTicker(stock.ticker); }}
                         >
@@ -442,7 +440,6 @@ export function DashboardView() {
                                 <div className="font-mono font-bold text-sm">{stock.ticker}</div>
                                 <div className="text-xs text-muted-foreground truncate max-w-[120px]">{stock.nameAr || stock.name}</div>
                               </div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-100 text-primary dark:bg-slate-800/40 dark:text-slate-300'}`}>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'}`}>
                                 {stock.recommendationAr || stock.recommendation}
                               </span>
@@ -468,8 +465,8 @@ export function DashboardView() {
                               <span className="text-muted-foreground">ثقة: <span className="font-bold">{stock.confidence?.toFixed(0) || '—'}%</span></span>
                             </div>
                             {/* T-ALPHA-A1: Time Horizon Glowing Badge */}
-                            {(stock as Record<string, unknown>).persona ? (
-                              <TimeHorizonBadge persona={String((stock as Record<string, unknown>).persona)} size="sm" />
+                            {(stock as unknown as Record<string, unknown>).persona ? (
+                              <TimeHorizonBadge horizon={String((stock as unknown as Record<string, unknown>).persona ?? "")} />
                             ) : null}
                           </CardContent>
                         </Card>
@@ -517,7 +514,7 @@ export function DashboardView() {
                 🔔 تنبيهات أسهمك الشخصية
               </summary>
               <div className="p-4 pt-0">
-                <ErrorBoundary title="تنبيهات المحفظة">
+                <ErrorBoundary>
                   <MyStocksBriefing />
                 </ErrorBoundary>
               </div>
