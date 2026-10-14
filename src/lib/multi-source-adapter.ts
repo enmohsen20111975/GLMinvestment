@@ -109,6 +109,13 @@ export interface CurrencyRate {
   name_ar?: string;
   source: string;
   fetched_at: string;
+  // Optional fields read by /api/market/sync writer when present on the
+  // API response (e.g. FCSAPI/exchangerate host). When undefined, the sync
+  // writer falls back to `${from}/${to}` for code and to `rate` for buy/sell.
+  code?: string;
+  buy_rate?: number;
+  sell_rate?: number;
+  is_major?: boolean;
 }
 
 export interface HistoricalPrice {

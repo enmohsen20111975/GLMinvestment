@@ -8,7 +8,7 @@
  */
 
 import ZAI from 'z-ai-web-dev-sdk';
-import { createDatabase } from '@/lib/sqlite-wrapper';
+import { createDatabase, type SqliteDatabase } from '@/lib/sqlite-wrapper';
 import * as path from 'path';
 
 // ---------------------------------------------------------------------------
@@ -289,7 +289,7 @@ export function priceHistoryExists(
  * Uses INSERT OR IGNORE to silently skip duplicates.
  */
 export function upsertPriceHistory(
-  db: Record<string, unknown>,
+  db: SqliteDatabase,
   ticker: string,
   date: string,
   data: {

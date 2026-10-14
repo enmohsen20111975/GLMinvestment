@@ -87,6 +87,12 @@ export async function GET() {
     };
   }
 
+  // ---- Precompute summary variables (used in section 3's initErr early-return AND in section 4) ----
+  // NOTE: Must be declared before section 3 because the early-return on DB init failure references them.
+  const primarySource = results['vps_python']?.available ? 'vps_python'
+    : (!isProductionHostinger && results['egxpy_local']?.available ? 'egxpy_local' : 'database');
+  const anyLiveSource = results['vps_python']?.available || results['egxpy_local']?.available;
+
   // ---- 3. Check local SQLite database (singletons, no file reads) ----
   const t3 = Date.now();
   try {
@@ -183,10 +189,6 @@ export async function GET() {
   }
 
   // ---- 4. Summary ----
-  const primarySource = results['vps_python']?.available ? 'vps_python'
-    : (!isProductionHostinger && results['egxpy_local']?.available ? 'egxpy_local' : 'database');
-  const anyLiveSource = results['vps_python']?.available || results['egxpy_local']?.available;
-
   const summary = anyLiveSource
     ? `LIVE data via ${isProductionHostinger ? 'VPS Python service' : (results['vps_python']?.available ? 'VPS' : 'local egxpy')}`
     : 'NO live data source - using stale database data only';

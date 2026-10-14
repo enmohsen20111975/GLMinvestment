@@ -559,12 +559,17 @@ export async function fetchFinancials(
 
 export interface LiveStock {
   ticker: string;
-  name_ar: string;
+  name_ar?: string;
   current_price: number;
   change: number;
   change_percent: number;
   volume: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  previous_close?: number;
   last_updated: string;
+  source?: string;
 }
 
 /**

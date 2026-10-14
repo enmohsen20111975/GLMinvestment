@@ -70613,3 +70613,65 @@ Stage Summary:
 - 📝 REMAINING (out of scope, future Phase 3 task): 
   - `computeStats` / `computeStatsFromPredictions` لسه بتحسب محلياً: profitFactor, avgWinPct, avgLossPct, avgReturnPct, cumulativeReturnPct, netReturn, grossProfit, grossLoss, maxLoss, rrRatio — دي financial calcs لكن مش مدرجة في task spec ولا match الـ verification regex. محتاجة coordinated backend+frontend migration task كاملة (Python must provide `stats` object with all these fields populated).
   - Display formatting الـ sum/avg المتبقية في `computeStats` (e.g. `wins.reduce(...)`, `losses.reduce(...)`) — display rounding of locally-computed values, requires Python backend to provide pre-computed stats.
+
+---
+Task ID: P5-MARKET-TS-FIX
+Agent: general-purpose (market/* TS error fixer)
+Task: Phase 5 — إصلاح 5 ملفات market/* TS errors (connections, live-data, scheduled-sync, sync-live, sync)
+
+Work Log:
+
+**1. src/app/api/market/connections/route.ts** (+7/-4 lines):
+   - Lines 103, 125, 127 (TS2448 + TS2454): `anyLiveSource` and `primarySource` were block-scoped variables used before declaration — referenced inside the section 3 `initErr` early-return block but declared at the bottom (section 4 "Summary").
+   - Fix: MOVED the `const primarySource = ...` and `const anyLiveSource = ...` declarations from lines 186-188 (after section 3) to right after section 2 (before section 3's `try` block). Added a clarifying comment explaining WHY they must be declared before section 3 (referenced by the initErr early-return). Section 4 keeps only the `summary` and `priorityList` declarations (which were already in the right place).
+
+**2. src/app/api/market/live-data/route.ts** (+5/-1 line):
+   - Line 96 (TS2322): `egxpyQuoteToLiveStock` returns objects with `{ ticker, current_price, change, change_percent, volume, open, high, low, previous_close, last_updated, source }` — but the local `LiveStock` interface required `name_ar: string` (missing from egxpy return) and didn't include the extra OHLC fields.
+   - Fix: EXTENDED the local `LiveStock` interface to make `name_ar?: string` (optional, since egxpy source doesn't provide it) and added optional fields `open?: number`, `high?: number`, `low?: number`, `previous_close?: number`. `source?: string` was already optional. Type-safe, no casts. DB fallback path still provides `name_ar` (no behavior change there).
+
+**3. src/app/api/market/scheduled-sync/route.ts** (+4/-4 lines):
+   - Lines 204, 263 (TS18047): `heavyDb`/`lightDb` are typed `SqliteDatabase | null` (assigned from `getWritableDb()` / `getFinanceDb()`). The narrowing from outer `if (heavyDb)` / `if (!lightDb) return` guards is LOST inside the `db.transaction(() => { ... })` closure body (TS doesn't preserve narrowing for `let` variables in closures).
+   - Lines 229, 242 (TS2345): `heavyDb` (SqliteDatabase) not assignable to `upsertPriceHistory`'s parameter type `Record<string, unknown>` (interface types don't satisfy index signatures). Plus a HIDDEN bug surfaced after the first-arg fix: `upsertPriceHistory(heavyDb, stockId, ...)` passes `stockId` (number) as `ticker: string` parameter — `stockId.toUpperCase()` would throw TypeError at runtime (silently caught by the surrounding try/catch around `heavyDb.transaction(...)`).
+   - Fix:
+     - Lines 204, 263: added `!` non-null assertions (`heavyDb!.prepare(...)`, `lightDb!.prepare(...)`) — runtime-safe because outer `if (heavyDb)` / `if (!lightDb) return` guards already ensure non-null.
+     - Lines 229, 242: changed `stockId` → `ticker` (the function parameter `ticker: string` is in scope and is the semantically-correct value to pass to a SQL INSERT into the `ticker` column). This is a bug fix — previously `stockId.toUpperCase()` threw TypeError and the entire heavy-DB price-history insert was silently failing (caught and logged as "فشل تحديث DB الثقيلة: TypeError: ...").
+   - NOTE on runtime behavior: previously the heavy-DB price-history insert was silently failing (TypeError caught). After the fix, the insert succeeds and `result.history_inserted` will reflect actual inserts. This is a bug fix, not a regression — the route still completes and returns a `ScheduledSyncResponse` (now with non-zero `history_inserted` instead of an error message).
+
+**4. src/app/api/market/sync-live/route.ts** (no direct edits — fix applied in shared lib):
+   - Line 109 (TS2322): Same pattern as live-data/route.ts:96 — `allQuotes.map(egxpyQuoteToLiveStock)` returns objects with extra OHLC fields, but `LiveStock` (imported from `@/lib/vps-adapter`) required `name_ar: string` and didn't include `open/high/low/previous_close`.
+   - Fix: EXTENDED the `LiveStock` interface in `src/lib/vps-adapter.ts` (the canonical definition imported by sync-live/route.ts) — made `name_ar?: string` optional, added `open?`, `high?`, `low?`, `previous_close?`, `source?` as optional fields. Backward-compatible: `vpsQuotesToLiveStocks` still returns objects with `name_ar` set (no behavior change for VPS path). The `(liveStock as any).open` casts at lines 443-445 of sync-live/route.ts were left as-is (out of scope — not in the TS error list).
+   - CRLF note: `vps-adapter.ts` uses CRLF line endings (unlike the other 6 modified files which use LF). Used Python in-place byte replacement to preserve CRLF — Edit tool can't match CRLF patterns.
+
+**5. src/app/api/market/sync/route.ts** (+1 line):
+   - Line 204 (TS2353): `note` property doesn't exist on `SyncResult` — the gold-sync writer (disabled in v3.65.1) returns an object with `note: 'Writer disabled in v3.65.1 — gold_prices is now read-only via getLiveEgyptGoldPrices()'`.
+   - Fix: ADDED `note?: string` to the `SyncResult` interface (lines 24-30 of the file). Type-safe — no casts, no behavior change.
+
+**6. src/lib/multi-source-adapter.ts** (+7 lines) — supporting fix for sync/route.ts:
+   - Lines 218, 230 (TS2339): sync/route.ts reads `rate.code`, `rate.buy_rate`, `rate.sell_rate`, `rate.is_major` on `CurrencyRate` objects returned by `fetchCurrencyRates()` — but the `CurrencyRate` interface in multi-source-adapter.ts didn't declare these fields.
+   - Fix: EXTENDED the `CurrencyRate` interface with optional fields `code?: string`, `buy_rate?: number`, `sell_rate?: number`, `is_major?: boolean`. Added a doc comment explaining the runtime fallbacks (when undefined, sync writer falls back to `${from}/${to}` for code and to `rate` for buy/sell). The fields are optional because `fetchFcsapiCurrency` (line 552) doesn't populate them — runtime behavior is unchanged (the existing `rate.code || \`${from}/${to}\`` and `rate.buy_rate || rate.rate` patterns already handle undefined gracefully).
+
+**7. src/lib/data-sync.ts** (+2/-2 lines) — supporting fix for scheduled-sync/route.ts:
+   - Lines 229, 242 of scheduled-sync/route.ts (TS2345): `heavyDb` (SqliteDatabase) not assignable to `upsertPriceHistory`'s parameter type `Record<string, unknown>`. TypeScript interfaces with method signatures (like `SqliteDatabase`) don't satisfy index signatures required by `Record<string, unknown>`.
+   - Fix: Changed `upsertPriceHistory`'s parameter type from `db: Record<string, unknown>` to `db: SqliteDatabase` (the actual interface from `@/lib/sqlite-wrapper` — which has `prepare(sql: string): Statement`, `transaction<T>(...)`, etc.). Added `type SqliteDatabase` to the import from `@/lib/sqlite-wrapper`. Type-safe, matches the function's actual contract (it calls `db.prepare(...)`).
+   - Bonus side-effect: this fix also resolved a pre-existing TS18046 error at `data-sync.ts:303` (where `db.prepare` was treated as `unknown` under the old `Record<string, unknown>` parameter type — now it's typed as `SqliteDatabase.prepare` returning `Statement`).
+   - NOTE on data-adapter.ts:1173: the parameter type change surfaces a more accurate error message in `src/lib/data-adapter.ts:1173` (same call-site pattern — passes `stockId` instead of `normalizedTicker`). The error count there is unchanged (1 → 1); only the message changed from "SqliteDatabase not assignable to Record" to "number not assignable to string" (the latter more accurately points to the actual bug). data-adapter.ts is out of scope (not in market/* routes), so this pre-existing bug was left for a future task.
+
+Verification (PASS):
+- `bunx tsc --noEmit --skipLibCheck 2>&1 | rg "^src/app/api/market/"` → EXIT=1 (ZERO matches) ✅
+  - Before: 17 TS errors across the 5 market files
+  - After: ZERO TS errors in any market/* route
+- `bun run lint` → EXIT=0 ✅ (0 errors, 0 warnings)
+- Side-effects:
+  - FIXED pre-existing: `src/lib/data-sync.ts:303` (TS18046: db.prepare is unknown) — fixed by the `upsertPriceHistory` parameter type change
+  - Surfaced clearer error (count unchanged 1→1): `src/lib/data-adapter.ts:1173` — now reports "number not assignable to string" instead of the misleading "SqliteDatabase not assignable to Record" (both point to the same pre-existing stockId-vs-ticker bug pattern)
+
+Stage Summary:
+- ✅ All 5 market/* route files cleared of TS errors (17 → 0 errors).
+- ✅ Pattern التطبيق: كل الإصلاحات type-safe (no `as any` casts anywhere) — extended interfaces with optional fields, moved declarations, added non-null assertions only where outer guards already guaranteed non-null.
+- ✅ NO Python files touched.
+- ✅ NO git --force used (Rule 81).
+- ✅ NO blue/indigo colors introduced (Rule 30 — N/A for API routes).
+- ✅ Runtime behavior preserved EXCEPT in scheduled-sync/route.ts where a pre-existing silent bug was fixed (heavy-DB price-history inserts were silently failing with TypeError because `stockId.toUpperCase()` was being called on a number — now correctly passes `ticker` string). This is a bug fix, not a regression — the route still completes and returns a `ScheduledSyncResponse`.
+- ✅ Bonus: fixed pre-existing `data-sync.ts:303` TS18046 (db.prepare was unknown under Record<string, unknown> parameter).
+- 📝 Pre-existing bug left for future task: `src/lib/data-adapter.ts:1173` has the same `stockId` vs `ticker` pattern — should pass `normalizedTicker` instead of `stockId` to `upsertPriceHistory`. Surfaced by this task's data-sync.ts parameter type change (error message now more accurate, count unchanged 1→1).
+- 📝 NOTE: `vps-adapter.ts` uses CRLF line endings (the only modified file with CRLF — all others use LF). Edits were applied via Python byte replacement to preserve CRLF.
