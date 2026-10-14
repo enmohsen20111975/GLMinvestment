@@ -38,6 +38,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STOCKS_DB = PROJECT_ROOT / "db" / "stocks.db"
+PREDICTIONS_DB = PROJECT_ROOT / "db" / "predictions.db"
 BUILD_SCRIPT = PROJECT_ROOT / "scripts" / "build_audited_track_record.py"
 SIGNAL_TYPE = 'backtest_track_record'
 
@@ -79,9 +80,10 @@ def step_2_purge_old(dry_run: bool) -> bool:
     if dry_run:
         log("  ℹ️ dry-run: would purge")
         return True
-    if not STOCKS_DB.exists():
+    pred_db = PREDICTIONS_DB if PREDICTIONS_DB.exists() else STOCKS_DB
+    if not pred_db.exists():
         return False
-    conn = sqlite3.connect(str(STOCKS_DB))
+    conn = sqlite3.connect(str(pred_db))
     try:
         # حذف صفقات backtest_track_record قديمة
         cur = conn.execute(f"DELETE FROM predictions WHERE signal_type = ?", (SIGNAL_TYPE,))

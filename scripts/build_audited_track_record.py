@@ -45,6 +45,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STOCKS_DB = PROJECT_ROOT / "db" / "stocks.db"
+PREDICTIONS_DB = PROJECT_ROOT / "db" / "predictions.db"
 
 RVOL_THRESHOLD = 1.8
 RVOL_LOOKBACK = 20
@@ -264,17 +265,18 @@ def simulate_trade(candles: List[Dict[str, Any]], entry_idx: int, entry_price: f
 
 
 def write_backtest_trades(trades: List[Dict[str, Any]]) -> int:
-    """كتابة الصفقات المغلقة في stocks.db.predictions."""
-    if not STOCKS_DB.exists():
-        log(f"stocks.db غير موجود: {STOCKS_DB}", "ERROR")
+    """كتابة الصفقات المغلقة في predictions.db."""
+    target_db = PREDICTIONS_DB if PREDICTIONS_DB.exists() else STOCKS_DB
+    if not target_db.exists():
+        log(f"Target DB غير موجود: {target_db}", "ERROR")
         return 0
 
-    conn = sqlite3.connect(str(STOCKS_DB))
+    conn = sqlite3.connect(str(target_db))
     # نسخة احتياطية قبل أي تعديل
-    backup_path = STOCKS_DB.parent / "backups" / f"stocks_db_before_backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+    backup_path = target_db.parent / "backups" / f"{target_db.name}_before_backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
     backup_path.parent.mkdir(parents=True, exist_ok=True)
     import shutil
-    shutil.copy2(STOCKS_DB, backup_path)
+    shutil.copy2(target_db, backup_path)
     log(f"💾 نسخة احتياطية: {backup_path.name}", "OK")
 
     # حذف أي صفقات backtest_track_record قديمة (idempotent)

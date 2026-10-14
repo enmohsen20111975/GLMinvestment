@@ -220,7 +220,7 @@ def load_egx30_data(db_path: str) -> List[Bar]:
     conn = sqlite3.connect(db_path)
     rows = conn.execute(
         "SELECT date, open_price, high_price, low_price, close_price, volume "
-        "FROM price_history WHERE ticker='EGX30' ORDER BY date ASC"
+        "FROM price_history WHERE ticker IN ('EGX30', 'EG30X') ORDER BY date ASC"
     ).fetchall()
     conn.close()
 
