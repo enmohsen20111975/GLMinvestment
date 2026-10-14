@@ -81,23 +81,21 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
         type="button"
         title={`${stock.ticker} — ${fmtPct(stock.change_percent)}`}
         className={cn(
-          'group inline-flex shrink-0 items-center gap-1.5 px-3 py-1 text-xs font-medium tabular-nums transition-colors',
-          'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 rounded',
+          'group inline-flex shrink-0 items-center gap-1.5 px-3 py-1 text-xs transition-colors rounded',
+          'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50',
           up
-            ? 'text-emerald-500 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'
-            : 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40',
+            ? 'text-stitch-primary hover:bg-emerald-500/10'
+            : 'text-rose-400 hover:bg-rose-500/10',
         )}
         dir="ltr"
       >
-        <span className="font-bold text-slate-900 dark:text-white">
+        <span className="stitch-num font-bold text-stitch-on-surface">
           {stock.ticker}
         </span>
         <span
           className={cn(
-            'inline-flex items-center gap-0.5 font-mono font-semibold',
-            up
-              ? 'text-emerald-500 dark:text-emerald-400'
-              : 'text-rose-600 dark:text-rose-400',
+            'stitch-num inline-flex items-center gap-0.5 font-semibold',
+            up ? 'text-stitch-primary' : 'text-rose-400',
           )}
         >
           {up ? (
@@ -109,9 +107,7 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
         </span>
       </button>
       {showSeparator && (
-        <span className="text-slate-300 dark:text-slate-700 select-none">
-          •
-        </span>
+        <span className="text-stitch-outline select-none">•</span>
       )}
     </>
   );
@@ -123,11 +119,11 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
 
 function TickerSkeleton() {
   return (
-    <div className="flex items-center gap-3 px-3 py-2">
-      {Array.from({ length: 12 }).map((_, i) => (
+    <div className="flex animate-pulse gap-6 px-4 py-2">
+      {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="h-3 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-800"
+          className="h-3 w-20 animate-pulse rounded bg-[#182030]"
         />
       ))}
     </div>
@@ -232,42 +228,40 @@ export function LiveStockTicker() {
       `}</style>
 
       <div
-        className="relative flex h-10 items-center overflow-hidden border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/60"
+        className="relative flex h-10 items-center overflow-hidden border-b border-white/[0.06] bg-[#0B0E14]/80 backdrop-blur-md"
         dir="rtl"
       >
         {/* شارة "مباشر" على اليمين (بداية RTL) */}
-        <div className="z-10 flex h-full shrink-0 items-center gap-1.5 border-l border-slate-200 bg-white/90 px-3 dark:border-slate-800 dark:bg-slate-950/90">
+        <div className="z-10 flex h-full shrink-0 items-center gap-1.5 border-l border-white/[0.06] bg-[#111622]/90 px-3">
           <span className="relative flex h-2 w-2">
             {isOpen && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
             )}
             <span
               className={cn(
                 'relative inline-flex h-2 w-2 rounded-full',
-                isOpen
-                  ? 'bg-emerald-500'
-                  : 'bg-slate-400 dark:bg-slate-600',
+                isOpen ? 'bg-emerald-500' : 'bg-stone-500',
               )}
             />
           </span>
-          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-500 dark:text-emerald-400">
+          <span className="stitch-num flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-stitch-primary">
             <Zap className="h-3 w-3" />
             {isOpen ? 'مباشر' : 'مغلق'}
           </span>
           {error && (
             <WifiOff
-              className="h-3 w-3 text-rose-500"
-              title="انقطاع الاتصال — عرض آخر بيانات"
+              className="h-3 w-3 text-rose-400"
+              aria-label="انقطاع الاتصال — عرض آخر بيانات"
             />
           )}
           {isRefreshing && (
-            <Loader2 className="h-3 w-3 animate-spin text-slate-400" />
+            <Loader2 className="h-3 w-3 animate-spin text-stitch-outline" />
           )}
         </div>
 
         {/* تدرّج لطفي على الحواف لإخفاء القطع */}
-        <div className="pointer-events-none absolute inset-y-0 right-10 z-[1] w-8 bg-gradient-to-l from-slate-50/80 to-transparent dark:from-slate-900/60" />
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-slate-50/80 to-transparent dark:from-slate-900/60" />
+        <div className="pointer-events-none absolute inset-y-0 right-10 z-[1] w-8 bg-gradient-to-l from-[#0B0E14]/80 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-[#0B0E14]/80 to-transparent" />
 
         {/* المسار المتحرك */}
         <div className="lss-ticker-wrap relative flex-1 overflow-hidden">
@@ -284,7 +278,7 @@ export function LiveStockTicker() {
               ))}
             </div>
           ) : (
-            <div className="px-4 py-2 text-xs text-slate-400 dark:text-slate-500">
+            <div className="stitch-ar px-4 py-2 text-xs text-stitch-outline">
               لا توجد بيانات أسهم متاحة
             </div>
           )}
