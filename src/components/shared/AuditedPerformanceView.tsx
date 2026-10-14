@@ -110,8 +110,8 @@ export function AuditedPerformanceView({ market }: { market: string }) {
   }
 
   const rawData = data as any;
-  const trades: any[] = rawData.audited_performance_history || rawData.audited_performance || [];
-  const stats: any = rawData.summary?.audited_performance || rawData.stats || {};
+  const trades: any[] = rawData?.audited_performance_history || rawData?.audited_performance || [];
+  const stats: any = rawData?.summary?.audited_performance || rawData?.stats || {};
 
   if (trades.length === 0) {
     return (
@@ -132,8 +132,6 @@ export function AuditedPerformanceView({ market }: { market: string }) {
     );
   }
 
-  // T-ALPHA-A20: Null safety مطلقة — stats?.?.?.?? null
-  const stats = data?.stats ?? null;
   const wins = trades.filter(t => Number(t?.hit_target) === 1 || (Number(t?.actual_return) > 0));
   const losses = trades.filter(t => Number(t?.hit_stop) === 1 || (Number(t?.actual_return) < 0));
   const winRate = stats?.win_rate != null ? stats.win_rate : trades.length > 0 ? Math.round((wins.length / trades.length) * 1000) / 10 : null;
