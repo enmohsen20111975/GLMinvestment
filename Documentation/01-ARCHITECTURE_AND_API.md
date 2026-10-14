@@ -208,6 +208,18 @@
 2. **لو Python رفض/تأخر → اقرأ من SQLite** عبر `src/lib/sqlite-compat.ts` + `src/lib/sqlite-wrapper.ts`.
 3. **لو SQLite فاضي → اقرأ من `data_engine.db`** (tier-3 fallback).
 
+> **⚠️ تحديث 2026-10-14 (Task `A-P1` — Phase 1 SQLite Decoupling — commit `3da92aa`):**
+> النمط أعلاه أُلغي. جميع راوتات `src/app/api/` (عدا admin DB-management) لم تعد تفتح `*.db` مباشرة.
+>
+> **النمط الجديد (Python Proxy + Honest Empty):**
+> 1. **حاول Python** (`fetch(PYTHON_BACKEND_URL + path)` + `127.0.0.1:8010` fallback).
+> 2. **لو Python رفض/تأخر → رجّع honest empty** (Rule 27: لا بيانات وهمية).
+> 3. **ممنوع `import Database from 'better-sqlite3'`** في أي route file.
+>
+> **36 route تم تحويلها** عبر 5 clusters: stocks/ (5) + predictions/ (6) + maker-radar/ (9) + news+market/ (8) + chart/misc (8). استثناءات موثقة: 6 راوتات admin DB-management (db-manager/repair, import-indices-csv, purge-cache, system-resources, backtest/v40/stats, news) — تدير قاعدة البيانات نفسها.
+>
+> **إثبات:** `rg '^import Database from better-sqlite3' src/app/api/` → 6 admin exceptions only · `bun run lint` → EXIT=0
+
 ### 1.7 P0 Wave 2026-09-27 — Security + Observability + Tests
 
 > **المرجع:** `worklog.md` entries `P0-12-SQLI` + `P0-17-RECONCILE` + `P0-7-15-INFRA` + `P0-14-ASYNC` + `P0-11-AUTH` + `HELI-INVESTIGATION` + `HELI-CLEANUP-2` + `P0-8-DB-UNIFY` + `P0-16-TESTS`.

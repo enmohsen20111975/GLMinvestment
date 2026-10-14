@@ -21,51 +21,12 @@ import {
   Zap, Target, ShieldAlert, ArrowRight, RefreshCw, Activity,
   Copy, Check, Flame, ChevronDown, ChevronUp, Search,
 } from 'lucide-react';
-
-interface LiveSignal {
-  ticker: string;
-  name: string | null;
-  market: string | null;
-  sector: string | null;
-  signal: string | null;
-  signal_ar: string | null;
-  entry_price: number | null;
-  target_1: number | null;
-  target_1_pct: number | null;
-  target_2: number | null;
-  target_2_pct: number | null;
-  stop_loss: number | null;
-  stop_loss_pct: number | null;
-  risk_reward: number | null;
-  confidence: number | null;
-  horizon: string | null;
-  horizon_icon: string | null;
-  catalyst: string | null;
-  catalyst_ar: string | null;
-  prediction_date: string | null;
-  current_price: number | null;
-}
-
-interface FeedResponse {
-  success: boolean;
-  top_5_signals?: LiveSignal[];
-  extra_signals?: LiveSignal[];
-  active_live_signals?: LiveSignal[];
-  summary?: {
-    active_signals?: { count?: number; avg_rr?: number | null; avg_confidence?: number | null };
-    audited_performance?: {
-      total_closed?: number;
-      wins?: number;
-      losses?: number;
-      win_rate?: number | null;
-      avg_return?: number | null;
-      best_return?: number | null;
-      profit_factor?: number | null;
-    };
-  };
-  error?: string;
-  message?: string;
-}
+// Directive A-P2: CANONICAL TYPES from src/types/commercial-feed.ts (SSOT)
+import type {
+  LiveSignal,
+  CommercialFeedResponse,
+} from '@/types/commercial-feed';
+import { safeFeedResponse, safeTop5Signals, safeAuditedPerformance, marketCurrencySymbol } from '@/types/commercial-feed';
 
 function fmtPrice(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(Number(n))) return '—';
@@ -217,7 +178,7 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
 }
 
 export function VIPLiveSignalsFeed({ market }: { market: string }) {
-  const [data, setData] = useState<FeedResponse | null>(null);
+  const [data, setData] = useState<CommercialFeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedTicker, setCopiedTicker] = useState<string | null>(null);
@@ -229,8 +190,9 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
     try {
       const res = await fetch(`/api/v2/commercial-feed?market=${encodeURIComponent(market)}`, { cache: 'no-store' });
       if (!res.ok) { setError('تعذّر جلب التوصيات'); setData(null); return; }
-      const json: FeedResponse = await res.json();
-      if (!json.success) { setError(json.message || 'تعذّر جلب التوصيات'); setData(null); return; }
+      const raw = await res.json();
+      const json = safeFeedResponse(raw); // defensive — never crashes on malformed payload
+      if (!json.success) { setError(json.message || json.error || 'تعذّر جلب التوصيات'); setData(null); return; }
       setData(json);
     } catch {
       setError('تعذّر الاتصال بالخادم');
@@ -280,13 +242,13 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
     );
   }
 
-  // T-ALPHA-A21: قراءة ما يرسله بايثون فقط — لا sort، لا filter، لا slice
-  const topSignals: LiveSignal[] = data.top_5_signals || data.active_live_signals?.slice(0, 5) || [];
-  const extraSignals: LiveSignal[] = data.extra_signals || [];
+  // T-ALPHA-A21 + A-P2: قراءة ما يرسله بايثون فقط — عبر safe accessors (defensive)
+  const topSignals: LiveSignal[] = safeTop5Signals(data);
+  const extraSignals: LiveSignal[] = data?.extra_signals ?? [];
 
-  // Audited Performance Banner (null safety مطلقة)
-  const audited = data?.summary?.audited_performance;
-  const showBanner = audited && audited.total_closed != null && audited.total_closed > 0;
+  // Audited Performance Banner (null safety مطلقة — via safe accessor)
+  const audited = safeAuditedPerformance(data);
+  const showBanner = audited != null && audited.total_closed > 0;
 
   if (topSignals.length === 0 && extraSignals.length === 0) {
     return (

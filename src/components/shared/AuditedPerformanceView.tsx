@@ -21,35 +21,9 @@ import {
   Trophy, TrendingUp, TrendingDown, Target, ShieldAlert,
   RefreshCw, Activity, Award, BarChart3,
 } from 'lucide-react';
-
-interface AuditedTrade {
-  ticker: string;
-  signal: string;
-  signal_ar: string;
-  entry_price: number | null;
-  target_price: number | null;
-  stop_loss: number | null;
-  exit_price: number | null;
-  actual_return: number | null;
-  pnl_pct: number | null;
-  hit_target: number | null;
-  hit_stop: number | null;
-  holding_days: number | null;
-  market: string;
-  prediction_date: string | null;
-  closed_at: string | null;
-}
-
-interface FeedResponse {
-  success: boolean;
-  audited_performance: AuditedTrade[];
-  stats: {
-    live_count: number;
-    audited_count: number;
-    win_rate: number | null;
-    avg_return: number | null;
-  };
-}
+// Directive A-P2: CANONICAL TYPES from src/types/commercial-feed.ts (SSOT)
+import type { CommercialFeedResponse, ClosedTrade, AuditedPerformance } from '@/types/commercial-feed';
+import { safeFeedResponse, safeAuditedPerformance, EMPTY_AUDITED_PERFORMANCE } from '@/types/commercial-feed';
 
 function fmtPct(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(Number(n))) return '—';
@@ -63,7 +37,7 @@ function fmtPrice(n: number | null | undefined): string {
 }
 
 export function AuditedPerformanceView({ market }: { market: string }) {
-  const [data, setData] = useState<FeedResponse | null>(null);
+  const [data, setData] = useState<CommercialFeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,7 +47,8 @@ export function AuditedPerformanceView({ market }: { market: string }) {
     try {
       const res = await fetch(`/api/v2/commercial-feed?market=${encodeURIComponent(market)}`, { cache: 'no-store' });
       if (!res.ok) { setError('تعذّر جلب سجل الأداء'); setData(null); return; }
-      const json: FeedResponse = await res.json();
+      const raw = await res.json();
+      const json = safeFeedResponse(raw); // defensive — never crashes on malformed payload
       if (!json.success) { setError('تعذّر جلب سجل الأداء'); setData(null); return; }
       setData(json);
     } catch {
@@ -109,9 +84,9 @@ export function AuditedPerformanceView({ market }: { market: string }) {
     );
   }
 
-  const rawData = data as any;
-  const trades: any[] = rawData?.audited_performance_history || rawData?.audited_performance || [];
-  const stats: any = rawData?.summary?.audited_performance || rawData?.stats || {};
+  // Directive A-P2: use canonical safe accessors (defensive — never crashes)
+  const trades: ClosedTrade[] = data?.audited_performance_history ?? [];
+  const stats: AuditedPerformance = safeAuditedPerformance(data);
 
   if (trades.length === 0) {
     return (
