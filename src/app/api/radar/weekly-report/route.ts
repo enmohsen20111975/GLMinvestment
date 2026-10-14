@@ -116,7 +116,7 @@ function resolvePython(): string {
  * Trigger a background regeneration of the weekly report.
  * Fire-and-forget — never blocks the API response.
  */
-export function triggerWeeklyReportWarmup(market = 'EGX'): boolean {
+function triggerWeeklyReportWarmup(market = 'EGX'): boolean {
   if (warmupInMemory) return false;
   if (!existsSync(REPORT_SCRIPT)) return false;
 

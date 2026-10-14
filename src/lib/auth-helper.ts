@@ -298,3 +298,14 @@ export function buildUserIdClause(userIds: string[], column = 'user_id'): { clau
   const placeholders = userIds.map(() => '?').join(', ');
   return { clause: `${column} IN (${placeholders})`, params: userIds };
 }
+
+/**
+ * P0/P1 helper: Returns authenticated userId as string, or null if unauthenticated.
+ */
+export async function requireAuthAsync(): Promise<string | null> {
+  const session = await getSessionUserId();
+  return session.userId;
+}
+
+export { requireAdminAsync } from '@/lib/admin-guard';
+

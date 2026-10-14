@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
  *
 import { getRadarDb, getRadarDbConfig, parseVolume } from '@/modules/radar/lib/radar-db';
 
-export async function GET_DISABLED(req: NextRequest) {
+async function GET_DISABLED(req: NextRequest) {
   const url = new URL(req.url);
   const ticker = (url.searchParams.get('ticker') || '').toUpperCase();
   const days = parseInt(url.searchParams.get('days') || '30', 10);

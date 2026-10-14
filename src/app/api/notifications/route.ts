@@ -29,7 +29,7 @@ export const runtime = 'nodejs';
  * يضمن وجود user_notifications + الأعمدة:
  *   severity, payload, read, ticker, created_at
  */
-export function ensureNotifColumns(db: SqliteDatabase): void {
+function ensureNotifColumns(db: SqliteDatabase): void {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS user_notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

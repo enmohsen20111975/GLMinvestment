@@ -34,7 +34,7 @@ let warmupInMemory = false;
  * This mirrors the maker radar's `triggerBackgroundWarmup` pattern — the
  * Python script is the brain (Constitution Rule 32), Next.js is display-only.
  */
-export function triggerExitRadarWarmup(market = 'EGX'): boolean {
+function triggerExitRadarWarmup(market = 'EGX'): boolean {
   if (warmupInMemory) return false;
   if (!existsSync(EXIT_SCRIPT)) return false;
 
@@ -240,7 +240,7 @@ export async function GET(req: NextRequest) {
  * the "refresh" button in the UI. Blocks until the script finishes (or
  * times out at 90s).
  */
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const url = new URL(req.url);
   const market = url.searchParams.get('market') || 'EGX';
 
@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
   warmupInMemory = true;
   const startedMonotonic = Date.now();
 
-  return new Promise((resolve) => {
+  return new Promise<Response>((resolve) => {
     const args = [
       EXIT_SCRIPT,
       '--market', market,
