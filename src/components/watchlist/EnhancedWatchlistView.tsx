@@ -240,23 +240,23 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
           <div className="space-y-2 relative" ref={dropdownRef}>
             <Label htmlFor="ws-stock-search">{t('watchlist.dialog.tickerLabel')}</Label>
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-on-surface-variant" />
               <Input
                 id="ws-stock-search"
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
                 onFocus={() => { if (results.length > 0) setShowDropdown(true); }}
                 placeholder={t('watchlist.dialog.searchPlaceholder')}
-                className="pr-9"
+                className="pr-9 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface"
                 dir="rtl"
               />
               {searching && (
-                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin dark:text-on-surface-variant" />
               )}
               {query && !searching && (
                 <button
                   type="button"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface"
                   onClick={() => { setQuery(''); setSelectedStock(null); setResults([]); }}
                 >
                   <X className="w-4 h-4" />
@@ -265,25 +265,25 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
             </div>
 
             {showDropdown && (
-              <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto dark:bg-surface-container dark:border-outline-variant">
                 {results.map((stock) => (
                   <button
                     key={stock.id}
                     type="button"
                     className={cn(
-                      'w-full px-3 py-2 text-right flex items-center gap-3 hover:bg-accent transition-colors',
-                      selectedStock?.id === stock.id && 'bg-accent'
+                      'w-full px-3 py-2 text-right flex items-center gap-3 hover:bg-accent transition-colors dark:hover:bg-surface-container-high',
+                      selectedStock?.id === stock.id && 'bg-accent dark:bg-surface-container-high'
                     )}
                     onClick={() => handleSelectStock(stock)}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm">{stock.ticker}</span>
+                        <span className="font-semibold text-sm dark:text-on-surface dark:font-financial">{stock.ticker}</span>
                         <Badge variant="secondary" className="text-[10px] px-1.5">{stock.sector}</Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{stock.name_ar}</p>
+                      <p className="text-xs text-muted-foreground truncate dark:text-on-surface-variant">{stock.name_ar}</p>
                     </div>
-                    <span className="text-sm font-medium">{formatCurrency(stock.current_price)}</span>
+                    <span className="text-sm font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(stock.current_price)}</span>
                   </button>
                 ))}
               </div>
@@ -292,12 +292,12 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
 
           {/* Selected stock info */}
           {selectedStock && (
-            <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+            <div className="p-3 rounded-lg bg-muted/50 border border-border/50 dark:bg-surface-container dark:border-outline-variant/30">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-bold text-sm">{selectedStock.ticker}</span>
-                <span className="text-xs text-muted-foreground">{selectedStock.name_ar}</span>
+                <span className="font-bold text-sm dark:text-on-surface dark:font-financial">{selectedStock.ticker}</span>
+                <span className="text-xs text-muted-foreground dark:text-on-surface-variant">{selectedStock.name_ar}</span>
               </div>
-              <p className="text-xs text-muted-foreground">{t('watchlist.dialog.currentPrice')}: {formatCurrency(selectedStock.current_price)}</p>
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant tabular-nums dark:font-financial">{t('watchlist.dialog.currentPrice')}: {formatCurrency(selectedStock.current_price)}</p>
             </div>
           )}
 
@@ -313,6 +313,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
                 onChange={(e) => setPurchasePrice(e.target.value)}
                 placeholder="0.00"
                 dir="ltr"
+                className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
               />
             </div>
             <div className="space-y-2">
@@ -325,6 +326,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="0"
                 dir="ltr"
+                className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
               />
             </div>
           </div>
@@ -341,6 +343,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
                 onChange={(e) => setAlertPriceAbove(e.target.value)}
                 placeholder="0.00"
                 dir="ltr"
+                className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
               />
             </div>
             <div className="space-y-2">
@@ -353,6 +356,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
                 onChange={(e) => setAlertPriceBelow(e.target.value)}
                 placeholder="0.00"
                 dir="ltr"
+                className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
               />
             </div>
           </div>
@@ -368,6 +372,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
               onChange={(e) => setAlertChangePercent(e.target.value)}
               placeholder="0.0"
               dir="ltr"
+              className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
             />
           </div>
 
@@ -381,6 +386,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
               placeholder={t('watchlist.dialog.notesPlaceholder')}
               rows={2}
               dir="rtl"
+              className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface"
             />
           </div>
         </div>
@@ -388,7 +394,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={resetAndClose}>{t('watchlist.buttons.cancel')}</Button>
           <Button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90"
             onClick={handleSubmit}
             disabled={submitting || !selectedStock}
           >
@@ -603,22 +609,22 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
 
   return (
     <Card className={cn(
-      'overflow-hidden',
-      hasGainLoss && item.purchase_price && item.quantity && isProfitable && 'border-emerald-200 dark:border-emerald-800',
-      hasGainLoss && item.purchase_price && item.quantity && !isProfitable && 'border-red-200 dark:border-red-800'
+      'overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30',
+      hasGainLoss && item.purchase_price && item.quantity && isProfitable && 'border-emerald-200 dark:border-emerald-800 dark:border-primary-container/40',
+      hasGainLoss && item.purchase_price && item.quantity && !isProfitable && 'border-red-200 dark:border-red-800 dark:border-error-container/40'
     )}>
       <CardContent className="p-4">
         {/* Header Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 dark:text-primary dark:font-financial">
                 {(item.ticker || '').slice(0, 2)}
               </span>
             </div>
             <div className="min-w-0">
-              <p className="font-bold">{item.ticker}</p>
-              <p className="text-xs text-muted-foreground truncate">{item.name_ar}</p>
+              <p className="font-bold dark:text-on-surface dark:font-financial">{item.ticker}</p>
+              <p className="text-xs text-muted-foreground truncate dark:text-on-surface-variant">{item.name_ar}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -648,18 +654,18 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
 
         {/* Price Section */}
         <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="bg-muted/50 rounded-lg p-2.5">
-            <p className="text-xs text-muted-foreground mb-0.5">السعر الحالي</p>
-            <p className="font-bold text-lg">{formatCurrency(item.current_price)}</p>
+          <div className="bg-muted/50 rounded-lg p-2.5 dark:bg-surface-container">
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-0.5">السعر الحالي</p>
+            <p className="font-bold text-lg tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.current_price)}</p>
             <div className="flex items-center gap-1 mt-1">
               {item.price_change >= 0 ? (
-                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                <TrendingUp className="w-3 h-3 text-emerald-500 dark:text-primary" />
               ) : (
-                <TrendingDown className="w-3 h-3 text-red-500" />
+                <TrendingDown className="w-3 h-3 text-red-500 dark:text-error" />
               )}
               <span className={cn(
-                'text-xs font-semibold',
-                item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                'text-xs font-semibold tabular-nums dark:font-financial',
+                item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
               )}>
                 {formatPercent(item.price_change_percent)}
               </span>
@@ -669,20 +675,20 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
           {hasGainLoss && item.purchase_price && item.quantity && (
             <div className={cn(
               'rounded-lg p-2.5',
-              isProfitable ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-red-50 dark:bg-red-950/30'
+              isProfitable ? 'bg-emerald-50 dark:bg-emerald-950/30 dark:bg-primary-container/20' : 'bg-red-50 dark:bg-red-950/30 dark:bg-error-container/20'
             )}>
-              <p className="text-xs text-muted-foreground mb-0.5">الربح/الخسارة</p>
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-0.5">الربح/الخسارة</p>
               <p className={cn(
-                'font-bold text-lg',
-                isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                'font-bold text-lg tabular-nums dark:font-financial',
+                isProfitable ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
               )}>
                 {formatCurrency(Math.abs(item.gain_loss))}
               </p>
               <Badge className={cn(
-                'text-[10px] px-1.5 mt-1',
+                'text-[10px] px-1.5 mt-1 tabular-nums dark:font-financial',
                 isProfitable
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary'
+                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error'
               )}>
                 {formatPercent(item.gain_loss_percent)}
               </Badge>
@@ -698,27 +704,27 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
         {hasGainLoss && item.purchase_price && (
           <div className="grid grid-cols-3 gap-2 text-xs mb-3">
             <div>
-              <p className="text-muted-foreground">سعر الشراء</p>
-              <p className="font-medium">{formatCurrency(item.purchase_price)}</p>
+              <p className="text-muted-foreground dark:text-on-surface-variant">سعر الشراء</p>
+              <p className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.purchase_price)}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">الكمية</p>
-              <p className="font-medium">{item.quantity?.toLocaleString('ar-EG') || '—'}</p>
+              <p className="text-muted-foreground dark:text-on-surface-variant">الكمية</p>
+              <p className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{item.quantity?.toLocaleString('ar-EG') || '—'}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">المستثمر</p>
-              <p className="font-medium">{formatCurrency(item.total_invested)}</p>
+              <p className="text-muted-foreground dark:text-on-surface-variant">المستثمر</p>
+              <p className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.total_invested)}</p>
             </div>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 pt-2 border-t border-border">
+        <div className="flex justify-end gap-2 pt-2 border-t border-border dark:border-outline-variant/30">
           <Button
             variant="outline"
             size="sm"
             onClick={onAnalyze}
-            className="h-9 border-primary text-primary hover:bg-primary/10"
+            className="h-9 border-primary text-primary hover:bg-primary/10 dark:border-primary-container dark:text-primary dark:hover:bg-primary-container/20"
             title="مستشار الصفقة"
           >
             <Sparkles className="w-3.5 h-3.5 ml-1.5" />
@@ -728,7 +734,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
             variant="outline"
             size="sm"
             onClick={onEdit}
-            className="h-9"
+            className="h-9 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface"
           >
             <Pencil className="w-3.5 h-3.5 ml-1.5" />
             تعديل
@@ -737,7 +743,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
             variant="outline"
             size="sm"
             onClick={onDelete}
-            className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 dark:text-error dark:hover:bg-error-container/20 dark:border-error-container/40"
           >
             <Trash2 className="w-3.5 h-3.5 ml-1.5" />
             حذف
@@ -847,14 +853,14 @@ export function EnhancedWatchlistView() {
       filterable: true,
       render: (item) => (
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+          <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 dark:text-primary dark:font-financial">
               {(item.ticker || '').slice(0, 2)}
             </span>
           </div>
           <div className="min-w-0">
-            <p className="font-bold text-sm">{item.ticker}</p>
-            <p className="text-xs text-muted-foreground truncate max-w-[120px]">{item.name_ar}</p>
+            <p className="font-bold text-sm dark:text-on-surface dark:font-financial">{item.ticker}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[120px] dark:text-on-surface-variant">{item.name_ar}</p>
           </div>
           <StockPublisher
             data={{
@@ -878,7 +884,7 @@ export function EnhancedWatchlistView() {
       align: 'center',
       sortable: true,
       filterable: true,
-      render: (item) => <p className="font-semibold text-sm">{formatCurrency(item.current_price)}</p>,
+      render: (item) => <p className="font-semibold text-sm tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.current_price)}</p>,
     },
     {
       key: 'sparkline',
@@ -899,7 +905,7 @@ export function EnhancedWatchlistView() {
       filterable: true,
       hideable: true,
       render: (item) => (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground dark:text-on-surface-variant tabular-nums dark:font-financial">
           {item.purchase_price ? formatCurrency(item.purchase_price) : '—'}
         </p>
       ),
@@ -912,7 +918,7 @@ export function EnhancedWatchlistView() {
       filterable: true,
       hideable: true,
       render: (item) => (
-        <p className="text-sm">
+        <p className="text-sm tabular-nums dark:font-financial dark:text-on-surface">
           {item.quantity ? item.quantity.toLocaleString('ar-EG') : '—'}
         </p>
       ),
@@ -924,7 +930,7 @@ export function EnhancedWatchlistView() {
       sortable: true,
       filterable: true,
       hideable: true,
-      render: (item) => <p className="text-sm font-medium">{formatCurrency(item.total_invested)}</p>,
+      render: (item) => <p className="text-sm font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.total_invested)}</p>,
     },
     {
       key: 'current_value',
@@ -933,7 +939,7 @@ export function EnhancedWatchlistView() {
       sortable: true,
       filterable: true,
       hideable: true,
-      render: (item) => <p className="text-sm font-medium">{formatCurrency(item.current_value)}</p>,
+      render: (item) => <p className="text-sm font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.current_value)}</p>,
     },
     {
       key: 'gain_loss',
@@ -947,16 +953,16 @@ export function EnhancedWatchlistView() {
         return (
           <div className="flex flex-col items-center gap-0.5">
             <span className={cn(
-              'text-sm font-semibold',
-              isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+              'text-sm font-semibold tabular-nums dark:font-financial',
+              isProfitable ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
             )}>
               {formatCurrency(Math.abs(item.gain_loss))}
             </span>
             <Badge className={cn(
-              'text-[10px] px-1.5',
+              'text-[10px] px-1.5 tabular-nums dark:font-financial',
               isProfitable
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error'
             )}>
               {formatPercent(item.gain_loss_percent)}
             </Badge>
@@ -973,13 +979,13 @@ export function EnhancedWatchlistView() {
       render: (item) => (
         <div className="flex items-center justify-center gap-1">
           {item.price_change >= 0 ? (
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-500 dark:text-primary" />
           ) : (
-            <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+            <TrendingDown className="w-3.5 h-3.5 text-red-500 dark:text-error" />
           )}
           <span className={cn(
-            'text-xs font-semibold',
-            item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+            'text-xs font-semibold tabular-nums dark:font-financial',
+            item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
           )}>
             {formatPercent(item.price_change_percent)}
           </span>
@@ -1003,11 +1009,11 @@ export function EnhancedWatchlistView() {
               <div className="relative">
                 <Bell className="w-4 h-4 text-amber-500" />
                 {(isAboveTriggered || isBelowTriggered) && (
-                  <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 dark:bg-error rounded-full" />
                 )}
               </div>
             ) : (
-              <BellOff className="w-4 h-4 text-muted-foreground" />
+              <BellOff className="w-4 h-4 text-muted-foreground dark:text-on-surface-variant" />
             )}
           </div>
         );
@@ -1069,7 +1075,7 @@ export function EnhancedWatchlistView() {
   // NOTE: must be AFTER all hook calls (useMemo above) to satisfy Rules of Hooks.
   if (loading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-background">
+      <div dir="rtl" className="min-h-screen bg-background dark:bg-surface-container-lowest">
         <div className="p-4 md:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <Skeleton className="h-8 w-48" />
@@ -1089,20 +1095,20 @@ export function EnhancedWatchlistView() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background">
+    <div dir="rtl" className="min-h-screen bg-background dark:bg-surface-container-lowest">
       <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <Eye className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center">
+              <Eye className="w-5 h-5 text-emerald-600 dark:text-emerald-400 dark:text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">{t('watchlist.title')}</h1>
+              <h1 className="text-xl font-bold dark:text-on-surface dark:font-outfit">{t('watchlist.title')}</h1>
               <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground">{t('watchlist.subtitle')}</p>
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('watchlist.subtitle')}</p>
                 {lastUpdate && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground dark:text-on-surface-variant flex items-center gap-1 tabular-nums dark:font-financial">
                     <Clock className="w-3 h-3" />
                     {lastUpdate.toLocaleTimeString('ar-EG')}
                   </span>
@@ -1139,7 +1145,7 @@ export function EnhancedWatchlistView() {
               تحديث
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90"
               size="sm"
               onClick={() => setAddDialogOpen(true)}
             >
@@ -1153,48 +1159,48 @@ export function EnhancedWatchlistView() {
         {/* UI-STABILITY fix (2026-09-28): stable key prevents unmount/remount on silent refresh */}
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4" key="watchlist-summary-cards">
-            <Card className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
                 <BarChart3 className="w-4 h-4" />
                 <span className="text-xs font-medium">{t('watchlist.stats.count')}</span>
               </div>
-              <p className="text-xl font-bold">{(summary.total_items ?? 0).toLocaleString('ar-EG')}</p>
+              <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{(summary.total_items ?? 0).toLocaleString('ar-EG')}</p>
             </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
                 <Wallet className="w-4 h-4" />
                 <span className="text-xs font-medium">{t('watchlist.stats.totalInvested')}</span>
               </div>
-              <p className="text-xl font-bold">{formatCurrency(summary.total_invested)}</p>
+              <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(summary.total_invested)}</p>
             </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
                 <DollarSign className="w-4 h-4" />
                 <span className="text-xs font-medium">{t('watchlist.stats.currentValue')}</span>
               </div>
-              <p className="text-xl font-bold">{formatCurrency(summary.total_current_value)}</p>
+              <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(summary.total_current_value)}</p>
             </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
                 {summary.total_gain_loss >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-primary" />
                 ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500" />
+                  <TrendingDown className="w-4 h-4 text-red-500 dark:text-error" />
                 )}
                 <span className="text-xs font-medium">{t('watchlist.stats.pnl')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <p className={cn(
-                  'text-xl font-bold',
-                  summary.total_gain_loss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                  'text-xl font-bold tabular-nums dark:font-financial',
+                  summary.total_gain_loss >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
                 )}>
                   {formatCurrency(Math.abs(summary.total_gain_loss))}
                 </p>
                 <Badge className={cn(
                   'text-xs',
                   summary.total_gain_loss >= 0
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary'
+                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error'
                 )}>
                   {formatPercent(summary.total_gain_loss_percent)}
                 </Badge>
@@ -1213,17 +1219,17 @@ export function EnhancedWatchlistView() {
         {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
         {/* UI-FIX-P2-P3 issue 2.10: hide empty-state when API failed; show error card instead */}
         {!showIntelligence && !loadError && items.length === 0 && (
-          <Card className="border-dashed" key="watchlist-empty-state">
+          <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant" key="watchlist-empty-state">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <EyeOff className="w-8 h-8 text-muted-foreground" />
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4 dark:bg-surface-container">
+                <EyeOff className="w-8 h-8 text-muted-foreground dark:text-on-surface-variant" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{t('watchlist.empty.title')}</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
+              <h3 className="text-lg font-semibold mb-2 dark:text-on-surface dark:font-outfit">{t('watchlist.empty.title')}</h3>
+              <p className="text-sm text-muted-foreground dark:text-on-surface-variant max-w-sm">
                 {t('watchlist.empty.body')}
               </p>
               <Button
-                className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90"
                 onClick={() => setAddDialogOpen(true)}
               >
                 <Plus className="w-4 h-4 ml-2" />
@@ -1235,19 +1241,19 @@ export function EnhancedWatchlistView() {
 
         {/* Error State — UI-FIX-P2-P3 issue 2.10: actionable retry + support link */}
         {!showIntelligence && loadError && (
-          <Card className="border-destructive/30 bg-destructive/5" key="watchlist-error-state">
+          <Card className="border-destructive/30 bg-destructive/5 dark:bg-surface-container-low dark:border-error-container/40 dark:bg-error-container/10" key="watchlist-error-state">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-                <AlertCircle className="w-8 h-8 text-destructive" />
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4 dark:bg-error-container/20">
+                <AlertCircle className="w-8 h-8 text-destructive dark:text-error" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{t('watchlist.error.title')}</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mb-6">
+              <h3 className="text-lg font-semibold mb-2 dark:text-on-surface dark:font-outfit">{t('watchlist.error.title')}</h3>
+              <p className="text-sm text-muted-foreground dark:text-on-surface-variant max-w-sm mb-6">
                 {t('watchlist.error.body')}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="default"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90"
                   onClick={() => fetchData(false)}
                   disabled={loading}
                 >
@@ -1256,7 +1262,7 @@ export function EnhancedWatchlistView() {
                 </Button>
                 <a
                   href="mailto:support@invist.m2y.net"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                 >
                   {t('watchlist.buttons.support')}
                 </a>
@@ -1268,7 +1274,7 @@ export function EnhancedWatchlistView() {
         {/* Watchlist - Mobile Cards View */}
         {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
         {!showIntelligence && items.length > 0 && (
-          <div className="md:hidden space-y-3" key="watchlist-mobile-cards">
+          <div className="md:hidden space-y-3 dark:bg-transparent" key="watchlist-mobile-cards">
             {items.map((item) => (
               <WatchlistMobileCard
                 key={item.id}
@@ -1293,7 +1299,7 @@ export function EnhancedWatchlistView() {
         {/* Watchlist - Desktop Table View */}
         {/* UI-STABILITY fix (2026-09-28): stable key + silent refresh */}
         {!showIntelligence && items.length > 0 && (
-          <Card className="hidden md:block" key="watchlist-desktop-table">
+          <Card className="hidden md:block dark:bg-surface-container-low dark:border dark:border-outline-variant/30" key="watchlist-desktop-table">
             <CardContent className="p-0">
               <UnifiedTable<EnhancedWatchlistItem>
                 columns={watchlistColumns}
@@ -1304,8 +1310,8 @@ export function EnhancedWatchlistView() {
                 filterable
                 rowClassName={(item) => cn(
                   'hover:bg-muted/50',
-                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-emerald-50/50 dark:bg-emerald-950/10',
-                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-red-50/50 dark:bg-red-950/10',
+                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-emerald-50/50 dark:bg-emerald-950/10 dark:bg-primary-container/10',
+                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-red-50/50 dark:bg-red-950/10 dark:bg-error-container/10',
                 )}
               />
             </CardContent>
@@ -1332,7 +1338,7 @@ export function EnhancedWatchlistView() {
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="sm:max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-error">
               <AlertTriangle className="w-5 h-5" />
               {t('watchlist.delete.title')}
             </DialogTitle>
@@ -1343,7 +1349,7 @@ export function EnhancedWatchlistView() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteId(null)}>{t('watchlist.buttons.cancel')}</Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white dark:bg-error dark:text-on-error dark:hover:bg-error/90"
               onClick={handleDelete}
             >
               {t('watchlist.buttons.delete')}

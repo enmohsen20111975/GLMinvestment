@@ -235,7 +235,7 @@ const ASSET_TYPES: AssetType[] = [
 ];
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
-  stock: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400',
+  stock: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary',
   gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   bank: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   certificate: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -299,9 +299,9 @@ const OBLIGATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400',
+  active: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary',
   paid: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-  overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error',
 };
 
 // ==================== STOCK SEARCH DROPDOWN ====================
@@ -399,7 +399,7 @@ function StockSearchDropdown({
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">{(stock.current_price ?? 0) > 0 ? (stock.current_price ?? 0).toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                   {(stock.price_change ?? 0) >= 0 ? '+' : ''}{(stock.price_change ?? 0).toFixed(2)}%
                 </div>
               </div>
@@ -514,7 +514,7 @@ function CryptoSearchDropdown({
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">${coin.price_usd > 0 ? (coin.price_usd ?? 0).toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', coin.change_24h >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                <div className={cn('text-xs font-medium', coin.change_24h >= 0 ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                   {coin.change_24h >= 0 ? '+' : ''}{(coin.change_24h ?? 0).toFixed(2)}%
                 </div>
               </div>
@@ -1154,7 +1154,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           other side — opens DynamicRiskProfilerModal to recompute the persona. */}
       <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl">
         <div className="flex items-center gap-2">
-          <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
+          <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary border-emerald-200 dark:border-emerald-800 dark:border-primary-container/40">
             <Shield className="w-3 h-3" />
             {t('portfolio.persona.label', { persona: personaLabelAr(persona) })}
           </Badge>
@@ -1175,44 +1175,44 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
 
       {/* Summary Cards — B-1: Backend P34 net-worth math (gross / debts / net / monthly yield) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
             <Landmark className="w-4 h-4" />
             <span className="text-xs font-medium">{t('portfolio.summary.totalAssets')}</span>
           </div>
-          <p className="text-lg md:text-xl font-bold">{formatCurrency(netWorthData?.gross ?? totalAssets)}</p>
+          <p className="text-lg md:text-xl font-bold dark:text-on-surface tabular-nums dark:font-financial">{formatCurrency(netWorthData?.gross ?? totalAssets)}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
             <CreditCard className="w-4 h-4 text-amber-500" />
             <span className="text-xs font-medium">{t('portfolio.summary.totalLiabilities')}</span>
           </div>
-          <p className="text-lg md:text-xl font-bold text-amber-600 dark:text-amber-400">
+          <p className="text-lg md:text-xl font-bold text-amber-600 dark:text-amber-400 tabular-nums dark:font-financial">
             {formatCurrency(netWorthData?.debts ?? totalLiabilities)}
           </p>
           {totalLiabilities > 0 && (netWorthData?.debts ?? 0) === 0 && (
-            <p className="text-xs text-muted-foreground mt-1">{t('portfolio.summary.afterDeduction', { amount: formatCurrency(totalLiabilities) })}</p>
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.summary.afterDeduction', { amount: formatCurrency(totalLiabilities) })}</p>
           )}
         </Card>
-        <Card className="p-4 ring-1 ring-emerald-500/30 bg-emerald-500/5">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Wallet className="w-4 h-4 text-emerald-500" />
+        <Card className="p-4 ring-1 ring-emerald-500/30 bg-emerald-500/5 dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:ring-primary/40 dark:bg-primary-container/10">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+            <Wallet className="w-4 h-4 text-emerald-500 dark:text-emerald-400 dark:text-primary" />
             <span className="text-xs font-medium">{t('portfolio.summary.netWorth')}</span>
           </div>
-          <p className={cn('text-lg md:text-xl font-bold', (netWorthData?.net ?? netWealth) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+          <p className={cn('text-lg md:text-xl font-bold tabular-nums dark:font-financial', (netWorthData?.net ?? netWealth) >= 0 ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
             {formatCurrency(netWorthData?.net ?? netWealth)}
           </p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Coins className="w-4 h-4 text-emerald-500" />
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+            <Coins className="w-4 h-4 text-emerald-500 dark:text-emerald-400 dark:text-primary" />
             <span className="text-xs font-medium">{t('portfolio.summary.monthlyYield')}</span>
           </div>
-          <p className="text-lg md:text-xl font-bold text-emerald-500 dark:text-emerald-400">
+          <p className="text-lg md:text-xl font-bold text-emerald-500 dark:text-emerald-400 dark:text-primary tabular-nums dark:font-financial">
             {formatCurrency(netWorthData?.monthlyYield ?? 0)}
           </p>
           {netWorthData && netWorthData.annualYield > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">{t('portfolio.summary.annualYield', { amount: formatCurrency(netWorthData.annualYield) })}</p>
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.summary.annualYield', { amount: formatCurrency(netWorthData.annualYield) })}</p>
           )}
         </Card>
       </div>
@@ -1220,17 +1220,17 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       {/* GLM5.2-A (P0-ALPHA-PORTFOLIO-COMMISSION) — Custom Brokerage & Fee Rate.
           Per manager directive: commissions vary between EGX/TADAWUL/US + brokers.
           Stored in localStorage. Applied to net trade returns (buy + sell sides). */}
-      <Card className="p-3 md:p-4 border-primary/20 bg-primary/5">
+      <Card className="p-3 md:p-4 border-primary/20 bg-primary/5 dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:bg-primary-container/10">
         <div className="flex flex-wrap items-center gap-3 justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 dark:bg-primary-container/30">
               <Percent className="w-4 h-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-foreground truncate">
+              <div className="text-sm font-semibold text-foreground truncate dark:text-on-surface dark:font-outfit">
                 نسبة عمولة التداول والانزلاق %
               </div>
-              <div className="text-[10px] text-muted-foreground truncate">
+              <div className="text-[10px] text-muted-foreground truncate dark:text-on-surface-variant">
                 Brokerage & Fee Rate — تُخصم من عوائد الصفقات (شراء + بيع)
               </div>
             </div>
@@ -1243,10 +1243,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
               step="0.01"
               value={commissionPct}
               onChange={(e) => updateCommission(parseFloat(e.target.value) || 0)}
-              className="w-24 text-center font-mono font-bold"
+              className="w-24 text-center font-mono font-bold dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
               dir="ltr"
             />
-            <span className="text-sm text-muted-foreground font-mono">%</span>
+            <span className="text-sm text-muted-foreground font-mono dark:text-on-surface-variant">%</span>
             {/* Quick presets */}
             <div className="flex gap-1">
               {[0, 0.15, 0.20, 0.40].map((preset) => (
@@ -1254,10 +1254,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   key={preset}
                   onClick={() => updateCommission(preset)}
                   className={cn(
-                    'px-2 py-1 rounded text-[10px] font-mono border transition-all',
+                    'px-2 py-1 rounded text-[10px] font-mono border transition-all dark:font-financial tabular-nums',
                     Math.abs(commissionPct - preset) < 0.001
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-card text-muted-foreground border-border hover:bg-muted',
+                      ? 'bg-primary text-primary-foreground border-primary dark:bg-primary-container dark:text-on-primary-container dark:border-primary-container'
+                      : 'bg-card text-muted-foreground border-border hover:bg-muted dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant dark:hover:bg-surface-container-high',
                   )}
                   title={`${preset}%`}
                 >
@@ -1268,9 +1268,9 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </div>
         </div>
         {commissionPct > 0 && (
-          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-            💡 العمولة الحالية: <span className="font-mono font-bold text-primary">{commissionPct.toFixed(2)}%</span>
-            (تكلفة الكتلة: <span className="font-mono">{(commissionPct * 2).toFixed(2)}%</span> لكل صفقة شراء + بيع).
+          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed dark:text-on-surface-variant">
+            💡 العمولة الحالية: <span className="font-mono font-bold text-primary dark:font-financial tabular-nums">{commissionPct.toFixed(2)}%</span>
+            (تكلفة الكتلة: <span className="font-mono dark:font-financial tabular-nums">{(commissionPct * 2).toFixed(2)}%</span> لكل صفقة شراء + بيع).
             الأرباح الصافية في جدول الصفقات تُحسب بخصم هذه النسبة من العائد الإجمالي.
           </p>
         )}
@@ -1308,7 +1308,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
               {t('portfolio.buttons.liveRefresh')}
             </span>
           )}
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
+          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
             <Plus className="w-4 h-4 ml-1.5" />
             {t('portfolio.buttons.addAsset')}
           </Button>
@@ -1317,11 +1317,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
 
       {/* Assets List - Grouped by Type */}
       {filteredAssets.length === 0 ? (
-        <Card className="border-dashed">
+        <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Landmark className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-semibold mb-1">{t('portfolio.empty.noAssets')}</h3>
-            <p className="text-sm text-muted-foreground">{t('portfolio.asset.addEmpty')}</p>
+            <Landmark className="w-10 h-10 text-muted-foreground mb-3 dark:text-on-surface-variant" />
+            <h3 className="text-lg font-semibold mb-1 dark:text-on-surface dark:font-outfit">{t('portfolio.empty.noAssets')}</h3>
+            <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.addEmpty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -1340,26 +1340,26 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             const groupYearlyInterest = groupAssets.reduce((s, a) => s + (Number(a.yearly_interest) || 0), 0);
             
             return (
-              <AccordionItem key={groupType} value={groupType} className="border rounded-lg bg-card px-4">
+              <AccordionItem key={groupType} value={groupType} className="border rounded-lg bg-card px-4 dark:bg-surface-container-low dark:border-outline-variant">
                 {/* Group Header — P30 TASK 6: Accordion trigger */}
-                <AccordionTrigger className="hover:no-underline bg-muted/30 rounded-lg px-3 py-3 hover:bg-muted/50">
+                <AccordionTrigger className="hover:no-underline bg-muted/30 rounded-lg px-3 py-3 hover:bg-muted/50 dark:bg-surface-container dark:hover:bg-surface-container-high">
                   <div className="flex items-center gap-2">
                     <Badge className={ASSET_TYPE_COLORS[groupType]}>{t(`portfolio.assetTypes.${groupType}`)}</Badge>
-                    <span className="text-sm text-muted-foreground">({groupAssets.length})</span>
+                    <span className="text-sm text-muted-foreground dark:text-on-surface-variant">({groupAssets.length})</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
                     <div className="text-left">
-                      <span className="text-muted-foreground">{t('portfolio.asset.value')}</span>
-                      <span className="font-semibold">{formatCurrency(groupCurrentValue)}</span>
+                      <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.value')}</span>
+                      <span className="font-semibold dark:text-on-surface tabular-nums dark:font-financial">{formatCurrency(groupCurrentValue)}</span>
                     </div>
-                    <div className={cn('text-left font-semibold', groupProfitLoss >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    <div className={cn('text-left font-semibold', groupProfitLoss >= 0 ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                       {formatPercent(groupProfitLossPercent)}
                     </div>
                     {/* Show interest for bank/certificate/fund */}
                     {['bank', 'certificate', 'fund'].includes(groupType) && groupYearlyInterest > 0 && (
-                      <div className="text-left text-emerald-500 dark:text-emerald-400">
+                      <div className="text-left text-emerald-500 dark:text-emerald-400 dark:text-primary">
                         <span className="text-xs">{t('portfolio.asset.annualReturn')}</span>
-                        <span className="font-semibold">{formatCurrency(groupYearlyInterest)}</span>
+                        <span className="font-semibold tabular-nums dark:font-financial">{formatCurrency(groupYearlyInterest)}</span>
                       </div>
                     )}
                   </div>
@@ -1449,14 +1449,14 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                     const avgBuy = Number(asset.avg_buy_price) || 0;
                     
                     return (
-                      <Card key={asset.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { if (isStock && asset.stock_ticker) loadStockDetail(asset.stock_ticker); }}>
+                      <Card key={asset.id} className="hover:shadow-md transition-shadow cursor-pointer dark:bg-surface-container-low dark:border dark:border-outline-variant/30" onClick={() => { if (isStock && asset.stock_ticker) loadStockDetail(asset.stock_ticker); }}>
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               <div className="min-w-0">
-                                <h3 className="font-semibold text-sm truncate">{asset.name}</h3>
+                                <h3 className="font-semibold text-sm truncate dark:text-on-surface">{asset.name}</h3>
                                 {isStock && asset.stock_ticker && (
-                                  <span className="text-xs text-muted-foreground block" dir="ltr">{asset.stock_ticker}</span>
+                                  <span className="text-xs text-muted-foreground block dark:text-on-surface-variant dark:font-financial" dir="ltr">{asset.stock_ticker}</span>
                                 )}
                                 {isStock && asset.stock_ticker && (() => {
                                   // PHASE3-MARKET-SEGREGATION (Task F): add a market badge so the user can
@@ -1562,27 +1562,27 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                           
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{t('portfolio.asset.invested')}</span>
-                              <span className="font-medium">{formatCurrency(invested)}</span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.invested')}</span>
+                              <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(invested)}</span>
                             </div>
                             
                             {/* Stock: Show current price */}
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">{t('portfolio.asset.currentPrice')}</span>
-                                <span className="font-medium" dir="ltr">{(currentPrice ?? 0).toFixed(2)} EGP</span>
+                                <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.currentPrice')}</span>
+                                <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{(currentPrice ?? 0).toFixed(2)} EGP</span>
                               </div>
                             )}
                             
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{t('portfolio.asset.currentValue')}</span>
-                              <span className="font-medium">{formatCurrency(currVal)}</span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.currentValue')}</span>
+                              <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(currVal)}</span>
                             </div>
                             
                             {/* Profit/Loss */}
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">{t('portfolio.asset.profitLoss')}</span>
-                              <span className={cn('font-semibold', gl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                              <span className={cn('font-semibold tabular-nums dark:font-financial', gl >= 0 ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                                 {gl >= 0 ? '+' : ''}{formatCurrency(gl)} ({formatPercent(glPct)})
                               </span>
                             </div>
@@ -1590,8 +1590,8 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {/* Stock: Daily change */}
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">{t('portfolio.asset.dayChange')}</span>
-                                <span className={cn('font-medium', priceChange >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                                <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.dayChange')}</span>
+                                <span className={cn('font-medium tabular-nums dark:font-financial', priceChange >= 0 ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                                   {formatPercent(priceChange)}
                                 </span>
                               </div>
@@ -1600,28 +1600,28 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {/* Interest-bearing assets: Show interest breakdown */}
                             {isInterestBearing && (rate > 0 || yearlyInterest > 0) && (
                               <>
-                                <div className="flex justify-between text-sm text-emerald-500 dark:text-emerald-400 pt-1 border-t border-dashed">
-                                  <span className="text-muted-foreground">{t('portfolio.asset.expectedAnnualReturn')}</span>
-                                  <span className="font-semibold">{formatCurrency(yearlyInterest)}</span>
+                                <div className="flex justify-between text-sm text-emerald-500 dark:text-emerald-400 pt-1 border-t border-dashed dark:border-outline-variant/30 dark:text-primary">
+                                  <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.expectedAnnualReturn')}</span>
+                                  <span className="font-semibold tabular-nums dark:font-financial">{formatCurrency(yearlyInterest)}</span>
                                 </div>
-                                <div className="flex justify-between text-xs text-muted-foreground">
+                                <div className="flex justify-between text-xs text-muted-foreground dark:text-on-surface-variant">
                                   <span>{t('portfolio.asset.monthly')}</span>
-                                  <span>{formatCurrency(monthlyInterest)}</span>
+                                  <span className="tabular-nums dark:font-financial">{formatCurrency(monthlyInterest)}</span>
                                 </div>
-                                <div className="flex justify-between text-xs text-muted-foreground">
+                                <div className="flex justify-between text-xs text-muted-foreground dark:text-on-surface-variant">
                                   <span>{t('portfolio.asset.daily')}</span>
-                                  <span>{formatCurrency(dailyInterest)}</span>
+                                  <span className="tabular-nums dark:font-financial">{formatCurrency(dailyInterest)}</span>
                                 </div>
                                 {accruedInterest > 0 && (
-                                  <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-xs">
+                                  <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 dark:bg-primary-container/20 rounded text-xs">
                                     <div className="flex justify-between">
-                                      <span className="text-muted-foreground">{t('portfolio.asset.earnedInterest')}</span>
-                                      <span className="font-semibold text-emerald-500 dark:text-emerald-400">
+                                      <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.earnedInterest')}</span>
+                                      <span className="font-semibold text-emerald-500 dark:text-emerald-400 dark:text-primary tabular-nums dark:font-financial">
                                         {formatCurrency(accruedInterest)}
                                       </span>
                                     </div>
                                     {daysElapsed > 0 && (
-                                      <div className="text-muted-foreground mt-1">{t('portfolio.asset.daysAgo', { days: daysElapsed })}</div>
+                                      <div className="text-muted-foreground mt-1 dark:text-on-surface-variant">{t('portfolio.asset.daysAgo', { days: daysElapsed })}</div>
                                     )}
                                   </div>
                                 )}
@@ -1631,27 +1631,27 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                           
                           {/* Footer info */}
                           {isStock && qty > 0 && (
-                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30 tabular-nums dark:font-financial">
                               {t('portfolio.asset.stockLine', { qty: qty.toLocaleString('en-US'), price: (avgBuy ?? 0).toFixed(2) })}
                             </div>
                           )}
                           {asset.type === 'gold' && (
-                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30 tabular-nums dark:font-financial">
                               {weightGrams ? t('portfolio.asset.goldLine', { weight: weightGrams.toLocaleString('en-US'), karat }) : ''}
                               {livePricePerGram > 0 && (
-                                <span className="block mt-1 text-emerald-500 dark:text-emerald-400">
+                                <span className="block mt-1 text-emerald-500 dark:text-emerald-400 dark:text-primary">
                                   {t('portfolio.asset.goldPricePerGram', { price: (livePricePerGram ?? 0).toFixed(2) })}
                                 </span>
                               )}
                             </div>
                           )}
                           {(asset.type === 'bank' || (asset.type as string) === 'deposit') && (
-                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30">
                               {asset.bank_name || ''} {rate > 0 ? t('portfolio.asset.bankLine', { bank: asset.bank_name || '', rate }) : ''}
                             </div>
                           )}
                           {asset.type === 'certificate' && (
-                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30">
                               {asset.certificate_duration_months ? t('portfolio.asset.certLine', { months: asset.certificate_duration_months, rate: rate ?? 0 }) : ''} 
                               {rate > 0 ? t('portfolio.asset.certLine', { months: asset.certificate_duration_months ?? 0, rate: rate ?? 0 }) : ''}
                             </div>
@@ -1720,7 +1720,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   }} placeholder="0.00" dir="ltr" /></div>
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
                     <span className="text-muted-foreground">{t('portfolio.forms.totalCost')}</span>
                     <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(parseFloat(formTotalInvested))}</span>
                   </div>
@@ -1787,7 +1787,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   </div>
                 )}
                 {formWeight && formCurrentValue && parseFloat(formCurrentValue) > 0 && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm flex justify-between">
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm flex justify-between">
                     <span className="text-muted-foreground">{t('portfolio.forms.currentValueLabel')}</span>
                     <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(parseFloat(formCurrentValue))}</span>
                   </div>
@@ -1923,7 +1923,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   </div>
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
                     <span className="text-muted-foreground">{t('portfolio.forms.totalCostUSD')}</span>
                     <span className="font-bold text-emerald-500 dark:text-emerald-400">${parseFloat(formTotalInvested).toFixed(2)}</span>
                   </div>
@@ -1938,7 +1938,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>{t('portfolio.forms.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave} disabled={saving}>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave} disabled={saving}>
               {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> {t('portfolio.forms.adding')}</> : t('common.add')}
             </Button>
           </DialogFooter>
@@ -1987,7 +1987,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t('portfolio.forms.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditSave} disabled={saving}>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleEditSave} disabled={saving}>
               {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> {t('portfolio.forms.saving')}</> : t('common.save')}
             </Button>
           </DialogFooter>
@@ -2003,7 +2003,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteId(null)}>{t('portfolio.obligations.cancel')}</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>{t('portfolio.forms.delete')}</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white dark:bg-error dark:text-on-error dark:hover:bg-error/90" onClick={handleDelete}>{t('portfolio.forms.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2049,9 +2049,9 @@ function WealthAllocationMatrixCard({
     critical: 'border-red-400 dark:border-red-700/70',
   };
   const severityText: Record<WealthAllocationAlert['severity'], string> = {
-    ok: 'text-emerald-500 dark:text-emerald-400',
+    ok: 'text-emerald-500 dark:text-emerald-400 dark:text-primary',
     warning: 'text-amber-600 dark:text-amber-400',
-    critical: 'text-red-600 dark:text-red-400',
+    critical: 'text-red-600 dark:text-red-400 dark:text-error',
   };
   const orderedAssets: WealthAllocationAlert['asset'][] = ['egx', 'crypto', 'gold', 'cash'];
   const visibleAlerts = alerts.filter((a) => a.severity !== 'ok');
@@ -2269,7 +2269,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       sortable: true,
       filterable: true,
       render: (row) => (
-        <Badge className={row.type === 'income' ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}>
+        <Badge className={row.type === 'income' ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error'}>
           {row.type === 'income' ? t('portfolio.income.incomeType') : t('portfolio.income.expenseType')}
         </Badge>
       ),
@@ -2288,7 +2288,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       sortable: true,
       filterable: true,
       render: (row) => (
-        <span className={cn('font-semibold text-sm', row.type === 'income' ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+        <span className={cn('font-semibold text-sm', row.type === 'income' ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
           {row.type === 'income' ? '+' : '-'}{formatCurrency(row.amount)}
         </span>
       ),
@@ -2367,7 +2367,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
           <span className="font-semibold text-sm min-w-[120px] text-center">{currentMonthLabel}</span>
           <Button variant="outline" size="icon" onClick={() => changeMonth(1)}><ChevronLeft className="w-4 h-4" /></Button>
         </div>
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => setAddDialogOpen(true)}>
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => setAddDialogOpen(true)}>
           <Plus className="w-4 h-4 ml-1.5" />
           {t('portfolio.income.addTransaction')}
         </Button>
@@ -2376,33 +2376,33 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       {/* Summary Row */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+          <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+              <ArrowUpRight className="w-4 h-4 text-emerald-500 dark:text-primary" />
               <span className="text-xs font-medium">{t('portfolio.income.totalIncome')}</span>
             </div>
-            <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(summary.total_income)}</p>
+            <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400 dark:text-primary tabular-nums dark:font-financial">{formatCurrency(summary.total_income)}</p>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <ArrowDownRight className="w-4 h-4 text-red-500" />
+          <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+              <ArrowDownRight className="w-4 h-4 text-red-500 dark:text-error" />
               <span className="text-xs font-medium">{t('portfolio.income.totalExpenses')}</span>
             </div>
-            <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(summary.total_expenses)}</p>
+            <p className="text-lg font-bold text-red-600 dark:text-red-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(summary.total_expenses)}</p>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
               <PiggyBank className="w-4 h-4 text-teal-500" />
               <span className="text-xs font-medium">{t('portfolio.income.netSavings')}</span>
             </div>
-            <p className="text-lg font-bold text-teal-600 dark:text-teal-400">{formatCurrency(summary.net_savings)}</p>
+            <p className="text-lg font-bold text-teal-600 dark:text-teal-400 dark:text-primary tabular-nums dark:font-financial">{formatCurrency(summary.net_savings)}</p>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
               <TrendingUp className="w-4 h-4" />
               <span className="text-xs font-medium">{t('portfolio.income.savingsRate')}</span>
             </div>
-            <p className="text-lg font-bold">{(savingsRate ?? 0).toFixed(1)}%</p>
+            <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{(savingsRate ?? 0).toFixed(1)}%</p>
             <Progress value={Math.min(savingsRate, 100)} className="h-2 mt-2" />
           </Card>
         </div>
@@ -2531,7 +2531,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>{t('common.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave}>{t('portfolio.income.save')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave}>{t('portfolio.income.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2742,23 +2742,23 @@ const ObligationsTab = memo(function ObligationsTab() {
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1"><CreditCard className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.reports.totalObligations')}</span></div>
-          <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(totalDebt)}</p>
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1"><CreditCard className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.reports.totalObligations')}</span></div>
+          <p className="text-lg font-bold text-red-600 dark:text-red-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(totalDebt)}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1"><CalendarDays className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.monthlyPayment')}</span></div>
-          <p className="text-lg font-bold">{formatCurrency(monthlyPayments)}</p>
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1"><CalendarDays className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.monthlyPayment')}</span></div>
+          <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(monthlyPayments)}</p>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1"><FileText className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.typeLabel')}</span></div>
-          <p className="text-lg font-bold">{activeLoans}</p>
+        <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1"><FileText className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.typeLabel')}</span></div>
+          <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{activeLoans}</p>
         </Card>
       </div>
 
       {/* Add Button */}
       <div className="flex justify-end">
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
           <Plus className="w-4 h-4 ml-1.5" />
           {t('portfolio.obligations.addObligation')}
         </Button>
@@ -2852,7 +2852,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>{t('portfolio.obligations.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSave}>{t('portfolio.obligations.add')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave}>{t('portfolio.obligations.add')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2873,7 +2873,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>{t('portfolio.obligations.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handlePayment}>{t('portfolio.obligations.record')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handlePayment}>{t('portfolio.obligations.record')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2892,7 +2892,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t('common.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleEditSave}>{t('portfolio.obligations.save')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleEditSave}>{t('portfolio.obligations.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2906,7 +2906,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteId(null)}>{t('common.cancel')}</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>{t('portfolio.obligations.delete')}</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white dark:bg-error dark:text-on-error dark:hover:bg-error/90" onClick={handleDelete}>{t('portfolio.obligations.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2977,29 +2977,29 @@ const ReportsTab = memo(function ReportsTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.totalAssets')}</p>
-              <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(totalAssets)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.totalAssetsHint')}</p>
+            <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20">
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalAssets')}</p>
+              <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400 dark:text-primary tabular-nums dark:font-financial">{formatCurrency(totalAssets)}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalAssetsHint')}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.totalObligations')}</p>
-              <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(totalLiabilities)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.totalObligationsHint')}</p>
+            <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20 dark:bg-error-container/20">
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalObligations')}</p>
+              <p className="text-lg font-bold text-red-600 dark:text-red-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(totalLiabilities)}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalObligationsHint')}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20">
-              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.netWorth')}</p>
-              <p className={cn('text-lg font-bold', netWorth >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400')}>
+            <div className="text-center p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20 dark:bg-primary-container/20">
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.netWorth')}</p>
+              <p className={cn('text-lg font-bold tabular-nums dark:font-financial', netWorth >= 0 ? 'text-teal-600 dark:text-teal-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                 {formatCurrency(netWorth)}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.netWorthHint')}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.netWorthHint')}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-              <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.monthlySavings')}</p>
-              <p className={cn('text-lg font-bold', (reports?.monthly_savings ?? 0) >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')}>
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.monthlySavings')}</p>
+              <p className={cn('text-lg font-bold tabular-nums dark:font-financial', (reports?.monthly_savings ?? 0) >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                 {formatCurrency(reports?.monthly_savings ?? 0)}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">{t('portfolio.reports.monthlySavingsHint')}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.monthlySavingsHint')}</p>
             </div>
           </div>
         </CardContent>
@@ -3034,7 +3034,7 @@ const ReportsTab = memo(function ReportsTab() {
                   <p className="text-base font-bold text-orange-600 dark:text-orange-400">{formatCurrency(investmentReturns.fund_monthly)}</p>
                 </div>
               )}
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 text-center">
                 <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.totalMonthlyReturn')}</p>
                 <p className="text-base font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(investmentReturns.total_monthly)}</p>
               </div>
@@ -3091,7 +3091,7 @@ const ReportsTab = memo(function ReportsTab() {
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
               <span className="text-sm text-muted-foreground">{t('portfolio.reports.netMonthlySavings')}</span>
-              <span className={cn('font-bold', (reports.monthly_savings ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+              <span className={cn('font-bold', (reports.monthly_savings ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error')}>
                 {formatCurrency(reports.monthly_savings)}
               </span>
             </div>
@@ -3249,7 +3249,7 @@ const ReportsTab = memo(function ReportsTab() {
 
                     {/* Suggestion: Emergency Fund */}
                     {investmentReturns && investmentReturns.total_monthly > 0 && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800">
                         <PiggyBank className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-emerald-500 dark:text-emerald-200">{t('portfolio.reports.emergencyFund')}</p>
@@ -3332,23 +3332,23 @@ export function EnhancedPortfolioView() {
   const [portfolioMode, setPortfolioMode] = useState<'portfolio' | 'wealth' | 'rescue'>('portfolio');
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background pb-20 lg:pb-4">
+    <div dir="rtl" className="min-h-screen bg-background pb-20 lg:pb-4 dark:bg-surface-container-lowest">
       <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              {portfolioMode === 'portfolio' && <Wallet className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />}
+            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center">
+              {portfolioMode === 'portfolio' && <Wallet className="w-5 h-5 text-emerald-500 dark:text-emerald-400 dark:text-primary" />}
               {portfolioMode === 'wealth' && <HandCoins className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
-              {portfolioMode === 'rescue' && <LifeBuoy className="w-5 h-5 text-red-500 dark:text-red-400" />}
+              {portfolioMode === 'rescue' && <LifeBuoy className="w-5 h-5 text-red-500 dark:text-red-400 dark:text-error" />}
             </div>
             <div>
-              <h1 className="text-xl font-bold">
+              <h1 className="text-xl font-bold dark:text-on-surface dark:font-outfit">
                 {portfolioMode === 'portfolio' && t('portfolio.title')}
                 {portfolioMode === 'wealth' && t('portfolio.modes.wealth')}
                 {portfolioMode === 'rescue' && t('portfolio.modes.rescue')}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground dark:text-on-surface-variant">
                 {portfolioMode === 'portfolio' && t('portfolio.subtitle')}
                 {portfolioMode === 'wealth' && t('portfolio.modes.wealthHint')}
                 {portfolioMode === 'rescue' && t('portfolio.modes.rescueHint')}
@@ -3359,7 +3359,7 @@ export function EnhancedPortfolioView() {
 
         {/* TASK 40-B: 3-way segmented control — Portfolio | Wealth | Rescue stock */}
         {/* Rule 30: emerald/amber/red accent only (no indigo/blue). */}
-        <div className="flex w-full rounded-lg border border-border bg-muted/40 p-1" role="tablist" aria-label={t('portfolio.modes.segmentsAria')}>
+        <div className="flex w-full rounded-lg border border-border bg-muted/40 p-1 dark:border-outline-variant dark:bg-surface-container-low" role="tablist" aria-label={t('portfolio.modes.segmentsAria')}>
           <button
             type="button"
             role="tab"
@@ -3368,8 +3368,8 @@ export function EnhancedPortfolioView() {
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
               portfolioMode === 'portfolio'
-                ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-background text-emerald-600 dark:text-emerald-400 dark:bg-primary-container dark:text-on-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             <Wallet className="w-4 h-4" />
@@ -3383,8 +3383,8 @@ export function EnhancedPortfolioView() {
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
               portfolioMode === 'wealth'
-                ? 'bg-background text-amber-600 dark:text-amber-400 shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-background text-amber-600 dark:text-amber-400 dark:bg-primary-container dark:text-on-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             <HandCoins className="w-4 h-4" />
@@ -3398,8 +3398,8 @@ export function EnhancedPortfolioView() {
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
               portfolioMode === 'rescue'
-                ? 'bg-background text-red-600 dark:text-red-400 shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-background text-red-600 dark:text-red-400 dark:bg-error-container dark:text-on-error shadow-sm'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             <LifeBuoy className="w-4 h-4" />
@@ -3444,11 +3444,11 @@ export function EnhancedPortfolioView() {
         {/* UI-STABILITY fix (2026-09-28): stable keys on each TabsContent so
             switching tabs doesn't unmount/remount the others unexpectedly. */}
         <Tabs defaultValue="assets">
-          <TabsList className="flex w-full">
-            <TabsTrigger value="assets" className="flex-1">{t('portfolio.tabs.assets')}</TabsTrigger>
-            <TabsTrigger value="income-expense" className="flex-1">{t('portfolio.tabs.incomeExpense')}</TabsTrigger>
-            <TabsTrigger value="obligations" className="flex-1">{t('portfolio.tabs.obligations')}</TabsTrigger>
-            <TabsTrigger value="reports" className="flex-1">{t('portfolio.tabs.reports')}</TabsTrigger>
+          <TabsList className="flex w-full dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+            <TabsTrigger value="assets" className="flex-1 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary dark:text-on-surface-variant dark:data-[state=active]:font-financial">{t('portfolio.tabs.assets')}</TabsTrigger>
+            <TabsTrigger value="income-expense" className="flex-1 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary dark:text-on-surface-variant dark:data-[state=active]:font-financial">{t('portfolio.tabs.incomeExpense')}</TabsTrigger>
+            <TabsTrigger value="obligations" className="flex-1 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary dark:text-on-surface-variant dark:data-[state=active]:font-financial">{t('portfolio.tabs.obligations')}</TabsTrigger>
+            <TabsTrigger value="reports" className="flex-1 dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary dark:text-on-surface-variant dark:data-[state=active]:font-financial">{t('portfolio.tabs.reports')}</TabsTrigger>
 
           </TabsList>
 

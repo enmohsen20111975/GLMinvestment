@@ -49,7 +49,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="flex-shrink-0"
+          className="flex-shrink-0 dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20"
           onClick={toggleSidebar}
           aria-label="القائمة الجانبية"
         >
@@ -74,12 +74,12 @@ export function Header({ title, subtitle }: HeaderProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="flex-shrink-0"
+            className="flex-shrink-0 dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             aria-label={resolvedTheme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
           >
             {resolvedTheme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
+              <Sun className="w-4 h-4 text-amber-400 dark:text-primary" />
             ) : (
               <Moon className="w-4 h-4" />
             )}
@@ -125,14 +125,14 @@ export function Header({ title, subtitle }: HeaderProps) {
 
         {/* Search */}
         <form onSubmit={handleSearch} className="relative hidden sm:block">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-on-surface-variant" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
             placeholder="ابحث عن سهم..."
-            className="w-48 md:w-64 pr-9 h-9 text-sm"
+            className="w-48 md:w-64 pr-9 h-9 text-sm dark:bg-surface-container-low dark:border-outline-variant/30 dark:text-on-surface dark:placeholder:text-on-surface-variant dark:focus-visible:border-primary/50"
             dir="rtl"
           />
         </form>
@@ -144,7 +144,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="flex-shrink-0 hidden sm:flex"
+          className="flex-shrink-0 hidden sm:flex dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20"
           onClick={() => {
             loadDashboard();
           }}
@@ -211,13 +211,13 @@ function HeaderNotificationBell() {
     <Button
       variant="ghost"
       size="icon"
-      className="flex-shrink-0 relative"
+      className="flex-shrink-0 relative dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20"
       onClick={() => setOpen(true)}
       aria-label="الإشعارات"
     >
       <Bell className="w-4 h-4" />
       {unreadCount > 0 && (
-        <Badge className="absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-red-500 text-white border-0 animate-pulse dark:bg-error">
+        <Badge className="absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-red-500 text-white border-0 animate-pulse dark:bg-error dark:border dark:border-surface-container-lowest">
           {unreadCount > 99 ? '99+' : unreadCount}
         </Badge>
       )}

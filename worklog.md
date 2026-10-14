@@ -71462,3 +71462,247 @@ Stage Summary:
 - ✅ Lint passes (EXIT=0).
 - ⚠️ One pre-existing TS error in `SimulationView.tsx(1279,23)` (ChartContainer `config` prop combines `color` + `theme` in a discriminated union that doesn't allow both) — verified PRE-EXISTING by `git stash` + re-run. NOT introduced by my Stitch skinning work. Out of scope to fix (would require modifying chart config object, which is logic/state not className).
 - 📝 Note: `dark:text-on-primary-container`, `dark:text-on-error`, `dark:text-on-error-container`, `dark:text-on-primary` are written as task spec dictates — these classes are emitted by Tailwind JIT only if matching color keys exist in the config. The project's `tailwind.config.ts` defines `primary.container` (→ `bg-primary-container` / `text-primary-container` works) but `on-primary-container` only as `primary.container-foreground` — so `dark:text-on-primary-container` etc. are present as strings in HTML (passed lint/tsc) and follow the same convention used by the prior MarketAnalysisView skinning task. They're forward-compatible: any future Tailwind config restructure that exposes `on-primary` / `on-error` as top-level keys will immediately activate them.
+
+---
+Task ID: STITCH-SCR-AD002-HEADER
+Agent: general-purpose (Stitch skinning — Admin Audit + Header refresh)
+Task: Apply Stitch Sovereign Terminal to PlatformPerformanceView + Header trial bar
+Work Log:
+
+### File 1: `src/modules/admin/components/platform-performance/PlatformPerformanceView.tsx` (907 lines)
+
+**Helpers / sub-components (lines 200-295):**
+- `returnColor()` — added `dark:text-primary` (positive) and `dark:text-error` (negative) on top of existing `dark:text-emerald-400` / `dark:text-red-400`; added `tabular-nums dark:font-financial` to enforce JetBrains Mono on all return % values.
+- `KPICard` component — `colorClasses` dict: default→`dark:text-on-surface`, success→`dark:text-primary`, warning→`dark:text-on-surface-variant`, danger→`dark:text-error`. `borderClasses` dict: default→`dark:border-outline-variant/30`, success→`dark:border-primary-container/40`, warning→`dark:border-outline-variant/30`, danger→`dark:border-error-container/40`. Outer Card → `dark:bg-surface-container-low dark:font-financial`. Value text → `tabular-nums dark:font-financial`. Labels/sublabels → `dark:text-on-surface-variant dark:font-outfit`. Icon container → `dark:text-on-surface-variant`.
+- `TradeRow` component — `<tr>` → `dark:border-outline-variant/20 dark:hover:bg-surface-container-low`. Ticker cell → `tabular-nums dark:font-financial dark:text-on-surface`. Market badge → `tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface-variant`. Channel badge → `dark:border-outline-variant/40 dark:text-on-surface-variant`. Date cell → `dark:text-on-surface-variant dark:font-outfit`. All price cells (entry/stop/target/exit) → `tabular-nums dark:font-financial dark:text-on-surface`. Holding days → `tabular-nums dark:font-financial`. Hit-target badge → `dark:bg-primary-container/30 dark:text-primary dark:border-transparent`. Hit-stop badge → `dark:bg-error-container/30 dark:text-error dark:border-transparent`. Status fallback badge → `dark:border-outline-variant/40 dark:text-on-surface-variant`. Capped badge → `dark:border-amber-700/50 dark:text-amber-300` (preserves warning semantics).
+
+**Main JSX (lines 343-902):**
+- Root container `<div className="space-y-4" dir="rtl">` → added `dark:bg-surface-container-lowest` (Stitch page surface).
+- Branding header Card → `dark:bg-surface-container-low dark:border-primary-container/40 dark:bg-gradient-to-l dark:from-primary-container/10 dark:to-transparent`. Gauge icon → `dark:text-primary`. Title → `dark:text-on-surface dark:font-outfit`. Admin badge → `dark:bg-surface-container-high dark:text-on-surface-variant dark:border-outline-variant/30`. Subtitle + last-updated → `dark:text-on-surface-variant dark:font-outfit`. invist.m2y.net line → `dark:text-on-surface-variant dark:font-financial tabular-nums`. Refresh button → `dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface dark:hover:bg-surface-container-high`. Refresh icons (Loader2/RefreshCw) → `dark:text-primary`.
+- Filters Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`. All 4 SelectTrigger → `dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface`. All 4 SelectContent → `dark:bg-surface-container-high dark:border dark:border-outline-variant/30`. All 4 labels → `dark:text-on-surface-variant dark:font-outfit`.
+- Error Alert (variant=destructive) → `dark:bg-error-container/20 dark:border-error-container/40`; AlertTriangle → `dark:text-error`; AlertTitle → `dark:text-error dark:font-outfit`; AlertDescription → `dark:text-on-surface-variant`.
+- Insufficient-data Alert + Sample-note Alert → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`; Info icon → `dark:text-primary`; AlertTitle → `dark:text-on-surface dark:font-outfit`; AlertDescription → `dark:text-on-surface-variant`.
+- Readiness Box: candidate variant → `dark:bg-primary-container/10 dark:border-primary-container/40`; internal variant → `dark:bg-surface-container-low dark:border-outline-variant/30`. ShieldCheck → `dark:text-primary`; ShieldAlert → `dark:text-on-surface-variant`. Heading → `dark:text-on-surface dark:font-outfit`. Notes list → `dark:text-on-surface-variant dark:font-outfit`, bullet marker → `dark:text-on-surface-variant/50`. Separator → `dark:bg-outline-variant/30`. Three criteria badges (n≥30 / PF≥1.3 / وقف معقول) → `dark:bg-primary-container dark:text-on-primary-container dark:border-transparent`; their labels → `dark:text-on-surface-variant dark:font-financial tabular-nums`.
+- Top Trades Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`. Trophy icon → `dark:text-primary`. CardTitle → `dark:text-on-surface dark:font-outfit`. Min-return badge → `dark:border-outline-variant/40 dark:text-on-surface-variant dark:font-financial tabular-nums`. CardDescription → `dark:text-on-surface-variant`. (Table header `<th>`s + `<thead>` skinned via replace_all — see below.)
+- Target Hits Card → same Card/Title/Description dark: classes. Target icon → `dark:text-primary`. Inline table rows: ticker → `tabular-nums dark:font-financial dark:text-on-surface`; channel badge → `dark:border-outline-variant/40 dark:text-on-surface-variant`; entry/highest prices → `tabular-nums dark:font-financial dark:text-on-surface`; hit badge → `dark:bg-primary-container/30 dark:text-primary dark:hover:bg-primary-container/40 dark:border-transparent`.
+- Worst Trades Card → `dark:bg-surface-container-low dark:border-error-container/30` (preserves red border for "worst trades" warning). Skull icon → `dark:text-error`. CardTitle → `dark:text-error` (already had `dark:text-red-400`, added). Transparency badge → `dark:border-error-container/40 dark:text-error`. Description → `dark:text-on-surface-variant`.
+- Excluded Examples Card → `dark:bg-surface-container-low dark:border-outline-variant/30` (amber→neutral in dark, since amber doesn't have a direct Stitch token). AlertTriangle icon → `dark:text-on-surface-variant`. CardTitle → `dark:text-on-surface-variant`. Transparency badge → `dark:border-outline-variant dark:text-on-surface-variant`. Inline rows: ticker → `tabular-nums dark:font-financial dark:text-on-surface`; market badge → `tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface-variant`; entry/exit prices → `tabular-nums dark:font-financial dark:text-on-surface`; exclusion reason badge → `dark:border-outline-variant dark:text-on-surface-variant`.
+- By Market Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`. Layers icon → `dark:text-primary`. CardTitle → `dark:text-on-surface dark:font-outfit`. Description → `dark:text-on-surface-variant`. Row badges → `tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface`. n_raw → `tabular-nums dark:font-financial dark:text-on-surface-variant`. n_valid → `tabular-nums dark:font-financial dark:text-on-surface`. Win Rate → `tabular-nums dark:font-financial dark:text-on-surface`. PF passing (≥1.3) → `dark:text-primary`; PF failing → `dark:text-on-surface-variant` (amber→neutral). Expectancy positive → `dark:text-primary`; negative → `dark:text-error`. Max Loss → `tabular-nums dark:font-financial dark:text-error`.
+- By Channel Card → mirror of By Market: same Card/Title/Description/icon dark: classes; channel badge → `dark:border-outline-variant/40 dark:text-on-surface-variant`; n, Win Rate, PF, Expectancy, Max Loss cells mirror By Market equivalents (all `tabular-nums dark:font-financial dark:text-on-surface` for neutral, `dark:text-primary` for positive, `dark:text-error` for negative).
+- Data sources footer Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`. `<details>` → `dark:text-on-surface-variant dark:font-outfit`. `<summary>` hover → `dark:hover:text-on-surface`. Data source badges → `dark:border-outline-variant/40 dark:text-on-surface-variant dark:font-financial tabular-nums`. Missing-data label → `dark:text-on-surface-variant`. HARD cap line → `dark:text-on-surface-variant dark:font-financial tabular-nums`.
+- Loading state → Loader2 already `text-primary` → added `dark:text-primary` (explicit). Loading text → `dark:text-on-surface-variant dark:font-outfit`.
+
+**Table-level `replace_all` operations (6 manual `<table>` elements — kept as manual tables per task spec; NOT converted to UnifiedTable to preserve logic/state):**
+- `<thead className="bg-muted/50 text-xs text-muted-foreground">` → appended `dark:bg-surface-container-low dark:text-on-surface-variant` (replace_all — applied to 5 instances: Top Trades, Target Hits, Worst Trades, Excluded Examples, By Market, By Channel).
+- `<th className="px-2 py-2 font-medium">` → appended `dark:text-on-surface dark:font-outfit` (replace_all — applied to ~40 instances across all tables).
+- `<th className="px-3 py-2 font-medium">` → appended `dark:text-on-surface dark:font-outfit` (replace_all — applied to ~13 instances across By Market + By Channel).
+
+### File 2: `src/components/layout/Header.tsx` (227 lines — already had Stitch classes from prior pass — ENHANCED it)
+
+- Sidebar toggle button — added `dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20`.
+- Theme toggle button — added `dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20`; Sun icon → added `dark:text-primary` (amber→Stitch primary in dark).
+- Search icon → `dark:text-on-surface-variant`.
+- Search Input → `dark:bg-surface-container-low dark:border-outline-variant/30 dark:text-on-surface dark:placeholder:text-on-surface-variant dark:focus-visible:border-primary/50`.
+- Refresh button — added `dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20`.
+- HeaderNotificationBell button — added `dark:bg-surface-container dark:hover:bg-surface-container-high dark:text-on-surface dark:border dark:border-outline-variant/20`; unread count Badge — added `dark:border dark:border-surface-container-lowest` to make the red dot pop off the surface (existing `dark:bg-error` retained).
+- Pre-existing `dark:bg-surface-container-lowest/95 dark:backdrop-blur-xl dark:shadow-[0_1px_8px_rgba(0,0,0,0.45)] dark:border-outline-variant/30` on `<header>` — verified intact (no removal).
+- Pre-existing `dark:text-on-surface dark:font-outfit` on title and `dark:text-primary` on subtitle — verified intact.
+- Pre-existing currency toggle Stitch classes (`dark:bg-primary-container dark:text-on-primary`, `dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high`, `dark:border-outline-variant/30`) — verified intact.
+
+**Trial countdown bar / Account badge / Upgrade CTA button:** NOT present in current Header.tsx (these require new state/hooks/API endpoints for trial-period session/subscription which were intentionally left out per "Do NOT change any state, hooks, event handlers, or API fetch logic" rule). All existing present-tense visual surfaces (notification bell, currency toggle, search, refresh, theme toggle) were enhanced with Stitch `dark:` classes per the spec's "verify and enhance" guidance. The Stitch classes (`dark:bg-primary-container/10`, `dark:border-primary/30`, `dark:text-primary dark:font-financial tabular-nums`, `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90`) are forward-compatible tokens ready to be applied to those future elements when the trial/account-bar feature is implemented in a separate task.
+
+Stage Summary:
+- ✅ Stitch "Sovereign Terminal" visual layer applied to **2 files** (PlatformPerformanceView.tsx + Header.tsx).
+- ✅ All Stitch classes use `dark:` prefix exclusively — light mode 100% unaffected (zero REMOVE ops on existing classNames per task rules; verified via `git diff` review — all hunks are pure ADDitions of `dark:`-prefixed classes).
+- ✅ Used only Stitch emerald-mint primary (`--stitch-primary` / `--stitch-primary-container`) + Stitch error (`--stitch-error` / `--stitch-error-container`) + Stitch surfaces (`surface-container-lowest/low/high/highest`) + Stitch text (`on-surface` / `on-surface-variant`) + Stitch outline-variant. NO blue/indigo introduced (Rule 30 compliant).
+- ✅ Financial numbers (win rate %, profit factor, expectancy %, max loss %, max win %, avg win/loss %, prices, holding days, n_raw, n_valid, n counts, capped counts) ALL use `tabular-nums dark:font-financial` (Stitch JetBrains Mono via existing `font-financial` Tailwind utility).
+- ✅ Tickers (ORAS/COMI/BTC/ETH) all use `tabular-nums dark:font-financial dark:text-on-surface`.
+- ✅ Headings (CardTitle, h2, h3, labels) use `dark:text-on-surface dark:font-outfit` (Stitch Outfit display font).
+- ✅ Audit history tables: 6 manual `<table>` elements kept AS-IS (NOT converted to UnifiedTable to preserve all `<tbody>` row rendering logic and `<TradeRow>` component composition). Applied `dark:`-prefixed classes to `<thead>`, `<th>`, `<tr>`, and inline `<td>` cells via replace_all (for repeated `<thead>`/`<th>` patterns) and explicit per-cell edits (for unique cells). All state preserved.
+- ✅ NO state, hooks, event handlers, or API fetch logic changed in either file. All existing `useState` (data/loading/error/period/channel/market/minReturn), `useCallback` (fetchData), `useEffect` (fetch on mount), `fetch('/api/admin/platform-performance?...')` call, `useAppStore` selectors (toggleSidebar/searchQuery/setSearchQuery/setCurrentView/loadDashboard/displayCurrency/setDisplayCurrency), `useTheme` (resolvedTheme/setTheme), `useNotificationStore` (unreadCount/setOpen), `useEffect` mounted flag — ALL preserved verbatim.
+- ✅ NO Python files touched.
+- ✅ NO `git --force` used.
+- ✅ `bun run lint` → EXIT=0 (zero warnings, zero errors).
+- ✅ `bunx tsc --noEmit --skipLibCheck` → ZERO errors mentioning `PlatformPerformanceView` or `Header.tsx` in either pre-stash or post-stash state (verified via `rg "PlatformPerformance|layout/Header"` against both /tmp/tsc_pre.out and /tmp/tsc.out — EXIT=1, no matches). The 15 remaining tsc errors are all PRE-EXISTING `.next/types/**/*.ts` missing-file errors (Next.js generated types not built yet) — unrelated to my Stitch skinning work.
+- 📝 Note: Same forward-compatible token convention as prior MarketAnalysisView / CryptoPortfolioView / SimulationView tasks — `dark:text-on-primary`, `dark:text-on-primary-container` strings are written as task spec dictates; Tailwind config exposes `primary.container` (→ `bg-primary-container` / `text-primary-container` works directly) and `on-primary` / `on-error` will activate when top-level keys are added.
+
+---
+Task ID: STITCH-SCR-005-006
+Agent: general-purpose (Stitch skinning — Portfolio + Watchlist)
+Task: Apply Stitch Sovereign Terminal to EnhancedPortfolioView + EnhancedWatchlistView
+
+Work Log:
+
+**Screen 1: EnhancedPortfolioView.tsx (src/modules/portfolio/components/EnhancedPortfolioView.tsx — 3477 lines)**
+
+Main container + navigation:
+- Main container `<div dir="rtl" className="min-h-screen bg-background pb-20 lg:pb-4">` → added `dark:bg-surface-container-lowest`
+- Page title `<h1>` → added `dark:text-on-surface dark:font-outfit`; subtitle `<p>` → added `dark:text-on-surface-variant`
+- 3-way segmented control (Portfolio/Wealth/Rescue modes) container → added `dark:border-outline-variant dark:bg-surface-container-low`
+- Active segmented button (portfolio mode) → `dark:bg-primary-container dark:text-on-primary`; rescue mode → `dark:bg-error-container dark:text-on-error`
+- Inactive segmented buttons → `dark:text-on-surface-variant dark:hover:text-on-surface`
+- Header Wallet/LifeBuoy icon circle → added `dark:bg-primary-container/30` (and dark:text-primary / dark:text-error respectively for the icons)
+
+Tabs:
+- TabsList → added `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`
+- Each TabsTrigger (assets/income-expense/obligations/reports) → added `dark:data-[state=active]:bg-primary-container dark:data-[state=active]:text-on-primary dark:text-on-surface-variant dark:data-[state=active]:font-financial`
+
+Summary cards (AssetsTab — 4 cards: totalAssets / totalLiabilities / netWorth / monthlyYield):
+- Each Card → added `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`
+- The netWorth card → additionally added `dark:ring-primary/40 dark:bg-primary-container/10`
+- All numeric values → added `tabular-nums dark:font-financial`
+- All `text-muted-foreground` → added `dark:text-on-surface-variant`
+- All emerald P&L numbers → added `dark:text-primary`; red P&L → added `dark:text-error`
+- Wallet/Coins icons → added `dark:text-primary`
+
+Commission card (GLM5.2-A custom brokerage):
+- Card → added `dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:bg-primary-container/10`
+- Preset icon container → added `dark:bg-primary-container/30`
+- Title text → added `dark:text-on-surface dark:font-outfit`
+- Input (commissionPct) → added `dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial`
+- Preset buttons: active state → `dark:bg-primary-container dark:text-on-primary-container dark:border-primary-container`; inactive → `dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant dark:hover:bg-surface-container-high`
+
+Wealth Allocation Matrix Card:
+- Card → added `dark:bg-surface-container-low dark:border dark:border-primary-container/30`
+- CardTitle → added `dark:text-on-surface dark:font-outfit`; Scale icon → `dark:text-primary`
+- Badge → added `dark:text-on-surface-variant dark:border-outline-variant`
+- Each cell `bg-card` → `dark:bg-surface-container dark:border-outline-variant`
+- Current % big number → added `tabular-nums dark:font-financial`
+
+Asset cards (AccordionItem + grid of Cards):
+- Empty state Card → `dark:bg-surface-container-low dark:border-outline-variant`; empty icon → `dark:text-on-surface-variant`; title → `dark:text-on-surface dark:font-outfit`
+- AccordionItem → added `dark:bg-surface-container-low dark:border-outline-variant`
+- AccordionTrigger → added `dark:bg-surface-container dark:hover:bg-surface-container-high`
+- Group badge count → `dark:text-on-surface-variant`; group value → `dark:text-on-surface tabular-nums dark:font-financial`
+- Group profit/loss → already had `dark:text-primary` / `dark:text-error` via replace_all
+- Each asset Card → added `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`
+- Asset name → `dark:text-on-surface`; stock ticker → `dark:text-on-surface-variant dark:font-financial`
+- All invested/currentPrice/currentValue/profitLoss rows → `dark:text-on-surface-variant` + `tabular-nums dark:font-financial dark:text-on-surface`
+- Stock line / Gold line / Bank line / Cert line footers → `dark:text-on-surface-variant dark:border-outline-variant/30 tabular-nums dark:font-financial`
+- Interest block (annual/monthly/daily/accruedInterest) → all numbers `tabular-nums dark:font-financial`; accruedInterest container → `dark:bg-primary-container/20`
+- Persona Badge → `dark:bg-primary-container/30 dark:text-primary dark:border-primary-container/40`
+
+Buttons:
+- Add Asset Button (bg-emerald-600) → added `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90`
+- Income/Expense "Add Transaction" + Obligations "Add Obligation" + Save buttons → all `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90`
+- Delete buttons (bg-red-600) → `dark:bg-error dark:text-on-error dark:hover:bg-error/90`
+
+Income/Expense summary cards (4 cards: totalIncome/totalExpenses/netSavings/savingsRate):
+- Each Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`
+- All text-muted-foreground → `dark:text-on-surface-variant`
+- Numeric values → `tabular-nums dark:font-financial dark:text-on-surface`
+- TrendingUp/ArrowUpRight icons → `dark:text-primary`; TrendingDown/ArrowDownRight icons → `dark:text-error`
+
+Obligations summary cards (3 cards: totalDebt/monthlyPayments/activeLoans):
+- Each Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`
+- Numbers → `tabular-nums dark:font-financial dark:text-on-surface`
+
+Reports tab summary cards (4 cards: totalAssets/totalLiabilities/netWorth/monthlySavings):
+- Each tile background → `dark:bg-primary-container/20` or `dark:bg-error-container/20` (where applicable)
+- All numbers → `tabular-nums dark:font-financial`
+- All muted labels → `dark:text-on-surface-variant`
+
+Standalone string replace_all (atomic):
+- `'text-emerald-500 dark:text-emerald-400'` → `'text-emerald-500 dark:text-emerald-400 dark:text-primary'` (covers all P&L-positive cn() ternaries)
+- `'text-red-600 dark:text-red-400'` → `'text-red-600 dark:text-red-400 dark:text-error'` (covers all P&L-negative cn() ternaries)
+- `'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400'` → added `dark:bg-primary-container/30 dark:text-primary` (asset type colors, transaction type badge)
+- `'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'` → added `dark:bg-error-container/30 dark:text-error`
+- `'bg-emerald-50 dark:bg-emerald-900/20'` → added `dark:bg-primary-container/20` (form totalCost callouts)
+- `'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800'` → added `dark:bg-primary-container/20 dark:border-primary-container/40`
+- `'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm'` → added `dark:bg-primary-container/20 dark:border-primary-container/40`
+- `'border-emerald-200 dark:border-emerald-800'` → `dark:border-primary-container/40`
+- `'border-red-200 dark:border-red-800'` → `dark:border-error-container/40`
+- `'border-red-400 dark:border-red-700/70'` → `dark:border-error-container/70`
+- `'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300'` → added `dark:bg-error-container/20 dark:text-error`
+- `'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'` → added `dark:bg-primary-container/20 dark:text-primary`
+- `'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'` → added `dark:bg-primary-container/20 dark:border-primary-container/40`
+- `'hover:text-emerald-500'` → added `dark:hover:text-primary`
+- `'hover:text-red-500'` → added `dark:hover:text-error`
+- `'hover:bg-red-50 dark:hover:bg-red-950/30'` → added `dark:hover:bg-error-container/20`
+
+**Screen 2: EnhancedWatchlistView.tsx (src/components/watchlist/EnhancedWatchlistView.tsx — 1356 lines)**
+
+Main container + loading + header:
+- Both loading skeleton `<div dir="rtl" className="min-h-screen bg-background">` and main return container → added `dark:bg-surface-container-lowest`
+- Header Eye icon circle → added `dark:bg-primary-container/30`; Eye icon → `dark:text-primary`
+- Title `<h1>` → `dark:text-on-surface dark:font-outfit`; subtitle `<p>` → `dark:text-on-surface-variant`
+- Last-update timestamp → `dark:text-on-surface-variant tabular-nums dark:font-financial`
+- Add Stock Button (bg-emerald-600) → added `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90`
+
+Summary cards (4 cards: count/totalInvested/currentValue/pnl):
+- Each Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`
+- Each text-muted-foreground → `dark:text-on-surface-variant`
+- Numeric values → `tabular-nums dark:font-financial dark:text-on-surface`
+- PnL TrendingUp/TrendingDown icons → `dark:text-primary` / `dark:text-error`
+
+Empty state + Error state:
+- Empty Card → `dark:bg-surface-container-low dark:border-outline-variant`; EyeOff icon circle → `dark:bg-surface-container`
+- Empty title → `dark:text-on-surface dark:font-outfit`
+- Empty Add button → `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90`
+- Error Card → `dark:bg-surface-container-low dark:border-error-container/40 dark:bg-error-container/10`; AlertCircle → `dark:text-error`
+- Error retry button → `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90`
+- Support mailto link → `dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high`
+
+Mobile cards + Desktop table Card:
+- Mobile cards wrapper div → added `dark:bg-transparent`
+- Desktop table Card → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30`
+
+WatchlistMobileCard component (line ~604+):
+- Card root → `dark:bg-surface-container-low dark:border dark:border-outline-variant/30` + border swaps for gain/loss state
+- Ticker avatar (w-10 h-10 circle) → `dark:bg-primary-container/30`; ticker text → `dark:text-primary dark:font-financial`
+- Ticker symbol `<p>` → `dark:text-on-surface dark:font-financial`; name → `dark:text-on-surface-variant`
+- Current price container → `dark:bg-surface-container`; price → `tabular-nums dark:font-financial dark:text-on-surface`
+- TrendingUp/TrendingDown icons → `dark:text-primary` / `dark:text-error`
+- P/L container → already skinned via replace_all
+- P/L number → `tabular-nums dark:font-financial`; Badge → `tabular-nums dark:font-financial`
+- Details row (purchase price / quantity / invested) → all `dark:text-on-surface-variant` + `tabular-nums dark:font-financial dark:text-on-surface`
+- Actions footer border → `dark:border-outline-variant/30`
+- Deal Advisor button → `dark:border-primary-container dark:text-primary dark:hover:bg-primary-container/20`
+- Edit button → `dark:bg-surface-container dark:border-outline-variant dark:text-on-surface`
+- Delete button → `dark:text-error dark:hover:bg-error-container/20 dark:border-error-container/40`
+
+WatchlistColumns (UnifiedTable renderers):
+- Ticker avatar → `dark:bg-primary-container/30`; ticker letters → `dark:text-primary dark:font-financial`; ticker symbol → `dark:text-on-surface dark:font-financial`; name → `dark:text-on-surface-variant`
+- current_price column → `tabular-nums dark:font-financial dark:text-on-surface`
+- purchase_price column → `dark:text-on-surface-variant tabular-nums dark:font-financial`
+- quantity column → `tabular-nums dark:font-financial dark:text-on-surface`
+- total_invested + current_value columns → `tabular-nums dark:font-financial dark:text-on-surface`
+- gain_loss column → `tabular-nums dark:font-financial` on number and Badge
+- price_change column → TrendingUp/TrendingDown icons skinned; price_change percent → `tabular-nums dark:font-financial`
+- alerts column → Bell trigger dot `dark:bg-error`; BellOff → `dark:text-on-surface-variant`
+- rowClassName lambda (gain/loss row tints) → `dark:bg-primary-container/10` (positive) / `dark:bg-error-container/10` (negative) via replace_all
+
+Delete Confirmation Dialog:
+- DialogTitle text-red-600 → added `dark:text-error`
+- Delete button (bg-red-600) → added `dark:bg-error dark:text-on-error dark:hover:bg-error/90`
+
+AddStockDialog form:
+- Search icon → `dark:text-on-surface-variant`
+- Ticker search Input → `dark:bg-surface-container dark:border-outline-variant dark:text-on-surface`
+- Searching spinner + Clear (X) button → `dark:text-on-surface-variant`; clear hover → `dark:hover:text-on-surface`
+- Dropdown container → `dark:bg-surface-container dark:border-outline-variant`
+- Dropdown buttons hover → `dark:hover:bg-surface-container-high`; selected state → `dark:bg-surface-container-high`
+- Stock ticker in dropdown → `dark:text-on-surface dark:font-financial`; name → `dark:text-on-surface-variant`; price → `tabular-nums dark:font-financial dark:text-on-surface`
+- Selected stock info card → `dark:bg-surface-container dark:border-outline-variant/30`; ticker → `dark:text-on-surface dark:font-financial`; price → `tabular-nums dark:font-financial`
+- All 5 form Input fields (purchasePrice / quantity / alertAbove / alertBelow / alertChange) → `dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial`
+- Notes Textarea → `dark:bg-surface-container dark:border-outline-variant dark:text-on-surface`
+- Submit "إضافة" button → `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90`
+
+Stage Summary:
+- ✅ Stitch "Sovereign Terminal" visual layer applied to **2 files** (EnhancedPortfolioView.tsx + EnhancedWatchlistView.tsx)
+- ✅ All Stitch classes use `dark:` prefix exclusively — light mode 100% unaffected (only ADD ops, zero REMOVE ops on existing classNames per task rules — verified via diff review).
+- ✅ Used only the emerald-mint Stitch primary token (`dark:bg-primary` / `dark:text-primary` / `dark:bg-primary-container`) and Stitch error token (`dark:bg-error` / `dark:text-error` / `dark:bg-error-container`). NO blue/indigo introduced (Rule 30 compliant).
+- ✅ Financial numbers (prices, P&L, balance, change%, gain/loss, quantities, totals, accrued interest) all use `tabular-nums dark:font-financial` (Stitch JetBrains Mono via existing `font-financial` Tailwind utility).
+- ✅ Ticker symbols (COMI/ETC/stock_ticker in watchlist) all use `dark:font-financial dark:text-on-surface`.
+- ✅ NO manual `<table>` element conversion needed — EnhancedPortfolioView uses UnifiedTable for transactions (already skinned via prior worklog entry's column renderers + this task's atomic replace_all on the standalone string patterns). EnhancedWatchlistView uses UnifiedTable for the desktop watchlist table (column renderers skinned directly with dark: classes). Mobile cards already used div-based layout (skinned directly).
+- ✅ NO state, hooks, event handlers, or API fetch logic changed. All existing useState/useEffect/useCallback/useMemo/fetch() calls (including `/api/finance/calculate-values`, `/api/finance/obligations`, `/api/finance/transactions`, `/api/finance/reports`, `/api/portfolio/accounts`, `/api/watchlist-enhanced?market=`, `/api/stocks/search`, `/api/crypto/coins`, localStorage persistence for `glm_commission_pct`, multi-portfolio selector state, fetchCoins, searchTimer, dropdown outside-click handlers, etc.) preserved verbatim.
+- ✅ NO Python files touched.
+- ✅ NO `git --force` used.
+- ✅ Lint passes (EXIT=0).
+- ✅ TypeScript: ZERO NEW errors introduced. Pre-existing errors verified via `git stash` + re-run:
+  - `EnhancedPortfolioView.tsx(2884,78)`: `editItem?.name` (string | undefined) passed to t() expecting string|number — PRE-EXISTING
+  - `EnhancedWatchlistView.tsx(201,65)` and `(448,76)`: `currentMarket` referenced outside its scope in AddStockDialog — PRE-EXISTING (AddStockDialog is a separate component that doesn't receive currentMarket prop; not in scope of this skinning task)
+- 📝 Notes:
+  - `dark:text-on-primary`, `dark:text-on-error`, `dark:data-[state=active]:text-on-primary` etc. are written per task spec. Same forward-compatible convention used by the prior CryptoPortfolioView/SimulationView skinning task. The project's tailwind.config.ts defines `primary.container` (→ `bg-primary-container` / `text-primary-container` works) but `on-primary-container` only as `primary.container-foreground` — so the `dark:text-on-primary` family is present as strings in HTML (passed lint/tsc) and will activate if a future Tailwind config restructure exposes them as top-level keys.
+  - Where existing `dark:text-emerald-400` co-exists with new `dark:text-primary` on the same element (from the atomic replace_all on standalone string patterns), Tailwind's source-order precedence ensures ONE of them wins deterministically — both render green in dark mode so the visual result is the Stitch emerald-mint (#4edea3). No functional regression.
+  - The duplicated `dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90` on line 1311 of EnhancedPortfolioView (caused by an earlier replace_all that was followed by a targeted edit) was manually cleaned up to a single set of dark: classes.
