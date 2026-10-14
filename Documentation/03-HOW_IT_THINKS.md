@@ -1,15 +1,239 @@
 # 🧠 03 — HOW IT THINKS — منطق المحرك + تقارير الـ Audit
 
-> **المرجع الكنسي لمنطق التفكير والقرار.** آخر تحديث: 2026-10-12 (Task `DOC-UNIFY-3-LOGIC-STATE`).
+> **المرجع الكنسي لمنطق التفكير والقرار.** آخر تحديث: 2026-10-14 (Task `DOC-CODE-AUDIT` — مراجعة شاملة من الأكواد الفعلية).
 > المصادر المُدمجة: `SYSTEM_HOW_IT_THINKS.md` (الأساس) + `06-AUDIT-FINDINGS.md` (§18) + `08-DATA-INTEGRITY.md` (§14) + `AUDIT_VERIFICATION_STATUS.md` (§16) + `ENGINEERING_AUDIT_REPORT.md` (§15) + `EMERGENCY_REMEDIATION_PLAN.md` + `UNIFICATION_MASTER_PLAN.md` (§17) + `REMAINING_TODO.md` + `REMAINING_PLAN_DETAILED.md` + `BACKTEST_PROMPT.md` (§19).
+>
+> **⚠️ مهم (Task DOC-CODE-AUDIT 2026-10-14):** هذا الملف تمت مراجعته ضد الأكواد الفعلية (`vps-service/analyzers/` + `scripts/`). القيم والأرقام في الأقسام أدناه موثقة 100% من الكود — انظر `§0 CODE-VERIFIED REFERENCE` للمرجع السريع. أي ادعاءات قديمة مغلوطة تم تصحيحها أو وضع علامة `⚠️ DEPRECATED` عليها.
 >
 > **إشارات مرجعية للملفات الأخرى:**
 > - القواعد الدستورية + الـ ENGINE-UNIFY + Rule 67 → `00-CONSTITUTION.md`
 > - قواعد البيانات + APIs + DB schema → `01-ARCHITECTURE_AND_API.md`
 > - شاشات UI + مكونات React → `02-SCREENS_AND_COMPONENTS.md`
 > - Production Snapshot + Waves + Breach-Log → `04-CURRENT_STATE.md §1`
+> - لقطة المرحلة الثانية (Commercial Feed + Audited Track Record) → `05-PHASE2_SNAPSHOT_2026-10-14.md`
 >
 > Per Rule 62 + Rule 70 + Rule 75 + Rule 76.
+
+---
+
+## §0 — CODE-VERIFIED REFERENCE (مرجع موثق من الأكواد)
+
+> **هذا القسم هو المرجع السريع الموثق 100% من الكود الفعلي (audit 2026-10-14).**
+> كل قيمة هنا تم التحقق منها بـ `grep` + `Read` من الملف المذكور. لو فيه تعارض بين هذا القسم وأي قسم آخر في الملف، **هذا القسم هو الصحيح**.
+
+### §0.1 — عتبات الإشارات الكنسية (Canonical Signal Thresholds)
+
+**الملف:** `vps-service/analyzers/master_analyzer.py` · **الأسطر:** 506–512
+
+```python
+THRESHOLDS = {
+    'STRONG_BUY': 78,    # line 507 — كان 80، خُفِض لـ 78 (Task IMPROVEMENT-04)
+    'BUY': 65,           # line 508
+    'ACCUMULATE': 55,    # line 509
+    'REDUCE': 40,        # line 510
+    'STRONG_SELL': 25,   # line 511
+}
+```
+
+> ⚠️ **تصحيح:** التعليق القديم في السطر 15 من `master_analyzer.py` كان يقول "STRONG_BUY >= 55, BUY >= 50" — **هذا خطأ**. القيم الفعلية هي 78/65/55/40/25 كما هو موضح أعلاه. الـ classifier الحقيقي هو `canonical_signal.classify_signal` (SSOT).
+
+### §0.2 — أوزان التسجيل (Master Scoring Weights)
+
+**الملف:** `vps-service/analyzers/master_analyzer.py` · **الأسطر:** 470–482
+
+```python
+MASTER_WEIGHTS = {
+    'smc': 0.26,                  # line 471 — Smart Money Concepts (LEADING)
+    'fundamental': 0.40,          # line 472 — ★ أكبر وزن (كان 0.18 → 0.40)
+    'technical': 0.042,           # line 473 — SMA/EMA (LAGGING, -30%)
+    'ai_pattern': 0.06,           # line 474
+    'sentiment': 0.04,            # line 475
+    'market_regime': 0.05,        # line 476
+    'sector_relative': 0.05,      # line 477
+    'enhanced_indicators': 0.024, # line 478 — MACD/RSI/Bollinger (LAGGING, -40%)
+    'multi_timeframe': 0.03,      # line 479
+    'volume_profile': 0.043,      # line 480 — VWAP+OBV (LEADING, +43%)
+    'timing': 0.015,              # line 481 — Session timing (-25%)
+}
+# مجموع الأوزان ≈ 1.024
+```
+
+### §0.3 — نظام الإثباتات الستة (6 Proofs — NOT 5)
+
+**الملف:** `vps-service/analyzers/institutional_decision_engine.py` · **الأسطر:** 339–487
+
+> ⚠️ **تصحيح حرج:** الأقسام القديمة كانت تقول "5 Proofs" — **هذا خطأ**. الدالة الفعلية هي `_build_6_proofs` (السطر 339) وتبني **6 إثباتات**:
+
+| # | الإثبات | الوزن الافتراضي | السطر | المصدر |
+|---|---------|-----------------|-------|--------|
+| 1 | Trend (الاتجاه) | 15 | 341 | close vs sma200 |
+| 2 | Makers (صانعو السوق) | 20 | 342 | absorption/distribution |
+| 3 | DNA/Fingerprint (البصمة) | 15 | 343 | candle prob + stock DNA |
+| 4 | Fundamentals (الأساسيات) | 15 | 344 | fundamental_score |
+| 5 | Sector (القطاع) | 10 | 345 | sector_change + market_regime |
+| 6 | Benchmark/RS (القوة النسبية) | 15 | 346 | stock_roc vs benchmark_roc (V39 NEW) |
+
+### §0.4 — حالات صانع السوق + حالة الطيران (Maker State + Flight State)
+
+**الملف:** `vps-service/analyzers/institutional_decision_engine.py`
+
+**Maker State** — `_detect_maker_state()` السطر 114. **3 حالات:**
+| الحالة | الأيقونة | السطر | المعنى |
+|-------|---------|-------|--------|
+| `absorption` | 🟢 | 214 | تجميع خفي |
+| `distribution` | 🔴 | 223 | تصريف |
+| `calm` | ⚪ | 229 | هدوء |
+
+**Flight State** — `_detect_flight_state()` السطر 253. **4 حالات** (V39):
+| الحالة | الأيقونة | السطر | المعنى |
+|-------|---------|-------|--------|
+| `flying_up` | 🚀 | 301 | طائر للأعلى |
+| `falling_down` | 📉 | 307 | واقع للأسفل |
+| `coiling` | 😴 | 313 | عرضي نايم قابل للانفجار |
+| `sideways` | 😴 | 319 | عرضي |
+
+### §0.5 — دورة حياة الصفقة + MAX_HOLDING_DAYS
+
+**الملف:** `vps-service/jobs/daily_closer.py`
+
+**Cron (موثق من `setup_cron.sh` السطر 49):**
+```
+35 12 * * 0-4  →  12:35 UTC = 14:35 Cairo, Sunday–Thursday
+```
+
+**5 حالات إغلاق** (موثقة من `main()` السطور 3689–3693):
+| الحالة | السطر | المعنى |
+|-------|-------|--------|
+| `TARGET_HIT` | 3689 | حقق الهدف |
+| `STOPPED` | 3690 | ضرب الوقف |
+| `EXPIRED` | 3691 | انتهت المدة |
+| `STILL_PENDING` | 3692 | لم تُغلق بعد |
+| `ERROR` | 3693 | فشل المعالجة |
+
+**`exit_type` (5 قيم):** `target_hit` | `stop_loss` | `expired` | `trailing_stop` | `trailing_profit`
+
+> ⚠️ **تصحيح حرج:** الـ docstring القديم كان يقول "MAX_HOLDING_DAYS (30 أو 60 للتتبع)" — **هذا خطأ**. القيم الفعلية:
+> - `MAX_HOLDING_DAYS_DEFAULT = 7` (السطر 240) — كان 30، غُيّر لـ 7 بناءً على backtest (2026-08-31): "BASELINE (30 يوم): WR=28.1% | WITH 7 أيام: WR=34.4% | PF=6.73 | عائد=+129.21%"
+> - `MAX_HOLDING_DAYS_TREND = 60` (السطر 241) — للصفقات التتبعية فقط
+> - `get_max_holding_days(regime, conviction)` السطر 208 يرجع ديناميكيًا: bull/range → 7, bear → 5, strong_bear → 0 (ممنوع جديد)
+
+### §0.6 — محرك التعلم (Learning Engine)
+
+**الملف:** `vps-service/jobs/learning_engine.py`
+
+**Cron (موثق من `setup_cron.sh` السطر 50):**
+```
+40 12 * * 5  →  12:40 UTC = 14:40 Cairo, Friday (weekly)
+```
+
+**عتبات الأداء (موثقة):**
+| الشرط | العتبة | السطر | الإجراء |
+|-------|--------|-------|---------|
+| win_rate ≥ 50 | success | 589 | `increase_weight` |
+| win_rate < 35 | failure | — | `reduce_exposure` |
+| win_rate ≥ 55 (pattern) | success | 730 | `increase_weight` |
+| improvement > 0.05 (5% PF) | write param | 1016 | `_write_param_immediately` |
+| low_conf < 50 | — | 271 | `increase_threshold` |
+| high_conf ≥ 70 | — | 271 | — |
+
+**DB writes:** `learned_lessons` table + `performance_reports` table + `vps-service/config/optimizer_params.json` (file)
+
+### §0.7 — محرك الـ Backtest (Audited Track Record)
+
+**الملف:** `scripts/build_audited_track_record.py` · **632 سطر**
+
+**الثوابت (موثقة من الأسطر 49–59):**
+```python
+RVOL_THRESHOLD = 1.8          # line 49
+RVOL_LOOKBACK = 20            # line 50
+ATR_PERIOD = 14               # line 51
+TARGET_RR = 2.5               # line 52
+STOP_PCT = 0.04               # line 54 — 4% تحت الدخول
+TARGET_PCT = 0.10             # line 55 — 10% فوق الدخول → R:R = 2.5
+ATR_STOP_MULTIPLIER = 1.5     # line 56
+MAX_HOLDING_DAYS = 60         # line 57
+SCAN_WINDOW_DAYS = 365        # line 58
+SIGNAL_TYPE = 'backtest_track_record'  # line 59
+```
+
+**منطق `detect_catalyst()` — 3 شروط دخول** (السطر 120):
+1. **(أ) ارتداد من دعم:** `-3.0 <= dist_to_support_pct <= 5.0 AND is_bullish`
+2. **(ب) اختراق مقاومة:** `close > resistance`
+3. **(ج) انفجار فوليوم:** `rvol >= 2.2 AND body_pct >= 2.0`
+
+**منطق الانتقاء (75% wins)** — السطور 567–592:
+- `target_wins = int(round(args.target * 0.75))` (السطر 571)
+- `n_top = int(target_wins * 0.7)` — 70% من الـ wins من الأعلى
+- `n_mid = target_wins - n_top` — 30% من الوسط
+- الباقي: losses (نصف non_wins) + expired
+
+### §0.8 — السكانر المؤسسي (Institutional Scanner)
+
+**الملف:** `scripts/multi_market_institutional_scan.py` · **656 سطر**
+
+**الثوابت (الأسطر 34–38):**
+```python
+MIN_RR = 1.5            # line 34
+TARGET_RR = 2.0         # line 35
+MIN_CONFIDENCE = 65.0   # line 36
+MIN_VOLUME_RATIO = 1.3  # line 37
+MAX_RSI = 70.0          # line 38
+```
+
+**`--strict` mode** (الأسطر 553–555): يضبط `MIN_RR=2.0, MIN_CONFIDENCE=78.0, TARGET_RR=2.0`
+
+**`_build_catalyst()`** — السطر 352. يبني وصف فني من: RVOL + دعوم + مقاومات + MA50/MA200 + RSI + ROC
+
+**استراتيجية كتابة الـ DB** — `write_predictions_canonical()` السطر 417:
+1. جرّب `predictions.db` أولًا (لو موجود + فيه جدول predictions)
+2. fallback لـ `stocks.db` (الساندبوكس)
+3. الحقول الإضافية → `notes` JSON
+
+### §0.9 — قاموس تعريب القطاعات
+
+**الملف:** `scripts/sector_arabic.py` · **120 سطر**
+
+- **27 mapping** في `SECTOR_ARABIC_MAP` (الأسطر 20–70)
+- `arabize_sector()` منطق 4 حالات (السطر 73):
+  1. اسم عربي أصلاً → رجّعه زي ما هو
+  2. في القاموس → رجّع الترجمة
+  3. مش في القاموس → رجّعه زي ما هو (لا fabricate)
+  4. None/فاضي → "متفرقات"
+
+### §0.10 — رادار الميكرز (Maker Radar)
+
+**الملف:** `scripts/maker_radar.py` · **2,366 سطر**
+
+**4 قيم لـ `maker_phase`** (`_classify_maker_phase` السطر 1064):
+| القيمة | الأيقونة | السطر | الشرط |
+|-------|---------|-------|-------|
+| `quiet_accumulation` | 🤫 | 1070 | net_flow > 0 AND buy_pct >= 55 AND accumulation |
+| `pre_explosion` | 🚀 | 1072 | net_flow > 0 AND buy_pct >= 50 AND pre_surge |
+| `distribution_exit` | ⚠️ | 1074 | net_flow < 0 OR تصريف/تخفيض |
+| `neutral` | 📊 | 1078 | else |
+
+**ثوابت أخرى:**
+- `RVOL_SURGE_THRESHOLD = 2.5` (السطر 97)
+- `LIQUIDITY_LOOKBACK_DAYS = 20` (السطر 102)
+- `LIQUIDITY_TIERS`: institutional (≥75 pct), active_mid (≥30), light (<30 = disqualified)
+
+### §0.11 — LGBM Gatekeeper
+
+**الملف:** `vps-service/jobs/daily_predictor.py` · **السطور:** 3421–3465
+
+- **العتبة:** `0.65` (السطور 3423, 3456, 3465)
+- لو `proba < 0.65` → لا تُدرج التوصية
+- موثوقية: **78.95% win rate** على 57 صفقة out-of-sample
+
+### §0.12 — Cron Schedule (موثق من setup_cron.sh)
+
+| Job | Cron (UTC) | Cairo | التكرار |
+|-----|-----------|-------|---------|
+| `daily_closer` | `35 12 * * 0-4` | 14:35 Sun–Thu | يومي (أيام التداول) |
+| `learning_engine` | `40 12 * * 5` | 14:40 Friday | أسبوعي |
+| `daily_backup` | `0 3 * * *` | 05:00 daily | يومي |
+| `data_heartbeat` | `0 * * * *` | كل ساعة | ساعي |
+| `daily_predictor` | NOT in crontab | via `market_scheduler` | كل 15 دقيقة 10:00–14:30 + 03:00 |
 
 ---
 
@@ -17,14 +241,15 @@
 
 | § | القسم | المصدر |
 |---|------|--------|
+| **0** | **CODE-VERIFIED REFERENCE (مرجع موثق)** | **audit 2026-10-14** |
 | 1 | Pipeline (9 stages) | SYSTEM_HOW_IT_THINKS §1 |
-| 2 | V34 Institutional Engine (Maker + Flight + 5 proofs) | SYSTEM_HOW_IT_THINKS §2 |
-| 3 | Confluence / Scoring (8-layer, 138 pts) | SYSTEM_HOW_IT_THINKS §3 |
+| 2 | V40 Institutional Engine (Maker + Flight + **6 proofs**) | SYSTEM_HOW_IT_THINKS §2 + audit |
+| 3 | Confluence / Scoring (11-layer weighted, max ~1.024) | SYSTEM_HOW_IT_THINKS §3 + audit |
 | 4 | Persona logic + PERSONA-UNIFY-A | SYSTEM_HOW_IT_THINKS §4 |
 | 5 | R:R story + Fundamentals + Backtest methodology | SYSTEM_HOW_IT_THINKS §5/§6/§7 |
 | 6 | Prediction lifecycle + Learning loop + Picks management | SYSTEM_HOW_IT_THINKS §8/§9/§10 |
 | 7 | 9-step summary + Volume Surge Hunter + EGX-STRATEGY-FINAL | SYSTEM_HOW_IT_THINKS §12/§13/§14 |
-| 8 | Radar (6 features + 5 stages + 5 exit paths + 7 markets) | SYSTEM_HOW_IT_THINKS §15 (radar) |
+| 8 | Radar (6 features + 4 phases + 5 exit paths + 7 markets) | SYSTEM_HOW_IT_THINKS §15 (radar) + audit |
 | 9 | HELI False-Target Forensics | SYSTEM_HOW_IT_THINKS §16 |
 | 10 | Observability Stack (Sentry + logger + /api/health) | SYSTEM_HOW_IT_THINKS §17 |
 | 11 | Technical Explanation Generator + Resource Monitor | SYSTEM_HOW_IT_THINKS §19/§20 |
@@ -251,10 +476,12 @@ prediction = {
 
 ---
 
-## §2 — V34 Institutional Decision Engine (Maker State + Flight State + 5 Proofs)
+## §2 — V40 Institutional Decision Engine (Maker State + Flight State + 6 Proofs)
 
-## 2. V34 Institutional Decision Engine — المنطق الكامل
+## 2. V40 Institutional Decision Engine — المنطق الكامل
 
+> **⚠️ تحديث (Task DOC-CODE-AUDIT 2026-10-14):** المحرك الفعلي هو **V40** (مش V34). الملف: `vps-service/analyzers/institutional_decision_engine.py` (1,508 سطر). الدالة الرئيسية: `build_institutional_decision()` السطر 1191. النظام بني **6 إثباتات** (مش 5) — انظر `§0.3` للتفاصيل الموثقة.
+>
 > **المرجع (مُدمج):** محتوى `V34-INSTITUTIONAL-DECISION-ENGINE.md` + `treadingView.code.text` (Pine Script V34، 372 سطر) دُمج بالكامل في هذا القسم §2 (توحيد التوثيق 2026-08-17).
 > **الكود:** `vps-service/analyzers/institutional_decision_engine.py` (~1,060 سطر، V39.2).
 > **الإلهام:** Pine Script "محرك القرار المؤسسي V34" (LuxAlgo + BigBeluga، CC BY-NC-SA 4.0).
@@ -618,9 +845,11 @@ if enable_pm and user_entry_price > 0:
 
 ---
 
-## §3 — Confluence / Scoring Logic (8-layer, 138 pts max)
+## §3 — Confluence / Scoring Logic (11-layer weighted, max ~1.024)
 
-## 3. Confluence / Scoring logic (8-layer, 138 pts max)
+## 3. Confluence / Scoring logic (11-layer weighted, max ~1.024)
+
+> **⚠️ تحديث (Task DOC-CODE-AUDIT 2026-10-14):** نظام التسجيل الفعلي هو **11 طبقة موزونة** (مش 8 طبقات). القيم في `§0.2` هي الصحيحة. الـ 8-layer confluence المذكور أدناه هو نظام ثانوي (`CONFLUENCE_THRESHOLDS` في master_analyzer.py السطور 523–528: STRONG_BUY=80, BUY=55, HOLD=45, SELL=45) — يختلف عن نظام الـ MASTER_WEIGHTS الـ 11 طبقة.
 
 > **السؤال:** "كيف يُجمّع النظام الـ confluence من 8 طبقات مختلفة؟ وأين عتبة الشراء؟"
 
@@ -2247,7 +2476,9 @@ MIN_ACCUM_RATIO = 1.2           # Filter E boost threshold
 
 ---
 
-## §8 — Radar (6 features + 5 stages + 5 exit paths + 7 markets)
+## §8 — Radar (6 features + 4 phases + 5 exit paths + 7 markets)
+
+> **⚠️ تحديث (Task DOC-CODE-AUDIT 2026-10-14):** الـ `maker_phase` له **4 قيم** (مش 5): `quiet_accumulation` / `pre_explosion` / `distribution_exit` / `neutral`. انظر `§0.10` للتفاصيل الموثقة من `scripts/maker_radar.py` السطر 1064.
 
 
 > **المرجع الرسمي** لترقية رادار السيولة (Liquidity Radar Upgrade) المُنفَّذة في 2026-09-27 عبر المهام `RADAR-A` + `RADAR-B` + `RADAR-C` + `RADAR-MAIN`.

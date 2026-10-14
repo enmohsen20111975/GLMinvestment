@@ -415,13 +415,13 @@ def _build_catalyst(cp: float, support: float, resistance: float,
 
 
 def write_predictions_canonical(opportunities: List[Dict[str, Any]]) -> int:
-    """كتابة الفرص المعتمدة مباشرة في SSOT الموحد: db/stocks.db.predictions.
+    """كتابة الفرص المعتمدة في جدول predictions (SSOT).
 
-    Task B-17 fix (2026-10-14): الكتابة في stocks.db (وليس predictions.db
-    المعزول) لأنها القاعدة التي يقرأ منها الـ frontend والـ commercial_feed.
-    الأعمدة الإضافية (rr, confidence, market, horizon, signal_ar) تُخزَّن
-    في عمود notes كـ JSON مُنسَّق لأن schema stocks.db.predictions لا يحتوي
-    على أعمدة منفصلة لها. هذا يحمي من تعارض schema ويبقي Python هو العقل.
+    استراتيجية اختيار الـ DB (Task B-21 audit):
+      1. جرّب predictions.db أولًا (لو موجود + فيه جدول predictions)
+      2. لو مش موجود/فاضي → fallback لـ stocks.db (الساندبوكس)
+      3. الحقول الإضافية (rr, confidence, market, horizon, catalyst) تُخزَّن
+         في عمود notes كـ JSON لأن schema predictions لا يحتوي على أعمدة منفصلة لها.
 
     Task B-20b: أضفنا حقل catalyst + catalyst_ar للـ notes JSON.
     """

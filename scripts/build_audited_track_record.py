@@ -20,7 +20,7 @@ Task B-20a (Owner Directive 2026-10-14)
   4. أتتبع الصفقة من اليوم التالي:
        - high >= target → win (hit_target=1)
        - low <= stop → loss (hit_stop=1)
-       - 30 يوم بدون أي منهما → expired
+       - 60 يوم بدون أي منهما → expired (MAX_HOLDING_DAYS = 60)
   5. أسجّل النتيجة في stocks.db.predictions بـ outcome_date + exit_price + actual_return
 
 الهدف: 25-35 صفقة مغلقة بـ Win Rate 70-76% ومتوسط ربح +8% إلى +12%.
@@ -52,7 +52,7 @@ ATR_PERIOD = 14
 TARGET_RR = 2.5
 # نسب مئوية ثابتة للـ stop/target (أكثر واقعية للأسواق العربية من ATR-based)
 STOP_PCT = 0.04      # 4% تحت الدخول
-TARGET_PCT = 0.10    # 12% فوق الدخول  → R:R = 3.0
+TARGET_PCT = 0.10    # 10% فوق الدخول → R:R = 2.5 (10/4)
 ATR_STOP_MULTIPLIER = 1.5
 MAX_HOLDING_DAYS = 60
 SCAN_WINDOW_DAYS = 365
@@ -481,7 +481,7 @@ def main() -> int:
                     continue
 
                 # حساب الوقف والهدف بنسب مئوية ثابتة (أكثر واقعية للأسواق العربية)
-                # stop = 4% تحت الدخول، target = 6% فوق → R:R = 1.5
+                # stop = 4% تحت الدخول، target = 10% فوق → R:R = 2.5
                 # لو ATR أكبر من 4% (سهم متطرف)، نوسّع الـ stop لـ ATR*1.5
                 atr_stop = entry_price - atr * ATR_STOP_MULTIPLIER
                 pct_stop = entry_price * (1 - STOP_PCT)
