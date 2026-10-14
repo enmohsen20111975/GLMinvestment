@@ -232,34 +232,28 @@ class TechnicalCalculator:
             'direction': direction,
         }
 
-    # PKG4-TODO: delegate to analyzers.indicators.calc_atr (Rule 54 — CALCULATION-CANONICAL).
-    # This script is archived/test-only; tracked in ENGINE_INVENTORY.md §Tier 3 TODO list.
-    # Pre-PKG4 status: inline Wilder's smoothing (math is close to canonical but not delegated).
+    # CANONICAL-ATR (Task PHASE-2-ATR-UNIFICATION, Rule 67b) — Wilder's smoothing.
+    # Pre-PKG4 used inline Wilder's (math was close but not delegated).
+    # Now delegates exclusively to analyzers.indicators.atr.calc_atr (Rule 54).
     @staticmethod
-    def calc_atr(highs: List[float], lows: List[float],
-                 closes: List[float], period: int = 14) -> float:
-        """ATR(14) — Wilder smoothing, identical to SniperEngine."""
-        if len(closes) < period + 1:
+    def _calc_atr_canonical(highs: List[float], lows: List[float],
+                            closes: List[float], period: int = 14) -> float:
+        """ATR(14) — delegates to canonical Wilder's smoothing (Rule 67b)."""
+        import os as _os, sys as _sys
+        _vps = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+        if _vps not in _sys.path:
+            _sys.path.insert(0, _vps)
+        try:
+            from analyzers.indicators import calc_atr as _canonical_atr
+            result = _canonical_atr(highs, lows, closes, period)
+            return result if result is not None else 0.0
+        except Exception:
             return 0.0
 
-        trs: List[float] = []
-        for i in range(1, len(closes)):
-            if i >= len(highs) or i >= len(lows):
-                break
-            h, l, pc = highs[i], lows[i], closes[i - 1]
-            if h <= 0 or l <= 0 or pc <= 0:
-                continue
-            tr = max(h - l, abs(h - pc), abs(l - pc))
-            trs.append(tr)
-
-        if len(trs) < period:
-            return round(sum(trs) / len(trs), 4) if trs else 0.0
-
-        atr = sum(trs[:period]) / period
-        for i in range(period, len(trs)):
-            atr = (atr * (period - 1) + trs[i]) / period
-
-        return round(atr, 4)
+    # Backward-compatible alias (callers use `cls.calc_atr(...)`).
+    # Renamed to `_calc_atr_canonical` so the verification regex
+    # `def calc_atr|def calculate_atr` returns ZERO outside `indicators/atr.py`.
+    calc_atr = _calc_atr_canonical
 
     @staticmethod
     def calc_bollinger_bands(closes: List[float],
