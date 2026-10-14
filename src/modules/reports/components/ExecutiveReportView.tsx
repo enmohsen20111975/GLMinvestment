@@ -100,7 +100,8 @@ interface PersonaStatsItem {
   losses: number;
   pending: number;
   settled: number;
-  winRate: number;
+  // RULE20-P3: winRate must come from Python (Rule 20). null when Python stat missing (Rule 27).
+  winRate: number | null;
   avgWinPct: number;
   avgLossPct: number;
   profitFactor: number;
@@ -133,6 +134,7 @@ interface HonestPredictionItem {
   maestro_score?: number | null;
   prediction_date: string;
   status: string; // PENDING | TARGET_HIT | STOPPED | PROFIT_TAKEN | EXPIRED | TRAILING_PROFIT
+  outcome?: string; // RULE20-P3: canonical outcome field from Python (TS fix — used at line ~354)
   final_price?: number | null;
   profit_loss_percent?: number | null;
   actual_return?: number | null;
@@ -428,13 +430,13 @@ export function ExecutiveReportView({
             predictions: buckets,
             stats: {
               total: 0, wins: 0, losses: 0, pending: 0, settled: 0,
-              winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0,
+              winRate: null as number | null, avgWinPct: 0, avgLossPct: 0, profitFactor: 0,
               closedCount: 0,
             },
             statsByPersona: {
-              gambler: { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 },
-              balanced: { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 },
-              conservative: { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 },
+              gambler: { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: null as number | null, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 },
+              balanced: { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: null as number | null, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 },
+              conservative: { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: null as number | null, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 },
             },
             last_updated: new Date().toISOString(),
             market: selectedMarket,
@@ -684,7 +686,7 @@ export function ExecutiveReportView({
     const pending = list.filter((p) => p.outcome === 'PENDING');
     const expired = list.filter((p) => p.outcome === 'EXPIRED');
 
-    const winRate = closed.length > 0 ? (wins.length / closed.length) * 100 : 0;
+    const winRate = null as number | null; // RULE20-P3 + Rule 27 — Python must provide win_rate (no local computation per Rule 20)
     const avgWinPct = wins.length > 0
       ? wins.reduce((s, p) => s + Number(p.returnPct || 0), 0) / wins.length
       : 0;
@@ -739,7 +741,7 @@ export function ExecutiveReportView({
         losses: personaLosses.length,
         pending: personaPreds.filter((p) => p.outcome === 'PENDING').length,
         settled: personaClosed.length,
-        winRate: personaClosed.length > 0 ? (personaWins.length / personaClosed.length) * 100 : 0,
+        winRate: null as number | null, // RULE20-P3 + Rule 27 — Python must provide per-persona win_rate
         avgWinPct: pAvgWin,
         avgLossPct: pAvgLoss,
         // RULE67-CANONICAL: profitFactor من averages (مش SUM)
@@ -921,6 +923,11 @@ export function ExecutiveReportView({
   }, [uniqueStocks]);
 
   // 2. Area: الأرباح التراكمية عبر الزمن (للمقفولة فقط)
+  // RULE20-P3 (PYTHON = BRAIN): قبل كده كان الـ cumulative بيتحسب محلياً كـ running sum
+  // للـ returnPct — ده COMPUTATION مالية (cumulative return) ممنوعة per Rule 20.
+  // Python ما بيوفرش حقل `cumulative_return` لكل صفقة → null (Rule 27: NO-FAKE-DATA).
+  // الـ chart بـ يعرض `—` placeholder لما cumulative = null.
+  // `trade` = display rounding فقط لـ c.returnPct (Python-provided per-trade return) — KEEP.
   const cumulativeProfitData = useMemo(() => {
     const closed = uniqueStocks
       .filter((p) => (p.outcome === 'WIN' || p.outcome === 'LOSS') && p.closedAt && p.returnPct != null)
@@ -930,20 +937,20 @@ export function ExecutiveReportView({
         returnPct: Number(p.returnPct),
       }))
       .sort((a, b) => String(a.closedAt).localeCompare(String(b.closedAt)));
-    let cum = 0;
-    return closed.map((c) => {
-      cum += c.returnPct;
-      return {
-        label: `${String(c.closedAt).slice(5, 10)} · ${c.ticker}`,
-        cumulative: Math.round(cum * 100) / 100,
-        trade: Math.round(c.returnPct * 100) / 100,
-      };
-    });
+    return closed.map((c) => ({
+      label: `${String(c.closedAt).slice(5, 10)} · ${c.ticker}`,
+      cumulative: null as number | null, // Rule 20 + Rule 27 — Python must provide cumulative_return
+      trade: Math.round(c.returnPct * 100) / 100, // DISPLAY FORMATTING only (Python-provided per-trade return)
+    }));
   }, [uniqueStocks]);
 
   // 3. Bar: العائد الشهري (تجميع حسب شهر الإغلاق)
+  // RULE20-P3 (PYTHON = BRAIN): قبل كده كان الـ `total` (sum of returnPct per month)
+  // و الـ `winRate` (wins/count * 100) بيتحسبوا محلياً — ده COMPUTATION مالية ممنوعة per Rule 20.
+  // Python ما بيوفرش per-month return أو per-month win_rate → null (Rule 27: NO-FAKE-DATA).
+  // `count` (عدد الصفقات في الشهر) = metadata (مش financial calc) → KEEP.
   const monthlyReturns = useMemo(() => {
-    const monthMap: Record<string, { month: string; total: number; count: number; wins: number }> = {};
+    const monthMap: Record<string, { month: string; count: number }> = {};
     for (const p of uniqueStocks) {
       if (p.outcome !== 'WIN' && p.outcome !== 'LOSS') continue;
       if (!p.closedAt || p.returnPct == null) continue;
@@ -951,19 +958,17 @@ export function ExecutiveReportView({
       if (isNaN(d.getTime())) continue;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const monthLabel = d.toLocaleDateString('ar-EG', { month: 'short', year: '2-digit' });
-      if (!monthMap[key]) monthMap[key] = { month: monthLabel, total: 0, count: 0, wins: 0 };
-      monthMap[key].total += Number(p.returnPct);
+      if (!monthMap[key]) monthMap[key] = { month: monthLabel, count: 0 };
       monthMap[key].count += 1;
-      if (p.outcome === 'WIN') monthMap[key].wins += 1;
     }
     return Object.entries(monthMap)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6) // آخر 6 شهور
       .map(([, v]) => ({
         month: v.month,
-        total: Math.round(v.total * 100) / 100,
+        total: null as number | null, // Rule 20 + Rule 27 — Python must provide monthly return
         count: v.count,
-        winRate: v.count > 0 ? Math.round((v.wins / v.count) * 100) : 0,
+        winRate: null as number | null, // Rule 20 + Rule 27 — Python must provide monthly win_rate
       }));
   }, [uniqueStocks]);
 
@@ -978,7 +983,9 @@ export function ExecutiveReportView({
     const b = statsByPersonaPred.statsByPersona.balanced;
     const c = statsByPersonaPred.statsByPersona.conservative;
     return [
-      { axis: 'نسبة النجاح', gambler: Math.round(g.winRate), balanced: Math.round(b.winRate), conservative: Math.round(c.winRate) },
+      // RULE20-P3: winRate may be null (Python must provide). Radar axis shows 0 for null
+      // (display fallback only — no fabrication in underlying data per Rule 27).
+      { axis: 'نسبة النجاح', gambler: Math.round(g.winRate ?? 0), balanced: Math.round(b.winRate ?? 0), conservative: Math.round(c.winRate ?? 0) },
       { axis: 'معامل الربحية', gambler: Math.round(Math.min(g.profitFactor, 5) * 20), balanced: Math.round(Math.min(b.profitFactor, 5) * 20), conservative: Math.round(Math.min(c.profitFactor, 5) * 20) },
       { axis: 'متوسط الربح', gambler: Math.round(Math.min(g.avgWinPct, 20) * 5), balanced: Math.round(Math.min(b.avgWinPct, 20) * 5), conservative: Math.round(Math.min(c.avgWinPct, 20) * 5) },
       { axis: 'عدد الصفقات', gambler: Math.round(Math.min(g.closedCount, 500) / 5), balanced: Math.round(Math.min(b.closedCount, 500) / 5), conservative: Math.round(Math.min(c.closedCount, 500) / 5) },
@@ -1063,7 +1070,7 @@ export function ExecutiveReportView({
       `من ${periodRange.start} إلى ${periodRange.end}`,
       '',
       `إجمالي الصفقات: ${totalTrades}`,
-      `نسبة النجاح: ${(winRate ?? 0).toFixed(1)}%`,
+      `نسبة النجاح: ${winRate == null ? '—' : `${winRate.toFixed(1)}%`}`,
       `معامل الربحية: ${profitFactor >= 999 ? '∞' : (profitFactor ?? 0).toFixed(2)}`,
       `رابحة: ${stats.wins} / خاسرة: ${stats.losses} / معلقة: ${stats.pending}`,
       `صافي العائد: ${stats.totalProfit >= 0 ? '+' : ''}${(stats.totalProfit ?? 0).toFixed(2)}%`,
@@ -1431,7 +1438,7 @@ export function ExecutiveReportView({
             <div className="flex flex-col items-start md:items-end justify-center bg-slate-900/70 px-5 py-4 rounded-2xl border border-amber-500/20 md:min-w-[240px]">
               <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">نسبة النجاح</span>
               <span className="text-3xl font-black text-emerald-400 mt-1 leading-none">
-                {(winRate ?? 0).toFixed(1)}%
+                {winRate == null ? '—' : `${winRate.toFixed(1)}%`}
               </span>
               <span className="text-sm text-amber-300 font-bold mt-2">
                 معامل الربحية {profitFactor >= 999 ? 'مثالي' : (profitFactor ?? 0).toFixed(2)}
@@ -1480,7 +1487,7 @@ export function ExecutiveReportView({
                 {/* Win Rate */}
                 <KpiCard
                   label="نسبة النجاح"
-                  value={`${(winRate ?? 0).toFixed(1)}%`}
+                  value={winRate == null ? '—' : `${winRate.toFixed(1)}%`}
                   subtext={`من ${stats.settled} سهم محسوم`}
                   accent="emerald"
                 />
@@ -1691,8 +1698,13 @@ export function ExecutiveReportView({
                     </div>
                     {cumulativeProfitData.length > 0 && (
                       <Badge variant="outline" className="text-[11px] text-emerald-300 border-emerald-500/30 bg-emerald-500/10">
-                        تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1].cumulative > 0 ? '+' : ''}
-                        {(cumulativeProfitData[cumulativeProfitData.length - 1].cumulative ?? 0).toFixed(1)}%
+                        تراكمي: {(() => {
+                          // RULE20-P3 + Rule 27: cumulative now comes from Python (or null).
+                          // لا fabrication — نعرض `—` لما null.
+                          const lastCum = cumulativeProfitData[cumulativeProfitData.length - 1].cumulative;
+                          if (lastCum == null) return '—';
+                          return `${lastCum > 0 ? '+' : ''}${lastCum.toFixed(1)}%`;
+                        })()}
                       </Badge>
                     )}
                   </div>
@@ -1717,8 +1729,10 @@ export function ExecutiveReportView({
                               fontSize: '12px',
                             }}
                             formatter={(value: number, name: string) => {
-                              if (name === 'cumulative') return [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'تراكمي'];
-                              return [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'الصفقة'];
+                              // RULE20-P3 + Rule 27: cumulative may be null (Python must provide).
+                              // trade is Python-provided per-trade return (display rounding only).
+                              if (value == null) return ['—', name === 'cumulative' ? 'تراكمي' : 'الصفقة'];
+                              return [`${value > 0 ? '+' : ''}${value.toFixed(2)}%`, name === 'cumulative' ? 'تراكمي' : 'الصفقة'];
                             }}
                           />
                           <ReferenceLine y={0} stroke="hsl(var(--foreground) / 0.2)" strokeDasharray="3 3" />
@@ -1762,12 +1776,22 @@ export function ExecutiveReportView({
                               borderRadius: '12px',
                               fontSize: '12px',
                             }}
-                            formatter={(value: number) => [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'العائد']}
+                            formatter={(value: number) => {
+                              // RULE20-P3 + Rule 27: monthly total may be null (Python must provide).
+                              if (value == null) return ['—', 'العائد'];
+                              return [`${value > 0 ? '+' : ''}${value.toFixed(2)}%`, 'العائد'];
+                            }}
                           />
                           <ReferenceLine y={0} stroke="hsl(var(--foreground) / 0.2)" strokeDasharray="3 3" />
                           <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                             {monthlyReturns.map((entry, idx) => (
-                              <Cell key={`bar-${idx}`} fill={entry.total >= 0 ? 'hsl(var(--success))' : 'hsl(var(--danger))'} />
+                              <Cell
+                                key={`bar-${idx}`}
+                                // RULE20-P3: null total → slate/neutral color (لا fabrication).
+                                fill={entry.total == null
+                                  ? 'hsl(var(--muted-foreground) / 0.3)'
+                                  : entry.total >= 0 ? 'hsl(var(--success))' : 'hsl(var(--danger))'}
+                              />
                             ))}
                           </Bar>
                         </BarChart>
@@ -1911,7 +1935,7 @@ export function ExecutiveReportView({
                     accentRing="border-orange-500/30"
                     accentBar="bg-orange-500"
                     stats={{
-                      winRate: statsByPersona?.gambler?.winRate ?? 0,
+                      winRate: statsByPersona?.gambler?.winRate ?? null,
                       profitFactor: statsByPersona?.gambler?.profitFactor ?? 0,
                       avgWinPct: statsByPersona?.gambler?.avgWinPct ?? 0,
                       wins: statsByPersona?.gambler?.wins ?? 0,
@@ -1928,7 +1952,7 @@ export function ExecutiveReportView({
                     accentRing="border-teal-500/30"
                     accentBar="bg-teal-500"
                     stats={{
-                      winRate: statsByPersona?.balanced?.winRate ?? 0,
+                      winRate: statsByPersona?.balanced?.winRate ?? null,
                       profitFactor: statsByPersona?.balanced?.profitFactor ?? 0,
                       avgWinPct: statsByPersona?.balanced?.avgWinPct ?? 0,
                       wins: statsByPersona?.balanced?.wins ?? 0,
@@ -1945,7 +1969,7 @@ export function ExecutiveReportView({
                     accentRing="border-emerald-500/30"
                     accentBar="bg-emerald-500"
                     stats={{
-                      winRate: statsByPersona?.conservative?.winRate ?? 0,
+                      winRate: statsByPersona?.conservative?.winRate ?? null,
                       profitFactor: statsByPersona?.conservative?.profitFactor ?? 0,
                       avgWinPct: statsByPersona?.conservative?.avgWinPct ?? 0,
                       wins: statsByPersona?.conservative?.wins ?? 0,
@@ -2017,21 +2041,26 @@ export function ExecutiveReportView({
 
                 {/* Proportion bar */}
                 <div className="h-5 w-full bg-slate-800 rounded-full overflow-hidden flex border border-white/10">
+                  {/* RULE20-P3 + Rule 27: winRate may be null (Python must provide). Bar shows
+                      neutral split (50/50) when null — NO fabrication of fake percentages. */}
                   <div
                     className="h-full bg-gradient-to-l from-emerald-500 to-teal-400 transition-all duration-1000 flex items-center justify-center"
-                    style={{ width: `${winRate}%` }}
+                    style={{ width: `${winRate == null ? 50 : winRate}%` }}
                   >
-                    {winRate > 15 && (
+                    {winRate != null && winRate > 15 && (
                       <span className="text-xs font-black text-emerald-950 px-2">
-                        {(winRate ?? 0).toFixed(0)}% رابحة
+                        {winRate.toFixed(0)}% رابحة
                       </span>
+                    )}
+                    {winRate == null && (
+                      <span className="text-xs font-black text-slate-300 px-2">—</span>
                     )}
                   </div>
                   <div
                     className="h-full bg-gradient-to-l from-rose-500 to-red-600 transition-all duration-1000 flex items-center justify-center"
-                    style={{ width: `${100 - winRate}%` }}
+                    style={{ width: `${winRate == null ? 50 : 100 - winRate}%` }}
                   >
-                    {100 - winRate > 15 && (
+                    {winRate != null && 100 - winRate > 15 && (
                       <span className="text-xs font-black text-white px-2">
                         {(100 - winRate).toFixed(0)}% خاسرة
                       </span>
@@ -2195,7 +2224,8 @@ function HighlightCard({
 }
 
 interface PersonaStats {
-  winRate: number;
+  // RULE20-P3: winRate must come from Python (Rule 20). null when Python stat missing (Rule 27).
+  winRate: number | null;
   profitFactor: number;
   avgWinPct: number;
   wins: number;
@@ -2243,7 +2273,7 @@ function PersonaCard({
       <div className="py-3 border-y border-white/10 text-center">
         <p className="text-xs text-slate-400 font-bold mb-1">نسبة النجاح</p>
         <p className={cn('text-3xl font-black leading-none', winRateColor)}>
-          {(stats.winRate ?? 0).toFixed(1)}%
+          {stats.winRate == null ? '—' : `${stats.winRate.toFixed(1)}%`}
         </p>
       </div>
 

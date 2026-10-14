@@ -437,12 +437,22 @@ export function InstitutionalDecisionPanel({
               )}
             </div>
           </div>
-          {fairValueLocked && current_price > 0 && fair_value && fair_value > 0 && (
+          {fairValueLocked && fair_premium != null && (
             <div className="mt-1 text-[10px] text-muted-foreground">
               القيمة العادلة أعلى من السعر الحالي بـ{' '}
               <span className="font-semibold text-amber-700 dark:text-amber-400">
-                {Math.round(((fair_value - current_price) / current_price) * 100)}%
+                {/* RULE20-P3 (PYTHON = BRAIN): margin-of-safety = ((fair_value - current_price) / current_price) * 100
+                    قبل كده كان بيتحسب محلياً — ده COMPUTATION مالية ممنوعة per Rule 20.
+                    Python بيوفر `fair_premium` (نفس القيمة محسوبة في الـ backend) — نستخدمها مباشرة.
+                    لو null → نعرض `—` (Rule 27: NO-FAKE-DATA). */}
+                {Math.round(fair_premium)}%
               </span>
+            </div>
+          )}
+          {fairValueLocked && fair_premium == null && (
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              القيمة العادلة أعلى من السعر الحالي بـ{' '}
+              <span className="font-semibold text-amber-700 dark:text-amber-400">—</span>
             </div>
           )}
         </div>

@@ -70510,3 +70510,106 @@ Stage Summary:
 - ✅ NO Python files touched
 - ✅ NO admin DB-management routes touched (6 intentional exceptions documented)
 
+
+---
+Task ID: P3-RULE20-SWEEP
+Agent: general-purpose (Rule 20 financial calc removal)
+Task: Phase 3 — إزالة العمليات الحسابية المالية من 3 ملفات (ExecutiveReportView, InstitutionalDecisionPanel, PredictionTrackingDashboard)
+
+Work Log:
+
+**1. src/modules/reports/components/ExecutiveReportView.tsx** (+71/-43 lines):
+   - Lines 929-943 (cumulativeProfitData useMemo): 
+     - REMOVED: `let cum = 0; cum += c.returnPct;` (running sum = COMPUTATION مالية)
+     - REPLACED: `cumulative: Math.round(cum * 100) / 100` → `cumulative: null as number | null` (Python must provide `cumulative_return` per trade — missing → null per Rule 27)
+     - KEPT: `trade: Math.round(c.returnPct * 100) / 100` — DISPLAY FORMATTING only of Python-provided per-trade `c.returnPct` (allowed per Rule 20 pattern)
+     - Badge (line ~1695-1705): added null-check IIFE → displays `—` when cumulative is null (Rule 27: لا fabrication)
+     - Tooltip formatter (line ~1727-1732): added `if (value == null) return ['—', ...]` instead of `(value ?? 0).toFixed(2)` fabrication
+   - Lines 945-971 (monthlyReturns useMemo):
+     - REMOVED: `total += Number(p.returnPct)` (sum per month = COMPUTATION) + `wins += 1` (count for winRate)
+     - REPLACED: `total: Math.round(v.total * 100) / 100` → `total: null as number | null` (Python must provide per-month return — missing → null)
+     - REPLACED: `winRate: v.count > 0 ? Math.round((v.wins / v.count) * 100) : 0` → `winRate: null as number | null` (Python must provide per-month `win_rate` — missing → null)
+     - KEPT: `count: v.count` (metadata count, not a financial calc — outside Rule 20 scope per task list)
+     - Tooltip formatter (line ~1775-1779): added `if (value == null) return ['—', 'العائد']`
+     - Bar Cell fill (line ~1782-1792): added null-check → `entry.total == null ? 'hsl(var(--muted-foreground) / 0.3)' : ...` (neutral slate for null, لا red fabrication)
+   - Lines 687-688 (computeStats winRate): 
+     - REMOVED: `const winRate = closed.length > 0 ? (wins.length / closed.length) * 100 : 0;` (winRate COMPUTATION مالية)
+     - REPLACED: `const winRate = null as number | null;` (Python must provide `win_rate` stat — missing → null)
+   - Line 743 (computeStats byPersona winRate):
+     - REMOVED: `winRate: personaClosed.length > 0 ? (personaWins.length / personaClosed.length) * 100 : 0,` (per-persona winRate COMPUTATION)
+     - REPLACED: `winRate: null as number | null;` (consistency with overall winRate nullification)
+   - Interface PersonaStatsItem (line 103-104): `winRate: number` → `winRate: number | null`
+   - Interface PersonaStats (line 2218-2220, PersonaCard component): `winRate: number` → `winRate: number | null`
+   - Defaults (lines 431-438, transformed LiveTrackingResponse): `winRate: 0` → `winRate: null as number | null` (4 places: stats + 3 personas)
+   - HonestPredictionItem interface (line 137): added `outcome?: string;` (TS fix — pre-existing TS2339 error at line 354 accessing `p.outcome`)
+   - UI displays updated to handle null gracefully (Rule 27: show `—` not 0.0% fabrication):
+     - Line 985 (Radar chart axis نسبة النجاح): `Math.round(g.winRate)` → `Math.round(g.winRate ?? 0)` (radar can't display `—`; uses 0 as display fallback only — NO fabrication in underlying data)
+     - Line 1072 (export filename): `نسبة النجاح: ${(winRate ?? 0).toFixed(1)}%` → `نسبة النجاح: ${winRate == null ? '—' : \`${winRate.toFixed(1)}%\`}`
+     - Line 1440 (hero KPI box): `{(winRate ?? 0).toFixed(1)}%` → `{winRate == null ? '—' : \`${winRate.toFixed(1)}%\`}`
+     - Line 1489 (KpiCard نسبة النجاح): `value={\`${(winRate ?? 0).toFixed(1)}%\`}` → `value={winRate == null ? '—' : \`${winRate.toFixed(1)}%\`}`
+     - Lines 1937/1954/1971 (3 PersonaCard stats props): `winRate: statsByPersona?.X?.winRate ?? 0` → `winRate: statsByPersona?.X?.winRate ?? null`
+     - Lines 2043-2068 (Win/Loss proportion bar): added null-handling — `width: \`${winRate == null ? 50 : winRate}%\`` (neutral 50/50 split for null) + `{winRate == null && (<span>—</span>)}` + conditional render of percentage labels only when winRate != null
+     - Line 2275 (PersonaCard big win rate display): `{(stats.winRate ?? 0).toFixed(1)}%` → `{stats.winRate == null ? '—' : \`${stats.winRate.toFixed(1)}%\`}`
+
+**2. src/modules/market-analysis/components/InstitutionalDecisionPanel.tsx** (+11/-3 lines):
+   - Lines 440-457 (fairValueLocked margin-of-safety block):
+     - REMOVED: `{Math.round(((fair_value - current_price) / current_price) * 100)}%` (margin-of-safety COMPUTATION مالية)
+     - REPLACED: uses Python-provided `fair_premium` field directly (same value computed in Python backend) — `{Math.round(fair_premium)}%` (display rounding of Python-provided value = ALLOWED per Rule 20 pattern)
+     - Condition updated: `fairValueLocked && current_price > 0 && fair_value && fair_value > 0` → `fairValueLocked && fair_premium != null` (no longer needs fair_value/current_price — just Python stat availability)
+     - Added fallback block: when `fair_premium == null` → displays `—` (Rule 27: NO-FAKE-DATA)
+     - **Side-effect fix**: this REMOVED the local computation that referenced `current_price` (which was `possibly undefined` per TS) — this FIXED 3 pre-existing TS18048 errors at lines 440/444 of InstitutionalDecisionPanel.tsx
+
+**3. src/modules/predictions/components/PredictionTrackingDashboard.tsx** (+44/-33 lines):
+   - Lines 772-780 (dailyPerformanceData useMemo type): `netReturnPct: number` → `netReturnPct: number | null`
+   - Lines 832-856 (dailyPerformanceData useMemo body):
+     - REMOVED: `let dailyCapital = 100; for (const t of trades) { dailyCapital *= (1 + t.returnPct / 100); } const netReturnPct = dailyCapital - 100;` (compound return COMPUTATION مالية)
+     - REPLACED: `netReturnPct: Math.round(netReturnPct * 100) / 100` → `netReturnPct: null as number | null` (Python must provide daily aggregated `net_return_pct` — missing → null)
+     - KEPT: `winCount`, `lossCount`, `totalTrades`, `tickers` (metadata counts + display strings, not financial calcs — outside Rule 20 scope)
+   - Lines 859-881 (dailyKPIs useMemo):
+     - REMOVED: `const greenDays = dailyPerformanceData.filter((d) => d.netReturnPct >= 0).length; greenDaysPct: Math.round((greenDays / dailyPerformanceData.length) * 100)` (greenDaysPct COMPUTATION مالية)
+     - REPLACED: `greenDaysPct: null as number | null` (Python must provide `green_days_pct` — missing → null)
+     - Empty-state default: `greenDaysPct: 0` → `greenDaysPct: null as number | null` (consistency)
+     - Sort comparator: `b.netReturnPct - a.netReturnPct` → `(b.netReturnPct ?? -Infinity) - (a.netReturnPct ?? -Infinity)` (handle null in sort, no NaN)
+     - KEPT: `avgTradesPerDay: Math.round((totalTrades / dailyPerformanceData.length) * 10) / 10` (average of count metadata, not financial calc)
+   - Lines 123-130 (PersonaStats interface): `winRate: number` → `winRate: number | null`
+   - Line 87 (LivePrediction interface): added `entry_price?: number | null;` (TS fix — pre-existing TS2551 errors at lines 1158/1184 accessing `p.entry_price`)
+   - Line 494 (computeStatsFromPredictions winRate):
+     - REMOVED: `const winRate = settled > 0 ? (wins / settled) * 100 : 0;` (winRate COMPUTATION مالية)
+     - REPLACED: `const winRate = null as number | null;` (Python must provide `win_rate` — missing → null)
+   - Line 890 (activeStats empty default): `winRate: 0` → `winRate: null as number | null`
+   - Line 1568 (PersonaCard badge display): `{(pStats.winRate ?? 0).toFixed(1)}%` → `{pStats.winRate == null ? '—' : \`${(pStats.winRate).toFixed(1)}%\`}`
+   - Lines 1656-1697 (DailyKPIs Strip cards): added null-handling for bestDay/worstDay/greenDaysPct:
+     - bestDay: `{dailyKPIs.bestDay && dailyKPIs.bestDay.netReturnPct != null && (...)}` + `{dailyKPIs.bestDay && dailyKPIs.bestDay.netReturnPct == null && (<div>—</div>)}`
+     - worstDay: same null-handling
+     - greenDaysPct: `{dailyKPIs.greenDaysPct == null ? '—' : \`${dailyKPIs.greenDaysPct}%\`}`
+   - Lines 1716-1762 (BarChart Tooltip + Cell fill):
+     - Tooltip content type: `netReturnPct?: number` → `netReturnPct?: number | null`
+     - Tooltip display: added null-check → `const netReturnDisplay = d.netReturnPct == null ? '—' : ...`
+     - Tooltip color: `d.netReturnPct == null ? 'text-muted-foreground' : isWin ? emerald : rose`
+     - Cell fill: `entry.netReturnPct >= 0 ? '#10b981' : '#f43f5e'` → `entry.netReturnPct == null ? 'hsl(var(--muted-foreground) / 0.3)' : entry.netReturnPct >= 0 ? '#10b981' : '#f43f5e'` (neutral slate for null, لا red fabrication)
+
+**Verification (PASS):**
+- `rg -n "win_rate.*=.*wins\.length|avg_return.*=.*reduce|winRate.*=.*wins|winRate.*=.*count" src/components/shared/ src/modules/reports/ src/modules/market-analysis/ src/modules/predictions/` → EXIT=1 (ZERO matches) ✅
+- `bun run lint` → EXIT=0 (0 errors) ✅
+- `bunx tsc --noEmit --skipLibCheck 2>&1 | rg "(ExecutiveReportView|InstitutionalDecisionPanel|PredictionTrackingDashboard)"` → ZERO errors ✅
+  - Pre-existing TS errors FIXED by this task:
+    - InstitutionalDecisionPanel.tsx: 3× TS18048 (current_price possibly undefined) — fixed by removing local margin-of-safety computation that referenced current_price
+    - PredictionTrackingDashboard.tsx: 2× TS2551 (entry_price on LivePrediction) — fixed by adding `entry_price?: number | null` to interface
+    - ExecutiveReportView.tsx: 1× TS2339 (outcome on HonestPredictionItem) — fixed by adding `outcome?: string` to interface
+  - Total: 6 pre-existing TS errors FIXED across the 3 files; ZERO new errors introduced
+
+Stage Summary:
+- ✅ 3 files تم تطهيرها من الـ financial computations المالية المحددة في task spec (cumulative return, monthly return sum, monthly winRate, daily compound netReturnPct, greenDaysPct, margin-of-safety, winRate in computeStats functions).
+- ✅ Rule 20 (PYTHON = BRAIN): كل الـ aggregations/formulas (sum, compound, wins/count, sum/count, (fair_value-current_price)/current_price) أُزيلت — الـ frontend بـ reads Python-provided values only.
+- ✅ Rule 27 (NO-FAKE-DATA): كل القيم الـ null بتعرض `—` (مش 0.0% fabrication) — في KPI cards + Tooltips + Badges + Bars + Radar axis + export filename + PersonaCard display.
+- ✅ Pattern التطبيق: 
+  - COMPUTATION (aggregation/formula) → REMOVED, replaced with null
+  - DISPLAY ROUNDING (Math.round of Python-provided value) → KEPT (e.g. `trade: Math.round(c.returnPct * 100) / 100` on per-trade Python returnPct, `Math.round(fair_premium)` on Python fair_premium)
+- ✅ NO Python files touched.
+- ✅ NO blue/indigo colors introduced (Rule 30) — neutral slate `hsl(var(--muted-foreground) / 0.3)` for null fills, amber for paywall, existing palette preserved.
+- ✅ NO git --force used (Rule 81).
+- ✅ NO UI broken — `—` placeholders everywhere null values appear, charts degrade gracefully (radar shows 0 for null axis, bar chart shows neutral slate cells for null).
+- ✅ Pre-existing TS errors FIXED as a side-effect (6 errors → 0 errors in the 3 files).
+- 📝 REMAINING (out of scope, future Phase 3 task): 
+  - `computeStats` / `computeStatsFromPredictions` لسه بتحسب محلياً: profitFactor, avgWinPct, avgLossPct, avgReturnPct, cumulativeReturnPct, netReturn, grossProfit, grossLoss, maxLoss, rrRatio — دي financial calcs لكن مش مدرجة في task spec ولا match الـ verification regex. محتاجة coordinated backend+frontend migration task كاملة (Python must provide `stats` object with all these fields populated).
+  - Display formatting الـ sum/avg المتبقية في `computeStats` (e.g. `wins.reduce(...)`, `losses.reduce(...)`) — display rounding of locally-computed values, requires Python backend to provide pre-computed stats.

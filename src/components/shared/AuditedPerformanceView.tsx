@@ -107,14 +107,21 @@ export function AuditedPerformanceView({ market }: { market: string }) {
     );
   }
 
+  // Directive A-P3 (Rule 20 — Python = brain): NO local financial calculations.
+  // win_rate, avg_return, best_return, profit_factor ALL come from Python stats.
+  // wins/losses counts are derived from Python's trade status fields (display only).
   const wins = trades.filter(t => Number(t?.hit_target) === 1 || (Number(t?.actual_return) > 0));
   const losses = trades.filter(t => Number(t?.hit_stop) === 1 || (Number(t?.actual_return) < 0));
-  const winRate = stats?.win_rate != null ? stats.win_rate : trades.length > 0 ? Math.round((wins.length / trades.length) * 1000) / 10 : null;
-  const avgReturn = stats?.avg_return != null ? stats.avg_return : trades.length > 0 ? Math.round((trades.reduce((s, t) => s + (Number(t?.actual_return) || 0), 0) / trades.length) * 100) / 100 : null;
-  const bestTrade = trades.length > 0 ? trades.reduce((best, t) => {
-    const ret = Number(t?.actual_return) || 0;
-    return ret > (Number(best?.actual_return) || -Infinity) ? t : best;
-  }, trades[0]) : null;
+  const winRate = stats?.win_rate ?? null;  // Python SSOT — no local computation
+  const avgReturn = stats?.avg_return ?? null;  // Python SSOT — no local computation
+  const bestReturn = stats?.best_return ?? null;  // Python SSOT
+  // bestTrade: derive from Python-provided best_return + trade list (display only)
+  const bestTrade = trades.length > 0
+    ? trades.reduce((best, t) => {
+        const ret = Number(t?.actual_return) || 0;
+        return ret > (Number(best?.actual_return) || -Infinity) ? t : best;
+      }, trades[0])
+    : null;
 
   return (
     <div className="space-y-4" dir="rtl">

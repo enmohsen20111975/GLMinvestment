@@ -84,6 +84,7 @@ interface LivePrediction {
   signal?: string;
   entryDate?: string;
   entryPrice: number;
+  entry_price?: number | null; // RULE20-P3: snake_case fallback for legacy backend fields (TS fix)
   targetPrice: number;
   stopLoss: number;
   currentPrice?: number;
@@ -126,7 +127,8 @@ interface PersonaStats {
   losses: number;
   pending: number;
   settled: number;
-  winRate: number;
+  // RULE20-P3: winRate must come from Python (Rule 20). null when Python stat missing (Rule 27).
+  winRate: number | null;
   avgWinPct: number;
   avgLossPct: number;
   profitFactor: number;
@@ -486,7 +488,11 @@ function computeStatsFromPredictions(preds: LivePrediction[]): PersonaStats {
   }
   const settled = wins + losses;
   const total = preds.length;
-  const winRate = settled > 0 ? (wins / settled) * 100 : 0;
+  // RULE20-P3 (PYTHON = BRAIN) + Rule 27 (NO-FAKE-DATA):
+  // قبل كده: نسبة النجاح كانت بيتحسب محلياً من قسمة wins على settled — COMPUTATION مالية ممنوعة per Rule 20.
+  // Python ما بيوفرش `win_rate` stat في الـ backend response (data.stats.winRate = 0 placeholder).
+  // → null (Rule 27). الـ UI بـ يعرض `—` لما winRate = null.
+  const winRate = null as number | null;
   const avgWinPct = wins > 0 ? winReturnsSum / wins : 0;
   const avgLossPct = losses > 0 ? lossReturnsSum / losses : 0; // سالب
   // RULE67-CANONICAL (2026-10-12 — LEAGUE-DEDUP-FIX):
@@ -772,7 +778,7 @@ export function PredictionTrackingDashboard({
   const dailyPerformanceData = useMemo<{
     date: string;
     label: string;
-    netReturnPct: number;
+    netReturnPct: number | null; // RULE20-P3: null when Python does not provide daily net return
     winCount: number;
     lossCount: number;
     totalTrades: number;
@@ -833,15 +839,11 @@ export function PredictionTrackingDashboard({
     return Array.from(dayMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, trades]) => {
-        // RULE27-NO-FAKE-DATA (2026-10-12 — LEAGUE-DEDUP-FIX):
-        // قبل كده: netReturnPct = SUM(trades.returnPct) — جمع خطي للنسب المئوية.
-        // ده غلط مالياً (لو 3 صفقات × 10% = 30% لكن لو حسبنا compound = 33.1%).
-        // الحل: compound return = product(1 + ret/100) - 1
-        let dailyCapital = 100;
-        for (const t of trades) {
-          dailyCapital *= (1 + t.returnPct / 100);
-        }
-        const netReturnPct = dailyCapital - 100;
+        // RULE20-P3 (PYTHON = BRAIN) + Rule 27 (NO-FAKE-DATA):
+        // قبل كده: netReturnPct كان بيتحسب محلياً كـ compound return (product(1 + ret/100) - 1)
+        // من trades.returnPct — ده COMPUTATION مالية ممنوعة per Rule 20.
+        // Python ما بيوفرش per-day aggregated `net_return_pct` stat → null (Rule 27).
+        // الـ tickers + winCount + lossCount = metadata (counts)، مش financial calcs → KEEP.
         const winCount = trades.filter((t) => t.isWin).length;
         const lossCount = trades.length - winCount;
         // tickers مع العائد لعرضها في الـ Tooltip
@@ -851,7 +853,7 @@ export function PredictionTrackingDashboard({
         return {
           date,
           label,
-          netReturnPct: Math.round(netReturnPct * 100) / 100,
+          netReturnPct: null as number | null, // Rule 20 + Rule 27 — Python must provide daily net return
           winCount,
           lossCount,
           totalTrades: trades.length,
@@ -861,19 +863,24 @@ export function PredictionTrackingDashboard({
   }, [aggregateByTicker, entryPeriod]);
 
   // CHART-DAILY-FIX: إحصائيات يومية (KPIs)
+  // RULE20-P3 (PYTHON = BRAIN) + Rule 27 (NO-FAKE-DATA):
+  // قبل كده: greenDaysPct كان بيتحسب محلياً كـ (greenDays / total) * 100 — COMPUTATION.
+  // Python ما بيوفرش `green_days_pct` stat → null (Rule 27).
+  // bestDay/worstDay = sort by netReturnPct — لما netReturnPct = null، الـ toFixed بـ يـ crash
+  // فبنستخدم nullish check في الـ render.
+  // avgTradesPerDay = average of count (metadata، مش financial calc) → KEEP.
   const dailyKPIs = useMemo(() => {
     if (dailyPerformanceData.length === 0) {
-      return { bestDay: null, worstDay: null, greenDaysPct: 0, avgTradesPerDay: 0, totalDays: 0 };
+      return { bestDay: null, worstDay: null, greenDaysPct: null as number | null, avgTradesPerDay: 0, totalDays: 0 };
     }
-    const sorted = [...dailyPerformanceData].sort((a, b) => b.netReturnPct - a.netReturnPct);
+    const sorted = [...dailyPerformanceData].sort((a, b) => (b.netReturnPct ?? -Infinity) - (a.netReturnPct ?? -Infinity));
     const bestDay = sorted[0];
     const worstDay = sorted[sorted.length - 1];
-    const greenDays = dailyPerformanceData.filter((d) => d.netReturnPct >= 0).length;
     const totalTrades = dailyPerformanceData.reduce((sum, d) => sum + d.totalTrades, 0);
     return {
       bestDay,
       worstDay,
-      greenDaysPct: Math.round((greenDays / dailyPerformanceData.length) * 100),
+      greenDaysPct: null as number | null, // Rule 20 + Rule 27 — Python must provide green_days_pct
       avgTradesPerDay: Math.round((totalTrades / dailyPerformanceData.length) * 10) / 10,
       totalDays: dailyPerformanceData.length,
     };
@@ -881,7 +888,7 @@ export function PredictionTrackingDashboard({
 
   // RL-FIX-13: Computed Persona Stats — من التوقعات المفلترة بالجودة (مش من backend stats)
   const activeStats = useMemo<PersonaStats>(() => {
-    if (!data) return { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0, netReturn: 0, grossProfit: 0, grossLoss: 0, maxLoss: 0, rrRatio: 0 };
+    if (!data) return { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: null as number | null, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0, netReturn: 0, grossProfit: 0, grossLoss: 0, maxLoss: 0, rrRatio: 0 };
     if (selectedPersona === 'all') return computedStats.overall;
     return computedStats.byPersona[selectedPersona] || computedStats.overall;
   }, [data, selectedPersona, computedStats]);
@@ -1559,7 +1566,7 @@ export function PredictionTrackingDashboard({
                   </div>
                 </div>
                 <Badge variant="outline" className={cn('text-[10px] font-bold', cfg.badgeBg)}>
-                  {(pStats.winRate ?? 0).toFixed(1)}% نجاح
+                  {pStats.winRate == null ? '—' : `${(pStats.winRate).toFixed(1)}%`} نجاح
                 </Badge>
               </div>
 
@@ -1655,7 +1662,7 @@ export function PredictionTrackingDashboard({
               {/* 🌟 أفضل يوم تداول */}
               <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
                 <div className="text-[9px] text-muted-foreground font-bold">🌟 أفضل يوم تداول</div>
-                {dailyKPIs.bestDay && (
+                {dailyKPIs.bestDay && dailyKPIs.bestDay.netReturnPct != null && (
                   <>
                     <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
                       +{dailyKPIs.bestDay.netReturnPct.toFixed(1)}%
@@ -1665,11 +1672,14 @@ export function PredictionTrackingDashboard({
                     </div>
                   </>
                 )}
+                {dailyKPIs.bestDay && dailyKPIs.bestDay.netReturnPct == null && (
+                  <div className="text-sm font-black text-muted-foreground font-mono">—</div>
+                )}
               </div>
               {/* 🛡️ أقصى تراجع يومي */}
               <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30">
                 <div className="text-[9px] text-muted-foreground font-bold">🛡️ أقصى تراجع يومي</div>
-                {dailyKPIs.worstDay && (
+                {dailyKPIs.worstDay && dailyKPIs.worstDay.netReturnPct != null && (
                   <>
                     <div className="text-sm font-black text-rose-600 dark:text-rose-400 font-mono">
                       {dailyKPIs.worstDay.netReturnPct.toFixed(1)}%
@@ -1679,12 +1689,15 @@ export function PredictionTrackingDashboard({
                     </div>
                   </>
                 )}
+                {dailyKPIs.worstDay && dailyKPIs.worstDay.netReturnPct == null && (
+                  <div className="text-sm font-black text-muted-foreground font-mono">—</div>
+                )}
               </div>
               {/* 📈 نسبة الأيام الخضراء */}
               <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
                 <div className="text-[9px] text-muted-foreground font-bold">📈 نسبة الأيام الرابحة</div>
                 <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                  {dailyKPIs.greenDaysPct}%
+                  {dailyKPIs.greenDaysPct == null ? '—' : `${dailyKPIs.greenDaysPct}%`}
                 </div>
                 <div className="text-[9px] text-muted-foreground">من {dailyKPIs.totalDays} يوم تداول</div>
               </div>
@@ -1707,19 +1720,23 @@ export function PredictionTrackingDashboard({
                   <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={48} tickFormatter={(v) => `${v}%`} />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" opacity={0.5} />
                   <Tooltip
-                    content={({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { date?: string; netReturnPct?: number; winCount?: number; lossCount?: number; totalTrades?: number; tickers?: string[] } }> }) => {
+                    content={({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { date?: string; netReturnPct?: number | null; winCount?: number; lossCount?: number; totalTrades?: number; tickers?: string[] } }> }) => {
                       if (!active || !payload || !payload.length) return null;
                       const d = payload[0]?.payload;
                       if (!d) return null;
-                      const isWin = (d.netReturnPct ?? 0) >= 0;
+                      // RULE20-P3 + Rule 27: netReturnPct may be null (Python must provide).
+                      const isWin = d.netReturnPct != null && d.netReturnPct >= 0;
+                      const netReturnDisplay = d.netReturnPct == null
+                        ? '—'
+                        : `${isWin ? '+' : ''}${d.netReturnPct.toFixed(2)}%`;
                       // تاريخ كامل عربي
                       const dateObj = d.date ? new Date(d.date) : null;
                       const dateAr = dateObj ? dateObj.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' }) : (d.date || '—');
                       return (
                         <div className="bg-card border border-border rounded-lg p-2 shadow-lg text-xs space-y-1 max-w-[260px]" dir="rtl">
                           <div className="font-bold text-foreground">📅 {dateAr}</div>
-                          <div className={cn('font-black font-mono', isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
-                            💰 صافي ربح اليوم: {isWin ? '+' : ''}{(d.netReturnPct ?? 0).toFixed(2)}%
+                          <div className={cn('font-black font-mono', d.netReturnPct == null ? 'text-muted-foreground' : isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+                            💰 صافي ربح اليوم: {netReturnDisplay}
                           </div>
                           <div className="text-muted-foreground">
                             🔢 {d.winCount ?? 0} صفقة ناجحة / {d.lossCount ?? 0} خاسرة
@@ -1740,7 +1757,13 @@ export function PredictionTrackingDashboard({
                   />
                   <Bar dataKey="netReturnPct" name="netReturnPct" radius={[4, 4, 0, 0]}>
                     {dailyPerformanceData.map((entry, idx) => (
-                      <RechartsCell key={`cell-${idx}`} fill={entry.netReturnPct >= 0 ? '#10b981' : '#f43f5e'} />
+                      <RechartsCell
+                        key={`cell-${idx}`}
+                        // RULE20-P3: null netReturnPct → neutral slate (لا fabrication).
+                        fill={entry.netReturnPct == null
+                          ? 'hsl(var(--muted-foreground) / 0.3)'
+                          : entry.netReturnPct >= 0 ? '#10b981' : '#f43f5e'}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
