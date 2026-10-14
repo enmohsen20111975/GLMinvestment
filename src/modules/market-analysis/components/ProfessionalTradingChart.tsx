@@ -760,10 +760,70 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
         </div>
       ) : !isBuySignal ? (
         <div className="px-4 py-3 border-t border-border">
-          <div className="p-3 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي.</span>
-          </div>
+          {(() => {
+            // Rule 78 (TradePlanCard filter): For SELL/STRONG_SELL/AVOID signals,
+            // show an EXPLICIT red warning panel. For HOLD/WAIT/REDUCE, show an
+            // amber "no actionable buy" panel. Never fabricate entry/stop/target.
+            const s = (signalFinal || '').toUpperCase();
+            const isSellSignal =
+              s.includes('SELL') ||
+              s.includes('AVOID') ||
+              s.includes('KILL') ||
+              s.includes('REJECT');
+            const isReduce = s.includes('REDUCE');
+            const isHoldWait = s === 'HOLD' || s === 'WAIT' || s.includes('ACCUMULATE') === false && !isSellSignal && !isReduce;
+
+            if (isSellSignal) {
+              return (
+                <div className="p-3 rounded-xl border-2 border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                    <span className="text-xs font-bold text-red-700 dark:text-red-400">
+                      تحذير صريح — إشارة تجنّب/بيع
+                    </span>
+                    <Badge className="text-[9px] bg-red-600 text-white">لا توجد خطة صفقة</Badge>
+                  </div>
+                  <p className="text-[11px] text-red-700 dark:text-red-400 leading-relaxed">
+                    هذا السهم يحمل إشارة تجنّب/بيع ({signalAr}). يمنع نظاميّاً عرض خطة صفقة (دخول/وقف/أهداف) لإشارات
+                    البيع/التجنّب. راجع سبب الرفض بالأسفل وتجنّب الدخول حتى تتغير الإشارة إلى شراء حقيقية.
+                  </p>
+                </div>
+              );
+            }
+
+            if (isReduce) {
+              return (
+                <div className="p-3 rounded-xl border-2 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                      إشارة تقليل — لا صفقة شراء جديدة
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                    الإشارة الحالية «تقليل» ({signalAr}). لا تُعرض خطة صفقة شراء في هذه الحالة. لو لديك مركز، راجع
+                    سياسة تقليل المخاطر ولا تُضِف كميات جديدة.
+                  </p>
+                </div>
+              );
+            }
+
+            // HOLD / WAIT / no-signal
+            return (
+              <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/20">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                    {isHoldWait ? 'إشارة انتظار' : 'لا توجد إشارة شراء'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي/عرضي.
+                  خطة الصفقة (دخول + وقف + أهداف) تُعرض فقط لإشارات الشراء الحقيقية (BUY / STRONG_BUY).
+                </p>
+              </div>
+            );
+          })()}
         </div>
       ) : null}
 
