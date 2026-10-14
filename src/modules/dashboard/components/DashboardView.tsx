@@ -49,6 +49,7 @@ import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPub
 import { StockSelector } from '@/modules/stock-analysis/components/StockSelector';
 import { toast } from 'sonner';
 import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
+import { VIPLiveSignalsFeed } from '@/components/shared/VIPLiveSignalsFeed';
 import { DevelopmentNotice } from '@/modules/dashboard/components/DevelopmentNotice';
 // MultiMarketWidget اتشال من هنا — بقى في شاشة #market-depth المنفصلة (Owner directive).
 // Owner directive: "الأسواق المتعددة → عملات + ذهب فقط" بقت شاشة مستقلة مع حركة
@@ -390,8 +391,9 @@ export function DashboardView() {
                 🏛️ SCR-001: VIP Live Signals Feed (Bloomberg Terminal Feel)
                 أعلى الـ Dashboard — أفضل 5 فرص استثمارية لحظية + محول الأسواق
                 (EGX, TADAWUL, KSE, QSE). Glassmorphism + emerald/amber palette.
+                SafeWidget يمنع كراش الواجهة لو API فشل
                 ═══════════════════════════════════════════════════════════════ */}
-            <SafeWidget name="VIP Live Signals">
+            <SafeWidget name="VIP Live Signals" fallback={null}>
               <VIPLiveSignalsFeed market={currentMarket} />
             </SafeWidget>
 
