@@ -1281,413 +1281,216 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         </Card>
       )}
 
-      {/* ===== SUB-TABS (Task 9-B Step 2) =====
-          The 5 radar tabs (exit-radar / weekly-report / multi-market-radar /
-          radar-accuracy / personalized-radar) that USED to live in #recommendations
-          are now internal sub-tabs here. The canonical MakerRadar lists stay the
-          default sub-tab. NetPicksTab duplicate removed — it lives only in
-          #recommendations now. */}
-      <Tabs defaultValue="maker" className="w-full">
-        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
-          <TabsTrigger value="maker" className="flex items-center gap-1">
-            <Radar className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">رادار الميكرز</span>
-          </TabsTrigger>
-          <TabsTrigger value="exit-radar" className="flex items-center gap-1">
-            <DoorOpen className="h-4 w-4 text-rose-600" />
-            <span className="hidden sm:inline">رادار الخروج</span>
-          </TabsTrigger>
-          <TabsTrigger value="weekly-report" className="flex items-center gap-1">
-            <FileText className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">التقرير الأسبوعي</span>
-          </TabsTrigger>
-          <TabsTrigger value="multi-market-radar" className="flex items-center gap-1">
-            <Radar className="h-4 w-4 text-violet-600" />
-            <span className="hidden sm:inline">الرادار الموحّد</span>
-          </TabsTrigger>
-          <TabsTrigger value="radar-accuracy" className="flex items-center gap-1">
-            <Gauge className="h-4 w-4 text-amber-600" />
-            <span className="hidden sm:inline">دقة الرادار</span>
-          </TabsTrigger>
-          <TabsTrigger value="personalized-radar" className="flex items-center gap-1">
-            <UserCircle className="h-4 w-4 text-cyan-600" />
-            <span className="hidden sm:inline">الرادار المخصّص</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* ===== T-ALPHA-A19: منظار القرار — 4 أعمدة عربي فقط =====
+          مسح كل التبويبات الفرعية الـ 6 + كل تصنيفات Wyckoff.
+          الرادار = 4 أعمدة واضحة + سبب كمي من Python. */}
 
-        {/* ─── Maker Radar (default) — the original 5-path radar lists + sub-cards ─── */}
-        <TabsContent value="maker" className="mt-4 space-y-4">
-
-      {/* ===== MARKET REGIME BANNER (إحساس وضع السوق وتكييف القواعد) ===== */}
-      {/* Owner directive: "تحذير أحمر وكبير وواضح جدًا، مش مخفي" */}
+      {/* ===== حالة السوق (Market Regime Banner) ===== */}
       {data?.market_regime && (
-        <Card className={`p-4 border-l-4 transition-all ${
+        <Card className={cn(
+          'p-3 border-l-4 transition-all overflow-hidden',
           data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-            ? 'border-l-red-500 bg-red-500/10 dark:bg-red-950/30 border-red-300 dark:border-red-800 shadow-lg shadow-red-500/20'
+            ? 'border-l-red-500 bg-red-500/10 dark:bg-red-950/30 border-red-300 dark:border-red-800'
             : data.market_regime.regime === 'AGGRESSIVE'
               ? 'border-l-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
-              : 'border-l-blue-500 bg-blue-500/5 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
-        }`}>
+              : 'border-l-primary bg-primary/5 dark:bg-slate-900/20 border-slate-200 dark:border-primary'
+        )}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <ShieldAlert className={`h-6 w-6 ${
+              <ShieldAlert className={cn(
+                'h-5 w-5',
                 data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                  ? 'text-red-600 dark:text-red-400 animate-pulse'
+                  ? 'text-red-600 dark:text-red-400'
                   : data.market_regime.regime === 'AGGRESSIVE'
                     ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-blue-600 dark:text-blue-400'
-              }`} />
+                    : 'text-primary dark:text-slate-400'
+              )} />
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-foreground">
-                    وضع السوق المستشعر:
-                  </span>
-                  <Badge variant="outline" className={`text-xs font-semibold ${
-                    data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                      ? 'bg-red-100 text-red-900 border-red-400 dark:bg-red-950 dark:text-red-200 dark:border-red-700'
-                      : data.market_regime.regime === 'AGGRESSIVE'
-                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
-                        : 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200'
-                  }`}>
-                    {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                      ? '🔴 دِفاعي — قلّل الحجم وركّز على وقف الخسارة'
-                      : data.market_regime.regime === 'AGGRESSIVE'
-                        ? '🟢 هجومي — زخم صاعد'
-                        : '⚖️ عادي — حركة متوازنة'}
-                  </Badge>
+                <span className="text-sm font-bold">
+                  {data.market_regime.regime_ar || data.market_regime.regime || '—'}
+                </span>
+                {data.market_regime.advice_ar && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{data.market_regime.advice_ar}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* ===== فلتر السوق (Market Filter) ===== */}
+      <div className="flex items-center gap-2 flex-wrap" dir="rtl">
+        <span className="text-xs text-muted-foreground">السوق:</span>
+        <Select value={market} onValueChange={() => {}}>
+          <SelectTrigger className="h-7 w-[100px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="EGX">🇪🇬 مصر</SelectItem>
+            <SelectItem value="TADAWUL">🇸🇦 السعودية</SelectItem>
+            <SelectItem value="KSE">🇰🇼 الكويت</SelectItem>
+            <SelectItem value="QSE">🇶🇦 قطر</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* ===== قائمة الأسهم — 4 أعمدة عربي فقط ===== */}
+      {(() => {
+        // T-ALPHA-A19: جمع كل الأسهم من كل القوائم في مصفوفة واحدة
+        const allStocks = [
+          ...(data?.pre_surge_list || []),
+          ...(data?.quiet_list || []),
+          ...(data?.explosive_list || []),
+          ...(data?.early_break_list || []),
+        ];
+
+        if (allStocks.length === 0) {
+          return (
+            <Card>
+              <CardContent className="p-6 text-center space-y-2">
+                <Activity className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+                <p className="text-sm font-semibold text-muted-foreground">
+                  لا توجد بيانات كافية للرادار حالياً
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  المحرك يفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها
+                </p>
+                <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5 mt-2">
+                  <RefreshCw className="w-3.5 h-3.5" /> تحديث
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        // T-ALPHA-A19: ترتيب حسب صافي الكاش (net_flow_egp) تنازلياً
+        const sorted = [...allStocks].sort((a, b) => {
+          const aFlow = Number(a.net_flow_egp ?? a.avg_turnover_20d ?? 0) || 0;
+          const bFlow = Number(b.net_flow_egp ?? b.avg_turnover_20d ?? 0) || 0;
+          return bFlow - aFlow;
+        }).slice(0, 20); // أقصى 20 سهم
+
+        return (
+          <div className="space-y-2">
+            {/* رأس الجدول — 4 أعمدة */}
+            <div className="grid grid-cols-4 gap-2 px-2 py-1.5 text-[10px] font-bold text-muted-foreground border-b border-border/40" dir="rtl">
+              <div>الحوت فين؟</div>
+              <div className="text-center">حالة السوق</div>
+              <div className="text-center">المرحلة</div>
+              <div className="text-center">مستوى الدخول والدفاع</div>
+            </div>
+
+            {sorted.map((stock) => {
+              // T-ALPHA-A19: العمود 1 — الحوت فين؟ (صافي الكاش)
+              const netFlow = Number(stock.net_flow_egp ?? 0) || 0;
+              const turnover = Number(stock.avg_turnover_20d ?? 0) || 0;
+              const isWhaleIn = netFlow > 0 && turnover > 0;
+              const isWhaleOut = netFlow < 0;
+
+              // T-ALPHA-A19: العمود 2 — حالة السوق (من Python market_regime)
+              const regime = data?.market_regime?.regime_ar || '—';
+              const isDefensive = data?.market_regime?.regime === 'DEFENSIVE' || data?.market_regime?.raw_regime === 'DEFENSIVE';
+
+              // T-ALPHA-A19: العمود 3 — المرحلة (3 حالات فقط)
+              let phase: string;
+              let phaseColor: string;
+              if (stock.path === 'D_explosive_surge') {
+                phase = 'بيصرف';
+                phaseColor = 'text-red-600 dark:text-red-400';
+              } else if (stock.path === 'A_pre_surge' || stock.path === 'E_early_break') {
+                phase = 'بيتحضر';
+                phaseColor = 'text-amber-600 dark:text-amber-400';
+              } else {
+                // quiet accumulation = بيبلع على الهادي
+                phase = 'بيبلع على الهادي';
+                phaseColor = 'text-emerald-600 dark:text-emerald-400';
+              }
+
+              // T-ALPHA-A19: لو السوق هابط واضح → ممنوع ألوان إيجابية
+              if (isDefensive && phase !== 'بيصرف') {
+                phaseColor = 'text-muted-foreground';
+              }
+
+              // T-ALPHA-A19: العمود 4 — مستوى الدخول والدفاع
+              const entry = Number(stock.current_price) || 0;
+              const pred = predMap.get(stock.ticker.toUpperCase());
+              const stopLoss = pred?.stop_loss ? Number(pred.stop_loss) : null;
+              const target = pred?.target_price ? Number(pred.target_price) : null;
+
+              // T-ALPHA-A19: السبب الكمي من Python (جملة واحدة، بدون تعديل)
+              const reason = stock.reason || stock.break_reason || '—';
+
+              return (
+                <div
+                  key={stock.ticker}
+                  className="grid grid-cols-4 gap-2 px-2 py-2 rounded-md hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/20"
+                  onClick={() => setSelectedTicker(stock.ticker)}
+                >
+                  {/* العمود 1: الحوت فين؟ */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono font-bold text-xs">{stock.ticker}</span>
+                    </div>
+                    <div className={cn(
+                      'text-[10px] font-semibold tabular-nums',
+                      isWhaleIn ? 'text-emerald-600 dark:text-emerald-400'
+                        : isWhaleOut ? 'text-red-600 dark:text-red-400'
+                        : 'text-muted-foreground'
+                    )}>
+                      {netFlow >= 0 ? '+' : ''}{(netFlow / 1000000).toFixed(1)}M ج.م
+                    </div>
+                    <div className="text-[8px] text-muted-foreground tabular-nums">
+                      سيولة: {(turnover / 1000000).toFixed(1)}M
+                    </div>
+                  </div>
+
+                  {/* العمود 2: حالة السوق */}
+                  <div className="text-center flex items-center justify-center">
+                    <span className={cn(
+                      'text-[10px] font-semibold',
+                      isDefensive ? 'text-red-600 dark:text-red-400'
+                        : data?.market_regime?.regime === 'AGGRESSIVE' ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-muted-foreground'
+                    )}>
+                      {regime}
+                    </span>
+                  </div>
+
+                  {/* العمود 3: المرحلة */}
+                  <div className="text-center flex items-center justify-center">
+                    <span className={cn('text-[10px] font-bold', phaseColor)}>
+                      {phase}
+                    </span>
+                  </div>
+
+                  {/* العمود 4: مستوى الدخول والدفاع */}
+                  <div className="text-center space-y-0.5">
+                    <div className="font-mono text-[10px] font-semibold tabular-nums">
+                      {entry > 0 ? entry.toFixed(2) : '—'}
+                    </div>
+                    {stopLoss != null && stopLoss > 0 && (
+                      <div className="text-[8px] text-red-500 tabular-nums">
+                        دفاع: {stopLoss.toFixed(2)}
+                      </div>
+                    )}
+                    {target != null && target > 0 && !isDefensive && (
+                      <div className="text-[8px] text-emerald-500 tabular-nums">
+                        هدف: {target.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* السبب الكمي — سطر واحد من Python */}
+                  <div className="col-span-4 text-[9px] text-muted-foreground leading-relaxed pt-0.5 border-t border-border/10">
+                    {reason}
+                  </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                    ? 'السوق العام واقع وشحيح السيولة — تم تكييف قواعد الرادار تلقائياً لصيد الأسهم المتماسكة ذات القوة النسبية وتجميع الميكرز الهادئ.'
-                    : 'القواعد تعمل بالمعايير القياسية للسيولة والزخم.'}
-                </p>
-              </div>
-            </div>
-            {data.market_regime.breadth_pct != null && (
-              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                <span>صعود السوق: <strong className="font-mono text-foreground">{data.market_regime.breadth_pct}%</strong></span>
-                {data.market_regime.turnover_ratio != null && (
-                  <span>نسبة السيولة: <strong className="font-mono text-foreground">{data.market_regime.turnover_ratio}x</strong></span>
-                )}
-              </div>
-            )}
+              );
+            })}
           </div>
-        </Card>
-      )}
+        );
+      })()}
 
-      {/* ===== KPI CARDS — FIX-UI-AUDIT (re-applied to NEW path) =====
-          Replaces the 4 raw-count cards (إجمالي المفحوصة / تحت الميكروسكوب /
-          موجات منفجرة / أسهم متابَعة) with the 4 audit-approved aggregated
-          metrics. When radarKpi.hasData === false, the row collapses into a
-          single actionable reason banner (no dead «فرص 0» display). tracked_count
-          still appears in the filter-bar badge (no loss of info). */}
-      {radarKpi.hasData ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard
-            icon={<Activity className="h-4 w-4" />}
-            label="عدد الأسهم النشطة"
-            value={radarKpi.activeCount}
-            sub="عبر كل قوائم الرادار"
-            accent="blue"
-          />
-          <KpiCard
-            icon={<TrendingUp className="h-4 w-4" />}
-            label="أقوى زخم حالي"
-            value={radarKpi.topMomentumTicker ?? '—'}
-            sub={
-              radarKpi.topMomentumRoc != null
-                ? `ROC 10 أيام: ${(radarKpi.topMomentumRoc ?? 0).toFixed(2)}%`
-                : 'بانتظار البيانات'
-            }
-            accent="emerald"
-          />
-          <KpiCard
-            icon={<BarChart3 className="h-4 w-4" />}
-            label="أعلى سيولة"
-            value={radarKpi.topLiquidityTicker ?? '—'}
-            sub={
-              radarKpi.topLiquidityValue != null
-                ? `متوسط سيولة 20 يوم: ${fmtMoney(radarKpi.topLiquidityValue)}`
-                : 'بانتظار البيانات'
-            }
-            accent="amber"
-          />
-          <KpiCard
-            icon={<Target className="h-4 w-4" />}
-            label="عدد الفرص الحقيقية"
-            value={radarKpi.realOpportunities}
-            sub={
-              radarKpi.realOpportunities > 0
-                ? 'فرص قابلة للتداول'
-                : 'الرادار بيفحص الأسهم'
-            }
-            accent="rose"
-          />
-        </div>
-      ) : (
-        <Card className="p-4 border-dashed border-muted-foreground/30 bg-muted/20">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <Radar className="h-5 w-5 flex-shrink-0 opacity-60" />
-            <div>
-              <p className="font-semibold text-foreground">لا توجد فرص حالياً — الرادار بيفحص الأسهم</p>
-              <p className="text-xs mt-0.5">جرّب تشغيل الرادار أو حدّث بعد دقيقة.</p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* ===== RADAR SUMMARY — الخلاصة النهائية للقرار ===== */}
-      {data && !loading && (
-        <Card className="p-4 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
-              <Target className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold">خلاصة الرادار</span>
-                {data.market_regime && (
-                  <Badge variant="outline" className={
-                    data.market_regime.effective_regime === 'AGGRESSIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' :
-                    data.market_regime.effective_regime === 'DEFENSIVE' ? 'bg-red-500/10 text-red-600 border-red-500/30' :
-                    'bg-amber-500/10 text-amber-600 border-amber-500/30'
-                  }>
-                    {data.market_regime.effective_regime === 'AGGRESSIVE' ? '🟢 السوق عدواني' :
-                     data.market_regime.effective_regime === 'DEFENSIVE' ? '🔴 السوق دفاعي' :
-                     '🟡 السوق محايد'}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {(() => {
-                  const totalStocks = data.total_scanned ?? 0;
-                  const underMicroscope = data.under_microscope_count ?? 0;
-                  const explosive = data.explosive_count ?? 0;
-                  const earlyBreak = data.early_break_count ?? 0;
-                  const tracked = data.tracked_count ?? 0;
-                  const totalOpportunities = underMicroscope + explosive + earlyBreak;
-
-                  if (totalStocks === 0) return 'الرادار قيد التحميل — انتظر دقيقة وحاول مرة أخرى.';
-                  if (totalOpportunities === 0) return `تم فحص ${totalStocks} سهم — لا توجد فرص واضحة حالياً. السوق هادئ، انتظر حركة.`;
-                  if (explosive > 0 || earlyBreak > 0) return `🔥 يوجد ${explosive + earlyBreak} سهم في حركة انفجارية/اختراق! ركّز على التبويبات الحمراء. + ${underMicroscope} تحت الميكروسكوب للتجميع.`;
-                  if (underMicroscope > 10) return `📊 ${underMicroscope} سهم تحت الميكروسكوب — السوق في مرحلة تجميع. تتركّز الفرص في الأسهم الصامتة قبل الانفجار.`;
-                  return `تم فحص ${totalStocks} سهم. ${totalOpportunities} فرصة محتملة. ${tracked} في قائمتك.`;
-                })()}
-              </p>
-              {data.tracked_count === 0 && (data.under_microscope_count ?? 0) > 0 && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  ⚠️ لا توجد أسهم في قائمة المتابعة — افتح أي سهم واضغط ⭐ لإضافته للمتابعة.
-                </p>
-              )}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* ===== RADAR ACTIVITY — مدى شعل الرادار خلال فترة زمنية ===== */}
-      <RadarActivityCard data={data} lastUpdated={lastUpdated} period={timeframe} onPeriodChange={setTimeframe} />
-
-      {/* ===== SECTOR HEAT STRIP ===== */}
-      <SectorHeatStrip sectors={sectors} loading={!stockMap} />
-
-      {/* ===== SECTOR LIQUIDITY TREEMAP — خريطة سيولة القطاعات ===== */}
-      <SectorTreemapCard />
-
-      {/* Task 9-B Step 2: NetPicksTab REMOVED from MakerRadarTab — it's the
-          canonical "صافى التوقعات" tab in #recommendations only (duplicate
-          render deleted at line 1213). Owner complaint #1 confirmed + fixed. */}
-
-
-      {/* ===== SIGNAL TRACKER STATS — مصير إشارات الرادار ===== */}
-      <RadarSignalStatsCard />
-
-      {/* ===== FILTER BAR ===== */}
-      <Card className="p-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs text-muted-foreground ml-1">فلترة:</span>
-          {([
-            { key: 'all', label: 'الكل', emoji: null },
-            { key: 'pre_surge', label: 'تحضير لانفجار', emoji: null },
-            { key: 'quiet', label: 'ميكروسكوب', emoji: '🎯' },
-            { key: 'explosive', label: 'منفجرة', emoji: '🔥' },
-            { key: 'early_break', label: 'اختراق', emoji: '⚡' },
-            { key: 'tracked', label: 'متابَعة', emoji: '⭐' },
-          ] as const).map((f) => (
-            <Button
-              key={f.key}
-              size="sm"
-              variant={filter === f.key ? 'default' : 'outline'}
-              className="h-7 text-xs"
-              onClick={() => setFilter(f.key)}
-            >
-              {f.emoji && <span className="ml-1">{f.emoji}</span>}
-              {f.label}
-              {f.key === 'tracked' && data?.tracked_count ? (
-                <Badge variant="secondary" className="mr-1 h-4 text-[10px] px-1">{data.tracked_count}</Badge>
-              ) : null}
-            </Button>
-          ))}
-          {/* ─── Sort by prediction toggle ─── */}
-          <div className="mr-auto flex items-center gap-1.5">
-            {predMap.size > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                {predMap.size} توقع محمّل
-              </span>
-            )}
-            <Button
-              size="sm"
-              variant={sortByPrediction ? 'default' : 'outline'}
-              className={`h-7 text-xs gap-1 ${sortByPrediction ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent' : ''}`}
-              onClick={() => setSortByPrediction((v) => !v)}
-              title="ترتيب الأسهم من الأعلى توقع للصعود للأدنى"
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              {sortByPrediction ? 'مرتّب بالتوقع ✓' : 'ترتيب حسب التوقع'}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* ===== MARKET REGIME BANNER ===== */}
-      <MarketRegimeBanner market={market} />
-
-      {/* ===== STOCK SECTIONS ===== */}
-      {/* Owner directive: "الأسهم المنفجرة تظهر بشكل أكبر وأوضح في الأعلى" */}
-
-      {/* Explosive (rose) — FIRST (owner directive: explosive stocks on top) */}
-      {(filter === 'all' || filter === 'explosive' || filter === 'tracked') && filteredExplosive.length > 0 && (
-        <RadarSection
-          key="radar-explosive"
-          title="🔥 الأسهم المنفجرة الآن"
-          subtitle="حجم فجائي + حركة قوية — تنبيه فوري"
-          icon={<Flame className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
-          accent="rose"
-          stocks={filteredExplosive}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Pre-Surge (purple) — second */}
-      {(filter === 'all' || filter === 'pre_surge' || filter === 'tracked') && filteredPreSurge.length > 0 && (
-        <RadarSection
-          key="radar-pre-surge"
-          title="Pre-Surge — متوقعة الانفجار"
-          subtitle="أعلى أولوية — السهم بيتجمع قبل الانفجار"
-          icon={<Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
-          accent="purple"
-          stocks={filteredPreSurge}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Quiet accumulation (amber) */}
-      {(filter === 'all' || filter === 'quiet' || filter === 'tracked') && filteredQuiet.length > 0 && (
-        <RadarSection
-          key="radar-quiet"
-          title="🎯 تحت الميكروسكوب"
-          subtitle="تجميع هادئ — أسهم بتتراكم قبل ما تنفجر"
-          icon={<Eye className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-          accent="amber"
-          stocks={filteredQuiet}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Early break (emerald) */}
-      {(filter === 'all' || filter === 'early_break' || filter === 'tracked') && filteredEarlyBreak.length > 0 && (
-        <RadarSection
-          key="radar-early-break"
-          title="⚡ اختراق مبكر"
-          subtitle="خروج من نطاق ضيق بحجم — أول إشارة اختراق"
-          icon={<Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-          accent="emerald"
-          stocks={filteredEarlyBreak}
-          market={market}
-          sectorForTicker={sectorForTicker}
-          changePercentForTicker={changePercentForTicker}
-          stockInfoForTicker={stockInfoForTicker}
-          predictionForTicker={predictionForTicker}
-          onSelect={handleSelectStock}
-          onTrackToggle={handleTrackToggle}
-        />
-      )}
-
-      {/* Empty state — FIX-UI-AUDIT (re-applied to NEW path):
-          differentiates between filter='all' (radar still scanning — show
-          «لا توجد فرص حالياً — الرادار بيفحص الأسهم») vs. a specific filter
-          that yields no matches (suggest clearing the filter). */}
-      {totalCardsShown === 0 && (
-        <Card className="p-8 text-center border-dashed border-muted-foreground/30 bg-muted/10">
-          <Radar className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-          {filter === 'all' ? (
-            <>
-              <p className="text-sm font-semibold text-foreground">لا توجد فرص حالياً — الرادار بيفحص الأسهم</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                الرادار بيفحص الأسهم بشكل دوري. جرّب تشغيل الرادار أو حدّث بعد دقيقة.
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-sm font-semibold text-foreground">لا توجد أسهم مطابقة للفلتر الحالي</p>
-              <p className="text-xs text-muted-foreground mt-1">جرّب فلتراً آخر أو أعد العرض للكل</p>
-            </>
-          )}
-          {filter !== 'all' && (
-            <Button size="sm" variant="outline" className="mt-3" onClick={() => setFilter('all')}>
-              عرض الكل
-            </Button>
-          )}
-        </Card>
-      )}
-
-      {/* ===== PROOF SECTION (collapsible) ===== */}
-      <ProofSection />
-
-        </TabsContent>
-
-        {/* ─── Exit Radar (رادار الخروج) — distribution/exit signals (inverse of maker radar) ─── */}
-        <TabsContent value="exit-radar" className="mt-4">
-          <ExitRadarTab market={market === 'CRYPTO' ? 'EGX' : market} />
-        </TabsContent>
-
-        {/* ─── Weekly Report (التقرير الأسبوعي للرادار) — Top 5 + Stock of the Week + regime ─── */}
-        <TabsContent value="weekly-report" className="mt-4">
-          <WeeklyReportTab market={market === 'CRYPTO' ? 'EGX' : market} />
-        </TabsContent>
-
-        {/* ─── Multi-Market Radar (الرادار الموحّد) — EGX/TADAWUL/KSE/QSE/CRYPTO in one view ─── */}
-        <TabsContent value="multi-market-radar" className="mt-4">
-          <MultiMarketRadarTab />
-        </TabsContent>
-
-        {/* ─── Radar Accuracy (دقة الرادار) — historical hit-rate by signal type ─── */}
-        <TabsContent value="radar-accuracy" className="mt-4">
-          <AccuracyDashboard market={market} />
-        </TabsContent>
-
-        {/* ─── Personalized Radar (الرادار المخصّص) — picks ranked by user's portfolio profile ─── */}
-        <TabsContent value="personalized-radar" className="mt-4">
-          <PersonalizedRadarTab />
-        </TabsContent>
-      </Tabs>
 
       {/* ===== Stock Detail Drawer (Dialog) — kept OUTSIDE the Tabs so it
           stays mounted and closeable regardless of which sub-tab is active.
