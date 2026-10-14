@@ -448,7 +448,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
   if (loading && !data) {
     return (
-      <div className="w-full p-4 space-y-3">
+      <div className="w-full p-4 space-y-3 dark:bg-surface-container-lowest">
         <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-96 w-full rounded-xl" />
         <Skeleton className="h-32 w-full rounded-xl" />
@@ -458,9 +458,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
   if (error) {
     return (
-      <div className="w-full p-8 text-center">
-        <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-3" />
-        <p className="text-sm text-muted-foreground mb-3">{error}</p>
+      <div className="w-full p-8 text-center dark:bg-surface-container-lowest dark:text-on-surface">
+        <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-3 dark:text-error" />
+        <p className="text-sm text-muted-foreground mb-3 dark:text-on-surface-variant">{error}</p>
         <Button variant="outline" size="sm" onClick={() => fetchData(ticker, timeframe)}>
           <RefreshCw className="w-4 h-4 ml-1" /> إعادة المحاولة
         </Button>
@@ -474,7 +474,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       ref={cardRef}
       dir="rtl"
       className={cn(
-        'border border-border bg-card rounded-2xl shadow-sm overflow-hidden flex flex-col',
+        'border border-border bg-card rounded-2xl shadow-sm overflow-hidden flex flex-col dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30',
         isMaximized ? 'fixed inset-2 z-50 overflow-y-auto p-4' : 'w-full'
       )}
     >
@@ -482,7 +482,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           §1 — شريط القرار السريع (Decision Header)
           أول حاجة العين تشوفها: الإشارة + الدخول + الوقف + الهدف + R/R
       ════════════════════════════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 border-b border-border bg-gradient-to-l from-muted/50 to-card">
+      <div className="px-4 py-3 border-b border-border bg-gradient-to-l from-muted/50 to-card dark:bg-surface-container dark:bg-none dark:border-outline-variant/30">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* يمين: السهم + البحث + السعر */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -491,20 +491,20 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               onSelectStock={handleSelectTicker}
               placeholder="اختر السهم"
               compact
-              buttonClassName="w-[140px] md:w-[170px] bg-card border-border shadow-sm rounded-xl"
+              buttonClassName="w-[140px] md:w-[170px] bg-card border-border shadow-sm rounded-xl dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
             />
             <div className="min-w-0">
-              <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px]">
+              <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px] dark:text-on-surface dark:font-outfit">
                 {data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker}
               </div>
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
                   className={cn(
-                    'font-mono text-xs font-black px-2 py-0.5 rounded-full',
+                    'font-mono text-xs font-black px-2 py-0.5 rounded-full dark:font-financial',
                     isUp
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300'
-                      : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40'
+                      : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:bg-error-container/20 dark:text-error dark:border-error-container/40'
                   )}
                 >
                   {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
@@ -517,7 +517,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                     'text-[9px] font-bold rounded-full',
                     liveData?.delayed_mode
                       ? 'bg-amber-500 text-white border border-amber-600'
-                      : 'bg-rose-600 text-white animate-pulse'
+                      : 'bg-rose-600 text-white animate-pulse dark:bg-error dark:text-on-error-container'
                   )}>
                     {liveData?.delayed_mode ? `DELAYED ${liveData.delayed_minutes || 5}M` : 'LIVE'}
                   </Badge>
@@ -549,37 +549,37 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             <div className="flex items-center gap-2 text-xs">
               {entry !== null && entry > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground">الدخول</span>
-                  <span className="font-mono font-bold text-foreground">{(entry ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الدخول</span>
+                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(entry ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {stop !== null && stop > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground">الوقف</span>
-                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{(stop ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الوقف</span>
+                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{(stop ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {target1 !== null && target1 > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground">الهدف</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(target1 ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الهدف</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 dark:text-primary tabular-nums dark:font-financial">{(target1 ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {rr !== null && rr > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground">R:R</span>
-                  <span className="font-mono font-bold text-foreground">{(rr ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">R:R</span>
+                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(rr ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {techScore !== null && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground">الثقة</span>
-                  <span className="font-mono font-bold text-foreground">{(techScore ?? 0).toFixed(0)}%</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الثقة</span>
+                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(techScore ?? 0).toFixed(0)}%</span>
                 </div>
               )}
             </div>
             ) : (
-              <div className="p-2 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
+              <div className="p-2 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
                 <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
                 <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً</span>
               </div>
@@ -589,7 +589,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           {/* يسار: الأدوات */}
           <div className="flex items-center gap-1">
             {/* Timeframe — CHART-ENRICH: إضافة 30د/60د للفريمات اللحظية */}
-            <div className="flex bg-muted border border-border rounded-xl p-0.5 text-[10px] font-semibold gap-0.5">
+            <div className="flex bg-muted border border-border rounded-xl p-0.5 text-[10px] font-semibold gap-0.5 dark:bg-surface-container dark:border-outline-variant/30">
               {['5M', '1H', 'DAY', 'WEEK', 'MONTH'].map((tf) => (
                 <button
                   key={tf}
@@ -598,8 +598,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                   className={cn(
                     'px-2 py-1 rounded-lg transition-colors',
                     timeframe === tf
-                      ? 'bg-emerald-600 text-white font-bold shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-emerald-600 text-white font-bold shadow-sm dark:bg-primary-container dark:text-on-primary-container'
+                      : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
                   )}
                 >
                   {tf === '5M' ? '5د' : tf === '1H' ? 'ساعة' : tf === 'DAY' ? 'يومي' : tf === 'WEEK' ? 'أسبوعي' : 'شهري'}
@@ -626,7 +626,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
         {/* سبب الانتظار/الرفض (سطر واحد واضح) */}
         {(signalFinal === 'HOLD' || signalFinal === 'WAIT' || signalFinal?.includes('KILL') || signalFinal?.includes('AVOID')) && (
-          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1 dark:text-on-surface-variant">
             <AlertTriangle className="w-3 h-3 text-amber-500" />
             <span>
               {decision?.path_taken || data?.adjustment_reason || 'السهم في مرحلة انتظار — راجع التفاصيل بالأسفل'}
@@ -662,7 +662,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       <div className="px-4 py-3">
         {/* شريط أدوات الشارت */}
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider dark:text-on-surface-variant dark:font-financial">
             شارت الأسعار
           </div>
           <div className="flex items-center gap-1.5">
@@ -671,7 +671,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               variant={chartMode === 'tradingview' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setChartMode('tradingview')}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'tradingview' && 'bg-emerald-600 text-white')}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'tradingview' && 'bg-emerald-600 text-white dark:bg-primary-container dark:text-on-primary-container')}
             >
               TradingView
             </Button>
@@ -679,7 +679,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               variant={chartMode === 'local' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setChartMode('local')}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'local' && 'bg-emerald-600 text-white')}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', chartMode === 'local' && 'bg-emerald-600 text-white dark:bg-primary-container dark:text-on-primary-container')}
             >
               <Activity className="w-3 h-3 ml-1" />
               شارت محلي
@@ -688,7 +688,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
         </div>
 
         {/* الشارت — كبير + نظيف */}
-        <div className={cn('rounded-xl overflow-hidden border border-border', isMaximized ? 'h-[600px]' : 'h-[400px] md:h-[500px]')}>
+        <div className={cn('rounded-xl overflow-hidden border border-border dark:border-outline-variant/30 dark:bg-surface-container-low', isMaximized ? 'h-[600px]' : 'h-[400px] md:h-[500px]')}>
           {chartMode === 'tradingview' ? (
             /* CHART-FIX: TradingView widget — بيجيب الشموع الحية مباشرة بدون فجوات */
             <iframe
@@ -712,7 +712,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               target2Price={target2 ?? undefined}
             />
           ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+            <div className="h-full flex items-center justify-center text-muted-foreground text-sm dark:text-on-surface-variant dark:bg-surface-container-low">
               <div className="text-center space-y-1">
                 <p>بانتظار تحميل الشموع — يتم التحميل تلقائياً</p>
                 <p className="text-[10px]">إذا لم تظهر خلال لحظات، يمكن للسهم غير متوفر على TradingView</p>
@@ -728,24 +728,24 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           للإشارات الأخرى: تحذير مؤسسي أنيق بدلاً من خطة وهمية.
       ════════════════════════════════════════════════════════════════════════ */}
       {isBuySignal && (entry !== null || target1 !== null || stop !== null) ? (
-        <div className="px-4 py-3 border-t border-border">
-          <div className="rounded-xl border border-border bg-muted/30 p-3">
+        <div className="px-4 py-3 border-t border-border dark:border-outline-variant/30">
+          <div className="rounded-xl border border-border bg-muted/30 p-3 dark:bg-surface-container-low dark:border-outline-variant/30">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold">خطة الصفقة</span>
+                <Target className="w-4 h-4 text-emerald-600 dark:text-primary" />
+                <span className="text-xs font-bold dark:text-on-surface dark:font-outfit">خطة الصفقة</span>
               </div>
               {rr !== null && rr > 0 && (
-                <Badge variant="outline" className="text-[10px] font-mono">
+                <Badge variant="outline" className="text-[10px] font-mono dark:font-financial">
                   R:R 1:{(rr ?? 0).toFixed(2)}
                 </Badge>
               )}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground" />
-              <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600 dark:text-rose-400" />
-              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
-              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
+              <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground dark:text-on-surface" />
+              <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600 dark:text-rose-400 dark:text-error" />
+              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400 dark:text-primary" />
+              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400 dark:text-primary" />
             </div>
             {data?.suggested_position_size_pct && (
               <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1">
@@ -830,9 +830,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       {/* ════════════════════════════════════════════════════════════════════════
           §5 — لماذا هذا القرار؟ (الأدلة) — CHART-ENRICH: ملء الشرطات الفارغة
       ════════════════════════════════════════════════════════════════════════ */}
-      <div className="px-4 py-3 border-t border-border">
-        <div className="text-xs font-bold mb-2 flex items-center gap-1">
-          <Activity className="w-3.5 h-3.5 text-emerald-600" />
+      <div className="px-4 py-3 border-t border-border dark:border-outline-variant/30">
+        <div className="text-xs font-bold mb-2 flex items-center gap-1 dark:text-on-surface dark:font-outfit">
+          <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-primary" />
           أسباب القرار
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -877,9 +877,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             3. مستشار الدخول والصفقة (Trade Plan + Deal Advisor)
             4. التفاصيل الفنية (للخبراء)
       ════════════════════════════════════════════════════════════════════════ */}
-      <div className="border-t border-border">
+      <div className="border-t border-border dark:border-outline-variant/30">
         {/* شريط التبويبات */}
-        <div className="flex border-b border-border bg-muted/30 overflow-x-auto">
+        <div className="flex border-b border-border bg-muted/30 overflow-x-auto dark:bg-surface-container dark:border-outline-variant/30">
           {[
             { id: 'liquidity', label: 'نبض السيولة والمؤسسات', icon: Waves },
             { id: 'smc', label: 'مستويات التداول و SMC', icon: Layers },
@@ -892,8 +892,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold whitespace-nowrap border-b-2 transition-colors',
                 activeTab === tab.id
-                  ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-card'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 dark:border-primary dark:text-primary bg-card dark:bg-surface-container-low'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high'
               )}
             >
               <tab.icon className="w-3.5 h-3.5" />
@@ -1037,9 +1037,9 @@ function PlanLevel({ label, value, currencyLabel, color }: {
   color: string;
 }) {
   return (
-    <div className="flex flex-col items-center p-2 rounded-lg bg-card border border-border/50">
-      <span className="text-[9px] text-muted-foreground">{label}</span>
-      <span className={cn('font-mono font-bold text-sm', color)}>
+    <div className="flex flex-col items-center p-2 rounded-lg bg-card border border-border/50 dark:bg-surface-container dark:border-outline-variant/30">
+      <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">{label}</span>
+      <span className={cn('font-mono font-bold text-sm tabular-nums dark:font-financial', color)}>
         {value !== null && value !== undefined && value > 0
           ? `${(value ?? 0).toFixed(2)} ${currencyLabel}`
           : '— بيانات غير متاحة'}
@@ -1058,15 +1058,15 @@ function ReasonCard({ label, value, positive, negative }: {
     <div className={cn(
       'p-2 rounded-lg border text-center',
       positive
-        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 dark:bg-primary-container/20 dark:border-primary-container/40'
         : negative
-        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800'
-        : 'bg-muted/30 border-border'
+        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 dark:bg-error-container/20 dark:border-error-container/40'
+        : 'bg-muted/30 border-border dark:bg-surface-container dark:border-outline-variant/30'
     )}>
-      <div className="text-[9px] text-muted-foreground mb-0.5">{label}</div>
+      <div className="text-[9px] text-muted-foreground mb-0.5 dark:text-on-surface-variant">{label}</div>
       <div className={cn(
         'text-[11px] font-bold',
-        positive ? 'text-emerald-700 dark:text-emerald-300' : negative ? 'text-rose-700 dark:text-rose-300' : 'text-foreground'
+        positive ? 'text-emerald-700 dark:text-emerald-300 dark:text-primary' : negative ? 'text-rose-700 dark:text-rose-300 dark:text-error' : 'text-foreground dark:text-on-surface'
       )}>
         {value}
       </div>
@@ -1076,9 +1076,9 @@ function ReasonCard({ label, value, positive, negative }: {
 
 function DetailItem({ label, value }: { label: string; value: string | undefined | null }) {
   return (
-    <div className="flex justify-between p-1.5 rounded bg-muted/30 border border-border/50">
-      <span className="text-muted-foreground">{label}:</span>
-      <span className="font-mono font-bold text-foreground">{value || '—'}</span>
+    <div className="flex justify-between p-1.5 rounded bg-muted/30 border border-border/50 dark:bg-surface-container dark:border-outline-variant/30">
+      <span className="text-muted-foreground dark:text-on-surface-variant">{label}:</span>
+      <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{value || '—'}</span>
     </div>
   );
 }

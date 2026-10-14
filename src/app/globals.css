@@ -1,7 +1,8 @@
 /* === Arabic + Latin fonts for StockInfographicCard (INFOGRAPHIC-CARD task) ===
    Cairo (primary Arabic), Tajawal (fallback Arabic), Outfit (Latin headings),
-   JetBrains Mono (numeric tabular figures). Loaded async — non-blocking. */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+   JetBrains Mono (numeric tabular figures). Loaded async — non-blocking.
+   SCR-STITCH: Outfit added for Sovereign Terminal display/headline fonts. */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -98,6 +99,35 @@
   --sidebar-accent-foreground: 160 84% 85%;
   --sidebar-border: 160 5% 18%;
   --sidebar-ring: 160 84% 45%;
+}
+
+/* ========================================================================
+   SCR-STITCH: Sovereign Terminal Design Tokens (Google Stitch Material Design 3)
+   Applied to dark mode only. These override the standard surface vars to
+   match the Stitch dark terminal aesthetic (emerald-mint on deep charcoal).
+   ======================================================================== */
+.dark {
+  /* Stitch surface palette — deep charcoal with subtle emerald tint */
+  --stitch-surface: 160 5% 7%;          /* #111413 */
+  --stitch-surface-dim: 160 5% 7%;      /* #111413 */
+  --stitch-surface-bright: 150 4% 21%;  /* #373a38 */
+  --stitch-surface-lowest: 160 5% 5%;   /* #0c0f0e */
+  --stitch-surface-low: 160 5% 10%;     /* #191c1b */
+  --stitch-surface-container: 150 4% 12%; /* #1d201f */
+  --stitch-surface-high: 150 4% 16%;    /* #282b29 */
+  --stitch-surface-highest: 150 4% 20%; /* #323534 */
+  --stitch-on-surface: 140 4% 88%;      /* #e1e3e1 */
+  --stitch-on-surface-variant: 140 10% 76%; /* #bbcabf */
+  --stitch-outline: 140 5% 55%;         /* #86948a */
+  --stitch-outline-variant: 140 8% 26%; /* #3c4a42 */
+  /* Stitch primary — emerald-mint (#4edea3) */
+  --stitch-primary: 158 67% 62%;        /* #4edea3 */
+  --stitch-primary-container: 160 84% 39%; /* #10b981 (emerald-600) */
+  --stitch-on-primary: 160 100% 11%;    /* #003824 */
+  --stitch-on-primary-container: 160 100% 13%; /* #00422b */
+  --stitch-secondary: 170 40% 67%;      /* #80d5cb */
+  --stitch-error: 0 100% 82%;          /* #ffb4ab */
+  --stitch-error-container: 0 100% 30%; /* #93000a */
 }
 
 @layer base {

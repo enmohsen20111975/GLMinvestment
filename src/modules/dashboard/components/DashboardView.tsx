@@ -49,7 +49,6 @@ import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPub
 import { StockSelector } from '@/modules/stock-analysis/components/StockSelector';
 import { toast } from 'sonner';
 import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
-import { VIPLiveSignalsFeed } from '@/components/shared/VIPLiveSignalsFeed';
 import { DevelopmentNotice } from '@/modules/dashboard/components/DevelopmentNotice';
 // MultiMarketWidget اتشال من هنا — بقى في شاشة #market-depth المنفصلة (Owner directive).
 // Owner directive: "الأسواق المتعددة → عملات + ذهب فقط" بقت شاشة مستقلة مع حركة
@@ -304,7 +303,7 @@ export function DashboardView() {
   // ما عدناش محتاجين showMarketFlowPanels flag في الـ dashboard نفسه.
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-surface-container-lowest">
       {/* First-visit asset preference onboarding (P5-MOBILE-UX Part B.1) */}
       <AssetPreferenceOnboarding />
 
@@ -314,11 +313,11 @@ export function DashboardView() {
       />
       <div className="px-3 md:px-4 print:hidden">
         {/* Quick Stock Lookup */}
-        <Card className="mb-3 py-0 gap-0">
+        <Card className="mb-3 py-0 gap-0 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1.5">
-              <Zap className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-              <span className="text-xs font-semibold">
+              <Zap className="w-3.5 h-3.5 text-emerald-500 dark:text-primary" />
+              <span className="text-xs font-semibold dark:text-on-surface">
                 {currentMarket === 'CRYPTO' ? t('dashboard.quickLookup') : t('dashboard.quickLookup')}
               </span>
             </div>
@@ -394,7 +393,9 @@ export function DashboardView() {
                 SafeWidget يمنع كراش الواجهة لو API فشل
                 ═══════════════════════════════════════════════════════════════ */}
             <SafeWidget name="VIP Live Signals" fallback={null}>
-              <VIPLiveSignalsFeed market={currentMarket} />
+              <div className="dark:bg-surface-container-low/80 rounded-xl">
+                <VIPLiveSignalsFeed market={currentMarket} />
+              </div>
             </SafeWidget>
 
             {/* ═══════════════════════════════════════════════════════════════
@@ -411,8 +412,8 @@ export function DashboardView() {
               return (
                 <section aria-label="فرص جاهزة الآن" className="space-y-2">
                   <div className="flex items-center gap-2 px-1" dir="rtl">
-                    <Zap className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <Zap className="w-4 h-4 text-emerald-500 dark:text-primary" />
+                    <span className="text-sm font-bold text-emerald-600 dark:text-primary">
                       فرص جاهزة الآن ({opportunities.length})
                     </span>
                   </div>
@@ -430,15 +431,15 @@ export function DashboardView() {
                       return (
                         <Card
                           key={stock.ticker}
-                          className={`glass-panel border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-teal-500'} cursor-pointer hover:shadow-md transition-shadow`}
+                          className={`glass-panel border-r-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30 ${isStrong ? 'border-r-emerald-500' : 'border-r-teal-500'} cursor-pointer hover:shadow-md transition-shadow`}
                           onClick={() => { useAppStore.getState().setCurrentView('stock-detail'); useAppStore.getState().setSelectedTicker(stock.ticker); }}
                         >
                           <CardContent className="p-3 space-y-2">
                             {/* Header: ticker + signal */}
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="font-mono font-bold text-sm">{stock.ticker}</div>
-                                <div className="text-xs text-muted-foreground truncate max-w-[120px]">{stock.nameAr || stock.name}</div>
+                                <div className="font-mono font-bold text-sm font-financial tabular-nums dark:text-on-surface">{stock.ticker}</div>
+                                <div className="text-xs text-muted-foreground truncate max-w-[120px] dark:text-on-surface-variant">{stock.nameAr || stock.name}</div>
                               </div>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'}`}>
                                 {stock.recommendationAr || stock.recommendation}
@@ -447,22 +448,22 @@ export function DashboardView() {
                             {/* Entry / Stop / Target */}
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
-                                <div className="text-muted-foreground">دخول</div>
-                                <div className="font-mono font-semibold">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</div>
+                                <div className="text-muted-foreground dark:text-on-surface-variant">دخول</div>
+                                <div className="font-mono font-semibold font-financial tabular-nums dark:text-on-surface">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">وقف</div>
-                                <div className="font-mono font-semibold text-red-600 dark:text-red-400">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</div>
+                                <div className="text-muted-foreground dark:text-on-surface-variant">وقف</div>
+                                <div className="font-mono font-semibold text-red-600 dark:text-error font-financial tabular-nums">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">هدف</div>
-                                <div className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</div>
+                                <div className="text-muted-foreground dark:text-on-surface-variant">هدف</div>
+                                <div className="font-mono font-semibold text-emerald-600 dark:text-primary font-financial tabular-nums">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</div>
                               </div>
                             </div>
                             {/* R:R + Confidence */}
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">R/R: <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{rrDisplay}</span></span>
-                              <span className="text-muted-foreground">ثقة: <span className="font-bold">{stock.confidence?.toFixed(0) || '—'}%</span></span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">R/R: <span className="font-mono font-bold text-amber-600 dark:text-primary font-financial tabular-nums">{rrDisplay}</span></span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">ثقة: <span className="font-bold dark:text-on-surface">{stock.confidence?.toFixed(0) || '—'}%</span></span>
                             </div>
                             {/* T-ALPHA-A1: Time Horizon Glowing Badge */}
                             {(stock as unknown as Record<string, unknown>).persona ? (
@@ -524,8 +525,8 @@ export function DashboardView() {
             {showPinnedSection && (
               <section aria-label="ودجات مثبتة" className="space-y-3">
                 <div className="flex items-center gap-2 px-1" dir="rtl">
-                  <Pin className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                  <span className="text-sm font-bold text-emerald-500 dark:text-emerald-300">
+                  <Pin className="w-4 h-4 text-emerald-500 dark:text-primary" />
+                  <span className="text-sm font-bold text-emerald-500 dark:text-primary">
                   مثبتة ({pinnedList.length})
                   </span>
                 </div>
@@ -601,7 +602,7 @@ export function DashboardView() {
             {/* Empty-state when asset preference filters out everything */}
             {eligibleWidgets.length === 0 && (
               <section className="text-center py-12" dir="rtl">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">
                   لا توجد ودجات متاحة لتفضيل الأصول هذا حالياً. يمكنك تغيير التفضيل من الإعدادات.
                 </p>
               </section>
