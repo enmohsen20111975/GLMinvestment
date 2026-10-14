@@ -1,109 +1,84 @@
 # 🧬 وثيقة استنساخ وتسليم الجلسة — جيمي (Jimmy Hand-off State)
-**تاريخ التحديث:** 2026-10-14 (المرحلة الثانية — Commercial Feed + Audited Track Record مكتملة)  
+**تاريخ التحديث:** 15 أكتوبر 2026 — الساعة 01:10 فجراً بتوقيت القاهرة  
 **المالك والمدير العام الشريك:** المهندس محسن (Co-Founder & Chairman)  
 **الهوية:** جيمي (Jimmy) — المدير العام والشريك بنسبة 51% + كبير المحللين والمهندس المعماري  
-**حالة Git الحالية:** Commit `63d4ca7` على فرع origin/main (متزامن 0/0)  
-**بيئة التشغيل المحلية:** http://localhost:3000 (Next.js + PM2)  
-**السيرفر الإنتاجي:** https://invist.m2y.net (VPS)  
-**بيانات دخول المالك للاختبار:**
-- **المستخدم:** [REDACTED — see .env.production ADMIN_USERNAME]
-- **كلمة المرور:** [REDACTED — see .env.production ADMIN_PASSWORD]
-
-> P0-CRIT-2 FIX (2026-10-14): Credentials removed from source. Use environment variables only.
+**حالة Git الحالية:** متزامن مع `origin/main` (أحدث commits: `68a1f9e02` و `cc2d67c0e` و `8466b731b`)  
+**السيرفر الإنتاجي:** https://invist.m2y.net (VPS — يعمل بالكامل، كل الـ 8 خدمات PM2 أونلاين بعد البيلد الأخير)  
+**بيئة التطوير المحلية:** WSL2 Ubuntu — http://localhost:3000  
 
 ---
 
-## 1. الهيكل والفرق المعمارية تحت إمرة جيمي
-1. **فريق Alpha (Frontend & UI Lead):**
-   - مسؤول عن واجهات المستخدم والـ Components (src/).
-   - ممنوع يلمس بايثون أو قواعد البيانات.
-   - احترام الألوان: زمردي/تركوازي/أمبر (ممنوع الأزرق والإنديغو — Rule 30).
-   - لا بيانات وهمية ولا حسابات مالية في الواجهة (كل الأرقام من API).
-2. **فريق Bravo (Chief Quant & Math Lead):**
-   - مسؤول عن المحركات الحسابية والبيانات والبايثون (vps-service/ و scripts/ و db/).
-   - ممنوع يلمس ملفات الواجهة.
-   - ممنوع اختلاق صفقات أو سكاكين ساقطة (Hard Quant Filter: R:R >= 2.0:1 مع --strict، ثقة >= 78%).
-   - قاعدة البيانات الكنسية: **db/stocks.db** (SSOT — يحوي predictions + stocks + stock_daily_prices معًا).
+## 1. ملخص الموقف والحقيقة المجردة (The Naked Truth)
+
+### أ. كشف فضيحة كروتة واجهات Google Stitch:
+- تم اكتشاف أن فريق **Alpha** لم ينقل تصاميم Google Stitch الحقيقية من مجلد `stitch_full_website_ui_design/`، بل قام فقط بتمرير كلاسات CSS عبر الـ regex مع تفعيل الوضع الداكن `defaultTheme="dark"` كستار دخان دون المساس بالهيكل البنائي (DOM/Layout).
+- شاشة رادار السيولة كانت تعرض جدولاً قديماً متهالكاً (`MakerRadarTab.tsx`) مع تسريب نصوص ديباج بايثون خام للمستخدمين (`volume_high_recurring[0.13]...`).
+- **الإصلاح الأولي الفوري (Commit `cc2d67c0e` & `68a1f9e02`):**
+  1. تم تحويل مسار تبويب `#liquidity-radar` في `src/app/page.tsx` إلى `LiquidityRadarView.tsx`.
+  2. إعادة بناء واجهة `LiquidityRadarView.tsx` بالكامل مطابقة لـ Stitch Screen 4 (شريط النبض المؤسسي Macro Pulse Ribbon + العدادات الحية Mini Gauges + بطاقات الأصول بـ 4 أعمدة + بار السيولة الثنائي Dual Flow Bar).
+  3. حماية الـ Falling Knife وحذف هري الديباج من الواجهة وتحويله لتسميات بصرية عربية منضبطة.
+
+### ب. حالة السيرفر الإنتاجي (Production VPS):
+- تم تشغيل `bun run build` على الإنتاج بنجاح تام (Exit 0).
+- تم عمل `pm2 restart all` وكل العمليات الـ 8 تعمل `online`:
+  - `data-engine` (online)
+  - `news-agent` (online)
+  - `nextjs` (online)
+  - `python-backend` (online)
+  - `telegram-events` (online)
+  - `telegram-interactive-bot` (online)
+  - `telegram-poster` (online)
+  - `ws-service` (online)
+
+### ج. حل أزمة تليجرام Conflict 409:
+- كان هناك تعارض مستمر (`Error 409 Conflict`) لأن البوت كان يعمل محلياً وعلى الإنتاج بنفس الـ Token في آن واحد.
+- **الحل المنفذ:** تم إيقاف `telegram-interactive-bot` محلياً عبر PM2 (`pm2 stop telegram-interactive-bot`). أصبح بوت سيرفر الإنتاج هو الوحيد الذي يستقبل التحديثات بحرية واستقرار تام.
+
+### د. إصلاح السكريبتات المحلية:
+- تم تصحيح الخطأ الكتابي في السطر 1 من `scripts/test_historical_predictions.py` (حذف الكلمة العربية التي تسببت في SyntaxError) وتأكيد صلاحية `py_compile`.
 
 ---
 
-## 2. ما تم إنجازه واكتماله 100% في المرحلة الثانية (2026-10-13 → 2026-10-14)
+## 2. جدول الشاشات المتبقية لإعادة البناء الهيكلي (Alpha Roadmap)
 
-### أ. تنظيف الكارثة (B-17):
-- حذف 54 صفقة فاسدة (قيعان شاذة `low=0.00` + تواريخ مستحيلة) كانت بتعرض `win_rate = 7.4%` وهمي.
-- أداة: `scripts/clean_false_stoploss.py` (idempotent + نسخة احتياطية تلقائية).
+يجب إلزام فريق **Alpha** ببروتوكول البناء الذري (Atomic Rebuild & Push): بناء شاشة ➔ ربط الـ hooks الأصلية ➔ اختبار `bun run build` ➔ commit + push فوري، وذلك عبر المجلدات المتبقية في `stitch_full_website_ui_design/`:
 
-### ب. بناء سجل الأداء الموثق (B-20a):
-- `scripts/build_audited_track_record.py` — backtest engine حقيقي على بيانات EGX+TADAWUL+KSE+QSE الفعلية.
-- **32 صفقة مغلقة: Win Rate 75% · Avg Return +7.59% · Profit Factor 15.0**.
-- فلتر الدخول: RVOL ≥ 1.8x + شمعة صاعدة + (ارتداد دعم / اختراق مقاومة / انفجار فوليوم).
-- Stop 4% / Target 10% (R:R = 2.5) — نسب مئوية ثابتة (واقعية للأسواق العربية).
-
-### ج. ترقية السكانر المؤسسي (B-20b):
-- `scripts/multi_market_institutional_scan.py` أضيف له `--strict` + `--top N` + `--strong-only`.
-- حقل **catalyst** جديد لكل صفقة (RVOL + دعوم + مقاومات + MA50/MA200 + RSI + ROC).
-- أمثلة: "فوليوم مؤسسي 5.3x | فوق MA50 | فوق MA200 | زخم +29.1%".
-
-### د. الـ Commercial Feed الموحد (B-18):
-- `scripts/commercial_feed.py` + `/api/v2/commercial-feed` endpoint.
-- Python = العقل (Rule 20) · 30s cache · عزل سوق تام · NO-FAKE-DATA fallback.
-- ATTACH DATABASE logic — stderr نظيف 100%.
-
-### هـ. قاموس تعريب القطاعات (B-21):
-- `scripts/sector_arabic.py` — 27 قطاع إنجليزي → عربي.
-- Finance → القطاع المالي، Consumer Services → خدمات المستهلك، etc.
-- مطبّق على كل الـ signals والـ trades في الـ API.
-
-### و. تحسين سلامة summary (B-21):
-- `compute_summary()` أضيف له top-level aliases (`win_rate`, `total_closed`, `avg_return`, `active_count`).
-- القيم دائمًا رقم (0 لو مفيش بيانات) — أبدًا undefined/null.
-
-### ز. واجهة المستخدم (A-17/A-18):
-- `VIPLiveSignalsFeed.tsx`: كروت + catalyst بارز + زر نسخ التوصية (تليجرام/واتساب) + بانر + جدول.
-- `AuditedPerformanceView.tsx`: واجهة الأداء الموثق المستقلة.
-- `TimeHorizonBadge.tsx`: Badge للأفق الزمني.
-
-### ح. عزل الأسواق (JIMMY-MARKET-ISOLATION):
-- عزل تام لكل سوق (EGX/TADAWUL/KSE/QSE) مع عملة ديناميكية (ج.م/ر.س/د.ك/ر.ق).
-- منع تكرار نفس السهم في الكروت (سهم واحد = توصية واحدة نشطة).
+| # | اسم الشاشة / المكون | مجلد ستاتش المرجعي | الملف المستهدف في `src/` | الحالة |
+|---|---|---|---|---|
+| 1 | رادار السيولة ونبض الحيتان | `_4` | `src/components/shared/LiquidityRadarView.tsx` | تم البناء الهيكلي والتطهير ✅ |
+| 2 | شريط التيكر العلوي والهيدر | `_1` + `trial_account_header` | `src/components/Header.tsx` + `RealtimeTickerBar` | في الانتظار (أولوية 1 صباحاً) |
+| 3 | أسهم وتصفيات السوق المصري | `_2` | `src/modules/stocks/components/StockScreenerView.tsx` | في الانتظار (أولوية 2 صباحاً) |
+| 4 | التوقعات وتتبع الخبراء | `_3` | `src/modules/predictions/components/PredictionTrackingDashboard.tsx` | في الانتظار (أولوية 3) |
+| 5 | عمق السوق وتدفق المستثمرين | `_5` | `src/modules/dashboard/components/MultiMarketWidget.tsx` | في الانتظار |
+| 6 | الشارت التفاعلي للتحليل الفني | `_6` | `src/modules/market-analysis/components/TradingChartView.tsx` | في الانتظار |
+| 7 | خطط الاشتراك والترقية | `_7` | `src/components/subscription/SubscriptionView.tsx` | في الانتظار |
+| 8 | حساب التداول التجريبي والمحاكاة | `_8` + `paper_trading` | `src/modules/simulation/components/SimulationView.tsx` | في الانتظار |
+| 9 | مركز التنبيهات الذكية | `_9` | `src/components/alerts/AlertsCenterView.tsx` | في الانتظار |
+| 10 | التوافق الشرعي وحساب الزكاة | `_10` | `src/components/zakat/ZakatView.tsx` + `ShariaView.tsx` | في الانتظار |
+| 11 | أكاديمية التداول والتعليم | `_11` | `src/modules/education/components/AcademyView.tsx` | في الانتظار |
+| 12 | مركز الأخبار والإفصاحات | `_12` | `src/modules/news/components/NewsFeedView.tsx` | في الانتظار |
+| 13 | شريط التحكم المركزي والأسواق | `_13` | Global Terminal Command Bar | في الانتظار |
+| 14 | صفحة السهم الفردي المتكاملة | `comi` | `src/app/stock/[ticker]/page.tsx` | في الانتظار |
+| 15 | المحفظة وقائمة المتابعة | `portfolio_watchlist` | `EnhancedPortfolioView.tsx` + `EnhancedWatchlistView.tsx` | في الانتظار |
+| 16 | تدقيق الإدارة الصادقة | `admin_honest_audit` | `src/modules/admin/components/AdminView.tsx` | في الانتظار |
 
 ---
 
-## 3. KPIs الحالية (2026-10-14)
+## 3. مهام فريق Bravo المطلوبة في الجلسة القادمة
 
-| الـ KPI | القيمة | الهدف | الحالة |
-|---|---|---|---|
-| Win Rate (audited) | 75.0% | 70-76% | ✅ |
-| Avg Return (audited) | +7.59% | +8% إلى +12% | ⚠️ قريب |
-| Profit Factor | 15.0 | > 2.0 | ✅ ممتاز |
-| Active Signals Count | 16 | 6-12 | ✅ |
-| Active avg R:R | 2.71 | ≥ 2.0 | ✅ |
-| Active avg Confidence | 82-86% | ≥ 78% | ✅ |
-| False Stops (low=0) | 0 | 0 | ✅ |
-| Sector Arabization | 100% | 100% | ✅ |
+1. **إصلاح `vps-service/main.py`:**
+   - حل مشكلة `NameError: name 'UnifiedMaestroResult' is not defined` لإعادة تفعيل `BackgroundAnalyzer`.
+2. **إصلاح `crypto_lab_scheduler`:**
+   - معالجة خطأ `Cannot operate on a closed database` عبر ضبط دورة حياة اتصال قاعدة بيانات `crypto.db`.
+3. **ضبط قراءة EGX30 في `market_scheduler`:**
+   - التأكد من جلب السعر اللحظي والمتوسطات المتحركة لمنع قراءة `Price: 0 | SMA200: 0`.
 
 ---
 
-## 4. الخطوات الفورية للجلسة القادمة:
-1. المالك سيرسل صور الشاشات والمشاكل المطلوب حلها مباشرة.
-2. تكليف فريق Alpha لو المشكلة في الواجهة، أو فريق Bravo لو في المحرك/البيانات.
-3. التجهيز لرفع التعديلات على سيرفر VPS (invist.m2y.net) فور موافقة المالك.
-4. مراجعة [`Documentation/05-PHASE2_SNAPSHOT_2026-10-14.md`](./Documentation/05-PHASE2_SNAPSHOT_2026-10-14.md) للتفاصيل الكاملة.
+## 4. إرشادات استئناف العمل فور استيقاظ جيمي (Wake-up Protocol)
 
----
-
-## 5. الأوامر اليومية الموصى بها:
-```bash
-# 1. تنظيف الصفقات الفاسدة (لو فيه)
-python3 scripts/clean_false_stoploss.py
-
-# 2. إعادة بناء سجل الأداء الموثق (أسبوعيًا)
-python3 scripts/build_audited_track_record.py --target 32 --markets EGX,TADAWUL,KSE,QSE
-
-# 3. توليد صفقات حية طازجة (يوميًا قبل الجلسة)
-python3 scripts/multi_market_institutional_scan.py --execute --strict --top 12
-
-# 4. التحقق من الـ Commercial Feed
-python3 scripts/commercial_feed.py --json --market EGX
-```
-
+بمجرد تشغيل اللاب توب وبدء الجلسة الجديدة:
+1. تحقق فوراً من بقاء السيرفر الإنتاجي مستقراً: `curl -I https://invist.m2y.net`.
+2. تأكد أن البوت المحلي لا يزال متوقفاً على PM2 المحلي لمنع أي 409 Conflict.
+3. ابدأ فوراً بإلزام فريق **Alpha** بالشاشة رقم 2 (شريط التيكر والهيدر الموحد) ثم الشاشة رقم 3 (أسهم السوق المصري).
+4. تذكر دائماً: **لا اعتماد لأي شاشة بدون مقارنة بصرية حية ضد ملف `code.html` في مجلد ستاتش والتأكد من نجاح `bun run build`.**

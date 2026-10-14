@@ -1,4 +1,4 @@
-شغل الس#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Test Historical Prediction Generator"""
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'vps-service', 'engines'))
