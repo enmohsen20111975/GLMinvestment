@@ -1,8 +1,17 @@
+/**
+ * GET /api/stocks/[ticker]/history
+ * ================================
+ * CANONICAL price-history route — pure proxy to Python engine.
+ *
+ *Directive P1 (API Routes Decoupling): NO direct SQLite access in Next.js
+ * routes. This route proxies to Python `/api/history/{ticker}` ONLY. If Python
+ * is unreachable → honest 404 with empty data (Rule 27 NO-FAKE-DATA).
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA).
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
-import Database from 'better-sqlite3';
-import path from 'path';
-import { existsSync } from 'fs';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +26,9 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
   const { ticker } = params;
   const url = new URL(req.url);
   const qs = url.searchParams.toString();
-  const days = parseInt(url.searchParams.get('days') || '365', 10);
   const resolvedTicker = resolveTicker(ticker);
 
+  // Python canonical endpoints (primary + direct fallback).
   const targetUrls = [
     `${PYTHON_BACKEND_URL}/api/history/${resolvedTicker}${qs ? `?${qs}` : ''}`,
     `http://127.0.0.1:8010/api/history/${resolvedTicker}${qs ? `?${qs}` : ''}`,
@@ -33,50 +42,20 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
         if (data.success && data.data && Array.isArray(data.data.history) && data.data.history.length > 0) {
           return NextResponse.json({
             success: true,
-            data: data.data.history
+            data: data.data.history,
           });
         }
       }
-    } catch (_err) {
-      // Try next fallback
+    } catch {
+      // Try next fallback URL (safe-by-design).
     }
   }
 
-  // Local SQLite fallback from stocks.db stock_daily_prices
-  const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-  if (existsSync(stocksDbPath)) {
-    try {
-      const db = new Database(stocksDbPath, { readonly: true, timeout: 5000 });
-      // SCHEMA-FIX (2026-10-09, Team 9): استخدم COALESCE لكل column بديل
-      // stock_daily_prices columns: price_date, open, high, low, close, volume
-      // (some rows have NULL for open/high/low → use close as fallback)
-      const rows = db.prepare(`
-        SELECT price_date as date,
-               COALESCE(open, close) as open,
-               COALESCE(high, close) as high,
-               COALESCE(low, close) as low,
-               close as close,
-               COALESCE(volume, 0) as volume
-        FROM stock_daily_prices
-        WHERE ticker = ?
-        ORDER BY price_date DESC
-        LIMIT ?
-      `).all(resolvedTicker, days) as any[];
-      db.close();
-
-      if (rows && rows.length > 0) {
-        return NextResponse.json({
-          success: true,
-          data: rows.reverse()
-        });
-      }
-    } catch (e) {
-      console.warn(`[history] Local fallback failed for ${ticker}:`, e);
-    }
-  }
-
+  // Rule 27: honest empty — no fabricated price history.
   return NextResponse.json({
     success: false,
-    error: `Failed to fetch history for ${ticker}`,
+    error: `تعذّر جلب بيانات السهم ${resolvedTicker} من المحرك الكنسي`,
+    ticker: resolvedTicker,
+    data: [],
   }, { status: 404 });
 }

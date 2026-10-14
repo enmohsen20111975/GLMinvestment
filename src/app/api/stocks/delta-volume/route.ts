@@ -1,120 +1,86 @@
+/**
+ * GET /api/stocks/delta-volume?ticker=COMI&days=14
+ * =================================================
+ * CANONICAL delta-volume route — pure proxy to Python engine.
+ *
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `data_engine.db` directly (`new Database(...)`) and read `egksco_price_history`
+ * (buy_volume/sell_volume/delta_volume/pressure). That bypassed the canonical
+ * Python engine. Now it calls Python `/api/stocks/{ticker}/delta-volume` and
+ * passes the response through verbatim. If Python is unreachable → honest
+ * empty (Rule 27 NO-FAKE-DATA).
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA).
+ */
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/stocks/delta-volume?ticker=COMI&days=14
- *
- * يجلب بيانات delta_volume (ضغط الشراء/البيع) لسهم معين.
- */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const ticker = searchParams.get('ticker');
-    const days = parseInt(searchParams.get('days') || '14', 10);
+    const days = searchParams.get('days') || '14';
 
     if (!ticker) {
-      return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'ticker required' },
+        { status: 400 },
+      );
     }
 
-    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-    const db = new Database(dbPath, { readonly: true, timeout: 5000 });
-    db.pragma('busy_timeout = 5000');
+    const tickerUpper = ticker.toUpperCase();
+    const qs = `ticker=${encodeURIComponent(tickerUpper)}&days=${encodeURIComponent(days)}`;
 
-    // Latest delta
-    const latest = db.prepare(`
-      SELECT symbol, price_date, volume, buy_volume, sell_volume,
-             delta_volume, delta_pct, pressure, close_price
-      FROM egksco_price_history
-      WHERE symbol = ? AND volume > 0 AND delta_volume IS NOT NULL
-      ORDER BY price_date DESC LIMIT 1
-    `).get(ticker.toUpperCase()) as any;
+    // Python canonical endpoints (primary + direct fallback).
+    const targetUrls = [
+      `${PYTHON_BACKEND_URL}/api/stocks/${tickerUpper}/delta-volume?${qs}`,
+      `http://127.0.0.1:8010/api/stocks/${tickerUpper}/delta-volume?${qs}`,
+      `${PYTHON_BACKEND_URL}/api/delta-volume/${tickerUpper}?${qs}`,
+      `http://127.0.0.1:8010/api/delta-volume/${tickerUpper}?${qs}`,
+    ];
 
-    if (!latest) {
-      db.close();
-      return NextResponse.json({ success: false, error: 'No delta data', ticker });
+    for (const targetUrl of targetUrls) {
+      try {
+        const res = await fetch(targetUrl, {
+          signal: AbortSignal.timeout(6000),
+          cache: 'no-store',
+        });
+        if (!res.ok) continue;
+        const json = await res.json();
+        if (json && (json.success === true || json.latest || json.summary)) {
+          // Pass through Python response verbatim (Rule 4: mirror only).
+          return NextResponse.json({
+            success: true,
+            ticker: tickerUpper,
+            latest: json.latest ?? null,
+            history: Array.isArray(json.history) ? json.history : [],
+            summary: json.summary ?? null,
+          });
+        }
+      } catch {
+        // try next URL (safe-by-design)
+      }
     }
 
-    // History
-    const history = db.prepare(`
-      SELECT price_date, volume, buy_volume, sell_volume,
-             delta_volume, delta_pct, pressure, close_price
-      FROM egksco_price_history
-      WHERE symbol = ? AND volume > 0 AND delta_volume IS NOT NULL
-      ORDER BY price_date DESC LIMIT ?
-    `).all(ticker.toUpperCase(), days) as any[];
-
-    // Summary
-    const summary = db.prepare(`
-      SELECT
-        COUNT(*) as total_days,
-        AVG(delta_pct) as avg_delta_pct,
-        SUM(CASE WHEN pressure IN ('STRONG_BUY','BUY') THEN 1 ELSE 0 END) as buy_days,
-        SUM(CASE WHEN pressure = 'NEUTRAL' THEN 1 ELSE 0 END) as neutral_days,
-        SUM(CASE WHEN pressure IN ('SELL','STRONG_SELL') THEN 1 ELSE 0 END) as sell_days,
-        SUM(buy_volume) as total_buy,
-        SUM(sell_volume) as total_sell,
-        SUM(delta_volume) as total_delta
-      FROM egksco_price_history
-      WHERE symbol = ? AND volume > 0 AND delta_volume IS NOT NULL
-    `).get(ticker.toUpperCase()) as any;
-
-    // Maker direction
-    let makerDirection = 'NEUTRAL';
-    if (summary && summary.total_days > 0) {
-      const buyRatio = summary.buy_days / summary.total_days;
-      const sellRatio = summary.sell_days / summary.total_days;
-      if (buyRatio > 0.6) makerDirection = 'ACCUMULATION';
-      else if (sellRatio > 0.6) makerDirection = 'DISTRIBUTION';
-      else if (buyRatio > sellRatio) makerDirection = 'ACCUMULATION_LIGHT';
-      else if (sellRatio > buyRatio) makerDirection = 'DISTRIBUTION_LIGHT';
-    }
-
-    db.close();
-
-    return NextResponse.json({
-      success: true,
-      ticker: ticker.toUpperCase(),
-      latest: {
-        date: latest.price_date,
-        volume: latest.volume,
-        buy_volume: latest.buy_volume,
-        sell_volume: latest.sell_volume,
-        delta_volume: latest.delta_volume,
-        delta_pct: latest.delta_pct,
-        pressure: latest.pressure,
-        close: latest.close_price,
-      },
-      history: history.map((h: any) => ({
-        date: h.price_date, volume: h.volume,
-        buy_volume: h.buy_volume, sell_volume: h.sell_volume,
-        delta_volume: h.delta_volume, delta_pct: h.delta_pct,
-        pressure: h.pressure, close: h.close_price,
-      })),
-      summary: summary ? {
-        total_days: summary.total_days,
-        avg_delta_pct: Math.round((summary.avg_delta_pct || 0) * 100) / 100,
-        buy_days: summary.buy_days,
-        sell_days: summary.sell_days,
-        neutral_days: summary.neutral_days,
-        total_buy: summary.total_buy,
-        total_sell: summary.total_sell,
-        buy_ratio: (summary.total_buy + summary.total_sell) > 0
-          ? Math.round((summary.total_buy / (summary.total_buy + summary.total_sell)) * 100) : 50,
-        sell_ratio: (summary.total_buy + summary.total_sell) > 0
-          ? Math.round((summary.total_sell / (summary.total_buy + summary.total_sell)) * 100) : 50,
-        maker_direction: makerDirection,
-      } : null,
-    });
-  } catch (error: any) {
-    console.error('[/api/stocks/delta-volume] Error:', error);
-    // FIX (2026-10-01): return 200 with fallback data instead of 500
+    // Rule 27: honest empty — no fabricated delta-volume data.
     return NextResponse.json({
       success: false,
       error: 'delta_volume_data_unavailable',
-      ticker: ticker?.toUpperCase() || '',
+      ticker: tickerUpper,
+      fallback: true,
+      latest: null,
+      history: [],
+      summary: null,
+    }, { status: 200 });
+  } catch (error: any) {
+    console.error('[/api/stocks/delta-volume] Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'delta_volume_data_unavailable',
+      ticker: (error?.ticker || '').toUpperCase(),
       fallback: true,
       latest: null,
       history: [],

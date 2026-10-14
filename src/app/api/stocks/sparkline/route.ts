@@ -1,6 +1,21 @@
+/**
+ * GET /api/stocks/sparkline?ticker=COMI&days=30
+ * GET /api/stocks/sparkline?tickers=COMI,ETEL&days=30
+ * ====================================================
+ * CANONICAL sparkline route — derives close-price array from the Python
+ * history endpoint (no direct SQLite access).
+ *
+ * Directive P1 (API Routes Decoupling): this route previously opened
+ * `stocks.db` directly (`new Database(...)`) and read `stock_daily_prices` +
+ * `market_indices`. That bypassed the canonical Python engine. Now it calls
+ * the Python history endpoint (same source as /api/stocks/[ticker]/history)
+ * and derives the sparkline from the OHLCV closes. Cache stays (TTL 60s).
+ *
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA): empty array when Python is unreachable.
+ */
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import { join } from 'path';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,129 +57,81 @@ function getCandidateTickers(t: string): string[] {
   return INDEX_ALIASES[upper] || [upper, t.trim()];
 }
 
-function fetchSingleSparkline(t: string, days: number) {
+interface HistoryBar {
+  date?: string;
+  close?: number;
+  close_price?: number;
+}
+
+async function fetchClosesFromPython(t: string, days: number): Promise<number[]> {
+  const candidates = getCandidateTickers(t);
+  for (const cand of candidates) {
+    const targetUrls = [
+      `${PYTHON_BACKEND_URL}/api/history/${cand}?days=${days}`,
+      `http://127.0.0.1:8010/api/history/${cand}?days=${days}`,
+    ];
+    for (const targetUrl of targetUrls) {
+      try {
+        const res = await fetch(targetUrl, {
+          signal: AbortSignal.timeout(6000),
+          cache: 'no-store',
+        });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const history: HistoryBar[] | undefined =
+          json?.data?.history || json?.data || (Array.isArray(json?.data) ? json.data : undefined);
+        if (Array.isArray(history) && history.length > 0) {
+          const closes = history
+            .map((b) => Number(b?.close ?? b?.close_price ?? 0))
+            .filter((n) => Number.isFinite(n) && n > 0);
+          if (closes.length > 0) return closes.slice(-days);
+        }
+      } catch {
+        // try next candidate / URL (safe-by-design)
+      }
+    }
+  }
+  return [];
+}
+
+async function fetchSingleSparkline(t: string, days: number) {
   const key = cacheKey(t, days);
   const cached = getCached(key);
   if (cached) return cached;
 
-  const candidates = getCandidateTickers(t);
-  const stocksPath = join(process.cwd(), 'db', 'stocks.db');
+  const prices = await fetchClosesFromPython(t, days);
 
-  // 1. stocks.db.stock_daily_prices (Canonical SSOT - P0-ISOLATION)
-  try {
-    const stocksDb = new Database(stocksPath, { readonly: true, timeout: 3000 });
-    for (const cand of candidates) {
-      const rows = stocksDb.prepare(`
-        SELECT price_date, COALESCE(close, close_price) as close_price
-        FROM stock_daily_prices
-        WHERE ticker = ? AND (close > 0 OR close_price > 0)
-        ORDER BY price_date DESC
-        LIMIT ?
-      `).all(cand, days) as { price_date: string; close_price: number }[];
-      if (rows.length > 0) {
-        stocksDb.close();
-        const prices = rows.reverse().map(r => Number(r.close_price));
-        const first = prices[0];
-        const last = prices[prices.length - 1];
-        const result = {
-          ticker: t,
-          prices,
-          min: Math.min(...prices),
-          max: Math.max(...prices),
-          first,
-          last,
-          change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
-          days: prices.length,
-          source: 'stocks.db.stock_daily_prices',
-        };
-        setCache(key, result);
-        return result;
-      }
-    }
-    stocksDb.close();
-  } catch { /* safe-by-design */ }
+  if (prices.length === 0) {
+    const empty = {
+      ticker: t,
+      prices: [],
+      min: 0,
+      max: 0,
+      first: 0,
+      last: 0,
+      change_pct: 0,
+      days: 0,
+      source: 'python_history_empty',
+    };
+    setCache(key, empty);
+    return empty;
+  }
 
-  // 2. stocks.db.stock_daily_prices
-  try {
-    const stocksDb = new Database(stocksPath, { readonly: true, timeout: 3000 });
-    for (const cand of candidates) {
-      const rows = stocksDb.prepare(`
-        SELECT price_date, close_price
-        FROM stock_daily_prices
-        WHERE ticker = ? AND close_price > 0
-        ORDER BY price_date DESC
-        LIMIT ?
-      `).all(cand, days) as { price_date: string; close_price: number }[];
-      if (rows.length > 0) {
-        stocksDb.close();
-        const prices = rows.reverse().map(r => Number(r.close_price));
-        const first = prices[0];
-        const last = prices[prices.length - 1];
-        const result = {
-          ticker: t,
-          prices,
-          min: Math.min(...prices),
-          max: Math.max(...prices),
-          first,
-          last,
-          change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
-          days: prices.length,
-          source: 'stocks.db',
-        };
-        setCache(key, result);
-        return result;
-      }
-    }
-
-    // 3. Fallback for market_indices if index has current_value
-    const idxRow = stocksDb.prepare(`
-      SELECT current_value, previous_close, change_percent
-      FROM market_indices
-      WHERE symbol = ? OR name LIKE ?
-    `).get(t.toUpperCase(), `%${t}%`) as { current_value: number; previous_close: number; change_percent: number } | undefined;
-    stocksDb.close();
-
-    if (idxRow && idxRow.current_value > 0) {
-      const cur = idxRow.current_value;
-      const prev = idxRow.previous_close || cur;
-      const chgPct = idxRow.change_percent || 0;
-      const pointsCount = Math.min(15, days);
-      const prices: number[] = [];
-      for (let i = 0; i < pointsCount; i++) {
-        const factor = 1 - ((pointsCount - 1 - i) / pointsCount) * (chgPct / 100);
-        const noise = Math.sin(i * 1.2) * 0.003 * cur;
-        prices.push(Number((cur * factor + noise).toFixed(2)));
-      }
-      prices[prices.length - 1] = cur;
-      const result = {
-        ticker: t,
-        prices,
-        min: Math.min(...prices),
-        max: Math.max(...prices),
-        first: prices[0],
-        last: cur,
-        change_pct: chgPct,
-        days: prices.length,
-        source: 'market_indices',
-      };
-      setCache(key, result);
-      return result;
-    }
-  } catch { /* safe-by-design */ }
-
-  const empty = {
+  const first = prices[0];
+  const last = prices[prices.length - 1];
+  const result = {
     ticker: t,
-    prices: [],
-    min: 0,
-    max: 0,
-    first: 0,
-    last: 0,
-    change_pct: 0,
-    days: 0,
-    source: 'none',
+    prices,
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+    first,
+    last,
+    change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
+    days: prices.length,
+    source: 'python_history',
   };
-  setCache(key, empty);
-  return empty;
+  setCache(key, result);
+  return result;
 }
 
 export async function GET(req: NextRequest) {
@@ -179,21 +146,23 @@ export async function GET(req: NextRequest) {
     }
 
     if (tickersParam) {
-      const list = tickersParam.split(',').map(s => s.trim()).filter(Boolean).slice(0, 50);
+      const list = tickersParam.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 50);
       const results: Record<string, any> = {};
-      for (const t of list) {
-        results[t] = fetchSingleSparkline(t, days);
-      }
+      await Promise.all(
+        list.map(async (t) => {
+          results[t] = await fetchSingleSparkline(t, days);
+        }),
+      );
       return NextResponse.json({ success: true, data: results });
     }
 
-    const singleResult = fetchSingleSparkline(rawTicker, days);
+    const singleResult = await fetchSingleSparkline(rawTicker, days);
     return NextResponse.json({ success: true, ...singleResult });
   } catch (e) {
     console.error('[stocks:sparkline]', e);
-    return NextResponse.json({
-      success: false,
-      error: 'internal_error',
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'internal_error' },
+      { status: 500 },
+    );
   }
 }

@@ -113,13 +113,13 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
     <Card key={`${sig.ticker}-${sig.prediction_date}`} className="overflow-hidden hover:border-emerald-500/40 transition-colors">
       <CardContent className="p-4 space-y-3">
         {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-base">{sig.ticker}</span>
+        <div className="flex items-start justify-between gap-2 min-w-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-base shrink-0">{sig.ticker}</span>
               {sig.signal && (
                 <Badge variant="outline" className={cn(
-                  'text-[9px]',
+                  'text-[9px] shrink-0',
                   sig.signal === 'STRONG_BUY'
                     ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                     : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/30'
@@ -129,14 +129,14 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
               )}
             </div>
             {sig.name && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">{sig.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{sig.name}</p>
             )}
             {sig.sector && (
-              <p className="text-[9px] text-muted-foreground/70">{sig.sector}</p>
+              <p className="text-[9px] text-muted-foreground/70 truncate">{sig.sector}</p>
             )}
           </div>
           {sig.confidence != null && Number(sig.confidence) > 0 && (
-            <div className="text-left">
+            <div className="text-left shrink-0">
               <p className="text-[9px] text-muted-foreground">الثقة</p>
               <p className="text-sm font-bold text-emerald-600">{Math.round(Number(sig.confidence))}%</p>
             </div>
@@ -145,33 +145,33 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
 
         {/* Prices */}
         <div className="grid grid-cols-3 gap-2 text-xs">
-          <div>
+          <div className="min-w-0">
             <p className="text-[9px] text-muted-foreground flex items-center gap-1">
-              <Target className="w-2.5 h-2.5" /> الدخول
+              <Target className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">الدخول</span>
             </p>
-            <p className="font-mono font-semibold">{fmtPrice(sig.entry_price)}</p>
+            <p className="font-mono font-semibold truncate">{fmtPrice(sig.entry_price)}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[9px] text-muted-foreground flex items-center gap-1">
-              <ArrowRight className="w-2.5 h-2.5" /> الهدف
+              <ArrowRight className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">الهدف</span>
             </p>
-            <p className="font-mono font-semibold text-emerald-600">
+            <p className="font-mono font-semibold text-emerald-600 truncate">
               {fmtPrice(sig.target_1)}
               {sig.target_1_pct != null && (
                 <span className="text-[9px] ml-1">({fmtPct(sig.target_1_pct)})</span>
               )}
             </p>
             {sig.target_2 != null && (
-              <p className="font-mono text-[10px] text-emerald-500">
+              <p className="font-mono text-[10px] text-emerald-500 truncate">
                 هدف 2: {fmtPrice(sig.target_2)}
               </p>
             )}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[9px] text-muted-foreground flex items-center gap-1">
-              <ShieldAlert className="w-2.5 h-2.5" /> الوقف
+              <ShieldAlert className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">الوقف</span>
             </p>
-            <p className="font-mono font-semibold text-red-500">{fmtPrice(sig.stop_loss)}</p>
+            <p className="font-mono font-semibold text-red-500 truncate">{fmtPrice(sig.stop_loss)}</p>
             {sig.stop_loss_pct != null && (
               <p className="text-[9px] text-red-400">{fmtPct(sig.stop_loss_pct)}</p>
             )}

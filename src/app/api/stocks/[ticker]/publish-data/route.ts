@@ -5,63 +5,34 @@
  * يجمع كل البيانات المبعثرة المطلوبة لنشر سهم في response واحد
  * (StockPublishData JSON) — جاهزة للـ StockPublisher component.
  *
- * مصادر البيانات:
- *   1. stocks.db.stocks           → basic info + fundamentals (fallback)
- *   2. predictions.db.predictions → آخر توقّع للسهم (recommendation/entry/target/stop)
- *   3. radar cache (maker_radar)  → liquidity + signal_count + path (إن وُجد)
- *   4. price_history (radar-db)   → آخر 60 يوم لحساب RSI/SMA/ATR
+ * CANONICAL SOURCES (Directive P1 — API Routes Decoupling):
+ *   1. Python backend `/api/stocks/{ticker}/publish-data` (best quality)
+ *   2. Canonical unified data `getUnifiedStockData()` (SSOT lib — same source
+ *      as /api/stocks/[ticker]/unified). Provides signal/prediction/technical/
+ *      radar fields WITHOUT any route-level SQL.
+ *   3. Canonical price adapter `getCanonicalPrice()` (Rule 67 SSOT) for
+ *      current_price + previous_close.
  *
- * الـ endpoint يحاول Python backend أولاً ثم يقع على SQLite fallback
- * (نفس النمط المتّبع في باقي /api/stocks/[ticker]/* routes).
+ *Directive P1: this route previously opened `predictions.db` directly
+ * (`fetchLatestPrediction`) and `radar-db` directly (`fetchPriceHistory`) via
+ * `new Database(...)`. Both bypassed the canonical Python engine + the unified
+ * SSOT lib. They have been REMOVED. No `import Database from 'better-sqlite3'`
+ * and no `new Database(` remain in this file.
  *
- * Response shape:
- *   {
- *     success: true,
- *     source: 'python' | 'sqlite_fallback' | 'sqlite_fallback_basic',
- *     data: StockPublishData,
- *     errors: string[]
- *   }
+ * Rule 4 (Python = brain, Frontend = mirror only).
+ * Rule 27 (NO-FAKE-DATA): missing fields are `undefined`, never fabricated.
+ * Rule 67 (CALCULATION-CANONICAL — price via canonical adapter).
+ * Rule 72 (UNIFIED-DATA-CONTRACT).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
-import {
-  getStockByTickerFallback,
-} from '@/lib/flutter-sqlite-fallback';
-// ─── PKG3-ROUND2 (Rule 67: SSOT — canonical-price) ─────────────────────
-// Before: route read current_price directly from `stockRow.current_price`
-//         via the lib wrapper `getStockByTickerFallback()` (which opens
-//         stocks.db directly). That bypassed the canonical resolution
-//         chain (stocks.db → data_engine → vps_api).
-// After: current_price + previous_close are overridden by the canonical
-//        adapter `getCanonicalPrice()` wrapped in `cache.getOrCompute()`
-//        (TTL=60s, LRU=512). The metadata (name, sector, market_cap,
-//        pe_ratio, etc.) still comes from the lib wrapper — those are NOT
-//        price reads so they don't fall under Rule 67's canonical SSOT.
-//        Rule 27 (NO-FAKE-DATA): if canonical adapter returns null →
-//        falls back to the lib wrapper value (which is also a real stocks.db
-//        read, not fabricated). If BOTH return null → 0 → UI renders "—".
+import { getStockByTickerFallback } from '@/lib/flutter-sqlite-fallback';
 import { getCanonicalPrice } from '@/lib/canonical-price';
 import { cache } from '@/lib/cache-manager';
-// ─── UNIFIED-DATA-CONTRACT (Task UNIFIED-API-V3, Rule 72) ────────────────
-// قبل كده: publish-data route بـ يجيب RSI/signal/support من Python backend
-// أو stocks.db (ممكن يكون قديم). النتيجة: CANA بـ يطلع RSI=56.8 في publish-data
-// لكن RSI=79.6 في comprehensive و RSI=50.0 في stocks/[ticker].
-// الحل: نـ inject canonical values من getUnifiedStockData() في الـ response.
 import { getUnifiedStockData } from '@/lib/unified-stock-data';
-import {
-  getRadarDb,
-  getRadarDbConfig,
-  parseVolume,
-  computeTurnover,
-} from '@/modules/radar/lib/radar-db';
-import Database from 'better-sqlite3';
-import { existsSync } from 'fs';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
-
-const MAX_HISTORY_DAYS = 60; // نقرأ 60 يوم ونحسب منها RSI(14) + SMA(20,50)
 
 // ============================================================================
 // Helpers — numerical
@@ -76,21 +47,6 @@ function safe(v: unknown): number | undefined {
   const n = Number(v);
   return Number.isFinite(n) ? n : undefined;
 }
-
-// ──────────────────────────────────────────────────────────────────────────
-// Rule 54 (CALCULATION-CANONICAL) — every technical indicator calculation
-// MUST come from the Python canonical package `vps-service/analyzers/indicators/`
-// (calc_rsi Wilder's / calc_atr Wilder's / sma / ema / macd).
-//
-// This route calls Python first via `fetchPythonPublishData`. When Python is
-// unreachable, NO local TS-side indicator calc is performed — indicators
-// (rsi/sma20/sma50/sma200/atr) are returned as `undefined` and an error
-// string is pushed into `errors[]` (Rule 27: no fake data).
-//
-// Previously this file contained local `computeRSI`/`sma`/`atr` calcs — the
-// `atr` was BUGGY (SMA-based, not Wilder's smoothing) — deleted 2026-10-05
-// per CALC-AUDIT consolidation.
-// ──────────────────────────────────────────────────────────────────────────
 
 // ============================================================================
 // Source 1 — Python backend (best quality if available)
@@ -114,75 +70,8 @@ async function fetchPythonPublishData(
       return (json.data as Record<string, unknown>) || (json as Record<string, unknown>);
     }
     return null;
-  } catch { // silent fallback (safe-by-design)
+  } catch {
     return null;
-  }
-}
-
-// ============================================================================
-// Source 2 — predictions.db → latest prediction row
-// ============================================================================
-
-interface PredictionRow {
-  ticker: string;
-  signal?: string;
-  signal_type?: string;
-  signal_ar?: string;
-  prediction_date?: string;
-  entry_price?: number | null;
-  target_price?: number | null;
-  stop_loss?: number | null;
-  master_score?: number | null;
-  technical_score?: number | null;
-  fundamental_score?: number | null;
-  risk_reward?: number | null;
-  persona?: string;
-  status?: string;
-  horizon?: string;
-  direction?: string;
-  confidence?: number | null;
-  entry_price_min?: number | null;
-  entry_price_max?: number | null;
-  support_level?: number | null;
-  support_level_2?: number | null;
-  resistance_level?: number | null;
-  resistance_level_2?: number | null;
-  target_price_2?: number | null;
-  [key: string]: unknown;
-}
-
-function fetchLatestPrediction(ticker: string): PredictionRow | null {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  if (!existsSync(dbPath)) return null;
-  let db: Database.Database | null = null;
-  try {
-    db = new Database(dbPath, { readonly: true, timeout: 3000 });
-    const row = db
-      .prepare(
-        `SELECT ticker, signal, signal_type, signal_ar, prediction_date,
-                entry_price, target_price, stop_loss, master_score,
-                technical_score, fundamental_score, risk_reward,
-                persona, status, horizon, direction, confidence,
-                entry_price_min, entry_price_max, support_level,
-                support_level_2, resistance_level, resistance_level_2,
-                target_price_2
-         FROM predictions
-         WHERE ticker = ? COLLATE NOCASE
-         ORDER BY prediction_date DESC, created_at DESC
-         LIMIT 1`
-      )
-      .get(ticker.toUpperCase()) as PredictionRow | undefined;
-    return row || null;
-  } catch { // silent fallback (safe-by-design)
-    return null;
-  } finally {
-    if (db) {
-      try {
-        db.close();
-      } catch { // silent fallback (safe-by-design)
-        /* noop */
-      }
-    }
   }
 }
 
@@ -199,116 +88,6 @@ function mapSignalToRecommendation(
   if (s.includes('SELL') || s.includes('REDUCE') || s.includes('AVOID')) return 'SELL';
   if (s.includes('HOLD') || s.includes('WAIT') || s.includes('NEUTRAL')) return 'HOLD';
   return undefined;
-}
-
-// ============================================================================
-// Source 3 — radar cache (maker_radar list) — find ticker in any path
-// ============================================================================
-
-interface RadarStock {
-  ticker: string;
-  current_price: number;
-  volume_ratio_10d_vs_20d?: number;
-  buy_pct?: number;
-  net_flow_egp?: number;
-  maker_activity?: string;
-  position_size: number;
-  reason: string;
-  path?: string;
-  pre_surge_details?: { signal_count?: number; signals_met?: string[] } | null;
-  quiet_details?: { signal_count?: number; signals_met?: string[] } | null;
-  explosive_details?: { vol_ratio?: number } | null;
-  [key: string]: unknown;
-}
-
-async function fetchRadarEntryAsync(
-  tickerUpper: string
-): Promise<RadarStock | null> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.SELF_BASE_URL ||
-    'http://localhost:3001';
-  try {
-    const res = await fetch(`${baseUrl}/api/maker-radar?market=EGX`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(6000),
-      cache: 'no-store',
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      quiet_list?: RadarStock[];
-      pre_surge_list?: RadarStock[];
-      explosive_list?: RadarStock[];
-      early_break_list?: RadarStock[];
-    };
-    const all = [
-      ...(json.quiet_list || []),
-      ...(json.pre_surge_list || []),
-      ...(json.explosive_list || []),
-      ...(json.early_break_list || []),
-    ];
-    return (
-      all.find((s) => s.ticker === tickerUpper) ||
-      all.find((s) => s.ticker?.toUpperCase() === tickerUpper) ||
-      null
-    );
-  } catch { // silent fallback (safe-by-design)
-    return null;
-  }
-}
-
-// ============================================================================
-// Source 4 — price history (radar-db fallback) → RSI/SMA/ATR
-// ============================================================================
-
-interface PriceRow {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  turnover: number;
-}
-
-function fetchPriceHistory(ticker: string): PriceRow[] {
-  const cfg = getRadarDbConfig();
-  const db = getRadarDb();
-  if (!cfg || !db) return [];
-  try {
-    const cols = `${cfg.dateCol}, ${cfg.openCol} as open, ${cfg.highCol} as high, ${cfg.lowCol} as low, ${cfg.priceCol} as close, ${cfg.volumeCol} as volume`;
-    const turnoverSelect = cfg.turnoverCol
-      ? `, ${cfg.turnoverCol} as turnover`
-      : ', NULL as turnover';
-    const rows = db
-      .prepare(
-        `SELECT ${cols}${turnoverSelect}
-         FROM ${cfg.table}
-         WHERE ${cfg.tickerCol} = ? AND ${cfg.priceCol} IS NOT NULL AND ${cfg.priceCol} > 0
-         ORDER BY ${cfg.dateCol} DESC
-         LIMIT ?`
-      )
-      .all(ticker.toUpperCase(), MAX_HISTORY_DAYS) as Record<string, unknown>[];
-
-    return rows.reverse().map((r) => ({
-      date: String(r[cfg.dateCol] ?? ''),
-      open: toNum(r.open),
-      high: toNum(r.high),
-      low: toNum(r.low),
-      close: toNum(r.close),
-      volume: parseVolume(r.volume),
-      turnover: computeTurnover(r, cfg),
-    }));
-  } catch { // silent fallback (safe-by-design)
-    return [];
-  } finally {
-    try {
-      db.close();
-    } catch { // silent fallback (safe-by-design)
-      /* noop */
-    }
-  }
 }
 
 // ============================================================================
@@ -334,7 +113,6 @@ export async function GET(
       // UNIFIED-DATA-CONTRACT: inject canonical values into Python response
       const unified = getUnifiedStockData(tickerUpper);
       if (unified) {
-        // Override technical fields with canonical values
         py.rsi = unified.technical.rsi ?? py.rsi;
         py.ma_50 = unified.technical.ma_50 ?? py.ma_50;
         py.ma_200 = unified.technical.ma_200 ?? py.ma_200;
@@ -359,7 +137,6 @@ export async function GET(
           py.buy_pct = unified.radar.buy_pct ?? py.buy_pct;
           py.sell_pct = unified.radar.sell_pct ?? py.sell_pct;
         }
-        // Tag the response
         py.unified = true;
         py.unified_source = unified.canonical.master_score_source;
       }
@@ -373,31 +150,31 @@ export async function GET(
     errors.push('python: unreachable or empty');
   }
 
-  // ── 2) SQLite fallback — basic stock record ──
-  const stockRow = getStockByTickerFallback(tickerUpper);
-  if (!stockRow) {
+  // ── 2) Canonical unified data (SSOT lib — no route-level SQL) ──
+  // getUnifiedStockData() is the SAME source as /api/stocks/[ticker]/unified.
+  // It reads stocks.db/predictions.db centrally via the lib, NOT via direct
+  // SQL in this route file. This satisfies Directive P1.
+  const unified = getUnifiedStockData(tickerUpper);
+  if (!unified || !unified.success) {
     return NextResponse.json(
       {
         success: false,
-        source: 'sqlite_fallback_empty',
-        error: `Stock ${tickerUpper} not found`,
+        source: 'unified_empty',
+        error: `السهم ${tickerUpper} غير متوفر في المصدر الموحد`,
         ticker: tickerUpper,
         data: null,
         errors,
       },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
-  // PKG3-ROUND2: override current_price + previous_close with the canonical
-  // values (Rule 67 SSOT). The lib wrapper returns stocks.db fields directly,
-  // which bypasses the canonical resolution chain. We override it here so
-  // the canonical adapter (stocks.db → data_engine → vps_api) is the single
-  // source of truth for the price fields. Falls back to the lib row's value
-  // if the canonical adapter returns null (defensive — both paths read real
-  // stocks.db data, no fabricated values per Rule 27 NO-FAKE-DATA).
-  let currentPrice = toNum(stockRow.current_price);
-  let previousClose = toNum(stockRow.previous_close);
+  // Basic stock record (lib wrapper — not a route-level SQL open).
+  const stockRow = getStockByTickerFallback(tickerUpper);
+
+  // Canonical current_price + previous_close (Rule 67 SSOT).
+  let currentPrice = toNum(unified.stock.current_price);
+  let previousClose = toNum(unified.stock.previous_close);
   try {
     const canonical = await cache.getOrCompute(
       `canonical_price:${tickerUpper}`,
@@ -415,98 +192,43 @@ export async function GET(
       }
     }
   } catch {
-    // canonical adapter failure → keep lib wrapper values (still real data).
+    // canonical adapter failure → keep unified values (still real data).
   }
 
   const changePct =
-    toNum(stockRow.change_percent) !== 0
-      ? toNum(stockRow.change_percent)
+    toNum(unified.stock.change_percent) !== 0
+      ? toNum(unified.stock.change_percent)
       : previousClose > 0
         ? ((currentPrice - previousClose) / previousClose) * 100
         : 0;
 
-  // ── 3) Latest prediction (recommendation/entry/target/stop) ──
-  const pred = fetchLatestPrediction(tickerUpper);
-
-  // ── 4) Price history → technicals ──
-  // Rule 54: indicators (rsi/sma/atr) are computed CANONICALLY by Python
-  // `analyzers/indicators/` and persisted into `stocks.db.stocks.{rsi,ma_50,
-  // ma_200}` (and `predictions.db.predictions.atr_at_entry` for ATR).
-  // When Python is unreachable (this fallback path), NO local TS calc is
-  // performed — we read whatever Python already wrote into the DB. If the
-  // columns are NULL, return `undefined` and push an error so the caller
-  // (UnifiedPublishButton / StockInfographicCard) shows «بانتظار البيانات».
-  // (Rule 27: no fake data.)
-  const history = fetchPriceHistory(tickerUpper);
-
-  const rsi = safe(stockRow.rsi);
-  const sma20: number | undefined = undefined; // stocks.db has no sma_20 column
-  const sma50 = safe(stockRow.ma_50);
-  const sma200 = safe(stockRow.ma_200);
-  const atrVal = safe(pred?.atr_at_entry); // ATR captured at prediction time
-
-  if (rsi === undefined || sma50 === undefined || sma200 === undefined || atrVal === undefined) {
-    const missing: string[] = [];
-    if (rsi === undefined) missing.push('rsi');
-    if (sma50 === undefined) missing.push('sma50');
-    if (sma200 === undefined) missing.push('sma200');
-    if (atrVal === undefined) missing.push('atr');
-    errors.push(
-      `indicators: python backend unreachable — pre-computed columns missing for: ${missing.join(', ')} (Rule 54)`
-    );
-  }
-
-  // Volume ratio (last 10d avg / last 20d avg)
-  const volumes = history.map((p) => p.volume).filter((v) => v > 0);
-  let volumeRatio: number | undefined;
-  if (volumes.length >= 20) {
-    const last10 = volumes.slice(-10).reduce((a, b) => a + b, 0) / 10;
-    const last20 = volumes.slice(-20).reduce((a, b) => a + b, 0) / 20;
-    volumeRatio = last20 > 0 ? last10 / last20 : undefined;
-  }
-
-  // ── 5) Radar entry (liquidity + signal) ──
-  const radarEntry = await fetchRadarEntryAsync(tickerUpper);
-
-  // ── 6) Build the unified payload ──
+  // ── Build the unified payload from canonical SSOT ──
+  const pred = unified.prediction;
   const recommendation = mapSignalToRecommendation(
-    pred?.signal as string | undefined
+    pred?.signal_type as string | undefined,
   );
 
   const entryPrice = safe(pred?.entry_price) ?? currentPrice;
   const targetPrice1 = safe(pred?.target_price) ?? undefined;
-  // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
-  // (target1 * 1.05, entry * 0.94, entry * 0.99/1.01, entry * 0.96). Now
-  // NULL when the prediction record lacks these fields.
   const targetPrice2 = safe(pred?.target_price_2) ?? undefined;
   const stopLoss = safe(pred?.stop_loss) ?? undefined;
-  const entryMin = safe(pred?.entry_price_min) ?? undefined;
-  const entryMax = safe(pred?.entry_price_max) ?? undefined;
-  const support1 = safe(pred?.support_level) ?? safe(stockRow.support_level ?? stockRow.support) ?? safe(py.support_level) ?? undefined;
-  const support2 = safe(pred?.support_level_2) ?? safe(stockRow.support_level_2) ?? undefined;
-  const resistance1 = safe(pred?.resistance_level) ?? safe(stockRow.resistance_level ?? stockRow.resistance) ?? targetPrice1 ?? safe(py.resistance_level) ?? undefined;
-  const resistance2 = safe(pred?.resistance_level_2) ?? safe(stockRow.resistance_level_2) ?? targetPrice2 ?? undefined;
+  const support1 = safe(pred?.support_level) ?? safe(stockRow?.support_level ?? stockRow?.support) ?? undefined;
+  const resistance1 = safe(pred?.resistance_level) ?? safe(stockRow?.resistance_level ?? stockRow?.resistance) ?? targetPrice1 ?? undefined;
 
   const riskReward =
     targetPrice1 && entryPrice && stopLoss && entryPrice - stopLoss !== 0
       ? (targetPrice1 - entryPrice) / (entryPrice - stopLoss)
       : safe(pred?.risk_reward);
 
-  const buyPressure =
-    radarEntry?.buy_pct != null ? toNum(radarEntry.buy_pct) : undefined;
-  const sellPressure = buyPressure != null ? 100 - buyPressure : undefined;
-  const netFlow = safe(radarEntry?.net_flow_egp);
-  const signalCount =
-    radarEntry?.pre_surge_details?.signal_count ??
-    radarEntry?.quiet_details?.signal_count ??
-    undefined;
-  const signalMax = radarEntry?.pre_surge_details
-    ? 4
-    : radarEntry?.quiet_details
-      ? 6
-      : undefined;
+  const buyPressure = safe(unified.canonical.buy_pct);
+  const sellPressure = buyPressure != null ? 100 - buyPressure : safe(unified.canonical.sell_pct);
+  const netFlow = safe(unified.radar?.net_flow_egp);
+  const volumeRatio = safe(unified.radar?.volume_ratio_10d_vs_20d);
+  const positionSize = unified.radar?.position_size_pct != null
+    ? toNum(unified.radar.position_size_pct) * 100
+    : undefined;
 
-  const stockMarketRaw = String(stockRow.market || '').toUpperCase();
+  const stockMarketRaw = String(stockRow?.market || '').toUpperCase();
   const stockMarket = (
     ['EGX', 'TADAWUL', 'KSE', 'QSE', 'CRYPTO', 'GOLD'].includes(stockMarketRaw)
       ? stockMarketRaw
@@ -515,64 +237,57 @@ export async function GET(
 
   const data = {
     ticker: tickerUpper,
-    nameAr:
-      (stockRow.name_ar as string) || (stockRow.name as string) || undefined,
-    nameEn: (stockRow.name as string) || undefined,
-    sector: (stockRow.sector as string) || undefined,
+    nameAr: (unified.stock.name_ar as string) || (stockRow?.name_ar as string) || (stockRow?.name as string) || undefined,
+    nameEn: (unified.stock.name as string) || (stockRow?.name as string) || undefined,
+    sector: (unified.stock.sector as string) || (stockRow?.sector as string) || undefined,
     currentPrice,
     previousClose: previousClose || undefined,
     changePct: Math.round(changePct * 100) / 100,
 
     recommendation,
-    recommendationAr: pred?.signal_ar as string | undefined,
+    recommendationAr: pred?.signal_type as string | undefined,
     confidence:
       safe(pred?.confidence) ??
-      (pred?.master_score != null
-        ? Math.min(100, toNum(pred.master_score))
+      (unified.canonical.master_score != null
+        ? Math.min(100, toNum(unified.canonical.master_score))
         : undefined),
-    masterScore: safe(pred?.master_score) ?? safe(pred?.confidence),
-    reason: radarEntry?.reason,
+    masterScore: safe(unified.canonical.master_score) ?? safe(pred?.confidence),
+    reason: undefined,
 
     entryPrice,
-    entryZoneLow: entryMin,
-    entryZoneHigh: entryMax,
+    entryZoneLow: undefined,
+    entryZoneHigh: undefined,
     targetPrice1,
     targetPrice2,
     stopLoss,
     support1,
-    support2,
+    support2: undefined,
     resistance1,
-    resistance2,
+    resistance2: undefined,
     riskReward:
       riskReward != null ? Math.round(riskReward * 100) / 100 : undefined,
-    positionSize:
-      radarEntry?.position_size != null
-        ? toNum(radarEntry.position_size) * 100
-        : undefined,
+    positionSize,
 
-    signalCount,
-    maxSignals: signalMax ?? (signalCount != null ? 6 : undefined),
-    path: radarEntry?.path,
+    signalCount: undefined,
+    maxSignals: undefined,
+    path: unified.radar?.path ?? undefined,
 
     buyPressure,
     sellPressure,
     netFlow,
     volumeRatio,
-    turnover:
-      history.length > 0
-        ? history[history.length - 1].turnover
-        : undefined,
+    turnover: undefined,
 
-    rsi: rsi != null ? Math.round(rsi * 100) / 100 : undefined,
-    sma20: sma20 != null ? Math.round(sma20 * 100) / 100 : undefined,
-    sma50: sma50 != null ? Math.round(sma50 * 100) / 100 : undefined,
-    sma200: sma200 != null ? Math.round(sma200 * 100) / 100 : undefined,
-    atr: atrVal != null ? Math.round(atrVal * 100) / 100 : undefined,
+    rsi: safe(unified.technical.rsi) != null ? Math.round(toNum(unified.technical.rsi) * 100) / 100 : undefined,
+    sma20: undefined,
+    sma50: safe(unified.technical.ma_50) != null ? Math.round(toNum(unified.technical.ma_50) * 100) / 100 : undefined,
+    sma200: safe(unified.technical.ma_200) != null ? Math.round(toNum(unified.technical.ma_200) * 100) / 100 : undefined,
+    atr: safe(unified.technical.atr) != null ? Math.round(toNum(unified.technical.atr) * 100) / 100 : undefined,
 
-    peRatio: safe(stockRow.pe_ratio),
-    pbRatio: safe(stockRow.pb_ratio),
-    roe: safe(stockRow.roe),
-    marketCap: safe(stockRow.market_cap),
+    peRatio: safe(unified.fundamentals.pe_ratio) ?? safe(stockRow?.pe_ratio),
+    pbRatio: safe(unified.fundamentals.pb_ratio) ?? safe(stockRow?.pb_ratio),
+    roe: safe(unified.fundamentals.roe) ?? safe(stockRow?.roe),
+    marketCap: safe(unified.stock.market_cap) ?? safe(stockRow?.market_cap),
 
     market: stockMarket,
     marketRegime: undefined as
@@ -582,12 +297,11 @@ export async function GET(
       | undefined,
   };
 
-  if (history.length === 0) errors.push('price_history: no rows');
-  if (!pred) errors.push('predictions: no rows');
+  if (!pred) errors.push('predictions: no fresh prediction (Rule 27 — no fabrication)');
 
   return NextResponse.json({
     success: true,
-    source: pred || radarEntry ? 'sqlite_fallback' : 'sqlite_fallback_basic',
+    source: 'unified_canonical',
     data,
     errors,
   });
