@@ -184,35 +184,42 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
         </Button>
       </div>
 
-      {/* Audited Performance Banner */}
-      {stats && stats.total_closed != null && stats.total_closed > 0 && (
-        <Card className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div>
-                <p className="text-[10px] text-muted-foreground">إجمالي الصفقات</p>
-                <p className="text-lg font-bold">{stats.total_closed}</p>
+      {/* T-ALPHA-A20: Audited Performance Banner — null safety مطلقة */}
+      {(() => {
+        const s = data?.stats ?? null;
+        if (!s || s?.total_closed == null || s.total_closed <= 0) return null;
+        const wr = s?.win_rate ?? null;
+        const ar = s?.avg_return ?? null;
+        const pf = s?.profit_factor ?? null;
+        return (
+          <Card className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border-emerald-500/20">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <p className="text-[10px] text-muted-foreground">إجمالي الصفقات</p>
+                  <p className="text-lg font-bold">{s?.total_closed ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">نسبة النجاح</p>
+                  <p className={cn('text-lg font-bold', wr != null && wr >= 70 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}>
+                    {wr != null ? `${wr}%` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">متوسط الربح</p>
+                  <p className={cn('text-lg font-bold', ar != null && ar >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    {ar != null ? `${ar >= 0 ? '+' : ''}${ar}%` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">معامل الربحية</p>
+                  <p className="text-lg font-bold">{pf ?? '—'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">نسبة النجاح</p>
-                <p className={cn('text-lg font-bold', (stats.win_rate ?? 0) >= 70 ? 'text-emerald-600' : 'text-amber-600')}>
-                  {stats.win_rate != null ? `${stats.win_rate}%` : '—'}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">متوسط الربح</p>
-                <p className="text-lg font-bold text-emerald-600">
-                  {stats.avg_return != null ? `+${stats.avg_return}%` : '—'}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Profit Factor</p>
-                <p className="text-lg font-bold">{stats.profit_factor ?? '—'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Active Signals Grid */}
       {signals.length === 0 ? (

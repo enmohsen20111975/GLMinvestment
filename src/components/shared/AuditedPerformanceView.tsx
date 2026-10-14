@@ -132,15 +132,16 @@ export function AuditedPerformanceView({ market }: { market: string }) {
     );
   }
 
-  // Compute stats locally from trades (in case API stats are null)
-  const wins = trades.filter(t => Number(t.hit_target) === 1 || (Number(t.actual_return) > 0));
-  const losses = trades.filter(t => Number(t.hit_stop) === 1 || (Number(t.actual_return) < 0));
-  const winRate = stats.win_rate != null ? stats.win_rate : trades.length > 0 ? Math.round((wins.length / trades.length) * 1000) / 10 : null;
-  const avgReturn = stats.avg_return != null ? stats.avg_return : trades.length > 0 ? Math.round((trades.reduce((s, t) => s + (Number(t.actual_return) || 0), 0) / trades.length) * 100) / 100 : null;
-  const bestTrade = trades.reduce((best, t) => {
-    const ret = Number(t.actual_return) || 0;
+  // T-ALPHA-A20: Null safety مطلقة — stats?.?.?.?? null
+  const stats = data?.stats ?? null;
+  const wins = trades.filter(t => Number(t?.hit_target) === 1 || (Number(t?.actual_return) > 0));
+  const losses = trades.filter(t => Number(t?.hit_stop) === 1 || (Number(t?.actual_return) < 0));
+  const winRate = stats?.win_rate != null ? stats.win_rate : trades.length > 0 ? Math.round((wins.length / trades.length) * 1000) / 10 : null;
+  const avgReturn = stats?.avg_return != null ? stats.avg_return : trades.length > 0 ? Math.round((trades.reduce((s, t) => s + (Number(t?.actual_return) || 0), 0) / trades.length) * 100) / 100 : null;
+  const bestTrade = trades.length > 0 ? trades.reduce((best, t) => {
+    const ret = Number(t?.actual_return) || 0;
     return ret > (Number(best?.actual_return) || -Infinity) ? t : best;
-  }, trades[0]);
+  }, trades[0]) : null;
 
   return (
     <div className="space-y-4" dir="rtl">

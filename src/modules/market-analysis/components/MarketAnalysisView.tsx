@@ -208,51 +208,25 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             now has 5 tabs only: predictions / status / sectors-tracking /
             historical-trades / net-picks. */}
         <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-2 h-auto gap-1">
-          {/* T-ALPHA-18: تبويب واحد نظيف — الصفقات + الأداء + القطاعات + الملخص جواه */}
+          {/* T-ALPHA-A20: تبويب واحد نظيف — الصفقات + الأداء + القطاعات + الملخص جواه */}
           <TabsTrigger value="predictions" className="flex items-center gap-1">
             <Target className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">غرفة الصفقات والأداء</span>
           </TabsTrigger>
           <TabsTrigger value="status" className="flex items-center gap-1">
             <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('marketAnalysis.tabs.marketStatus')}</span>
-          </TabsTrigger>
-          {/* Phase P5: تتبع حركة القطاعات */}
-          <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
-            <Layers className="h-4 w-4 text-teal-600" />
-            <span className="hidden sm:inline">{t('marketAnalysis.tabs.sectorsTracking')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="historical-trades" className="flex items-center gap-1">
-            <History className="h-4 w-4 text-primary" />
-            <span className="hidden sm:inline">{t('marketAnalysis.tabs.historicalTrades')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="net-picks" className="flex items-center gap-1">
-            <Target className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">{t('marketAnalysis.tabs.netPicks')}</span>
+            <span className="hidden sm:inline">حالة السوق ونبضه</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل 3 تابات منفصلة.
-            الـ 3 sub-views (الحالية / الأداء / الملخص) بتقرأ من نفس المصدر
-            (predictions.db.predictions) عبر نفس الـ cache → بيانات متوافقة 100%. */}
+        {/* T-ALPHA-A20: UnifiedPredictionsTab يحتوي على 4 sub-views:
+            ⚡ الصفقات الحية | 📊 الأداء الموثق | 🏭 حركة القطاعات | 📋 الملخص */}
         <TabsContent value="predictions" className="mt-4">
           <UnifiedPredictionsTab market={currentMarket} />
         </TabsContent>
 
         <TabsContent value="status" className="mt-4">
           <MarketStatusTab market={currentMarket} />
-        </TabsContent>
-
-        {/* T-ALPHA-18: sectors-tracking + historical-trades + net-picks
-            تم دمجها داخل UnifiedPredictionsTab كـ sub-views */}
-
-        {/* Task 9-B Step 2: 5 radar tabs (exit-radar / weekly-report /
-            multi-market-radar / radar-accuracy / personalized-radar) moved to
-            #liquidity-radar (MakerRadarTab) as internal sub-tabs. The 5
-            TabsContent blocks that used to live here are now sub-tabs inside
-            MakerRadarTab.tsx. */}
-        <TabsContent value="net-picks" className="mt-4">
-          <NetPicksTab market={currentMarket} />
         </TabsContent>
       </Tabs>
 
