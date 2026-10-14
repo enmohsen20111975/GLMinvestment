@@ -59,7 +59,7 @@ export async function GET(req: Request) {
         market,
         active_live_signals: [],
         audited_performance_history: [],
-        summary: null,
+        summary: { win_rate: 0, total_closed: 0, avg_return: 0, active_count: 0, active_signals: { count: 0, avg_rr: 0, avg_confidence: 0 }, audited_performance: { total_closed: 0, wins: 0, losses: 0, expired: 0, win_rate: 0, avg_return: 0, best_return: 0, worst_return: 0, profit_factor: 0 }, generated_at: new Date().toISOString() },
       },
       { status: 500 }
     );
@@ -90,7 +90,7 @@ export async function GET(req: Request) {
           raw_preview: stdout.slice(0, 500),
           active_live_signals: [],
           audited_performance_history: [],
-          summary: null,
+          summary: { win_rate: 0, total_closed: 0, avg_return: 0, active_count: 0, active_signals: { count: 0, avg_rr: 0, avg_confidence: 0 }, audited_performance: { total_closed: 0, wins: 0, losses: 0, expired: 0, win_rate: 0, avg_return: 0, best_return: 0, worst_return: 0, profit_factor: 0 }, generated_at: new Date().toISOString() },
         },
         { status: 502 }
       );
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
           raw_preview: stdout.slice(0, 500),
           active_live_signals: [],
           audited_performance_history: [],
-          summary: null,
+          summary: { win_rate: 0, total_closed: 0, avg_return: 0, active_count: 0, active_signals: { count: 0, avg_rr: 0, avg_confidence: 0 }, audited_performance: { total_closed: 0, wins: 0, losses: 0, expired: 0, win_rate: 0, avg_return: 0, best_return: 0, worst_return: 0, profit_factor: 0 }, generated_at: new Date().toISOString() },
         },
         { status: 502 }
       );
