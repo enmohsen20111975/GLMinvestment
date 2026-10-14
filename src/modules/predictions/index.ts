@@ -3,5 +3,4 @@
 
 export { PredictionTrackingView } from './components/PredictionTrackingView';
 export { DualTrackPredictionsView } from './components/DualTrackPredictionsView';
-export { PredictionTrackingDashboard } from './components/PredictionTrackingDashboard';
 export { MakerRadarTab } from './components/MakerRadarTab';

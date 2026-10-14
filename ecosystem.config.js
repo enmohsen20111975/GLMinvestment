@@ -1,3 +1,15 @@
+// ============================================================================
+// P2-9 FIX (2026-10-14): PM2 production hardening.
+// Before deploying, install pm2-logrotate:
+//   pm2 install pm2-logrotate
+//   pm2 set pm2-logrotate:max_size 10M
+//   pm2 set pm2-logrotate:retain 7
+//   pm2 set pm2-logrotate:compress true
+//
+// Healthcheck URLs: add `healthcheck_url` to each app for PM2 auto-recovery.
+// Example: healthcheck_url: 'http://localhost:3000/api/health'
+// ============================================================================
+
 /**
  * PM2 Ecosystem Configuration
  * ===========================

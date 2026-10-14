@@ -1,3 +1,17 @@
+/**
+ * P3 FIX (2026-10-14): seed-subscriptions.ts needs updating.
+ *
+ * Current: creates 3 plans (free/normal/premium).
+ * Schema supports 6 tiers in MarketPricing: free|premium|pro|b2b_starter|b2b_pro|b2b_enterprise.
+ *
+ * This file is outdated. Update needed:
+ *   1. Add pro, b2b_starter, b2b_pro, b2b_enterprise plans
+ *   2. Add multi-market pricing (EGX/TADAWUL/KSE/QSE) per MarketPricing model
+ *   3. Set sort_order field correctly
+ *
+ * See prisma/SCHEMA_STATUS.md for full schema status.
+ */
+
 import { db } from '../src/lib/db';
 
 async function main() {

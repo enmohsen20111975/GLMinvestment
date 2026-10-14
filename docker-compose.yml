@@ -1,0 +1,52 @@
+# ============================================================================
+# GLMinvestment — docker-compose for Next.js app
+# P3 FIX (2026-10-14): Containerized Next.js app.
+# ============================================================================
+# Usage:
+#   docker-compose up -d
+#
+# NOTE: Python backend, data-engine, ws-service, telegram-events, and news-agent
+# are NOT included here. They run via PM2 on the host (see ecosystem.config.js)
+# or as separate containers (see vps-service/docker-compose.yml).
+# ============================================================================
+
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/keepalive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - glm-network
+
+networks:
+  glm-network:
+    driver: bridge

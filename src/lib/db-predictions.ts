@@ -24,4 +24,4 @@ export const predictionsDb =
 if (process.env.NODE_ENV !== 'production') globalForPredictions.predictionsDb = predictionsDb
 
 // Re-export types
-export type { AiPrediction, ExpertRecommendation, ExpertTrackRecord, PredictionLog } from '@prisma/predictions-client'
+export type { ExpertRecommendation, ExpertTrackRecord, PredictionLog } from '@prisma/predictions-client'

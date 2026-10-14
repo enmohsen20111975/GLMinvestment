@@ -270,7 +270,6 @@ const RescuePage = dynamicImport(() => import('@/app/rescue/page'), { ssr: false
 // CryptoAdvancedAnalysisView + CryptoLearningView moved to archive/dead-components-2026-10-08/
 // (they were imported as dynamic-import variables but never rendered in any JSX).
 // CryptoPredictionTrackingView is KEPT (it IS rendered). To restore: move files back + uncomment.
-const CryptoScreenerView = null;
 const CryptoTradingChartView = null;
 const CryptoAdvancedAnalysisView = null;
 const CryptoPredictionTrackingView = withErrorBoundary(

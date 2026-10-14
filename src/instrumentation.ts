@@ -83,3 +83,40 @@ export async function register() {
     }
   }
 }
+
+
+// ─── P2-12 FIX (2026-10-14): Graceful shutdown handlers ────────────────────
+// Ensures DB connections close cleanly on SIGTERM/SIGINT (PM2 restart, deploy).
+// Without this, WAL corruption can occur under frequent restarts.
+if (process.env.NEXT_RUNTIME === 'nodejs') {
+  const shutdownGracefully = async (signal: string) => {
+    console.log(`[instrumentation] Received ${signal}. Starting graceful shutdown...`);
+
+    // Close Prisma connections (auth + predictions)
+    try {
+      const { db } = await import('@/lib/db');
+      await db.$disconnect();
+      console.log('[instrumentation] Prisma auth DB disconnected.');
+    } catch (e) {
+      console.error('[instrumentation] Prisma auth disconnect failed:', e);
+    }
+
+    try {
+      const { db: predictionsDb } = await import('@/lib/db-predictions');
+      await predictionsDb.$disconnect();
+      console.log('[instrumentation] Prisma predictions DB disconnected.');
+    } catch (e) {
+      console.error('[instrumentation] Prisma predictions disconnect failed:', e);
+    }
+
+    // Give in-flight requests ~2s to complete (PM2 kill_timeout handles the rest)
+    setTimeout(() => {
+      console.log('[instrumentation] Graceful shutdown complete. Exiting.');
+      process.exit(0);
+    }, 2000);
+  };
+
+  process.on('SIGTERM', () => shutdownGracefully('SIGTERM'));
+  process.on('SIGINT', () => shutdownGracefully('SIGINT'));
+  console.log('[instrumentation] Graceful shutdown handlers registered (SIGTERM + SIGINT).');
+}
