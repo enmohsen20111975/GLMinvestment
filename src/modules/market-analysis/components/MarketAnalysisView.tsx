@@ -215,7 +215,6 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           </TabsTrigger>
           <TabsTrigger value="status" className="flex items-center gap-1">
             <Activity className="h-4 w-4" />
-<<<<<<< HEAD
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.marketStatus')}</span>
           </TabsTrigger>
           {/* Phase P5: تتبع حركة القطاعات */}
@@ -230,9 +229,6 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <TabsTrigger value="net-picks" className="flex items-center gap-1">
             <Target className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.netPicks')}</span>
-=======
-            <span className="hidden sm:inline">حالة السوق</span>
->>>>>>> 0a55727 (feat(ui): A-18: Null safety + unified Arabic tabs + English purge)
           </TabsTrigger>
         </TabsList>
 
