@@ -240,7 +240,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
           <div className="space-y-2 relative" ref={dropdownRef}>
             <Label htmlFor="ws-stock-search">{t('watchlist.dialog.tickerLabel')}</Label>
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-on-surface-variant" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stitch-muted dark:text-on-surface-variant" />
               <Input
                 id="ws-stock-search"
                 value={query}
@@ -251,12 +251,12 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
                 dir="rtl"
               />
               {searching && (
-                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin dark:text-on-surface-variant" />
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stitch-muted animate-spin dark:text-on-surface-variant" />
               )}
               {query && !searching && (
                 <button
                   type="button"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface"
                   onClick={() => { setQuery(''); setSelectedStock(null); setResults([]); }}
                 >
                   <X className="w-4 h-4" />
@@ -265,7 +265,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
             </div>
 
             {showDropdown && (
-              <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto dark:bg-surface-container dark:border-outline-variant">
+              <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-white/[0.06] rounded-md shadow-lg max-h-48 overflow-y-auto dark:bg-surface-container dark:border-outline-variant">
                 {results.map((stock) => (
                   <button
                     key={stock.id}
@@ -281,7 +281,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
                         <span className="font-semibold text-sm dark:text-on-surface dark:font-financial">{stock.ticker}</span>
                         <Badge variant="secondary" className="text-[10px] px-1.5">{stock.sector}</Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate dark:text-on-surface-variant">{stock.name_ar}</p>
+                      <p className="text-xs text-stitch-muted truncate dark:text-on-surface-variant">{stock.name_ar}</p>
                     </div>
                     <span className="text-sm font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(stock.current_price)}</span>
                   </button>
@@ -292,12 +292,12 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
 
           {/* Selected stock info */}
           {selectedStock && (
-            <div className="p-3 rounded-lg bg-muted/50 border border-border/50 dark:bg-surface-container dark:border-outline-variant/30">
+            <div className="p-3 rounded-lg bg-[#182030]/50 border border-white/[0.06]/50 dark:bg-surface-container dark:border-outline-variant/30">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-bold text-sm dark:text-on-surface dark:font-financial">{selectedStock.ticker}</span>
-                <span className="text-xs text-muted-foreground dark:text-on-surface-variant">{selectedStock.name_ar}</span>
+                <span className="text-xs text-stitch-muted dark:text-on-surface-variant">{selectedStock.name_ar}</span>
               </div>
-              <p className="text-xs text-muted-foreground dark:text-on-surface-variant tabular-nums dark:font-financial">{t('watchlist.dialog.currentPrice')}: {formatCurrency(selectedStock.current_price)}</p>
+              <p className="text-xs text-stitch-muted dark:text-on-surface-variant tabular-nums dark:font-financial">{t('watchlist.dialog.currentPrice')}: {formatCurrency(selectedStock.current_price)}</p>
             </div>
           )}
 
@@ -617,14 +617,14 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
         {/* Header Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 dark:text-primary dark:font-financial">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary dark:font-financial">
                 {(item.ticker || '').slice(0, 2)}
               </span>
             </div>
             <div className="min-w-0">
               <p className="font-bold dark:text-on-surface dark:font-financial">{item.ticker}</p>
-              <p className="text-xs text-muted-foreground truncate dark:text-on-surface-variant">{item.name_ar}</p>
+              <p className="text-xs text-stitch-muted truncate dark:text-on-surface-variant">{item.name_ar}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -654,18 +654,18 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
 
         {/* Price Section */}
         <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="bg-muted/50 rounded-lg p-2.5 dark:bg-surface-container">
-            <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-0.5">السعر الحالي</p>
+          <div className="bg-[#182030]/50 rounded-lg p-2.5 dark:bg-surface-container">
+            <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-0.5">السعر الحالي</p>
             <p className="font-bold text-lg tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.current_price)}</p>
             <div className="flex items-center gap-1 mt-1">
               {item.price_change >= 0 ? (
-                <TrendingUp className="w-3 h-3 text-emerald-500 dark:text-primary" />
+                <TrendingUp className="w-3 h-3 text-stitch-primary dark:text-primary" />
               ) : (
-                <TrendingDown className="w-3 h-3 text-red-500 dark:text-error" />
+                <TrendingDown className="w-3 h-3 text-rose-400 dark:text-error" />
               )}
               <span className={cn(
                 'text-xs font-semibold tabular-nums dark:font-financial',
-                item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
+                item.price_change >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error'
               )}>
                 {formatPercent(item.price_change_percent)}
               </span>
@@ -677,18 +677,18 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
               'rounded-lg p-2.5',
               isProfitable ? 'bg-emerald-50 dark:bg-emerald-950/30 dark:bg-primary-container/20' : 'bg-red-50 dark:bg-red-950/30 dark:bg-error-container/20'
             )}>
-              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-0.5">الربح/الخسارة</p>
+              <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-0.5">الربح/الخسارة</p>
               <p className={cn(
                 'font-bold text-lg tabular-nums dark:font-financial',
-                isProfitable ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
+                isProfitable ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error'
               )}>
                 {formatCurrency(Math.abs(item.gain_loss))}
               </p>
               <Badge className={cn(
                 'text-[10px] px-1.5 mt-1 tabular-nums dark:font-financial',
                 isProfitable
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error'
+                  ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary'
+                  : 'bg-rose-500/10 text-red-700 dark:bg-red-900/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error'
               )}>
                 {formatPercent(item.gain_loss_percent)}
               </Badge>
@@ -704,22 +704,22 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
         {hasGainLoss && item.purchase_price && (
           <div className="grid grid-cols-3 gap-2 text-xs mb-3">
             <div>
-              <p className="text-muted-foreground dark:text-on-surface-variant">سعر الشراء</p>
+              <p className="text-stitch-muted dark:text-on-surface-variant">سعر الشراء</p>
               <p className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.purchase_price)}</p>
             </div>
             <div>
-              <p className="text-muted-foreground dark:text-on-surface-variant">الكمية</p>
+              <p className="text-stitch-muted dark:text-on-surface-variant">الكمية</p>
               <p className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{item.quantity?.toLocaleString('ar-EG') || '—'}</p>
             </div>
             <div>
-              <p className="text-muted-foreground dark:text-on-surface-variant">المستثمر</p>
+              <p className="text-stitch-muted dark:text-on-surface-variant">المستثمر</p>
               <p className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.total_invested)}</p>
             </div>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 pt-2 border-t border-border dark:border-outline-variant/30">
+        <div className="flex justify-end gap-2 pt-2 border-t border-white/[0.06] dark:border-outline-variant/30">
           <Button
             variant="outline"
             size="sm"
@@ -743,7 +743,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
             variant="outline"
             size="sm"
             onClick={onDelete}
-            className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 dark:text-error dark:hover:bg-error-container/20 dark:border-error-container/40"
+            className="h-9 text-rose-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 dark:text-error dark:hover:bg-error-container/20 dark:border-error-container/40"
           >
             <Trash2 className="w-3.5 h-3.5 ml-1.5" />
             حذف
@@ -853,14 +853,14 @@ export function EnhancedWatchlistView() {
       filterable: true,
       render: (item) => (
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 dark:text-primary dark:font-financial">
+          <div className="w-9 h-9 rounded-full bg-emerald-500/10 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary dark:font-financial">
               {(item.ticker || '').slice(0, 2)}
             </span>
           </div>
           <div className="min-w-0">
             <p className="font-bold text-sm dark:text-on-surface dark:font-financial">{item.ticker}</p>
-            <p className="text-xs text-muted-foreground truncate max-w-[120px] dark:text-on-surface-variant">{item.name_ar}</p>
+            <p className="text-xs text-stitch-muted truncate max-w-[120px] dark:text-on-surface-variant">{item.name_ar}</p>
           </div>
           <StockPublisher
             data={{
@@ -905,7 +905,7 @@ export function EnhancedWatchlistView() {
       filterable: true,
       hideable: true,
       render: (item) => (
-        <p className="text-sm text-muted-foreground dark:text-on-surface-variant tabular-nums dark:font-financial">
+        <p className="text-sm text-stitch-muted dark:text-on-surface-variant tabular-nums dark:font-financial">
           {item.purchase_price ? formatCurrency(item.purchase_price) : '—'}
         </p>
       ),
@@ -954,15 +954,15 @@ export function EnhancedWatchlistView() {
           <div className="flex flex-col items-center gap-0.5">
             <span className={cn(
               'text-sm font-semibold tabular-nums dark:font-financial',
-              isProfitable ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
+              isProfitable ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error'
             )}>
               {formatCurrency(Math.abs(item.gain_loss))}
             </span>
             <Badge className={cn(
               'text-[10px] px-1.5 tabular-nums dark:font-financial',
               isProfitable
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error'
+                ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary'
+                : 'bg-rose-500/10 text-red-700 dark:bg-red-900/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error'
             )}>
               {formatPercent(item.gain_loss_percent)}
             </Badge>
@@ -979,13 +979,13 @@ export function EnhancedWatchlistView() {
       render: (item) => (
         <div className="flex items-center justify-center gap-1">
           {item.price_change >= 0 ? (
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500 dark:text-primary" />
+            <TrendingUp className="w-3.5 h-3.5 text-stitch-primary dark:text-primary" />
           ) : (
-            <TrendingDown className="w-3.5 h-3.5 text-red-500 dark:text-error" />
+            <TrendingDown className="w-3.5 h-3.5 text-rose-400 dark:text-error" />
           )}
           <span className={cn(
             'text-xs font-semibold tabular-nums dark:font-financial',
-            item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
+            item.price_change >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error'
           )}>
             {formatPercent(item.price_change_percent)}
           </span>
@@ -1013,7 +1013,7 @@ export function EnhancedWatchlistView() {
                 )}
               </div>
             ) : (
-              <BellOff className="w-4 h-4 text-muted-foreground dark:text-on-surface-variant" />
+              <BellOff className="w-4 h-4 text-stitch-muted dark:text-on-surface-variant" />
             )}
           </div>
         );
@@ -1046,7 +1046,7 @@ export function EnhancedWatchlistView() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            className="h-8 w-8 text-stitch-muted hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
             onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -1054,7 +1054,7 @@ export function EnhancedWatchlistView() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="h-8 w-8 text-stitch-muted hover:text-rose-400 hover:bg-red-50 dark:hover:bg-red-950/20"
             onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); }}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -1075,7 +1075,7 @@ export function EnhancedWatchlistView() {
   // NOTE: must be AFTER all hook calls (useMemo above) to satisfy Rules of Hooks.
   if (loading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-background dark:bg-surface-container-lowest">
+      <div dir="rtl" className="min-h-screen stitch-canvas dark:bg-surface-container-lowest">
         <div className="p-4 md:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <Skeleton className="h-8 w-48" />
@@ -1095,20 +1095,20 @@ export function EnhancedWatchlistView() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background dark:bg-surface-container-lowest">
+    <div dir="rtl" className="min-h-screen stitch-canvas dark:bg-surface-container-lowest">
       <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center">
-              <Eye className="w-5 h-5 text-emerald-600 dark:text-emerald-400 dark:text-primary" />
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center">
+              <Eye className="w-5 h-5 text-stitch-primary dark:text-stitch-primary dark:text-primary" />
             </div>
             <div>
               <h1 className="text-xl font-bold dark:text-on-surface dark:font-outfit">{t('watchlist.title')}</h1>
               <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('watchlist.subtitle')}</p>
+                <p className="text-sm text-stitch-muted dark:text-on-surface-variant">{t('watchlist.subtitle')}</p>
                 {lastUpdate && (
-                  <span className="text-xs text-muted-foreground dark:text-on-surface-variant flex items-center gap-1 tabular-nums dark:font-financial">
+                  <span className="text-xs text-stitch-muted dark:text-on-surface-variant flex items-center gap-1 tabular-nums dark:font-financial">
                     <Clock className="w-3 h-3" />
                     {lastUpdate.toLocaleTimeString('ar-EG')}
                   </span>
@@ -1160,47 +1160,47 @@ export function EnhancedWatchlistView() {
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4" key="watchlist-summary-cards">
             <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+              <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
                 <BarChart3 className="w-4 h-4" />
                 <span className="text-xs font-medium">{t('watchlist.stats.count')}</span>
               </div>
               <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{(summary.total_items ?? 0).toLocaleString('ar-EG')}</p>
             </Card>
             <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+              <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
                 <Wallet className="w-4 h-4" />
                 <span className="text-xs font-medium">{t('watchlist.stats.totalInvested')}</span>
               </div>
               <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(summary.total_invested)}</p>
             </Card>
             <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+              <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
                 <DollarSign className="w-4 h-4" />
                 <span className="text-xs font-medium">{t('watchlist.stats.currentValue')}</span>
               </div>
               <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(summary.total_current_value)}</p>
             </Card>
             <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-              <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+              <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
                 {summary.total_gain_loss >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-primary" />
+                  <TrendingUp className="w-4 h-4 text-stitch-primary dark:text-primary" />
                 ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500 dark:text-error" />
+                  <TrendingDown className="w-4 h-4 text-rose-400 dark:text-error" />
                 )}
                 <span className="text-xs font-medium">{t('watchlist.stats.pnl')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <p className={cn(
                   'text-xl font-bold tabular-nums dark:font-financial',
-                  summary.total_gain_loss >= 0 ? 'text-emerald-600 dark:text-emerald-400 dark:text-primary' : 'text-red-600 dark:text-red-400 dark:text-error'
+                  summary.total_gain_loss >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error'
                 )}>
                   {formatCurrency(Math.abs(summary.total_gain_loss))}
                 </p>
                 <Badge className={cn(
                   'text-xs',
                   summary.total_gain_loss >= 0
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 dark:bg-primary-container/30 dark:text-primary'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 dark:bg-error-container/30 dark:text-error'
+                    ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary'
+                    : 'bg-rose-500/10 text-red-700 dark:bg-red-900/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error'
                 )}>
                   {formatPercent(summary.total_gain_loss_percent)}
                 </Badge>
@@ -1221,11 +1221,11 @@ export function EnhancedWatchlistView() {
         {!showIntelligence && !loadError && items.length === 0 && (
           <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant" key="watchlist-empty-state">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4 dark:bg-surface-container">
-                <EyeOff className="w-8 h-8 text-muted-foreground dark:text-on-surface-variant" />
+              <div className="w-16 h-16 rounded-full bg-[#182030] flex items-center justify-center mb-4 dark:bg-surface-container">
+                <EyeOff className="w-8 h-8 text-stitch-muted dark:text-on-surface-variant" />
               </div>
               <h3 className="text-lg font-semibold mb-2 dark:text-on-surface dark:font-outfit">{t('watchlist.empty.title')}</h3>
-              <p className="text-sm text-muted-foreground dark:text-on-surface-variant max-w-sm">
+              <p className="text-sm text-stitch-muted dark:text-on-surface-variant max-w-sm">
                 {t('watchlist.empty.body')}
               </p>
               <Button
@@ -1247,7 +1247,7 @@ export function EnhancedWatchlistView() {
                 <AlertCircle className="w-8 h-8 text-destructive dark:text-error" />
               </div>
               <h3 className="text-lg font-semibold mb-2 dark:text-on-surface dark:font-outfit">{t('watchlist.error.title')}</h3>
-              <p className="text-sm text-muted-foreground dark:text-on-surface-variant max-w-sm mb-6">
+              <p className="text-sm text-stitch-muted dark:text-on-surface-variant max-w-sm mb-6">
                 {t('watchlist.error.body')}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -1262,7 +1262,7 @@ export function EnhancedWatchlistView() {
                 </Button>
                 <a
                   href="mailto:support@invist.m2y.net"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-input stitch-canvas hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high"
                 >
                   {t('watchlist.buttons.support')}
                 </a>
@@ -1309,7 +1309,7 @@ export function EnhancedWatchlistView() {
                 columnToggle
                 filterable
                 rowClassName={(item) => cn(
-                  'hover:bg-muted/50',
+                  'hover:bg-[#182030]/50',
                   hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-emerald-50/50 dark:bg-emerald-950/10 dark:bg-primary-container/10',
                   hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-red-50/50 dark:bg-red-950/10 dark:bg-error-container/10',
                 )}
@@ -1338,7 +1338,7 @@ export function EnhancedWatchlistView() {
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="sm:max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-error">
+            <DialogTitle className="flex items-center gap-2 text-rose-400 dark:text-error">
               <AlertTriangle className="w-5 h-5" />
               {t('watchlist.delete.title')}
             </DialogTitle>
