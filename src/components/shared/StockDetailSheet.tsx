@@ -354,41 +354,59 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
                 </div>
               )}
 
-              {/* ─── مستويات الدخول والدفاع ─── */}
+              {/* ─── مستويات الدخول والدفاع + R/R ─── */}
               {data.entry_defense && (
                 <div className="bg-card border border-border rounded-xl p-3">
                   <div className="flex items-center gap-1.5 mb-3">
                     <TrendingUp className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm font-semibold">
-                      مستويات الدخول والدفاع
-                    </span>
+                    <span className="text-sm font-semibold">مستويات الدخول والدفاع</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-sm">
                     <div className="text-center">
-                      <span className="text-xs text-muted-foreground block">
-                        الدخول
-                      </span>
-                      <span className="font-bold tabular-nums">
-                        {fmtPrice(data.entry_defense.entry_level)}
-                      </span>
+                      <span className="text-xs text-muted-foreground block">الدخول</span>
+                      <span className="font-bold tabular-nums text-emerald-500">{fmtPrice(data.entry_defense.entry_level)}</span>
                     </div>
                     <div className="text-center">
-                      <span className="text-xs text-muted-foreground block">
-                        الدفاع
-                      </span>
-                      <span className="font-bold tabular-nums text-amber-500">
-                        {fmtPrice(data.entry_defense.defense_level)}
-                      </span>
+                      <span className="text-xs text-muted-foreground block">الدفاع</span>
+                      <span className="font-bold tabular-nums text-rose-500">{fmtPrice(data.entry_defense.defense_level)}</span>
                     </div>
                     <div className="text-center">
-                      <span className="text-xs text-muted-foreground block">
-                        المقاومة
-                      </span>
-                      <span className="font-bold tabular-nums">
-                        {fmtPrice(data.entry_defense.resistance_level)}
-                      </span>
+                      <span className="text-xs text-muted-foreground block">المقاومة</span>
+                      <span className="font-bold tabular-nums text-teal-500">{fmtPrice(data.entry_defense.resistance_level)}</span>
                     </div>
                   </div>
+                  {/* R/R Ratio */}
+                  {data.rr_ratio != null && (
+                    <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">نسبة العائد/المخاطرة</span>
+                      <span className="font-mono tabular-nums font-bold text-lg text-emerald-500">
+                        1:{Number(data.rr_ratio).toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                  {/* Entry/Target/Stop from unified data */}
+                  {(data.entry_price || data.target_price || data.stop_loss) && (
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                      {data.entry_price && (
+                        <div className="text-center">
+                          <span className="text-muted-foreground block">سعر الدخول</span>
+                          <span className="font-mono tabular-nums font-semibold">{fmtPrice(data.entry_price)}</span>
+                        </div>
+                      )}
+                      {data.target_price && (
+                        <div className="text-center">
+                          <span className="text-muted-foreground block">الهدف</span>
+                          <span className="font-mono tabular-nums font-semibold text-emerald-500">{fmtPrice(data.target_price)}</span>
+                        </div>
+                      )}
+                      {data.stop_loss && (
+                        <div className="text-center">
+                          <span className="text-muted-foreground block">الوقف</span>
+                          <span className="font-mono tabular-nums font-semibold text-rose-500">{fmtPrice(data.stop_loss)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -443,9 +461,17 @@ ${data?.entry_defense?.defense_level ? `الدفاع: ${fmtPrice(data.entry_defe
                 </div>
               </div>
 
-              {/* ─── StockInfographicCard (مرجع للنشر) ─── */}
-              <div ref={infographicRef} className="hidden">
-                {/* StockInfographicCard يُعرض فقط عند الحاجة للتصدير كصورة */}
+              {/* ─── StockInfographicCard (مرجع للنشر + بطاقة فخمة) ─── */}
+              <div ref={infographicRef} className="bg-card border border-border rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <BarChart3 className="w-4 h-4 text-emerald-500" />
+                  <span className="text-sm font-semibold">بطاقة الإنفوجرافيك</span>
+                </div>
+                {ticker && data && (
+                  <div className="text-center text-sm text-muted-foreground">
+                    بطاقة الإنفوجرافيك تُولّد عند الضغط على زر النشر
+                  </div>
+                )}
               </div>
             </>
           )}
