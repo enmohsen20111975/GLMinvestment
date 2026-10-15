@@ -136,6 +136,8 @@ BLUEPRINTS = [
     # — Node route (`/api/maker-radar/wyckoff-screener`) مجرد thin proxy (Rule 20).
     # يفحص كل أسهم EGX (is_active=1) + يرجع phase_distribution + whale_flow_egp.
     ('api.wyckoff_screener_routes', 'wyckoff_screener_bp'),
+    # PRESET-ROUTES: One-click Tactical Presets + Market Pills for all 6 markets
+    ('api.preset_routes', 'preset_bp'),
 ]
 
 for mod_name, bp_name in BLUEPRINTS:

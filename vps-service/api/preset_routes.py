@@ -115,3 +115,24 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
+# Flask Blueprint compatibility for lightweight_server.py
+try:
+    from flask import Blueprint, jsonify, request
+    preset_bp = Blueprint('preset_routes', __name__)
+
+    @preset_bp.route('/api/markets/pills', methods=['GET'])
+    def flask_market_pills():
+        return jsonify(market_pills())
+
+    @preset_bp.route('/api/presets/<market>/<preset>', methods=['GET'])
+    def flask_preset_stocks(market, preset):
+        try:
+            res = get_preset_stocks(market, preset)
+            return jsonify(res)
+        except Exception as e:
+            status_code = getattr(e, 'status_code', 500)
+            detail = getattr(e, 'detail', str(e))
+            return jsonify({'error': detail}), status_code
+except ImportError:
+    preset_bp = None
