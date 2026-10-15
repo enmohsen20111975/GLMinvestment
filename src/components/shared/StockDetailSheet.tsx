@@ -43,6 +43,7 @@ import { Badge } from '@/components/ui/badge';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import { CompanyFundamentalsCard } from '@/modules/radar/components/CompanyFundamentalsCard';
+import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface StockInfo {
@@ -590,7 +591,14 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
                 </TabsContent>
                 <TabsContent value="chart" className="mt-4">
                   <div className="bg-card border border-border rounded-xl p-3">
-                    <MiniSparkline ticker={ticker || ''} days={90} height={120} width={500} showArea />
+                    {/* Full interactive candlestick chart (lightweight-charts library — NOT TradingView website) */}
+                    {ticker && (
+                      <TradingViewChart
+                        ticker={ticker}
+                        stockName={data?.name_ar || data?.name || ticker}
+                        height={400}
+                      />
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>

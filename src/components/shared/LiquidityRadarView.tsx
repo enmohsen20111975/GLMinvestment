@@ -176,6 +176,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       key: 'ticker',
       header: 'السهم',
       sortable: true,
+      filterable: true,
       width: 'min-w-[120px]',
       render: (row) => (
         <div className="flex items-center gap-2">
@@ -246,6 +247,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       key: 'phase',
       header: 'المرحلة',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       align: 'center',
       render: (row) => {

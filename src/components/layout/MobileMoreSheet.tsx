@@ -27,6 +27,14 @@ import {
   LayoutGrid,
   ShieldCheck,
   LifeBuoy,
+  Newspaper,
+  FileText,
+  Microscope,
+  Layers,
+  Wallet,
+  Calculator,
+  Calendar,
+  History,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useNotificationStore } from '@/lib/notification-store';
@@ -43,7 +51,17 @@ const moreNavItems: Array<{ id: AppView; label: string; icon: React.ComponentTyp
   // hidden + weak.
   { id: 'bagholder-rescue', label: '🆘 إنقاذ سهم خسران', icon: LifeBuoy },
   { id: 'watchlist', label: 'قوائم المراقبة', icon: Eye },
+  { id: 'news', label: 'الأخبار الاقتصادية', icon: Newspaper },
+  { id: 'alerts-center', label: 'مركز التنبيهات', icon: Bell },
+  { id: 'reports', label: 'التقارير', icon: FileText },
+  { id: 'specialist-analysis', label: 'تحليل المتخصصين', icon: Microscope },
+  { id: 'market-depth', label: 'عمق السوق', icon: Layers },
+  { id: 'wealth', label: 'إدارة الثروة', icon: Wallet },
+  { id: 'zakat', label: 'حاسبة الزكاة', icon: Calculator },
   { id: 'sharia', label: 'التوافق الشرعي', icon: ShieldCheck },
+  { id: 'seasonality', label: 'الموسمية', icon: Calendar },
+  { id: 'smart-confluence', label: 'التوافق الذكي', icon: Sparkles },
+  { id: 'backtesting', label: 'الاختبار الخلفي', icon: History },
   { id: 'simulation', label: 'المحاكاة', icon: Gamepad2 },
   { id: 'academy', label: 'الأكاديمية', icon: GraduationCap },
   { id: 'about', label: 'من نحن', icon: Sparkles },
