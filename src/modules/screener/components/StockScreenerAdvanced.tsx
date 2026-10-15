@@ -1716,7 +1716,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
               className={cn(
                 'h-8 text-xs gap-1.5 transition-all',
                 isActive
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  ? 'bg-emerald-600 text-foreground hover:bg-emerald-700'
                   : 'border-emerald-500/40 bg-bg-background text-primary hover:bg-emerald-500/20',
               )}
               title={isActive ? 'إزالة الفلتر' : 'تطبيق القالب'}

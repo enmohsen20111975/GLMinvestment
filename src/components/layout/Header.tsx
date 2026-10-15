@@ -107,7 +107,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                   className={cn(
                     'font-mono h-7 px-2 text-xs font-medium leading-none transition-colors',
                     active
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-emerald-600 text-foreground'
                       : 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
                   )}
                 >
@@ -159,7 +159,7 @@ function HeaderNotificationBell() {
     >
       <Bell className="w-4 h-4" />
       {unreadCount > 0 && (
-        <span className="font-mono absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-rose-500 text-white border border-[#0B0E14] rounded-full animate-pulse flex items-center justify-center">
+        <span className="font-mono absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-rose-500 text-foreground border border-background rounded-full animate-pulse flex items-center justify-center">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
