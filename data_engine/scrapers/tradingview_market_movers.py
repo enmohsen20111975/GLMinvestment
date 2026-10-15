@@ -367,6 +367,12 @@ def save_to_db(all_data):
     cursor.execute('DELETE FROM market_movers_tabs')
 
     ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # SOSO-CLEANUP (2026-10-15): فلتر تحقق صريح قبل أي INSERT
+    # منع إدخال أسماء أسواق كـ symbol أو تواريخ ربع سنوية
+    GARBAGE_SYMBOLS = {'مصر', 'السعودية', 'الكويت', 'قطر', 'EGX', 'TADAWUL', 'KSE', 'QSE'}
+    import re as _re
+    skipped_garbage = 0
+
     count = 0
     for page_data in all_data:
         market_type = page_data.get('market_type', 'unknown')
@@ -375,17 +381,40 @@ def save_to_db(all_data):
             tab_qa_id = tab_data.get('tab_qa_id', '')
             headers = json.dumps(tab_data.get('headers', []), ensure_ascii=False)
             for row in tab_data.get('rows', []):
+                symbol = str(row.get('symbol', '')).strip()
+
+                # فلتر 1: ممنوع إدخال symbol = اسم سوق
+                if symbol in GARBAGE_SYMBOLS:
+                    log(f"  ⚠️ تم رفض symbol زبالة (اسم سوق): '{symbol}' — تم التخطي")
+                    skipped_garbage += 1
+                    continue
+
+                # فلتر 2: ممنوع إدخال symbol يبدأ بـ '202' أو يطابق تاريخ ربع سنوي
+                if symbol.startswith('202') or _re.match(r'^\d{4}-', symbol):
+                    log(f"  ⚠️ تم رفض symbol زبالة (تاريخ ربع سنوي): '{symbol}' — تم التخطي")
+                    skipped_garbage += 1
+                    continue
+
+                # فلتر 3: ممنوع إدخال market_type يبدأ بـ '202'
+                if str(market_type).strip().startswith('202'):
+                    log(f"  ⚠️ تم رفض market_type زبالة: '{market_type}' — تم التخطي")
+                    skipped_garbage += 1
+                    continue
+
                 cursor.execute('''
                     INSERT OR REPLACE INTO market_movers_tabs
                     (market_type, tab_name, tab_qa_id, symbol, name, column_headers, cell_values, scraped_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     market_type, tab_name, tab_qa_id,
-                    row.get('symbol', ''), row.get('name', ''),
+                    symbol, row.get('name', ''),
                     headers, json.dumps(row.get('values', []), ensure_ascii=False),
                     ts
                 ))
                 count += 1
+
+    if skipped_garbage > 0:
+        log(f"  🚫 تم رفض {skipped_garbage} صف زبالة (symbol = اسم سوق أو تاريخ ربع سنوي)")
 
     conn.commit()
     conn.close()
