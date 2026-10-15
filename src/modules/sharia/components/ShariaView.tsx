@@ -272,13 +272,13 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
   compliant:
-    'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 dark:bg-primary-container/20 dark:text-primary',
+    'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/50 dark:text-stitch-primary border-emerald-500/30 dark:border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary',
   non_compliant:
-    'bg-rose-500/10 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800 dark:bg-error-container/20 dark:text-error',
+    'bg-rose-500/10 text-rose-400 dark:bg-rose-500/60/50 dark:text-rose-400 border-rose-500/30 dark:border-rose-500/30 dark:bg-error-container/20 dark:text-error',
   doubtful:
     'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
   not_available:
-    'bg-[#182030] text-stitch-muted dark:bg-[#0B0E14]/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+    'bg-[#182030] text-stitch-muted dark:bg-[#0B0E14]/50 dark:text-stitch-outline border-white/[0.06] dark:border-white/[0.06]',
 };
 
 function deriveOverallStatus(row: ShariaRow): ShariaStatus {
@@ -318,7 +318,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
 
   return (
     <Card
-      className="relative overflow-hidden border border-white/[0.06] hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors cursor-pointer group dark:bg-surface-container-low dark:border-outline-variant/30"
+      className="relative overflow-hidden border border-white/[0.06] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-colors cursor-pointer group dark:bg-surface-container-low dark:border-outline-variant/30"
       onClick={() => onOpenDetail(row.symbol)}
     >
       <IslamicPattern />
@@ -418,11 +418,11 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto stitch-glass rounded-2xl border border-emerald-200 dark:border-emerald-900 shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto stitch-glass rounded-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-emerald-50 p-4">
+        <div className="relative bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-stitch-primary p-4">
           <IslamicPattern />
           <div className="relative flex items-start justify-between gap-3">
             <div>
@@ -430,7 +430,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
                 <ShieldCheck className="w-5 h-5" />
                 <h3 className="text-lg font-bold">التوافق الشرعي — {symbol}</h3>
               </div>
-              <p className="text-xs text-emerald-100/80 mt-1">
+              <p className="text-xs text-stitch-primary mt-1">
                 التفصيل حسب المصادر الثمانية + نسب التطهير
               </p>
             </div>
@@ -438,7 +438,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-emerald-50 hover:bg-emerald-800/40 hover:text-white"
+              className="text-stitch-primary hover:bg-emerald-600/80/40 hover:text-white"
               aria-label="إغلاق"
             >
               ✕
@@ -455,8 +455,8 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
             </div>
           )}
           {error && !loading && (
-            <Card className="border-red-200 dark:border-red-900/50">
-              <CardContent className="p-4 flex items-center gap-2 text-sm text-red-700 dark:text-rose-400">
+            <Card className="border-rose-500/30 dark:border-rose-500/30/50">
+              <CardContent className="p-4 flex items-center gap-2 text-sm text-rose-400 dark:text-rose-400">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </CardContent>
@@ -487,14 +487,14 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
   return (
     <>
       {/* Headline */}
-      <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 space-y-1 dark:bg-surface-container-low dark:border-outline-variant/30">
+      <div className="rounded-lg border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-600/60/20 p-3 space-y-1 dark:bg-surface-container-low dark:border-outline-variant/30">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-bold text-stitch-primary dark:text-stitch-primary text-lg font-financial tabular-nums dark:text-primary stitch-latin">{symbol}</span>
           <Badge
             className={cn(
               'border',
               isHalal
-                ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/50 dark:text-stitch-primary border-emerald-500/30 dark:border-emerald-500/30'
                 : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
             )}
           >
@@ -626,7 +626,7 @@ function MetricTile({
       className={cn(
         'rounded-md border p-2 text-center',
         accent === 'emerald'
-          ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20'
+          ? 'border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-600/60/20'
           : 'border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20',
       )}
     >
@@ -709,7 +709,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
   }, [symbol, quantity, buyPrice, sellPrice, method, includeCapitalGain, canSubmit]);
 
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900">
+    <Card className="border-emerald-500/30 dark:border-emerald-500/30">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Calculator className="w-4 h-4 text-stitch-primary" />
@@ -795,7 +795,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
         <Button
           onClick={handleCalculate}
           disabled={!canSubmit}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+          className="w-full bg-emerald-600 hover:bg-emerald-600 text-white gap-2"
         >
           {loading ? (
             <>
@@ -996,7 +996,7 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
   const perSymbol = Array.isArray(result.per_symbol) ? (result.per_symbol as Array<Record<string, unknown>>) : [];
 
   return (
-    <div className="rounded-lg border-2 border-emerald-300 dark:border-emerald-800 bg-gradient-to-l from-emerald-50 via-emerald-50/40 to-emerald-50 dark:from-emerald-950/30 dark:via-emerald-950/10 dark:to-emerald-950/30 p-4 space-y-3">
+    <div className="rounded-lg border-2 border-emerald-500/30 dark:border-emerald-500/30 bg-gradient-to-l from-emerald-50 via-emerald-50/40 to-emerald-50 dark:from-emerald-950/30 dark:via-emerald-950/10 dark:to-emerald-950/30 p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-wider text-stitch-primary dark:text-stitch-primary font-semibold">
@@ -1076,7 +1076,7 @@ function Alert({ variant, children }: { variant: 'error' | 'info'; children: Rea
       className={cn(
         'flex items-start gap-2 p-3 rounded-md text-xs border',
         variant === 'error'
-          ? 'border-red-200 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900'
+          ? 'border-rose-500/30 bg-red-50 text-rose-400 dark:bg-rose-500/60/30 dark:text-rose-400 dark:border-rose-500/30'
           : 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900',
       )}
     >
@@ -1172,7 +1172,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
       </div>
 
       {/* Filters */}
-      <Card className="border-emerald-200 dark:border-emerald-900">
+      <Card className="border-emerald-500/30 dark:border-emerald-500/30">
         <CardContent className="p-3 space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
@@ -1196,7 +1196,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
                 }}
                 className={cn(
                   'gap-1.5 text-xs h-9',
-                  consensusOnly && 'bg-emerald-600 hover:bg-emerald-700 text-white',
+                  consensusOnly && 'bg-emerald-600 hover:bg-emerald-600 text-white',
                 )}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -1340,7 +1340,7 @@ function StatPill({
       className={cn(
         'rounded-lg border p-2 flex items-center gap-2 dark:bg-surface-container-low dark:border dark:border-outline-variant/30',
         accent === 'emerald'
-          ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20'
+          ? 'border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-600/60/20'
           : 'border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20',
       )}
     >
@@ -1348,7 +1348,7 @@ function StatPill({
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-full',
           accent === 'emerald'
-            ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-500/10 dark:text-emerald-300'
+            ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-500/10 dark:text-stitch-primary'
             : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
         )}
       >
@@ -1396,7 +1396,7 @@ export function ShariaView() {
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-background to-background dark:from-emerald-950/10 dark:bg-surface-container-lowest">
       <div className="max-w-6xl mx-auto p-3 sm:p-4 space-y-4" dir="rtl">
         {/* Hero header */}
-        <Card className="relative overflow-hidden border-emerald-300 dark:border-emerald-900 bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-emerald-50">
+        <Card className="relative overflow-hidden border-emerald-500/30 dark:border-emerald-500/30 bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-stitch-primary">
           <IslamicPattern />
           <CardContent className="relative p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -1405,17 +1405,17 @@ export function ShariaView() {
                   <ShieldCheck className="w-6 h-6 text-amber-300" />
                   <h1 className="text-xl sm:text-2xl font-bold">شاشة التوافق الشرعي</h1>
                 </div>
-                <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-stitch-primary max-w-2xl leading-relaxed">
                   بيانات التوافق الشرعي لأسهم البورصة المصرية من ثمانية مصادر متخصصة، مع
                   حاسبة تطهير الأرباح وفق معيار S&P الشرعي وحاسبة تطهير المحفظة بالكامل.
                 </p>
               </div>
               <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wider text-emerald-100/80">
+                <div className="text-[10px] uppercase tracking-wider text-stitch-primary">
                   المنهجية الأساسية
                 </div>
                 <div className="text-lg font-bold text-amber-300">معيار S&P</div>
-                <div className="text-[10px] text-emerald-100/70 mt-0.5">
+                <div className="text-[10px] text-stitch-primary mt-0.5">
                   8 مصادر · تحديث أسبوعي
                 </div>
               </div>

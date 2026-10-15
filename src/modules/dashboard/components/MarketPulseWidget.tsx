@@ -266,7 +266,7 @@ function PulseGauge({ score }: { score: number }) {
         stroke="currentColor"
         strokeWidth={1}
         strokeDasharray="2 4"
-        className="text-slate-300 dark:text-stitch-muted"
+        className="text-stitch-outline dark:text-stitch-muted"
         opacity={0.5}
       />
 
@@ -356,9 +356,9 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
   switch (regime) {
     case 'HEALTHY_BULL':
       return {
-        bg: 'bg-emerald-50 dark:bg-emerald-950/50',
-        text: 'text-stitch-primary dark:text-emerald-300',
-        border: 'border-emerald-200 dark:border-emerald-800',
+        bg: 'bg-emerald-50 dark:bg-emerald-600/60/50',
+        text: 'text-stitch-primary dark:text-stitch-primary',
+        border: 'border-emerald-500/30 dark:border-emerald-500/30',
         icon: ArrowUpRight,
       };
     case 'DISTRIBUTION':
@@ -385,8 +385,8 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
     default:
       return {
         bg: 'bg-[#182030] dark:bg-[#0B0E14]/50',
-        text: 'text-stitch-muted dark:text-slate-300',
-        border: 'border-slate-200 dark:border-slate-800',
+        text: 'text-stitch-muted dark:text-stitch-outline',
+        border: 'border-white/[0.06] dark:border-white/[0.06]',
         icon: AlertTriangle,
       };
   }
@@ -423,7 +423,7 @@ function IndexMiniCard({
   const up = (idx?.change_percent ?? 0) >= 0;
   const hasData = !!idx && typeof idx.value === 'number';
   return (
-    <div className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-[#182030]/60 p-2.5 dark:border-slate-800 dark:bg-[#0B0E14]/40">
+    <div className="flex flex-col gap-0.5 rounded-lg border border-white/[0.06] bg-[#182030]/60 p-2.5 dark:border-white/[0.06] dark:bg-[#0B0E14]/40">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wider text-stitch-outline dark:text-stitch-outline">
           {label}
@@ -497,7 +497,7 @@ function BreadthBar({
           style={{ width: `${gPct}%` }}
         />
         <div
-          className="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700 ease-out"
+          className="h-full bg-[#182030] dark:bg-[#0B0E14] transition-all duration-700 ease-out"
           style={{ width: `${uPct}%` }}
         />
         <div
@@ -641,7 +641,7 @@ export function MarketPulseWidget() {
             </div>
             <button
               onClick={() => void fetchData()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-[#182030] px-3 py-1.5 text-xs font-medium text-stitch-muted transition-colors hover:bg-[#182030] dark:border-slate-700 dark:bg-[#0B0E14] dark:text-slate-200 dark:hover:bg-[#0B0E14]"
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-[#182030] px-3 py-1.5 text-xs font-medium text-stitch-muted transition-colors hover:bg-[#182030] dark:border-white/[0.06] dark:bg-[#0B0E14] dark:text-slate-200 dark:hover:bg-[#0B0E14]"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               إعادة المحاولة
@@ -680,7 +680,7 @@ export function MarketPulseWidget() {
               className={cn(
                 'flex h-7 w-7 items-center justify-center rounded-md',
                 isOpen
-                  ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-950/60 dark:text-stitch-primary'
+                  ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/60 dark:text-stitch-primary'
                   : 'bg-[#182030] text-stitch-outline dark:bg-[#0B0E14] dark:text-stitch-outline',
               )}
             >
@@ -698,14 +698,14 @@ export function MarketPulseWidget() {
             {/* مؤشر مباشر */}
             <span className="relative flex h-2 w-2">
               {isOpen && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/20 opacity-75" />
               )}
               <span
                 className={cn(
                   'relative inline-flex h-2 w-2 rounded-full',
                   isOpen
                     ? 'bg-emerald-500'
-                    : 'bg-slate-400 dark:bg-slate-600',
+                    : 'bg-[#182030] dark:bg-[#0B0E14]',
                 )}
               />
             </span>
@@ -808,7 +808,7 @@ export function MarketPulseWidget() {
         )}
 
         {/* اتساع السوق */}
-        <div className="rounded-lg border border-slate-200 bg-white/60 p-2.5 dark:border-slate-800 dark:bg-slate-950/30">
+        <div className="rounded-lg border border-white/[0.06] bg-white/60 p-2.5 dark:border-white/[0.06] dark:bg-[#0B0E14]/30">
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-stitch-outline dark:text-stitch-outline">
               اتساع السوق
@@ -832,9 +832,9 @@ export function MarketPulseWidget() {
 
         {/* القطاع الأكثر نشاطاً */}
         {top && (
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-gradient-to-l from-emerald-50/60 to-transparent px-2.5 py-2 dark:border-slate-800 dark:from-emerald-950/30">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-gradient-to-l from-emerald-50/60 to-transparent px-2.5 py-2 dark:border-white/[0.06] dark:from-emerald-950/30">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10 text-stitch-primary dark:bg-emerald-950/60 dark:text-stitch-primary">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/60 dark:text-stitch-primary">
                 {top.avg_change >= 0 ? (
                   <Signal className="h-3.5 w-3.5" />
                 ) : (
@@ -845,7 +845,7 @@ export function MarketPulseWidget() {
                 <div className="text-[10px] text-stitch-outline dark:text-stitch-outline">
                   القطاع الأكثر امتصاصاً للسيولة
                 </div>
-                <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                <div className="text-xs font-bold text-stitch-on-surface dark:text-slate-100">
                   {top.sector}
                 </div>
               </div>
@@ -869,7 +869,7 @@ export function MarketPulseWidget() {
         )}
 
         {/* آخر تحديث */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-stitch-outline dark:border-slate-800 dark:text-stitch-outline">
+        <div className="flex items-center justify-between border-t border-white/[0.06] pt-2 text-[10px] text-stitch-outline dark:border-white/[0.06] dark:text-stitch-outline">
           <span>آخر تحديث: {lastUpdateStr}</span>
           <span dir="ltr" className="tabular-nums">
             {data.cairo_time?.split(' ')?.[1] ?? ''}

@@ -196,9 +196,9 @@ const DECISION_STYLE: Record<
   CUT_LOSS: {
     icon: StopCircle,
     accent: 'text-rose-400 dark:text-rose-400 dark:text-error',
-    badge: 'bg-red-600 text-white dark:bg-error dark:text-on-error',
-    ring: 'border-red-400 dark:border-red-700 dark:border-error',
-    panelActive: 'border-red-400 dark:border-red-700 bg-red-50 dark:bg-red-950/30 dark:border-error dark:bg-error-container/10',
+    badge: 'bg-rose-500 text-white dark:bg-error dark:text-on-error',
+    ring: 'border-rose-500/30 dark:border-rose-500/30 dark:border-error',
+    panelActive: 'border-rose-500/30 dark:border-rose-500/30 bg-red-50 dark:bg-rose-500/60/30 dark:border-error dark:bg-error-container/10',
     panelIdle: 'border-white/[0.06]/50 bg-[#182030]/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
   },
   AVERAGE_DOWN: {
@@ -393,7 +393,7 @@ export function BagHolderRescuePanel({
       )}
 
       {/* ── Input Card ─────────────────────────────────────────────────── */}
-      <Card className="border-2 border-emerald-200 dark:border-emerald-900 dark:bg-surface-container-low dark:border dark:border-primary/30">
+      <Card className="border-2 border-emerald-500/30 dark:border-emerald-500/30 dark:bg-surface-container-low dark:border dark:border-primary/30">
         <CardContent className="p-4 md:p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="space-y-1.5">
@@ -449,7 +449,7 @@ export function BagHolderRescuePanel({
           <Button
             onClick={handleDiagnose}
             disabled={loading}
-            className="w-full h-11 text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="w-full h-11 text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-600 text-white"
           >
             {loading ? (
               <>
@@ -490,14 +490,14 @@ export function BagHolderRescuePanel({
 
       {/* ── Error / engine unavailable state (Rule 27 — honest) ────────── */}
       {!loading && result && !result.success && (
-        <Card className="border-2 border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/20 dark:bg-error-container/10 dark:border-error/30">
+        <Card className="border-2 border-rose-500/30 dark:border-rose-500/30 bg-red-50 dark:bg-rose-500/60/20 dark:bg-error-container/10 dark:border-error/30">
           <CardContent className="p-4 md:p-5 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shrink-0 dark:bg-error">
+              <div className="w-11 h-11 rounded-full bg-rose-500 flex items-center justify-center shrink-0 dark:bg-error">
                 <AlertTriangle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-lg font-black text-red-700 dark:text-rose-400 dark:text-error dark:font-outfit">
+                <p className="text-lg font-black text-rose-400 dark:text-rose-400 dark:text-error dark:font-outfit">
                   تعذّر تشخيص الصفقة
                 </p>
                 <p className="text-xs text-stitch-muted dark:text-on-surface-variant">
@@ -610,7 +610,7 @@ function ResultView({ result }: { result: RescueResponse }) {
 
   const trendBadgeStyle = (trend: string) => {
     if (trend.includes('كسر دعم') || trend.includes('هابط واضح')) {
-      return 'border-red-300 text-rose-400 dark:text-rose-400 dark:border-error dark:text-error';
+      return 'border-rose-500/30 text-rose-400 dark:text-rose-400 dark:border-error dark:text-error';
     }
     if (trend.includes('تصحيح حاد') || trend.includes('هبوط عميق')) {
       return 'border-amber-300 text-amber-600 dark:text-amber-400 dark:border-amber-500/40 dark:text-secondary';
@@ -624,7 +624,7 @@ function ResultView({ result }: { result: RescueResponse }) {
       <Card className={cn(
         'border-2',
         result.verdict_badge === 'danger'
-          ? 'border-red-400 dark:border-red-800 bg-red-50 dark:bg-red-950/20 dark:border-error dark:bg-error-container/10'
+          ? 'border-rose-500/30 dark:border-rose-500/30 bg-red-50 dark:bg-rose-500/60/20 dark:border-error dark:bg-error-container/10'
           : result.verdict_badge === 'warning'
             ? 'border-amber-400 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 dark:bg-amber-500/5'
             : 'border-teal-400 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20 dark:border-secondary dark:bg-secondary/5',
@@ -634,7 +634,7 @@ function ResultView({ result }: { result: RescueResponse }) {
             <div className={cn(
               'w-12 h-12 rounded-full flex items-center justify-center shrink-0',
               result.verdict_badge === 'danger'
-                ? 'bg-red-600 dark:bg-error'
+                ? 'bg-rose-500 dark:bg-error'
                 : result.verdict_badge === 'warning'
                   ? 'bg-amber-600'
                   : 'bg-teal-600 dark:bg-secondary',
@@ -827,7 +827,7 @@ function ResultView({ result }: { result: RescueResponse }) {
             )}
             <div className="pt-1 space-y-1">
               {result.autopsy?.bought_near_peak && (
-                <Badge variant="outline" className="text-[9px] border-red-300 text-rose-400 mr-1 dark:border-error dark:text-error">شراء في قمة</Badge>
+                <Badge variant="outline" className="text-[9px] border-rose-500/30 text-rose-400 mr-1 dark:border-error dark:text-error">شراء في قمة</Badge>
               )}
               {result.autopsy?.trend_status && (
                 <Badge variant="outline" className={cn('text-[9px] mr-1', trendBadgeStyle(result.autopsy.trend_status))}>
@@ -950,9 +950,9 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
   }
 
   const toneClass: Record<typeof phases[number]['tone'], string> = {
-    emerald: 'border-emerald-300 text-stitch-primary dark:text-stitch-primary bg-emerald-50 dark:bg-emerald-950/20 dark:border-primary/30 dark:text-primary dark:bg-primary-container/10',
+    emerald: 'border-emerald-500/30 text-stitch-primary dark:text-stitch-primary bg-emerald-50 dark:bg-emerald-600/60/20 dark:border-primary/30 dark:text-primary dark:bg-primary-container/10',
     amber: 'border-amber-300 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 dark:bg-amber-500/5',
-    red: 'border-red-300 text-red-700 dark:text-rose-400 bg-red-50 dark:bg-red-950/20 dark:border-error/30 dark:text-error dark:bg-error-container/10',
+    red: 'border-rose-500/30 text-rose-400 dark:text-rose-400 bg-red-50 dark:bg-rose-500/60/20 dark:border-error/30 dark:text-error dark:bg-error-container/10',
     teal: 'border-teal-300 text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 dark:border-secondary/30 dark:text-secondary dark:bg-secondary/10',
     gray: 'border-white/[0.06] text-stitch-muted bg-[#182030]/20 dark:border-outline-variant/30 dark:text-on-surface-variant dark:bg-surface-container-low',
   };
@@ -1030,7 +1030,7 @@ function FinanceCell({ label, value, tone }: { label: string; value: string; ton
   const toneText: Record<typeof tone, string> = {
     emerald: 'text-stitch-primary dark:text-stitch-primary dark:text-primary',
     amber: 'text-amber-700 dark:text-amber-400 dark:text-secondary',
-    red: 'text-red-700 dark:text-rose-400 dark:text-error',
+    red: 'text-rose-400 dark:text-rose-400 dark:text-error',
     teal: 'text-teal-700 dark:text-teal-400 dark:text-secondary',
     gray: 'text-stitch-on-surface dark:text-on-surface',
   };

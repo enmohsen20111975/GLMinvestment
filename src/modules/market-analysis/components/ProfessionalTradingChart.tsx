@@ -62,9 +62,9 @@ interface Props {
 
 // ─── خريطة ألوان الإشارة (كنسي — مطابق V40.2) ─────────────────────────────────
 const SIGNAL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  STRONG_BUY:        { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
-  INSTITUTIONAL_BUY: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
-  BUY:               { bg: 'bg-emerald-500/10 dark:bg-emerald-500/10', text: 'text-stitch-primary dark:text-emerald-300', border: 'border-emerald-300 dark:border-emerald-700' },
+  STRONG_BUY:        { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-500/30' },
+  INSTITUTIONAL_BUY: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-500/30' },
+  BUY:               { bg: 'bg-emerald-500/10 dark:bg-emerald-500/10', text: 'text-stitch-primary dark:text-stitch-primary', border: 'border-emerald-500/30 dark:border-emerald-500/30' },
   ACCUMULATE:        { bg: 'bg-teal-100 dark:bg-teal-900/40', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-300 dark:border-teal-700' },
   HOLD:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
   WAIT:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
@@ -366,7 +366,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   // تفرق بوضوح بين: سكين ساقطة / تصحيح صاعد / تذبذب عرضي
   const regimeBadge = (() => {
     if (flightState?.state === 'falling_down' || makerState?.state === 'distribution') {
-      return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-rose-400 dark:text-rose-400', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-300 dark:border-red-800' };
+      return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-rose-400 dark:text-rose-400', bg: 'bg-red-50 dark:bg-rose-500/60/30', border: 'border-rose-500/30 dark:border-rose-500/30' };
     }
     if (flightState?.state === 'taking_off' && chgPct < 0 && chgPct > -5) {
       return { label: '🟡 تصحيح في مسار صاعد', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-300 dark:border-amber-800' };
@@ -375,7 +375,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-300 dark:border-orange-800' };
     }
     if (flightState?.state === 'taking_off') {
-      return { label: '🟢 مسار صاعد صحي', color: 'text-stitch-primary dark:text-stitch-primary', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-300 dark:border-emerald-800' };
+      return { label: '🟢 مسار صاعد صحي', color: 'text-stitch-primary dark:text-stitch-primary', bg: 'bg-emerald-50 dark:bg-emerald-600/60/30', border: 'border-emerald-500/30 dark:border-emerald-500/30' };
     }
     return null;
   })();
@@ -503,7 +503,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                   className={cn(
                     'stitch-num text-xs font-black px-2 py-0.5 rounded-full dark:font-financial',
                     isUp
-                      ? 'bg-emerald-50 text-stitch-primary border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40'
+                      ? 'bg-emerald-50 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40'
                       : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:bg-error-container/20 dark:text-error dark:border-error-container/40'
                   )}
                 >
@@ -775,15 +775,15 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
             if (isSellSignal) {
               return (
-                <div className="p-3 rounded-xl border-2 border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+                <div className="p-3 rounded-xl border-2 border-rose-500/30 dark:border-rose-500/30 bg-red-50 dark:bg-rose-500/60/30">
                   <div className="flex items-center gap-2 mb-1">
                     <ShieldAlert className="w-4 h-4 text-rose-400 dark:text-rose-400 shrink-0" />
-                    <span className="text-xs font-bold text-red-700 dark:text-rose-400">
+                    <span className="text-xs font-bold text-rose-400 dark:text-rose-400">
                       تحذير صريح — إشارة تجنّب/بيع
                     </span>
-                    <Badge className="text-[9px] bg-red-600 text-white">لا توجد خطة صفقة</Badge>
+                    <Badge className="text-[9px] bg-rose-500 text-white">لا توجد خطة صفقة</Badge>
                   </div>
-                  <p className="text-[11px] text-red-700 dark:text-rose-400 leading-relaxed">
+                  <p className="text-[11px] text-rose-400 dark:text-rose-400 leading-relaxed">
                     هذا السهم يحمل إشارة تجنّب/بيع ({signalAr}). يمنع نظاميّاً عرض خطة صفقة (دخول/وقف/أهداف) لإشارات
                     البيع/التجنّب. راجع سبب الرفض بالأسفل وتجنّب الدخول حتى تتغير الإشارة إلى شراء حقيقية.
                   </p>
@@ -892,7 +892,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold whitespace-nowrap border-b-2 transition-colors',
                 activeTab === tab.id
-                  ? 'border-emerald-600 text-stitch-primary dark:text-stitch-primary dark:border-primary dark:text-primary stitch-glass dark:bg-surface-container-low'
+                  ? 'border-emerald-500/30 text-stitch-primary dark:text-stitch-primary dark:border-primary dark:text-primary stitch-glass dark:bg-surface-container-low'
                   : 'border-transparent text-stitch-muted hover:text-stitch-on-surface hover:bg-[#182030]/50 dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high'
               )}
             >
@@ -1058,7 +1058,7 @@ function ReasonCard({ label, value, positive, negative }: {
     <div className={cn(
       'p-2 rounded-lg border text-center',
       positive
-        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 dark:bg-primary-container/20 dark:border-primary-container/40'
+        ? 'bg-emerald-50 dark:bg-emerald-600/60/30 border-emerald-500/30 dark:border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary-container/40'
         : negative
         ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 dark:bg-error-container/20 dark:border-error-container/40'
         : 'bg-[#182030]/30 border-white/[0.06] dark:bg-surface-container dark:border-outline-variant/30'
@@ -1066,7 +1066,7 @@ function ReasonCard({ label, value, positive, negative }: {
       <div className="text-[9px] text-stitch-muted mb-0.5 dark:text-on-surface-variant">{label}</div>
       <div className={cn(
         'text-[11px] font-bold',
-        positive ? 'text-stitch-primary dark:text-emerald-300 dark:text-primary' : negative ? 'text-rose-700 dark:text-rose-300 dark:text-error' : 'text-stitch-on-surface dark:text-on-surface'
+        positive ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : negative ? 'text-rose-700 dark:text-rose-300 dark:text-error' : 'text-stitch-on-surface dark:text-on-surface'
       )}>
         {value}
       </div>
@@ -1106,7 +1106,7 @@ function WhoIsBuyingPanel({ buyPct, sellPct, whoIsBuying, accumulation }: {
   if (institutionalPct !== null) {
     if (institutionalPct >= 70) {
       statusBadge = 'تجميع مؤسسي قوي';
-      statusColor = 'bg-emerald-500/10 text-stitch-primary border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300';
+      statusColor = 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary';
     } else if (institutionalPct >= 55) {
       statusBadge = 'تجميع مؤسسي هادئ';
       statusColor = 'bg-teal-100 text-teal-700 border-teal-300 dark:bg-teal-950/40 dark:text-teal-300';
@@ -1148,7 +1148,7 @@ function WhoIsBuyingPanel({ buyPct, sellPct, whoIsBuying, accumulation }: {
                 style={{ width: `${institutionalPct}%` }}
               />
             </div>
-            <span className="stitch-num font-bold text-stitch-primary dark:text-emerald-300">
+            <span className="stitch-num font-bold text-stitch-primary dark:text-stitch-primary">
               {institutionalPct.toFixed(0)}%
             </span>
           </div>
@@ -1200,7 +1200,7 @@ function MoneyFlowPanel({ netFlowEgp, buyValueM, sellValueM, moneyFlow, volumeRa
   if (netFlowM !== null) {
     if (netFlowM > 5) {
       flowSignal = 'سيولة ذكية فائقة الدخول';
-      flowColor = 'text-stitch-primary dark:text-emerald-300';
+      flowColor = 'text-stitch-primary dark:text-stitch-primary';
     } else if (netFlowM > 0) {
       flowSignal = 'سيولة داخلة';
       flowColor = 'text-stitch-primary dark:text-stitch-primary';
@@ -1315,7 +1315,7 @@ function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, 
           className={cn(
             'text-[9px]',
             isClean
-              ? 'bg-emerald-500/10 text-stitch-primary border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
+              ? 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary'
               : 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300'
           )}
         >
@@ -1324,7 +1324,7 @@ function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, 
       </div>
       
       {isClean ? (
-        <div className="text-xs text-stitch-primary dark:text-emerald-300 text-center py-2">
+        <div className="text-xs text-stitch-primary dark:text-stitch-primary text-center py-2">
           لا توجد مصائد أو أنماط سلبية مكتشفة في السهم حالياً
         </div>
       ) : (
@@ -1343,7 +1343,7 @@ function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, 
           <div className="text-[10px] text-stitch-muted mb-1">إشارات إيجابية:</div>
           <div className="flex flex-wrap gap-1">
             {bullishSignals.map((sig, i) => (
-              <Badge key={i} variant="outline" className="text-[9px] bg-emerald-50 text-stitch-primary border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <Badge key={i} variant="outline" className="text-[9px] bg-emerald-50 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary">
                 {sig}
               </Badge>
             ))}

@@ -1135,8 +1135,8 @@ function LiveMarketScanner() {
     : '—';
 
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
-      <CardHeader className="gap-3 border-b bg-emerald-950/30 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
+    <Card className="overflow-hidden border-emerald-500/30/20 bg-gradient-to-br from-emerald-950/20 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-3 border-b bg-emerald-600/60/30 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-stitch-primary dark:text-stitch-primary">
@@ -1164,7 +1164,7 @@ function LiveMarketScanner() {
               size="sm"
               onClick={() => fetchStocks()}
               disabled={refreshing}
-              className="border-emerald-600/40 text-stitch-primary hover:bg-emerald-600/10 dark:text-stitch-primary dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
+              className="border-emerald-500/30/40 text-stitch-primary hover:bg-emerald-600/10 dark:text-stitch-primary dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
             >
               <RefreshCw className={cn('ml-1 h-4 w-4', refreshing && 'animate-spin')} />
               تحديث
@@ -1228,9 +1228,9 @@ function LiveMarketScanner() {
                           <span
                             className={cn(
                               'inline-flex items-center gap-1 rounded-md px-2 py-0.5 stitch-num text-xs font-semibold tabular-nums',
-                              tone === 'up' && 'bg-emerald-600/10 text-stitch-primary dark:text-emerald-300',
-                              tone === 'down' && 'bg-red-600/10 text-red-700 dark:text-red-300',
-                              tone === 'flat' && 'bg-slate-500/10 text-stitch-muted dark:text-slate-300',
+                              tone === 'up' && 'bg-emerald-600/10 text-stitch-primary dark:text-stitch-primary',
+                              tone === 'down' && 'bg-rose-500/10 text-rose-400 dark:text-rose-400',
+                              tone === 'flat' && 'bg-[#182030]/10 text-stitch-muted dark:text-stitch-outline',
                             )}
                             dir="ltr"
                           >
@@ -1254,7 +1254,7 @@ function LiveMarketScanner() {
                             variant="secondary"
                             size="sm"
                             onClick={() => setAnalysis({ open: true, stock: s })}
-                            className="h-8 bg-emerald-600/15 text-stitch-primary hover:bg-emerald-600/25 dark:text-emerald-300"
+                            className="h-8 bg-emerald-600/15 text-stitch-primary hover:bg-emerald-600/25 dark:text-stitch-primary"
                           >
                             حلّل
                           </Button>
@@ -1291,9 +1291,9 @@ function LiveMarketScanner() {
                       <span
                         className={cn(
                           'inline-flex items-center gap-1 rounded-md px-2 py-0.5 stitch-num text-xs font-semibold tabular-nums',
-                          tone === 'up' && 'bg-emerald-600/10 text-stitch-primary dark:text-emerald-300',
-                          tone === 'down' && 'bg-red-600/10 text-red-700 dark:text-red-300',
-                          tone === 'flat' && 'bg-slate-500/10 text-stitch-muted dark:text-slate-300',
+                          tone === 'up' && 'bg-emerald-600/10 text-stitch-primary dark:text-stitch-primary',
+                          tone === 'down' && 'bg-rose-500/10 text-rose-400 dark:text-rose-400',
+                          tone === 'flat' && 'bg-[#182030]/10 text-stitch-muted dark:text-stitch-outline',
                         )}
                         dir="ltr"
                       >
@@ -1304,7 +1304,7 @@ function LiveMarketScanner() {
                         variant="secondary"
                         size="sm"
                         onClick={() => setAnalysis({ open: true, stock: s })}
-                        className="h-7 bg-emerald-600/15 px-2 text-xs text-stitch-primary hover:bg-emerald-600/25 dark:text-emerald-300"
+                        className="h-7 bg-emerald-600/15 px-2 text-xs text-stitch-primary hover:bg-emerald-600/25 dark:text-stitch-primary"
                       >
                         حلّل
                       </Button>
@@ -1391,9 +1391,9 @@ function LiveMarketScanner() {
                       className={cn(
                         'rounded-lg border p-3 text-sm',
                         hint.tone === 'up' &&
-                          'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200',
+                          'border-emerald-500/30/40 bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary',
                         hint.tone === 'down' &&
-                          'border-red-500/40 bg-rose-500/10 text-red-800 dark:text-red-200',
+                          'border-rose-500/30/40 bg-rose-500/10 text-rose-400 dark:text-rose-400',
                         hint.tone === 'flat' &&
                           'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200',
                       )}
@@ -1588,18 +1588,18 @@ const SCENARIO_TONE_STYLES: Record<
   { accentBorder: string; accentStrip: string; badge: string; badgeLabel: string; iconBg: string }
 > = {
   bullish: {
-    accentBorder: 'border-emerald-500/40',
+    accentBorder: 'border-emerald-500/30/40',
     accentStrip: 'bg-emerald-500',
-    badge: 'bg-emerald-600/15 text-stitch-primary dark:text-emerald-300',
+    badge: 'bg-emerald-600/15 text-stitch-primary dark:text-stitch-primary',
     badgeLabel: 'صعودي',
     iconBg: 'bg-emerald-600/15 text-stitch-primary dark:text-stitch-primary',
   },
   bearish: {
-    accentBorder: 'border-red-500/40',
-    accentStrip: 'bg-red-500',
-    badge: 'bg-red-600/15 text-red-700 dark:text-red-300',
+    accentBorder: 'border-rose-500/30/40',
+    accentStrip: 'bg-rose-500',
+    badge: 'bg-rose-500/15 text-rose-400 dark:text-rose-400',
     badgeLabel: 'هبوطي',
-    iconBg: 'bg-red-600/15 text-rose-400 dark:text-rose-400',
+    iconBg: 'bg-rose-500/15 text-rose-400 dark:text-rose-400',
   },
   wait: {
     accentBorder: 'border-amber-500/40',
@@ -1609,11 +1609,11 @@ const SCENARIO_TONE_STYLES: Record<
     iconBg: 'bg-amber-600/15 text-amber-600 dark:text-amber-400',
   },
   neutral: {
-    accentBorder: 'border-slate-500/40',
-    accentStrip: 'bg-slate-500',
-    badge: 'bg-slate-600/15 text-stitch-muted dark:text-slate-300',
+    accentBorder: 'border-white/[0.06]/40',
+    accentStrip: 'bg-[#182030]',
+    badge: 'bg-[#0B0E14]/15 text-stitch-muted dark:text-stitch-outline',
     badgeLabel: 'مشروط',
-    iconBg: 'bg-slate-600/15 text-stitch-muted dark:text-stitch-outline',
+    iconBg: 'bg-[#0B0E14]/15 text-stitch-muted dark:text-stitch-outline',
   },
 };
 
@@ -1628,8 +1628,8 @@ const VERDICT_STYLE: Record<
 > = {
   go: {
     Icon: CheckCircle2,
-    color: 'text-stitch-primary dark:text-emerald-300',
-    bg: 'bg-emerald-600/10 border-emerald-500/40',
+    color: 'text-stitch-primary dark:text-stitch-primary',
+    bg: 'bg-emerald-600/10 border-emerald-500/30/40',
     label: 'إجراء',
   },
   wait: {
@@ -1640,8 +1640,8 @@ const VERDICT_STYLE: Record<
   },
   avoid: {
     Icon: XCircle,
-    color: 'text-red-700 dark:text-red-300',
-    bg: 'bg-red-600/10 border-red-500/40',
+    color: 'text-rose-400 dark:text-rose-400',
+    bg: 'bg-rose-500/10 border-rose-500/30/40',
     label: 'تجنّب',
   },
 };
@@ -1708,7 +1708,7 @@ function ScenarioDecisionTree() {
                 </div>
 
                 {/* Trigger box */}
-                <div className="rounded-md border border-slate-500/30 bg-slate-950/20 p-3">
+                <div className="rounded-md border border-white/[0.06]/30 bg-[#0B0E14]/20 p-3">
                   <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stitch-muted">
                     المشغّل (Trigger)
                   </div>
@@ -1825,7 +1825,7 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'stop-loss',
     icon: ShieldAlert,
-    iconBg: 'bg-red-600/15 text-rose-400 dark:text-rose-400',
+    iconBg: 'bg-rose-500/15 text-rose-400 dark:text-rose-400',
     title: 'خطة Stop-loss آلي (الخروج التلقائي)',
     condition:
       'تم فتح مركز شراء وحددت مسبقاً مستوى وقف الخسارة — والآن وصل السعر لهذا المستوى.',
@@ -1844,7 +1844,7 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'dca',
     icon: Layers,
-    iconBg: 'bg-slate-600/15 text-stitch-muted dark:text-stitch-outline',
+    iconBg: 'bg-[#0B0E14]/15 text-stitch-muted dark:text-stitch-outline',
     title: 'خطة DCA (متوسط التكلفة)',
     condition:
       'تستثمر في سهم أساسي طويل الأجل (بنك أو قائد قطاع) وتريد تخفيض متوسط التكلفة دون توقيت السوق.',
@@ -1926,7 +1926,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
             <ol className="space-y-1.5">
               {playbook.steps.map((s, idx) => (
                 <li key={idx} className="flex gap-2 text-xs leading-relaxed">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600/15 text-[10px] font-bold text-stitch-primary dark:text-emerald-300">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600/15 text-[10px] font-bold text-stitch-primary dark:text-stitch-primary">
                     {idx + 1}
                   </span>
                   <span className="flex-1 pt-0.5">{s}</span>
@@ -1935,12 +1935,12 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
             </ol>
           </div>
           {/* Mistake */}
-          <div className="rounded-md border border-red-500/40 bg-red-600/10 p-2">
-            <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
+          <div className="rounded-md border border-rose-500/30/40 bg-rose-500/10 p-2">
+            <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-rose-400 dark:text-rose-400">
               <AlertTriangle className="h-3.5 w-3.5" />
               الخطأ الشائع
             </div>
-            <p className="text-xs leading-relaxed text-red-900 dark:text-red-200">
+            <p className="text-xs leading-relaxed text-rose-400 dark:text-rose-400">
               {playbook.mistake}
             </p>
           </div>
@@ -1962,8 +1962,8 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
 
 function ActionPlaybooks() {
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
-      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
+    <Card className="overflow-hidden border-emerald-500/30/20 bg-gradient-to-br from-emerald-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-2 border-b bg-emerald-600/60/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-stitch-primary dark:text-stitch-primary">
             <ListChecks className="h-5 w-5" />
@@ -1991,7 +1991,7 @@ function TradingFloorView() {
   return (
     <div className="space-y-6">
       {/* Owner intent banner — sets the tone that this is a desk, not a textbook */}
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
+      <div className="rounded-lg border border-emerald-500/30/30 bg-emerald-600/60/20 px-4 py-3 text-xs text-stitch-primary dark:text-stitch-primary sm:px-6 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
         <span className="font-semibold">📊 أرض التداول —</span> مكتب عملي للقرارات المباشرة:
         شاشة أسعار حية، شجرة قرارات سيناريوهات، وكتيبات إجراءات جاهزة.
       </div>
@@ -2001,10 +2001,10 @@ function TradingFloorView() {
           Validation → Signal → Risk Gate → Execution → Journal → Review) with a feedback
           loop. Placed at the top of the Trading Floor so investors see HOW the system
           thinks before they act on the live prices below. */}
-      <section aria-labelledby="pipeline-heading" className="rounded-xl border border-slate-200 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60 sm:p-6 dark:bg-surface-container-lowest dark:border-outline-variant/30">
+      <section aria-labelledby="pipeline-heading" className="rounded-xl border border-white/[0.06] bg-white/80 p-4 dark:border-white/[0.06] dark:bg-[#0B0E14]/60 sm:p-6 dark:bg-surface-container-lowest dark:border-outline-variant/30">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-lg" role="img" aria-label="خريطة">🗺️</span>
-          <h3 id="pipeline-heading" className="text-base font-bold text-slate-800 dark:text-slate-100 sm:text-lg dark:text-on-surface dark:font-outfit">
+          <h3 id="pipeline-heading" className="text-base font-bold text-stitch-on-surface dark:text-slate-100 sm:text-lg dark:text-on-surface dark:font-outfit">
             الخريطة المنطقية لنظام التداول
           </h3>
         </div>
@@ -2125,8 +2125,8 @@ function PositionSizeCalculator() {
   }, [capital, riskPct, entryPrice, stopPrice]);
 
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
-      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
+    <Card className="overflow-hidden border-emerald-500/30/20 bg-gradient-to-br from-emerald-950/10 via-card to-card dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30">
+      <CardHeader className="gap-2 border-b bg-emerald-600/60/20 px-4 py-3 sm:px-6 dark:border-outline-variant/30 dark:bg-surface-container">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-stitch-primary dark:text-stitch-primary">
             <Calculator className="h-5 w-5" />
@@ -2209,35 +2209,35 @@ function PositionSizeCalculator() {
         ) : result ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-primary dark:text-emerald-300 dark:text-on-surface-variant">
+              <div className="rounded-md border border-emerald-500/30/30 bg-emerald-50/50 dark:bg-emerald-600/60/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-primary dark:text-stitch-primary dark:text-on-surface-variant">
                   المخاطرة (جنيه)
                 </div>
-                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200 dark:text-primary dark:font-financial tabular-nums" dir="ltr">
+                <div className="mt-1 text-base font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary dark:font-financial tabular-nums" dir="ltr">
                   {result.maxLoss.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-primary dark:text-emerald-300 dark:text-on-surface-variant">
+              <div className="rounded-md border border-emerald-500/30/30 bg-emerald-50/50 dark:bg-emerald-600/60/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-primary dark:text-stitch-primary dark:text-on-surface-variant">
                   الحجم الأقصى (سهم)
                 </div>
-                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200 dark:text-primary dark:font-financial tabular-nums" dir="ltr">
+                <div className="mt-1 text-base font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary dark:font-financial tabular-nums" dir="ltr">
                   {result.maxShares.toLocaleString('en-US')}
                 </div>
               </div>
-              <div className="rounded-md border border-slate-500/30 bg-[#182030]/50 dark:bg-slate-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-slate-300 dark:text-on-surface-variant">
+              <div className="rounded-md border border-white/[0.06]/30 bg-[#182030]/50 dark:bg-[#0B0E14]/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-stitch-outline dark:text-on-surface-variant">
                   القيمة الإجمالية
                 </div>
-                <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200 dark:text-on-surface dark:font-financial tabular-nums" dir="ltr">
+                <div className="mt-1 text-base font-bold text-stitch-on-surface dark:text-slate-200 dark:text-on-surface dark:font-financial tabular-nums" dir="ltr">
                   {result.totalValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="rounded-md border border-slate-500/30 bg-[#182030]/50 dark:bg-slate-950/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-slate-300 dark:text-on-surface-variant">
+              <div className="rounded-md border border-white/[0.06]/30 bg-[#182030]/50 dark:bg-[#0B0E14]/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-stitch-outline dark:text-on-surface-variant">
                   % من المحفظة
                 </div>
-                <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200 dark:text-on-surface dark:font-financial tabular-nums" dir="ltr">
+                <div className="mt-1 text-base font-bold text-stitch-on-surface dark:text-slate-200 dark:text-on-surface dark:font-financial tabular-nums" dir="ltr">
                   {(result.positionPct ?? 0).toFixed(1)}%
                 </div>
               </div>
@@ -2246,7 +2246,7 @@ function PositionSizeCalculator() {
               <span className="rounded-md border border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20 px-2 py-1 text-amber-800 dark:text-amber-200">
                 الاتجاه: {result.direction}
               </span>
-              <span className="rounded-md border border-slate-500/30 bg-[#182030]/40 px-2 py-1 text-stitch-muted" dir="ltr">
+              <span className="rounded-md border border-white/[0.06]/30 bg-[#182030]/40 px-2 py-1 text-stitch-muted" dir="ltr">
                 المخاطرة/سهم: {(result.perShareRisk ?? 0).toFixed(3)} ج
               </span>
             </div>
@@ -2331,7 +2331,7 @@ function BiasDetectorQuiz() {
                   className={cn(
                     'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
                     answers[q.id] === true
-                      ? 'border-red-500/60 bg-red-600/15 text-red-700 dark:text-red-300'
+                      ? 'border-rose-500/30/60 bg-rose-500/15 text-rose-400 dark:text-rose-400'
                       : 'border-white/[0.06] bg-[#182030]/30 text-stitch-muted hover:bg-[#182030]/60',
                   )}
                 >
@@ -2343,7 +2343,7 @@ function BiasDetectorQuiz() {
                   className={cn(
                     'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
                     answers[q.id] === false
-                      ? 'border-emerald-500/60 bg-emerald-600/15 text-stitch-primary dark:text-emerald-300'
+                      ? 'border-emerald-500/30/60 bg-emerald-600/15 text-stitch-primary dark:text-stitch-primary'
                       : 'border-white/[0.06] bg-[#182030]/30 text-stitch-muted hover:bg-[#182030]/60',
                   )}
                 >
@@ -2376,12 +2376,12 @@ function BiasDetectorQuiz() {
         {submitted && (
           <div className="space-y-3">
             {dominantBias ? (
-              <div className="rounded-md border border-red-500/40 bg-red-600/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
+              <div className="rounded-md border border-rose-500/30/40 bg-rose-500/10 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-rose-400 dark:text-rose-400">
                   <AlertTriangle className="h-4 w-4" />
                   تحيزك المهيمن: {dominantBias[0]}
                 </div>
-                <p className="text-xs leading-relaxed text-red-900 dark:text-red-100">
+                <p className="text-xs leading-relaxed text-rose-400 dark:text-rose-400">
                   أجبت بـ &quot;نعم&quot; على {dominantBias[1].count} من الأسئلة المرتبطة بهذا التحيز. هذا
                   التحيز هو السبب الأكثر احتمالاً لخسائرك. راجع{' '}
                   <span className="font-semibold">درس رقم {dominantBias[1].lessonNum} — {dominantBias[1].lesson}</span>{' '}
@@ -2389,12 +2389,12 @@ function BiasDetectorQuiz() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-md border border-emerald-500/40 bg-emerald-600/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-stitch-primary dark:text-emerald-300">
+              <div className="rounded-md border border-emerald-500/30/40 bg-emerald-600/10 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-stitch-primary dark:text-stitch-primary">
                   <CheckCircle2 className="h-4 w-4" />
                   ممتاز — لا يوجد تحيز مهيمن واضح
                 </div>
-                <p className="text-xs leading-relaxed text-emerald-900 dark:text-emerald-100">
+                <p className="text-xs leading-relaxed text-stitch-primary dark:text-stitch-primary">
                   أجبت بـ &quot;لا&quot; على كل الأسئلة. هذا يعني أن سلوكك التداولي منضبط نسبياً. استمر في
                   الالتزام بـ SOPs (Checklist + Hard Rules + Journal + Review) للحفاظ على هذا الانضباط.
                 </p>
@@ -2402,7 +2402,7 @@ function BiasDetectorQuiz() {
             )}
 
             {scores.sorted.length > 1 && (
-              <div className="rounded-md border border-slate-500/30 bg-[#182030]/30 p-3">
+              <div className="rounded-md border border-white/[0.06]/30 bg-[#182030]/30 p-3">
                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-on-surface-variant">
                   تحيزات أخرى مكتشفة ({scores.sorted.length})
                 </div>
@@ -2459,7 +2459,7 @@ function PracticalToolsView() {
 function AdvancedLabView() {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant" dir="rtl">
+      <div className="rounded-lg border border-emerald-500/30/30 bg-emerald-600/60/20 px-4 py-3 text-xs text-stitch-primary dark:text-stitch-primary sm:px-6 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant" dir="rtl">
         <span className="font-semibold">🔬 المختبر المتقدم —</span> 5 رسوم بيانية تفاعلية + محاكيان
         متقدمان. كل أداة بتعلمك مفهوم محدد: مراحل السوق، تدفّق الأوامر، أنماط الشموع،
         حاسبة المخاطرة/العائد، توزيع المحفظة، محاكاة Monte Carlo، ومقارنة استراتيجيات

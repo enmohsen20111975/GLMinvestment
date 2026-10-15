@@ -839,7 +839,7 @@ export function SimulationView() {
       render: (s) => (
         <Badge
           variant={s.changePercent >= 0 ? 'default' : 'destructive'}
-          className={cn(s.changePercent >= 0 ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary dark:border dark:border-primary-container/40' : '', 'tabular-nums dark:font-financial')}
+          className={cn(s.changePercent >= 0 ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary dark:border dark:border-primary-container/40' : '', 'tabular-nums dark:font-financial')}
         >
           {s.changePercent >= 0 ? '+' : ''}{(s.changePercent ?? 0).toFixed(2)}%
         </Badge>
@@ -853,7 +853,7 @@ export function SimulationView() {
       hideable: false,
       render: (s) => (
         <div className="flex items-center justify-center gap-1">
-          <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'buy'); }}>
+          <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'buy'); }}>
             <Plus className="h-3 w-3" />
             شراء
           </Button>
@@ -943,7 +943,7 @@ export function SimulationView() {
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs gap-1 text-rose-400 hover:text-red-700 border-red-200 hover:bg-red-50 dark:bg-error-container dark:text-on-error-container dark:border-transparent dark:hover:bg-error-container/90"
+            className="h-7 text-xs gap-1 text-rose-400 hover:text-rose-400 border-rose-500/30 hover:bg-red-50 dark:bg-error-container dark:text-on-error-container dark:border-transparent dark:hover:bg-error-container/90"
             onClick={(e) => { if (p._stock) { e.stopPropagation(); openTradeDialog(p._stock, 'sell'); } }}
           >
             <Minus className="h-3 w-3" />
@@ -975,7 +975,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-24',
       render: (t) => (
-        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary dark:border dark:border-primary-container/40' : 'dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/40')}>
+        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary dark:border dark:border-primary-container/40' : 'dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/40')}>
           {t.type === 'buy' ? (
             <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
           ) : (
@@ -1107,9 +1107,9 @@ export function SimulationView() {
           <MarketSelector size="sm" />
           <Badge
             variant={marketOpen ? 'default' : 'secondary'}
-            className={cn('gap-1.5 px-3 py-1', marketOpen ? 'bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90' : 'bg-red-600 hover:bg-red-600 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90')}
+            className={cn('gap-1.5 px-3 py-1', marketOpen ? 'bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90' : 'bg-rose-500 hover:bg-rose-500 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90')}
           >
-            <span className={cn('h-2 w-2 rounded-full', marketOpen ? 'bg-white animate-pulse dark:bg-on-primary-container' : 'bg-red-200 dark:bg-on-error-container')} />
+            <span className={cn('h-2 w-2 rounded-full', marketOpen ? 'bg-white animate-pulse dark:bg-on-primary-container' : 'bg-rose-500/10 dark:bg-on-error-container')} />
             {marketOpen ? 'السوق مفتوح' : 'السوق مغلق'}
           </Badge>
           <Badge variant="outline" className="gap-1.5 dark:bg-surface-container dark:border-outline-variant dark:text-on-surface-variant">
@@ -1195,7 +1195,7 @@ export function SimulationView() {
                     <p className="text-sm text-stitch-muted dark:text-on-surface-variant">الرصيد النقدي</p>
                     <p className="text-xl font-bold tabular-nums dark:font-financial dark:text-primary">{formatCurrency(simState.balance, currencyLabel)}</p>
                   </div>
-                  <div className="p-2 bg-emerald-500/10 dark:bg-emerald-900/30 dark:bg-primary-container/40 rounded-lg">
+                  <div className="p-2 bg-emerald-500/10 dark:bg-emerald-600/80/30 dark:bg-primary-container/40 rounded-lg">
                     <Wallet className="h-5 w-5 text-stitch-primary dark:text-stitch-primary dark:text-primary" />
                   </div>
                 </div>
@@ -1216,7 +1216,7 @@ export function SimulationView() {
               </CardContent>
             </Card>
 
-            <Card className={cn('relative overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30', totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800 dark:border-primary-container/40' : 'border-red-200 dark:border-red-800 dark:border-error-container/40')}>
+            <Card className={cn('relative overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30', totalPnL >= 0 ? 'border-emerald-500/30 dark:border-emerald-500/30 dark:border-primary-container/40' : 'border-rose-500/30 dark:border-rose-500/30 dark:border-error-container/40')}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1225,7 +1225,7 @@ export function SimulationView() {
                       {totalPnL >= 0 ? '+' : ''}{formatCurrency(totalPnL, currencyLabel)}
                     </p>
                   </div>
-                  <div className={cn('p-2 rounded-lg', totalPnL >= 0 ? 'bg-emerald-500/10 dark:bg-emerald-900/30 dark:bg-primary-container/40' : 'bg-rose-500/10 dark:bg-red-900/30 dark:bg-error-container/40')}>
+                  <div className={cn('p-2 rounded-lg', totalPnL >= 0 ? 'bg-emerald-500/10 dark:bg-emerald-600/80/30 dark:bg-primary-container/40' : 'bg-rose-500/10 dark:bg-rose-500/60/30 dark:bg-error-container/40')}>
                     {totalPnL >= 0 ? <TrendingUp className="h-5 w-5 text-stitch-primary dark:text-primary" /> : <TrendingDown className="h-5 w-5 text-rose-400 dark:text-error" />}
                   </div>
                 </div>
@@ -1241,7 +1241,7 @@ export function SimulationView() {
                       {totalPnLPercent >= 0 ? '+' : ''}{(totalPnLPercent ?? 0).toFixed(2)}%
                     </p>
                   </div>
-                  <div className={cn('p-2 rounded-lg', totalPnLPercent >= 0 ? 'bg-emerald-500/10 dark:bg-emerald-900/30 dark:bg-primary-container/40' : 'bg-rose-500/10 dark:bg-red-900/30 dark:bg-error-container/40')}>
+                  <div className={cn('p-2 rounded-lg', totalPnLPercent >= 0 ? 'bg-emerald-500/10 dark:bg-emerald-600/80/30 dark:bg-primary-container/40' : 'bg-rose-500/10 dark:bg-rose-500/60/30 dark:bg-error-container/40')}>
                     <Target className="h-5 w-5 dark:text-on-surface-variant" />
                   </div>
                 </div>
@@ -1324,7 +1324,7 @@ export function SimulationView() {
                 <Separator className="dark:bg-outline-variant" />
                 <div className="space-y-2">
                   <Button
-                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90"
+                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90"
                     onClick={() => setActiveTab('trading')}
                   >
                     <ShoppingCart className="h-4 w-4" />
@@ -1374,8 +1374,8 @@ export function SimulationView() {
                     key={stock.ticker}
                     className={cn(
                       'rounded-lg border p-3 cursor-pointer transition-all hover:shadow-md dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high',
-                      flashingTickers[stock.ticker] === 'up' && 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:bg-primary-container/20 dark:border-primary-container/40',
-                      flashingTickers[stock.ticker] === 'down' && 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:bg-error-container/20 dark:border-error-container/40'
+                      flashingTickers[stock.ticker] === 'up' && 'bg-emerald-50 dark:bg-emerald-600/60/30 border-emerald-500/30 dark:bg-primary-container/20 dark:border-primary-container/40',
+                      flashingTickers[stock.ticker] === 'down' && 'bg-red-50 dark:bg-rose-500/60/30 border-rose-500/30 dark:bg-error-container/20 dark:border-error-container/40'
                     )}
                     onClick={() => openTradeDialog(stock, 'buy')}
                   >
@@ -1423,8 +1423,8 @@ export function SimulationView() {
                   maxHeight="max-h-[600px]"
                   rowClassName={(s) => cn(
                     'transition-colors',
-                    flashingTickers[s.ticker] === 'up' && 'bg-emerald-50/50 dark:bg-emerald-950/20',
-                    flashingTickers[s.ticker] === 'down' && 'bg-red-50/50 dark:bg-red-950/20',
+                    flashingTickers[s.ticker] === 'up' && 'bg-emerald-50/50 dark:bg-emerald-600/60/20',
+                    flashingTickers[s.ticker] === 'down' && 'bg-red-50/50 dark:bg-rose-500/60/20',
                   )}
                 />
               </div>
@@ -1456,7 +1456,7 @@ export function SimulationView() {
                 <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(portfolioValue, currencyLabel)}</p>
               </CardContent>
             </Card>
-            <Card className={cn(totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800 dark:bg-surface-container-low dark:border dark:border-primary-container/40' : 'border-red-200 dark:border-red-800 dark:bg-surface-container-low dark:border dark:border-error-container/40')}>
+            <Card className={cn(totalPnL >= 0 ? 'border-emerald-500/30 dark:border-emerald-500/30 dark:bg-surface-container-low dark:border dark:border-primary-container/40' : 'border-rose-500/30 dark:border-rose-500/30 dark:bg-surface-container-low dark:border dark:border-error-container/40')}>
               <CardContent className="p-4">
                 <p className="text-sm text-stitch-muted dark:text-on-surface-variant">الربح/الخسارة غير المحقق</p>
                 <p className={cn('text-lg font-bold tabular-nums dark:font-financial', totalPnL >= 0 ? 'text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-error')}>
@@ -1658,8 +1658,8 @@ export function SimulationView() {
                     key={ticker}
                     className={cn(
                       'transition-all hover:shadow-md cursor-pointer dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:hover:bg-surface-container',
-                      flashingTickers[ticker] === 'up' && 'border-emerald-300 bg-emerald-50/30 dark:bg-primary-container/20 dark:border-primary-container/40',
-                      flashingTickers[ticker] === 'down' && 'border-red-300 bg-red-50/30 dark:bg-error-container/20 dark:border-error-container/40'
+                      flashingTickers[ticker] === 'up' && 'border-emerald-500/30 bg-emerald-50/30 dark:bg-primary-container/20 dark:border-primary-container/40',
+                      flashingTickers[ticker] === 'down' && 'border-rose-500/30 bg-red-50/30 dark:bg-error-container/20 dark:border-error-container/40'
                     )}
                   >
                     <CardContent className="p-4">
@@ -1693,7 +1693,7 @@ export function SimulationView() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          className="flex-1 h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90"
+                          className="flex-1 h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90"
                           onClick={() => openTradeDialog(stock, 'buy')}
                         >
                           <Plus className="h-3 w-3" />
@@ -1895,7 +1895,7 @@ export function SimulationView() {
               )}
 
               {tradeType === 'buy' && tradeQuantity > 0 && tradeQuantity * selectedStock.price * (1 + COMMISSION_RATE) > simState.balance && (
-                <div className="flex items-center gap-2 text-sm text-rose-400 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
+                <div className="flex items-center gap-2 text-sm text-rose-400 bg-red-50 dark:bg-rose-500/60/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <span>رصيدك غير كافي لإتمام هذه الصفقة</span>
                 </div>
@@ -1904,13 +1904,13 @@ export function SimulationView() {
               {tradeType === 'sell' && (() => {
                 const pos = simState.positions.find((p) => p.ticker === selectedStock.ticker);
                 if (!pos) return (
-                  <div className="flex items-center gap-2 text-sm text-rose-400 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
+                  <div className="flex items-center gap-2 text-sm text-rose-400 bg-red-50 dark:bg-rose-500/60/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>ليس لديك أسهم من هذا السهم لبيعها</span>
                   </div>
                 );
                 if (tradeQuantity > pos.shares) return (
-                  <div className="flex items-center gap-2 text-sm text-rose-400 bg-red-50 dark:bg-red-950/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
+                  <div className="flex items-center gap-2 text-sm text-rose-400 bg-red-50 dark:bg-rose-500/60/30 rounded-lg p-3 dark:bg-error-container/30 dark:text-error dark:border dark:border-error-container/50">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>عدد الأسهم المطلوبة أكبر مما تملك ({pos.shares})</span>
                   </div>
@@ -1927,7 +1927,7 @@ export function SimulationView() {
             <Button
               className={cn(
                 'gap-1.5',
-                tradeType === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent' : 'bg-red-600 hover:bg-red-700 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent'
+                tradeType === 'buy' ? 'bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent' : 'bg-rose-500 hover:bg-rose-500/80 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent'
               )}
               onClick={handleTradeSubmit}
               disabled={tradeQuantity <= 0}
@@ -1987,7 +1987,7 @@ export function SimulationView() {
             <AlertDialogCancel className="dark:bg-surface-container dark:border-outline-variant dark:text-on-surface dark:hover:bg-surface-container-high">إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={executeTrade}
-              className={cn(pendingTrade?.type === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent' : 'bg-red-600 hover:bg-red-700 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent')}
+              className={cn(pendingTrade?.type === 'buy' ? 'bg-emerald-600 hover:bg-emerald-600 dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary-container/90 dark:border-transparent' : 'bg-rose-500 hover:bg-rose-500/80 dark:bg-error-container dark:text-on-error-container dark:hover:bg-error-container/90 dark:border-transparent')}
             >
               تأكيد التنفيذ
             </AlertDialogAction>

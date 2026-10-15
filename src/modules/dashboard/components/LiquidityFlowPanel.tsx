@@ -87,7 +87,7 @@ const PERIOD_LABEL: Record<PeriodKey, string> = {
 function FlowDirectionBadge({ direction }: { direction: SectorFlow['flow_direction'] }) {
   if (direction === 'inflow') {
     return (
-      <Badge className="text-[10px] bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary border-emerald-500/30 hover:bg-emerald-500/20">
+      <Badge className="text-[10px] bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary border-emerald-500/30/30 hover:bg-emerald-500/20">
         <ArrowDownToLine className="w-3 h-3 ml-1" />
         داخلة
       </Badge>
@@ -95,7 +95,7 @@ function FlowDirectionBadge({ direction }: { direction: SectorFlow['flow_directi
   }
   if (direction === 'outflow') {
     return (
-      <Badge className="text-[10px] bg-rose-500/10 text-red-700 dark:text-rose-400 border-red-500/30 hover:bg-rose-500/20">
+      <Badge className="text-[10px] bg-rose-500/10 text-rose-400 dark:text-rose-400 border-rose-500/30/30 hover:bg-rose-500/20">
         <ArrowUpFromLine className="w-3 h-3 ml-1" />
         خارجة
       </Badge>
@@ -352,13 +352,13 @@ export function LiquidityFlowPanel() {
               {marketNameAr}
             </Badge>
             {summary.net_flow_direction === 'inflow' && (
-              <Badge className="text-[10px] bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary border-emerald-500/30">
+              <Badge className="text-[10px] bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary border-emerald-500/30/30">
                 <TrendingUp className="w-3 h-3 ml-1" />
                 صافي تدفّق داخلي
               </Badge>
             )}
             {summary.net_flow_direction === 'outflow' && (
-              <Badge className="text-[10px] bg-rose-500/10 text-red-700 dark:text-rose-400 border-red-500/30">
+              <Badge className="text-[10px] bg-rose-500/10 text-rose-400 dark:text-rose-400 border-rose-500/30/30">
                 <TrendingDown className="w-3 h-3 ml-1" />
                 صافي تدفّق خارجة
               </Badge>
@@ -425,7 +425,7 @@ export function LiquidityFlowPanel() {
 
             {/* Two columns: inflow vs outflow */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2">
+              <div className="rounded-md border border-emerald-500/30/30 bg-emerald-500/5 p-2">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <ArrowDownToLine className="w-3.5 h-3.5 text-stitch-primary dark:text-stitch-primary" />
                   <span className="text-xs font-semibold text-stitch-primary dark:text-stitch-primary">سيولة داخلة</span>
@@ -443,10 +443,10 @@ export function LiquidityFlowPanel() {
                 )}
               </div>
 
-              <div className="rounded-md border border-red-500/30 bg-rose-500/5 p-2">
+              <div className="rounded-md border border-rose-500/30/30 bg-rose-500/5 p-2">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <ArrowUpFromLine className="w-3.5 h-3.5 text-rose-400 dark:text-rose-400" />
-                  <span className="text-xs font-semibold text-red-700 dark:text-rose-400">سيولة هاربة</span>
+                  <span className="text-xs font-semibold text-rose-400 dark:text-rose-400">سيولة هاربة</span>
                 </div>
                 {top_outflow_stocks.length === 0 ? (
                   <div className="text-[11px] text-stitch-muted py-2">لا توجد سيولة خارجة في النافذة الحالية</div>

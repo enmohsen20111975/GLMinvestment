@@ -219,9 +219,9 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 className={cn(
                   'text-[10px]',
                   interpretation.tone === 'buy'
-                    ? 'bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary border-emerald-500/30'
+                    ? 'bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary border-emerald-500/30/30'
                     : interpretation.tone === 'sell'
-                    ? 'bg-rose-500/10 text-red-700 dark:text-rose-400 border-red-500/30'
+                    ? 'bg-rose-500/10 text-rose-400 dark:text-rose-400 border-rose-500/30/30'
                     : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
                 )}
               >
@@ -426,7 +426,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
 
             {/* Volume totals */}
             <div className="grid grid-cols-3 gap-2 text-[11px]">
-              <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
+              <div className="rounded-md bg-emerald-500/5 border border-emerald-500/30/20 p-2">
                 <div className="text-[10px] text-stitch-muted">إجمالي شراء</div>
                 <div className="font-bold text-stitch-primary dark:text-stitch-primary">{formatNumber(session!.total_buy_volume)}</div>
               </div>
@@ -434,7 +434,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 <div className="text-[10px] text-stitch-muted">محايد</div>
                 <div className="font-bold text-amber-600 dark:text-amber-400">{formatNumber(session!.total_neutral_volume)}</div>
               </div>
-              <div className="rounded-md bg-rose-500/5 border border-red-500/20 p-2">
+              <div className="rounded-md bg-rose-500/5 border border-rose-500/30/20 p-2">
                 <div className="text-[10px] text-stitch-muted">إجمالي بيع</div>
                 <div className="font-bold text-rose-400 dark:text-rose-400">{formatNumber(session!.total_sell_volume)}</div>
               </div>

@@ -155,8 +155,8 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
       className="w-full min-h-screen overflow-y-auto stitch-canvas text-stitch-on-surface p-2 md:p-5 pb-28 space-y-5 dark:bg-surface-container-lowest dark:text-on-surface"
     >
       {/* ── SCR-004: Institutional Glass Panel (Bloomberg terminal feel) ── */}
-      <div className="rounded-2xl border border-emerald-500/20 stitch-glass/80 backdrop-blur-sm shadow-lg overflow-hidden dark:bg-surface-container-low/80 dark:border dark:border-outline-variant/30">
-        <div className="border-b border-emerald-500/10 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5 px-4 py-4 md:px-5 md:py-5 dark:bg-surface-container dark:border-outline-variant/30 dark:bg-none">
+      <div className="rounded-2xl border border-emerald-500/30/20 stitch-glass/80 backdrop-blur-sm shadow-lg overflow-hidden dark:bg-surface-container-low/80 dark:border dark:border-outline-variant/30">
+        <div className="border-b border-emerald-500/30/10 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5 px-4 py-4 md:px-5 md:py-5 dark:bg-surface-container dark:border-outline-variant/30 dark:bg-none">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-stitch-primary dark:text-primary">
@@ -175,7 +175,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
               <ExchangeSelector compact className="h-9 text-xs rounded-xl border-white/[0.06] stitch-glass dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface" />
               {marketOverview && (
                 <div className="hidden lg:flex items-center gap-2 text-[10px]">
-                  <Badge variant="outline" className="text-stitch-primary border-emerald-200 bg-emerald-50 px-2.5 py-1 stitch-num tabular-nums dark:text-primary dark:border-primary-container/40 dark:bg-primary-container/20 dark:font-financial">
+                  <Badge variant="outline" className="text-stitch-primary border-emerald-500/30 bg-emerald-50 px-2.5 py-1 stitch-num tabular-nums dark:text-primary dark:border-primary-container/40 dark:bg-primary-container/20 dark:font-financial">
                     <TrendingUp className="w-3 h-3 ml-0.5" />
                     ارتفاعات: {marketOverview.summary.gainers}
                   </Badge>
@@ -226,7 +226,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                 </Button>
               </div>
 
-              <Badge className="stitch-num text-[11px] px-2.5 py-1 bg-emerald-50 text-stitch-primary border border-emerald-200 dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40 dark:font-financial">
+              <Badge className="stitch-num text-[11px] px-2.5 py-1 bg-emerald-50 text-stitch-primary border border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40 dark:font-financial">
                 {selectedTickers.length} سهم
               </Badge>
 
@@ -268,7 +268,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                     className={cn(
                       'text-[11px] stitch-num py-1 px-2.5 flex items-center gap-1.5 rounded-full dark:font-financial',
                       isPrimary
-                        ? 'bg-emerald-500/10 text-emerald-800 border border-emerald-200 dark:bg-primary-container/30 dark:text-on-primary-container dark:border-primary-container/40'
+                        ? 'bg-emerald-500/10 text-stitch-primary border border-emerald-500/30 dark:bg-primary-container/30 dark:text-on-primary-container dark:border-primary-container/40'
                         : 'stitch-glass text-stitch-on-surface border border-white/[0.06] dark:bg-surface-container dark:text-on-surface dark:border-outline-variant/30'
                     )}
                   >

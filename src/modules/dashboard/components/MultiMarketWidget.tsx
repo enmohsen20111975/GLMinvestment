@@ -505,7 +505,7 @@ export function MultiMarketWidget() {
     return (
       <div className="space-y-2.5">
         {/* Header summary */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-stitch-primary dark:text-stitch-primary font-medium">
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30/20 text-xs text-stitch-primary dark:text-stitch-primary font-medium">
           <span className="flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5 text-stitch-primary" />
             أسعار الصرف مقابل {marketInfo.currencyName}
@@ -580,25 +580,25 @@ export function MultiMarketWidget() {
           <TabsList className="w-full grid grid-cols-4 h-10 rounded-none border-y bg-[#182030]/40 p-0">
             <TabsTrigger
               value="stocks"
-              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all font-medium"
             >
               📈 الأسهم
             </TabsTrigger>
             <TabsTrigger
               value="gold"
-              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 transition-all font-medium"
             >
               🥇 الذهب
             </TabsTrigger>
             <TabsTrigger
               value="crypto"
-              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-500 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-500 transition-all font-medium"
             >
               ₿ كريبتو
             </TabsTrigger>
             <TabsTrigger
               value="forex"
-              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500/30 transition-all font-medium"
             >
               💱 عملات
             </TabsTrigger>

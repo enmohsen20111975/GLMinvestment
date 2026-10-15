@@ -235,7 +235,7 @@ const ASSET_TYPES: AssetType[] = [
 ];
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
-  stock: 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary',
+  stock: 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary',
   gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   bank: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   certificate: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -299,9 +299,9 @@ const OBLIGATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary',
+  active: 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary',
   paid: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-  overdue: 'bg-rose-500/10 text-red-700 dark:bg-red-900/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error',
+  overdue: 'bg-rose-500/10 text-rose-400 dark:bg-rose-500/60/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error',
 };
 
 // ==================== STOCK SEARCH DROPDOWN ====================
@@ -380,7 +380,7 @@ function StockSearchDropdown({
         />
         {loading && (
           <div className="absolute left-2 top-1/2 -translate-y-1/2">
-            <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-emerald-500/30 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
       </div>
@@ -1107,13 +1107,13 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 document.getElementById('bag-holder-rescue-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }, 100);
             }}
-            className="w-full text-right rounded-lg border-2 border-red-500 bg-red-50 dark:bg-red-950/40 p-4 animate-pulse hover:bg-rose-500/10 dark:hover:bg-red-950/60 transition-colors"
+            className="w-full text-right rounded-lg border-2 border-rose-500/30 bg-red-50 dark:bg-rose-500/60/40 p-4 animate-pulse hover:bg-rose-500/10 dark:hover:bg-rose-500/60/60 transition-colors"
             title={t('portfolio.rescue.hint')}
           >
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-2xl">🚨</span>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-red-700 dark:text-red-300 text-sm md:text-base">
+                <div className="font-bold text-rose-400 dark:text-rose-400 text-sm md:text-base">
                   {t('portfolio.rescue.banner', { count: severeLossPositions.length, unit: severeLossPositions.length === 1 ? t('portfolio.rescue.unitSingular') : t('portfolio.rescue.unitPlural') })}
                 </div>
                 <div className="text-xs text-rose-400 dark:text-rose-400 mt-0.5">
@@ -1154,7 +1154,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           other side — opens DynamicRiskProfilerModal to recompute the persona. */}
       <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl">
         <div className="flex items-center gap-2">
-          <Badge className="text-[10px] gap-1 bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary border-emerald-200 dark:border-emerald-800 dark:border-primary-container/40">
+          <Badge className="text-[10px] gap-1 bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary border-emerald-500/30 dark:border-emerald-500/30 dark:border-primary-container/40">
             <Shield className="w-3 h-3" />
             {t('portfolio.persona.label', { persona: personaLabelAr(persona) })}
           </Badge>
@@ -1308,7 +1308,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
               {t('portfolio.buttons.liveRefresh')}
             </span>
           )}
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
+          <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
             <Plus className="w-4 h-4 ml-1.5" />
             {t('portfolio.buttons.addAsset')}
           </Button>
@@ -1466,7 +1466,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   if (!m || m === 'EGX') return null; // EGX is the default — no badge
                                   const label = MARKET_NAMES_AR[m];
                                   return (
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-[#182030] dark:bg-[#0B0E14]/40 border-slate-200 dark:border-primary text-primary dark:text-slate-300">
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-[#182030] dark:bg-[#0B0E14]/40 border-white/[0.06] dark:border-primary text-primary dark:text-stitch-outline">
                                       🏛️ {label}
                                     </Badge>
                                   );
@@ -1490,7 +1490,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-7 px-2 mr-1 text-[10px] font-bold border-red-500 text-rose-400 dark:text-rose-400 bg-red-50 dark:bg-red-950/40 hover:bg-rose-500/10 dark:hover:bg-red-950/60 animate-pulse"
+                                  className="h-7 px-2 mr-1 text-[10px] font-bold border-rose-500/30 text-rose-400 dark:text-rose-400 bg-red-50 dark:bg-rose-500/60/40 hover:bg-rose-500/10 dark:hover:bg-rose-500/60/60 animate-pulse"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     e.preventDefault();
@@ -1556,7 +1556,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                 </span>
                               )}
                               <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title={t('common.edit')}><Pencil className="w-3.5 h-3.5" /></Button>
-                              <Button variant="outline" size="icon" className="h-7 w-7 text-stitch-muted hover:text-rose-400 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title={t('common.delete')}><Trash2 className="w-3.5 h-3.5" /></Button>
+                              <Button variant="outline" size="icon" className="h-7 w-7 text-stitch-muted hover:text-rose-400 hover:border-rose-500/30 hover:bg-red-50 dark:hover:bg-rose-500/60/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title={t('common.delete')}><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
                           </div>
                           
@@ -1613,7 +1613,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   <span className="tabular-nums dark:font-financial">{formatCurrency(dailyInterest)}</span>
                                 </div>
                                 {accruedInterest > 0 && (
-                                  <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 dark:bg-primary-container/20 rounded text-xs">
+                                  <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 dark:bg-primary-container/20 rounded text-xs">
                                     <div className="flex justify-between">
                                       <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.earnedInterest')}</span>
                                       <span className="font-semibold text-stitch-primary dark:text-stitch-primary dark:text-primary tabular-nums dark:font-financial">
@@ -1720,7 +1720,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   }} placeholder="0.00" dir="ltr" /></div>
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
+                  <div className="bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30 rounded-md px-3 py-2 text-sm">
                     <span className="text-stitch-muted">{t('portfolio.forms.totalCost')}</span>
                     <span className="font-bold text-stitch-primary dark:text-stitch-primary">{formatCurrency(parseFloat(formTotalInvested))}</span>
                   </div>
@@ -1787,7 +1787,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   </div>
                 )}
                 {formWeight && formCurrentValue && parseFloat(formCurrentValue) > 0 && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm flex justify-between">
+                  <div className="bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30 rounded-md px-3 py-2 text-sm flex justify-between">
                     <span className="text-stitch-muted">{t('portfolio.forms.currentValueLabel')}</span>
                     <span className="font-bold text-stitch-primary dark:text-stitch-primary">{formatCurrency(parseFloat(formCurrentValue))}</span>
                   </div>
@@ -1843,7 +1843,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 <div className="space-y-2"><Label>{t('portfolio.forms.currentValueLabel')}</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} placeholder="0.00" dir="ltr" /></div>
                 {formFundType === 'fixed_income' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-emerald-50 dark:bg-emerald-600/60/30 rounded-lg border border-emerald-500/30 dark:border-emerald-500/30">
                     <div className="space-y-2">
                       <Label className="text-stitch-primary dark:text-stitch-primary">{t('portfolio.forms.annualReturnPct')}</Label>
                       <Input type="number" step="0.01" value={formAnnualReturn} onChange={(e) => setFormAnnualReturn(e.target.value)} placeholder={t('portfolio.forms.annualReturnPlaceholder')} dir="ltr" />
@@ -1923,7 +1923,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   </div>
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
+                  <div className="bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30 rounded-md px-3 py-2 text-sm">
                     <span className="text-stitch-muted">{t('portfolio.forms.totalCostUSD')}</span>
                     <span className="font-bold text-stitch-primary dark:text-stitch-primary">${parseFloat(formTotalInvested).toFixed(2)}</span>
                   </div>
@@ -1938,7 +1938,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>{t('portfolio.forms.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave} disabled={saving}>
+            <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave} disabled={saving}>
               {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> {t('portfolio.forms.adding')}</> : t('common.add')}
             </Button>
           </DialogFooter>
@@ -1987,7 +1987,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t('portfolio.forms.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleEditSave} disabled={saving}>
+            <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleEditSave} disabled={saving}>
               {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-1.5" /> {t('portfolio.forms.saving')}</> : t('common.save')}
             </Button>
           </DialogFooter>
@@ -2003,7 +2003,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteId(null)}>{t('portfolio.obligations.cancel')}</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white dark:bg-error dark:text-on-error dark:hover:bg-error/90" onClick={handleDelete}>{t('portfolio.forms.delete')}</Button>
+            <Button className="bg-rose-500 hover:bg-rose-500/80 text-white dark:bg-error dark:text-on-error dark:hover:bg-error/90" onClick={handleDelete}>{t('portfolio.forms.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2044,9 +2044,9 @@ function WealthAllocationMatrixCard({
     cash: { labelKey: 'portfolio.assetLabels.cash', icon: <Banknote className="w-4 h-4" /> },
   };
   const severityBorder: Record<WealthAllocationAlert['severity'], string> = {
-    ok: 'border-emerald-200 dark:border-emerald-800/60',
+    ok: 'border-emerald-500/30 dark:border-emerald-500/30/60',
     warning: 'border-amber-300 dark:border-amber-700/60',
-    critical: 'border-red-400 dark:border-red-700/70',
+    critical: 'border-rose-500/30 dark:border-rose-500/30/70',
   };
   const severityText: Record<WealthAllocationAlert['severity'], string> = {
     ok: 'text-stitch-primary dark:text-stitch-primary dark:text-primary',
@@ -2057,7 +2057,7 @@ function WealthAllocationMatrixCard({
   const visibleAlerts = alerts.filter((a) => a.severity !== 'ok');
 
   return (
-    <Card dir="rtl" className="border-2 border-emerald-500/20">
+    <Card dir="rtl" className="border-2 border-emerald-500/30/20">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm md:text-base font-bold flex items-center gap-2">
@@ -2104,7 +2104,7 @@ function WealthAllocationMatrixCard({
                     value={fillPct}
                     className={cn(
                       'h-2',
-                      alert.severity === 'critical' && '[&>[data-slot=progress-indicator]]:bg-red-500',
+                      alert.severity === 'critical' && '[&>[data-slot=progress-indicator]]:bg-rose-500',
                       alert.severity === 'warning' && '[&>[data-slot=progress-indicator]]:bg-amber-500',
                       alert.severity === 'ok' && '[&>[data-slot=progress-indicator]]:bg-emerald-500',
                     )}
@@ -2112,7 +2112,7 @@ function WealthAllocationMatrixCard({
                   {/* Vertical red line at the ceiling position */}
                   {ceilingPos > 0 && ceilingPos < 100 && (
                     <div
-                      className="absolute top-[-2px] bottom-[-2px] w-0.5 bg-red-600 dark:bg-red-400 rounded-full"
+                      className="absolute top-[-2px] bottom-[-2px] w-0.5 bg-rose-500 dark:bg-rose-500/20 rounded-full"
                       style={{ left: `${ceilingPos}%` }}
                       title={t('portfolio.wealth.ceilingLabel', { pct: alert.ceilingPercent })}
                     />
@@ -2132,7 +2132,7 @@ function WealthAllocationMatrixCard({
                 className={cn(
                   'text-xs flex items-start gap-1.5 rounded-md px-2 py-1.5',
                   a.severity === 'critical'
-                    ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300'
+                    ? 'bg-red-50 dark:bg-rose-500/60/30 text-rose-400 dark:text-rose-400'
                     : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300',
                 )}
               >
@@ -2269,7 +2269,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       sortable: true,
       filterable: true,
       render: (row) => (
-        <Badge className={row.type === 'income' ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-900/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary' : 'bg-rose-500/10 text-red-700 dark:bg-red-900/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error'}>
+        <Badge className={row.type === 'income' ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary' : 'bg-rose-500/10 text-rose-400 dark:bg-rose-500/60/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error'}>
           {row.type === 'income' ? t('portfolio.income.incomeType') : t('portfolio.income.expenseType')}
         </Badge>
       ),
@@ -2367,7 +2367,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
           <span className="font-semibold text-sm min-w-[120px] text-center">{currentMonthLabel}</span>
           <Button variant="outline" size="icon" onClick={() => changeMonth(1)}><ChevronLeft className="w-4 h-4" /></Button>
         </div>
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => setAddDialogOpen(true)}>
+        <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => setAddDialogOpen(true)}>
           <Plus className="w-4 h-4 ml-1.5" />
           {t('portfolio.income.addTransaction')}
         </Button>
@@ -2429,7 +2429,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
                       <span className="font-medium">{formatCurrency(amount)} ({(pct ?? 0).toFixed(1)}%)</span>
                     </div>
                     <div className="h-2 rounded-full bg-[#182030] overflow-hidden">
-                      <div className="h-full rounded-full bg-red-400 transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-rose-500/20 transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
@@ -2531,7 +2531,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>{t('common.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave}>{t('portfolio.income.save')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave}>{t('portfolio.income.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2758,7 +2758,7 @@ const ObligationsTab = memo(function ObligationsTab() {
 
       {/* Add Button */}
       <div className="flex justify-end">
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
+        <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" size="sm" onClick={() => { resetForm(); setAddDialogOpen(true); }}>
           <Plus className="w-4 h-4 ml-1.5" />
           {t('portfolio.obligations.addObligation')}
         </Button>
@@ -2852,7 +2852,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => { resetForm(); setAddDialogOpen(false); }}>{t('portfolio.obligations.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave}>{t('portfolio.obligations.add')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleSave}>{t('portfolio.obligations.add')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2873,7 +2873,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>{t('portfolio.obligations.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handlePayment}>{t('portfolio.obligations.record')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handlePayment}>{t('portfolio.obligations.record')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2892,7 +2892,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t('common.cancel')}</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleEditSave}>{t('portfolio.obligations.save')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-600 text-white dark:bg-primary dark:text-on-primary dark:hover:bg-primary/90" onClick={handleEditSave}>{t('portfolio.obligations.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2906,7 +2906,7 @@ const ObligationsTab = memo(function ObligationsTab() {
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteId(null)}>{t('common.cancel')}</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white dark:bg-error dark:text-on-error dark:hover:bg-error/90" onClick={handleDelete}>{t('portfolio.obligations.delete')}</Button>
+            <Button className="bg-rose-500 hover:bg-rose-500/80 text-white dark:bg-error dark:text-on-error dark:hover:bg-error/90" onClick={handleDelete}>{t('portfolio.obligations.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2977,12 +2977,12 @@ const ReportsTab = memo(function ReportsTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20">
+            <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20">
               <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalAssets')}</p>
               <p className="text-lg font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary tabular-nums dark:font-financial">{formatCurrency(totalAssets)}</p>
               <p className="text-[10px] text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalAssetsHint')}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20 dark:bg-error-container/20">
+            <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-rose-500/60/20 dark:bg-error-container/20">
               <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalObligations')}</p>
               <p className="text-lg font-bold text-rose-400 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(totalLiabilities)}</p>
               <p className="text-[10px] text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalObligationsHint')}</p>
@@ -3007,7 +3007,7 @@ const ReportsTab = memo(function ReportsTab() {
 
       {/* Investment Returns - NEW */}
       {investmentReturns && investmentReturns.total_monthly > 0 && (
-        <Card className="border-emerald-200 dark:border-emerald-800">
+        <Card className="border-emerald-500/30 dark:border-emerald-500/30">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-stitch-primary dark:text-stitch-primary" />
@@ -3034,7 +3034,7 @@ const ReportsTab = memo(function ReportsTab() {
                   <p className="text-base font-bold text-orange-600 dark:text-orange-400">{formatCurrency(investmentReturns.fund_monthly)}</p>
                 </div>
               )}
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 text-center">
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 text-center">
                 <p className="text-xs text-stitch-muted mb-1">{t('portfolio.reports.totalMonthlyReturn')}</p>
                 <p className="text-base font-bold text-stitch-primary dark:text-stitch-primary">{formatCurrency(investmentReturns.total_monthly)}</p>
               </div>
@@ -3064,7 +3064,7 @@ const ReportsTab = memo(function ReportsTab() {
                   <span className="font-medium text-stitch-primary dark:text-stitch-primary">{formatCurrency(reports.monthly_income)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-[#182030] overflow-hidden">
-                  <div className="h-full rounded-full bg-emerald-400" style={{ width: '100%' }} />
+                  <div className="h-full rounded-full bg-emerald-500/20" style={{ width: '100%' }} />
                 </div>
                 {investmentReturns && investmentReturns.total_monthly > 0 && (
                   <p className="text-[10px] text-stitch-muted mt-1">
@@ -3078,7 +3078,7 @@ const ReportsTab = memo(function ReportsTab() {
                   <span className="font-medium text-rose-400 dark:text-rose-400">{formatCurrency(reports.monthly_expenses)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-[#182030] overflow-hidden">
-                  <div className="h-full rounded-full bg-red-400" style={{ width: `${reports.monthly_income > 0 ? Math.min((reports.monthly_expenses / reports.monthly_income) * 100, 100) : 0}%` }} />
+                  <div className="h-full rounded-full bg-rose-500/20" style={{ width: `${reports.monthly_income > 0 ? Math.min((reports.monthly_expenses / reports.monthly_income) * 100, 100) : 0}%` }} />
                 </div>
               </div>
             </div>
@@ -3114,7 +3114,7 @@ const ReportsTab = memo(function ReportsTab() {
                 key={idx}
                 className={cn(
                   'flex items-start gap-3 p-3 rounded-lg border',
-                  alert.type === 'danger' && 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/50',
+                  alert.type === 'danger' && 'bg-red-50 border-rose-500/30 dark:bg-rose-500/60/20 dark:border-rose-500/30/50',
                   alert.type === 'warning' && 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900/50',
                   alert.type === 'info' && 'bg-[#182030] border-teal-200 dark:bg-[#0B0E14]/20 dark:border-teal-900/50'
                 )}
@@ -3147,7 +3147,7 @@ const ReportsTab = memo(function ReportsTab() {
                 const pct = totalAssets > 0 ? (value / totalAssets) * 100 : 0;
                 const label = t(`portfolio.assetTypes.${type}`) || type;
                 const colorClass = ASSET_TYPE_COLORS[type as AssetType] || 'bg-gray-400';
-                const barColor = type === 'stock' ? 'bg-emerald-400' : type === 'gold' ? 'bg-yellow-400' : type === 'bank' ? 'bg-teal-400' : type === 'certificate' ? 'bg-purple-400' : type === 'fund' ? 'bg-orange-400' : 'bg-teal-400';
+                const barColor = type === 'stock' ? 'bg-emerald-500/20' : type === 'gold' ? 'bg-yellow-400' : type === 'bank' ? 'bg-teal-400' : type === 'certificate' ? 'bg-purple-400' : type === 'fund' ? 'bg-orange-400' : 'bg-teal-400';
                 return (
                   <div key={type} className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -3249,10 +3249,10 @@ const ReportsTab = memo(function ReportsTab() {
 
                     {/* Suggestion: Emergency Fund */}
                     {investmentReturns && investmentReturns.total_monthly > 0 && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 dark:bg-primary-container/20 border border-emerald-200 dark:border-emerald-800">
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30">
                         <PiggyBank className="w-5 h-5 text-stitch-primary mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-stitch-primary dark:text-emerald-200">{t('portfolio.reports.emergencyFund')}</p>
+                          <p className="text-sm font-medium text-stitch-primary dark:text-stitch-primary">{t('portfolio.reports.emergencyFund')}</p>
                           <p className="text-xs text-stitch-muted mt-1">
                             {t('portfolio.reports.emergencyFundMsg', { min: formatCurrency((reports?.monthly_expenses || 0) * 3), max: formatCurrency((reports?.monthly_expenses || 0) * 6) })}
                           </p>
@@ -3337,7 +3337,7 @@ export function EnhancedPortfolioView() {
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 dark:bg-emerald-900/30 dark:bg-primary-container/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 dark:bg-emerald-600/80/30 dark:bg-primary-container/30 flex items-center justify-center">
               {portfolioMode === 'portfolio' && <Wallet className="w-5 h-5 text-stitch-primary dark:text-stitch-primary dark:text-primary" />}
               {portfolioMode === 'wealth' && <HandCoins className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
               {portfolioMode === 'rescue' && <LifeBuoy className="w-5 h-5 text-rose-400 dark:text-rose-400 dark:text-error" />}
@@ -3430,10 +3430,10 @@ export function EnhancedPortfolioView() {
         <MasterPortfolioSummary userId={userId} />
 
         {selectedPortfolioId !== 'master' && (
-          <Card className="bg-emerald-950/20 border-emerald-800/40">
-            <CardContent className="p-3 flex items-center justify-between text-xs text-emerald-300">
+          <Card className="bg-emerald-600/60/20 border-emerald-500/30/40">
+            <CardContent className="p-3 flex items-center justify-between text-xs text-stitch-primary">
               <span>{t('portfolio.subPortfolio.banner')}</span>
-              <Badge variant="outline" className="text-stitch-primary border-emerald-600">
+              <Badge variant="outline" className="text-stitch-primary border-emerald-500/30">
                 {t('portfolio.subPortfolio.badge', { id: selectedPortfolioId })}
               </Badge>
             </CardContent>

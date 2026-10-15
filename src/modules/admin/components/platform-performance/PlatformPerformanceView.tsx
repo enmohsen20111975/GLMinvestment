@@ -227,9 +227,9 @@ function KPICard({
   };
   const borderClasses = {
     default: 'border-white/[0.06] dark:border-outline-variant/30',
-    success: 'border-emerald-200 dark:border-emerald-800/50 dark:border-primary-container/40',
+    success: 'border-emerald-500/30 dark:border-emerald-500/30/50 dark:border-primary-container/40',
     warning: 'border-amber-200 dark:border-amber-800/50 dark:border-outline-variant/30',
-    danger: 'border-red-200 dark:border-red-800/50 dark:border-error-container/40',
+    danger: 'border-rose-500/30 dark:border-rose-500/30/50 dark:border-error-container/40',
   };
   return (
     <Card className={`border ${borderClasses[variant]} shadow-xs dark:bg-surface-container-low dark:font-financial`}>
@@ -285,7 +285,7 @@ function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Tra
         {trade.hit_target === 1 ? (
           <Badge className="bg-emerald-500/10 text-stitch-primary hover:bg-emerald-500/10 text-[10px] dark:bg-primary-container/30 dark:text-primary dark:hover:bg-primary-container/40 dark:border-transparent">هدف ✓</Badge>
         ) : trade.hit_stop === 1 ? (
-          <Badge className="bg-rose-500/10 text-red-700 hover:bg-rose-500/10 text-[10px] dark:bg-error-container/30 dark:text-error dark:hover:bg-error-container/40 dark:border-transparent">وقف ✗</Badge>
+          <Badge className="bg-rose-500/10 text-rose-400 hover:bg-rose-500/10 text-[10px] dark:bg-error-container/30 dark:text-error dark:hover:bg-error-container/40 dark:border-transparent">وقف ✗</Badge>
         ) : (
           <Badge variant="outline" className="text-[10px] dark:border-outline-variant/40 dark:text-on-surface-variant">{trade.status}</Badge>
         )}
@@ -537,7 +537,7 @@ export function PlatformPerformanceView() {
 
       {/* === Readiness Box === */}
       {readiness && !insufficientData && (
-        <Card className={readiness.recommendation === 'candidate' ? 'border-emerald-300 bg-emerald-50/50 dark:bg-primary-container/10 dark:border-primary-container/40' : 'border-amber-300 bg-amber-50/50 dark:bg-surface-container-low dark:border-outline-variant/30'}>
+        <Card className={readiness.recommendation === 'candidate' ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-primary-container/10 dark:border-primary-container/40' : 'border-amber-300 bg-amber-50/50 dark:bg-surface-container-low dark:border-outline-variant/30'}>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               {readiness.recommendation === 'candidate' ? (
@@ -675,12 +675,12 @@ export function PlatformPerformanceView() {
 
       {/* === Worst Trades (إجباري) === */}
       {data && data.worst_trades.length > 0 && (
-        <Card className="border-red-200 dark:border-red-800/50 dark:bg-surface-container-low dark:border-error-container/30">
+        <Card className="border-rose-500/30 dark:border-rose-500/30/50 dark:bg-surface-container-low dark:border-error-container/30">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-red-700 dark:text-rose-400 dark:text-error">
+            <CardTitle className="flex items-center gap-2 text-base text-rose-400 dark:text-rose-400 dark:text-error">
               <Skull className="h-5 w-5 dark:text-error" />
               أسوأ الصفقات (Worst {data.worst_trades.length})
-              <Badge variant="outline" className="text-xs border-red-300 text-red-700 dark:border-error-container/40 dark:text-error">شفافية داخلية</Badge>
+              <Badge variant="outline" className="text-xs border-rose-500/30 text-rose-400 dark:border-error-container/40 dark:text-error">شفافية داخلية</Badge>
             </CardTitle>
             <CardDescription className="text-xs dark:text-on-surface-variant">
               أسوأ الصفقات بدون إخفاء — للأمانة الداخلية

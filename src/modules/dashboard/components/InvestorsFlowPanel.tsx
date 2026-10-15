@@ -164,9 +164,9 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
         <Badge
           className={cn(
             'text-[9px] px-1 py-0',
-            isInflow && 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30 dark:text-stitch-primary',
-            isOutflow && 'bg-rose-500/10 text-red-700 border-red-500/30 dark:text-red-300',
-            !isInflow && !isOutflow && 'bg-slate-500/10 text-stitch-muted border-slate-500/30 dark:text-slate-300'
+            isInflow && 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30/30 dark:text-stitch-primary',
+            isOutflow && 'bg-rose-500/10 text-rose-400 border-rose-500/30/30 dark:text-rose-400',
+            !isInflow && !isOutflow && 'bg-[#182030]/10 text-stitch-muted border-white/[0.06]/30 dark:text-stitch-outline'
           )}
         >
           {isInflow ? 'داخل' : isOutflow ? 'هارب' : 'محايد'}
@@ -486,7 +486,7 @@ function InvestorsTable({
             'text-[9px] px-1 py-0',
             autoSeeded
               ? 'text-amber-600 dark:text-amber-400 border-amber-500/30'
-              : 'text-stitch-primary dark:text-stitch-primary border-emerald-500/30'
+              : 'text-stitch-primary dark:text-stitch-primary border-emerald-500/30/30'
           )}
           title={source}
         >

@@ -441,7 +441,7 @@ export function DashboardView() {
                                 <div className="stitch-num font-bold text-sm font-financial tabular-nums dark:text-on-surface">{stock.ticker}</div>
                                 <div className="text-xs text-stitch-muted truncate max-w-[120px] dark:text-on-surface-variant">{stock.nameAr || stock.name}</div>
                               </div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-500/10 dark:text-stitch-primary' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'}`}>
                                 {stock.recommendationAr || stock.recommendation}
                               </span>
                             </div>
@@ -495,12 +495,12 @@ export function DashboardView() {
                   : 'السوق عرضي — انتظر فرص أوضح');
               return (
                 <section aria-label="حالة السوق">
-                  <div className={`rounded-lg border p-3 ${isDefensive ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'}`}>
+                  <div className={`rounded-lg border p-3 ${isDefensive ? 'border-rose-500/30 bg-red-50 dark:border-rose-500/30 dark:bg-rose-500/60/30' : 'border-emerald-500/30 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-600/60/30'}`}>
                     <div className="flex items-center gap-2">
                       {isDefensive ? (
                         <span className="text-rose-400 dark:text-rose-400 font-bold text-sm">⚠️ {advice}</span>
                       ) : (
-                        <span className="text-stitch-primary dark:text-emerald-300 font-bold text-sm">📊 {advice}</span>
+                        <span className="text-stitch-primary dark:text-stitch-primary font-bold text-sm">📊 {advice}</span>
                       )}
                     </div>
                   </div>
@@ -510,8 +510,8 @@ export function DashboardView() {
 
             {/* FOCUS-5-TASKS: تنبيهات أسهمك الشخصية — Owner directive: "تبقى أصغر أو في جانب" */}
             {/* خليها collapsible عشان مش تزحم الفرص فوق */}
-            <details className="rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/10">
-              <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-stitch-primary dark:text-emerald-300 select-none flex items-center gap-2">
+            <details className="rounded-lg border border-emerald-500/30 dark:border-emerald-500/30/50 bg-emerald-50/30 dark:bg-emerald-600/60/10">
+              <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-stitch-primary dark:text-stitch-primary select-none flex items-center gap-2">
                 🔔 تنبيهات أسهمك الشخصية
               </summary>
               <div className="p-4 pt-0">
