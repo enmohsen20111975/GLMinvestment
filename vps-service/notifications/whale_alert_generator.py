@@ -32,6 +32,19 @@ os.environ.setdefault('STOCKS_DB', str(PROJECT_ROOT / "db" / "stocks.db"))
 os.environ.setdefault('DATA_ENGINE_DB', str(PROJECT_ROOT / "db" / "data_engine.db"))
 
 
+def _fmt_flow(val: float, currency_ar: str) -> str:
+    """تنسيق ديناميكي (مليار/مليون/ألف) حسب الحجم — يمنع "0.0 مليار" (Phase 1 #2)."""
+    a = abs(val)
+    if a >= 1e9:
+        return f"{val/1e9:,.2f} مليار {currency_ar}"
+    elif a >= 1e6:
+        return f"{val/1e6:,.1f} مليون {currency_ar}"
+    elif a >= 1e3:
+        return f"{val/1e3:,.1f} ألف {currency_ar}"
+    else:
+        return f"{val:,.0f} {currency_ar}"
+
+
 def generate_whale_pulse_alert(market: str = 'EGX') -> Dict:
     """اجمع أرقام الرادار الحقيقية + رتّب رسالة تسويقية خطافة (FoudaLens-style).
 
@@ -47,20 +60,12 @@ def generate_whale_pulse_alert(market: str = 'EGX') -> Dict:
     total_inflow_raw = sum(s['whale']['net_flow_egp'] for s in accumulators)
     total_outflow_raw = sum(abs(s['whale']['net_flow_egp']) for s in distributors)
 
-    # ── currency + unit (Task BRAVO-GULF-TADAWUL): TADAWUL → billions SAR; else millions EGP.
+    # ─ـ currency (Task BRAVO-GULF-TADAWUL) + dynamic formatting (Phase 1 #2: يمنع "0.0 مليار")
     mr = result.get('market_regime', {}) or {}
     currency_ar = mr.get('currency_ar', 'جنيه مصري')
-    is_tadawul = market.upper() == 'TADAWUL'
-    if is_tadawul:
-        inflow_val = round(total_inflow_raw / 1e9, 2)
-        outflow_val = round(total_outflow_raw / 1e9, 2)
-        unit = 'مليار'
-        market_label = ' (تداول)'
-    else:
-        inflow_val = round(total_inflow_raw / 1e6, 1)
-        outflow_val = round(total_outflow_raw / 1e6, 1)
-        unit = 'مليون'
-        market_label = ''
+    market_label = ' (تداول)' if market.upper() == 'TADAWUL' else ''
+    inflow_str = _fmt_flow(total_inflow_raw, currency_ar)
+    outflow_str = _fmt_flow(total_outflow_raw, currency_ar)
 
     # top accumulators (by net_flow)
     top = sorted(accumulators, key=lambda s: s['whale']['net_flow_egp'], reverse=True)[:5]
@@ -70,7 +75,7 @@ def generate_whale_pulse_alert(market: str = 'EGX') -> Dict:
     # ── format the marketing message ──
     lines = []
     lines.append(
-        f"🚨 رادار نبض الحيتان{market_label}: رصد دخول {inflow_val:,.2f} {unit} {currency_ar} كاش مؤسسي "
+        f"🚨 رادار نبض الحيتان{market_label}: رصد دخول {inflow_str} كاش مؤسسي "
         f"في {len(accumulators)} أسهم.. و {len(distributors)} سهم تحت التصريف! "
         f"افتح المنصة وشوف الأسهم اللي الحيتان بتشتريها قبل الإغلاق."
     )
@@ -79,8 +84,7 @@ def generate_whale_pulse_alert(market: str = 'EGX') -> Dict:
         lines.append("🔥 أقوى تجميعات اليوم (الكاش المؤسسي):")
         for i, s in enumerate(top, 1):
             flow_raw = s['whale']['net_flow_egp']
-            flow_val = flow_raw / (1e9 if is_tadawul else 1e6)
-            flow_str = f"{flow_val:+.2f}" if is_tadawul else f"{flow_val:+.1f}"
+            flow_str = _fmt_flow(flow_raw, currency_ar)
             sym = s.get('ticker', '?')
             name = (s.get('name') or sym)
             if len(name) > 20:
@@ -90,7 +94,7 @@ def generate_whale_pulse_alert(market: str = 'EGX') -> Dict:
             fcf = (s.get('fundamentals', {}).get('free_cash_flow') or 0) / 1e9
             fcf_str = f" | free_cf={fcf:+.1f}B" if fcf else ""
             tv = " 🐋TV" if s.get('tv_whale_spotted') else ""
-            lines.append(f"  {i}. {sym} ({name}) — تدفق {flow_str}{unit} | دخول {entry_str}{fcf_str}{tv}")
+            lines.append(f"  {i}. {sym} ({name}) — تدفق {flow_str} | دخول {entry_str}{fcf_str}{tv}")
     if cash_rich:
         lines.append("")
         lines.append(
@@ -104,9 +108,10 @@ def generate_whale_pulse_alert(market: str = 'EGX') -> Dict:
     return {
         'message': msg,
         'stats': {
-            'total_inflow_display': inflow_val,
-            'total_outflow_display': outflow_val,
-            'unit': unit,
+            'total_inflow_raw': round(total_inflow_raw, 0),
+            'total_outflow_raw': round(total_outflow_raw, 0),
+            'inflow_display': inflow_str,
+            'outflow_display': outflow_str,
             'currency_ar': currency_ar,
             'accumulating_count': len(accumulators),
             'distributing_count': len(distributors),
@@ -115,7 +120,7 @@ def generate_whale_pulse_alert(market: str = 'EGX') -> Dict:
             'market': market,
         },
         'top_accumulators': [
-            {'ticker': s.get('ticker'), 'flow_display': round(s['whale']['net_flow_egp'] / (1e9 if is_tadawul else 1e6), 2)}
+            {'ticker': s.get('ticker'), 'flow_raw': round(s['whale']['net_flow_egp'], 0)}
             for s in top
         ],
     }
@@ -169,6 +174,12 @@ def print_schedule() -> None:
     print("=" * 72)
     print("⏰ الجدولة — الساعتان الذهبيتان (توقيت القاهرة Africa/Cairo):")
     print("=" * 72)
+    # Phase 1 #3: CRON_TZ=Africa/Cairo (cron env var) — يُضبط مرة في أعلى crontab.
+    header = (
+        "# ضبط توقيت القاهرة لـ cron (مرة واحدة في أعلى crontab):\n"
+        "CRON_TZ=Africa/Cairo\n"
+        "TZ=Africa/Cairo\n"
+    )
     egx = (
         "# 12:30 ظهرًا (Mid-Session) — EGX\n"
         "30 12 * * * cd /root/GLMinvestment && \\\n"
@@ -177,17 +188,19 @@ def print_schedule() -> None:
         "  python3 vps-service/notifications/whale_alert_generator.py --market EGX >> /var/log/whale_alert.log 2>&1"
     )
     tadawul = (
-        "# 14:45 عصرًا (قبل إخلاق بربع ساعة) — TADAWUL\n"
+        "# 14:45 عصرًا (قبل الإغلاق بربع ساعة) — TADAWUL\n"
         "45 14 * * * cd /root/GLMinvestment && \\\n"
         "  STOCKS_DB=db/stocks.db DATA_ENGINE_DB=db/data_engine.db \\\n"
         "  TELEGRAM_BOT_TOKEN=$BOT TELEGRAM_CHAT_ID=$CHAT WEB_PUSH_ENDPOINT=$PUSH \\\n"
         "  python3 vps-service/notifications/whale_alert_generator.py --market TADAWUL >> /var/log/whale_alert.log 2>&1"
     )
+    print(header)
+    print()
     print(egx)
     print()
     print(tadawul)
     print("=" * 72)
-    print("التركيب: crontab -e ثم ألصق السطور. لازم TZ=Africa/Cairo في بيئة cron.")
+    print("التركيب: crontab -e ثم ألصق السطور (CRON_TZ يضمن توقيت القاهرة).")
     print("=" * 72)
 
 
@@ -208,6 +221,10 @@ def main() -> int:
     print("=" * 72)
     print(f"📊 Stats: {alert['stats']}")
     print()
+    # Phase 1: --dry-run يطبعة فقط بدون إرسال فعلي.
+    if '--dry-run' in args:
+        print("📦 --dry-run: تخطّي الإرسال (طباعة فقط).")
+        return 0
     # محاولة الإرسال (شرطية على المفاتيح — طباعة only لو غير متاحة)
     tg = send_telegram(alert['message'])
     wp = send_web_push(alert['message'])

@@ -376,17 +376,30 @@ def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float
       - avg_flow = متوسط القيمة المطلقة اليومية
       - whale_present = net_flow > 0 AND net_flow > avg_flow × 0.5
     """
-    if len(candles) < MIN_CANDLES:
+    n = len(candles)
+    if n == 0:
         return {
             'net_flow_egp': 0,
             'avg_daily_flow_egp': 0,
             'whale_present': False,
             'flow_strength': 'بيانات غير كافية',
-            'reason': f'أقل من {MIN_CANDLES} شمعة متاحة',
+            'reason': 'لا شموع متاحة',
+            'cash_ratio': round(cash_ratio, 4) if cash_ratio else None,
+            'cash_safety_multiplier': (1.5 if (cash_ratio or 0) >= 0.20 else (1.2 if (cash_ratio or 0) >= 0.10 else 1.0)),
         }
-
-    # آخر LOOKBACK_DAYS شمعة
-    recent = candles[-LOOKBACK_DAYS:]
+    # Phase 1 #1 — مرونة الشموع للأسهم المنضمة حديثاً في الخليج (< 30 شمعة):
+    #   - n < 5:  proxy لحظي (آخر شمعة: (close-open)*volume = تدفق اليوم).
+    #   - 5 <= n < MIN_CANDLES: استخدم كل الشموع المتاحة (ديناميكي).
+    #   - n >= MIN_CANDLES: آخر LOOKBACK_DAYS (standard).
+    if n < 5:
+        recent = candles[-1:]
+        flow_mode = f'intraday-proxy ({n} شمعة)'
+    elif n < MIN_CANDLES:
+        recent = candles[:]
+        flow_mode = f'dynamic ({n} شمعة)'
+    else:
+        recent = candles[-LOOKBACK_DAYS:]
+        flow_mode = f'standard ({LOOKBACK_DAYS} يوم)'
     buy_value_total = 0.0
     sell_value_total = 0.0
     daily_flows = []
@@ -450,7 +463,7 @@ def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float
         whale_present = False
 
     reason = (
-        f"صافي التدفق {net_flow/1e6:+.1f}M EGP خلال {LOOKBACK_DAYS} يوم "
+        f"صافي التدفق {net_flow/1e6:+.1f}M EGP ({flow_mode}) "
         f"(متوسط يومي {avg_daily_flow/1e6:.1f}M) — {flow_strength}"
     )
 
