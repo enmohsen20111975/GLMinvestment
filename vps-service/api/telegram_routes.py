@@ -20,6 +20,7 @@ import asyncio
 import threading
 from datetime import datetime
 from flask import Blueprint, request, jsonify
+from api.standard_responses import standard_error
 
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -153,7 +154,7 @@ def morning_bell_preview():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/morning-bell/test', methods=['POST'])
@@ -179,7 +180,7 @@ def morning_bell_test():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 # ==================== Authentication ====================
@@ -201,7 +202,7 @@ def auth_connect_user():
         result = run_async(ts.connect_as_user(phone), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/auth/send-code', methods=['POST'])
@@ -221,7 +222,7 @@ def auth_send_code():
         result = run_async(ts.send_code(phone), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/auth/verify-code', methods=['POST'])
@@ -242,7 +243,7 @@ def auth_verify_code():
         result = run_async(ts.verify_code(phone, code), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/auth/verify-password', methods=['POST'])
@@ -262,7 +263,7 @@ def auth_verify_password():
         result = run_async(ts.verify_password(password), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/auth/status', methods=['GET'])
@@ -323,7 +324,7 @@ def auth_status():
         return jsonify({
             "authorized": False,
             "connected": False,
-            "error": str(e)
+            "error": "internal_error"
         })
 
 
@@ -363,7 +364,7 @@ def get_my_channels():
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e),
+            "error": "internal_error",
             "hint": "Make sure you are authenticated as a user (not bot)"
         })
 
@@ -476,7 +477,7 @@ def get_channel_messages():
         result = run_async(ts.scrape_channel(channel_id, days, limit), timeout=60)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/scrape/all', methods=['POST'])
@@ -494,7 +495,7 @@ def scrape_all_tracked_channels():
         result = run_async(ts.scrape_all_tracked(days, limit), timeout=300)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 # ==================== AI Processing (Local Ollama/LM Studio) ====================
@@ -828,7 +829,7 @@ def save_message():
             return jsonify({
                 "success": False,
                 "error": "Cannot access predictions database. Tried: " + ", ".join(db_paths)
-            }), 500
+            }), 200
 
         try:
             c = conn.cursor()
@@ -900,7 +901,7 @@ def save_message():
                     "success": False,
                     "error": "No valid columns found in expertRecommendation table",
                     "existing_cols": list(existing_cols)
-                }), 500
+                }), 200
 
             # بناء INSERT ديناميكي
             columns = ', '.join(valid_fields.keys())
@@ -928,7 +929,7 @@ def save_message():
                 conn.close()
             except Exception:
                 pass
-            return jsonify({"success": False, "error": str(e), "db": db_used}), 500
+            return jsonify({"success": False, "error": "internal_error", "db": db_used}), 200
     
     elif msg_type == 'news':
         # Save to news table in stocks.db
@@ -974,7 +975,7 @@ def save_message():
             
             return jsonify({"success": True, "type": "news"})
         except Exception as e:
-            return jsonify({"success": False, "error": str(e)}), 500
+            return jsonify(standard_error()), 200
     
     return jsonify({"success": False, "error": "Invalid type. Use 'recommendation' or 'news'"}), 400
 
@@ -1061,7 +1062,7 @@ def post_connect():
         result = run_async(poster.connect())
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/message', methods=['POST'])
@@ -1090,7 +1091,7 @@ def post_message():
         result = run_async(poster.send_message(text, parse_mode))
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/recommendation', methods=['POST'])
@@ -1127,7 +1128,7 @@ def post_recommendation():
         result = run_async(poster.send_message(text, 'md'))
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/daily-summary', methods=['POST'])
@@ -1165,7 +1166,7 @@ def post_daily_summary():
             }
         })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/top-recommendations', methods=['POST'])
@@ -1215,7 +1216,7 @@ def post_top_recommendations():
             "results": results
         })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/alert', methods=['POST'])
@@ -1248,7 +1249,7 @@ def post_alert():
         
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/market-open', methods=['POST'])
@@ -1265,7 +1266,7 @@ def post_market_open():
         
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/market-close', methods=['POST'])
@@ -1290,7 +1291,7 @@ def post_market_close():
         
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 @telegram_bp.route('/post/custom', methods=['POST'])
@@ -1326,7 +1327,7 @@ def post_custom():
 
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": "internal_error"})
 
 
 # ==================== Dialogs & Chat History (NEW) ====================
@@ -1342,7 +1343,7 @@ def get_dialogs():
         result = run_async(get_telegram_service().get_dialogs(limit=limit), timeout=30)
         return jsonify({"success": True, "dialogs": result})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/dialogs/<int:chat_id>/history', methods=['GET'])
@@ -1360,7 +1361,7 @@ def get_chat_history(chat_id):
         )
         return jsonify({"success": True, "messages": result})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 # ==================== Messaging (NEW) ====================
@@ -1383,7 +1384,7 @@ def send_message():
         ), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/messages/edit', methods=['POST'])
@@ -1403,7 +1404,7 @@ def edit_message():
         ), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/messages/delete', methods=['POST'])
@@ -1423,7 +1424,7 @@ def delete_messages():
         ), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/media/upload', methods=['POST'])
@@ -1457,7 +1458,7 @@ def upload_media():
                 pass
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 # ==================== Groups & Members (NEW) ====================
@@ -1477,7 +1478,7 @@ def get_members(group_id):
         ), timeout=30)
         return jsonify({"success": True, "members": result})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/groups/<int:group_id>/add', methods=['POST'])
@@ -1497,7 +1498,7 @@ def add_member(group_id):
         ), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 @telegram_bp.route('/groups/<int:group_id>/remove', methods=['POST'])
@@ -1515,7 +1516,7 @@ def remove_member(group_id):
         ), timeout=30)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 # ==================== Search (NEW) ====================
@@ -1534,7 +1535,7 @@ def search_messages():
         result = run_async(get_telegram_service().search_messages(q, limit=limit), timeout=30)
         return jsonify({"success": True, "results": result})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 # ==================== Events Polling (NEW - for WebSocket mini-service) ====================
@@ -1555,7 +1556,7 @@ def poll_events():
         events = ts.poll_events(since=since)
         return jsonify({"success": True, "events": events, "authenticated": True})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(standard_error()), 200
 
 
 # ==================== Image Serving ====================
@@ -1657,9 +1658,9 @@ def send_daily_report():
             return jsonify({
                 'success': False,
                 'error': 'فشل الإرسال — تحقق من TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID'
-            }), 500
+            }), 200
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': "internal_error"}), 200
 
 
 # ============================================================================
@@ -1690,7 +1691,7 @@ def test_target_hit_notification():
         )
         return jsonify({'success': ok})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': "internal_error"}), 200
 
 
 @telegram_bp.route('/notifications/test/approaching-target', methods=['POST'])
@@ -1715,7 +1716,7 @@ def test_approaching_target_notification():
         )
         return jsonify({'success': ok})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': "internal_error"}), 200
 
 
 @telegram_bp.route('/notifications/test/stop-warning', methods=['POST'])
@@ -1736,7 +1737,7 @@ def test_stop_warning_notification():
         )
         return jsonify({'success': ok})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': "internal_error"}), 200
 
 
 @telegram_bp.route('/notifications/test/trailing-profit', methods=['POST'])
@@ -1758,7 +1759,7 @@ def test_trailing_profit_notification():
         )
         return jsonify({'success': ok})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': "internal_error"}), 200
 
 
 @telegram_bp.route('/notifications/test/stop-loss', methods=['POST'])
@@ -1779,7 +1780,7 @@ def test_stop_loss_notification():
         )
         return jsonify({'success': ok})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': "internal_error"}), 200
 
 
 @telegram_bp.route('/notifications/live-monitor', methods=['POST'])
@@ -1805,7 +1806,7 @@ def run_live_monitor():
             'message': f'تم إرسال {sent_count} إشعار للتليجرام'
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': "internal_error"}), 200
 
 
 @telegram_bp.route('/notifications/types', methods=['GET'])
