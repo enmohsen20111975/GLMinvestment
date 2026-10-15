@@ -131,6 +131,27 @@ def rescue(ticker: str, market: str, entry_price: float, shares: float = 100) ->
     }
 
 
+def diagnose(ticker: str, entry_price: float, shares: float = 1000, market: str = 'EGX') -> Dict[str, Any]:
+    """Phase 2 Nuclear: تشخيص سريع + Autopsy + سيناريو تعويض رأس المال الزمني/المالي.
+    Convenience wrapper: diagnose('COMI', 130.0, 1000) → full rescue report."""
+    r = rescue(ticker, market, entry_price, shares)
+    if r.get('decision') == 'NO_DATA':
+        return r
+    # Capital recovery scenario: كم يحتاج السهم ليرتفع لتعويض الخسارة؟
+    current = _to_float(r.get('current_price'))
+    loss_egp = abs(_to_float(r.get('pnl_egp'))) if r.get('pnl_egp', 0) < 0 else 0
+    if loss_egp > 0 and current > 0:
+        recovery_pct = (loss_egp / (current * shares)) * 100 if shares > 0 else 0
+        r['capital_recovery'] = {
+            'loss_egp': round(loss_egp, 2),
+            'recovery_needed_pct': round(recovery_pct, 2),
+            'break_even_price': round(entry_price, 4),
+            'current_price': round(current, 4),
+            'note': f'السهم يحتاج ارتفاع {recovery_pct:.1f}% من الحالي ({current:.2f}) للوصول لنقطة الدخول ({entry_price:.2f})',
+        }
+    return r
+
+
 def main() -> int:
     import argparse
     p = argparse.ArgumentParser(description='مستشار الإنقاذ المالي — Rescue Advisor (Phase 2)')
