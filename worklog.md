@@ -71864,3 +71864,52 @@ Stage Summary:
 - No `git --force` used
 - stitch-num/stitch-latin additions: applied where obvious (single-display ticker symbols);
   deferred for embedded inline financial-number spans per "do not change JSX structure" rule
+
+---
+Task ID: STRUCT-BATCH-1
+Agent: general-purpose (Structural batch 1 — 5 dashboard/market files)
+
+Work Log:
+- File 1: src/modules/dashboard/components/InvestorsFlowPanel.tsx
+  * 51 structural class replacements applied (text-muted-foreground ×21, text-emerald-500/400/300 ×12, text-red-600/400 ×8, border-border ×5, text-foreground ×2, bg-muted ×1, bg-red-500 ×1, text-slate-600 ×1)
+  * stitch-latin added to 2 ticker-symbol spans ({s.ticker} ×2 in Inflow/Outflow sections)
+  * stitch-num added to 3 financial-number spans (total_turnover, advancing_sectors, declining_sectors)
+  * Commit 309c5f85 pushed to origin/main
+- File 2: src/modules/dashboard/components/LiquidityFlowPanel.tsx
+  * 59 structural class replacements (text-muted-foreground ×16, text-emerald-* ×14, text-red-* ×13, bg-muted ×5, border-border ×4, bg-red-500 ×5, text-foreground ×2)
+  * stitch-latin added to 2 ticker-symbol elements ({stock.ticker} in div, {b.ticker} in span)
+  * stitch-num added to 3 financial-number spans (avg_trade_value, block_trades_count, estimated_value)
+  * Commit 4baf1b49 pushed to origin/main
+- File 3: src/modules/dashboard/components/IntradayPressurePanel.tsx
+  * 45 structural class replacements (text-muted-foreground ×14, text-emerald-* ×10, text-red-* ×9, bg-muted ×4, bg-red-500 ×4, border-border ×3, text-emerald-400 ×4, font-mono → stitch-num ×1)
+  * stitch-latin added to 1 ticker Badge ({data.ticker})
+  * stitch-num added to 5 financial-number spans (sell_volume, total_volume, buy_volume, cumulative ×2)
+  * Commit 2e0fa896 pushed to origin/main
+- File 4: src/modules/dashboard/components/MultiMarketWidget.tsx
+  * 55 structural class replacements after reverting 4 non-main-container bg-background (text-muted-foreground ×17, bg-muted ×9, bg-card → stitch-glass ×4, border-border ×7, text-emerald-* ×9, text-red-* ×6, text-foreground ×2, font-mono → stitch-num ×1, bg-emerald-100 ×1)
+  * REVERTED: 4 `data-[state=active]:bg-background` on TabsTrigger kept as bg-background (not main container per task instruction "bg-background → stitch-canvas (main container only)")
+  * stitch-latin added to 6 ticker/currency spans ({ticker}, {crypto.symbol}, {code}, {marketInfo.currency} ×2, {marketCurr})
+  * Commit 59174633 pushed to origin/main
+- File 5: src/modules/market-analysis/components/TradingChartView.tsx
+  * 36 structural class replacements (text-foreground ×4, text-emerald-700/600/500/300 ×8, text-muted-foreground ×5, bg-card → stitch-glass ×6, border-border ×5, font-mono → stitch-num ×4, bg-muted ×2, bg-background → stitch-canvas ×1 [main container only], bg-emerald-100 ×1)
+  * stitch-latin added to 2 ticker-symbol spans ({st?.name_ar || tk} and ({tk}))
+  * Commit 3a2b3471 pushed to origin/main
+
+Stage Summary:
+- Total legacy classes replaced across 5 files: 246 (51 + 59 + 45 + 55 + 36)
+- All replacements via Python script `scripts/stitch_replace.py` (opacity-aware word-boundary regex;
+  preserves /N opacity modifiers; drops opacity for fixed-target replacements like border-white/[0.06])
+- `bun run lint` EXIT=0 after EACH file replacement (verified 5 times)
+- `bunx tsc --noEmit` baseline=1512 errors (pre-existing across TreasuryBondsView/telegram-events/
+  vps-service and one pre-existing in IntradayPressurePanel + TradingChartView); after each file:
+  error count unchanged → ZERO NEW tsc errors introduced by this batch
+- Each file got its own atomic commit + push to origin/main (5 separate commits, file-specific `git add`
+  used — not `git add -A` — to avoid sweeping parallel agents' in-flight changes)
+- stitch-latin added to 13 ticker/currency elements across 5 files (ticker symbols, currency codes)
+- stitch-num added to 11 financial-number spans/ps across 4 files (counts, prices, volumes, percentages)
+- bg-background replaced ONLY on main container in TradingChartView (line 155); REVERTED on
+  4 TabsTrigger active-state variants in MultiMarketWidget (per "main container only" qualifier)
+- Rule 30 honored: no blue/indigo introduced
+- No Python files touched (scripts/stitch_replace.py is a NEW helper script, untracked)
+- No `git --force` used; push collisions from parallel batches handled via plain `git push origin main`
+- tabular-nums left as-is where already present (per task instruction "standalone is fine")
