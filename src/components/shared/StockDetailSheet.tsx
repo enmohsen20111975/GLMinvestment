@@ -457,10 +457,14 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
                 </TabsContent>
               </Tabs>
 
-              {/* ─── أزرار النشر الموحّد ─── */}
-              <div className="bg-card border border-border rounded-xl p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">نشر هذه التوصية</span>
+              {/* ─── بطاقة الإنفوجرافيك + زر النشر الموحد (أعلى الكارت) ─── */}
+              <div ref={infographicRef} className="bg-card border border-border rounded-xl p-3 space-y-3">
+                {/* UnifiedPublishButton — أعلى الكارت لنشر مباشر لتيليجرام */}
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-border">
+                  <span className="text-sm font-semibold flex items-center gap-1.5">
+                    <BarChart3 className="w-4 h-4 text-emerald-500" />
+                    بطاقة الإنفوجرافيك المؤسسية
+                  </span>
                   <UnifiedPublishButton
                     content={`📊 ${ticker || '—'} — ${data?.name_ar || ''}
 السعر: ${fmtPrice(data?.current_price)}
@@ -468,74 +472,99 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
 الإشارة: ${data?.signal || '—'}
 ${data?.entry_defense?.entry_level ? `الدخول: ${fmtPrice(data.entry_defense.entry_level)}` : ''}
 ${data?.entry_defense?.defense_level ? `الدفاع: ${fmtPrice(data.entry_defense.defense_level)}` : ''}
+${data?.entry_defense?.resistance_level ? `الهدف: ${fmtPrice(data.entry_defense.resistance_level)}` : ''}
+${data?.rr_ratio ? `نسبة R/R: 1:${Number(data.rr_ratio).toFixed(1)}` : ''}
+${data?.whale?.net_flow_egp ? `صافي سيولة الحيتان: ${fmtFlow(data.whale.net_flow_egp)} ${currency}` : ''}
+${data?.sharia_compliant ? '🟢 متوافق مع الشريعة' : ''}
 
 منصة دليل الاستثمار`}
                     title={`${ticker || '—'} — ${data?.name_ar || ''}`}
                     image={infographicRef}
-                    filename={`${ticker || 'stock'}-analysis.png`}
+                    filename={`${ticker || 'stock'}-infographic.png`}
                     hashtags={['EGX', 'استثمار', ticker || 'stock']}
                     variant="default"
                     size="sm"
                   />
                 </div>
-              </div>
 
-              {/* ─── StockInfographicCard — بطاقة الإنفوجرافيك المباشرة ─── */}
-              <div ref={infographicRef} className="bg-card border border-border rounded-xl p-3">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <BarChart3 className="w-4 h-4 text-emerald-500" />
-                  <span className="text-sm font-semibold">بطاقة الإنفوجرافيك</span>
-                </div>
+                {/* المعطيات المؤسسية — كل الأرقام من /api/stocks/{ticker}/unified */}
                 {ticker && data && (
                   <div className="flex flex-col gap-2 text-sm">
                     <div className="grid grid-cols-2 gap-2">
+                      {/* السعر الحالي */}
                       <div className="bg-muted rounded-lg p-2">
                         <span className="text-xs text-muted-foreground block">السعر الحالي</span>
                         <span className="font-mono tabular-nums font-bold text-lg text-foreground">{fmtPrice(data.current_price)}</span>
                       </div>
+                      {/* التغير */}
                       <div className="bg-muted rounded-lg p-2">
                         <span className="text-xs text-muted-foreground block">التغير</span>
                         <span className={`font-mono tabular-nums font-bold text-lg ${(data.change_pct ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                           {fmtPct(data.change_pct)}
                         </span>
                       </div>
+                      {/* الدخول */}
                       {data.entry_defense && (
                         <>
                           <div className="bg-muted rounded-lg p-2">
-                            <span className="text-xs text-muted-foreground block">الدخول</span>
+                            <span className="text-xs text-muted-foreground block">سعر الدخول</span>
                             <span className="font-mono tabular-nums font-semibold text-emerald-500">{fmtPrice(data.entry_defense.entry_level)}</span>
                           </div>
+                          {/* وقف الخسارة */}
                           <div className="bg-muted rounded-lg p-2">
-                            <span className="text-xs text-muted-foreground block">الدفاع</span>
+                            <span className="text-xs text-muted-foreground block">وقف الخسارة</span>
                             <span className="font-mono tabular-nums font-semibold text-rose-500">{fmtPrice(data.entry_defense.defense_level)}</span>
                           </div>
+                          {/* الهدف 1 (المقاومة) */}
                           <div className="bg-muted rounded-lg p-2">
-                            <span className="text-xs text-muted-foreground block">المقاومة</span>
+                            <span className="text-xs text-muted-foreground block">الهدف 1</span>
                             <span className="font-mono tabular-nums font-semibold text-teal-500">{fmtPrice(data.entry_defense.resistance_level)}</span>
                           </div>
-                          <div className="bg-muted rounded-lg p-2">
-                            <span className="text-xs text-muted-foreground block">القطاع</span>
-                            <span className="font-semibold text-foreground text-xs">{data.sector || '—'}</span>
-                          </div>
+                          {/* الهدف 2 (من unified data) */}
+                          {data.target_price != null && (
+                            <div className="bg-muted rounded-lg p-2">
+                              <span className="text-xs text-muted-foreground block">الهدف 2</span>
+                              <span className="font-mono tabular-nums font-semibold text-teal-500">{fmtPrice(data.target_price)}</span>
+                            </div>
+                          )}
                         </>
                       )}
+                      {/* نسبة R/R (من Python — لا حساب في الواجهة) */}
                       {data.rr_ratio != null && Number(data.rr_ratio) > 0 && (
                         <div className="bg-muted rounded-lg p-2 col-span-2">
-                          <span className="text-xs text-muted-foreground block">نسبة العائد/المخاطرة</span>
+                          <span className="text-xs text-muted-foreground block">نسبة العائد/المخاطرة (R/R)</span>
                           <span className="font-mono tabular-nums font-bold text-xl text-emerald-500">1:{Number(data.rr_ratio).toFixed(1)}</span>
                         </div>
                       )}
+                      {/* صافي سيولة الحيتان */}
+                      {data.whale?.net_flow_egp != null && (
+                        <div className="bg-muted rounded-lg p-2 col-span-2">
+                          <span className="text-xs text-muted-foreground block">صافي سيولة الحيتان</span>
+                          <span className={`font-mono tabular-nums font-bold text-lg ${(data.whale.net_flow_egp ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {fmtFlow(data.whale.net_flow_egp)} {currency}
+                          </span>
+                        </div>
+                      )}
+                      {/* الإشارة */}
                       {data.signal && (
                         <div className="bg-muted rounded-lg p-2 col-span-2 flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">الإشارة</span>
+                          <span className="text-xs text-muted-foreground">الإشارة الفنية</span>
                           <Badge variant={data.signal.includes('BUY') ? 'default' : 'secondary'}>
                             {data.signal}
                           </Badge>
                         </div>
                       )}
+                      {/* التوافق الشرعي */}
                       {data.sharia_compliant === true && (
                         <div className="bg-muted rounded-lg p-2 col-span-2 flex items-center gap-2">
                           <span className="text-xs">🟢 متوافق مع الشريعة الإسلامية</span>
+                        </div>
+                      )}
+                      {/* القطاع */}
+                      {data.sector && (
+                        <div className="bg-muted rounded-lg p-2 col-span-2">
+                          <span className="text-xs text-muted-foreground block">القطاع</span>
+                          <span className="font-semibold text-foreground text-xs">{data.sector}</span>
                         </div>
                       )}
                     </div>
