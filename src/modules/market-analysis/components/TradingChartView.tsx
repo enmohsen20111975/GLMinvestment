@@ -152,34 +152,34 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
   return (
     <div
       dir="rtl"
-      className="w-full min-h-screen overflow-y-auto bg-background text-foreground p-2 md:p-5 pb-28 space-y-5 dark:bg-surface-container-lowest dark:text-on-surface"
+      className="w-full min-h-screen overflow-y-auto stitch-canvas text-stitch-on-surface p-2 md:p-5 pb-28 space-y-5 dark:bg-surface-container-lowest dark:text-on-surface"
     >
       {/* ── SCR-004: Institutional Glass Panel (Bloomberg terminal feel) ── */}
-      <div className="rounded-2xl border border-emerald-500/20 bg-card/80 backdrop-blur-sm shadow-lg overflow-hidden dark:bg-surface-container-low/80 dark:border dark:border-outline-variant/30">
+      <div className="rounded-2xl border border-emerald-500/20 stitch-glass/80 backdrop-blur-sm shadow-lg overflow-hidden dark:bg-surface-container-low/80 dark:border dark:border-outline-variant/30">
         <div className="border-b border-emerald-500/10 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5 px-4 py-4 md:px-5 md:py-5 dark:bg-surface-container dark:border-outline-variant/30 dark:bg-none">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-emerald-500 dark:text-primary">
+              <div className="flex items-center gap-2 text-stitch-primary dark:text-primary">
                 <LayoutGrid className="w-5 h-5" />
                 <span className="text-xs font-bold tracking-[0.22em] uppercase dark:font-financial">غرفة التداول</span>
               </div>
-              <h1 className="text-xl md:text-2xl font-black text-foreground dark:text-on-surface dark:font-outfit">
+              <h1 className="text-xl md:text-2xl font-black text-stitch-on-surface dark:text-on-surface dark:font-outfit">
                 الشارت التفاعلي والتحليل المتقدم
               </h1>
-              <p className="text-xs text-muted-foreground max-w-2xl dark:text-on-surface-variant">
+              <p className="text-xs text-stitch-muted max-w-2xl dark:text-on-surface-variant">
                 مقارنة فورية للأسهم مع تحليل السعر، مستويات الدعم والمقاومة، المخاطرة، ومؤشرات التوافق الفني.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <ExchangeSelector compact className="h-9 text-xs rounded-xl border-border bg-card dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface" />
+              <ExchangeSelector compact className="h-9 text-xs rounded-xl border-white/[0.06] stitch-glass dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface" />
               {marketOverview && (
                 <div className="hidden lg:flex items-center gap-2 text-[10px]">
-                  <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono tabular-nums dark:text-primary dark:border-primary-container/40 dark:bg-primary-container/20 dark:font-financial">
+                  <Badge variant="outline" className="text-stitch-primary border-emerald-200 bg-emerald-50 px-2.5 py-1 stitch-num tabular-nums dark:text-primary dark:border-primary-container/40 dark:bg-primary-container/20 dark:font-financial">
                     <TrendingUp className="w-3 h-3 ml-0.5" />
                     ارتفاعات: {marketOverview.summary.gainers}
                   </Badge>
-                  <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50 px-2.5 py-1 font-mono tabular-nums dark:text-error dark:border-error-container/40 dark:bg-error-container/20 dark:font-financial">
+                  <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50 px-2.5 py-1 stitch-num tabular-nums dark:text-error dark:border-error-container/40 dark:bg-error-container/20 dark:font-financial">
                     <TrendingDown className="w-3 h-3 ml-0.5" />
                     خسائر: {marketOverview.summary.losers}
                   </Badge>
@@ -196,19 +196,19 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                 mode="add"
                 placeholder="إدراج سهم آخر للتحليل..."
                 onSelectStock={(ticker) => handleAddStock(ticker)}
-                buttonClassName="w-full border-border bg-muted hover:bg-card text-foreground rounded-xl shadow-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
+                buttonClassName="w-full border-white/[0.06] bg-[#182030] hover:stitch-glass text-stitch-on-surface rounded-xl shadow-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex bg-muted p-1 rounded-xl border border-border dark:bg-surface-container dark:border-outline-variant/30">
+              <div className="flex bg-[#182030] p-1 rounded-xl border border-white/[0.06] dark:bg-surface-container dark:border-outline-variant/30">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setColumns(1)}
                   className={cn(
                     'h-8 px-2.5 text-[11px] font-bold rounded-lg transition-all',
-                    columns === 1 ? 'bg-card text-emerald-700 dark:text-emerald-300 dark:bg-primary-container dark:text-on-primary-container shadow-sm' : 'text-muted-foreground dark:text-on-surface-variant'
+                    columns === 1 ? 'stitch-glass text-stitch-primary dark:text-stitch-primary dark:bg-primary-container dark:text-on-primary-container shadow-sm' : 'text-stitch-muted dark:text-on-surface-variant'
                   )}
                 >
                   1 عمود
@@ -219,14 +219,14 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                   onClick={() => setColumns(2)}
                   className={cn(
                     'h-8 px-2.5 text-[11px] font-bold rounded-lg transition-all',
-                    columns === 2 ? 'bg-card text-emerald-700 dark:text-emerald-300 dark:bg-primary-container dark:text-on-primary-container shadow-sm' : 'text-muted-foreground dark:text-on-surface-variant'
+                    columns === 2 ? 'stitch-glass text-stitch-primary dark:text-stitch-primary dark:bg-primary-container dark:text-on-primary-container shadow-sm' : 'text-stitch-muted dark:text-on-surface-variant'
                   )}
                 >
                   2 عمود
                 </Button>
               </div>
 
-              <Badge className="font-mono text-[11px] px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40 dark:font-financial">
+              <Badge className="stitch-num text-[11px] px-2.5 py-1 bg-emerald-50 text-stitch-primary border border-emerald-200 dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40 dark:font-financial">
                 {selectedTickers.length} سهم
               </Badge>
 
@@ -247,7 +247,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                 size="sm"
                 onClick={handlePublishAll}
                 disabled={publishingAll || selectedTickers.length === 0}
-                className="h-8 px-2.5 text-[11px] text-emerald-700 hover:bg-emerald-50 gap-1.5 dark:text-primary dark:hover:bg-primary-container/20"
+                className="h-8 px-2.5 text-[11px] text-stitch-primary hover:bg-emerald-50 gap-1.5 dark:text-primary dark:hover:bg-primary-container/20"
               >
                 {publishingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 نشر الكل
@@ -256,8 +256,8 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
           </div>
 
           {selectedTickers.length > 0 && (
-            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-border dark:border-outline-variant/30">
-              <span className="text-[10px] md:text-xs font-bold text-muted-foreground dark:text-on-surface-variant">الأوراق المعروضة:</span>
+            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-white/[0.06] dark:border-outline-variant/30">
+              <span className="text-[10px] md:text-xs font-bold text-stitch-muted dark:text-on-surface-variant">الأوراق المعروضة:</span>
               {selectedTickers.map((tk, idx) => {
                 const st = stocks.find((s) => s.ticker === tk);
                 const isPrimary = idx === 0;
@@ -266,14 +266,14 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                     key={tk}
                     variant={isPrimary ? 'secondary' : 'outline'}
                     className={cn(
-                      'text-[11px] font-mono py-1 px-2.5 flex items-center gap-1.5 rounded-full dark:font-financial',
+                      'text-[11px] stitch-num py-1 px-2.5 flex items-center gap-1.5 rounded-full dark:font-financial',
                       isPrimary
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-primary-container/30 dark:text-on-primary-container dark:border-primary-container/40'
-                        : 'bg-card text-foreground border border-border dark:bg-surface-container dark:text-on-surface dark:border-outline-variant/30'
+                        ? 'bg-emerald-500/10 text-emerald-800 border border-emerald-200 dark:bg-primary-container/30 dark:text-on-primary-container dark:border-primary-container/40'
+                        : 'stitch-glass text-stitch-on-surface border border-white/[0.06] dark:bg-surface-container dark:text-on-surface dark:border-outline-variant/30'
                     )}
                   >
-                    <span>{st?.name_ar || tk}</span>
-                    <span className="text-[9px] text-muted-foreground font-bold dark:text-on-surface-variant">({tk})</span>
+                    <span className="stitch-latin">{st?.name_ar || tk}</span>
+                    <span className="text-[9px] text-stitch-muted font-bold stitch-latin dark:text-on-surface-variant">({tk})</span>
                     {!isPrimary && (
                       <button
                         type="button"
