@@ -480,15 +480,65 @@ ${data?.entry_defense?.defense_level ? `الدفاع: ${fmtPrice(data.entry_defe
                 </div>
               </div>
 
-              {/* ─── StockInfographicCard (مرجع للنشر + بطاقة فخمة) ─── */}
+              {/* ─── StockInfographicCard — بطاقة الإنفوجرافيك المباشرة ─── */}
               <div ref={infographicRef} className="bg-card border border-border rounded-xl p-3">
                 <div className="flex items-center gap-1.5 mb-3">
                   <BarChart3 className="w-4 h-4 text-emerald-500" />
                   <span className="text-sm font-semibold">بطاقة الإنفوجرافيك</span>
                 </div>
                 {ticker && data && (
-                  <div className="text-center text-sm text-muted-foreground">
-                    بطاقة الإنفوجرافيك تُولّد عند الضغط على زر النشر
+                  <div className="flex flex-col gap-2 text-sm">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-muted rounded-lg p-2">
+                        <span className="text-xs text-muted-foreground block">السعر الحالي</span>
+                        <span className="font-mono tabular-nums font-bold text-lg text-foreground">{fmtPrice(data.current_price)}</span>
+                      </div>
+                      <div className="bg-muted rounded-lg p-2">
+                        <span className="text-xs text-muted-foreground block">التغير</span>
+                        <span className={`font-mono tabular-nums font-bold text-lg ${(data.change_pct ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {fmtPct(data.change_pct)}
+                        </span>
+                      </div>
+                      {data.entry_defense && (
+                        <>
+                          <div className="bg-muted rounded-lg p-2">
+                            <span className="text-xs text-muted-foreground block">الدخول</span>
+                            <span className="font-mono tabular-nums font-semibold text-emerald-500">{fmtPrice(data.entry_defense.entry_level)}</span>
+                          </div>
+                          <div className="bg-muted rounded-lg p-2">
+                            <span className="text-xs text-muted-foreground block">الدفاع</span>
+                            <span className="font-mono tabular-nums font-semibold text-rose-500">{fmtPrice(data.entry_defense.defense_level)}</span>
+                          </div>
+                          <div className="bg-muted rounded-lg p-2">
+                            <span className="text-xs text-muted-foreground block">المقاومة</span>
+                            <span className="font-mono tabular-nums font-semibold text-teal-500">{fmtPrice(data.entry_defense.resistance_level)}</span>
+                          </div>
+                          <div className="bg-muted rounded-lg p-2">
+                            <span className="text-xs text-muted-foreground block">القطاع</span>
+                            <span className="font-semibold text-foreground text-xs">{data.sector || '—'}</span>
+                          </div>
+                        </>
+                      )}
+                      {data.rr_ratio != null && Number(data.rr_ratio) > 0 && (
+                        <div className="bg-muted rounded-lg p-2 col-span-2">
+                          <span className="text-xs text-muted-foreground block">نسبة العائد/المخاطرة</span>
+                          <span className="font-mono tabular-nums font-bold text-xl text-emerald-500">1:{Number(data.rr_ratio).toFixed(1)}</span>
+                        </div>
+                      )}
+                      {data.signal && (
+                        <div className="bg-muted rounded-lg p-2 col-span-2 flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">الإشارة</span>
+                          <Badge variant={data.signal.includes('BUY') ? 'default' : 'secondary'}>
+                            {data.signal}
+                          </Badge>
+                        </div>
+                      )}
+                      {data.sharia_compliant === true && (
+                        <div className="bg-muted rounded-lg p-2 col-span-2 flex items-center gap-2">
+                          <span className="text-xs">🟢 متوافق مع الشريعة الإسلامية</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

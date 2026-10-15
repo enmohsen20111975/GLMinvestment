@@ -22,6 +22,7 @@ import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
+import { StockIcon } from '@/modules/stock-analysis/components/StockIcon';
 import {
   Shield, RefreshCw, AlertTriangle, Activity,
   TrendingUp, TrendingDown, Layers,
@@ -176,9 +177,12 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       sortable: true,
       width: 'min-w-[120px]',
       render: (row) => (
-        <div className="flex flex-col">
-          <span className="font-bold text-sm font-mono tabular-nums text-foreground">{row.ticker}</span>
-          <span className="text-xs text-muted-foreground truncate max-w-[100px]">{row.name || ''}</span>
+        <div className="flex items-center gap-2">
+          <StockIcon ticker={row.ticker} name={row.name || undefined} size="sm" />
+          <div className="flex flex-col">
+            <span className="font-bold text-sm font-mono tabular-nums text-foreground">{row.ticker}</span>
+            <span className="text-xs text-muted-foreground truncate max-w-[100px]">{row.name || ''}</span>
+          </div>
         </div>
       ),
     },
@@ -287,30 +291,6 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         </span>
       ),
     },
-    {
-      key: 'publish',
-      header: 'نشر',
-      width: 'w-24',
-      align: 'center',
-      render: (row) => (
-        <UnifiedPublishButton
-          ticker={row.ticker}
-          content={`📊 ${row.ticker} — ${row.name || ''}
-المرحلة: ${PHASE_LABELS[row.phase] || row.phase}
-الدخول: ${fmtPrice(row.entry_defense?.entry_level)}
-الوقف: ${fmtPrice(row.entry_defense?.defense_level)}
-الهدف: ${fmtPrice(row.entry_defense?.resistance_level)}
-صافي تدفق الحوت: ${fmtFlow(row.whale?.net_flow_egp)} ${currency}
-
-منصة دليل الاستثمار`}
-          title={`${row.ticker} — ${row.name || ''}`}
-          filename={`${row.ticker}-radar.png`}
-          hashtags={['EGX', 'رادار', row.ticker]}
-          variant="outline"
-          size="sm"
-        />
-      ),
-    },
   ];
 
   // ─── Loading state ───
@@ -394,6 +374,18 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         >
           🛡️ نهاية تصحيح وارتداد
         </button>
+      </div>
+
+      {/* ─── Central Publish Button (for selected rows) ─── */}
+      <div className="flex items-center justify-end">
+        <UnifiedPublishButton
+          content={`📊 رادار السيولة — ${market}\n${data.stocks.length} سهم مرقوب\nمنصة دليل الاستثمار`}
+          title={`رادار السيولة — ${market}`}
+          filename={`radar-${market}-${new Date().toISOString().slice(0,10)}.png`}
+          hashtags={['EGX', 'رادار', market]}
+          variant="outline"
+          size="sm"
+        />
       </div>
 
       {/* ─── UnifiedTable ─── */}

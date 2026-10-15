@@ -74,6 +74,7 @@ import {
 import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
+import { StockSelector } from '@/modules/stock-analysis/components/StockSelector';
 // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
 // قبل كده: كان فيه labels "ضغط شرائي قوي/ضغط بيعي قوي" بـ thresholds 1.2/0.8
 // غير موجودة في canonical → نتائج متضاربة مع الرادار + تفاصيل السهم.
@@ -2734,23 +2735,15 @@ export function SpecialistAnalysisView() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
-            <select
-              value={ticker}
-              onChange={(e) => {
-                const val = e.target.value;
-                setTicker(val);
-                if (val) fetchAnalysis(val);
-              }}
-              disabled={loading}
-              className="flex-1 px-3 sm:px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-background text-foreground text-sm sm:text-base min-w-0"
-            >
-              <option value="">اختر سهماً من {MARKET_NAMES_AR[currentMarket] || currentMarket}...</option>
-              {stocks.map((stock) => (
-                <option key={stock.ticker} value={stock.ticker}>
-                  {stock.ticker} {stock.name_ar ? `- ${stock.name_ar}` : stock.name ? `- ${stock.name}` : ''}
-                </option>
-              ))}
-            </select>
+            <div className="flex-1 min-w-0">
+              <StockSelector
+                onSelect={(t) => {
+                  setTicker(t);
+                  if (t) fetchAnalysis(t);
+                }}
+                compact
+              />
+            </div>
             <Button onClick={handleSearch} disabled={loading || !ticker} className="flex-shrink-0 gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               <span>تحليل</span>
