@@ -136,7 +136,7 @@ const CHANGE_FILTER_OPTIONS = [
 
 type StockTab = 'stocks' | 'bonds';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 25;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

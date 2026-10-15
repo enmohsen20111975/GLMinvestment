@@ -145,6 +145,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [activePhase, setActivePhase] = useState<string>('الكل');
+  const [hideLowLiquidity, setHideLowLiquidity] = useState<boolean>(true);
   const currency = marketCurrency(market);
 
   const fetchData = useCallback(async () => {
@@ -388,10 +389,23 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         />
       </div>
 
+      {/* ─── Low Liquidity Filter Toggle ─── */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setHideLowLiquidity(!hideLowLiquidity)}
+          className={cn(
+            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors',
+            hideLowLiquidity ? 'bg-muted text-muted-foreground' : 'bg-emerald-600 text-white',
+          )}
+        >
+          {hideLowLiquidity ? '🔒 إظهار الأسهم منخفضة السيولة' : '✓ عرض كل الأسهم'}
+        </button>
+      </div>
+
       {/* ─── UnifiedTable ─── */}
       <UnifiedTable<RadarStock>
         columns={columns}
-        data={activePhase === 'الكل' ? data.stocks : data.stocks.filter(s => s.phase === activePhase)}
+        data={(activePhase === 'الكل' ? data.stocks : data.stocks.filter(s => s.phase === activePhase)).filter(s => !hideLowLiquidity || (s.whale?.net_flow_egp != null && Math.abs(Number(s.whale.net_flow_egp)) > 100000))}
         keyField="ticker"
         dense
         filterable
