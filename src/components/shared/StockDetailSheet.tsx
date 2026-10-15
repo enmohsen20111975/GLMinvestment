@@ -264,6 +264,75 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
 
           {data && !loading && !error && (
             <>
+              {/* ─── Hero Infographic Card & One-Click Publish ─── */}
+              <div ref={infographicRef} className="bg-gradient-to-br from-card to-muted/40 border-2 border-emerald-500/20 rounded-2xl p-4 shadow-sm mb-4">
+                <div className="flex items-center justify-between mb-3 border-b border-border/50 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-emerald-500" />
+                    <span className="font-bold text-base text-foreground">بطاقة الصفقة والإنفوجرافيك</span>
+                    {data.sharia_compliant === true || data.sharia_status === 'متوافق' ? (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                        🟢 متوافق شرعياً
+                      </span>
+                    ) : null}
+                  </div>
+                  <UnifiedPublishButton
+                    ticker={ticker || 'stock'}
+                    elementRef={infographicRef}
+                    content={`📊 ${ticker} — ${data.name_ar || data.name || ''}\nسعر الدخول: ${fmtPrice(data.entry_price || data.entry_defense?.entry_level)}\nالوقف: ${fmtPrice(data.stop_loss || data.entry_defense?.defense_level)}\nالهدف: ${fmtPrice(data.target_price || data.entry_defense?.resistance_level)}\nنسبة العائد للمخاطرة R/R: ${data.rr_ratio || data.risk_reward || '—'}\nصافي سيولة الحيتان: ${fmtFlow(data.whale_net_flow || data.whale?.net_flow_egp)} ${currency}\n\nمنصة دليل الاستثمار`}
+                    title={`${ticker} — بطاقة الصفقة`}
+                    filename={`${ticker || 'stock'}-infographic.png`}
+                    hashtags={['تداول', 'استثمار', ticker || 'stock']}
+                    variant="default"
+                    size="sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-3">
+                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                    <span className="text-[11px] text-muted-foreground block mb-0.5">سعر الدخول المقترح</span>
+                    <span className="font-mono tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">
+                      {fmtPrice(data.entry_price || data.entry_defense?.entry_level)}
+                    </span>
+                  </div>
+                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                    <span className="text-[11px] text-muted-foreground block mb-0.5">وقف الخسارة (الدفاع)</span>
+                    <span className="font-mono tabular-nums font-bold text-base text-rose-600 dark:text-rose-400">
+                      {fmtPrice(data.stop_loss || data.entry_defense?.defense_level)}
+                    </span>
+                  </div>
+                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                    <span className="text-[11px] text-muted-foreground block mb-0.5">الهدف الأول</span>
+                    <span className="font-mono tabular-nums font-bold text-base text-teal-600 dark:text-teal-400">
+                      {fmtPrice(data.target_price || data.entry_defense?.resistance_level)}
+                    </span>
+                  </div>
+                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                    <span className="text-[11px] text-muted-foreground block mb-0.5">نسبة R/R</span>
+                    <span className="font-mono tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">
+                      {data.rr_ratio ? `1:${Number(data.rr_ratio).toFixed(1)}` : '1:2.0+'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                  <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5">
+                    <span className="text-muted-foreground">تدفق الحيتان:</span>
+                    <span className={`font-mono font-bold tabular-nums ${(data.whale_net_flow || data.whale?.net_flow_egp || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {fmtFlow(data.whale_net_flow || data.whale?.net_flow_egp)} {currency}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5">
+                    <span className="text-muted-foreground">القطاع:</span>
+                    <span className="font-medium text-foreground truncate max-w-[110px]">{data.sector || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5 col-span-2 sm:col-span-1">
+                    <span className="text-muted-foreground">الإشارة الفنية:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{data.signal || 'مراقبة إيجابية'}</span>
+                  </div>
+                </div>
+              </div>
+
               <Tabs defaultValue="liquidity" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="liquidity">السيولة ونبض الحيتان</TabsTrigger>

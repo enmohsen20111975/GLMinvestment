@@ -135,6 +135,14 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Note on ai_router: {e}")
 
+# Mount Unified Stock Data Router
+try:
+    from api.unified_stock_routes import router as unified_stock_router
+    app.include_router(unified_stock_router)
+    logger.info("✅ Mounted unified_stock_router")
+except Exception as e:
+    logger.warning(f"⚠️ Note on unified_stock_router: {e}")
+
 # Start MarketScheduler in background thread
 _scheduler_thread = None
 _egypt_scheduler_thread = None

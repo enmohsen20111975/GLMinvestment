@@ -74,7 +74,7 @@ import {
 import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
-import { StockSelector } from '@/modules/stock-analysis/components/StockSelector';
+import { StockSearchSelector } from '@/components/shared/StockSearchSelector';
 // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
 // قبل كده: كان فيه labels "ضغط شرائي قوي/ضغط بيعي قوي" بـ thresholds 1.2/0.8
 // غير موجودة في canonical → نتائج متضاربة مع الرادار + تفاصيل السهم.
@@ -2736,15 +2736,17 @@ export function SpecialistAnalysisView() {
 
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1 min-w-0">
-              <StockSelector
-                onSelect={(t) => {
+              <StockSearchSelector
+                value={ticker}
+                onSelectStock={(t) => {
                   setTicker(t);
                   if (t) fetchAnalysis(t);
                 }}
-                compact
+                placeholder="اختر السهم للتحليل..."
+                buttonClassName="w-full justify-between h-10 text-sm font-mono"
               />
             </div>
-            <Button onClick={handleSearch} disabled={loading || !ticker} className="flex-shrink-0 gap-2">
+            <Button onClick={handleSearch} disabled={loading || !ticker} className="flex-shrink-0 gap-2 h-10">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               <span>تحليل</span>
             </Button>
