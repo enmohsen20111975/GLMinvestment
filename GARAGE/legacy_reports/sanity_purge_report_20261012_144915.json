@@ -1,0 +1,51 @@
+{
+  "task_id": "GLM5.2-S3-SPLIT-GUARD-PURGE",
+  "timestamp": "2026-10-12T14:49:15.205528",
+  "mode": "EXECUTE",
+  "db_path": "/home/meme/my_apps/GLMinvestment/db/predictions.db",
+  "backup_path": "/home/meme/my_apps/GLMinvestment/db/backups/predictions_sanity_purge_20261012_144914.db",
+  "pre_state": {
+    "total_predictions": 1102,
+    "fantasy_targets_gt_30pct": 415,
+    "targets_above_cap": 638,
+    "returns_below_minus_35": 2,
+    "split_excluded_marked": 0,
+    "split_NOT_marked": 2,
+    "split_excluded_total": 1,
+    "data_quality_split_excluded": 2,
+    "status_active": 22,
+    "status_archived": 0,
+    "status_rejected_bad_rr": 96
+  },
+  "post_state": {
+    "total_predictions": 1102,
+    "fantasy_targets_gt_30pct": 83,
+    "targets_above_cap": 306,
+    "returns_below_minus_35": 0,
+    "split_excluded_marked": 0,
+    "split_NOT_marked": 0,
+    "split_excluded_total": 3,
+    "data_quality_split_excluded": 3,
+    "status_active": 5,
+    "status_archived": 7,
+    "status_rejected_bad_rr": 106
+  },
+  "results": {
+    "phase1_fantasy_targets": {
+      "scanned": 500,
+      "capped_targets_count": 332,
+      "rejected_rr_count": 10
+    },
+    "phase2_hold_cleanup": {
+      "scanned": 7,
+      "archived_count": 7
+    },
+    "phase3_split_records_fix": {
+      "scanned": 2,
+      "fixed_count": 2
+    },
+    "phase4_reac_specific": {
+      "fixes_count": 0
+    }
+  }
+}
