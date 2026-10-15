@@ -730,11 +730,13 @@ def check_falling_knife(
 
 
 def check_liquidity(candles: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """فحص السيولة الأدنى. لو متوسط القيمة اليومية < 3M EGP → ضعيف."""
-    if len(candles) < MIN_CANDLES:
-        return {'liquid': False, 'reason': f'أقل من {MIN_CANDLES} شمعة'}
+    """فحص السيولة الأدنى. لو متوسط القيمة اليومية < 3M EGP/SAR → ضعيف."""
+    n = len(candles)
+    if n == 0:
+        return {'liquid': False, 'reason': 'لا شموع متاحة'}
 
-    recent = candles[-LOOKBACK_DAYS:]
+    # للأسواق المنضمة حديثاً (< MIN_CANDLES): احسب من الشموع المتاحة
+    recent = candles if n < MIN_CANDLES else candles[-LOOKBACK_DAYS:]
     daily_values = []
     for c in recent:
         close = _to_float(c.get('close'))
