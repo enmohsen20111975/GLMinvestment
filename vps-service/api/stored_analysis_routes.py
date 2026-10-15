@@ -2041,19 +2041,33 @@ def _fetch_live_tracking_data(market: str = 'EGX', days: int = 999,
             _dq_clause = "AND COALESCE(data_quality, 'clean') = 'clean'" if _has_dq else ""
             _hard_cap = 50.0  # |return_pct| <= 50%
 
+            # Support flexible market query matching
+            if market in ('EGX', 'EGYPT', 'مصر'):
+                m_clause = "(market IN ('EGX', 'EGYPT', 'مصر') OR (market IS NULL AND ticker NOT GLOB '[0-9]*'))"
+                sql_params = (f'-{days} days', _hard_cap, limit * 3)
+            elif market in ('TADAWUL', 'KSA', 'SAUDI', 'السعودية'):
+                m_clause = "(market IN ('TADAWUL', 'KSA', 'SAUDI', 'السعودية') OR ticker GLOB '[0-9]*')"
+                sql_params = (f'-{days} days', _hard_cap, limit * 3)
+            elif market in ('ALL', ''):
+                m_clause = "1=1"
+                sql_params = (f'-{days} days', _hard_cap, limit * 3)
+            else:
+                m_clause = "market = ?"
+                sql_params = (f'-{days} days', market, _hard_cap, limit * 3)
+
             cursor.execute(f"""
                 SELECT ticker, signal, signal_type, persona, entry_price, target_price,
                        stop_loss, master_score, confidence, prediction_date, created_at,
-                       outcome_date, outcome, exit_price, exit_type, return_pct,
+                       outcome_date, actual_exit_price, exit_type, actual_return, is_correct,
                        atr_at_entry, notes, market { _dq_sel }{ _tp2_sel }{ _hpr_sel }{ _lpr_sel }
                 FROM predictions
-                WHERE prediction_date >= date('now', ?)
-                  AND market = ?
+                WHERE (prediction_date >= date('now', ?) OR created_at >= date('now', ?))
+                  AND { m_clause }
                   AND (actual_return IS NULL OR ABS(actual_return) <= ?)
                   { _dq_clause }
                 ORDER BY prediction_date DESC, created_at DESC
                 LIMIT ?
-            """, (f'-{days} days', market, _hard_cap, limit * 3))
+            """, (f'-{days} days',) + sql_params)
             rows = cursor.fetchall()
 
             # Build items list (same as /live-tracking)
@@ -2064,21 +2078,25 @@ def _fetch_live_tracking_data(market: str = 'EGX', days: int = 999,
                 if persona not in ('gambler', 'balanced', 'conservative'):
                     persona = 'balanced'
 
-                outcome_raw = (r.get('outcome') or 'PENDING').upper()
-                if outcome_raw in ('WIN', 'TARGET_HIT', 'target_hit'):
-                    outcome = 'WIN'
-                elif outcome_raw in ('LOSS', 'STOP_HIT', 'stop_hit'):
-                    outcome = 'LOSS'
-                elif outcome_raw in ('EXPIRED', 'expired'):
-                    outcome = 'EXPIRED'
+                outcome_date = r.get('outcome_date')
+                exit_type = (r.get('exit_type') or '').strip().lower()
+                ret_pct = float(r.get('actual_return') or 0)
+                if outcome_date:
+                    if ret_pct > 0:
+                        outcome = 'WIN'
+                    elif ret_pct < 0:
+                        outcome = 'LOSS'
+                    elif exit_type == 'expired':
+                        outcome = 'EXPIRED'
+                    else:
+                        outcome = 'WIN' if r.get('is_correct') == 1 else ('LOSS' if r.get('is_correct') == 0 else 'EXPIRED')
                 else:
                     outcome = 'PENDING'
 
                 entry = float(r.get('entry_price') or 0)
                 target = float(r.get('target_price') or 0)
                 stop = float(r.get('stop_loss') or 0)
-                ret_pct = float(r.get('return_pct') or 0)
-                exit_price = float(r.get('exit_price') or 0)
+                exit_price = float(r.get('actual_exit_price') or 0)
 
                 item = {
                     'ticker': r.get('ticker', ''),

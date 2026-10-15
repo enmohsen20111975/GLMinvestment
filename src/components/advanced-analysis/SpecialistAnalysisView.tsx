@@ -2476,7 +2476,7 @@ function HeaderCard({
 // ============================================================================
 
 export function SpecialistAnalysisView() {
-  const { stocks, currentMarket, loadStocks, selectedTicker: storeTicker } = useAppStore();
+  const { stocks, currentMarket, setCurrentMarket, loadStocks, selectedTicker: storeTicker } = useAppStore();
   const [ticker, setTicker] = useState(storeTicker || '');
   const [loading, setLoading] = useState(false);
 
@@ -2682,7 +2682,7 @@ export function SpecialistAnalysisView() {
                 <span>التقرير المالي الاحترافي</span>
               </h1>
               <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-                تحليل عميق لسهم واحد — بيانات من 8 مصادر (PRIMARY: maker-radar/stock ← SECONDARY: footprint ← TERTIARY: predictions.db ← ENRICHMENT: flow + explosive + comprehensive + sharia)
+                تحليل مالي وفني مؤسسي شامل — تدفقات السيولة الحية، نماذج صانع السوق، وتاريخ التوقعات الفعلي
               </p>
             </div>
           </div>
@@ -2696,9 +2696,43 @@ export function SpecialistAnalysisView() {
         </div>
       </div>
 
-      {/* ════ Stock Selector ════ */}
+      {/* ════ Stock Selector & Market Switcher ════ */}
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-        <CardContent className="pt-6">
+        <CardContent className="pt-4 space-y-4">
+          {/* Quick Market Switcher Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-xs font-semibold text-muted-foreground ml-2 whitespace-nowrap">السوق:</span>
+            {[
+              { id: 'EGX', label: 'مصر 🇪🇬' },
+              { id: 'TADAWUL', label: 'السعودية 🇸🇦' },
+              { id: 'KSE', label: 'الكويت 🇰🇼' },
+              { id: 'QSE', label: 'قطر 🇶🇦' },
+              { id: 'US', label: 'أمريكا 🇺🇸' },
+              { id: 'CRYPTO', label: 'كريبتو 🪙' },
+            ].map((m) => {
+              const active = currentMarket === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => {
+                    if (currentMarket !== m.id) {
+                      setCurrentMarket(m.id as any);
+                      setTicker('');
+                    }
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all whitespace-nowrap ${
+                    active
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 font-bold'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={ticker}
