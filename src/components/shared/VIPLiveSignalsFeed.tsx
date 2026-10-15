@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -168,7 +169,7 @@ function MarketSwitcherBar({
   );
 }
 
-function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: React.MouseEvent, sig: LiveSignal) => void; copied: boolean }) {
+function SignalCard({ sig, onCopy, copied, onOpenDossier }: { sig: LiveSignal; onCopy: (e: React.MouseEvent, sig: LiveSignal) => void; copied: boolean; onOpenDossier: (ticker: string) => void }) {
   return (
     <Card className="glass-panel overflow-hidden hover:border-emerald-500/40 transition-colors">
       <CardContent className="p-4 space-y-3">
@@ -234,9 +235,14 @@ function SignalCard({ sig, onCopy, copied }: { sig: LiveSignal; onCopy: (e: Reac
             <span className="text-[10px] text-amber-700 dark:text-amber-300 leading-relaxed flex-1">{sig.catalyst_ar || sig.catalyst}</span>
           </div>
         )}
-        <Button variant="outline" size="sm" onClick={(e) => onCopy(e, sig)} className="w-full h-7 text-[10px] gap-1.5">
-          {copied ? <><Check className="w-3 h-3 text-emerald-500" /> تم نسخ التوصية ✓</> : <><Copy className="w-3 h-3" /> 📋 نسخ التوصية للتليجرام/واتساب</>}
-        </Button>
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" onClick={(e) => onCopy(e, sig)} className="flex-1 h-7 text-[10px] gap-1.5">
+            {copied ? <><Check className="w-3 h-3 text-emerald-500" /> تم النسخ ✓</> : <><Copy className="w-3 h-3" /> 📋 نسخ</>}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => onOpenDossier(sig.ticker)} className="h-7 text-[10px] gap-1">
+            📂 الأدلة
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -313,6 +319,28 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
       toast.error('تعذّر النسخ', { description: 'حاول مرة أخرى أو انسخ النص يدوياً' });
     }
   };
+
+  // ALPHA-2: Conviction Dossier
+  const [dossierTicker, setDossierTicker] = useState<string | null>(null);
+  const [dossierData, setDossierData] = useState<any>(null);
+  const [dossierLoading, setDossierLoading] = useState(false);
+
+  const openDossier = useCallback(async (ticker: string) => {
+    setDossierTicker(ticker);
+    setDossierLoading(true);
+    setDossierData(null);
+    try {
+      const res = await fetch(`/api/recommendations/dossier/${ticker}`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        setDossierData(json);
+      }
+    } catch {
+      // graceful — dossier may not be available
+    } finally {
+      setDossierLoading(false);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -442,6 +470,92 @@ export function VIPLiveSignalsFeed({ market }: { market: string }) {
           )}
         </div>
       )}
+
+      {/* ALPHA-2: Conviction Dossier Dialog */}
+      <Dialog open={!!dossierTicker} onOpenChange={(open) => { if (!open) setDossierTicker(null); }}>
+        <DialogContent className="max-w-[95vw] w-full max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              📂 ملف الأدلة والبراهين — {dossierTicker}
+            </DialogTitle>
+          </DialogHeader>
+          {dossierLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : dossierData ? (
+            <div className="space-y-4">
+              {/* برهان سيولة الحيتان */}
+              <Card className="bg-card border-border">
+                <CardContent className="p-3">
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5">
+                    <Activity className="w-4 h-4 text-emerald-500" /> برهان سيولة الحيتان
+                  </h3>
+                  {dossierData.whale_flow_history && Array.isArray(dossierData.whale_flow_history) && dossierData.whale_flow_history.length > 0 ? (
+                    <div className="space-y-1">
+                      {dossierData.whale_flow_history.map((d: any, i: number) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">{d.date || '—'}</span>
+                          <span className={`font-mono tabular-nums font-semibold ${(d.net_flow ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {fmtPrice(d.net_flow)} ج.م
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">لا توجد بيانات تدفق متاحة</p>
+                  )}
+                </CardContent>
+              </Card>
+              {/* سجل النزاهة */}
+              {dossierData.historical_win_rate != null && (
+                <Card className="bg-card border-border">
+                  <CardContent className="p-3">
+                    <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5">
+                      <Trophy className="w-4 h-4 text-amber-500" /> سجل النزاهة والذاكرة
+                    </h3>
+                    <p className="text-sm">
+                      نسبة نجاح المنصة في هذا السهم:{' '}
+                      <span className="font-mono font-bold text-emerald-500">{dossierData.historical_win_rate}%</span>
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+              {/* هندسة المخاطرة */}
+              {dossierData.trade_math && (
+                <Card className="bg-card border-border">
+                  <CardContent className="p-3">
+                    <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5">
+                      <Target className="w-4 h-4 text-emerald-500" /> هندسة المخاطرة
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>الدخول: <span className="font-mono font-bold">{fmtPrice(dossierData.trade_math.entry_price)}</span></div>
+                      <div>الوقف: <span className="font-mono font-bold text-rose-500">{fmtPrice(dossierData.trade_math.stop_loss)}</span></div>
+                      <div>الهدف 1: <span className="font-mono font-bold text-teal-500">{fmtPrice(dossierData.trade_math.target_1)}</span></div>
+                      <div>R/R: <span className="font-mono font-bold text-emerald-500">1:{Number(dossierData.trade_math.rr_ratio ?? 0).toFixed(1)}</span></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {/* التفسير المؤسسي */}
+              {dossierData.technical_rationale && (
+                <Card className="bg-card border-border">
+                  <CardContent className="p-3">
+                    <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-emerald-500" /> التفسير المؤسسي
+                    </h3>
+                    <p className="text-sm text-foreground leading-relaxed">{dossierData.technical_rationale}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              لا توجد بيانات أدلة متاحة حالياً
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
