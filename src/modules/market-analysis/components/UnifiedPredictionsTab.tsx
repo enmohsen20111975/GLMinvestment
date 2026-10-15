@@ -17,8 +17,8 @@ const SUB_VIEWS: Array<{ value: SubView; label: string; icon: string }> = [
   { value: 'summary', label: 'الملخص التنفيذي ونبض السوق', icon: '📋' },
 ];
 
-export function UnifiedPredictionsTab({ market }: { market: MarketType }) {
-  const [subView, setSubView] = useState<SubView>('live');
+export function UnifiedPredictionsTab({ market, initialSubView }: { market: MarketType; initialSubView?: SubView }) {
+  const [subView, setSubView] = useState<SubView>(initialSubView || 'live');
   return (
     <div className="space-y-4">
       <div className="flex justify-center" dir="rtl">

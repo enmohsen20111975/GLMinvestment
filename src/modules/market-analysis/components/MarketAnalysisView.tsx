@@ -242,9 +242,8 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         </div>
       </div>
 
-      {/* 🔔 P17 جرس الصباح — أعلى 3 فرص EGX فوق التبويبات */}
-      {/* MorningBellSection — UNIFIED-BALANCED-ONLY: متعطل */}
-      <HorizontalSectorsBar marketCode={marketCode} />
+      {/* 🔔 P17 جرس الصباح — REMOVED per institutional directive (duplicate sectors bar) */}
+      {/* <HorizontalSectorsBar marketCode={marketCode} /> */}
 
       {/* ── SCR-007: Track Record Banner (أرقام حقيقية من Python) ── */}
       {trackStats.totalClosed !== null && trackStats.totalClosed > 0 && (
@@ -320,14 +319,18 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-card border border-border flex w-full overflow-x-auto sm:grid sm:grid-cols-2 h-auto gap-1">
-          <TabsTrigger value="predictions" className=" flex items-center gap-1 text-muted-foreground data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
+        <TabsList className="bg-card border border-border flex w-full overflow-x-auto sm:grid sm:grid-cols-3 h-auto gap-1">
+          <TabsTrigger value="predictions" className="flex items-center gap-1 text-muted-foreground data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Target className="h-4 w-4 text-primary" />
-            <span className="hidden sm:inline">غرفة الصفقات والأداء</span>
+            <span className="hidden sm:inline">الصفقات الحية والأدلة</span>
           </TabsTrigger>
-          <TabsTrigger value="status" className=" flex items-center gap-1 text-muted-foreground data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
+          <TabsTrigger value="status" className="flex items-center gap-1 text-muted-foreground data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">حالة السوق ونبضه</span>
+            <span className="hidden sm:inline">نبض السوق والمؤشرات</span>
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="flex items-center gap-1 text-muted-foreground data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
+            <Trophy className="h-4 w-4" />
+            <span className="hidden sm:inline">سجل الأداء الصادق</span>
           </TabsTrigger>
         </TabsList>
 
@@ -339,6 +342,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
 
         <TabsContent value="status" className="mt-4">
           <MarketStatusTab market={currentMarket} />
+        </TabsContent>
+
+        {/* سجل الأداء الصادق — redirects to UnifiedPredictionsTab performance sub-view */}
+        <TabsContent value="performance" className="mt-4">
+          <UnifiedPredictionsTab market={currentMarket} initialSubView="performance" />
         </TabsContent>
       </Tabs>
 

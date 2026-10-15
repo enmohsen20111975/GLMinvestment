@@ -143,6 +143,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [activePhase, setActivePhase] = useState<string>('الكل');
   const currency = marketCurrency(market);
 
   const fetchData = useCallback(async () => {
@@ -354,10 +355,51 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       {/* ─── Pulse Ribbon ─── */}
       <PulseRibbon market={market} scannedCount={data.scanned_count ?? data.stocks.length} />
 
+      {/* ─── Smart Preset Buttons ─── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground shrink-0">قوائم ذكية:</span>
+        <button
+          onClick={() => setActivePhase('بيبلع على الهادي')}
+          className={cn(
+            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
+            activePhase === 'بيبلع على الهادي' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
+          )}
+        >
+          🌊 تدفق سيولة حوتية
+        </button>
+        <button
+          onClick={() => setActivePhase('بيصرف')}
+          className={cn(
+            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
+            activePhase === 'بيصرف' ? 'bg-rose-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
+          )}
+        >
+          🩸 تصريف وهروب كاش
+        </button>
+        <button
+          onClick={() => setActivePhase('الكل')}
+          className={cn(
+            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
+            activePhase === 'الكل' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
+          )}
+        >
+          💎 تجميع قيعان صامت
+        </button>
+        <button
+          onClick={() => setActivePhase('بيتحضر')}
+          className={cn(
+            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
+            activePhase === 'بيتحضر' ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
+          )}
+        >
+          🛡️ نهاية تصحيح وارتداد
+        </button>
+      </div>
+
       {/* ─── UnifiedTable ─── */}
       <UnifiedTable<RadarStock>
         columns={columns}
-        data={data.stocks}
+        data={activePhase === 'الكل' ? data.stocks : data.stocks.filter(s => s.phase === activePhase)}
         keyField="ticker"
         dense
         filterable
