@@ -266,7 +266,7 @@ function PulseGauge({ score }: { score: number }) {
         stroke="currentColor"
         strokeWidth={1}
         strokeDasharray="2 4"
-        className="text-slate-300 dark:text-slate-700"
+        className="text-slate-300 dark:text-stitch-muted"
         opacity={0.5}
       />
 
@@ -285,7 +285,7 @@ function PulseGauge({ score }: { score: number }) {
               y2={p2.y}
               stroke="currentColor"
               strokeWidth={1.5}
-              className="text-slate-400 dark:text-slate-500"
+              className="text-stitch-outline dark:text-stitch-outline"
             />
             <text
               x={labelP.x}
@@ -316,7 +316,7 @@ function PulseGauge({ score }: { score: number }) {
           stroke="currentColor"
           strokeWidth={3}
           strokeLinecap="round"
-          className="text-slate-900 dark:text-white"
+          className="text-stitch-on-surface dark:text-white"
         />
         {/* رأس الإبرة (دائرة صغيرة) */}
         <circle
@@ -357,7 +357,7 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
     case 'HEALTHY_BULL':
       return {
         bg: 'bg-emerald-50 dark:bg-emerald-950/50',
-        text: 'text-emerald-500 dark:text-emerald-300',
+        text: 'text-stitch-primary dark:text-emerald-300',
         border: 'border-emerald-200 dark:border-emerald-800',
         icon: ArrowUpRight,
       };
@@ -384,8 +384,8 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
       };
     default:
       return {
-        bg: 'bg-slate-50 dark:bg-slate-900/50',
-        text: 'text-slate-700 dark:text-slate-300',
+        bg: 'bg-[#182030] dark:bg-[#0B0E14]/50',
+        text: 'text-stitch-muted dark:text-slate-300',
         border: 'border-slate-200 dark:border-slate-800',
         icon: AlertTriangle,
       };
@@ -395,9 +395,9 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
 function pulseColorClasses(color: PulseInfo['color']): string {
   switch (color) {
     case 'emerald':
-      return 'text-emerald-500 dark:text-emerald-400';
+      return 'text-stitch-primary dark:text-stitch-primary';
     case 'green':
-      return 'text-emerald-500 dark:text-green-400';
+      return 'text-stitch-primary dark:text-green-400';
     case 'amber':
       return 'text-amber-600 dark:text-amber-400';
     case 'orange':
@@ -405,7 +405,7 @@ function pulseColorClasses(color: PulseInfo['color']): string {
     case 'rose':
       return 'text-rose-600 dark:text-rose-400';
     default:
-      return 'text-slate-600 dark:text-slate-400';
+      return 'text-stitch-muted dark:text-stitch-outline';
   }
 }
 
@@ -423,9 +423,9 @@ function IndexMiniCard({
   const up = (idx?.change_percent ?? 0) >= 0;
   const hasData = !!idx && typeof idx.value === 'number';
   return (
-    <div className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 dark:border-slate-800 dark:bg-slate-900/40">
+    <div className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-[#182030]/60 p-2.5 dark:border-slate-800 dark:bg-[#0B0E14]/40">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-stitch-outline dark:text-stitch-outline">
           {label}
         </span>
         {hasData && (
@@ -433,7 +433,7 @@ function IndexMiniCard({
             className={cn(
               'inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums',
               up
-                ? 'text-emerald-500 dark:text-emerald-400'
+                ? 'text-stitch-primary dark:text-stitch-primary'
                 : 'text-rose-600 dark:text-rose-400',
             )}
             dir="ltr"
@@ -448,12 +448,12 @@ function IndexMiniCard({
         )}
       </div>
       <div
-        className="font-mono text-lg font-bold tabular-nums text-slate-900 dark:text-white"
+        className="stitch-num text-lg font-bold tabular-nums text-stitch-on-surface dark:text-white"
         dir="ltr"
       >
         {hasData ? fmtNum(idx?.value) : '—'}
       </div>
-      <div className="text-[10px] text-slate-400 dark:text-slate-500" dir="ltr">
+      <div className="text-[10px] text-stitch-outline dark:text-stitch-outline" dir="ltr">
         إغلاق سابق: {hasData ? fmtNum(idx?.previous_close) : '—'}
       </div>
     </div>
@@ -481,17 +481,17 @@ function BreadthBar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-[11px] font-medium">
-        <span className="text-emerald-500 dark:text-emerald-400">
+        <span className="text-stitch-primary dark:text-stitch-primary">
           ▲ {gainers} صاعد
         </span>
-        <span className="text-slate-400 dark:text-slate-500">
+        <span className="text-stitch-outline dark:text-stitch-outline">
           {unchanged} ثابت
         </span>
         <span className="text-rose-600 dark:text-rose-400">
           ▼ {losers} هابط
         </span>
       </div>
-      <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-[#182030] dark:bg-[#0B0E14]">
         <div
           className="h-full bg-emerald-500 transition-all duration-700 ease-out"
           style={{ width: `${gPct}%` }}
@@ -632,16 +632,16 @@ export function MarketPulseWidget() {
           <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
             <WifiOff className="h-8 w-8 text-rose-400" />
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <p className="text-sm font-semibold text-stitch-muted dark:text-slate-200">
                 انقطاع الاتصال
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-stitch-outline dark:text-stitch-outline">
                 تعذّر جلب بيانات نبض السوق
               </p>
             </div>
             <button
               onClick={() => void fetchData()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-[#182030] px-3 py-1.5 text-xs font-medium text-stitch-muted transition-colors hover:bg-[#182030] dark:border-slate-700 dark:bg-[#0B0E14] dark:text-slate-200 dark:hover:bg-[#0B0E14]"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               إعادة المحاولة
@@ -680,8 +680,8 @@ export function MarketPulseWidget() {
               className={cn(
                 'flex h-7 w-7 items-center justify-center rounded-md',
                 isOpen
-                  ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-400'
-                  : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400',
+                  ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-950/60 dark:text-stitch-primary'
+                  : 'bg-[#182030] text-stitch-outline dark:bg-[#0B0E14] dark:text-stitch-outline',
               )}
             >
               <Zap className="h-4 w-4" />
@@ -709,7 +709,7 @@ export function MarketPulseWidget() {
                 )}
               />
             </span>
-            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+            <span className="text-[10px] font-medium text-stitch-outline dark:text-stitch-outline">
               {isOpen ? 'مباشر' : 'مغلق'}
             </span>
 
@@ -729,7 +729,7 @@ export function MarketPulseWidget() {
               onClick={() => void fetchData()}
               disabled={isRefreshing}
               title="تحديث"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-stitch-outline transition-colors hover:bg-[#182030] hover:text-stitch-muted dark:hover:bg-[#0B0E14] dark:hover:text-slate-200"
             >
               {isRefreshing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -750,14 +750,14 @@ export function MarketPulseWidget() {
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center">
               <span
                 className={cn(
-                  'font-mono text-2xl font-bold tabular-nums leading-none',
+                  'stitch-num text-2xl font-bold tabular-nums leading-none',
                   pulseColorClasses(pulse?.color),
                 )}
                 dir="ltr"
               >
                 {pulse ? (pulse.score >= 0 ? `+${(pulse.score ?? 0).toFixed(1)}` : (pulse.score ?? 0).toFixed(1)) : '—'}
               </span>
-              <span className="text-[9px] text-slate-400 dark:text-slate-500">
+              <span className="text-[9px] text-stitch-outline dark:text-stitch-outline">
                 من +5
               </span>
             </div>
@@ -772,7 +772,7 @@ export function MarketPulseWidget() {
             >
               {pulse?.label ?? '—'}
             </div>
-            <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <div className="text-[10px] font-medium uppercase tracking-wide text-stitch-outline dark:text-stitch-outline">
               {pulse?.label_en ?? ''}
             </div>
           </div>
@@ -799,7 +799,7 @@ export function MarketPulseWidget() {
                 <div className={cn('text-xs font-bold', divStyle.text)}>
                   {div.regime_ar}
                 </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                <div className="text-[10px] text-stitch-outline dark:text-stitch-outline">
                   التباعد: {fmtPct(div.value)} • {div.action_ar}
                 </div>
               </div>
@@ -810,11 +810,11 @@ export function MarketPulseWidget() {
         {/* اتساع السوق */}
         <div className="rounded-lg border border-slate-200 bg-white/60 p-2.5 dark:border-slate-800 dark:bg-slate-950/30">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stitch-outline dark:text-stitch-outline">
               اتساع السوق
             </span>
             {bread && (
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">
+              <span className="text-[10px] text-stitch-outline dark:text-stitch-outline">
                 السيولة: {fmtVolume(bread.total_turnover)} ج.م
               </span>
             )}
@@ -834,7 +834,7 @@ export function MarketPulseWidget() {
         {top && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-gradient-to-l from-emerald-50/60 to-transparent px-2.5 py-2 dark:border-slate-800 dark:from-emerald-950/30">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10 text-stitch-primary dark:bg-emerald-950/60 dark:text-stitch-primary">
                 {top.avg_change >= 0 ? (
                   <Signal className="h-3.5 w-3.5" />
                 ) : (
@@ -842,7 +842,7 @@ export function MarketPulseWidget() {
                 )}
               </div>
               <div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                <div className="text-[10px] text-stitch-outline dark:text-stitch-outline">
                   القطاع الأكثر امتصاصاً للسيولة
                 </div>
                 <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
@@ -851,14 +851,14 @@ export function MarketPulseWidget() {
               </div>
             </div>
             <div className="text-left" dir="ltr">
-              <div className="text-xs font-bold tabular-nums text-emerald-500 dark:text-emerald-400">
+              <div className="text-xs font-bold tabular-nums text-stitch-primary dark:text-stitch-primary">
                 {fmtPct(top.turnover_pct)}
               </div>
               <div
                 className={cn(
                   'text-[10px] tabular-nums',
                   top.avg_change >= 0
-                    ? 'text-emerald-500 dark:text-emerald-400'
+                    ? 'text-stitch-primary dark:text-stitch-primary'
                     : 'text-rose-600 dark:text-rose-400',
                 )}
               >
@@ -869,7 +869,7 @@ export function MarketPulseWidget() {
         )}
 
         {/* آخر تحديث */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-400 dark:border-slate-800 dark:text-slate-500">
+        <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-stitch-outline dark:border-slate-800 dark:text-stitch-outline">
           <span>آخر تحديث: {lastUpdateStr}</span>
           <span dir="ltr" className="tabular-nums">
             {data.cairo_time?.split(' ')?.[1] ?? ''}
