@@ -605,6 +605,22 @@ class FundamentalScorer:
                 score -= 10
             details["debt_equity"] = de
 
+        # Task BRAVO-CASH-LINKAGE: Cash-Rich bonus — +10 for positive free cash flow.
+        free_cf = fundamental.get("free_cash_flow")
+        if free_cf is not None:
+            try:
+                fcf = float(str(free_cf).replace('−', '-').replace(',', '').strip())
+            except (ValueError, TypeError):
+                fcf = 0.0
+            if fcf > 0:
+                score += 10  # Cash-Rich — تدفق نقدي حر موجب
+                details["free_cash_flow"] = fcf
+                details["cash_rich"] = True
+            elif fcf < 0:
+                score -= 5   # تدفق سالب — ضعف أساسي
+                details["free_cash_flow"] = fcf
+                details["free_cf_burned"] = True
+
         return (round(min(100, max(0, score)), 2), details)
 
 
@@ -2329,6 +2345,20 @@ class CoreScoringEngine:
         if not config.is_signal_allowed(adjusted_signal):
             adjusted_signal = "HOLD"
             warnings.append(f"⚡ الإشارة معدّلة لـ HOLD لأن الشخصية لا تسمح بهذه الإشارة")
+
+        # ─── Task BRAVO-CASH-LINKAGE: High Conviction block — free_cf سالب ومحروق ──
+        _fund = price_data.get("fundamental", {})
+        _fcf = _fund.get("free_cash_flow")
+        if adjusted_signal == "STRONG_BUY" and _fcf is not None:
+            try:
+                _fcf_val = float(str(_fcf).replace('−', '-').replace(',', '').strip())
+            except (ValueError, TypeError):
+                _fcf_val = 0.0
+            if _fcf_val < 0:
+                adjusted_signal = "BUY"  # downgrade — High Conviction محظور على الـ free_cf المحروق
+                _fcf_reason = f"free_cf سالب ({_fcf_val/1e9:+.2f}B) — High Conviction محظور (Task BRAVO-CASH-LINKAGE)"
+                rejection_reason = (rejection_reason + " | " if rejection_reason else "") + _fcf_reason
+                warnings.append(f"⚠️ {_fcf_reason}")
 
         # ─── 8. Confidence ───────────────────────────────────────────────
         confidence = self._calculate_confidence(

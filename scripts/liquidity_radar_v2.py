@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -42,7 +43,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-STOCKS_DB = PROJECT_ROOT / "db" / "stocks.db"
+STOCKS_DB = Path(os.environ.get('STOCKS_DB', str(PROJECT_ROOT / "db" / "stocks.db")))
+DATA_ENGINE_DB = Path(os.environ.get('DATA_ENGINE_DB', str(PROJECT_ROOT / "db" / "data_engine.db")))
 
 # Task BRAVO-RADAR-V2: استيراد قاموس تعريب القطاعات
 import importlib.util as _ilu
@@ -112,6 +114,135 @@ def _to_float(v: Any, default: float = 0.0) -> float:
         return float(str(v).replace('−', '-').replace('،', '').strip())
     except (ValueError, TypeError):
         return default
+
+
+# ─── Task BRAVO-TV-MINE: TradingView data mine integration helpers ───────────
+
+
+def _parse_egp_value(s: Any) -> Optional[float]:
+    """Parse localized EGP value strings from tabs_data.
+
+    Examples: '1.69 T EGP' → 1.69e12, '82.39 B EGP' → 8.239e10, '5 M EGP' → 5e6.
+    Returns None for '—' / empty / unparseable.
+    """
+    if s is None:
+        return None
+    txt = str(s).replace('−', '-').strip()
+    if not txt or txt in ('—', '-', '— '):
+        return None
+    import re
+    m = re.match(r'^(-?[0-9]+(?:\.[0-9]+)?)\s*([TBMK]?)', txt)
+    if not m:
+        return None
+    val = float(m.group(1))
+    unit = (m.group(2) or '').upper()
+    mult = {'T': 1e12, 'B': 1e9, 'M': 1e6, 'K': 1e3}.get(unit, 1.0)
+    return val * mult
+
+
+def _compute_fundamentals(ticker: str, de_conn: Optional[sqlite3.Connection]) -> Dict[str, Any]:
+    """Fundamentals — pull cash, total_assets, free_cf, operating_cf, debt for a stock.
+
+    Source priority (Task BRAVO-CASH-LINKAGE):
+      1. data_engine.db/stocks.tabs_data JSON:
+         - 'بَيَانُ المُوَازَنَة' array: [3]=total_assets, [7]=cash, [9]=debt.
+         - 'التدفقات النقدية' array: [3]=operating_cf, [6]=free_cf.
+      2. Fallback: tab_balance_sheet + tab_cash_flow tables by symbol (non-EGX numeric).
+
+    Returns {free_cash_flow, cash_on_hand, operating_cf, total_assets, debt, cash_ratio, debt_ratio, source}.
+    """
+    result = {
+        'free_cash_flow': None, 'cash_on_hand': None, 'operating_cf': None,
+        'total_assets': None, 'debt': None, 'cash_ratio': None, 'debt_ratio': None,
+        'source': 'unavailable',
+    }
+    if de_conn is None:
+        return result
+    # 1. tabs_data (TradingView balance sheet + cash flow arrays)
+    try:
+        row = de_conn.execute("SELECT tabs_data FROM stocks WHERE symbol = ? LIMIT 1", (ticker,)).fetchone()
+        if row and row[0]:
+            j = json.loads(row[0])
+            bs = j.get('بَيَانُ المُوَازَنَة') or j.get('بيان الموازنة') or []
+            cf = j.get('التدفقات النقدية') or []
+            if isinstance(bs, list) and len(bs) >= 8:
+                ta = _parse_egp_value(bs[3])     # index 3 = total_assets
+                cash = _parse_egp_value(bs[7])   # index 7 = cash
+                debt = _parse_egp_value(bs[9]) if len(bs) > 9 else None  # index 9 = debt
+                if ta and ta > 0:
+                    result['total_assets'] = round(ta, 0)
+                if cash is not None:
+                    result['cash_on_hand'] = round(cash, 0)
+                if debt is not None:
+                    result['debt'] = round(debt, 0)
+                if ta and ta > 0 and cash is not None:
+                    result['cash_ratio'] = round(cash / ta, 4)
+                if ta and ta > 0 and debt is not None:
+                    result['debt_ratio'] = round(debt / ta, 4)
+            if isinstance(cf, list) and len(cf) >= 7:
+                op_cf = _parse_egp_value(cf[3])    # index 3 = operating_cf
+                free_cf = _parse_egp_value(cf[6])  # index 6 = free_cf
+                if op_cf is not None:
+                    result['operating_cf'] = round(op_cf, 0)
+                if free_cf is not None:
+                    result['free_cash_flow'] = round(free_cf, 0)
+            if result['total_assets'] or result['free_cash_flow'] is not None:
+                result['source'] = 'tabs_data (TradingView balance sheet + cash flow)'
+                return result
+    except Exception:
+        pass
+    # 2. Fallback: tab_balance_sheet + tab_cash_flow tables by symbol
+    try:
+        bs_row = de_conn.execute(
+            "SELECT cash, total_assets, debt FROM tab_balance_sheet WHERE symbol = ? ORDER BY fiscal_end DESC LIMIT 1",
+            (ticker,)).fetchone()
+        cf_row = de_conn.execute(
+            "SELECT operating_cf, free_cf FROM tab_cash_flow WHERE symbol = ? ORDER BY fiscal_end DESC LIMIT 1",
+            (ticker,)).fetchone()
+        if bs_row:
+            cash = _to_float(bs_row[0]); ta = _to_float(bs_row[1]); debt = _to_float(bs_row[2])
+            if ta > 0:
+                result['total_assets'] = round(ta, 0)
+                if cash >= 0:
+                    result['cash_on_hand'] = round(cash, 0)
+                result['cash_ratio'] = round(cash / ta, 4) if cash >= 0 else None
+            if debt > 0:
+                result['debt'] = round(debt, 0)
+                result['debt_ratio'] = round(debt / ta, 4) if ta > 0 else None
+        if cf_row:
+            op_cf = _to_float(cf_row[0]); free_cf = _to_float(cf_row[1])
+            if op_cf:
+                result['operating_cf'] = round(op_cf, 0)
+            if free_cf:
+                result['free_cash_flow'] = round(free_cf, 0)
+        if result['total_assets'] or result['free_cash_flow'] is not None:
+            result['source'] = 'tab_balance_sheet + tab_cash_flow'
+    except Exception:
+        pass
+    return result
+
+
+def _check_tv_whale(ticker: str, de_conn: Optional[sqlite3.Connection]) -> Dict[str, Any]:
+    """TradingView Screener flag — True if stock is in 'unusual_volume' or 'most_active' list.
+
+    Source: data_engine.db/screener_lists (populated by tradingview_market_movers scraper).
+    """
+    result = {'tv_whale_spotted': False, 'tv_lists': [], 'tv_rank': None, 'source': 'screener_lists'}
+    if de_conn is None:
+        return result
+    try:
+        rows = de_conn.execute(
+            "SELECT category, rank FROM screener_lists WHERE symbol = ? "
+            "AND category IN ('unusual_volume','most_active') ORDER BY rank ASC",
+            (ticker,)
+        ).fetchall()
+        if rows:
+            result['tv_whale_spotted'] = True
+            result['tv_lists'] = [r[0] for r in rows]
+            result['tv_rank'] = rows[0][1]
+    except Exception:
+        pass
+    return result
 
 
 # ─── 1. فلتر حالة السوق (إلزامي أولًا) ─────────────────────────────────────
@@ -234,8 +365,8 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
 # ─── 2. الحوت فين؟ (صافي الكاش المطلق) ────────────────────────────────────
 
 
-def compute_whale_flow(candles: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """حساب صافي التدفق المطلق (EGP) + مقارنة بالمتوسط.
+def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float] = None) -> Dict[str, Any]:
+    """حساب صافي التدفق المطلق (EGP) + مقارنة بالمتوسط + Cash Safety Multiplier.
 
     المنطق:
       - لكل يوم: buy_value ≈ volume × close (لو close > open) → شراء
@@ -285,12 +416,28 @@ def compute_whale_flow(candles: List[Dict[str, Any]]) -> Dict[str, Any]:
     net_flow = buy_value_total - sell_value_total
     avg_daily_flow = sum(abs(f) for f in daily_flows) / len(daily_flows) if daily_flows else 0
 
+    # Task BRAVO-TV-MINE: Cash Safety Multiplier — الشركة عالية الكاش (cash_ratio >= 0.20)
+    # زي (SWDY 22.8%) تاخد boost مؤسسي طالما صافي التدفق موجب → عتبة الحوت تُخفّض.
+    cash_ratio = cash_ratio if cash_ratio is not None else 0.0
+    if cash_ratio >= 0.20:
+        cash_boost = 1.5    # كاش عالي → boost قوي
+    elif cash_ratio >= 0.10:
+        cash_boost = 1.2    # كاش متوسط
+    else:
+        cash_boost = 1.0
+    # عتبة الحوت: 0.5×avg_daily_flow (base)، تُخفّض بـ cash_boost.
+    whale_threshold_mult = 0.5 / cash_boost if cash_boost > 0 else 0.5
+
     # قوة التدفق
     if avg_daily_flow <= 0:
         flow_strength = 'بيانات غير كافية'
         whale_present = False
-    elif net_flow > 0 and net_flow > avg_daily_flow * 0.5:
-        flow_strength = 'تدفق موجب قوي'
+    elif net_flow > 0 and net_flow > avg_daily_flow * whale_threshold_mult:
+        flow_strength = 'تدفق موجب قوي' + (' + كاش عالي (boost مؤسسي)' if cash_boost >= 1.5 else '')
+        whale_present = True
+    elif net_flow > 0 and cash_boost >= 1.5 and net_flow > avg_daily_flow * 0.3:
+        # كاش عالي + تدفق موجب ضعيف → ترقية لحوت (boost مؤسسي)
+        flow_strength = 'تدفق موجب + كاش عالي (boost مؤسسي)'
         whale_present = True
     elif net_flow > 0:
         flow_strength = 'تدفق موجب ضعيف'
@@ -312,6 +459,8 @@ def compute_whale_flow(candles: List[Dict[str, Any]]) -> Dict[str, Any]:
         'avg_daily_flow_egp': round(avg_daily_flow, 0),
         'whale_present': whale_present,
         'flow_strength': flow_strength,
+        'cash_ratio': round(cash_ratio, 4) if cash_ratio else None,
+        'cash_safety_multiplier': cash_boost,
         'reason': reason,
     }
 
@@ -503,10 +652,33 @@ def check_falling_knife(
     current_price = _to_float(stock_info.get('current_price'))
     change_pct = _to_float(stock_info.get('change_percent'))
 
-    # Rule 79: Falling Knife — سهم تحت MA50 بـ >5% + MA50 < MA200
-    if ma_50 > 0 and ma_200 > 0 and current_price > 0:
-        deviation_from_ma50 = ((current_price - ma_50) / ma_50) * 100.0
-        if deviation_from_ma50 < -5.0 and ma_50 < ma_200:
+    # Task BRAVO-MA200-UNCHOKE: لو MA200 أو MA50 مفقود من جدول stocks،
+    # احسب EMA20 + SMA50 ديناميكياً من stock_daily_prices (candles).
+    ema20 = 0.0
+    sma50 = 0.0
+    if candles:
+        closes_all = [c for c in (_to_float(x.get('close')) for x in candles) if c > 0]
+        if len(closes_all) >= 50:
+            sma50 = sum(closes_all[-50:]) / 50
+        elif len(closes_all) >= 20:
+            sma50 = sum(closes_all) / len(closes_all)
+        if len(closes_all) >= 20:
+            k = 2 / (20 + 1)
+            ema = sum(closes_all[:20]) / 20
+            for p in closes_all[20:]:
+                ema = (p - ema) * k + ema
+            ema20 = ema
+
+    # long-term trend: MA200 من جدول stocks، fallback لـ SMA50 (ديناميكي).
+    long_ma = ma_200 if ma_200 > 0 else sma50
+    # medium-term trend: MA50 من جدول stocks، fallback لـ EMA20 (ديناميكي).
+    medium_ma = ma_50 if ma_50 > 0 else ema20
+    ma_source = 'table' if (ma_200 > 0 and ma_50 > 0) else 'dynamic EMA20/SMA50 from stock_daily_prices'
+
+    # Rule 79: Falling Knife — سهم تحت MA50 بـ >5% + MA50 < long_ma
+    if medium_ma > 0 and long_ma > 0 and current_price > 0:
+        deviation_from_ma50 = ((current_price - medium_ma) / medium_ma) * 100.0
+        if deviation_from_ma50 < -5.0 and medium_ma < long_ma:
             return {
                 'is_falling_knife': True,
                 'targets_available': False,
@@ -521,19 +693,23 @@ def check_falling_knife(
             'reason': f'سوق هابط ({market_regime["change_pct"]:.2f}%) + السهم هابط ({change_pct:.2f}%) — لا أهداف صاعدة (Rule 78)',
         }
 
-    # لو مفيش MA50 أو MA200 → محافظ: targets_available = False
-    if ma_50 <= 0 or ma_200 <= 0:
+    # Task BRAVO-MA200-UNCHOKE: لا تعطّل الأهداف لمجرد غياب MA200.
+    # لو في سعر إغلاق حقيقي + قاع دفاعي واضح (support أو recent low) → أهداف متاحة.
+    support = _to_float(stock_info.get('support'))
+    has_real_close = current_price > 0
+    has_defense = support > 0 or (candles and ema20 > 0)
+    if has_real_close and has_defense:
         return {
             'is_falling_knife': False,
-            'targets_available': False,
-            'reason': 'بيانات MA50/MA200 غير متاحة — محافظ: لا أهداف',
+            'targets_available': True,
+            'reason': f'السهم سليم — أهداف متاحة (MA src: {ma_source})',
         }
 
-    # سهم سليم → أهداف متاحة
+    # فعلاً لا بيانات (لا سعر ولا قاع)
     return {
         'is_falling_knife': False,
-        'targets_available': True,
-        'reason': 'السهم فوق MA50 + MA50 > MA200 — أهداف متاحة',
+        'targets_available': False,
+        'reason': 'لا سعر إغلاق حقيقي ولا قاع دفاعي — لا أهداف',
     }
 
 
@@ -630,8 +806,25 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
             'reason': f'سيولة ضعيفة — {liquidity["reason"]}',
         }
 
-    # 1. الحوت فين؟
-    whale = compute_whale_flow(candles)
+    # Task BRAVO-CASH-LINKAGE: فتح data_engine.db لسحب fundamentals (cash + free_cf + operating_cf + debt) + screener_lists.
+    de_conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True) if DATA_ENGINE_DB.exists() else None
+    fundamentals = _compute_fundamentals(ticker, de_conn)
+    tv_whale = _check_tv_whale(ticker, de_conn)
+
+    # 1. الحوت فين؟ (+ Cash Safety Multiplier من cash_ratio)
+    whale = compute_whale_flow(candles, cash_ratio=fundamentals.get('cash_ratio'))
+    if de_conn is not None:
+        de_conn.close()
+
+    # Task BRAVO-CASH-LINKAGE: قاعدة القرار — تجميع مؤسسي مدعوم بتدفق نقدي حقيقي vs مضاربة خطرة.
+    _net_flow = whale.get('net_flow_egp', 0)
+    _free_cf = fundamentals.get('free_cash_flow')
+    _debt_ratio = fundamentals.get('debt_ratio')
+    accumulation_class = None
+    if _net_flow > 0 and _free_cf is not None and _free_cf > 0:
+        accumulation_class = 'تجميع مؤسسي مدعوم بتدفق نقدي حقيقي'
+    elif _free_cf is not None and _free_cf < 0 and _debt_ratio is not None and _debt_ratio > 0.5:
+        accumulation_class = 'مضاربة خطرة سريعة'
 
     # 2. حالة السوق (تم حسابها مسبقًا)
     # market_regime passed in
@@ -676,6 +869,12 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         'entry_defense': entry_defense,
         'falling_knife': falling_knife,
         'targets_available': falling_knife['targets_available'],
+        # Task BRAVO-CASH-LINKAGE: fundamentals + accumulation_class
+        'fundamentals': fundamentals,
+        'accumulation_class': accumulation_class,
+        'tv_whale_spotted': tv_whale['tv_whale_spotted'],
+        'tv_lists': tv_whale.get('tv_lists', []),
+        'tv_rank': tv_whale.get('tv_rank'),
         'reason': short_reason,
     }
 
@@ -811,7 +1010,16 @@ def main() -> int:
         log("أول 10 أسهم:")
         for s in result.get('stocks', [])[:10]:
             log(f"  {s['ticker']:10} | {s['phase']:25} | تدفق={s['whale'].get('net_flow_egp',0)/1e6:+.1f}M | دخول={s['entry_defense'].get('entry_level')} | دفاع={s['entry_defense'].get('defense_level')}")
-            log(f"    السبب: {s['reason'][:120]}")
+            cb = s.get('fundamentals', {})
+            if cb.get('cash_on_hand') is not None:
+                cash_str = f"كاش={(cb.get('cash_on_hand') or 0)/1e9:.2f}B | free_cf={(cb.get('free_cash_flow') or 0)/1e9:+.2f}B | op_cf={(cb.get('operating_cf') or 0)/1e9:.2f}B | نسبة_كاش={cb.get('cash_ratio')}"
+            else:
+                cash_str = "fundamentals=غير متاح"
+            acc = s.get('accumulation_class')
+            acc_str = f"⚡ {acc}" if acc else "محايد"
+            tv_str = f"TV whale={'✓' if s.get('tv_whale_spotted') else '✗'} rank={s.get('tv_rank')} {','.join(s.get('tv_lists',[]))}" if s.get('tv_whale_spotted') else "TV whale=✗"
+            log(f"    {cash_str}")
+            log(f"    {tv_str} | {acc_str} | {s['reason'][:80]}")
         log("")
 
     return 0
