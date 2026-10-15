@@ -187,7 +187,13 @@ def save_to_db(stocks, market):
     for table_name, cols in tab_tables:
         cursor.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({cols})')
 
+    # SOSO-CLEANUP (2026-10-15): فلتر قبل INSERT
+    GARBAGE = {'مصر','السعودية','الكويت','قطر','EGX','TADAWUL','KSE','QSE'}
+    skipped = 0
     for s in stocks:
+        sym = str(s.get('symbol','')).strip()
+        if sym in GARBAGE or sym.startswith('202') or str(market).strip().startswith('202'):
+            skipped += 1; continue
         cursor.execute('''
             INSERT INTO stocks
             (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update)
@@ -210,6 +216,7 @@ def save_to_db(stocks, market):
             datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         ))
 
+    if skipped > 0: log(f"  🚫 rejected {skipped} garbage rows")
     conn.commit()
     conn.close()
 
