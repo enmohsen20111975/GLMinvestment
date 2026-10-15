@@ -244,7 +244,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div className="flex flex-col gap-1 max-w-3xl">
             <div className="flex items-center gap-1.5">
-              <span className="px-1.5 py-0.5 rounded bg-[#182030] stitch-num text-[10px] text-stitch-primary uppercase tracking-wide">Whale Protocol Alpha</span>
+              <span className="px-1.5 py-0.5 rounded bg-secondary stitch-num text-[10px] text-stitch-primary uppercase tracking-wide">Whale Protocol Alpha</span>
               <span className="text-stitch-outline stitch-num text-[10px] tracking-widest">● LIVE INSTITUTIONAL SCAN</span>
             </div>
             <h1 className="stitch-latin text-xl lg:text-2xl font-bold text-stitch-on-surface tracking-tight">
@@ -290,7 +290,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
           {/* Top Line: Market + Search + Refresh */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center bg-[#182030] p-1 rounded-lg">
+              <div className="flex items-center bg-secondary p-1 rounded-lg">
                 <span className="bg-emerald-600 text-white px-2.5 py-0.5 rounded-md text-xs font-semibold flex items-center gap-1">
                   🇪🇬 {market}
                 </span>
@@ -303,11 +303,11 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
                   placeholder="ابحث برمز السهم أو الاسم..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="stitch-ar pr-7 pl-2 py-1.5 text-xs rounded-lg bg-[#182030] text-stitch-on-surface border border-white/[0.06] focus:outline-none focus:ring-1 focus:ring-emerald-500 w-48"
+                  className="stitch-ar pr-7 pl-2 py-1.5 text-xs rounded-lg bg-secondary text-stitch-on-surface border border-border/60 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-48"
                 />
               </div>
             </div>
-            <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#182030] hover:bg-[#1f2a3d] text-stitch-on-surface transition-colors text-xs">
+            <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-stitch-on-surface transition-colors text-xs">
               <RefreshCw className="w-3.5 h-3.5" /> تحديث
             </button>
           </div>
@@ -323,14 +323,14 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
                   'px-2.5 py-1 rounded-full shrink-0 text-xs font-semibold transition-colors flex items-center gap-1.5',
                   activePhase === p.key
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-[#182030] text-stitch-muted hover:bg-[#1f2a3d] hover:text-stitch-on-surface',
+                    : 'bg-secondary text-stitch-muted hover:bg-secondary/80 hover:text-stitch-on-surface',
                 )}
               >
                 {p.dot && <span className={cn('w-1.5 h-1.5 rounded-full', p.dot)} />}
                 <span>{p.label}</span>
                 <span className={cn(
                   'stitch-num text-[10px] px-1 rounded-full',
-                  activePhase === p.key ? 'bg-black/20' : 'bg-[#0B0E14]',
+                  activePhase === p.key ? 'bg-black/20' : 'bg-background',
                 )}>
                   {p.count}
                 </span>
@@ -413,7 +413,7 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
     <div className="stitch-glass p-3 hover:border-emerald-500/20 transition-colors flex flex-col xl:grid xl:grid-cols-12 gap-3 items-stretch">
 
       {/* ─── Col 1: Whale Volume & Flow + Dual Color Flow Bar ─── */}
-      <div className="xl:col-span-3 flex flex-col justify-between bg-[#0B0E14]/50 p-2.5 rounded-lg">
+      <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="stitch-num text-sm font-bold text-stitch-on-surface truncate">{stock.ticker}</span>
@@ -433,7 +433,7 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
             <span className="text-stitch-primary font-semibold">شراء {Math.round(buyPct)}%</span>
             <span className="text-stitch-muted">بيع {Math.round(sellPct)}%</span>
           </div>
-          <div className="w-full h-2 rounded-full bg-[#0B0E14] overflow-hidden flex">
+          <div className="w-full h-2 rounded-full bg-background overflow-hidden flex">
             <div className="h-full bg-emerald-500 rounded-r-full transition-all" style={{ width: `${buyPct}%` }} />
             <div className="h-full bg-rose-500 rounded-l-full transition-all" style={{ width: `${sellPct}%` }} />
           </div>
@@ -449,7 +449,7 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
       </div>
 
       {/* ─── Col 2: Momentum & Market Regime ─── */}
-      <div className="xl:col-span-3 flex flex-col justify-between bg-[#0B0E14]/50 p-2.5 rounded-lg">
+      <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between">
           <span className="stitch-num text-[10px] text-stitch-outline uppercase tracking-wide">حالة السهم</span>
           <span className={cn(
@@ -465,7 +465,7 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
             'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold',
             regime?.is_bull ? 'bg-emerald-500/10 text-stitch-primary' :
             regime?.is_bear ? 'bg-rose-500/10 text-rose-400' :
-            'bg-[#182030] text-stitch-muted'
+            'bg-secondary text-stitch-muted'
           )}>
             <span className={cn('w-1.5 h-1.5 rounded-full',
               regime?.is_bull ? 'bg-emerald-500' : regime?.is_bear ? 'bg-rose-500' : 'bg-stone-500')} />
@@ -486,14 +486,14 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
       </div>
 
       {/* ─── Col 3: Wyckoff Phase & Key Levels ─── */}
-      <div className="xl:col-span-3 flex flex-col justify-between bg-[#0B0E14]/50 p-2.5 rounded-lg">
+      <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between">
           <span className={cn(
             'px-2 py-0.5 rounded-md text-xs font-semibold flex items-center gap-1 stitch-ar',
             stock.phase === 'بيبلع على الهادي' ? 'bg-emerald-500/10 text-stitch-primary' :
             stock.phase === 'بيتحضر' ? 'bg-teal-500/10 text-teal-400' :
             stock.phase === 'بيصرف' ? 'bg-rose-500/10 text-rose-400' :
-            'bg-[#182030] text-stitch-muted'
+            'bg-secondary text-stitch-muted'
           )}>
             <Layers className="w-3.5 h-3.5" />
             {phaseLabel}
@@ -526,7 +526,7 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
       </div>
 
       {/* ─── Col 4: Entry & Capital Defense Strategy ─── */}
-      <div className="xl:col-span-3 flex flex-col justify-between bg-[#0B0E14]/50 p-2.5 rounded-lg">
+      <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between">
           <span className="stitch-num text-[10px] text-stitch-outline uppercase tracking-wide">استراتيجية الدخول</span>
           <span className={cn('flex items-center gap-0.5 text-[10px] font-semibold',
@@ -536,11 +536,11 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
         </div>
 
         <div className="grid grid-cols-2 gap-1.5 my-1.5">
-          <div className="flex flex-col p-1.5 rounded bg-[#182030]/50">
+          <div className="flex flex-col p-1.5 rounded bg-secondary/50">
             <span className="text-[9px] text-stitch-muted stitch-ar">الدخول</span>
             <span className="stitch-num text-sm font-bold text-stitch-primary">{fmtPrice(defense?.entry_level)}</span>
           </div>
-          <div className="flex flex-col p-1.5 rounded bg-[#182030]/50">
+          <div className="flex flex-col p-1.5 rounded bg-secondary/50">
             <span className="text-[9px] text-stitch-muted stitch-ar">الدفاع</span>
             <span className="stitch-num text-sm font-bold text-rose-400">{fmtPrice(defense?.defense_level)}</span>
           </div>

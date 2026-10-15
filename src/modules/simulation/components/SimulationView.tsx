@@ -1340,7 +1340,7 @@ export function SimulationView() {
                   </Button>
                 </div>
                 <Separator className="dark:bg-outline-variant" />
-                <div className="rounded-lg bg-[#182030]/50 p-3 space-y-1.5 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+                <div className="rounded-lg bg-secondary/50 p-3 space-y-1.5 dark:bg-surface-container dark:border dark:border-outline-variant/30">
                   <p className="text-xs font-medium text-stitch-muted dark:text-on-surface-variant">إحصائيات سريعة</p>
                   <div className="flex justify-between text-xs">
                     <span className="text-stitch-muted dark:text-on-surface-variant">القيمة الإجمالية</span>
@@ -1741,7 +1741,7 @@ export function SimulationView() {
                   .map((stock) => (
                     <div
                       key={stock.ticker}
-                      className="flex items-center justify-between rounded-lg border p-3 hover:bg-[#182030]/50 transition-colors dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
+                      className="flex items-center justify-between rounded-lg border p-3 hover:bg-secondary/50 transition-colors dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
                     >
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate dark:text-on-surface">{stock.name_ar}</p>
@@ -1784,7 +1784,7 @@ export function SimulationView() {
 
           {selectedStock && (
             <div className="space-y-4">
-              <div className="rounded-lg bg-[#182030]/50 p-3 space-y-1.5 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+              <div className="rounded-lg bg-secondary/50 p-3 space-y-1.5 dark:bg-surface-container dark:border dark:border-outline-variant/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-stitch-muted dark:text-on-surface-variant">السهم</span>
                   <span className="font-medium dark:text-on-surface">{selectedStock.name_ar} ({selectedStock.ticker})</span>

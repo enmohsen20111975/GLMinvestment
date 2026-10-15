@@ -265,7 +265,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
             </div>
 
             {showDropdown && (
-              <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-white/[0.06] rounded-md shadow-lg max-h-48 overflow-y-auto dark:bg-surface-container dark:border-outline-variant">
+              <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border/60 rounded-md shadow-lg max-h-48 overflow-y-auto dark:bg-surface-container dark:border-outline-variant">
                 {results.map((stock) => (
                   <button
                     key={stock.id}
@@ -292,7 +292,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
 
           {/* Selected stock info */}
           {selectedStock && (
-            <div className="p-3 rounded-lg bg-[#182030]/50 border border-white/[0.06]/50 dark:bg-surface-container dark:border-outline-variant/30">
+            <div className="p-3 rounded-lg bg-secondary/50 border border-border/60/50 dark:bg-surface-container dark:border-outline-variant/30">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-bold text-sm dark:text-on-surface dark:font-financial">{selectedStock.ticker}</span>
                 <span className="text-xs text-stitch-muted dark:text-on-surface-variant">{selectedStock.name_ar}</span>
@@ -654,7 +654,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
 
         {/* Price Section */}
         <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="bg-[#182030]/50 rounded-lg p-2.5 dark:bg-surface-container">
+          <div className="bg-secondary/50 rounded-lg p-2.5 dark:bg-surface-container">
             <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-0.5">السعر الحالي</p>
             <p className="font-bold text-lg tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(item.current_price)}</p>
             <div className="flex items-center gap-1 mt-1">
@@ -719,7 +719,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
         )}
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 pt-2 border-t border-white/[0.06] dark:border-outline-variant/30">
+        <div className="flex justify-end gap-2 pt-2 border-t border-border/60 dark:border-outline-variant/30">
           <Button
             variant="outline"
             size="sm"
@@ -1221,7 +1221,7 @@ export function EnhancedWatchlistView() {
         {!showIntelligence && !loadError && items.length === 0 && (
           <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant" key="watchlist-empty-state">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#182030] flex items-center justify-center mb-4 dark:bg-surface-container">
+              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4 dark:bg-surface-container">
                 <EyeOff className="w-8 h-8 text-stitch-muted dark:text-on-surface-variant" />
               </div>
               <h3 className="text-lg font-semibold mb-2 dark:text-on-surface dark:font-outfit">{t('watchlist.empty.title')}</h3>
@@ -1309,7 +1309,7 @@ export function EnhancedWatchlistView() {
                 columnToggle
                 filterable
                 rowClassName={(item) => cn(
-                  'hover:bg-[#182030]/50',
+                  'hover:bg-secondary/50',
                   hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-emerald-50/50 dark:bg-emerald-600/60/10 dark:bg-primary-container/10',
                   hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-red-50/50 dark:bg-rose-500/60/10 dark:bg-error-container/10',
                 )}

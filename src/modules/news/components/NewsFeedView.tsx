@@ -114,7 +114,7 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
     <div className="my-4">
       {/* Featured Primary Image */}
       <div
-        className="relative group rounded-lg overflow-hidden border border-white/[0.06]/70 bg-[#182030]/20 cursor-pointer max-h-[380px] dark:bg-surface-container-low dark:border-outline-variant/30"
+        className="relative group rounded-lg overflow-hidden border border-border/60/70 bg-secondary/20 cursor-pointer max-h-[380px] dark:bg-surface-container-low dark:border-outline-variant/30"
         onClick={() => setSelectedImage(validImages[0])}
       >
         <img
@@ -142,7 +142,7 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
               key={idx}
               type="button"
               onClick={() => setSelectedImage(img)}
-              className="relative flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border border-white/[0.06]/70 hover:border-primary transition-all"
+              className="relative flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border border-border/60/70 hover:border-primary transition-all"
             >
               <img src={img} alt="" className="w-full h-full object-cover" />
             </button>
@@ -156,11 +156,11 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] stitch-canvas/95 rounded-xl p-2 border border-white/[0.06] shadow-2xl dark:bg-surface-container-low dark:border-outline-variant/30">
+          <div className="relative max-w-4xl max-h-[90vh] stitch-canvas/95 rounded-xl p-2 border border-border/60 shadow-2xl dark:bg-surface-container-low dark:border-outline-variant/30">
             <button
               type="button"
               onClick={() => setSelectedImage(null)}
-              className="absolute top-4 left-4 z-10 stitch-canvas/80 hover:stitch-canvas border border-white/[0.06] rounded-full p-1.5 text-stitch-on-surface transition-colors shadow dark:bg-surface-container-high dark:text-on-surface dark:border-outline-variant/30"
+              className="absolute top-4 left-4 z-10 stitch-canvas/80 hover:stitch-canvas border border-border/60 rounded-full p-1.5 text-stitch-on-surface transition-colors shadow dark:bg-surface-container-high dark:text-on-surface dark:border-outline-variant/30"
               aria-label={t('news.feed.closeAriaLabel')}
             >
               <X className="w-4 h-4" />
@@ -219,8 +219,8 @@ function InvestmentDecisionInsight({
   };
 
   return (
-    <div className="rounded-xl border border-white/[0.06]/80 bg-[#182030]/30 p-3.5 space-y-3 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-      <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]/50 dark:border-outline-variant/30">
+    <div className="rounded-xl border border-border/60/80 bg-secondary/30 p-3.5 space-y-3 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+      <div className="flex items-center justify-between pb-2 border-b border-border/60/50 dark:border-outline-variant/30">
         <div className="flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-bold text-stitch-on-surface dark:text-on-surface">{t('news.feed.insight.title')}</span>
@@ -283,7 +283,7 @@ function InvestmentDecisionInsight({
 
       {/* Related Tickers */}
       {item.tickers && item.tickers.length > 0 && (
-        <div className="flex items-center gap-1 pt-2 border-t border-white/[0.06]/40 flex-wrap dark:border-outline-variant/30">
+        <div className="flex items-center gap-1 pt-2 border-t border-border/60/40 flex-wrap dark:border-outline-variant/30">
           <span className="text-[10px] text-stitch-muted dark:text-on-surface-variant">{t('news.feed.insight.stocksLabel')}</span>
           {item.tickers.map((t) => (
             <button
@@ -437,7 +437,7 @@ function ShareAndActions({ item }: { item: NewsItem }) {
           size="sm"
           onClick={() => window.open(item.url, '_blank')}
           title={t('news.feed.share.sourceLinkTitle')}
-          className="h-8 w-full text-xs gap-1.5 justify-center hover:bg-[#182030] text-stitch-muted hover:text-stitch-on-surface dark:hover:bg-surface-container-high dark:text-on-surface-variant dark:hover:text-on-surface"
+          className="h-8 w-full text-xs gap-1.5 justify-center hover:bg-secondary text-stitch-muted hover:text-stitch-on-surface dark:hover:bg-surface-container-high dark:text-on-surface-variant dark:hover:text-on-surface"
         >
           <ExternalLink className="w-3.5 h-3.5" />
           <span>{t('news.feed.share.sourceLink')}</span>
@@ -508,7 +508,7 @@ function NewsCard({ item }: { item: NewsItem }) {
   };
 
   return (
-    <Card className="overflow-hidden border border-white/[0.06]/70 hover:border-white/[0.06] transition-all duration-200 stitch-glass shadow-sm hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+    <Card className="overflow-hidden border border-border/60/70 hover:border-border/60 transition-all duration-200 stitch-glass shadow-sm hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
       <CardContent className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
           {/* Main Content Area (الجزء الأكبر للخبر - 8 أعمدة) */}
@@ -630,7 +630,7 @@ function NewsCard({ item }: { item: NewsItem }) {
           </div>
 
           {/* Sidebar Area (التحليل والنشر على جنب - 4 أعمدة) */}
-          <div className="md:col-span-4 flex flex-col justify-between border-t md:border-t-0 md:border-r md:border-white/[0.06]/60 pt-4 md:pt-0 md:pr-4 gap-3">
+          <div className="md:col-span-4 flex flex-col justify-between border-t md:border-t-0 md:border-r md:border-border/60/60 pt-4 md:pt-0 md:pr-4 gap-3">
             {/* Local AI Decision Insight */}
             <InvestmentDecisionInsight item={item} onTickerClick={handleTickerClick} />
 
@@ -725,7 +725,7 @@ export function NewsFeedView() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6 dark:bg-surface-container-lowest" dir="rtl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.06] pb-4 dark:border-outline-variant/30">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4 dark:border-outline-variant/30">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-primary/10 text-primary dark:bg-primary-container/20 dark:text-primary">
@@ -765,7 +765,7 @@ export function NewsFeedView() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('news.feed.searchPlaceholder')}
-            className="pr-9 h-10 text-sm stitch-glass border-white/[0.06] dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
+            className="pr-9 h-10 text-sm stitch-glass border-border/60 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
           />
           {searchQuery && (
             <button
@@ -778,7 +778,7 @@ export function NewsFeedView() {
         </div>
 
         {/* Market Filter Tabs */}
-        <div className="flex items-center gap-1 bg-[#182030] p-1 rounded-lg w-full sm:w-auto self-stretch dark:bg-surface-container dark:border dark:border-outline-variant/30">
+        <div className="flex items-center gap-1 bg-secondary p-1 rounded-lg w-full sm:w-auto self-stretch dark:bg-surface-container dark:border dark:border-outline-variant/30">
           <button
             type="button"
             onClick={() => setMarketFilter('all')}
@@ -822,7 +822,7 @@ export function NewsFeedView() {
       {loading && !data && (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="border-white/[0.06]/60 stitch-glass dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+            <Card key={i} className="border-border/60/60 stitch-glass dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <Skeleton className="h-5 w-24 rounded" />
@@ -854,7 +854,7 @@ export function NewsFeedView() {
 
       {/* Empty State */}
       {!loading && filteredNews.length === 0 && (
-        <Card className="border-white/[0.06]/60 stitch-glass dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+        <Card className="border-border/60/60 stitch-glass dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardContent className="p-12 text-center space-y-3">
             <Newspaper className="w-10 h-10 mx-auto text-stitch-muted/50 dark:text-on-surface-variant" />
             <p className="text-sm font-medium text-stitch-on-surface dark:text-on-surface">{t('news.feed.emptyTitle')}</p>

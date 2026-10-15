@@ -278,7 +278,7 @@ const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
   doubtful:
     'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
   not_available:
-    'bg-[#182030] text-stitch-muted dark:bg-[#0B0E14]/50 dark:text-stitch-outline border-white/[0.06] dark:border-white/[0.06]',
+    'bg-secondary text-stitch-muted dark:bg-background/50 dark:text-stitch-outline border-border/60 dark:border-border/60',
 };
 
 function deriveOverallStatus(row: ShariaRow): ShariaStatus {
@@ -318,7 +318,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
 
   return (
     <Card
-      className="relative overflow-hidden border border-white/[0.06] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-colors cursor-pointer group dark:bg-surface-container-low dark:border-outline-variant/30"
+      className="relative overflow-hidden border border-border/60 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-colors cursor-pointer group dark:bg-surface-container-low dark:border-outline-variant/30"
       onClick={() => onOpenDetail(row.symbol)}
     >
       <IslamicPattern />
@@ -528,10 +528,10 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
           <BookOpen className="w-4 h-4 text-stitch-primary" />
           تفصيل المصادر الثمانية
         </h4>
-        <div className="rounded-md border border-white/[0.06] overflow-hidden">
+        <div className="rounded-md border border-border/60 overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[#182030]/40">
+              <TableRow className="bg-secondary/40">
                 <TableHead className="text-xs">المصدر</TableHead>
                 <TableHead className="text-xs text-center">الحالة</TableHead>
                 <TableHead className="text-xs text-center">النسبة</TableHead>
@@ -587,7 +587,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
                     'rounded-md border p-2 flex items-center justify-between',
                     r.is_primary === 1
                       ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800'
-                      : 'border-white/[0.06] bg-[#182030]/30',
+                      : 'border-border/60 bg-secondary/30',
                   )}
                 >
                   <div>
@@ -786,7 +786,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
               type="checkbox"
               checked={includeCapitalGain}
               onChange={(e) => setIncludeCapitalGain(e.target.checked)}
-              className="w-4 h-4 rounded border-white/[0.06] accent-emerald-600"
+              className="w-4 h-4 rounded border-border/60 accent-emerald-600"
             />
             تضمين الربح الرأسمالي المحقق
           </label>
@@ -956,7 +956,7 @@ function PortfolioPurificationCalculator() {
             type="checkbox"
             checked={includeCapitalGain}
             onChange={(e) => setIncludeCapitalGain(e.target.checked)}
-            className="w-4 h-4 rounded border-white/[0.06] accent-emerald-600"
+            className="w-4 h-4 rounded border-border/60 accent-emerald-600"
           />
           تضمين الأرباح الرأسمالية المحققة
         </label>
@@ -1013,13 +1013,13 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-center">
-        <div className="rounded-md border border-white/[0.06] stitch-canvas/60 p-2">
+        <div className="rounded-md border border-border/60 stitch-canvas/60 p-2">
           <p className="text-[10px] text-stitch-muted">إجمالي التوزيعات</p>
           <p className="text-sm font-bold tabular-nums" dir="ltr">
             {totalDividends != null ? totalDividends.toFixed(2) : '—'}
           </p>
         </div>
-        <div className="rounded-md border border-white/[0.06] stitch-canvas/60 p-2">
+        <div className="rounded-md border border-border/60 stitch-canvas/60 p-2">
           <p className="text-[10px] text-stitch-muted">إجمالي الربح المحقق</p>
           <p className="text-sm font-bold tabular-nums" dir="ltr">
             {totalCapitalGain != null ? totalCapitalGain.toFixed(2) : '—'}
@@ -1030,10 +1030,10 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
       {perSymbol.length > 0 && (
         <div>
           <p className="text-xs font-semibold mb-1">تفصيل لكل سهم</p>
-          <div className="rounded-md border border-white/[0.06] overflow-hidden max-h-48 overflow-y-auto">
+          <div className="rounded-md border border-border/60 overflow-hidden max-h-48 overflow-y-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#182030]/40">
+                <TableRow className="bg-secondary/40">
                   <TableHead className="text-xs">السهم</TableHead>
                   <TableHead className="text-xs text-center">الكمية</TableHead>
                   <TableHead className="text-xs text-center">قيمة التطهير</TableHead>
@@ -1218,7 +1218,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
           {/* Status filter chips */}
           <div className="flex flex-wrap gap-1.5">
             {([
-              { id: 'all', label: 'الكل', color: 'bg-[#182030] text-stitch-on-surface' },
+              { id: 'all', label: 'الكل', color: 'bg-secondary text-stitch-on-surface' },
               { id: 'compliant', label: '🟢 متوافق', color: STATUS_BADGE_CLASS.compliant },
               { id: 'doubtful', label: '🟡 مشمول', color: STATUS_BADGE_CLASS.doubtful },
               { id: 'non_compliant', label: '🔴 غير متوافق', color: STATUS_BADGE_CLASS.non_compliant },
@@ -1249,7 +1249,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
                 <BookOpen className="w-3.5 h-3.5" />
                 المصادر الشرعية الثمانية ({sources.filter((s) => s.is_active === 1).length} نشط)
               </summary>
-              <div className="mt-2 grid grid-cols-2 gap-1.5 p-2 rounded-md bg-[#182030]/40">
+              <div className="mt-2 grid grid-cols-2 gap-1.5 p-2 rounded-md bg-secondary/40">
                 {sources.map((s) => (
                   <div key={s.source_key} className="flex items-center justify-between text-[11px]">
                     <span className="font-medium">{s.name_ar}</span>

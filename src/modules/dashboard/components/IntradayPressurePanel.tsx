@@ -273,7 +273,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                   لا توجد باكتات زمنية في هذه الجلسة
                 </div>
               ) : (
-                <div className="max-h-80 overflow-y-auto rounded-md border border-white/[0.06] bg-[#182030]/10 pr-1
+                <div className="max-h-80 overflow-y-auto rounded-md border border-border/60 bg-secondary/10 pr-1
                                 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent
                                 [&::-webkit-scrollbar-thumb]:bg-border/60 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {data.buckets.map((b, idx) => {
@@ -285,7 +285,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                     return (
                       <div
                         key={b.bucket_start + idx}
-                        className="flex items-center gap-1 py-1.5 px-2 border-b border-white/[0.06] last:border-0 hover:bg-[#182030]/30"
+                        className="flex items-center gap-1 py-1.5 px-2 border-b border-border/60 last:border-0 hover:bg-secondary/30"
                       >
                         <div className="text-[10px] text-stitch-muted w-10 flex-shrink-0 stitch-num" title={b.bucket_start}>
                           {b.time_label}
@@ -370,7 +370,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
               // T-ALPHA-A8: Dual-Tone Gradient — green for positive, red for negative
               const gradientId = 'cumulative-gradient';
               return (
-                <div className="rounded-md border border-white/[0.06] bg-[#182030]/10 p-2 overflow-hidden">
+                <div className="rounded-md border border-border/60 bg-secondary/10 p-2 overflow-hidden">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
                       <Activity className="w-3 h-3 text-purple-500" />
@@ -456,7 +456,7 @@ function SummaryCell({
   tone?: 'pos' | 'neg' | 'neutral';
 }) {
   return (
-    <div className="rounded-md bg-[#182030]/40 p-2">
+    <div className="rounded-md bg-secondary/40 p-2">
       <div className="text-[10px] text-stitch-muted">{label}</div>
       <div
         className={cn(

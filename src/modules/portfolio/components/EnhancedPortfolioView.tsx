@@ -1257,7 +1257,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                     'px-2 py-1 rounded text-[10px] stitch-num border transition-all dark:font-financial tabular-nums',
                     Math.abs(commissionPct - preset) < 0.001
                       ? 'bg-primary text-primary-foreground border-primary dark:bg-primary-container dark:text-on-primary-container dark:border-primary-container'
-                      : 'stitch-glass text-stitch-muted border-white/[0.06] hover:bg-[#182030] dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant dark:hover:bg-surface-container-high',
+                      : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant dark:hover:bg-surface-container-high',
                   )}
                   title={`${preset}%`}
                 >
@@ -1342,7 +1342,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             return (
               <AccordionItem key={groupType} value={groupType} className="border rounded-lg stitch-glass px-4 dark:bg-surface-container-low dark:border-outline-variant">
                 {/* Group Header — P30 TASK 6: Accordion trigger */}
-                <AccordionTrigger className="hover:no-underline bg-[#182030]/30 rounded-lg px-3 py-3 hover:bg-[#182030]/50 dark:bg-surface-container dark:hover:bg-surface-container-high">
+                <AccordionTrigger className="hover:no-underline bg-secondary/30 rounded-lg px-3 py-3 hover:bg-secondary/50 dark:bg-surface-container dark:hover:bg-surface-container-high">
                   <div className="flex items-center gap-2">
                     <Badge className={ASSET_TYPE_COLORS[groupType]}>{t(`portfolio.assetTypes.${groupType}`)}</Badge>
                     <span className="text-sm text-stitch-muted dark:text-on-surface-variant">({groupAssets.length})</span>
@@ -1466,7 +1466,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   if (!m || m === 'EGX') return null; // EGX is the default — no badge
                                   const label = MARKET_NAMES_AR[m];
                                   return (
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-[#182030] dark:bg-[#0B0E14]/40 border-white/[0.06] dark:border-primary text-primary dark:text-stitch-outline">
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-secondary dark:bg-background/40 border-border/60 dark:border-primary text-primary dark:text-stitch-outline">
                                       🏛️ {label}
                                     </Badge>
                                   );
@@ -1699,7 +1699,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   />
                 </div>
                 {formSelectedPrice && formSelectedPrice > 0 && (
-                  <div className="bg-[#182030] rounded-md px-3 py-2 text-xs flex justify-between">
+                  <div className="bg-secondary rounded-md px-3 py-2 text-xs flex justify-between">
                     <span className="text-stitch-muted">{t('portfolio.forms.currentStockPrice')}</span>
                     <span className="font-semibold" dir="ltr">{(formSelectedPrice ?? 0).toFixed(2)} EGP</span>
                   </div>
@@ -1781,7 +1781,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   }} placeholder="0.00" dir="ltr" /></div>
                 </div>
                 {formWeight && formPricePerGram && (
-                  <div className="bg-[#182030] rounded-md px-3 py-2 text-sm flex justify-between">
+                  <div className="bg-secondary rounded-md px-3 py-2 text-sm flex justify-between">
                     <span className="text-stitch-muted">{t('portfolio.forms.purchaseCost')}</span>
                     <span className="font-bold">{formatCurrency(parseFloat(formWeight) * parseFloat(formPricePerGram))}</span>
                   </div>
@@ -1928,7 +1928,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                     <span className="font-bold text-stitch-primary dark:text-stitch-primary">${parseFloat(formTotalInvested).toFixed(2)}</span>
                   </div>
                 )}
-                <p className="text-xs text-stitch-muted bg-[#182030]/50 p-2 rounded">
+                <p className="text-xs text-stitch-muted bg-secondary/50 p-2 rounded">
                   {t('portfolio.forms.cryptoAutoUpdate')}
                 </p>
               </>
@@ -1952,12 +1952,12 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>{t('portfolio.forms.assetType')}</Label>
-              <Input value={t(`portfolio.assetTypes.${formType}`) || formType} disabled className="bg-[#182030]" />
+              <Input value={t(`portfolio.assetTypes.${formType}`) || formType} disabled className="bg-secondary" />
             </div>
             {formType === 'stock' && editAsset?.stock_ticker && (
               <div className="space-y-2">
                 <Label>{t('portfolio.forms.stock')}</Label>
-                <Input value={`${editAsset.stock_ticker} - ${editAsset.name}`} disabled className="bg-[#182030]" dir="ltr" />
+                <Input value={`${editAsset.stock_ticker} - ${editAsset.name}`} disabled className="bg-secondary" dir="ltr" />
               </div>
             )}
             {formType !== 'stock' && (
@@ -2428,7 +2428,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
                       <span className="text-stitch-muted">{label}</span>
                       <span className="font-medium">{formatCurrency(amount)} ({(pct ?? 0).toFixed(1)}%)</span>
                     </div>
-                    <div className="h-2 rounded-full bg-[#182030] overflow-hidden">
+                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
                       <div className="h-full rounded-full bg-rose-500/20 transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
@@ -2987,7 +2987,7 @@ const ReportsTab = memo(function ReportsTab() {
               <p className="text-lg font-bold text-rose-400 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(totalLiabilities)}</p>
               <p className="text-[10px] text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalObligationsHint')}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-[#182030] dark:bg-teal-900/20 dark:bg-primary-container/20">
+            <div className="text-center p-3 rounded-lg bg-secondary dark:bg-teal-900/20 dark:bg-primary-container/20">
               <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-1">{t('portfolio.reports.netWorth')}</p>
               <p className={cn('text-lg font-bold tabular-nums dark:font-financial', netWorth >= 0 ? 'text-teal-600 dark:text-teal-400 dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                 {formatCurrency(netWorth)}
@@ -3017,7 +3017,7 @@ const ReportsTab = memo(function ReportsTab() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {investmentReturns.bank_monthly > 0 && (
-                <div className="p-3 rounded-lg bg-[#182030] dark:bg-teal-900/20 text-center">
+                <div className="p-3 rounded-lg bg-secondary dark:bg-teal-900/20 text-center">
                   <p className="text-xs text-stitch-muted mb-1">{t('portfolio.reports.bankMonthlyReturn')}</p>
                   <p className="text-base font-bold text-teal-600 dark:text-teal-400">{formatCurrency(investmentReturns.bank_monthly)}</p>
                 </div>
@@ -3063,7 +3063,7 @@ const ReportsTab = memo(function ReportsTab() {
                   <span className="text-stitch-muted">{t('portfolio.reports.totalIncome')}</span>
                   <span className="font-medium text-stitch-primary dark:text-stitch-primary">{formatCurrency(reports.monthly_income)}</span>
                 </div>
-                <div className="h-3 rounded-full bg-[#182030] overflow-hidden">
+                <div className="h-3 rounded-full bg-secondary overflow-hidden">
                   <div className="h-full rounded-full bg-emerald-500/20" style={{ width: '100%' }} />
                 </div>
                 {investmentReturns && investmentReturns.total_monthly > 0 && (
@@ -3077,7 +3077,7 @@ const ReportsTab = memo(function ReportsTab() {
                   <span className="text-stitch-muted">{t('portfolio.reports.totalExpenses')}</span>
                   <span className="font-medium text-rose-400 dark:text-rose-400">{formatCurrency(reports.monthly_expenses)}</span>
                 </div>
-                <div className="h-3 rounded-full bg-[#182030] overflow-hidden">
+                <div className="h-3 rounded-full bg-secondary overflow-hidden">
                   <div className="h-full rounded-full bg-rose-500/20" style={{ width: `${reports.monthly_income > 0 ? Math.min((reports.monthly_expenses / reports.monthly_income) * 100, 100) : 0}%` }} />
                 </div>
               </div>
@@ -3116,7 +3116,7 @@ const ReportsTab = memo(function ReportsTab() {
                   'flex items-start gap-3 p-3 rounded-lg border',
                   alert.type === 'danger' && 'bg-red-50 border-rose-500/30 dark:bg-rose-500/60/20 dark:border-rose-500/30/50',
                   alert.type === 'warning' && 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900/50',
-                  alert.type === 'info' && 'bg-[#182030] border-teal-200 dark:bg-[#0B0E14]/20 dark:border-teal-900/50'
+                  alert.type === 'info' && 'bg-secondary border-teal-200 dark:bg-background/20 dark:border-teal-900/50'
                 )}
               >
                 {alert.type === 'danger' && <XCircle className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />}
@@ -3156,7 +3156,7 @@ const ReportsTab = memo(function ReportsTab() {
                       </div>
                       <span className="font-medium">{formatCurrency(value)} ({(pct ?? 0).toFixed(1)}%)</span>
                     </div>
-                    <div className="h-2.5 rounded-full bg-[#182030] overflow-hidden">
+                    <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
                       <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${(value / maxAssetTypeValue) * 100}%` }} />
                     </div>
                   </div>
@@ -3223,7 +3223,7 @@ const ReportsTab = memo(function ReportsTab() {
 
                     {/* Good: High Bank Returns */}
                     {bankPercent > 60 && investmentReturns && investmentReturns.bank_monthly > 0 && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-[#182030] dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
                         <CheckCircle2 className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-teal-800 dark:text-teal-200">{t('portfolio.reports.bankReturns')}</p>
@@ -3359,7 +3359,7 @@ export function EnhancedPortfolioView() {
 
         {/* TASK 40-B: 3-way segmented control — Portfolio | Wealth | Rescue stock */}
         {/* Rule 30: emerald/amber/red accent only (no indigo/blue). */}
-        <div className="flex w-full rounded-lg border border-white/[0.06] bg-[#182030]/40 p-1 dark:border-outline-variant dark:bg-surface-container-low" role="tablist" aria-label={t('portfolio.modes.segmentsAria')}>
+        <div className="flex w-full rounded-lg border border-border/60 bg-secondary/40 p-1 dark:border-outline-variant dark:bg-surface-container-low" role="tablist" aria-label={t('portfolio.modes.segmentsAria')}>
           <button
             type="button"
             role="tab"

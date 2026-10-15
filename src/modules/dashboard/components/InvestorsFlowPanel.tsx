@@ -166,7 +166,7 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
             'text-[9px] px-1 py-0',
             isInflow && 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30/30 dark:text-stitch-primary',
             isOutflow && 'bg-rose-500/10 text-rose-400 border-rose-500/30/30 dark:text-rose-400',
-            !isInflow && !isOutflow && 'bg-[#182030]/10 text-stitch-muted border-white/[0.06]/30 dark:text-stitch-outline'
+            !isInflow && !isOutflow && 'bg-secondary/10 text-stitch-muted border-border/60/30 dark:text-stitch-outline'
           )}
         >
           {isInflow ? 'داخل' : isOutflow ? 'هارب' : 'محايد'}
@@ -272,7 +272,7 @@ export function InvestorsFlowPanel() {
           </CardHeader>
           <CardContent className="space-y-3">
             <InvestorsTable rows={invData} source={invSource} autoSeeded={invAutoSeeded} />
-            <div className="text-[10px] text-stitch-muted text-center pt-1 border-t border-white/[0.06]">
+            <div className="text-[10px] text-stitch-muted text-center pt-1 border-t border-border/60">
               ⚠️ بيانات تدفّق القطاعات غير متاحة حالياً — يعرض تدفّق المستثمرين فقط
             </div>
           </CardContent>
@@ -340,7 +340,7 @@ export function InvestorsFlowPanel() {
               <User className="w-3 h-3 text-amber-500" />
             </span>
           </div>
-          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[#182030]">
+          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-secondary">
             <div
               className="bg-cyan-500 dark:bg-cyan-500"
               style={{ width: `${instPct}%` }}
@@ -358,7 +358,7 @@ export function InvestorsFlowPanel() {
 
         {/* Sector Flow Table (UnifiedTable) */}
         <div className="space-y-1">
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-stitch-muted pb-1 border-b border-white/[0.06]">
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-stitch-muted pb-1 border-b border-border/60">
             <Layers className="w-3 h-3" />
             تدفّق القطاعات
           </div>
@@ -429,7 +429,7 @@ export function InvestorsFlowPanel() {
         )}
 
         {/* Summary */}
-        <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-stitch-muted">
+        <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[10px] text-stitch-muted">
           <span>
             إجمالي السيولة: <span className="font-bold text-stitch-on-surface stitch-num">{fmtNum(data.summary.total_turnover)}</span>
           </span>
@@ -475,7 +475,7 @@ function InvestorsTable({
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px] font-semibold text-stitch-muted pb-1 border-b border-white/[0.06]">
+      <div className="flex items-center justify-between text-[11px] font-semibold text-stitch-muted pb-1 border-b border-border/60">
         <span className="flex items-center gap-1">
           <Globe2 className="w-3 h-3" />
           تدفّق المستثمرين (مصريين / عرب / أجانب)
@@ -499,7 +499,7 @@ function InvestorsTable({
           const arab = fmtNet(r.arab_institutions_net_value);
           const forNet = fmtNet(r.foreign_net_value);
           return (
-            <div key={r.date || i} className="rounded border border-white/[0.06] p-1.5 text-[10px]">
+            <div key={r.date || i} className="rounded border border-border/60 p-1.5 text-[10px]">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold text-stitch-on-surface">{r.date}</span>
                 {r.number_of_trades != null && (

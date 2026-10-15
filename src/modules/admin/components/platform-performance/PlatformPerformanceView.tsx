@@ -226,7 +226,7 @@ function KPICard({
     danger: 'text-rose-400 dark:text-rose-400 dark:text-error',
   };
   const borderClasses = {
-    default: 'border-white/[0.06] dark:border-outline-variant/30',
+    default: 'border-border/60 dark:border-outline-variant/30',
     success: 'border-emerald-500/30 dark:border-emerald-500/30/50 dark:border-primary-container/40',
     warning: 'border-amber-200 dark:border-amber-800/50 dark:border-outline-variant/30',
     danger: 'border-rose-500/30 dark:border-rose-500/30/50 dark:border-error-container/40',
@@ -253,7 +253,7 @@ function KPICard({
 
 function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Trade; showChannel?: boolean; showMarket?: boolean }) {
   return (
-    <tr className="border-b hover:bg-[#182030]/30 transition-colors dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
+    <tr className="border-b hover:bg-secondary/30 transition-colors dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
       <td className="px-2 py-2 text-xs stitch-num font-medium tabular-nums dark:font-financial dark:text-on-surface">{trade.ticker}</td>
       {showMarket && (
         <td className="px-2 py-2 text-xs">
@@ -600,7 +600,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-[#182030]/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
@@ -641,7 +641,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-[#182030]/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">القناة</th>
@@ -653,7 +653,7 @@ export function PlatformPerformanceView() {
                 </thead>
                 <tbody>
                   {data.target_hits.map((t) => (
-                    <tr key={t.id} className="border-b hover:bg-[#182030]/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
+                    <tr key={t.id} className="border-b hover:bg-secondary/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
                       <td className="px-2 py-2 text-xs stitch-num font-medium tabular-nums dark:font-financial dark:text-on-surface">{t.ticker}</td>
                       <td className="px-2 py-2 text-xs">
                         <Badge variant="outline" className="text-[10px] dark:border-outline-variant/40 dark:text-on-surface-variant">{channelLabel(t.channel)}</Badge>
@@ -689,7 +689,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-[#182030]/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
@@ -729,7 +729,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-[#182030]/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
@@ -776,7 +776,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-[#182030]/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">n_raw</th>
@@ -789,7 +789,7 @@ export function PlatformPerformanceView() {
                 </thead>
                 <tbody>
                   {data.by_market.map((m) => (
-                    <tr key={m.market} className="border-b hover:bg-[#182030]/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
+                    <tr key={m.market} className="border-b hover:bg-secondary/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
                       <td className="px-3 py-2 text-sm font-medium">
                         <Badge variant="outline" className="stitch-num tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface">{m.market}</Badge>
                       </td>
@@ -827,7 +827,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-[#182030]/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">القناة</th>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">n</th>
@@ -839,7 +839,7 @@ export function PlatformPerformanceView() {
                 </thead>
                 <tbody>
                   {data.by_channel.map((ch) => (
-                    <tr key={ch.channel} className="border-b hover:bg-[#182030]/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
+                    <tr key={ch.channel} className="border-b hover:bg-secondary/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
                       <td className="px-3 py-2 text-sm font-medium">
                         <Badge variant="outline" className="dark:border-outline-variant/40 dark:text-on-surface-variant">{channelLabel(ch.channel)}</Badge>
                       </td>

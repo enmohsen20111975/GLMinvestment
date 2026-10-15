@@ -139,10 +139,13 @@
    Rule 4: Breadcrumb Live Telemetry — animate-ping green dot on every screen header
    ======================================================================== */
 
-/* Canvas — applied to <main> or page wrappers */
+/* Canvas — ALPHA-FIX (2026-10-15): respects light/dark mode */
 .stitch-canvas {
-  background-color: #0B0E14;
+  background-color: hsl(var(--background));
   position: relative;
+}
+.dark .stitch-canvas {
+  background-color: #0B0E14;
 }
 .stitch-canvas::before {
   content: '';
@@ -154,27 +157,35 @@
   z-index: 0;
 }
 
-/* Glassmorphic Card — the unified card surface for ALL components */
+/* Glassmorphic Card — ALPHA-FIX: respects light/dark mode */
 .stitch-glass {
-  background-color: rgba(17, 22, 34, 0.80);
+  background-color: hsl(var(--card) / 0.80);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
 }
+.dark .stitch-glass {
+  background-color: rgba(17, 22, 34, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
 
 /* Glass variant — stronger for modals/overlays */
 .stitch-glass-strong {
-  background-color: rgba(17, 22, 34, 0.92);
+  background-color: hsl(var(--card) / 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
 }
+.dark .stitch-glass-strong {
+  background-color: rgba(17, 22, 34, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
 
 /* Glass variant — subtle for nested panels */
 .stitch-glass-subtle {
-  background-color: rgba(17, 22, 34, 0.50);
+  background-color: hsl(var(--card) / 0.50);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -227,17 +238,22 @@
 }
 
 /* Sovereign Terminal color utilities (raw hex — for structural rebuild) */
-.bg-stitch-canvas { background-color: #0B0E14; }
-.bg-stitch-card { background-color: #111622; }
-.bg-stitch-card-80 { background-color: rgba(17, 22, 34, 0.80); }
-.bg-stitch-surface { background-color: #182030; }
-.text-stitch-primary { color: #10B981; }
+.bg-stitch-canvas { background-color: hsl(var(--background)); }
+.dark .bg-stitch-canvas { background-color: #0B0E14; }
+.bg-stitch-card { background-color: hsl(var(--card)); }
+.dark .bg-stitch-card { background-color: #111622; }
+.bg-stitch-card-80 { background-color: hsl(var(--card) / 0.80); }
+.dark .bg-stitch-card-80 { background-color: rgba(17, 22, 34, 0.80); }
+.bg-stitch-surface { background-color: hsl(var(--secondary)); }
+.dark .bg-stitch-surface { background-color: #182030; }
+.text-stitch-primary { color: hsl(var(--primary)); }
 .text-stitch-mint { color: #4EDEA3; }
-.text-stitch-error { color: #FF6B6B; }
-.text-stitch-on-surface { color: #E1E3E1; }
-.text-stitch-muted { color: #BBCABF; }
-.text-stitch-outline { color: #86948A; }
-.border-stitch-glass { border-color: rgba(255, 255, 255, 0.06); }
+.text-stitch-error { color: hsl(var(--destructive)); }
+.text-stitch-on-surface { color: hsl(var(--foreground)); }
+.text-stitch-muted { color: hsl(var(--muted-foreground)); }
+.text-stitch-outline { color: hsl(var(--muted-foreground) / 0.7); }
+.border-stitch-glass { border-color: hsl(var(--border) / 0.6); }
+.dark .border-stitch-glass { border-color: rgba(255, 255, 255, 0.06); }
 
 
 @layer base {

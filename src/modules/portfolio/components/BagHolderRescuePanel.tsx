@@ -199,7 +199,7 @@ const DECISION_STYLE: Record<
     badge: 'bg-rose-500 text-white dark:bg-error dark:text-on-error',
     ring: 'border-rose-500/30 dark:border-rose-500/30 dark:border-error',
     panelActive: 'border-rose-500/30 dark:border-rose-500/30 bg-red-50 dark:bg-rose-500/60/30 dark:border-error dark:bg-error-container/10',
-    panelIdle: 'border-white/[0.06]/50 bg-[#182030]/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
+    panelIdle: 'border-border/60/50 bg-secondary/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
   },
   AVERAGE_DOWN: {
     icon: RefreshCcwDot,
@@ -207,7 +207,7 @@ const DECISION_STYLE: Record<
     badge: 'bg-amber-600 text-white',
     ring: 'border-amber-400 dark:border-amber-700 dark:border-amber-500/40',
     panelActive: 'border-amber-400 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-500/40 dark:bg-amber-500/5',
-    panelIdle: 'border-white/[0.06]/50 bg-[#182030]/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
+    panelIdle: 'border-border/60/50 bg-secondary/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
   },
   HOLD: {
     icon: Hourglass,
@@ -215,7 +215,7 @@ const DECISION_STYLE: Record<
     badge: 'bg-teal-600 text-white dark:bg-secondary dark:text-on-secondary',
     ring: 'border-teal-400 dark:border-teal-700 dark:border-secondary',
     panelActive: 'border-teal-400 dark:border-teal-700 bg-teal-50 dark:bg-teal-950/30 dark:border-secondary dark:bg-secondary/5',
-    panelIdle: 'border-white/[0.06]/50 bg-[#182030]/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
+    panelIdle: 'border-border/60/50 bg-secondary/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
   },
 };
 
@@ -477,7 +477,7 @@ export function BagHolderRescuePanel({
 
       {/* ── Honest empty state (Rule 27) ──────────────────────────────── */}
       {!loading && !result && (
-        <Card className="border-dashed border-2 border-white/[0.06]/60 dark:bg-surface-container-low dark:border-outline-variant/30">
+        <Card className="border-dashed border-2 border-border/60/60 dark:bg-surface-container-low dark:border-outline-variant/30">
           <CardContent className="p-6 text-center space-y-2">
             <FileSearch className="w-8 h-8 text-stitch-muted/60 mx-auto dark:text-on-surface-variant/60" />
             <p className="text-sm font-semibold text-stitch-on-surface dark:text-on-surface dark:font-outfit">لا يوجد تشخيص بعد</p>
@@ -706,7 +706,7 @@ function ResultView({ result }: { result: RescueResponse }) {
                   {d.ar_when}
                 </p>
                 {d.applicable_reason && (
-                  <p className="text-[11px] text-stitch-on-surface leading-relaxed stitch-canvas/60 border border-white/[0.06]/40 rounded-md p-2 dark:text-on-surface dark:bg-surface-container dark:border-outline-variant/30">
+                  <p className="text-[11px] text-stitch-on-surface leading-relaxed stitch-canvas/60 border border-border/60/40 rounded-md p-2 dark:text-on-surface dark:bg-surface-container dark:border-outline-variant/30">
                     <span className="font-bold">السبب: </span>{d.applicable_reason}
                   </p>
                 )}
@@ -730,7 +730,7 @@ function ResultView({ result }: { result: RescueResponse }) {
               'p-3 rounded-lg border',
               result.action_plan.average_down_allowed
                 ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 dark:bg-amber-500/5'
-                : 'border-white/[0.06]/50 bg-[#182030]/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
+                : 'border-border/60/50 bg-secondary/20 dark:border-outline-variant/30 dark:bg-surface-container-low',
             )}>
               <div className="flex items-center gap-1.5 mb-1">
                 <Activity className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 dark:text-secondary" />
@@ -772,7 +772,7 @@ function ResultView({ result }: { result: RescueResponse }) {
               <p className="text-xs text-stitch-on-surface leading-relaxed dark:text-on-surface">
                 {result.diagnosis.summary}
               </p>
-              <div className="space-y-2 pt-1 border-t border-white/[0.06] dark:border-outline-variant/30">
+              <div className="space-y-2 pt-1 border-t border-border/60 dark:border-outline-variant/30">
                 {result.diagnosis.questions.map((qa, i) => (
                   <div key={i} className="space-y-0.5">
                     <p className="text-[11px] font-bold text-stitch-on-surface dark:text-on-surface">{qa.question}</p>
@@ -820,7 +820,7 @@ function ResultView({ result }: { result: RescueResponse }) {
               </div>
             )}
             {result.price_source && (
-              <p className="text-[10px] text-stitch-muted pt-1 border-t border-white/[0.06] dark:text-on-surface-variant dark:border-outline-variant/30">
+              <p className="text-[10px] text-stitch-muted pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
                 مصدر السعر: {result.price_source}
                 {result.price_timestamp ? ` — آخر تحديث ${result.price_timestamp}` : ''}
               </p>
@@ -887,7 +887,7 @@ function ResultView({ result }: { result: RescueResponse }) {
                 </div>
               )}
               {result.asset_health.profitability_note && (
-                <p className="text-[10px] text-stitch-muted pt-1 border-t border-white/[0.06] dark:text-on-surface-variant dark:border-outline-variant/30">
+                <p className="text-[10px] text-stitch-muted pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
                   دليل الربحية: {result.asset_health.profitability_note}
                 </p>
               )}
@@ -954,7 +954,7 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
     amber: 'border-amber-300 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 dark:bg-amber-500/5',
     red: 'border-rose-500/30 text-rose-400 dark:text-rose-400 bg-red-50 dark:bg-rose-500/60/20 dark:border-error/30 dark:text-error dark:bg-error-container/10',
     teal: 'border-teal-300 text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 dark:border-secondary/30 dark:text-secondary dark:bg-secondary/10',
-    gray: 'border-white/[0.06] text-stitch-muted bg-[#182030]/20 dark:border-outline-variant/30 dark:text-on-surface-variant dark:bg-surface-container-low',
+    gray: 'border-border/60 text-stitch-muted bg-secondary/20 dark:border-outline-variant/30 dark:text-on-surface-variant dark:bg-surface-container-low',
   };
 
   return (
@@ -1017,7 +1017,7 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
         )}
 
         {/* Disclaimer */}
-        <p className="text-[10px] text-stitch-muted leading-relaxed pt-1 border-t border-white/[0.06] dark:text-on-surface-variant dark:border-outline-variant/30">
+        <p className="text-[10px] text-stitch-muted leading-relaxed pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
           <ShieldAlert className="w-3 h-3 inline ml-1 text-amber-500 dark:text-secondary" />
           كل الأرقام مصدرها Python من قواعد البيانات الحقيقية — لا تقديرات ولا تخمينات. القرارات الاستثمارية النهائية مسؤولية المستخدم.
         </p>
@@ -1035,7 +1035,7 @@ function FinanceCell({ label, value, tone }: { label: string; value: string; ton
     gray: 'text-stitch-on-surface dark:text-on-surface',
   };
   return (
-    <div className="p-2 rounded-lg border border-white/[0.06]/60 bg-[#182030]/20 dark:bg-surface-container-low dark:border-outline-variant/30">
+    <div className="p-2 rounded-lg border border-border/60/60 bg-secondary/20 dark:bg-surface-container-low dark:border-outline-variant/30">
       <p className="text-[10px] text-stitch-muted mb-0.5 dark:text-on-surface-variant">{label}</p>
       <p className={cn('stitch-num font-bold text-sm tabular-nums dark:font-financial', toneText[tone])}>{value}</p>
     </div>

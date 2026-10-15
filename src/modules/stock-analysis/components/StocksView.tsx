@@ -265,7 +265,7 @@ const SECTOR_COLOR_MAP: Record<string, string> = {
   'الاتصالات': 'bg-teal-500/10 text-teal-400',
 };
 
-const SECTOR_FALLBACK_COLOR = 'bg-[#182030] text-stitch-on-surface';
+const SECTOR_FALLBACK_COLOR = 'bg-secondary text-stitch-on-surface';
 
 function getSectorColor(sector: string | undefined | null): string {
   if (!sector) return SECTOR_FALLBACK_COLOR;
@@ -290,7 +290,7 @@ function TableSkeleton() {
   return (
     <div className="hidden md:block">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 py-2.5 border-b border-white/[0.06] last:border-0 px-4">
+        <div key={i} className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0 px-4">
           <Skeleton className="h-5 w-14 flex-shrink-0" />
           <Skeleton className="h-5 w-28 flex-1" />
           <Skeleton className="h-5 w-20 flex-shrink-0" />
@@ -342,7 +342,7 @@ const OverviewSummary = memo(function OverviewSummary({
 }) {
   return (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-      <div className="flex items-center gap-1.5 bg-[#182030]/60 rounded-lg px-3 py-1.5">
+      <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
         <span className="text-xs font-medium text-stitch-muted">الإجمالي</span>
         <span className="text-sm font-bold">{total}</span>
       </div>
@@ -356,12 +356,12 @@ const OverviewSummary = memo(function OverviewSummary({
         <span className="text-xs font-medium text-stitch-error">المنخفضة</span>
         <span className="text-sm font-bold text-stitch-error">{losers}</span>
       </div>
-      <div className="flex items-center gap-1.5 bg-[#182030]/60 rounded-lg px-3 py-1.5">
+      <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
         <Minus className="w-3.5 h-3.5 text-stitch-muted" />
         <span className="text-xs font-medium text-stitch-muted">الثابتة</span>
         <span className="text-sm font-bold">{unchanged}</span>
       </div>
-      <div className="flex items-center gap-1.5 bg-[#182030]/60 rounded-lg px-3 py-1.5">
+      <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
         <span className="text-xs font-medium text-stitch-muted">متوسط التغير</span>
         <span
           className={cn(
@@ -435,7 +435,7 @@ const StockCard = memo(function StockCard({
                     </span>
                   )}
                   {stock.egx100_member && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#182030] text-stitch-on-surface font-medium">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-stitch-on-surface font-medium">
                       100
                     </span>
                   )}
@@ -500,7 +500,7 @@ const StockCard = memo(function StockCard({
               'flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-bold tabular-nums',
               isPositive && 'bg-emerald-500/10 text-stitch-primary',
               isNegative && 'bg-red-500/10 text-stitch-error',
-              isNeutral && 'bg-[#182030] text-stitch-muted'
+              isNeutral && 'bg-secondary text-stitch-muted'
             )}
           >
             {isPositive ? (
@@ -521,7 +521,7 @@ const StockCard = memo(function StockCard({
 
         {/* Mini Price Bar */}
         <div className="mb-3">
-          <div className="h-1.5 bg-[#182030] rounded-full overflow-hidden relative">
+          <div className="h-1.5 bg-secondary rounded-full overflow-hidden relative">
             <div
               className={cn(
                 'absolute top-0 h-full rounded-full transition-all',
@@ -529,7 +529,7 @@ const StockCard = memo(function StockCard({
                   ? 'bg-gradient-to-l from-emerald-400 to-emerald-500'
                   : isNegative
                     ? 'bg-gradient-to-l from-red-400 to-red-500'
-                    : 'bg-[#182030]'
+                    : 'bg-secondary'
               )}
               style={{ width: `${Math.min(100, Math.max(0, pricePosition))}%` }}
             />
@@ -542,17 +542,17 @@ const StockCard = memo(function StockCard({
 
         {/* Metrics Row */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-[#182030]/40 rounded-lg p-2 text-center">
+          <div className="bg-secondary/40 rounded-lg p-2 text-center">
             <p className="text-[10px] text-stitch-muted mb-0.5">الحجم</p>
             <p className="text-xs font-semibold tabular-nums">{formatVolume(stock.volume)}</p>
           </div>
-          <div className="bg-[#182030]/40 rounded-lg p-2 text-center">
+          <div className="bg-secondary/40 rounded-lg p-2 text-center">
             <p className="text-[10px] text-stitch-muted mb-0.5">مكرر الربحية</p>
             <p className="text-xs font-semibold tabular-nums">
               {stock.pe_ratio > 0 ? (stock.pe_ratio ?? 0).toFixed(1) : '—'}
             </p>
           </div>
-          <div className="bg-[#182030]/40 rounded-lg p-2 text-center">
+          <div className="bg-secondary/40 rounded-lg p-2 text-center">
             <p className="text-[10px] text-stitch-muted mb-0.5">القيمة السوقية</p>
             <p className="text-xs font-semibold tabular-nums">{formatMarketCap(stock.market_cap)}</p>
           </div>
@@ -578,7 +578,7 @@ const MobileStockRow = memo(function MobileStockRow({
 
   return (
     <div
-      className="p-4 active:bg-[#182030]/50 cursor-pointer border-b border-white/[0.06] last:border-0"
+      className="p-4 active:bg-secondary/50 cursor-pointer border-b border-border/60 last:border-0"
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-3">
@@ -701,7 +701,7 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
               'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border',
               activePreset === 'all'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'stitch-glass text-stitch-muted border-white/[0.06] hover:bg-[#182030] hover:text-stitch-on-surface'
+                : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
             )}
             aria-pressed={activePreset === 'all'}
           >
@@ -721,7 +721,7 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
                   'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border',
                   isActive
                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                    : 'stitch-glass text-stitch-muted border-white/[0.06] hover:bg-[#182030] hover:text-stitch-on-surface'
+                    : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
                 )}
               >
                 <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-white' : 'text-stitch-primary')} />
@@ -773,7 +773,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
     changeMax !== '';
 
   return (
-    <div className="space-y-3 pt-3 border-t border-white/[0.06]">
+    <div className="space-y-3 pt-3 border-t border-border/60">
       {/* Sector multi-select chips */}
       <div>
         <p className="text-xs font-medium text-stitch-muted mb-2">القطاع</p>
@@ -788,7 +788,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
                   'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                   isActive
                     ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'bg-stitch-canvas text-stitch-muted border-white/[0.06] hover:bg-[#182030]'
+                    : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary'
                 )}
               >
                 {sector}
@@ -1762,7 +1762,7 @@ export function StocksView() {
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
               stockTab === 'stocks'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'stitch-glass text-stitch-muted border-white/[0.06] hover:bg-[#182030] hover:text-stitch-on-surface'
+                : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
             )}
           >
             <BarChart3 className="w-4 h-4" />
@@ -1775,7 +1775,7 @@ export function StocksView() {
                 'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
                 stockTab === 'bonds'
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                  : 'stitch-glass text-stitch-muted border-white/[0.06] hover:bg-[#182030] hover:text-stitch-on-surface'
+                  : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
               )}
             >
               <Landmark className="w-4 h-4" />
@@ -1835,7 +1835,7 @@ export function StocksView() {
                 size="sm"
                 className={cn(
                   'h-9 gap-1.5 text-xs',
-                  showFilters && 'bg-[#182030] text-stitch-on-surface',
+                  showFilters && 'bg-secondary text-stitch-on-surface',
                 )}
                 onClick={() => setShowFilters((prev) => !prev)}
                 title={t('stocks.filterButton.title')}
@@ -1872,7 +1872,7 @@ export function StocksView() {
                       'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                       isActive
                         ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-stitch-canvas text-stitch-muted border-white/[0.06] hover:bg-[#182030]',
+                        : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary',
                     )}
                   >
                     {chip.label}
@@ -1883,7 +1883,7 @@ export function StocksView() {
 
             {/* Row 3: Advanced Filters (collapsible) */}
             {showFilters && (
-              <div className="space-y-3 pt-3 border-t border-white/[0.06]">
+              <div className="space-y-3 pt-3 border-t border-border/60">
                 {/* Row 2a: Quick filters (preset select, period, sector dropdown, index chips, price/change buckets) */}
                 <div className="flex flex-wrap gap-2 items-center">
                   {/* Preset Selector (also accessible via top preset buttons) */}
@@ -1915,7 +1915,7 @@ export function StocksView() {
                             'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                             presetPeriod === p.key
                               ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-stitch-canvas text-stitch-muted border-white/[0.06] hover:bg-[#182030]'
+                              : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary'
                           )}
                         >
                           {p.label}
@@ -1957,7 +1957,7 @@ export function StocksView() {
                             'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                             selectedIndex === filter.key
                               ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-stitch-canvas text-stitch-muted border-white/[0.06] hover:bg-[#182030]'
+                              : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary'
                           )}
                         >
                           {filter.label}
@@ -2038,12 +2038,12 @@ export function StocksView() {
                 {PRESET_OPTIONS.find(p => p.key === selectedPreset)?.label}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 bg-[#182030]/60 rounded-lg px-3 py-1.5">
+            <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
               <span className="text-xs font-medium text-stitch-muted">{t('stocks.footer.count')}</span>
               <span className="text-sm font-bold">{presetData.length}</span>
             </div>
             {presetScanDate && (
-              <div className="flex items-center gap-1.5 bg-[#182030]/60 rounded-lg px-3 py-1.5">
+              <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
                 <span className="text-xs font-medium text-stitch-muted">{t('stocks.footer.lastUpdate')}</span>
                 <span className="text-xs stitch-num">{new Date(presetScanDate).toLocaleString('ar-EG')}</span>
               </div>
@@ -2138,7 +2138,7 @@ export function StocksView() {
                   return (
                     <div
                       key={item.ticker}
-                      className="p-4 active:bg-[#182030]/50 cursor-pointer"
+                      className="p-4 active:bg-secondary/50 cursor-pointer"
                       onClick={() => handleRowClick(item.ticker)}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -2204,13 +2204,13 @@ export function StocksView() {
                       </div>
                       {/* Secondary row: 1w change + fair_value + upside */}
                       <div className="grid grid-cols-3 gap-2 mt-2">
-                        <div className="bg-[#182030]/40 rounded-lg p-1.5 text-center">
+                        <div className="bg-secondary/40 rounded-lg p-1.5 text-center">
                           <p className="text-[9px] text-stitch-muted mb-0.5">{t('stocks.mobile.week')}</p>
                           <p className={cn('text-[10px] font-semibold tabular-nums', changeColorClass(change1w))}>
                             {formatPercent(change1w)}
                           </p>
                         </div>
-                        <div className="bg-[#182030]/40 rounded-lg p-1.5 text-center">
+                        <div className="bg-secondary/40 rounded-lg p-1.5 text-center">
                           <p className="text-[9px] text-stitch-muted mb-0.5">{t('stocks.mobile.fairValue')}</p>
                           <p className={cn(
                             'text-[10px] font-semibold tabular-nums',
@@ -2223,7 +2223,7 @@ export function StocksView() {
                             {fairValue != null ? safeNum(fairValue).toFixed(1) : '—'}
                           </p>
                         </div>
-                        <div className="bg-[#182030]/40 rounded-lg p-1.5 text-center">
+                        <div className="bg-secondary/40 rounded-lg p-1.5 text-center">
                           <p className="text-[9px] text-stitch-muted mb-0.5">{t('stocks.mobile.opportunity')}</p>
                           <p className={cn(
                             'text-[10px] font-semibold tabular-nums',
@@ -2242,7 +2242,7 @@ export function StocksView() {
 
               {/* Pagination — mobile only (Task STOCKS-TABLE-FIX: desktop بيعتمد على scroll داخل UnifiedTable) */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06] bg-[#182030]/30 md:hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-secondary/30 md:hidden">
                   <span className="text-xs text-stitch-muted">
                     {t('stocks.pagination.page', { current: safePage, total: totalPages })}
                   </span>

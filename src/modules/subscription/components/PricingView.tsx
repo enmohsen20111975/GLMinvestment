@@ -196,7 +196,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
           </Select>
         </div>
 
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-[#182030] dark:bg-surface-container-high dark:border dark:border-outline-variant/30">
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary dark:bg-surface-container-high dark:border dark:border-outline-variant/30">
           <button
             onClick={() => setBillingCycle('monthly')}
             className={cn(
@@ -242,7 +242,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                 key={`${plan.tier}-${plan.billing_cycle}`}
                 className={cn(
                   'relative flex flex-col dark:bg-surface-container-low dark:border dark:border-outline-variant/30',
-                  TIER_ACCENT[plan.tier] || 'border-white/[0.06]',
+                  TIER_ACCENT[plan.tier] || 'border-border/60',
                   popular && 'ring-2 ring-amber-500/50 dark:border-primary dark:bg-primary-container/10 dark:ring-1 dark:ring-primary/30',
                 )}
               >

@@ -346,7 +346,7 @@ export function CryptoPortfolioView() {
   return (
     <div className="min-h-screen flex flex-col stitch-canvas dark:bg-surface-container-lowest" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-10 stitch-canvas/95 backdrop-blur border-b border-white/[0.06] dark:bg-surface-container-lowest/95 dark:border-outline-variant/30">
+      <div className="sticky top-0 z-10 stitch-canvas/95 backdrop-blur border-b border-border/60 dark:bg-surface-container-lowest/95 dark:border-outline-variant/30">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -394,21 +394,21 @@ export function CryptoPortfolioView() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="border-white/[0.06]/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <Card className="border-border/60/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               <DollarSign className="w-5 h-5 text-stitch-primary dark:text-primary" />
               <span className="text-lg font-bold tabular-nums dark:font-financial dark:text-primary" dir="ltr">{formatPrice(summary.totalValue)}</span>
               <span className="text-xs text-stitch-muted dark:text-on-surface-variant">إجمالي القيمة</span>
             </CardContent>
           </Card>
-          <Card className="border-white/[0.06]/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <Card className="border-border/60/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               <BarChart3 className="w-5 h-5 text-amber-500" />
               <span className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatPrice(summary.totalCost)}</span>
               <span className="text-xs text-stitch-muted dark:text-on-surface-variant">إجمالي التكلفة</span>
             </CardContent>
           </Card>
-          <Card className="border-white/[0.06]/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <Card className="border-border/60/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               {summary.totalProfitLoss >= 0 ? (
                 <TrendingUp className="w-5 h-5 text-stitch-primary dark:text-primary" />
@@ -424,7 +424,7 @@ export function CryptoPortfolioView() {
               <span className="text-xs text-stitch-muted dark:text-on-surface-variant">الربح/الخسارة</span>
             </CardContent>
           </Card>
-          <Card className="border-white/[0.06]/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+          <Card className="border-border/60/60 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               <Percent className="w-5 h-5 text-orange-500" />
               <span className={cn(
@@ -484,7 +484,7 @@ export function CryptoPortfolioView() {
                   return (
                     <div
                       key={position.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-white/[0.06]/60 hover:bg-[#182030]/30 transition-colors dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
+                      className="flex items-center justify-between p-4 rounded-lg border border-border/60/60 hover:bg-secondary/30 transition-colors dark:bg-surface-container dark:border-outline-variant/30 dark:hover:bg-surface-container-high"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center dark:bg-primary-container/40">
@@ -613,7 +613,7 @@ export function CryptoPortfolioView() {
             </div>
 
             {newCoin.symbol && livePriceMap[newCoin.symbol] && (
-              <div className="text-xs text-stitch-muted p-2 rounded-md bg-[#182030]/30 dark:text-on-surface-variant dark:bg-surface-container dark:border dark:border-outline-variant/30">
+              <div className="text-xs text-stitch-muted p-2 rounded-md bg-secondary/30 dark:text-on-surface-variant dark:bg-surface-container dark:border dark:border-outline-variant/30">
                 السعر الحالي لـ {newCoin.symbol}: <span className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatPrice(livePriceMap[newCoin.symbol].price)}</span>
                 <span className={cn('mr-2 tabular-nums dark:font-financial', livePriceMap[newCoin.symbol].change >= 0 ? 'text-stitch-primary dark:text-primary' : 'text-rose-600 dark:text-error')} dir="ltr">
                   ({livePriceMap[newCoin.symbol].change >= 0 ? '+' : ''}{(livePriceMap[newCoin.symbol].change ?? 0).toFixed(2)}%)

@@ -172,7 +172,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <ExchangeSelector compact className="h-9 text-xs rounded-xl border-white/[0.06] stitch-glass dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface" />
+              <ExchangeSelector compact className="h-9 text-xs rounded-xl border-border/60 stitch-glass dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface" />
               {marketOverview && (
                 <div className="hidden lg:flex items-center gap-2 text-[10px]">
                   <Badge variant="outline" className="text-stitch-primary border-emerald-500/30 bg-emerald-50 px-2.5 py-1 stitch-num tabular-nums dark:text-primary dark:border-primary-container/40 dark:bg-primary-container/20 dark:font-financial">
@@ -196,12 +196,12 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                 mode="add"
                 placeholder="إدراج سهم آخر للتحليل..."
                 onSelectStock={(ticker) => handleAddStock(ticker)}
-                buttonClassName="w-full border-white/[0.06] bg-[#182030] hover:stitch-glass text-stitch-on-surface rounded-xl shadow-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
+                buttonClassName="w-full border-border/60 bg-secondary hover:stitch-glass text-stitch-on-surface rounded-xl shadow-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex bg-[#182030] p-1 rounded-xl border border-white/[0.06] dark:bg-surface-container dark:border-outline-variant/30">
+              <div className="flex bg-secondary p-1 rounded-xl border border-border/60 dark:bg-surface-container dark:border-outline-variant/30">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -256,7 +256,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
           </div>
 
           {selectedTickers.length > 0 && (
-            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-white/[0.06] dark:border-outline-variant/30">
+            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-border/60 dark:border-outline-variant/30">
               <span className="text-[10px] md:text-xs font-bold text-stitch-muted dark:text-on-surface-variant">الأوراق المعروضة:</span>
               {selectedTickers.map((tk, idx) => {
                 const st = stocks.find((s) => s.ticker === tk);
@@ -269,7 +269,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                       'text-[11px] stitch-num py-1 px-2.5 flex items-center gap-1.5 rounded-full dark:font-financial',
                       isPrimary
                         ? 'bg-emerald-500/10 text-stitch-primary border border-emerald-500/30 dark:bg-primary-container/30 dark:text-on-primary-container dark:border-primary-container/40'
-                        : 'stitch-glass text-stitch-on-surface border border-white/[0.06] dark:bg-surface-container dark:text-on-surface dark:border-outline-variant/30'
+                        : 'stitch-glass text-stitch-on-surface border border-border/60 dark:bg-surface-container dark:text-on-surface dark:border-outline-variant/30'
                     )}
                   >
                     <span className="stitch-latin">{st?.name_ar || tk}</span>

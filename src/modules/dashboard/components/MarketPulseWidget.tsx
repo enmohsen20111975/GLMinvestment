@@ -384,9 +384,9 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
       };
     default:
       return {
-        bg: 'bg-[#182030] dark:bg-[#0B0E14]/50',
+        bg: 'bg-secondary dark:bg-background/50',
         text: 'text-stitch-muted dark:text-stitch-outline',
-        border: 'border-white/[0.06] dark:border-white/[0.06]',
+        border: 'border-border/60 dark:border-border/60',
         icon: AlertTriangle,
       };
   }
@@ -423,7 +423,7 @@ function IndexMiniCard({
   const up = (idx?.change_percent ?? 0) >= 0;
   const hasData = !!idx && typeof idx.value === 'number';
   return (
-    <div className="flex flex-col gap-0.5 rounded-lg border border-white/[0.06] bg-[#182030]/60 p-2.5 dark:border-white/[0.06] dark:bg-[#0B0E14]/40">
+    <div className="flex flex-col gap-0.5 rounded-lg border border-border/60 bg-secondary/60 p-2.5 dark:border-border/60 dark:bg-background/40">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wider text-stitch-outline dark:text-stitch-outline">
           {label}
@@ -491,13 +491,13 @@ function BreadthBar({
           ▼ {losers} هابط
         </span>
       </div>
-      <div className="flex h-2 w-full overflow-hidden rounded-full bg-[#182030] dark:bg-[#0B0E14]">
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-secondary dark:bg-background">
         <div
           className="h-full bg-emerald-500 transition-all duration-700 ease-out"
           style={{ width: `${gPct}%` }}
         />
         <div
-          className="h-full bg-[#182030] dark:bg-[#0B0E14] transition-all duration-700 ease-out"
+          className="h-full bg-secondary dark:bg-background transition-all duration-700 ease-out"
           style={{ width: `${uPct}%` }}
         />
         <div
@@ -641,7 +641,7 @@ export function MarketPulseWidget() {
             </div>
             <button
               onClick={() => void fetchData()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-[#182030] px-3 py-1.5 text-xs font-medium text-stitch-muted transition-colors hover:bg-[#182030] dark:border-white/[0.06] dark:bg-[#0B0E14] dark:text-slate-200 dark:hover:bg-[#0B0E14]"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-secondary px-3 py-1.5 text-xs font-medium text-stitch-muted transition-colors hover:bg-secondary dark:border-border/60 dark:bg-background dark:text-slate-200 dark:hover:bg-background"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               إعادة المحاولة
@@ -681,7 +681,7 @@ export function MarketPulseWidget() {
                 'flex h-7 w-7 items-center justify-center rounded-md',
                 isOpen
                   ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/60 dark:text-stitch-primary'
-                  : 'bg-[#182030] text-stitch-outline dark:bg-[#0B0E14] dark:text-stitch-outline',
+                  : 'bg-secondary text-stitch-outline dark:bg-background dark:text-stitch-outline',
               )}
             >
               <Zap className="h-4 w-4" />
@@ -705,7 +705,7 @@ export function MarketPulseWidget() {
                   'relative inline-flex h-2 w-2 rounded-full',
                   isOpen
                     ? 'bg-emerald-500'
-                    : 'bg-[#182030] dark:bg-[#0B0E14]',
+                    : 'bg-secondary dark:bg-background',
                 )}
               />
             </span>
@@ -729,7 +729,7 @@ export function MarketPulseWidget() {
               onClick={() => void fetchData()}
               disabled={isRefreshing}
               title="تحديث"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-stitch-outline transition-colors hover:bg-[#182030] hover:text-stitch-muted dark:hover:bg-[#0B0E14] dark:hover:text-slate-200"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-stitch-outline transition-colors hover:bg-secondary hover:text-stitch-muted dark:hover:bg-background dark:hover:text-slate-200"
             >
               {isRefreshing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -808,7 +808,7 @@ export function MarketPulseWidget() {
         )}
 
         {/* اتساع السوق */}
-        <div className="rounded-lg border border-white/[0.06] bg-white/60 p-2.5 dark:border-white/[0.06] dark:bg-[#0B0E14]/30">
+        <div className="rounded-lg border border-border/60 bg-white/60 p-2.5 dark:border-border/60 dark:bg-background/30">
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-stitch-outline dark:text-stitch-outline">
               اتساع السوق
@@ -832,7 +832,7 @@ export function MarketPulseWidget() {
 
         {/* القطاع الأكثر نشاطاً */}
         {top && (
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-gradient-to-l from-emerald-50/60 to-transparent px-2.5 py-2 dark:border-white/[0.06] dark:from-emerald-950/30">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-gradient-to-l from-emerald-50/60 to-transparent px-2.5 py-2 dark:border-border/60 dark:from-emerald-950/30">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/60 dark:text-stitch-primary">
                 {top.avg_change >= 0 ? (
@@ -869,7 +869,7 @@ export function MarketPulseWidget() {
         )}
 
         {/* آخر تحديث */}
-        <div className="flex items-center justify-between border-t border-white/[0.06] pt-2 text-[10px] text-stitch-outline dark:border-white/[0.06] dark:text-stitch-outline">
+        <div className="flex items-center justify-between border-t border-border/60 pt-2 text-[10px] text-stitch-outline dark:border-border/60 dark:text-stitch-outline">
           <span>آخر تحديث: {lastUpdateStr}</span>
           <span dir="ltr" className="tabular-nums">
             {data.cairo_time?.split(' ')?.[1] ?? ''}

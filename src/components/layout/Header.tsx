@@ -43,7 +43,7 @@ export function Header({ title, subtitle }: HeaderProps) {
 
   return (
     <header
-      className="sticky top-0 z-30 bg-[#0B0E14]/95 backdrop-blur-md border-b border-white/[0.06] shadow-[0_1px_8px_rgba(0,0,0,0.45)]"
+      className="sticky top-0 z-30 bg-[#0B0E14]/95 backdrop-blur-md border-b border-border/60 shadow-[0_1px_8px_rgba(0,0,0,0.45)]"
       dir="rtl"
     >
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3">
@@ -52,7 +52,7 @@ export function Header({ title, subtitle }: HeaderProps) {
 
         {/* Sidebar toggle */}
         <button
-          className="flex-shrink-0 p-2 rounded-lg bg-[#111622]/80 hover:bg-[#182030] text-stitch-on-surface border border-white/[0.06] transition-colors"
+          className="flex-shrink-0 p-2 rounded-lg bg-card/80 hover:bg-secondary text-stitch-on-surface border border-border/60 transition-colors"
           onClick={toggleSidebar}
           aria-label="القائمة الجانبية"
         >
@@ -70,7 +70,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         {/* Dark/Light mode toggle */}
         {mounted && (
           <button
-            className="flex-shrink-0 p-2 rounded-lg bg-[#111622]/80 hover:bg-[#182030] text-stitch-on-surface border border-white/[0.06] transition-colors"
+            className="flex-shrink-0 p-2 rounded-lg bg-card/80 hover:bg-secondary text-stitch-on-surface border border-border/60 transition-colors"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             aria-label={resolvedTheme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
           >
@@ -88,7 +88,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             role="group"
             aria-label="عملة العرض"
             title="عملة العرض"
-            className="flex items-center rounded-md border border-white/[0.06] overflow-hidden flex-shrink-0 bg-[#111622]/80"
+            className="flex items-center rounded-md border border-border/60 overflow-hidden flex-shrink-0 bg-card/80"
           >
             {([
               { code: 'EGP' as DisplayCurrency, label: 'ج.م', title: 'الجنيه المصري' },
@@ -108,7 +108,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                     'stitch-num h-7 px-2 text-xs font-medium leading-none transition-colors',
                     active
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-transparent text-stitch-muted hover:bg-[#182030] hover:text-stitch-on-surface',
+                      : 'bg-transparent text-stitch-muted hover:bg-secondary hover:text-stitch-on-surface',
                   )}
                 >
                   {opt.label}
@@ -127,7 +127,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
             placeholder="ابحث عن سهم..."
-            className="stitch-ar w-48 md:w-64 pr-9 h-9 text-sm rounded-lg bg-[#111622]/80 border border-white/[0.06] text-stitch-on-surface placeholder:text-stitch-outline focus:outline-none focus:border-emerald-500/50"
+            className="stitch-ar w-48 md:w-64 pr-9 h-9 text-sm rounded-lg bg-card/80 border border-border/60 text-stitch-on-surface placeholder:text-stitch-outline focus:outline-none focus:border-ring/50"
             dir="rtl"
           />
         </form>
@@ -137,7 +137,7 @@ export function Header({ title, subtitle }: HeaderProps) {
 
         {/* Refresh */}
         <button
-          className="flex-shrink-0 hidden sm:flex p-2 rounded-lg bg-[#111622]/80 hover:bg-[#182030] text-stitch-on-surface border border-white/[0.06] transition-colors"
+          className="flex-shrink-0 hidden sm:flex p-2 rounded-lg bg-card/80 hover:bg-secondary text-stitch-on-surface border border-border/60 transition-colors"
           onClick={() => { loadDashboard(); }}
           aria-label="تحديث"
         >
@@ -153,7 +153,7 @@ function HeaderNotificationBell() {
 
   return (
     <button
-      className="flex-shrink-0 relative p-2 rounded-lg bg-[#111622]/80 hover:bg-[#182030] text-stitch-on-surface border border-white/[0.06] transition-colors"
+      className="flex-shrink-0 relative p-2 rounded-lg bg-card/80 hover:bg-secondary text-stitch-on-surface border border-border/60 transition-colors"
       onClick={() => setOpen(true)}
       aria-label="الإشعارات"
     >

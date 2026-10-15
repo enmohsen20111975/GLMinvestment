@@ -123,7 +123,7 @@ function TickerSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="h-3 w-20 animate-pulse rounded bg-[#182030]"
+          className="h-3 w-20 animate-pulse rounded bg-secondary"
         />
       ))}
     </div>
@@ -228,11 +228,11 @@ export function LiveStockTicker() {
       `}</style>
 
       <div
-        className="relative flex h-10 items-center overflow-hidden border-b border-white/[0.06] bg-[#0B0E14]/80 backdrop-blur-md"
+        className="relative flex h-10 items-center overflow-hidden border-b border-border/60 bg-background/80 backdrop-blur-md"
         dir="rtl"
       >
         {/* شارة "مباشر" على اليمين (بداية RTL) */}
-        <div className="z-10 flex h-full shrink-0 items-center gap-1.5 border-l border-white/[0.06] bg-[#111622]/90 px-3">
+        <div className="z-10 flex h-full shrink-0 items-center gap-1.5 border-l border-border/60 bg-card/90 px-3">
           <span className="relative flex h-2 w-2">
             {isOpen && (
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />

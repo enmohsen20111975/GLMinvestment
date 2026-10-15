@@ -173,7 +173,7 @@ export function MultiMarketWidget() {
   };
 
   const renderMarketSelector = () => (
-    <div className="flex gap-1.5 p-1 bg-[#182030]/60 rounded-xl mb-3 overflow-x-auto border">
+    <div className="flex gap-1.5 p-1 bg-secondary/60 rounded-xl mb-3 overflow-x-auto border">
       {MARKETS.map((market) => {
         const isSelected = selectedMarket === market.code;
         return (
@@ -185,7 +185,7 @@ export function MultiMarketWidget() {
               'text-xs h-8 px-3 rounded-lg font-medium transition-all',
               isSelected
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'hover:bg-[#182030] text-stitch-muted hover:text-stitch-on-surface'
+                : 'hover:bg-secondary text-stitch-muted hover:text-stitch-on-surface'
             )}
             onClick={() => setSelectedMarket(market.code)}
           >
@@ -235,7 +235,7 @@ export function MultiMarketWidget() {
             <div
               key={`${ticker}-${index}`}
               onClick={() => handleStockClick(ticker)}
-              className="flex items-center justify-between p-2.5 rounded-lg stitch-glass/60 hover:bg-[#182030]/70 border border-white/[0.06] transition-all cursor-pointer group"
+              className="flex items-center justify-between p-2.5 rounded-lg stitch-glass/60 hover:bg-secondary/70 border border-border/60 transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="text-base flex-shrink-0">{marketInfo.flag}</span>
@@ -353,7 +353,7 @@ export function MultiMarketWidget() {
                     ? 'bg-amber-500/10 border-amber-500/30'
                     : isKarat24
                     ? 'bg-amber-500/5 border-amber-500/20'
-                    : 'stitch-glass/60 border-white/[0.06] hover:bg-[#182030]/50'
+                    : 'stitch-glass/60 border-border/60 hover:bg-secondary/50'
                 )}
               >
                 <div className="flex items-center gap-2">
@@ -385,7 +385,7 @@ export function MultiMarketWidget() {
         {/* Gold Pound & Ounce Cards */}
         <div className="grid grid-cols-2 gap-2 pt-1">
           {goldPoundEstimate && (
-            <div className="p-2 rounded-lg bg-[#182030]/50 border border-white/[0.06] text-center">
+            <div className="p-2 rounded-lg bg-secondary/50 border border-border/60 text-center">
               <p className="text-[11px] text-stitch-muted mb-0.5">جنيه ذهب (8ج عيار 21)</p>
               <p className="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                 {goldPoundEstimate.toLocaleString()} {marketInfo.currency}
@@ -393,7 +393,7 @@ export function MultiMarketWidget() {
             </div>
           )}
           {goldOunceEstimate && (
-            <div className="p-2 rounded-lg bg-[#182030]/50 border border-white/[0.06] text-center">
+            <div className="p-2 rounded-lg bg-secondary/50 border border-border/60 text-center">
               <p className="text-[11px] text-stitch-muted mb-0.5">أوقية ذهب (31.1ج)</p>
               <p className="text-xs font-bold tabular-nums">
                 {goldOunceEstimate.toLocaleString()} {marketInfo.currency}
@@ -435,7 +435,7 @@ export function MultiMarketWidget() {
           return (
             <div
               key={crypto.symbol}
-              className="flex items-center justify-between p-2.5 rounded-lg stitch-glass/60 hover:bg-[#182030]/70 border border-white/[0.06] transition-colors"
+              className="flex items-center justify-between p-2.5 rounded-lg stitch-glass/60 hover:bg-secondary/70 border border-border/60 transition-colors"
             >
               <div className="flex items-center gap-2.5">
                 <Badge variant="outline" className="text-[10px] h-5 w-6 flex items-center justify-center p-0 stitch-num text-stitch-muted">
@@ -526,7 +526,7 @@ export function MultiMarketWidget() {
             return (
               <div
                 key={code}
-                className="flex items-center justify-between p-2 rounded-lg stitch-glass/60 hover:bg-[#182030]/70 border border-white/[0.06] transition-colors"
+                className="flex items-center justify-between p-2 rounded-lg stitch-glass/60 hover:bg-secondary/70 border border-border/60 transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <span className="text-lg flex-shrink-0">{meta.flag}</span>
@@ -557,7 +557,7 @@ export function MultiMarketWidget() {
   };
 
   return (
-    <Card className="border-white/[0.06] shadow-sm overflow-hidden">
+    <Card className="border-border/60 shadow-sm overflow-hidden">
       <CardHeader className="pb-2 pt-3.5 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -577,7 +577,7 @@ export function MultiMarketWidget() {
 
         {/* Categories Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-4 h-10 rounded-none border-y bg-[#182030]/40 p-0">
+          <TabsList className="w-full grid grid-cols-4 h-10 rounded-none border-y bg-secondary/40 p-0">
             <TabsTrigger
               value="stocks"
               className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all font-medium"

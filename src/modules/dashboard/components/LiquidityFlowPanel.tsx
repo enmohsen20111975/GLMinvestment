@@ -177,7 +177,7 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
 
 function StockFlowRow({ stock }: { stock: StockFlowItem }) {
   return (
-    <div className="flex items-center justify-between gap-2 py-1.5 border-b border-white/[0.06] last:border-0">
+    <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/60 last:border-0">
       <div className="flex-1 min-w-0">
         <div className="text-xs font-semibold truncate stitch-latin" title={stock.name_ar}>
           {stock.ticker}
@@ -388,19 +388,19 @@ export function LiquidityFlowPanel() {
           <>
             {/* Summary strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="rounded-md bg-[#182030]/40 p-2">
+              <div className="rounded-md bg-secondary/40 p-2">
                 <div className="text-[10px] text-stitch-muted">إجمالي السيولة</div>
                 <div className="text-sm font-bold">{formatNumber(summary.total_turnover)} {currencyLabel}</div>
               </div>
-              <div className="rounded-md bg-[#182030]/40 p-2">
+              <div className="rounded-md bg-secondary/40 p-2">
                 <div className="text-[10px] text-stitch-muted">إجمالي الحجم</div>
                 <div className="text-sm font-bold">{formatNumber(summary.total_volume)}</div>
               </div>
-              <div className="rounded-md bg-[#182030]/40 p-2">
+              <div className="rounded-md bg-secondary/40 p-2">
                 <div className="text-[10px] text-stitch-muted">قطاعات صاعدة</div>
                 <div className="text-sm font-bold text-stitch-primary dark:text-stitch-primary">{summary.advancing_sectors}</div>
               </div>
-              <div className="rounded-md bg-[#182030]/40 p-2">
+              <div className="rounded-md bg-secondary/40 p-2">
                 <div className="text-[10px] text-stitch-muted">قطاعات هابطة</div>
                 <div className="text-sm font-bold text-rose-400 dark:text-rose-400">{summary.declining_sectors}</div>
               </div>
@@ -472,9 +472,9 @@ export function LiquidityFlowPanel() {
                     {investor_type_estimate.block_trades_count} صفقة كتلة
                   </Badge>
                 </div>
-                <div className="rounded-md border border-white/[0.06] bg-[#182030]/10 p-2.5 space-y-2">
+                <div className="rounded-md border border-border/60 bg-secondary/10 p-2.5 space-y-2">
                   {/* Bar */}
-                  <div className="flex h-6 w-full overflow-hidden rounded-md border border-white/[0.06]">
+                  <div className="flex h-6 w-full overflow-hidden rounded-md border border-border/60">
                     <div
                       className="bg-purple-500/70 flex items-center justify-center text-[10px] text-white font-semibold"
                       style={{ width: `${Math.max(investor_type_estimate.institutional_pct, 5)}%` }}
@@ -495,7 +495,7 @@ export function LiquidityFlowPanel() {
                     <span>صفقات الكتل: <span className="font-semibold text-stitch-on-surface stitch-num">{investor_type_estimate.block_trades_count}</span></span>
                   </div>
                   {investor_type_estimate.large_blocks.length > 0 && (
-                    <div className="pt-1 border-t border-white/[0.06]">
+                    <div className="pt-1 border-t border-border/60">
                       <div className="text-[10px] text-stitch-muted mb-1">أكبر الصفقات المؤسسية المقدّرة:</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                         {investor_type_estimate.large_blocks.slice(0, 6).map((b) => (

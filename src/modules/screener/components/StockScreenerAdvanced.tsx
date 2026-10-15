@@ -220,10 +220,10 @@ const STATE_BADGE_COLORS: Record<string, string> = {
   NEAR_BREAKOUT: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
   AT_PEAK: 'bg-red-500/10 text-stitch-error border-red-500/30',
   NEAR_PEAK: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
-  NEUTRAL: 'bg-[#182030] text-stitch-on-surface border-white/[0.06]',
+  NEUTRAL: 'bg-secondary text-stitch-on-surface border-border/60',
   CORRECTION: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
   DECLINING: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-  INSUFFICIENT_DATA: 'bg-[#182030] text-stitch-muted border-white/[0.06]',
+  INSUFFICIENT_DATA: 'bg-secondary text-stitch-muted border-border/60',
 };
 
 function getStateLabels(t: (k: string, p?: any) => string): Record<string, string> {
@@ -1094,7 +1094,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
      gold: 'border-yellow-600/40 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-600/20',
      cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20',
      violet: 'border-violet-500/40 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20',
-     slate: 'border-white/[0.08] bg-white/[0.04] text-stitch-on-surface hover:bg-white/[0.04]',
+     slate: 'border-border/70 bg-white/[0.04] text-stitch-on-surface hover:bg-white/[0.04]',
    };
 
    const applyPreset = (preset: typeof presets[0]) => {
@@ -1649,7 +1649,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 border-white/[0.08] bg-[#182030] text-stitch-on-surface hover:bg-[#182030]"
+                    className="gap-1.5 border-border/70 bg-secondary text-stitch-on-surface hover:bg-secondary"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                     {t('screener.advanced.presets.more')}
@@ -2005,7 +2005,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             </div>
 
             {/* Checkboxes row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/[0.06]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-border/60">
               <CheckboxField
                 label={t('screener.advanced.filters.volumeSurge')}
                 help={FILTER_HELP.volume_surge}
@@ -2027,7 +2027,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             </div>
 
             {/* State legend / explanations */}
-            <div className="border-t border-white/[0.06] pt-3">
+            <div className="border-t border-border/60 pt-3">
               <button
                 onClick={() => setShowStateHelp((s) => !s)}
                 className="flex items-center gap-2 text-xs text-stitch-muted hover:text-stitch-on-surface transition-colors"
@@ -2038,7 +2038,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
               {showStateHelp && (
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {Object.entries(getStateExplanations(t)).map(([key, text]) => (
-                    <div key={key} className="flex items-start gap-2 p-2 rounded bg-[#182030]/30">
+                    <div key={key} className="flex items-start gap-2 p-2 rounded bg-secondary/30">
                       <StateBadge state={key} />
                       <p className="text-xs text-stitch-muted leading-relaxed flex-1">{text}</p>
                     </div>
@@ -2063,7 +2063,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           <KPIBox label={t('screener.advanced.kpi.volumeMomentum')} value={derivedSummary.volumeMomentum} color="text-amber-400" />
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-white/[0.06] bg-[#182030]/20 px-4 py-3 text-center text-xs text-stitch-muted">
+        <div className="rounded-lg border border-dashed border-border/60 bg-secondary/20 px-4 py-3 text-center text-xs text-stitch-muted">
           لا توجد أسهم تحقق شروط الفلتر الحالي — جرّب فلتراً آخر أو وسّع النطاق
         </div>
       )}
@@ -2387,7 +2387,7 @@ function TopPerformersTab() {
             </FilterField>
           </div>
 
-          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/[0.06] flex-wrap gap-2">
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/60 flex-wrap gap-2">
             <div className="text-xs text-stitch-muted">
               {t('screener.advanced.performers.periodLabel')} <span className="font-medium">{periodLabel}</span>
               {data && (
@@ -2609,7 +2609,7 @@ function CheckboxField({
 
 function KPIBox({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
   return (
-    <div className="border border-white/[0.06] rounded-lg p-2 stitch-glass">
+    <div className="border border-border/60 rounded-lg p-2 stitch-glass">
       <div className="text-[11px] text-stitch-muted truncate">{label}</div>
       <div className={cn('text-base font-bold stitch-num tabular-nums', color)}>{value}</div>
     </div>

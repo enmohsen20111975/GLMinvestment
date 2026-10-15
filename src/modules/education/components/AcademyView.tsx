@@ -156,7 +156,7 @@ export function AcademyView() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-[#182030]/30 dark:bg-surface-container-lowest dark:border-outline-variant/30" dir="rtl">
+      <footer className="border-t bg-secondary/30 dark:bg-surface-container-lowest dark:border-outline-variant/30" dir="rtl">
         <div className="mx-auto max-w-7xl px-4 py-3 text-center text-xs text-stitch-muted sm:px-6 dark:text-on-surface-variant">
           أكاديمية دليل الاستثمار — تعلّم، تدرّب، ثم استثمر بثقة
         </div>
@@ -352,7 +352,7 @@ function AdvancedLessonsTab() {
               فيبوناتشي، مذكرة التداول، التمويل الإسلامي، السوق السعودي (TADAWUL)،
               أسواق الكويت وقطر، الأسهم الأمريكية، تداول الذهب والمعادن،
               والتحليل عبر الأسواق (Intermarket Analysis). المحتوى يُقرأ مباشرةً
-              من <code className="rounded bg-[#182030] px-1 text-[10px]">content/education/*.md</code>.
+              من <code className="rounded bg-secondary px-1 text-[10px]">content/education/*.md</code>.
             </p>
           </div>
           <Badge variant="outline" className="shrink-0 gap-1">
@@ -552,7 +552,7 @@ function AdvancedLessonsTab() {
 
                   {/* CTA: load full content */}
                   <section className="border-t pt-4">
-                    <div className="rounded-md border border-dashed bg-[#182030]/30 p-4 text-center">
+                    <div className="rounded-md border border-dashed bg-secondary/30 p-4 text-center">
                       <p className="text-sm text-stitch-muted">
                         هذا عرض مختصر لكل قسم. اضغط &quot;إظهار النص الكامل&quot; بالأعلى
                         لقراءة الدرس كاملاً (يشمل المعادلات، الأكواد، الجداول، والقصص
@@ -689,7 +689,7 @@ function AdvancedMarkdownRenderer({
               <pre
                 key={i}
                 dir="ltr"
-                className="my-2 overflow-x-auto rounded-md border bg-[#182030]/60 p-3 text-xs leading-relaxed"
+                className="my-2 overflow-x-auto rounded-md border bg-secondary/60 p-3 text-xs leading-relaxed"
               >
                 <code className="stitch-num">{block.text}</code>
               </pre>
@@ -754,13 +754,13 @@ function AdvancedMarkdownRenderer({
                         className={
                           ri % 2 === 0
                             ? 'stitch-glass'
-                            : 'bg-[#182030]/30'
+                            : 'bg-secondary/30'
                         }
                       >
                         {row.map((cell, ci) => (
                           <td
                             key={ci}
-                            className="border-b border-white/[0.06]/40 p-2 align-top leading-relaxed"
+                            className="border-b border-border/60/40 p-2 align-top leading-relaxed"
                           >
                             {renderInline(cell)}
                           </td>
@@ -944,7 +944,7 @@ function renderInline(text: string): React.ReactNode {
         <code
           key={key++}
           dir="ltr"
-          className="mx-0.5 rounded bg-[#182030] px-1 py-0.5 stitch-num text-[0.85em]"
+          className="mx-0.5 rounded bg-secondary px-1 py-0.5 stitch-num text-[0.85em]"
         >
           {token.slice(1, -1)}
         </code>,
@@ -1230,7 +1230,7 @@ function LiveMarketScanner() {
                               'inline-flex items-center gap-1 rounded-md px-2 py-0.5 stitch-num text-xs font-semibold tabular-nums',
                               tone === 'up' && 'bg-emerald-600/10 text-stitch-primary dark:text-stitch-primary',
                               tone === 'down' && 'bg-rose-500/10 text-rose-400 dark:text-rose-400',
-                              tone === 'flat' && 'bg-[#182030]/10 text-stitch-muted dark:text-stitch-outline',
+                              tone === 'flat' && 'bg-secondary/10 text-stitch-muted dark:text-stitch-outline',
                             )}
                             dir="ltr"
                           >
@@ -1293,7 +1293,7 @@ function LiveMarketScanner() {
                           'inline-flex items-center gap-1 rounded-md px-2 py-0.5 stitch-num text-xs font-semibold tabular-nums',
                           tone === 'up' && 'bg-emerald-600/10 text-stitch-primary dark:text-stitch-primary',
                           tone === 'down' && 'bg-rose-500/10 text-rose-400 dark:text-rose-400',
-                          tone === 'flat' && 'bg-[#182030]/10 text-stitch-muted dark:text-stitch-outline',
+                          tone === 'flat' && 'bg-secondary/10 text-stitch-muted dark:text-stitch-outline',
                         )}
                         dir="ltr"
                       >
@@ -1316,7 +1316,7 @@ function LiveMarketScanner() {
 
             {/* Show more / less */}
             {filtered.length > 15 && (
-              <div className="border-t bg-[#182030]/20 px-4 py-3 text-center">
+              <div className="border-t bg-secondary/20 px-4 py-3 text-center">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1354,13 +1354,13 @@ function LiveMarketScanner() {
               </SheetHeader>
               <div className="space-y-3 px-4 pb-6">
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg border bg-[#182030]/30 p-2 text-center">
+                  <div className="rounded-lg border bg-secondary/30 p-2 text-center">
                     <div className="text-[10px] text-stitch-muted">السعر</div>
                     <div className="stitch-num text-sm font-semibold tabular-nums" dir="ltr">
                       {(analysis.stock.current_price ?? 0).toFixed(2)}
                     </div>
                   </div>
-                  <div className="rounded-lg border bg-[#182030]/30 p-2 text-center">
+                  <div className="rounded-lg border bg-secondary/30 p-2 text-center">
                     <div className="text-[10px] text-stitch-muted">التغير</div>
                     <div
                       className={cn(
@@ -1377,7 +1377,7 @@ function LiveMarketScanner() {
                       {(analysis.stock.change_percent ?? 0).toFixed(2)}%
                     </div>
                   </div>
-                  <div className="rounded-lg border bg-[#182030]/30 p-2 text-center">
+                  <div className="rounded-lg border bg-secondary/30 p-2 text-center">
                     <div className="text-[10px] text-stitch-muted">الحجم</div>
                     <div className="stitch-num text-sm font-semibold tabular-nums" dir="ltr">
                       {formatVolume(analysis.stock.volume)}
@@ -1609,11 +1609,11 @@ const SCENARIO_TONE_STYLES: Record<
     iconBg: 'bg-amber-600/15 text-amber-600 dark:text-amber-400',
   },
   neutral: {
-    accentBorder: 'border-white/[0.06]/40',
-    accentStrip: 'bg-[#182030]',
-    badge: 'bg-[#0B0E14]/15 text-stitch-muted dark:text-stitch-outline',
+    accentBorder: 'border-border/60/40',
+    accentStrip: 'bg-secondary',
+    badge: 'bg-background/15 text-stitch-muted dark:text-stitch-outline',
     badgeLabel: 'مشروط',
-    iconBg: 'bg-[#0B0E14]/15 text-stitch-muted dark:text-stitch-outline',
+    iconBg: 'bg-background/15 text-stitch-muted dark:text-stitch-outline',
   },
 };
 
@@ -1708,7 +1708,7 @@ function ScenarioDecisionTree() {
                 </div>
 
                 {/* Trigger box */}
-                <div className="rounded-md border border-white/[0.06]/30 bg-[#0B0E14]/20 p-3">
+                <div className="rounded-md border border-border/60/30 bg-background/20 p-3">
                   <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stitch-muted">
                     المشغّل (Trigger)
                   </div>
@@ -1728,7 +1728,7 @@ function ScenarioDecisionTree() {
                     return (
                       <div
                         key={i}
-                        className="flex flex-col rounded-md border border-white/[0.06] stitch-canvas/70 p-3"
+                        className="flex flex-col rounded-md border border-border/60 stitch-canvas/70 p-3"
                       >
                         <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stitch-muted">
                           الشرط #{i + 1}
@@ -1844,7 +1844,7 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'dca',
     icon: Layers,
-    iconBg: 'bg-[#0B0E14]/15 text-stitch-muted dark:text-stitch-outline',
+    iconBg: 'bg-background/15 text-stitch-muted dark:text-stitch-outline',
     title: 'خطة DCA (متوسط التكلفة)',
     condition:
       'تستثمر في سهم أساسي طويل الأجل (بنك أو قائد قطاع) وتريد تخفيض متوسط التكلفة دون توقيت السوق.',
@@ -1891,7 +1891,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 bg-[#182030]/30 px-3 py-2.5 text-right"
+        className="flex w-full items-center gap-2 bg-secondary/30 px-3 py-2.5 text-right"
         aria-expanded={open}
       >
         <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', playbook.iconBg)}>
@@ -1913,7 +1913,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
               <CheckCircle2 className="h-3 w-3" />
               الشرط
             </div>
-            <p className="rounded-md border bg-[#182030]/30 p-2 text-xs leading-relaxed">
+            <p className="rounded-md border bg-secondary/30 p-2 text-xs leading-relaxed">
               {playbook.condition}
             </p>
           </div>
@@ -2001,7 +2001,7 @@ function TradingFloorView() {
           Validation → Signal → Risk Gate → Execution → Journal → Review) with a feedback
           loop. Placed at the top of the Trading Floor so investors see HOW the system
           thinks before they act on the live prices below. */}
-      <section aria-labelledby="pipeline-heading" className="rounded-xl border border-white/[0.06] bg-white/80 p-4 dark:border-white/[0.06] dark:bg-[#0B0E14]/60 sm:p-6 dark:bg-surface-container-lowest dark:border-outline-variant/30">
+      <section aria-labelledby="pipeline-heading" className="rounded-xl border border-border/60 bg-white/80 p-4 dark:border-border/60 dark:bg-background/60 sm:p-6 dark:bg-surface-container-lowest dark:border-outline-variant/30">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-lg" role="img" aria-label="خريطة">🗺️</span>
           <h3 id="pipeline-heading" className="text-base font-bold text-stitch-on-surface dark:text-slate-100 sm:text-lg dark:text-on-surface dark:font-outfit">
@@ -2225,7 +2225,7 @@ function PositionSizeCalculator() {
                   {result.maxShares.toLocaleString('en-US')}
                 </div>
               </div>
-              <div className="rounded-md border border-white/[0.06]/30 bg-[#182030]/50 dark:bg-[#0B0E14]/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+              <div className="rounded-md border border-border/60/30 bg-secondary/50 dark:bg-background/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-stitch-outline dark:text-on-surface-variant">
                   القيمة الإجمالية
                 </div>
@@ -2233,7 +2233,7 @@ function PositionSizeCalculator() {
                   {result.totalValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="rounded-md border border-white/[0.06]/30 bg-[#182030]/50 dark:bg-[#0B0E14]/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
+              <div className="rounded-md border border-border/60/30 bg-secondary/50 dark:bg-background/20 p-2.5 text-center dark:border-outline-variant/30 dark:bg-surface-container-high">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-stitch-outline dark:text-on-surface-variant">
                   % من المحفظة
                 </div>
@@ -2246,7 +2246,7 @@ function PositionSizeCalculator() {
               <span className="rounded-md border border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20 px-2 py-1 text-amber-800 dark:text-amber-200">
                 الاتجاه: {result.direction}
               </span>
-              <span className="rounded-md border border-white/[0.06]/30 bg-[#182030]/40 px-2 py-1 text-stitch-muted" dir="ltr">
+              <span className="rounded-md border border-border/60/30 bg-secondary/40 px-2 py-1 text-stitch-muted" dir="ltr">
                 المخاطرة/سهم: {(result.perShareRisk ?? 0).toFixed(3)} ج
               </span>
             </div>
@@ -2255,7 +2255,7 @@ function PositionSizeCalculator() {
             </div>
           </div>
         ) : (
-          <div className="rounded-md border border-dashed bg-[#182030]/30 p-4 text-center text-xs text-stitch-muted">
+          <div className="rounded-md border border-dashed bg-secondary/30 p-4 text-center text-xs text-stitch-muted">
             أدخل القيم الأربعة (رأس المال + نسبة المخاطرة + سعر الدخول + سعر الـ Stop) لحساب الحجم الأقصى للصفقة.
           </div>
         )}
@@ -2316,7 +2316,7 @@ function BiasDetectorQuiz() {
           {BIAS_QUESTIONS.map((q, i) => (
             <div
               key={q.id}
-              className="rounded-md border border-white/[0.06] stitch-canvas/60 p-3"
+              className="rounded-md border border-border/60 stitch-canvas/60 p-3"
             >
               <div className="mb-2 flex items-start gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-600/15 text-[10px] font-bold text-amber-700 dark:text-amber-300">
@@ -2332,7 +2332,7 @@ function BiasDetectorQuiz() {
                     'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
                     answers[q.id] === true
                       ? 'border-rose-500/30/60 bg-rose-500/15 text-rose-400 dark:text-rose-400'
-                      : 'border-white/[0.06] bg-[#182030]/30 text-stitch-muted hover:bg-[#182030]/60',
+                      : 'border-border/60 bg-secondary/30 text-stitch-muted hover:bg-secondary/60',
                   )}
                 >
                   نعم
@@ -2344,7 +2344,7 @@ function BiasDetectorQuiz() {
                     'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
                     answers[q.id] === false
                       ? 'border-emerald-500/30/60 bg-emerald-600/15 text-stitch-primary dark:text-stitch-primary'
-                      : 'border-white/[0.06] bg-[#182030]/30 text-stitch-muted hover:bg-[#182030]/60',
+                      : 'border-border/60 bg-secondary/30 text-stitch-muted hover:bg-secondary/60',
                   )}
                 >
                   لا
@@ -2402,7 +2402,7 @@ function BiasDetectorQuiz() {
             )}
 
             {scores.sorted.length > 1 && (
-              <div className="rounded-md border border-white/[0.06]/30 bg-[#182030]/30 p-3">
+              <div className="rounded-md border border-border/60/30 bg-secondary/30 p-3">
                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-stitch-muted dark:text-on-surface-variant">
                   تحيزات أخرى مكتشفة ({scores.sorted.length})
                 </div>

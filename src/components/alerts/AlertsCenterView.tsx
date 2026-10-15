@@ -155,11 +155,11 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div className="p-2 rounded-lg bg-[#182030]/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+          <div className="p-2 rounded-lg bg-secondary/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
             <span className="text-xs text-stitch-muted dark:text-on-surface-variant">السعر الحالي</span>
             <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatCurrency(alert.current_price, alert.type === 'crypto')}</p>
           </div>
-          <div className="p-2 rounded-lg bg-[#182030]/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+          <div className="p-2 rounded-lg bg-secondary/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
             <span className="text-xs text-stitch-muted dark:text-on-surface-variant">
               {isAbove ? 'السعر المستهدف (أعلى)' : 'السعر المستهدف (أقل)'}
             </span>
@@ -187,7 +187,7 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
 
 function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
   const severityColors = {
-    info: 'border-teal-200 dark:border-teal-800 bg-[#182030]/50 dark:bg-[#0B0E14]/20',
+    info: 'border-teal-200 dark:border-teal-800 bg-secondary/50 dark:bg-background/20',
     warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
     danger: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
   };
@@ -249,7 +249,7 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
 
 function MarketAlertCard({ alert }: { alert: MarketAlert }) {
   const severityColors = {
-    info: 'border-teal-200 dark:border-teal-800 bg-[#182030]/50 dark:bg-[#0B0E14]/20',
+    info: 'border-teal-200 dark:border-teal-800 bg-secondary/50 dark:bg-background/20',
     warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
     danger: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
   };
@@ -258,7 +258,7 @@ function MarketAlertCard({ alert }: { alert: MarketAlert }) {
     <Card className={cn('transition-all duration-200 hover:shadow-md dark:bg-surface-container-low dark:border dark:border-outline-variant/30', severityColors[alert.severity])}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#182030] flex-shrink-0 dark:bg-surface-container-high">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-secondary flex-shrink-0 dark:bg-surface-container-high">
             <Bell className="w-5 h-5 text-stitch-muted dark:text-on-surface-variant" />
           </div>
           <div className="flex-1 min-w-0">
@@ -283,7 +283,7 @@ function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
     overdue: 'border-red-500 dark:border-red-400 bg-red-50/60 dark:bg-red-950/30',
     critical: 'border-red-400 dark:border-red-500 bg-red-50/40 dark:bg-red-950/20',
     warning: 'border-amber-400 dark:border-amber-500 bg-amber-50/60 dark:bg-amber-950/20',
-    info: 'border-teal-400 dark:border-teal-500 bg-[#182030]/60 dark:bg-[#0B0E14]/20',
+    info: 'border-teal-400 dark:border-teal-500 bg-secondary/60 dark:bg-background/20',
   };
 
   const severityBadge: Record<ObligationAlert['severity'], string> = {
@@ -314,7 +314,7 @@ function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#182030] flex-shrink-0 dark:bg-surface-container-high">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-secondary flex-shrink-0 dark:bg-surface-container-high">
               <CreditCard className="w-5 h-5 text-stitch-muted dark:text-on-surface-variant" />
             </div>
             <div>
@@ -331,11 +331,11 @@ function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div className="p-2 rounded-lg bg-[#182030]/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+          <div className="p-2 rounded-lg bg-secondary/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
             <span className="text-xs text-stitch-muted dark:text-on-surface-variant">القسط الشهري</span>
             <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatCurrency(alert.monthly_payment)}</p>
           </div>
-          <div className="p-2 rounded-lg bg-[#182030]/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
+          <div className="p-2 rounded-lg bg-secondary/50 dark:bg-surface-container dark:border dark:border-outline-variant/30">
             <span className="text-xs text-stitch-muted dark:text-on-surface-variant">المتبقي</span>
             <p className="font-semibold tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{formatCurrency(alert.remaining_amount)}</p>
           </div>
