@@ -114,18 +114,36 @@ const PHASE_COLORS: Record<string, string> = {
   'بيانات غير كافية': 'bg-muted text-muted-foreground border-border',
 };
 
+const MARKET_OPTIONS = [
+  { code: 'EGX', label: '🇪🇬 مصر', currency: 'ج.م' },
+  { code: 'TADAWUL', label: '🇸🇦 السعودية', currency: 'ر.س' },
+  { code: 'KSE', label: '🇰🇼 الكويت', currency: 'د.ك' },
+  { code: 'QSE', label: '🇶🇦 قطر', currency: 'ر.ق' },
+  { code: 'US', label: '🇺🇸 أمريكا', currency: '$' },
+  { code: 'CRYPTO', label: '🪙 كريبتو', currency: '$' },
+] as const;
+
+function marketCurrency(market: string): string {
+  const found = MARKET_OPTIONS.find((m) => m.code === market);
+  return found?.currency || 'ج.م';
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
 
 export function LiquidityRadarView({ market: marketProp }: { market?: string }) {
   const storeMarket = useAppStore((s) => s.currentMarket);
-  const market = (marketProp || storeMarket || 'EGX').toUpperCase();
+  const [activeMarket, setActiveMarket] = useState(
+    (marketProp || storeMarket || 'EGX').toUpperCase()
+  );
+  const market = activeMarket;
 
   const [data, setData] = useState<RadarResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const currency = marketCurrency(market);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -281,7 +299,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
 الدخول: ${fmtPrice(row.entry_defense?.entry_level)}
 الوقف: ${fmtPrice(row.entry_defense?.defense_level)}
 الهدف: ${fmtPrice(row.entry_defense?.resistance_level)}
-صافي تدفق الحوت: ${fmtFlow(row.whale?.net_flow_egp)} ج.م
+صافي تدفق الحوت: ${fmtFlow(row.whale?.net_flow_egp)} ${currency}
 
 منصة دليل الاستثمار`}
           title={`${row.ticker} — ${row.name || ''}`}
@@ -308,6 +326,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   if (error || !data || !data.stocks || data.stocks.length === 0) {
     return (
       <div className="space-y-4 p-4" dir="rtl">
+        <MarketSelectorBar activeMarket={market} onSelect={setActiveMarket} currency={currency} />
         <PulseRibbon market={market} scannedCount={data?.scanned_count ?? 0} />
         <Card className="bg-card border-border">
           <CardContent className="p-8 text-center space-y-3">
@@ -329,6 +348,9 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
 
   return (
     <div className="space-y-4 p-4" dir="rtl">
+      {/* ─── Market Selector Bar ─── */}
+      <MarketSelectorBar activeMarket={market} onSelect={setActiveMarket} currency={currency} />
+
       {/* ─── Pulse Ribbon ─── */}
       <PulseRibbon market={market} scannedCount={data.scanned_count ?? data.stocks.length} />
 
@@ -383,6 +405,48 @@ function PulseRibbon({ market, scannedCount }: { market: string; scannedCount: n
         </div>
         <div className="h-4 w-px bg-border" />
         <span className="font-mono text-[10px] text-muted-foreground">مرقوب: {scannedCount} سهم</span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Market Selector Bar
+// ============================================================================
+
+function MarketSelectorBar({
+  activeMarket,
+  onSelect,
+  currency,
+}: {
+  activeMarket: string;
+  onSelect: (m: string) => void;
+  currency: string;
+}) {
+  return (
+    <div className="w-full bg-card border border-border rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-muted-foreground shrink-0">السوق:</span>
+        {MARKET_OPTIONS.map((m) => (
+          <button
+            key={m.code}
+            onClick={() => onSelect(m.code)}
+            className={cn(
+              'px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors',
+              activeMarket === m.code
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
+            )}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-xs text-muted-foreground">العملة:</span>
+        <span className="font-mono text-sm font-bold text-emerald-500 bg-muted px-2 py-0.5 rounded-md">
+          {currency}
+        </span>
       </div>
     </div>
   );

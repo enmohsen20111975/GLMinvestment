@@ -50,6 +50,7 @@ interface StockData {
   name?: string;
   name_ar?: string;
   sector?: string;
+  market?: string;
   current_price?: number;
   change_pct?: number;
   change_value?: number;
@@ -84,6 +85,22 @@ interface StockData {
   };
 }
 
+// Currency mapping per market
+const MARKET_CURRENCY: Record<string, string> = {
+  EGX: 'ج.م',
+  TADAWUL: 'ر.س',
+  KSE: 'د.ك',
+  QSE: 'ر.ق',
+  US: '$',
+  CRYPTO: '$',
+};
+
+function getCurrency(market?: string): string {
+  if (!market) return 'ج.م';
+  const upper = market.toUpperCase();
+  return MARKET_CURRENCY[upper] || 'ج.م';
+}
+
 interface StockDetailSheetProps {
   /** رمز السهم المراد عرض تفاصيله. null = مغلق */
   ticker: string | null;
@@ -97,6 +114,7 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
   const [data, setData] = useState<StockData | null>(stockData || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const currency = getCurrency(data?.market);
   const infographicRef = useRef<HTMLDivElement>(null);
 
   // جلب بيانات السهم من API عند فتح Sheet (لو stockData غير ممرّر)
@@ -289,7 +307,7 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
                             : 'text-rose-500'
                         }`}
                       >
-                        {fmtFlow(data.whale.net_flow_egp)} EGP
+                        {fmtFlow(data.whale.net_flow_egp)} {currency}
                       </div>
                     </div>
 
