@@ -45,6 +45,28 @@ import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPub
 import { CompanyFundamentalsCard } from '@/modules/radar/components/CompanyFundamentalsCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+interface StockInfo {
+  name_ar?: string;
+  sector?: string;
+  current_price?: number;
+  change_pct?: number;
+  fair_value?: number;
+  sharia_compliant?: boolean;
+  whale_net_flow_5d?: number;
+  liquidity_bucket?: string;
+  support_level?: number | null;
+  resistance_level?: number | null;
+}
+
+interface TradeSetup {
+  entry_price: number;
+  stop_loss: number;
+  target_1: number;
+  target_2?: number;
+  rr_ratio: number;
+  signal: string;
+}
+
 interface StockData {
   ticker: string;
   name?: string;
@@ -84,6 +106,12 @@ interface StockData {
     defense_level?: number | null;
     resistance_level?: number | null;
   };
+  // NEW: unified API state machine fields
+  has_active_trade?: boolean;
+  observation_status?: string;
+  observation_reason?: string;
+  trade_setup?: TradeSetup | null;
+  stock_info?: StockInfo;
 }
 
 // Currency mapping per market
@@ -264,74 +292,115 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
 
           {data && !loading && !error && (
             <>
-              {/* ─── Hero Infographic Card & One-Click Publish ─── */}
-              <div ref={infographicRef} className="bg-gradient-to-br from-card to-muted/40 border-2 border-emerald-500/20 rounded-2xl p-4 shadow-sm mb-4">
-                <div className="flex items-center justify-between mb-3 border-b border-border/50 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-emerald-500" />
-                    <span className="font-bold text-base text-foreground">بطاقة الصفقة والإنفوجرافيك</span>
-                    {data.sharia_compliant === true || data.sharia_status === 'متوافق' ? (
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                        🟢 متوافق شرعياً
-                      </span>
-                    ) : null}
+              {/* ═══ STATE MACHINE: has_active_trade ═══ */}
+              {/* الحالة (أ): صفقة نشطة مكتملة الشروط → كارت الصفقة الأخضر */}
+              {/* الحالة (ب): كاش وانتظار → كارت مراقبة مؤسسي (لا شُرَط فارغة!) */}
+              {(() => {
+                const trade = data.trade_setup || (data.has_active_trade === true ? {
+                  entry_price: data.entry_price ?? data.entry_defense?.entry_level ?? 0,
+                  stop_loss: data.stop_loss ?? data.entry_defense?.defense_level ?? 0,
+                  target_1: data.target_price ?? data.entry_defense?.resistance_level ?? 0,
+                  target_2: undefined,
+                  rr_ratio: data.rr_ratio ?? 0,
+                  signal: data.signal || 'BUY',
+                } : null);
+                const si = data.stock_info || {};
+                const isActive = data.has_active_trade === true || (trade && trade.entry_price > 0 && trade.rr_ratio >= 1.5);
+                if (isActive && trade) {
+                  return (
+                    <div ref={infographicRef} className="bg-gradient-to-br from-card to-emerald-500/5 border-2 border-emerald-500/20 rounded-2xl p-4 shadow-sm mb-4">
+                      <div className="flex items-center justify-between mb-3 border-b border-border/50 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-emerald-500" />
+                          <span className="font-bold text-base text-foreground">صفقة نشطة مؤكدة</span>
+                          {(data.sharia_compliant || si.sharia_compliant) && (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">🟢 متوافق شرعياً</span>
+                          )}
+                        </div>
+                        <UnifiedPublishButton
+                          ticker={ticker || 'stock'}
+                          content={`📊 ${ticker} — ${data.name_ar || si.name_ar || ''}\nسعر الدخول: ${fmtPrice(trade.entry_price)}\nوقف الخسارة: ${fmtPrice(trade.stop_loss)}\nالهدف 1: ${fmtPrice(trade.target_1)}\n${trade.target_2 ? `الهدف 2: ${fmtPrice(trade.target_2)}\n` : ''}نسبة R/R: 1:${Number(trade.rr_ratio).toFixed(1)}\nصافي سيولة الحيتان: ${fmtFlow(si.whale_net_flow_5d ?? data.whale?.net_flow_egp)} ${currency}\n\nمنصة دليل الاستثمار`}
+                          title={`${ticker} — صفقة نشطة`}
+                          image={infographicRef}
+                          filename={`${ticker || 'stock'}-trade.png`}
+                          hashtags={['تداول', 'استثمار', ticker || 'stock']}
+                          variant="default"
+                          size="sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-3">
+                        <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                          <span className="text-[11px] text-muted-foreground block mb-0.5">سعر الدخول</span>
+                          <span className="font-mono tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">{fmtPrice(trade.entry_price)}</span>
+                        </div>
+                        <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                          <span className="text-[11px] text-muted-foreground block mb-0.5">وقف الخسارة</span>
+                          <span className="font-mono tabular-nums font-bold text-base text-rose-600 dark:text-rose-400">{fmtPrice(trade.stop_loss)}</span>
+                        </div>
+                        <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                          <span className="text-[11px] text-muted-foreground block mb-0.5">الهدف الأول</span>
+                          <span className="font-mono tabular-nums font-bold text-base text-teal-600 dark:text-teal-400">{fmtPrice(trade.target_1)}</span>
+                        </div>
+                        <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
+                          <span className="text-[11px] text-muted-foreground block mb-0.5">نسبة R/R</span>
+                          <span className="font-mono tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">1:{Number(trade.rr_ratio).toFixed(1)}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                        {si.whale_net_flow_5d != null && (
+                          <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5">
+                            <span className="text-muted-foreground">صافي سيولة الحيتان (5ج):</span>
+                            <span className={`font-mono font-bold tabular-nums ${si.whale_net_flow_5d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmtFlow(si.whale_net_flow_5d)} {currency}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <span className="text-muted-foreground">القطاع:</span>
+                          <span className="font-medium text-foreground truncate max-w-[110px]">{data.sector || si.sector || '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5 col-span-2 sm:col-span-1">
+                          <span className="text-muted-foreground">الإشارة:</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{trade.signal}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                // الحالة (ب): كاش وانتظار — لا شُرَط فارغة!
+                return (
+                  <div className="bg-muted/40 border border-border rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary">وضع المراقبة: كاش وانتظار ⏸️</Badge>
+                      {(data.sharia_compliant || si.sharia_compliant) && <Badge variant="outline" className="text-emerald-500 border-emerald-500/20">🟢 متوافق شرعياً</Badge>}
+                    </div>
+                    <p className="text-sm font-semibold text-foreground mb-1">{data.observation_status || 'لا توجد نقطة دخول آمنة بشروط المنصة حالياً'}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{data.observation_reason || 'نسبة العائد للمخاطرة غير مجزية أو السهم في مسار هابط. يُنصح بالحفاظ على السيولة ومراقبة مستويات الدعم.'}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div className="bg-background rounded-lg p-2 border border-border/50">
+                        <span className="text-muted-foreground block text-[10px]">السعر الحالي</span>
+                        <span className="font-mono font-bold text-sm text-foreground">{fmtPrice(si.current_price ?? data.current_price)} {currency}</span>
+                      </div>
+                      {si.fair_value != null && (
+                        <div className="bg-background rounded-lg p-2 border border-border/50">
+                          <span className="text-muted-foreground block text-[10px]">القيمة العادلة</span>
+                          <span className="font-mono font-bold text-sm text-teal-600">{fmtPrice(si.fair_value)}</span>
+                        </div>
+                      )}
+                      {si.support_level != null && (
+                        <div className="bg-background rounded-lg p-2 border border-border/50">
+                          <span className="text-muted-foreground block text-[10px]">مستوى الدعم</span>
+                          <span className="font-mono font-bold text-sm text-rose-500">{fmtPrice(si.support_level)}</span>
+                        </div>
+                      )}
+                      {si.resistance_level != null && (
+                        <div className="bg-background rounded-lg p-2 border border-border/50">
+                          <span className="text-muted-foreground block text-[10px]">مستوى المقاومة</span>
+                          <span className="font-mono font-bold text-sm text-emerald-500">{fmtPrice(si.resistance_level)}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <UnifiedPublishButton
-                    ticker={ticker || 'stock'}
-                    elementRef={infographicRef}
-                    content={`📊 ${ticker} — ${data.name_ar || data.name || ''}\nسعر الدخول: ${fmtPrice(data.entry_price || data.entry_defense?.entry_level)}\nالوقف: ${fmtPrice(data.stop_loss || data.entry_defense?.defense_level)}\nالهدف: ${fmtPrice(data.target_price || data.entry_defense?.resistance_level)}\nنسبة العائد للمخاطرة R/R: ${data.rr_ratio || data.risk_reward || '—'}\nصافي سيولة الحيتان: ${fmtFlow(data.whale_net_flow || data.whale?.net_flow_egp)} ${currency}\n\nمنصة دليل الاستثمار`}
-                    title={`${ticker} — بطاقة الصفقة`}
-                    filename={`${ticker || 'stock'}-infographic.png`}
-                    hashtags={['تداول', 'استثمار', ticker || 'stock']}
-                    variant="default"
-                    size="sm"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-3">
-                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
-                    <span className="text-[11px] text-muted-foreground block mb-0.5">سعر الدخول المقترح</span>
-                    <span className="font-mono tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">
-                      {fmtPrice(data.entry_price || data.entry_defense?.entry_level)}
-                    </span>
-                  </div>
-                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
-                    <span className="text-[11px] text-muted-foreground block mb-0.5">وقف الخسارة (الدفاع)</span>
-                    <span className="font-mono tabular-nums font-bold text-base text-rose-600 dark:text-rose-400">
-                      {fmtPrice(data.stop_loss || data.entry_defense?.defense_level)}
-                    </span>
-                  </div>
-                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
-                    <span className="text-[11px] text-muted-foreground block mb-0.5">الهدف الأول</span>
-                    <span className="font-mono tabular-nums font-bold text-base text-teal-600 dark:text-teal-400">
-                      {fmtPrice(data.target_price || data.entry_defense?.resistance_level)}
-                    </span>
-                  </div>
-                  <div className="bg-background/80 border border-border/60 rounded-xl p-2.5">
-                    <span className="text-[11px] text-muted-foreground block mb-0.5">نسبة R/R</span>
-                    <span className="font-mono tabular-nums font-bold text-base text-emerald-600 dark:text-emerald-400">
-                      {data.rr_ratio ? `1:${Number(data.rr_ratio).toFixed(1)}` : '1:2.0+'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                  <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5">
-                    <span className="text-muted-foreground">تدفق الحيتان:</span>
-                    <span className={`font-mono font-bold tabular-nums ${(data.whale_net_flow || data.whale?.net_flow_egp || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {fmtFlow(data.whale_net_flow || data.whale?.net_flow_egp)} {currency}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5">
-                    <span className="text-muted-foreground">القطاع:</span>
-                    <span className="font-medium text-foreground truncate max-w-[110px]">{data.sector || '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-muted/40 rounded-lg px-2.5 py-1.5 col-span-2 sm:col-span-1">
-                    <span className="text-muted-foreground">الإشارة الفنية:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{data.signal || 'مراقبة إيجابية'}</span>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               <Tabs defaultValue="liquidity" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
@@ -526,35 +595,6 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
                 </TabsContent>
               </Tabs>
 
-              {/* ─── بطاقة الإنفوجرافيك + زر النشر الموحد (أعلى الكارت) ─── */}
-              <div ref={infographicRef} className="bg-card border border-border rounded-xl p-3 space-y-3">
-                {/* UnifiedPublishButton — أعلى الكارت لنشر مباشر لتيليجرام */}
-                <div className="flex items-center justify-between gap-2 pb-2 border-b border-border">
-                  <span className="text-sm font-semibold flex items-center gap-1.5">
-                    <BarChart3 className="w-4 h-4 text-emerald-500" />
-                    بطاقة الإنفوجرافيك المؤسسية
-                  </span>
-                  <UnifiedPublishButton
-                    content={`📊 ${ticker || '—'} — ${data?.name_ar || ''}
-السعر: ${fmtPrice(data?.current_price)}
-التغير: ${fmtPct(data?.change_pct)}
-الإشارة: ${data?.signal || '—'}
-${data?.entry_defense?.entry_level ? `الدخول: ${fmtPrice(data.entry_defense.entry_level)}` : ''}
-${data?.entry_defense?.defense_level ? `الدفاع: ${fmtPrice(data.entry_defense.defense_level)}` : ''}
-${data?.entry_defense?.resistance_level ? `الهدف: ${fmtPrice(data.entry_defense.resistance_level)}` : ''}
-${data?.rr_ratio ? `نسبة R/R: 1:${Number(data.rr_ratio).toFixed(1)}` : ''}
-${data?.whale?.net_flow_egp ? `صافي سيولة الحيتان: ${fmtFlow(data.whale.net_flow_egp)} ${currency}` : ''}
-${data?.sharia_compliant ? '🟢 متوافق مع الشريعة' : ''}
-
-منصة دليل الاستثمار`}
-                    title={`${ticker || '—'} — ${data?.name_ar || ''}`}
-                    image={infographicRef}
-                    filename={`${ticker || 'stock'}-infographic.png`}
-                    hashtags={['EGX', 'استثمار', ticker || 'stock']}
-                    variant="default"
-                    size="sm"
-                  />
-                </div>
 
                 {/* المعطيات المؤسسية — كل الأرقام من /api/stocks/{ticker}/unified */}
                 {ticker && data && (
