@@ -151,6 +151,30 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Note on dossier_router: {e}")
 
+# Mount Preset Routes (Market Pills + Tactical Presets)
+try:
+    from api.preset_routes import router as preset_router
+    app.include_router(preset_router)
+    logger.info("✅ Mounted preset_router (market pills + tactical presets)")
+except Exception as e:
+    logger.warning(f"⚠️ Note on preset_router: {e}")
+
+# Mount Quant Routes (Global Indices + Sparklines + Radar Buckets)
+try:
+    from api.quant_routes import router as quant_router
+    app.include_router(quant_router)
+    logger.info("✅ Mounted quant_router (indices + sparklines + radar buckets)")
+except Exception as e:
+    logger.warning(f"⚠️ Note on quant_router: {e}")
+
+# Mount DCS Control Routes (Hierarchical Control + Topology)
+try:
+    from api.dcs_routes import router as dcs_router
+    app.include_router(dcs_router)
+    logger.info("✅ Mounted dcs_router (hierarchical control + topology)")
+except Exception as e:
+    logger.warning(f"⚠️ Note on dcs_router: {e}")
+
 # Start MarketScheduler in background thread
 _scheduler_thread = None
 _egypt_scheduler_thread = None
