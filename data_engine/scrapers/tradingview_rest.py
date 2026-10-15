@@ -84,6 +84,18 @@ _MARKET_AR_LABEL = {
     'qatar': 'قطر',
 }
 
+# SOSO-UNIFY (2026-10-15): Market code mapping (unified English code for all DBs)
+_MARKET_CODE_MAP = {
+    'مصر': 'EGX',
+    'السعودية': 'TADAWUL',
+    'الكويت': 'KSE',
+    'قطر': 'QSE',
+    'egypt': 'EGX',
+    'saudi': 'TADAWUL',
+    'kuwait': 'KSE',
+    'qatar': 'QSE',
+}
+
 # Scanner columns we request. We map these to our stock dict in `_map_row`.
 _TV_COLUMNS = [
     'name', 'description', 'close', 'change', 'change_abs',
@@ -316,6 +328,7 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
             market_cap TEXT,
             sector TEXT,
             market TEXT,
+            market_code TEXT,
             tabs_data TEXT,
             last_update TEXT DEFAULT CURRENT_TIMESTAMP
         )
@@ -327,8 +340,8 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
         try:
             cursor.execute('''
                 INSERT INTO stocks
-                (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (symbol, name, price, change_percent, volume, market_cap, sector, market, market_code, tabs_data, last_update)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(symbol) DO UPDATE SET
                     price = excluded.price,
                     change_percent = excluded.change_percent,
@@ -336,6 +349,7 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
                     market_cap = excluded.market_cap,
                     sector = CASE WHEN excluded.sector != '' THEN excluded.sector ELSE stocks.sector END,
                     name = CASE WHEN excluded.name != '' AND excluded.name != excluded.symbol THEN excluded.name ELSE stocks.name END,
+                    market_code = excluded.market_code,
                     tabs_data = excluded.tabs_data,
                     last_update = excluded.last_update
             ''', (
@@ -343,7 +357,7 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
                 float(s.get('price', 0) or 0),
                 float(s.get('change_percent', 0) or 0),
                 s.get('volume', ''), s.get('market_cap', ''),
-                s.get('sector', ''), market,
+                s.get('sector', ''), market, s.get('market_code', ''),
                 json.dumps(s.get('tabs_data', {}), ensure_ascii=False), now,
             ))
             saved += 1
