@@ -62,30 +62,27 @@ SCRAPERS: Dict[str, Dict[str, Any]] = {
         'fallback': None,
         'timeout': 120,
     },
-    # SOSO-GULF (2026-10-15): أسواق الخليج عبر REST API (بدون متصفح)
+    # Task BRAVO-GULF-REST: الخليج عبر tradingview_rest.py (REST خفيف بدون متصفح)
     'TADAWUL': {
-        'name': 'TADAWUL (Saudi Arabia)',
+        'name': 'Saudi (TADAWUL) — REST',
         'primary': 'tradingview_rest.py',
         'fallback': None,
+        'args': ['--market', 'saudi'],
         'timeout': 120,
-        'market_slug': 'saudi',
-        'market_ar': 'السعودية',
     },
     'KSE': {
-        'name': 'KSE (Kuwait)',
+        'name': 'Kuwait (Boursa) — REST',
         'primary': 'tradingview_rest.py',
         'fallback': None,
+        'args': ['--market', 'kuwait'],
         'timeout': 120,
-        'market_slug': 'kuwait',
-        'market_ar': 'الكويت',
     },
     'QSE': {
-        'name': 'QSE (Qatar)',
+        'name': 'Qatar (QSE) — REST',
         'primary': 'tradingview_rest.py',
         'fallback': None,
+        'args': ['--market', 'qatar'],
         'timeout': 120,
-        'market_slug': 'qatar',
-        'market_ar': 'قطر',
     },
 }
 
@@ -146,7 +143,7 @@ def log(msg: str, level: str = 'info') -> None:
 # ────────────────────────────────────────────────────────────────────────────
 # Subprocess runner
 # ────────────────────────────────────────────────────────────────────────────
-def run_scraper(script_name: str, timeout: int = 300) -> Dict[str, Any]:
+def run_scraper(script_name: str, timeout: int = 300, extra_args: Optional[List[str]] = None) -> Dict[str, Any]:
     """
     Run a scraper script via subprocess. Captures stdout/stderr.
 
@@ -154,6 +151,9 @@ def run_scraper(script_name: str, timeout: int = 300) -> Dict[str, Any]:
     (e.g. crypto_fetcher.py's sys.exit(1) when all sources fail) is captured
     as `success=False` instead of raising CalledProcessError. The orchestrator
     then correctly counts this as a failure in the summary and exits 1 too.
+
+    Task BRAVO-GULF-REST: extra_args lets SCRAPERS entries pass per-market args
+    (e.g. ['--market', 'saudi'] for tradingview_rest.py).
 
     Returns: dict with success, returncode, runtime_sec, stdout_tail, stderr_tail.
     """
@@ -171,8 +171,9 @@ def run_scraper(script_name: str, timeout: int = 300) -> Dict[str, Any]:
         # check=False is explicit — a non-zero exit code is a *failure* of the
         # scraper, not an exception in the orchestrator. We surface it as
         # success=False so the summary accurately reflects failures.
+        cmd = [python_bin, str(script_path)] + (extra_args or [])
         result = subprocess.run(
-            [python_bin, str(script_path)],
+            cmd,
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -242,7 +243,7 @@ def run_market(market: str, dry_run: bool = False) -> Dict[str, Any]:
         return result
 
     # Primary
-    primary = run_scraper(cfg['primary'], timeout=cfg.get('timeout', 300))
+    primary = run_scraper(cfg['primary'], timeout=cfg.get('timeout', 300), extra_args=cfg.get('args'))
     result['primary_result'] = primary
 
     if primary['success']:
