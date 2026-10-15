@@ -38,7 +38,7 @@
  *   §8  Prediction History (table from predictions.db — Rule 67 accuracy gating)
  *   §9  Recommendation (signal + entry zone + target + stop + R:R + position size)
  *   §10 52-Week Analysis (visual bar showing current position)
- *   §11 Flow + Explosive (graceful degrade — may show t('specialist.k_146'))
+ *   §11 Flow + Explosive (graceful degrade — may show "بيانات التدفق متاحة عند...")
  *   §12 Comprehensive Analysis (maestro/hunter/board/news — graceful degrade)
  *   §13 Position Sizing Calculator (interactive — capital × risk% / per-share risk)
  *   §14 Price Levels Ladder (52w high → resistance → current → support → 52w low)
@@ -75,13 +75,11 @@ import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
-// قبل كده: كان فيه labels t('specialist.k_147') بـ thresholds 1.2/0.8
+// قبل كده: كان فيه labels "ضغط شرائي قوي/ضغط بيعي قوي" بـ thresholds 1.2/0.8
 // غير موجودة في canonical → نتائج متضاربة مع الرادار + تفاصيل السهم.
 // الحل: استيراد classifyAccumulation من canonical-signal.ts
 import { classifyAccumulation } from '@/lib/canonical-signal';
 import { StockPublisher } from '@/modules/publishing/components/StockPublisher';
-import { StockSearchSelector } from '@/components/shared/StockSearchSelector';
-import { useTranslation } from '@/lib/i18n-context';
 
 // ============================================================================
 // TYPES — Rule 67: every field optional because engines may fail independently.
@@ -375,31 +373,31 @@ function safeStr(v: unknown): string | null {
 
 function fmtNum(v: unknown, digits = 2): string {
   const n = safeNum(v);
-  if (n == null || !Number.isFinite(n)) return '—';
+  if (n == null) return '—';
   return n.toFixed(digits);
 }
 
 function fmtPct(v: unknown, digits = 1): string {
   const n = safeNum(v);
-  if (n == null || !Number.isFinite(n)) return '—';
+  if (n == null) return '—';
   return `${n.toFixed(digits)}%`;
 }
 
 function fmtInt(v: unknown): string {
   const n = safeNum(v);
-  if (n == null || !Number.isFinite(n)) return '—';
+  if (n == null) return '—';
   return Math.round(n).toLocaleString('en-US');
 }
 
 // Compact volume/money formatter: 1.2K / 3.4M / 5.6B (Rule 67 — real number, no fabrication).
 function fmtCompact(v: unknown, suffix = ''): string {
   const n = safeNum(v);
-  if (n == null || !Number.isFinite(n)) return '—';
+  if (n == null) return '—';
   const abs = Math.abs(n);
   if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B${suffix}`;
   if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M${suffix}`;
   if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}K${suffix}`;
-  return `${n.toFixed(2)}${suffix}`;
+  return `${(n ?? 0).toFixed(2)}${suffix}`;
 }
 
 // ============================================================================
@@ -551,52 +549,19 @@ function CandlestickChart({
   resistance,
   ma50,
   ma200,
-  ticker,
-  market = 'EGX',
 }: {
   prices: PriceRow[];
   support?: number | null;
   resistance?: number | null;
   ma50?: number | null;
   ma200?: number | null;
-  ticker?: string;
-  market?: string;
-}) {  const t = useTranslation();
-
-  // CHART-REBUILD-FIX (2026-10-10): استبدال الـ SVG اليدوي البدائي بـ TradingView widget.
-  // قبل كده: handmade SVG بياخد آخر 30 شمعة + ينهار لو prices فاضية = خط أفقي مسطح.
-  // دلوقتي: TradingView widget بيجيب شموع حية + volume + support/resistance تلقائياً.
-  const [chartMode, setChartMode] = useState<'tradingview' | 'local'>('tradingview');
+}) {
   const slice = useMemo(() => prices.slice(-30), [prices]);
-
-  // TradingView symbol mapping per market (مش hardcoded EGX)
-  const tvSymbol = useMemo(() => {
-    const tk = (ticker || '').trim().toUpperCase();
-    if (!tk) return '';
-    const m = (market || 'EGX').toUpperCase();
-    const prefixMap: Record<string, string> = {
-      EGX: 'EGX',
-      TADAWUL: 'TADAWUL',
-      KSA: 'TADAWUL',
-      KSE: 'KSE',
-      QSE: 'QSE',
-      US: '',
-      CRYPTO: '',
-      DFM: 'DFM',
-    };
-    const p = prefixMap[m];
-    if (m === 'CRYPTO') return `${tk}USD`;
-    return p ? `${p}:${tk}` : tk;
-  }, [ticker, market]);
-
-  const tvSrc = tvSymbol
-    ? `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol)}&interval=D&theme=dark&style=1&timezone=Africa%2FCairo&locale=ar_AE&enable_publishing=false&allow_symbol_change=1&save_image=1&hide_side_toolbar=0&utm_source=invist.m2y.net`
-    : '';
 
   if (!slice || slice.length === 0) {
     return (
-      <SectionCard icon={<BarChart3 className="w-4 h-4" />} title={t('specialist.attr_001')} accent="slate">
-        <EmptyState msg={t('specialist.attr_002')} />
+      <SectionCard icon={<BarChart3 className="w-4 h-4" />} title="شارت الشموع اليابانية (30 يوم)" accent="slate">
+        <EmptyState msg="لا توجد بيانات تاريخية كافية للرسم البياني" />
       </SectionCard>
     );
   }
@@ -629,8 +594,8 @@ function CandlestickChart({
 
   if (priceValues.length === 0) {
     return (
-      <SectionCard icon={<BarChart3 className="w-4 h-4" />} title={t('specialist.attr_001')} accent="slate">
-        <EmptyState msg={t('specialist.attr_003')} />
+      <SectionCard icon={<BarChart3 className="w-4 h-4" />} title="شارت الشموع اليابانية (30 يوم)" accent="slate">
+        <EmptyState msg="بيانات الأسعار غير متاحة" />
       </SectionCard>
     );
   }
@@ -658,8 +623,8 @@ function CandlestickChart({
   return (
     <SectionCard
       icon={<BarChart3 className="w-4 h-4" />}
-      title={t('specialist.attr_004')}
-      description={`مصدر البيانات: TradingView widget (حي) + /api/maker-radar/stock?prices — ${slice.length} شمعة كـ fallback محلي (Rule 67)`}
+      title="شارت الشموع اليابانية (آخر 30 جلسة)"
+      description={`مصدر البيانات: /api/maker-radar/stock?prices — ${slice.length} شمعة من stocks.db (Rule 67)`}
       accent="slate"
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -681,51 +646,19 @@ function CandlestickChart({
             </Badge>
           )}
         </div>
-        <div className="flex gap-2 items-center">
-          {/* CHART-REBUILD-FIX: زر تبديل بين TradingView و الشارت المحلي */}
-          {tvSrc && (
-            <div className="flex gap-1 p-0.5 bg-muted rounded-md">
-              <Button
-                size="sm"
-                variant={chartMode === 'tradingview' ? 'default' : 'ghost'}
-                className="h-6 px-2 text-[10px]"
-                onClick={() => setChartMode('tradingview')}
-              >
-                TradingView
-              </Button>
-              <Button
-                size="sm"
-                variant={chartMode === 'local' ? 'default' : 'ghost'}
-                className="h-6 px-2 text-[10px]"
-                onClick={() => setChartMode('local')}
-              >{t('specialist.k_085')}</Button>
-            </div>
-          )}
-          <div className="flex gap-4 text-xs">
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-emerald-500 rounded-sm" />
-              <span className="text-muted-foreground">{t('specialist.k_086')}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-red-500 rounded-sm" />
-              <span className="text-muted-foreground">{t('specialist.k_087')}</span>
-            </span>
-          </div>
+        <div className="flex gap-4 text-xs">
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-emerald-500 rounded-sm" />
+            <span className="text-muted-foreground">صاعد</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-red-500 rounded-sm" />
+            <span className="text-muted-foreground">هابط</span>
+          </span>
         </div>
       </div>
 
-      {/* CHART-REBUILD-FIX: TradingView widget — شموع حية + volume + تفاعل كامل */}
-      {chartMode === 'tradingview' && tvSrc ? (
-        <div className="w-full h-[500px] rounded-lg overflow-hidden border border-border bg-slate-900">
-          <iframe
-            src={tvSrc}
-            className="w-full h-full border-0"
-            title={`TradingView ${ticker || ''}`}
-            allowFullScreen
-          />
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
+      <div className="overflow-x-auto">
         <svg
           width="100%"
           viewBox={`0 0 ${W} ${H}`}
@@ -913,7 +846,6 @@ function CandlestickChart({
           })}
         </svg>
       </div>
-      )}
     </SectionCard>
   );
 }
@@ -933,8 +865,7 @@ function LiquidityFootprintSection({
   canonicalAccumulation?: string | null;
   // canonical.money_flow from the unified API — used for the flow-state display.
   canonicalMoneyFlow?: string | null;
-}) {  const t = useTranslation();
-
+}) {
   if (!data || !data.success) return null;
 
   const poc = safeNum(data.poc_price);
@@ -970,23 +901,25 @@ function LiquidityFootprintSection({
   return (
     <SectionCard
       icon={<Droplets className="w-4 h-4" />}
-      title={t('specialist.attr_005')}
+      title="بصمة السيولة (Liquidity Footprint)"
       description={`من /api/maker-radar/footprint?ticker=${data.ticker ?? ''}&days=30 — تحليل توزيع السيولة على ${levels.length} مستوى سعر`}
       accent="emerald"
     >
       {/* Top: POC + VAH + VAL + value area % */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <PriceTile label={t('specialist.attr_006')} value={fmtNum(poc)} color="text-amber-600" sub={t('specialist.attr_007')} />
-        <PriceTile label={t('specialist.attr_008')} value={fmtNum(vah)} color="text-emerald-600" />
-        <PriceTile label={t('specialist.attr_009')} value={fmtNum(val)} color="text-red-600" />
-        <PriceTile label={t('specialist.attr_010')} value={fmtPct(vaPct)} color="text-slate-600 dark:text-slate-300" sub={t('specialist.attr_011')} />
+        <PriceTile label="POC (نقطة التحكم)" value={fmtNum(poc)} color="text-amber-600" sub="أعلى سيولة" />
+        <PriceTile label="VAH (قمة منطقة القيمة)" value={fmtNum(vah)} color="text-emerald-600" />
+        <PriceTile label="VAL (قاع منطقة القيمة)" value={fmtNum(val)} color="text-red-600" />
+        <PriceTile label="نسبة منطقة القيمة" value={fmtPct(vaPct)} color="text-slate-600 dark:text-slate-300" sub="70% من السيولة" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Buy vs Sell visual bar */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <p className="text-xs font-semibold mb-2 text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />{t('specialist.k_088')}</p>
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+            توزيع التدفق: شراء vs بيع
+          </p>
           <div className="flex h-6 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
             <div
               className="bg-emerald-500 flex items-center justify-center text-[10px] text-white font-bold"
@@ -1002,10 +935,10 @@ function LiquidityFootprintSection({
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-            <MetricRow label={t('specialist.attr_012')} value={fmtCompact(buyVol)} valueClass="text-emerald-600" />
-            <MetricRow label={t('specialist.attr_013')} value={fmtCompact(sellVol)} valueClass="text-red-600" />
+            <MetricRow label="حجم الشراء" value={fmtCompact(buyVol)} valueClass="text-emerald-600" />
+            <MetricRow label="حجم البيع" value={fmtCompact(sellVol)} valueClass="text-red-600" />
             <MetricRow
-              label={t('specialist.attr_014')}
+              label="الفرق (Delta)"
               value={fmtCompact(delta)}
               valueClass={delta != null && delta >= 0 ? 'text-emerald-600' : 'text-red-600'}
             />
@@ -1015,19 +948,21 @@ function LiquidityFootprintSection({
         {/* Ratio gauge */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <p className="text-xs font-semibold mb-2 text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-            <Gauge className="w-3.5 h-3.5 text-amber-600" />{t('specialist.k_089')}</p>
+            <Gauge className="w-3.5 h-3.5 text-amber-600" />
+            نسبة الشراء/البيع
+          </p>
           <div className="text-center">
             <p className={`text-4xl font-bold ${ratioColor}`}>{ratio != null ? ratio.toFixed(2) : '—'}</p>
             <p className="text-xs text-muted-foreground mt-1">
               {/* ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ─────────── */}
-              {/* قبل كده: كان labels t('specialist.k_147') بـ thresholds 1.2/0.8 */}
+              {/* قبل كده: كان labels "ضغط شرائي قوي/ضغط بيعي قوي" بـ thresholds 1.2/0.8 */}
               {/* الحل: نحسب buy_pct من buyVol/sellVol ونستخدم canonical classifyAccumulation */}
               {/* UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — canonical.accumulation
                   from unified API takes precedence over locally-derived label. */}
               {canonicalAccumulation
-                ? (canonicalAccumulation.includes(t('specialist.k_148'))
+                ? (canonicalAccumulation.includes('تجميع')
                     ? `✓ ${canonicalAccumulation}`
-                    : canonicalAccumulation.includes(t('specialist.k_149'))
+                    : canonicalAccumulation.includes('تصريف')
                       ? `⚠ ${canonicalAccumulation}`
                       : canonicalAccumulation)
                 : ratio == null ? '—'
@@ -1036,8 +971,8 @@ function LiquidityFootprintSection({
                       const sV = Number(sellVol || 0);
                       const buyPct = (bV + sV) > 0 ? (bV / (bV + sV)) * 100 : null;
                       const label = classifyAccumulation(buyPct);
-                      const isAccum = label.includes(t('specialist.k_148'));
-                      const isDist = label.includes(t('specialist.k_149'));
+                      const isAccum = label.includes('تجميع');
+                      const isDist = label.includes('تصريف');
                       return isAccum ? `✓ ${label}` : isDist ? `⚠ ${label}` : label;
                     })()
               }
@@ -1050,7 +985,7 @@ function LiquidityFootprintSection({
             )}
           </div>
           <div className="mt-2">
-            <MetricRow label={t('specialist.attr_015')} value={fmtCompact(totalVol)} valueClass="text-amber-600" />
+            <MetricRow label="إجمالي السيولة" value={fmtCompact(totalVol)} valueClass="text-amber-600" />
           </div>
         </div>
       </div>
@@ -1122,12 +1057,8 @@ function LiquidityFootprintSection({
 // §5 — Technical Indicators Panel (RSI + MA50 + MA200 + Support/Resistance + Signal)
 // ============================================================================
 
-function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = useTranslation();
-
-  // CHART-REBUILD-FIX (2026-10-10): RSI bug fix — كان بيقرأ 100.0 لو المعادلة المحلية فاضية.
-  // الحل: clamp RSI لـ [0, 100] + لو >{t('specialist.k_090')}<0 → null (مش fabrication).
-  const rawRsi = safeNum(info.rsi);
-  const rsi = rawRsi != null && rawRsi >= 0 && rawRsi <= 100 ? rawRsi : null;
+function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
+  const rsi = safeNum(info.rsi);
   const ma50 = safeNum(info.ma_50);
   const ma200 = safeNum(info.ma_200);
   const support = safeNum(info.support);
@@ -1141,24 +1072,24 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
   }
 
   // RSI interpretation: <30 oversold (emerald), >70 overbought (red), 30-70 neutral.
-  const rsiInterp = rsi == null ? { txt: t('specialist.k_150'), cls: 'text-muted-foreground' }
-    : rsi < 30 ? { txt: t('specialist.k_151'), cls: 'text-emerald-600' }
-    : rsi > 70 ? { txt: t('specialist.k_152'), cls: 'text-red-600' }
-    : rsi >= 45 && rsi <= 55 ? { txt: t('specialist.k_153'), cls: 'text-slate-500 dark:text-slate-400' }
-    : rsi < 45 ? { txt: t('specialist.k_154'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_155'), cls: 'text-amber-600' };
+  const rsiInterp = rsi == null ? { txt: '—', cls: 'text-muted-foreground' }
+    : rsi < 30 ? { txt: 'تشبع بيعي — فرصة شراء محتملة', cls: 'text-emerald-600' }
+    : rsi > 70 ? { txt: 'تشبع شرائي — فرصة بيع محتملة', cls: 'text-red-600' }
+    : rsi >= 45 && rsi <= 55 ? { txt: 'محايد', cls: 'text-slate-500 dark:text-slate-400' }
+    : rsi < 45 ? { txt: 'ضعيف نسبياً', cls: 'text-amber-600' }
+    : { txt: 'قوي نسبياً', cls: 'text-amber-600' };
 
   // MA position interpretation
   const ma50Interp = current != null && ma50 != null
     ? current > ma50
-      ? { txt: t('specialist.k_156'), cls: 'text-emerald-600' }
-      : { txt: t('specialist.k_157'), cls: 'text-red-600' }
+      ? { txt: 'السعر فوق MA50 — زخم صاعد', cls: 'text-emerald-600' }
+      : { txt: 'السعر تحت MA50 — زخم هابط', cls: 'text-red-600' }
     : { txt: '—', cls: 'text-muted-foreground' };
 
   const ma200Interp = current != null && ma200 != null
     ? current > ma200
-      ? { txt: t('specialist.k_158'), cls: 'text-emerald-600' }
-      : { txt: t('specialist.k_159'), cls: 'text-red-600' }
+      ? { txt: 'السعر فوق MA200 — اتجاه صاعد طويل الأمد', cls: 'text-emerald-600' }
+      : { txt: 'السعر تحت MA200 — اتجاه هابط طويل الأمد', cls: 'text-red-600' }
     : { txt: '—', cls: 'text-muted-foreground' };
 
   // Distance from support / resistance
@@ -1171,18 +1102,18 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
   // بدل thresholds 70/50/30 المحلية المتضاربة.
   const sigNum = safeNum(info.signal);
   const sigInterp = sigNum == null ? { txt: '—', cls: 'text-muted-foreground' }
-    : sigNum >= 78 ? { txt: t('specialist.k_160'), cls: 'text-emerald-600' }
-    : sigNum >= 65 ? { txt: t('specialist.k_119'), cls: 'text-emerald-600' }
-    : sigNum >= 55 ? { txt: t('specialist.k_148'), cls: 'text-teal-600' }
-    : sigNum >= 40 ? { txt: t('specialist.k_161'), cls: 'text-amber-600' }
-    : sigNum >= 25 ? { txt: t('specialist.k_162'), cls: 'text-orange-600' }
-    : { txt: t('specialist.k_120'), cls: 'text-red-600' };
+    : sigNum >= 78 ? { txt: 'شراء قوي', cls: 'text-emerald-600' }
+    : sigNum >= 65 ? { txt: 'شراء', cls: 'text-emerald-600' }
+    : sigNum >= 55 ? { txt: 'تجميع', cls: 'text-teal-600' }
+    : sigNum >= 40 ? { txt: 'انتظار', cls: 'text-amber-600' }
+    : sigNum >= 25 ? { txt: 'تقليل', cls: 'text-orange-600' }
+    : { txt: 'بيع', cls: 'text-red-600' };
 
   return (
     <SectionCard
       icon={<Gauge className="w-4 h-4" />}
-      title={t('specialist.attr_016')}
-      description={t('specialist.attr_017')}
+      title="المؤشرات الفنية — لوحة شاملة"
+      description="من stock_info: RSI + MA50 + MA200 + Support + Resistance + Signal"
       accent="emerald"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1205,16 +1136,16 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
             )}
           </div>
           <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-            <span>{t('specialist.k_091')}</span>
-            <span>{t('specialist.k_092')}</span>
-            <span>{t('specialist.k_093')}</span>
+            <span>0 تشبع بيعي</span>
+            <span>50 محايد</span>
+            <span>100 تشبع شرائي</span>
           </div>
           <p className={`text-xs mt-2 ${rsiInterp.cls}`}>{rsiInterp.txt}</p>
         </div>
 
         {/* MA50 */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-          <h4 className="font-semibold text-sm mb-2">{t('specialist.k_094')}</h4>
+          <h4 className="font-semibold text-sm mb-2">MA50 (متوسط 50 يوم)</h4>
           <p className="text-3xl font-bold text-amber-600">{fmtNum(ma50)}</p>
           <p className={`text-xs mt-2 ${ma50Interp.cls}`}>{ma50Interp.txt}</p>
           {current != null && ma50 != null && (
@@ -1226,7 +1157,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
 
         {/* MA200 */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-          <h4 className="font-semibold text-sm mb-2">{t('specialist.k_095')}</h4>
+          <h4 className="font-semibold text-sm mb-2">MA200 (متوسط 200 يوم)</h4>
           <p className="text-3xl font-bold text-slate-600 dark:text-slate-300">{fmtNum(ma200)}</p>
           <p className={`text-xs mt-2 ${ma200Interp.cls}`}>{ma200Interp.txt}</p>
           {current != null && ma200 != null && (
@@ -1239,7 +1170,8 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
         {/* Support */}
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-900/60">
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-emerald-600" />{t('specialist.k_096')}</h4>
+            <Shield className="w-4 h-4 text-emerald-600" /> الدعم
+          </h4>
           <p className="text-3xl font-bold text-emerald-600">{fmtNum(support)}</p>
           <p className="text-xs text-muted-foreground mt-2">
             المسافة من السعر الحالي: {distFromSupport != null ? `${distFromSupport.toFixed(2)}%` : '—'}
@@ -1249,7 +1181,8 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
         {/* Resistance */}
         <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/60">
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-            <Target className="w-4 h-4 text-red-600" />{t('specialist.k_097')}</h4>
+            <Target className="w-4 h-4 text-red-600" /> المقاومة
+          </h4>
           <p className="text-3xl font-bold text-red-600">{fmtNum(resistance)}</p>
           <p className="text-xs text-muted-foreground mt-2">
             المسافة من السعر الحالي: {distFromResistance != null ? `${distFromResistance.toFixed(2)}%` : '—'}
@@ -1259,7 +1192,8 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
         {/* Signal */}
         <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900/60">
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-amber-600" />{t('specialist.k_098')}</h4>
+            <Activity className="w-4 h-4 text-amber-600" /> الإشارة
+          </h4>
           <p className="text-3xl font-bold text-amber-600">
             {signal != null ? (typeof signal === 'number' ? signal.toFixed(0) : signal) : '—'}
           </p>
@@ -1275,8 +1209,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {  const t = 
 // §6 — Fundamentals (from stock_info — 60 fields)
 // ============================================================================
 
-function FundamentalsSection({ info }: { info: StockInfo }) {  const t = useTranslation();
-
+function FundamentalsSection({ info }: { info: StockInfo }) {
   const pe = safeNum(info.pe_ratio);
   const pb = safeNum(info.pb_ratio);
   const ps = safeNum(info.ps_ratio);
@@ -1299,108 +1232,108 @@ function FundamentalsSection({ info }: { info: StockInfo }) {  const t = useTran
 
   // Interpretation helpers — high/low/normal based on standard thresholds.
   const peInterp = pe == null ? null
-    : pe < 0 ? { txt: t('specialist.k_163'), cls: 'text-red-600' }
-    : pe < 8 ? { txt: t('specialist.k_164'), cls: 'text-emerald-600' }
-    : pe < 15 ? { txt: t('specialist.k_165'), cls: 'text-emerald-600' }
-    : pe < 25 ? { txt: t('specialist.k_166'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_167'), cls: 'text-red-600' };
+    : pe < 0 ? { txt: 'خسارة (تعادل سالب)', cls: 'text-red-600' }
+    : pe < 8 ? { txt: 'رخيص جداً', cls: 'text-emerald-600' }
+    : pe < 15 ? { txt: 'تقييم عادل', cls: 'text-emerald-600' }
+    : pe < 25 ? { txt: 'مرتفع نسبياً', cls: 'text-amber-600' }
+    : { txt: 'مرتفع جداً', cls: 'text-red-600' };
 
   const pbInterp = pb == null ? null
-    : pb < 0 ? { txt: t('specialist.k_168'), cls: 'text-red-600' }
-    : pb < 1 ? { txt: t('specialist.k_169'), cls: 'text-emerald-600' }
-    : pb < 3 ? { txt: t('specialist.k_165'), cls: 'text-emerald-600' }
-    : pb < 6 ? { txt: t('specialist.k_166'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_167'), cls: 'text-red-600' };
+    : pb < 0 ? { txt: 'قيمة دفترية سالبة', cls: 'text-red-600' }
+    : pb < 1 ? { txt: 'أقل من القيمة الدفترية', cls: 'text-emerald-600' }
+    : pb < 3 ? { txt: 'تقييم عادل', cls: 'text-emerald-600' }
+    : pb < 6 ? { txt: 'مرتفع نسبياً', cls: 'text-amber-600' }
+    : { txt: 'مرتفع جداً', cls: 'text-red-600' };
 
   const roeInterp = roe == null ? null
-    : roe < 0 ? { txt: t('specialist.k_170'), cls: 'text-red-600' }
-    : roe >= 20 ? { txt: t('specialist.k_171'), cls: 'text-emerald-600' }
-    : roe >= 12 ? { txt: t('specialist.k_172'), cls: 'text-emerald-600' }
-    : roe >= 5 ? { txt: t('specialist.k_173'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_174'), cls: 'text-red-600' };
+    : roe < 0 ? { txt: 'خسارة', cls: 'text-red-600' }
+    : roe >= 20 ? { txt: 'ممتاز', cls: 'text-emerald-600' }
+    : roe >= 12 ? { txt: 'جيد', cls: 'text-emerald-600' }
+    : roe >= 5 ? { txt: 'متوسط', cls: 'text-amber-600' }
+    : { txt: 'ضعيف', cls: 'text-red-600' };
 
   const debtInterp = debtToEquity == null ? null
-    : debtToEquity < 0.3 ? { txt: t('specialist.k_175'), cls: 'text-emerald-600' }
-    : debtToEquity < 1 ? { txt: t('specialist.k_176'), cls: 'text-emerald-600' }
-    : debtToEquity < 2 ? { txt: t('specialist.k_177'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_178'), cls: 'text-red-600' };
+    : debtToEquity < 0.3 ? { txt: 'ديون منخفضة', cls: 'text-emerald-600' }
+    : debtToEquity < 1 ? { txt: 'ديون معتدلة', cls: 'text-emerald-600' }
+    : debtToEquity < 2 ? { txt: 'ديون مرتفعة', cls: 'text-amber-600' }
+    : { txt: 'ديون عالية جداً', cls: 'text-red-600' };
 
   const marginInterp = profitMargin == null ? null
-    : profitMargin >= 15 ? { txt: t('specialist.k_171'), cls: 'text-emerald-600' }
-    : profitMargin >= 5 ? { txt: t('specialist.k_172'), cls: 'text-emerald-600' }
-    : profitMargin >= 0 ? { txt: t('specialist.k_179'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_170'), cls: 'text-red-600' };
+    : profitMargin >= 15 ? { txt: 'ممتاز', cls: 'text-emerald-600' }
+    : profitMargin >= 5 ? { txt: 'جيد', cls: 'text-emerald-600' }
+    : profitMargin >= 0 ? { txt: 'منخفض', cls: 'text-amber-600' }
+    : { txt: 'خسارة', cls: 'text-red-600' };
 
   const divInterp = divYield == null ? null
-    : divYield >= 5 ? { txt: t('specialist.k_180'), cls: 'text-emerald-600' }
-    : divYield > 0 ? { txt: t('specialist.k_181'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_182'), cls: 'text-slate-600' };
+    : divYield >= 5 ? { txt: 'عائد مرتفع', cls: 'text-emerald-600' }
+    : divYield > 0 ? { txt: 'عائد معتدل', cls: 'text-amber-600' }
+    : { txt: 'لا يوزع', cls: 'text-slate-600' };
 
   return (
     <SectionCard
       icon={<Banknote className="w-4 h-4" />}
-      title={t('specialist.attr_018')}
-      description={t('specialist.attr_019')}
+      title="البيانات المالية (Fundamentals)"
+      description="من stock_info: P/E + P/B + EPS + ROE + ROA + Debt/Equity + Dividend Yield + Profit Margin + Free Float + Market Cap"
       accent="emerald"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* P/E */}
-        <FundamentalCard label={t('specialist.attr_020')} value={pe != null ? pe.toFixed(2) : '—'} interp={peInterp} />
+        <FundamentalCard label="P/E (مكرر الربحية)" value={pe != null ? pe.toFixed(2) : '—'} interp={peInterp} />
         {/* P/B */}
-        <FundamentalCard label={t('specialist.attr_021')} value={pb != null ? pb.toFixed(2) : '—'} interp={pbInterp} />
+        <FundamentalCard label="P/B (مكرر القيمة الدفترية)" value={pb != null ? pb.toFixed(2) : '—'} interp={pbInterp} />
         {/* P/S */}
         <FundamentalCard
-          label={t('specialist.attr_022')}
+          label="P/S (مكرر المبيعات)"
           value={ps != null ? ps.toFixed(2) : '—'}
           interp={null}
         />
         {/* EPS */}
         <FundamentalCard
-          label={t('specialist.attr_023')}
+          label="EPS (ربحية السهم) ج.م"
           value={eps != null ? eps.toFixed(3) : '—'}
-          interp={eps == null ? null : { txt: eps > 0 ? t('specialist.k_183') : t('specialist.k_184'), cls: eps > 0 ? 'text-emerald-600' : 'text-red-600' }}
+          interp={eps == null ? null : { txt: eps > 0 ? 'موجب' : 'سالب', cls: eps > 0 ? 'text-emerald-600' : 'text-red-600' }}
         />
         {/* ROE */}
-        <FundamentalCard label={t('specialist.attr_024')} value={roe != null ? `${roe.toFixed(2)}%` : '—'} interp={roeInterp} />
+        <FundamentalCard label="ROE (العائد على حقوق الملكية)" value={roe != null ? `${roe.toFixed(2)}%` : '—'} interp={roeInterp} />
         {/* ROA */}
         <FundamentalCard
-          label={t('specialist.attr_025')}
+          label="ROA (العائد على الأصول)"
           value={roa != null ? `${roa.toFixed(2)}%` : '—'}
-          interp={roa == null ? null : { txt: roa >= 5 ? t('specialist.k_172') : t('specialist.k_174'), cls: roa >= 5 ? 'text-emerald-600' : 'text-amber-600' }}
+          interp={roa == null ? null : { txt: roa >= 5 ? 'جيد' : 'ضعيف', cls: roa >= 5 ? 'text-emerald-600' : 'text-amber-600' }}
         />
         {/* Debt/Equity */}
-        <FundamentalCard label={t('specialist.attr_026')} value={debtToEquity != null ? debtToEquity.toFixed(2) : '—'} interp={debtInterp} />
+        <FundamentalCard label="ديون / حقوق ملكية" value={debtToEquity != null ? debtToEquity.toFixed(2) : '—'} interp={debtInterp} />
         {/* Dividend Yield */}
-        <FundamentalCard label={t('specialist.attr_027')} value={divYield != null ? `${divYield.toFixed(2)}%` : '—'} interp={divInterp} />
+        <FundamentalCard label="عائد التوزيعات" value={divYield != null ? `${divYield.toFixed(2)}%` : '—'} interp={divInterp} />
         {/* Profit Margin */}
-        <FundamentalCard label={t('specialist.attr_028')} value={profitMargin != null ? `${profitMargin.toFixed(2)}%` : '—'} interp={marginInterp} />
+        <FundamentalCard label="هامش الربح" value={profitMargin != null ? `${profitMargin.toFixed(2)}%` : '—'} interp={marginInterp} />
         {/* Free Float */}
         <FundamentalCard
-          label={t('specialist.attr_029')}
+          label="Free Float (تداول حر)"
           value={freeFloat != null ? `${freeFloat.toFixed(1)}%` : '—'}
-          interp={freeFloat == null ? null : { txt: freeFloat >= 25 ? t('specialist.k_185') : t('specialist.k_186'), cls: freeFloat >= 25 ? 'text-emerald-600' : 'text-amber-600' }}
+          interp={freeFloat == null ? null : { txt: freeFloat >= 25 ? 'سيولة جيدة' : 'سيولة محدودة', cls: freeFloat >= 25 ? 'text-emerald-600' : 'text-amber-600' }}
         />
         {/* Market Cap */}
         <FundamentalCard
-          label={t('specialist.attr_030')}
-          value={marketCap != null && marketCap > 0 ? fmtCompact(marketCap, t('specialist.k_187')) : '—'}
+          label="القيمة السوقية"
+          value={marketCap != null && marketCap > 0 ? fmtCompact(marketCap, ' ج.م') : '—'}
           interp={null}
         />
         {/* DPS TTM */}
         <FundamentalCard
-          label={t('specialist.attr_031')}
+          label="توزيعات السهم (TTM)"
           value={dpsTtm != null ? `${dpsTtm.toFixed(3)} ج.م` : '—'}
           interp={null}
         />
         {/* Current Ratio */}
         <FundamentalCard
-          label={t('specialist.attr_032')}
+          label="نسبة السيولة (Current Ratio)"
           value={currentRatio != null ? currentRatio.toFixed(2) : '—'}
-          interp={currentRatio == null ? null : { txt: currentRatio >= 1.5 ? t('specialist.k_188') : currentRatio >= 1 ? t('specialist.k_189') : t('specialist.k_190'), cls: currentRatio >= 1 ? 'text-emerald-600' : 'text-red-600' }}
+          interp={currentRatio == null ? null : { txt: currentRatio >= 1.5 ? 'سائلة' : currentRatio >= 1 ? 'مقبولة' : 'ضعيفة', cls: currentRatio >= 1 ? 'text-emerald-600' : 'text-red-600' }}
         />
         {/* Book Value */}
         <FundamentalCard
-          label={t('specialist.attr_033')}
+          label="القيمة الدفترية للسهم"
           value={fmtNum(bookValue)}
           interp={null}
         />
@@ -1433,8 +1366,7 @@ function FundamentalCard({
 // §7 — Momentum Stats (from radarData.stats)
 // ============================================================================
 
-function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info: StockInfo }) {  const t = useTranslation();
-
+function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info: StockInfo }) {
   if (!stats) return null;
 
   const roc10d = safeNum(stats.roc10d);
@@ -1458,42 +1390,42 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
   return (
     <SectionCard
       icon={<Activity className="w-4 h-4" />}
-      title={t('specialist.attr_034')}
-      description={`من radarData.stats — مدى 20 يوم (${dataPoints != null ? `${dataPoints.toFixed(0)} نقطة بيانات` : t('specialist.k_191')})`}
+      title="مؤشرات الزخم (Momentum Stats)"
+      description={`من radarData.stats — مدى 20 يوم (${dataPoints != null ? `${dataPoints.toFixed(0)} نقطة بيانات` : 'بيانات محدودة'})`}
       accent="amber"
     >
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <PriceTile
-          label={t('specialist.attr_035')}
+          label="ROC 10 أيام (معدل التغير)"
           value={roc10d != null ? `${roc10d >= 0 ? '+' : ''}${roc10d.toFixed(2)}%` : '—'}
           color={roc10d == null ? 'text-slate-600 dark:text-slate-300' : roc10d >= 0 ? 'text-emerald-600' : 'text-red-600'}
-          sub={t('specialist.attr_036')}
+          sub="زخم 10 جلسات"
         />
-        <PriceTile label={t('specialist.attr_037')} value={fmtInt(avgVol20)} color="text-amber-600" />
+        <PriceTile label="متوسط حجم 20 يوم" value={fmtInt(avgVol20)} color="text-amber-600" />
         <PriceTile
-          label={t('specialist.attr_038')}
-          value={avgTurnover20 != null ? fmtCompact(avgTurnover20, t('specialist.k_187')) : '—'}
+          label="متوسط تداول 20 يوم"
+          value={avgTurnover20 != null ? fmtCompact(avgTurnover20, ' ج.م') : '—'}
           color="text-amber-700"
         />
         <PriceTile
-          label={t('specialist.attr_039')}
+          label="نسبة الحجم (يومي/20ي)"
           value={volRatio != null ? `${volRatio.toFixed(2)}x` : '—'}
           color={volRatio == null ? 'text-slate-600 dark:text-slate-300' : volRatio >= 1.5 ? 'text-emerald-600' : volRatio < 0.7 ? 'text-red-600' : 'text-amber-600'}
           sub={currentVol != null ? `اليوم: ${fmtCompact(currentVol)}` : undefined}
         />
-        <PriceTile label={t('specialist.attr_040')} value={fmtNum(max20)} color="text-emerald-600" />
-        <PriceTile label={t('specialist.attr_041')} value={fmtNum(min20)} color="text-red-600" />
+        <PriceTile label="أعلى 20 يوم" value={fmtNum(max20)} color="text-emerald-600" />
+        <PriceTile label="أدنى 20 يوم" value={fmtNum(min20)} color="text-red-600" />
         <PriceTile
-          label={t('specialist.attr_042')}
+          label="مدى 20 يوم %"
           value={range20Pct != null ? `${range20Pct.toFixed(2)}%` : '—'}
           color="text-amber-600"
           sub={max20 != null && min20 != null ? `(${min20.toFixed(2)} — ${max20.toFixed(2)})` : undefined}
         />
-        <PriceTile label={t('specialist.attr_043')} value={fmtNum(lastClose)} color="text-slate-700 dark:text-slate-200" />
+        <PriceTile label="آخر إغلاق" value={fmtNum(lastClose)} color="text-slate-700 dark:text-slate-200" />
       </div>
       {changePct != null && (
         <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{t('specialist.k_099')}</span>
+          <span className="text-xs text-muted-foreground">تغير آخر جلسة:</span>
           <span className={`text-sm font-bold ${changePct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
             {changePct >= 0 ? '+' : ''}{(changePct ?? 0).toFixed(2)}%
           </span>
@@ -1508,17 +1440,16 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
 // Rule 67: accuracy stat ONLY if ≥5 closed predictions.
 // ============================================================================
 
-function PredictionHistorySection({ data }: { data: PredictionsResponse | null }) {  const t = useTranslation();
-
+function PredictionHistorySection({ data }: { data: PredictionsResponse | null }) {
   if (!data || !data.success) {
     return (
       <SectionCard
         icon={<Trophy className="w-4 h-4" />}
-        title={t('specialist.attr_044')}
-        description={t('specialist.attr_045')}
+        title="سجل التوقعات لهذا السهم"
+        description="من /api/predictions?ticker=X — predictions.db مباشرة (Rule 67)"
         accent="amber"
       >
-        <EmptyState msg={t('specialist.attr_046')} />
+        <EmptyState msg="تعذّر تحميل سجل التوقعات — حاول مرة أخرى" />
       </SectionCard>
     );
   }
@@ -1528,11 +1459,11 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
     return (
       <SectionCard
         icon={<Trophy className="w-4 h-4" />}
-        title={t('specialist.attr_044')}
-        description={t('specialist.attr_045')}
+        title="سجل التوقعات لهذا السهم"
+        description="من /api/predictions?ticker=X — predictions.db مباشرة (Rule 67)"
         accent="amber"
       >
-        <EmptyState msg={t('specialist.attr_047')} />
+        <EmptyState msg="لا توجد توقعات سابقة لهذا السهم" />
       </SectionCard>
     );
   }
@@ -1546,14 +1477,16 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
   return (
     <SectionCard
       icon={<Trophy className="w-4 h-4" />}
-      title={t('specialist.attr_044')}
+      title="سجل التوقعات لهذا السهم"
       description={`من /api/predictions?ticker=${data.ticker ?? ''} — ${preds.length} توقع${closedCount > 0 ? ` (${closedCount} مغلق)` : ''}`}
       accent="amber"
     >
       {showAccuracy && (
         <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-lg">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">{t('specialist.k_100')}</p>
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+              دقة التوقعات المغلقة
+            </p>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{accuracy}%</p>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -1572,14 +1505,14 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b text-muted-foreground">
-              <th className="text-right p-2 font-medium">{t('specialist.k_101')}</th>
-              <th className="text-right p-2 font-medium">{t('specialist.k_098')}</th>
-              <th className="text-right p-2 font-medium">{t('specialist.k_102')}</th>
-              <th className="text-right p-2 font-medium">{t('specialist.k_103')}</th>
-              <th className="text-right p-2 font-medium">{t('specialist.k_104')}</th>
-              <th className="text-right p-2 font-medium">{t('specialist.k_105')}</th>
-              <th className="text-right p-2 font-medium">{t('specialist.k_106')}</th>
-              <th className="text-right p-2 font-medium">{t('specialist.k_107')}</th>
+              <th className="text-right p-2 font-medium">التاريخ</th>
+              <th className="text-right p-2 font-medium">الإشارة</th>
+              <th className="text-right p-2 font-medium">الدخول</th>
+              <th className="text-right p-2 font-medium">الهدف</th>
+              <th className="text-right p-2 font-medium">الوقف</th>
+              <th className="text-right p-2 font-medium">الحالة</th>
+              <th className="text-right p-2 font-medium">العائد %</th>
+              <th className="text-right p-2 font-medium">تحقق</th>
             </tr>
           </thead>
           <tbody>
@@ -1634,8 +1567,7 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
 // §9 — Recommendation (from stock_info.signal + support/resistance)
 // ============================================================================
 
-function RecommendationSection({ info }: { info: StockInfo }) {  const t = useTranslation();
-
+function RecommendationSection({ info }: { info: StockInfo }) {
   const current = safeNum(info.current_price);
   const support = safeNum(info.support);
   const resistance = safeNum(info.resistance);
@@ -1658,31 +1590,31 @@ function RecommendationSection({ info }: { info: StockInfo }) {  const t = useTr
 
   // UNIFY-FIX (Rule 73): توحيد thresholds مع canonical 78/65/55/40/25
   const sigInt = signal == null ? null
-    : signal >= 78 ? { txt: t('specialist.k_160'), cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
-    : signal >= 65 ? { txt: t('specialist.k_119'), cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
-    : signal >= 55 ? { txt: t('specialist.k_148'), cls: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' }
-    : signal >= 40 ? { txt: t('specialist.k_161'), cls: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' }
-    : signal >= 25 ? { txt: t('specialist.k_162'), cls: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' }
-    : { txt: t('specialist.k_120'), cls: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30' };
+    : signal >= 78 ? { txt: 'شراء قوي', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
+    : signal >= 65 ? { txt: 'شراء', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
+    : signal >= 55 ? { txt: 'تجميع', cls: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' }
+    : signal >= 40 ? { txt: 'انتظار', cls: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' }
+    : signal >= 25 ? { txt: 'تقليل', cls: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' }
+    : { txt: 'بيع', cls: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30' };
 
   const trendAr = trend == null ? null
-    : trend === t('specialist.k_086') || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
-    ? { txt: t('specialist.k_086'), cls: 'text-emerald-600' }
-    : trend === t('specialist.k_087') || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
-    ? { txt: t('specialist.k_087'), cls: 'text-red-600' }
+    : trend === 'صاعد' || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
+    ? { txt: 'صاعد', cls: 'text-emerald-600' }
+    : trend === 'هابط' || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
+    ? { txt: 'هابط', cls: 'text-red-600' }
     : { txt: trend, cls: 'text-slate-600 dark:text-slate-300' };
 
   return (
     <SectionCard
       icon={<Target className="w-4 h-4" />}
-      title={t('specialist.attr_048')}
-      description={t('specialist.attr_049')}
+      title="التوصية والأسعار المستهدفة"
+      description="من stock_info: signal + support + resistance + trend (Rule 67 — أرقام حقيقية فقط)"
       accent="amber"
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         {/* Entry zone */}
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg text-center">
-          <p className="text-xs text-muted-foreground">{t('specialist.k_108')}</p>
+          <p className="text-xs text-muted-foreground">منطقة الدخول</p>
           <p className="text-lg font-bold text-emerald-600 mt-1">
             {entryLow != null && entryHigh != null
               ? `${(entryLow ?? 0).toFixed(2)} — ${(entryHigh ?? 0).toFixed(2)}`
@@ -1691,17 +1623,17 @@ function RecommendationSection({ info }: { info: StockInfo }) {  const t = useTr
         </div>
         {/* Target = resistance */}
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg text-center">
-          <p className="text-xs text-muted-foreground">{t('specialist.k_109')}</p>
+          <p className="text-xs text-muted-foreground">الهدف (مقاومة)</p>
           <p className="text-lg font-bold text-emerald-700 mt-1">{fmtNum(resistance)}</p>
         </div>
         {/* Stop = support */}
         <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg text-center">
-          <p className="text-xs text-muted-foreground">{t('specialist.k_110')}</p>
+          <p className="text-xs text-muted-foreground">وقف الخسارة (دعم)</p>
           <p className="text-lg font-bold text-red-600 mt-1">{fmtNum(support)}</p>
         </div>
         {/* R:R */}
         <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center">
-          <p className="text-xs text-muted-foreground">{t('specialist.k_111')}</p>
+          <p className="text-xs text-muted-foreground">مخاطرة/عائد</p>
           <p className={`text-lg font-bold mt-1 ${rr == null ? 'text-slate-600 dark:text-slate-300' : rr >= 2 ? 'text-emerald-600' : rr >= 1 ? 'text-amber-600' : 'text-red-600'}`}>
             {rr != null ? `${rr.toFixed(2)}:1` : '—'}
           </p>
@@ -1711,7 +1643,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {  const t = useTr
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Signal interpretation */}
         <div className={`p-3 rounded-lg ${sigInt?.bg ?? 'bg-slate-50 dark:bg-slate-800/60'}`}>
-          <p className="text-xs text-muted-foreground mb-1">{t('specialist.k_098')}</p>
+          <p className="text-xs text-muted-foreground mb-1">الإشارة</p>
           <p className="text-sm font-semibold flex items-center gap-2">
             <span className={`text-lg ${sigInt?.cls ?? 'text-muted-foreground'}`}>
               {sigInt?.txt ?? '—'}
@@ -1726,7 +1658,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {  const t = useTr
         </div>
         {/* Trend */}
         <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
-          <p className="text-xs text-muted-foreground mb-1">{t('specialist.k_112')}</p>
+          <p className="text-xs text-muted-foreground mb-1">الاتجاه العام</p>
           <p className={`text-sm font-semibold ${trendAr?.cls ?? 'text-muted-foreground'}`}>
             {trendAr?.txt ?? '—'}
           </p>
@@ -1737,7 +1669,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {  const t = useTr
         <p className="text-xs text-muted-foreground mt-3 text-center">
           المعادلة: (المقاومة {fmtNum(resistance)} − السعر {fmtNum(current)}) ÷ (السعر {fmtNum(current)} − الدعم {fmtNum(support)}) = {(rr ?? 0).toFixed(2)}:1
           {' '}
-          {rr >= 2 ? t('specialist.k_192') : rr >= 1.5 ? t('specialist.k_193') : t('specialist.k_194')}
+          {rr >= 2 ? '✓ ممتازة' : rr >= 1.5 ? '✓ جيدة' : '⚠ راجع قاعدة 18 (1.8:1)'}
         </p>
       )}
     </SectionCard>
@@ -1748,8 +1680,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {  const t = useTr
 // §10 — 52-Week Analysis (visual bar)
 // ============================================================================
 
-function Week52AnalysisSection({ info }: { info: StockInfo }) {  const t = useTranslation();
-
+function Week52AnalysisSection({ info }: { info: StockInfo }) {
   const current = safeNum(info.current_price);
   const high52w = safeNum(info.high_52w);
   const low52w = safeNum(info.low_52w);
@@ -1767,29 +1698,29 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {  const t = useTr
 
   // Interpretation
   const interp = positionPct == null ? null
-    : positionPct >= 80 ? { txt: t('specialist.k_195'), cls: 'text-red-600' }
-    : positionPct >= 60 ? { txt: t('specialist.k_196'), cls: 'text-amber-600' }
-    : positionPct >= 40 ? { txt: t('specialist.k_197'), cls: 'text-slate-600 dark:text-slate-300' }
-    : positionPct >= 20 ? { txt: t('specialist.k_198'), cls: 'text-amber-600' }
-    : { txt: t('specialist.k_199'), cls: 'text-emerald-600' };
+    : positionPct >= 80 ? { txt: 'قريب من القمة', cls: 'text-red-600' }
+    : positionPct >= 60 ? { txt: 'في الثلث العلوي', cls: 'text-amber-600' }
+    : positionPct >= 40 ? { txt: 'في المنتصف', cls: 'text-slate-600 dark:text-slate-300' }
+    : positionPct >= 20 ? { txt: 'في الثلث السفلي', cls: 'text-amber-600' }
+    : { txt: 'قريب من القاع', cls: 'text-emerald-600' };
 
   return (
     <SectionCard
       icon={<Layers className="w-4 h-4" />}
-      title={t('specialist.attr_050')}
-      description={t('specialist.attr_051')}
+      title="تحليل 52 أسبوع"
+      description="موقع السعر الحالي بين أعلى وأدنى سعر في 52 أسبوع"
       accent="slate"
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-        <PriceTile label={t('specialist.attr_052')} value={fmtNum(high52w)} color="text-emerald-600" />
-        <PriceTile label={t('specialist.attr_053')} value={fmtNum(low52w)} color="text-red-600" />
+        <PriceTile label="أعلى 52 أسبوع" value={fmtNum(high52w)} color="text-emerald-600" />
+        <PriceTile label="أدنى 52 أسبوع" value={fmtNum(low52w)} color="text-red-600" />
         <PriceTile
-          label={t('specialist.attr_054')}
+          label="المسافة من القمة"
           value={distFromHigh != null ? `${distFromHigh >= 0 ? '+' : ''}${distFromHigh.toFixed(1)}%` : '—'}
           color={distFromHigh == null ? 'text-slate-600 dark:text-slate-300' : distFromHigh < 0 ? 'text-red-600' : 'text-emerald-600'}
         />
         <PriceTile
-          label={t('specialist.attr_055')}
+          label="المسافة من القاع"
           value={distFromLow != null ? `${distFromLow >= 0 ? '+' : ''}${distFromLow.toFixed(1)}%` : '—'}
           color={distFromLow == null ? 'text-slate-600 dark:text-slate-300' : distFromLow > 0 ? 'text-emerald-600' : 'text-red-600'}
         />
@@ -1831,8 +1762,7 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {  const t = useTr
 // §11 — Flow + Explosive (graceful degrade — may be empty)
 // ============================================================================
 
-function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; explosive: ExplosiveData | null }) {  const t = useTranslation();
-
+function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; explosive: ExplosiveData | null }) {
   const flowObj = (flow?.flow ?? (flow?.data as Record<string, unknown> | undefined)) as Record<string, unknown> | undefined;
   const explObj = (explosive?.explosive ?? (explosive?.data as Record<string, unknown> | undefined)) as Record<string, unknown> | undefined;
 
@@ -1844,11 +1774,11 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
     return (
       <SectionCard
         icon={<Flame className="w-4 h-4" />}
-        title={t('specialist.attr_056')}
-        description={t('specialist.attr_057')}
+        title="نقاط التدفق + ماسح القنابل"
+        description="من /api/flow + /api/explosive — قد تكون فارغة إذا كان Python 8010 مطفي"
         accent="amber"
       >
-        <EmptyState msg={t('specialist.attr_058')} />
+        <EmptyState msg="بيانات التدفق متاحة عند تشغيل محرك البيانات (Python 8010)" />
       </SectionCard>
     );
   }
@@ -1887,8 +1817,8 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
   return (
     <SectionCard
       icon={<Flame className="w-4 h-4" />}
-      title={t('specialist.attr_056')}
-      description={t('specialist.attr_059')}
+      title="نقاط التدفق + ماسح القنابل"
+      description="من /api/flow + /api/explosive — الزخم المؤسسي + إشارات الانفجار السعري"
       accent="amber"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1896,7 +1826,8 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
         {flowObj && (
           <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-              <Droplets className="w-4 h-4 text-emerald-600" />{t('specialist.k_113')}</h4>
+              <Droplets className="w-4 h-4 text-emerald-600" /> نقاط التدفق (Flow Score)
+            </h4>
             <div className="flex items-center gap-3">
               <span className={`text-4xl font-bold ${resolveColor(flowColor, flowScore)}`}>
                 {flowScore != null ? flowScore.toFixed(0) : '—'}
@@ -1917,7 +1848,8 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
         {explObj && !explExcluded && (
           <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-              <Flame className="w-4 h-4 text-amber-600" />{t('specialist.k_114')}</h4>
+              <Flame className="w-4 h-4 text-amber-600" /> ماسح القنابل (Explosive)
+            </h4>
             <div className="flex items-center gap-3">
               <span className={`text-4xl font-bold ${resolveColor(explColor, explScore)}`}>
                 {explScore != null ? explScore.toFixed(0) : '—'}
@@ -1931,7 +1863,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
                   {range10d != null && <> · Range 10d: <span className="font-medium">{range10d.toFixed(1)}%</span></>}
                 </div>
                 <div className="text-xs mt-1">
-                  <span className="text-muted-foreground">{t('specialist.k_115')}</span>
+                  <span className="text-muted-foreground">الإجراء: </span>
                   <span className="font-medium text-slate-700 dark:text-slate-200">{explAction ?? '—'}</span>
                   {explStop != null && <span className="text-red-600"> · وقف: {explStop.toFixed(1)}%</span>}
                   {explTarget != null && <span className="text-emerald-600"> · هدف: +{explTarget.toFixed(1)}%</span>}
@@ -1949,17 +1881,16 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
 // §12 — Comprehensive Analysis (graceful degrade — maestro/hunter/board/news)
 // ============================================================================
 
-function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null }) {  const t = useTranslation();
-
+function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null }) {
   if (!data || !data.success) {
     return (
       <SectionCard
         icon={<Activity className="w-4 h-4" />}
-        title={t('specialist.attr_060')}
-        description={t('specialist.attr_061')}
+        title="التحليل الشامل (Maestro + Hunter + Board + News)"
+        description="من /api/stocks/X/comprehensive — قد تكون فارغة إذا كان Python مطفي"
         accent="emerald"
       >
-        <EmptyState msg={t('specialist.attr_062')} />
+        <EmptyState msg="التحليل الشامل متاح عند تشغيل محرك البيانات (Python 8010)" />
       </SectionCard>
     );
   }
@@ -1975,21 +1906,21 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
     return (
       <SectionCard
         icon={<Activity className="w-4 h-4" />}
-        title={t('specialist.attr_060')}
-        description={t('specialist.attr_061')}
+        title="التحليل الشامل (Maestro + Hunter + Board + News)"
+        description="من /api/stocks/X/comprehensive — قد تكون فارغة إذا كان Python مطفي"
         accent="emerald"
       >
-        <EmptyState msg={t('specialist.attr_062')} />
+        <EmptyState msg="التحليل الشامل متاح عند تشغيل محرك البيانات (Python 8010)" />
       </SectionCard>
     );
   }
 
   const phase = safeStr(maestro?.phase) ?? safeStr(maestro?.regime_phase);
   const phaseMeta: Record<string, { ar: string; cls: string }> = {
-    accumulation: { ar: t('specialist.k_200'), cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
-    markup: { ar: t('specialist.k_201'), cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
-    distribution: { ar: t('specialist.k_202'), cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
-    decline: { ar: t('specialist.k_203'), cls: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
+    accumulation: { ar: 'تراكم', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
+    markup: { ar: 'تصعيد', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
+    distribution: { ar: 'توزيع', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
+    decline: { ar: 'انخفاض', cls: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
   };
   const meta = phase ? phaseMeta[phase.toLowerCase()] ?? { ar: phase, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' } : null;
 
@@ -2003,8 +1934,8 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
   return (
     <SectionCard
       icon={<Activity className="w-4 h-4" />}
-      title={t('specialist.attr_060')}
-      description={t('specialist.attr_063')}
+      title="التحليل الشامل (Maestro + Hunter + Board + News)"
+      description="من /api/stocks/X/comprehensive — 10 أقسام (graceful degrade عند توقف Python)"
       accent="emerald"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2012,7 +1943,8 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         {meta && (
           <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-emerald-600" />{t('specialist.k_116')}</p>
+              <Activity className="w-3.5 h-3.5 text-emerald-600" /> مرحلة المايسترو
+            </p>
             <Badge className={`text-sm ${meta.cls}`}>{meta.ar}</Badge>
           </div>
         )}
@@ -2021,7 +1953,8 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         {hunterScore != null && (
           <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-              <Crosshair className="w-3.5 h-3.5 text-amber-600" />{t('specialist.k_117')}</p>
+              <Crosshair className="w-3.5 h-3.5 text-amber-600" /> تقييم الـ Hunter
+            </p>
             <p className="text-2xl font-bold text-amber-600">{(hunterScore ?? 0).toFixed(0)}</p>
             {hunterAssessment && <p className="text-xs mt-1 text-slate-700 dark:text-slate-200">{hunterAssessment}</p>}
           </div>
@@ -2031,18 +1964,19 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         {(institutionalBuy != null || institutionalSell != null) && (
           <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-emerald-600" />{t('specialist.k_118')}</p>
+              <Building2 className="w-3.5 h-3.5 text-emerald-600" /> نشاط المؤسسات
+            </p>
             <div className="grid grid-cols-3 gap-2 text-xs mt-1">
               <div>
-                <p className="text-muted-foreground text-[10px]">{t('specialist.k_119')}</p>
+                <p className="text-muted-foreground text-[10px]">شراء</p>
                 <p className="font-bold text-emerald-600">{fmtCompact(institutionalBuy)}</p>
               </div>
               <div>
-                <p className="text-muted-foreground text-[10px]">{t('specialist.k_120')}</p>
+                <p className="text-muted-foreground text-[10px]">بيع</p>
                 <p className="font-bold text-red-600">{fmtCompact(institutionalSell)}</p>
               </div>
               <div>
-                <p className="text-muted-foreground text-[10px]">{t('specialist.k_121')}</p>
+                <p className="text-muted-foreground text-[10px]">صافي</p>
                 <p className={`font-bold ${netInstitutional == null ? 'text-slate-600 dark:text-slate-300' : netInstitutional >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                   {fmtCompact(netInstitutional)}
                 </p>
@@ -2055,7 +1989,8 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         {news.length > 0 && (
           <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-              <Newspaper className="w-3.5 h-3.5 text-slate-600" />{t('specialist.k_122')}</p>
+              <Newspaper className="w-3.5 h-3.5 text-slate-600" /> آخر الأخبار
+            </p>
             <div className="space-y-1.5 max-h-32 overflow-y-auto">
               {news.slice(0, 3).map((n, i) => {
                 const title = safeStr(n.title) ?? safeStr(n.headline) ?? '—';
@@ -2076,11 +2011,11 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         )}
       </div>
 
-      {data?.errors?.length ? (
+      {data.errors.length > 0 && (
         <p className="text-xs text-muted-foreground mt-3 italic">
-          ⚠ تحذيرات المحركات: {data.errors.join(t('specialist.k_204'))}
+          ⚠ تحذيرات المحركات: {data.errors.join('، ')}
         </p>
-      ) : null}
+      )}
     </SectionCard>
   );
 }
@@ -2099,8 +2034,7 @@ function PositionSizingCalculator({
   stopLoss: number | null;
   targetPrice: number | null;
   rrRatio: number | null;
-}) {  const t = useTranslation();
-
+}) {
   const [capital, setCapital] = useState<string>('10000');
   const [riskPct, setRiskPct] = useState<string>('1');
 
@@ -2119,14 +2053,14 @@ function PositionSizingCalculator({
   return (
     <SectionCard
       icon={<Calculator className="w-4 h-4" />}
-      title={t('specialist.attr_064')}
-      description={t('specialist.attr_065')}
+      title="حاسبة حجم الصفقة (Position Sizing)"
+      description="قاعدة 1% مخاطرة — المدخلات: رأس المال + نسبة المخاطرة. المخرجات: أقصى عدد أسهم + R:R المحسوب"
       accent="amber"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">{t('specialist.k_123')}</label>
+            <label className="text-xs text-muted-foreground block mb-1">رأس المال (جنيه)</label>
             <div className="relative">
               <Wallet className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -2140,7 +2074,7 @@ function PositionSizingCalculator({
             </div>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">{t('specialist.k_124')}</label>
+            <label className="text-xs text-muted-foreground block mb-1">نسبة المخاطرة (%) — افتراضي 1%</label>
             <div className="relative">
               <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -2155,24 +2089,26 @@ function PositionSizingCalculator({
               />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">{t('specialist.k_125')}</p>
+          <p className="text-xs text-muted-foreground">
+            الحد الموصى به للمخاطرة: 1-3% من رأس المال لكل صفقة (قاعدة 1%)
+          </p>
         </div>
 
         <div className="space-y-2">
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
-            <p className="text-xs text-muted-foreground">{t('specialist.k_126')}</p>
+            <p className="text-xs text-muted-foreground">المبلغ المخاطر به</p>
             <p className="text-xl font-bold text-emerald-600 mt-1">
               {riskAmount != null ? `${riskAmount.toFixed(2)} جنيه` : '—'}
             </p>
           </div>
           <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
-            <p className="text-xs text-muted-foreground">{t('specialist.k_127')}</p>
+            <p className="text-xs text-muted-foreground">المخاطرة لكل سهم (دخول − وقف)</p>
             <p className="text-xl font-bold text-amber-600 mt-1">
               {perShareRisk != null ? `${perShareRisk.toFixed(2)} جنيه` : '—'}
             </p>
           </div>
           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
-            <p className="text-xs text-muted-foreground">{t('specialist.k_128')}</p>
+            <p className="text-xs text-muted-foreground">أقصى عدد أسهم</p>
             <p className="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">
               {maxShares != null ? maxShares.toLocaleString('en-US') : '—'}
             </p>
@@ -2183,17 +2119,17 @@ function PositionSizingCalculator({
             )}
           </div>
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg">
-            <p className="text-xs text-muted-foreground">{t('specialist.k_129')}</p>
+            <p className="text-xs text-muted-foreground">نسبة المخاطرة/العائد الفعلية</p>
             <p className="text-lg font-bold text-emerald-700 mt-1">
               {rrRatio != null ? `${rrRatio.toFixed(2)}:1` : '—'}
             </p>
             {rrRatio != null && (
               <p className="text-xs text-muted-foreground mt-1">
                 {rrRatio >= 2
-                  ? t('specialist.k_205')
+                  ? '✓ ممتازة — R:R ≥ 2:1 (قاعدة 18)'
                   : rrRatio >= 1.8
-                  ? t('specialist.k_206')
-                  : t('specialist.k_207')}
+                  ? '✓ مقبولة — R:R ≥ 1.8:1 (Floor قاعدة 18)'
+                  : '⚠ أقل من Floor 1.8:1 — راجع القاعدة 18'}
               </p>
             )}
           </div>
@@ -2207,8 +2143,7 @@ function PositionSizingCalculator({
 // §14 — Price Levels Ladder (52w high → resistance → current → support → 52w low)
 // ============================================================================
 
-function PriceLevelsLadderSection({ info }: { info: StockInfo }) {  const t = useTranslation();
-
+function PriceLevelsLadderSection({ info }: { info: StockInfo }) {
   const current = safeNum(info.current_price);
   const high52w = safeNum(info.high_52w);
   const low52w = safeNum(info.low_52w);
@@ -2220,23 +2155,23 @@ function PriceLevelsLadderSection({ info }: { info: StockInfo }) {  const t = us
   }
 
   const rows: Array<{ label: string; value: number | null; color: string; bg: string }> = [
-    { label: t('specialist.attr_052'), value: high52w, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/60' },
-    { label: t('specialist.k_097'), value: resistance, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60' },
-    { label: t('specialist.k_208'), value: current, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700' },
-    { label: t('specialist.k_096'), value: support, color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/60' },
-    { label: t('specialist.attr_053'), value: low52w, color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/60' },
+    { label: 'أعلى 52 أسبوع', value: high52w, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/60' },
+    { label: 'المقاومة', value: resistance, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60' },
+    { label: 'السعر الحالي', value: current, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700' },
+    { label: 'الدعم', value: support, color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/60' },
+    { label: 'أدنى 52 أسبوع', value: low52w, color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/60' },
   ].filter((r) => r.value != null) as Array<{ label: string; value: number | null; color: string; bg: string }>;
 
   return (
     <SectionCard
       icon={<Layers className="w-4 h-4" />}
-      title={t('specialist.attr_066')}
-      description={t('specialist.attr_067')}
+      title="سُلَّم مستويات السعر"
+      description="من stock_info: high_52w → resistance → current → support → low_52w"
       accent="slate"
     >
       <div className="space-y-2">
         {rows.map((r, i) => {
-          const isCurrent = r.label === t('specialist.k_208');
+          const isCurrent = r.label === 'السعر الحالي';
           return (
             <div
               key={i}
@@ -2261,8 +2196,7 @@ function PriceLevelsLadderSection({ info }: { info: StockInfo }) {  const t = us
 // §15 — Score Dashboard (fundamental_score + smc_score + signal)
 // ============================================================================
 
-function ScoreDashboardSection({ info }: { info: StockInfo }) {  const t = useTranslation();
-
+function ScoreDashboardSection({ info }: { info: StockInfo }) {
   const fundScore = safeNum(info.fundamental_score);
   const smcScore = safeNum(info.smc_score);
   const signalScore = safeNum(info.signal);
@@ -2279,15 +2213,15 @@ function ScoreDashboardSection({ info }: { info: StockInfo }) {  const t = useTr
   return (
     <SectionCard
       icon={<Gauge className="w-4 h-4" />}
-      title={t('specialist.attr_068')}
-      description={t('specialist.attr_069')}
+      title="لوحة الدرجات"
+      description="من stock_info: fundamental_score + smc_score + signal (0-100 لكل مؤشر)"
       accent="emerald"
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[
-          { label: t('specialist.k_209'), value: fundScore, icon: <Banknote className="w-4 h-4" />, color: 'emerald' as const },
-          { label: t('specialist.k_210'), value: smcScore, icon: <Activity className="w-4 h-4" />, color: 'amber' as const },
-          { label: t('specialist.k_211'), value: signalScore, icon: <Target className="w-4 h-4" />, color: 'slate' as const },
+          { label: 'الدرجة الأساسية', value: fundScore, icon: <Banknote className="w-4 h-4" />, color: 'emerald' as const },
+          { label: 'درجة SMC (Smart Money)', value: smcScore, icon: <Activity className="w-4 h-4" />, color: 'amber' as const },
+          { label: 'الإشارة الفنية', value: signalScore, icon: <Target className="w-4 h-4" />, color: 'slate' as const },
         ].map((s, i) => (
           <div key={i} className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-2 text-muted-foreground">
@@ -2310,8 +2244,7 @@ function ScoreDashboardSection({ info }: { info: StockInfo }) {  const t = useTr
 // §16 — Sharia Compliance
 // ============================================================================
 
-function ShariaSection({ data }: { data: ShariaResponse | null }) {  const t = useTranslation();
-
+function ShariaSection({ data }: { data: ShariaResponse | null }) {
   if (!data || !data.success) return null;
 
   const metric = data.metric;
@@ -2327,25 +2260,25 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {  const t = u
   return (
     <SectionCard
       icon={<BookOpen className="w-4 h-4" />}
-      title={t('specialist.attr_070')}
-      description={t('specialist.attr_071')}
+      title="التوافق الشرعي"
+      description="من /api/sharia — مصادر: S&P + Musaffa + Kashif + Osoul + ... (consensus_min=6)"
       accent={isHalal ? 'emerald' : 'red'}
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className={`p-3 rounded-lg text-center ${isHalal ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
-          <p className="text-xs text-muted-foreground">{t('specialist.k_130')}</p>
+          <p className="text-xs text-muted-foreground">الحكم</p>
           <p className={`text-lg font-bold mt-1 ${isHalal ? 'text-emerald-600' : 'text-red-600'}`}>
-            {isHalal ? t('specialist.k_212') : t('specialist.k_213')}
+            {isHalal ? '✓ متوافق' : '✗ غير متوافق'}
           </p>
         </div>
         <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg text-center">
-          <p className="text-xs text-muted-foreground">{t('specialist.k_131')}</p>
+          <p className="text-xs text-muted-foreground">المصادر المتوافقة</p>
           <p className="text-lg font-bold text-slate-700 dark:text-slate-200 mt-1">
             {compliantCount != null && activeCount != null ? `${compliantCount}/${activeCount}` : '—'}
           </p>
         </div>
         <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center">
-          <p className="text-xs text-muted-foreground">{t('specialist.k_132')}</p>
+          <p className="text-xs text-muted-foreground">نسبة التطهير (S&P)</p>
           <p className="text-lg font-bold text-amber-600 mt-1">
             {purRatePct != null ? `${purRatePct.toFixed(2)}%` : '—'}
           </p>
@@ -2354,18 +2287,20 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {  const t = u
 
       {nameAr && (
         <p className="text-sm mt-3">
-          <span className="text-muted-foreground">{t('specialist.k_133')}</span>
+          <span className="text-muted-foreground">الاسم: </span>
           <span className="font-medium">{nameAr}</span>
         </p>
       )}
       {category && (
         <p className="text-xs mt-1">
-          <span className="text-muted-foreground">{t('specialist.k_134')}</span>
+          <span className="text-muted-foreground">التصنيف: </span>
           {category}
         </p>
       )}
       {needsReview && (
-        <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 rounded text-xs text-amber-700 dark:text-amber-400">{t('specialist.k_135')}</div>
+        <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 rounded text-xs text-amber-700 dark:text-amber-400">
+          ⚠️ يحتاج مراجعة يدوية — رمز مختلف أو تعارض بين المصادر
+        </div>
       )}
     </SectionCard>
   );
@@ -2375,8 +2310,7 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {  const t = u
 // Share Buttons
 // ============================================================================
 
-function ShareButtons({ info, ticker }: { info: StockInfo; ticker: string }) {  const t = useTranslation();
-
+function ShareButtons({ info, ticker }: { info: StockInfo; ticker: string }) {
   const nameAr = safeStr(info.name_ar) ?? safeStr(info.name) ?? ticker;
   const current = safeNum(info.current_price);
   const changePct = safeNum(info.change_percent);
@@ -2403,12 +2337,12 @@ ${OFFICIAL_LINKS_BLOCK}
       window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
     else {
       navigator.clipboard.writeText(shareText);
-      toast.success(t('specialist.k_214'));
+      toast.success('تم نسخ التحليل!');
     }
   };
 
   return (
-    <SectionCard icon={<Share2 className="w-4 h-4" />} title={t('specialist.attr_072')} accent="slate">
+    <SectionCard icon={<Share2 className="w-4 h-4" />} title="مشاركة التحليل" accent="slate">
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => handleShare('whatsapp')} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white gap-1.5">
           <MessageCircle className="w-4 h-4" /> WhatsApp
@@ -2420,7 +2354,8 @@ ${OFFICIAL_LINKS_BLOCK}
           <Send className="w-4 h-4" /> Telegram
         </Button>
         <Button onClick={() => handleShare('copy')} size="sm" variant="outline" className="gap-1.5">
-          <Download className="w-4 h-4" />{t('specialist.k_136')}</Button>
+          <Download className="w-4 h-4" /> نسخ
+        </Button>
       </div>
     </SectionCard>
   );
@@ -2442,8 +2377,7 @@ function HeaderCard({
   iconUrl: string | null;
   sharia: ShariaResponse | null;
   market: string;
-}) {  const t = useTranslation();
-
+}) {
   const nameAr = safeStr(info.name_ar) ?? safeStr(info.name) ?? symbol;
   const sector = safeStr(info.sector);
   const industry = safeStr(info.industry);
@@ -2457,10 +2391,10 @@ function HeaderCard({
   const isSuspended = info.is_suspended === 1 || info.is_suspended === true;
 
   const trendAr = trend == null ? null
-    : trend === t('specialist.k_086') || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
-    ? { txt: t('specialist.k_086'), cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' }
-    : trend === t('specialist.k_087') || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
-    ? { txt: t('specialist.k_087'), cls: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' }
+    : trend === 'صاعد' || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
+    ? { txt: 'صاعد', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' }
+    : trend === 'هابط' || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
+    ? { txt: 'هابط', cls: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' }
     : { txt: trend, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
 
   const shariaHalal = sharia?.success
@@ -2489,11 +2423,11 @@ function HeaderCard({
                         : 'border-red-300 text-red-700 dark:border-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/30'
                     }`}
                   >
-                    {shariaHalal ? t('specialist.k_215') : t('specialist.k_213')}
+                    {shariaHalal ? '✓ متوافق شرعياً' : '✗ غير متوافق'}
                   </Badge>
                 )}
                 {isSuspended && (
-                  <Badge variant="destructive" className="text-xs">{t('specialist.k_137')}</Badge>
+                  <Badge variant="destructive" className="text-xs">متوقف</Badge>
                 )}
                 <StockPublisher
                   data={{
@@ -2542,15 +2476,11 @@ function HeaderCard({
 // ============================================================================
 
 export function SpecialistAnalysisView() {
-  const t = useTranslation();
   const { stocks, currentMarket, loadStocks, selectedTicker: storeTicker } = useAppStore();
-  // FIX-MOHSEN-5: read selectedTicker from global store (when user clicks a stock
-  // in StocksView/LiquidityRadar then navigates to #specialist-analysis, the
-  // ticker should auto-populate instead of showing an empty input).
   const [ticker, setTicker] = useState(storeTicker || '');
   const [loading, setLoading] = useState(false);
 
-  // Sync ticker when store selectedTicker changes
+  // FIX: sync ticker when global selectedTicker changes (from StocksView / Radar click)
   useEffect(() => {
     if (storeTicker) setTicker(storeTicker);
   }, [storeTicker]);
@@ -2635,14 +2565,14 @@ export function SpecialistAnalysisView() {
 
       // PRIMARY: maker-radar/stock — must succeed; otherwise we have nothing to render.
       if (radarRes.status !== 'fulfilled') {
-        throw new Error(t('specialist.k_216'));
+        throw new Error('فشل الاتصال بـ maker-radar/stock API (PRIMARY source)');
       }
       const radarJson = (await radarRes.value.json()) as MakerRadarStock;
       if (!radarJson.success || !radarJson.stock_info) {
         throw new Error(
           radarJson.error
             ? `فشل تحميل بيانات السهم: ${radarJson.error}`
-            : t('specialist.k_217')
+            : 'لا توجد بيانات لهذا السهم في stocks.db'
         );
       }
       setRadarData(radarJson);
@@ -2675,12 +2605,12 @@ export function SpecialistAnalysisView() {
               computed_at: new Date().toISOString(),
             } as FootprintData);
           }
-        } catch { /* ignore - safe-by-design */ }
+        } catch { /* ignore */ }
       }
 
       // TERTIARY: predictions
       if (predRes.status === 'fulfilled') {
-        try { setPredictions(await predRes.value.json()); } catch { /* ignore - safe-by-design */ }
+        try { setPredictions(await predRes.value.json()); } catch { /* ignore */ }
       }
 
       // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
@@ -2688,17 +2618,17 @@ export function SpecialistAnalysisView() {
       // الـ unified API بيوفر كل القيم المطلوبة في مكان واحد.
 
       if (shariaRes.status === 'fulfilled') {
-        try { setSharia(await shariaRes.value.json()); } catch { /* ignore - safe-by-design */ }
+        try { setSharia(await shariaRes.value.json()); } catch { /* ignore */ }
       }
       // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — best-effort unified fetch.
       if (unifiedRes.status === 'fulfilled') {
         try {
           const u = await unifiedRes.value.json();
           if (u?.success) setUnified(u);
-        } catch { /* ignore - safe-by-design */ }
+        } catch { /* ignore */ }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('specialist.k_218'));
+      setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال بالخادم');
       setRadarData(null);
       console.error('[SpecialistAnalysisView] fetch error:', err);
     } finally {
@@ -2749,9 +2679,11 @@ export function SpecialistAnalysisView() {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-                <span>{t('specialist.k_138')}</span>
+                <span>التقرير المالي الاحترافي</span>
               </h1>
-              <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{t('specialist.k_139')}</p>
+              <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+                تحليل عميق لسهم واحد — بيانات من 8 مصادر (PRIMARY: maker-radar/stock ← SECONDARY: footprint ← TERTIARY: predictions.db ← ENRICHMENT: flow + explosive + comprehensive + sharia)
+              </p>
             </div>
           </div>
           <Badge
@@ -2768,18 +2700,26 @@ export function SpecialistAnalysisView() {
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-2">
-            <StockSearchSelector
+            <select
               value={ticker}
-              onSelectStock={(val) => {
+              onChange={(e) => {
+                const val = e.target.value;
                 setTicker(val);
-                fetchAnalysis(val);
+                if (val) fetchAnalysis(val);
               }}
-              placeholder={t('specialist.k_219')}
-              buttonClassName="flex-1 justify-start font-normal"
-            />
+              disabled={loading}
+              className="flex-1 px-3 sm:px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-background text-foreground text-sm sm:text-base min-w-0"
+            >
+              <option value="">اختر سهماً من {MARKET_NAMES_AR[currentMarket] || currentMarket}...</option>
+              {stocks.map((stock) => (
+                <option key={stock.ticker} value={stock.ticker}>
+                  {stock.ticker} {stock.name_ar ? `- ${stock.name_ar}` : stock.name ? `- ${stock.name}` : ''}
+                </option>
+              ))}
+            </select>
             <Button onClick={handleSearch} disabled={loading || !ticker} className="flex-shrink-0 gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              <span>{t('specialist.k_140')}</span>
+              <span>تحليل</span>
             </Button>
           </div>
         </CardContent>
@@ -2791,7 +2731,7 @@ export function SpecialistAnalysisView() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-red-700 dark:text-red-400 text-sm">{t('specialist.k_141')}</p>
+              <p className="font-semibold text-red-700 dark:text-red-400 text-sm">تعذّر تحميل بيانات السهم</p>
               <p className="text-xs text-red-600 dark:text-red-500 mt-1">{error}</p>
             </div>
           </div>
@@ -2815,7 +2755,7 @@ export function SpecialistAnalysisView() {
       {!radarData && !loading && !error && (
         <Card className="p-6 sm:p-12 text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
           <Activity className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-base sm:text-xl font-semibold mb-2">{t('specialist.k_142')}</h3>
+          <h3 className="text-base sm:text-xl font-semibold mb-2">اختر سهماً للتحليل الشامل</h3>
           <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto">
             حدد سهماً من القائمة المنسدلة أعلاه للحصول على تقرير مالي احترافي بكل البيانات:
             60+ مؤشر من stock_info + 30 يوم OHLCV + بصمة السيولة + سجل التوقعات + المؤشرات الفنية والأساسية.
@@ -2838,24 +2778,24 @@ export function SpecialistAnalysisView() {
           {/* ── §2. Price Summary (8 tiles from stock_info) ── */}
           <SectionCard
             icon={<TrendingUp className="w-4 h-4" />}
-            title={t('specialist.attr_073')}
-            description={t('specialist.attr_074')}
+            title="ملخص حركة السعر"
+            description="من stock_info: open + high + low + previous_close + volume + turnover + 52w high/low"
             accent="emerald"
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <PriceTile label={t('specialist.attr_075')} value={fmtNum(info.open_price)} color="text-slate-700 dark:text-slate-200" />
-              <PriceTile label={t('specialist.attr_076')} value={fmtNum(info.high_price)} color="text-emerald-600" />
-              <PriceTile label={t('specialist.attr_077')} value={fmtNum(info.low_price)} color="text-red-600" />
-              <PriceTile label={t('specialist.attr_078')} value={fmtNum(info.previous_close)} color="text-slate-600 dark:text-slate-300" />
-              <PriceTile label={t('specialist.attr_079')} value={fmtCompact(info.volume)} color="text-amber-600" />
-              <PriceTile label={t('specialist.attr_080')} value={fmtCompact(info.turnover_egp ?? info.value_traded, t('specialist.k_187'))} color="text-amber-700" />
-              <PriceTile label={t('specialist.attr_052')} value={fmtNum(info.high_52w)} color="text-emerald-600" />
-              <PriceTile label={t('specialist.attr_053')} value={fmtNum(info.low_52w)} color="text-red-600" />
+              <PriceTile label="الافتتاح" value={fmtNum(info.open_price)} color="text-slate-700 dark:text-slate-200" />
+              <PriceTile label="الأعلى" value={fmtNum(info.high_price)} color="text-emerald-600" />
+              <PriceTile label="الأدنى" value={fmtNum(info.low_price)} color="text-red-600" />
+              <PriceTile label="الإغلاق السابق" value={fmtNum(info.previous_close)} color="text-slate-600 dark:text-slate-300" />
+              <PriceTile label="حجم التداول" value={fmtCompact(info.volume)} color="text-amber-600" />
+              <PriceTile label="قيمة التداول" value={fmtCompact(info.turnover_egp ?? info.value_traded, ' ج.م')} color="text-amber-700" />
+              <PriceTile label="أعلى 52 أسبوع" value={fmtNum(info.high_52w)} color="text-emerald-600" />
+              <PriceTile label="أدنى 52 أسبوع" value={fmtNum(info.low_52w)} color="text-red-600" />
             </div>
             {/* Distance tiles */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
               <PriceTile
-                label={t('specialist.attr_081')}
+                label="المسافة من قمة 52 أسبوع"
                 value={
                   currentPrice != null && info.high_52w != null && info.high_52w > 0
                     ? `${(((currentPrice - info.high_52w) / info.high_52w) * 100).toFixed(1)}%`
@@ -2864,7 +2804,7 @@ export function SpecialistAnalysisView() {
                 color={currentPrice != null && info.high_52w != null && currentPrice < info.high_52w ? 'text-red-600' : 'text-emerald-600'}
               />
               <PriceTile
-                label={t('specialist.attr_082')}
+                label="المسافة من قاع 52 أسبوع"
                 value={
                   currentPrice != null && info.low_52w != null && info.low_52w > 0
                     ? `${(((currentPrice - info.low_52w) / info.low_52w) * 100).toFixed(1)}%`
@@ -2873,27 +2813,25 @@ export function SpecialistAnalysisView() {
                 color={currentPrice != null && info.low_52w != null && currentPrice > info.low_52w ? 'text-emerald-600' : 'text-red-600'}
               />
               <PriceTile
-                label={t('specialist.attr_083')}
+                label="متوسط الحجم"
                 value={fmtCompact(info.avg_volume)}
                 color="text-slate-600 dark:text-slate-300"
               />
               <PriceTile
-                label={t('specialist.attr_084')}
+                label="Beta (حساسية السوق)"
                 value={fmtNum(info.beta)}
                 color="text-slate-600 dark:text-slate-300"
               />
             </div>
           </SectionCard>
 
-          {/* ── §3. 30-Day Candlestick Chart (TradingView + SVG fallback) ── */}
+          {/* ── §3. 30-Day Candlestick Chart (BEAUTIFUL SVG) ── */}
           <CandlestickChart
             prices={prices}
             support={support}
             resistance={resistance}
             ma50={ma50}
             ma200={ma200}
-            ticker={ticker}
-            market={currentMarket}
           />
 
           {/* ── §4. Liquidity Footprint ── */}
@@ -2954,7 +2892,7 @@ export function SpecialistAnalysisView() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-amber-700 dark:text-amber-400 mb-1 text-sm">{t('specialist.k_143')}</h4>
+                <h4 className="font-bold text-amber-700 dark:text-amber-400 mb-1 text-sm">إخلاء المسؤولية</h4>
                 <p className="text-xs text-amber-700 dark:text-amber-500">
                   هذا التحليل لأغراض تعليمية وإعلامية فقط وليس توصية استثمارية.
                   القرار النهائي مسؤولية العميل. قرارات الاستثمار يجب أن تبنى على تقييمك الشخصي
@@ -2967,7 +2905,9 @@ export function SpecialistAnalysisView() {
           {/* ── Engine errors transparency (Rule 67) ── */}
           {radarData.db_source && (
             <Card className="p-3 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700">
-              <p className="text-xs text-muted-foreground">{t('specialist.k_144')}<span className="font-mono font-bold">{radarData.db_source}</span>{t('specialist.k_145')}</p>
+              <p className="text-xs text-muted-foreground">
+                مصدر البيانات الرئيسي: <span className="font-mono font-bold">{radarData.db_source}</span> — Rule 67: البيانات حقيقية من stocks.db + predictions.db
+              </p>
             </Card>
           )}
         </div>

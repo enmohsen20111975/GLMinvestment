@@ -60,7 +60,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             keepalive: true,
           }).catch(() => { /* silent */ });
         }
-      } catch { // silent fallback (safe-by-design)
+      } catch {
         // tracking is fire-and-forget — never break UX
       }
     };
@@ -79,10 +79,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <I18nProvider>
-        {/* SCR-STITCH: defaultTheme="dark" — Sovereign Terminal design is dark-first.
-            All Stitch classes use dark: prefix, so the default MUST be dark for
-            the visual skin to render. Users can still toggle to light via the
-            theme switch button in the Header. */}
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
           {/* P37-PHASE-4B: global session-expired modal — listens for the
