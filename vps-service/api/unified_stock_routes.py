@@ -103,37 +103,113 @@ def get_unified_stock(ticker: str) -> Dict[str, Any]:
             if entry > 0 and target > entry and stop < entry:
                 rr = round((target - entry) / (entry - stop), 2)
 
-        # 5. Build unified response.
+        # 5. Risk reward.
+        current_price = _to_float(stock_info.get('current_price'))
+        rr = _to_float(pred.get('risk_reward'))
+        if rr == 0:
+            entry = _to_float(pred.get('entry_price')) or current_price
+            target = _to_float(pred.get('target_price'))
+            stop = _to_float(pred.get('stop_loss'))
+            if entry > 0 and target > entry and stop < entry:
+                rr = round((target - entry) / (entry - stop), 2)
+
+        # 6. Falling Knife check (Rule 78): breaking yearly low?
+        conn_fk = ro_connect('stocks.db')
+        yearly_low = 0.0
+        if conn_fk:
+            try:
+                yl = conn_fk.execute(
+                    "SELECT MIN(low) FROM stock_daily_prices WHERE ticker = ? AND market = ? AND low > 0",
+                    (ticker, market)
+                ).fetchone()
+                yearly_low = _to_float(yl[0]) if yl else 0.0
+            except Exception:
+                pass
+            conn_fk.close()
+        breaking_yearly_low = yearly_low > 0 and current_price <= yearly_low * 1.02
+        bearish_distribution = whale_net_flow < 0
+        falling_knife = breaking_yearly_low or bearish_distribution
+
+        # 7. State Machine: has_active_trade?
+        has_active_trade = (rr >= 1.5 and not falling_knife and bool(pred.get('signal_type')))
+
+        # 8. Canonical flow classification.
+        try:
+            from api.canonical_flow import classify_liquidity_bucket
+            flow_cls = classify_liquidity_bucket(ticker, market, entry=current_price,
+                                                  target=_to_float(pred.get('target_price')) or _to_float(stock_info.get('resistance')),
+                                                  stop=_to_float(pred.get('stop_loss')) or _to_float(stock_info.get('support')))
+            liquidity_bucket = flow_cls.bucket
+            liquidity_reason = flow_cls.reason
+        except Exception:
+            liquidity_bucket = 'neutral'
+            liquidity_reason = ''
+
+        # 9. Build response — State Machine.
         result = {
-            'entry_price': pred.get('entry_price') or stock_info.get('current_price'),
-            'target_price': pred.get('target_price') or stock_info.get('resistance'),
-            'stop_loss': pred.get('stop_loss') or stock_info.get('support'),
-            'risk_reward': rr if rr > 0 else None,
-            'whale_net_flow': whale_net_flow,
-            'sharia_status': _sharia_status(market),
             'ticker': ticker,
             'name': stock_info.get('name_ar') or stock_info.get('name') or ticker,
-            'market': market, 'sector': stock_info.get('sector'),
-            'current_price': _to_float(stock_info.get('current_price')),
+            'market': market,
+            'current_price': current_price,
             'change_percent': _to_float(stock_info.get('change_percent')),
-            'signal': pred.get('signal_type'),
-            'confidence': pred.get('confidence'),
-            'maestro_score': pred.get('maestro_score'),
-            'dividend_yield': stock_info.get('dividend_yield'),
-            'pe_ratio': stock_info.get('pe_ratio'),
-            'pb_ratio': stock_info.get('pb_ratio'),
-            'is_egx30': bool(stock_info.get('is_egx30')),
+            'liquidity_bucket': liquidity_bucket,
+            'liquidity_reason': liquidity_reason,
+            'sharia_status': _sharia_status(market),
         }
 
-        # Enrich with unified fields.
+        if has_active_trade:
+            # Active trade — green card data.
+            result['has_active_trade'] = True
+            result['trade_setup'] = {
+                'entry_price': _to_float(pred.get('entry_price')) or current_price,
+                'stop_loss': _to_float(pred.get('stop_loss')) or _to_float(stock_info.get('support')),
+                'target_1': _to_float(pred.get('target_price')) or _to_float(stock_info.get('resistance')),
+                'target_2': round(_to_float(pred.get('target_price')) * 1.15, 2) if pred.get('target_price') else None,
+                'rr_ratio': rr,
+                'signal': pred.get('signal_type') or 'BUY',
+            }
+            result['observation_status'] = None
+            result['observation_reason'] = None
+        else:
+            # No active trade — observation mode (NO null entry/stop/target!).
+            result['has_active_trade'] = False
+            result['trade_setup'] = None
+            result['observation_status'] = 'وضع المراقبة: كاش وانتظار ⏸️'
+            if rr < 1.5 and rr > 0:
+                result['observation_reason'] = f'نسبة العائد للمخاطرة R/R = {rr:.2f} غير مجزية (أقل من 1.5)'
+            elif falling_knife:
+                reason_parts = []
+                if breaking_yearly_low:
+                    reason_parts.append(f'السهم يكسر قاعه السنوي ({yearly_low:.2f})')
+                if bearish_distribution:
+                    reason_parts.append(f'تصريف حيتان (تدفق سالب {whale_net_flow/1e6:.1f}M)')
+                result['observation_reason'] = ' — '.join(reason_parts) if reason_parts else 'السهم في مسار هابط'
+            else:
+                result['observation_reason'] = 'لا توجد إشارة شراء نشطة بهذا السهم حالياً'
+
+        # Stock info (always present — real numbers only).
+        result['stock_info'] = {
+            'current_price': current_price,
+            'change_pct': _to_float(stock_info.get('change_percent')),
+            'fair_value': _to_float(stock_info.get('resistance')),
+            'support_level': _to_float(stock_info.get('support')),
+            'resistance_level': _to_float(stock_info.get('resistance')),
+            'whale_net_flow_5d': whale_net_flow,
+            'sharia_compliant': _sharia_status(market) == 'متوافق',
+            'pe_ratio': stock_info.get('pe_ratio'),
+            'dividend_yield': stock_info.get('dividend_yield'),
+            'sector': stock_info.get('sector'),
+            'is_egx30': bool(stock_info.get('is_egx30')),
+        }
+        # Enrich with unified financial fields.
         enriched = enrich_opportunity({
-            'entry_defense': {'entry_level': result['current_price'],
-                              'defense_level': result.get('stop_loss'),
-                              'resistance_level': result.get('target_price')},
+            'entry_defense': {'entry_level': current_price,
+                              'defense_level': _to_float(stock_info.get('support')),
+                              'resistance_level': _to_float(stock_info.get('resistance'))},
             'whale': {'net_flow_egp': whale_net_flow},
             'fundamentals': {},
-            'targets_available': rr is not None and rr > 0,
-            'falling_knife': {'is_falling_knife': False},
+            'targets_available': has_active_trade,
+            'falling_knife': {'is_falling_knife': falling_knife},
         })
         result['rr_ratio'] = enriched.get('rr_ratio')
         result['risk_level'] = enriched.get('risk_level')

@@ -168,6 +168,12 @@ def get_conviction_dossier(ticker: str) -> Dict[str, Any]:
             },
             'verdict': verdict,
             'reason': reason,
+            'technical_rationale': (
+                f"السهم يتداول عند {current_price:.2f} (RSI={_f(latest_pred.get('confidence') or 0):.0f}) "
+                f"مع تدفق حيتان 5ج = {whale_5d/1e6:+.1f}M ج.م "
+                f"وكسر قاع سنوي {'نعم' if breaking_yearly_low else 'لا'} ({yearly_low:.2f}). "
+                f"نسبة العائد للمخاطرة = {rr:.2f} ({'مقبولة ≥1.5' if rr>=1.5 else 'مرفوضة <1.5'})."
+            ),
             'latest_prediction': {
                 'signal': latest_pred.get('signal_type'),
                 'confidence': latest_pred.get('confidence'),
