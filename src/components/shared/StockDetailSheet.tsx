@@ -405,7 +405,7 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold">نشر هذه التوصية</span>
                   <UnifiedPublishButton
-                    content={`📊 ${ticker} — ${data?.name_ar || ''}
+                    content={`📊 ${ticker || '—'} — ${data?.name_ar || ''}
 السعر: ${fmtPrice(data?.current_price)}
 التغير: ${fmtPct(data?.change_pct)}
 الإشارة: ${data?.signal || '—'}
@@ -413,10 +413,10 @@ ${data?.entry_defense?.entry_level ? `الدخول: ${fmtPrice(data.entry_defens
 ${data?.entry_defense?.defense_level ? `الدفاع: ${fmtPrice(data.entry_defense.defense_level)}` : ''}
 
 منصة دليل الاستثمار`}
-                    title={`${ticker} — ${data?.name_ar || ''}`}
+                    title={`${ticker || '—'} — ${data?.name_ar || ''}`}
                     image={infographicRef}
-                    filename={`${ticker}-analysis.png`}
-                    hashtags={['EGX', 'استثمار', ticker]}
+                    filename={`${ticker || 'stock'}-analysis.png`}
+                    hashtags={['EGX', 'استثمار', ticker || 'stock']}
                     variant="default"
                     size="sm"
                   />

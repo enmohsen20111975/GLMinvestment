@@ -895,6 +895,7 @@ export function StocksView() {
   const showDetail = selectedTicker !== null && currentView === 'stock-detail';
 
   // ── Local filter / sort / view state ──
+  const [selectedSheetTicker, setSelectedSheetTicker] = useState<string | null>(null);
   const [stockTab, setStockTab] = useState<StockTab>('stocks');
   const [localSearch, setLocalSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');

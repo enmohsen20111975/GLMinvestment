@@ -105,7 +105,6 @@ function abbreviateNumber(value: number): string {
 
 function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
   const t = useTranslation();
-  const [selectedSheetTicker, setSelectedSheetTicker] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<StockSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -200,7 +199,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/watchlist-enhanced?market=${currentMarket}`, {
+      const res = await fetch(`/api/watchlist-enhanced?market=${useAppStore.getState().currentMarket || 'EGX'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -447,7 +446,7 @@ function EditStockDialog({
   const handleSave = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/watchlist-enhanced/${item.id}?market=${currentMarket}`, {
+      const res = await fetch(`/api/watchlist-enhanced/${item.id}?market=${useAppStore.getState().currentMarket || 'EGX'}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -775,6 +774,7 @@ export function EnhancedWatchlistView() {
   const [loadError, setLoadError] = useState<boolean>(false);
   const { currentMarket } = useAppStore();
   const { setDealAdvisorPrefill, setCurrentView } = useAppStore();
+  const [selectedSheetTicker, setSelectedSheetTicker] = useState<string | null>(null);
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -783,7 +783,7 @@ export function EnhancedWatchlistView() {
       setLoading(true);
     }
     try {
-      const res = await fetch(`/api/watchlist-enhanced?market=${currentMarket}`);
+      const res = await fetch(`/api/watchlist-enhanced?market=${useAppStore.getState().currentMarket || 'EGX'}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: WatchlistResponse = await res.json();
       setItems(data.items || []);

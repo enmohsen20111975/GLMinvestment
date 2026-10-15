@@ -420,7 +420,7 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
 
   return (
     <div 
-      onClick={() => onSelectTicker(stock.ticker)}
+      onClick={() => onSelectTicker?.(stock.ticker)}
       className="stitch-glass p-3 hover:border-emerald-500/20 transition-colors flex flex-col xl:grid xl:grid-cols-12 gap-3 items-stretch cursor-pointer"
     >
 
