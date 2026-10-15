@@ -656,7 +656,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         && computeScreenerRR(s) >= 2.0,
     },
     {
-      label: '🚀 انفجار سعري',
+      label: '🚀 زخم صاعد مرتفع',
       test: (s) => !!s.volume_surge
         && s.above_ma_50
         && computeOpportunityQuality(s) >= 70,

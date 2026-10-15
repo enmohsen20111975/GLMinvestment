@@ -624,7 +624,7 @@ function CandlestickChart({
     <SectionCard
       icon={<BarChart3 className="w-4 h-4" />}
       title="شارت الشموع اليابانية (آخر 30 جلسة)"
-      description={`مصدر البيانات: /api/maker-radar/stock?prices — ${slice.length} شمعة من stocks.db (Rule 67)`}
+      description={`بيانات الأسعار التاريخية — ${slice.length} جلسة تداول`}
       accent="slate"
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -902,7 +902,7 @@ function LiquidityFootprintSection({
     <SectionCard
       icon={<Droplets className="w-4 h-4" />}
       title="بصمة السيولة (Liquidity Footprint)"
-      description={`من /api/maker-radar/footprint?ticker=${data.ticker ?? ''}&days=30 — تحليل توزيع السيولة على ${levels.length} مستوى سعر`}
+      description={`تحليل توزيع السيولة على ${levels.length} مستوى سعر`}
       accent="emerald"
     >
       {/* Top: POC + VAH + VAL + value area % */}
@@ -1446,7 +1446,7 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
       <SectionCard
         icon={<Trophy className="w-4 h-4" />}
         title="سجل التوقعات لهذا السهم"
-        description="من /api/predictions?ticker=X — predictions.db مباشرة (Rule 67)"
+        description="سجل التوقعات الفنية الموثقة"
         accent="amber"
       >
         <EmptyState msg="تعذّر تحميل سجل التوقعات — حاول مرة أخرى" />
@@ -1460,7 +1460,7 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
       <SectionCard
         icon={<Trophy className="w-4 h-4" />}
         title="سجل التوقعات لهذا السهم"
-        description="من /api/predictions?ticker=X — predictions.db مباشرة (Rule 67)"
+        description="سجل التوقعات الفنية الموثقة"
         accent="amber"
       >
         <EmptyState msg="لا توجد توقعات سابقة لهذا السهم" />
@@ -1608,7 +1608,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
     <SectionCard
       icon={<Target className="w-4 h-4" />}
       title="التوصية والأسعار المستهدفة"
-      description="من stock_info: signal + support + resistance + trend (Rule 67 — أرقام حقيقية فقط)"
+      description="مؤشرات فنية: الإشارة + الدعم + المقاومة + الاتجاه"
       accent="amber"
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
