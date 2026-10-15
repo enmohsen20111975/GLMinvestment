@@ -19,9 +19,11 @@ advanced_screener_bp = Blueprint('advanced_screener', __name__)
 
 
 def _get_stocks_conn():
-    """Get a connection to stocks.db."""
-    conn = sqlite3.connect(DBPaths.STOCKS_DB)
+    """Get a connection to stocks.db with WAL + busy_timeout (prevents locks)."""
+    conn = sqlite3.connect(DBPaths.STOCKS_DB, timeout=30.0)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA busy_timeout=30000')
     return conn
 
 
@@ -112,8 +114,37 @@ def advanced_screener():
       - summary: {total, advancers, decliners, avg_change, total_turnover}
     """
     try:
-        market = request.args.get('market', 'EGX').strip()
+        # BRAVO-MARKET (2026-10-15): Normalize market param for all 6 markets
+        _MARKET_MAP = {
+            'EGX': 'EGX', 'EGYPT': 'EGX', 'مصر': 'EGX',
+            'TADAWUL': 'TADAWUL', 'TASI': 'TADAWUL', 'SAUDI': 'TADAWUL', 'السعودية': 'TADAWUL', 'TADAWUL': 'TADAWUL',
+            'KSE': 'KSE', 'KUWAIT': 'KSE', 'الكويت': 'KSE',
+            'QSE': 'QSE', 'QATAR': 'QSE', 'قطر': 'QSE',
+            'US': 'US', 'USA': 'US',
+            'CRYPTO': 'CRYPTO',
+        }
+        raw_market = request.args.get('market', 'EGX').strip()
+        market = _MARKET_MAP.get(raw_market.upper(), _MARKET_MAP.get(raw_market, raw_market))
         sector = request.args.get('sector', '').strip()
+
+        # BRAVO-PRESETS (2026-10-15): Quick-filter presets for all 6 markets
+        preset = request.args.get('preset', '').strip().lower()
+        # Preset → filter overrides
+        if preset == 'whale_accumulation':
+            # أسهم الحيتان: حجم تداول كبير + تغير إيجابي + فوق MA50
+            request.args = request.args.copy()
+            request.args['min_volume'] = request.args.get('min_volume', '100000')
+            if not sort_by or sort_by == 'turnover_egp':
+                sort_by = 'volume'
+        elif preset == 'breakout':
+            # اختراقات: تغير > 3% + حجم ضخم + فوق MA50
+            request.args = request.args.copy()
+            request.args['min_change'] = request.args.get('min_change', '3.0')
+            sort_by = 'change_percent'
+        elif preset == 'high_rr':
+            # فرص R/R ≥ 1.5: تحتاج support/resistance + إشارة شراء
+            request.args = request.args.copy()
+            request.args['min_signal'] = request.args.get('min_signal', '1')
         sort_by = request.args.get('sort', 'turnover_egp').strip()
         order = request.args.get('order', 'desc').strip().lower()
         limit = min(int(request.args.get('limit', '100')), 500)
@@ -344,14 +375,24 @@ def advanced_screener():
                          else (_safe_float(r['current_price'], 0) * _safe_float(r['volume'], 0)) if _safe_float(r['current_price'], 0) > 0 and _safe_float(r['volume'], 0) > 0
                          else 0.0),
                         0),
+                    # BRAVO-RR (2026-10-15): R/R ratio + falling knife guard
+                    'support': _safe_float(r['support']),
+                    'resistance': _safe_float(r['resistance']),
+                    'rr_ratio': (
+                        (lambda s, c: round((s - c) / max(c - _safe_float(r.get('support'), c * 0.95), 0.01), 2) if s and c and c > _safe_float(r.get('support'), 0) else None)
+                        (_safe_float(r['resistance']), current)
+                    ),
+                    'targets_available': not (
+                        current and _safe_float(r['ma_50']) and _safe_float(r['ma_200'])
+                        and current < _safe_float(r['ma_50']) * 0.95
+                        and _safe_float(r['ma_50']) < _safe_float(r['ma_200'])
+                    ),
                     'is_egx30': bool(r['is_egx30']),
                     'is_egx70': bool(r['is_egx70']),
                     'is_egx100': bool(r['is_egx100']),
                     'free_float_percentage': _safe_float(r['free_float_percentage']),
                     'dps_ttm': _safe_float(r['dps_ttm']),
                     'book_value_per_share': _safe_float(r['book_value_per_share']),
-                    'support': _safe_float(r['support']),
-                    'resistance': _safe_float(r['resistance']),
                     'volume_surge': vol_surge,
                     'above_ma_50': bool(r['ma_50'] and current > r['ma_50']),
                     'above_ma_200': bool(r['ma_200'] and current > r['ma_200']),
@@ -456,6 +497,19 @@ def advanced_screener():
                 },
             }
             _set_cache(_cache_key, result_payload)
+
+            # BRAVO-RR-FILTER (2026-10-15): If preset=high_rr, filter to R/R ≥ 1.5 only
+            if preset == 'high_rr':
+                result_payload['stocks'] = [
+                    s for s in result_payload.get('stocks', [])
+                    if _safe_float(s.get('rr_ratio'), 0) and _safe_float(s.get('rr_ratio'), 0) >= 1.5
+                ]
+                result_payload['count'] = len(result_payload['stocks'])
+                result_payload['preset'] = 'high_rr'
+                result_payload['rr_filter'] = '≥ 1.5 (enforced)'
+            elif preset:
+                result_payload['preset'] = preset
+
             return jsonify(result_payload)
         finally:
             conn.close()
