@@ -28,7 +28,7 @@ analyzers/indicators/__init__.py — Canonical Technical Indicators
 from .atr import calc_atr
 from .rsi import calc_rsi
 from .srsi import calc_srsi
-from .ma import sma, ema, macd
+from .ma import sma, ema, macd, bollinger
 
-__all__ = ['calc_atr', 'calc_rsi', 'calc_srsi', 'sma', 'ema', 'macd']
+__all__ = ['calc_atr', 'calc_rsi', 'calc_srsi', 'sma', 'ema', 'macd', 'bollinger']
 

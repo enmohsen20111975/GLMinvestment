@@ -64,19 +64,19 @@ if os.path.exists('db/data_engine.db'):
             print("     *", r)
     conn_de.close()
 
-# 4. Check market.db
-if os.path.exists('db/market.db'):
-    conn_m = sqlite3.connect('db/market.db')
+# 4. Check stocks.db
+if os.path.exists('db/stocks.db'):
+    conn_m = sqlite3.connect('db/stocks.db')
     try:
         tables_m = [r[0] for r in conn_m.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-        print(f"\n4. market.db tables: {', '.join(tables_m[:10])}")
+        print(f"\n4. stocks.db tables: {', '.join(tables_m[:10])}")
         if 'stocks' in tables_m:
             ar_m = conn_m.execute("SELECT ticker, name_ar FROM stocks WHERE name_ar GLOB '*[ا-ي]*' LIMIT 5").fetchall()
-            print(f"   Arabic names in market.db: {len(ar_m)}")
+            print(f"   Arabic names in stocks.db: {len(ar_m)}")
             for r in ar_m:
                 print("     *", r)
     except Exception as e:
-        print(f"   market.db error: {e}")
+        print(f"   stocks.db error: {e}")
     finally:
         conn_m.close()
 

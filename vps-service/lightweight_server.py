@@ -542,7 +542,7 @@ def live_monitor():
 
 @app.route('/', methods=['GET'])
 def root():
-    return jsonify({"name": "Market Pulse Server (Lightweight)", "port": 8010, "endpoints": ["/api/market-pulse", "/api/live-monitor", "/api/flow/*"]})
+    return jsonify({"name": "Market Pulse Server (Lightweight)", "port": int(os.environ.get('PORT_LIGHTWEIGHT', 8015)), "endpoints": ["/api/market-pulse", "/api/live-monitor", "/api/flow/*"]})
 
 
 # ============================================================================
@@ -1681,7 +1681,7 @@ def keepalive_root():
     return jsonify({
         'status': 'ok',
         'service': 'GLM Finance Backend',
-        'port': 8010,
+        'port': int(os.environ.get('PORT_LIGHTWEIGHT', 8015)),
         'timestamp': datetime.utcnow().isoformat() + 'Z',
     })
 
@@ -2108,6 +2108,6 @@ if __name__ == '__main__':
     print("=" * 50)
     print("Market Pulse Server (Lightweight)")
     print(f"Database: {DATABASE_PATH}")
-    print("Port: 8010")
+    print(f"Port: {os.environ.get('PORT_LIGHTWEIGHT', '8015')} (env PORT_LIGHTWEIGHT; default 8015 — 8010 reserved for FastAPI main.py)")
     print("=" * 50)
-    app.run(host='0.0.0.0', port=8010, debug=False, threaded=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT_LIGHTWEIGHT', '8015')), debug=False, threaded=True)

@@ -20,7 +20,7 @@ def get_database_path() -> str:
     
     NOTE: unified_learning_routes.py uses predictions.db directly (not via config).
     DATABASE_PATH here is used by ~20 modules for market data (stocks, prices, etc.)
-    — it MUST point to stocks.db (or market.db after migration).
+    — it MUST point to stocks.db.
     
     PHASE-3-DB-UNIFY (2026-08-29): REVERTED from predictions.db back to stocks.db.
     Changing DATABASE_PATH to predictions.db broke 20 modules that read market data.

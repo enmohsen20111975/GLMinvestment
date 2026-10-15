@@ -428,7 +428,9 @@ type AdminTab =
   | 'telegram-predictions'
   // Task 31-B (Engine Monitor Battalion) — unified engine control room.
   | 'engine-control-room'
-  | 'ai-gatekeeper';
+  | 'ai-gatekeeper'
+  // bravo2-dcs-rebuild-and-admin-integration: industrial DCS ops center sub-page.
+  | 'ops-dcs';
 
 // Stream C: 6 Core Admin Hubs — consolidates the flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -1039,6 +1041,9 @@ export function AdminView() {
         { id: 'learning', label: 'التعلم الذكي', icon: <Brain className="w-3.5 h-3.5" />, desc: 'تعلّم + توقعات' },
         { id: 'backtest', label: 'الباك تست', icon: <Activity className="w-3.5 h-3.5" />, desc: 'اختبار الاستراتيجيات' },
         { id: 'ai-gatekeeper', label: '🤖 حارس الذكاء الاصطناعي', icon: <Brain className="w-3.5 h-3.5" />, desc: 'مراقبة وتحكم LightGBM' },
+        // bravo2-dcs-rebuild-and-admin-integration: DCS ops center sub-page.
+        // External sub-page at /admin/ops-dcs rendered via iframe (mirrors /admin/reports pattern).
+        { id: 'ops-dcs', label: '🎮 DCS Ops Center', icon: <Gauge className="w-3.5 h-3.5" />, desc: 'غرفة تحكم PLC/DCS صناعية (8 panels مباشرة)' },
         // Task ADMIN-CLEANUP: أخفينا 'engine-control-room' (🎮 حشو) + 'general' (مكرر) + 'platform-performance' (عرضي)
       ],
     },
@@ -1857,6 +1862,21 @@ export function AdminView() {
             className="w-full"
             style={{ minHeight: '80vh', border: 'none' }}
             title="التقارير الذكية"
+          />
+        </div>
+      )}
+
+      {/* ==================== DCS OPS CENTER TAB (bravo2-dcs-rebuild-and-admin-integration) ==================== */}
+      {/* Industrial PLC/DCS control-room dashboard at /admin/ops-dcs. Same 8 endpoints
+          as the sandbox preview (GLMinvestment's own /api/dcs/{view} route). Real
+          production data only (Rule 27). Python calc brain (Rule 4/67b) — no mock. */}
+      {activeTab === 'ops-dcs' && (
+        <div className="bg-background rounded-lg">
+          <iframe
+            src="/admin/ops-dcs"
+            className="w-full"
+            style={{ minHeight: '85vh', border: 'none' }}
+            title="DCS Ops Center"
           />
         </div>
       )}

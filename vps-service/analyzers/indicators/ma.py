@@ -123,3 +123,33 @@ def macd(closes: List[float], fast: int = 12, slow: int = 26,
         "signal": round(signal_val, 4),
         "histogram": round(macd_line - signal_val, 4),
     }
+
+
+def bollinger(data: List[float], period: int = 20, num_std: float = 2.0) -> Optional[Dict[str, float]]:
+    """Bollinger Bands — canonical (Rule 54).
+
+    الصيغة:
+      middle = SMA(data, period)
+      std = standard deviation of data[-period:]
+      upper = middle + num_std * std
+      lower = middle - num_std * std
+
+    Args:
+        data: قائمة القيم (آخرها في النهاية)
+        period: فترة الـ Bollinger (default: 20)
+        num_std: عدد الانحرافات المعيارية (default: 2.0)
+
+    Returns:
+        dict: {upper, middle, lower} أو None لو البيانات غير كافية. Rounded لـ 4 أرقام.
+    """
+    if not data or len(data) < period:
+        return None
+    recent = data[-period:]
+    mid = sum(recent) / period
+    var = sum((x - mid) ** 2 for x in recent) / period
+    std = var ** 0.5
+    return {
+        "upper": round(mid + num_std * std, 4),
+        "middle": round(mid, 4),
+        "lower": round(mid - num_std * std, 4),
+    }

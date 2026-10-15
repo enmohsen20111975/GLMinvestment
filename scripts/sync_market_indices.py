@@ -8,7 +8,7 @@ sync_market_indices.py — مزامنة وتحديث قيم المؤشرات ا�
 
 ويقوم بحقنها وتحديث أحدث القيم اللحظية واليومية في:
   1. db/stocks.db -> جدول market_indices و index_daily_prices
-  2. db/market.db -> جدول market_indices
+  2. db/stocks.db -> جدول market_indices
   3. db/data_engine.db -> جدول historical_data
 """
 

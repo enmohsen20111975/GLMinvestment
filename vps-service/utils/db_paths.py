@@ -4,7 +4,7 @@ db_paths.py — Single source of truth لكل مسارات قواعد البيا
 PHASE-4-DB-REORG (2026-08-29): إعادة هيكلة لـ 4 قواعد بيانات فقط
 
 التصميم الجديد:
-    1. market.db      — كل بيانات السوق والأسعار والميتاداتا والأساسيات
+    1. stocks.db      — كل بيانات السوق والأسعار والميتاداتا والأساسيات
     2. predictions.db  — كل التوقعات والتعلم والنتائج والمحفظة
     3. auth.db         — المستخدمين والاشتراكات والصلاحيات
     4. content.db      — الأخبار والتليجرام والمحتوى
@@ -14,7 +14,7 @@ PHASE-4-DB-REORG (2026-08-29): إعادة هيكلة لـ 4 قواعد بيان�
 
 الاستخدام:
     from utils.db_paths import DBPaths
-    conn = sqlite3.connect(DBPaths.MARKET_DB)
+    conn = sqlite3.connect(DBPaths.STOCKS_DB)
     conn = sqlite3.connect(DBPaths.PREDICTIONS_DB)
     conn = sqlite3.connect(DBPaths.AUTH_DB)
     conn = sqlite3.connect(DBPaths.CONTENT_DB)
@@ -52,7 +52,7 @@ class DBPaths:
     # ═══════════════════════════════════════════════════════════════
 
     # 1. stocks.db — بيانات السوق والأسعار والميتاداتا والأساسيات (المصدر المعتمد)
-    MARKET_DB: str = _resolve("STOCKS_DB", "stocks.db")
+    #    (كل بيانات السوق canonical في stocks.db)
 
     # 2. predictions.db — التوقعات والتعلم والنتائج
     #    يحتوي على: predictions, persona_predictions, outcome_logs,
@@ -75,15 +75,12 @@ class DBPaths:
     # Backward compatibility aliases
     # ═══════════════════════════════════════════════════════════════
     # PHASE-2-DB-UNIFY (2026-08-29):
-    # الـ 4-DB target architecture (market.db + predictions.db + auth.db + content.db) لم يكتمل
-    # بعد على الإنتاج (market.db = 0 بايت). لحين اكتمال الـ migration، كل alias بـ points
-    # لـ DBه الأصلي (اللي فيه بيانات حقيقية على الإنتاج):
+    # الـ 4-DB target architecture (stocks.db + predictions.db + auth.db + content.db).
+    # Legacy aliases redirect to the live DB holding the real data:
     #   - price_history.db: 1,248,257 rows (25 سنة) — canonical price history
     #   - data_engine.db: fundamentals (tab_*) + crypto_prices + gold_prices + screener_lists
     #   - stocks.db: stocks metadata + stock_daily_prices (آخر 30 يوم) + screener_*
     #   - intraday.db: stock_intraday + crypto_intraday + commodity_intraday
-    #
-    # ملاحظة: market.db_alias = market.db (هدف نهائي)، بس دلوقتي الفاضي.
     #
     # P0-8-DB-UNIFY (2026-09-27): 9 duplicate tables dropped across the 4 DBs.
     # See agent-ctx/P0-8-DB-UNIFY-REPORT.md for the full per-table decisions.
@@ -106,8 +103,7 @@ class DBPaths:
     # crypto.db: crypto-specific tables (legacy)
     CRYPTO_DB: str = _resolve("CRYPTO_DB", "crypto.db")
 
-    # market.db: ملغية ومحذوفة لتوفير المساحة — يتم التوجيه تلقائياً إلى stocks.db
-    MARKET_DB: str = _resolve("STOCKS_DB", "stocks.db")
+    # (canonical market data = stocks.db; no legacy market DB remains)
 
     # Aliases for legacy code (توجّه للـ canonical source — updated P0-8-DB-UNIFY 2026-09-27)
     GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices — canonical: data_engine.db (187K rows). Dropped: stocks.db (3 stale rows).
@@ -121,7 +117,7 @@ class DBPaths:
     def all_dbs(cls) -> dict[str, str]:
         """خريطة اسم → مسار لكل القواعد المعتمدة (4 فقط)."""
         return {
-            'MARKET_DB': cls.MARKET_DB,
+            'STOCKS_DB': cls.STOCKS_DB,
             'PREDICTIONS_DB': cls.PREDICTIONS_DB,
             'AUTH_DB': cls.AUTH_DB,
             'CONTENT_DB': cls.CONTENT_DB,
@@ -139,9 +135,8 @@ class DBPaths:
 
         P0-8-DB-UNIFY (2026-09-27): refreshed to point at the *canonical* DB
         for every consolidated table. Previously, several entries pointed at the
-        target 4-DB architecture (MARKET_DB = market.db, which is still empty
-        in production); now they point at the live DB that actually holds the
-        data (data_engine.db / stocks.db / predictions.db / auth.db).
+        (canonical = stocks.db); they point at the live
+        DB that actually holds the data (data_engine.db / stocks.db / predictions.db / auth.db).
 
         Returns: مسار الـ DB المناسب
         """
@@ -226,12 +221,10 @@ class DBPaths:
 def get_db_path(name: str) -> str:
     """
     احصل على مسار DB بالاسم.
-    Example: get_db_path('market') -> '/abs/path/db/market.db'
+    Example: get_db_path('stocks') -> '/abs/path/db/stocks.db'
     """
     name = name.lower().strip()
     if name.endswith(".db"):
         name = name[:-3]
-    if name == "market":
-        return _resolve("STOCKS_DB", "stocks.db")
     env_key = f"{name.upper()}_DB"
     return _resolve(env_key, f"{name}.db")

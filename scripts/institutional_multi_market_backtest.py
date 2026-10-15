@@ -12,7 +12,7 @@ DATA SOURCE (Rule 27 — NO-FAKE-DATA):
     * radar_signal_tracking : 1,102 signals, date range 2026-09-28 →
                               2026-10-11 ONLY.
   - ⛔ db/price_history.db is malformed (DO NOT USE).
-  - ⛔ db/market.db is dead (DO NOT USE).
+  - ⛔ db/stocks.db is dead (DO NOT USE).
 
 TRADE-CLASSIFICATION SOURCE (consistency with verify_all_radar_signals.py):
   The `status` column in `radar_signal_tracking` already reflects the

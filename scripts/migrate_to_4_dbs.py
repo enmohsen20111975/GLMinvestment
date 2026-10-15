@@ -5,7 +5,7 @@ migrate_to_4_dbs.py — سكربت تشغيلى واحد لإعادة هيكلة
 PHASE-4-DB-REORG (2026-08-29): دمج 19 قاعدة بيانات في 4 فقط.
 
 التصميم:
-    1. market.db      — كل بيانات السوق والأسعار والميتاداتا والأساسيات
+    1. stocks.db      — كل بيانات السوق والأسعار والميتاداتا والأساسيات
     2. predictions.db  — كل التوقعات والتعلم والنتائج
     3. auth.db         — المستخدمين والاشتراكات
     4. content.db      — الأخبار والتليجرام والمحتوى
@@ -39,7 +39,7 @@ LOG_FILE = DB_DIR / 'migration_log.json'
 # ═══════════════════════════════════════════════════════════════════════════
 
 MIGRATION_PLAN = {
-    'market.db': {
+    'stocks.db': {
         'source_dbs': {
             'data_engine.db': [
                 'egksco_price_history', 'crypto_prices', 'gold_prices',
@@ -322,7 +322,7 @@ def verify_migration():
     log("التحقق من الـ 4 قواعد الجديدة:")
     log("=" * 60)
 
-    for db_name in ['market.db', 'predictions.db', 'auth.db', 'content.db']:
+    for db_name in ['stocks.db', 'predictions.db', 'auth.db', 'content.db']:
         db_path = DB_DIR / db_name
         if not db_path.exists():
             log(f"  ❌ {db_name}: not found", "ERROR")

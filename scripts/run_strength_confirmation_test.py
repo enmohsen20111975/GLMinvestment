@@ -64,7 +64,7 @@ def find_daily_price_db():
     candidates = [
         (DB_DIR / "data_engine.db", "egksco_price_history"),
         (DB_DIR / "price_history.db", "price_history"),
-        (DB_DIR / "market.db", "egksco_price_history"),
+        (DB_DIR / "stocks.db", "egksco_price_history"),
         (DB_DIR / "stocks.db", "egksco_price_history"),
     ]
     for db_path, table_name in candidates:
