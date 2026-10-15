@@ -48,6 +48,27 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from contextlib import contextmanager
 
+
+def _whale_distribution_guard(opens, highs, lows, closes, volumes):
+    """Phase 2 #1: فحص تصريف الحيتان — لو صافي التدفق سالب (تصريف) → أمنع BUY.
+    يحمي المتداول من مصايد الثيران (bull traps) على أسهم بنزف مؤسسي."""
+    try:
+        _scripts = Path(__file__).resolve().parents[2] / "scripts"
+        if str(_scripts) not in sys.path:
+            sys.path.insert(0, str(_scripts))
+        n = min(len(opens), len(highs), len(lows), len(closes), len(volumes))
+        if n < 5:
+            return False  # بيانات غير كافية للفحص — لا تمنع
+        candles = [{'open': opens[i], 'high': highs[i], 'low': lows[i], 'close': closes[i], 'volume': volumes[i]} for i in range(n)]
+        from liquidity_radar_v2 import compute_whale_flow
+        whale = compute_whale_flow(candles)
+        return (whale.get('net_flow_egp', 0) or 0) < 0  # distributing → block BUY
+    except Exception as e:
+        # لا بلع أخطاء — يُسجّل صراحة + fail-open (لا يمنع BUY لو الفحص فشل).
+        sys.stderr.write(f"[daily_predictor] whale_distribution_guard error: {e}\n")
+        return False
+
+
 # Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect
 try:
     from core.db_manager import db_manager as _dbm
@@ -877,6 +898,12 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # DNA-DEBUG: trace AMOC
             if ticker == 'AMOC':
                 print(f"[DNA-TRACE] AMOC: signal={signal} score={result.get('score')} on {scan_date}", flush=True)
+            # Phase 2 #1: حظر BUY للأسهم اللي بتشهد تصريف حيتان (Whale Distributing).
+            if signal in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
+                if _whale_distribution_guard(opens[:day_idx+1], highs[:day_idx+1], lows[:day_idx+1], closes[:day_idx+1], volumes[:day_idx+1]):
+                    signal = 'HOLD'
+                    result['signal'] = 'HOLD'
+                    result.setdefault('rejection_reason', 'whale distributing — BUY blocked (Phase 2)')
             # PILLAR-4: قبول BUY عادي (مش بس STRONG_BUY/INSTITUTIONAL_BUY)
             # لو الإشارة مش شراء، نفحص صيادي الانفجار والتجميع (Surge / Accumulation / Recovery Hunters)
             # Task IMPROVEMENT-12-2026-10-07: لو مفيش إشارة شراء → اكتب SELL/HOLD بدل ما ترفض
