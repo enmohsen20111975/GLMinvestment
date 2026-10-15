@@ -608,13 +608,40 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
 
   const isProfitable = item.gain_loss >= 0;
 
+  // ALPHA-6: Status badges (تجميع حيتان / تبريد وإنقاذ / تحذير كسر الوقف)
+  const stopLossTriggered = hasAlertBelow && isBelowTriggered;
+  const isRescueZone = hasGainLoss && item.purchase_price && item.gain_loss_percent <= -10;
+  const isWhaleAccumulation = hasGainLoss && item.purchase_price && isProfitable && item.gain_loss_percent >= 5;
+
   return (
     <Card className={cn(
-      'overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30',
-      hasGainLoss && item.purchase_price && item.quantity && isProfitable && 'border-emerald-500/30 dark:border-emerald-500/30 dark:border-primary-container/40',
-      hasGainLoss && item.purchase_price && item.quantity && !isProfitable && 'border-rose-500/30 dark:border-rose-500/30 dark:border-error-container/40'
+      'overflow-hidden bg-card border-border',
+      hasGainLoss && item.purchase_price && item.quantity && isProfitable && 'border-emerald-500/30',
+      hasGainLoss && item.purchase_price && item.quantity && !isProfitable && 'border-rose-500/30',
+      stopLossTriggered && 'border-rose-500/50 ring-1 ring-rose-500/20',
+      isRescueZone && 'border-amber-500/50 ring-1 ring-amber-500/20'
     )}>
       <CardContent className="p-4">
+        {/* ALPHA-6: Status badges row */}
+        {(isWhaleAccumulation || isRescueZone || stopLossTriggered) && (
+          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+            {isWhaleAccumulation && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                🐋 تجميع حيتان
+              </span>
+            )}
+            {isRescueZone && !stopLossTriggered && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                🔄 منطقة إنقاذ وتبريد
+              </span>
+            )}
+            {stopLossTriggered && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-rose-500/10 text-rose-600 border border-rose-500/20 animate-pulse">
+                ⚠️ تحذير كسر الوقف
+              </span>
+            )}
+          </div>
+        )}
         {/* Header Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
