@@ -135,7 +135,7 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
     header: 'السيولة',
     align: 'center',
     sortable: true,
-    className: 'tabular-nums text-muted-foreground',
+    className: 'tabular-nums text-stitch-muted',
     render: (s) => fmtNum(s.total_turnover),
   },
   {
@@ -146,10 +146,10 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
     className: 'tabular-nums font-semibold',
     render: (s) => {
       const cls = s.avg_change_pct > 0
-        ? 'text-emerald-500 dark:text-emerald-400'
+        ? 'text-stitch-primary dark:text-stitch-primary'
         : s.avg_change_pct < 0
-        ? 'text-red-600 dark:text-red-400'
-        : 'text-muted-foreground';
+        ? 'text-rose-400 dark:text-rose-400'
+        : 'text-stitch-muted';
       return <span className={cn(cls, 'font-semibold')}>{fmtPct(s.avg_change_pct)}</span>;
     },
   },
@@ -164,9 +164,9 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
         <Badge
           className={cn(
             'text-[9px] px-1 py-0',
-            isInflow && 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 dark:text-emerald-300',
-            isOutflow && 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-300',
-            !isInflow && !isOutflow && 'bg-slate-500/10 text-slate-600 border-slate-500/30 dark:text-slate-300'
+            isInflow && 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30 dark:text-stitch-primary',
+            isOutflow && 'bg-rose-500/10 text-red-700 border-red-500/30 dark:text-red-300',
+            !isInflow && !isOutflow && 'bg-slate-500/10 text-stitch-muted border-slate-500/30 dark:text-slate-300'
           )}
         >
           {isInflow ? 'داخل' : isOutflow ? 'هارب' : 'محايد'}
@@ -247,7 +247,7 @@ export function InvestorsFlowPanel() {
   if (loading) {
     return (
       <Card dir="rtl" className="p-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-stitch-muted">
           <Loader2 className="w-4 h-4 animate-spin" />
           جاري تحميل بيانات تدفّق السيولة...
         </div>
@@ -272,7 +272,7 @@ export function InvestorsFlowPanel() {
           </CardHeader>
           <CardContent className="space-y-3">
             <InvestorsTable rows={invData} source={invSource} autoSeeded={invAutoSeeded} />
-            <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/50">
+            <div className="text-[10px] text-stitch-muted text-center pt-1 border-t border-white/[0.06]">
               ⚠️ بيانات تدفّق القطاعات غير متاحة حالياً — يعرض تدفّق المستثمرين فقط
             </div>
           </CardContent>
@@ -281,7 +281,7 @@ export function InvestorsFlowPanel() {
     }
     return (
       <Card dir="rtl" className="p-4">
-        <div className="text-center text-xs text-muted-foreground py-4 space-y-1">
+        <div className="text-center text-xs text-stitch-muted py-4 space-y-1">
           <div className="flex items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400">
             <Users className="w-3.5 h-3.5" />
             <span className="font-semibold">تدفّق السيولة — {marketNameAr}</span>
@@ -340,7 +340,7 @@ export function InvestorsFlowPanel() {
               <User className="w-3 h-3 text-amber-500" />
             </span>
           </div>
-          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[#182030]">
             <div
               className="bg-cyan-500 dark:bg-cyan-500"
               style={{ width: `${instPct}%` }}
@@ -350,7 +350,7 @@ export function InvestorsFlowPanel() {
               style={{ width: `${retailPct}%` }}
             />
           </div>
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="flex items-center justify-between text-[10px] text-stitch-muted">
             <span>صفقات كبيرة: {inst.block_trades_count?.toLocaleString('ar-EG') || 0}</span>
             <span>متوسط قيمة الصفقة: {fmtNum(inst.avg_trade_value || 0)}</span>
           </div>
@@ -358,7 +358,7 @@ export function InvestorsFlowPanel() {
 
         {/* Sector Flow Table (UnifiedTable) */}
         <div className="space-y-1">
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground pb-1 border-b border-border/50">
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-stitch-muted pb-1 border-b border-white/[0.06]">
             <Layers className="w-3 h-3" />
             تدفّق القطاعات
           </div>
@@ -376,7 +376,7 @@ export function InvestorsFlowPanel() {
         <div className="grid grid-cols-2 gap-2">
           {/* Inflow */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-500 dark:text-emerald-400">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-stitch-primary dark:text-stitch-primary">
               <TrendingUp className="w-3 h-3" />
               سيولة داخلة
             </div>
@@ -384,23 +384,23 @@ export function InvestorsFlowPanel() {
               {data.top_inflow_stocks.slice(0, 4).map((s) => (
                 <div key={s.ticker} className="flex items-center justify-between text-[10px] py-0.5">
                   <div className="truncate" title={s.name_ar}>
-                    <span className="font-bold">{s.ticker}</span>
+                    <span className="font-bold stitch-latin">{s.ticker}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-emerald-500 font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
-                    <span className="text-muted-foreground tabular-nums">{fmtNum(s.total_turnover)}</span>
+                    <span className="text-stitch-primary font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
+                    <span className="text-stitch-muted tabular-nums">{fmtNum(s.total_turnover)}</span>
                   </div>
                 </div>
               ))}
               {data.top_inflow_stocks.length === 0 && (
-                <div className="text-[10px] text-muted-foreground py-1">بانتظار البيانات</div>
+                <div className="text-[10px] text-stitch-muted py-1">بانتظار البيانات</div>
               )}
             </div>
           </div>
 
           {/* Outflow */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-rose-400 dark:text-rose-400">
               <TrendingDown className="w-3 h-3" />
               سيولة هاربة
             </div>
@@ -408,16 +408,16 @@ export function InvestorsFlowPanel() {
               {data.top_outflow_stocks.slice(0, 4).map((s) => (
                 <div key={s.ticker} className="flex items-center justify-between text-[10px] py-0.5">
                   <div className="truncate" title={s.name_ar}>
-                    <span className="font-bold">{s.ticker}</span>
+                    <span className="font-bold stitch-latin">{s.ticker}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-red-600 font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
-                    <span className="text-muted-foreground tabular-nums">{fmtNum(s.total_turnover)}</span>
+                    <span className="text-rose-400 font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
+                    <span className="text-stitch-muted tabular-nums">{fmtNum(s.total_turnover)}</span>
                   </div>
                 </div>
               ))}
               {data.top_outflow_stocks.length === 0 && (
-                <div className="text-[10px] text-muted-foreground py-1">بانتظار البيانات</div>
+                <div className="text-[10px] text-stitch-muted py-1">بانتظار البيانات</div>
               )}
             </div>
           </div>
@@ -429,14 +429,14 @@ export function InvestorsFlowPanel() {
         )}
 
         {/* Summary */}
-        <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+        <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-stitch-muted">
           <span>
-            إجمالي السيولة: <span className="font-bold text-foreground">{fmtNum(data.summary.total_turnover)}</span>
+            إجمالي السيولة: <span className="font-bold text-stitch-on-surface stitch-num">{fmtNum(data.summary.total_turnover)}</span>
           </span>
           <span>
-            قطاعات صاعدة: <span className="font-bold text-emerald-500">{data.summary.advancing_sectors}</span>
+            قطاعات صاعدة: <span className="font-bold text-stitch-primary stitch-num">{data.summary.advancing_sectors}</span>
             {' / '}
-            <span className="font-bold text-red-600">{data.summary.declining_sectors}</span> هابطة
+            <span className="font-bold text-rose-400 stitch-num">{data.summary.declining_sectors}</span> هابطة
           </span>
         </div>
       </CardContent>
@@ -465,17 +465,17 @@ function InvestorsTable({
     return fmtNum(n);
   };
   const fmtNet = (n: number | null): { text: string; cls: string } => {
-    if (n == null) return { text: '—', cls: 'text-muted-foreground' };
+    if (n == null) return { text: '—', cls: 'text-stitch-muted' };
     const sign = n >= 0 ? '+' : '';
     return {
       text: `${sign}${fmtNum(n)}`,
-      cls: n > 0 ? 'text-emerald-500 dark:text-emerald-400' : n < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground',
+      cls: n > 0 ? 'text-stitch-primary dark:text-stitch-primary' : n < 0 ? 'text-rose-400 dark:text-rose-400' : 'text-stitch-muted',
     };
   };
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground pb-1 border-b border-border/50">
+      <div className="flex items-center justify-between text-[11px] font-semibold text-stitch-muted pb-1 border-b border-white/[0.06]">
         <span className="flex items-center gap-1">
           <Globe2 className="w-3 h-3" />
           تدفّق المستثمرين (مصريين / عرب / أجانب)
@@ -486,7 +486,7 @@ function InvestorsTable({
             'text-[9px] px-1 py-0',
             autoSeeded
               ? 'text-amber-600 dark:text-amber-400 border-amber-500/30'
-              : 'text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
+              : 'text-stitch-primary dark:text-stitch-primary border-emerald-500/30'
           )}
           title={source}
         >
@@ -499,20 +499,20 @@ function InvestorsTable({
           const arab = fmtNet(r.arab_institutions_net_value);
           const forNet = fmtNet(r.foreign_net_value);
           return (
-            <div key={r.date || i} className="rounded border border-border/40 p-1.5 text-[10px]">
+            <div key={r.date || i} className="rounded border border-white/[0.06] p-1.5 text-[10px]">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-foreground">{r.date}</span>
+                <span className="font-semibold text-stitch-on-surface">{r.date}</span>
                 {r.number_of_trades != null && (
-                  <span className="text-muted-foreground tabular-nums">
+                  <span className="text-stitch-muted tabular-nums">
                     صفقات: {(r.number_of_trades / 1000).toFixed(0)}K
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-4 gap-1 items-center">
-                <div className="text-muted-foreground">النوع</div>
-                <div className="text-center tabular-nums text-muted-foreground">شراء</div>
-                <div className="text-center tabular-nums text-muted-foreground">بيع</div>
-                <div className="text-center tabular-nums text-muted-foreground">صافي</div>
+                <div className="text-stitch-muted">النوع</div>
+                <div className="text-center tabular-nums text-stitch-muted">شراء</div>
+                <div className="text-center tabular-nums text-stitch-muted">بيع</div>
+                <div className="text-center tabular-nums text-stitch-muted">صافي</div>
 
                 <div className="text-amber-600 dark:text-amber-400 font-medium">مصريين</div>
                 <div className="text-center tabular-nums">{fmtM(r.individuals_buys_value)}</div>
@@ -533,7 +533,7 @@ function InvestorsTable({
           );
         })}
       </div>
-      <div className="text-[9px] text-muted-foreground pt-0.5" title={source}>
+      <div className="text-[9px] text-stitch-muted pt-0.5" title={source}>
         المصدر: {source || 'stocks.db.investors_data'}
       </div>
     </div>
