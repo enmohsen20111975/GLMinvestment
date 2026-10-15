@@ -25,6 +25,12 @@ sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
 os.environ.setdefault('STOCKS_DB', str(PROJECT_ROOT / "db" / "stocks.db"))
 os.environ.setdefault('DATA_ENGINE_DB', str(PROJECT_ROOT / "db" / "data_engine.db"))
 
+# BRAVO Directive: unified responses + financial fields + ro DB.
+from api.standard_responses import (
+    standard_error, standard_success, enrich_opportunity,
+    verify_market, SUPPORTED_MARKETS, ro_connect, ro_query,
+)
+
 router = APIRouter(prefix="/api", tags=["Preset Filters + Market Pills"])
 
 
@@ -40,43 +46,57 @@ class PresetResult(BaseModel):
 def market_pills() -> Dict[str, Any]:
     """Market Pills — الأسواق الستة + عدد الأسهم (لشريط الأزرار العلوي)."""
     from analyzers.preset_filters import get_market_pills
-    pills = get_market_pills()
-    return {'pills': pills, 'count': len(pills)}
+    try:
+        pills = get_market_pills()
+        return standard_success(pills, count=len(pills))
+    except Exception as e:
+        import sys; sys.stderr.write(f"[api] market_pills error: {e}\n")
+        return standard_error()
 
 
-@router.get("/presets/{market}/{preset}", response_model=PresetResult)
+@router.get("/presets/{market}/{preset}")
 def get_preset_stocks(market: str, preset: str) -> Dict[str, Any]:
-    """الأسهم المُفلترة حسب الـ preset (جاهزة من Python — لا حساب في Node)."""
+    """الأسهم المُفلترة حسب الـ preset (جاهزة من Python — لا حساب في Node).
+    Unified fields: rr_ratio, risk_level, trend_direction, institutional_volume_pct."""
     from analyzers.preset_filters import apply_preset, PRESETS
     from liquidity_radar_v2 import scan_market
+    if not verify_market(market):
+        return standard_error(f"السوق {market} غير مدعوم — الأسواق: {SUPPORTED_MARKETS}", "unsupported_market")
     if preset not in PRESETS:
-        raise HTTPException(status_code=400, detail=f"unknown preset: {preset}. available: {list(PRESETS)}")
-    result = scan_market(market)
-    filtered = apply_preset(result, preset)
-    # compact output (ticker + key fields only — no heavy nested).
-    compact = []
-    for s in filtered:
-        ed = s.get('entry_defense', {}) or {}
-        w = s.get('whale', {}) or {}
-        f = s.get('fundamentals', {}) or {}
-        compact.append({
-            'ticker': s.get('ticker'), 'name': s.get('name'),
-            'price': ed.get('entry_level'), 'defense': ed.get('defense_level'),
-            'resistance': ed.get('resistance_level'),
-            'net_flow_m': round(_to_float(w.get('net_flow_egp')) / 1e6, 1),
-            'free_cf_b': round(_to_float(f.get('free_cash_flow')) / 1e9, 2) if f.get('free_cash_flow') else None,
-            'tv_whale': s.get('tv_whale_spotted', False),
-            'targets_available': s.get('targets_available', False),
-            'preset_reason': s.get('preset_reason', ''),
-            'preset_rr': s.get('preset_rr'),
-            'preset_distance_pct': s.get('preset_distance_pct'),
-            'preset_recovery_pct': s.get('preset_recovery_pct'),
-        })
-    return {
-        'market': market, 'preset': preset,
-        'preset_label': PRESETS[preset]['label'],
-        'count': len(compact), 'stocks': compact,
-    }
+        return standard_error(f"الفلتر {preset} غير معروف — المتاح: {list(PRESETS)}", "unknown_preset")
+    try:
+        result = scan_market(market)
+        filtered = apply_preset(result, preset)
+        # enrich with unified financial fields + compact output.
+        compact = []
+        for s in filtered:
+            ed = s.get('entry_defense', {}) or {}
+            w = s.get('whale', {}) or {}
+            f = s.get('fundamentals', {}) or {}
+            enriched = enrich_opportunity(dict(s))
+            compact.append({
+                'ticker': s.get('ticker'), 'name': s.get('name'),
+                'price': ed.get('entry_level'), 'defense': ed.get('defense_level'),
+                'resistance': ed.get('resistance_level'),
+                'net_flow_m': round(_to_float(w.get('net_flow_egp')) / 1e6, 1),
+                'free_cf_b': round(_to_float(f.get('free_cash_flow')) / 1e9, 2) if f.get('free_cash_flow') else None,
+                'tv_whale': s.get('tv_whale_spotted', False),
+                'targets_available': s.get('targets_available', False),
+                'preset_reason': s.get('preset_reason', ''),
+                'preset_rr': s.get('preset_rr'),
+                'preset_distance_pct': s.get('preset_distance_pct'),
+                'preset_recovery_pct': s.get('preset_recovery_pct'),
+                # BRAVO Directive: unified financial fields.
+                'rr_ratio': enriched.get('rr_ratio'),
+                'risk_level': enriched.get('risk_level'),
+                'trend_direction': enriched.get('trend_direction'),
+                'institutional_volume_pct': enriched.get('institutional_volume_pct'),
+            })
+        return standard_success(compact, market=market, preset=preset,
+                                preset_label=PRESETS[preset]['label'], count=len(compact))
+    except Exception as e:
+        import sys; sys.stderr.write(f"[api] presets error: {e}\n")
+        return standard_error()
 
 
 def _to_float(v, default=0.0):
