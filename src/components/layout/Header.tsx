@@ -46,6 +46,21 @@ export function Header({ title, subtitle }: HeaderProps) {
       className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/60 shadow-[0_1px_8px_rgba(0,0,0,0.45)]"
       dir="rtl"
     >
+      {/* Trial countdown bar — per Stitch trial_account_header */}
+      <div className="bg-muted px-4 py-1 flex items-center justify-between text-xs text-muted-foreground border-b border-border">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          <span className="font-mono text-emerald-500 font-semibold">تنبيه مباشر:</span>
+          <span className="text-foreground">باقي على انتهاء التجربة المجانية</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="text-primary hover:text-foreground transition-colors font-semibold">ترقية الآن ←</button>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3">
         {/* Mobile "More" sections button */}
         <MobileMoreButton />
