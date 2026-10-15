@@ -222,15 +222,15 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
   }, []);
 
   return (
-    <div className="stitch-canvas space-y-4 p-4 relative">
+    <div className="bg-background space-y-4 p-4 relative">
       <div className="relative z-10 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="stitch-latin text-xl sm:text-2xl font-bold flex items-center gap-2 text-stitch-on-surface">
-          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-stitch-primary flex-shrink-0" />
+        <h2 className="font-sans text-xl sm:text-2xl font-bold flex items-center gap-2 text-foreground">
+          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
           <span>{t('marketAnalysis.title')}</span>
           {/* v3.66.9 LIVE badge — بيتحدث تلقائياً خلال جلسة EGX */}
           {isLive && (
-            <span className="stitch-num inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-stitch-primary animate-pulse">
+            <span className="font-mono inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-primary animate-pulse">
               <Activity className="h-3 w-3" />
               LIVE · {liveCountdown}s
             </span>
@@ -248,69 +248,69 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
 
       {/* ── SCR-007: Track Record Banner (أرقام حقيقية من Python) ── */}
       {trackStats.totalClosed !== null && trackStats.totalClosed > 0 && (
-        <Card className="stitch-glass overflow-hidden">
+        <Card className="bg-card border border-border overflow-hidden">
           <CardContent className="p-3 sm:p-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               {/* Win Rate */}
               <div className="text-center">
-                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
+                <div className=" flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
                   <Trophy className="w-3 h-3" />
                   <span>نسبة النجاح</span>
                 </div>
-                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-primary">
+                <p className="font-mono text-lg sm:text-xl font-bold text-primary">
                   {trackStats.winRate !== null ? `${trackStats.winRate}%` : '—'}
                 </p>
               </div>
               {/* Total Closed */}
               <div className="text-center">
-                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
+                <div className=" flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
                   <BarChart3 className="w-3 h-3" />
                   <span>الصفقات المغلقة</span>
                 </div>
-                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-on-surface">
+                <p className="font-mono text-lg sm:text-xl font-bold text-foreground">
                   {trackStats.totalClosed ?? '—'}
                 </p>
               </div>
               {/* Wins */}
               <div className="text-center">
-                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
-                  <TrendingUp className="w-3 h-3 text-stitch-primary" />
+                <div className=" flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
+                  <TrendingUp className="w-3 h-3 text-primary" />
                   <span>رابحة</span>
                 </div>
-                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-primary">
+                <p className="font-mono text-lg sm:text-xl font-bold text-primary">
                   {trackStats.wins ?? '—'}
                 </p>
               </div>
               {/* Losses */}
               <div className="text-center">
-                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
+                <div className=" flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
                   <TrendingDown className="w-3 h-3 text-rose-400" />
                   <span>خاسرة</span>
                 </div>
-                <p className="stitch-num text-lg sm:text-xl font-bold text-rose-400">
+                <p className="font-mono text-lg sm:text-xl font-bold text-rose-400">
                   {trackStats.losses ?? '—'}
                 </p>
               </div>
               {/* Profit Factor */}
               <div className="text-center">
-                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
+                <div className=" flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
                   <Target className="w-3 h-3" />
                   <span>معامل الربحية</span>
                 </div>
-                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-on-surface">
+                <p className="font-mono text-lg sm:text-xl font-bold text-foreground">
                   {trackStats.profitFactor !== null ? trackStats.profitFactor : '—'}
                 </p>
               </div>
               {/* Active + Top 5 */}
               <div className="text-center">
-                <div className="stitch-ar flex items-center justify-center gap-1 text-[10px] text-stitch-muted mb-1">
+                <div className=" flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-1">
                   <Activity className="w-3 h-3" />
                   <span>صفقات نشطة</span>
                 </div>
-                <p className="stitch-num text-lg sm:text-xl font-bold text-stitch-on-surface">
+                <p className="font-mono text-lg sm:text-xl font-bold text-foreground">
                   {trackStats.activeCount ?? '—'}
                   {trackStats.top5Count !== null && (
-                    <span className="stitch-ar text-[10px] text-stitch-muted ms-1">(أقوى {trackStats.top5Count})</span>
+                    <span className=" text-[10px] text-muted-foreground ms-1">(أقوى {trackStats.top5Count})</span>
                   )}
                 </p>
               </div>
@@ -320,12 +320,12 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="stitch-glass flex w-full overflow-x-auto sm:grid sm:grid-cols-2 h-auto gap-1">
-          <TabsTrigger value="predictions" className="stitch-ar flex items-center gap-1 text-stitch-muted data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
-            <Target className="h-4 w-4 text-stitch-primary" />
+        <TabsList className="bg-card border border-border flex w-full overflow-x-auto sm:grid sm:grid-cols-2 h-auto gap-1">
+          <TabsTrigger value="predictions" className=" flex items-center gap-1 text-muted-foreground data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
+            <Target className="h-4 w-4 text-primary" />
             <span className="hidden sm:inline">غرفة الصفقات والأداء</span>
           </TabsTrigger>
-          <TabsTrigger value="status" className="stitch-ar flex items-center gap-1 text-stitch-muted data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
+          <TabsTrigger value="status" className=" flex items-center gap-1 text-muted-foreground data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">حالة السوق ونبضه</span>
           </TabsTrigger>
@@ -343,27 +343,27 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       </Tabs>
 
       {/* Social Share Footer */}
-      <Card className="stitch-glass mt-4">
-        <CardContent className="p-3 text-center text-sm text-stitch-muted stitch-ar">
+      <Card className="bg-card border border-border mt-4">
+        <CardContent className="p-3 text-center text-sm text-muted-foreground ">
           <p>{t('marketAnalysis.socialFollow')}</p>
           <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
-            <a href={OFFICIAL_LINKS.website} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
+            <a href={OFFICIAL_LINKS.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               invist.m2y.net
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.android} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
+            <a href={OFFICIAL_LINKS.android} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               Android
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
+            <a href={OFFICIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               Telegram
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
+            <a href={OFFICIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               Facebook
             </a>
             <span>|</span>
-            <a href={OFFICIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-stitch-primary hover:underline">
+            <a href={OFFICIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               WhatsApp
             </a>
           </div>

@@ -272,13 +272,13 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
   compliant:
-    'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/50 dark:text-stitch-primary border-emerald-500/30 dark:border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary',
+    'bg-emerald-500/10 text-primary dark:bg-emerald-600/60/50 dark:text-primary border-emerald-500/30 dark:border-emerald-500/30 dark:bg-primary-container/20 dark:text-primary',
   non_compliant:
     'bg-rose-500/10 text-rose-400 dark:bg-rose-500/60/50 dark:text-rose-400 border-rose-500/30 dark:border-rose-500/30 dark:bg-error-container/20 dark:text-error',
   doubtful:
     'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
   not_available:
-    'bg-secondary text-stitch-muted dark:bg-background/50 dark:text-stitch-outline border-border/60 dark:border-border/60',
+    'bg-secondary text-muted-foreground dark:bg-background/50 dark:text-muted-foreground border-border/60 dark:border-border/60',
 };
 
 function deriveOverallStatus(row: ShariaRow): ShariaStatus {
@@ -326,7 +326,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-stitch-primary dark:text-stitch-primary text-base font-financial tabular-nums dark:text-primary">
+              <span className="font-bold text-primary dark:text-primary text-base font-financial tabular-nums dark:text-primary">
                 {row.symbol}
               </span>
               <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full border', STATUS_BADGE_CLASS[status])}>
@@ -339,22 +339,22 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
                 </span>
               )}
             </div>
-            <p className="text-xs text-stitch-muted truncate mt-1">
+            <p className="text-xs text-muted-foreground truncate mt-1">
               {row.name_ar || '—'}
             </p>
             {row.category_ar && (
-              <p className="text-[10px] text-stitch-muted/70 mt-0.5">
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                 {row.category_ar}
               </p>
             )}
           </div>
 
           <div className="text-left flex-shrink-0 space-y-1">
-            <div className="text-[10px] text-stitch-muted">نسبة التطهير (S&P)</div>
+            <div className="text-[10px] text-muted-foreground">نسبة التطهير (S&P)</div>
             <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400" dir="ltr">
               {formatPct(purificationRate)}
             </div>
-            <div className="text-[10px] text-stitch-muted">
+            <div className="text-[10px] text-muted-foreground">
               {compliantCount}/{activeCount || 8} مصدر
             </div>
           </div>
@@ -418,11 +418,11 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto stitch-glass rounded-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-border rounded-2xl border border-emerald-500/30 dark:border-emerald-500/30 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-stitch-primary p-4">
+        <div className="relative bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-primary p-4">
           <IslamicPattern />
           <div className="relative flex items-start justify-between gap-3">
             <div>
@@ -430,7 +430,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
                 <ShieldCheck className="w-5 h-5" />
                 <h3 className="text-lg font-bold">التوافق الشرعي — {symbol}</h3>
               </div>
-              <p className="text-xs text-stitch-primary mt-1">
+              <p className="text-xs text-primary mt-1">
                 التفصيل حسب المصادر الثمانية + نسب التطهير
               </p>
             </div>
@@ -438,7 +438,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-stitch-primary hover:bg-emerald-600/80/40 hover:text-white"
+              className="text-primary hover:bg-emerald-600/80/40 hover:text-white"
               aria-label="إغلاق"
             >
               ✕
@@ -489,12 +489,12 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
       {/* Headline */}
       <div className="rounded-lg border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-600/60/20 p-3 space-y-1 dark:bg-surface-container-low dark:border-outline-variant/30">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-stitch-primary dark:text-stitch-primary text-lg font-financial tabular-nums dark:text-primary stitch-latin">{symbol}</span>
+          <span className="font-bold text-primary dark:text-primary text-lg font-financial tabular-nums dark:text-primary font-sans">{symbol}</span>
           <Badge
             className={cn(
               'border',
               isHalal
-                ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/60/50 dark:text-stitch-primary border-emerald-500/30 dark:border-emerald-500/30'
+                ? 'bg-emerald-500/10 text-primary dark:bg-emerald-600/60/50 dark:text-primary border-emerald-500/30 dark:border-emerald-500/30'
                 : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
             )}
           >
@@ -504,8 +504,8 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
             {compliantCount}/{activeCount || 8} مصدر
           </Badge>
         </div>
-        {nameAr && <p className="text-sm text-stitch-muted">{nameAr}</p>}
-        {categoryAr && <p className="text-xs text-stitch-muted/70">{categoryAr}</p>}
+        {nameAr && <p className="text-sm text-muted-foreground">{nameAr}</p>}
+        {categoryAr && <p className="text-xs text-muted-foreground/70">{categoryAr}</p>}
       </div>
 
       {/* Metrics grid */}
@@ -525,7 +525,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
       {/* Sources breakdown */}
       <div>
         <h4 className="text-sm font-bold mb-2 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-stitch-primary" />
+          <BookOpen className="w-4 h-4 text-primary" />
           تفصيل المصادر الثمانية
         </h4>
         <div className="rounded-md border border-border/60 overflow-hidden">
@@ -541,7 +541,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
             <TableBody>
               {data.sources.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-xs text-stitch-muted py-4">
+                  <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-4">
                     لا توجد بيانات مصادر لهذا السهم.
                   </TableCell>
                 </TableRow>
@@ -559,7 +559,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
                     <TableCell className="text-center tabular-nums" dir="ltr">
                       {formatPct(s.percentage)}
                     </TableCell>
-                    <TableCell className="text-center text-stitch-muted hidden sm:table-cell">
+                    <TableCell className="text-center text-muted-foreground hidden sm:table-cell">
                       {s.methodology || '—'}
                     </TableCell>
                   </TableRow>
@@ -597,7 +597,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
                         <span className="text-[10px] text-amber-700 dark:text-amber-400 mr-1">★ أساسي</span>
                       )}
                     </div>
-                    <div className="text-[10px] text-stitch-muted">{r.basis || '—'}</div>
+                    <div className="text-[10px] text-muted-foreground">{r.basis || '—'}</div>
                   </div>
                   <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400" dir="ltr">
                     {formatPct(r.rate_pct)}
@@ -630,12 +630,12 @@ function MetricTile({
           : 'border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20',
       )}
     >
-      <div className="text-[10px] text-stitch-muted">{label}</div>
+      <div className="text-[10px] text-muted-foreground">{label}</div>
       <div
         className={cn(
           'text-sm font-bold tabular-nums',
           accent === 'emerald'
-            ? 'text-stitch-primary dark:text-stitch-primary'
+            ? 'text-primary dark:text-primary'
             : 'text-amber-700 dark:text-amber-400',
         )}
         dir="ltr"
@@ -712,7 +712,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
     <Card className="border-emerald-500/30 dark:border-emerald-500/30">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Calculator className="w-4 h-4 text-stitch-primary" />
+          <Calculator className="w-4 h-4 text-primary" />
           حاسبة تطهير صفقة واحدة
         </CardTitle>
         <CardDescription className="text-xs">
@@ -722,17 +722,17 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-stitch-muted mb-1 block">رمز السهم</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">رمز السهم</label>
             <Input
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
               placeholder="مثال: ABUK"
-              className="stitch-num dark:bg-surface-container dark:border-outline-variant"
+              className="font-mono dark:bg-surface-container dark:border-outline-variant"
               dir="ltr"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-stitch-muted mb-1 block">عدد الأسهم</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">عدد الأسهم</label>
             <Input
               type="number"
               value={quantity}
@@ -743,7 +743,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-stitch-muted mb-1 block">سعر الشراء (ج.م)</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">سعر الشراء (ج.م)</label>
             <Input
               type="number"
               value={buyPrice}
@@ -754,7 +754,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-stitch-muted mb-1 block">سعر البيع (ج.م)</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">سعر البيع (ج.م)</label>
             <Input
               type="number"
               value={sellPrice}
@@ -768,7 +768,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
           <div>
-            <label className="text-xs font-medium text-stitch-muted mb-1 block">المنهجية</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">المنهجية</label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -840,24 +840,24 @@ function PurificationResultCard({ result }: { result: PurificationResponse }) {
           </p>
         </div>
         <div className="text-left">
-          <p className="text-[10px] text-stitch-muted">المنهجية</p>
+          <p className="text-[10px] text-muted-foreground">المنهجية</p>
           <p className="text-xs font-bold">{result.method || result.primary_method || 'S&P'}</p>
         </div>
       </div>
       <Separator className="my-2 bg-amber-200 dark:bg-amber-900" />
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
-          <p className="text-[10px] text-stitch-muted">نسبة التطهير</p>
+          <p className="text-[10px] text-muted-foreground">نسبة التطهير</p>
           <p className="text-sm font-bold tabular-nums" dir="ltr">{formatPct(rate)}</p>
         </div>
         <div>
-          <p className="text-[10px] text-stitch-muted">التوزيعات</p>
+          <p className="text-[10px] text-muted-foreground">التوزيعات</p>
           <p className="text-sm font-bold tabular-nums" dir="ltr">
             {dividends != null ? `${dividends.toFixed(2)}` : '—'}
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-stitch-muted">الربح المحقق</p>
+          <p className="text-[10px] text-muted-foreground">الربح المحقق</p>
           <p className="text-sm font-bold tabular-nums" dir="ltr">
             {capitalGain != null ? `${capitalGain.toFixed(2)}` : '—'}
           </p>
@@ -927,7 +927,7 @@ function PortfolioPurificationCalculator() {
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
           <div>
-            <label className="text-xs font-medium text-stitch-muted mb-1 block">معرّف المستخدم</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">معرّف المستخدم</label>
             <Input
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
@@ -937,7 +937,7 @@ function PortfolioPurificationCalculator() {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-stitch-muted mb-1 block">المنهجية</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">المنهجية</label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -999,28 +999,28 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
     <div className="rounded-lg border-2 border-emerald-500/30 dark:border-emerald-500/30 bg-gradient-to-l from-emerald-50 via-emerald-50/40 to-emerald-50 dark:from-emerald-950/30 dark:via-emerald-950/10 dark:to-emerald-950/30 p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-stitch-primary dark:text-stitch-primary font-semibold">
+          <p className="text-[10px] uppercase tracking-wider text-primary dark:text-primary font-semibold">
             إجمالي التطهير للمحفظة
           </p>
-          <p className="text-2xl font-bold text-stitch-primary dark:text-stitch-primary tabular-nums font-financial dark:text-primary" dir="ltr">
+          <p className="text-2xl font-bold text-primary dark:text-primary tabular-nums font-financial dark:text-primary" dir="ltr">
             {totalPurification != null ? `${totalPurification.toFixed(2)} ج.م` : '—'}
           </p>
         </div>
         <div className="text-left">
-          <p className="text-[10px] text-stitch-muted">عدد المراكز</p>
+          <p className="text-[10px] text-muted-foreground">عدد المراكز</p>
           <p className="text-sm font-bold tabular-nums">{tradesCount != null ? tradesCount : '—'}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-center">
-        <div className="rounded-md border border-border/60 stitch-canvas/60 p-2">
-          <p className="text-[10px] text-stitch-muted">إجمالي التوزيعات</p>
+        <div className="rounded-md border border-border/60 bg-background/60 p-2">
+          <p className="text-[10px] text-muted-foreground">إجمالي التوزيعات</p>
           <p className="text-sm font-bold tabular-nums" dir="ltr">
             {totalDividends != null ? totalDividends.toFixed(2) : '—'}
           </p>
         </div>
-        <div className="rounded-md border border-border/60 stitch-canvas/60 p-2">
-          <p className="text-[10px] text-stitch-muted">إجمالي الربح المحقق</p>
+        <div className="rounded-md border border-border/60 bg-background/60 p-2">
+          <p className="text-[10px] text-muted-foreground">إجمالي الربح المحقق</p>
           <p className="text-sm font-bold tabular-nums" dir="ltr">
             {totalCapitalGain != null ? totalCapitalGain.toFixed(2) : '—'}
           </p>
@@ -1042,7 +1042,7 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
               <TableBody>
                 {perSymbol.map((row, i) => (
                   <TableRow key={String(row.symbol || i)} className="text-xs dark:bg-surface-container-low">
-                    <TableCell className="stitch-num font-medium font-financial tabular-nums dark:text-primary">
+                    <TableCell className="font-mono font-medium font-financial tabular-nums dark:text-primary">
                       {String(row.symbol || row.ticker || '—')}
                     </TableCell>
                     <TableCell className="text-center tabular-nums" dir="ltr">
@@ -1176,7 +1176,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
         <CardContent className="p-3 space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stitch-muted" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => {
@@ -1218,7 +1218,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
           {/* Status filter chips */}
           <div className="flex flex-wrap gap-1.5">
             {([
-              { id: 'all', label: 'الكل', color: 'bg-secondary text-stitch-on-surface' },
+              { id: 'all', label: 'الكل', color: 'bg-secondary text-foreground' },
               { id: 'compliant', label: '🟢 متوافق', color: STATUS_BADGE_CLASS.compliant },
               { id: 'doubtful', label: '🟡 مشمول', color: STATUS_BADGE_CLASS.doubtful },
               { id: 'non_compliant', label: '🔴 غير متوافق', color: STATUS_BADGE_CLASS.non_compliant },
@@ -1245,7 +1245,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
           {/* Sources legend */}
           {sources.length > 0 && (
             <details className="text-xs">
-              <summary className="cursor-pointer text-stitch-muted hover:text-stitch-on-surface flex items-center gap-1.5">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5" />
                 المصادر الشرعية الثمانية ({sources.filter((s) => s.is_active === 1).length} نشط)
               </summary>
@@ -1253,7 +1253,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
                 {sources.map((s) => (
                   <div key={s.source_key} className="flex items-center justify-between text-[11px]">
                     <span className="font-medium">{s.name_ar}</span>
-                    <span className="text-stitch-muted">
+                    <span className="text-muted-foreground">
                       {s.is_active === 1 ? 'نشط' : 'متوقف'} · {s.methodology}
                     </span>
                   </div>
@@ -1275,7 +1275,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
         </div>
       ) : pageRows.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-stitch-muted">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
             <Filter className="w-8 h-8 mx-auto mb-2 opacity-40" />
             لا توجد أسهم مطابقة للفلتر الحالي.
           </CardContent>
@@ -1291,7 +1291,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between gap-2 pt-2">
-              <span className="text-xs text-stitch-muted">
+              <span className="text-xs text-muted-foreground">
                 صفحة {safePage + 1} من {totalPages} · إجمالي {filteredRows.length} سهماً
               </span>
               <div className="flex gap-1">
@@ -1348,19 +1348,19 @@ function StatPill({
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-full',
           accent === 'emerald'
-            ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-500/10 dark:text-stitch-primary'
+            ? 'bg-emerald-500/10 text-primary dark:bg-emerald-500/10 dark:text-primary'
             : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
         )}
       >
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="text-[10px] text-stitch-muted truncate">{label}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{label}</p>
         <p
           className={cn(
             'text-sm font-bold tabular-nums',
             accent === 'emerald'
-              ? 'text-stitch-primary dark:text-stitch-primary'
+              ? 'text-primary dark:text-primary'
               : 'text-amber-700 dark:text-amber-400',
           )}
           dir="ltr"
@@ -1396,7 +1396,7 @@ export function ShariaView() {
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-background to-background dark:from-emerald-950/10 dark:bg-surface-container-lowest">
       <div className="max-w-6xl mx-auto p-3 sm:p-4 space-y-4" dir="rtl">
         {/* Hero header */}
-        <Card className="relative overflow-hidden border-emerald-500/30 dark:border-emerald-500/30 bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-stitch-primary">
+        <Card className="relative overflow-hidden border-emerald-500/30 dark:border-emerald-500/30 bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-primary">
           <IslamicPattern />
           <CardContent className="relative p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -1405,17 +1405,17 @@ export function ShariaView() {
                   <ShieldCheck className="w-6 h-6 text-amber-300" />
                   <h1 className="text-xl sm:text-2xl font-bold">شاشة التوافق الشرعي</h1>
                 </div>
-                <p className="text-xs sm:text-sm text-stitch-primary max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-primary max-w-2xl leading-relaxed">
                   بيانات التوافق الشرعي لأسهم البورصة المصرية من ثمانية مصادر متخصصة، مع
                   حاسبة تطهير الأرباح وفق معيار S&P الشرعي وحاسبة تطهير المحفظة بالكامل.
                 </p>
               </div>
               <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wider text-stitch-primary">
+                <div className="text-[10px] uppercase tracking-wider text-primary">
                   المنهجية الأساسية
                 </div>
                 <div className="text-lg font-bold text-amber-300">معيار S&P</div>
-                <div className="text-[10px] text-stitch-primary mt-0.5">
+                <div className="text-[10px] text-primary mt-0.5">
                   8 مصادر · تحديث أسبوعي
                 </div>
               </div>
@@ -1449,7 +1449,7 @@ export function ShariaView() {
 
           <TabsContent value="single" className="mt-3">
             <SingleTradePurificationCalculator defaultSymbol={defaultCalcSymbol} />
-            <p className="text-[10px] text-stitch-muted mt-2 flex items-center gap-1">
+            <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
               <Info className="w-3 h-3" />
               الحساب يتم عبر محرك Python المعتمد (vps-service/portfolio/purification_calculator.py) لضمان الدقة.
             </p>
@@ -1457,7 +1457,7 @@ export function ShariaView() {
 
           <TabsContent value="portfolio" className="mt-3">
             <PortfolioPurificationCalculator />
-            <p className="text-[10px] text-stitch-muted mt-2 flex items-center gap-1">
+            <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
               <Info className="w-3 h-3" />
               يتم حساب التطهير لكل صفقة نشطة في محفظتك ثم جمعها. قد يستغرق الحساب بضع ثوانٍ.
             </p>
@@ -1466,7 +1466,7 @@ export function ShariaView() {
 
         {/* Footer note */}
         <OrnamentDivider />
-        <p className="text-[10px] text-stitch-muted text-center px-4 pb-2 leading-relaxed">
+        <p className="text-[10px] text-muted-foreground text-center px-4 pb-2 leading-relaxed">
           البيانات مصدرها ثمانية مواقع متخصصة في التوافق الشرعي (بورصة حلال، مصفّى، كاشف،
           حلال إنفست، بنك فيصل الإسلامي، أسطول، ثندر/Islamicly، جروب الأسهم الشرعية فقط) ويتم
           تحديثها أسبوعياً. الإجماع يعني توافق 6 مصادر أو أكثر. هذه المعلومات للاسترشاد فقط ولا تُغني

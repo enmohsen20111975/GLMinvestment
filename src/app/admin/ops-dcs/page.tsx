@@ -491,7 +491,7 @@ function Header({
   const isIdle = meta?.engine_state === 'IDLE';
 
   return (
-    <header className="border-b border-slate-800 bg-[#0a0e14] px-4 py-3">
+    <header className="border-b border-border bg-background px-4 py-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           {showBackLink && (
@@ -510,12 +510,12 @@ function Header({
             <Radio className="h-3 w-3 animate-pulse" />
             LIVE
           </span>
-          <span className="font-mono text-[11px] text-slate-500">
+          <span className="font-mono text-[11px] text-muted-foreground">
             GLMinvestment · distributed control system · admin · no mock
           </span>
         </div>
         <div className="flex items-center gap-3 font-mono text-xs">
-          <Clock className="h-3.5 w-3.5 text-slate-500" />
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-slate-400">
             EET <span className="text-emerald-400">{eet}</span>
           </span>
@@ -535,7 +535,7 @@ function Header({
               isIdle ? 'text-amber-400' : 'text-slate-400',
             )}
           >
-            SNAPSHOT <span className="text-slate-200">{meta.snapshot_date}</span>
+            SNAPSHOT <span className="text-foreground">{meta.snapshot_date}</span>
             {' · '}ENGINE{' '}
             <span
               className={cn(
@@ -595,10 +595,10 @@ function Legend() {
   ];
 
   return (
-    <div className="border-t border-slate-800 bg-[#0a0e14] px-4 py-3 font-mono text-[11px]">
+    <div className="border-t border-border bg-background px-4 py-3 font-mono text-[11px]">
       <div className="flex flex-col gap-3 lg:flex-row lg:gap-6">
         <div>
-          <div className="mb-1 text-slate-500">NODE STATES</div>
+          <div className="mb-1 text-muted-foreground">NODE STATES</div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             {states.map((s) => (
               <div key={s.key} className="flex items-center gap-1.5">
@@ -613,7 +613,7 @@ function Legend() {
           </div>
         </div>
         <div>
-          <div className="mb-1 text-slate-500">EDGE TYPES</div>
+          <div className="mb-1 text-muted-foreground">EDGE TYPES</div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             {edges.map((e) => (
               <div key={e.label} className="flex items-center gap-1.5">
@@ -633,7 +633,7 @@ function Legend() {
             ))}
           </div>
         </div>
-        <div className="text-slate-500 lg:ml-auto">
+        <div className="text-muted-foreground lg:ml-auto">
           animated dots = live data flow · still line = inactive / stopped · red X = blocked pipe
         </div>
       </div>
@@ -647,7 +647,7 @@ function Legend() {
 
 function Footer() {
   return (
-    <footer className="mt-auto border-t border-slate-800 bg-[#0a0e14] px-4 py-3 font-mono text-[10px] tracking-wide text-slate-500">
+    <footer className="mt-auto border-t border-border bg-background px-4 py-3 font-mono text-[10px] tracking-wide text-muted-foreground">
       BRAVO 2 · PYTHON CALC BRAIN (RULE 4/67B) · REAL PRODUCTION DATA (RULE 27) · NO MOCK · LIVE TOPOLOGY
     </footer>
   );
@@ -675,8 +675,8 @@ function TopologyDiagram({ topo }: { topo: Topology }) {
   const activeCount = topo.edges.filter((e) => e.active).length;
 
   return (
-    <div className="bg-[#0a0e14] p-2 sm:p-4">
-      <div className="mb-2 flex flex-wrap items-center gap-3 font-mono text-[11px] text-slate-500">
+    <div className="bg-background p-2 sm:p-4">
+      <div className="mb-2 flex flex-wrap items-center gap-3 font-mono text-[11px] text-muted-foreground">
         <span>
           NODES <span className="text-slate-300">{topo.nodes.length}</span>
         </span>
@@ -692,7 +692,7 @@ function TopologyDiagram({ topo }: { topo: Topology }) {
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded border border-slate-800">
+      <div className="overflow-x-auto rounded border border-border">
         <svg
           viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           role="img"
@@ -779,7 +779,7 @@ export default function OpsDcsPage() {
   const inIframe = useInIframe();
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0a0e14] text-slate-200">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header meta={topo?.meta ?? null} eet={eet} showBackLink={!inIframe} />
 
       <main className="flex-1">

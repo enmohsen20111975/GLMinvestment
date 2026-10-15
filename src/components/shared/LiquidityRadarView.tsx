@@ -199,13 +199,13 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   // ─── Loading state ───
   if (loading) {
     return (
-      <div className="stitch-canvas min-h-screen p-4 space-y-4" dir="rtl">
-        <div className="stitch-glass h-12 animate-pulse" />
-        <div className="stitch-glass h-32 animate-pulse" />
-        <div className="stitch-glass h-16 animate-pulse" />
+      <div className="bg-background min-h-screen p-4 space-y-4" dir="rtl">
+        <div className="bg-card border border-border h-12 animate-pulse" />
+        <div className="bg-card border border-border h-32 animate-pulse" />
+        <div className="bg-card border border-border h-16 animate-pulse" />
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="stitch-glass h-40 animate-pulse" />
+            <div key={i} className="bg-card border border-border h-40 animate-pulse" />
           ))}
         </div>
       </div>
@@ -213,32 +213,32 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   }
 
   return (
-    <div className="stitch-canvas min-h-screen p-4 space-y-4 relative" dir="rtl">
+    <div className="bg-background min-h-screen p-4 space-y-4 relative" dir="rtl">
       <div className="relative z-10 space-y-4">
 
         {/* ═══ (أ) Macro Market Pulse Ribbon ═══ */}
-        <div className="stitch-glass px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div className="bg-card border border-border px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               {/* Live pulse dot (animate-ping green) */}
-              <span className="stitch-pulse-dot" />
-              <span className="stitch-num text-[10px] text-stitch-primary uppercase tracking-widest">WYCKOFF-RADAR-V4</span>
+              <span className="animate-pulse" />
+              <span className="font-mono text-[10px] text-primary uppercase tracking-widest">WYCKOFF-RADAR-V4</span>
             </div>
             <div className="h-4 w-px bg-white/[0.06]" />
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-stitch-muted">حالة تدفق السيولة:</span>
-              <span className={cn('stitch-num font-semibold', isBear ? 'text-rose-400' : isBull ? 'text-stitch-primary' : 'text-teal-400')}>
+              <span className="text-muted-foreground">حالة تدفق السيولة:</span>
+              <span className={cn('font-mono font-semibold', isBear ? 'text-rose-400' : isBull ? 'text-primary' : 'text-teal-400')}>
                 {isBear ? 'سيولة تصريفية خارجة — حذر' : isBull ? 'سيولة تراكمية داخلة — تدفق شراء مؤسسي' : 'سيولة متوازنة — توزيع عادل'}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 text-xs text-stitch-muted">
-              <Shield className="w-3.5 h-3.5 text-stitch-primary" />
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Shield className="w-3.5 h-3.5 text-primary" />
               <span>بروتوكول Rule 80 نشط</span>
             </div>
             <div className="h-4 w-px bg-white/[0.06]" />
-            <span className="stitch-num text-[10px] text-teal-400">مرقوب: {data?.scanned_count ?? allStocks.length} سهم</span>
+            <span className="font-mono text-[10px] text-teal-400">مرقوب: {data?.scanned_count ?? allStocks.length} سهم</span>
           </div>
         </div>
 
@@ -246,26 +246,26 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div className="flex flex-col gap-1 max-w-3xl">
             <div className="flex items-center gap-1.5">
-              <span className="px-1.5 py-0.5 rounded bg-secondary stitch-num text-[10px] text-stitch-primary uppercase tracking-wide">Whale Protocol Alpha</span>
-              <span className="text-stitch-outline stitch-num text-[10px] tracking-widest">● LIVE INSTITUTIONAL SCAN</span>
+              <span className="px-1.5 py-0.5 rounded bg-secondary font-mono text-[10px] text-primary uppercase tracking-wide">Whale Protocol Alpha</span>
+              <span className="text-muted-foreground font-mono text-[10px] tracking-widest">● LIVE INSTITUTIONAL SCAN</span>
             </div>
-            <h1 className="stitch-latin text-xl lg:text-2xl font-bold text-stitch-on-surface tracking-tight">
+            <h1 className="font-sans text-xl lg:text-2xl font-bold text-foreground tracking-tight">
               رادار تدفق السيولة المؤسسية ونبض الحيتان
             </h1>
-            <p className="text-sm text-stitch-muted stitch-ar">
+            <p className="text-sm text-muted-foreground ">
               رصد خوارزمي دقيق لتدفقات السيولة الذكية ومراحل تجميع وتصريف صناع السوق وفق منهجية وايكوف المعيارية.
             </p>
           </div>
 
           {/* Live Macro Mini Gauges */}
-          <div className="flex items-center gap-3 stitch-glass-strong p-3 rounded-xl shadow-md">
+          <div className="flex items-center gap-3 bg-card border border-border p-3 rounded-xl shadow-md">
             <MiniGauge
               label="كفاءة التجميع المؤسسي"
               value={`${(phasesBreakdown['بيبلع على الهادي'] ?? 0) + (phasesBreakdown['بيتحضر'] ?? 0)}`}
               suffix=" سهم"
               trend="▲"
-              trendColor="text-stitch-primary"
-              color="text-stitch-primary"
+              trendColor="text-primary"
+              color="text-primary"
             />
             <div className="w-px h-10 bg-white/[0.06]" />
             <MiniGauge
@@ -282,13 +282,13 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
               value={isBear ? 'عالي' : isBull ? 'منخفض' : 'متوسط'}
               trend=""
               trendColor=""
-              color={isBear ? 'text-rose-400' : isBull ? 'text-stitch-primary' : 'text-teal-400'}
+              color={isBear ? 'text-rose-400' : isBull ? 'text-primary' : 'text-teal-400'}
             />
           </div>
         </div>
 
         {/* ═══ (ج) Multi-tier Filter Bar ═══ */}
-        <div className="stitch-glass p-3 space-y-3">
+        <div className="bg-card border border-border p-3 space-y-3">
           {/* Top Line: Market + Search + Refresh */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -299,24 +299,24 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
               </div>
               {/* Search */}
               <div className="relative">
-                <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stitch-outline" />
+                <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="ابحث برمز السهم أو الاسم..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="stitch-ar pr-7 pl-2 py-1.5 text-xs rounded-lg bg-secondary text-stitch-on-surface border border-border/60 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-48"
+                  className=" pr-7 pl-2 py-1.5 text-xs rounded-lg bg-secondary text-foreground border border-border/60 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-48"
                 />
               </div>
             </div>
-            <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-stitch-on-surface transition-colors text-xs">
+            <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors text-xs">
               <RefreshCw className="w-3.5 h-3.5" /> تحديث
             </button>
           </div>
 
           {/* Wyckoff Phase Filter Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            <span className="stitch-num text-[10px] text-stitch-muted shrink-0 ml-1 uppercase tracking-wide">مرحلة وايكوف:</span>
+            <span className="font-mono text-[10px] text-muted-foreground shrink-0 ml-1 uppercase tracking-wide">مرحلة وايكوف:</span>
             {phasesList.map((p) => (
               <button
                 key={p.key}
@@ -325,13 +325,13 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
                   'px-2.5 py-1 rounded-full shrink-0 text-xs font-semibold transition-colors flex items-center gap-1.5',
                   activePhase === p.key
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-secondary text-stitch-muted hover:bg-secondary/80 hover:text-stitch-on-surface',
+                    : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground',
                 )}
               >
                 {p.dot && <span className={cn('w-1.5 h-1.5 rounded-full', p.dot)} />}
                 <span>{p.label}</span>
                 <span className={cn(
-                  'stitch-num text-[10px] px-1 rounded-full',
+                  'font-mono text-[10px] px-1 rounded-full',
                   activePhase === p.key ? 'bg-black/20' : 'bg-background',
                 )}>
                   {p.count}
@@ -343,14 +343,14 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
 
         {/* ═══ (د) Institutional Asset Cards ═══ */}
         {error || !data || allStocks.length === 0 ? (
-          <div className="stitch-glass p-8 text-center">
+          <div className="bg-card border border-border p-8 text-center">
             <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-amber-400">{error || 'لا توجد بيانات رادار متاحة حالياً'}</p>
-            <p className="text-xs text-stitch-muted mt-1">المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها</p>
+            <p className="text-xs text-muted-foreground mt-1">المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها</p>
           </div>
         ) : filteredStocks.length === 0 ? (
-          <div className="stitch-glass p-8 text-center">
-            <p className="text-sm text-stitch-muted">لا توجد أسهم مطابقة للفلتر الحالي</p>
+          <div className="bg-card border border-border p-8 text-center">
+            <p className="text-sm text-muted-foreground">لا توجد أسهم مطابقة للفلتر الحالي</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -360,7 +360,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
             {allStocks.length > limit && (
               <button
                 onClick={() => setLimit(l => l + 20)}
-                className="stitch-glass w-full py-2.5 flex items-center justify-center gap-1.5 text-sm text-stitch-muted hover:text-stitch-on-surface transition-colors"
+                className="bg-card border border-border w-full py-2.5 flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ChevronDown className="w-4 h-4" /> عرض المزيد ({allStocks.length - limit} سهم متبقي)
               </button>
@@ -393,11 +393,11 @@ function MiniGauge({ label, value, suffix, trend, trendColor, color }: {
 }) {
   return (
     <div className="flex flex-col text-right px-2">
-      <span className="text-xs text-stitch-muted stitch-ar">{label}</span>
+      <span className="text-xs text-muted-foreground ">{label}</span>
       <div className="flex items-baseline gap-1">
-        <span className={cn('stitch-num text-xl font-bold', color)}>{value}</span>
-        {suffix && <span className={cn('text-xs stitch-num', color)}>{suffix}</span>}
-        {trend && <span className={cn('text-xs stitch-num', trendColor)}>{trend}</span>}
+        <span className={cn('font-mono text-xl font-bold', color)}>{value}</span>
+        {suffix && <span className={cn('text-xs font-mono', color)}>{suffix}</span>}
+        {trend && <span className={cn('text-xs font-mono', trendColor)}>{trend}</span>}
       </div>
     </div>
   );
@@ -421,19 +421,19 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
   return (
     <div 
       onClick={() => onSelectTicker?.(stock.ticker)}
-      className="stitch-glass p-3 hover:border-emerald-500/20 transition-colors flex flex-col xl:grid xl:grid-cols-12 gap-3 items-stretch cursor-pointer"
+      className="bg-card border border-border p-3 hover:border-emerald-500/20 transition-colors flex flex-col xl:grid xl:grid-cols-12 gap-3 items-stretch cursor-pointer"
     >
 
       {/* ─── Col 1: Whale Volume & Flow + Dual Color Flow Bar ─── */}
       <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="stitch-num text-sm font-bold text-stitch-on-surface truncate">{stock.ticker}</span>
-            <span className="text-xs text-stitch-muted stitch-ar truncate">{stock.name || stock.ticker}</span>
+            <span className="font-mono text-sm font-bold text-foreground truncate">{stock.ticker}</span>
+            <span className="text-xs text-muted-foreground  truncate">{stock.name || stock.ticker}</span>
           </div>
           <span className={cn(
-            'px-1.5 py-0.5 rounded stitch-num text-[10px] font-semibold shrink-0',
-            netFlowPositive ? 'bg-emerald-500/10 text-stitch-primary' : 'bg-rose-500/10 text-rose-400'
+            'px-1.5 py-0.5 rounded font-mono text-[10px] font-semibold shrink-0',
+            netFlowPositive ? 'bg-emerald-500/10 text-primary' : 'bg-rose-500/10 text-rose-400'
           )}>
             {fmtFlow(whale?.net_flow_egp)} صافي
           </span>
@@ -441,9 +441,9 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
 
         {/* Dual Color Flow Bar */}
         <div className="flex flex-col gap-1 my-1.5">
-          <div className="flex justify-between items-center stitch-num text-[10px]">
-            <span className="text-stitch-primary font-semibold">شراء {Math.round(buyPct)}%</span>
-            <span className="text-stitch-muted">بيع {Math.round(sellPct)}%</span>
+          <div className="flex justify-between items-center font-mono text-[10px]">
+            <span className="text-primary font-semibold">شراء {Math.round(buyPct)}%</span>
+            <span className="text-muted-foreground">بيع {Math.round(sellPct)}%</span>
           </div>
           <div className="w-full h-2 rounded-full bg-background overflow-hidden flex">
             <div className="h-full bg-emerald-500 rounded-r-full transition-all" style={{ width: `${buyPct}%` }} />
@@ -451,9 +451,9 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-1 stitch-num text-[10px] text-stitch-muted">
+        <div className="flex items-center justify-between mt-1 font-mono text-[10px] text-muted-foreground">
           <span>{whale?.whale_present ? 'حوت نشط' : 'سيولة عادية'}</span>
-          <span className={cn('flex items-center gap-0.5', netFlowPositive ? 'text-stitch-primary' : 'text-rose-400')}>
+          <span className={cn('flex items-center gap-0.5', netFlowPositive ? 'text-primary' : 'text-rose-400')}>
             {netFlowPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {netFlowPositive ? 'تدفق تجميعي' : 'تدفق تصريفي'}
           </span>
@@ -463,10 +463,10 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
       {/* ─── Col 2: Momentum & Market Regime ─── */}
       <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between">
-          <span className="stitch-num text-[10px] text-stitch-outline uppercase tracking-wide">حالة السهم</span>
+          <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wide">حالة السهم</span>
           <span className={cn(
-            'stitch-num text-sm font-bold',
-            (regime?.change_pct ?? 0) >= 0 ? 'text-stitch-primary' : 'text-rose-400'
+            'font-mono text-sm font-bold',
+            (regime?.change_pct ?? 0) >= 0 ? 'text-primary' : 'text-rose-400'
           )}>
             {fmtPct(regime?.change_pct)}
           </span>
@@ -475,9 +475,9 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
         <div className="my-1.5">
           <div className={cn(
             'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold',
-            regime?.is_bull ? 'bg-emerald-500/10 text-stitch-primary' :
+            regime?.is_bull ? 'bg-emerald-500/10 text-primary' :
             regime?.is_bear ? 'bg-rose-500/10 text-rose-400' :
-            'bg-secondary text-stitch-muted'
+            'bg-secondary text-muted-foreground'
           )}>
             <span className={cn('w-1.5 h-1.5 rounded-full',
               regime?.is_bull ? 'bg-emerald-500' : regime?.is_bear ? 'bg-rose-500' : 'bg-stone-500')} />
@@ -485,11 +485,11 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
           </div>
         </div>
 
-        <div className="flex items-center justify-between stitch-num text-[10px]">
-          <span className="text-stitch-muted">تقييم النبض:</span>
+        <div className="flex items-center justify-between font-mono text-[10px]">
+          <span className="text-muted-foreground">تقييم النبض:</span>
           <span className={cn('flex items-center gap-0.5',
-            (regime?.change_pct ?? 0) > 0.5 ? 'text-stitch-primary' :
-            (regime?.change_pct ?? 0) < -0.5 ? 'text-rose-400' : 'text-stitch-muted')}>
+            (regime?.change_pct ?? 0) > 0.5 ? 'text-primary' :
+            (regime?.change_pct ?? 0) < -0.5 ? 'text-rose-400' : 'text-muted-foreground')}>
             {(regime?.change_pct ?? 0) > 0.5 ? <><TrendingUp className="w-3 h-3" /> زخم إيجابي</> :
              (regime?.change_pct ?? 0) < -0.5 ? <><TrendingDown className="w-3 h-3" /> ضغط بيعي</> :
              <><Minus className="w-3 h-3" /> حركة عرضية</>}
@@ -501,68 +501,68 @@ function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; 
       <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between">
           <span className={cn(
-            'px-2 py-0.5 rounded-md text-xs font-semibold flex items-center gap-1 stitch-ar',
-            stock.phase === 'بيبلع على الهادي' ? 'bg-emerald-500/10 text-stitch-primary' :
+            'px-2 py-0.5 rounded-md text-xs font-semibold flex items-center gap-1 ',
+            stock.phase === 'بيبلع على الهادي' ? 'bg-emerald-500/10 text-primary' :
             stock.phase === 'بيتحضر' ? 'bg-teal-500/10 text-teal-400' :
             stock.phase === 'بيصرف' ? 'bg-rose-500/10 text-rose-400' :
-            'bg-secondary text-stitch-muted'
+            'bg-secondary text-muted-foreground'
           )}>
             <Layers className="w-3.5 h-3.5" />
             {phaseLabel}
           </span>
-          <span className="stitch-num text-[10px] text-stitch-outline">{stock.phase_reason ? 'نشط' : 'مراقبة'}</span>
+          <span className="font-mono text-[10px] text-muted-foreground">{stock.phase_reason ? 'نشط' : 'مراقبة'}</span>
         </div>
 
         <div className="flex flex-col gap-1 my-1.5 text-xs">
           {defense?.entry_level != null && Number.isFinite(Number(defense.entry_level)) && (
             <div className="flex items-center justify-between">
-              <span className="text-stitch-muted stitch-ar">مستوى الدخول:</span>
-              <span className="stitch-num font-semibold text-stitch-primary">{fmtPrice(defense.entry_level)}</span>
+              <span className="text-muted-foreground ">مستوى الدخول:</span>
+              <span className="font-mono font-semibold text-primary">{fmtPrice(defense.entry_level)}</span>
             </div>
           )}
           {defense?.defense_level != null && Number.isFinite(Number(defense.defense_level)) && (
             <div className="flex items-center justify-between">
-              <span className="text-stitch-muted stitch-ar">مستوى الدفاع:</span>
-              <span className="stitch-num font-semibold text-rose-400">{fmtPrice(defense.defense_level)}</span>
+              <span className="text-muted-foreground ">مستوى الدفاع:</span>
+              <span className="font-mono font-semibold text-rose-400">{fmtPrice(defense.defense_level)}</span>
             </div>
           )}
           {defense?.resistance_level != null && Number.isFinite(Number(defense.resistance_level)) && (
             <div className="flex items-center justify-between">
-              <span className="text-stitch-muted stitch-ar">المقاومة:</span>
-              <span className="stitch-num font-semibold text-teal-400">{fmtPrice(defense.resistance_level)}</span>
+              <span className="text-muted-foreground ">المقاومة:</span>
+              <span className="font-mono font-semibold text-teal-400">{fmtPrice(defense.resistance_level)}</span>
             </div>
           )}
         </div>
 
-        <div className="text-[10px] text-stitch-muted stitch-ar truncate">{cleanStockReason}</div>
+        <div className="text-[10px] text-muted-foreground  truncate">{cleanStockReason}</div>
       </div>
 
       {/* ─── Col 4: Entry & Capital Defense Strategy ─── */}
       <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
         <div className="flex items-center justify-between">
-          <span className="stitch-num text-[10px] text-stitch-outline uppercase tracking-wide">استراتيجية الدخول</span>
+          <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wide">استراتيجية الدخول</span>
           <span className={cn('flex items-center gap-0.5 text-[10px] font-semibold',
-            whale?.whale_present ? 'text-stitch-primary' : 'text-stitch-muted')}>
+            whale?.whale_present ? 'text-primary' : 'text-muted-foreground')}>
             {whale?.whale_present ? <><Shield className="w-3 h-3" /> حماية حيتان</> : <><AlertTriangle className="w-3 h-3" /> بدون حماية</>}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-1.5 my-1.5">
           <div className="flex flex-col p-1.5 rounded bg-secondary/50">
-            <span className="text-[9px] text-stitch-muted stitch-ar">الدخول</span>
-            <span className="stitch-num text-sm font-bold text-stitch-primary">{fmtPrice(defense?.entry_level)}</span>
+            <span className="text-[9px] text-muted-foreground ">الدخول</span>
+            <span className="font-mono text-sm font-bold text-primary">{fmtPrice(defense?.entry_level)}</span>
           </div>
           <div className="flex flex-col p-1.5 rounded bg-secondary/50">
-            <span className="text-[9px] text-stitch-muted stitch-ar">الدفاع</span>
-            <span className="stitch-num text-sm font-bold text-rose-400">{fmtPrice(defense?.defense_level)}</span>
+            <span className="text-[9px] text-muted-foreground ">الدفاع</span>
+            <span className="font-mono text-sm font-bold text-rose-400">{fmtPrice(defense?.defense_level)}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-1 text-[10px]">
           <Gauge className="w-3 h-3 text-teal-400" />
-          <span className="text-stitch-muted stitch-ar">قوة التدفق:</span>
-          <span className={cn('stitch-num font-semibold',
-            whale?.flow_strength === 'high' || whale?.flow_strength === 'سيولة ذكية فائقة' ? 'text-stitch-primary' :
+          <span className="text-muted-foreground ">قوة التدفق:</span>
+          <span className={cn('font-mono font-semibold',
+            whale?.flow_strength === 'high' || whale?.flow_strength === 'سيولة ذكية فائقة' ? 'text-primary' :
             whale?.flow_strength === 'low' || whale?.flow_strength === 'ضعيف' ? 'text-rose-400' : 'text-teal-400')}>
             {whale?.flow_strength || 'متوسط'}
           </span>

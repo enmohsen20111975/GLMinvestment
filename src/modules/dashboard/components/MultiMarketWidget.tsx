@@ -185,7 +185,7 @@ export function MultiMarketWidget() {
               'text-xs h-8 px-3 rounded-lg font-medium transition-all',
               isSelected
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'hover:bg-secondary text-stitch-muted hover:text-stitch-on-surface'
+                : 'hover:bg-secondary text-muted-foreground hover:text-foreground'
             )}
             onClick={() => setSelectedMarket(market.code)}
           >
@@ -216,7 +216,7 @@ export function MultiMarketWidget() {
 
     if (uniqueStocks.length === 0) {
       return (
-        <div className="text-center py-8 text-stitch-muted text-sm">
+        <div className="text-center py-8 text-muted-foreground text-sm">
           لا توجد بيانات أسهم متاحة لسوق {marketInfo.name} حالياً
         </div>
       );
@@ -235,15 +235,15 @@ export function MultiMarketWidget() {
             <div
               key={`${ticker}-${index}`}
               onClick={() => handleStockClick(ticker)}
-              className="flex items-center justify-between p-2.5 rounded-lg stitch-glass/60 hover:bg-secondary/70 border border-border/60 transition-all cursor-pointer group"
+              className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/60 hover:bg-secondary/70 border border-border/60 transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="text-base flex-shrink-0">{marketInfo.flag}</span>
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm group-hover:text-primary transition-colors truncate stitch-latin">
+                  <p className="font-semibold text-sm group-hover:text-primary transition-colors truncate font-sans">
                     {ticker}
                   </p>
-                  <p className="text-xs text-stitch-muted truncate max-w-[120px] sm:max-w-[160px]">
+                  <p className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-[160px]">
                     {stock.name}
                   </p>
                 </div>
@@ -258,24 +258,24 @@ export function MultiMarketWidget() {
                 <div className="text-left flex flex-col items-end">
                   <p className="font-semibold text-sm tabular-nums">
                     {price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
-                    <span className="text-[11px] text-stitch-muted mr-1 stitch-latin">{marketInfo.currency}</span>
+                    <span className="text-[11px] text-muted-foreground mr-1 font-sans">{marketInfo.currency}</span>
                   </p>
                   <div className="flex items-center gap-1">
                     {isPositive ? (
-                      <TrendingUp className="w-3 h-3 text-stitch-primary" />
+                      <TrendingUp className="w-3 h-3 text-primary" />
                     ) : isNegative ? (
                       <TrendingDown className="w-3 h-3 text-rose-400" />
                     ) : (
-                      <Minus className="w-3 h-3 text-stitch-muted" />
+                      <Minus className="w-3 h-3 text-muted-foreground" />
                     )}
                     <span
                       className={cn(
                         'text-xs font-semibold tabular-nums',
                         isPositive
-                          ? 'text-stitch-primary dark:text-stitch-primary'
+                          ? 'text-primary dark:text-primary'
                           : isNegative
                           ? 'text-rose-400 dark:text-rose-400'
-                          : 'text-stitch-muted'
+                          : 'text-muted-foreground'
                       )}
                     >
                       {change >= 0 ? '+' : ''}{(change ?? 0).toFixed(2)}%
@@ -305,7 +305,7 @@ export function MultiMarketWidget() {
     const countryGold = goldData[marketInfo.name];
     if (!countryGold || !countryGold.prices || countryGold.prices.length === 0) {
       return (
-        <div className="text-center py-8 text-stitch-muted text-sm">
+        <div className="text-center py-8 text-muted-foreground text-sm">
           لا توجد بيانات أسعار ذهب متاحة لـ {marketInfo.name} حالياً
         </div>
       );
@@ -353,13 +353,13 @@ export function MultiMarketWidget() {
                     ? 'bg-amber-500/10 border-amber-500/30'
                     : isKarat24
                     ? 'bg-amber-500/5 border-amber-500/20'
-                    : 'stitch-glass/60 border-border/60 hover:bg-secondary/50'
+                    : 'bg-card border border-border/60 border-border/60 hover:bg-secondary/50'
                 )}
               >
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     'text-sm font-semibold',
-                    isKarat21 ? 'text-amber-600 dark:text-amber-400' : 'text-stitch-on-surface'
+                    isKarat21 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
                   )}>
                     {item.karat}
                   </span>
@@ -373,7 +373,7 @@ export function MultiMarketWidget() {
                   <span className="text-sm font-bold tabular-nums">
                     {Math.round(gramPrice).toLocaleString()}
                   </span>
-                  <span className="text-[11px] text-stitch-muted mr-1 stitch-latin">
+                  <span className="text-[11px] text-muted-foreground mr-1 font-sans">
                     {marketInfo.currency} / جرام
                   </span>
                 </div>
@@ -386,7 +386,7 @@ export function MultiMarketWidget() {
         <div className="grid grid-cols-2 gap-2 pt-1">
           {goldPoundEstimate && (
             <div className="p-2 rounded-lg bg-secondary/50 border border-border/60 text-center">
-              <p className="text-[11px] text-stitch-muted mb-0.5">جنيه ذهب (8ج عيار 21)</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5">جنيه ذهب (8ج عيار 21)</p>
               <p className="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                 {goldPoundEstimate.toLocaleString()} {marketInfo.currency}
               </p>
@@ -394,7 +394,7 @@ export function MultiMarketWidget() {
           )}
           {goldOunceEstimate && (
             <div className="p-2 rounded-lg bg-secondary/50 border border-border/60 text-center">
-              <p className="text-[11px] text-stitch-muted mb-0.5">أوقية ذهب (31.1ج)</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5">أوقية ذهب (31.1ج)</p>
               <p className="text-xs font-bold tabular-nums">
                 {goldOunceEstimate.toLocaleString()} {marketInfo.currency}
               </p>
@@ -419,7 +419,7 @@ export function MultiMarketWidget() {
 
     if (cryptoData.length === 0) {
       return (
-        <div className="text-center py-8 text-stitch-muted text-sm">
+        <div className="text-center py-8 text-muted-foreground text-sm">
           لا توجد بيانات عملات رقمية متاحة حالياً
         </div>
       );
@@ -435,15 +435,15 @@ export function MultiMarketWidget() {
           return (
             <div
               key={crypto.symbol}
-              className="flex items-center justify-between p-2.5 rounded-lg stitch-glass/60 hover:bg-secondary/70 border border-border/60 transition-colors"
+              className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border/60 hover:bg-secondary/70 border border-border/60 transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <Badge variant="outline" className="text-[10px] h-5 w-6 flex items-center justify-center p-0 stitch-num text-stitch-muted">
+                <Badge variant="outline" className="text-[10px] h-5 w-6 flex items-center justify-center p-0 font-mono text-muted-foreground">
                   {crypto.rank || '#'}
                 </Badge>
                 <div>
-                  <p className="font-semibold text-sm stitch-latin">{crypto.symbol}</p>
-                  <p className="text-xs text-stitch-muted truncate max-w-[120px]">{crypto.name}</p>
+                  <p className="font-semibold text-sm font-sans">{crypto.symbol}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[120px]">{crypto.name}</p>
                 </div>
               </div>
               <div className="text-left flex flex-col items-end">
@@ -454,20 +454,20 @@ export function MultiMarketWidget() {
                 </p>
                 <div className="flex items-center gap-1">
                   {isPositive ? (
-                    <ArrowUpRight className="w-3 h-3 text-stitch-primary" />
+                    <ArrowUpRight className="w-3 h-3 text-primary" />
                   ) : isNegative ? (
                     <ArrowDownRight className="w-3 h-3 text-rose-400" />
                   ) : (
-                    <Minus className="w-3 h-3 text-stitch-muted" />
+                    <Minus className="w-3 h-3 text-muted-foreground" />
                   )}
                   <span
                     className={cn(
                       'text-xs font-semibold tabular-nums',
                       isPositive
-                        ? 'text-stitch-primary dark:text-stitch-primary'
+                        ? 'text-primary dark:text-primary'
                         : isNegative
                         ? 'text-rose-400 dark:text-rose-400'
-                        : 'text-stitch-muted'
+                        : 'text-muted-foreground'
                     )}
                   >
                     {change >= 0 ? '+' : ''}{(change ?? 0).toFixed(2)}%
@@ -505,9 +505,9 @@ export function MultiMarketWidget() {
     return (
       <div className="space-y-2.5">
         {/* Header summary */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30/20 text-xs text-stitch-primary dark:text-stitch-primary font-medium">
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30/20 text-xs text-primary dark:text-primary font-medium">
           <span className="flex items-center gap-1.5">
-            <Globe className="w-3.5 h-3.5 text-stitch-primary" />
+            <Globe className="w-3.5 h-3.5 text-primary" />
             أسعار الصرف مقابل {marketInfo.currencyName}
           </span>
           <span>1 وحدة = بالـ {marketCurr}</span>
@@ -526,13 +526,13 @@ export function MultiMarketWidget() {
             return (
               <div
                 key={code}
-                className="flex items-center justify-between p-2 rounded-lg stitch-glass/60 hover:bg-secondary/70 border border-border/60 transition-colors"
+                className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/60 hover:bg-secondary/70 border border-border/60 transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <span className="text-lg flex-shrink-0">{meta.flag}</span>
                   <div>
-                    <p className="font-semibold text-sm stitch-latin">{code}</p>
-                    <p className="text-xs text-stitch-muted">{meta.name}</p>
+                    <p className="font-semibold text-sm font-sans">{code}</p>
+                    <p className="text-xs text-muted-foreground">{meta.name}</p>
                   </div>
                 </div>
 
@@ -543,7 +543,7 @@ export function MultiMarketWidget() {
                       : rateInMarketCurrency >= 1
                       ? (rateInMarketCurrency ?? 0).toFixed(3)
                       : (rateInMarketCurrency ?? 0).toFixed(4)}
-                    <span className="text-[11px] text-stitch-muted mr-1 font-normal stitch-latin">
+                    <span className="text-[11px] text-muted-foreground mr-1 font-normal font-sans">
                       {marketCurr}
                     </span>
                   </p>
@@ -580,25 +580,25 @@ export function MultiMarketWidget() {
           <TabsList className="w-full grid grid-cols-4 h-10 rounded-none border-y bg-secondary/40 p-0">
             <TabsTrigger
               value="stocks"
-              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all font-medium"
             >
               📈 الأسهم
             </TabsTrigger>
             <TabsTrigger
               value="gold"
-              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 transition-all font-medium"
             >
               🥇 الذهب
             </TabsTrigger>
             <TabsTrigger
               value="crypto"
-              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-500 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-500 transition-all font-medium"
             >
               ₿ كريبتو
             </TabsTrigger>
             <TabsTrigger
               value="forex"
-              className="text-xs py-2 rounded-none data-[state=active]:stitch-canvas data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500/30 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500/30 transition-all font-medium"
             >
               💱 عملات
             </TabsTrigger>

@@ -154,7 +154,7 @@ export function DailyPicksPoster() {
           ref={posterRef}
           dir="rtl"
           style={{ width: '1080px', maxWidth: '100%' }}
-          className="bg-[#0a0e27] shadow-2xl"
+          className="bg-card shadow-2xl"
         >
           {/* HEADER */}
           <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f1535 0%, #1a1f3a 100%)' }}>
@@ -226,7 +226,7 @@ export function DailyPicksPoster() {
           {/* TABLE */}
           <div className="bg-white">
             {/* Table Header */}
-            <div className="grid grid-cols-4 text-white font-bold text-center" style={{ borderBottom: '2px solid #ffd700' }}>
+            <div className="grid grid-cols-4 text-foreground font-bold text-center" style={{ borderBottom: '2px solid #ffd700' }}>
               <div className="py-3 px-2 text-lg" style={{ background: '#1e3a8a' }}>السهم</div>
               <div className="py-3 px-2 text-lg" style={{ background: '#00a651' }}>سعر الشراء</div>
               <div className="py-3 px-2 text-lg" style={{ background: '#00a651' }}>الهدف</div>
@@ -246,7 +246,7 @@ export function DailyPicksPoster() {
                 {/* Stock Name */}
                 <div className="py-3 px-2 flex items-center gap-2 justify-start">
                   <div 
-                    className="w-10 h-10 rounded-full bg-teal-900 flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                    className="w-10 h-10 rounded-full bg-teal-900 flex items-center justify-center text-foreground text-xs font-bold flex-shrink-0"
                     style={{ background: '#1e3a8a' }}
                   >
                     {pick.ticker.substring(0, 3)}
@@ -297,7 +297,7 @@ export function DailyPicksPoster() {
               {/* Warning */}
               <div className="flex items-start gap-3 flex-1">
                 <AlertTriangle className="w-8 h-8 text-yellow-500 flex-shrink-0 mt-0.5" />
-                <div className="text-white text-sm space-y-1">
+                <div className="text-foreground text-sm space-y-1">
                   <p className="font-semibold">
                     ⚠️ هذا المحتوى للتوعية التعليمية فقط وليس توقعة شراء أو بيع
                   </p>
@@ -310,7 +310,7 @@ export function DailyPicksPoster() {
               {/* Shield */}
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
-                  <Shield className="w-7 h-7 text-white" />
+                  <Shield className="w-7 h-7 text-foreground" />
                 </div>
               </div>
             </div>

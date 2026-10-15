@@ -60,7 +60,7 @@ const TIER_ICONS: Record<string, React.ReactNode> = {
   vip_pass: <Crown className="w-5 h-5 text-amber-400 animate-bounce" />,
   b2b_starter: <Building2 className="w-5 h-5 text-sky-500" />,
   b2b_pro: <Building2 className="w-5 h-5 text-sky-600" />,
-  b2b_enterprise: <Building2 className="w-5 h-5 text-stitch-primary" />,
+  b2b_enterprise: <Building2 className="w-5 h-5 text-primary" />,
 };
 
 const TIER_ACCENT: Record<string, string> = {
@@ -173,7 +173,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
           باقات المنصة
         </div>
         <h2 className="text-2xl font-bold dark:text-on-surface dark:font-outfit">اختر الباقة المناسبة لك</h2>
-        <p className="text-sm text-stitch-muted max-w-2xl mx-auto dark:text-on-surface-variant">
+        <p className="text-sm text-muted-foreground max-w-2xl mx-auto dark:text-on-surface-variant">
           ابدأ بتجربة مجانية لمدة 7 أيام تشمل جميع مزايا Premium — بدون بطاقة ائتمان. بعد انتهائها، اختر الباقة المناسبة لك.
         </p>
       </div>
@@ -181,7 +181,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-center gap-3">
         <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-stitch-muted dark:text-on-surface-variant" />
+          <Globe className="w-4 h-4 text-muted-foreground dark:text-on-surface-variant" />
           <Select value={market} onValueChange={setMarket} disabled={!!forcedMarket}>
             <SelectTrigger className="w-[200px] dark:bg-surface-container dark:border-outline-variant dark:text-on-surface">
               <SelectValue />
@@ -201,7 +201,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
             onClick={() => setBillingCycle('monthly')}
             className={cn(
               'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              billingCycle === 'monthly' ? 'stitch-canvas shadow-sm dark:bg-primary-container dark:text-on-primary-container' : 'text-stitch-muted dark:text-on-surface-variant',
+              billingCycle === 'monthly' ? 'bg-background shadow-sm dark:bg-primary-container dark:text-on-primary-container' : 'text-muted-foreground dark:text-on-surface-variant',
             )}
           >
             شهري
@@ -210,7 +210,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
             onClick={() => setBillingCycle('yearly')}
             className={cn(
               'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              billingCycle === 'yearly' ? 'stitch-canvas shadow-sm dark:bg-primary-container dark:text-on-primary-container' : 'text-stitch-muted dark:text-on-surface-variant',
+              billingCycle === 'yearly' ? 'bg-background shadow-sm dark:bg-primary-container dark:text-on-primary-container' : 'text-muted-foreground dark:text-on-surface-variant',
             )}
           >
             سنوي
@@ -229,7 +229,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
           ))}
         </div>
       ) : filteredPlans.length === 0 ? (
-        <div className="text-center py-8 text-stitch-muted dark:text-on-surface-variant">
+        <div className="text-center py-8 text-muted-foreground dark:text-on-surface-variant">
           لا توجد باقات متاحة لهذا السوق حالياً. حاول مرة أخرى لاحقاً.
         </div>
       ) : (
@@ -273,7 +273,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                   <div className="space-y-1.5">
                     {/* السعر الأصلي المشطوب ونسبة الخصم */}
                     <div className="flex items-center gap-2">
-                      <span className="text-xs line-through text-stitch-muted/80 font-medium tabular-nums dark:font-financial dark:text-on-surface-variant">
+                      <span className="text-xs line-through text-muted-foreground/80 font-medium tabular-nums dark:font-financial dark:text-on-surface-variant">
                         {formatPrice(plan.original_price_local || Math.round(plan.price_local * 2), plan.currency)}
                       </span>
                       <Badge variant="destructive" className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 dark:bg-error/15 dark:text-error dark:border-error/30 text-[10px] px-1.5 py-0 font-bold tabular-nums dark:font-financial">
@@ -282,13 +282,13 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                     </div>
 
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-extrabold text-stitch-on-surface tabular-nums dark:font-financial dark:text-primary">
+                      <span className="text-3xl font-extrabold text-foreground tabular-nums dark:font-financial dark:text-primary">
                         {formatPrice(plan.price_local, plan.currency)}
                       </span>
-                      <span className="text-xs text-stitch-muted dark:text-on-surface-variant">/ {plan.billing_cycle === 'monthly' ? 'شهر' : 'سنة'}</span>
+                      <span className="text-xs text-muted-foreground dark:text-on-surface-variant">/ {plan.billing_cycle === 'monthly' ? 'شهر' : 'سنة'}</span>
                     </div>
                     {plan.currency !== 'EGP' && (
-                      <p className="text-[11px] text-stitch-muted tabular-nums dark:font-financial dark:text-on-surface-variant">
+                      <p className="text-[11px] text-muted-foreground tabular-nums dark:font-financial dark:text-on-surface-variant">
                         (المعادل {plan.price_egp} ج.م وقت الدفع عبر Paymob)
                       </p>
                     )}
@@ -297,8 +297,8 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                   <ul className="space-y-2 flex-1">
                     {plan.features.map((f, i) => (
                       <li key={i} className="flex items-start gap-2 text-xs">
-                        <Check className="w-3.5 h-3.5 text-stitch-primary dark:text-primary shrink-0 mt-0.5" />
-                        <span className="text-stitch-muted dark:text-on-surface-variant">{f}</span>
+                        <Check className="w-3.5 h-3.5 text-primary dark:text-primary shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground dark:text-on-surface-variant">{f}</span>
                       </li>
                     ))}
                   </ul>
@@ -335,7 +335,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                             market,
                           })
                         }
-                        className="w-full gap-2 border-emerald-500/40 text-stitch-primary dark:text-stitch-primary hover:bg-emerald-500/10 font-bold text-xs dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
+                        className="w-full gap-2 border-emerald-500/40 text-primary dark:text-primary hover:bg-emerald-500/10 font-bold text-xs dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
                       >
                         <span>⚡</span>
                         الدفع عبر إنستاباي (InstaPay)
@@ -349,7 +349,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
         </div>
       )}
 
-      <div className="text-center text-xs text-stitch-muted space-y-1 dark:bg-primary-container/10 dark:border dark:border-primary/30 dark:text-on-surface-variant dark:rounded-lg dark:p-4">
+      <div className="text-center text-xs text-muted-foreground space-y-1 dark:bg-primary-container/10 dark:border dark:border-primary/30 dark:text-on-surface-variant dark:rounded-lg dark:p-4">
         <p>✓ تجربة مجانية لمدة 7 أيام بكل مزايا Premium — بدون بطاقة ائتمان</p>
         <p>✓ ادفع بالجنيه المصري عبر Paymob</p>
         <p>✓ ألغِ في أي وقت — بدون التزام</p>

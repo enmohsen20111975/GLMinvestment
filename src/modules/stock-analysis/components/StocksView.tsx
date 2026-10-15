@@ -208,10 +208,10 @@ function formatPercent(val: number | null | undefined, decimals = 2): string {
 }
 
 function changeColorClass(val: number | null | undefined): string {
-  if (val == null || !Number.isFinite(val)) return 'text-stitch-muted';
-  if (val > 0) return 'text-stitch-primary';
-  if (val < 0) return 'text-stitch-error';
-  return 'text-stitch-muted';
+  if (val == null || !Number.isFinite(val)) return 'text-muted-foreground';
+  if (val > 0) return 'text-primary';
+  if (val < 0) return 'text-rose-400';
+  return 'text-muted-foreground';
 }
 
 const PRESET_OPTIONS = [
@@ -242,8 +242,8 @@ const PRESET_BUTTONS: Array<{
 
 // Sector → tailwind badge colors (deterministic by sector name hash)
 const SECTOR_COLOR_MAP: Record<string, string> = {
-  'Financials': 'bg-emerald-500/10 text-stitch-primary',
-  'القطاع المالي': 'bg-emerald-500/10 text-stitch-primary',
+  'Financials': 'bg-emerald-500/10 text-primary',
+  'القطاع المالي': 'bg-emerald-500/10 text-primary',
   'Basic Materials': 'bg-amber-500/10 text-amber-400',
   'الأساسية': 'bg-amber-500/10 text-amber-400',
   'Real Estate': 'bg-purple-500/10 text-purple-400',
@@ -258,15 +258,15 @@ const SECTOR_COLOR_MAP: Record<string, string> = {
   'التكنولوجيا': 'bg-cyan-500/10 text-cyan-400',
   'Consumer Services': 'bg-rose-500/10 text-rose-400',
   'الخدمات الاستهلاكية': 'bg-rose-500/10 text-rose-400',
-  'Healthcare': 'bg-red-500/10 text-stitch-error',
-  'الرعاية الصحية': 'bg-red-500/10 text-stitch-error',
+  'Healthcare': 'bg-red-500/10 text-rose-400',
+  'الرعاية الصحية': 'bg-red-500/10 text-rose-400',
   'Energy': 'bg-yellow-500/10 text-yellow-400',
   'الطاقة': 'bg-yellow-500/10 text-yellow-400',
   'Telecommunications': 'bg-teal-500/10 text-teal-400',
   'الاتصالات': 'bg-teal-500/10 text-teal-400',
 };
 
-const SECTOR_FALLBACK_COLOR = 'bg-secondary text-stitch-on-surface';
+const SECTOR_FALLBACK_COLOR = 'bg-secondary text-foreground';
 
 function getSectorColor(sector: string | undefined | null): string {
   if (!sector) return SECTOR_FALLBACK_COLOR;
@@ -344,34 +344,34 @@ const OverviewSummary = memo(function OverviewSummary({
   return (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
       <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
-        <span className="text-xs font-medium text-stitch-muted">الإجمالي</span>
+        <span className="text-xs font-medium text-muted-foreground">الإجمالي</span>
         <span className="text-sm font-bold">{total}</span>
       </div>
       <div className="flex items-center gap-1.5 bg-emerald-500/10 rounded-lg px-3 py-1.5">
-        <TrendingUp className="w-3.5 h-3.5 text-stitch-primary" />
-        <span className="text-xs font-medium text-stitch-primary">المرتفعة</span>
-        <span className="text-sm font-bold text-stitch-primary">{gainers}</span>
+        <TrendingUp className="w-3.5 h-3.5 text-primary" />
+        <span className="text-xs font-medium text-primary">المرتفعة</span>
+        <span className="text-sm font-bold text-primary">{gainers}</span>
       </div>
       <div className="flex items-center gap-1.5 bg-red-500/10 rounded-lg px-3 py-1.5">
-        <TrendingDown className="w-3.5 h-3.5 text-stitch-error" />
-        <span className="text-xs font-medium text-stitch-error">المنخفضة</span>
-        <span className="text-sm font-bold text-stitch-error">{losers}</span>
+        <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+        <span className="text-xs font-medium text-rose-400">المنخفضة</span>
+        <span className="text-sm font-bold text-rose-400">{losers}</span>
       </div>
       <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
-        <Minus className="w-3.5 h-3.5 text-stitch-muted" />
-        <span className="text-xs font-medium text-stitch-muted">الثابتة</span>
+        <Minus className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground">الثابتة</span>
         <span className="text-sm font-bold">{unchanged}</span>
       </div>
       <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
-        <span className="text-xs font-medium text-stitch-muted">متوسط التغير</span>
+        <span className="text-xs font-medium text-muted-foreground">متوسط التغير</span>
         <span
           className={cn(
             'text-sm font-bold tabular-nums',
             avgChange > 0
-              ? 'text-stitch-primary'
+              ? 'text-primary'
               : avgChange < 0
-                ? 'text-stitch-error'
-                : 'text-stitch-muted'
+                ? 'text-rose-400'
+                : 'text-muted-foreground'
           )}
         >
           {avgChange >= 0 ? '+' : ''}
@@ -421,12 +421,12 @@ const StockCard = memo(function StockCard({
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="stitch-latin font-bold text-base text-stitch-primary tabular-nums">
+                <span className="font-sans font-bold text-base text-primary tabular-nums">
                   {formatCleanTicker(stock.ticker)}
                 </span>
                 <div className="flex gap-1">
                   {stock.egx30_member && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-stitch-primary font-medium">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-primary font-medium">
                       30
                     </span>
                   )}
@@ -436,13 +436,13 @@ const StockCard = memo(function StockCard({
                     </span>
                   )}
                   {stock.egx100_member && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-stitch-on-surface font-medium">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-foreground font-medium">
                       100
                     </span>
                   )}
                 </div>
               </div>
-              <p className="text-xs text-stitch-muted truncate mb-1" dir="rtl">
+              <p className="text-xs text-muted-foreground truncate mb-1" dir="rtl">
                 {stock.name_ar}
               </p>
               <Badge variant="secondary" className="text-[10px] font-normal">
@@ -491,17 +491,17 @@ const StockCard = memo(function StockCard({
         {/* Price + Change */}
         <div className="flex items-end justify-between mb-3">
           <div>
-            <p className="stitch-num text-2xl font-bold tabular-nums tracking-tight text-stitch-on-surface">
+            <p className="font-mono text-2xl font-bold tabular-nums tracking-tight text-foreground">
               {safeNum(stock.current_price).toFixed(2)}
             </p>
-            <p className="text-[10px] text-stitch-muted">{stock.market === 'CRYPTO' ? 'دولار' : 'جنيه مصري'}</p>
+            <p className="text-[10px] text-muted-foreground">{stock.market === 'CRYPTO' ? 'دولار' : 'جنيه مصري'}</p>
           </div>
           <div
             className={cn(
               'flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-bold tabular-nums',
-              isPositive && 'bg-emerald-500/10 text-stitch-primary',
-              isNegative && 'bg-red-500/10 text-stitch-error',
-              isNeutral && 'bg-secondary text-stitch-muted'
+              isPositive && 'bg-emerald-500/10 text-primary',
+              isNegative && 'bg-red-500/10 text-rose-400',
+              isNeutral && 'bg-secondary text-muted-foreground'
             )}
           >
             {isPositive ? (
@@ -535,7 +535,7 @@ const StockCard = memo(function StockCard({
               style={{ width: `${Math.min(100, Math.max(0, pricePosition))}%` }}
             />
           </div>
-          <div className="flex justify-between mt-0.5 text-[9px] text-stitch-muted tabular-nums">
+          <div className="flex justify-between mt-0.5 text-[9px] text-muted-foreground tabular-nums">
             <span>{safeNum(low).toFixed(1)}</span>
             <span>{safeNum(high).toFixed(1)}</span>
           </div>
@@ -544,17 +544,17 @@ const StockCard = memo(function StockCard({
         {/* Metrics Row */}
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-secondary/40 rounded-lg p-2 text-center">
-            <p className="text-[10px] text-stitch-muted mb-0.5">الحجم</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">الحجم</p>
             <p className="text-xs font-semibold tabular-nums">{formatVolume(stock.volume)}</p>
           </div>
           <div className="bg-secondary/40 rounded-lg p-2 text-center">
-            <p className="text-[10px] text-stitch-muted mb-0.5">مكرر الربحية</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">مكرر الربحية</p>
             <p className="text-xs font-semibold tabular-nums">
               {stock.pe_ratio > 0 ? (stock.pe_ratio ?? 0).toFixed(1) : '—'}
             </p>
           </div>
           <div className="bg-secondary/40 rounded-lg p-2 text-center">
-            <p className="text-[10px] text-stitch-muted mb-0.5">القيمة السوقية</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">القيمة السوقية</p>
             <p className="text-xs font-semibold tabular-nums">{formatMarketCap(stock.market_cap)}</p>
           </div>
         </div>
@@ -592,12 +592,12 @@ const MobileStockRow = memo(function MobileStockRow({
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="stitch-latin font-bold text-sm text-stitch-primary tabular-nums">
+            <span className="font-sans font-bold text-sm text-primary tabular-nums">
               {formatCleanTicker(stock.ticker)}
             </span>
             <div className="flex gap-1">
               {stock.egx30_member && (
-                <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-stitch-primary font-medium">
+                <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-primary font-medium">
                   30
                 </span>
               )}
@@ -608,23 +608,23 @@ const MobileStockRow = memo(function MobileStockRow({
               )}
             </div>
           </div>
-          <p className="text-xs text-stitch-muted truncate mb-0.5" dir="rtl">
+          <p className="text-xs text-muted-foreground truncate mb-0.5" dir="rtl">
             {stock.name_ar}
           </p>
-          <span className="text-[11px] text-stitch-muted">{stock.sector}</span>
+          <span className="text-[11px] text-muted-foreground">{stock.sector}</span>
         </div>
         <div className="text-left flex-shrink-0">
-          <p className="font-bold text-sm stitch-num tabular-nums">
+          <p className="font-bold text-sm font-mono tabular-nums">
             {safeNum(stock.current_price).toFixed(2)}
           </p>
           <p
             className={cn(
               'text-xs font-medium tabular-nums flex items-center gap-0.5 justify-end',
               isPositive
-                ? 'text-stitch-primary'
+                ? 'text-primary'
                 : isNegative
-                  ? 'text-stitch-error'
-                  : 'text-stitch-muted'
+                  ? 'text-rose-400'
+                  : 'text-muted-foreground'
             )}
           >
             {isPositive ? (
@@ -687,12 +687,12 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
   onSelect: (preset: string) => void;
 }) {
   return (
-    <Card className="stitch-glass py-0 gap-0">
+    <Card className="bg-card border border-border py-0 gap-0">
       <CardContent className="p-3 md:p-4">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <LayoutGrid className="w-4 h-4 text-stitch-primary" />
+          <LayoutGrid className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">القوائم المُسبقة</span>
-          <span className="text-xs text-stitch-muted">— اختر قائمة لعرض الأسهم المُصنّفة</span>
+          <span className="text-xs text-muted-foreground">— اختر قائمة لعرض الأسهم المُصنّفة</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
           {/*"All" button — first */}
@@ -702,7 +702,7 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
               'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border',
               activePreset === 'all'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
+                : 'bg-card border border-border text-muted-foreground border-border/60 hover:bg-secondary hover:text-foreground'
             )}
             aria-pressed={activePreset === 'all'}
           >
@@ -722,10 +722,10 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
                   'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border',
                   isActive
                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                    : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
+                    : 'bg-card border border-border text-muted-foreground border-border/60 hover:bg-secondary hover:text-foreground'
                 )}
               >
-                <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-white' : 'text-stitch-primary')} />
+                <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-white' : 'text-primary')} />
                 <span className="truncate">{p.label}</span>
               </button>
             );
@@ -777,7 +777,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
     <div className="space-y-3 pt-3 border-t border-border/60">
       {/* Sector multi-select chips */}
       <div>
-        <p className="text-xs font-medium text-stitch-muted mb-2">القطاع</p>
+        <p className="text-xs font-medium text-muted-foreground mb-2">القطاع</p>
         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
           {availableSectors.map((sector) => {
             const isActive = selectedSectors.includes(sector);
@@ -789,7 +789,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
                   'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                   isActive
                     ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary'
+                    : 'bg-bg-background text-muted-foreground border-border/60 hover:bg-secondary'
                 )}
               >
                 {sector}
@@ -797,7 +797,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
             );
           })}
           {availableSectors.length === 0 && (
-            <span className="text-xs text-stitch-muted">لا توجد قطاعات متاحة</span>
+            <span className="text-xs text-muted-foreground">لا توجد قطاعات متاحة</span>
           )}
         </div>
       </div>
@@ -805,7 +805,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
       {/* Price range + Change range side by side */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <p className="text-xs font-medium text-stitch-muted mb-2">نطاق السعر</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">نطاق السعر</p>
           <div className="flex items-center gap-2">
             <Input
               type="number"
@@ -816,7 +816,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
               className="h-8 text-xs"
               min={0}
             />
-            <span className="text-xs text-stitch-muted">←</span>
+            <span className="text-xs text-muted-foreground">←</span>
             <Input
               type="number"
               inputMode="decimal"
@@ -829,7 +829,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
           </div>
         </div>
         <div>
-          <p className="text-xs font-medium text-stitch-muted mb-2">نطاق التغير %</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">نطاق التغير %</p>
           <div className="flex items-center gap-2">
             <Input
               type="number"
@@ -839,7 +839,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
               placeholder="أقل"
               className="h-8 text-xs"
             />
-            <span className="text-xs text-stitch-muted">←</span>
+            <span className="text-xs text-muted-foreground">←</span>
             <Input
               type="number"
               inputMode="decimal"
@@ -857,7 +857,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-xs text-stitch-muted hover:text-stitch-on-surface"
+            className="h-8 text-xs text-muted-foreground hover:text-foreground"
             onClick={onReset}
           >
             <X className="w-3.5 h-3.5 ml-1" />
@@ -1231,11 +1231,11 @@ export function StocksView() {
         filterable: true,
         render: (row) => (
           <div className="flex items-center gap-1">
-            <span className="stitch-latin font-bold text-sm text-stitch-primary tabular-nums">
+            <span className="font-sans font-bold text-sm text-primary tabular-nums">
               {formatCleanTicker(String(row.ticker ?? ''))}
             </span>
             {row.egx30_member && (
-              <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-stitch-primary font-medium">
+              <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-primary font-medium">
                 30
               </span>
             )}
@@ -1296,7 +1296,7 @@ export function StocksView() {
         sortable: true,
         filterable: true,
         render: (row) => (
-          <span className="stitch-num font-semibold text-sm tabular-nums text-stitch-on-surface">
+          <span className="font-mono font-semibold text-sm tabular-nums text-foreground">
             {safeNum(row.current_price as number).toFixed(2)}
           </span>
         ),
@@ -1314,12 +1314,12 @@ export function StocksView() {
           return (
             <div
               className={cn(
-                'flex items-center gap-1 justify-end text-sm stitch-num',
+                'flex items-center gap-1 justify-end text-sm font-mono',
                 isPositive
-                  ? 'text-stitch-primary'
+                  ? 'text-primary'
                   : isNegative
-                    ? 'text-stitch-error'
-                    : 'text-stitch-muted'
+                    ? 'text-rose-400'
+                    : 'text-muted-foreground'
               )}
             >
               {isPositive ? (
@@ -1343,12 +1343,12 @@ export function StocksView() {
         render: (row) => {
           const high = safeNum(row.high_price as number);
           const low = safeNum(row.low_price as number);
-          if (high <= 0 && low <= 0) return <span className="text-stitch-muted">—</span>;
+          if (high <= 0 && low <= 0) return <span className="text-muted-foreground">—</span>;
           return (
-            <span className="text-xs stitch-num text-stitch-muted" dir="ltr">
-              <span className="text-stitch-primary font-medium">{(high ?? 0).toFixed(2)}</span>
-              <span className="mx-1 text-stitch-muted">/</span>
-              <span className="text-stitch-error font-medium">{(low ?? 0).toFixed(2)}</span>
+            <span className="text-xs font-mono text-muted-foreground" dir="ltr">
+              <span className="text-primary font-medium">{(high ?? 0).toFixed(2)}</span>
+              <span className="mx-1 text-muted-foreground">/</span>
+              <span className="text-rose-400 font-medium">{(low ?? 0).toFixed(2)}</span>
             </span>
           );
         },
@@ -1380,7 +1380,7 @@ export function StocksView() {
         render: (row) => {
           const change1w = row.change_1w ?? null;
           return (
-            <span className={cn('text-xs stitch-num font-medium', changeColorClass(change1w))}>
+            <span className={cn('text-xs font-mono font-medium', changeColorClass(change1w))}>
               {formatPercent(change1w)}
             </span>
           );
@@ -1399,7 +1399,7 @@ export function StocksView() {
         render: (row) => {
           const change1m = row.change_1m ?? null;
           return (
-            <span className={cn('text-xs stitch-num font-medium', changeColorClass(change1m))}>
+            <span className={cn('text-xs font-mono font-medium', changeColorClass(change1m))}>
               {formatPercent(change1m)}
             </span>
           );
@@ -1416,7 +1416,7 @@ export function StocksView() {
       render: (row) => {
         const volToday = row.volume_int ?? (row.volume ?? 0);
         return (
-          <span className="text-xs text-stitch-muted tabular-nums">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {formatVolume(volToday)}
           </span>
         );
@@ -1434,7 +1434,7 @@ export function StocksView() {
         filterable: true,
         hidden: true,
         render: (row) => (
-          <span className="text-xs text-stitch-muted tabular-nums">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {formatTurnover((row.turnover_egp as number | null | undefined) ?? (row.value_traded as number | null | undefined) ?? null)}
           </span>
         ),
@@ -1453,7 +1453,7 @@ export function StocksView() {
           render: (row) => {
             const volWeek = row.volume_week ?? null;
             return (
-              <span className="text-xs text-stitch-muted tabular-nums">
+              <span className="text-xs text-muted-foreground tabular-nums">
                 {formatVolume(volWeek)}
               </span>
             );
@@ -1472,12 +1472,12 @@ export function StocksView() {
             return (
               <span
                 className={cn(
-                  'text-xs stitch-num font-medium',
+                  'text-xs font-mono font-medium',
                   fairValue != null && currentPrice && fairValue > currentPrice
-                    ? 'text-stitch-primary'
+                    ? 'text-primary'
                     : fairValue != null && currentPrice && fairValue < currentPrice
-                      ? 'text-stitch-error'
-                      : 'text-stitch-muted',
+                      ? 'text-rose-400'
+                      : 'text-muted-foreground',
                 )}
               >
                 {fairValue != null ? safeNum(fairValue).toFixed(2) : '—'}
@@ -1497,10 +1497,10 @@ export function StocksView() {
             return (
               <span
                 className={cn(
-                  'text-xs stitch-num font-medium',
-                  upside != null && upside > 5 ? 'text-stitch-primary' :
-                  upside != null && upside < -5 ? 'text-stitch-error' :
-                  'text-stitch-muted',
+                  'text-xs font-mono font-medium',
+                  upside != null && upside > 5 ? 'text-primary' :
+                  upside != null && upside < -5 ? 'text-rose-400' :
+                  'text-muted-foreground',
                 )}
               >
                 {upside != null ? formatPercent(upside, 1) : '—'}
@@ -1518,7 +1518,7 @@ export function StocksView() {
           render: (row) => {
             const peRatio = row.pe_ratio ?? null;
             return (
-              <span className="text-xs stitch-num">
+              <span className="text-xs font-mono">
                 {peRatio != null && peRatio > 0 ? peRatio.toFixed(1) : '—'}
               </span>
             );
@@ -1546,9 +1546,9 @@ export function StocksView() {
             const isSell = s.includes('sell') || s.includes('bear') || s.includes('avoid');
             const label = isBuy ? t('stocks.signal.buy') : isSell ? t('stocks.signal.sell') : t('stocks.signal.hold');
             const cls = isBuy
-              ? 'bg-emerald-500/10 text-stitch-primary'
+              ? 'bg-emerald-500/10 text-primary'
               : isSell
-                ? 'bg-red-500/10 text-stitch-error'
+                ? 'bg-red-500/10 text-rose-400'
                 : 'bg-amber-500/10 text-amber-400';
             return (
               <span className={cn('inline-block text-[10px] px-2 py-0.5 rounded font-bold', cls)}>
@@ -1560,7 +1560,7 @@ export function StocksView() {
           // قبل كده: كان فيه client-side fallback بـ RSI thresholds 70/30 + MA50/MA200
           // → نتائج متضاربة مع canonical signal classification.
           // الحل: لو signal من DB موجود → نعرضه. لو NULL →"—" (لا fabrication).
-          return <span className="text-stitch-muted">—</span>;
+          return <span className="text-muted-foreground">—</span>;
         },
       },
       {
@@ -1571,7 +1571,7 @@ export function StocksView() {
         filterable: true,
         hidden: true, // (Task STOCKS-TABLE-FIX) مخفي افتراضياً
         render: (row) => (
-          <span className="text-xs text-stitch-muted tabular-nums">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {formatMarketCap(safeNum(row.market_cap as number))}
           </span>
         ),
@@ -1730,7 +1730,7 @@ export function StocksView() {
   // ── Detail View ──
   if (showDetail) {
     return (
-      <div className="stitch-canvas flex flex-col min-h-screen">
+      <div className="bg-background flex flex-col min-h-screen">
         <Header
           title={t('stocks.detail.title')}
         />
@@ -1749,14 +1749,14 @@ export function StocksView() {
     : t('stocks.subtitle.stocks', { market: MARKET_NAMES_AR[currentMarket] || t('markets.egypt') });
 
   return (
-    <div className="stitch-canvas flex flex-col min-h-screen" dir="rtl">
+    <div className="bg-background flex flex-col min-h-screen" dir="rtl">
       <Header
         title={pageTitle}
         subtitle={pageSubtitle}
       />
       <main className="flex-1 p-3 md:p-6 max-w-7xl mx-auto w-full space-y-3 md:space-y-4">
         {/* ── SCR-002: Institutional Glass Panel (Bloomberg terminal feel) ── */}
-        <div className="stitch-glass p-4 md:p-6 space-y-4">
+        <div className="bg-card border border-border p-4 md:p-6 space-y-4">
         {/* ── Tabs ── */}
         <div className="flex gap-2">
           <button
@@ -1765,7 +1765,7 @@ export function StocksView() {
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
               stockTab === 'stocks'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
+                : 'bg-card border border-border text-muted-foreground border-border/60 hover:bg-secondary hover:text-foreground'
             )}
           >
             <BarChart3 className="w-4 h-4" />
@@ -1778,7 +1778,7 @@ export function StocksView() {
                 'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
                 stockTab === 'bonds'
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                  : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary hover:text-stitch-on-surface'
+                  : 'bg-card border border-border text-muted-foreground border-border/60 hover:bg-secondary hover:text-foreground'
               )}
             >
               <Landmark className="w-4 h-4" />
@@ -1806,13 +1806,13 @@ export function StocksView() {
         {/* ── Search + Quick Filters + Advanced Filter Toggle ── */}
         {/* (Task STOCKS-TABLE-V2) دمج الـ search + الـ quick filter chips في كارت واحد،
             وإلغاء الـ StockSelector المكرر (كان بيعمل مستوى بحث تالت فوق الـ search العادي). */}
-        <Card className="stitch-glass py-0 gap-0">
+        <Card className="bg-card border border-border py-0 gap-0">
           <CardContent className="p-4 space-y-3">
             {/* Row 1: Search + Advanced Filter Toggle (less prominent) + Publish */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Search — ده الـ search الوحيد في الشاشة */}
               <div className="relative flex-1 min-w-[140px] sm:min-w-[200px]">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stitch-muted" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   value={localSearch}
                   onChange={(e) => handleSearchChange(e.target.value)}
@@ -1838,7 +1838,7 @@ export function StocksView() {
                 size="sm"
                 className={cn(
                   'h-9 gap-1.5 text-xs',
-                  showFilters && 'bg-secondary text-stitch-on-surface',
+                  showFilters && 'bg-secondary text-foreground',
                 )}
                 onClick={() => setShowFilters((prev) => !prev)}
                 title={t('stocks.filterButton.title')}
@@ -1875,7 +1875,7 @@ export function StocksView() {
                       'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                       isActive
                         ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary',
+                        : 'bg-bg-background text-muted-foreground border-border/60 hover:bg-secondary',
                     )}
                   >
                     {chip.label}
@@ -1918,7 +1918,7 @@ export function StocksView() {
                             'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                             presetPeriod === p.key
                               ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary'
+                              : 'bg-bg-background text-muted-foreground border-border/60 hover:bg-secondary'
                           )}
                         >
                           {p.label}
@@ -1960,7 +1960,7 @@ export function StocksView() {
                             'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                             selectedIndex === filter.key
                               ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-stitch-canvas text-stitch-muted border-border/60 hover:bg-secondary'
+                              : 'bg-bg-background text-muted-foreground border-border/60 hover:bg-secondary'
                           )}
                         >
                           {filter.label}
@@ -2002,7 +2002,7 @@ export function StocksView() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 text-xs text-stitch-muted hover:text-stitch-on-surface"
+                      className="h-8 text-xs text-muted-foreground hover:text-foreground"
                       onClick={handleResetFilters}
                     >
                       {t('stocks.filters.reset')}
@@ -2042,13 +2042,13 @@ export function StocksView() {
               </span>
             </div>
             <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
-              <span className="text-xs font-medium text-stitch-muted">{t('stocks.footer.count')}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('stocks.footer.count')}</span>
               <span className="text-sm font-bold">{presetData.length}</span>
             </div>
             {presetScanDate && (
               <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-3 py-1.5">
-                <span className="text-xs font-medium text-stitch-muted">{t('stocks.footer.lastUpdate')}</span>
-                <span className="text-xs stitch-num">{new Date(presetScanDate).toLocaleString('ar-EG')}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('stocks.footer.lastUpdate')}</span>
+                <span className="text-xs font-mono">{new Date(presetScanDate).toLocaleString('ar-EG')}</span>
               </div>
             )}
             {presetLoading && (
@@ -2069,16 +2069,16 @@ export function StocksView() {
 
         {/* ── Stock Content ── */}
         {isInitialLoading ? (
-          <Card className="stitch-glass py-0 overflow-hidden">
+          <Card className="bg-card border border-border py-0 overflow-hidden">
             <CardContent className="p-4">
               <TableSkeleton />
             </CardContent>
           </Card>
         ) : paginatedStocks.length === 0 ? (
-          <Card className="stitch-glass py-0 overflow-hidden">
+          <Card className="bg-card border border-border py-0 overflow-hidden">
             <CardContent className="p-12 text-center">
-              <BarChart3 className="w-12 h-12 text-stitch-muted mx-auto mb-3" />
-              <p className="text-stitch-muted text-sm">
+              <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">
                 {isPresetMode
                   ? t('stocks.empty.presetMissing')
                   : t('stocks.empty.noMatches')}
@@ -2107,7 +2107,7 @@ export function StocksView() {
           </Card>
         ) : (
           /* ── Table View ── */
-          <Card className="stitch-glass py-0 overflow-hidden">
+          <Card className="bg-card border border-border py-0 overflow-hidden">
             <>
               {/* Desktop Table */}
               <div className="hidden md:block">
@@ -2153,11 +2153,11 @@ export function StocksView() {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="stitch-latin font-bold text-sm text-stitch-primary tabular-nums">
+                            <span className="font-sans font-bold text-sm text-primary tabular-nums">
                               {item.ticker}
                             </span>
                             {(item as Stock).egx30_member && (
-                              <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-stitch-primary font-medium">
+                              <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-primary font-medium">
                                 30
                               </span>
                             )}
@@ -2167,7 +2167,7 @@ export function StocksView() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-stitch-muted truncate mb-0.5" dir="rtl">
+                          <p className="text-xs text-muted-foreground truncate mb-0.5" dir="rtl">
                             {item.name_ar}
                           </p>
                           <span className={cn(
@@ -2178,17 +2178,17 @@ export function StocksView() {
                           </span>
                         </div>
                         <div className="text-left flex-shrink-0">
-                          <p className="font-bold text-sm stitch-num tabular-nums">
+                          <p className="font-bold text-sm font-mono tabular-nums">
                             {safeNum(item.current_price).toFixed(2)}
                           </p>
                           <p
                             className={cn(
                               'text-xs font-medium tabular-nums flex items-center gap-0.5 justify-end',
                               isPositive
-                                ? 'text-stitch-primary'
+                                ? 'text-primary'
                                 : isNegative
-                                  ? 'text-stitch-error'
-                                  : 'text-stitch-muted'
+                                  ? 'text-rose-400'
+                                  : 'text-muted-foreground'
                             )}
                           >
                             {isPositive ? (
@@ -2208,31 +2208,31 @@ export function StocksView() {
                       {/* Secondary row: 1w change + fair_value + upside */}
                       <div className="grid grid-cols-3 gap-2 mt-2">
                         <div className="bg-secondary/40 rounded-lg p-1.5 text-center">
-                          <p className="text-[9px] text-stitch-muted mb-0.5">{t('stocks.mobile.week')}</p>
+                          <p className="text-[9px] text-muted-foreground mb-0.5">{t('stocks.mobile.week')}</p>
                           <p className={cn('text-[10px] font-semibold tabular-nums', changeColorClass(change1w))}>
                             {formatPercent(change1w)}
                           </p>
                         </div>
                         <div className="bg-secondary/40 rounded-lg p-1.5 text-center">
-                          <p className="text-[9px] text-stitch-muted mb-0.5">{t('stocks.mobile.fairValue')}</p>
+                          <p className="text-[9px] text-muted-foreground mb-0.5">{t('stocks.mobile.fairValue')}</p>
                           <p className={cn(
                             'text-[10px] font-semibold tabular-nums',
                             fairValue != null && item.current_price && fairValue > Number(item.current_price)
-                              ? 'text-stitch-primary'
+                              ? 'text-primary'
                               : fairValue != null && item.current_price && fairValue < Number(item.current_price)
-                                ? 'text-stitch-error'
-                                : 'text-stitch-muted'
+                                ? 'text-rose-400'
+                                : 'text-muted-foreground'
                           )}>
                             {fairValue != null ? safeNum(fairValue).toFixed(1) : '—'}
                           </p>
                         </div>
                         <div className="bg-secondary/40 rounded-lg p-1.5 text-center">
-                          <p className="text-[9px] text-stitch-muted mb-0.5">{t('stocks.mobile.opportunity')}</p>
+                          <p className="text-[9px] text-muted-foreground mb-0.5">{t('stocks.mobile.opportunity')}</p>
                           <p className={cn(
                             'text-[10px] font-semibold tabular-nums',
-                            upside != null && upside > 5 ? 'text-stitch-primary' :
-                            upside != null && upside < -5 ? 'text-stitch-error' :
-                            'text-stitch-muted'
+                            upside != null && upside > 5 ? 'text-primary' :
+                            upside != null && upside < -5 ? 'text-rose-400' :
+                            'text-muted-foreground'
                           )}>
                             {upside != null ? formatPercent(upside, 1) : '—'}
                           </p>
@@ -2246,7 +2246,7 @@ export function StocksView() {
               {/* Pagination — mobile only (Task STOCKS-TABLE-FIX: desktop بيعتمد على scroll داخل UnifiedTable) */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-secondary/30 md:hidden">
-                  <span className="text-xs text-stitch-muted">
+                  <span className="text-xs text-muted-foreground">
                     {t('stocks.pagination.page', { current: safePage, total: totalPages })}
                   </span>
                   <div className="flex items-center gap-2">

@@ -84,18 +84,18 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
           'group inline-flex shrink-0 items-center gap-1.5 px-3 py-1 text-xs transition-colors rounded',
           'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50',
           up
-            ? 'text-stitch-primary hover:bg-emerald-500/10'
+            ? 'text-primary hover:bg-emerald-500/10'
             : 'text-rose-400 hover:bg-rose-500/10',
         )}
         dir="ltr"
       >
-        <span className="stitch-num font-bold text-stitch-on-surface">
+        <span className="font-mono font-bold text-foreground">
           {stock.ticker}
         </span>
         <span
           className={cn(
-            'stitch-num inline-flex items-center gap-0.5 font-semibold',
-            up ? 'text-stitch-primary' : 'text-rose-400',
+            'font-mono inline-flex items-center gap-0.5 font-semibold',
+            up ? 'text-primary' : 'text-rose-400',
           )}
         >
           {up ? (
@@ -107,7 +107,7 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
         </span>
       </button>
       {showSeparator && (
-        <span className="text-stitch-outline select-none">•</span>
+        <span className="text-muted-foreground select-none">•</span>
       )}
     </>
   );
@@ -244,7 +244,7 @@ export function LiveStockTicker() {
               )}
             />
           </span>
-          <span className="stitch-num flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-stitch-primary">
+          <span className="font-mono flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-primary">
             <Zap className="h-3 w-3" />
             {isOpen ? 'مباشر' : 'مغلق'}
           </span>
@@ -255,7 +255,7 @@ export function LiveStockTicker() {
             />
           )}
           {isRefreshing && (
-            <Loader2 className="h-3 w-3 animate-spin text-stitch-outline" />
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
           )}
         </div>
 
@@ -278,7 +278,7 @@ export function LiveStockTicker() {
               ))}
             </div>
           ) : (
-            <div className="stitch-ar px-4 py-2 text-xs text-stitch-outline">
+            <div className=" px-4 py-2 text-xs text-muted-foreground">
               لا توجد بيانات أسهم متاحة
             </div>
           )}

@@ -206,9 +206,9 @@ export function SystemControlPanel() {
   const staleDbs = dbMeta.filter(d => isStale(d.lastModified));
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] text-white" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-[#0a0e17]/95 backdrop-blur-xl border-b border-white/5">
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between p-3">
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-cyan-400" />
@@ -234,7 +234,7 @@ export function SystemControlPanel() {
                   'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all min-h-[40px] whitespace-nowrap',
                   activeTab === tab.id
                     ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    : 'text-gray-400 hover:text-foreground hover:bg-white/5'
                 )}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -291,7 +291,7 @@ export function SystemControlPanel() {
       </div>
 
       {/* Quick Actions Bar — fixed bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0a0e17]/95 backdrop-blur-xl border-t border-white/5 p-2" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border p-2" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex gap-2 overflow-x-auto scrollbar-hide-mobile">
           <QuickButton icon={RefreshCw} label="تحديث الأسعار" loading={actionLoading === 'update-prices'} onClick={() => runAction('update-prices')} color="emerald" />
           <QuickButton icon={CheckCircle2} label="إغلاق التوقعات" loading={actionLoading === 'run-daily-closer'} onClick={() => runAction('run-daily-closer')} color="amber" />
@@ -333,13 +333,13 @@ function OverviewTab({ data, dbMeta, scrapers }: { data: any; dbMeta: DbRowMeta[
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-foreground">
               {totalRows > 0 ? totalRows.toLocaleString() : '—'}
             </div>
             <div className="text-[10px] text-gray-500 mt-1">إجمالي الصفوف</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-white">{(totalSize / 1024).toFixed(0)} MB</div>
+            <div className="text-2xl font-bold text-foreground">{(totalSize / 1024).toFixed(0)} MB</div>
             <div className="text-[10px] text-gray-500 mt-1">إجمالي حجم البيانات</div>
           </div>
         </div>
@@ -382,7 +382,7 @@ function OverviewTab({ data, dbMeta, scrapers }: { data: any; dbMeta: DbRowMeta[
               <div key={s.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <Globe className="w-3 h-3 text-gray-400" />
-                  <span className="text-white">{s.name}</span>
+                  <span className="text-foreground">{s.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-500" dir="ltr">
@@ -441,7 +441,7 @@ function DBRow({ db, compact, runAction, actionLoading, meta }: any) {
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Database className="w-4 h-4 text-cyan-400 shrink-0" />
           <div className="min-w-0">
-            <div className="text-xs font-medium text-white truncate">{db.name}</div>
+            <div className="text-xs font-medium text-foreground truncate">{db.name}</div>
             <div className="text-[10px] text-gray-500">
               {db.size_human || meta?.sizeFormatted || '—'} • {db.tables ?? meta?.tableCount ?? 0} جداول
               {/* PHASE2-ADMIN-PANEL: row count from /api/admin/db */}
@@ -463,7 +463,7 @@ function DBRow({ db, compact, runAction, actionLoading, meta }: any) {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-[10px] text-gray-400 hover:text-white"
+              className="h-7 px-2 text-[10px] text-gray-400 hover:text-foreground"
               disabled={actionLoading === `vacuum-${db.name}`}
               onClick={() => runAction('vacuum-db', { db: db.name })}
             >
@@ -487,7 +487,7 @@ function ServicesTab({ data, runAction, actionLoading }: any) {
             <div className="flex items-center gap-2">
               <Server className="w-4 h-4 text-purple-400 shrink-0" />
               <div>
-                <div className="text-xs font-medium text-white">{svc.name}</div>
+                <div className="text-xs font-medium text-foreground">{svc.name}</div>
                 <div className="text-[10px] text-gray-500">
                   {svc.memory ? `${svc.memory} • CPU ${svc.cpu}` : `port ${svc.port || '?'}`}
                 </div>
@@ -523,7 +523,7 @@ function EnginesTab({ data }: { data: any }) {
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4 text-cyan-400 shrink-0" />
               <div>
-                <div className="text-xs font-medium text-white">{eng.name}</div>
+                <div className="text-xs font-medium text-foreground">{eng.name}</div>
                 <div className="text-[10px] text-gray-500">port {eng.port}</div>
               </div>
             </div>
@@ -557,7 +557,7 @@ function PricesTab({ data, runAction, actionLoading }: any) {
           </div>
           <Button
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
+            className="bg-emerald-600 hover:bg-emerald-700 text-foreground h-8"
             disabled={actionLoading === 'update-prices'}
             onClick={() => runAction('update-prices')}
           >
@@ -567,7 +567,7 @@ function PricesTab({ data, runAction, actionLoading }: any) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-2xl font-bold text-white">{fmtNum(totalStocks)}</div>
+            <div className="text-2xl font-bold text-foreground">{fmtNum(totalStocks)}</div>
             <div className="text-[10px] text-gray-400">إجمالي الأسهم</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
@@ -616,7 +616,7 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
           </div>
           <Button
             size="sm"
-            className="bg-amber-600 hover:bg-amber-700 text-white h-8"
+            className="bg-amber-600 hover:bg-amber-700 text-foreground h-8"
             disabled={actionLoading === 'run-daily-closer'}
             onClick={() => runAction('run-daily-closer')}
           >
@@ -626,7 +626,7 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-2xl font-bold text-white">{fmtNum(total)}</div>
+            <div className="text-2xl font-bold text-foreground">{fmtNum(total)}</div>
             <div className="text-[10px] text-gray-400">إجمالي</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
@@ -686,7 +686,7 @@ function StatCard({ icon: Icon, label, value, color }: any) {
         <Icon className="w-3.5 h-3.5" />
         <span className="text-[10px] text-gray-400">{label}</span>
       </div>
-      <div className="text-xs font-bold text-white truncate">{value}</div>
+      <div className="text-xs font-bold text-foreground truncate">{value}</div>
     </Card>
   );
 }

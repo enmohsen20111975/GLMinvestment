@@ -303,7 +303,7 @@ export function DashboardView() {
   // ما عدناش محتاجين showMarketFlowPanels flag في الـ dashboard نفسه.
 
   return (
-    <div className="min-h-screen flex flex-col stitch-canvas dark:bg-surface-container-lowest">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-surface-container-lowest">
       {/* First-visit asset preference onboarding (P5-MOBILE-UX Part B.1) */}
       <AssetPreferenceOnboarding />
 
@@ -316,7 +316,7 @@ export function DashboardView() {
         <Card className="mb-3 py-0 gap-0 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1.5">
-              <Zap className="w-3.5 h-3.5 text-stitch-primary dark:text-primary" />
+              <Zap className="w-3.5 h-3.5 text-primary dark:text-primary" />
               <span className="text-xs font-semibold dark:text-on-surface">
                 {currentMarket === 'CRYPTO' ? t('dashboard.quickLookup') : t('dashboard.quickLookup')}
               </span>
@@ -412,8 +412,8 @@ export function DashboardView() {
               return (
                 <section aria-label="فرص جاهزة الآن" className="space-y-2">
                   <div className="flex items-center gap-2 px-1" dir="rtl">
-                    <Zap className="w-4 h-4 text-stitch-primary dark:text-primary" />
-                    <span className="text-sm font-bold text-stitch-primary dark:text-primary">
+                    <Zap className="w-4 h-4 text-primary dark:text-primary" />
+                    <span className="text-sm font-bold text-primary dark:text-primary">
                       فرص جاهزة الآن ({opportunities.length})
                     </span>
                   </div>
@@ -438,32 +438,32 @@ export function DashboardView() {
                             {/* Header: ticker + signal */}
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="stitch-num font-bold text-sm font-financial tabular-nums dark:text-on-surface">{stock.ticker}</div>
-                                <div className="text-xs text-stitch-muted truncate max-w-[120px] dark:text-on-surface-variant">{stock.nameAr || stock.name}</div>
+                                <div className="font-mono font-bold text-sm font-financial tabular-nums dark:text-on-surface">{stock.ticker}</div>
+                                <div className="text-xs text-muted-foreground truncate max-w-[120px] dark:text-on-surface-variant">{stock.nameAr || stock.name}</div>
                               </div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-500/10 dark:text-stitch-primary' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-500/10 text-primary dark:bg-emerald-500/10 dark:text-primary' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'}`}>
                                 {stock.recommendationAr || stock.recommendation}
                               </span>
                             </div>
                             {/* Entry / Stop / Target */}
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
-                                <div className="text-stitch-muted dark:text-on-surface-variant">دخول</div>
-                                <div className="stitch-num font-semibold font-financial tabular-nums dark:text-on-surface">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</div>
+                                <div className="text-muted-foreground dark:text-on-surface-variant">دخول</div>
+                                <div className="font-mono font-semibold font-financial tabular-nums dark:text-on-surface">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</div>
                               </div>
                               <div>
-                                <div className="text-stitch-muted dark:text-on-surface-variant">وقف</div>
-                                <div className="stitch-num font-semibold text-rose-400 dark:text-error font-financial tabular-nums">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</div>
+                                <div className="text-muted-foreground dark:text-on-surface-variant">وقف</div>
+                                <div className="font-mono font-semibold text-rose-400 dark:text-error font-financial tabular-nums">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</div>
                               </div>
                               <div>
-                                <div className="text-stitch-muted dark:text-on-surface-variant">هدف</div>
-                                <div className="stitch-num font-semibold text-stitch-primary dark:text-primary font-financial tabular-nums">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</div>
+                                <div className="text-muted-foreground dark:text-on-surface-variant">هدف</div>
+                                <div className="font-mono font-semibold text-primary dark:text-primary font-financial tabular-nums">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</div>
                               </div>
                             </div>
                             {/* R:R + Confidence */}
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-stitch-muted dark:text-on-surface-variant">R/R: <span className="stitch-num font-bold text-amber-600 dark:text-primary font-financial tabular-nums">{rrDisplay}</span></span>
-                              <span className="text-stitch-muted dark:text-on-surface-variant">ثقة: <span className="font-bold dark:text-on-surface">{stock.confidence?.toFixed(0) || '—'}%</span></span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">R/R: <span className="font-mono font-bold text-amber-600 dark:text-primary font-financial tabular-nums">{rrDisplay}</span></span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">ثقة: <span className="font-bold dark:text-on-surface">{stock.confidence?.toFixed(0) || '—'}%</span></span>
                             </div>
                             {/* T-ALPHA-A1: Time Horizon Glowing Badge */}
                             {(stock as unknown as Record<string, unknown>).persona ? (
@@ -500,7 +500,7 @@ export function DashboardView() {
                       {isDefensive ? (
                         <span className="text-rose-400 dark:text-rose-400 font-bold text-sm">⚠️ {advice}</span>
                       ) : (
-                        <span className="text-stitch-primary dark:text-stitch-primary font-bold text-sm">📊 {advice}</span>
+                        <span className="text-primary dark:text-primary font-bold text-sm">📊 {advice}</span>
                       )}
                     </div>
                   </div>
@@ -511,7 +511,7 @@ export function DashboardView() {
             {/* FOCUS-5-TASKS: تنبيهات أسهمك الشخصية — Owner directive: "تبقى أصغر أو في جانب" */}
             {/* خليها collapsible عشان مش تزحم الفرص فوق */}
             <details className="rounded-lg border border-emerald-500/30 dark:border-emerald-500/30/50 bg-emerald-50/30 dark:bg-emerald-600/60/10">
-              <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-stitch-primary dark:text-stitch-primary select-none flex items-center gap-2">
+              <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-primary dark:text-primary select-none flex items-center gap-2">
                 🔔 تنبيهات أسهمك الشخصية
               </summary>
               <div className="p-4 pt-0">
@@ -525,8 +525,8 @@ export function DashboardView() {
             {showPinnedSection && (
               <section aria-label="ودجات مثبتة" className="space-y-3">
                 <div className="flex items-center gap-2 px-1" dir="rtl">
-                  <Pin className="w-4 h-4 text-stitch-primary dark:text-primary" />
-                  <span className="text-sm font-bold text-stitch-primary dark:text-primary">
+                  <Pin className="w-4 h-4 text-primary dark:text-primary" />
+                  <span className="text-sm font-bold text-primary dark:text-primary">
                   مثبتة ({pinnedList.length})
                   </span>
                 </div>
@@ -602,7 +602,7 @@ export function DashboardView() {
             {/* Empty-state when asset preference filters out everything */}
             {eligibleWidgets.length === 0 && (
               <section className="text-center py-12" dir="rtl">
-                <p className="text-sm text-stitch-muted dark:text-on-surface-variant">
+                <p className="text-sm text-muted-foreground dark:text-on-surface-variant">
                   لا توجد ودجات متاحة لتفضيل الأصول هذا حالياً. يمكنك تغيير التفضيل من الإعدادات.
                 </p>
               </section>

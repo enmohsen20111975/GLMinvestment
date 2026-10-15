@@ -139,7 +139,7 @@ const WealthCharts = dynamic(
   () => import('@/modules/admin/components/WealthCharts').then(m => ({ default: m.WealthCharts })),
   { ssr: false, loading: () => (
     <Card className="mt-4">
-      <CardContent className="p-6 text-sm text-stitch-muted">{loadingWealthText}</CardContent>
+      <CardContent className="p-6 text-sm text-muted-foreground">{loadingWealthText}</CardContent>
     </Card>
   ) }
 );
@@ -235,7 +235,7 @@ const ASSET_TYPES: AssetType[] = [
 ];
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
-  stock: 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary',
+  stock: 'bg-emerald-500/10 text-primary dark:bg-emerald-600/80/30 dark:text-primary dark:bg-primary-container/30 dark:text-primary',
   gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   bank: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   certificate: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -299,7 +299,7 @@ const OBLIGATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary',
+  active: 'bg-emerald-500/10 text-primary dark:bg-emerald-600/80/30 dark:text-primary dark:bg-primary-container/30 dark:text-primary',
   paid: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   overdue: 'bg-rose-500/10 text-rose-400 dark:bg-rose-500/60/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error',
 };
@@ -395,11 +395,11 @@ function StockSearchDropdown({
             >
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-sm truncate">{stock.name_ar}</div>
-                <div className="text-xs text-stitch-muted" dir="ltr">{stock.ticker} | {stock.name}</div>
+                <div className="text-xs text-muted-foreground" dir="ltr">{stock.ticker} | {stock.name}</div>
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">{(stock.current_price ?? 0) > 0 ? (stock.current_price ?? 0).toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                   {(stock.price_change ?? 0) >= 0 ? '+' : ''}{(stock.price_change ?? 0).toFixed(2)}%
                 </div>
               </div>
@@ -510,11 +510,11 @@ function CryptoSearchDropdown({
             >
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-sm truncate">{coin.name}</div>
-                <div className="text-xs text-stitch-muted" dir="ltr">{coin.symbol}</div>
+                <div className="text-xs text-muted-foreground" dir="ltr">{coin.symbol}</div>
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">${coin.price_usd > 0 ? (coin.price_usd ?? 0).toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', coin.change_24h >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+                <div className={cn('text-xs font-medium', coin.change_24h >= 0 ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                   {coin.change_24h >= 0 ? '+' : ''}{(coin.change_24h ?? 0).toFixed(2)}%
                 </div>
               </div>
@@ -523,7 +523,7 @@ function CryptoSearchDropdown({
         </div>
       )}
       {open && !loading && filtered.length === 0 && allCoins.length > 0 && query.trim() && (
-        <div className="absolute z-50 w-full mt-1 rounded-md border bg-popover shadow-lg p-3 text-sm text-stitch-muted text-center">
+        <div className="absolute z-50 w-full mt-1 rounded-md border bg-popover shadow-lg p-3 text-sm text-muted-foreground text-center">
           {t('portfolio.search.noCryptoMatch', { query })}
         </div>
       )}
@@ -1154,21 +1154,21 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           other side — opens DynamicRiskProfilerModal to recompute the persona. */}
       <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl">
         <div className="flex items-center gap-2">
-          <Badge className="text-[10px] gap-1 bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary border-emerald-500/30 dark:border-emerald-500/30 dark:border-primary-container/40">
+          <Badge className="text-[10px] gap-1 bg-emerald-500/10 text-primary dark:bg-emerald-600/80/30 dark:text-primary dark:bg-primary-container/30 dark:text-primary border-emerald-500/30 dark:border-emerald-500/30 dark:border-primary-container/40">
             <Shield className="w-3 h-3" />
             {t('portfolio.persona.label', { persona: personaLabelAr(persona) })}
           </Badge>
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-2 text-[11px] text-stitch-muted hover:text-stitch-primary"
+            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary"
             onClick={() => setProfilerOpen(true)}
           >
             <RefreshCw className="w-3 h-3 ml-1" />
             {t('portfolio.persona.retest')}
           </Button>
         </div>
-        <Badge variant="outline" className="text-[10px] gap-1 text-stitch-muted">
+        <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
           {t('portfolio.currency.label', { currency: displayCurrency })}
         </Badge>
       </div>
@@ -1176,14 +1176,14 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       {/* Summary Cards — B-1: Backend P34 net-worth math (gross / debts / net / monthly yield) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-          <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
             <Landmark className="w-4 h-4" />
             <span className="text-xs font-medium">{t('portfolio.summary.totalAssets')}</span>
           </div>
           <p className="text-lg md:text-xl font-bold dark:text-on-surface tabular-nums dark:font-financial">{formatCurrency(netWorthData?.gross ?? totalAssets)}</p>
         </Card>
         <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-          <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
             <CreditCard className="w-4 h-4 text-amber-500" />
             <span className="text-xs font-medium">{t('portfolio.summary.totalLiabilities')}</span>
           </div>
@@ -1191,28 +1191,28 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {formatCurrency(netWorthData?.debts ?? totalLiabilities)}
           </p>
           {totalLiabilities > 0 && (netWorthData?.debts ?? 0) === 0 && (
-            <p className="text-xs text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.summary.afterDeduction', { amount: formatCurrency(totalLiabilities) })}</p>
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.summary.afterDeduction', { amount: formatCurrency(totalLiabilities) })}</p>
           )}
         </Card>
         <Card className="p-4 ring-1 ring-emerald-500/30 bg-emerald-500/5 dark:bg-surface-container-low dark:border dark:border-outline-variant/30 dark:ring-primary/40 dark:bg-primary-container/10">
-          <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
-            <Wallet className="w-4 h-4 text-stitch-primary dark:text-stitch-primary dark:text-primary" />
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+            <Wallet className="w-4 h-4 text-primary dark:text-primary dark:text-primary" />
             <span className="text-xs font-medium">{t('portfolio.summary.netWorth')}</span>
           </div>
-          <p className={cn('text-lg md:text-xl font-bold tabular-nums dark:font-financial', (netWorthData?.net ?? netWealth) >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+          <p className={cn('text-lg md:text-xl font-bold tabular-nums dark:font-financial', (netWorthData?.net ?? netWealth) >= 0 ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
             {formatCurrency(netWorthData?.net ?? netWealth)}
           </p>
         </Card>
         <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-          <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
-            <Coins className="w-4 h-4 text-stitch-primary dark:text-stitch-primary dark:text-primary" />
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+            <Coins className="w-4 h-4 text-primary dark:text-primary dark:text-primary" />
             <span className="text-xs font-medium">{t('portfolio.summary.monthlyYield')}</span>
           </div>
-          <p className="text-lg md:text-xl font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary tabular-nums dark:font-financial">
+          <p className="text-lg md:text-xl font-bold text-primary dark:text-primary dark:text-primary tabular-nums dark:font-financial">
             {formatCurrency(netWorthData?.monthlyYield ?? 0)}
           </p>
           {netWorthData && netWorthData.annualYield > 0 && (
-            <p className="text-xs text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.summary.annualYield', { amount: formatCurrency(netWorthData.annualYield) })}</p>
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.summary.annualYield', { amount: formatCurrency(netWorthData.annualYield) })}</p>
           )}
         </Card>
       </div>
@@ -1227,10 +1227,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
               <Percent className="w-4 h-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-stitch-on-surface truncate dark:text-on-surface dark:font-outfit">
+              <div className="text-sm font-semibold text-foreground truncate dark:text-on-surface dark:font-outfit">
                 نسبة عمولة التداول والانزلاق %
               </div>
-              <div className="text-[10px] text-stitch-muted truncate dark:text-on-surface-variant">
+              <div className="text-[10px] text-muted-foreground truncate dark:text-on-surface-variant">
                 Brokerage & Fee Rate — تُخصم من عوائد الصفقات (شراء + بيع)
               </div>
             </div>
@@ -1243,10 +1243,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
               step="0.01"
               value={commissionPct}
               onChange={(e) => updateCommission(parseFloat(e.target.value) || 0)}
-              className="w-24 text-center stitch-num font-bold dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
+              className="w-24 text-center font-mono font-bold dark:bg-surface-container dark:border-outline-variant dark:text-on-surface tabular-nums dark:font-financial"
               dir="ltr"
             />
-            <span className="text-sm text-stitch-muted stitch-num dark:text-on-surface-variant">%</span>
+            <span className="text-sm text-muted-foreground font-mono dark:text-on-surface-variant">%</span>
             {/* Quick presets */}
             <div className="flex gap-1">
               {[0, 0.15, 0.20, 0.40].map((preset) => (
@@ -1254,10 +1254,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   key={preset}
                   onClick={() => updateCommission(preset)}
                   className={cn(
-                    'px-2 py-1 rounded text-[10px] stitch-num border transition-all dark:font-financial tabular-nums',
+                    'px-2 py-1 rounded text-[10px] font-mono border transition-all dark:font-financial tabular-nums',
                     Math.abs(commissionPct - preset) < 0.001
                       ? 'bg-primary text-primary-foreground border-primary dark:bg-primary-container dark:text-on-primary-container dark:border-primary-container'
-                      : 'stitch-glass text-stitch-muted border-border/60 hover:bg-secondary dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant dark:hover:bg-surface-container-high',
+                      : 'bg-card border border-border text-muted-foreground border-border/60 hover:bg-secondary dark:bg-surface-container dark:text-on-surface-variant dark:border-outline-variant dark:hover:bg-surface-container-high',
                   )}
                   title={`${preset}%`}
                 >
@@ -1268,9 +1268,9 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           </div>
         </div>
         {commissionPct > 0 && (
-          <p className="text-[10px] text-stitch-muted mt-2 leading-relaxed dark:text-on-surface-variant">
-            💡 العمولة الحالية: <span className="stitch-num font-bold text-primary dark:font-financial tabular-nums">{commissionPct.toFixed(2)}%</span>
-            (تكلفة الكتلة: <span className="stitch-num dark:font-financial tabular-nums">{(commissionPct * 2).toFixed(2)}%</span> لكل صفقة شراء + بيع).
+          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed dark:text-on-surface-variant">
+            💡 العمولة الحالية: <span className="font-mono font-bold text-primary dark:font-financial tabular-nums">{commissionPct.toFixed(2)}%</span>
+            (تكلفة الكتلة: <span className="font-mono dark:font-financial tabular-nums">{(commissionPct * 2).toFixed(2)}%</span> لكل صفقة شراء + بيع).
             الأرباح الصافية في جدول الصفقات تُحسب بخصم هذه النسبة من العائد الإجمالي.
           </p>
         )}
@@ -1303,7 +1303,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
         </div>
         <div className="flex items-center gap-2">
           {refreshing && (
-            <span className="text-[10px] text-stitch-muted flex items-center gap-1 animate-pulse">
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1 animate-pulse">
               <RefreshCw className="w-3 h-3 animate-spin" />
               {t('portfolio.buttons.liveRefresh')}
             </span>
@@ -1319,9 +1319,9 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       {filteredAssets.length === 0 ? (
         <Card className="border-dashed dark:bg-surface-container-low dark:border-outline-variant">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Landmark className="w-10 h-10 text-stitch-muted mb-3 dark:text-on-surface-variant" />
+            <Landmark className="w-10 h-10 text-muted-foreground mb-3 dark:text-on-surface-variant" />
             <h3 className="text-lg font-semibold mb-1 dark:text-on-surface dark:font-outfit">{t('portfolio.empty.noAssets')}</h3>
-            <p className="text-sm text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.addEmpty')}</p>
+            <p className="text-sm text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.addEmpty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -1340,24 +1340,24 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             const groupYearlyInterest = groupAssets.reduce((s, a) => s + (Number(a.yearly_interest) || 0), 0);
             
             return (
-              <AccordionItem key={groupType} value={groupType} className="border rounded-lg stitch-glass px-4 dark:bg-surface-container-low dark:border-outline-variant">
+              <AccordionItem key={groupType} value={groupType} className="border rounded-lg bg-card border border-border px-4 dark:bg-surface-container-low dark:border-outline-variant">
                 {/* Group Header — P30 TASK 6: Accordion trigger */}
                 <AccordionTrigger className="hover:no-underline bg-secondary/30 rounded-lg px-3 py-3 hover:bg-secondary/50 dark:bg-surface-container dark:hover:bg-surface-container-high">
                   <div className="flex items-center gap-2">
                     <Badge className={ASSET_TYPE_COLORS[groupType]}>{t(`portfolio.assetTypes.${groupType}`)}</Badge>
-                    <span className="text-sm text-stitch-muted dark:text-on-surface-variant">({groupAssets.length})</span>
+                    <span className="text-sm text-muted-foreground dark:text-on-surface-variant">({groupAssets.length})</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
                     <div className="text-left">
-                      <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.value')}</span>
+                      <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.value')}</span>
                       <span className="font-semibold dark:text-on-surface tabular-nums dark:font-financial">{formatCurrency(groupCurrentValue)}</span>
                     </div>
-                    <div className={cn('text-left font-semibold', groupProfitLoss >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+                    <div className={cn('text-left font-semibold', groupProfitLoss >= 0 ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                       {formatPercent(groupProfitLossPercent)}
                     </div>
                     {/* Show interest for bank/certificate/fund */}
                     {['bank', 'certificate', 'fund'].includes(groupType) && groupYearlyInterest > 0 && (
-                      <div className="text-left text-stitch-primary dark:text-stitch-primary dark:text-primary">
+                      <div className="text-left text-primary dark:text-primary dark:text-primary">
                         <span className="text-xs">{t('portfolio.asset.annualReturn')}</span>
                         <span className="font-semibold tabular-nums dark:font-financial">{formatCurrency(groupYearlyInterest)}</span>
                       </div>
@@ -1456,7 +1456,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                               <div className="min-w-0">
                                 <h3 className="font-semibold text-sm truncate dark:text-on-surface">{asset.name}</h3>
                                 {isStock && asset.stock_ticker && (
-                                  <span className="text-xs text-stitch-muted block dark:text-on-surface-variant dark:font-financial" dir="ltr">{asset.stock_ticker}</span>
+                                  <span className="text-xs text-muted-foreground block dark:text-on-surface-variant dark:font-financial" dir="ltr">{asset.stock_ticker}</span>
                                 )}
                                 {isStock && asset.stock_ticker && (() => {
                                   // PHASE3-MARKET-SEGREGATION (Task F): add a market badge so the user can
@@ -1466,7 +1466,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   if (!m || m === 'EGX') return null; // EGX is the default — no badge
                                   const label = MARKET_NAMES_AR[m];
                                   return (
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-secondary dark:bg-background/40 border-border/60 dark:border-primary text-primary dark:text-stitch-outline">
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-secondary dark:bg-background/40 border-border/60 dark:border-primary text-primary dark:text-muted-foreground">
                                       🏛️ {label}
                                     </Badge>
                                   );
@@ -1556,33 +1556,33 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                 </span>
                               )}
                               <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title={t('common.edit')}><Pencil className="w-3.5 h-3.5" /></Button>
-                              <Button variant="outline" size="icon" className="h-7 w-7 text-stitch-muted hover:text-rose-400 hover:border-rose-500/30 hover:bg-red-50 dark:hover:bg-rose-500/60/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title={t('common.delete')}><Trash2 className="w-3.5 h-3.5" /></Button>
+                              <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground hover:text-rose-400 hover:border-rose-500/30 hover:bg-red-50 dark:hover:bg-rose-500/60/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title={t('common.delete')}><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
                           </div>
                           
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.invested')}</span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.invested')}</span>
                               <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(invested)}</span>
                             </div>
                             
                             {/* Stock: Show current price */}
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.currentPrice')}</span>
+                                <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.currentPrice')}</span>
                                 <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{(currentPrice ?? 0).toFixed(2)} EGP</span>
                               </div>
                             )}
                             
                             <div className="flex justify-between text-sm">
-                              <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.currentValue')}</span>
+                              <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.currentValue')}</span>
                               <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(currVal)}</span>
                             </div>
                             
                             {/* Profit/Loss */}
                             <div className="flex justify-between text-sm">
-                              <span className="text-stitch-muted">{t('portfolio.asset.profitLoss')}</span>
-                              <span className={cn('font-semibold tabular-nums dark:font-financial', gl >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+                              <span className="text-muted-foreground">{t('portfolio.asset.profitLoss')}</span>
+                              <span className={cn('font-semibold tabular-nums dark:font-financial', gl >= 0 ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                                 {gl >= 0 ? '+' : ''}{formatCurrency(gl)} ({formatPercent(glPct)})
                               </span>
                             </div>
@@ -1590,8 +1590,8 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {/* Stock: Daily change */}
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.dayChange')}</span>
-                                <span className={cn('font-medium tabular-nums dark:font-financial', priceChange >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+                                <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.dayChange')}</span>
+                                <span className={cn('font-medium tabular-nums dark:font-financial', priceChange >= 0 ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                                   {formatPercent(priceChange)}
                                 </span>
                               </div>
@@ -1600,28 +1600,28 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {/* Interest-bearing assets: Show interest breakdown */}
                             {isInterestBearing && (rate > 0 || yearlyInterest > 0) && (
                               <>
-                                <div className="flex justify-between text-sm text-stitch-primary dark:text-stitch-primary pt-1 border-t border-dashed dark:border-outline-variant/30 dark:text-primary">
-                                  <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.expectedAnnualReturn')}</span>
+                                <div className="flex justify-between text-sm text-primary dark:text-primary pt-1 border-t border-dashed dark:border-outline-variant/30 dark:text-primary">
+                                  <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.expectedAnnualReturn')}</span>
                                   <span className="font-semibold tabular-nums dark:font-financial">{formatCurrency(yearlyInterest)}</span>
                                 </div>
-                                <div className="flex justify-between text-xs text-stitch-muted dark:text-on-surface-variant">
+                                <div className="flex justify-between text-xs text-muted-foreground dark:text-on-surface-variant">
                                   <span>{t('portfolio.asset.monthly')}</span>
                                   <span className="tabular-nums dark:font-financial">{formatCurrency(monthlyInterest)}</span>
                                 </div>
-                                <div className="flex justify-between text-xs text-stitch-muted dark:text-on-surface-variant">
+                                <div className="flex justify-between text-xs text-muted-foreground dark:text-on-surface-variant">
                                   <span>{t('portfolio.asset.daily')}</span>
                                   <span className="tabular-nums dark:font-financial">{formatCurrency(dailyInterest)}</span>
                                 </div>
                                 {accruedInterest > 0 && (
                                   <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 dark:bg-primary-container/20 rounded text-xs">
                                     <div className="flex justify-between">
-                                      <span className="text-stitch-muted dark:text-on-surface-variant">{t('portfolio.asset.earnedInterest')}</span>
-                                      <span className="font-semibold text-stitch-primary dark:text-stitch-primary dark:text-primary tabular-nums dark:font-financial">
+                                      <span className="text-muted-foreground dark:text-on-surface-variant">{t('portfolio.asset.earnedInterest')}</span>
+                                      <span className="font-semibold text-primary dark:text-primary dark:text-primary tabular-nums dark:font-financial">
                                         {formatCurrency(accruedInterest)}
                                       </span>
                                     </div>
                                     {daysElapsed > 0 && (
-                                      <div className="text-stitch-muted mt-1 dark:text-on-surface-variant">{t('portfolio.asset.daysAgo', { days: daysElapsed })}</div>
+                                      <div className="text-muted-foreground mt-1 dark:text-on-surface-variant">{t('portfolio.asset.daysAgo', { days: daysElapsed })}</div>
                                     )}
                                   </div>
                                 )}
@@ -1631,27 +1631,27 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                           
                           {/* Footer info */}
                           {isStock && qty > 0 && (
-                            <div className="mt-2 pt-2 border-t text-xs text-stitch-muted dark:text-on-surface-variant dark:border-outline-variant/30 tabular-nums dark:font-financial">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30 tabular-nums dark:font-financial">
                               {t('portfolio.asset.stockLine', { qty: qty.toLocaleString('en-US'), price: (avgBuy ?? 0).toFixed(2) })}
                             </div>
                           )}
                           {asset.type === 'gold' && (
-                            <div className="mt-2 pt-2 border-t text-xs text-stitch-muted dark:text-on-surface-variant dark:border-outline-variant/30 tabular-nums dark:font-financial">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30 tabular-nums dark:font-financial">
                               {weightGrams ? t('portfolio.asset.goldLine', { weight: weightGrams.toLocaleString('en-US'), karat }) : ''}
                               {livePricePerGram > 0 && (
-                                <span className="block mt-1 text-stitch-primary dark:text-stitch-primary dark:text-primary">
+                                <span className="block mt-1 text-primary dark:text-primary dark:text-primary">
                                   {t('portfolio.asset.goldPricePerGram', { price: (livePricePerGram ?? 0).toFixed(2) })}
                                 </span>
                               )}
                             </div>
                           )}
                           {(asset.type === 'bank' || (asset.type as string) === 'deposit') && (
-                            <div className="mt-2 pt-2 border-t text-xs text-stitch-muted dark:text-on-surface-variant dark:border-outline-variant/30">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30">
                               {asset.bank_name || ''} {rate > 0 ? t('portfolio.asset.bankLine', { bank: asset.bank_name || '', rate }) : ''}
                             </div>
                           )}
                           {asset.type === 'certificate' && (
-                            <div className="mt-2 pt-2 border-t text-xs text-stitch-muted dark:text-on-surface-variant dark:border-outline-variant/30">
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground dark:text-on-surface-variant dark:border-outline-variant/30">
                               {asset.certificate_duration_months ? t('portfolio.asset.certLine', { months: asset.certificate_duration_months, rate: rate ?? 0 }) : ''} 
                               {rate > 0 ? t('portfolio.asset.certLine', { months: asset.certificate_duration_months ?? 0, rate: rate ?? 0 }) : ''}
                             </div>
@@ -1692,7 +1692,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {formType === 'stock' && (
               <>
                 <div className="space-y-2">
-                  <Label>{t('portfolio.forms.selectStock')} <span className="text-xs text-stitch-muted">{t('portfolio.forms.selectStockHint')}</span></Label>
+                  <Label>{t('portfolio.forms.selectStock')} <span className="text-xs text-muted-foreground">{t('portfolio.forms.selectStockHint')}</span></Label>
                   <StockSearchDropdown
                     value={formTicker ? `${formTicker} - ${formName}` : ''}
                     onSelect={(ticker, name, price) => handleStockSelect(ticker, name, price)}
@@ -1700,7 +1700,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formSelectedPrice && formSelectedPrice > 0 && (
                   <div className="bg-secondary rounded-md px-3 py-2 text-xs flex justify-between">
-                    <span className="text-stitch-muted">{t('portfolio.forms.currentStockPrice')}</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.currentStockPrice')}</span>
                     <span className="font-semibold" dir="ltr">{(formSelectedPrice ?? 0).toFixed(2)} EGP</span>
                   </div>
                 )}
@@ -1721,8 +1721,8 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30 rounded-md px-3 py-2 text-sm">
-                    <span className="text-stitch-muted">{t('portfolio.forms.totalCost')}</span>
-                    <span className="font-bold text-stitch-primary dark:text-stitch-primary">{formatCurrency(parseFloat(formTotalInvested))}</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.totalCost')}</span>
+                    <span className="font-bold text-primary dark:text-primary">{formatCurrency(parseFloat(formTotalInvested))}</span>
                   </div>
                 )}
               </>
@@ -1782,14 +1782,14 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formWeight && formPricePerGram && (
                   <div className="bg-secondary rounded-md px-3 py-2 text-sm flex justify-between">
-                    <span className="text-stitch-muted">{t('portfolio.forms.purchaseCost')}</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.purchaseCost')}</span>
                     <span className="font-bold">{formatCurrency(parseFloat(formWeight) * parseFloat(formPricePerGram))}</span>
                   </div>
                 )}
                 {formWeight && formCurrentValue && parseFloat(formCurrentValue) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30 rounded-md px-3 py-2 text-sm flex justify-between">
-                    <span className="text-stitch-muted">{t('portfolio.forms.currentValueLabel')}</span>
-                    <span className="font-bold text-stitch-primary dark:text-stitch-primary">{formatCurrency(parseFloat(formCurrentValue))}</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.currentValueLabel')}</span>
+                    <span className="font-bold text-primary dark:text-primary">{formatCurrency(parseFloat(formCurrentValue))}</span>
                   </div>
                 )}
               </>
@@ -1845,11 +1845,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {formFundType === 'fixed_income' && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-emerald-50 dark:bg-emerald-600/60/30 rounded-lg border border-emerald-500/30 dark:border-emerald-500/30">
                     <div className="space-y-2">
-                      <Label className="text-stitch-primary dark:text-stitch-primary">{t('portfolio.forms.annualReturnPct')}</Label>
+                      <Label className="text-primary dark:text-primary">{t('portfolio.forms.annualReturnPct')}</Label>
                       <Input type="number" step="0.01" value={formAnnualReturn} onChange={(e) => setFormAnnualReturn(e.target.value)} placeholder={t('portfolio.forms.annualReturnPlaceholder')} dir="ltr" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-stitch-primary dark:text-stitch-primary">{t('portfolio.forms.returnType')}</Label>
+                      <Label className="text-primary dark:text-primary">{t('portfolio.forms.returnType')}</Label>
                       <Select value={formReturnType} onValueChange={(v) => setFormReturnType(v as 'annual' | 'monthly' | 'daily')}>
                         <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -1860,10 +1860,10 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-stitch-primary dark:text-stitch-primary">{t('portfolio.forms.purchaseDate')}</Label>
+                      <Label className="text-primary dark:text-primary">{t('portfolio.forms.purchaseDate')}</Label>
                       <Input type="date" value={formPurchaseDate} onChange={(e) => setFormPurchaseDate(e.target.value)} dir="ltr" />
                     </div>
-                    <p className="text-[11px] text-stitch-muted sm:col-span-3">
+                    <p className="text-[11px] text-muted-foreground sm:col-span-3">
                       {t('portfolio.forms.autoCalcHint')}
                     </p>
                   </div>
@@ -1886,7 +1886,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             {formType === 'crypto' && (
               <>
                 <div className="space-y-2">
-                  <Label>{t('portfolio.forms.selectCrypto')} <span className="text-xs text-stitch-muted">{t('portfolio.forms.selectCryptoHint')}</span></Label>
+                  <Label>{t('portfolio.forms.selectCrypto')} <span className="text-xs text-muted-foreground">{t('portfolio.forms.selectCryptoHint')}</span></Label>
                   <CryptoSearchDropdown
                     value={formTicker ? `${formTicker} - ${formName}` : ''}
                     onSelect={(symbol, name, priceUsd) => {
@@ -1898,7 +1898,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formSelectedPrice && formSelectedPrice > 0 && (
                   <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md px-3 py-2 text-xs flex justify-between">
-                    <span className="text-stitch-muted">{t('portfolio.forms.currentCryptoPrice')}</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.currentCryptoPrice')}</span>
                     <span className="font-semibold text-orange-700 dark:text-orange-400" dir="ltr">${(formSelectedPrice ?? 0).toFixed(2)}</span>
                   </div>
                 )}
@@ -1924,11 +1924,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 </div>
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30 rounded-md px-3 py-2 text-sm">
-                    <span className="text-stitch-muted">{t('portfolio.forms.totalCostUSD')}</span>
-                    <span className="font-bold text-stitch-primary dark:text-stitch-primary">${parseFloat(formTotalInvested).toFixed(2)}</span>
+                    <span className="text-muted-foreground">{t('portfolio.forms.totalCostUSD')}</span>
+                    <span className="font-bold text-primary dark:text-primary">${parseFloat(formTotalInvested).toFixed(2)}</span>
                   </div>
                 )}
-                <p className="text-xs text-stitch-muted bg-secondary/50 p-2 rounded">
+                <p className="text-xs text-muted-foreground bg-secondary/50 p-2 rounded">
                   {t('portfolio.forms.cryptoAutoUpdate')}
                 </p>
               </>
@@ -2049,7 +2049,7 @@ function WealthAllocationMatrixCard({
     critical: 'border-rose-500/30 dark:border-rose-500/30/70',
   };
   const severityText: Record<WealthAllocationAlert['severity'], string> = {
-    ok: 'text-stitch-primary dark:text-stitch-primary dark:text-primary',
+    ok: 'text-primary dark:text-primary dark:text-primary',
     warning: 'text-amber-600 dark:text-amber-400',
     critical: 'text-rose-400 dark:text-rose-400 dark:text-error',
   };
@@ -2061,10 +2061,10 @@ function WealthAllocationMatrixCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm md:text-base font-bold flex items-center gap-2">
-            <Scale className="w-4 h-4 text-stitch-primary" />
+            <Scale className="w-4 h-4 text-primary" />
             {t('portfolio.wealth.title', { persona: personaLabel })}
           </CardTitle>
-          <Badge variant="outline" className="text-[10px] gap-1 text-stitch-muted">
+          <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
             <Shield className="w-3 h-3" />
             {t('portfolio.wealth.ceilings', { persona: personaLabel })}
           </Badge>
@@ -2082,7 +2082,7 @@ function WealthAllocationMatrixCard({
             return (
               <div
                 key={key}
-                className={cn('rounded-lg border-2 p-3 stitch-glass', severityBorder[alert.severity])}
+                className={cn('rounded-lg border-2 p-3 bg-card border border-border', severityBorder[alert.severity])}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span className={cn('flex-shrink-0', severityText[alert.severity])}>{meta.icon}</span>
@@ -2092,7 +2092,7 @@ function WealthAllocationMatrixCard({
                   <span className={cn('text-2xl font-bold', severityText[alert.severity])}>
                     {(alert.currentPercent ?? 0).toFixed(1)}%
                   </span>
-                  <span className="text-[11px] text-stitch-muted">
+                  <span className="text-[11px] text-muted-foreground">
                     {t('portfolio.wealth.ceilingSlash', { pct: alert.ceilingPercent })}
                   </span>
                 </div>
@@ -2150,7 +2150,7 @@ function WealthAllocationMatrixCard({
             {t('portfolio.wealth.autoRebalance')}
           </Button>
           {visibleAlerts.length === 0 && (
-            <span className="text-[11px] text-stitch-primary dark:text-stitch-primary flex items-center gap-1">
+            <span className="text-[11px] text-primary dark:text-primary flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
               {t('portfolio.wealth.balanced')}
             </span>
@@ -2269,7 +2269,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       sortable: true,
       filterable: true,
       render: (row) => (
-        <Badge className={row.type === 'income' ? 'bg-emerald-500/10 text-stitch-primary dark:bg-emerald-600/80/30 dark:text-stitch-primary dark:bg-primary-container/30 dark:text-primary' : 'bg-rose-500/10 text-rose-400 dark:bg-rose-500/60/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error'}>
+        <Badge className={row.type === 'income' ? 'bg-emerald-500/10 text-primary dark:bg-emerald-600/80/30 dark:text-primary dark:bg-primary-container/30 dark:text-primary' : 'bg-rose-500/10 text-rose-400 dark:bg-rose-500/60/30 dark:text-rose-400 dark:bg-error-container/30 dark:text-error'}>
           {row.type === 'income' ? t('portfolio.income.incomeType') : t('portfolio.income.expenseType')}
         </Badge>
       ),
@@ -2288,7 +2288,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       sortable: true,
       filterable: true,
       render: (row) => (
-        <span className={cn('font-semibold text-sm', row.type === 'income' ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+        <span className={cn('font-semibold text-sm', row.type === 'income' ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
           {row.type === 'income' ? '+' : '-'}{formatCurrency(row.amount)}
         </span>
       ),
@@ -2297,7 +2297,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       key: 'description',
       header: t('portfolio.income.colDescription'),
       filterable: true,
-      className: 'text-xs text-stitch-muted',
+      className: 'text-xs text-muted-foreground',
       render: (row) => (
         <span className="block max-w-[150px] truncate" title={row.description || ''}>
           {row.description || '—'}
@@ -2309,7 +2309,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       header: t('portfolio.income.colDate'),
       sortable: true,
       filterable: true,
-      className: 'text-xs text-stitch-muted',
+      className: 'text-xs text-muted-foreground',
       render: (row) => <span dir="ltr">{row.transaction_date}</span>,
     },
     {
@@ -2320,7 +2320,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 text-stitch-muted hover:text-rose-400"
+          className="h-9 w-9 text-muted-foreground hover:text-rose-400"
           onClick={(e) => { e.stopPropagation(); if (row.id != null) handleDelete(row.id); }}
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -2377,28 +2377,28 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-            <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
-              <ArrowUpRight className="w-4 h-4 text-stitch-primary dark:text-primary" />
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
+              <ArrowUpRight className="w-4 h-4 text-primary dark:text-primary" />
               <span className="text-xs font-medium">{t('portfolio.income.totalIncome')}</span>
             </div>
-            <p className="text-lg font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary tabular-nums dark:font-financial">{formatCurrency(summary.total_income)}</p>
+            <p className="text-lg font-bold text-primary dark:text-primary dark:text-primary tabular-nums dark:font-financial">{formatCurrency(summary.total_income)}</p>
           </Card>
           <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-            <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
               <ArrowDownRight className="w-4 h-4 text-rose-400 dark:text-error" />
               <span className="text-xs font-medium">{t('portfolio.income.totalExpenses')}</span>
             </div>
             <p className="text-lg font-bold text-rose-400 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(summary.total_expenses)}</p>
           </Card>
           <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-            <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
               <PiggyBank className="w-4 h-4 text-teal-500" />
               <span className="text-xs font-medium">{t('portfolio.income.netSavings')}</span>
             </div>
             <p className="text-lg font-bold text-teal-600 dark:text-teal-400 dark:text-primary tabular-nums dark:font-financial">{formatCurrency(summary.net_savings)}</p>
           </Card>
           <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-            <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1">
               <TrendingUp className="w-4 h-4" />
               <span className="text-xs font-medium">{t('portfolio.income.savingsRate')}</span>
             </div>
@@ -2425,7 +2425,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
                 return (
                   <div key={cat} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-stitch-muted">{label}</span>
+                      <span className="text-muted-foreground">{label}</span>
                       <span className="font-medium">{formatCurrency(amount)} ({(pct ?? 0).toFixed(1)}%)</span>
                     </div>
                     <div className="h-2 rounded-full bg-secondary overflow-hidden">
@@ -2458,7 +2458,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
-            <p className="text-sm text-stitch-muted text-center py-8">{t('portfolio.income.noTransactions')}</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('portfolio.income.noTransactions')}</p>
           ) : (
             <UnifiedTable<FinancialTransaction>
               columns={transactionColumns}
@@ -2743,15 +2743,15 @@ const ObligationsTab = memo(function ObligationsTab() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-          <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1"><CreditCard className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.reports.totalObligations')}</span></div>
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1"><CreditCard className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.reports.totalObligations')}</span></div>
           <p className="text-lg font-bold text-rose-400 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(totalDebt)}</p>
         </Card>
         <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-          <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1"><CalendarDays className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.monthlyPayment')}</span></div>
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1"><CalendarDays className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.monthlyPayment')}</span></div>
           <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{formatCurrency(monthlyPayments)}</p>
         </Card>
         <Card className="p-4 dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-          <div className="flex items-center gap-2 text-stitch-muted dark:text-on-surface-variant mb-1"><FileText className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.typeLabel')}</span></div>
+          <div className="flex items-center gap-2 text-muted-foreground dark:text-on-surface-variant mb-1"><FileText className="w-4 h-4" /><span className="text-xs font-medium">{t('portfolio.obligations.typeLabel')}</span></div>
           <p className="text-lg font-bold tabular-nums dark:font-financial dark:text-on-surface">{activeLoans}</p>
         </Card>
       </div>
@@ -2768,9 +2768,9 @@ const ObligationsTab = memo(function ObligationsTab() {
       {(obligations || []).length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <CreditCard className="w-10 h-10 text-stitch-muted mb-3" />
+            <CreditCard className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-semibold mb-1">{t('portfolio.obligations.noObligations')}</h3>
-            <p className="text-sm text-stitch-muted">{t('portfolio.obligations.noObligationsHint')}</p>
+            <p className="text-sm text-muted-foreground">{t('portfolio.obligations.noObligationsHint')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -2789,18 +2789,18 @@ const ObligationsTab = memo(function ObligationsTab() {
                     <div className="flex items-center gap-1">
                       <Button variant="outline" size="sm" onClick={() => openPayment(ob)}>{t('portfolio.obligations.recordPayment')}</Button>
                       <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-stitch-muted hover:text-rose-400" onClick={() => setDeleteId(ob.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-rose-400" onClick={() => setDeleteId(ob.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                    <div><span className="text-stitch-muted">{t('portfolio.obligations.creditor')}</span> <span className="font-medium">{ob.creditor}</span></div>
-                    <div><span className="text-stitch-muted">{t('portfolio.obligations.remaining')}</span> <span className="font-medium text-rose-400 dark:text-rose-400">{formatCurrency(ob.remaining_amount)}</span></div>
-                    <div><span className="text-stitch-muted">{t('portfolio.obligations.monthlyInstallment')}</span> <span className="font-medium">{formatCurrency(ob.monthly_payment)}</span></div>
-                    {ob.interest_rate && <div><span className="text-stitch-muted">{t('portfolio.obligations.interest')}</span> <span className="font-medium">{ob.interest_rate}%</span></div>}
+                    <div><span className="text-muted-foreground">{t('portfolio.obligations.creditor')}</span> <span className="font-medium">{ob.creditor}</span></div>
+                    <div><span className="text-muted-foreground">{t('portfolio.obligations.remaining')}</span> <span className="font-medium text-rose-400 dark:text-rose-400">{formatCurrency(ob.remaining_amount)}</span></div>
+                    <div><span className="text-muted-foreground">{t('portfolio.obligations.monthlyInstallment')}</span> <span className="font-medium">{formatCurrency(ob.monthly_payment)}</span></div>
+                    {ob.interest_rate && <div><span className="text-muted-foreground">{t('portfolio.obligations.interest')}</span> <span className="font-medium">{ob.interest_rate}%</span></div>}
                   </div>
                   <div className="mt-3 space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-stitch-muted">{t('portfolio.obligations.paid')}</span>
+                      <span className="text-muted-foreground">{t('portfolio.obligations.paid')}</span>
                       <span className="font-medium">{(paidPercent ?? 0).toFixed(1)}%</span>
                     </div>
                     <Progress value={paidPercent} className="h-2" />
@@ -2971,35 +2971,35 @@ const ReportsTab = memo(function ReportsTab() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-stitch-primary dark:text-stitch-primary" />
+            <Wallet className="w-5 h-5 text-primary dark:text-primary" />
             {t('portfolio.reports.overview')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20">
-              <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalAssets')}</p>
-              <p className="text-lg font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary tabular-nums dark:font-financial">{formatCurrency(totalAssets)}</p>
-              <p className="text-[10px] text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalAssetsHint')}</p>
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalAssets')}</p>
+              <p className="text-lg font-bold text-primary dark:text-primary dark:text-primary tabular-nums dark:font-financial">{formatCurrency(totalAssets)}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalAssetsHint')}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-rose-500/60/20 dark:bg-error-container/20">
-              <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalObligations')}</p>
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.totalObligations')}</p>
               <p className="text-lg font-bold text-rose-400 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{formatCurrency(totalLiabilities)}</p>
-              <p className="text-[10px] text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalObligationsHint')}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.totalObligationsHint')}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-secondary dark:bg-teal-900/20 dark:bg-primary-container/20">
-              <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-1">{t('portfolio.reports.netWorth')}</p>
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.netWorth')}</p>
               <p className={cn('text-lg font-bold tabular-nums dark:font-financial', netWorth >= 0 ? 'text-teal-600 dark:text-teal-400 dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                 {formatCurrency(netWorth)}
               </p>
-              <p className="text-[10px] text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.reports.netWorthHint')}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.netWorthHint')}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-              <p className="text-xs text-stitch-muted dark:text-on-surface-variant mb-1">{t('portfolio.reports.monthlySavings')}</p>
+              <p className="text-xs text-muted-foreground dark:text-on-surface-variant mb-1">{t('portfolio.reports.monthlySavings')}</p>
               <p className={cn('text-lg font-bold tabular-nums dark:font-financial', (reports?.monthly_savings ?? 0) >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                 {formatCurrency(reports?.monthly_savings ?? 0)}
               </p>
-              <p className="text-[10px] text-stitch-muted dark:text-on-surface-variant mt-1">{t('portfolio.reports.monthlySavingsHint')}</p>
+              <p className="text-[10px] text-muted-foreground dark:text-on-surface-variant mt-1">{t('portfolio.reports.monthlySavingsHint')}</p>
             </div>
           </div>
         </CardContent>
@@ -3010,7 +3010,7 @@ const ReportsTab = memo(function ReportsTab() {
         <Card className="border-emerald-500/30 dark:border-emerald-500/30">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-stitch-primary dark:text-stitch-primary" />
+              <TrendingUp className="w-5 h-5 text-primary dark:text-primary" />
               {t('portfolio.reports.monthlyReturns')}
             </CardTitle>
           </CardHeader>
@@ -3018,30 +3018,30 @@ const ReportsTab = memo(function ReportsTab() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {investmentReturns.bank_monthly > 0 && (
                 <div className="p-3 rounded-lg bg-secondary dark:bg-teal-900/20 text-center">
-                  <p className="text-xs text-stitch-muted mb-1">{t('portfolio.reports.bankMonthlyReturn')}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.bankMonthlyReturn')}</p>
                   <p className="text-base font-bold text-teal-600 dark:text-teal-400">{formatCurrency(investmentReturns.bank_monthly)}</p>
                 </div>
               )}
               {investmentReturns.certificate_monthly > 0 && (
                 <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-center">
-                  <p className="text-xs text-stitch-muted mb-1">{t('portfolio.reports.certMonthlyReturn')}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.certMonthlyReturn')}</p>
                   <p className="text-base font-bold text-purple-600 dark:text-purple-400">{formatCurrency(investmentReturns.certificate_monthly)}</p>
                 </div>
               )}
               {investmentReturns.fund_monthly > 0 && (
                 <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-center">
-                  <p className="text-xs text-stitch-muted mb-1">{t('portfolio.reports.fundMonthlyReturn')}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.fundMonthlyReturn')}</p>
                   <p className="text-base font-bold text-orange-600 dark:text-orange-400">{formatCurrency(investmentReturns.fund_monthly)}</p>
                 </div>
               )}
               <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 text-center">
-                <p className="text-xs text-stitch-muted mb-1">{t('portfolio.reports.totalMonthlyReturn')}</p>
-                <p className="text-base font-bold text-stitch-primary dark:text-stitch-primary">{formatCurrency(investmentReturns.total_monthly)}</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('portfolio.reports.totalMonthlyReturn')}</p>
+                <p className="text-base font-bold text-primary dark:text-primary">{formatCurrency(investmentReturns.total_monthly)}</p>
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-stitch-muted">{t('portfolio.reports.expectedAnnualReturn')}</span>
-              <span className="font-bold text-stitch-primary dark:text-stitch-primary">{formatCurrency(investmentReturns.total_yearly)}</span>
+              <span className="text-sm text-muted-foreground">{t('portfolio.reports.expectedAnnualReturn')}</span>
+              <span className="font-bold text-primary dark:text-primary">{formatCurrency(investmentReturns.total_yearly)}</span>
             </div>
           </CardContent>
         </Card>
@@ -3052,7 +3052,7 @@ const ReportsTab = memo(function ReportsTab() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-stitch-primary dark:text-stitch-primary" />
+              <TrendingUp className="w-5 h-5 text-primary dark:text-primary" />
               {t('portfolio.reports.incomeVsExpenses')}
             </CardTitle>
           </CardHeader>
@@ -3060,21 +3060,21 @@ const ReportsTab = memo(function ReportsTab() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-stitch-muted">{t('portfolio.reports.totalIncome')}</span>
-                  <span className="font-medium text-stitch-primary dark:text-stitch-primary">{formatCurrency(reports.monthly_income)}</span>
+                  <span className="text-muted-foreground">{t('portfolio.reports.totalIncome')}</span>
+                  <span className="font-medium text-primary dark:text-primary">{formatCurrency(reports.monthly_income)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-secondary overflow-hidden">
                   <div className="h-full rounded-full bg-emerald-500/20" style={{ width: '100%' }} />
                 </div>
                 {investmentReturns && investmentReturns.total_monthly > 0 && (
-                  <p className="text-[10px] text-stitch-muted mt-1">
+                  <p className="text-[10px] text-muted-foreground mt-1">
                     {t('portfolio.reports.includesReturns', { amount: formatCurrency(investmentReturns.total_monthly) })}
                   </p>
                 )}
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-stitch-muted">{t('portfolio.reports.totalExpenses')}</span>
+                  <span className="text-muted-foreground">{t('portfolio.reports.totalExpenses')}</span>
                   <span className="font-medium text-rose-400 dark:text-rose-400">{formatCurrency(reports.monthly_expenses)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-secondary overflow-hidden">
@@ -3083,15 +3083,15 @@ const ReportsTab = memo(function ReportsTab() {
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-stitch-muted">{t('portfolio.reports.savingsRate')}</span>
+              <span className="text-sm text-muted-foreground">{t('portfolio.reports.savingsRate')}</span>
               <div className="flex items-center gap-2">
                 <Progress value={Math.min(Math.max(reports.savings_rate ?? 0, 0), 100)} className="h-2 w-24" />
                 <span className="font-bold text-sm">{(reports.savings_rate ?? 0).toFixed(1)}%</span>
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-stitch-muted">{t('portfolio.reports.netMonthlySavings')}</span>
-              <span className={cn('font-bold', (reports.monthly_savings ?? 0) >= 0 ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
+              <span className="text-sm text-muted-foreground">{t('portfolio.reports.netMonthlySavings')}</span>
+              <span className={cn('font-bold', (reports.monthly_savings ?? 0) >= 0 ? 'text-primary dark:text-primary dark:text-primary' : 'text-rose-400 dark:text-rose-400 dark:text-error')}>
                 {formatCurrency(reports.monthly_savings)}
               </span>
             </div>
@@ -3136,7 +3136,7 @@ const ReportsTab = memo(function ReportsTab() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Coins className="w-5 h-5 text-stitch-primary dark:text-stitch-primary" />
+              <Coins className="w-5 h-5 text-primary dark:text-primary" />
               {t('portfolio.reports.assetDistribution')}
             </CardTitle>
           </CardHeader>
@@ -3180,7 +3180,7 @@ const ReportsTab = memo(function ReportsTab() {
             <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-slate-50 dark:from-emerald-900/20 dark:to-slate-800/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-sm">{t('portfolio.reports.portfolioHealth')}</span>
-                <span className="text-2xl font-bold text-stitch-primary dark:text-stitch-primary">
+                <span className="text-2xl font-bold text-primary dark:text-primary">
                   {Math.min(100, Math.round(
                     (netWorth > 0 ? 25 : 0) +
                     ((investmentReturns?.total_yearly || 0) > 0 ? 25 : 0) +
@@ -3214,7 +3214,7 @@ const ReportsTab = memo(function ReportsTab() {
                         <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{t('portfolio.reports.diversification')}</p>
-                          <p className="text-xs text-stitch-muted mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {t('portfolio.reports.diversificationMsg', { pct: (stockPercent ?? 0).toFixed(1) })}
                           </p>
                         </div>
@@ -3227,7 +3227,7 @@ const ReportsTab = memo(function ReportsTab() {
                         <CheckCircle2 className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-teal-800 dark:text-teal-200">{t('portfolio.reports.bankReturns')}</p>
-                          <p className="text-xs text-stitch-muted mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {t('portfolio.reports.bankReturnsMsg', { amount: formatCurrency(investmentReturns.bank_monthly) })}
                           </p>
                         </div>
@@ -3240,7 +3240,7 @@ const ReportsTab = memo(function ReportsTab() {
                         <Info className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{t('portfolio.reports.addGold')}</p>
-                          <p className="text-xs text-stitch-muted mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {t('portfolio.reports.addGoldMsg')}
                           </p>
                         </div>
@@ -3250,10 +3250,10 @@ const ReportsTab = memo(function ReportsTab() {
                     {/* Suggestion: Emergency Fund */}
                     {investmentReturns && investmentReturns.total_monthly > 0 && (
                       <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-600/80/20 dark:bg-primary-container/20 border border-emerald-500/30 dark:border-emerald-500/30">
-                        <PiggyBank className="w-5 h-5 text-stitch-primary mt-0.5 flex-shrink-0" />
+                        <PiggyBank className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-stitch-primary dark:text-stitch-primary">{t('portfolio.reports.emergencyFund')}</p>
-                          <p className="text-xs text-stitch-muted mt-1">
+                          <p className="text-sm font-medium text-primary dark:text-primary">{t('portfolio.reports.emergencyFund')}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
                             {t('portfolio.reports.emergencyFundMsg', { min: formatCurrency((reports?.monthly_expenses || 0) * 3), max: formatCurrency((reports?.monthly_expenses || 0) * 6) })}
                           </p>
                         </div>
@@ -3272,23 +3272,23 @@ const ReportsTab = memo(function ReportsTab() {
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
-                  <p className="font-bold text-stitch-primary">50%</p>
-                  <p className="text-stitch-muted">{t('portfolio.reports.basicNeeds')}</p>
+                  <p className="font-bold text-primary">50%</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.basicNeeds')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.5)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
                   <p className="font-bold text-teal-600">20%</p>
-                  <p className="text-stitch-muted">{t('portfolio.reports.savings')}</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.savings')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.2)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
                   <p className="font-bold text-purple-600">20%</p>
-                  <p className="text-stitch-muted">{t('portfolio.reports.development')}</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.development')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.2)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
                   <p className="font-bold text-amber-600">10%</p>
-                  <p className="text-stitch-muted">{t('portfolio.reports.charity')}</p>
+                  <p className="text-muted-foreground">{t('portfolio.reports.charity')}</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.1)}</p>
                 </div>
               </div>
@@ -3301,9 +3301,9 @@ const ReportsTab = memo(function ReportsTab() {
       {!reports && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="w-10 h-10 text-stitch-muted mb-3" />
+            <FileText className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-semibold mb-1">{t('portfolio.reports.noDataTitle')}</h3>
-            <p className="text-sm text-stitch-muted">{t('portfolio.reports.noDataDesc')}</p>
+            <p className="text-sm text-muted-foreground">{t('portfolio.reports.noDataDesc')}</p>
           </CardContent>
         </Card>
       )}
@@ -3332,13 +3332,13 @@ export function EnhancedPortfolioView() {
   const [portfolioMode, setPortfolioMode] = useState<'portfolio' | 'wealth' | 'rescue'>('portfolio');
 
   return (
-    <div dir="rtl" className="min-h-screen stitch-canvas pb-20 lg:pb-4 dark:bg-surface-container-lowest">
+    <div dir="rtl" className="min-h-screen bg-background pb-20 lg:pb-4 dark:bg-surface-container-lowest">
       <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500/10 dark:bg-emerald-600/80/30 dark:bg-primary-container/30 flex items-center justify-center">
-              {portfolioMode === 'portfolio' && <Wallet className="w-5 h-5 text-stitch-primary dark:text-stitch-primary dark:text-primary" />}
+              {portfolioMode === 'portfolio' && <Wallet className="w-5 h-5 text-primary dark:text-primary dark:text-primary" />}
               {portfolioMode === 'wealth' && <HandCoins className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
               {portfolioMode === 'rescue' && <LifeBuoy className="w-5 h-5 text-rose-400 dark:text-rose-400 dark:text-error" />}
             </div>
@@ -3348,7 +3348,7 @@ export function EnhancedPortfolioView() {
                 {portfolioMode === 'wealth' && t('portfolio.modes.wealth')}
                 {portfolioMode === 'rescue' && t('portfolio.modes.rescue')}
               </h1>
-              <p className="text-sm text-stitch-muted dark:text-on-surface-variant">
+              <p className="text-sm text-muted-foreground dark:text-on-surface-variant">
                 {portfolioMode === 'portfolio' && t('portfolio.subtitle')}
                 {portfolioMode === 'wealth' && t('portfolio.modes.wealthHint')}
                 {portfolioMode === 'rescue' && t('portfolio.modes.rescueHint')}
@@ -3368,8 +3368,8 @@ export function EnhancedPortfolioView() {
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
               portfolioMode === 'portfolio'
-                ? 'stitch-canvas text-stitch-primary dark:text-stitch-primary dark:bg-primary-container dark:text-on-primary shadow-sm'
-                : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                ? 'bg-background text-primary dark:text-primary dark:bg-primary-container dark:text-on-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             <Wallet className="w-4 h-4" />
@@ -3383,8 +3383,8 @@ export function EnhancedPortfolioView() {
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
               portfolioMode === 'wealth'
-                ? 'stitch-canvas text-amber-600 dark:text-amber-400 dark:bg-primary-container dark:text-on-primary shadow-sm'
-                : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                ? 'bg-background text-amber-600 dark:text-amber-400 dark:bg-primary-container dark:text-on-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             <HandCoins className="w-4 h-4" />
@@ -3398,8 +3398,8 @@ export function EnhancedPortfolioView() {
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
               portfolioMode === 'rescue'
-                ? 'stitch-canvas text-rose-400 dark:text-rose-400 dark:bg-error-container dark:text-on-error shadow-sm'
-                : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                ? 'bg-background text-rose-400 dark:text-rose-400 dark:bg-error-container dark:text-on-error shadow-sm'
+                : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
             )}
           >
             <LifeBuoy className="w-4 h-4" />
@@ -3431,9 +3431,9 @@ export function EnhancedPortfolioView() {
 
         {selectedPortfolioId !== 'master' && (
           <Card className="bg-emerald-600/60/20 border-emerald-500/30/40">
-            <CardContent className="p-3 flex items-center justify-between text-xs text-stitch-primary">
+            <CardContent className="p-3 flex items-center justify-between text-xs text-primary">
               <span>{t('portfolio.subPortfolio.banner')}</span>
-              <Badge variant="outline" className="text-stitch-primary border-emerald-500/30">
+              <Badge variant="outline" className="text-primary border-emerald-500/30">
                 {t('portfolio.subPortfolio.badge', { id: selectedPortfolioId })}
               </Badge>
             </CardContent>

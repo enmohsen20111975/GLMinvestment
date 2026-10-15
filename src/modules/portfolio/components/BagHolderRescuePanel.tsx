@@ -382,10 +382,10 @@ export function BagHolderRescuePanel({
     <div className="space-y-6" dir="rtl">
       {!compact && (
         <div className="text-center space-y-2">
-          <h1 className="text-2xl md:text-3xl font-black flex items-center justify-center gap-2 text-stitch-primary dark:text-stitch-primary dark:text-primary dark:font-outfit">
+          <h1 className="text-2xl md:text-3xl font-black flex items-center justify-center gap-2 text-primary dark:text-primary dark:text-primary dark:font-outfit">
             🚑 عيادة إنقاذ الصفقات المتعثرة
           </h1>
-          <p className="text-sm text-stitch-muted max-w-xl mx-auto dark:text-on-surface-variant">
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto dark:text-on-surface-variant">
             تشخيص صارم بلا مجاملة — ثلاثة قرارات فقط: اقطع الخسارة / برّد بحساب دقيق / اصبر.
             كل الأرقام من بيانات حقيقية، وكل قرار من محرك Python.
           </p>
@@ -402,13 +402,13 @@ export function BagHolderRescuePanel({
                 value={ticker}
                 onChange={(e) => handleTickerChange(e.target.value)}
                 placeholder="مثال: COMI"
-                className="h-10 stitch-num dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
+                className="h-10 font-mono dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
                 dir="ltr"
               />
-              {fetchingPrice && <span className="text-[10px] text-stitch-muted dark:text-on-surface-variant">جاري جلب السعر...</span>}
+              {fetchingPrice && <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">جاري جلب السعر...</span>}
               {livePrice !== null && !fetchingPrice && (
-                <span className="text-[10px] text-stitch-muted dark:text-on-surface-variant">
-                  السعر الحالي: <span className="stitch-num font-bold text-stitch-primary dark:text-stitch-primary tabular-nums dark:font-financial dark:text-primary">{fmtPrice(livePrice)} {currency}</span>
+                <span className="text-[10px] text-muted-foreground dark:text-on-surface-variant">
+                  السعر الحالي: <span className="font-mono font-bold text-primary dark:text-primary tabular-nums dark:font-financial dark:text-primary">{fmtPrice(livePrice)} {currency}</span>
                 </span>
               )}
             </div>
@@ -419,7 +419,7 @@ export function BagHolderRescuePanel({
                 value={entryPrice}
                 onChange={(e) => setEntryPrice(e.target.value)}
                 placeholder="مثال: 25.50"
-                className="h-10 stitch-num dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
+                className="h-10 font-mono dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
                 dir="ltr"
               />
             </div>
@@ -430,7 +430,7 @@ export function BagHolderRescuePanel({
                 value={qty}
                 onChange={(e) => setQty(e.target.value)}
                 placeholder="مثال: 1000"
-                className="h-10 stitch-num dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
+                className="h-10 font-mono dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
                 dir="ltr"
               />
             </div>
@@ -441,7 +441,7 @@ export function BagHolderRescuePanel({
                 value={totalCost}
                 onChange={(e) => setTotalCost(e.target.value)}
                 placeholder="يُحسب تلقائياً"
-                className="h-10 stitch-num dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
+                className="h-10 font-mono dark:bg-surface-container dark:text-on-surface dark:border-outline-variant dark:font-financial tabular-nums"
                 dir="ltr"
               />
             </div>
@@ -479,9 +479,9 @@ export function BagHolderRescuePanel({
       {!loading && !result && (
         <Card className="border-dashed border-2 border-border/60/60 dark:bg-surface-container-low dark:border-outline-variant/30">
           <CardContent className="p-6 text-center space-y-2">
-            <FileSearch className="w-8 h-8 text-stitch-muted/60 mx-auto dark:text-on-surface-variant/60" />
-            <p className="text-sm font-semibold text-stitch-on-surface dark:text-on-surface dark:font-outfit">لا يوجد تشخيص بعد</p>
-            <p className="text-xs text-stitch-muted dark:text-on-surface-variant">
+            <FileSearch className="w-8 h-8 text-muted-foreground/60 mx-auto dark:text-on-surface-variant/60" />
+            <p className="text-sm font-semibold text-foreground dark:text-on-surface dark:font-outfit">لا يوجد تشخيص بعد</p>
+            <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
               أدخل بيانات الصفقة بالأعلى ثم اضغط «تشخيص الصفقة». كل النتائج تُحسب من بيانات السوق الحقيقية عبر Python.
             </p>
           </CardContent>
@@ -500,17 +500,17 @@ export function BagHolderRescuePanel({
                 <p className="text-lg font-black text-rose-400 dark:text-rose-400 dark:text-error dark:font-outfit">
                   تعذّر تشخيص الصفقة
                 </p>
-                <p className="text-xs text-stitch-muted dark:text-on-surface-variant">
+                <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
                   {result.message || result.error || 'خطأ غير معروف'}
                 </p>
               </div>
             </div>
             {result.details && (
-              <p className="text-[10px] text-stitch-muted stitch-num leading-relaxed break-all dark:text-on-surface-variant dark:font-financial tabular-nums">
+              <p className="text-[10px] text-muted-foreground font-mono leading-relaxed break-all dark:text-on-surface-variant dark:font-financial tabular-nums">
                 التفاصيل: {result.details}
               </p>
             )}
-            <p className="text-xs text-stitch-muted leading-relaxed dark:text-on-surface-variant">
+            <p className="text-xs text-muted-foreground leading-relaxed dark:text-on-surface-variant">
               لم يتم اختلاق أي توصية. أعد المحاولة بعد التأكد من توفّر محرك Python وقواعد البيانات.
             </p>
           </CardContent>
@@ -529,7 +529,7 @@ export function BagHolderRescuePanel({
                 <p className="text-lg font-black text-amber-700 dark:text-amber-400 dark:text-secondary dark:font-outfit">
                   تعارض في البيانات — التوصية متوقفة
                 </p>
-                <p className="text-xs text-stitch-muted dark:text-on-surface-variant">
+                <p className="text-xs text-muted-foreground dark:text-on-surface-variant">
                   {result.message || 'لا يمكن إصدار توصية موثوقة قبل حل التعارض.'}
                 </p>
               </div>
@@ -543,24 +543,24 @@ export function BagHolderRescuePanel({
               ))}
             </div>
             {result.price_candidates && result.price_candidates.length > 1 && (
-              <div className="p-3 rounded-lg stitch-canvas/60 border border-amber-200 dark:border-amber-800 dark:bg-surface-container dark:border-amber-500/40">
+              <div className="p-3 rounded-lg bg-background/60 border border-amber-200 dark:border-amber-800 dark:bg-surface-container dark:border-amber-500/40">
                 <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 mb-1.5 dark:text-secondary">
                   أسعار مرشحة من المصادر:
                 </p>
                 <div className="space-y-1">
                   {result.price_candidates.map((c, i) => (
-                    <div key={i} className="flex justify-between text-[11px] stitch-num dark:font-financial tabular-nums">
-                      <span className="text-stitch-muted dark:text-on-surface-variant">{c.source}</span>
+                    <div key={i} className="flex justify-between text-[11px] font-mono dark:font-financial tabular-nums">
+                      <span className="text-muted-foreground dark:text-on-surface-variant">{c.source}</span>
                       <span className="font-bold dark:text-on-surface">
                         {fmtPrice(c.price)}
-                        {c.timestamp ? <span className="text-stitch-muted font-sans dark:text-on-surface-variant"> — {c.timestamp}</span> : null}
+                        {c.timestamp ? <span className="text-muted-foreground font-sans dark:text-on-surface-variant"> — {c.timestamp}</span> : null}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            <p className="text-xs text-stitch-muted leading-relaxed dark:text-on-surface-variant">
+            <p className="text-xs text-muted-foreground leading-relaxed dark:text-on-surface-variant">
               أعد المحاولة لاحقاً بعد تحديث البيانات، أو تحقق من السعر يدوياً من مصدر موثوق قبل اتخاذ أي قرار.
             </p>
           </CardContent>
@@ -648,17 +648,17 @@ function ResultView({ result }: { result: RescueResponse }) {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-base md:text-lg font-black text-stitch-on-surface dark:text-on-surface dark:font-outfit">
+              <p className="text-base md:text-lg font-black text-foreground dark:text-on-surface dark:font-outfit">
                 {result.decision_ar || 'القرار غير متاح'}
               </p>
-              <p className="text-xs text-stitch-muted mt-1 leading-relaxed dark:text-on-surface-variant">
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed dark:text-on-surface-variant">
                 {result.action_plan?.recommended_action}
               </p>
               {result.market_value_egp != null && (
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-stitch-muted dark:text-on-surface-variant">
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground dark:text-on-surface-variant">
                   <Wallet className="w-3.5 h-3.5" />
                   <span>قيمة المركز الحالية:</span>
-                  <span className="stitch-num font-bold text-stitch-on-surface tabular-nums dark:font-financial dark:text-on-surface">
+                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">
                     {fmtMoney(result.market_value_egp, currency)}
                   </span>
                 </div>
@@ -672,7 +672,7 @@ function ResultView({ result }: { result: RescueResponse }) {
       <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-1.5 dark:text-on-surface dark:font-outfit">
-            <ListChecks className="w-4 h-4 text-stitch-primary dark:text-primary" />
+            <ListChecks className="w-4 h-4 text-primary dark:text-primary" />
             القرارات الثلاثة الصارمة — كل قرار بشرطه
           </CardTitle>
         </CardHeader>
@@ -701,23 +701,23 @@ function ResultView({ result }: { result: RescueResponse }) {
                     )}
                   </div>
                 </div>
-                <p className="text-[11px] text-stitch-muted dark:text-on-surface-variant">
-                  <span className="font-semibold text-stitch-on-surface dark:text-on-surface">متى يُلائم هذا القرار؟ </span>
+                <p className="text-[11px] text-muted-foreground dark:text-on-surface-variant">
+                  <span className="font-semibold text-foreground dark:text-on-surface">متى يُلائم هذا القرار؟ </span>
                   {d.ar_when}
                 </p>
                 {d.applicable_reason && (
-                  <p className="text-[11px] text-stitch-on-surface leading-relaxed stitch-canvas/60 border border-border/60/40 rounded-md p-2 dark:text-on-surface dark:bg-surface-container dark:border-outline-variant/30">
+                  <p className="text-[11px] text-foreground leading-relaxed bg-background/60 border border-border/60/40 rounded-md p-2 dark:text-on-surface dark:bg-surface-container dark:border-outline-variant/30">
                     <span className="font-bold">السبب: </span>{d.applicable_reason}
                   </p>
                 )}
                 {d.invalidation && (
-                  <p className="text-[11px] text-stitch-muted leading-relaxed dark:text-on-surface-variant">
-                    <span className="font-semibold text-stitch-on-surface dark:text-on-surface">يُلغى عند: </span>{d.invalidation}
+                  <p className="text-[11px] text-muted-foreground leading-relaxed dark:text-on-surface-variant">
+                    <span className="font-semibold text-foreground dark:text-on-surface">يُلغى عند: </span>{d.invalidation}
                   </p>
                 )}
                 {d.level && (
-                  <p className="text-[11px] text-stitch-muted leading-relaxed dark:text-on-surface-variant">
-                    <span className="font-semibold text-stitch-on-surface dark:text-on-surface">مستوى تراجع القرار: </span>{d.level}
+                  <p className="text-[11px] text-muted-foreground leading-relaxed dark:text-on-surface-variant">
+                    <span className="font-semibold text-foreground dark:text-on-surface">مستوى تراجع القرار: </span>{d.level}
                   </p>
                 )}
               </div>
@@ -738,7 +738,7 @@ function ResultView({ result }: { result: RescueResponse }) {
                   {result.action_plan.average_down_allowed ? 'تبريد إضافي مشروط — مش التوصية الرئيسية' : 'حالة التبريد'}
                 </span>
               </div>
-              <p className="text-xs text-stitch-muted leading-relaxed dark:text-on-surface-variant">
+              <p className="text-xs text-muted-foreground leading-relaxed dark:text-on-surface-variant">
                 {result.action_plan.average_down_reason}
               </p>
             </div>
@@ -756,7 +756,7 @@ function ResultView({ result }: { result: RescueResponse }) {
           <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-1.5 dark:text-on-surface dark:font-outfit">
-                <ListChecks className="w-4 h-4 text-stitch-primary dark:text-primary" />
+                <ListChecks className="w-4 h-4 text-primary dark:text-primary" />
                 التشخيص — السبب قبل الحكم
               </CardTitle>
             </CardHeader>
@@ -769,14 +769,14 @@ function ResultView({ result }: { result: RescueResponse }) {
                   السيولة: {result.diagnosis.selling_pressure}
                 </Badge>
               </div>
-              <p className="text-xs text-stitch-on-surface leading-relaxed dark:text-on-surface">
+              <p className="text-xs text-foreground leading-relaxed dark:text-on-surface">
                 {result.diagnosis.summary}
               </p>
               <div className="space-y-2 pt-1 border-t border-border/60 dark:border-outline-variant/30">
                 {result.diagnosis.questions.map((qa, i) => (
                   <div key={i} className="space-y-0.5">
-                    <p className="text-[11px] font-bold text-stitch-on-surface dark:text-on-surface">{qa.question}</p>
-                    <p className="text-[11px] text-stitch-muted leading-relaxed dark:text-on-surface-variant">{qa.answer}</p>
+                    <p className="text-[11px] font-bold text-foreground dark:text-on-surface">{qa.question}</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed dark:text-on-surface-variant">{qa.answer}</p>
                   </div>
                 ))}
               </div>
@@ -788,39 +788,39 @@ function ResultView({ result }: { result: RescueResponse }) {
         <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5 dark:text-on-surface dark:font-outfit">
-              <FileSearch className="w-4 h-4 text-stitch-primary dark:text-primary" />
+              <FileSearch className="w-4 h-4 text-primary dark:text-primary" />
               تحليل الصفقة
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-stitch-muted dark:text-on-surface-variant">نسبة الخسارة</span>
-              <span className={cn('font-bold stitch-num tabular-nums dark:font-financial', (result.loss_pct ?? 0) < 0 ? 'text-rose-400 dark:text-rose-400 dark:text-error' : 'text-stitch-primary dark:text-stitch-primary dark:text-primary')}>
+              <span className="text-muted-foreground dark:text-on-surface-variant">نسبة الخسارة</span>
+              <span className={cn('font-bold font-mono tabular-nums dark:font-financial', (result.loss_pct ?? 0) < 0 ? 'text-rose-400 dark:text-rose-400 dark:text-error' : 'text-primary dark:text-primary dark:text-primary')}>
                 {fmtPct(result.loss_pct)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-stitch-muted dark:text-on-surface-variant">قيمة الخسارة</span>
-              <span className={cn('font-bold stitch-num tabular-nums dark:font-financial', (result.loss_pct ?? 0) < 0 ? 'text-rose-400 dark:text-rose-400 dark:text-error' : 'text-stitch-primary dark:text-stitch-primary dark:text-primary')}>
+              <span className="text-muted-foreground dark:text-on-surface-variant">قيمة الخسارة</span>
+              <span className={cn('font-bold font-mono tabular-nums dark:font-financial', (result.loss_pct ?? 0) < 0 ? 'text-rose-400 dark:text-rose-400 dark:text-error' : 'text-primary dark:text-primary dark:text-primary')}>
                 {fmtMoney(result.loss_amount, currency)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-stitch-muted dark:text-on-surface-variant">سعر الشراء</span>
-              <span className="stitch-num font-semibold tabular-nums dark:font-financial dark:text-on-surface">{fmtPrice(result.buy_price)}</span>
+              <span className="text-muted-foreground dark:text-on-surface-variant">سعر الشراء</span>
+              <span className="font-mono font-semibold tabular-nums dark:font-financial dark:text-on-surface">{fmtPrice(result.buy_price)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-stitch-muted dark:text-on-surface-variant">السعر الحالي</span>
-              <span className="stitch-num font-semibold tabular-nums dark:font-financial dark:text-on-surface">{fmtPrice(result.current_price)}</span>
+              <span className="text-muted-foreground dark:text-on-surface-variant">السعر الحالي</span>
+              <span className="font-mono font-semibold tabular-nums dark:font-financial dark:text-on-surface">{fmtPrice(result.current_price)}</span>
             </div>
             {result.recovery_needed_pct != null && result.recovery_needed_pct > 0 && (
               <div className="flex justify-between">
-                <span className="text-stitch-muted dark:text-on-surface-variant">التعادل يحتاج ارتداداً</span>
-                <span className="stitch-num font-semibold text-amber-600 dark:text-amber-400 tabular-nums dark:font-financial dark:text-secondary">{result.recovery_needed_pct.toFixed(1)}%</span>
+                <span className="text-muted-foreground dark:text-on-surface-variant">التعادل يحتاج ارتداداً</span>
+                <span className="font-mono font-semibold text-amber-600 dark:text-amber-400 tabular-nums dark:font-financial dark:text-secondary">{result.recovery_needed_pct.toFixed(1)}%</span>
               </div>
             )}
             {result.price_source && (
-              <p className="text-[10px] text-stitch-muted pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
+              <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
                 مصدر السعر: {result.price_source}
                 {result.price_timestamp ? ` — آخر تحديث ${result.price_timestamp}` : ''}
               </p>
@@ -838,7 +838,7 @@ function ResultView({ result }: { result: RescueResponse }) {
                 <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-600 mr-1 dark:border-amber-500/40 dark:text-secondary">تجاهل الوقف</Badge>
               )}
             </div>
-            <p className="text-[11px] text-stitch-muted leading-relaxed pt-1 dark:text-on-surface-variant">{result.autopsy?.summary}</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed pt-1 dark:text-on-surface-variant">{result.autopsy?.summary}</p>
           </CardContent>
         </Card>
 
@@ -847,47 +847,47 @@ function ResultView({ result }: { result: RescueResponse }) {
           <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-1.5 dark:text-on-surface dark:font-outfit">
-                <HeartPulse className="w-4 h-4 text-stitch-primary dark:text-primary" />
+                <HeartPulse className="w-4 h-4 text-primary dark:text-primary" />
                 حيوية الأصل والسيولة
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-stitch-muted dark:text-on-surface-variant">تدفق السيولة المؤسسية</span>
+                <span className="text-muted-foreground dark:text-on-surface-variant">تدفق السيولة المؤسسية</span>
                 <span className="font-semibold dark:text-on-surface">{result.asset_health.institutional_flow ?? '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-stitch-muted dark:text-on-surface-variant">ربحية الشركة</span>
+                <span className="text-muted-foreground dark:text-on-surface-variant">ربحية الشركة</span>
                 <span className="font-semibold dark:text-on-surface">
                   {result.asset_health.is_profitable === true ? '✅ رابحة' : result.asset_health.is_profitable === false ? '❌ خاسرة' : '—'}
                 </span>
               </div>
               {result.asset_health.pe_ratio != null && (
                 <div className="flex justify-between">
-                  <span className="text-stitch-muted dark:text-on-surface-variant">مكرر الربحية (P/E)</span>
-                  <span className="stitch-num font-semibold tabular-nums dark:font-financial dark:text-on-surface">{result.asset_health.pe_ratio.toFixed(2)}</span>
+                  <span className="text-muted-foreground dark:text-on-surface-variant">مكرر الربحية (P/E)</span>
+                  <span className="font-mono font-semibold tabular-nums dark:font-financial dark:text-on-surface">{result.asset_health.pe_ratio.toFixed(2)}</span>
                 </div>
               )}
               {(result.asset_health.dividend_yield ?? 0) > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-stitch-muted dark:text-on-surface-variant">عائد التوزيعات</span>
-                  <span className="stitch-num font-semibold text-stitch-primary dark:text-stitch-primary tabular-nums dark:font-financial dark:text-primary">{(result.asset_health.dividend_yield ?? 0).toFixed(2)}%</span>
+                  <span className="text-muted-foreground dark:text-on-surface-variant">عائد التوزيعات</span>
+                  <span className="font-mono font-semibold text-primary dark:text-primary tabular-nums dark:font-financial dark:text-primary">{(result.asset_health.dividend_yield ?? 0).toFixed(2)}%</span>
                 </div>
               )}
               {result.asset_health.support_level != null && result.asset_health.support_level > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-stitch-muted dark:text-on-surface-variant">مستوى الدعم</span>
-                  <span className="stitch-num font-semibold text-stitch-primary dark:text-stitch-primary tabular-nums dark:font-financial dark:text-primary">{result.asset_health.support_level.toFixed(2)}</span>
+                  <span className="text-muted-foreground dark:text-on-surface-variant">مستوى الدعم</span>
+                  <span className="font-mono font-semibold text-primary dark:text-primary tabular-nums dark:font-financial dark:text-primary">{result.asset_health.support_level.toFixed(2)}</span>
                 </div>
               )}
               {result.asset_health.resistance_exit_level != null && result.asset_health.resistance_exit_level > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-stitch-muted dark:text-on-surface-variant">مستوى الخروج (أقرب مقاومة)</span>
-                  <span className="stitch-num font-semibold text-rose-400 dark:text-rose-400 tabular-nums dark:font-financial dark:text-error">{result.asset_health.resistance_exit_level.toFixed(2)}</span>
+                  <span className="text-muted-foreground dark:text-on-surface-variant">مستوى الخروج (أقرب مقاومة)</span>
+                  <span className="font-mono font-semibold text-rose-400 dark:text-rose-400 tabular-nums dark:font-financial dark:text-error">{result.asset_health.resistance_exit_level.toFixed(2)}</span>
                 </div>
               )}
               {result.asset_health.profitability_note && (
-                <p className="text-[10px] text-stitch-muted pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
+                <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
                   دليل الربحية: {result.asset_health.profitability_note}
                 </p>
               )}
@@ -906,7 +906,7 @@ function ResultView({ result }: { result: RescueResponse }) {
             </CardHeader>
             <CardContent className="space-y-1.5">
               {result.lessons_learned.map((lesson, i) => (
-                <p key={i} className="text-xs text-stitch-muted leading-relaxed dark:text-on-surface-variant">{lesson}</p>
+                <p key={i} className="text-xs text-muted-foreground leading-relaxed dark:text-on-surface-variant">{lesson}</p>
               ))}
             </CardContent>
           </Card>
@@ -950,18 +950,18 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
   }
 
   const toneClass: Record<typeof phases[number]['tone'], string> = {
-    emerald: 'border-emerald-500/30 text-stitch-primary dark:text-stitch-primary bg-emerald-50 dark:bg-emerald-600/60/20 dark:border-primary/30 dark:text-primary dark:bg-primary-container/10',
+    emerald: 'border-emerald-500/30 text-primary dark:text-primary bg-emerald-50 dark:bg-emerald-600/60/20 dark:border-primary/30 dark:text-primary dark:bg-primary-container/10',
     amber: 'border-amber-300 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 dark:bg-amber-500/5',
     red: 'border-rose-500/30 text-rose-400 dark:text-rose-400 bg-red-50 dark:bg-rose-500/60/20 dark:border-error/30 dark:text-error dark:bg-error-container/10',
     teal: 'border-teal-300 text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 dark:border-secondary/30 dark:text-secondary dark:bg-secondary/10',
-    gray: 'border-border/60 text-stitch-muted bg-secondary/20 dark:border-outline-variant/30 dark:text-on-surface-variant dark:bg-surface-container-low',
+    gray: 'border-border/60 text-muted-foreground bg-secondary/20 dark:border-outline-variant/30 dark:text-on-surface-variant dark:bg-surface-container-low',
   };
 
   return (
     <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-1.5 dark:text-on-surface dark:font-outfit">
-          <Target className="w-4 h-4 text-stitch-primary dark:text-primary" />
+          <Target className="w-4 h-4 text-primary dark:text-primary" />
           خطة استرداد رأس المال — timeline + أرقام مالية
         </CardTitle>
       </CardHeader>
@@ -996,11 +996,11 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
 
         {/* Timeline phases */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-stitch-on-surface dark:text-on-surface">الخطوات الزمنية:</p>
+          <p className="text-xs font-bold text-foreground dark:text-on-surface">الخطوات الزمنية:</p>
           {phases.map((p, i) => (
             <div key={i} className={cn('flex items-center justify-between gap-2 p-2 rounded-lg border text-xs', toneClass[p.tone])}>
               <span className="font-semibold dark:text-on-surface">{p.label}</span>
-              <span className="stitch-num tabular-nums dark:font-financial">{p.value}</span>
+              <span className="font-mono tabular-nums dark:font-financial">{p.value}</span>
             </div>
           ))}
         </div>
@@ -1008,16 +1008,16 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
         {/* Exit level (if any) */}
         {exitLevel != null && exitLevel > 0 && (
           <div className="flex items-center justify-between p-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/10 text-xs dark:border-amber-500/40 dark:bg-amber-500/5">
-            <span className="text-stitch-muted flex items-center gap-1 dark:text-on-surface-variant">
+            <span className="text-muted-foreground flex items-center gap-1 dark:text-on-surface-variant">
               <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-secondary" />
               مستوى الخروج المالي (أقرب مقاومة)
             </span>
-            <span className="stitch-num font-bold text-amber-700 dark:text-amber-400 tabular-nums dark:font-financial dark:text-secondary">{fmtPrice(exitLevel)} {currency}</span>
+            <span className="font-mono font-bold text-amber-700 dark:text-amber-400 tabular-nums dark:font-financial dark:text-secondary">{fmtPrice(exitLevel)} {currency}</span>
           </div>
         )}
 
         {/* Disclaimer */}
-        <p className="text-[10px] text-stitch-muted leading-relaxed pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
+        <p className="text-[10px] text-muted-foreground leading-relaxed pt-1 border-t border-border/60 dark:text-on-surface-variant dark:border-outline-variant/30">
           <ShieldAlert className="w-3 h-3 inline ml-1 text-amber-500 dark:text-secondary" />
           كل الأرقام مصدرها Python من قواعد البيانات الحقيقية — لا تقديرات ولا تخمينات. القرارات الاستثمارية النهائية مسؤولية المستخدم.
         </p>
@@ -1028,16 +1028,16 @@ function CapitalRecoveryPlan({ result }: { result: RescueResponse }) {
 
 function FinanceCell({ label, value, tone }: { label: string; value: string; tone: 'emerald' | 'amber' | 'red' | 'teal' | 'gray' }) {
   const toneText: Record<typeof tone, string> = {
-    emerald: 'text-stitch-primary dark:text-stitch-primary dark:text-primary',
+    emerald: 'text-primary dark:text-primary dark:text-primary',
     amber: 'text-amber-700 dark:text-amber-400 dark:text-secondary',
     red: 'text-rose-400 dark:text-rose-400 dark:text-error',
     teal: 'text-teal-700 dark:text-teal-400 dark:text-secondary',
-    gray: 'text-stitch-on-surface dark:text-on-surface',
+    gray: 'text-foreground dark:text-on-surface',
   };
   return (
     <div className="p-2 rounded-lg border border-border/60/60 bg-secondary/20 dark:bg-surface-container-low dark:border-outline-variant/30">
-      <p className="text-[10px] text-stitch-muted mb-0.5 dark:text-on-surface-variant">{label}</p>
-      <p className={cn('stitch-num font-bold text-sm tabular-nums dark:font-financial', toneText[tone])}>{value}</p>
+      <p className="text-[10px] text-muted-foreground mb-0.5 dark:text-on-surface-variant">{label}</p>
+      <p className={cn('font-mono font-bold text-sm tabular-nums dark:font-financial', toneText[tone])}>{value}</p>
     </div>
   );
 }

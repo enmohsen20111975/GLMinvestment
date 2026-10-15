@@ -1545,7 +1545,7 @@ export function TradingViewChart({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border/60 stitch-glass overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+      <div className="rounded-xl border border-border/60 bg-card border border-border overflow-hidden dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 dark:border-outline-variant/30">
           <Skeleton className="h-5 w-40" />
           <div className="flex gap-2">
@@ -1562,10 +1562,10 @@ export function TradingViewChart({
 
   if (error) {
     return (
-      <div className="rounded-xl border border-border/60 stitch-glass p-8 flex flex-col items-center justify-center min-h-[400px] dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-        <RotateCcw className="size-10 text-stitch-muted mb-4 dark:text-on-surface-variant" />
+      <div className="rounded-xl border border-border/60 bg-card border border-border p-8 flex flex-col items-center justify-center min-h-[400px] dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+        <RotateCcw className="size-10 text-muted-foreground mb-4 dark:text-on-surface-variant" />
         <p className="text-sm font-medium text-destructive mb-2 dark:text-error">خطأ في تحميل الشارت</p>
-        <p className="text-xs text-stitch-muted mb-4 dark:text-on-surface-variant">{error}</p>
+        <p className="text-xs text-muted-foreground mb-4 dark:text-on-surface-variant">{error}</p>
         <Button
           variant="outline"
           size="sm"
@@ -1582,8 +1582,8 @@ export function TradingViewChart({
 
   if (data.length === 0) {
     return (
-      <div className="rounded-xl border border-border/60 stitch-glass p-8 flex flex-col items-center justify-center min-h-[400px] dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
-        <p className="text-sm font-medium text-stitch-muted dark:text-on-surface-variant">
+      <div className="rounded-xl border border-border/60 bg-card border border-border p-8 flex flex-col items-center justify-center min-h-[400px] dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
+        <p className="text-sm font-medium text-muted-foreground dark:text-on-surface-variant">
           لا توجد بيانات تاريخية لهذا السهم
         </p>
       </div>
@@ -1605,7 +1605,7 @@ export function TradingViewChart({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border/60 stitch-glass overflow-hidden dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30',
+        'rounded-xl border border-border/60 bg-card border border-border overflow-hidden dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30',
         isFullscreen && 'rounded-none border-0'
       )}
     >
@@ -1618,7 +1618,7 @@ export function TradingViewChart({
             <span
               className={cn(
                 'text-sm font-medium flex items-center gap-0.5 tabular-nums dark:font-financial',
-                isPositive ? 'text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-error'
+                isPositive ? 'text-primary dark:text-primary' : 'text-rose-400 dark:text-error'
               )}
             >
               {isPositive ? (
@@ -1633,16 +1633,16 @@ export function TradingViewChart({
           </div>
 
           {/* Market Status Chip */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border stitch-canvas/50 dark:bg-surface-container dark:border-outline-variant/30">
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-background/50 dark:bg-surface-container dark:border-outline-variant/30">
             {getEGXMarketStatus().isOpen ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse dark:bg-primary" />
-                <span className="text-stitch-primary dark:text-stitch-primary dark:text-primary">مباشر</span>
+                <span className="text-primary dark:text-primary dark:text-primary">مباشر</span>
               </>
             ) : (
               <>
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="text-stitch-muted dark:text-on-surface-variant">السوق مغلق</span>
+                <span className="text-muted-foreground dark:text-on-surface-variant">السوق مغلق</span>
               </>
             )}
           </div>
@@ -1671,9 +1671,9 @@ export function TradingViewChart({
       {/* OHLCV Info Bar */}
       {(hoveredPrice || allData.length > 0) && (
         <div className="flex items-center gap-4 px-4 py-1.5 text-xs border-b border-border/60 bg-secondary/20 dark:bg-surface-container dark:border-outline-variant/30" dir="ltr">
-          <span className="text-stitch-muted dark:text-on-surface-variant">{hoveredPrice ? fmtDateLabel(hoveredPrice.date) : 'Latest'}</span>
+          <span className="text-muted-foreground dark:text-on-surface-variant">{hoveredPrice ? fmtDateLabel(hoveredPrice.date) : 'Latest'}</span>
           <span>O: <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{(hoveredPrice?.open || allData[allData.length - 1]?.open || 0).toFixed(3)}</span></span>
-          <span>H: <span className="font-medium text-stitch-primary tabular-nums dark:font-financial dark:text-primary">{(hoveredPrice?.high || allData[allData.length - 1]?.high || 0).toFixed(3)}</span></span>
+          <span>H: <span className="font-medium text-primary tabular-nums dark:font-financial dark:text-primary">{(hoveredPrice?.high || allData[allData.length - 1]?.high || 0).toFixed(3)}</span></span>
           <span>L: <span className="font-medium text-rose-400 tabular-nums dark:font-financial dark:text-error">{(hoveredPrice?.low || allData[allData.length - 1]?.low || 0).toFixed(3)}</span></span>
           <span>C: <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface">{(hoveredPrice?.close || allData[allData.length - 1]?.close || 0).toFixed(3)}</span></span>
           <span>Vol: <span className="font-medium tabular-nums dark:font-financial dark:text-on-surface-variant">{formatVolume(hoveredPrice?.volume || allData[allData.length - 1]?.volume || 0)}</span></span>
@@ -1691,7 +1691,7 @@ export function TradingViewChart({
                 'px-2.5 py-0.5 rounded text-xs font-semibold transition-all',
                 chartEngine === 'interactive'
                   ? 'bg-primary text-primary-foreground shadow-sm dark:bg-primary-container dark:text-on-primary-container'
-                  : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                  : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
               )}
             >
               شارت التحليل
@@ -1702,7 +1702,7 @@ export function TradingViewChart({
                 'px-2.5 py-0.5 rounded text-xs font-semibold transition-all flex items-center gap-1',
                 chartEngine === 'tradingview_widget'
                   ? 'bg-primary text-primary-foreground shadow-sm dark:bg-primary-container dark:text-on-primary-container'
-                  : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                  : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
               )}
               title="عرض الرسم البياني المباشر من منصة ترادينج فيو الرسمية"
             >
@@ -1727,7 +1727,7 @@ export function TradingViewChart({
                   'px-2 py-0.5 rounded text-xs font-medium transition-all',
                   chartType === type.key
                     ? 'bg-primary text-primary-foreground shadow-sm dark:bg-primary-container dark:text-on-primary-container'
-                    : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                    : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
                 )}
               >
                 {type.label}
@@ -1743,7 +1743,7 @@ export function TradingViewChart({
 
           {/* Resolutions (Candle Intervals) — UI-FIX: added gap-1 for spacing */}
           <div className="flex items-center gap-1 bg-secondary/70 p-0.5 rounded-md border border-border/60/60 dark:bg-surface-container-high dark:border-outline-variant/30">
-            <span className="text-[10px] text-stitch-muted px-1 font-semibold hidden md:inline dark:text-on-surface-variant">الفريم:</span>
+            <span className="text-[10px] text-muted-foreground px-1 font-semibold hidden md:inline dark:text-on-surface-variant">الفريم:</span>
             {RESOLUTIONS.map((res) => {
               const active = timeframe === res.key;
               return (
@@ -1754,7 +1754,7 @@ export function TradingViewChart({
                     'px-2 py-0.5 rounded text-xs font-medium transition-all flex items-center gap-0.5',
                     active
                       ? 'bg-primary text-primary-foreground shadow-sm font-bold dark:bg-primary-container dark:text-on-primary-container'
-                      : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                      : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
                   )}
                   title={res.isIntraday ? `شمعة لحظية: ${res.label}` : `شمعة: ${res.label}`}
                 >
@@ -1793,7 +1793,7 @@ export function TradingViewChart({
       {/* Indicator Toggles — only in interactive mode */}
       {!focusMode && chartEngine === 'interactive' && (
         <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/60 bg-secondary/10 flex-wrap dark:bg-surface-container dark:border-outline-variant/30">
-          <span className="text-[11px] text-stitch-muted font-medium ml-1 dark:text-on-surface-variant">المؤشرات:</span>
+          <span className="text-[11px] text-muted-foreground font-medium ml-1 dark:text-on-surface-variant">المؤشرات:</span>
           {[
             { key: 'sma20' as const, label: 'SMA 20', color: SMA20_COLOR },
             { key: 'sma50' as const, label: 'SMA 50', color: SMA50_COLOR },
@@ -1816,7 +1816,7 @@ export function TradingViewChart({
                 'flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors border',
                 indicators[ind.key]
                   ? 'bg-primary/15 border-primary/40 text-primary dark:bg-primary-container/20 dark:border-primary-container/40 dark:text-primary'
-                  : 'stitch-glass/50 border-border/60/60 text-stitch-muted hover:bg-secondary dark:bg-surface-container-high/50 dark:border-outline-variant/30 dark:text-on-surface-variant dark:hover:bg-surface-container-highest'
+                  : 'bg-card border border-border/50 border-border/60/60 text-muted-foreground hover:bg-secondary dark:bg-surface-container-high/50 dark:border-outline-variant/30 dark:text-on-surface-variant dark:hover:bg-surface-container-highest'
               )}
             >
               <span
@@ -1846,7 +1846,7 @@ export function TradingViewChart({
       {/* Chart Container / TradingView Widget */}
       {chartEngine === 'tradingview_widget' ? (
         <div
-          className="w-full relative stitch-glass overflow-hidden dark:bg-surface-container-low"
+          className="w-full relative bg-card border border-border overflow-hidden dark:bg-surface-container-low"
           style={{ height: isFullscreen ? 'calc(100vh - 150px)' : `${height}px` }}
         >
           <iframe
@@ -1871,7 +1871,7 @@ export function TradingViewChart({
       {/* TradingView Bottom Range Bar (شريط النطاق الزمني السريع) */}
       <div className="flex items-center justify-between px-3 py-1.5 border-t border-border/60 bg-secondary/20 text-xs select-none dark:bg-surface-container dark:border-outline-variant/30">
         <div className="flex items-center gap-1">
-          <span className="text-[11px] text-stitch-muted ml-1 font-medium dark:text-on-surface-variant">النطاق:</span>
+          <span className="text-[11px] text-muted-foreground ml-1 font-medium dark:text-on-surface-variant">النطاق:</span>
           {RANGES.map((r) => {
             const active = currentRange === r.key;
             return (
@@ -1882,7 +1882,7 @@ export function TradingViewChart({
                   'px-2 py-0.5 rounded text-xs font-semibold transition-all',
                   active
                     ? 'bg-primary text-primary-foreground shadow-sm dark:bg-primary-container dark:text-on-primary-container'
-                    : 'text-stitch-muted hover:text-stitch-on-surface hover:bg-secondary/60 dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60 dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high'
                 )}
               >
                 {r.label}
@@ -1891,7 +1891,7 @@ export function TradingViewChart({
           })}
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] text-stitch-muted dark:text-on-surface-variant" dir="ltr">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground dark:text-on-surface-variant" dir="ltr">
           <span>{data.length} candles</span>
           <span className="text-border dark:text-outline-variant">|</span>
           <span className="flex items-center gap-1.5">

@@ -42,6 +42,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
+import { CompanyFundamentalsCard } from '@/modules/radar/components/CompanyFundamentalsCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface StockData {
   ticker: string;
@@ -243,8 +245,15 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
 
           {data && !loading && !error && (
             <>
+              <Tabs defaultValue="liquidity" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="liquidity">السيولة ونبض الحيتان</TabsTrigger>
+                  <TabsTrigger value="fundamentals">الميزانية والتدفقات</TabsTrigger>
+                  <TabsTrigger value="chart">الرسم البياني الفني</TabsTrigger>
+                </TabsList>
+                <TabsContent value="liquidity" className="space-y-4 mt-4">
               {/* ─── MiniSparkline ─── */}
-              <div className="stitch-glass p-3 rounded-xl">
+              <div className="bg-card border border-border rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold flex items-center gap-1.5">
                     <Activity className="w-4 h-4 text-emerald-500" />
@@ -262,7 +271,7 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
 
               {/* ─── بيانات السيولة (Liquidity) ─── */}
               {data.whale && (
-                <div className="stitch-glass p-3 rounded-xl">
+                <div className="bg-card border border-border rounded-xl p-3">
                   <div className="flex items-center gap-1.5 mb-3">
                     <DollarSign className="w-4 h-4 text-emerald-500" />
                     <span className="text-sm font-semibold">بيانات السيولة</span>
@@ -329,7 +338,7 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
 
               {/* ─── المرحلة + السبب ─── */}
               {data.phase && (
-                <div className="stitch-glass p-3 rounded-xl">
+                <div className="bg-card border border-border rounded-xl p-3">
                   <div className="flex items-center gap-1.5 mb-2">
                     <BarChart3 className="w-4 h-4 text-emerald-500" />
                     <span className="text-sm font-semibold">المرحلة</span>
@@ -347,7 +356,7 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
 
               {/* ─── مستويات الدخول والدفاع ─── */}
               {data.entry_defense && (
-                <div className="stitch-glass p-3 rounded-xl">
+                <div className="bg-card border border-border rounded-xl p-3">
                   <div className="flex items-center gap-1.5 mb-3">
                     <TrendingUp className="w-4 h-4 text-emerald-500" />
                     <span className="text-sm font-semibold">
@@ -400,8 +409,19 @@ export function StockDetailSheet({ ticker, stockData, onClose }: StockDetailShee
                 </div>
               )}
 
+                </TabsContent>
+                <TabsContent value="fundamentals" className="mt-4">
+                  {ticker && <CompanyFundamentalsCard ticker={ticker} />}
+                </TabsContent>
+                <TabsContent value="chart" className="mt-4">
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <MiniSparkline ticker={ticker || ''} days={90} height={120} width={500} showArea />
+                  </div>
+                </TabsContent>
+              </Tabs>
+
               {/* ─── أزرار النشر الموحّد ─── */}
-              <div className="stitch-glass p-3 rounded-xl">
+              <div className="bg-card border border-border rounded-xl p-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold">نشر هذه التوصية</span>
                   <UnifiedPublishButton

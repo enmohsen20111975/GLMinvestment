@@ -198,7 +198,7 @@ function channelLabel(ch: string): string {
 }
 
 function returnColor(ret: number): string {
-  if (ret >= 0) return 'text-stitch-primary dark:text-stitch-primary dark:text-primary font-semibold tabular-nums dark:font-financial';
+  if (ret >= 0) return 'text-primary dark:text-primary dark:text-primary font-semibold tabular-nums dark:font-financial';
   return 'text-rose-400 dark:text-rose-400 dark:text-error font-semibold tabular-nums dark:font-financial';
 }
 
@@ -220,8 +220,8 @@ function KPICard({
   variant?: 'default' | 'success' | 'warning' | 'danger';
 }) {
   const colorClasses = {
-    default: 'text-stitch-on-surface dark:text-on-surface',
-    success: 'text-stitch-primary dark:text-stitch-primary dark:text-primary',
+    default: 'text-foreground dark:text-on-surface',
+    success: 'text-primary dark:text-primary dark:text-primary',
     warning: 'text-amber-600 dark:text-amber-400 dark:text-on-surface-variant',
     danger: 'text-rose-400 dark:text-rose-400 dark:text-error',
   };
@@ -235,12 +235,12 @@ function KPICard({
     <Card className={`border ${borderClasses[variant]} shadow-xs dark:bg-surface-container-low dark:font-financial`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-stitch-muted dark:text-on-surface-variant dark:font-outfit">{label}</span>
-          <div className="text-stitch-muted/70 dark:text-on-surface-variant">{icon}</div>
+          <span className="text-xs text-muted-foreground dark:text-on-surface-variant dark:font-outfit">{label}</span>
+          <div className="text-muted-foreground/70 dark:text-on-surface-variant">{icon}</div>
         </div>
         <div className={`text-2xl font-bold tabular-nums dark:font-financial ${colorClasses[variant]}`}>{value}</div>
         {sublabel && (
-          <div className="text-xs text-stitch-muted mt-1 dark:text-on-surface-variant dark:font-outfit">{sublabel}</div>
+          <div className="text-xs text-muted-foreground mt-1 dark:text-on-surface-variant dark:font-outfit">{sublabel}</div>
         )}
       </CardContent>
     </Card>
@@ -254,10 +254,10 @@ function KPICard({
 function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Trade; showChannel?: boolean; showMarket?: boolean }) {
   return (
     <tr className="border-b hover:bg-secondary/30 transition-colors dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
-      <td className="px-2 py-2 text-xs stitch-num font-medium tabular-nums dark:font-financial dark:text-on-surface">{trade.ticker}</td>
+      <td className="px-2 py-2 text-xs font-mono font-medium tabular-nums dark:font-financial dark:text-on-surface">{trade.ticker}</td>
       {showMarket && (
         <td className="px-2 py-2 text-xs">
-          <Badge variant="outline" className="text-[10px] stitch-num tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface-variant">{trade.market}</Badge>
+          <Badge variant="outline" className="text-[10px] font-mono tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface-variant">{trade.market}</Badge>
         </td>
       )}
       {showChannel && (
@@ -267,23 +267,23 @@ function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Tra
           </Badge>
         </td>
       )}
-      <td className="px-2 py-2 text-xs text-stitch-muted dark:text-on-surface-variant dark:font-outfit">{fmtDate(trade.prediction_date)}</td>
-      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.entry_price)}</td>
-      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.stop_loss)}</td>
-      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.target_price)}</td>
-      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.exit_price ?? trade.highest_price)}</td>
+      <td className="px-2 py-2 text-xs text-muted-foreground dark:text-on-surface-variant dark:font-outfit">{fmtDate(trade.prediction_date)}</td>
+      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.entry_price)}</td>
+      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.stop_loss)}</td>
+      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.target_price)}</td>
+      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(trade.exit_price ?? trade.highest_price)}</td>
       <td className={`px-2 py-2 text-xs ${returnColor(trade.actual_return)}`} dir="ltr">
         {fmtPct(trade.actual_return)}
         {trade.capped && (
           <Badge variant="outline" className="ml-1 text-[9px] border-amber-300 text-amber-700 px-1 py-0 dark:border-amber-700/50 dark:text-amber-300">capped</Badge>
         )}
       </td>
-      <td className="px-2 py-2 text-xs text-stitch-muted tabular-nums dark:text-on-surface-variant dark:font-financial">
+      <td className="px-2 py-2 text-xs text-muted-foreground tabular-nums dark:text-on-surface-variant dark:font-financial">
         {trade.holding_days !== null ? `${trade.holding_days}ي` : '—'}
       </td>
       <td className="px-2 py-2 text-xs">
         {trade.hit_target === 1 ? (
-          <Badge className="bg-emerald-500/10 text-stitch-primary hover:bg-emerald-500/10 text-[10px] dark:bg-primary-container/30 dark:text-primary dark:hover:bg-primary-container/40 dark:border-transparent">هدف ✓</Badge>
+          <Badge className="bg-emerald-500/10 text-primary hover:bg-emerald-500/10 text-[10px] dark:bg-primary-container/30 dark:text-primary dark:hover:bg-primary-container/40 dark:border-transparent">هدف ✓</Badge>
         ) : trade.hit_stop === 1 ? (
           <Badge className="bg-rose-500/10 text-rose-400 hover:bg-rose-500/10 text-[10px] dark:bg-error-container/30 dark:text-error dark:hover:bg-error-container/40 dark:border-transparent">وقف ✗</Badge>
         ) : (
@@ -354,14 +354,14 @@ export function PlatformPerformanceView() {
                   للتقييم الداخلي — Admin Only
                 </Badge>
               </div>
-              <p className="text-sm text-stitch-muted dark:text-on-surface-variant dark:font-outfit">
+              <p className="text-sm text-muted-foreground dark:text-on-surface-variant dark:font-outfit">
                 منصة «دليل الاستثمار» — أرقام حقيقية بدون تجميل
               </p>
-              <p className="text-xs text-stitch-muted/70 mt-1 dark:text-on-surface-variant dark:font-outfit">
+              <p className="text-xs text-muted-foreground/70 mt-1 dark:text-on-surface-variant dark:font-outfit">
                 {data ? `آخر تحديث: ${new Date(data.generated_at).toLocaleString('ar-EG')}` : 'جارٍ التحميل...'}
               </p>
             </div>
-            <div className="text-left text-xs text-stitch-muted dark:text-on-surface-variant dark:font-financial tabular-nums">
+            <div className="text-left text-xs text-muted-foreground dark:text-on-surface-variant dark:font-financial tabular-nums">
               <div>invist.m2y.net</div>
               <div className="mt-1">
                 <Button
@@ -389,7 +389,7 @@ export function PlatformPerformanceView() {
         <CardContent className="p-3 sm:p-4">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-stitch-muted dark:text-on-surface-variant dark:font-outfit">الفترة</label>
+              <label className="text-xs text-muted-foreground dark:text-on-surface-variant dark:font-outfit">الفترة</label>
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger className="h-9 text-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface">
                   <SelectValue />
@@ -403,7 +403,7 @@ export function PlatformPerformanceView() {
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-stitch-muted dark:text-on-surface-variant dark:font-outfit">السوق</label>
+              <label className="text-xs text-muted-foreground dark:text-on-surface-variant dark:font-outfit">السوق</label>
               <Select value={market} onValueChange={setMarket}>
                 <SelectTrigger className="h-9 text-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface">
                   <SelectValue />
@@ -418,7 +418,7 @@ export function PlatformPerformanceView() {
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-stitch-muted dark:text-on-surface-variant dark:font-outfit">القناة</label>
+              <label className="text-xs text-muted-foreground dark:text-on-surface-variant dark:font-outfit">القناة</label>
               <Select value={channel} onValueChange={setChannel}>
                 <SelectTrigger className="h-9 text-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface">
                   <SelectValue />
@@ -431,7 +431,7 @@ export function PlatformPerformanceView() {
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-stitch-muted dark:text-on-surface-variant dark:font-outfit">حد «صفقة محترمة» (%)</label>
+              <label className="text-xs text-muted-foreground dark:text-on-surface-variant dark:font-outfit">حد «صفقة محترمة» (%)</label>
               <Select value={minReturn} onValueChange={setMinReturn}>
                 <SelectTrigger className="h-9 text-sm dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface">
                   <SelectValue />
@@ -541,7 +541,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               {readiness.recommendation === 'candidate' ? (
-                <ShieldCheck className="h-6 w-6 text-stitch-primary flex-shrink-0 dark:text-primary" />
+                <ShieldCheck className="h-6 w-6 text-primary flex-shrink-0 dark:text-primary" />
               ) : (
                 <ShieldAlert className="h-6 w-6 text-amber-600 flex-shrink-0 dark:text-on-surface-variant" />
               )}
@@ -551,8 +551,8 @@ export function PlatformPerformanceView() {
                 </h3>
                 <div className="space-y-1">
                   {readiness.notes_ar.map((note, i) => (
-                    <div key={i} className="text-xs text-stitch-muted flex items-start gap-1.5 dark:text-on-surface-variant dark:font-outfit">
-                      <span className="text-stitch-muted/50 mt-0.5 dark:text-on-surface-variant/50">•</span>
+                    <div key={i} className="text-xs text-muted-foreground flex items-start gap-1.5 dark:text-on-surface-variant dark:font-outfit">
+                      <span className="text-muted-foreground/50 mt-0.5 dark:text-on-surface-variant/50">•</span>
                       <span>{note}</span>
                     </div>
                   ))}
@@ -560,19 +560,19 @@ export function PlatformPerformanceView() {
                 <Separator className="my-2 dark:bg-outline-variant/30" />
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <span className="text-stitch-muted dark:text-on-surface-variant dark:font-financial tabular-nums">n ≥ 30: </span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant dark:font-financial tabular-nums">n ≥ 30: </span>
                     <Badge variant={readiness.n_sufficient ? 'default' : 'outline'} className="text-[10px] dark:bg-primary-container dark:text-on-primary-container dark:border-transparent">
                       {readiness.n_sufficient ? 'نعم' : 'لا'}
                     </Badge>
                   </div>
                   <div>
-                    <span className="text-stitch-muted dark:text-on-surface-variant dark:font-financial tabular-nums">PF ≥ 1.3: </span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant dark:font-financial tabular-nums">PF ≥ 1.3: </span>
                     <Badge variant={readiness.pf_passes ? 'default' : 'outline'} className="text-[10px] dark:bg-primary-container dark:text-on-primary-container dark:border-transparent">
                       {readiness.pf_passes ? 'نعم' : 'لا'}
                     </Badge>
                   </div>
                   <div>
-                    <span className="text-stitch-muted dark:text-on-surface-variant dark:font-financial tabular-nums">وقف معقول: </span>
+                    <span className="text-muted-foreground dark:text-on-surface-variant dark:font-financial tabular-nums">وقف معقول: </span>
                     <Badge variant={readiness.max_loss_reasonable ? 'default' : 'outline'} className="text-[10px] dark:bg-primary-container dark:text-on-primary-container dark:border-transparent">
                       {readiness.max_loss_reasonable ? 'نعم' : 'لا'}
                     </Badge>
@@ -589,7 +589,7 @@ export function PlatformPerformanceView() {
         <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base dark:text-on-surface dark:font-outfit">
-              <Trophy className="h-5 w-5 text-stitch-primary dark:text-primary" />
+              <Trophy className="h-5 w-5 text-primary dark:text-primary" />
               أفضل الصفقات المحترمة (Top {data.top_trades.length})
               <Badge variant="outline" className="text-xs dark:border-outline-variant/40 dark:text-on-surface-variant dark:font-financial tabular-nums">≥ +{minReturn}%</Badge>
             </CardTitle>
@@ -600,7 +600,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-muted-foreground dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
@@ -631,7 +631,7 @@ export function PlatformPerformanceView() {
         <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base dark:text-on-surface dark:font-outfit">
-              <Target className="h-5 w-5 text-stitch-primary dark:text-primary" />
+              <Target className="h-5 w-5 text-primary dark:text-primary" />
               تحقق المستهدفات ({data.target_hits.length})
             </CardTitle>
             <CardDescription className="text-xs dark:text-on-surface-variant">
@@ -641,7 +641,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-muted-foreground dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">القناة</th>
@@ -654,15 +654,15 @@ export function PlatformPerformanceView() {
                 <tbody>
                   {data.target_hits.map((t) => (
                     <tr key={t.id} className="border-b hover:bg-secondary/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
-                      <td className="px-2 py-2 text-xs stitch-num font-medium tabular-nums dark:font-financial dark:text-on-surface">{t.ticker}</td>
+                      <td className="px-2 py-2 text-xs font-mono font-medium tabular-nums dark:font-financial dark:text-on-surface">{t.ticker}</td>
                       <td className="px-2 py-2 text-xs">
                         <Badge variant="outline" className="text-[10px] dark:border-outline-variant/40 dark:text-on-surface-variant">{channelLabel(t.channel)}</Badge>
                       </td>
-                      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.entry_price)}</td>
-                      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.highest_price ?? t.exit_price)}</td>
+                      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.entry_price)}</td>
+                      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.highest_price ?? t.exit_price)}</td>
                       <td className={`px-2 py-2 text-xs ${returnColor(t.actual_return)}`} dir="ltr">{fmtPct(t.actual_return)}</td>
                       <td className="px-2 py-2 text-xs">
-                        <Badge className="bg-emerald-500/10 text-stitch-primary hover:bg-emerald-500/10 text-[10px] dark:bg-primary-container/30 dark:text-primary dark:hover:bg-primary-container/40 dark:border-transparent">تحقق ✓</Badge>
+                        <Badge className="bg-emerald-500/10 text-primary hover:bg-emerald-500/10 text-[10px] dark:bg-primary-container/30 dark:text-primary dark:hover:bg-primary-container/40 dark:border-transparent">تحقق ✓</Badge>
                       </td>
                     </tr>
                   ))}
@@ -689,7 +689,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-muted-foreground dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
@@ -729,7 +729,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-muted-foreground dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السهم</th>
                     <th className="px-2 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
@@ -741,12 +741,12 @@ export function PlatformPerformanceView() {
                 <tbody>
                   {data.excluded_examples.map((t) => (
                     <tr key={t.id} className="border-b dark:border-outline-variant/20">
-                      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface">{t.ticker}</td>
+                      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface">{t.ticker}</td>
                       <td className="px-2 py-2 text-xs">
-                        <Badge variant="outline" className="text-[10px] stitch-num tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface-variant">{t.market}</Badge>
+                        <Badge variant="outline" className="text-[10px] font-mono tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface-variant">{t.market}</Badge>
                       </td>
-                      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.entry_price)}</td>
-                      <td className="px-2 py-2 text-xs stitch-num tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.exit_price)}</td>
+                      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.entry_price)}</td>
+                      <td className="px-2 py-2 text-xs font-mono tabular-nums dark:font-financial dark:text-on-surface" dir="ltr">{fmtPrice(t.exit_price)}</td>
                       <td className="px-2 py-2 text-xs">
                         <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 dark:border-outline-variant dark:text-on-surface-variant">
                           {t.exclusion_reason || 'unknown'}
@@ -776,7 +776,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-muted-foreground dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">السوق</th>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">n_raw</th>
@@ -791,15 +791,15 @@ export function PlatformPerformanceView() {
                   {data.by_market.map((m) => (
                     <tr key={m.market} className="border-b hover:bg-secondary/30 dark:border-outline-variant/20 dark:hover:bg-surface-container-low">
                       <td className="px-3 py-2 text-sm font-medium">
-                        <Badge variant="outline" className="stitch-num tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface">{m.market}</Badge>
+                        <Badge variant="outline" className="font-mono tabular-nums dark:font-financial dark:border-outline-variant/40 dark:text-on-surface">{m.market}</Badge>
                       </td>
-                      <td className="px-3 py-2 text-sm text-stitch-muted tabular-nums dark:text-on-surface-variant dark:font-financial">{m.n_raw}</td>
+                      <td className="px-3 py-2 text-sm text-muted-foreground tabular-nums dark:text-on-surface-variant dark:font-financial">{m.n_raw}</td>
                       <td className="px-3 py-2 text-sm font-medium tabular-nums dark:text-on-surface dark:font-financial">{m.n_valid}</td>
                       <td className="px-3 py-2 text-sm tabular-nums dark:font-financial dark:text-on-surface">{fmtNum(m.win_rate, 1)}%</td>
-                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${m.profit_factor >= 1.3 ? 'text-stitch-primary font-medium dark:text-primary' : 'text-amber-600 dark:text-on-surface-variant'}`}>
+                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${m.profit_factor >= 1.3 ? 'text-primary font-medium dark:text-primary' : 'text-amber-600 dark:text-on-surface-variant'}`}>
                         {fmtNum(m.profit_factor)}
                       </td>
-                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${m.expectancy_pct >= 0 ? 'text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-error'}`} dir="ltr">
+                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${m.expectancy_pct >= 0 ? 'text-primary dark:text-primary' : 'text-rose-400 dark:text-error'}`} dir="ltr">
                         {fmtPct(m.expectancy_pct)}
                       </td>
                       <td className="px-3 py-2 text-sm text-rose-400 tabular-nums dark:font-financial dark:text-error" dir="ltr">{fmtPct(m.max_loss_pct)}</td>
@@ -827,7 +827,7 @@ export function PlatformPerformanceView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-right">
-                <thead className="bg-secondary/50 text-xs text-stitch-muted dark:bg-surface-container-low dark:text-on-surface-variant">
+                <thead className="bg-secondary/50 text-xs text-muted-foreground dark:bg-surface-container-low dark:text-on-surface-variant">
                   <tr>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">القناة</th>
                     <th className="px-3 py-2 font-medium dark:text-on-surface dark:font-outfit">n</th>
@@ -845,10 +845,10 @@ export function PlatformPerformanceView() {
                       </td>
                       <td className="px-3 py-2 text-sm tabular-nums dark:font-financial dark:text-on-surface">{ch.n}</td>
                       <td className="px-3 py-2 text-sm tabular-nums dark:font-financial dark:text-on-surface">{fmtNum(ch.win_rate, 1)}%</td>
-                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${ch.profit_factor >= 1.3 ? 'text-stitch-primary font-medium dark:text-primary' : 'text-amber-600 dark:text-on-surface-variant'}`}>
+                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${ch.profit_factor >= 1.3 ? 'text-primary font-medium dark:text-primary' : 'text-amber-600 dark:text-on-surface-variant'}`}>
                         {fmtNum(ch.profit_factor)}
                       </td>
-                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${ch.expectancy_pct >= 0 ? 'text-stitch-primary dark:text-primary' : 'text-rose-400 dark:text-error'}`} dir="ltr">
+                      <td className={`px-3 py-2 text-sm tabular-nums dark:font-financial ${ch.expectancy_pct >= 0 ? 'text-primary dark:text-primary' : 'text-rose-400 dark:text-error'}`} dir="ltr">
                         {fmtPct(ch.expectancy_pct)}
                       </td>
                       <td className="px-3 py-2 text-sm text-rose-400 tabular-nums dark:font-financial dark:text-error" dir="ltr">{fmtPct(ch.max_loss_pct)}</td>
@@ -865,8 +865,8 @@ export function PlatformPerformanceView() {
       {data && (
         <Card className="dark:bg-surface-container-low dark:border dark:border-outline-variant/30">
           <CardContent className="p-3">
-            <details className="text-xs text-stitch-muted dark:text-on-surface-variant dark:font-outfit">
-              <summary className="cursor-pointer hover:text-stitch-on-surface dark:hover:text-on-surface">
+            <details className="text-xs text-muted-foreground dark:text-on-surface-variant dark:font-outfit">
+              <summary className="cursor-pointer hover:text-foreground dark:hover:text-on-surface">
                 مصادر البيانات ({data.data_sources.length})
               </summary>
               <div className="mt-2 space-y-1">
@@ -881,7 +881,7 @@ export function PlatformPerformanceView() {
                     {data.data_missing.join('، ')}
                   </div>
                 )}
-                <div className="mt-1 text-stitch-muted dark:text-on-surface-variant dark:font-financial tabular-nums">
+                <div className="mt-1 text-muted-foreground dark:text-on-surface-variant dark:font-financial tabular-nums">
                   HARD cap: ABS(actual_return) ≤ 50% · حساب العائد: actual_return → exit_price → hit_target/target → hit_stop/stop → null
                 </div>
               </div>
@@ -894,7 +894,7 @@ export function PlatformPerformanceView() {
       {loading && !data && (
         <div className="flex flex-col items-center justify-center py-16">
           <Loader2 className="h-10 w-10 animate-spin text-primary mb-3 dark:text-primary" />
-          <p className="text-sm text-stitch-muted dark:text-on-surface-variant dark:font-outfit">جارٍ تحميل البيانات...</p>
+          <p className="text-sm text-muted-foreground dark:text-on-surface-variant dark:font-outfit">جارٍ تحميل البيانات...</p>
         </div>
       )}
     </div>

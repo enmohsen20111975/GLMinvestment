@@ -205,21 +205,21 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
             ) : data?.note ? (
               <span className="text-amber-600 dark:text-amber-400">{data.note}</span>
             ) : (
-              <span className="text-stitch-muted">لا توجد بيانات تداول داخل الجلسة لهذا السهم</span>
+              <span className="text-muted-foreground">لا توجد بيانات تداول داخل الجلسة لهذا السهم</span>
             )}
           </div>
         ) : (
           <>
             {/* Header strip */}
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <Badge variant="outline" className="text-[10px] stitch-latin">{data.ticker}</Badge>
+              <Badge variant="outline" className="text-[10px] font-sans">{data.ticker}</Badge>
               {data.date && <Badge variant="outline" className="text-[10px]">{data.date}</Badge>}
               <Badge variant="outline" className="text-[10px]">{PERIOD_LABEL[data.period as PeriodKey]}</Badge>
               <Badge
                 className={cn(
                   'text-[10px]',
                   interpretation.tone === 'buy'
-                    ? 'bg-emerald-500/10 text-stitch-primary dark:text-stitch-primary border-emerald-500/30/30'
+                    ? 'bg-emerald-500/10 text-primary dark:text-primary border-emerald-500/30/30'
                     : interpretation.tone === 'sell'
                     ? 'bg-rose-500/10 text-rose-400 dark:text-rose-400 border-rose-500/30/30'
                     : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
@@ -257,11 +257,11 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                   <Activity className="w-3.5 h-3.5 text-purple-500" />
                   <span className="text-xs font-semibold">الضغط عبر الوقت</span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-stitch-muted">
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <span className="inline-block w-2 h-2 rounded-sm bg-rose-500/70" /> بيع
                   </span>
-                  <span className="text-stitch-muted/50">|</span>
+                  <span className="text-muted-foreground/50">|</span>
                   <span className="flex items-center gap-1">
                     <span className="inline-block w-2 h-2 rounded-sm bg-emerald-500/70" /> شراء
                   </span>
@@ -269,7 +269,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
               </div>
 
               {data.buckets.length === 0 ? (
-                <div className="text-center text-xs text-stitch-muted py-6">
+                <div className="text-center text-xs text-muted-foreground py-6">
                   لا توجد باكتات زمنية في هذه الجلسة
                 </div>
               ) : (
@@ -287,7 +287,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                         key={b.bucket_start + idx}
                         className="flex items-center gap-1 py-1.5 px-2 border-b border-border/60 last:border-0 hover:bg-secondary/30"
                       >
-                        <div className="text-[10px] text-stitch-muted w-10 flex-shrink-0 stitch-num" title={b.bucket_start}>
+                        <div className="text-[10px] text-muted-foreground w-10 flex-shrink-0 font-mono" title={b.bucket_start}>
                           {b.time_label}
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -309,17 +309,17 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                               />
                             </div>
                           </div>
-                          <div className="text-[8px] sm:text-[9px] text-stitch-muted flex items-center justify-between overflow-hidden">
-                            <span className="text-rose-400/80 stitch-num">{formatNumber(b.sell_volume)}</span>
-                            <span className="stitch-num">{formatNumber(b.total_volume)} حصة</span>
-                            <span className="text-stitch-primary/80 stitch-num">{formatNumber(b.buy_volume)}</span>
+                          <div className="text-[8px] sm:text-[9px] text-muted-foreground flex items-center justify-between overflow-hidden">
+                            <span className="text-rose-400/80 font-mono">{formatNumber(b.sell_volume)}</span>
+                            <span className="font-mono">{formatNumber(b.total_volume)} حصة</span>
+                            <span className="text-primary/80 font-mono">{formatNumber(b.buy_volume)}</span>
                           </div>
                         </div>
                         <div
                           className={cn(
                             'text-[10px] font-bold w-14 text-left whitespace-nowrap',
-                            netTone === 'pos' ? 'text-stitch-primary dark:text-stitch-primary' :
-                            netTone === 'neg' ? 'text-rose-400 dark:text-rose-400' : 'text-stitch-muted'
+                            netTone === 'pos' ? 'text-primary dark:text-primary' :
+                            netTone === 'neg' ? 'text-rose-400 dark:text-rose-400' : 'text-muted-foreground'
                           )}
                           title="الضغط الصافي (شراء - بيع)"
                         >
@@ -377,10 +377,10 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                       <span className="text-[11px] font-semibold">منحنى الضغط التراكمي</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[9px]">
-                      <span className={cn('font-bold', isPositiveTrend ? 'text-stitch-primary' : 'text-rose-400')}>
+                      <span className={cn('font-bold', isPositiveTrend ? 'text-primary' : 'text-rose-400')}>
                         {isPositiveTrend ? '▲ تجميع' : '▼ تصريف'}
                       </span>
-                      <span className="text-stitch-muted stitch-num">
+                      <span className="text-muted-foreground font-mono">
                         ({cumulative[0] >= 0 ? '+' : ''}{formatNumber(cumulative[0])} → {cumulative[n - 1] >= 0 ? '+' : ''}{formatNumber(cumulative[n - 1])})
                       </span>
                     </div>
@@ -405,7 +405,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                       </linearGradient>
                     </defs>
                     {/* Zero line */}
-                    <line x1={padding} y1={zeroY} x2={width - padding} y2={zeroY} stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 3" className="text-stitch-muted/40" />
+                    <line x1={padding} y1={zeroY} x2={width - padding} y2={zeroY} stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 3" className="text-muted-foreground/40" />
                     {/* Area fill with dual-tone gradient */}
                     <path d={areaPath} fill={`url(#${gradientId})`} />
                     {/* T-ALPHA-A8: Smooth Bezier curve */}
@@ -415,9 +415,9 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                     {/* End point */}
                     <circle cx={points[n - 1].x} cy={points[n - 1].y} r="2.5" fill={isPositiveTrend ? '#10b981' : '#ef4444'} />
                   </svg>
-                  <div className="flex items-center justify-between text-[9px] text-stitch-muted mt-0.5">
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-0.5">
                     <span>{buckets[0]?.time_label ?? ''}</span>
-                    <span className="stitch-num">صافي تراكمي: {cumulative[n - 1] >= 0 ? '+' : ''}{formatNumber(cumulative[n - 1])}</span>
+                    <span className="font-mono">صافي تراكمي: {cumulative[n - 1] >= 0 ? '+' : ''}{formatNumber(cumulative[n - 1])}</span>
                     <span>{buckets[n - 1]?.time_label ?? ''}</span>
                   </div>
                 </div>
@@ -427,15 +427,15 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
             {/* Volume totals */}
             <div className="grid grid-cols-3 gap-2 text-[11px]">
               <div className="rounded-md bg-emerald-500/5 border border-emerald-500/30/20 p-2">
-                <div className="text-[10px] text-stitch-muted">إجمالي شراء</div>
-                <div className="font-bold text-stitch-primary dark:text-stitch-primary">{formatNumber(session!.total_buy_volume)}</div>
+                <div className="text-[10px] text-muted-foreground">إجمالي شراء</div>
+                <div className="font-bold text-primary dark:text-primary">{formatNumber(session!.total_buy_volume)}</div>
               </div>
               <div className="rounded-md bg-amber-500/5 border border-amber-500/20 p-2">
-                <div className="text-[10px] text-stitch-muted">محايد</div>
+                <div className="text-[10px] text-muted-foreground">محايد</div>
                 <div className="font-bold text-amber-600 dark:text-amber-400">{formatNumber(session!.total_neutral_volume)}</div>
               </div>
               <div className="rounded-md bg-rose-500/5 border border-rose-500/30/20 p-2">
-                <div className="text-[10px] text-stitch-muted">إجمالي بيع</div>
+                <div className="text-[10px] text-muted-foreground">إجمالي بيع</div>
                 <div className="font-bold text-rose-400 dark:text-rose-400">{formatNumber(session!.total_sell_volume)}</div>
               </div>
             </div>
@@ -457,11 +457,11 @@ function SummaryCell({
 }) {
   return (
     <div className="rounded-md bg-secondary/40 p-2">
-      <div className="text-[10px] text-stitch-muted">{label}</div>
+      <div className="text-[10px] text-muted-foreground">{label}</div>
       <div
         className={cn(
           'text-sm font-bold',
-          tone === 'pos' ? 'text-stitch-primary dark:text-stitch-primary' :
+          tone === 'pos' ? 'text-primary dark:text-primary' :
           tone === 'neg' ? 'text-rose-400 dark:text-rose-400' : ''
         )}
       >

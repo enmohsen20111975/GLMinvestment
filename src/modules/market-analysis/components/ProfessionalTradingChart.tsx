@@ -64,7 +64,7 @@ interface Props {
 const SIGNAL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   STRONG_BUY:        { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-500/30' },
   INSTITUTIONAL_BUY: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-500/30' },
-  BUY:               { bg: 'bg-emerald-500/10 dark:bg-emerald-500/10', text: 'text-stitch-primary dark:text-stitch-primary', border: 'border-emerald-500/30 dark:border-emerald-500/30' },
+  BUY:               { bg: 'bg-emerald-500/10 dark:bg-emerald-500/10', text: 'text-primary dark:text-primary', border: 'border-emerald-500/30 dark:border-emerald-500/30' },
   ACCUMULATE:        { bg: 'bg-teal-100 dark:bg-teal-900/40', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-300 dark:border-teal-700' },
   HOLD:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
   WAIT:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
@@ -375,7 +375,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-300 dark:border-orange-800' };
     }
     if (flightState?.state === 'taking_off') {
-      return { label: '🟢 مسار صاعد صحي', color: 'text-stitch-primary dark:text-stitch-primary', bg: 'bg-emerald-50 dark:bg-emerald-600/60/30', border: 'border-emerald-500/30 dark:border-emerald-500/30' };
+      return { label: '🟢 مسار صاعد صحي', color: 'text-primary dark:text-primary', bg: 'bg-emerald-50 dark:bg-emerald-600/60/30', border: 'border-emerald-500/30 dark:border-emerald-500/30' };
     }
     return null;
   })();
@@ -460,7 +460,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
     return (
       <div className="w-full p-8 text-center dark:bg-surface-container-lowest dark:text-on-surface">
         <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-3 dark:text-error" />
-        <p className="text-sm text-stitch-muted mb-3 dark:text-on-surface-variant">{error}</p>
+        <p className="text-sm text-muted-foreground mb-3 dark:text-on-surface-variant">{error}</p>
         <Button variant="outline" size="sm" onClick={() => fetchData(ticker, timeframe)}>
           <RefreshCw className="w-4 h-4 ml-1" /> إعادة المحاولة
         </Button>
@@ -474,7 +474,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       ref={cardRef}
       dir="rtl"
       className={cn(
-        'border border-border/60 stitch-glass rounded-2xl shadow-sm overflow-hidden flex flex-col dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30',
+        'border border-border/60 bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col dark:bg-surface-container-lowest dark:border dark:border-outline-variant/30',
         isMaximized ? 'fixed inset-2 z-50 overflow-y-auto p-4' : 'w-full'
       )}
     >
@@ -491,19 +491,19 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               onSelectStock={handleSelectTicker}
               placeholder="اختر السهم"
               compact
-              buttonClassName="w-[140px] md:w-[170px] stitch-glass border-border/60 shadow-sm rounded-xl dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
+              buttonClassName="w-[140px] md:w-[170px] bg-card border border-border border-border/60 shadow-sm rounded-xl dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface"
             />
             <div className="min-w-0">
-              <div className="text-sm md:text-base font-black text-stitch-on-surface truncate max-w-[220px] dark:text-on-surface dark:font-outfit">
+              <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px] dark:text-on-surface dark:font-outfit">
                 {data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker}
               </div>
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
                   className={cn(
-                    'stitch-num text-xs font-black px-2 py-0.5 rounded-full dark:font-financial',
+                    'font-mono text-xs font-black px-2 py-0.5 rounded-full dark:font-financial',
                     isUp
-                      ? 'bg-emerald-50 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40'
+                      ? 'bg-emerald-50 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary dark:bg-primary-container/20 dark:text-primary dark:border-primary-container/40'
                       : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:bg-error-container/20 dark:text-error dark:border-error-container/40'
                   )}
                 >
@@ -549,37 +549,37 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             <div className="flex items-center gap-2 text-xs">
               {entry !== null && entry > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-stitch-muted dark:text-on-surface-variant">الدخول</span>
-                  <span className="stitch-num font-bold text-stitch-on-surface tabular-nums dark:font-financial dark:text-on-surface">{(entry ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الدخول</span>
+                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(entry ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {stop !== null && stop > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-stitch-muted dark:text-on-surface-variant">الوقف</span>
-                  <span className="stitch-num font-bold text-rose-600 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{(stop ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الوقف</span>
+                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400 dark:text-error tabular-nums dark:font-financial">{(stop ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {target1 !== null && target1 > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-stitch-muted dark:text-on-surface-variant">الهدف</span>
-                  <span className="stitch-num font-bold text-stitch-primary dark:text-stitch-primary dark:text-primary tabular-nums dark:font-financial">{(target1 ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الهدف</span>
+                  <span className="font-mono font-bold text-primary dark:text-primary dark:text-primary tabular-nums dark:font-financial">{(target1 ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {rr !== null && rr > 0 && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-stitch-muted dark:text-on-surface-variant">R:R</span>
-                  <span className="stitch-num font-bold text-stitch-on-surface tabular-nums dark:font-financial dark:text-on-surface">{(rr ?? 0).toFixed(2)}</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">R:R</span>
+                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(rr ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {techScore !== null && (
                 <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-stitch-muted dark:text-on-surface-variant">الثقة</span>
-                  <span className="stitch-num font-bold text-stitch-on-surface tabular-nums dark:font-financial dark:text-on-surface">{(techScore ?? 0).toFixed(0)}%</span>
+                  <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">الثقة</span>
+                  <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{(techScore ?? 0).toFixed(0)}%</span>
                 </div>
               )}
             </div>
             ) : (
-              <div className="p-2 rounded-xl border border-border/60 bg-secondary/40 text-xs text-stitch-muted flex items-center gap-2 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
+              <div className="p-2 rounded-xl border border-border/60 bg-secondary/40 text-xs text-muted-foreground flex items-center gap-2 dark:bg-surface-container dark:border-outline-variant/30 dark:text-on-surface-variant">
                 <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
                 <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً</span>
               </div>
@@ -599,7 +599,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                     'px-2 py-1 rounded-lg transition-colors',
                     timeframe === tf
                       ? 'bg-emerald-600 text-white font-bold shadow-sm dark:bg-primary-container dark:text-on-primary-container'
-                      : 'text-stitch-muted hover:text-stitch-on-surface dark:text-on-surface-variant dark:hover:text-on-surface'
+                      : 'text-muted-foreground hover:text-foreground dark:text-on-surface-variant dark:hover:text-on-surface'
                   )}
                 >
                   {tf === '5M' ? '5د' : tf === '1H' ? 'ساعة' : tf === 'DAY' ? 'يومي' : tf === 'WEEK' ? 'أسبوعي' : 'شهري'}
@@ -613,7 +613,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-amber-500" /> : <Bell className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className="h-8 w-8 p-0 rounded-lg">
-              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5 text-stitch-primary" /> : <Star className="h-3.5 w-3.5" />}
+              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5 text-primary" /> : <Star className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setIsMaximized((v) => !v)} className="h-8 w-8 p-0 rounded-lg">
               {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -626,7 +626,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
 
         {/* سبب الانتظار/الرفض (سطر واحد واضح) */}
         {(signalFinal === 'HOLD' || signalFinal === 'WAIT' || signalFinal?.includes('KILL') || signalFinal?.includes('AVOID')) && (
-          <div className="mt-2 text-xs text-stitch-muted flex items-center gap-1 dark:text-on-surface-variant">
+          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1 dark:text-on-surface-variant">
             <AlertTriangle className="w-3 h-3 text-amber-500" />
             <span>
               {decision?.path_taken || data?.adjustment_reason || 'السهم في مرحلة انتظار — راجع التفاصيل بالأسفل'}
@@ -662,7 +662,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       <div className="px-4 py-3">
         {/* شريط أدوات الشارت */}
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-          <div className="text-[11px] font-bold text-stitch-muted uppercase tracking-wider dark:text-on-surface-variant dark:font-financial">
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider dark:text-on-surface-variant dark:font-financial">
             شارت الأسعار
           </div>
           <div className="flex items-center gap-1.5">
@@ -712,7 +712,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               target2Price={target2 ?? undefined}
             />
           ) : (
-            <div className="h-full flex items-center justify-center text-stitch-muted text-sm dark:text-on-surface-variant dark:bg-surface-container-low">
+            <div className="h-full flex items-center justify-center text-muted-foreground text-sm dark:text-on-surface-variant dark:bg-surface-container-low">
               <div className="text-center space-y-1">
                 <p>بانتظار تحميل الشموع — يتم التحميل تلقائياً</p>
                 <p className="text-[10px]">إذا لم تظهر خلال لحظات، يمكن للسهم غير متوفر على TradingView</p>
@@ -732,27 +732,27 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           <div className="rounded-xl border border-border/60 bg-secondary/30 p-3 dark:bg-surface-container-low dark:border-outline-variant/30">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-stitch-primary dark:text-primary" />
+                <Target className="w-4 h-4 text-primary dark:text-primary" />
                 <span className="text-xs font-bold dark:text-on-surface dark:font-outfit">خطة الصفقة</span>
               </div>
               {rr !== null && rr > 0 && (
-                <Badge variant="outline" className="text-[10px] stitch-num dark:font-financial">
+                <Badge variant="outline" className="text-[10px] font-mono dark:font-financial">
                   R:R 1:{(rr ?? 0).toFixed(2)}
                 </Badge>
               )}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-stitch-on-surface dark:text-on-surface" />
+              <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground dark:text-on-surface" />
               <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600 dark:text-rose-400 dark:text-error" />
-              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-stitch-primary dark:text-stitch-primary dark:text-primary" />
-              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-stitch-primary dark:text-stitch-primary dark:text-primary" />
+              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-primary dark:text-primary dark:text-primary" />
+              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-primary dark:text-primary dark:text-primary" />
             </div>
             {data?.suggested_position_size_pct && (
-              <div className="mt-2 text-[10px] text-stitch-muted flex items-center gap-1">
+              <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1">
                 <Wallet className="w-3 h-3" />
-                حجم المحفظة المقترح: <strong className="stitch-num text-stitch-primary">{data.suggested_position_size_pct}%</strong>
+                حجم المحفظة المقترح: <strong className="font-mono text-primary">{data.suggested_position_size_pct}%</strong>
                 {data?.analysis_text && (
-                  <span className="text-stitch-muted mr-2">• {data.analysis_text.slice(0, 80)}</span>
+                  <span className="text-muted-foreground mr-2">• {data.analysis_text.slice(0, 80)}</span>
                 )}
               </div>
             )}
@@ -817,7 +817,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                     {isHoldWait ? 'إشارة انتظار' : 'لا توجد إشارة شراء'}
                   </span>
                 </div>
-                <p className="text-[11px] text-stitch-muted leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي/عرضي.
                   خطة الصفقة (دخول + وقف + أهداف) تُعرض فقط لإشارات الشراء الحقيقية (BUY / STRONG_BUY).
                 </p>
@@ -832,7 +832,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       ════════════════════════════════════════════════════════════════════════ */}
       <div className="px-4 py-3 border-t border-border/60 dark:border-outline-variant/30">
         <div className="text-xs font-bold mb-2 flex items-center gap-1 dark:text-on-surface dark:font-outfit">
-          <Activity className="w-3.5 h-3.5 text-stitch-primary dark:text-primary" />
+          <Activity className="w-3.5 h-3.5 text-primary dark:text-primary" />
           أسباب القرار
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -892,8 +892,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold whitespace-nowrap border-b-2 transition-colors',
                 activeTab === tab.id
-                  ? 'border-emerald-500/30 text-stitch-primary dark:text-stitch-primary dark:border-primary dark:text-primary stitch-glass dark:bg-surface-container-low'
-                  : 'border-transparent text-stitch-muted hover:text-stitch-on-surface hover:bg-secondary/50 dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high'
+                  ? 'border-emerald-500/30 text-primary dark:text-primary dark:border-primary dark:text-primary bg-card border border-border dark:bg-surface-container-low'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/50 dark:text-on-surface-variant dark:hover:text-on-surface dark:hover:bg-surface-container-high'
               )}
             >
               <tab.icon className="w-3.5 h-3.5" />
@@ -955,10 +955,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {/* SMC Analysis التفصيلي */}
               {data?.smc_analysis && (
                 <div className="text-xs rounded-lg border border-border/60 bg-secondary/30 p-2">
-                  <div className="font-bold mb-1 text-stitch-muted">تحليل SMC:</div>
-                  <div className="text-stitch-on-surface">{data.smc_analysis.bias_ar || '—'}</div>
+                  <div className="font-bold mb-1 text-muted-foreground">تحليل SMC:</div>
+                  <div className="text-foreground">{data.smc_analysis.bias_ar || '—'}</div>
                   {data.smc_analysis.summary_ar && (
-                    <div className="text-stitch-muted mt-1">{data.smc_analysis.summary_ar}</div>
+                    <div className="text-muted-foreground mt-1">{data.smc_analysis.summary_ar}</div>
                   )}
                 </div>
               )}
@@ -991,8 +991,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {/* SMC / Fusion / Candlestick (للخبراء) */}
               {data?.smc_analysis && (
                 <div className="text-xs">
-                  <div className="font-bold mb-1 text-stitch-muted">تحليل SMC:</div>
-                  <div className="text-stitch-on-surface">{data.smc_analysis.bias_ar || '—'}</div>
+                  <div className="font-bold mb-1 text-muted-foreground">تحليل SMC:</div>
+                  <div className="text-foreground">{data.smc_analysis.bias_ar || '—'}</div>
                 </div>
               )}
             </div>
@@ -1012,8 +1012,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             <div className="flex items-center gap-2">
               <span className="text-xl">🚑</span>
               <div>
-                <p className="text-sm font-bold text-stitch-on-surface">هل أنت عالق في هذا السهم بخسارة؟</p>
-                <p className="text-[11px] text-stitch-muted">افتح عيادة الإنقاذ المالي للتشخيص وخطة التعافي</p>
+                <p className="text-sm font-bold text-foreground">هل أنت عالق في هذا السهم بخسارة؟</p>
+                <p className="text-[11px] text-muted-foreground">افتح عيادة الإنقاذ المالي للتشخيص وخطة التعافي</p>
               </div>
             </div>
             <span className="text-xs font-semibold text-primary group-hover:translate-x-[-4px] transition-transform">
@@ -1037,9 +1037,9 @@ function PlanLevel({ label, value, currencyLabel, color }: {
   color: string;
 }) {
   return (
-    <div className="flex flex-col items-center p-2 rounded-lg stitch-glass border border-border/60/50 dark:bg-surface-container dark:border-outline-variant/30">
-      <span className="text-[9px] text-stitch-muted dark:text-on-surface-variant">{label}</span>
-      <span className={cn('stitch-num font-bold text-sm tabular-nums dark:font-financial', color)}>
+    <div className="flex flex-col items-center p-2 rounded-lg bg-card border border-border border border-border/60/50 dark:bg-surface-container dark:border-outline-variant/30">
+      <span className="text-[9px] text-muted-foreground dark:text-on-surface-variant">{label}</span>
+      <span className={cn('font-mono font-bold text-sm tabular-nums dark:font-financial', color)}>
         {value !== null && value !== undefined && value > 0
           ? `${(value ?? 0).toFixed(2)} ${currencyLabel}`
           : '— بيانات غير متاحة'}
@@ -1063,10 +1063,10 @@ function ReasonCard({ label, value, positive, negative }: {
         ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 dark:bg-error-container/20 dark:border-error-container/40'
         : 'bg-secondary/30 border-border/60 dark:bg-surface-container dark:border-outline-variant/30'
     )}>
-      <div className="text-[9px] text-stitch-muted mb-0.5 dark:text-on-surface-variant">{label}</div>
+      <div className="text-[9px] text-muted-foreground mb-0.5 dark:text-on-surface-variant">{label}</div>
       <div className={cn(
         'text-[11px] font-bold',
-        positive ? 'text-stitch-primary dark:text-stitch-primary dark:text-primary' : negative ? 'text-rose-700 dark:text-rose-300 dark:text-error' : 'text-stitch-on-surface dark:text-on-surface'
+        positive ? 'text-primary dark:text-primary dark:text-primary' : negative ? 'text-rose-700 dark:text-rose-300 dark:text-error' : 'text-foreground dark:text-on-surface'
       )}>
         {value}
       </div>
@@ -1077,8 +1077,8 @@ function ReasonCard({ label, value, positive, negative }: {
 function DetailItem({ label, value }: { label: string; value: string | undefined | null }) {
   return (
     <div className="flex justify-between p-1.5 rounded bg-secondary/30 border border-border/60/50 dark:bg-surface-container dark:border-outline-variant/30">
-      <span className="text-stitch-muted dark:text-on-surface-variant">{label}:</span>
-      <span className="stitch-num font-bold text-stitch-on-surface tabular-nums dark:font-financial dark:text-on-surface">{value || '—'}</span>
+      <span className="text-muted-foreground dark:text-on-surface-variant">{label}:</span>
+      <span className="font-mono font-bold text-foreground tabular-nums dark:font-financial dark:text-on-surface">{value || '—'}</span>
     </div>
   );
 }
@@ -1106,7 +1106,7 @@ function WhoIsBuyingPanel({ buyPct, sellPct, whoIsBuying, accumulation }: {
   if (institutionalPct !== null) {
     if (institutionalPct >= 70) {
       statusBadge = 'تجميع مؤسسي قوي';
-      statusColor = 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary';
+      statusColor = 'bg-emerald-500/10 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary';
     } else if (institutionalPct >= 55) {
       statusBadge = 'تجميع مؤسسي هادئ';
       statusColor = 'bg-teal-100 text-teal-700 border-teal-300 dark:bg-teal-950/40 dark:text-teal-300';
@@ -1123,10 +1123,10 @@ function WhoIsBuyingPanel({ buyPct, sellPct, whoIsBuying, accumulation }: {
   }
 
   return (
-    <div className="rounded-xl border border-border/60 stitch-glass p-3">
+    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <Building2 className="w-4 h-4 text-stitch-primary" />
+          <Building2 className="w-4 h-4 text-primary" />
           <span className="text-xs font-bold">من يشتري؟ (مؤسسات vs أفراد)</span>
         </div>
         {statusBadge && (
@@ -1140,41 +1140,41 @@ function WhoIsBuyingPanel({ buyPct, sellPct, whoIsBuying, accumulation }: {
       {institutionalPct !== null && retailPct !== null ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-[10px]">
-            <Building2 className="w-3 h-3 text-stitch-primary" />
-            <span className="text-stitch-muted">مؤسسات</span>
+            <Building2 className="w-3 h-3 text-primary" />
+            <span className="text-muted-foreground">مؤسسات</span>
             <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden">
               <div
                 className="h-full bg-emerald-500 transition-all"
                 style={{ width: `${institutionalPct}%` }}
               />
             </div>
-            <span className="stitch-num font-bold text-stitch-primary dark:text-stitch-primary">
+            <span className="font-mono font-bold text-primary dark:text-primary">
               {institutionalPct.toFixed(0)}%
             </span>
           </div>
           <div className="flex items-center gap-2 text-[10px]">
             <Users className="w-3 h-3 text-amber-500" />
-            <span className="text-stitch-muted">أفراد</span>
+            <span className="text-muted-foreground">أفراد</span>
             <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden">
               <div
                 className="h-full bg-amber-500 transition-all"
                 style={{ width: `${retailPct}%` }}
               />
             </div>
-            <span className="stitch-num font-bold text-amber-700 dark:text-amber-300">
+            <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
               {retailPct.toFixed(0)}%
             </span>
           </div>
         </div>
       ) : (
-        <div className="text-xs text-stitch-muted text-center py-2">
+        <div className="text-xs text-muted-foreground text-center py-2">
           — بيانات تدفق المؤسسات غير متاحة لهذا السهم
         </div>
       )}
       
       {/* من يشتري؟ من prediction.who_is_buying */}
       {whoIsBuying && (
-        <div className="mt-2 pt-2 border-t border-border/60/50 text-[10px] text-stitch-muted">
+        <div className="mt-2 pt-2 border-t border-border/60/50 text-[10px] text-muted-foreground">
           <strong>تحليل Python:</strong> {whoIsBuying}
         </div>
       )}
@@ -1200,10 +1200,10 @@ function MoneyFlowPanel({ netFlowEgp, buyValueM, sellValueM, moneyFlow, volumeRa
   if (netFlowM !== null) {
     if (netFlowM > 5) {
       flowSignal = 'سيولة ذكية فائقة الدخول';
-      flowColor = 'text-stitch-primary dark:text-stitch-primary';
+      flowColor = 'text-primary dark:text-primary';
     } else if (netFlowM > 0) {
       flowSignal = 'سيولة داخلة';
-      flowColor = 'text-stitch-primary dark:text-stitch-primary';
+      flowColor = 'text-primary dark:text-primary';
     } else if (netFlowM > -5) {
       flowSignal = 'تسرب سيولة خارجة';
       flowColor = 'text-amber-600 dark:text-amber-400';
@@ -1214,7 +1214,7 @@ function MoneyFlowPanel({ netFlowEgp, buyValueM, sellValueM, moneyFlow, volumeRa
   }
 
   return (
-    <div className="rounded-xl border border-border/60 stitch-glass p-3">
+    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Waves className="w-4 h-4 text-blue-600" />
@@ -1229,22 +1229,22 @@ function MoneyFlowPanel({ netFlowEgp, buyValueM, sellValueM, moneyFlow, volumeRa
       
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
         <div className="rounded-lg bg-secondary/30 p-2 border border-border/60/50">
-          <div className="text-[9px] text-stitch-muted">التدفق الصافي</div>
-          <div className={cn('stitch-num font-bold', isPositive ? 'text-stitch-primary dark:text-stitch-primary' : 'text-rose-600 dark:text-rose-400')}>
+          <div className="text-[9px] text-muted-foreground">التدفق الصافي</div>
+          <div className={cn('font-mono font-bold', isPositive ? 'text-primary dark:text-primary' : 'text-rose-600 dark:text-rose-400')}>
             {netFlowM !== null
               ? `${isPositive ? '+' : ''}${netFlowM.toFixed(2)}M ج.م`
               : '— بيانات غير متاحة'}
           </div>
         </div>
         <div className="rounded-lg bg-secondary/30 p-2 border border-border/60/50">
-          <div className="text-[9px] text-stitch-muted">شراء (مليون)</div>
-          <div className="stitch-num font-bold text-stitch-primary dark:text-stitch-primary">
+          <div className="text-[9px] text-muted-foreground">شراء (مليون)</div>
+          <div className="font-mono font-bold text-primary dark:text-primary">
             {buyValueM !== null ? `${buyValueM.toFixed(2)}M` : '—'}
           </div>
         </div>
         <div className="rounded-lg bg-secondary/30 p-2 border border-border/60/50">
-          <div className="text-[9px] text-stitch-muted">بيع (مليون)</div>
-          <div className="stitch-num font-bold text-rose-600 dark:text-rose-400">
+          <div className="text-[9px] text-muted-foreground">بيع (مليون)</div>
+          <div className="font-mono font-bold text-rose-600 dark:text-rose-400">
             {sellValueM !== null ? `${sellValueM.toFixed(2)}M` : '—'}
           </div>
         </div>
@@ -1252,14 +1252,14 @@ function MoneyFlowPanel({ netFlowEgp, buyValueM, sellValueM, moneyFlow, volumeRa
       
       <div className="mt-2 flex items-center gap-3 text-[10px]">
         {moneyFlow && (
-          <span className="text-stitch-muted">
+          <span className="text-muted-foreground">
             <strong>الحالة:</strong> {moneyFlow}
           </span>
         )}
         {volumeRatio !== null && (
-          <span className="text-stitch-muted">
+          <span className="text-muted-foreground">
             <strong>نسبة الحجم (10d/20d):</strong>{' '}
-            <span className={cn('stitch-num font-bold', volumeRatio > 1.5 ? 'text-stitch-primary' : volumeRatio < 0.7 ? 'text-rose-600' : 'text-stitch-on-surface')}>
+            <span className={cn('font-mono font-bold', volumeRatio > 1.5 ? 'text-primary' : volumeRatio < 0.7 ? 'text-rose-600' : 'text-foreground')}>
               {volumeRatio.toFixed(2)}×
             </span>
           </span>
@@ -1304,10 +1304,10 @@ function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, 
   const hasBullish = bullishSignals.length > 0;
   
   return (
-    <div className="rounded-xl border border-border/60 stitch-glass p-3">
+    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-stitch-primary" />
+          <ShieldCheck className="w-4 h-4 text-primary" />
           <span className="text-xs font-bold">كشف المصائد والصعود الوهمي</span>
         </div>
         <Badge
@@ -1315,7 +1315,7 @@ function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, 
           className={cn(
             'text-[9px]',
             isClean
-              ? 'bg-emerald-500/10 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary'
+              ? 'bg-emerald-500/10 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary'
               : 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300'
           )}
         >
@@ -1324,7 +1324,7 @@ function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, 
       </div>
       
       {isClean ? (
-        <div className="text-xs text-stitch-primary dark:text-stitch-primary text-center py-2">
+        <div className="text-xs text-primary dark:text-primary text-center py-2">
           لا توجد مصائد أو أنماط سلبية مكتشفة في السهم حالياً
         </div>
       ) : (
@@ -1340,10 +1340,10 @@ function TrapDetectorPanel({ candlestickPatterns, positionWarning, signalFinal, 
       
       {hasBullish && (
         <div className="mt-2 pt-2 border-t border-border/60/50">
-          <div className="text-[10px] text-stitch-muted mb-1">إشارات إيجابية:</div>
+          <div className="text-[10px] text-muted-foreground mb-1">إشارات إيجابية:</div>
           <div className="flex flex-wrap gap-1">
             {bullishSignals.map((sig, i) => (
-              <Badge key={i} variant="outline" className="text-[9px] bg-emerald-50 text-stitch-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-stitch-primary">
+              <Badge key={i} variant="outline" className="text-[9px] bg-emerald-50 text-primary border-emerald-500/30 dark:bg-emerald-600/60/40 dark:text-primary">
                 {sig}
               </Badge>
             ))}
@@ -1388,18 +1388,18 @@ function SMCKeyLevelsPanel({ support, resistance, farSupport, farResistance, piv
   const levels = [
     { label: 'مقاومة بعيدة (R2)', value: farResistance, color: 'text-rose-600 dark:text-rose-400' },
     { label: 'مقاومة (R1)', value: resistance, color: 'text-rose-600 dark:text-rose-400' },
-    { label: 'الهدف 2', value: target2, color: 'text-stitch-primary dark:text-stitch-primary' },
-    { label: 'الهدف 1', value: target1, color: 'text-stitch-primary dark:text-stitch-primary' },
+    { label: 'الهدف 2', value: target2, color: 'text-primary dark:text-primary' },
+    { label: 'الهدف 1', value: target1, color: 'text-primary dark:text-primary' },
     { label: 'نقطة الدخول', value: entry, color: 'text-blue-600 dark:text-blue-400' },
-    { label: 'السعر الحالي', value: livePrice > 0 ? livePrice : null, color: 'text-stitch-on-surface font-black' },
-    { label: 'نقطة Pivot', value: pivot, color: 'text-stitch-muted' },
+    { label: 'السعر الحالي', value: livePrice > 0 ? livePrice : null, color: 'text-foreground font-black' },
+    { label: 'نقطة Pivot', value: pivot, color: 'text-muted-foreground' },
     { label: 'وقف الخسارة', value: stop, color: 'text-rose-600 dark:text-rose-400' },
-    { label: 'دعم (S1)', value: support, color: 'text-stitch-primary dark:text-stitch-primary' },
-    { label: 'دعم بعيد (S2)', value: farSupport, color: 'text-stitch-primary dark:text-stitch-primary' },
+    { label: 'دعم (S1)', value: support, color: 'text-primary dark:text-primary' },
+    { label: 'دعم بعيد (S2)', value: farSupport, color: 'text-primary dark:text-primary' },
   ];
 
   return (
-    <div className="rounded-xl border border-border/60 stitch-glass p-3">
+    <div className="rounded-xl border border-border/60 bg-card border border-border p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Layers className="w-4 h-4 text-purple-600" />
@@ -1425,12 +1425,12 @@ function SMCKeyLevelsPanel({ support, resistance, farSupport, farResistance, piv
               )}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-stitch-muted">{lvl.label}</span>
+                <span className="text-[10px] text-muted-foreground">{lvl.label}</span>
                 {lvl.value !== null && (
                   <button
                     type="button"
                     onClick={() => handleCopy(fmt(lvl.value))}
-                    className="text-stitch-muted hover:text-stitch-on-surface"
+                    className="text-muted-foreground hover:text-foreground"
                     title="نسخ القيمة"
                   >
                     <Copy className="w-2.5 h-2.5" />
@@ -1438,11 +1438,11 @@ function SMCKeyLevelsPanel({ support, resistance, farSupport, farResistance, piv
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className={cn('stitch-num font-bold', lvl.color)}>
+                <span className={cn('font-mono font-bold', lvl.color)}>
                   {fmt(lvl.value)} {lvl.value !== null && currencyLabel}
                 </span>
                 {pct && (
-                  <span className="text-[9px] text-stitch-muted">{pct}</span>
+                  <span className="text-[9px] text-muted-foreground">{pct}</span>
                 )}
               </div>
             </div>
@@ -1455,16 +1455,16 @@ function SMCKeyLevelsPanel({ support, resistance, farSupport, farResistance, piv
         <div className="mt-2 pt-2 border-t border-border/60/50 grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px]">
           {smcAnalysis.nearest_ob && (
             <div className="rounded bg-secondary/30 p-1.5">
-              <div className="text-stitch-muted">أقرب Order Block:</div>
-              <div className="stitch-num font-bold">
+              <div className="text-muted-foreground">أقرب Order Block:</div>
+              <div className="font-mono font-bold">
                 {smcAnalysis.nearest_ob.type} @ {smcAnalysis.nearest_ob.price.toFixed(2)} ({smcAnalysis.nearest_ob.quality})
               </div>
             </div>
           )}
           {smcAnalysis.nearest_fvg && (
             <div className="rounded bg-secondary/30 p-1.5">
-              <div className="text-stitch-muted">أقرب FVG (Fair Value Gap):</div>
-              <div className="stitch-num font-bold">
+              <div className="text-muted-foreground">أقرب FVG (Fair Value Gap):</div>
+              <div className="font-mono font-bold">
                 {smcAnalysis.nearest_fvg.type}: {smcAnalysis.nearest_fvg.bottom.toFixed(2)} → {smcAnalysis.nearest_fvg.top.toFixed(2)}
               </div>
             </div>
