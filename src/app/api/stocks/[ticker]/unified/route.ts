@@ -66,5 +66,32 @@ export async function GET(
     );
   }
 
+  // PULL FROM PYTHON BACKEND (SINGLE SOURCE OF TRUTH FOR STATE MACHINE)
+  const pyBase = (process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010').replace('localhost', '127.0.0.1');
+  try {
+    const pyRes = await fetch(`${pyBase}/api/stocks/${ticker}/unified`, {
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' },
+    });
+    if (pyRes.ok) {
+      const pyJson = await pyRes.json();
+      if (pyJson && pyJson.data) {
+        return NextResponse.json({
+          ...data,
+          ...pyJson.data,
+          has_active_trade: pyJson.data.has_active_trade,
+          trade_setup: pyJson.data.trade_setup,
+          observation_status: pyJson.data.observation_status,
+          observation_reason: pyJson.data.observation_reason,
+          stock_info: pyJson.data.stock_info,
+          liquidity_bucket: pyJson.data.liquidity_bucket,
+          liquidity_reason: pyJson.data.liquidity_reason,
+        });
+      }
+    }
+  } catch (pyErr) {
+    console.warn(`[unified route] Python backend offline for ${ticker}, using local fallback:`, pyErr);
+  }
+
   return NextResponse.json(data);
 }

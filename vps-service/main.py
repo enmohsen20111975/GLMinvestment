@@ -143,6 +143,14 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Note on unified_stock_router: {e}")
 
+# Mount Conviction Dossier Router
+try:
+    from api.conviction_dossier_routes import router as dossier_router
+    app.include_router(dossier_router)
+    logger.info("✅ Mounted dossier_router")
+except Exception as e:
+    logger.warning(f"⚠️ Note on dossier_router: {e}")
+
 # Start MarketScheduler in background thread
 _scheduler_thread = None
 _egypt_scheduler_thread = None

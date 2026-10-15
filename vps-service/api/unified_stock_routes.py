@@ -76,7 +76,7 @@ def get_unified_stock(ticker: str) -> Dict[str, Any]:
         # 1. Stock metadata.
         stock_rows = ro_query('stocks.db',
             "SELECT ticker, name, name_ar, market, sector, current_price, change_percent, "
-            "ma_50, ma_200, rsi, support, resistance, dividend_yield, pe_ratio, pb_ratio, is_egx30 "
+            "ma_50, ma_200, rsi, support, resistance, dividend_yield, pe_ratio, pb_ratio, is_egx30, low_52w, high_52w "
             "FROM stocks WHERE ticker = ? LIMIT 1", (ticker,))
         stock_info = dict(stock_rows[0]) if stock_rows else None
         if not stock_info:
@@ -84,54 +84,50 @@ def get_unified_stock(ticker: str) -> Dict[str, Any]:
 
         market = stock_info.get('market', 'EGX')
 
-        # 2. Prediction (latest BUY signal from aiPrediction — compute R/R in Python).
+        # 2. Prediction (latest BUY signal from predictions table or aiPrediction — compute R/R in Python).
         pred_rows = ro_query('predictions.db',
-            "SELECT stock_symbol, stock_name_ar, signal_type, confidence, maestro_score, "
-            "entry_price, target_price, stop_loss, risk_reward, market "
-            "FROM aiPrediction WHERE stock_symbol = ? AND signal_type = 'BUY' "
-            "ORDER BY created_at DESC LIMIT 1", (ticker,))
+            "SELECT ticker, signal, signal_type, entry_price, target_price, stop_loss, risk_reward, market "
+            "FROM predictions WHERE ticker = ? AND (signal LIKE '%BUY%' OR signal_type = 'BUY') "
+            "ORDER BY id DESC LIMIT 1", (ticker,))
+        if not pred_rows:
+            pred_rows = ro_query('predictions.db',
+                "SELECT stock_symbol AS ticker, signal_type AS signal, signal_type, entry_price, target_price, stop_loss, market "
+                "FROM aiPrediction WHERE stock_symbol = ? AND signal_type = 'BUY' "
+                "ORDER BY id DESC LIMIT 1", (ticker,))
         pred = dict(pred_rows[0]) if pred_rows else {}
 
         # 3. Whale net flow.
         whale_net_flow = _compute_whale_net_flow(ticker, market)
 
         # 4. Risk reward.
-        rr = _to_float(pred.get('risk_reward'))
-        if rr == 0:
-            entry = _to_float(pred.get('entry_price')) or _to_float(stock_info.get('current_price'))
-            target = _to_float(pred.get('target_price'))
-            stop = _to_float(pred.get('stop_loss'))
-            if entry > 0 and target > entry and stop < entry:
-                rr = round((target - entry) / (entry - stop), 2)
-
-        # 5. Risk reward.
         current_price = _to_float(stock_info.get('current_price'))
         rr = _to_float(pred.get('risk_reward'))
-        if rr == 0:
-            entry = _to_float(pred.get('entry_price')) or current_price
-            target = _to_float(pred.get('target_price'))
-            stop = _to_float(pred.get('stop_loss'))
-            if entry > 0 and target > entry and stop < entry:
-                rr = round((target - entry) / (entry - stop), 2)
+        entry = _to_float(pred.get('entry_price')) or current_price
+        target = _to_float(pred.get('target_price'))
+        stop = _to_float(pred.get('stop_loss'))
+        if rr <= 0 and entry > 0 and target > entry and stop < entry:
+            rr = round((target - entry) / (entry - stop), 2)
 
-        # 6. Falling Knife check (Rule 78): breaking yearly low?
-        conn_fk = ro_connect('stocks.db')
-        yearly_low = 0.0
-        if conn_fk:
-            try:
-                yl = conn_fk.execute(
-                    "SELECT MIN(low) FROM stock_daily_prices WHERE ticker = ? AND market = ? AND low > 0",
-                    (ticker, market)
-                ).fetchone()
-                yearly_low = _to_float(yl[0]) if yl else 0.0
-            except Exception:
-                pass
-            conn_fk.close()
+        # 5. Falling Knife check (Rule 78): breaking yearly low?
+        yearly_low = _to_float(stock_info.get('low_52w'))
+        if yearly_low <= 0:
+            conn_fk = ro_connect('stocks.db')
+            if conn_fk:
+                try:
+                    yl = conn_fk.execute(
+                        "SELECT MIN(low) FROM stock_daily_prices WHERE ticker = ? AND market = ? AND low > 0",
+                        (ticker, market)
+                    ).fetchone()
+                    yearly_low = _to_float(yl[0]) if yl else 0.0
+                except Exception:
+                    pass
+                conn_fk.close()
         breaking_yearly_low = yearly_low > 0 and current_price < yearly_low
+        bearish_distribution = whale_net_flow < -2_000_000
         falling_knife = breaking_yearly_low
 
         # 7. State Machine: has_active_trade?
-        has_active_trade = (rr >= 1.5 and not falling_knife and bool(pred.get('signal_type')))
+        has_active_trade = (rr >= 1.5 and not falling_knife and bool(pred.get('signal') or pred.get('signal_type')))
 
         # 8. Canonical flow classification.
         try:
