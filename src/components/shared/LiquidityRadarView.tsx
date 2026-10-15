@@ -22,6 +22,7 @@ import {
   Layers, Gauge, ChevronDown,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
 
 // ============================================================================
 // Types — مطابقة 100% لـ API (liquidity_radar_v2.py)
@@ -142,6 +143,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   const storeMarket = useAppStore((s) => s.currentMarket);
   const market = (marketProp || storeMarket || 'EGX').toUpperCase();
 
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [data, setData] = useState<RadarResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -353,7 +355,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         ) : (
           <div className="space-y-3">
             {filteredStocks.map((stock) => (
-              <InstitutionalAssetCard key={stock.ticker} stock={stock} />
+              <InstitutionalAssetCard key={stock.ticker} stock={stock} onSelectTicker={setSelectedTicker} />
             ))}
             {allStocks.length > limit && (
               <button
@@ -366,6 +368,13 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
           </div>
         )}
       </div>
+
+      {/* ALPHA-UNIFIED: StockDetailSheet — يفتح عند النقر على أي سهم */}
+      <StockDetailSheet
+        ticker={selectedTicker}
+        stockData={null}
+        onClose={() => setSelectedTicker(null)}
+      />
     </div>
   );
 }
@@ -398,7 +407,7 @@ function MiniGauge({ label, value, suffix, trend, trendColor, color }: {
 // Institutional Asset Card — 4 columns (structural rebuild per Stitch _4)
 // ============================================================================
 
-function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
+function InstitutionalAssetCard({ stock, onSelectTicker }: { stock: RadarStock; onSelectTicker?: (ticker: string) => void }) {
   const whale = stock.whale;
   const regime = stock.market_regime;
   const defense = stock.entry_defense;
@@ -410,7 +419,10 @@ function InstitutionalAssetCard({ stock }: { stock: RadarStock }) {
   const netFlowPositive = (whale?.net_flow_egp ?? 0) >= 0;
 
   return (
-    <div className="stitch-glass p-3 hover:border-emerald-500/20 transition-colors flex flex-col xl:grid xl:grid-cols-12 gap-3 items-stretch">
+    <div 
+      onClick={() => onSelectTicker(stock.ticker)}
+      className="stitch-glass p-3 hover:border-emerald-500/20 transition-colors flex flex-col xl:grid xl:grid-cols-12 gap-3 items-stretch cursor-pointer"
+    >
 
       {/* ─── Col 1: Whale Volume & Flow + Dual Color Flow Bar ─── */}
       <div className="xl:col-span-3 flex flex-col justify-between bg-background/50 p-2.5 rounded-lg">
