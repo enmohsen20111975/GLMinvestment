@@ -703,6 +703,74 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
         </CardContent>
       </Card>
 
+      {/* ALPHA-3: TradePlanCard — خطة الصفقة الكاملة (Rule 78/79: Falling Knife Gate) */}
+      {picks.length > 0 && picks[0] && (() => {
+        const top = picks[0];
+        // Rule 78/79: لو السهم سكين ساقط → إخفاء خطة الصفقة + عرض تحذير
+        const isFallingKnife = top.signal_type === 'SELL' || top.signal_type === 'STRONG_SELL'
+          || (top.targets_available === false);
+        if (isFallingKnife) {
+          return (
+            <Card className="bg-rose-500/10 border border-rose-500/30" key="falling-knife-warning">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-rose-500">
+                      تحذير مؤسسي: {top.ticker} — لا أهداف صاعدة متاحة
+                    </p>
+                    <p className="text-xs text-rose-500/80 mt-1">
+                      السهم في مرحلة هبوط حاد. تم تعطيل خطة الصفقة بناءً على Rule 78/79.
+                      يُمنع الشراء حتى تأكيد تكون قاع تجميع مؤسسي.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        // خطة الصفقة الكاملة (TradePlanCard)
+        return (
+          <Card className="bg-card border border-border" key="trade-plan-card">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-bold">خطة الصفقة — {top.ticker}</span>
+                <Badge variant="secondary" className="text-[10px]">{top.signal_ar || top.signal_type || '—'}</Badge>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block">سعر الدخول</span>
+                  <span className="font-mono tabular-nums font-bold text-emerald-600">
+                    {top.entry_price != null ? Number(top.entry_price).toFixed(2) : '—'}
+                  </span>
+                </div>
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block">وقف الخسارة</span>
+                  <span className="font-mono tabular-nums font-bold text-rose-500">
+                    {top.stop_loss != null ? Number(top.stop_loss).toFixed(2) : '—'}
+                  </span>
+                </div>
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block">الهدف</span>
+                  <span className="font-mono tabular-nums font-bold text-teal-500">
+                    {top.target_price != null ? Number(top.target_price).toFixed(2) : '—'}
+                  </span>
+                </div>
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block">نسبة R/R</span>
+                  <span className="font-mono tabular-nums font-bold text-lg text-emerald-600">
+                    {top.risk_reward != null && Number(top.risk_reward) > 0
+                      ? `1:${Number(top.risk_reward).toFixed(1)}`
+                      : '—'}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Info note */}
       <Card className="bg-muted/30" key="prediction-info-note">
         <CardContent className="p-3 text-xs text-muted-foreground text-center">
