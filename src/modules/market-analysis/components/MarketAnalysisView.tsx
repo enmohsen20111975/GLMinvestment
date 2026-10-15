@@ -1,3 +1,4 @@
+import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -92,6 +93,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
   // FOCUS-AUDIT-FIX (2026-10-01): default tab بقى 'predictions' (التاب الموحّد)
   // بدل 'balanced' (اللي كان تاب منفصل). الـ 3 تابات القديمة (tracking + executive-report
   // + balanced) ادمجوا في تاب واحد بـ 3 sub-views.
+  const [selectedSheetTicker, setSelectedSheetTicker] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('predictions');
   const { currentMarket, setCurrentMarket } = useAppStore();
   const t = useTranslation();
@@ -368,7 +370,13 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         </CardContent>
       </Card>
       </div>
-    </div>
+    
+      <StockDetailSheet
+        ticker={selectedSheetTicker}
+        stockData={null}
+        onClose={() => setSelectedSheetTicker(null)}
+      />
+</div>
   );
 }
 

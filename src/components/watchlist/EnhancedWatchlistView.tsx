@@ -51,6 +51,7 @@ import { toast } from 'sonner';
 import type { EnhancedWatchlistItem } from '@/types';
 import { WatchlistIntelligenceSection } from '@/components/intelligence/WatchlistIntelligenceSection';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
+import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
 
 // ==================== TYPES ====================
 
@@ -104,6 +105,7 @@ function abbreviateNumber(value: number): string {
 
 function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
   const t = useTranslation();
+  const [selectedSheetTicker, setSelectedSheetTicker] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<StockSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -1031,6 +1033,7 @@ export function EnhancedWatchlistView() {
             className="h-8 w-8 text-primary hover:bg-primary/10"
             onClick={(e) => {
               e.stopPropagation();
+              setSelectedSheetTicker(item.ticker);
               setDealAdvisorPrefill({
                 ticker: item.ticker,
                 entryPrice: item.purchase_price ?? null,
@@ -1357,6 +1360,12 @@ export function EnhancedWatchlistView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    
+      <StockDetailSheet
+        ticker={selectedSheetTicker}
+        stockData={null}
+        onClose={() => setSelectedSheetTicker(null)}
+      />
+</div>
   );
 }

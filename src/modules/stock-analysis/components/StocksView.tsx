@@ -5,6 +5,7 @@ import type { Stock } from '@/types';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { Header } from '@/components/layout/Header';
 import { StockDetail } from './StockDetail';
+import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
 import { ShareButton } from '@/components/share/ShareButton';
 import { TreasuryBondsView } from './TreasuryBondsView';
 import { cn, safeNum } from '@/lib/utils';
@@ -1196,9 +1197,10 @@ export function StocksView() {
   // ── Handlers ──
   const handleRowClick = useCallback(
     (ticker: string) => {
-      loadStockDetail(ticker);
+      // ALPHA-UNIFIED: open StockDetailSheet (overlay, no new screen)
+      setSelectedSheetTicker(ticker);
     },
-    [loadStockDetail]
+    []
   );
 
   const resetPage = useCallback(() => setPage(1), []);
