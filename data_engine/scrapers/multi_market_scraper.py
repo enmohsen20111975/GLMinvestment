@@ -62,6 +62,31 @@ SCRAPERS: Dict[str, Dict[str, Any]] = {
         'fallback': None,
         'timeout': 120,
     },
+    # SOSO-GULF (2026-10-15): أسواق الخليج عبر REST API (بدون متصفح)
+    'TADAWUL': {
+        'name': 'TADAWUL (Saudi Arabia)',
+        'primary': 'tradingview_rest.py',
+        'fallback': None,
+        'timeout': 120,
+        'market_slug': 'saudi',
+        'market_ar': 'السعودية',
+    },
+    'KSE': {
+        'name': 'KSE (Kuwait)',
+        'primary': 'tradingview_rest.py',
+        'fallback': None,
+        'timeout': 120,
+        'market_slug': 'kuwait',
+        'market_ar': 'الكويت',
+    },
+    'QSE': {
+        'name': 'QSE (Qatar)',
+        'primary': 'tradingview_rest.py',
+        'fallback': None,
+        'timeout': 120,
+        'market_slug': 'qatar',
+        'market_ar': 'قطر',
+    },
 }
 
 ALL_MARKETS = list(SCRAPERS.keys())
