@@ -2543,9 +2543,17 @@ function HeaderCard({
 
 export function SpecialistAnalysisView() {
   const t = useTranslation();
-  const { stocks, currentMarket, loadStocks } = useAppStore();
-  const [ticker, setTicker] = useState('');
+  const { stocks, currentMarket, loadStocks, selectedTicker: storeTicker } = useAppStore();
+  // FIX-MOHSEN-5: read selectedTicker from global store (when user clicks a stock
+  // in StocksView/LiquidityRadar then navigates to #specialist-analysis, the
+  // ticker should auto-populate instead of showing an empty input).
+  const [ticker, setTicker] = useState(storeTicker || '');
   const [loading, setLoading] = useState(false);
+
+  // Sync ticker when store selectedTicker changes
+  useEffect(() => {
+    if (storeTicker) setTicker(storeTicker);
+  }, [storeTicker]);
 
   // PRIMARY: maker-radar/stock (always works — reads from stocks.db)
   const [radarData, setRadarData] = useState<MakerRadarStock | null>(null);

@@ -2306,6 +2306,16 @@ export function StocksView() {
         )}
         </div>{/* end SCR-002 glass-panel */}
       </main>
+
+      {/* FIX-MOHSEN-1: StockDetailSheet overlay — was imported but never rendered.
+          When a row is clicked (handleRowClick → setSelectedSheetTicker),
+          this sheet opens with full stock details + TV chart + sparkline. */}
+      {selectedSheetTicker && (
+        <StockDetailSheet
+          ticker={selectedSheetTicker}
+          onClose={() => setSelectedSheetTicker(null)}
+        />
+      )}
     </div>
   );
 }

@@ -51,7 +51,7 @@ export function StockIcon({
     return (
       <div 
         className={cn(
-          'relative flex items-center justify-center rounded-lg bg-muted/60 font-bold text-foreground border border-border/40 flex-shrink-0 text-xs',
+          'relative flex items-center justify-center rounded-lg bg-[#182030] font-bold text-stitch-on-surface border border-white/[0.06] flex-shrink-0 text-xs',
           sizeClass,
           className
         )}
@@ -66,7 +66,7 @@ export function StockIcon({
   return (
     <div 
       className={cn(
-        'relative flex items-center justify-center rounded-lg bg-white dark:bg-muted/20 border border-border/30 overflow-hidden flex-shrink-0',
+        'relative flex items-center justify-center rounded-lg bg-[#182030] border border-white/[0.06] overflow-hidden flex-shrink-0',
         sizeClass,
         className
       )}
@@ -102,7 +102,7 @@ export function StockIconMini({
     return (
       <div 
         className={cn(
-          'w-6 h-6 rounded-full flex items-center justify-center bg-teal-500/10 text-teal-700 dark:text-teal-300 text-[10px] font-bold border border-teal-500/20 flex-shrink-0',
+          'w-6 h-6 rounded-full flex items-center justify-center bg-teal-500/10 text-teal-400 text-[10px] font-bold border border-teal-500/20 flex-shrink-0',
           className
         )}
         title={name ? `${cleanTicker} - ${name}` : cleanTicker}
@@ -115,7 +115,7 @@ export function StockIconMini({
   return (
     <div 
       className={cn(
-        'relative w-6 h-6 rounded-full flex items-center justify-center bg-white dark:bg-muted/30 overflow-hidden border border-border/40 flex-shrink-0 p-0.5',
+        'relative w-6 h-6 rounded-full flex items-center justify-center bg-[#182030] overflow-hidden border border-white/[0.06] flex-shrink-0 p-0.5',
         className
       )}
       title={name ? `${cleanTicker} - ${name}` : cleanTicker}
