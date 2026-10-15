@@ -544,6 +544,16 @@ interface StockScreenerAdvancedProps {
   initialMarket?: string;
 }
 
+
+function formatClientError(err: string | null): string {
+  if (!err) return '';
+  const lower = err.toLowerCase();
+  if (lower.includes('python') || lower.includes('500') || lower.includes('502') || lower.includes('backend') || lower.includes('failed')) {
+    return 'جاري تحديث بيانات الأسهم من مركز البيانات... يرجى المحاولة بعد لحظات';
+  }
+  return err;
+}
+
 export function StockScreenerAdvanced({ initialTab = 'advanced', initialMarket }: StockScreenerAdvancedProps) {
   const t = useTranslation();
   const [tab, setTab] = useState<'advanced' | 'top-performers'>(initialTab);
@@ -2097,7 +2107,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         ) : error ? (
           <div className="p-8 text-center text-rose-400">
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
-            {error}
+            {formatClientError(error)}
             <div className="mt-3">
               <Button variant="outline" size="sm" onClick={fetchScreener} className="gap-1.5">
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -2525,7 +2535,7 @@ function TopPerformersTab() {
         ) : error ? (
           <div className="p-8 text-center text-rose-400">
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
-            {error}
+            {formatClientError(error)}
             <div className="mt-3">
               <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
                 <RefreshCw className="w-3.5 h-3.5" />

@@ -2766,7 +2766,7 @@ export function SpecialistAnalysisView() {
             <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-red-700 dark:text-red-400 text-sm">تعذّر تحميل بيانات السهم</p>
-              <p className="text-xs text-red-600 dark:text-red-500 mt-1">{error}</p>
+              <p className="text-xs text-red-600 dark:text-red-500 mt-1">{error.includes('maker-radar') || error.includes('API') || error.includes('fetch') ? 'جاري تحديث المؤشرات المالية لهذا السهم من مزود البيانات. يرجى اختيار سهم آخر أو المحاولة بعد قليل.' : error}</p>
             </div>
           </div>
         </Card>
