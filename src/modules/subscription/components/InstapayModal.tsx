@@ -300,6 +300,18 @@ export function InstapayModal({ open, onOpenChange, plan }: InstapayModalProps) 
                 </>
               )}
             </Button>
+
+            {/* WhatsApp — send receipt instantly */}
+            <a
+              href={`https://wa.me/201000000000?text=${encodeURIComponent(
+                `مرحباً، أريد تفعيل اشتراك ${plan.name_ar}\nحساب إنستاباي: ${instapayAccount}\nالمبلغ: ${plan.price} ${plan.currency}\nالبريد: ${session?.user?.email || ''}`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg transition-colors text-sm mt-2"
+            >
+              📱 أرسل إيصال التحويل على واتساب للتفعيل الفوري
+            </a>
           </form>
         )}
       </DialogContent>

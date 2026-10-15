@@ -56,6 +56,7 @@ interface StockData {
   change_value?: number;
   volume?: number;
   market_cap?: string;
+  sharia_compliant?: boolean;
   signal?: string;
   master_score?: number;
   entry_price?: number | null;

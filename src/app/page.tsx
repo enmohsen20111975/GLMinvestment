@@ -802,63 +802,33 @@ function AppShell() {
 
   const isChartView = currentView === 'trading-chart' || currentView === 'screener';
 
-  // SEC-AUTH-GATE: لو مش مسجل → نعرض شاشة تسجيل الدخول فقط (مفيش وصول للمنصة)
-  // SEC-DEV-LOGIN (2026-09-30): لو في ?dev=1 → نعرض DevLoginForm (للسيرفر التجريبي)
-  if (authStatus === 'unauthenticated') {
-    // فحص ?dev=1 في الـ URL
-    const isDevLogin = typeof window !== 'undefined'
-      && new URLSearchParams(window.location.search).get('dev') === '1';
+  // GUEST-PREVIEW: allow unauthenticated visitors to browse 7 public screens
+  // (dashboard, stocks, liquidity-radar, trading-chart, news, academy, rescue).
+  // Protected screens (portfolio, watchlist, admin, settings) still require login.
+  const GUEST_ALLOWED_VIEWS = new Set([
+    'dashboard', 'stocks', 'liquidity-radar', 'trading-chart',
+    'news', 'academy', 'rescue',
+  ]);
+  const isGuestPreview = authStatus === 'unauthenticated';
+  const isGuestAllowed = isGuestPreview && GUEST_ALLOWED_VIEWS.has(currentView);
 
-    if (isDevLogin) {
-      return <DevLoginForm />;
-    }
-
-    // BOT-SUBSCRIPTION-GATE (2026-10-01): لو في ?bot_link=TOKEN → اعرض AuthView
-    // مع بانر واضح يوضح إنه لازم يسجل قبل ما يقدر يربط البوت بحسابه.
-    const botLinkToken = typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('bot_link')
-      : null;
-    if (botLinkToken) {
-      return (
-        <div
-          className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/20 dark:via-background dark:to-background p-4 gap-4"
-          dir="rtl"
-        >
-          <div className="max-w-md w-full rounded-xl border border-primary/30 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
-            <h2 className="text-lg font-bold mb-1">ربط بوت تليجرام بحسابك</h2>
-            <p className="text-sm text-muted-foreground">
-              سجّل دخولك أو أنشئ حساب (تجربة 7 أيام مجاناً) لتأكيد ربط البوت بحسابك في الموقع.
-            </p>
-          </div>
-          <div className="w-full max-w-md">
-            <AuthView />
-          </div>
-        </div>
-      );
-    }
-
+  // If guest tries to access a protected screen → redirect to dashboard
+  if (isGuestPreview && !GUEST_ALLOWED_VIEWS.has(currentView)) {
+    // Show login prompt for protected screens
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background p-4 relative overflow-hidden"
+        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background p-4"
         dir="rtl"
       >
-        {/* Subtle emerald pattern overlay — adds texture without distraction
-            (Rule 29 NO-HYPE: alpha ≤ 0.04) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, hsl(var(--primary)) 1px, transparent 0)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div className="relative w-full max-w-md">
+        <div className="max-w-md w-full">
           <AuthView />
         </div>
       </div>
     );
   }
+
+  // GUEST-PREVIEW: if guest is on an allowed screen → render AppShell with preview banner
+  // (no auth wall for dashboard/stocks/liquidity-radar/trading-chart/news/academy/rescue)
 
   // لو الـ session لسه بيتحمّل → skeleton
   if (authStatus === 'loading') {
@@ -881,6 +851,20 @@ function AppShell() {
         <DbSchemaInit />
         <SessionSync />
         <UrlHashSync />
+        {/* GUEST-PREVIEW banner — shown when visitor is not logged in */}
+        {isGuestPreview && isGuestAllowed && (
+          <div className="bg-muted border-b border-border px-4 py-1.5 flex items-center justify-between text-xs">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              👁️ أنت في وضع المعاينة الحرة — تصفح الأسعار ورادار الحيتان بحرية
+            </span>
+            <button
+              onClick={() => useAppStore.getState().setCurrentView('auth')}
+              className="text-primary hover:text-foreground transition-colors font-semibold"
+            >
+              سجّل الآن ←
+            </button>
+          </div>
+        )}
         <RealtimeTicker />
         {/* BOT-SUBSCRIPTION-GATE (2026-10-01): لو في ?bot_link=TOKEN →
             اعرض Dialog تأكيد ربط البوت بحساب المستخدم المسجّل. */}

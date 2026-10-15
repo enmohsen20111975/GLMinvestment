@@ -130,7 +130,7 @@ interface WidgetDescriptor {
 }
 
 export function DashboardView() {
-  const { isLoading, loadDashboard, marketOverview, currentMarket, assetPreference, pinnedWidgets, stocks, v2Data } = useAppStore();
+  const { isLoading, loadDashboard, marketOverview, currentMarket, assetPreference, pinnedWidgets, stocks, v2Data, setCurrentView } = useAppStore();
   // FOCUS-5-TASKS — i18n Phase 2 Full (2026-10-01): translator hook.
   const t = useTranslation();
   const [exporting, setExporting] = useState(false);
@@ -385,6 +385,50 @@ export function DashboardView() {
           <DashboardSkeleton />
         ) : (
           <div id="dashboard-export" ref={dashboardRef} className="space-y-4 p-3 md:p-4" dir="rtl">
+
+            {/* ═══ Thndr/Sahm Themes — 4 quick-access cards ═══ */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <button
+                onClick={() => { setCurrentView('liquidity-radar'); }}
+                className="bg-card border border-border rounded-xl p-3 hover:border-emerald-500/30 transition-colors text-right group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">🐋</span>
+                  <span className="text-sm font-bold text-foreground">أسهم بتجمعها الحيتان</span>
+                </div>
+                <p className="text-xs text-muted-foreground">رادار السيولة مفلتر بالتجميع المؤسسي</p>
+              </button>
+              <button
+                onClick={() => { setCurrentView('stocks'); }}
+                className="bg-card border border-border rounded-xl p-3 hover:border-emerald-500/30 transition-colors text-right group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">💰</span>
+                  <span className="text-sm font-bold text-foreground">أسهم العوائد والكاش</span>
+                </div>
+                <p className="text-xs text-muted-foreground">توزيعات نقدية عالية وكاش قوي</p>
+              </button>
+              <button
+                onClick={() => { setCurrentView('market-depth'); }}
+                className="bg-card border border-border rounded-xl p-3 hover:border-emerald-500/30 transition-colors text-right group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">🛡️</span>
+                  <span className="text-sm font-bold text-foreground">حماية من التضخم والذهب</span>
+                </div>
+                <p className="text-xs text-muted-foreground">أسعار الذهب والأسهم الدفاعية</p>
+              </button>
+              <button
+                onClick={() => { setCurrentView('recommendations'); }}
+                className="bg-card border border-border rounded-xl p-3 hover:border-emerald-500/30 transition-colors text-right group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">🎯</span>
+                  <span className="text-sm font-bold text-foreground">الفرص الذهبية R/R ≥ 1.5</span>
+                </div>
+                <p className="text-xs text-muted-foreground">صفقات مؤكدة بنسبة عائد/مخاطرة عالية</p>
+              </button>
+            </div>
 
             {/* ═══════════════════════════════════════════════════════════════
                 🏛️ SCR-001: VIP Live Signals Feed (Bloomberg Terminal Feel)
