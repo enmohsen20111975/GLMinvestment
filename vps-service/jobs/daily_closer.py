@@ -25,6 +25,34 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
+
+# Phase 4 #2: تعدين الدروس آلياً من الصفقات المغلقة → learned_lessons.
+def mine_lesson_from_close(ticker: str, entry_price: float, exit_price: float,
+                           pnl_pct: float, exit_reason: str, market: str = 'EGX') -> bool:
+    """حوّل الصفقة المغلقة لدرس سببي في learned_lessons (يُستدعى بعد كل إغلاق)."""
+    try:
+        _root = Path(__file__).resolve().parents[2]
+        _pred_db = os.environ.get('PREDICTIONS_DB', str(_root / "db" / "predictions.db"))
+        if not os.path.exists(_pred_db):
+            return False
+        outcome = 'win' if pnl_pct > 0 else ('loss' if pnl_pct < 0 else 'breakeven')
+        lesson_type = f"trade_{exit_reason}_{outcome}"
+        condition = f"ticker={ticker} entry@{entry_price:.2f} exit@{exit_price:.2f} reason={exit_reason}"
+        recommendation = (f"keep ({pnl_pct:+.1f}%)" if outcome == 'win'
+                          else f"avoid ({pnl_pct:+.1f}%)" if outcome == 'loss' else "neutral")
+        conn = sqlite3.connect(_pred_db)
+        conn.execute(
+            "INSERT INTO learned_lessons (lesson_type, condition, outcome, failure_rate, occurrences, avg_return, recommendation, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (lesson_type, condition, outcome, 0.0 if outcome == 'win' else 100.0,
+             1, pnl_pct, recommendation, datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        sys.stderr.write(f"[daily_closer] mine_lesson error: {e}\n")
+        return False
+
 # CRITICAL FIX 2026-08-15 (P2-ARCH-1): add vps-service/ to sys.path so that
 # `from data.prices import load_price_history` (Rule #12 canonical source) and
 # `from utils.lesson_store import ...` and `from utils.live_price import ...`
