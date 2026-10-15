@@ -673,6 +673,21 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         return dist > 0 && dist < 3 && s.turnover_egp > 5_000_000;
       },
     },
+    {
+      label: '🐋 أسهم الحيتان',
+      test: (s) => isHighMakerActivity(s) && s.turnover_egp > 5_000_000,
+    },
+    {
+      label: '💰 أسهم العوائد والكاش',
+      test: (s) => {
+        const dy = typeof s.dividend_yield === 'number' ? s.dividend_yield : 0;
+        return dy > 3.0;
+      },
+    },
+    {
+      label: '🎯 الفرص الذهبية R/R ≥ 1.5',
+      test: (s) => computeScreenerRR(s) >= 1.5,
+    },
   ], []);
 
   const fetchScreener = useCallback(async () => {
