@@ -84,11 +84,12 @@ def get_unified_stock(ticker: str) -> Dict[str, Any]:
 
         market = stock_info.get('market', 'EGX')
 
-        # 2. Prediction (latest from aiPrediction).
+        # 2. Prediction (latest BUY signal from aiPrediction — compute R/R in Python).
         pred_rows = ro_query('predictions.db',
             "SELECT stock_symbol, stock_name_ar, signal_type, confidence, maestro_score, "
             "entry_price, target_price, stop_loss, risk_reward, market "
-            "FROM aiPrediction WHERE stock_symbol = ? ORDER BY id DESC LIMIT 1", (ticker,))
+            "FROM aiPrediction WHERE stock_symbol = ? AND signal_type = 'BUY' "
+            "ORDER BY created_at DESC LIMIT 1", (ticker,))
         pred = dict(pred_rows[0]) if pred_rows else {}
 
         # 3. Whale net flow.
@@ -126,9 +127,8 @@ def get_unified_stock(ticker: str) -> Dict[str, Any]:
             except Exception:
                 pass
             conn_fk.close()
-        breaking_yearly_low = yearly_low > 0 and current_price <= yearly_low * 1.02
-        bearish_distribution = whale_net_flow < 0
-        falling_knife = breaking_yearly_low or bearish_distribution
+        breaking_yearly_low = yearly_low > 0 and current_price < yearly_low
+        falling_knife = breaking_yearly_low
 
         # 7. State Machine: has_active_trade?
         has_active_trade = (rr >= 1.5 and not falling_knife and bool(pred.get('signal_type')))
