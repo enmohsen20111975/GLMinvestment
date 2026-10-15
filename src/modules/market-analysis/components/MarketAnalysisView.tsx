@@ -1,6 +1,6 @@
-import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
 'use client';
 
+import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
 import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
