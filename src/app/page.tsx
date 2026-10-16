@@ -430,16 +430,15 @@ function SessionSync() {
 function AppShell() {
   const { currentView, setCurrentView } = useAppStore();
 
-  // Direct hash → view sync (runs on every render, not just in useEffect)
-  // This ensures guests landing on #recommendations see the right view
-  // BEFORE the auth gate blocks them.
-  if (typeof window !== 'undefined') {
-    const hash = window.location.hash.slice(1).replace(/^\//, '');
-    if (hash && hash !== currentView) {
-      // Use setTimeout to avoid setState during render
-      setTimeout(() => setCurrentView(hash as typeof currentView), 0);
+  // Direct hash → view sync (runs once on mount)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.slice(1).replace(/^\//, '');
+      if (hash && hash !== currentView) {
+        setCurrentView(hash as typeof currentView);
+      }
     }
-  }
+  }, []);
   const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
   const currentMarket = useAppStore((s) => s.currentMarket);
   const setCurrentMarket = useAppStore((s) => s.setCurrentMarket);
@@ -869,7 +868,10 @@ function AppShell() {
           </div>
         )}
         <RealtimeTicker />
-        <Header title={t('dashboard.title')} subtitle={`${t('dashboard.subtitle')} — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
+        <Header
+          title="منصة دليل الاستثمار"
+          subtitle={`تحليل كمي بالذكاء الاصطناعي — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`}
+        />
         <main className="flex-1">
           {renderView()}
         </main>
