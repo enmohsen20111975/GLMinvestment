@@ -774,6 +774,31 @@ function TopologyDiagram({ topo }: { topo: Topology }) {
 // ────────────────────────────────────────────────────────────
 
 export default function OpsDcsPage() {
+  const [topology, setTopology] = useState<any>(null);
+  const [topoLoading, setTopoLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTopology = async () => {
+      try {
+        const res = await fetch('/api/dcs/topology', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (!cancelled) setTopology(json);
+        }
+      } catch { /* graceful */ }
+      finally { if (!cancelled) setTopoLoading(false); }
+    };
+    fetchTopology();
+    const interval = setInterval(fetchTopology, 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  const controlNode = async (node: string, action: string) => {
+    try {
+      await fetch(`/api/dcs/control/${node}/${action}`, { method: 'POST', cache: 'no-store' });
+    } catch { /* graceful */ }
+  };
   const { topo, error, loading } = useTopologyPolling('/api/dcs/topology');
   const eet = useEetClock();
   const inIframe = useInIframe();

@@ -201,15 +201,25 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       sortable: true,
       filterable: true,
       width: 'min-w-[120px]',
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <StockIcon ticker={row.ticker} name={row.name || undefined} size="sm" />
-          <div className="flex flex-col">
-            <span className="font-bold text-sm font-mono tabular-nums text-foreground">{row.ticker}</span>
-            <span className="text-xs text-muted-foreground truncate max-w-[100px]">{row.name || ''}</span>
+      render: (row) => {
+        const flow = row.whale?.net_flow_egp ?? 0;
+        const isPositive = flow >= 0;
+        const buyPct = row.whale?.buy_pct ?? (isPositive ? 65 : 35);
+        return (
+          <div className="flex items-center gap-2">
+            <StockIcon ticker={row.ticker} name={row.name || undefined} size="sm" />
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-sm font-mono tabular-nums text-foreground">{row.ticker}</span>
+              <span className="text-xs text-muted-foreground truncate max-w-[100px]">{row.name || ''}</span>
+              {/* Mini whale flow bar */}
+              <div className="w-16 h-1 rounded-full bg-muted overflow-hidden flex mt-0.5">
+                <div className="h-full bg-emerald-500" style={{ width: `${buyPct}%` }} />
+                <div className="h-full bg-rose-500" style={{ width: `${100 - buyPct}%` }} />
+              </div>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'price',

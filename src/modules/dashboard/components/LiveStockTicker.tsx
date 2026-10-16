@@ -22,6 +22,69 @@ import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
+// Global indices sparkline bar
+interface GlobalIndex {
+  symbol: string;
+  name: string;
+  flag: string;
+  value: number;
+  change_pct: number;
+  sparkline?: number[];
+}
+
+function GlobalIndicesBar() {
+  const [indices, setIndices] = useState<GlobalIndex[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchIndices = async () => {
+      try {
+        const res = await fetch('/api/market/indices/global', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && Array.isArray(json.indices)) {
+          setIndices(json.indices);
+        }
+      } catch { /* graceful */ }
+      finally { if (!cancelled) setLoading(false); }
+    };
+    fetchIndices();
+    const interval = setInterval(fetchIndices, 60_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  if (loading || indices.length === 0) return null;
+
+  return (
+    <div className="bg-card border-b border-border px-3 py-1.5 flex items-center gap-3 overflow-x-auto scrollbar-none" dir="rtl">
+      {indices.map((idx) => {
+        const isPositive = (idx.change_pct ?? 0) >= 0;
+        return (
+          <div key={idx.symbol} className="flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg bg-muted/50">
+            <span className="text-sm">{idx.flag}</span>
+            <span className="text-[10px] font-bold text-foreground">{idx.symbol}</span>
+            <span className="font-mono tabular-nums text-[10px] text-foreground">{Number(idx.value).toFixed(2)}</span>
+            <span className={cn('font-mono tabular-nums text-[10px] font-semibold', isPositive ? 'text-emerald-500' : 'text-rose-500')}>
+              {isPositive ? '+' : ''}{Number(idx.change_pct).toFixed(2)}%
+            </span>
+            {idx.sparkline && idx.sparkline.length > 2 && (
+              <svg viewBox="0 0 60 16" className="w-14 h-4" preserveAspectRatio="none">
+                <polyline
+                  points={idx.sparkline.map((v, i) => `${(i / (idx.sparkline.length - 1)) * 60},${16 - (v * 16)}`).join(' ')}
+                  fill="none"
+                  stroke={isPositive ? '#10b981' : '#f43f5e'}
+                  strokeWidth="1.5"
+                />
+              </svg>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ============================================================
 // Types
 // ============================================================
@@ -209,6 +272,7 @@ export function LiveStockTicker() {
 
   return (
     <>
+      <GlobalIndicesBar />
       {/* keyframes — تمرير من اليمين إلى اليسار */}
       <style>{`
         @keyframes lss-ticker-scroll {

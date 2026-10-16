@@ -307,6 +307,7 @@ export function DashboardView() {
       {/* First-visit asset preference onboarding (P5-MOBILE-UX Part B.1) */}
       <AssetPreferenceOnboarding />
 
+      <LiveStockTicker />
       <Header
         title={t('dashboard.title')}
         subtitle={`${t('dashboard.subtitle')} — ${marketNameAr}`}
