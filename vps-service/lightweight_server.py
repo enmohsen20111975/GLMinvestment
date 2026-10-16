@@ -136,8 +136,15 @@ BLUEPRINTS = [
     # — Node route (`/api/maker-radar/wyckoff-screener`) مجرد thin proxy (Rule 20).
     # يفحص كل أسهم EGX (is_active=1) + يرجع phase_distribution + whale_flow_egp.
     ('api.wyckoff_screener_routes', 'wyckoff_screener_bp'),
-    # PRESET-ROUTES: One-click Tactical Presets + Market Pills for all 6 markets
-    ('api.preset_routes', 'preset_bp'),
+    # TASK-BACKEND-BRAVO (2026-10-15): canonical liquidity classifier + unified
+    # stock view + conviction dossier. Each is a Flask Blueprint (Rule 20).
+    #   - canonical_flow_bp        -> GET /api/liquidity/buckets
+    #   - unified_stock_bp         -> GET /api/stocks/<ticker>/unified
+    #   - conviction_dossier_bp    -> GET /api/recommendations/dossier/<ticker>
+    # الـ logic كله في Python — Next.js routes مجرد thin proxy.
+    ('api.canonical_flow', 'canonical_flow_bp'),
+    ('api.unified_stock_routes', 'unified_stock_bp'),
+    ('api.conviction_dossier_routes', 'conviction_dossier_bp'),
 ]
 
 for mod_name, bp_name in BLUEPRINTS:

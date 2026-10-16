@@ -136,7 +136,7 @@ const CHANGE_FILTER_OPTIONS = [
 
 type StockTab = 'stocks' | 'bonds';
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 25; // TASK-ALPHA-C: 25 per owner directive
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -912,6 +912,43 @@ export function StocksView() {
   const [presetPeriod, setPresetPeriod] = useState('1d');
   const [presetScanDate, setPresetScanDate] = useState<string | null>(null);
 
+  // ── TASK-ALPHA-C: tactical liquidity-bucket filters (4 mutually-exclusive) ──
+  type BucketKey = 'all' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
+  const [liquidityBucketFilter, setLiquidityBucketFilter] = useState<BucketKey>('all');
+  const [hideInactiveStocks, setHideInactiveStocks] = useState(true);
+  const [bucketTickerMap, setBucketTickerMap] = useState<Record<string, Set<string>>>({
+    whale_inflow: new Set(),
+    whale_outflow: new Set(),
+    bottom_absorption: new Set(),
+    correction_exhaustion: new Set(),
+  });
+  const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K — below = inactive (owner directive)
+
+  // ── TASK-ALPHA-C: fetch canonical liquidity buckets when market changes ──
+  useEffect(() => {
+    if (currentMarket === 'CRYPTO' || currentMarket === 'GOLD') return; // buckets are EGX/equity only
+    let cancelled = false;
+    fetch(`/api/liquidity/buckets?market=${encodeURIComponent(currentMarket)}`, { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((json) => {
+        if (cancelled || !json || json.success === false) return;
+        const map: Record<string, Set<string>> = {
+          whale_inflow: new Set<string>(),
+          whale_outflow: new Set<string>(),
+          bottom_absorption: new Set<string>(),
+          correction_exhaustion: new Set<string>(),
+        };
+        for (const b of Object.keys(map)) {
+          for (const st of (json[b] || [])) {
+            if (st && st.ticker) map[b].add(String(st.ticker));
+          }
+        }
+        setBucketTickerMap(map);
+      })
+      .catch(() => { /* silent — buckets are an enhancement, not critical */ });
+    return () => { cancelled = true; };
+  }, [currentMarket]);
+
   // ── Advanced filter state (STOCKS-SCREEN-020) ──
   const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
   const [priceMin, setPriceMin] = useState('');
@@ -1186,8 +1223,24 @@ export function StocksView() {
     });
   }, [isPresetMode, presetDisplayData, debouncedSearch, selectedSector, selectedSectors, selectedIndex, priceRange, priceMin, priceMax, changeMin, changeMax, changeFilter]);
 
-  // ── Pagination ──
-  const baseData = isPresetMode ? filteredPresetData : sortedStocks;
+  // ── TASK-ALPHA-C: apply tactical bucket + inactive filters before pagination ──
+  const preFilterBase = isPresetMode ? filteredPresetData : sortedStocks;
+  const baseData = React.useMemo(() => {
+    let out = preFilterBase as Array<Record<string, unknown>>;
+    if (liquidityBucketFilter !== 'all') {
+      const bucketSet = bucketTickerMap[liquidityBucketFilter] || new Set<string>();
+      out = out.filter((st) => bucketSet.has(String(st.ticker ?? '')));
+    }
+    if (hideInactiveStocks) {
+      out = out.filter((st) => {
+        const vol = Number(st.volume ?? 0);
+        const turnover = Number(st.turnover_egp ?? st.value_traded ?? 0);
+        // Active if volume > 0 OR turnover >= 100K EGP
+        return vol > 0 || turnover >= INACTIVE_VOLUME_THRESHOLD;
+      });
+    }
+    return out;
+  }, [preFilterBase, liquidityBucketFilter, bucketTickerMap, hideInactiveStocks]);
   const totalPages = Math.max(1, Math.ceil(baseData.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginatedStocks = baseData.slice(
@@ -1883,6 +1936,48 @@ export function StocksView() {
                 );
               })}
             </div>
+
+            {/* TASK-ALPHA-C: Tactical liquidity-bucket filters (4 mutually-exclusive) */}
+            {currentMarket !== 'CRYPTO' && currentMarket !== 'GOLD' && (
+              <div className="flex flex-wrap gap-1.5 items-center mt-1.5">
+                <span className="text-[10px] text-muted-foreground font-semibold ml-1">تصنيف السيولة:</span>
+                {([
+                  { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted/40 text-muted-foreground border-border/60' },
+                  { key: 'whale_inflow', label: 'تدفق حيتان', icon: '🌊', cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
+                  { key: 'whale_outflow', label: 'تصريف', icon: '🩸', cls: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' },
+                  { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30' },
+                  { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' },
+                ] as Array<{ key: BucketKey; label: string; icon: string; cls: string }>).map((f) => {
+                  const count = f.key === 'all'
+                    ? preFilterBase.length
+                    : (bucketTickerMap[f.key]?.size ?? 0);
+                  const active = liquidityBucketFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => { setLiquidityBucketFilter(f.key); setPage(1); }}
+                      className={cn(
+                        'px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all border flex items-center gap-1',
+                        active ? f.cls + ' shadow-sm' : 'bg-muted/20 text-muted-foreground border-transparent hover:bg-muted/40'
+                      )}
+                    >
+                      <span>{f.icon}</span>
+                      <span>{f.label}</span>
+                      <span className="text-[9px] opacity-70">({count})</span>
+                    </button>
+                  );
+                })}
+                <label className="mr-auto flex items-center gap-1 text-[10px] text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hideInactiveStocks}
+                    onChange={(e) => { setHideInactiveStocks(e.target.checked); setPage(1); }}
+                    className="w-3 h-3 accent-emerald-500"
+                  />
+                  إخفاء الأسهم الخاملة (&lt;100K)
+                </label>
+              </div>
+            )}
 
             {/* Row 3: Advanced Filters (collapsible) */}
             {showFilters && (

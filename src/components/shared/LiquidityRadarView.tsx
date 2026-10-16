@@ -22,10 +22,9 @@ import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import { StockDetailSheet } from '@/components/shared/StockDetailSheet';
-import { StockIcon } from '@/modules/stock-analysis/components/StockIcon';
 import {
   Shield, RefreshCw, AlertTriangle, Activity,
-  TrendingUp, TrendingDown, Layers,
+  TrendingUp, TrendingDown, Layers, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
@@ -64,7 +63,25 @@ interface RadarStock {
   phase_reason?: string | null;
   entry_defense: EntryDefense;
   reason: string | null;
+  // TASK-BACKEND-BRAVO: canonical mutually-exclusive liquidity bucket
+  liquidity_bucket?: string | null;
+  liquidity_bucket_ar?: string | null;
+  net_flow_5d?: number | null;
+  volume?: number | null;
 }
+
+
+// ─── TASK-ALPHA-C: Tactical liquidity-bucket filters + pagination ─────────
+type BucketKey = 'all' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
+const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: string }> = [
+  { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted text-muted-foreground' },
+  { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
+  { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' },
+  { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30' },
+  { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' },
+];
+const PAGE_SIZE = 25;
+const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive
 
 interface RadarResponse {
   success: boolean;
@@ -144,31 +161,9 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
-  const [activePhase, setActivePhase] = useState<string>('الكل');
-  const [presetCounts, setPresetCounts] = useState<Record<string, number>>({});
-
-  // Fetch preset counts from /api/radar/bucket
-  const fetchPresetCounts = useCallback(async () => {
-    const types = ['inflow', 'outflow', 'quiet_accumulation', 'correction_exhaustion'];
-    const counts: Record<string, number> = {};
-    await Promise.all(types.map(async (type) => {
-      try {
-        const res = await fetch(`/api/radar/bucket?market=${encodeURIComponent(market)}&type=${type}`, { cache: 'no-store' });
-        if (res.ok) {
-          const json = await res.json();
-          counts[type] = Array.isArray(json.stocks) ? json.stocks.length : (json.count ?? 0);
-        }
-      } catch { /* graceful */ }
-    }));
-    setPresetCounts(counts);
-  }, [market]);
-
-  useEffect(() => { fetchPresetCounts(); }, [fetchPresetCounts]);
-
-  const handlePresetClick = useCallback((bucketType: string, phase: string) => {
-    setActivePhase(phase);
-  }, []);
-  const [hideLowLiquidity, setHideLowLiquidity] = useState<boolean>(true);
+  const [bucketFilter, setBucketFilter] = useState<BucketKey>('all');
+  const [hideInactive, setHideInactive] = useState(true);
+  const [page, setPage] = useState(0);
   const currency = marketCurrency(market);
 
   const fetchData = useCallback(async () => {
@@ -193,33 +188,45 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // ─── TASK-ALPHA-C: client-side bucket + inactive filtering + pagination ───
+  const filteredStocks = React.useMemo(() => {
+    const list = data?.stocks ?? [];
+    let out = list;
+    if (bucketFilter !== 'all') {
+      out = out.filter((s) => (s.liquidity_bucket || 'neutral') === bucketFilter);
+    }
+    if (hideInactive) {
+      out = out.filter((s) => {
+        const vol = Number(s.volume ?? s.whale?.net_flow_egp ?? 0);
+        // Consider a stock "active" if it has meaningful volume OR net flow.
+        // net_flow_5d is in EGP; volume from stocks table is share count.
+        // Use whale.net_flow_egp absolute value as the turnover proxy.
+        const flow = Math.abs(Number(s.whale?.net_flow_egp ?? 0));
+        return flow >= INACTIVE_VOLUME_THRESHOLD || vol > 0;
+      });
+    }
+    return out;
+  }, [data, bucketFilter, hideInactive]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStocks.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pagedStocks = filteredStocks.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  React.useEffect(() => { setPage(0); }, [bucketFilter, hideInactive, activeMarket]);
+
   // ─── Build UnifiedTable columns ───
   const columns: Column<RadarStock>[] = [
     {
       key: 'ticker',
       header: 'السهم',
       sortable: true,
-      filterable: true,
       width: 'min-w-[120px]',
-      render: (row) => {
-        const flow = row.whale?.net_flow_egp ?? 0;
-        const isPositive = flow >= 0;
-        const buyPct = row.whale?.buy_pct ?? (isPositive ? 65 : 35);
-        return (
-          <div className="flex items-center gap-2">
-            <StockIcon ticker={row.ticker} name={row.name || undefined} size="sm" />
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm font-mono tabular-nums text-foreground">{row.ticker}</span>
-              <span className="text-xs text-muted-foreground truncate max-w-[100px]">{row.name || ''}</span>
-              {/* Mini whale flow bar */}
-              <div className="w-16 h-1 rounded-full bg-muted overflow-hidden flex mt-0.5">
-                <div className="h-full bg-emerald-500" style={{ width: `${buyPct}%` }} />
-                <div className="h-full bg-rose-500" style={{ width: `${100 - buyPct}%` }} />
-              </div>
-            </div>
-          </div>
-        );
-      },
+      render: (row) => (
+        <div className="flex flex-col">
+          <span className="font-bold text-sm font-mono tabular-nums text-foreground">{row.ticker}</span>
+          <span className="text-xs text-muted-foreground truncate max-w-[100px]">{row.name || ''}</span>
+        </div>
+      ),
     },
     {
       key: 'price',
@@ -280,7 +287,6 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       key: 'phase',
       header: 'المرحلة',
       sortable: true,
-      filterable: true,
       width: 'w-24',
       align: 'center',
       render: (row) => {
@@ -327,6 +333,30 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         </span>
       ),
     },
+    {
+      key: 'publish',
+      header: 'نشر',
+      width: 'w-24',
+      align: 'center',
+      render: (row) => (
+        <UnifiedPublishButton
+          ticker={row.ticker}
+          content={`📊 ${row.ticker} — ${row.name || ''}
+المرحلة: ${PHASE_LABELS[row.phase] || row.phase}
+الدخول: ${fmtPrice(row.entry_defense?.entry_level)}
+الوقف: ${fmtPrice(row.entry_defense?.defense_level)}
+الهدف: ${fmtPrice(row.entry_defense?.resistance_level)}
+صافي تدفق الحوت: ${fmtFlow(row.whale?.net_flow_egp)} ${currency}
+
+منصة دليل الاستثمار`}
+          title={`${row.ticker} — ${row.name || ''}`}
+          filename={`${row.ticker}-radar.png`}
+          hashtags={['EGX', 'رادار', row.ticker]}
+          variant="outline"
+          size="sm"
+        />
+      ),
+    },
   ];
 
   // ─── Loading state ───
@@ -371,85 +401,75 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       {/* ─── Pulse Ribbon ─── */}
       <PulseRibbon market={market} scannedCount={data.scanned_count ?? data.stocks.length} />
 
-      {/* ─── Smart Preset Buttons (wired to /api/radar/bucket) ─── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground shrink-0">قوائم ذكية:</span>
-        <button
-          onClick={() => handlePresetClick('inflow', 'بيبلع على الهادي')}
-          className={cn(
-            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
-            activePhase === 'بيبلع على الهادي' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
-          )}
-        >
-          🌊 تدفق سيولة حوتية {presetCounts.inflow > 0 && <span className="text-[9px] opacity-70">({presetCounts.inflow})</span>}
-        </button>
-        <button
-          onClick={() => handlePresetClick('outflow', 'بيصرف')}
-          className={cn(
-            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
-            activePhase === 'بيصرف' ? 'bg-rose-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
-          )}
-        >
-          🩸 تصريف وهروب كاش {presetCounts.outflow > 0 && <span className="text-[9px] opacity-70">({presetCounts.outflow})</span>}
-        </button>
-        <button
-          onClick={() => handlePresetClick('quiet_accumulation', 'الكل')}
-          className={cn(
-            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
-            activePhase === 'الكل' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
-          )}
-        >
-          💎 تجميع قيعان صامت {presetCounts.quiet_accumulation > 0 && <span className="text-[9px] opacity-70">({presetCounts.quiet_accumulation})</span>}
-        </button>
-        <button
-          onClick={() => handlePresetClick('correction_exhaustion', 'بيتحضر')}
-          className={cn(
-            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
-            activePhase === 'بيتحضر' ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
-          )}
-        >
-          🛡️ نهاية تصحيح وارتداد {presetCounts.correction_exhaustion > 0 && <span className="text-[9px] opacity-70">({presetCounts.correction_exhaustion})</span>}
-        </button>
+      {/* ─── TASK-ALPHA-C: Tactical liquidity-bucket filter bar ─── */}
+      <div className="bg-card border border-border rounded-xl p-2 flex flex-wrap items-center gap-1.5">
+        {BUCKET_FILTERS.map((f) => {
+          const count = f.key === 'all'
+            ? (data?.stocks?.length ?? 0)
+            : (data?.stocks ?? []).filter((st) => (st.liquidity_bucket || 'neutral') === f.key).length;
+          const active = bucketFilter === f.key;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setBucketFilter(f.key)}
+              className={cn(
+                'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1',
+                active
+                  ? f.cls + ' shadow-sm ring-1 ring-emerald-500/20'
+                  : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
+              )}
+            >
+              <span>{f.icon}</span>
+              <span>{f.label}</span>
+              <span className="text-[9px] opacity-70">({count})</span>
+            </button>
+          );
+        })}
+        <label className="ms-auto flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={hideInactive}
+            onChange={(e) => setHideInactive(e.target.checked)}
+            className="w-3.5 h-3.5 accent-emerald-500"
+          />
+          إخفاء الأسهم الخاملة (&lt;100K)
+        </label>
       </div>
 
-      {/* ─── Central Publish Button (for selected rows) ─── */}
-      <div className="flex items-center justify-end">
-        <UnifiedPublishButton
-          content={`📊 رادار السيولة — ${market}\n${data.stocks.length} سهم مرقوب\nمنصة دليل الاستثمار`}
-          title={`رادار السيولة — ${market}`}
-          filename={`radar-${market}-${new Date().toISOString().slice(0,10)}.png`}
-          hashtags={['EGX', 'رادار', market]}
-          variant="outline"
-          size="sm"
-        />
-      </div>
-
-      {/* ─── Low Liquidity Filter Toggle ─── */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setHideLowLiquidity(!hideLowLiquidity)}
-          className={cn(
-            'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors',
-            hideLowLiquidity ? 'bg-muted text-muted-foreground' : 'bg-emerald-600 text-white',
-          )}
-        >
-          {hideLowLiquidity ? '🔒 إظهار الأسهم منخفضة السيولة' : '✓ عرض كل الأسهم'}
-        </button>
-      </div>
-
-      {/* ─── UnifiedTable ─── */}
+      {/* ─── UnifiedTable (paginated) ─── */}
       <UnifiedTable<RadarStock>
         columns={columns}
-        data={(activePhase === 'الكل' ? data.stocks : data.stocks.filter(s => s.phase === activePhase)).filter(s => !hideLowLiquidity || (s.whale?.net_flow_egp != null && Math.abs(Number(s.whale.net_flow_egp)) > 100000))}
+        data={pagedStocks}
         keyField="ticker"
         dense
         filterable
         columnToggle
         onRowClick={(row) => setSelectedTicker(row.ticker)}
-        maxHeight="calc(100vh - 200px)"
-        emptyText="لا توجد أسهم مطابقة"
+        maxHeight="calc(100vh - 280px)"
+        emptyText={bucketFilter === 'all' ? 'لا توجد أسهم مطابقة' : `لا توجد أسهم في تصنيف "${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label || ''}"`}
         className="bg-card border-border rounded-xl"
       />
+
+      {/* ─── Pagination ─── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-3 py-2">
+          <span className="text-xs text-muted-foreground">
+            عرض {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredStocks.length)} من {filteredStocks.length} سهم
+            {bucketFilter !== 'all' && ` (مُصفّى: ${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label})`}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="sm" disabled={safePage === 0} onClick={() => setPage(safePage - 1)} className="h-7 gap-1 text-xs">
+              <ChevronRight className="w-3.5 h-3.5" /> السابق
+            </Button>
+            <span className="text-xs font-mono tabular-nums text-muted-foreground px-2">
+              {safePage + 1} / {totalPages}
+            </span>
+            <Button variant="outline" size="sm" disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)} className="h-7 gap-1 text-xs">
+              التالي <ChevronLeft className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ─── StockDetailSheet ─── */}
       <StockDetailSheet

@@ -1,267 +1,311 @@
 #!/usr/bin/env python3
 """
-conviction_dossier_routes.py — ملف الأدلة الصارم + سباركلاين المؤشرات
-=====================================================================
-1. GET /api/recommendations/dossier/{ticker} — ملف أدلة إثباتي:
-   - Historical win-rate per ticker (aiPrediction outcomes).
-   - Whale liquidity (last 5 sessions net flow).
-   - Risk calculator: entry/target/stop + R/R ≥ 1.5 MANDATORY (reject < 1.5).
-   - Falling Knife Guard (Rule 78): block bullish signal if breaking yearly low.
+conviction_dossier_routes.py — ملف الأدلة والبراهين (Conviction Dossier)
+=================================================================================
+Task BRAVO-CONVICTION-DOSSIER (Owner Directive 2026-10-15)
 
-2. GET /api/markets/indices/sparklines — 6 indices (EGX30/TASI/BKP/QSE/SPX/BTC):
-   latest price + change% + 7-10 sparkline points.
+المشكلة: شاشة التوقعات بترمي "شراء فوري" للعميل من غير ما تقوله مين الحوت
+اللي اشترى، والمنصة كسبت في السهم ده كام مرة، وإيه الدليل الفني والحسابي.
 
-Rule 27: real data only. mode=ro. standard_responses (200 JSON, no leak).
+الحل: كل كارت توصية يكون فيه زرار "ملف الأدلة والبراهين 📂" يفتح Drawer
+يعرض 4 طبقات:
+  1. برهان سيولة الحيتان: آخر 5 جلسات (التاريخ، صافي الكاش، الحجم).
+  2. سجل النزاهة: نسبة نجاح توصيات المنصة السابقة على نفس السهم.
+  3. هندسة المخاطرة: الدخول، الوقف، الأهداف، R/R، المخاطرة والمكافأة بالجنيه.
+  4. التفسير المؤسسي: جملتان صريحتان بلغة السوق.
+
+Endpoint (Blueprint `conviction_dossier_bp`):
+    GET /api/recommendations/dossier/<ticker>
+
+Rule 20: Python = brain. Next.js route is a thin proxy.
+Rule 27: NO-FAKE-DATA — كل رقم من DB؛ لو ناقص → null + reason واضح.
 """
+
 from __future__ import annotations
-import os, sys, sqlite3, json
+
+import logging
+import sqlite3
+import sys
 from pathlib import Path
-from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, Query
+from typing import Any, Dict, List, Optional
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
-sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
-os.environ.setdefault('STOCKS_DB', str(PROJECT_ROOT / "db" / "stocks.db"))
-os.environ.setdefault('DATA_ENGINE_DB', str(PROJECT_ROOT / "db" / "data_engine.db"))
-os.environ.setdefault('PREDICTIONS_DB', str(PROJECT_ROOT / "db" / "predictions.db"))
+from flask import Blueprint, jsonify
 
-from api.standard_responses import standard_error, standard_success, ro_connect, ro_query, verify_market, SUPPORTED_MARKETS
+_VPS_ROOT = Path(__file__).resolve().parent.parent
+if str(_VPS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_VPS_ROOT))
 
-router = APIRouter(tags=["Conviction Dossier + Sparklines"])
+from utils.db_paths import DBPaths  # noqa: E402
+from api.canonical_flow import classify_liquidity_bucket  # noqa: E402
 
-INDICES = [
-    {'code': 'EGX', 'symbol': 'EGX30', 'label': 'EGX 30', 'flag': '🇪🇬'},
-    {'code': 'TADAWUL', 'symbol': 'TASI', 'label': 'TASI', 'flag': '🇸🇦'},
-    {'code': 'KSE', 'symbol': 'BKP', 'label': 'BKP', 'flag': '🇰🇼'},
-    {'code': 'QSE', 'symbol': 'QSE', 'label': 'QSE', 'flag': '🇶🇦'},
-    {'code': 'US', 'symbol': 'SPX', 'label': 'S&P 500', 'flag': '🇺🇸'},
-    {'code': 'CRYPTO', 'symbol': 'BTC', 'label': 'Bitcoin', 'flag': '🪙'},
-]
+logger = logging.getLogger(__name__)
+
+conviction_dossier_bp = Blueprint('conviction_dossier_bp', __name__)
 
 
-def _f(v, d=0.0):
-    if v is None: return d
-    try: return float(str(v).replace('−','-').strip())
-    except: return d
+def _get_stocks_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(DBPaths.STOCKS_DB, timeout=10.0)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
-# ═══════════════════════════════════════════════════════════════════
-# 1. GET /api/recommendations/dossier/{ticker}
-# ═══════════════════════════════════════════════════════════════════
-
-@router.get("/api/recommendations/dossier/{ticker}")
-def get_conviction_dossier(ticker: str) -> Dict[str, Any]:
-    """ملف أدلة صارم: تاريخ + سيولة + مخاطرة + حارس السكاكين."""
-    ticker = (ticker or '').strip().upper()
-    if not ticker:
-        return standard_error('التيكر مطلوب')
+def _to_float(v: Any, default: float = 0.0) -> float:
+    if v is None:
+        return default
     try:
-        # 1. Stock metadata.
-        stock_rows = ro_query('stocks.db',
-            "SELECT ticker, name, name_ar, market, current_price, change_percent, "
-            "support, resistance, is_egx30 FROM stocks WHERE ticker = ? LIMIT 1", (ticker,))
-        stock = dict(stock_rows[0]) if stock_rows else None
-        if not stock:
-            return standard_error(f'{ticker} غير موجود', 'not_found')
-        market = stock.get('market', 'EGX')
-
-        # 2. Historical win-rate per ticker.
-        preds = ro_query('predictions.db',
-            "SELECT signal_type, entry_price, target_price, stop_loss, confidence, "
-            "status, final_price, profit_loss_percent, hit_target, hit_stop_loss, created_at "
-            "FROM aiPrediction WHERE stock_symbol = ? ORDER BY created_at DESC LIMIT 20", (ticker,))
-        total = len(preds)
-        hits = sum(1 for p in preds if p.get('hit_target'))
-        stops = sum(1 for p in preds if p.get('hit_stop_loss'))
-        pending = sum(1 for p in preds if not p.get('final_price') and p.get('status') != 'closed')
-        decided = total - pending
-        win_rate = round((hits / decided * 100), 1) if decided > 0 else 0.0
-
-        # 3. Whale liquidity (last 5 sessions).
-        conn = ro_connect('stocks.db')
-        whale_5d = 0.0
-        whale_sessions = []
-        yearly_low = 0.0
-        if conn:
-            try:
-                rows = conn.execute(
-                    "SELECT price_date, open, close, high, low, volume FROM stock_daily_prices "
-                    "WHERE ticker = ? AND market = ? AND close > 0 AND volume > 0 "
-                    "ORDER BY price_date DESC LIMIT 5", (ticker, market)
-                ).fetchall()
-                buy, sell = 0.0, 0.0
-                for r in rows:
-                    o, c, v = _f(r['open']), _f(r['close']), _f(r['volume'])
-                    val = v * c
-                    if c > o: buy += val
-                    elif c < o: sell += val
-                    else: buy += val*0.5; sell += val*0.5
-                    whale_sessions.append({
-                        'date': r['price_date'], 'close': round(c,2),
-                        'volume': round(v,0), 'direction': 'buy' if c>o else ('sell' if c<o else 'neutral')
-                    })
-                whale_5d = round(buy - sell, 0)
-            except Exception as e:
-                sys.stderr.write(f"[dossier] whale_5d error: {e}\n")
-            # 4. Yearly low (for Falling Knife Guard).
-            try:
-                yl = conn.execute(
-                    "SELECT MIN(low) FROM stock_daily_prices WHERE ticker = ? AND market = ? AND low > 0", (ticker, market)
-                ).fetchone()
-                yearly_low = _f(yl[0]) if yl else 0.0
-            except Exception:
-                pass
-            conn.close()
-
-        current_price = _f(stock.get('current_price'))
-        # 5. Falling Knife Guard (Rule 78).
-        breaking_yearly_low = yearly_low > 0 and current_price <= yearly_low * 1.02
-        bearish_distribution = whale_5d < 0
-        falling_knife_blocked = breaking_yearly_low or bearish_distribution
-
-        # 6. Risk calculator (from latest prediction).
-        latest_pred = dict(preds[0]) if preds else {}
-        entry = _f(latest_pred.get('entry_price')) or current_price
-        target = _f(latest_pred.get('target_price')) or _f(stock.get('resistance'))
-        stop = _f(latest_pred.get('stop_loss')) or _f(stock.get('support'))
-        rr = round((target - entry) / (entry - stop), 2) if entry > 0 and target > entry and stop < entry else 0.0
-
-        # 7. Verdict — R/R ≥ 1.5 mandatory + Falling Knife Guard.
-        if falling_knife_blocked:
-            verdict = '⛔ مرفوض — حارس السكاكين الساقطة (Rule 78)'
-            reason = f"السهم {'يكسر قاعه السنوي' if breaking_yearly_low else 'تحت تصريف هابط'} — ممنوع إشارة صعود"
-        elif rr < 1.5:
-            verdict = '⛔ مرفوض — R/R < 1.5'
-            reason = f"نسبة العائد للمخاطرة {rr:.2f} أقل من الحد الأدنى 1.5 — القاعدة تمنع الصفقة"
-        else:
-            verdict = f'✅ مقبول — R/R = {rr:.2f}'
-            reason = f"دخول {entry:.2f} | هدف {target:.2f} | وقف {stop:.2f} | R/R {rr:.2f}"
-
-        return standard_success({
-            'ticker': ticker,
-            'name': stock.get('name_ar') or stock.get('name') or ticker,
-            'market': market,
-            'current_price': current_price,
-            'historical_win_rate': {
-                'total_predictions': total,
-                'hit_target': hits, 'hit_stop_loss': stops,
-                'pending': pending, 'decided': decided,
-                'win_rate_pct': win_rate,
-            },
-            'whale_liquidity_5d': {
-                'net_flow': whale_5d,
-                'direction': 'inflow' if whale_5d > 0 else 'outflow' if whale_5d < 0 else 'neutral',
-                'sessions': whale_sessions,
-            },
-            'risk_calculator': {
-                'entry_price': entry, 'target_price': target, 'stop_loss': stop,
-                'risk_reward': rr,
-                'rr_pass': rr >= 1.5,
-            },
-            'falling_knife_guard': {
-                'blocked': falling_knife_blocked,
-                'breaking_yearly_low': breaking_yearly_low,
-                'yearly_low': yearly_low,
-                'bearish_distribution': bearish_distribution,
-                'rule': 'Rule 78 — حظر إشارات الصعود للأسهم المنهارة',
-            },
-            'verdict': verdict,
-            'reason': reason,
-            'technical_rationale': (
-                f"السهم يتداول عند {current_price:.2f} (RSI={_f(latest_pred.get('confidence') or 0):.0f}) "
-                f"مع تدفق حيتان 5ج = {whale_5d/1e6:+.1f}M ج.م "
-                f"وكسر قاع سنوي {'نعم' if breaking_yearly_low else 'لا'} ({yearly_low:.2f}). "
-                f"نسبة العائد للمخاطرة = {rr:.2f} ({'مقبولة ≥1.5' if rr>=1.5 else 'مرفوضة <1.5'})."
-            ),
-            'latest_prediction': {
-                'signal': latest_pred.get('signal_type'),
-                'confidence': latest_pred.get('confidence'),
-                'created_at': latest_pred.get('created_at'),
-            },
-        }, ticker=ticker)
-    except Exception as e:
-        sys.stderr.write(f"[dossier] {ticker} error: {e}\n")
-        return standard_error(f'خطأ في تحميل ملف أدلة {ticker}')
+        return float(str(v).replace('\u2212', '-').replace('\u060c', '').strip())
+    except (ValueError, TypeError):
+        return default
 
 
-# ═══════════════════════════════════════════════════════════════════
-# 2. GET /api/markets/indices/sparklines
-# ═══════════════════════════════════════════════════════════════════
+def _query_row(conn: sqlite3.Connection, sql: str, params: tuple) -> Optional[Dict[str, Any]]:
+    cur = conn.execute(sql, params)
+    row = cur.fetchone()
+    if row is None:
+        return None
+    cols = [d[0] for d in cur.description]
+    return {cols[i]: row[i] for i in range(len(cols))}
 
-@router.get("/api/markets/indices/sparklines")
-def get_sparklines() -> Dict[str, Any]:
-    """6 مؤشرات عالمية: latest + change% + 7-10 sparkline points لكل مؤشر."""
+
+def _fetch_latest_trade_setup(conn: sqlite3.Connection, ticker: str) -> Optional[Dict[str, Any]]:
+    return _query_row(
+        conn,
+        """
+        SELECT ticker, signal, entry_price, target_price, stop_loss,
+               risk_reward, master_score, analysis_json, analysis_date, updated_at
+        FROM cached_analysis
+        WHERE ticker = ?
+        ORDER BY COALESCE(updated_at, analysis_date, '0') DESC
+        LIMIT 1
+        """,
+        (ticker,),
+    )
+
+
+def _compute_historical_win_rate(conn: sqlite3.Connection, ticker: str) -> Dict[str, Any]:
+    """Win rate from real_evaluated_predictions (hit_target=1 → win, hit_stop=1 → loss)."""
     try:
-        conn = ro_connect('stocks.db')
-        results = []
-        for idx in INDICES:
-            entry = {
-                'market': idx['code'], 'symbol': idx['symbol'],
-                'label': idx['label'], 'flag': idx['flag'],
-                'latest_price': None, 'change_percent': None,
-                'sparkline': [],
-            }
-            # 1. Try market_indices table.
-            if conn:
-                try:
-                    row = conn.execute(
-                        "SELECT symbol, current_value, change_percent FROM market_indices "
-                        "WHERE symbol LIKE ? LIMIT 1", (f"%{idx['symbol']}%",)
-                    ).fetchone()
-                    if row:
-                        entry['latest_price'] = _f(row['current_value'])
-                        entry['change_percent'] = round(_f(row['change_percent']), 2)
-                except Exception:
-                    pass
-            # 2. Sparkline: 7-10 daily aggregate from stock_daily_prices.
-            try:
-                sc = ro_connect('stocks.db')
-                if sc:
-                    rows = sc.execute(
-                        "SELECT price_date, AVG(close) AS avg_close "
-                        "FROM stock_daily_prices WHERE market = ? AND close > 0 "
-                        "GROUP BY price_date ORDER BY price_date DESC LIMIT 10", (idx['code'],)
-                    ).fetchall()
-                    sc.close()
-                    if rows:
-                        spark = [round(_f(r['avg_close']), 2) for r in reversed(rows)]
-                        entry['sparkline'] = spark
-                        if entry['latest_price'] is None and spark:
-                            entry['latest_price'] = spark[-1]
-            except Exception as e:
-                sys.stderr.write(f"[sparkline] {idx['code']} error: {e}\n")
-            results.append(entry)
-        if conn:
+        row = _query_row(
+            conn,
+            """
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
+                SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses
+            FROM real_evaluated_predictions
+            WHERE ticker = ?
+            """,
+            (ticker,),
+        )
+    except sqlite3.Error as e:
+        logger.warning(f'[dossier] win_rate query failed for {ticker}: {e}')
+        return {
+            'total_recommendations': 0, 'wins': 0, 'losses': 0,
+            'win_rate_pct': 0.0, 'last_outcome': None, 'last_outcome_date': None,
+        }
+
+    if not row:
+        return {
+            'total_recommendations': 0, 'wins': 0, 'losses': 0,
+            'win_rate_pct': 0.0, 'last_outcome': None, 'last_outcome_date': None,
+        }
+
+    total = int(row.get('total') or 0)
+    wins = int(row.get('wins') or 0)
+    losses = int(row.get('losses') or 0)
+    win_rate = round((wins / total) * 100.0, 1) if total > 0 else 0.0
+
+    # Last outcome
+    last_outcome: Optional[str] = None
+    last_outcome_date: Optional[str] = None
+    try:
+        last = _query_row(
+            conn,
+            """
+            SELECT hit_target, hit_stop, return_pct, evaluated_at
+            FROM real_evaluated_predictions
+            WHERE ticker = ?
+            ORDER BY evaluated_at DESC
+            LIMIT 1
+            """,
+            (ticker,),
+        )
+        if last:
+            if last.get('hit_target') == 1:
+                last_outcome = 'win'
+            elif last.get('hit_stop') == 1:
+                last_outcome = 'loss'
+            else:
+                last_outcome = 'open'
+            last_outcome_date = last.get('evaluated_at')
+    except sqlite3.Error:
+        pass
+
+    return {
+        'total_recommendations': total,
+        'wins': wins,
+        'losses': losses,
+        'win_rate_pct': win_rate,
+        'last_outcome': last_outcome,
+        'last_outcome_date': last_outcome_date,
+    }
+
+
+def _build_technical_rationale(
+    stock: Optional[Dict[str, Any]],
+    classification: Dict[str, Any],
+    trade: Optional[Dict[str, Any]],
+) -> str:
+    """Two-sentence Arabic rationale built from real DB values (Rule 27)."""
+    if not stock:
+        return '\u0628\u064a\u0627\u0646\u0627\u062a \u063a\u064a\u0631 \u0643\u0627\u0641\u064a\u0629 \u0644\u062a\u0641\u0633\u064a\u0631 \u0645\u0641\u0635\u0644.'
+
+    current_price = _to_float(stock.get('current_price'))
+    support = _to_float(stock.get('support'))
+    resistance = _to_float(stock.get('resistance'))
+    rsi = _to_float(stock.get('rsi')) if stock.get('rsi') else None
+    net_flow = classification.get('net_flow_5d', 0.0)
+    bucket_ar = classification.get('bucket_ar', '\u062d\u064a\u0627\u062f')
+
+    parts: List[str] = []
+    if support > 0 and current_price > 0:
+        dist = ((current_price - support) / support) * 100.0 if support > 0 else 0.0
+        parts.append(
+            f'\u0627\u0644\u0633\u0639\u0631 {current_price:.2f} \u064a\u0628\u0639\u062f {dist:.1f}% \u0639\u0646 \u062f\u0639\u0645 {support:.2f}'
+        )
+    if net_flow != 0:
+        sign = '\u062f\u062e\u0648\u0644' if net_flow > 0 else '\u062e\u0631\u0648\u062c'
+        parts.append(
+            f'\u0635\u0627\u0641\u064a \u062a\u062f\u0641\u0642 \u062d\u064a\u0627\u0646 5 \u062c\u0644\u0633\u0627\u062a {abs(net_flow)/1e6:.1f}M \u062c.\u0645 ({sign})'
+        )
+    if rsi is not None and rsi > 0:
+        parts.append(f'RSI \u0639\u0646\u062f {rsi:.1f}')
+
+    sentence1 = '\u060c '.join(parts) + '.' if parts else '\u0644\u0627 \u0628\u064a\u0627\u0646\u0627\u062a \u0641\u0646\u064a\u0629 \u0643\u0627\u0641\u064a\u0629.'
+
+    # Sentence 2: bucket + trade context
+    signal = (trade or {}).get('signal') or '\u0644\u0627 \u0625\u0634\u0627\u0631\u0629'
+    rr = (trade or {}).get('risk_reward')
+    rr_str = f'R/R {float(rr):.2f}' if rr is not None else '\u0644\u0627 R/R'
+    sentence2 = f'\u0627\u0644\u062a\u0635\u0646\u064a\u0641 \u0627\u0644\u0643\u0646\u0633\u064a: {bucket_ar} \u2014 \u0625\u0634\u0627\u0631\u0629 {signal} \u0645\u0639 {rr_str}.'
+
+    return sentence1 + ' ' + sentence2
+
+
+def _build_trade_math(
+    trade: Optional[Dict[str, Any]],
+    stock: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Risk-engineering math: entry, stop, targets, RR, per-share risk/reward."""
+    if not trade:
+        return {
+            'entry_price': None, 'stop_loss': None, 'target_1': None, 'target_2': None,
+            'rr_ratio': None, 'signal': None,
+            'risk_egp_per_share': None, 'reward_egp_per_share': None,
+        }
+    entry = _to_float(trade.get('entry_price'))
+    stop = _to_float(trade.get('stop_loss'))
+    target = _to_float(trade.get('target_price'))
+    rr_raw = trade.get('risk_reward')
+    signal = (trade.get('signal') or '').strip().upper()
+
+    rr: Optional[float] = None
+    if rr_raw is not None:
+        try:
+            rr = float(rr_raw)
+        except (ValueError, TypeError):
+            rr = None
+    if rr is None and entry > 0 and stop > 0 and target > 0 and stop < entry and target > entry:
+        rr = round((target - entry) / (entry - stop), 2)
+
+    risk_per_share = round(entry - stop, 4) if (entry > 0 and stop > 0 and stop < entry) else None
+    reward_per_share = round(target - entry, 4) if (entry > 0 and target > 0 and target > entry) else None
+
+    return {
+        'entry_price': round(entry, 4) if entry > 0 else None,
+        'stop_loss': round(stop, 4) if stop > 0 else None,
+        'target_1': round(target, 4) if target > 0 else None,
+        'target_2': None,  # cached_analysis has no target_2; populated when available
+        'rr_ratio': rr,
+        'signal': signal or None,
+        'risk_egp_per_share': risk_per_share,
+        'reward_egp_per_share': reward_per_share,
+    }
+
+
+# ─── Endpoint ────────────────────────────────────────────────────────────────
+
+@conviction_dossier_bp.route('/api/recommendations/dossier/<string:ticker>', methods=['GET'])
+def conviction_dossier(ticker: str):
+    """GET /api/recommendations/dossier/<ticker> — 4-layer evidence dossier."""
+    tkr = (ticker or '').strip().upper()
+    if not tkr:
+        return jsonify({'success': False, 'error': 'missing_ticker'}), 400
+
+    try:
+        conn = _get_stocks_conn()
+        try:
+            stock = _query_row(
+                conn,
+                """
+                SELECT ticker, name, name_ar, market, sector, current_price,
+                       change_percent, support, resistance, rsi, ma_50, ma_200,
+                       high_52w, low_52w, volume
+                FROM stocks
+                WHERE ticker = ?
+                LIMIT 1
+                """,
+                (tkr,),
+            )
+            if not stock:
+                return jsonify({
+                    'success': False,
+                    'error': 'stock_not_found',
+                    'ticker': tkr,
+                }), 404
+
+            trade = _fetch_latest_trade_setup(conn, tkr)
+            classification = classify_liquidity_bucket(
+                tkr, stock.get('market') or 'EGX', conn=conn
+            )
+
+            whale_history: List[Dict[str, Any]] = classification.get('whale_flow_history', [])
+            # Enrich with cumulative total
+            total_inflow = sum(h.get('net_flow_egp', 0) for h in whale_history)
+
+            win_rate = _compute_historical_win_rate(conn, tkr)
+            trade_math = _build_trade_math(trade, stock)
+            rationale = _build_technical_rationale(stock, classification, trade)
+
+            return jsonify({
+                'success': True,
+                'ticker': tkr,
+                'name_ar': stock.get('name_ar') or stock.get('name') or tkr,
+                'sector': stock.get('sector') or '\u0645\u062a\u0641\u0631\u0642\u0627\u062a',
+                'liquidity_bucket': classification['bucket'],
+                'liquidity_bucket_ar': classification['bucket_ar'],
+                'whale_flow_history': whale_history,
+                'whale_total_5d_egp': round(total_inflow, 0),
+                'historical_win_rate': win_rate,
+                'trade_math': trade_math,
+                'technical_rationale': rationale,
+                'computed_at': _now_iso(),
+            })
+        finally:
             conn.close()
-        return standard_success(results, count=len(results))
-    except Exception as e:
-        sys.stderr.write(f"[sparklines] error: {e}\n")
-        return standard_error()
+    except sqlite3.Error as e:
+        logger.error(f'[dossier] db error for {tkr}: {e}')
+        return jsonify({
+            'success': False,
+            'error': 'db_unavailable',
+            'error_ar': '\u062a\u0639\u0630\u0651\u0631 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a. \u062d\u0627\u0648\u0644 \u0644\u0627\u062d\u0642\u0627\u064b.',
+            'detail': str(e),
+        }), 503
 
 
-# ═══════════════════════════════════════════════════════════════════
-# Standalone test
-# ═══════════════════════════════════════════════════════════════════
+def _now_iso() -> str:
+    from datetime import datetime
+    return datetime.now().isoformat()
 
-def main():
-    import argparse
-    p = argparse.ArgumentParser(description='Conviction Dossier + Sparklines')
-    p.add_argument('--dossier', help='ticker for conviction dossier')
-    p.add_argument('--sparklines', action='store_true')
-    args = p.parse_args()
-    if args.dossier:
-        r = get_conviction_dossier(args.dossier)
-        print(json.dumps(r, ensure_ascii=False, indent=2, default=str)[:3000])
-        return 0
-    if args.sparklines:
-        r = get_sparklines()
-        for i in r.get('data', []):
-            pts = len(i.get('sparkline', []))
-            print(f"  {i['flag']} {i['symbol']:6} latest={i.get('latest_price')} chg={i.get('change_percent')}% pts={pts}")
-        return 0
-    p.print_help()
-    return 1
 
-if __name__ == '__main__':
-    sys.exit(main())
+__all__ = ['conviction_dossier_bp']

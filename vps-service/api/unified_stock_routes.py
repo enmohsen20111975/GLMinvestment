@@ -1,236 +1,314 @@
 #!/usr/bin/env python3
 """
-unified_stock_routes.py — المسار الموحد لتغذية StockInfographicCard
-=====================================================================
-BRAVO Directive: GET /api/stocks/{ticker}/unified يرجع كل الحقول المطلوبة:
-  entry_price, target_price, stop_loss, risk_reward, whale_net_flow, sharia_status
-  + current_price, name, sector, signal, confidence, rr_ratio, risk_level, trend_direction.
+unified_stock_routes.py — العرض الموحّد للسهم (State Machine)
+=================================================================================
+Task BRAVO-UNIFIED-STOCK (Owner Directive 2026-10-15)
 
-FastAPI router — يُركّب في main.py: app.include_router(unified_router).
-mode=ro. standard_responses. Rule 27.
+الهدف: إنهاء كارثة كارت ACFR (الشُرَط الفاضية والكروت المكررة). الشيت له
+حالتان لا ثالث لهما:
+
+  (أ) has_active_trade === true:
+      صفقة نشطة مكتملة الشروط (entry>0, stop<entry, target>entry, R/R>=1.5,
+      signal BUY, current_price > low_52w). يُرجع trade_setup كامل.
+
+  (ب) has_active_trade === false:
+      كاش وانتظار ومراقبة. يُرجع observation_status + observation_reason.
+      ممنوع إرجاع أرقام دخول/وقف/هدف وهمية.
+
+Rule 78 (IRON): لو السهم يكسر قاعه السنوي (current_price <= low_52w) →
+                has_active_trade = false منعاً باتاً.
+
+Endpoint (Blueprint `unified_stock_bp`):
+    GET /api/stocks/<ticker>/unified
+
+Rule 20: Python = brain. Next.js route is a thin proxy + local fallback.
+Rule 27: NO-FAKE-DATA — كل رقم من DB؛ لو ناقص → null + reason.
 """
+
 from __future__ import annotations
-import os, sys, sqlite3, json
+
+import logging
+import sqlite3
+import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
-from fastapi import APIRouter, Query
-from pydantic import BaseModel
+from typing import Any, Dict, Optional
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
-sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
-os.environ.setdefault('STOCKS_DB', str(PROJECT_ROOT / "db" / "stocks.db"))
-os.environ.setdefault('DATA_ENGINE_DB', str(PROJECT_ROOT / "db" / "data_engine.db"))
-os.environ.setdefault('PREDICTIONS_DB', str(PROJECT_ROOT / "db" / "predictions.db"))
+from flask import Blueprint, jsonify
 
-from api.standard_responses import standard_error, standard_success, enrich_opportunity, ro_connect, ro_query
+_VPS_ROOT = Path(__file__).resolve().parent.parent
+if str(_VPS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_VPS_ROOT))
 
-router = APIRouter(prefix="/api/stocks", tags=["Unified Stock Data"])
+from utils.db_paths import DBPaths  # noqa: E402
+from api.canonical_flow import (  # noqa: E402
+    classify_liquidity_bucket,
+    BUCKET_LABEL_AR,
+)
 
+logger = logging.getLogger(__name__)
 
-def _to_float(v, default=0.0):
-    if v is None: return default
-    try: return float(str(v).replace('−','-').strip())
-    except: return default
+unified_stock_bp = Blueprint('unified_stock_bp', __name__)
 
 
-def _compute_whale_net_flow(ticker: str, market: str) -> float:
-    """صافي التدفق من stock_daily_prices (نفس منطق الرادار)."""
-    conn = ro_connect('stocks.db')
-    if not conn: return 0.0
+# ─── Trade-setup thresholds (Rule 78 + owner directive) ─────────────────────
+MIN_RR_RATIO: float = 1.5
+ACTIVE_SIGNALS = {'BUY', 'STRONG_BUY', 'ACCUMULATE', 'STRONG BUY'}
+
+
+# ─── DB helpers (robust to any connection — no row_factory dependency) ───────
+
+def _get_stocks_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(DBPaths.STOCKS_DB, timeout=10.0)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _to_float(v: Any, default: float = 0.0) -> float:
+    if v is None:
+        return default
     try:
-        rows = conn.execute(
-            "SELECT open, close, volume FROM stock_daily_prices "
-            "WHERE ticker = ? AND market = ? AND close > 0 AND volume > 0 "
-            "ORDER BY price_date DESC LIMIT 20", (ticker, market)
-        ).fetchall()
-        conn.close()
-        if not rows: return 0.0
-        buy, sell = 0.0, 0.0
-        for r in rows:
-            o, c, v = _to_float(r['open']), _to_float(r['close']), _to_float(r['volume'])
-            if v <= 0: continue
-            val = v * c
-            if c > o: buy += val
-            elif c < o: sell += val
-            else: buy += val * 0.5; sell += val * 0.5
-        return round(buy - sell, 0)
-    except Exception as e:
-        sys.stderr.write(f"[unified] whale_flow error: {e}\n")
-        conn.close()
-        return 0.0
+        return float(str(v).replace('\u2212', '-').replace('\u060c', '').strip())
+    except (ValueError, TypeError):
+        return default
 
 
-def _sharia_status(market: str) -> str:
-    if market.upper() == 'TADAWUL': return 'متوافق'
-    return 'تحتاج مراجعة'
+def _query_row(conn: sqlite3.Connection, sql: str, params: tuple) -> Optional[Dict[str, Any]]:
+    """Run a SELECT and return the first row as a dict (robust to row_factory)."""
+    cur = conn.execute(sql, params)
+    row = cur.fetchone()
+    if row is None:
+        return None
+    cols = [d[0] for d in cur.description]
+    return {cols[i]: row[i] for i in range(len(cols))}
 
 
-@router.get("/{ticker}/unified")
-def get_unified_stock(ticker: str) -> Dict[str, Any]:
-    """المسار الموحد — يغذي StockInfographicCard بكل الحقول."""
-    ticker = (ticker or '').strip().upper()
-    if not ticker:
-        return standard_error('التيكر مطلوب')
-    try:
-        # 1. Stock metadata.
-        stock_rows = ro_query('stocks.db',
-            "SELECT ticker, name, name_ar, market, sector, current_price, change_percent, "
-            "ma_50, ma_200, rsi, support, resistance, dividend_yield, pe_ratio, pb_ratio, is_egx30, low_52w, high_52w "
-            "FROM stocks WHERE ticker = ? LIMIT 1", (ticker,))
-        stock_info = dict(stock_rows[0]) if stock_rows else None
-        if not stock_info:
-            return standard_error(f'{ticker} غير موجود', 'not_found')
+def _fetch_stock_info(conn: sqlite3.Connection, ticker: str) -> Optional[Dict[str, Any]]:
+    return _query_row(
+        conn,
+        """
+        SELECT ticker, name, name_ar, market, sector, current_price,
+               change_percent, volume, avg_volume, support, resistance,
+               ma_50, ma_200, rsi, high_52w, low_52w, signal, previous_close
+        FROM stocks
+        WHERE ticker = ?
+        LIMIT 1
+        """,
+        (ticker,),
+    )
 
-        market = stock_info.get('market', 'EGX')
 
-        # 2. Prediction (latest BUY signal from predictions table or aiPrediction — compute R/R in Python).
-        pred_rows = ro_query('predictions.db',
-            "SELECT ticker, signal, signal_type, entry_price, target_price, stop_loss, risk_reward, market "
-            "FROM predictions WHERE ticker = ? AND (signal LIKE '%BUY%' OR signal_type = 'BUY') "
-            "ORDER BY id DESC LIMIT 1", (ticker,))
-        if not pred_rows:
-            pred_rows = ro_query('predictions.db',
-                "SELECT stock_symbol AS ticker, signal_type AS signal, signal_type, entry_price, target_price, stop_loss, market "
-                "FROM aiPrediction WHERE stock_symbol = ? AND signal_type = 'BUY' "
-                "ORDER BY id DESC LIMIT 1", (ticker,))
-        pred = dict(pred_rows[0]) if pred_rows else {}
+def _fetch_latest_trade_setup(conn: sqlite3.Connection, ticker: str) -> Optional[Dict[str, Any]]:
+    """Latest trade setup from cached_analysis (entry/target/stop/RR/signal)."""
+    return _query_row(
+        conn,
+        """
+        SELECT ticker, signal, entry_price, target_price, stop_loss,
+               risk_reward, target_price as target_1, target_price as target_2,
+               master_score, analysis_json, analysis_date, updated_at
+        FROM cached_analysis
+        WHERE ticker = ?
+        ORDER BY COALESCE(updated_at, analysis_date, '0') DESC
+        LIMIT 1
+        """,
+        (ticker,),
+    )
 
-        # 3. Whale net flow.
-        whale_net_flow = _compute_whale_net_flow(ticker, market)
 
-        # 4. Risk reward.
-        current_price = _to_float(stock_info.get('current_price'))
-        rr = _to_float(pred.get('risk_reward'))
-        entry = _to_float(pred.get('entry_price')) or current_price
-        target = _to_float(pred.get('target_price'))
-        stop = _to_float(pred.get('stop_loss'))
-        if rr <= 0 and entry > 0 and target > entry and stop < entry:
-            rr = round((target - entry) / (entry - stop), 2)
+# ─── State machine ──────────────────────────────────────────────────────────
 
-        # 5. Falling Knife check (Rule 78): breaking yearly low?
-        yearly_low = _to_float(stock_info.get('low_52w'))
-        if yearly_low <= 0:
-            conn_fk = ro_connect('stocks.db')
-            if conn_fk:
-                try:
-                    yl = conn_fk.execute(
-                        "SELECT MIN(low) FROM stock_daily_prices WHERE ticker = ? AND market = ? AND low > 0",
-                        (ticker, market)
-                    ).fetchone()
-                    yearly_low = _to_float(yl[0]) if yl else 0.0
-                except Exception:
-                    pass
-                conn_fk.close()
-        breaking_yearly_low = yearly_low > 0 and current_price < yearly_low
-        bearish_distribution = whale_net_flow < -2_000_000
-        falling_knife = breaking_yearly_low
+def _evaluate_active_trade(
+    trade: Optional[Dict[str, Any]],
+    current_price: float,
+    low_52w: Optional[float],
+) -> Dict[str, Any]:
+    """Decide has_active_trade + build trade_setup OR observation fields.
 
-        # 7. State Machine: has_active_trade?
-        has_active_trade = (rr >= 1.5 and not falling_knife and bool(pred.get('signal') or pred.get('signal_type')))
+    Rule 78: if current_price <= low_52w → NEVER active (falling knife guard).
+    """
+    # Default = observation mode
+    observation_default = {
+        'has_active_trade': False,
+        'trade_setup': None,
+        'observation_status': '\u0648\u0636\u0639 \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u0629: \u0643\u0627\u0634 \u0648\u0627\u0646\u062a\u0638\u0627\u0631 \u23f8\ufe0f',
+        'observation_reason': '\u0644\u0627 \u062a\u0648\u062c\u062f \u0646\u0642\u0637\u0629 \u062f\u062e\u0648\u0644 \u0622\u0645\u0646\u0629 \u0628\u0634\u0631\u0648\u0637 \u0627\u0644\u0645\u0646\u0635\u0629 \u062d\u0627\u0644\u064a\u0627\u064b (\u0644\u0627 \u0635\u0641\u0642\u0629 \u0645\u062e\u0632\u0651\u0646\u0629 \u0645\u0643\u062a\u0645\u0644\u0629 \u0627\u0644\u0634\u0631\u0648\u0637).',
+    }
 
-        # 8. Canonical flow classification.
+    # Rule 78: breaking 52w low → NEVER active
+    if low_52w is not None and low_52w > 0 and current_price <= low_52w:
+        return {
+            'has_active_trade': False,
+            'trade_setup': None,
+            'observation_status': '\u0648\u0636\u0639 \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u0629: \u0643\u0627\u0634 \u0648\u0627\u0646\u062a\u0638\u0627\u0631 \u23f8\ufe0f',
+            'observation_reason': (
+                f'\u0627\u0644\u0633\u0639\u0631 {current_price:.2f} \u0643\u0633\u0631 \u0642\u0627\u0639 52 \u0623\u0633\u0628\u0648\u0639 ({low_52w:.2f}) \u2014 '
+                f'\u0633\u0643\u064a\u0646 \u0633\u0627\u0642\u0637 (Rule 78): \u0645\u0645\u0646\u0648\u0639 \u0625\u0637\u0644\u0627\u0642 \u062a\u0648\u0635\u064a\u0629 \u0634\u0631\u0627\u0621.'
+            ),
+        }
+
+    if not trade:
+        return observation_default
+
+    entry = _to_float(trade.get('entry_price'))
+    stop = _to_float(trade.get('stop_loss'))
+    target = _to_float(trade.get('target_price'))
+    target_2_raw = trade.get('target_price_2')
+    target_2 = _to_float(target_2_raw) if target_2_raw is not None else None
+    rr = trade.get('risk_reward')
+    signal = (trade.get('signal') or '').strip().upper()
+
+    # Compute R/R if missing but levels are valid
+    rr_val: Optional[float] = None
+    if rr is not None:
         try:
-            from api.canonical_flow import classify_liquidity_bucket
-            flow_cls = classify_liquidity_bucket(ticker, market, entry=current_price,
-                                                  target=_to_float(pred.get('target_price')) or _to_float(stock_info.get('resistance')),
-                                                  stop=_to_float(pred.get('stop_loss')) or _to_float(stock_info.get('support')))
-            liquidity_bucket = flow_cls.bucket
-            liquidity_reason = flow_cls.reason
-        except Exception:
-            liquidity_bucket = 'neutral'
-            liquidity_reason = ''
+            rr_val = float(rr)
+        except (ValueError, TypeError):
+            rr_val = None
+    if rr_val is None and entry > 0 and stop > 0 and target > 0 and stop < entry and target > entry:
+        rr_val = round((target - entry) / (entry - stop), 2)
 
-        # 9. Build response — State Machine.
-        result = {
-            'ticker': ticker,
-            'name': stock_info.get('name_ar') or stock_info.get('name') or ticker,
-            'market': market,
-            'current_price': current_price,
-            'change_percent': _to_float(stock_info.get('change_percent')),
-            'liquidity_bucket': liquidity_bucket,
-            'liquidity_reason': liquidity_reason,
-            'sharia_status': _sharia_status(market),
+    # Validate ALL conditions for an active trade
+    conditions_met = (
+        entry > 0
+        and stop > 0
+        and target > 0
+        and stop < entry
+        and target > entry
+        and rr_val is not None
+        and rr_val >= MIN_RR_RATIO
+        and signal in ACTIVE_SIGNALS
+    )
+
+    if not conditions_met:
+        # Build a precise observation reason
+        reasons = []
+        if entry <= 0:
+            reasons.append('\u0644\u0627 \u0633\u0639\u0631 \u062f\u062e\u0648\u0644')
+        if stop <= 0:
+            reasons.append('\u0644\u0627 \u0648\u0642\u0641')
+        if target <= 0:
+            reasons.append('\u0644\u0627 \u0647\u062f\u0641')
+        if entry > 0 and stop > 0 and stop >= entry:
+            reasons.append('\u0627\u0644\u0648\u0642\u0641 \u0641\u0648\u0642 \u0627\u0644\u062f\u062e\u0648\u0644')
+        if entry > 0 and target > 0 and target <= entry:
+            reasons.append('\u0627\u0644\u0647\u062f\u0641 \u062a\u062d\u062a \u0627\u0644\u062f\u062e\u0648\u0644')
+        if rr_val is not None and rr_val < MIN_RR_RATIO:
+            reasons.append(f'R/R \u063a\u064a\u0631 \u0645\u062c\u0632\u064a\u0629 ({rr_val:.2f} < {MIN_RR_RATIO:.1f})')
+        if signal and signal not in ACTIVE_SIGNALS:
+            reasons.append(f'\u0625\u0634\u0627\u0631\u0629 {signal} \u063a\u064a\u0631 \u0635\u0627\u0644\u062d\u0629 \u0644\u0644\u0634\u0631\u0627\u0621')
+        if not signal:
+            reasons.append('\u0644\u0627 \u0625\u0634\u0627\u0631\u0629')
+        reason_str = '\u060c '.join(reasons) if reasons else '\u0634\u0631\u0648\u0637 \u063a\u064a\u0631 \u0645\u0643\u062a\u0645\u0644\u0629'
+        return {
+            'has_active_trade': False,
+            'trade_setup': None,
+            'observation_status': '\u0648\u0636\u0639 \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u0629: \u0643\u0627\u0634 \u0648\u0627\u0646\u062a\u0638\u0627\u0631 \u23f8\ufe0f',
+            'observation_reason': reason_str + '.',
         }
 
-        if has_active_trade:
-            # Active trade — green card data.
-            result['has_active_trade'] = True
-            result['trade_setup'] = {
-                'entry_price': _to_float(pred.get('entry_price')) or current_price,
-                'stop_loss': _to_float(pred.get('stop_loss')) or _to_float(stock_info.get('support')),
-                'target_1': _to_float(pred.get('target_price')) or _to_float(stock_info.get('resistance')),
-                'target_2': round(_to_float(pred.get('target_price')) * 1.15, 2) if pred.get('target_price') else None,
-                'rr_ratio': rr,
-                'signal': pred.get('signal_type') or 'BUY',
+    # Active trade — build trade_setup
+    return {
+        'has_active_trade': True,
+        'trade_setup': {
+            'entry_price': round(entry, 4),
+            'stop_loss': round(stop, 4),
+            'target_1': round(target, 4),
+            'target_2': round(target_2, 4) if target_2 and target_2 > target else None,
+            'rr_ratio': rr_val,
+            'signal': signal,
+        },
+        'observation_status': None,
+        'observation_reason': None,
+    }
+
+
+# ─── Endpoint ────────────────────────────────────────────────────────────────
+
+@unified_stock_bp.route('/api/stocks/<string:ticker>/unified', methods=['GET'])
+def unified_stock(ticker: str):
+    """GET /api/stocks/<ticker>/unified
+
+    Returns the state-machine shape:
+      { success, ticker, has_active_trade, observation_status, observation_reason,
+        trade_setup, stock_info }
+    """
+    tkr = (ticker or '').strip().upper()
+    if not tkr:
+        return jsonify({'success': False, 'error': 'missing_ticker'}), 400
+
+    try:
+        conn = _get_stocks_conn()
+        try:
+            stock = _fetch_stock_info(conn, tkr)
+            if not stock:
+                return jsonify({
+                    'success': False,
+                    'error': 'stock_not_found',
+                    'ticker': tkr,
+                    'has_active_trade': False,
+                    'observation_status': '\u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f',
+                    'observation_reason': f'\u0627\u0644\u0633\u0647\u0645 {tkr} \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f \u0641\u064a \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a.',
+                    'trade_setup': None,
+                    'stock_info': None,
+                }), 404
+
+            trade = _fetch_latest_trade_setup(conn, tkr)
+
+            current_price = _to_float(stock.get('current_price'))
+            low_52w = _to_float(stock.get('low_52w')) if stock.get('low_52w') else None
+            high_52w = _to_float(stock.get('high_52w')) if stock.get('high_52w') else None
+
+            # Canonical liquidity classification (mutually-exclusive bucket + 5d flow + history)
+            classification = classify_liquidity_bucket(tkr, stock.get('market') or 'EGX', conn=conn)
+
+            trade_state = _evaluate_active_trade(trade, current_price, low_52w)
+
+            stock_info = {
+                'name_ar': stock.get('name_ar') or stock.get('name') or tkr,
+                'name': stock.get('name') or tkr,
+                'sector': stock.get('sector') or '\u0645\u062a\u0641\u0631\u0642\u0627\u062a',
+                'market': stock.get('market') or 'EGX',
+                'current_price': round(current_price, 4) if current_price > 0 else None,
+                'change_pct': round(_to_float(stock.get('change_percent')), 4),
+                'fair_value': None,  # Rule 27: not in stocks.db; data_engine.db absent in this env
+                'sharia_compliant': None,  # Rule 27: not in stocks.db schema
+                'whale_net_flow_5d': classification['net_flow_5d'],
+                'liquidity_bucket': classification['bucket'],
+                'liquidity_bucket_ar': classification['bucket_ar'],
+                'support_level': round(_to_float(stock.get('support')), 4) if stock.get('support') else None,
+                'resistance_level': round(_to_float(stock.get('resistance')), 4) if stock.get('resistance') else None,
+                'low_52w': round(low_52w, 4) if low_52w else None,
+                'high_52w': round(high_52w, 4) if high_52w else None,
+                'volume': _to_float(stock.get('volume')),
+                'avg_volume': _to_float(stock.get('avg_volume')) if stock.get('avg_volume') else None,
             }
-            result['observation_status'] = None
-            result['observation_reason'] = None
-        else:
-            # No active trade — observation mode (NO null entry/stop/target!).
-            result['has_active_trade'] = False
-            result['trade_setup'] = None
-            result['observation_status'] = 'وضع المراقبة: كاش وانتظار ⏸️'
-            if rr < 1.5 and rr > 0:
-                result['observation_reason'] = f'نسبة العائد للمخاطرة R/R = {rr:.2f} غير مجزية (أقل من 1.5)'
-            elif falling_knife:
-                reason_parts = []
-                if breaking_yearly_low:
-                    reason_parts.append(f'السهم يكسر قاعه السنوي ({yearly_low:.2f})')
-                if bearish_distribution:
-                    reason_parts.append(f'تصريف حيتان (تدفق سالب {whale_net_flow/1e6:.1f}M)')
-                result['observation_reason'] = ' — '.join(reason_parts) if reason_parts else 'السهم في مسار هابط'
-            else:
-                result['observation_reason'] = 'لا توجد إشارة شراء نشطة بهذا السهم حالياً'
 
-        # Stock info (always present — real numbers only).
-        result['stock_info'] = {
-            'current_price': current_price,
-            'change_pct': _to_float(stock_info.get('change_percent')),
-            'fair_value': _to_float(stock_info.get('resistance')),
-            'support_level': _to_float(stock_info.get('support')),
-            'resistance_level': _to_float(stock_info.get('resistance')),
-            'whale_net_flow_5d': whale_net_flow,
-            'sharia_compliant': _sharia_status(market) == 'متوافق',
-            'pe_ratio': stock_info.get('pe_ratio'),
-            'dividend_yield': stock_info.get('dividend_yield'),
-            'sector': stock_info.get('sector'),
-            'is_egx30': bool(stock_info.get('is_egx30')),
-        }
-        # Enrich with unified financial fields.
-        enriched = enrich_opportunity({
-            'entry_defense': {'entry_level': current_price,
-                              'defense_level': _to_float(stock_info.get('support')),
-                              'resistance_level': _to_float(stock_info.get('resistance'))},
-            'whale': {'net_flow_egp': whale_net_flow},
-            'fundamentals': {},
-            'targets_available': has_active_trade,
-            'falling_knife': {'is_falling_knife': falling_knife},
-        })
-        result['rr_ratio'] = enriched.get('rr_ratio')
-        result['risk_level'] = enriched.get('risk_level')
-        result['trend_direction'] = enriched.get('trend_direction')
-        result['institutional_volume_pct'] = enriched.get('institutional_volume_pct')
-
-        return standard_success(result, ticker=ticker)
-    except Exception as e:
-        sys.stderr.write(f"[unified] {ticker} error: {e}\n")
-        return standard_error(f'خطأ في تحميل بيانات {ticker}')
+            return jsonify({
+                'success': True,
+                'ticker': tkr,
+                'has_active_trade': trade_state['has_active_trade'],
+                'observation_status': trade_state['observation_status'],
+                'observation_reason': trade_state['observation_reason'],
+                'trade_setup': trade_state['trade_setup'],
+                'stock_info': stock_info,
+                'liquidity_reason': classification['reason'],
+                'whale_flow_history': classification.get('whale_flow_history', []),
+                'computed_at': _now_iso(),
+            })
+        finally:
+            conn.close()
+    except sqlite3.Error as e:
+        logger.error(f'[unified_stock] db error for {tkr}: {e}')
+        return jsonify({
+            'success': False,
+            'error': 'db_unavailable',
+            'error_ar': '\u062a\u0639\u0630\u0651\u0631 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a. \u062d\u0627\u0648\u0644 \u0644\u0627\u062d\u0642\u0627\u064b.',
+            'detail': str(e),
+        }), 503
 
 
-# Standalone test.
-if __name__ == '__main__':
-    print("=" * 72)
-    print("🧪 unified_stock_routes — standalone test")
-    print("=" * 72)
-    for ticker in ['COMI', 'SWDY', 'AMOC']:
-        r = get_unified_stock(ticker)
-        d = r.get('data', {})
-        if d:
-            print(f"\n{ticker}: success={r.get('success')}")
-            print(f"  entry={d.get('entry_price')} target={d.get('target_price')} stop={d.get('stop_loss')}")
-            print(f"  R/R={d.get('risk_reward')} whale_flow={d.get('whale_net_flow')} sharia={d.get('sharia_status')}")
-            print(f"  rr_ratio={d.get('rr_ratio')} risk={d.get('risk_level')} trend={d.get('trend_direction')} inst_vol={d.get('institutional_volume_pct')}%")
-        else:
-            print(f"\n{ticker}: {r.get('message_ar', 'error')}")
-    print("\n" + "=" * 72)
+def _now_iso() -> str:
+    from datetime import datetime
+    return datetime.now().isoformat()
+
+
+__all__ = ['unified_stock_bp']

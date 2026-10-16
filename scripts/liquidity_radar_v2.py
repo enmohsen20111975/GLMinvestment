@@ -46,6 +46,45 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STOCKS_DB = Path(os.environ.get('STOCKS_DB', str(PROJECT_ROOT / "db" / "stocks.db")))
 DATA_ENGINE_DB = Path(os.environ.get('DATA_ENGINE_DB', str(PROJECT_ROOT / "db" / "data_engine.db")))
 
+# TASK-BACKEND-BRAVO (2026-10-15): canonical liquidity classifier (mutually-exclusive).
+# Add vps-service to sys.path so we can import the canonical classifier.
+_VPS_SERVICE_ROOT = PROJECT_ROOT / 'vps-service'
+if str(_VPS_SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(_VPS_SERVICE_ROOT))
+try:
+    from api.canonical_flow import classify_liquidity_bucket as _classify_liquidity_bucket
+    from api.canonical_flow import BUCKET_LABEL_AR as _BUCKET_LABEL_AR
+except Exception as _cf_err:  # graceful — radar still works without canonical classifier
+    _classify_liquidity_bucket = None
+    _BUCKET_LABEL_AR = {'neutral': 'حياد'}
+    print(f"[liquidity_radar_v2] WARN: canonical_flow import failed: {_cf_err}", flush=True)
+
+
+def _classify_bucket_safe(conn, ticker: str, market: str) -> Dict[str, Any]:
+    """Call the canonical classifier with full error isolation.
+
+    Returns a fallback neutral classification if the classifier is unavailable
+    or raises. Never lets the radar crash because of the canonical flow import.
+    """
+    fallback = {
+        'liquidity_bucket': 'neutral',
+        'liquidity_bucket_ar': _BUCKET_LABEL_AR.get('neutral', 'حياد'),
+        'net_flow_5d': 0.0,
+    }
+    if _classify_liquidity_bucket is None:
+        return fallback
+    try:
+        cls = _classify_liquidity_bucket(ticker, market, conn)
+        return {
+            'liquidity_bucket': cls.get('bucket', 'neutral'),
+            'liquidity_bucket_ar': cls.get('bucket_ar', _BUCKET_LABEL_AR.get('neutral', 'حياد')),
+            'net_flow_5d': float(cls.get('net_flow_5d', 0.0) or 0.0),
+        }
+    except Exception as e:
+        print(f"[liquidity_radar_v2] WARN: classify failed for {ticker}: {e}", flush=True)
+        return fallback
+
+
 # Task BRAVO-RADAR-V2: استيراد قاموس تعريب القطاعات
 import importlib.util as _ilu
 _sector_arabic_path = Path(__file__).resolve().parent / "sector_arabic.py"
@@ -784,6 +823,10 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
             'phase': PHASE_INSUFFICIENT,
             'entry_defense': {'entry_level': None, 'defense_level': None},
             'reason': 'السهم غير موجود في قاعدة البيانات',
+            # TASK-BACKEND-BRAVO: canonical mutually-exclusive bucket (neutral fallback).
+            'liquidity_bucket': 'neutral',
+            'liquidity_bucket_ar': _BUCKET_LABEL_AR.get('neutral', 'حياد'),
+            'net_flow_5d': 0.0,
         }
 
     # بناء dict من stock_row باستخدام أسماء الأعمدة الصحيحة من الاستعلام الأول
@@ -819,6 +862,10 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
             'phase': PHASE_INSUFFICIENT,
             'entry_defense': {'entry_level': None, 'defense_level': None, 'reason': 'سيولة ضعيفة'},
             'reason': f'سيولة ضعيفة — {liquidity["reason"]}',
+            # TASK-BACKEND-BRAVO: even low-liquidity stocks get classified (usually neutral).
+            'liquidity_bucket': 'neutral',
+            'liquidity_bucket_ar': _BUCKET_LABEL_AR.get('neutral', 'حياد'),
+            'net_flow_5d': 0.0,
         }
 
     # Task BRAVO-CASH-LINKAGE: فتح data_engine.db لسحب fundamentals (cash + free_cf + operating_cf + debt) + screener_lists.
@@ -872,6 +919,11 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
     if falling_knife['is_falling_knife']:
         short_reason += f" | ⚠️ {falling_knife['reason']}"
 
+    # TASK-BACKEND-BRAVO (2026-10-15): canonical mutually-exclusive liquidity bucket.
+    # This is the NEW canonical classification — the legacy `phase` field above
+    # is kept for backward compatibility. `liquidity_bucket` is the SSOT.
+    _bucket_cls = _classify_bucket_safe(conn, ticker, market)
+
     return {
         'ticker': ticker,
         'name': stock_info.get('name_ar') or stock_info.get('name') or ticker,
@@ -891,6 +943,10 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         'tv_lists': tv_whale.get('tv_lists', []),
         'tv_rank': tv_whale.get('tv_rank'),
         'reason': short_reason,
+        # TASK-BACKEND-BRAVO: canonical mutually-exclusive liquidity bucket.
+        'liquidity_bucket': _bucket_cls['liquidity_bucket'],
+        'liquidity_bucket_ar': _bucket_cls['liquidity_bucket_ar'],
+        'net_flow_5d': _bucket_cls['net_flow_5d'],
     }
 
 
