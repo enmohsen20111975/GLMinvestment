@@ -235,6 +235,19 @@ function SignalCard({ sig, onCopy, copied, onOpenDossier }: { sig: LiveSignal; o
             <span className="text-[10px] text-amber-700 dark:text-amber-300 leading-relaxed flex-1">{sig.catalyst_ar || sig.catalyst}</span>
           </div>
         )}
+
+        {/* Simplified explanation for all client types */}
+        <div className="bg-muted/40 rounded-lg p-2 border border-border/50">
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            {sig.signal === 'STRONG_BUY'
+              ? '🎯 فرصة قوية: الحيتان بتشتري بسعر دخول آمن مع وقف خسارة محدود وهدف صاعد. مناسب للمستثمر اللي بيدور على صفقة واضحة.'
+              : sig.signal === 'BUY'
+                ? '✅ فرصة جيدة: المؤشرات الفنية إيجابية مع تدفق سيولة واردة. مناسبة للمضارب اللي بيقبل مخاطرة معتدلة.'
+                : '👁️ مراقبة: السهم تحت المتابعة. انتظر تأكيد التجميع المؤسسي قبل الدخول.'
+            }
+          </p>
+        </div>
+
         <div className="flex gap-1.5">
           <Button variant="outline" size="sm" onClick={(e) => onCopy(e, sig)} className="flex-1 h-7 text-[10px] gap-1.5">
             {copied ? <><Check className="w-3 h-3 text-emerald-500" /> تم النسخ ✓</> : <><Copy className="w-3 h-3" /> 📋 نسخ</>}
