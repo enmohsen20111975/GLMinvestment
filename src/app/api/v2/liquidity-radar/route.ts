@@ -131,9 +131,8 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: isTimeout ? 'liquidity_radar_v2.py timed out (>120s)' : 'liquidity_radar_v2.py failed',
-        message: error?.message || 'Unknown error',
-        stderr_preview: error?.stderr ? error.stderr.slice(0, 500) : undefined,
+        error: isTimeout ? 'انتهت مهلة استجابة محرك الرادار (>120 ثانية)' : 'تعذر تحميل بيانات رادار السيولة لحظياً — المحرك قيد المزامنة',
+        message: 'radar_sync_pending',
         market,
         market_regime: null,
         scanned_count: 0,
