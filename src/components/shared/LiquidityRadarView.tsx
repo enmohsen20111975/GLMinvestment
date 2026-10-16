@@ -145,6 +145,29 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
   const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [activePhase, setActivePhase] = useState<string>('الكل');
+  const [presetCounts, setPresetCounts] = useState<Record<string, number>>({});
+
+  // Fetch preset counts from /api/radar/bucket
+  const fetchPresetCounts = useCallback(async () => {
+    const types = ['inflow', 'outflow', 'quiet_accumulation', 'correction_exhaustion'];
+    const counts: Record<string, number> = {};
+    await Promise.all(types.map(async (type) => {
+      try {
+        const res = await fetch(`/api/radar/bucket?market=${encodeURIComponent(market)}&type=${type}`, { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          counts[type] = Array.isArray(json.stocks) ? json.stocks.length : (json.count ?? 0);
+        }
+      } catch { /* graceful */ }
+    }));
+    setPresetCounts(counts);
+  }, [market]);
+
+  useEffect(() => { fetchPresetCounts(); }, [fetchPresetCounts]);
+
+  const handlePresetClick = useCallback((bucketType: string, phase: string) => {
+    setActivePhase(phase);
+  }, []);
   const [hideLowLiquidity, setHideLowLiquidity] = useState<boolean>(true);
   const currency = marketCurrency(market);
 
@@ -338,44 +361,44 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       {/* ─── Pulse Ribbon ─── */}
       <PulseRibbon market={market} scannedCount={data.scanned_count ?? data.stocks.length} />
 
-      {/* ─── Smart Preset Buttons ─── */}
+      {/* ─── Smart Preset Buttons (wired to /api/radar/bucket) ─── */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-muted-foreground shrink-0">قوائم ذكية:</span>
         <button
-          onClick={() => setActivePhase('بيبلع على الهادي')}
+          onClick={() => handlePresetClick('inflow', 'بيبلع على الهادي')}
           className={cn(
             'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
             activePhase === 'بيبلع على الهادي' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
           )}
         >
-          🌊 تدفق سيولة حوتية
+          🌊 تدفق سيولة حوتية {presetCounts.inflow > 0 && <span className="text-[9px] opacity-70">({presetCounts.inflow})</span>}
         </button>
         <button
-          onClick={() => setActivePhase('بيصرف')}
+          onClick={() => handlePresetClick('outflow', 'بيصرف')}
           className={cn(
             'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
             activePhase === 'بيصرف' ? 'bg-rose-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
           )}
         >
-          🩸 تصريف وهروب كاش
+          🩸 تصريف وهروب كاش {presetCounts.outflow > 0 && <span className="text-[9px] opacity-70">({presetCounts.outflow})</span>}
         </button>
         <button
-          onClick={() => setActivePhase('الكل')}
+          onClick={() => handlePresetClick('quiet_accumulation', 'الكل')}
           className={cn(
             'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
             activePhase === 'الكل' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
           )}
         >
-          💎 تجميع قيعان صامت
+          💎 تجميع قيعان صامت {presetCounts.quiet_accumulation > 0 && <span className="text-[9px] opacity-70">({presetCounts.quiet_accumulation})</span>}
         </button>
         <button
-          onClick={() => setActivePhase('بيتحضر')}
+          onClick={() => handlePresetClick('correction_exhaustion', 'بيتحضر')}
           className={cn(
             'px-2.5 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1',
             activePhase === 'بيتحضر' ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground hover:bg-accent',
           )}
         >
-          🛡️ نهاية تصحيح وارتداد
+          🛡️ نهاية تصحيح وارتداد {presetCounts.correction_exhaustion > 0 && <span className="text-[9px] opacity-70">({presetCounts.correction_exhaustion})</span>}
         </button>
       </div>
 
