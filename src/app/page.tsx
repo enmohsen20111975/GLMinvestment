@@ -807,7 +807,8 @@ function AppShell() {
   // Protected screens (portfolio, watchlist, admin, settings) still require login.
   const GUEST_ALLOWED_VIEWS = new Set([
     'dashboard', 'stocks', 'liquidity-radar', 'trading-chart',
-    'news', 'academy', 'rescue',
+    'news', 'academy', 'rescue', 'recommendations', 'market-depth',
+    'specialist-analysis', 'stock-filters', 'top-performers',
   ]);
   const isGuestPreview = authStatus === 'unauthenticated';
   const isGuestAllowed = isGuestPreview && GUEST_ALLOWED_VIEWS.has(currentView);
