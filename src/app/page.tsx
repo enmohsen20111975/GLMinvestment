@@ -428,7 +428,18 @@ function SessionSync() {
 }
 
 function AppShell() {
-  const { currentView } = useAppStore();
+  const { currentView, setCurrentView } = useAppStore();
+
+  // Direct hash → view sync (runs on every render, not just in useEffect)
+  // This ensures guests landing on #recommendations see the right view
+  // BEFORE the auth gate blocks them.
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.slice(1).replace(/^\//, '');
+    if (hash && hash !== currentView) {
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => setCurrentView(hash as typeof currentView), 0);
+    }
+  }
   const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
   const currentMarket = useAppStore((s) => s.currentMarket);
   const setCurrentMarket = useAppStore((s) => s.setCurrentMarket);
