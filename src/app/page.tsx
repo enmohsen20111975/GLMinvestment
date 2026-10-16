@@ -830,6 +830,42 @@ function AppShell() {
 
   // GUEST-PREVIEW: if guest is on an allowed screen → render AppShell with preview banner
   // (no auth wall for dashboard/stocks/liquidity-radar/trading-chart/news/academy/rescue)
+  // This check runs BEFORE the loading check so guests don't see the loading skeleton.
+  // Read hash directly for guest check (store may not have updated yet on first render)
+  const hashView = typeof window !== 'undefined'
+    ? (window.location.hash.replace(/^#\/?/, '') || 'dashboard')
+    : 'dashboard';
+  const guestView = GUEST_ALLOWED_VIEWS.has(hashView) ? hashView : currentView;
+  if ((authStatus === 'unauthenticated' || authStatus === 'loading') && GUEST_ALLOWED_VIEWS.has(guestView)) {
+    const showGuestBanner = authStatus === 'unauthenticated';
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <DbSchemaInit />
+        <SessionSync />
+        <UrlHashSync />
+        {/* GUEST-PREVIEW banner — shown when visitor is not logged in */}
+        {showGuestBanner && (
+          <div className="bg-muted border-b border-border px-4 py-1.5 flex items-center justify-between text-xs">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              👁️ أنت في وضع المعاينة الحرة — تصفح الأسعار ورادار الحيتان بحرية
+            </span>
+            <button
+              onClick={() => useAppStore.getState().setCurrentView('auth')}
+              className="text-primary hover:text-foreground transition-colors font-semibold"
+            >
+              سجّل الآن ←
+            </button>
+          </div>
+        )}
+        <RealtimeTicker />
+        <Header title={t('dashboard.title')} subtitle={`${t('dashboard.subtitle')} — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
+        <main className="flex-1">
+          {renderView()}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   // لو الـ session لسه بيتحمّل → skeleton
   if (authStatus === 'loading') {
