@@ -85,7 +85,7 @@
 | ✅ **A-P1** | ألفا | PASS + متدفع — TopBar 24→10، `page.tsx` UNTOUCHED (Rule 67) |
 | ✅ **A-P2** | ألفا | PASS + متدفع — tabs مدمجة (stock-filters→StocksView، reports→MarketAnalysisView، alerts→EnhancedPortfolioView) |
 | ✅ **B-P1** | برافو | PASS + متدفع — `require_role` + `require_trial_or_paid` في auth_middleware، مستخدم في ai_routes، py_compile PASS، `API-CONTRACT-PAYWALL.md` مكتوب |
-| 🔜 **A-P3** | ألفا | Auth UI (Guest Mode + Trial soft + soft paywall بالاَ contract) |
+| ✅ **A-P3** | ألفا | ✅ PASS + متدفع (`92197fe`) — Guest Mode (AuthView سجن اتشال + GuestLockedView + isGuest) + TrialExpiredModal soft + PaywallListener (402/403 routing صح) + apiClient regression fix (9 methods). 3 حالات code-ready، browser كامل محتاج backend. |
 | 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
 | 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | ✅ PASS + متدفع — TRIAL_DAYS_CANONICAL=14 + fail-closed للـ paid (قرار جون اتـ implement) + trial_migration.py + admin reset |
 | 🔜 **B-P3** | برافو | stocks/crypto unification — canonical محدّد (price_history للأسعار التاريخية) |
