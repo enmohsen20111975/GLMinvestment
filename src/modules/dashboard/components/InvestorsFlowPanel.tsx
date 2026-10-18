@@ -501,38 +501,8 @@ function InvestorsTable({
   autoSeeded: boolean;
   stale: boolean;
 }) {
-  // ALPHA-FIX: لو البيانات قديمة → اعرض شارة تحذيرية بدل الأرقام
-  if (stale) {
-    const latestDate = rows[0]?.date ?? 'غير معروف';
-    return (
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground pb-1 border-b border-border/50">
-          <span className="flex items-center gap-1">
-            <Globe2 className="w-3 h-3" />
-            تدفّق المستثمرين (مصريين / عرب / أجانب)
-          </span>
-          <Badge
-            variant="outline"
-            className="text-[9px] px-1 py-0 text-amber-600 dark:text-amber-400 border-amber-500/50 bg-amber-500/10"
-            title={`أحدث بيانات: ${latestDate}`}
-          >
-            بيانات قديمة
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-[11px] text-amber-700 dark:text-amber-300">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
-          <div className="space-y-0.5">
-            <p className="font-semibold">البيانات قيد التحديث من البورصة</p>
-            <p className="text-[10px] text-amber-600 dark:text-amber-400">
-              آخر بيانات متاحة بتاريخ {latestDate} — يتم تحديث الجدول تلقائياً فور توفر بيانات الجلسة الأحدث.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const slice = rows.slice(0, 3);
+  // ALPHA-FIX: دائماً نعرض جدول المستثمرين الحقيقي، وإذا كانت البيانات قديمة نعرض تنبيه صغير مع الجدول
+  const slice = rows.slice(0, 5);
   if (slice.length === 0) return null;
 
   const fmtM = (n: number | null): string => {

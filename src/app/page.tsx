@@ -228,20 +228,7 @@ const MarketDepthInvestorsFlow = withErrorBoundary(
   }),
   'تدفّق المستثمرين',
 );
-const MarketDepthLiquidityFlow = withErrorBoundary(
-  dynamicImport(() => import('@/modules/dashboard/components/LiquidityFlowPanel').then(m => ({ default: m.LiquidityFlowPanel })), {
-    ssr: false,
-    loading: () => <LazyTabLoader label="حركة السيولة" />,
-  }),
-  'حركة السيولة القطاعية',
-);
-const MarketDepthIntradayPressure = withErrorBoundary(
-  dynamicImport(() => import('@/modules/dashboard/components/IntradayPressurePanel').then(m => ({ default: m.IntradayPressurePanel })), {
-    ssr: false,
-    loading: () => <LazyTabLoader label="ضغط الجلسة" />,
-  }),
-  'ضغط الشراء والبيع',
-);
+
 const AboutView = dynamicImport(() => import('@/components/about/AboutView').then(m => ({ default: m.AboutView })), { ssr: false });
 // ALPHA-P0: Rescue Clinic standalone page
 const RescuePage = dynamicImport(() => import('@/app/rescue/page'), { ssr: false, loading: () => <LazyTabLoader label="عيادة الإنقاذ" /> });
@@ -619,26 +606,13 @@ function AppShell() {
                 </SafeWidget>
               </section>
 
-              {/* ── الصف 2: بيانات EGX اللحظية (تدفّق المستثمرين + السيولة + ضغط الجلسة) ── */}
+              {/* ── الصف 2: بيانات EGX اللحظية (تدفّق المستثمرين وحركة السيولة) ── */}
               {isEGX ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                  {/* تدفّق المستثمرين + السيولة القطاعية — 7 أعمدة */}
-                  <section aria-label="تدفّق المستثمرين وحركة السيولة" className="lg:col-span-7 space-y-4">
-                    <SafeWidget name="تدفّق المستثمرين">
-                      <MarketDepthInvestorsFlow />
-                    </SafeWidget>
-                    <SafeWidget name="حركة السيولة القطاعية">
-                      <MarketDepthLiquidityFlow />
-                    </SafeWidget>
-                  </section>
-
-                  {/* ضغط الجلسة — 5 أعمدة */}
-                  <section aria-label="ضغط الشراء والبيع داخل الجلسة" className="lg:col-span-5">
-                    <SafeWidget name="ضغط الشراء والبيع">
-                      <MarketDepthIntradayPressure initialTicker={selectedTicker || 'COMI'} />
-                    </SafeWidget>
-                  </section>
-                </div>
+                <section aria-label="تدفّق المستثمرين وحركة السيولة" className="space-y-4">
+                  <SafeWidget name="تدفّق المستثمرين وحركة السيولة">
+                    <MarketDepthInvestorsFlow />
+                  </SafeWidget>
+                </section>
               ) : (
                 <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
                   <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
