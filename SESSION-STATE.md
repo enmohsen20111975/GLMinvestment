@@ -224,7 +224,7 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 
 ### القرار (reordered للسرعة + الحرص):
 - **فورية (ألفا)**: بدّل الفرونت لـ V40.2 canonical → يوقف التناقض للعميل فورًا.
-- **برافو NOW (safe)**: STEP 3 (شيل shim، افقد lesson-veto) + STEP 2 (ابني V40.2 daily_opportunities للـ telegram).
+- **برافو NOW (safe)**: STEP 3 المعدّل — **re-implement lesson-veto جوّه V40.2 قبل شيل الـ shim** (قرار المالك: (ب) — مفيش فقدان قدرة) + STEP 2 (ابني V40.2 daily_opportunities للـ telegram).
 - **STOP قبل STEP 4-6**: BUILD scope (V40.2 equivalents) — حقق + ابعتلي.
 - **STEP 1 (410)**: بعد ما ألفا بدّل الفرونت.
 - **STEP 7 (kill maestro)**: LAST.
