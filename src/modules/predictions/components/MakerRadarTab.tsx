@@ -2621,20 +2621,12 @@ const StockTable = memo(function StockTable({
       align: 'center',
       sortable: true,
       className: 'font-mono text-xs',
-      // (UNIFIED-TABLE-UPGRADE) sortValue: numeric ADR estimate (null → -1)
-      sortValue: (stock) => {
-        const adr = stock.range_10d_pct ? (stock.range_10d_pct / 2.8) : null;
-        return adr != null && adr > 0 ? adr : -1;
-      },
-      render: (stock) => {
-        // P0-3 FIX: أزلنا fabrication '2.4%' للتردد (Rule 27 NO-FAKE-DATA).
-        // التردد الحقيقي يحتاج حساب ATR من Python (canonical).
-        if (!stock.range_10d_pct) {
-          return <span className="text-muted-foreground font-mono">—</span>;
-        }
-        const adr = (stock.range_10d_pct / 2.8).toFixed(1);
-        return <span className="text-muted-foreground font-mono">±{adr}%</span>;
-      },
+      // ALPHA-MAKER-RADAR-NO-FAB: ADR ليس من API → لا fabrication (Rule 20+27).
+      // range_10d_pct/2.8 كان fabrication — اتشال. ADR يحتاج ATR من Python.
+      sortValue: () => -1,
+      render: () => (
+        <span className="text-muted-foreground font-mono">—</span>
+      ),
     },
     {
       key: 'expected',
@@ -2642,21 +2634,18 @@ const StockTable = memo(function StockTable({
       align: 'center',
       sortable: true,
       className: 'text-xs',
-      // (UNIFIED-TABLE-UPGRADE) sortValue: expected gain % (null → -1)
+      // ALPHA-MAKER-RADAR-NO-FAB: expected gain من pred.target_price فقط (Rule 20+27).
+      // range_10d_pct/2 fallback كان fabrication — اتشال.
       sortValue: (stock) => {
         const pred = predictionForTicker(stock.ticker);
         if (pred?.target_price && pred.target_price > 0 && stock.current_price > 0) {
           return ((pred.target_price - stock.current_price) / stock.current_price * 100);
         }
-        if (stock.range_10d_pct) {
-          return Math.min(stock.range_10d_pct / 2, 15);
-        }
         return -1;
       },
       render: (stock) => {
-        // UNIFY-FIX v2: لو لا توقع طازج، استخدم نسب منطقية من range_10d_pct
-        // (مش fabrication — ده مقياس تقلب حقيقي من OHLCV).
-        // لو لا بيانات → "—" بخلفية مميزة.
+        // ALPHA-MAKER-RADAR-NO-FAB: expected gain من pred.target_price فقط (Rule 20+27).
+        // range_10d_pct/2 fallback كان fabrication — اتشال. لو مفيش توقع → "—".
         const pred = predictionForTicker(stock.ticker);
         if (pred?.target_price && stock.current_price) {
           const expGain = ((pred.target_price - stock.current_price) / stock.current_price * 100);
@@ -2671,21 +2660,7 @@ const StockTable = memo(function StockTable({
             </div>
           );
         }
-        // Fallback منطقي: استخدم range_10d_pct كنسبة متوقعة (مش fabrication — مقياس تقلب)
-        if (stock.range_10d_pct) {
-          const expectedMove = Math.min(stock.range_10d_pct / 2, 15); // نصف المدى، حد أقصى 15%
-          return (
-            <div className="flex flex-col items-center leading-tight">
-              <span className="text-amber-600 dark:text-amber-400 font-bold font-mono text-xs">
-                ±{(expectedMove ?? 0).toFixed(0)}%
-              </span>
-              <span className="text-[9px] text-amber-500/70 whitespace-nowrap">
-                تقدير من التقلب
-              </span>
-            </div>
-          );
-        }
-        // لا بيانات إطلاقاً
+        // لا توقع متاح
         return (
           <div className="flex flex-col items-center leading-tight bg-amber-50/50 dark:bg-amber-950/10 rounded px-1">
             <span className="text-muted-foreground font-mono text-xs">—</span>

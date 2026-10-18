@@ -68691,3 +68691,40 @@ Stage Summary:
 | price_history.db | 352MB | 3 | part7 (3 splits combined) |
 
 الـ BLOCKED السابق (BRAVO-DB-RESTORE-BLOCKED) اتلغى — كل الـ 3 DBs (intraday + price_history + data_engine) دلوقتي متاحة.
+---
+Task ID: ALPHA-MAKER-RADAR-NO-FAB
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: في src/modules/predictions/components/MakerRadarTab.tsx — شيل client-side calculation لـ entry/stop/target/RR. خصوصًا: range_10d_pct/2.8 + range_10d_pct/2. أي رقم مش موجود من الـ API → null / "—" (تكليف من كيمي، flag من برافو).
+
+Work Log (PLAN — قبل الكود):
+- بروتوكول البدء: git pull --rebase (HEAD = c87ca09). قرأت worklog tail + DATA-SOURCES.md.
+- scope: src/modules/predictions/components/MakerRadarTab.tsx بس.
+- لقيت fabrication zone في عمودين:
+  1. "التردد" (Frequency/ADR) — L2626: `range_10d_pct / 2.8` في sortValue + L2635 في render. الـ 2.8 magic number بيخترع ADR.
+  2. "المتوقع" (Expected) — L2652: `Math.min(range_10d_pct / 2, 15)` في sortValue fallback + L2676 في render fallback. بيخترع expected move.
+- الـ FIRST branch في "المتوقع" (using `pred.target_price` from API) هو REAL — محفوظ.
+- التعديل المخطط:
+  * "التردد": sortValue → `() => -1`، render → دائمًا "—".
+  * "المتوقع" sortValue: شيل fallback `range_10d_pct/2`، رجّع -1.
+  * "المتوقع" render: شيل fallback block، خلّي "لا بيانات" block يتعامل مع الـ case.
+- commit + push فوري بعد التنفيذ.
+
+Work Log (EXECUTION — بعد الكود):
+- التعديلات (3 edits بالـ MultiEdit):
+  1. "التردد" column: sortValue `() => -1` + render دائمًا "—" (شلت range_10d_pct/2.8).
+  2. "المتوقع" sortValue: شلت fallback `Math.min(range_10d_pct/2, 15)`، رجّع -1.
+  3. "المتوقع" render: شلت fallback block كله (range_10d_pct/2 fabrication)، خلّي "لا توقع متاح" block يعرض "—".
+- التحقق:
+  * `grep -c "range_10d_pct/2.8\|range_10d_pct/2\|Math.min.*range_10d_pct"` → 0 fabrication leftovers.
+  * `bun run lint` → exit 0، 0 errors.
+  *  1 file changed, 11 insertions(+), 36 deletions(-)
+- الـ FIRST branch في "المتوقع" (using pred.target_price from API) محفوظ — ده real data.
+- ⚠️ FLAG: line 3393 في نفس الملف فيه `range_10d_pct = ((resistance_1 - support_1) / support_1) * 100` — client-side compute من support/resistance. ده Rule 20 violation تاني بس مش في scope التكليف ده (التكليف خص range_10d_pct/2.8 + range_10d_pct/2).
+
+Stage Summary:
+- ✅ range_10d_pct/2.8 (ADR fabrication) اتمسحت من "التردد" column.
+- ✅ range_10d_pct/2 (expected move fabrication) اتمسحت من "المتوقع" column sortValue + render.
+- ✅ أي رقم مش من API → "—" (Rule 27 NO-FAKE-DATA).
+- ✅ lint: 0 errors.
+- ✅ scope نظيف: src/modules/predictions/components/MakerRadarTab.tsx بس.
+- 🔁 Rule 75: commit + push فوري.
