@@ -354,13 +354,13 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
         Results are cached per (ticker, limit) for 5 minutes. Same ticker in
         the same analysis run = 1 DB hit. Call clear_cache() to reset.
 
-    Source priority (FIX-1 — egksco is now PRIMARY per Rule 46):
-        1. data_engine.db.egksco_price_history (PRIMARY — 162K+ rows, fresh)
-           → via load_egksco_history()
-        2. master_analyzer.load_merged_history (tries price_history.db,
-           then data_engine.db via Step-3 fallback, then stock_daily_prices)
-           → via _canonical_load()
-        3. EMPTY list [] (per owner directive: NO placeholder data — Rule 24)
+    Source priority (DATA-LAYER-1 fix 2026-10-18 — egksco DEPRECATED):
+        1. price_history.db.price_history (PRIMARY — 1.3M rows, 2000-2026, fresh)
+           → via _canonical_load() which calls master_analyzer.load_merged_history
+        2. EMPTY list [] (per owner directive: NO placeholder data — Rule 24)
+
+    ⚠️ DEPRECATED: data_engine.db.egksco_price_history (was 59K rows, stale schema,
+       split-brain). Rule 46 amended 2026-10-18 — all code must use price_history.db.
     """
     if not ticker:
         return []
@@ -390,35 +390,23 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
     if cached is not None:
         return cached
 
-    # ── FIX-1 (Step 2): egksco is now PRIMARY source per Rule 46 ──
+    # ── DATA-LAYER-1 (2026-10-18): price_history.db is PRIMARY canonical ──
     # REAL DATA ONLY — no placeholder (per owner directive + Rule 24).
-    # 1) PRIMARY: data_engine.db.egksco_price_history (162K+ rows, fresh)
-    egksco_data = load_egksco_history(ticker_norm, limit)
+    # egksco_price_history DEPRECATED (Rule 46 amended — stale schema, split-brain).
+    # 1) PRIMARY: price_history.db.price_history (1.3M rows, fresh) via _canonical_load
+    canonical_data = _canonical_load(ticker_norm, limit)
+    if not canonical_data and ticker_norm != raw_norm:
+        canonical_data = _canonical_load(raw_norm, limit)
 
-    # 2) FALLBACK: master_analyzer.load_merged_history (tries price_history.db +
-    #    data_engine.db.egksco_price_history via Step-3 fallback + stock_daily_prices)
-    if not egksco_data:
-        canonical_data = _canonical_load(ticker_norm, limit)
-        if not canonical_data and ticker_norm != raw_norm:
-            canonical_data = _canonical_load(raw_norm, limit)
-    else:
-        canonical_data = []
-
-    # 3) Log which source was used (per owner directive: be honest about data source)
-    n_egksco = len(egksco_data)
+    # 2) Log which source was used (per owner directive: be honest about data source)
     n_canonical = len(canonical_data)
-    if n_egksco > 0:
-        print(f"[data.prices] {ticker_norm}: egksco={n_egksco} rows | "
-              f"stock_daily_prices=0 rows (egksco PRIMARY — Rule 46)")
-    elif n_canonical > 0:
-        print(f"[data.prices] {ticker_norm}: egksco=0 rows | "
-              f"stock_daily_prices(fallback)={n_canonical} rows")
+    if n_canonical > 0:
+        print(f"[data.prices] {ticker_norm}: price_history={n_canonical} rows (CANONICAL — DATA-LAYER-1)")
     else:
-        print(f"[data.prices] {ticker_norm}: egksco=0 rows | "
-              f"stock_daily_prices=0 rows — NO DATA (empty per Rule 24)")
+        print(f"[data.prices] {ticker_norm}: price_history=0 rows — NO DATA (empty per Rule 24)")
 
-    # Pick the source — egksco first (PRIMARY), fallback to canonical
-    data = egksco_data if egksco_data else canonical_data
+    # Pick the source — price_history canonical only (egksco deprecated)
+    data = canonical_data
 
     # Ensure consistent key names (canonical returns date/open/high/low/close/volume)
     # but be defensive: some callers expect close_price/high_price. We standardize here.

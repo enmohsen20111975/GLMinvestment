@@ -69350,3 +69350,47 @@ Work Log:
 - subscription-gate.ts:491: TRIAL_DAYS 7 → 14. شلت كومنت "30 days of full access" المضلّل. حدّثته لـ "14 days, soft paywall not hard block".
 - seed-subscriptions.ts:17: free plan trial_days 0 → 14.
 Stage Summary: ✅ TRIAL_DAYS = 14 canonical (مصدر واحد). lint 0 errors.
+
+Task ID: DATA-LAYER-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — DATA-LAYER-1: أصلّح البنية التحتية للداتا (egksco deprecated → price_history canonical)
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = a62a0b3). قرأت worklog tail + Constitution Rules 11/12/20/27/46 + DATA-SOURCES.md + prices.py.
+- 🔴 تصحيح ground-truth لجون: جون قال "egksco_price_history = 0 rows". الفحص أظهر **59,109 rows** (طازج 2026-10-18، 245 dates، 1134 tickers). بس price_history.db.price_history أكبر بكتير (1,309,893 rows، 2000-2026، 1557 tickers) → ده الـ canonical الصح.
+- التعديل 1 — vps-service/core/canonical_sources.py (NEW، 120 سطر):
+  * SSOT per-domain map (Rule 11). Rule 17 relative paths.
+  * Stock historical → price_history.db.price_history (CANONICAL)
+  * Stock live → stocks.db.stocks
+  * Stock intraday → intraday.db.stock_intraday
+  * Crypto → data_engine.db.crypto_prices + btc_local_prices
+  * Gold/metals → data_engine.db.gold_prices + gold_prices_clean + silver_prices
+  * Forex → data_engine.db.exchange_rates
+  * Commodity intraday → intraday.db.commodity_intraday
+  * DEPRECATED: egksco_price_history
+  * is_deprecated_source() helper
+- التعديل 2 — vps-service/data/prices.py (load_price_history):
+  * شيلت egksco-first check (lines 393-421 القديمة).
+  * price_history.db.price_history = PRIMARY (via _canonical_load → master_analyzer.load_merged_history).
+  * أي data → EMPTY (Rule 24 سياسة الفراغ).
+  * log message: "[data.prices] {ticker}: price_history={N} rows (CANONICAL — DATA-LAYER-1)"
+- التعديل 3 — Documentation/00-CONSTITUTION.md: Rule 46 amendment:
+  * أضفت قسم "AMENDMENT 2026-10-18 (DATA-LAYER-1)" بعد Rule 46.
+  * وثّقت إن egksco DEPRECATED + السبب (59K rows stale schema + split-brain).
+  * حطيت الـ per-domain canonical map.
+- التعديل 4 — Documentation/CHANGELOG.md: إضافة entry للـ amendment.
+- التحقق:
+  * py_compile: canonical_sources.py PASS + prices.py PASS.
+  * load_price_history('COMI', 5) → رجّع 7 rows من price_history (مش egksco) ✓.
+  * canonical_sources SSOT resolves correct paths + is_deprecated_source works.
+  * grep egksco في vps-service: لسه فيه 20+ ملف (follow-up refactor محتاج — الـ 10 ملفات المذكورة).
+
+Stage Summary:
+- ✅ canonical_sources.py SSOT منفّذ (Rule 11).
+- ✅ prices.py بـ يقرأ من price_history.db (1.3M rows) — مش egksco.
+- ✅ Rule 46 اتعدّل + CHANGELOG اتحدّث.
+- ✅ py_compile PASS + load_price_history test PASS.
+- ⚠️ FLAG: جون قال egksco=0 rows، الفعلي=59,109. الـ canonical decision صح (price_history أكبر) بس الـ rationale محتاج تصحيح (مش "empty" بل "stale schema + split-brain").
+- ⚠️ FLAG: 10 ملفات لسه بـ check egksco (daily_predictor, daily_closer, learning_engine, etc.) — محتاجة follow-up refactor.
+- ⚠️ FLAG: egksco_price_history DROP محتاج verify 0 usage الأول (مش فاضي، فيه 59K rows).
+- 🔁 Push gate: جون وافق على phases → هـ commit + push.
