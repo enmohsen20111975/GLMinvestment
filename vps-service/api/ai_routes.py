@@ -13,6 +13,9 @@ if str(_AI_DIR) not in sys.path:
 from ai.glm_finance_agent import GLMFinanceAgent, PREDICTIONS_DB
 from ai.decision_engine import DecisionEngine
 
+# BRAVO RESTRUCT-B-P1: paywall gate (Rule 20 — Python = Brain)
+from core.auth_middleware import require_role, require_trial_or_paid
+
 logger = logging.getLogger(__name__)
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
@@ -258,8 +261,12 @@ def live_signals():
 
 
 @ai_bp.route('/live/scan', methods=['GET'])
+@require_trial_or_paid
 def live_scan():
     """تشغيل فوري للمسح الكامل: hot stocks + AI analysis.
+
+    BRAVO RESTRUCT-B-P1: @require_trial_or_paid — free tier requires active trial,
+    paid tiers (normal/premium/pro) bypass. Guest → 403.
 
     Query params:
       market — السوق (افتراضي EGX)

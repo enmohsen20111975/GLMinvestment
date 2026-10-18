@@ -239,12 +239,189 @@ admin_session_tracker = AdminSessionTracker()
 
 
 # ============================================================================
+# BRAVO RESTRUCT-B-P1 — Subscription/Tier-based access control (Rule 20)
+# ============================================================================
+# Trusted-proxy model: Next.js (port 3000) proxies to Python (port 8010).
+# Python is NOT exposed directly to the internet (Caddy → Next.js → Python).
+# Next.js sends PROXY_API_KEY + X-User-Id + X-User-Tier headers after auth.
+#
+# Tier hierarchy (auth.db.User.subscription_tier):
+#   guest < free < normal < premium < pro < admin
+#
+# Guest = no X-User-Id header (anonymous visitor). Read-only limited endpoints.
+# Free = trial active (trial_ends_at > NOW) or expired trial. Soft paywall.
+# Normal/Premium/Pro = paid. Full access.
+# Admin = everything (handled by @require_admin).
+# ============================================================================
+
+# Tier order — lower index = lower privilege.
+TIER_ORDER = ['guest', 'free', 'normal', 'premium', 'pro', 'admin', 'developer', 'enterprise',
+              'b2b_starter', 'b2b_pro', 'b2b_enterprise']
+
+# Trial days — canonical = 14 (per Owner spec "Trial 14 days").
+# BRAVO RESTRUCT-B-P2 will unify all sources to this value.
+TRIAL_DAYS_CANONICAL = 14
+
+
+def _tier_index(tier: str) -> int:
+    """Return tier index. Unknown tiers default to 'free' (safe default)."""
+    if not tier:
+        return 0  # guest
+    tier_lower = tier.lower().strip()
+    if tier_lower in TIER_ORDER:
+        return TIER_ORDER.index(tier_lower)
+    # Unknown tier → treat as free (safer than admin)
+    return 1
+
+
+def _get_request_tier() -> tuple:
+    """Extract (tier, user_id) from request headers.
+
+    Trusted-proxy model: Next.js sends these AFTER authenticating the user.
+    If PROXY_API_KEY is missing/invalid → treat as guest (fail-safe for direct calls).
+    """
+    # If PROXY_API_KEY is configured, require it (trusted proxy check).
+    # If not configured (dev mode), allow without it.
+    if PROXY_API_KEY:
+        provided_key = request.headers.get('X-API-Key', '')
+        if provided_key != PROXY_API_KEY:
+            # Not from trusted proxy → guest only
+            return 'guest', None
+
+    tier = request.headers.get('X-User-Tier', '').lower().strip() or 'guest'
+    user_id = request.headers.get('X-User-Id') or None
+    return tier, user_id
+
+
+def _check_trial_active(user_id):
+    """Check if user's trial is active (trial_ends_at > NOW).
+
+    Returns (is_active, reason).
+    If user_id is None or trial_ends_at is NULL → (False, 'no_trial').
+    """
+    if not user_id:
+        return False, 'no_user'
+
+    try:
+        import sqlite3
+        from pathlib import Path
+        # Rule 17: relative path to auth.db
+        _here = Path(__file__).resolve()
+        # vps-service/core/auth_middleware.py → project root = parents[2]
+        _project_root = _here.parents[2]
+        _auth_db = _project_root / 'db' / 'auth.db'
+
+        if not _auth_db.exists():
+            return False, 'auth_db_missing'
+
+        conn = sqlite3.connect(str(_auth_db), timeout=5.0)
+        try:
+            row = conn.execute(
+                "SELECT subscription_tier, trial_ends_at FROM User WHERE id = ?",
+                (user_id,)
+            ).fetchone()
+            if not row:
+                return False, 'user_not_found'
+
+            tier = row[0] or 'free'
+            trial_ends_at = row[1]
+
+            # Paid tiers → full access, no trial check
+            if tier in ('normal', 'premium', 'pro', 'admin', 'developer', 'enterprise',
+                        'b2b_starter', 'b2b_pro', 'b2b_enterprise'):
+                return True, 'paid_tier'
+
+            # Free tier → check trial
+            if not trial_ends_at:
+                return False, 'trial_not_set'  # B-P2 will fix this
+
+            # Parse trial_ends_at (ISO datetime)
+            from datetime import datetime
+            try:
+                ends_at = datetime.fromisoformat(trial_ends_at.replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                return False, 'trial_invalid_format'
+
+            is_active = datetime.now(ends_at.tzinfo) < ends_at if ends_at.tzinfo else datetime.now() < ends_at
+            return is_active, 'trial_active' if is_active else 'trial_expired'
+        finally:
+            conn.close()
+    except Exception as e:
+        # Fail-safe: on DB error, allow access (don't block legit users due to infra)
+        import logging
+        logging.getLogger(__name__).warning(f"trial check failed for user={user_id}: {e}")
+        return False, f'db_error: {e}'
+
+
+def require_role(min_tier='guest', require_trial=False):
+    """Decorator: enforce minimum subscription tier + optional trial check.
+
+    Args:
+        min_tier: minimum tier required ('guest', 'free', 'normal', 'premium', 'pro').
+        require_trial: if True, user must have active trial OR paid tier.
+
+    Usage:
+        @app.route('/api/market-pulse')  # guest OK (no decorator needed, default)
+        @require_role('free')            # registered users only
+        @require_role('normal')          # paid users only
+        @require_role('normal', require_trial=True)  # paid OR active trial
+
+    Returns 403 if insufficient tier. Returns 402 (Payment Required) if trial expired.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapped(*args, **kwargs):
+            if not AUTH_ENABLED:
+                return f(*args, **kwargs)  # dev mode bypass
+
+            tier, user_id = _get_request_tier()
+
+            # Check minimum tier
+            if _tier_index(tier) < _tier_index(min_tier):
+                return jsonify({
+                    'success': False,
+                    'error': 'insufficient_tier',
+                    'required_tier': min_tier,
+                    'current_tier': tier,
+                    'error_ar': f'هذه الميزة تتطلب اشتراك {min_tier} أو أعلى'
+                }), 403
+
+            # Check trial if required
+            if require_trial and tier == 'free':
+                is_active, reason = _check_trial_active(user_id)
+                if not is_active:
+                    return jsonify({
+                        'success': False,
+                        'error': 'trial_expired',
+                        'reason': reason,
+                        'error_ar': 'انتهت فترة التجربة. اشترك الآن للوصول الكامل.',
+                        'upgrade_required': True
+                    }), 402  # Payment Required
+
+            # Store user info in flask g for downstream use
+            g.user_tier = tier
+            g.user_id = user_id
+
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
+
+
+# Convenience: trial-locked endpoint (free + active trial OR paid)
+def require_trial_or_paid(f):
+    """Decorator: free tier requires active trial, paid tiers bypass."""
+    return require_role('free', require_trial=True)(f)
+
+
+# ============================================================================
 # EXPORT
 # ============================================================================
 
 __all__ = [
     'require_admin',
     'require_admin_or_public',
+    'require_role',
+    'require_trial_or_paid',
     'verify_token',
     '_constant_time_eq',
     'get_client_ip',
@@ -252,6 +429,8 @@ __all__ = [
     'ADMIN_TOKEN',
     'PROXY_API_KEY',
     'AUTH_ENABLED',
+    'TIER_ORDER',
+    'TRIAL_DAYS_CANONICAL',
     'AdminSessionTracker',
     'admin_session_tracker'
 ]

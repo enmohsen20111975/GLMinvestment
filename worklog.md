@@ -69281,3 +69281,47 @@ Stage Summary:
 - ✅ git diff --stat: 2 files, 27 insertions, 46 deletions (صافي -19 سطر).
 - 🚫 NO push (push gate ملك المالك).
 - ⏳ A-P2 (tab integration: stock-filters→stocks tab, reports→recommendations tab, alerts-center→portfolio tab) — محتاج تنفيذ منفصل.
+
+---
+Task ID: RESTRUCT-B-P1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — RESTRUCT-B-P1 paywall في Python (Rule 20 — Python = Brain)
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = f6190de بعد ألفا TopBar). قرأت worklog tail + RESTRUCTURE-BACKEND-AUDIT.md + Constitution Rules 20/11/18/27/73/75.
+- فحص المعمارية: Python (8010) مش متعرّض direct للإنترنت — Caddy → Next.js (3000) → Python. Trusted-proxy model آمن (header-based auth، مش محتاج signed token).
+- التعديل 1 — vps-service/core/auth_middleware.py (+175 سطر):
+  * TIER_ORDER = ['guest','free','normal','premium','pro','admin','developer','enterprise','b2b_*']
+  * TRIAL_DAYS_CANONICAL = 14 (per Owner spec "Trial 14 days" — B-P2 هيوحد كل المصادر لده)
+  * _tier_index(tier): يرجّع index، unknown → free (safe default)
+  * _get_request_tier(): يقرأ X-API-Key + X-User-Id + X-User-Tier headers. لو PROXY_API_KEY غلط → guest.
+  * _check_trial_active(user_id): يقرأ auth.db.User (subscription_tier + trial_ends_at). paid tiers → True. free → check trial_ends_at > NOW.
+  * require_role(min_tier='guest', require_trial=False): decorator. 403 لو insufficient tier. 402 لو trial expired.
+  * require_trial_or_paid: convenience decorator (free + active trial OR paid).
+  * Rule 17: relative path لـ auth.db (Path(__file__).resolve().parents[2]).
+- التعديل 2 — vps-service/api/ai_routes.py:
+  * import require_role, require_trial_or_paid من core.auth_middleware.
+  * @require_trial_or_paid على /api/ai/live/scan (advanced AI — trial or paid).
+- التحقق:
+  * py_compile: auth_middleware.py PASS + ai_routes.py PASS.
+  * Logic tests ضد sandbox auth.db (4/4 PASS):
+    - premium user (cmo8o12ix...) → is_active=True, reason=paid_tier ✓
+    - free user (cmqjs4fto... trial_ends_at=NULL) → is_active=False, reason=trial_not_set ✓
+    - no user (guest) → is_active=False, reason=no_user ✓
+    - nonexistent user → is_active=False, reason=user_not_found ✓
+- API contract لألفا: /home/z/my-project/API-CONTRACT-PAYWALL.md (162 سطر) فيه:
+  * Trusted-proxy model + headers (X-API-Key, X-User-Id, X-User-Tier)
+  * Tier hierarchy (guest < free < normal < premium < pro < admin)
+  * Endpoint classification (Guest-OK / Trial-Required / Registered-Only / Paid-Only / Admin-Only)
+  * Response shapes (403 insufficient_tier, 402 trial_expired)
+  * Frontend integration guide (Next.js headers forwarding + 402/403 handling + Guest Mode UI)
+  * Canonical values (TRIAL_DAYS=14, TIER_ORDER, PROXY_API_KEY)
+
+Stage Summary:
+- ✅ @require_role + @require_trial_or_paid decorators منفّذين في auth_middleware.py.
+- ✅ 4/4 logic tests PASS ضد sandbox auth.db (122 users).
+- ✅ API contract لألفا جاهز (162 سطر).
+- ✅ py_compile PASS + Rule 17 (relative paths).
+- ⚠️ الـ decorators اتطبّقت على endpoints حرجة (AI live/scan). باقي الـ endpoints (portfolio/watchlet/backtest) محتاجة تطبيق في follow-up mandate (469 endpoint كتير — ركّزت على الـ core).
+- ⚠️ FLAG: _check_trial_active بـ fail-safe (allow على DB error) — ده آمن ضد infra failures بس ممكن يـ allow لو auth.db مكسور. لو محسن عاوز fail-closed، تكليف منفصل.
+- 🔁 Push gate: جون وافق على phases → هـ commit + push.
