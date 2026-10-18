@@ -69394,3 +69394,28 @@ Stage Summary:
 - ⚠️ FLAG: 10 ملفات لسه بـ check egksco (daily_predictor, daily_closer, learning_engine, etc.) — محتاجة follow-up refactor.
 - ⚠️ FLAG: egksco_price_history DROP محتاج verify 0 usage الأول (مش فاضي، فيه 59K rows).
 - 🔁 Push gate: جون وافق على phases → هـ commit + push.
+---
+---
+Task ID: RESTRUCT-A-DB-1
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: A-DB-1 — شيل direct-DB من الفرونت (PRIORITY). api-client.ts + deprecation + migration plan.
+
+Work Log:
+- لقيت shared-db.ts (278 سطر) بيفتح 6 DBs مباشرة (data_engine/stocks/price_history/historical/intraday/predictions).
+- لقيت data-engine-db-sqljs.ts (18KB) بيفتح data_engine + stocks بـ sql.js.
+- **callers**: 49 route بيستخدم shared-db + 7 بيستخدم data-engine-db-sqljs = ~56 route total.
+- **أنشأت** `src/lib/api-client.ts` — unified fetch layer:
+  * `apiFetch<T>(url, options)` — fetch wrapper بـ timeout (30s) + auth headers + retry (502/503/504) + canonical response shape ({success, source, data, meta}).
+  * `apiGet<T>()` + `apiPost<T>()` — convenience wrappers.
+  * ممنوع silent .catch(() => ({ stocks: [] })) — كل error بيترجّع كـ {success: false, error}.
+- **deprecation notice** على shared-db.ts: ⚠️ DEPRECATED — Rule 20 violation. New code MUST use api-client.ts.
+- **migration plan**: الـ 56 route محتاجة refactoring route-by-route لـ proxy للـ Python (depends on Bravo's DATA-LAYER-1). الـ exceptions الموثّقة:
+  * sparkline/route.ts → price_history.db (canonical — ALREADY FIXED in ALPHA-FAB-FIX-SPARKLINE-001).
+  * predictions.db routes → Next.js-owned (acceptable — Next.js writes predictions).
+
+Stage Summary:
+- ✅ api-client.ts موجود — unified fetch layer (منفذ واحد للـ API).
+- ✅ shared-db.ts عليه deprecation notice.
+- ✅ lint: 0 errors.
+- ⏳ الـ 56 route migration: depends on Bravo DATA-LAYER-1 (Python endpoints). ده multi-phase effort.
+- 🚫 NO push (gate جون).

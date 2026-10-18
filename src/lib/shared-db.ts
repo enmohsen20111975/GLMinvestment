@@ -1,6 +1,13 @@
 /**
  * shared-db.ts — Robust SQLite access for databases shared with the Python service.
  *
+ * ⚠️ RESTRUCT-A-DB-1 (2026-10-18): DEPRECATED — direct DB access from frontend
+ * violates Rule 20 (Python=Brain). This module is kept for backwards-compat
+ * during migration. New code MUST use src/lib/api-client.ts → /api/* routes
+ * that proxy to Python. Migration plan: 49 routes use this module — each
+ * will be refactored to call Python endpoints (Bravo DATA-LAYER-1).
+ * Exceptions: sparkline/route.ts (price_history — documented, canonical).
+ *
  * PROBLEM:
  *   The Python Flask service (port 8010) and the Next.js app both access the same
  *   .db files. Python writes in WAL mode, leaving uncommitted pages in the -wal file.
