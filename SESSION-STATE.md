@@ -6,7 +6,7 @@
 > **المستودع:** `/home/z/my-project` (origin/main).  
 > **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
 > **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق + متدفعين. B-P2 green-lit (split: برافو Python + ألفا A-P2.5 subscription-gate.ts). باقي: A-P3/A-P4 + B-P3 + data fixes.  
-> **آخر تحديث:** 2026-10-18 — ✅ ✅✅✅✅ 4 mandates متحقق منها PASS: DATA-LAYER-1 (prices.py price_history-first + Rule 46 amended) + A-P2.5 (TRIAL_DAYS=14) + A-DB-1 (api-client.ts) + B-P2 (TRIAL_DAYS_CANONICAL=14 + fail-closed + migration). 🚨 المحركات الحية (backtest_engine + maestro_orchestrator) ما اتلمستش — المنصة بأمان. الـ DEAD-ENGINE-1 misclassification اتصلّح. 3 نقط follow-up (stale docstring + egksco row-count reconcile + A-DB-1 56 routes pending).
+> **آخر تحديث:** 2026-10-18 — 🔴🔴🔴 **MAESTRO-CANCER-1 (Stage 4 metastasis)** متكشف + متتبّت بنفسي: `maestro_orchestrator.py` (4,416 lines) LIVE على 8010 (13 endpoints + `POST /api/maestro/run` ثغرة — أي حد يـ trigger!) + متغلغل في قلب V40.2 (`daily_predictor.py` L3811 `run_expert_memory_phase`) + telegram (`auto_post_scheduler.py` L1190 `daily_opportunities`) + 4 zombie analyzers (crypto_maestro, unified_maestro, hunting_engine, background_analyzer) + الفرونت (`dual-persona/route.ts` L148 + `SpecialistAnalysisView.tsx` L1899 `data.maestro` + `MaestroWidget.tsx` zombie). **thresholds متناقضة** (maestro 55/42/30 vs V40.2 78/65/55) → **توصيات متناقضة للعميل** (بيع في الرئيسية + شراء في dual-persona!). data-layer follow-up + dead-engine معلّقين (المايسترو أولوية قصوى).
 
 ---
 
@@ -89,9 +89,9 @@
 | 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
 | 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | ✅ PASS + متدفع — TRIAL_DAYS_CANONICAL=14 + fail-closed للـ paid (قرار جون اتـ implement) + trial_migration.py + admin reset |
 | 🔜 **B-P3** | برافو | stocks/crypto unification — canonical محدّد (price_history للأسعار التاريخية) |
-| ✅ **DATA-LAYER-1** | برافو | ✅ PASS + متدفع — prices.py price_history-first (L399) + canonical_sources.py SSOT + Rule 46 amended (egksco DEPRECATED). 🟡 nit: module docstring stale |
-| ✅ **A-DB-1** | ألفا | ✅ PASS (جزئي) + متدفع — api-client.ts + shared-db deprecated. 🟡 56 routes pending migration |
-| ✅ **A-P2.5** | ألفا | ✅ PASS + متدفع — TRIAL_DAYS=14 + امسح كومنت 30 + seed free=14 |
+| 🔴 **MAESTRO-CANCER-1** | برافو (Python) + ألفا (frontend) | **أولوية قصوى — Stage 4** — surgical disconnection piece by piece: trace → افصل الفرونت → افصل telegram → 🔴 افصل قلب V40.2 (daily_predictor L3811) → شيل 13 endpoints → شيل 4 zombies → شيل maestro_orchestrator.py (LAST). unify thresholds على V40.2 (78/65/55). verify بعد كل قطع. ⚠️ بنشتغل على مفاصل حية |
+| ✅ **DATA-LAYER-1** | برافو | ✅ PASS + متدفع — prices.py price_history-first + Rule 46 amended. ⏸️ follow-up معلّق (stale docstring + egksco reconcile) — الـ data-layer وقّفه المالك |
+| ✅ **A-DB-1** | ألفا | ✅ PASS (جزئي) + متدفع — api-client.ts + shared-db deprecated. ⏸️ 56 routes migration معلّقة |
 | ⏸️ **DEAD-ENGINE-1** | برافو | **معلّق + متصحّح** (الأولوية = DATA-LAYER-1). ⚠️ الخلاصة الجديدة: `engines/backtest_engine.py` + `analyzers/maestro_orchestrator.py` = **RED LINE (LIVE)** — ممنوع اللمس. الـ cancer الحقيقي = 5 broken scripts (diagnose_v402_filters/full، diagnose_entry_gate، retrospective_analysis، run_full_backtest_daemon.sh) + 3 zombie duplicates (scripts/backtesting_engine.py sys.exit guard، analysis_engine_v2.py، analyzers/backtest_engine.py). **triple-verify قبل أي إزالة**: not imported by daily_predictor/core/jobs/live_signals + not in crontab |
 | ~~CANONICAL-DB-1~~ | برافو | ✅ متقرّر (المالك جاوب بالـ data — شوف Section 3.5) |
 
@@ -201,8 +201,9 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | 4 | trial 4-source | B-P2 + A-P2.5 | برافو+ألفا | ✅ خلص — TRIAL_DAYS=14 canonical |
 | 5 | price split-brain | DATA-LAYER-1 | برافو | ✅ خلص — prices.py price_history-first + Rule 46 amended |
 | 6 | frontend direct-DB | A-DB-1 | ألفا | ✅ جزئي — api-client.ts + shared-db deprecated، 56 routes pending |
-| 7 | R/R stale 1.5 | cleanup دستوري | ألفا | 🔜 |
-| 8 | ~~dead-engine cancer~~ → **تصحيح**: `engines/backtest_engine.py` LIVE (V40.2 driver). الـ cancer الحقيقي = 5 broken scripts + 3 zombie duplicate engines. DEAD-ENGINE-1 معلّق + متصحّح | برافو | ⏸️ معلّق (DATA-LAYER أولوية) |
+| 7 | R/R stale 1.5 | cleanup دستوري | ألفا | ⏸️ معلّق |
+| 8 | ~~dead-engine cancer~~ → **تصحيح**: `engines/backtest_engine.py` LIVE (V40.2 driver). الـ cancer الحقيقي = 5 broken scripts + 3 zombie duplicate engines. DEAD-ENGINE-1 معلّق | برافو | ⏸️ معلّق |
+| 9 | 🔴🔴🔴 **MAESTRO-CANCER-1** (Stage 4): maestro_orchestrator 4,416 lines LIVE + 13 endpoints + متغلغل في V40.2 قلب + telegram + فرونت + 4 zombies + thresholds متناقضة → توصيات متناقضة للعميل | برافو+ألفا | 🔴 أولوية قصوى |
 
 ---
 
