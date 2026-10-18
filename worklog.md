@@ -68148,3 +68148,53 @@ Finding (BLOCKED):
   2. المالك يوفّر VPS access لـ scp الـ DBs، OR
   3. المالك يـ runs الـ scrapers (data_engine) من جديد في الساندبوكس (وقت طويل)
 - Status: BLOCKED — منتظر قرار المالك.
+
+---
+Task ID: BRAVO-3TASKS-FINAL-STATEMENT
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: كيمي — ملخص الـ 3 tasks النهائي
+
+Work Log:
+- Task 1 (BRAVO-DB-RESTORE-001) — commit 7ba78a8:
+  * 3/7 DBs restored من backups المحلية (predictions 281MB + stocks 29MB + auth 356KB)
+  * 2/7 DBs مغطاة كـ aliases (news→stocks ✓، historical→data_engine BLOCKED)
+  * 3/7 DBs BLOCKED (intraday + price_history + data_engine) — Finding BRAVO-DB-RESTORE-BLOCKED مفتوح
+  * بيانات إنتاج حقيقية: aiPrediction=2613, investors_data=30, User=122
+
+- Task 2 (BRAVO-DATA-SOURCE-SPEC-001) — commit 46d0ad0:
+  * Documentation/DATA-SOURCES.md (321 سطر) — canonical spec
+  * 7 DBs inventory + status + DBPaths mapping
+  * Schema per DB (46+68+23 tables)
+  * Python endpoints + data sources
+  * Fallback strategy (Rule 27 سياسة الفراغ)
+  * Frontend↔Backend contract (Rule 20 + Rule 73)
+  * هذا الـ spec هو source of truth لألفا في src/
+
+- Task 3 (BRAVO-RADAR-PRED-AUDIT-001) — commits f9289af → 23e0b46 (5 commits، session سابق):
+  * Fix 1 (f9289af): v2_routes fabrication killed (Rule 27 + Rule 8)
+  * Fix 2 (cbc159f): persona max_position_pct capped 2.5% (Rule 19)
+  * Fix 3 (8edb411): maestro min_rr 1.5→1.8 (Rule 18)
+  * Fix 4 (f8ffa3c): Falling Knife unified (canonical first + structural)
+  * Verification test: 24/24 PASS (vps-service/tests/test_bravo_radar_pred_audit.py)
+  * Final: 23e0b46
+
+Stage Summary — Final Audit Statement للـ 3 tasks:
+
+# 🎯 Task 1: PASS (مشروط — 3 DBs BLOCKED) → commit 7ba78a8
+# 🎯 Task 2: PASS → commit 46d0ad0
+# 🎯 Task 3: PASS (24/24 tests) → commits f9289af → 23e0b46
+
+القيود كلها اتربطت:
+- ✅ مفيش لمس src/ (scope: vps-service/ + scripts/ + db/ + Documentation/ بس)
+- ✅ مفيش git push --force (كله fast-forward)
+- ✅ مفيش test اتعطّل
+- ✅ كل تعديل commit + push فوري (Rule 75)
+- ✅ .env مش متلموس
+
+BLOCKED items (منتظرة قرار المالك):
+1. BRAVO-DB-RESTORE-BLOCKED: 3 DBs (intraday + price_history + data_engine) محتاجة VPS access أو backups parts 2-6.
+
+FLAGS لألفا (src/ scope):
+1. MakerRadarTab.tsx فيه range_10d_pct/2.8 + range_10d_pct/2 client-side calc — محتاج إصلاح حسب DATA-SOURCES.md spec.
+
+القرار النهائي لكيمي.
