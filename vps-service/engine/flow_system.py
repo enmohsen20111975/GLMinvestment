@@ -93,6 +93,114 @@ class FlowScore:
         return asdict(self)
 
 
+# ============================================================================
+# RISK EVALUATION GATE (BRAVO-JIMMY task 2026-10-18)
+# ============================================================================
+# Rule 18 (CALCULATION-CANONICAL): R/R floor = 1.8 إلزامي. أي إشارة R/R < 1.8
+#   تُقتل فورًا → signal = "CASH_WAIT", confidence = 0.0.
+# Rule 19 (capital protection): أقصى حجم مركز = 2.5% (0.025) من رأس المال.
+# المعادلة الكنسية: R/R = (Target - Entry) / (Entry - Stop)
+# Position cap: Pos_Size = min(calculated_size, 0.025)
+# ----------------------------------------------------------------------------
+
+RR_FLOOR: float = 1.8          # Rule 18 (matches engine_settings.dynamic_rr_normal)
+MAX_POSITION_SIZE: float = 0.025  # 2.5% hard cap (Rule 19 capital protection)
+
+
+def evaluate_risk(
+    entry_price: float,
+    stop_loss: float,
+    target_price: float,
+    calculated_position_size: float = 0.025,
+    confidence: float = 1.0,
+) -> Dict[str, Any]:
+    """Evaluate a candidate signal against the hardened R/R floor + position cap.
+
+    BRAVO-JIMMY task (2026-10-18): Hardened Risk/Reward Floor + Position Sizing Cap.
+
+    Formula (Rule 18 — CALCULATION-CANONICAL):
+        R/R = (Target - Entry) / (Entry - Stop)
+
+    Rules enforced:
+        1. If R/R < 1.8 (RR_FLOOR) → KILL: signal="CASH_WAIT", confidence=0.0.
+           (Rule 18 — any BUY signal must offer >=1.8 reward per 1.0 risk.)
+        2. Position size capped: pos_size = min(calculated_size, 0.025).
+           (Rule 19 — max 2.5% of capital per position, regardless of conviction.)
+        3. Invalid geometry (stop >= entry, target <= entry, non-positive prices)
+           → KILL with "INVALID_GEOMETRY" reason.
+
+    Args:
+        entry_price: planned entry price.
+        stop_loss: planned stop-loss price (must be < entry).
+        target_price: planned target price (must be > entry).
+        calculated_position_size: fraction of capital (0.0-1.0). Capped to 0.025.
+        confidence: caller-supplied confidence (0.0-1.0). Zeroed on kill.
+
+    Returns:
+        dict with keys:
+            signal: "BUY" | "CASH_WAIT"
+            confidence: float (0.0 if killed)
+            rr: float | None (computed R/R, or None if invalid geometry)
+            position_size: float (capped to 0.025)
+            killed: bool (True if R/R < floor or invalid geometry)
+            kill_reason: str ("" if not killed)
+    """
+    result: Dict[str, Any] = {
+        'signal': 'BUY',
+        'confidence': float(confidence) if confidence else 0.0,
+        'rr': None,
+        'position_size': min(float(calculated_position_size), MAX_POSITION_SIZE),
+        'killed': False,
+        'kill_reason': '',
+    }
+
+    # Geometry validation — invalid setup = kill, no fabrication.
+    try:
+        entry = float(entry_price)
+        stop = float(stop_loss)
+        target = float(target_price)
+    except (TypeError, ValueError):
+        result['signal'] = 'CASH_WAIT'
+        result['confidence'] = 0.0
+        result['killed'] = True
+        result['kill_reason'] = 'INVALID_GEOMETRY: non-numeric prices'
+        return result
+
+    if entry <= 0 or stop <= 0 or target <= 0:
+        result['signal'] = 'CASH_WAIT'
+        result['confidence'] = 0.0
+        result['killed'] = True
+        result['kill_reason'] = 'INVALID_GEOMETRY: non-positive prices'
+        return result
+
+    if stop >= entry or target <= entry:
+        result['signal'] = 'CASH_WAIT'
+        result['confidence'] = 0.0
+        result['killed'] = True
+        result['kill_reason'] = (
+            f'INVALID_GEOMETRY: stop={stop} must be < entry={entry}, '
+            f'target={target} must be > entry'
+        )
+        return result
+
+    risk = entry - stop
+    reward = target - entry
+    rr = round(reward / risk, 4)
+    result['rr'] = rr
+
+    # R/R floor gate — Rule 18 hard kill.
+    if rr < RR_FLOOR:
+        result['signal'] = 'CASH_WAIT'
+        result['confidence'] = 0.0
+        result['killed'] = True
+        result['kill_reason'] = (
+            f'R/R {rr:.3f} < floor {RR_FLOOR:.1f} (Rule 18) — signal killed'
+        )
+        return result
+
+    return result
+
+
 class FlowSystemEngine:
     """محرك نظام التدفقات"""
 
@@ -629,7 +737,7 @@ class FlowSystemEngine:
         elif total_score >= 60:
             label, label_en, color = "شرارة", "SPARK", "orange"
             action, action_en = "دخول حذر", "CAUTIOUS_ENTRY"
-            position, stop, target = 3, -5, 12  # أقصى حجم مركز 3% (Rule 19)
+            position, stop, target = 2.5, -5, 12  # أقصى حجم مركز 2.5% (Rule 19 cap — BRAVO-JIMMY task)
         elif total_score >= 40:
             label, label_en, color = "رماد", "ASH", "gray"
             action, action_en = "استنى", "WAIT"

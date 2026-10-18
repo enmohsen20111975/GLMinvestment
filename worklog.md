@@ -68054,3 +68054,59 @@ Stage Summary:
 - FLAG 1: stop=-3% في FIRE + -5% في SPARK لسه ثابتين (مخالفة Rule 8 ATR [5%,9%]). محتاج تكليف منفصل للمرحلة 2.
 - FLAG 2: التوكن لسه في git remote URL. المالك لازم يعمل revoke فورًا بعد الـ push ده.
 - ⚠️ لم أُشغّل Flask/FastAPI للتأكد من runtime (بيئة الساندبوكس مفيهاش flask). syntax + lint فقط.
+
+---
+Task ID: BRAVO-JIMMY-RR-FLOOR-POSITION-CAP-FALLING-KNIFE
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: Jimmy (Platform Lead) — Hardened R/R Floor (>=1.8) + Position Sizing Cap (2.5%) + Falling Knife Filter
+
+Work Log:
+- بروتوكول البدء: git pull --rebase origin main. جاب commits جديدة من فريق تاني:
+  * cbf12d2 fix(phase1): إيقاف نزيف fabrication + توحيد R/R + خفض position size
+    - RR_FLOOR 1.5 → 1.8 في canonical_flow.py (اتعمل بالفعل)
+    - flow_system.py position: FIRE 5%→2%, SPARK 15%→3% (اتعمل بالفعل)
+  * 7e405dd, e58c083 (portfolio/radar syncs)
+- قرأت آخر 60 سطر في worklog + Documentation/00-CONSTITUTION.md:
+  * Rule 18: RR floor = 1.8 إلزامي (dynamic_rr_normal). أي R/R < 1.8 يُرفض قبل predictions.db.
+  * Rule 19: Hard Loss Ceiling 7% + Split Guard 35% + Cooldowns (مش position size مباشرة).
+  * Rule 8: ATR stop [5%, 9%] — stop=-3%/-5% في flow_system بيخالف (سابق، مش في scope).
+
+- ⚠️ تناقض في التكليف (مُ flagged): المسار `vps-service/services/flow_system.py` مش موجود.
+  الملفات الفعلية: `vps-service/engine/flow_system.py` + `vps-service/api/canonical_flow.py`.
+  كمان السطور 140-220 في engine/flow_system.py = calculate_sector_flow (مش signal generation).
+  نُفّذ في الملفات الصحيحة مع توثيق الفارق.
+
+- التعديل 1 — engine/flow_system.py (position cap):
+  * SPARK: position 3% → 2.5% (كان بيخالف cap 2.5% من التكليف). FIRE 2% سابقًا (تحت cap، تركته).
+  * السطر 740: position, stop, target = 2.5, -5, 12
+
+- التعديل 2 — engine/flow_system.py (evaluate_risk function جديدة):
+  * RR_FLOOR = 1.8, MAX_POSITION_SIZE = 0.025 (2.5%)
+  * evaluate_risk(entry, stop, target, calculated_position_size, confidence) → dict
+  * R/R = (target - entry) / (entry - stop)
+  * لو R/R < 1.8 → signal="CASH_WAIT", confidence=0.0, killed=True (Rule 18 hard kill)
+  * position_size = min(calculated, 0.025) (Rule 19 cap)
+  * invalid geometry (stop>=entry, target<=entry, non-positive) → kill, no fabrication
+
+- التعديل 3 — api/canonical_flow.py (Falling Knife filter):
+  * constants: FALLING_KNIFE_DROP_3D_PCT=10.0, SMA50_PERIOD=50
+  * bucket جديد: 'avoid_falling_knife' = 'سقوط حر — تجنب' في BUCKET_LABEL_AR
+  * _compute_drop_pct_3d(): peak-to-close drop % على 3 جلسات
+  * _is_falling_knife(candles, current_price, sma50): drop_3d > 10% AND price < SMA50 → True
+  * في classify_liquidity_bucket: الفلتر بيتفعل FIRST (قبل whale_inflow) → bucket='avoid_falling_knife', expected_rr=None (ممنوع هدف صاعد)
+
+- التحقق (proof-of-work، الكل PASS):
+  * py_compile: الملفين PASS
+  * git diff scope: vps-service/ بس، src/ مش متلموس
+  * evaluate_risk test: R/R=1.0 → CASH_WAIT ✓ | R/R=1.7 → CASH_WAIT ✓ | R/R=2.0 pos=10% → BUY pos=2.5% ✓ | invalid geometry → kill ✓
+  * Falling Knife test: FK-TICKER (drop 12.4%, below SMA50) → AVOID ✓ | HEALTHY (drop 4.9%) → not FK ✓ | CRASH-ABOVE-SMA50 (drop 12.8% but above SMA50) → not FK (both conditions required) ✓
+
+Stage Summary:
+- ✅ RR_FLOOR=1.8 enforced as explicit KILL (signal=CASH_WAIT, confidence=0.0) في evaluate_risk.
+- ✅ Position cap 2.5% (0.025): SPARK 3%→2.5% + min(calculated, 0.025) في evaluate_risk.
+- ✅ Falling Knife filter: >10% drop في 3 جلسات AND تحت SMA50 → AVOID_FALLING_KNIFE، مفيش هدف صاعد.
+- ✅ py_compile PASS + proof-of-work tests PASS + scope نظيف (vps-service/ بس).
+- ⚠️ FLAG 1 (مسار التكليف): `services/flow_system.py` مش موجود. نُفّذ في `engine/flow_system.py` + `api/canonical_flow.py` (الملفات الكنسية). لو Jimmy قاصد ملف تاني، لازم توضيح.
+- ⚠️ FLAG 2 (سابق): stop=-3%/-5% في flow_system بيخالف Rule 8 (ATR [5%,9%]). مش في scope دلوقتي.
+- ⚠️ FLAG 3 (تكامل): evaluate_risk موجودة كـ function مستقلة، لسه مربطتش في الـ flow الإنتاجي (classify_liquidity_bucket / v40_2_daily_generator). ربطها تكليف منفصل عشان مايكونش silent dead code.
+- 🔁 Rule 75: commit + push فوري.

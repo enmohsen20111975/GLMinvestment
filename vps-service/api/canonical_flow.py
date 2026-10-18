@@ -59,6 +59,13 @@ WHALE_INFLOW_RSI_MAX: float = 68.0
 BOTTOM_ABSORPTION_52W_PROXIMITY_PCT: float = 8.0
 CORRECTION_DROP_PCT: float = 8.0
 
+# BRAVO-JIMMY task (2026-10-18) — Falling Knife Filter:
+# لو السعر هبط > 10% خلال 3 جلسات تداول AND يتاجر تحت SMA50
+# → ممنوع منعاً باتاً إصدار هدف صاعد. التصنيف = avoid_falling_knife.
+# (Rule: NO upward targets on crashing/unconfirmed stocks.)
+FALLING_KNIFE_DROP_3D_PCT: float = 10.0
+SMA50_PERIOD: int = 50
+
 # SEALED-DISPATCH-BRAVO-UNIFIED-RADAR (2026-10-17) — Step 3:
 # Unified R/R floor for ALL BUY-side buckets.
 #
@@ -81,6 +88,7 @@ BUCKET_LABEL_AR: Dict[str, str] = {
     'whale_outflow': 'تصريف وهروب كاش',
     'bottom_absorption': 'تجميع قيعان هادئ',
     'correction_exhaustion': 'نهاية تصحيح وارتداد',
+    'avoid_falling_knife': 'سقوط حر — تجنب',
     'neutral': 'حياد',
 }
 ALL_BUCKETS: List[str] = list(BUCKET_LABEL_AR.keys())
@@ -288,6 +296,63 @@ def _compute_drop_pct_15d(candles: List[Dict[str, Any]]) -> Optional[float]:
     return ((peak - last_close) / peak) * 100.0
 
 
+def _compute_drop_pct_3d(candles: List[Dict[str, Any]]) -> Optional[float]:
+    """Peak-to-close drop % over the last 3 trading sessions.
+
+    BRAVO-JIMMY task (2026-10-18) — Falling Knife Filter.
+    Mirrors _compute_drop_pct_15d but windowed to 3 sessions.
+    Returns None if insufficient data.
+    """
+    if len(candles) < 2:
+        return None
+    recent = candles[-3:] if len(candles) >= 3 else candles[:]
+    highs = [c['high'] for c in recent if c['high'] > 0]
+    last_close = recent[-1]['close']
+    if not highs or last_close <= 0:
+        return None
+    peak = max(highs)
+    if peak <= 0:
+        return None
+    return ((peak - last_close) / peak) * 100.0
+
+
+def _is_falling_knife(
+    candles: List[Dict[str, Any]],
+    current_price: Optional[float],
+    sma50: Optional[float],
+) -> Tuple[bool, str]:
+    """Falling Knife detector — BRAVO-JIMMY task (2026-10-18).
+
+    Rule (Owner Directive via Jimmy):
+        If stock price dropped > 10% over the last 3 trading sessions
+        AND is trading below SMA50 → STRICTLY PROHIBITED from issuing an
+        upward target. Signal MUST be classified as 'avoid_falling_knife'.
+
+    Args:
+        candles: daily candle history (newest last).
+        current_price: latest close.
+        sma50: 50-session simple moving average (None if insufficient data).
+
+    Returns:
+        (is_fk: bool, reason: str)
+    """
+    if current_price is None or current_price <= 0:
+        return False, ''
+    if sma50 is None or sma50 <= 0:
+        return False, ''
+    drop_3d = _compute_drop_pct_3d(candles)
+    if drop_3d is None:
+        return False, ''
+    below_sma50 = current_price < sma50
+    if drop_3d > FALLING_KNIFE_DROP_3D_PCT and below_sma50:
+        return True, (
+            f'سقوط حر: هبوط {drop_3d:.1f}% خلال 3 جلسات '
+            f'(>{FALLING_KNIFE_DROP_3D_PCT:.0f}%) + السعر {current_price:.2f} '
+            f'تحت SMA50 {sma50:.2f} — ممنوع إصدار هدف صاعد'
+        )
+    return False, ''
+
+
 def _is_green_engulfing(candles: List[Dict[str, Any]]) -> bool:
     if len(candles) < 2:
         return False
@@ -384,6 +449,7 @@ def classify_liquidity_bucket(
         atr_current, atr_avg = _compute_atr(candles)
         net_flow_5d, flow_history = _compute_net_flow_5d(candles)
         drop_15d = _compute_drop_pct_15d(candles)
+        sma50 = _compute_ma(closes, SMA50_PERIOD)
 
         if len(closes) < 10 or current_price <= 0:
             return _result(
@@ -393,6 +459,19 @@ def classify_liquidity_bucket(
             )
 
         stock_res = _to_float(stock.get('resistance')) if stock.get('resistance') else None
+
+        # 0. FALLING KNIFE FILTER (BRAVO-JIMMY task 2026-10-18):
+        # لو السعر هبط > 10% خلال 3 جلسات AND تحت SMA50 → ممنوع أي هدف صاعد.
+        # هذا الفلتر يسبق كل تصنيفات BUY-side (whale_inflow / bottom_absorption /
+        # correction_exhaustion) — السقوط الحر يلغي أي إشارة شراء مهما بلغت قوتها.
+        is_fk, fk_reason = _is_falling_knife(candles, current_price, sma50)
+        if is_fk:
+            return _result(
+                'avoid_falling_knife', net_flow_5d, current_price, ma20, rsi,
+                atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
+                fk_reason,
+                expected_rr=None,  # NO upward target on falling knife
+            )
 
         # 1. whale_inflow
         if (
