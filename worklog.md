@@ -69624,3 +69624,37 @@ Stage Summary — BUILD scope أصغر بكتير:
 - background_analyzer return None = مش بـ ينادي maestro أصلاً.
 
 **مفيش فقدان قدرة لأن مفيش حد بـ يستدعي maestro فعلاً (بعد STEP 2+3).**
+
+---
+Task ID: MAESTRO-CANCER-1-STEP4-STEP6
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — MAESTRO-CANCER-1 STEP 4 (kill 13 endpoints) + STEP 6 (kill maestro_orchestrator.py)
+
+Work Log:
+- STEP 4 (kill 13 maestro endpoints):
+  * شيلت maestro_bp registration من lightweight_server.py L53 (commented out).
+  * أضفت catch-all 410 Gone route لـ /api/maestro/* في lightweight_server.py.
+  * الـ 410 بيرجّع canonical alternatives (stock_data → /api/stocks/<ticker>/unified، إلخ).
+  * py_compile PASS.
+- STEP 6 (kill maestro_orchestrator.py — 4,416 lines):
+  * 🔴 اكتشفت إن git rm مش بيـ delete من الـ disk فورًا. اضطررت أعمل rm -f كمان.
+  * شيلت: maestro_orchestrator.py + recorder.py (dead) + forward_test_may2026.py (dead).
+  * شيلت: 3 manual scripts (maestro_backfill_phase3 + publish_today_picks + rebuild_predictions).
+  * ما شيلتش الـ 4 analyzers (hunting_engine + background_analyzer + unified_maestro + crypto_maestro) — جون قال متشيلهاش.
+- SANITY TESTS (بعد شيل maestro — كلهم PASS):
+  1. daily_predictor imports OK (no maestro) ✓
+  2. V40.2 veto still works (COMI: 1,973 lessons, proceed) ✓
+  3. V40.2 daily_opportunities works (3 opportunities from predictions.db) ✓
+  4. background_analyzer: MAESTRO_ORCHESTRATOR_AVAILABLE=False ✓ (catch ImportError)
+  5. hunting_engine: MAESTRO_AVAILABLE=False + _safe_float=1.5 (helpers لسه شغّالة) ✓
+  6. unified_maestro: EGX_MAESTRO_AVAILABLE=False ✓
+  7. 0 maestro_orchestrator imports شغّالة (grep بيرجع فاضي) ✓
+- py_compile ALL: hunting_engine + unified_maestro + background_analyzer + daily_predictor + auto_post_scheduler + lightweight_server = PASS.
+
+Stage Summary:
+- ✅ STEP 4: 13 maestro endpoints → 410 Gone (catch-all route). blueprint registration مشدود.
+- ✅ STEP 6: maestro_orchestrator.py (4,416 lines) اتشال + 5 dead files (recorder + forward_test + 3 scripts).
+- ✅ كل sanity tests PASS: daily_predictor + telegram + veto + 3 analyzers (all MAESTRO_*=False).
+- ✅ 0 فقدان قدرة: V40.2 veto شغّال + daily_opportunities شغّالة + helpers لسه شغّالة.
+- ⚠️ STEP 5 (kill 4 analyzers) اتعمل SKIP بأمر جون ("متشيلش الـ 4 analyzers").
+- 🔁 Push gate: جون وافق → هـ commit + push.

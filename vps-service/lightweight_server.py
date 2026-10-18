@@ -50,7 +50,9 @@ BLUEPRINTS = [
     ('api.ai_predictions_routes', 'ai_pred_bp'),
     ('api.prediction_tracking_routes', 'prediction_tracking_bp'),
     ('api.prediction_tracking_routes', 'tracking_bp'),
-    ('api.maestro_routes', 'maestro_bp'),
+    # BRAVO MAESTRO-CANCER-1 STEP 4: maestro_bp DISABLED (410 Gone for all 13 endpoints).
+    # All maestro_orchestrator.py callers disconnected (STEP 2+3). V40.2 is sole engine.
+    # ('api.maestro_routes', 'maestro_bp'),
     ('api.sniper_routes', 'sniper_bp'),
     ('api.reports_routes', 'reports_bp'),
     ('api.risk_routes', 'risk_bp'),
@@ -1889,3 +1891,28 @@ if __name__ == '__main__':
     print("Port: 8010")
     print("=" * 50)
     app.run(host='0.0.0.0', port=8010, debug=False, threaded=True)
+
+
+# ============================================================================
+# BRAVO MAESTRO-CANCER-1 STEP 4: /api/maestro/* → 410 Gone
+# ============================================================================
+# All 13 maestro endpoints disabled. V40.2 is the sole engine (Rule 21).
+# Returns 410 Gone with redirect hint to V40.2 canonical endpoints.
+
+@app.route('/api/maestro/<path:dummy>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/api/maestro', methods=['GET', 'POST'])
+def maestro_gone(dummy=None):
+    """410 Gone — maestro endpoints disabled. Use V40.2 canonical endpoints."""
+    return jsonify({
+        'success': False,
+        'error': 'gone',
+        'deprecated': True,
+        'error_ar': 'هذا الـ endpoint معطّل. استخدم V40.2 canonical.',
+        'canonical_alternatives': {
+            'stock_data': '/api/stocks/<ticker>/unified',
+            'predictions': '/api/predictions/honest-tracking/list',
+            'market_overview': '/api/market/overview',
+        },
+        'deprecated_at': '2026-10-18',
+        'reason': 'MAESTRO-CANCER-1: maestro_orchestrator removed. V40.2 is sole engine (Rule 21).'
+    }), 410
