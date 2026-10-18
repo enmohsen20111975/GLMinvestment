@@ -128,11 +128,18 @@ export async function GET(request: NextRequest) {
 
       const where: string[] = ['market = ?'];
       const sqlParams: unknown[] = [market];
+      // RESTRUCT-TEST-FIX-1: guard minScore/persona queries against missing columns.
+      // stored_analyses schema varies (some columns absent) → only apply filter if column exists.
+      const hasMasterScore = availableCols.has('master_score');
       if (minScore && !Number.isNaN(Number(minScore))) {
-        where.push('COALESCE(maestro_score, master_score, 0) >= ?');
+        if (hasMasterScore) {
+          where.push('COALESCE(maestro_score, master_score, 0) >= ?');
+        } else {
+          where.push('COALESCE(maestro_score, 0) >= ?');
+        }
         sqlParams.push(Number(minScore));
       }
-      if (persona && persona !== 'all') {
+      if (persona && persona !== 'all' && availableCols.has('persona')) {
         where.push("LOWER(COALESCE(persona, '')) = ?");
         sqlParams.push(persona);
       }
@@ -140,11 +147,12 @@ export async function GET(request: NextRequest) {
         where.push('(UPPER(recommendation) = ? OR UPPER(signal) = ?)');
         sqlParams.push(recommendation, recommendation);
       }
+      const orderByCol = hasMasterScore ? 'master_score' : 'maestro_score';
       const sql = `
         SELECT ${cols}
         FROM stored_analyses
         WHERE ${where.join(' AND ')}
-        ORDER BY prediction_date DESC, maestro_score DESC
+        ORDER BY prediction_date DESC, ${orderByCol} DESC
         LIMIT ?
       `;
       // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
@@ -154,13 +162,19 @@ export async function GET(request: NextRequest) {
       rows = db.prepare(sql).all(...sqlParams) as Array<Record<string, unknown>>;
     } else {
       // Use predictions table as the source of stored analyses
+      // RESTRUCT-TEST-FIX-1: guard against missing columns in predictions table (schema varies).
+      const predCols = new Set(
+        (db.prepare('PRAGMA table_info(predictions)').all() as Array<{ name: string }>).map(
+          (c) => c.name
+        )
+      );
       const where: string[] = ['market = ?'];
       const sqlParams: unknown[] = [market];
       if (minScore && !Number.isNaN(Number(minScore))) {
         where.push('COALESCE(master_score, 0) >= ?');
         sqlParams.push(Number(minScore));
       }
-      if (persona && persona !== 'all') {
+      if (persona && persona !== 'all' && predCols.has('persona')) {
         where.push("LOWER(COALESCE(persona, '')) = ?");
         sqlParams.push(persona);
       }
@@ -168,17 +182,22 @@ export async function GET(request: NextRequest) {
         where.push('(UPPER(signal) = ? OR UPPER(signal_type) = ?)');
         sqlParams.push(recommendation, recommendation);
       }
+      // RESTRUCT-TEST-FIX-1: build SELECT list dynamically from available columns.
+      const predWant: Array<string> = [
+        'ticker', 'market', 'signal', 'signal_type', 'signal_ar',
+        'master_score', 'maestro_score', 'technical_score', 'confidence',
+        'entry_price', 'target_price', 'target_price_2', 'stop_loss',
+        'risk_reward', 'persona', 'prediction_date', 'status',
+        'exit_type', 'horizon', 'evidence_count', 'kill_filter_result',
+        'explosive_score',
+      ];
+      const predSelect = predWant.filter((c) => predCols.has(c)).join(', ');
+      const orderByPred = predCols.has('master_score') ? 'master_score' : 'prediction_date';
       const sql = `
-        SELECT
-          ticker, market, signal, signal_type, signal_ar,
-          master_score, maestro_score, technical_score, confidence,
-          entry_price, target_price, target_price_2, stop_loss,
-          risk_reward, persona, prediction_date, status,
-          exit_type, horizon, evidence_count, kill_filter_result,
-          explosive_score
+        SELECT ${predSelect || 'ticker, market'}
         FROM predictions
         WHERE ${where.join(' AND ')}
-        ORDER BY prediction_date DESC, master_score DESC
+        ORDER BY prediction_date DESC, ${orderByPred} DESC
         LIMIT ?
       `;
       sqlParams.push(limit);

@@ -2872,7 +2872,7 @@ interface StockDetailDrawerProps {
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
-function StockDetailDrawer({
+export function StockDetailDrawer({
   ticker, radarStock, sectorForTicker, sectorChangeForTicker, onClose, onTrackToggle,
 }: StockDetailDrawerProps) {
   const t = useTranslation();

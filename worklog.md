@@ -69921,3 +69921,40 @@ Stage Summary:
 - 🔁 Push gate: المالك رفعه ("ارفع بستمرار"). A-P3 متدفع. DESIGN-SYSTEM-PLAN.md + worklog هـ commit + push.
 - ⚠️ Phase 5 (codemod 5,505 occurrences) محتاج visual smoke-test per module.
 - ⚠️ Hardcoded hex (1,359) في SVG/canvas templates — out of scope (future Phase 2).
+
+---
+Task ID: TEST-FIX-1
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — TEST-FIX-1: real runtime testing + crash fixing (restore DBs + test كل شاشات TopBar + fix crashes).
+
+Work Log:
+- STEP 1: Restore DBs من data/*.zip لـ db/ (9 DBs: auth, crypto, decision_log, historical, metrics, news, paper_trading, predictions 281MB, stocks 29MB). Python backend (lightweight_server.py على 8010) مش متاح (flask مش متثبت في venv — scope برافو).
+- STEP 2: runtime testing بـ agent-browser (10 شاشات + stock click):
+  * Dashboard (/): ✅ بترندر داتا حقيقية (ARAB 0.25 -7.06%, PHGC, KRDIA, إلخ) + hasTopBar + مفيش crash.
+  * Stocks (#stocks): ✅ بترندر + hash بقي + مفيش crash.
+  * Liquidity Radar (#liquidity-radar): ✅ بترندر + hash بقي + مفيش crash.
+  * Recommendations (#recommendations): ✅ بترندر (hash بيتمسح — UX nit، مش crash، Guest-allowed view).
+  * News (#news): ✅ بترندر (bodyLen=28043 = content أكبر) + مفيش crash.
+  * Academy (#academy): ✅ بترندر + hash بقي + مفيش crash.
+  * Portfolio (#portfolio): ✅ Guest restriction + LoginPromptModal (متوقع).
+  * Watchlist (#watchlist): ✅ Guest restriction + LoginPromptModal (متوقع).
+  * Subscription (#subscription): ✅ بترندر + hash بقي + مفيش crash.
+  * Settings (#settings): ✅ Guest restriction + LoginPromptModal (متوقع).
+  * Stock click (ARAB): ✅ clicked + مفيش crash (Guest redirect لـ LoginPrompt).
+- STEP 3: Crashes لقيتها + أصلّحتها:
+  1. ✅ FIXED: StockDetailDrawer مش exported من MakerRadarTab.tsx (import مكسور). أضفت `export` للـ function. (src/modules/predictions/components/MakerRadarTab.tsx)
+  2. ✅ FIXED: SqliteError "no such column: persona" في stored-analysis/results route. الـ stored_analyses table مش فيها column persona. أضفت guards: check availableCols.has('persona') قبل الـ WHERE + hasMasterScore fallback للـ ORDER BY + COALESCE. (src/app/api/stored-analysis/results/route.ts)
+  3. ✅ FIXED: SqliteError "no such table: news_signals" في news-feed route. predictions.db مش فيها news_signals table. أضفت guard: check table existence قبل الـ query. (src/app/api/news-feed/route.ts)
+- lint: exit 0 (0 errors).
+- Re-test بعد الـ fixes: كل الـ 10 شاشات hasError=false + مفيش SqliteErrors في dev.log.
+
+Stage Summary:
+- ✅ 3 frontend crashes اتصلّحوا (StockDetailDrawer import + 2 DB schema guards).
+- ✅ كل شاشات TopBar (10) بترندر بدون crash (hasError=false).
+- ✅ Dashboard بـ يـ render داتا حقيقية (stocks list: ARAB, PHGC, KRDIA, إلخ).
+- ✅ Guest Mode + LoginPromptModal لسه شغّال (مكسرش حاجة).
+- ✅ lint 0.
+- ⚠️ Backend (Python 8010) مش متاح في sandbox (flask مش متثبت) — الـ API proxy errors بتاعة الـ fetch failed للـ Python (sniper:scan, stored-analysis proxy) دي backend issues (scope برافو).
+- ⚠️ DB schema mismatches: stored_analyses ناقصة columns (persona, sector, name_ar, status, exit_type, horizon, evidence_count, kill_filter_result, explosive_score) — الـ route دلوقتي resilient (guards). الـ schema نفسها محتاجة update من برافو/المالك.
+- ⚠️ #recommendations hash بيتمسح للـ Guest — UX nit (مش crash). محتاج تحقيق مستقبلي.
+- 🔁 push: المالك رفع الـ gate. هـ commit + push.
