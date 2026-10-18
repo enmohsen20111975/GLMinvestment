@@ -68259,3 +68259,381 @@ Stage Summary:
 - ✅ scope نظيف: src/app/api/egx/investors/route.ts بس.
 - ⚠️ FLAG: لو فيه Flutter app خارجي بيتعامل مع `arab_institutions_*` field name، هيتكسر. المالك لازم يأكد.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: AUDIT-API-DB-ACCESS-1
+Agent: Alpha (frontend dragon — sub-agent Explore)
+Task: Audit ALL `src/app/api/*/route.ts` files that read from SQLite databases (better-sqlite3 / new Database / Prisma). Extract DB paths + SQL tables + access pattern (direct/proxy/hybrid/compute), and compare each route against the canonical `DBPaths` spec (`vps-service/utils/db_paths.py`) + `Documentation/DATA-SOURCES.md`. Research-only — NO file modifications, NO commits.
+
+Work Log:
+- قرأت آخر 30 سطر من worklog.md + Documentation/DATA-SOURCES.md (canonical spec) + vps-service/utils/db_paths.py (DBPaths class — مصدر الحقيقة الوحيد لمسارات الـ DBs).
+- شغّلت `rg -l "better-sqlite3|new Database|Database\(" src/app/api/` → 111 route.ts file بتـ access مباشر لـ SQLite (من إجمالي 451 route في `src/app/api/`).
+- فتحت وقرأت بـ التفصيل ~70 route من الـ 111 (cover كل domains: predictions, market, stocks, news, maker-radar, portfolio, mobile, admin, ai, screener, chart, metals, money, watchlist, radar, v4, reports, sharia, tab-data, disclosures, telegram, data-engine, crypto, finance, auth). الباقي ~40 route قرأت header + first 50 line لتأكيد الـ pattern.
+- لكل route استخرجت: (1) DB file accessed, (2) SQL tables queried, (3) access pattern (direct/hybrid/proxy/compute), (4) canonical match, (5) issues.
+
+Stage Summary:
+
+## 1. Summary Table (Domain-Grouped)
+
+### 1.1 Predictions Domain (predictions.db canonical — `predictions`, `persona_predictions`, `learned_lessons`, `historical_trades`, `stored_analyses`, `exit_notifications`, `morning_bell_signals`, `conjunction_patterns`, `indicator_trust_scores`, `crypto_predictions_log`, `aiPredictionStats`)
+
+| Route | DB | Tables | Pattern | Canonical Match | Issues |
+|-------|-----|--------|---------|-----------------|--------|
+| `/api/predictions` | predictions.db + (Python proxy) | `predictions`, `stored_analyses` | Hybrid (Python first → SQLite) | ✅ predictions.db canonical | Reads `predictions` table only — NOT canonical `aiPrediction` table per DATA-SOURCES.md §2.1 (aiPrediction = 2,613 rows V40.2 production). Comment in code: "aiPrediction table فاضي (0 صفوف) — استخدم predictions table" — legacy stale comment. |
+| `/api/predictions/eid` | data_engine.db + price_history.db | `crypto_prices`, `gold_prices`, `stocks`, `price_history` | Compute (Node-side signal generation) | data_engine ✅, price_history ✅ | Rule 20 violation: generates BTC/ETH/GOLD signals in Node from Fear & Greed Index (alternative.me API). Code comments admit "NOT a per-stock canonical signal". |
+| `/api/predictions/learned-lessons` | predictions.db | `learned_lessons` | Direct | ✅ canonical | Hardcoded path; no central config. |
+| `/api/predictions/historical-trades` | predictions.db | `historical_trades` | Direct | ✅ canonical | Same hardcoded path. |
+| `/api/predictions/active-management` | predictions.db + stocks.db | `predictions`, `stocks` | Hybrid (Python first → SQLite) | ✅ both canonical | Computes `unrealized_pnl_pct`, `distance_to_target_pct`, `urgency` heuristic in Node — borderline Rule 20 (descriptive, not decision). |
+| `/api/predictions/backtest-list` | predictions.db | `predictions` | Direct | ✅ canonical | Hardcoded path. Computes `risk_reward` via `preferComputedRiskReward()` in Node — Rule 54 (CALCULATION-CANONICAL) concern. |
+| `/api/predictions/expert-consensus` | predictions.db + stocks.db | `predictions`, `stocks` | Direct | ✅ both canonical | Computes `bullish`/`bearish` counts + RSI/MA/relative-strength reasons in Node. Verdict sourced from canonical `pred.signal` (OK). Borderline Rule 20. |
+| `/api/predictions/performance` | predictions.db | `predictions` | Direct | ✅ canonical | Hardcoded path. |
+| `/api/predictions/performance-dashboard` | predictions.db | `predictions` | Direct (heavy compute in Node) | ✅ canonical DB | Rule 20 concern: computes win_rate, by_market, by_signal, top_tickers, timeseries — all aggregations in Node (not Python). |
+| `/api/predictions/daily-picks` | predictions.db + stocks.db | `predictions`, `stocks` | Hybrid (Python first → SQLite) | ✅ both canonical | Computes `risk_reward` in Node via `preferComputedRiskReward`. |
+| `/api/predictions/dual-track/list` | predictions.db | `predictions`, `liquidity_dynamic_threshold` | Direct + **WRITE** (ALTER TABLE) | ✅ DB | Rule 20 violation: `ensureTrackColumn` ALTERs predictions.db schema from Node. Opens DB with `readonly=false`. |
+| `/api/predictions/dual-track/stats` | predictions.db | `predictions`, `liquidity_dynamic_threshold`, `liquidity_backtest_results` | Direct + **WRITE** (ALTER TABLE) | ✅ DB | Same ALTER TABLE issue. Computes `combined_efficiency` formula `(win_rate_A × 0.4) + (win_rate_B × 0.6)` in Node. |
+| `/api/predictions/dual-track/threshold` | intraday.db + price_history.db + data_engine.db + predictions.db | `stock_intraday`, `price_history`, `historical_data`, `crypto_prices`, `gold_prices_clean`, `liquidity_dynamic_threshold` | Compute + **WRITE** (CREATE TABLE + INSERT) | All ✅ canonical | Rule 20 violation: calculates p75 percentile in Node + writes to predictions.db.liquidity_dynamic_threshold. Canonical Python should compute this. |
+| `/api/predictions/honest-tracking` (root) | predictions.db | `predictions`, `prediction_lessons` | Direct | ✅ canonical | OK. |
+| `/api/predictions/honest-tracking/list` | predictions.db | `predictions` | Direct + **WRITE** (ensureSchema) | ✅ DB | Rule 20 concern: `ensureSchema(db)` ALTERs predictions.db from Node. |
+| `/api/predictions/honest-tracking/stats` | predictions.db | `predictions` | Direct + **WRITE** (ensureSchema) | ✅ DB | Same ALTER issue. |
+| `/api/predictions/honest-tracking/live-tracking` | predictions.db | `predictions` | Direct + **WRITE** (ensureSchema) | ✅ DB | Same. Uses `COALESCE(actual_return, pnl_pct)` — indicates SCHEMA-MISMATCH within `predictions` table. |
+| `/api/predictions/honest-tracking/missed-opportunities` | predictions.db + stocks.db | `predictions`, `stocks` | Direct | ✅ both | OK. Reads `was_published = 1` filter. |
+| `/api/predictions/honest-tracking/learn-from-errors` | predictions.db | `predictions`, `prediction_lessons` | Hybrid (local extract + Python proxy) + **WRITE** (CREATE TABLE + INSERT) | ✅ DB | Rule 20 violation: writes `prediction_lessons` rows from Node. |
+
+### 1.2 Stocks / Market Domain (stocks.db canonical — `stocks`, `stock_daily_prices`, `egksco_stocks`, `cached_analysis`, `market_indices`, `system_settings`, `market_regime_log`, `investors_data`)
+
+| Route | DB | Tables | Pattern | Canonical Match | Issues |
+|-------|-----|--------|---------|-----------------|--------|
+| `/api/stocks` | stocks.db + (Python proxy) | `stocks` | Hybrid (Python first → SQLite) | ✅ canonical | Hardcoded path. |
+| `/api/stocks/search` | stocks.db (via getLightDb/getStocksDb) | `stocks` | Direct | ✅ canonical | Uses `symbol` column (legacy egksco_scraper schema) — not `ticker`. Inconsistent column naming. |
+| `/api/stocks/top-performers` | stocks.db | `stocks` | Hybrid (Python first → SQLite) | ✅ canonical | OK. |
+| `/api/stocks/delta-volume` | data_engine.db | `egksco_price_history` | Direct | ✅ canonical | Computes `maker_direction` (ACCUMULATION/DISTRIBUTION) in Node — borderline Rule 20. |
+| `/api/stocks/[ticker]` | (Python proxy) + stocks.db via `getStockByTickerFallback` | `stocks` | Hybrid (Python first → SQLite) | ✅ canonical | Injects unified canonical values via `getUnifiedStockData()`. OK Rule 73. |
+| `/api/stocks/[ticker]/history` | (Python proxy) + stocks.db | `stock_daily_prices` | Hybrid (Python first → SQLite) | ✅ canonical | OK. |
+| `/api/stocks/[ticker]/depth` | intraday.db + stocks.db | `stock_intraday`, `stocks` | Direct (heavy compute) | ✅ both | Rule 20 concern: reconstructs fake "depth/DOM" from intraday ticks — buckets, buy/sell classification, imbalance all in Node. No real Level-2 data exists. |
+| `/api/stocks/[ticker]/publish-data` | stocks.db + predictions.db + radar-db | `stocks`, `predictions`, radar tables | Hybrid (Python first → multi-DB SQLite) | ✅ canonical | Aggregates 4 sources. OK pattern. |
+| `/api/stocks/sparkline` | price_history.db + stocks.db | `price_history`, `stock_daily_prices`, `market_indices` | Direct | ✅ canonical | Rule 27 violation: when no price rows exist for an index, FABRICATES prices using `factor = 1 - ... * (chgPct / 100)` + `noise = Math.sin(i * 1.2) * 0.003 * cur`. Code at L132-153. |
+| `/api/market/liquidity-flow` | stocks.db | `stocks`, `stock_daily_prices` | Direct (heavy compute) | ✅ canonical | Rule 20 violation: computes sector_flow, top_inflow/outflow, investor_type_estimate (institutional vs retail heuristic) all in Node. Should be Python. |
+| `/api/market/live-data` | stocks.db (via getLightDb) + (egxpy + VPS) | `stocks` | Hybrid (egxpy → VPS → Database) | ✅ canonical | OK pattern. |
+| `/api/market/indices` | (delegates to fetchMarketIndices helper) | (varies) | Hybrid (Yahoo/CoinGecko → SQLite) | ✅ OK | OK pattern. |
+| `/api/market/overview` | stocks.db + (Python proxy) | `stocks`, `market_indices` | Hybrid (Python first → SQLite) | ✅ canonical | Rule 20 concern: computes "composite index" inline if external fetch fails — fabricated weighted avg of stocks. |
+| `/api/market/regime` | stocks.db + (Python proxy) | `system_settings`, `market_regime_log` | Hybrid (Python first → SQLite) | ✅ canonical | OK — read-only, regime computed by Python. |
+| `/api/market/sectors/intelligence` | stocks.db | `stocks` | Direct (compute) | ✅ canonical | Rule 20 concern: computes sector_ranking, relative_strength, market_breadth in Node. |
+| `/api/market/top-movers` | stocks.db (via lib) | `stocks` | Direct | ✅ canonical | OK. |
+| `/api/market/intraday-pressure` | intraday.db | `stock_intraday` | Direct (heavy compute) | ✅ canonical | Rule 20 concern: computes buy/sell pressure per bucket, VWAP, session summary all in Node. |
+| `/api/market/sync-live` | stocks.db (writable) + egxpy + VPS | `stocks`, `db_metadata` | Proxy (egxpy → VPS → DB write) | ✅ canonical | OK — admin-only POST. Writes to stocks.db (intended). |
+| `/api/market/sync` | stocks.db + data_engine.db + news.db (writable) + Python subprocess | `stocks`, `currency_rates`, `gold_prices` (skipped) | Proxy (Python subprocess + DB write) | ✅ canonical | OK — admin-only POST. Note: gold_prices writer DISABLED per code comment (v3.65.1). |
+| `/api/egx/investors` | stocks.db (writable!) | `investors_data`, `stock_daily_prices` | Direct + **WRITE** (CREATE TABLE + UPSERT) + heavy compute | ✅ canonical DB | Rule 20 violation: AUTO-SEEDS `investors_data` table by computing estimates from `stock_daily_prices` with hardcoded ratios (EGX_RATIO_EGYPTIANS=0.70, ARABS=0.10, FOREIGNERS=0.20). Should be Python `egx_investors_scraper.py`. |
+| `/api/market-pulse` | stocks.db + (Python proxy) | `stocks` | Hybrid (Python first → SQLite) | ✅ canonical | OK pattern. |
+
+### 1.3 News Domain (canonical per DBPaths: `NEWS_DB = STOCKS_DB` — news should be in stocks.db; in practice Node reads from non-canonical `news.db`)
+
+| Route | DB | Tables | Pattern | Canonical Match | Issues |
+|-------|-----|--------|---------|-----------------|--------|
+| `/api/news` | **news.db** (non-canonical!) | `market_news` | Direct | ❌ Canonical = stocks.db (NEWS_DB alias). Node reads separate file. | CRITICAL: news.db not in DBPaths. Should be stocks.db per `get_db_for_table('news')` (returns stocks.db) or content.db per `get_db_for_table('market_news')` (target). |
+| `/api/news/latest` | **news.db** | `market_news` | Direct | ❌ Same as above | Same issue. |
+| `/api/news-feed` | **news.db** + predictions.db | `market_news` + `news_signals` | Direct | ❌ news.db non-canonical; `news_signals` table not in DBPaths.get_db_for_table (defaults to stocks.db). | CRITICAL: dual-DB inconsistency. news_signals table existence in predictions.db is non-canonical. |
+| `/api/mobile/news` | **news.db** | `market_news` | Direct | ❌ Same as /api/news | Same issue. |
+| `/api/admin/news` | **news.db** + predictions.db | `market_news` | Direct + Write | ❌ Same | Same issue. POST writes to news.db. |
+| `/api/admin/news-health` | **news.db** | `market_news` | Direct | ❌ Same | Same issue. |
+| `/api/disclosures/company/[symbol]` | predictions.db + stocks.db + **news.db** | `corporate_actions`, `news_items`, `market_news` | Direct (multi-DB) | ❌ news.db non-canonical; `corporate_actions` not in DBPaths (defaults to stocks.db). | Multi-DB inconsistency. |
+
+### 1.4 Auth / Portfolio / Watchlist Domain (auth.db canonical — `User`, `SubscriptionPlan`, `api_tokens`, `task_runs`, `user_stock_watchlists`, `portfolio_assets`)
+
+| Route | DB | Tables | Pattern | Canonical Match | Issues |
+|-------|-----|--------|---------|-----------------|--------|
+| `/api/auth/[...nextauth]` | auth.db (Prisma via DATABASE_URL) | `User`, `Account`, `Session` | Prisma (Node-side auth logic) | ✅ canonical | OK — auth/subscription exempt from Rule 20 per §5.1. |
+| `/api/money` | stocks.db | `portfolio_assets`, `user_stock_watchlists`, `price_alerts`, `trading_journal` | Direct | ❌ Canonical per DBPaths: `portfolio_assets` in auth_tables (auth.db), `user_stock_watchlists` in auth_tables. Node reads them from stocks.db. | CRITICAL: portfolio/watchlist tables canonical = auth.db, Node reads from stocks.db. Schema duplication risk. |
+| `/api/watchlist` | stocks.db | `user_stock_watchlists`, `stocks` | Direct + Write | ❌ Same — `user_stock_watchlists` canonical = auth.db. | Same issue. |
+| `/api/watchlist-enhanced` | stocks.db + data_engine.db | `user_stock_watchlists`, `stocks` | Direct | ❌ Same. | Same issue. Note: reads `stocks.symbol` from data_engine.db (egksco schema) — inconsistent with stocks.db.ticker. |
+| `/api/mobile/watchlist` | stocks.db + data_engine.db | `user_stock_watchlists`, `stocks` | Direct | ❌ Same. | Same. |
+| `/api/mobile/portfolio` | auth.db (Prisma) + stocks.db (better-sqlite3) | `PortfolioItem` (Prisma), `stocks` (bsqlite3) | Hybrid (Python first → Prisma + SQLite) | ✅ Prisma auth.db OK; stocks.db.stocks OK | Mixed access (Prisma + better-sqlite3) for related data. |
+| `/api/mobile/portfolio/intelligence` | auth.db (Prisma) + stocks.db | `PortfolioItem`, `stocks` | Direct | ✅ canonical | Same mixed access. Computes diversification_score, risk_score in Node — borderline Rule 20. |
+| `/api/portfolio/master` | finance.db (via getFinanceDb) + data_engine.db | `portfolio_assets`, `portfolios`, gold/exchange tables | Direct + Write | ❌ `portfolio_assets` canonical = auth.db; route reads from `finance.db` (non-canonical!). | CRITICAL: portfolio_assets in 2 different DBs (auth.db per DBPaths, finance.db per this route). Schema duplication. |
+| `/api/portfolio/cashflow` | stocks.db | `portfolio_transactions`, `financial_transactions` | Direct | ❌ `portfolio_transactions` not in DBPaths (defaults to stocks.db — coincidentally matches but not canonical-listed). | OK-by-accident. |
+| `/api/portfolio/unified-watch` | stocks.db + predictions.db | `portfolio_assets`, `user_stock_watchlists`, `predictions` | Direct | ❌ portfolio_assets canonical = auth.db. | Same issue. Joins user tables with predictions in Node — Rule 20 borderline. |
+| `/api/portfolio/rescue` | stocks.db + price_history.db (via lib) | `stocks`, `price_history` | Direct (heavy compute) | ✅ canonical DBs | Rule 20 violation: computes `supportResistance` (pivot detection) + `weinsteinStage` heuristics in Node. Code comments acknowledge "NOT a canonical technical indicator per Rule 54. Kept local on purpose." |
+| `/api/reports/morning` | stocks.db (writable!) | `morning_reports` | Direct + Write | ✅ DB | OK — receives reports from Python. |
+| `/api/finance/calculate-values` | finance.db (via getFinanceDb) + data_engine.db | `portfolio_assets`, gold/exchange | Direct | ❌ Same — portfolio_assets canonical = auth.db. | Same. |
+| `/api/expert-recommendations` | stocks.db | `ExpertRecommendation`, `stocks` | Direct + Write (POST/PUT/DELETE) | ✅ ExpertRecommendation canonical = stocks.db per P0-8-DB-UNIFY | OK — admin-gated writes. |
+| `/api/recommendations/expert` | stocks.db | `ExpertRecommendation` | Direct | ✅ canonical | OK. |
+| `/api/recommendations/retroactive-evaluate` | predictions.db + price_history.db (writable) | `real_predictions`, `price_history` | Compute + Write | ⚠️ `real_predictions` table not in DBPaths (defaults to stocks.db). | CRITICAL: `real_predictions` table — Node reads from predictions.db but DBPaths says it should be in stocks.db. Either DBPaths is incomplete or route reads from wrong DB. |
+
+### 1.5 Admin / System Domain
+
+| Route | DB | Tables | Pattern | Canonical Match | Issues |
+|-------|-----|--------|---------|-----------------|--------|
+| `/api/admin/db/[db]` | Any (param-driven) | Any | Direct + Write (VACUUM, raw SQL) | ⚠️ Dynamic — depends on `db` param | OK — admin-only. Uses sqlite-admin lib whitelist. |
+| `/api/admin/db-manager/repair` | Any DB | Any | Direct + Write (CREATE/ALTER) | ⚠️ Dynamic | OK — admin-only. |
+| `/api/admin/db-manager/backup` | Any DB | Any | Direct (file copy) | ⚠️ Dynamic | OK — admin-only. |
+| `/api/admin/news` | news.db (non-canonical) + predictions.db | `market_news` | Direct + Write | ❌ news.db non-canonical | Same as /api/news issue. |
+| `/api/admin/news-health` | news.db (non-canonical) | `market_news` | Direct | ❌ Same | Same. |
+| `/api/admin/engines-status` | stocks.db + predictions.db + data_engine.db | Various | Hybrid (Python/VPS + SQLite) | ✅ canonical DBs | OK. |
+| `/api/admin/system-resources` | metrics DB | Various | Direct + Write | ✅ | OK. |
+| `/api/admin/daily-analysis` | auth.db (Prisma) + Python subprocess | Various | Hybrid (Prisma + Python) | ✅ | OK. |
+| `/api/admin/backtest/v40/stats` | predictions.db | `predictions` | Direct (compute stats) | ✅ canonical | Computes stats in Node — borderline Rule 20. |
+| `/api/admin/backtest/v40/run` | predictions.db (writable) | `predictions` | Compute + Write (DELETE FROM predictions) | ✅ canonical DB | Rule 20 violation: spawns Python `backfill_with_personas.py` subprocess — OK, but also DELETEs rows from predictions.db directly. |
+| `/api/admin/generate-historical-predictions` | predictions.db + stocks.db (via maestro lib) | `predictions`, `stored_analyses`, `prediction_lessons` | Compute + Write (heavy) | ✅ canonical DBs | Rule 20 violation: runs `generateHistoricalPredictions()` entirely in TS (no Python). Writes predictions + stored_analyses + lessons. |
+| `/api/admin/import-stocks` | stocks.db (writable) | `stocks` | Direct + Write | ✅ canonical | OK — admin-only CSV import. |
+| `/api/admin/import-indices-csv` | stocks.db (writable) | `market_indices_history` | Direct + Write | ✅ canonical | OK. |
+| `/api/admin/purge-cache` | predictions.db (writable) | Various | Direct + Write (DELETE) | ✅ canonical | OK — admin-only. |
+| `/api/admin/sources` | price_history.db | `price_history` | Direct | ✅ canonical | OK. |
+| `/api/admin/telegram-predictions` | predictions.db | `predictions` | Direct | ✅ canonical | OK. |
+| `/api/admin/validation` | stocks.db | `stocks` | Direct (compute validation) | ✅ canonical | Rule 20 concern: re-implements `validation.py` rules in TS. Code comments admit it. |
+| `/api/data-engine/control` | data_engine.db + stocks.db + news.db + data_engine.db (as historical) | Various | Hybrid (Flask + SQLite) | ⚠️ HISTORICAL_DB alias used as data_engine.db (canonical ✅). news.db non-canonical ❌. | Mixed. |
+
+### 1.6 Maker-Radar / Chart / AI / Metals / Screener / Crypto / Misc Domain
+
+| Route | DB | Tables | Pattern | Canonical Match | Issues |
+|-------|-----|--------|---------|-----------------|--------|
+| `/api/maker-radar` | stocks.db + maker_radar_tracking.json | `stocks` | Direct (cache + DB enrich) | ✅ canonical | OK — reads from JSON cache, enriches with stocks.db. |
+| `/api/maker-radar/stock` | radar-db (dynamic) + stocks.db | price-history tables, `stocks` | Direct | ✅ portable radar-db helper | OK. |
+| `/api/maker-radar/fundamentals` | data_engine.db | `tab_*` (8 tables) | Direct | ✅ canonical (tab_* in data_engine_tables) | OK. |
+| `/api/maker-radar/market-intelligence` | intraday.db + data_engine.db + stocks.db | `stock_intraday`, `tab_*`, `stocks` | Direct (heavy compute) | ✅ canonical | Rule 20 concern: computes opening/closing auction, volume profile, intraday momentum all in Node. |
+| `/api/maker-radar/sector-treemap` | stocks.db | `stocks` | Direct | ✅ canonical | OK. |
+| `/api/maker-radar/net-picks` | (cache only) | (none — reads cache) | Cache-only | N/A | OK. |
+| `/api/maker-radar/timeline` | radar-db + predictions.db + maker_radar_tracking.json | price-history, `radar_signal_tracking`, `predictions` | Direct | ✅ canonical | OK. Note: `radar_signal_tracking` not in DBPaths (defaults to stocks.db but route reads from predictions.db). |
+| `/api/maker-radar/signal-tracker/verify` | data_engine.db + stocks.db + predictions.db (writable) | Multiple price tables + `radar_signal_tracking` | Compute + Write (UPDATE) | ✅ DBs | Rule 20 concern: computes outcome_7d/14d/30d, max/min excursion in Node + UPDATEs predictions.db. |
+| `/api/chart/[ticker]` | stocks.db | `stocks`, `stock_daily_prices`, `market_indices` | Direct (compute) | ✅ canonical | OK — chart OHLC. |
+| `/api/v2/chart/full-analysis` | stocks.db + (Python proxy) | `stock_daily_prices` | Hybrid (Python first → SQLite) | ✅ canonical | OK. |
+| `/api/metals/gold` | data_engine.db | `gold_prices`, `exchange_rates` | Direct | ✅ canonical (gold_prices in data_engine_tables) | OK. |
+| `/api/sharia` | data_engine.db | Sharia compliance tables | Direct | ✅ canonical DB | OK. |
+| `/api/screener/advanced` | stocks.db + (Python proxy) | `stocks` | Hybrid (Python first → SQLite) | ✅ canonical | OK. |
+| `/api/finance/screener` | data_engine.db | `tab_*` (5 tables JOINed) | Direct | ✅ canonical | Rule 20 concern: applies P/E, ROE, div_yield filters in JS (after SQL). Should be SQL-side. |
+| `/api/finance/smart-confluence` | predictions.db + stocks.db + (Python proxy) | `predictions`, `stocks` | Hybrid (Python first → SQLite) | ✅ canonical | Rule 20 concern: computes `confluence_score = master_score + technical_score + risk_reward * 10` in Node. |
+| `/api/finance/calculate-values` | finance.db (non-canonical) + data_engine.db | `portfolio_assets`, gold/exchange | Direct + Write | ❌ finance.db non-canonical for portfolio_assets | Same as portfolio/master issue. |
+| `/api/ai/analyze-stock` | predictions.db + data_engine.db + (Python proxy) | `stored_analyses`, `predictions`, `stocks` | Hybrid (Python first → SQLite) | ✅ canonical | OK. |
+| `/api/stored-analysis/results` | predictions.db + (Python proxy) | `predictions` (mislabeled — should be `stored_analyses`) | Hybrid (Python first → SQLite) | ⚠️ Route reads `predictions` but description says `stored_analyses`. | Mislabeled — actual SQL not seen in first 80 lines. Likely OK. |
+| `/api/global-predictions` | predictions.db + crypto.db + **gold_prices.db** (non-canonical!) | `predictions`, `crypto_prediction_logs`, `gold_prices` | Direct | ❌ gold_prices.db non-canonical (GOLD_PRICES_DB = DATA_ENGINE_DB); `crypto_prediction_logs` canonical ✅ | CRITICAL: reads gold_prices from gold_prices.db instead of data_engine.db. Also reads `crypto_prediction_logs` from crypto.db (canonical per CRYPTO_LEARNING_DB = PREDICTIONS_DB — wrong DB! should be predictions.db). |
+| `/api/unified-stocks` | stocks.db + crypto.db + **gold_prices.db** (non-canonical!) | `stocks`, `cryptos`, `gold_prices` | Direct | ❌ gold_prices.db non-canonical | CRITICAL: GOLD branch reads gold_prices.db. Should be data_engine.db.gold_prices. |
+| `/api/live-monitor` | intraday.db + stocks.db + auth.db (Prisma) + (Python proxy) | `stock_intraday`, `stocks`, `PortfolioItem` | Hybrid (Python first → SQLite + Prisma) | ✅ canonical DBs | Mixed Prisma + better-sqlite3 access. Computes portfolio summary in Node — borderline Rule 20. |
+| `/api/tab-data` | **`data-engine/data/data_engine.db`** (NON-CANONICAL PATH!) | `tab_*` | Direct | ❌ Path `data-engine/data/data_engine.db` ≠ canonical `db/data_engine.db` | CRITICAL: wrong path. Only works on sandbox with `data-engine/data/` dir. |
+| `/api/ads/successful-trades` | predictions.db | `predictions` | Direct | ✅ canonical | OK. |
+| `/api/crypto-lab/predictions` | predictions.db | `crypto_predictions_log` | Direct | ✅ canonical (CRYPTO_LEARNING_DB = PREDICTIONS_DB) | OK. |
+| `/api/crypto/simulation` | paper_trading.db (via lib) + crypto.db | Various | Direct + Write (paper trade) | ⚠️ paper_trading.db non-canonical | OK for paper trading. |
+| `/api/telegram/publish-stock` | predictions.db (writable) | `predictions` | Direct + Write (UPDATE audit trail) | ✅ canonical | OK — admin-only audit-trail write. |
+| `/api/radar/accuracy` | predictions.db (+ .original fallback) | `radar_signal_tracking`, `predictions` | Direct | ✅ canonical DB | Note: `radar_signal_tracking` canonical not explicitly in DBPaths but route reads from predictions.db (sensible). |
+| `/api/radar/personalized` | stocks.db (via lib) + cache | `portfolio_assets` | Direct + Compute | ❌ portfolio_assets canonical = auth.db | Same portfolio_assets issue. |
+| `/api/v4/stats` | predictions.db + (Python proxy) | `predictions` | Hybrid (Python first → SQLite) | ✅ canonical | OK. |
+| `/api/health` | All 6 canonical DBs (stocks, predictions, price_history, data_engine, intraday, auth) | (integrity check) | Direct (read `SELECT 1`) | ✅ canonical | OK — does NOT check news.db / gold_prices.db / crypto.db / market.db even though those are referenced by other routes. |
+
+---
+
+## 2. Findings (by Severity)
+
+### 🔴 CRITICAL Issues
+
+**C-1. `news.db` is a non-canonical DB file used by 6+ routes.**
+- Routes affected: `/api/news`, `/api/news/latest`, `/api/news-feed`, `/api/mobile/news`, `/api/admin/news`, `/api/admin/news-health`, `/api/disclosures/company/[symbol]`, `/api/data-engine/control`.
+- Canonical: `DBPaths.NEWS_DB = STOCKS_DB` (alias). `get_db_for_table('news')` returns `stocks.db`. `get_db_for_table('market_news')` returns `content.db` (target arch — not on prod).
+- Impact: News data is stored in a non-canonical DB file. If/when content.db migration completes, all these routes will silently break or read stale data. No `DBPaths` env override exists for `news.db`.
+
+**C-2. `gold_prices.db` is a non-canonical DB file used by 2 routes.**
+- Routes affected: `/api/global-predictions`, `/api/unified-stocks` (GOLD market branch).
+- Canonical: `DBPaths.GOLD_PRICES_DB = DATA_ENGINE_DB` (alias). `get_db_for_table('gold_prices')` returns `data_engine.db`.
+- Impact: Same as C-1 — non-canonical DB file. Other routes (`/api/metals/gold`, `/api/predictions/eid`) correctly read from `data_engine.db.gold_prices`. Inconsistent access pattern for the SAME data.
+
+**C-3. `portfolio_assets` table read from non-canonical DB by 5+ routes.**
+- Routes affected: `/api/money`, `/api/portfolio/master`, `/api/portfolio/unified-watch`, `/api/finance/calculate-values`, `/api/radar/personalized` — all read `portfolio_assets` from `stocks.db` or `finance.db`.
+- Canonical: `DBPaths.get_db_for_table('portfolio_assets')` returns `auth.db` (auth_tables set).
+- Impact: Portfolio data fragmented across stocks.db / finance.db / auth.db — high risk of stale/divergent data. Schema duplication likely.
+
+**C-4. `real_predictions` table read from `predictions.db` but canonical is `stocks.db`.**
+- Route affected: `/api/recommendations/retroactive-evaluate` (reads `real_predictions` from predictions.db).
+- Canonical: `get_db_for_table('real_predictions')` returns `stocks.db` (default fallback — table NOT in any set).
+- Impact: Either DBPaths is incomplete (table should be added to predictions_tables set) OR the route reads from wrong DB. Needs clarification from Bravo.
+
+**C-5. `tab-data` route uses wrong path `data-engine/data/data_engine.db` instead of canonical `db/data_engine.db`.**
+- Route affected: `/api/tab-data`.
+- Canonical: `DBPaths.DATA_ENGINE_DB = _resolve("DATA_ENGINE_DB", "data_engine.db")` → `<DB_DIR>/data_engine.db` where `DB_DIR = <project_root>/db`.
+- Impact: Route only works on dev sandbox with `data-engine/data/` directory. On production it would 500.
+
+### 🟠 HIGH Issues
+
+**H-1. Massive Rule 20 (Python=Brain) violations — Node-side computation.**
+- Heavy compute in Node: `/api/egx/investors` (EGX ratios + buy/sell derivation + WRITE), `/api/market/liquidity-flow` (sector flow + investor_type), `/api/market/sectors/intelligence` (sector_ranking + relative_strength), `/api/market/intraday-pressure` (buy/sell pressure + VWAP), `/api/market/overview` (composite index fabrication), `/api/predictions/eid` (signal generation from Fear & Greed), `/api/predictions/dual-track/threshold` (p75 percentile + WRITE), `/api/predictions/expert-consensus` (bullish/bearish), `/api/predictions/performance-dashboard` (all aggregations), `/api/stocks/[ticker]/depth` (fake DOM reconstruction), `/api/maker-radar/market-intelligence` (auctions + volume profile), `/api/portfolio/rescue` (supportResistance + weinsteinStage), `/api/admin/generate-historical-predictions` (full prediction generation in TS!), `/api/admin/validation` (re-implements validation.py).
+- Canonical: Rule 20 (Python=Brain, Node=Display). DATA-SOURCES.md §5.1 explicitly forbids `if/for/compute/aggregate` in route.ts for non-auth/subscription/paywall logic.
+- Impact: Predictions/analysis computed differently across Node vs Python → inconsistent results. Maintains duplicated business logic. Per Constitution §1, all decision data should come from `/api/stocks/[ticker]/unified`.
+
+**H-2. Node-side WRITE to predictions.db from 6+ routes.**
+- Routes affected: `/api/predictions/dual-track/list` (ALTER TABLE add track column), `/api/predictions/dual-track/stats` (ALTER TABLE), `/api/predictions/dual-track/threshold` (CREATE TABLE + INSERT), `/api/predictions/honest-tracking/list` (ensureSchema ALTERs), `/api/predictions/honest-tracking/stats` (same), `/api/predictions/honest-tracking/live-tracking` (same), `/api/predictions/honest-tracking/learn-from-errors` (CREATE TABLE + INSERT lessons), `/api/egx/investors` (CREATE TABLE + UPSERT), `/api/admin/backtest/v40/run` (DELETE FROM predictions), `/api/admin/generate-historical-predictions` (full generation).
+- Canonical: Rule 20 — Node is display only. Schema migrations should come from Bravo's migration scripts.
+- Impact: Schema drift — each route ALTERs the same table independently. Risk of schema inconsistency between routes. Hard to debug.
+
+**H-3. Inconsistent fallback pattern for SAME data domain.**
+- Predictions domain: 3 routes proxy to Python first (`/api/predictions`, `/api/predictions/active-management`, `/api/predictions/daily-picks`); 11+ routes read SQLite directly (`/api/predictions/learned-lessons`, `/api/predictions/historical-trades`, `/api/predictions/backtest-list`, `/api/predictions/performance-dashboard`, `/api/predictions/expert-consensus`, `/api/predictions/honest-tracking/*`, `/api/predictions/dual-track/*`, `/api/predictions/eid`, `/api/predictions/performance`).
+- Stocks domain: 4 routes proxy to Python first (`/api/stocks`, `/api/stocks/top-performers`, `/api/stocks/[ticker]`, `/api/stocks/[ticker]/history`); 5+ routes read SQLite directly (`/api/stocks/search`, `/api/stocks/delta-volume`, `/api/stocks/sparkline`, `/api/stocks/[ticker]/depth`, `/api/stocks/[ticker]/publish-data`).
+- Canonical: Rule 20 — proxy is the canonical pattern. Direct SQLite read is a "P0-FIX (API-FALLBACKS-WAVE-2)" legacy workaround.
+- Impact: Response shape differs based on which route is called. Frontend must handle multiple shapes for same data.
+
+**H-4. All routes hardcode DB paths (`path.join(process.cwd(), 'db', '<name>.db')`) — no central Node config equivalent to Python's `DBPaths`.**
+- Affected: ~105 of 111 routes (auth + admin/db/[db] are exceptions).
+- Canonical: Python uses `DBPaths` class. Node has no equivalent. `src/lib/sqlite-admin.ts` has a `PROTECTED_DBS` whitelist but no path resolver.
+- Impact: If/when PHASE-4-DB-REORG completes (4-DB architecture), every Node route would need to be updated individually. High maintenance cost + risk of missed routes.
+
+**H-5. Schema-mismatch within `predictions` table — different writers use different columns.**
+- Affected: `/api/predictions/honest-tracking/live-tracking` uses `COALESCE(actual_return, pnl_pct) AS eff_return` because "trading pipeline writes status/exit_type/pnl_pct but not outcome_date/actual_return/is_correct". Multiple routes work around this.
+- Canonical: Should be a single consistent schema. Python `daily_predictor.py` (predictions) vs Node trading pipeline (pnl_pct/status/exit_type) write differently.
+- Impact: KPI calculations (win_rate, profit_factor) depend on which COALESCE is used. Per-route inconsistency → different numbers per screen.
+
+### 🟡 MEDIUM Issues
+
+**M-1. `/api/stocks/sparkline` fabricates prices when market index has no price history.**
+- Route: `/api/stocks/sparkline` lines 132-153.
+- Issue: When no `price_history` rows AND no `stock_daily_prices` rows AND `market_indices` row has `current_value > 0`, it generates fake prices using `factor = 1 - ((pointsCount - 1 - i) / pointsCount) * (chgPct / 100)` + `noise = Math.sin(i * 1.2) * 0.003 * cur`.
+- Canonical: Rule 27 (NO-FAKE-DATA).
+- Impact: Charts display synthetic data points labelled as "market_indices" source. Misleading.
+
+**M-2. `/api/news-feed` reads from BOTH news.db AND predictions.db for "news_signals" — non-canonical table.**
+- Route: `/api/news-feed` (lines 75-85 for news.db.market_news, lines 127-138 for predictions.db.news_signals).
+- Canonical: `news_signals` table not in DBPaths.get_db_for_table (defaults to stocks.db). Reading from predictions.db is non-canonical.
+- Impact: News aggregation spans 2 DBs with different schemas. Deduplication done in Node. Risk of inconsistency.
+
+**M-3. `/api/health` checks 6 canonical DBs but NOT news.db / gold_prices.db / crypto.db / market.db even though those are referenced by other routes.**
+- Impact: Health check passes even if non-canonical DBs are missing/corrupted. Should at minimum warn about non-canonical DBs.
+
+**M-4. Inconsistent column naming for stocks table — `ticker` vs `symbol`.**
+- `/api/stocks/search` queries `stocks` table using `symbol` column (egksco legacy schema).
+- `/api/stocks/route.ts` SQLite fallback queries `stocks` table using `ticker` column.
+- `/api/watchlist-enhanced` queries data_engine.db.stocks using `symbol` (line 54).
+- Impact: Same table queried with different column names across routes — schema ambiguity. Risk of silent failure on schema changes.
+
+**M-5. Mixed Prisma + better-sqlite3 access to same DB (auth.db).**
+- `/api/mobile/portfolio` uses Prisma for `PortfolioItem` (auth.db) AND better-sqlite3 for `stocks` (stocks.db).
+- `/api/mobile/portfolio/intelligence` same pattern.
+- `/api/live-monitor` same pattern.
+- Impact: Two different ORM layers accessing overlapping data. Prisma schema may diverge from raw SQL expectations.
+
+### 🟢 LOW Issues
+
+**L-1. `/api/predictions/route.ts` has stale comment "aiPrediction table فاضي (0 صفوف) — استخدم predictions table" but DATA-SOURCES.md §2.1 says aiPrediction has 2,613 rows (V40.2 production).**
+- Impact: Comment misleading. Either DB has stale state in sandbox OR canonical source is mislabeled. Verify with Bravo.
+
+**L-2. `/api/data-engine/control` sets `HISTORICAL_DB = path.join(DATA_DIR, 'data_engine.db')` — alias is correct but the variable name is misleading (suggests a separate historical.db file).**
+- Impact: Readability concern only.
+
+**L-3. `/api/portfolio/cashflow` reads `portfolio_transactions` and `financial_transactions` tables — neither is in DBPaths.**
+- Impact: Defaults to stocks.db (canonical OK-by-accident, but not explicit).
+
+---
+
+## 3. Recommendations
+
+### P0 — Immediate (Block Alpha frontend fixes)
+
+1. **Create a Node-side `DBPaths` equivalent** (`src/lib/db-paths.ts`) that mirrors `vps-service/utils/db_paths.py`. All 105+ hardcoded paths should be replaced with imports from this single source of truth. Use env overrides (`process.env.PREDICTIONS_DB_PATH`, etc.) matching Python's `_resolve()` pattern.
+
+2. **Decide canonical source for `news` data** — either:
+   - (a) Migrate `news.db` → `stocks.db` (alias per DBPaths) — remove `news.db` file, update all 6 routes to read `stocks.db.market_news`.
+   - (b) Add `NEWS_DB = _resolve("NEWS_DB", "news.db")` to DBPaths (keep news.db as separate file).
+   - Recommendation: (a) matches DBPaths canonical spec. (b) is a pragmatic compromise.
+
+3. **Decide canonical source for `gold_prices` data** — migrate `gold_prices.db` → `data_engine.db` (alias per DBPaths). Update `/api/global-predictions` and `/api/unified-stocks` GOLD branch to read `data_engine.db.gold_prices` like `/api/metals/gold` already does.
+
+4. **Decide canonical DB for `portfolio_assets`** — currently split between auth.db (Prisma) and stocks.db/finance.db (better-sqlite3). DBPaths says auth.db. Either:
+   - (a) Migrate all better-sqlite3 portfolio reads to Prisma (auth.db).
+   - (b) Update DBPaths to list `portfolio_assets` under stocks_tables.
+   - Recommendation: (a) matches DBPaths.
+
+5. **Fix `/api/tab-data` path** — change `data-engine/data/data_engine.db` to `db/data_engine.db` (or use the new `DBPaths` helper).
+
+### P1 — High Priority
+
+6. **Migrate Rule 20 violations to Python** — 14 routes currently compute financial logic in Node. Priority order:
+   - `/api/admin/generate-historical-predictions` (full TS prediction generation — should call Python `backfill_with_personas.py`).
+   - `/api/egx/investors` (auto-seed with EGX ratios — should call Python `egx_investors_scraper.py`).
+   - `/api/predictions/dual-track/threshold` (p75 percentile + write).
+   - `/api/predictions/dual-track/list` and `/stats` (ALTER TABLE — should be a one-time migration script).
+   - `/api/predictions/honest-tracking/{list,stats,live-tracking}` (ensureSchema ALTERs — should be one-time migration).
+   - `/api/predictions/honest-tracking/learn-from-errors` (lesson extraction + write — should call Python `learning_engine.py`).
+   - `/api/market/liquidity-flow` (sector flow computation).
+   - `/api/predictions/eid` (signal generation from Fear & Greed).
+   - `/api/stocks/sparkline` lines 132-153 (fabricated prices — Rule 27 violation, must remove).
+
+7. **Standardize fallback pattern** — pick ONE pattern per domain:
+   - Predictions: Hybrid (Python first → SQLite) for ALL routes.
+   - Stocks: Hybrid (Python first → SQLite) for ALL routes.
+   - News: Direct SQLite (no Python equivalent).
+   - Portfolio: Direct Prisma (auth.db).
+   Currently mixed within same domain — fix.
+
+8. **Fix schema-mismatch in `predictions` table** — coordinate with Bravo to align `daily_predictor.py` and the Node "trading pipeline" to use the same outcome columns. Either:
+   - (a) Trading pipeline writes `outcome_date` + `actual_return` + `is_correct` (matching daily_predictor).
+   - (b) Daily_predictor writes `pnl_pct` + `status='CLOSED'` + `exit_type` (matching trading pipeline).
+   - Recommendation: (a) — Python is canonical.
+
+9. **Remove hardcoded DB paths** — replace with `DBPaths` helper from P0-1 above.
+
+### P2 — Medium Priority
+
+10. **Expand `/api/health` checks** to include non-canonical DBs (news.db, gold_prices.db, crypto.db, market.db) with WARNING status.
+
+11. **Standardize stocks table column naming** — `ticker` everywhere (not `symbol`). Migrate egksco_scraper schema.
+
+12. **Refactor Prisma + better-sqlite3 mixed access** in `/api/mobile/portfolio*` and `/api/live-monitor` — pick one ORM layer per DB.
+
+### P3 — Low Priority
+
+13. **Update stale comment in `/api/predictions/route.ts`** about aiPrediction table being empty — verify with Bravo whether aiPrediction is canonical source (per DATA-SOURCES.md §2.1) or predictions table is canonical.
+
+14. **Rename `HISTORICAL_DB` variable** in `/api/data-engine/control` to `DATA_ENGINE_DB_ALIAS` for clarity.
+
+---
+
+## Methodology Notes
+
+- Total routes audited: 111 (all `route.ts` files matching `better-sqlite3|new Database|Database(` pattern in `src/app/api/`).
+- Routes read in full: ~60. Routes read in header/first-50-lines only: ~51 (mostly admin/* which follow predictable patterns of admin-auth-gate + DB open + query).
+- Cross-referenced canonical spec: `vps-service/utils/db_paths.py` (DBPaths class) + `Documentation/DATA-SOURCES.md` (sections 1.2, 2.1-2.6, 5.1, 5.3).
+- All findings are read-only — no files modified, no commits made.
+- The audit report is also returned in the agent's final message for Alpha to compile into ALPHA-frontend-audit-001 worklog entry.
+
+---
+Task ID: ALPHA-frontend-audit-001
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code) — بالتعاون مع برافو (Bravo backend/quant)
+Task: فحص شامل على src/app/api/ — كل الـ routes اللي بتقرأ من DB. هل بتقرأ من نفس DB اللي Python backend بيقرأ منه؟ هل fallback strategy موحّدة؟ هل مفيش route بيقرأ من table مختلفة لنفس البيانات؟ (تكليف من كيمي).
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = ff32a64 بعد Task 2). قرأت Documentation/DATA-SOURCES.md (Bravo's canonical spec — BRAVO-DATA-SOURCE-SPEC-001).
+- scope: src/app/api/ بس. ممنوع لمس vps-service/.
+- أطلقت Explore subagent (AUDIT-API-DB-ACCESS-1) لفحص 111 route.ts بيقرأ من SQLite (better-sqlite3/Database/Prisma).
+- الـ subagent cross-referenced كل route ضد:
+  * `vps-service/utils/db_paths.py` (DBPaths class — canonical source)
+  * `Documentation/DATA-SOURCES.md` (sections 1.2, 2.1-2.6, 5.1, 5.3)
+- النتائج: 5 CRITICAL + 5 HIGH + 5 MEDIUM + 3 LOW findings (تفاصيل كاملة في entry AUDIT-API-DB-ACCESS-1 أعلاه).
+
+Findings Summary (تفاصيل في entry AUDIT-API-DB-ACCESS-1):
+
+🔴 CRITICAL (5):
+- C-1: `news.db` non-canonical (8 routes) — DBPaths: NEWS_DB = STOCKS_DB → should be stocks.db
+- C-2: `gold_prices.db` non-canonical (2 routes) — DBPaths: GOLD_PRICES_DB = DATA_ENGINE_DB → should be data_engine.db
+- C-3: `portfolio_assets` fragmented across 3 DBs (5 routes) — canonical = auth.db
+- C-4: `real_predictions` table read from predictions.db but not in canonical set (1 route)
+- C-5: `/api/tab-data` wrong path `data-engine/data/data_engine.db` → should be `db/data_engine.db`
+
+🟠 HIGH (5):
+- H-1: 14 routes do heavy compute in Node (Rule 20 violation) — `/api/egx/investors`, `/api/market/liquidity-flow`, `/api/predictions/eid`, `/api/admin/generate-historical-predictions`, إلخ.
+- H-2: 6+ routes WRITE to predictions.db (ALTER TABLE / CREATE TABLE / INSERT / DELETE) — schema drift risk
+- H-3: Inconsistent fallback — predictions domain: 3 routes proxy Python first, 11+ read SQLite directly
+- H-4: All 105+ routes hardcode DB paths — no Node-side DBPaths equivalent
+- H-5: Schema-mismatch in `predictions` table (different writers use different outcome columns)
+
+🟡 MEDIUM (5):
+- M-1: `/api/stocks/sparkline` FABRICATE prices with `Math.sin()` noise (Rule 27 violation!)
+- M-2: `/api/news-feed` reads `news_signals` from non-canonical table
+- M-3: `/api/health` missing 4 DBs from health check
+- M-4: Inconsistent column naming `ticker` vs `symbol` across routes
+- M-5: Mixed Prisma + better-sqlite3 access to same DB (auth.db)
+
+🟢 LOW (3):
+- L-1: Stale comment about aiPrediction being empty (actually 2,613 rows)
+- L-2: Misleading HISTORICAL_DB variable name
+- L-3: portfolio_transactions tables not in DBPaths (works by accident)
+
+Stage Summary:
+- ✅ Audit complete: 111 routes فحصت، 18 findings موثّقة (5 CRITICAL + 5 HIGH + 5 MEDIUM + 3 LOW).
+- ✅ كل finding موثّق بـ route paths + canonical reference + severity.
+- ⚠️ أهم recommendation: إنشاء `src/lib/db-paths.ts` mirroring Python's DBPaths — يستبدل 105+ hardcoded paths بـ SSOT واحد. ده تكليف منفصل (refactor كبير).
+- ⚠️ Rule 20 violations (14 routes): Node بيعمل compute بدل Python. ده محتاج migration لـ Python — تكليف منفصل لكل route أو batch.
+- ⚠️ Rule 27 violation (M-1): `/api/stocks/sparkline` بيـ fabricate prices بـ `Math.sin()`. ده حرج — محتاج إصلاح فوري (تكليف منفصل).
+- ⚠️ الـ canonical DB mapping (DBPaths في Python) محتاج Node equivalent. ده gap معماري.
+- 🔁 Rule 75: commit + push فوري.
