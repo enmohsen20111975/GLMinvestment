@@ -3629,10 +3629,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     morning_bell=sig.get('morning_bell', 0),
                     risk_reward=sig.get('r_multiple'),  # P0 FIX (V402-DIAGNOSIS R5): كان محسوب لكن غير مكتوب
                     who_is_buying_state=sig.get('who_is_buying_state', ''),  # P0 FIX (V402-DIAGNOSIS R6)
-                    # FIX (PREDICTION-INTEGRITY 2026-10-11): S/R levels من الـ analysis result
-                    # السبب: كانت 0.0 في 87% من التوقعات لأنها ما كانتش بتـ تمرر لـ record_prediction.
-                    support_level=sig.get('support_level', 0.0),
-                    resistance_level=sig.get('resistance_level', 0.0),
+                    # PREDICTION-STORE-FIX (2026-10-18): تم إزالة support_level/resistance_level kwargs
+                    # لأن record_prediction() signature مفيهمش + predictions table مفيهاش columns لهم.
+                    # ده كان بيسبب "Store error: got an unexpected keyword argument 'support_level'"
+                    # وبيمنع تخزين التوقعات (59 توقع اتلغوا بسبب ده أمبارح).
+                    # TODO: لو محتاجين S/R في predictions، نضيف columns + params في task منفصل.
                     kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}" + f" | V68:prob={sig.get('v68_probability', 0)}/100 dir={sig.get('v68_future_direction', 'flat')}" + (" | A+GRAB" if sig.get('v68_liquidity_grab') else "") + (" | QUIET-ACC" if sig.get('v68_quiet_accumulation') else ""),
                 ) if tracker else None
                 if pred_id and tracker:

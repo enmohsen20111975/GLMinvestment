@@ -1041,12 +1041,16 @@ def morning_recommendations():
             from api.ai_predictions_routes import query_db as _qdb, PREDICTIONS_DB as _pdb
             _pred_row = None
             try:
+                # V40.2-SOURCE-FIX (2026-10-18): نقرأ من `predictions` table (اللي بيكتب فيها
+                # daily_predictor.py عبر record_prediction)، مش من `aiPrediction` (اللي بيكتب
+                # فيها محرك قديم). ده يصلح الـ mismatch اللي كان بيخلي الشاشات تعرض "—"
+                # حتى لو daily_predictor شغال ومخزن توقعات.
                 _pred_row = _qdb(_pdb, """
-                    SELECT entry_price, target_price, stop_loss, risk_reward, signal_type
-                    FROM aiPrediction
-                    WHERE stock_symbol = ? COLLATE NOCASE
-                      AND signal_type IN ('BUY', 'STRONG_BUY', 'ACCUMULATE')
-                      AND (status IS NULL OR status = '' OR status = 'PENDING')
+                    SELECT entry_price, target_price, stop_loss, risk_reward, signal as signal_type
+                    FROM predictions
+                    WHERE ticker = ? COLLATE NOCASE
+                      AND signal IN ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY')
+                      AND (status IS NULL OR status = '' OR status IN ('PENDING', 'ACTIVE'))
                     ORDER BY prediction_date DESC, id DESC
                     LIMIT 1
                 """, (ticker,))

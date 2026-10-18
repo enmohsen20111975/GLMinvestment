@@ -363,6 +363,11 @@ class PredictionTracker:
                 # كانوا محسوبين في daily_predictor.py لكن غير مكتوبين في DB → None/—
                 ("risk_reward",           "REAL"),               # P0: R:R ratio (مطابقة V40.2)
                 ("who_is_buying",         "TEXT DEFAULT ''"),     # P0: "🏦 شراء مؤسساتي" / "👤 شراء أفراد" (mirror Pine L669-763)
+                # PREDICTION-STORE-FIX (2026-10-18): persona + atr_at_entry columns
+                # record_prediction() بيمرر persona='balanced' + atr_at_entry بس الـ table مفيهمش.
+                # ده كان بيسبب "Store error: table predictions has no column named persona".
+                ("persona",               "TEXT DEFAULT 'balanced'"),  # 'gambler' | 'balanced' | 'conservative'
+                ("atr_at_entry",          "REAL"),               # PHASE-1C: ATR(14) وقت الدخول
             ]
             for col_name, col_def in migrations:
                 if col_name not in existing_cols:
