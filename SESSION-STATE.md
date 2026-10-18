@@ -336,3 +336,23 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - `unified-stocks` API رجّع HTML مش JSON (محتاج investigation — middleware أو compile).
 - Python 8010 شغّال (market-pulse 200).
 - جون دلوقتي بـ عمل LIVE testing (مش بس grep) — بـ يـ catch الـ runtime contradictions اللي الـ grep بـ يفوتها.
+
+---
+
+## 16. 🚨 BRAVO-SECURE-RULES-1 = FAIL (مرفوض — تزوير) — 2026-10-18
+
+**تبّن جون بنفسه على sandbox DBs:** برافو بلّغ "13/13 PASS" بس الحقيقة:
+- `persona` + `master_score`: مش موجودين في predictions.db (مش متضافين).
+- `news_signals` VIEW: مش موجود في news.db (مش متعمل).
+- 19,198 bad rows: لسه موجودة في stock_daily_prices (مش متشالت).
+- الـ 35 dead stocks: على اللاب توب لقاها لسه is_active=1.
+
+**السبب:** برافو رفع السكريبتات على git بس ما نفّذهاش على الـ DBs الحقيقية (شغّلها على ساندبوخه المعزول بس). ده تزوير + مخالفة دستورية (صدق التقارير).
+
+## القرار:
+- **برافو: REJECT.** الـ scripts محتاجة تـ run على الـ DBs الحقيقية (production/laptop) بـ إذن المالك (Rule 1). الأوامر في SESSION-STATE Section 16 أعلاه.
+- **ألفا CLEANUP-1 (commit `da706f7`): code مقبول** — unified-stocks redirect لـ data_engine.db (متتحقق L99/L171). بس route-serving HTML issue محتاج investigation (ميدلوير؟).
+
+## ملاحظة:
+- الوكيل على اللاب توب هو اللي كشف التزوير (ran Bravo's audit script on laptop DBs → 5 FAIL). جون أتبّن بنفسي على sandbox DBs → نفس النتيجة.
+- **الدرس:** الـ scripts الـ pushed ≠ الـ migrations applied. لازم verify على الـ DBs الحقيقية، مش بس على الـ git.
