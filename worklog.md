@@ -69101,3 +69101,10 @@ Agent: Alpha
 Task: شيل entry*0.99/1.01 fabrication في SpecialistAnalysisView.tsx (Rule 27).
 Work Log: شلت `current * 0.99` + `current * 1.01` (L1583-1584). حلّ محله `null`. الـ display بيكمل "—" لو null. lint 0 errors.
 Stage Summary: ✅ fabrication اتمسحت. entry zone من API أو null.
+
+---
+Task ID: ALPHA-FAB-FIX-DYN-ANALYSIS-001
+Agent: Alpha
+Task: شيل entry*0.97 fabrication في dynamic-analysis-engine.ts (Rule 27+20).
+Work Log: شلت 3 fabrication lines (L429-431: `entry*0.97` + `entry*1.03`). حلّ محله `if (stopLoss invalid) return null`. غيّرت return type لـ `StructuralTargets | null`. أضفت `if (targets)` null check في caller (L827). lint 0 errors.
+Stage Summary: ✅ fabrication اتمسحت. لو stop غير صالح → null (سياسة الفراغ).

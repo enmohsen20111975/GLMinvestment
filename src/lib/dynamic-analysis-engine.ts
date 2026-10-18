@@ -372,7 +372,8 @@ export function calculateStructuralTargets(options: {
   atrStopMultiplier: number;
   atrTargetMultiplier: number;
   bbSqueezeLevel: SqueezeLevel;
-}): StructuralTargets {
+}): StructuralTargets | null {
+  // ALPHA-FAB-FIX-DYN-ANALYSIS-001: return type دلوقتي nullable — لو stop غير صالح → null (Rule 27+20).
   const {
     entry, atr, signal,
     support, resistance, farSupport, farResistance,
@@ -425,10 +426,11 @@ export function calculateStructuralTargets(options: {
     stopSource = 'atr_floor';
   }
 
-  // Ensure stop is positive
-  if (stopLoss <= 0) stopLoss = entry * (isBuy ? 0.97 : 1.03);
-  if (isBuy && stopLoss >= entry) stopLoss = entry * 0.97;
-  if (!isBuy && stopLoss <= entry) stopLoss = entry * 1.03;
+  // ALPHA-FAB-FIX-DYN-ANALYSIS-001: removed entry*0.97/1.03 fabrication (Rule 27+20).
+  // لو stop غير صالح → return null (سياسة الفراغ). الـ stop من Python فقط.
+  if (stopLoss <= 0 || (isBuy && stopLoss >= entry) || (!isBuy && stopLoss <= entry)) {
+    return null;
+  }
 
   // ---- STEP 2: Structural Target ----
   let target: number;
@@ -822,8 +824,10 @@ export function runDynamicAnalysis(input: DynamicAnalysisInput): DynamicAnalysis
       atrTargetMultiplier: params.atrTargetMultiplier,
       bbSqueezeLevel: squeeze.level,
     });
-    notes.push(`Target: ${targets.target.toFixed(2)} (${targets.targetSource}), Stop: ${targets.stopLoss.toFixed(2)} (${targets.stopSource}), R:R: ${targets.riskReward}`);
-    notesAr.push(`هدف: ${targets.target.toFixed(2)} (${targetSourceLabelAr(targets.targetSource)}), وقف: ${targets.stopLoss.toFixed(2)} (${targets.stopSource}), نسبة: ${targets.riskReward}`);
+    if (targets) {
+      notes.push(`Target: ${targets.target.toFixed(2)} (${targets.targetSource}), Stop: ${targets.stopLoss.toFixed(2)} (${targets.stopSource}), R:R: ${targets.riskReward}`);
+      notesAr.push(`هدف: ${targets.target.toFixed(2)} (${targetSourceLabelAr(targets.targetSource)}), وقف: ${targets.stopLoss.toFixed(2)} (${targets.stopSource}), نسبة: ${targets.riskReward}`);
+    }
   }
 
   // ---- Step 5: Adaptive Weights ----
