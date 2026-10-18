@@ -263,6 +263,15 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - جون **بطلّع ايده** من الـ cron/production. المالك بـ يـ check الإنتاج بنفسه (cron logs + scrapers).
 - لو scraper مكسور (كود) → برافو يصلّحه. لو مش شغّال (ops) → المالك يشغّله على الـ VPS.
 
+### ✅ TEST-FIX-1 (real runtime testing + 3 crash fixes) — PASS (`008987b`)
+- Alpha عمل runtime testing بجد (10 شاشات + stock click). لقى + أصلّح 3 crashes:
+  - StockDetailDrawer export (import error).
+  - stored-analysis route guard (persona/master_score missing columns).
+  - news-feed route guard (news_signals missing table).
+- الـ user journey بـ يمشي بدون crash (sandbox, partial data).
+- **Backend/data issues (مش blockers — routes resilient):** Python 8010 (flask مش متثبت) + stored_analyses ناقصة columns + news_signals table missing + data_engine/price_history/intraday مش في backups. = برافو/المالك.
+- **المالك: re-test على اللاب توب بعد pull** (full data + Python maybe → crashes تانية محتملة).
+
 ### 🔜 Alpha A-P3 (Auth UI) — جاري + revival prompt جاهز
 - A-P3 mandate مفصل اتعطى لألفا (Guest Mode + Trial soft + soft paywalls + 4 files).
 - revival prompt جاهز (لو ألفا مات بسبب بيئة النود الزفت) — فيه تاريخه + آخر شغل + قواعده.
