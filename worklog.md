@@ -68728,3 +68728,75 @@ Stage Summary:
 - ✅ lint: 0 errors.
 - ✅ scope نظيف: src/modules/predictions/components/MakerRadarTab.tsx بس.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: BRAVO-PIPELINE-AUDIT-FULL-001
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — فحص شامل من أول محرك البيانات لحد الآخر (تخبط/تضارب)
+
+Work Log (8 layers):
+- Layer 1 (Data engine schema): ✅ PASS — data_engine.db (29 tables, gold_prices=850K, historical_data=174K, crypto_prices=2M) + price_history.db (1.3M rows) + intraday.db (6 tables) سليمة.
+- Layer 2 (Cross-DB price consistency): 🔴 CRITICAL — نفس السهم (COMI) ليه 4 أسعار مختلفة:
+  * stocks.db: 124.97 (vol 1.61M)
+  * data_engine.db.historical_data: 123.71 (vol 1.88M)
+  * price_history.db: 123.36 (vol 850K)
+  * intraday.db: 126.72 (tick)
+  التضارب في volume بنسبة 2x بين stocks.db و price_history.db.
+- Layer 3 (predictions.db ↔ stocks.db): 🔴 CRITICAL — الـ predictions في الـ DB بتخالف القواعد:
+  * 660/1023 (64.5%) من BUY-side predictions فيها R/R < 1.8 (مخالفة Rule 18)
+  * 633/1023 (61.9%) فيها stop خارج [5%, 9%] (مخالفة Rule 8)
+  * 996/1023 (97.4%) الـ risk_reward field = 0.0 (fabrication — مش بيتحسب)
+  * أحدث توقع COMI (2026-09-08): R/R=0.86، stop=7.69%، stored rr=0.0
+- Layer 4 (Logic consistency بين 3 modules): ✅ PASS — بعد Fix 4:
+  * RR_FLOOR = 1.8 في flow_system + canonical_flow (متطابق)
+  * MAX_POSITION_SIZE = 0.025 (متطابق)
+  * Falling Knife: 3 sources متطابقة على نفس السهم (canonical first)
+  * position cap: persona + evaluate_risk متطابقين (2.5%)
+- Layer 5 (R/R floor enforcement): 🟡 PARTIAL — evaluate_risk بـ kill صح (CASH_WAIT)، بس التوقعات المخالفة موجودة في الـ DB (الـ gate مش بيمنع الكتابة أصلًا للـ predictions التاريخية).
+- Layer 6 (Position cap): ✅ PASS — كل paths بتـ cap لـ 2.5%.
+- Layer 7 (ATR stop): ✅ PASS في الكود (flow_system + canonical_flow)، 🔴 FAIL في الـ DB (633 predictions بـ stop خارج النطاق).
+- Layer 8 (End-to-end COMI): 🔴 CRITICAL —
+  * السعر الحالي 124.97، آخر توقع entry=141.31 (قديم ومخالف)
+  * evaluate_risk قتله صح (CASH_WAIT، R/R=0.86)
+  * بس التوقع لسه موجود في الـ DB ولو API قديم قرأه من غير evaluate_risk هيبعت إشارة خاطئة
+
+Stage Summary — التخبط/التضارب المكتشف:
+
+🔴 CRITICAL FINDINGS (5):
+
+1. **Cross-DB price inconsistency** (Layer 2):
+   - نفس السهم ليه 4 أسعار + 3 volumes مختلفة في 4 DBs.
+   - السبب: كل DB ليه scraper مختلف (stocks.db من egksco، data_engine من eodhd، price_history من source تالت).
+   - الأثر: الـ R/R والـ stop بيتحسبوا غلط لو الـ entry من DB والتاريخ من DB تاني.
+
+2. **predictions.db مليان توقعات مخالفة** (Layer 3):
+   - 64.5% R/R < 1.8 (Rule 18 violation)
+   - 61.9% stop خارج [5%, 9%] (Rule 8 violation)
+   - السبب: الـ gate (evaluate_risk) اتضاف لـ canonical_flow بس مش بـ retroactive على الـ DB التاريخي.
+
+3. **risk_reward field = 0.0 في 97.4% من الـ rows** (Layer 3):
+   - fabrication مطلق — الـ field موجود بس مش بيتحسب وقت الـ insert.
+   - السبب: الـ daily_predictor.py بـ store الـ prediction بدون حساب R/R صريح.
+
+4. **evaluate_risk مش مربوط في daily_predictor.py** (Layer 5):
+   - الـ gate شغال في canonical_flow بس مش في الـ prediction generator الأساسي.
+   - الأثر: توقعات جديدة ممكن تكتتب في الـ DB بدون فحص R/R.
+
+5. **MA200 = None لكذا سهم** (Layer 8):
+   - COMI: MA200=None → Falling Knife structural check مش هيشتغل صح.
+   - السبب: backfill MA200 مش كامل.
+
+✅ ما اشتغل صح:
+- Code layer (flow_system + canonical_flow + liquidity_radar): متطابق بعد Fix 4.
+- Falling Knife: 3 sources متفقين.
+- Position cap: 2.5% في كل paths.
+- evaluate_risk: بـ kill صح لو اشتغل.
+
+🔴 خطة الإصلاح (محتاجة تكليف منفصل من كيمي/محسن):
+1. **DB cleanup script**: امسح/flag الـ predictions المخالفة (R/R < 1.8 OR stop خارج [5%,9%]).
+2. **risk_reward backfill script**: احسب R/R لكل الـ rows الـ risk_reward=0.0.
+3. **wire evaluate_risk في daily_predictor.py**: قبل أي insert، شغل evaluate_risk → kill → skip insert.
+4. **price source unification**: حدد DB واحد كـ canonical للأسعار (الأرجح stocks.db.stock_daily_prices) + خلي الباقي read-only fallback.
+5. **MA200 backfill**: كمل backfill للأسهم الـ MA200=None.
+
+Final Audit Statement: 🔴 FAIL — النظام في الـ code layer سليم، بس الـ data layer فيه تخبط/تضارب خطير (5 critical findings). محتاج إصلاح قبل الإنتاج.
