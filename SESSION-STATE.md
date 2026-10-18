@@ -228,3 +228,39 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - **STOP قبل STEP 4-6**: BUILD scope (V40.2 equivalents) — حقق + ابعتلي.
 - **STEP 1 (410)**: بعد ما ألفا بدّل الفرونت.
 - **STEP 7 (kill maestro)**: LAST.
+
+---
+
+## 13. تحديثات متأخرة (2026-10-18 مساءً) — جون سبه، بيلحق دلوقتي
+
+### ✅ MAESTRO-CANCER-1 — خلص + متتحقق آمن (commit `e634be8` + `4853696`)
+- maestro_orchestrator.py (4,416 سطر) اتمسح. 13 endpoints → 410. الـ 4 analyzers بـ catch + كمّلوا (MAESTRO_*=False). المنصة آمنة.
+
+### ✅ DATA-ENGINE-AUDIT-1 — خلص + متدفع (commit `0932151`)
+- برافو فحص محرك البيانات (port 5000): 18 endpoints + 22 scrapers + 5 sync functions.
+- DATA-ENGINE-MAP.md على origin (13.9KB) — الـ data flow كامل (EGX live/daily + crypto + gold + forex).
+- الـ 4 dead files اتمسحتوا فعلًا (recorder + 3 scripts).
+
+### 🔴 الـ Data Engine findings + توضيحات المالك:
+| الـ finding | توضيح المالك | الحالة |
+|---|---|---|
+| stocks.db.stocks stale 4 شهور | **EGXPilot scraper مات** (الموقع الاتقفل) → مش fixable. محتاج مصدر بديل. | 🔴 محتاج قرار جاي |
+| intraday.db stale 4 أيام | **مش مستعملة خلاص** (deprecated). | ✅ ما يهمش |
+| aiPrediction stale 7 أيام | **عادي** — الـ sample DB عند جون مش كامل. المالك بـ يشغل daily_predictor بنفسه على الإنتاج. | ✅ عادي |
+| الـ DBs stale عمومًا | **sample مش كاملة** + كان فيه جمع+سبت إجازة. آخر تحديث ~امبارح. | ✅ مفهوم |
+| egksco vs price_history | **100/100 match** — متطابقين. | ✅ تمام |
+
+### 🔜 DROP-EMPTY-TABLES-1 (mandate لبرافو — جاري)
+- سكربت يمسح الجداول الفاضية (egksco_stocks + news_articles + metrics.resource_snapshot_* + historical.daily_prices + crypto.cryptos + أي تاني فاضي).
+- أمان: verify row=0 قبل DROP، --dry-run، idempotent، Rule 17، sandbox copy بس.
+
+### 🚫 cron/production ops = بتاع المالك
+- جون **بطلّع ايده** من الـ cron/production. المالك بـ يـ check الإنتاج بنفسه (cron logs + scrapers).
+- لو scraper مكسور (كود) → برافو يصلّحه. لو مش شغّال (ops) → المالك يشغّله على الـ VPS.
+
+### 🔜 Alpha A-P3 (Auth UI) — جاري + revival prompt جاهز
+- A-P3 mandate مفصل اتعطى لألفا (Guest Mode + Trial soft + soft paywalls + 4 files).
+- revival prompt جاهز (لو ألفا مات بسبب بيئة النود الزفت) — فيه تاريخه + آخر شغل + قواعده.
+
+### ملاحظة مستقبلية:
+- EGXPilot مات = مفيش live price source. هنحتاج مصدر بديل (Yahoo؟ TradingView live؟) في مرحلة جاية. **مش دلوقتي**.
