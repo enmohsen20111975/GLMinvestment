@@ -12,6 +12,7 @@ import { MobileNav } from '@/components/layout/MobileNav';
 import { TopBar } from '@/components/layout/TopBar';
 import { DashboardView } from '@/modules/dashboard/components/DashboardView';
 import { AuthGate } from '@/components/auth/AuthGate';
+import { PaywallListener } from '@/components/auth/PaywallListener';
 import { RealtimeTicker } from '@/modules/dashboard/components/RealtimeTicker';
 import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
 import { CentralAlertMonitor } from '@/components/notifications/CentralAlertMonitor';
@@ -19,6 +20,7 @@ import { DesktopNotificationPrompt } from '@/components/notifications/DesktopNot
 import { TrialExpiredModal } from '@/modules/subscription/components/TrialExpiredModal';
 import { TrialCountdownBanner } from '@/modules/subscription/components/TrialCountdownBanner';
 import { DevLoginForm } from '@/modules/auth/components/DevLoginForm';
+import { isGuestUser, isViewAllowedForGuest } from '@/lib/subscription-gate';
 
 import { Footer } from '@/components/layout/Footer';
 import { PlatformGuide, usePlatformGuide } from '@/components/help/PlatformGuide';
@@ -27,7 +29,7 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
 import { Header } from '@/components/layout/Header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -404,18 +406,72 @@ function SessionSync() {
   return null; // no UI
 }
 
+// ============================================================================
+// RESTRUCT-A-P3: GuestLockedView — placeholder للـ Guest لما يحاول يفتح view مقفول.
+// (مش شاشة جديدة — Rule 4: placeholder component جوّه page.tsx.)
+// ============================================================================
+function GuestLockedView({ view }: { view: string }) {
+  const setShowLoginPrompt = useAppStore((s) => s.setShowLoginPrompt);
+  const setCurrentView = useAppStore((s) => s.setCurrentView);
+
+  React.useEffect(() => {
+    // افتح LoginPromptModal فورًا — Guest لازم يسجل عشان يفتح view مقفول.
+    setShowLoginPrompt(true);
+  }, [setShowLoginPrompt]);
+
+  return (
+    <div
+      className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center"
+      dir="rtl"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="inline-flex items-center justify-center mb-4 size-16 rounded-2xl bg-amber-500/10 ring-2 ring-amber-500/20">
+        <Lock className="size-8 text-amber-500" />
+      </div>
+      <h2 className="text-xl font-bold mb-2">هذه الصفحة تتطلب تسجيل الدخول</h2>
+      <p className="text-sm text-muted-foreground mb-5 max-w-md">
+        سجّل مجاناً للوصول إلى {view || 'هذه الصفحة'} — توقعات، تحليلات، محفظة، وتنبيهات.
+        تجربة 14 يوماً مجاناً بدون بطاقة ائتمان.
+      </p>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => setCurrentView('dashboard')}
+          variant="outline"
+          size="sm"
+        >
+          تصفّح السوق مجاناً
+        </Button>
+        <Button
+          onClick={() => setShowLoginPrompt(true)}
+          size="sm"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+        >
+          <Lock className="size-3.5" />
+          سجّل مجاناً
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function AppShell() {
   const { currentView } = useAppStore();
   const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
   const currentMarket = useAppStore((s) => s.currentMarket);
   const setCurrentMarket = useAppStore((s) => s.setCurrentMarket);
   const selectedTicker = useAppStore((s) => s.selectedTicker);
+  // RESTRUCT-A-P3: Guest Mode flags — بنحدد Guest + restrict views.
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const user = useAppStore((s) => s.user);
+  const setShowLoginPrompt = useAppStore((s) => s.setShowLoginPrompt);
 
-  // SEC-AUTH-GATE (2026-09-30): مفيش وصول للمنصة من غير تسجيل.
-  // لو status === 'unauthenticated' → نعرض AuthView (شاشة تسجيل الدخول)
-  // لو status === 'loading' → نعرض skeleton
-  // لو status === 'authenticated' → نكمل الـ AppShell العادي
+  // SEC-AUTH-GATE (RESTRUCT-A-P3): Guest Mode — مش AuthView سجن.
+  // Guest (unauthenticated) بيوصل لـ AppShell محدود (market + radar-limited + news).
+  // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
+  // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
   const { status: authStatus } = useSession();
+  const isGuest = authStatus === 'unauthenticated' || isGuestUser(user, isAuthenticated);
 
   // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
   // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)
@@ -490,6 +546,14 @@ function AppShell() {
   }, [setCurrentViewFromHash]);
 
   const renderView = () => {
+    // RESTRUCT-A-P3: Guest Mode restrictions.
+    // Guest (مش مسجّل) بيشوف بس: dashboard + market + radar-limited + news + about.
+    // لو ضغط view مقفول → نعرض GuestLockedView placeholder + نفتح LoginPromptModal.
+    // (AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal تلقائياً،
+    //  بس هنا بنعرض placeholder كمان لو الـ view وصل لـ render قبل الـ redirect.)
+    if (isGuest && !isViewAllowedForGuest(currentView)) {
+      return <GuestLockedView view={currentView} />;
+    }
     switch (currentView) {
       // === البورصة المصرية (EGX) ===
       case 'dashboard':
@@ -741,8 +805,10 @@ function AppShell() {
 
   const isChartView = currentView === 'trading-chart' || currentView === 'screener';
 
-  // SEC-AUTH-GATE: لو مش مسجل → نعرض شاشة تسجيل الدخول فقط (مفيش وصول للمنصة)
-  // SEC-DEV-LOGIN (2026-09-30): لو في ?dev=1 → نعرض DevLoginForm (للسيرفر التجريبي)
+  // SEC-AUTH-GATE (RESTRUCT-A-P3): Guest Mode — مش AuthView سجن.
+  // لو status === 'unauthenticated' → Guest بيوصل لـ AppShell محدود (market + radar-limited + news).
+  // ?dev=1 → DevLoginForm. ?bot_link → AuthView container (لازم يسجل عشان يربط البوت).
+  // باقي cases → Guest يكمل لـ <AuthGate> + renderView مع Guest restrictions.
   if (authStatus === 'unauthenticated') {
     // فحص ?dev=1 في الـ URL
     const isDevLogin = typeof window !== 'undefined'
@@ -766,7 +832,7 @@ function AppShell() {
           <div className="max-w-md w-full rounded-xl border border-primary/30 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
             <h2 className="text-lg font-bold mb-1">ربط بوت تليجرام بحسابك</h2>
             <p className="text-sm text-muted-foreground">
-              سجّل دخولك أو أنشئ حساب (تجربة 7 أيام مجاناً) لتأكيد ربط البوت بحسابك في الموقع.
+              سجّل دخولك أو أنشئ حساب (تجربة 14 يوماً مجاناً) لتأكيد ربط البوت بحسابك في الموقع.
             </p>
           </div>
           <div className="w-full max-w-md">
@@ -776,27 +842,9 @@ function AppShell() {
       );
     }
 
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background p-4 relative overflow-hidden"
-        dir="rtl"
-      >
-        {/* Subtle emerald pattern overlay — adds texture without distraction
-            (Rule 29 NO-HYPE: alpha ≤ 0.04) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, hsl(var(--primary)) 1px, transparent 0)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div className="relative w-full max-w-md">
-          <AuthView />
-        </div>
-      </div>
-    );
+    // RESTRUCT-A-P3: Guest Mode — Guest بيوصل لـ AppShell محدود (مش AuthView سجن).
+    // يكمل لـ <AuthGate> + renderView مع Guest restrictions (isGuestUser + isViewAllowedForGuest).
+    // LoginPromptModal بيتفتح تلقائياً لو Guest ضغط view مقفول (عبر AuthGate route guard).
   }
 
   // لو الـ session لسه بيتحمّل → skeleton
@@ -821,6 +869,9 @@ function AppShell() {
         <SessionSync />
         <UrlHashSync />
         <RealtimeTicker />
+        {/* RESTRUCT-A-P3: PaywallListener — بيسمع paywall:blocked events من api-client
+            (402/403) + بيـ trigger المودال الصح (LoginPrompt/Lock/TrialExpired) حسب user state. */}
+        <PaywallListener />
         {/* BOT-SUBSCRIPTION-GATE (2026-10-01): لو في ?bot_link=TOKEN →
             اعرض Dialog تأكيد ربط البوت بحساب المستخدم المسجّل. */}
         <BotLinkHandler />
@@ -829,7 +880,8 @@ function AppShell() {
         <CentralAlertMonitor />
         {/* إشعار تفعيل تنبيهات سطح المكتب بنظام الواتساب حتى لو الموقع مصغر */}
         <DesktopNotificationPrompt />
-        {/* Trial expired modal — block كامل للـ free users بعد 14 يوم */}
+        {/* RESTRUCT-A-P3: Trial expired — soft paywall (dismissable + CTA).
+            لو trialExpired=true → soft modal. (مش hard block اللي كان قبل كده.) */}
         <TrialExpiredModal isExpired={trialExpired} />
         {/* Trial countdown banner — بانر تنبيهي بالأيام المتبقية في الفترة المجانية */}
         <TrialCountdownBanner

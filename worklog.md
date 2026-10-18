@@ -69769,3 +69769,85 @@ Stage Summary:
 - التطبيق يـ compile ويخدم 200 على 3000.
 - findings حرجة لجون: (1) التوكن اتسرب في البرومبت — لازم rotation فوري. (2) كدبة نسخة: package.json بـ pin Next 14.2.28 لكن الدستور/README بيقولوا Next 16. (3) imports مكسورة في كودهم: 'apiClient' مش exported من '@/lib/api-client'، 'StockDetailDrawer' مش exported (warnings مش قاتلة). (4) dev server مش بـ persists بين tool calls (platform reap) — Preview Panel هيفضي لحد ما platform يرمّم `bun run dev` (دلوقتي الـ script صحيح).
 - skills/ (platform-managed) ضاع في الـ swap (مش جزء من الريبو) — مش مطلوب للمهمة دي.
+
+---
+Task ID: A-P3
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly — no subagents)
+Task: جون — A-P3 (Auth/Monetization UI): 4 حالات مستخدم (Guest/Trial/Trial-Expired/Paid) بـ Guest Mode (مش AuthView سجن) + soft paywall + paywall event routing.
+
+Work Log:
+- قرأت SESSION-STATE.md + API-CONTRACT-PAYWALL.md + tail worklog + Documentation/00-CONSTITUTION.md (Rules 4/20/27/67/73).
+- git pull --rebase origin main: حلّيت conflict في worklog.md (entries برافو + بتاعي) → HEAD=435d56a (شغلي rebased atop origin). working tree clean ما عدا A-P3 changes.
+- التحقق من شغل ألفا اللي فات: TRIAL_DAYS=14 موجود في subscription-gate.ts (A-P2.5 ✓)، maestro disconnect في SpecialistAnalysisView (MAESTRO-CANCER-1 frontend ✓).
+
+A-P3.1 — subscription-gate.ts (+99 LOC):
+  - isGuestUser(user, isAuthenticated): Guest = لا session + لا user.
+  - GUEST_ALLOWED_VIEWS: dashboard, market, market-overview, market-pulse, recommendations, news, about.
+  - isViewAllowedForGuest(view).
+  - PaywallAction type + resolvePaywallAction(status, errorBody, user, isAuthenticated, feature): routing per API contract.
+    * 402 trial_expired + registered → trial_expired_soft
+    * 403 insufficient_tier + guest → login_prompt
+    * 403 insufficient_tier + registered → lock_upgrade
+
+A-P3.2 — api-client.ts (+149 LOC):
+  - dispatchPaywallBlocked(payload): window event `paywall:blocked` على 402/403.
+  - ApiResponse أضفت status + errorBody fields.
+  - apiFetch بيـ dispatch event قبل retry/return (الـ listener بيـ trigger المودال).
+
+A-P3.3 — PaywallListener.tsx (جديد، 103 LOC):
+  - بيسمع `paywall:blocked` event.
+  - بيقرأ user + isAuthenticated من store.
+  - بيـ trigger المودال الصح:
+    * login_prompt → setShowLoginPrompt(true) (LoginPromptModal عبر AuthGate)
+    * lock_upgrade → LockModal محلي (variant='upgrade')
+    * trial_expired_soft → TrialExpiredModal soft محلي
+
+A-P3.4 — AuthGate.tsx:
+  - fix "30 يوماً" → {TRIAL_DAYS} يوماً (TrialWarningBanner + TrialExpiredBanner).
+  - Guest Mode route guard الحالي كويس (redirect لـ dashboard + LoginPromptModal).
+
+A-P3.5 — TrialExpiredModal.tsx (rewrite، +162/-...):
+  - من hard block (مفيش X) → soft (dismissable + CTA "اشترك الآن" + "تصفّح المحتوى المحدود").
+  - hardBlock prop fallback (للـ legacy usage لو لزم).
+  - fix "7 أيام" → TRIAL_DAYS يوماً.
+
+A-P3.6 — LockModal.tsx (+169 LOC):
+  - variant='guest' | 'upgrade' (guest: "سجّل مجاناً"، upgrade: "ترقية").
+  - props: onSignUp + onUpgrade + requiredTier.
+  - fix "3 أيام" → TRIAL_DAYS يوماً.
+  - LockedContent component (جديد): blur overlay للمحتوى المقفول جوّه view + CTA.
+
+A-P3.7 — page.tsx (+112 LOC):
+  - Guest Mode: شيلت الـ AuthView سجن default case (الـ SEC-AUTH-GATE). Guest بيوصل لـ AppShell محدود (مش AuthView).
+  - isGuest flag derived (authStatus + isGuestUser).
+  - renderView Guest restrictions: لو isGuest + view مش في GUEST_ALLOWED_VIEWS → GuestLockedView placeholder + LoginPromptModal.
+  - GuestLockedView component (جديد): placeholder + CTA "سجّل مجاناً".
+  - wire PaywallListener جوّه <AuthGate>.
+  - TrialExpiredModal soft default (مش hardBlock).
+  - fix "تجربة 7 أيام" → "تجربة 14 يوماً" (bot_link copy).
+  - أحافظ على ?dev=1 + ?bot_link cases.
+
+A-P3.8 — prerequisite fix: apiClient object (api-client.ts):
+  - الـ store.ts بـ import { apiClient } من api-client بس الـ export اتشال في A-DB-1 (regression) → apiClient=undefined → crash في DashboardView (TypeError: Cannot read properties of undefined (reading 'getMarketOverview')).
+  - أضفت apiClient object بـ 9 methods (getMarketOverview, getAiInsights, getStocks, getStock, getStockHistory, getStockRecommendation, getStockNews, getEgxPilotNews, getProfessionalAnalysis) بـ unwrap من ApiResponse<T>.
+  - endpoints مبنية على API routes الموجودة (/api/market/overview, /api/ai/models, /api/stocks, /api/stocks/[ticker]/*, /api/egxpilot/news).
+
+A-P3.9 — lint + browser verification:
+  - bun run lint: exit 0 (0 errors).
+  - agent-browser verification (cookie clear + sessionStorage dismiss onboarding):
+    * Guest home: bodyLen=2329, AuthGateBanner ظاهر ("سجّل الدخول للوصول إلى حسابك ومحفظتك"), hasTopBar=true, hasAuthView=false (مفيش سجن!), hasDashboard=true. ✓
+    * #portfolio click: GuestLockedView trigger + LoginPromptModal ظاهر ("سجّل مجاناً للوصول الكامل — أنشئ حساباً مجانياً للوصول إلى كل المميزات"). ✓
+    * screenshot: /tmp/a-p3-guest-final.png + /tmp/a-p3-portfolio-loginprompt.png.
+  - Trial/Paid/Expired: logic في الكود (resolvePaywallAction + PaywallListener) — browser verification الكامل محتاج backend session (NextAuth + Python على 8010) غير متاح في sandbox.
+
+Stage Summary:
+- ✅ Guest Mode: browser-verified (AppShell محدود، مفيش AuthView سجن، TopBar + Dashboard، AuthGateBanner).
+- ✅ #portfolio → LoginPromptModal: browser-verified.
+- ✅ lint 0 errors.
+- ✅ TrialExpiredModal soft (dismissable + CTA) — مش hard block.
+- ✅ LockModal variant='guest'|'upgrade' + LockedContent blur overlay.
+- ✅ PaywallListener: 402/403 → المودال الصح حسب user state.
+- ⚠️ Trial/Paid/Expired browser verification محتاج backend session (مش متاح في sandbox بدون Python على 8010).
+- ⚠️ prerequisite fix: apiClient object (regression من A-DB-1) — لازم للـ Guest Mode verification.
+- ⚠️ dev.log: errors سابقة مش من A-P3 (StockDetailDrawer import مكسور، stocks.db not found في sandbox).
+- 🔁 Push gate: جون (Rule 75 معلّقة). الـ changes uncommitted + unpushed (6 files modified + 1 new file PaywallListener.tsx).

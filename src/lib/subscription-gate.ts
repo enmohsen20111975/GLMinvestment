@@ -643,3 +643,102 @@ export function getTierNameArExtended(tier: string): string {
   };
   return names[(tier || 'free').toLowerCase()] || tier;
 }
+
+// ============================================================================
+// RESTRUCT-A-P3 (Auth/Monetization UI) — Guest Mode + paywall action routing
+// ----------------------------------------------------------------------------
+// Per CEO John directive: Guest (غير مسجّل) → AppShell محدود (مش AuthView سجن).
+// يقدر يشوف: السوق + رادار محدود + الأخبار. لو ضغط مقفول → LoginPromptModal.
+// الـ helpers هنا بـ تحدد:
+//   1. isGuestUser: هل المستخدم guest (مش مسجّل)؟
+//   2. GUEST_ALLOWED_VIEWS: الـ views اللي guest يقدر يشوفها.
+//   3. resolvePaywallAction: بناءً على response + user state → المودال الصح.
+// ============================================================================
+
+/**
+ * يحدد هل المستخدم guest (مش مسجّل دخول).
+ * Guest = لا يوجد user object في store + isAuthenticated=false.
+ * (authChecked بيـ guarded عشان ميفضلش false في أول load.)
+ */
+export function isGuestUser(
+  user: { subscription_tier?: string | null } | null | undefined,
+  isAuthenticated: boolean
+): boolean {
+  if (isAuthenticated && user) return false;
+  return true; // لا session + لا user → guest
+}
+
+/**
+ * Views اللي Guest (مش مسجّل) يقدر يشوفها في Guest Mode.
+ * جون: "السوق + رادار محدود + الأخبار".
+ * dashboard مدرجة عشان Guest يفضل في AppShell (مش AuthView).
+ */
+export const GUEST_ALLOWED_VIEWS = new Set<string>([
+  'dashboard',
+  'market',
+  'market-overview',
+  'market-pulse',
+  'recommendations', // public landing driver (يـ limit server-side لـ 3 items)
+  'news',
+  'about',
+]);
+
+/**
+ * هل الـ view مسموح لـ Guest؟
+ */
+export function isViewAllowedForGuest(view: string): boolean {
+  return GUEST_ALLOWED_VIEWS.has(view);
+}
+
+/**
+ * Paywall action types — أي modal/action الـ UI لازم يـ trigger.
+ * مرتبطة بـ API-CONTRACT-PAYWALL.md (B-P1 contract من برافو).
+ */
+export type PaywallAction =
+  | { type: 'login_prompt'; feature?: string }
+  | { type: 'lock_upgrade'; requiredTier?: string; feature?: string }
+  | { type: 'trial_expired_soft' }
+  | { type: 'none' };
+
+/**
+ * بتحلل response من الـ backend + user state → تحدد المودال الصح.
+ *
+ * Contract (API-CONTRACT-PAYWALL.md):
+ *   - 402 trial_expired → soft TrialExpiredModal (لـ free users بس)
+ *   - 403 insufficient_tier + guest → LoginPromptModal (سجّل الأول)
+ *   - 403 insufficient_tier + registered (free/normal) → LockModal (upgrade)
+ *   - 403 insufficient_tier + paid (لو الـ tier مش كافي) → LockModal (upgrade أعلى)
+ *
+ * @param status        HTTP status (402 / 403 / other)
+ * @param errorBody     parsed JSON body ({ error, required_tier, current_tier, ... })
+ * @param user          user object from store (null = guest)
+ * @param isAuthenticated هل المستخدم مسجّل؟
+ */
+export function resolvePaywallAction(
+  status: number,
+  errorBody: { error?: string; required_tier?: string; current_tier?: string } | null | undefined,
+  user: { subscription_tier?: string | null } | null | undefined,
+  isAuthenticated: boolean,
+  feature?: string
+): PaywallAction {
+  const guest = isGuestUser(user, isAuthenticated);
+
+  // 402 trial_expired → soft paywall (لـ free users)
+  if (status === 402 || errorBody?.error === 'trial_expired') {
+    // Guest مش ممكن يكون trial_expired (ما عندهش حساب). نسيبه → login_prompt.
+    if (guest) return { type: 'login_prompt', feature };
+    return { type: 'trial_expired_soft' };
+  }
+
+  // 403 insufficient_tier → Guest: login, Registered: upgrade
+  if (status === 403 || errorBody?.error === 'insufficient_tier') {
+    if (guest) return { type: 'login_prompt', feature };
+    return {
+      type: 'lock_upgrade',
+      requiredTier: errorBody?.required_tier,
+      feature,
+    };
+  }
+
+  return { type: 'none' };
+}

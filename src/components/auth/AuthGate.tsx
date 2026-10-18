@@ -27,7 +27,7 @@ import { useSession } from 'next-auth/react';
 import { Sparkles, X, Rocket, Clock, AlertTriangle, Crown, Lock, KeyRound } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
-import { getTrialStatus } from '@/lib/subscription-gate';
+import { getTrialStatus, TRIAL_DAYS } from '@/lib/subscription-gate';
 import { LoginPromptModal } from '@/components/auth/LoginPromptModal';
 import { Button } from '@/components/ui/button';
 import { isAdmin as checkIsAdmin } from '@/lib/admin-auth';
@@ -200,7 +200,7 @@ function TrialWarningBanner({ daysLeft }: { daysLeft: number }) {
           <p className="flex-1 text-sm sm:text-base font-semibold leading-tight">
             <span className="inline-flex items-center gap-1.5">
               <AlertTriangle className="size-4 text-amber-200" />
-              ⏳ متبقي لديك {daysLeft} يوماً في فترتك التجريبية المجانية (من أصل 30 يوماً)
+              ⏳ متبقي لديك {daysLeft} يوماً في فترتك التجريبية المجانية (من أصل {TRIAL_DAYS} يوماً)
             </span>
             <span className="hidden sm:inline mr-2 text-white/85 font-normal">
               — اشترك الآن للاستمرار في استخدام المنصة دون انقطاع
@@ -233,7 +233,7 @@ function TrialExpiredBanner({ daysLeft = 0 }: { daysLeft?: number }) {
 
   const isWarning = daysLeft > 0;
   const message = isWarning
-    ? `❌ انتهت فترتك التجريبية المجانية (30 يوماً). ستتم حذف بياناتك بعد ${daysLeft} يوم — يرجى الاشتراك الآن`
+    ? `❌ انتهت فترتك التجريبية المجانية (${TRIAL_DAYS} يوماً). ستتم حذف بياناتك بعد ${daysLeft} يوم — يرجى الاشتراك الآن`
     : '❌ انتهت فترتك التجريبية المجانية وتم حذف بياناتك. يرجى الاشتراك مرة أخرى';
 
   return (
