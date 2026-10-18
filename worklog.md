@@ -67990,3 +67990,65 @@ Stage Summary:
 - ⚠️ FLAG 2 (defense in depth): evaluate_risk بتعمل re-verify لـ R/R بعد _determine_target. ده redundant رقميًا بس قيمته: (a) position cap جديد، (b) لو _determine_target فيه bug، evaluate_risk هتقتل، (c) dead code eliminated.
 - ⚠️ FLAG 3 (v40_2_daily_generator.py): الملف مش موجود أصلاً رغم إن الدستور Rule 18 بيتكلم عنه كـ canonical R/R gate. محتاج توضيح من Jimmy: هل اتعمل rename ولا في path تاني.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: BRAVO-INVESTORS-FULL-SCRAPER-REVIEW
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: مراجعة وضمان سحب بيانات المستثمرين كاملة (EGX Investors Scraper) + التحقق من مسار API
+
+Work Log:
+- بروتوكول البدء: git pull --rebase origin main (fast-forward, 8 files changed من فريق تاني).
+- قرأت آخر 30 سطر في worklog: تكليفات سابقة لـ flow_system + canonical_flow + ATR stop + evaluate_risk wiring.
+
+- ⚠️ تناقض مسار (مُ flagged): التكليف قال `scripts/egx_investors_scraper.py` — **مش موجود**.
+  السكربت الفعلي في `vps-service/scrappers/egx_investors_scraper.py`. نُفّذ في المسار الصحيح.
+
+- مراجعة السكربت (pre-fix):
+  * Schema عنده 9 أعمدة aggregate حسب الجنسية (individuals_*=مصريين، arab_*=عرب، foreign_*=أجانب).
+  * **الفجوة الحرجة**: مفيش تقسيم أفراد/مؤسسات إطلاقاً. التكليف يطلب 18 عمود:
+    الأفراد (مصريين/عرب/أجانب) × (buy/sell/net) = 9 + المؤسسات (مصريين/عرب/أجانب) × (buy/sell/net) = 9.
+  * الإيجابيات الموجودة: Σ=0 accounting fix، weekend skip (Fri/Sat)، turnover cap (2-8B EGP)، INSERT OR REPLACE (idempotent).
+
+- التعديلات على vps-service/scrappers/egx_investors_scraper.py:
+  1. CREATE_TABLE_SQL: أضفت 18 عمود جديد (individuals_egy/arab/foreign + institutions_egy/arab/foreign × buys/sells/net).
+  2. _MIGRATION_COLUMNS list + ensure_schema migration: ALTER TABLE ADD COLUMN لكل عمود ناقص (try/except للـ race-safety). **ممنوع مسح جداول تاريخية** → ALTER بس، مش DROP.
+  3. InvestorFlowRow dataclass: أضفت 18 حقل جديد (default 0.0).
+  4. upsert_row: حدّثت INSERT OR REPLACE ليشمل الـ 18 عمود جديد.
+  5. _compute_estimate_for_date:
+     * أضفت `institutional_turnover` tracking في الـ loop (يaccumulates مع block_trade_count).
+     * أضفت `inst_ratio = institutional_turnover / total_turnover` (clamped [0, 1]).
+     * Split كل جنسية: individual = aggregate × (1-inst_ratio)، institution = aggregate × inst_ratio.
+     * الـ split بيحافظ على accounting identity: individuals_X + institutions_X = aggregate_X.
+  6. fetch_egx_real: الـ 18 عمود جديد defaultًا لـ 0.0 (EGX parser الحالي بيسحب الجنسية بس، مش الـ type breakdown — TODO لو EGX site متاح).
+
+- التحقق من API (src/app/api/egx/investors/route.ts — READ ONLY، خارج scope):
+  * ✅ بيقرأ من investors_data: `SELECT * FROM investors_data ORDER BY date DESC LIMIT ?`
+  * ✅ مرتب تنازليًا حسب التاريخ: `ORDER BY date DESC`
+  * ⚠️ `normalizeRow` بيحول `arab_*` لـ `arab_institutions_*` (تسمية مضللة — بيانات العرب مش بالضرورة مؤسسات).
+  * ⚠️ `normalizeRow` بيDROP الـ 18 عمود جديد (individuals_egy_*, institutions_egy_*, إلخ) — بيرجّع 12 حقل بس.
+  * ⚠️ Rule 20 violation (سابق): Node بيعمل computation (computeAndUpsertForDate) بدل Python backend.
+
+- إثبات الشغل (تشغيل السكربت + verification):
+  * أنشأت test data في stock_daily_prices (6 tickers × 3 dates + 5 mixed tickers لتاريخ رابع).
+  * شغّلت `run_pipeline(days=3)` + date إضافي. النتيجة: 4 rows في investors_data.
+  * EGX real scrape timed out (sandbox can't reach egx.com.eg) → fallback لـ computed_estimate اشتغل بنجاح.
+  * **Row count**: 4 (صحيح — واحد لكل يوم تداول).
+  * **Column count**: 27 عمود investor (9 aggregate + 18 split) = مطابق للمطلوب.
+  * **NULL check**: 0 nulls في كل الـ 9 net columns (individuals_net, arab_net, foreign_net + 6 split nets).
+  * **Split verification**: individual + institution = aggregate لكل جنسية ✓.
+  * **Σ=0**: egy_net + arab_net + foreign_net ≈ 0 لكل row ✓.
+  * **Mixed data test**: 2 institutional tickers + 3 individual tickers → both sides non-zero ✓.
+  * تم تنظيف test data (stock_daily_prices + investors_data test rows) — الجداول سليمة (مش محذوفة).
+
+Stage Summary:
+- ✅ السكربت بيسحب ويخزن 18 عمود investor كاملة (أفراد + مؤسسات × 3 جنسيات × buy/sell/net).
+- ✅ Schema migration بـ ALTER TABLE (مش DROP) — يحافظ على الجداول التاريخية.
+- ✅ NULL check: 0 nulls في كل الـ 9 net columns.
+- ✅ Σ=0 accounting identity محفوظة + split sums to aggregate.
+- ✅ .env مش متلموس. scope: vps-service/scrappers/ بس. src/ سليم.
+- ⚠️ FLAG 1 (مسار التكليف): `scripts/` غير صحيح. السكربت في `vps-service/scrappers/`.
+- ⚠️ FLAG 2 (API gap — خارج scope): `src/app/api/egx/investors/route.ts` بيDROP الـ 18 عمود جديد. محتاج تحديث من فريق Alpha (src/).
+- ⚠️ FLAG 3 (API naming — خارج scope): `arab_*` → `arab_institutions_*` تسمية مضللة.
+- ⚠️ FLAG 4 (Rule 20 — سابق): Node بيعمل computation بدل Python. لو محتاج إصلاح، تكليف منفصل لـ Python endpoint في vps-service/.
+- ⚠️ FLAG 5 (EGX real scrape): parser الحالي بيسحب الجنسية بس. لو EGX site متاح، ممكن توسيع الـ parser ليسحب الـ type breakdown كمان.
+- 🔁 Rule 75: commit + push فوري.

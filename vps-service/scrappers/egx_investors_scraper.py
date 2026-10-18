@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS investors_data (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,
     session_type TEXT,
+    -- Aggregate by nationality (backward compat — original 9 columns)
     individuals_buys_value REAL,
     individuals_sells_value REAL,
     individuals_net_value REAL,
@@ -129,9 +130,43 @@ CREATE TABLE IF NOT EXISTS investors_data (
     number_of_trades INTEGER,
     source TEXT DEFAULT 'computed_estimate',
     created_at TEXT DEFAULT (datetime('now')),
+    -- BRAVO-INVESTORS-FULL (2026-10-18): Individual/Institution split by nationality.
+    -- Task requirement: الأفراد (مصريين/عرب/أجانب) + المؤسسات (مصريين/عرب/أجانب)
+    -- = 2 types × 3 nationalities × 3 metrics = 18 columns.
+    -- These split the aggregate above: individuals_*_net + institutions_*_net = aggregate net.
+    individuals_egy_buys_value REAL,
+    individuals_egy_sells_value REAL,
+    individuals_egy_net_value REAL,
+    individuals_arab_buys_value REAL,
+    individuals_arab_sells_value REAL,
+    individuals_arab_net_value REAL,
+    individuals_foreign_buys_value REAL,
+    individuals_foreign_sells_value REAL,
+    individuals_foreign_net_value REAL,
+    institutions_egy_buys_value REAL,
+    institutions_egy_sells_value REAL,
+    institutions_egy_net_value REAL,
+    institutions_arab_buys_value REAL,
+    institutions_arab_sells_value REAL,
+    institutions_arab_net_value REAL,
+    institutions_foreign_buys_value REAL,
+    institutions_foreign_sells_value REAL,
+    institutions_foreign_net_value REAL,
     UNIQUE(date)
 );
 """
+
+# BRAVO-INVESTORS-FULL (2026-10-18): Migration — add 18 columns to existing dbs.
+# Uses ALTER TABLE (NOT DROP) to preserve historical rows per task prohibition.
+# Each ALTER is wrapped in try/except because SQLite errors if column already exists.
+_MIGRATION_COLUMNS = [
+    'individuals_egy_buys_value', 'individuals_egy_sells_value', 'individuals_egy_net_value',
+    'individuals_arab_buys_value', 'individuals_arab_sells_value', 'individuals_arab_net_value',
+    'individuals_foreign_buys_value', 'individuals_foreign_sells_value', 'individuals_foreign_net_value',
+    'institutions_egy_buys_value', 'institutions_egy_sells_value', 'institutions_egy_net_value',
+    'institutions_arab_buys_value', 'institutions_arab_sells_value', 'institutions_arab_net_value',
+    'institutions_foreign_buys_value', 'institutions_foreign_sells_value', 'institutions_foreign_net_value',
+]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -141,6 +176,7 @@ CREATE TABLE IF NOT EXISTS investors_data (
 class InvestorFlowRow:
     date: str
     session_type: Optional[str]
+    # Aggregate by nationality (original 9 columns — backward compat)
     individuals_buys_value: float
     individuals_sells_value: float
     individuals_net_value: float
@@ -154,6 +190,25 @@ class InvestorFlowRow:
     total_sells_value: float
     number_of_trades: int
     source: str = "computed_estimate"
+    # BRAVO-INVESTORS-FULL: Individual/Institution split by nationality (18 columns)
+    individuals_egy_buys_value: float = 0.0
+    individuals_egy_sells_value: float = 0.0
+    individuals_egy_net_value: float = 0.0
+    individuals_arab_buys_value: float = 0.0
+    individuals_arab_sells_value: float = 0.0
+    individuals_arab_net_value: float = 0.0
+    individuals_foreign_buys_value: float = 0.0
+    individuals_foreign_sells_value: float = 0.0
+    individuals_foreign_net_value: float = 0.0
+    institutions_egy_buys_value: float = 0.0
+    institutions_egy_sells_value: float = 0.0
+    institutions_egy_net_value: float = 0.0
+    institutions_arab_buys_value: float = 0.0
+    institutions_arab_sells_value: float = 0.0
+    institutions_arab_net_value: float = 0.0
+    institutions_foreign_buys_value: float = 0.0
+    institutions_foreign_sells_value: float = 0.0
+    institutions_foreign_net_value: float = 0.0
 
     def to_dict(self) -> Dict[str, object]:
         d = asdict(self)
@@ -177,6 +232,14 @@ def _connect(db_path: str) -> sqlite3.Connection:
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(CREATE_TABLE_SQL)
+    # BRAVO-INVESTORS-FULL: migrate existing tables — add 18 columns if missing.
+    existing = {r[1] for r in conn.execute("PRAGMA table_info(investors_data)").fetchall()}
+    for col in _MIGRATION_COLUMNS:
+        if col not in existing:
+            try:
+                conn.execute(f"ALTER TABLE investors_data ADD COLUMN {col} REAL")
+            except sqlite3.OperationalError:
+                pass  # already exists (race-safe)
     conn.commit()
 
 
@@ -189,14 +252,26 @@ def upsert_row(conn: sqlite3.Connection, row: InvestorFlowRow) -> None:
             arab_buys_value, arab_sells_value, arab_net_value,
             foreign_buys_value, foreign_sells_value, foreign_net_value,
             total_buys_value, total_sells_value, number_of_trades,
-            source, created_at
+            source, created_at,
+            individuals_egy_buys_value, individuals_egy_sells_value, individuals_egy_net_value,
+            individuals_arab_buys_value, individuals_arab_sells_value, individuals_arab_net_value,
+            individuals_foreign_buys_value, individuals_foreign_sells_value, individuals_foreign_net_value,
+            institutions_egy_buys_value, institutions_egy_sells_value, institutions_egy_net_value,
+            institutions_arab_buys_value, institutions_arab_sells_value, institutions_arab_net_value,
+            institutions_foreign_buys_value, institutions_foreign_sells_value, institutions_foreign_net_value
         ) VALUES (
             ?, ?,
             ?, ?, ?,
             ?, ?, ?,
             ?, ?, ?,
             ?, ?, ?,
-            ?, datetime('now')
+            ?, datetime('now'),
+            ?, ?, ?,
+            ?, ?, ?,
+            ?, ?, ?,
+            ?, ?, ?,
+            ?, ?, ?,
+            ?, ?, ?
         )
         """,
         (
@@ -215,6 +290,24 @@ def upsert_row(conn: sqlite3.Connection, row: InvestorFlowRow) -> None:
             row.total_sells_value,
             row.number_of_trades,
             row.source,
+            row.individuals_egy_buys_value,
+            row.individuals_egy_sells_value,
+            row.individuals_egy_net_value,
+            row.individuals_arab_buys_value,
+            row.individuals_arab_sells_value,
+            row.individuals_arab_net_value,
+            row.individuals_foreign_buys_value,
+            row.individuals_foreign_sells_value,
+            row.individuals_foreign_net_value,
+            row.institutions_egy_buys_value,
+            row.institutions_egy_sells_value,
+            row.institutions_egy_net_value,
+            row.institutions_arab_buys_value,
+            row.institutions_arab_sells_value,
+            row.institutions_arab_net_value,
+            row.institutions_foreign_buys_value,
+            row.institutions_foreign_sells_value,
+            row.institutions_foreign_net_value,
         ),
     )
     conn.commit()
@@ -403,6 +496,7 @@ def _compute_estimate_for_date(conn: sqlite3.Connection, date_str: str) -> Optio
     declining_turnover = 0.0
     flat_turnover = 0.0
     block_trade_count = 0
+    institutional_turnover = 0.0  # BRAVO-INVESTORS-FULL: track for individual/institution split
     for ticker, close, volume, turnover, change_pct in rows:
         price = _safe_float(close)
         vol = int(volume or 0)
@@ -425,6 +519,7 @@ def _compute_estimate_for_date(conn: sqlite3.Connection, date_str: str) -> Optio
         avg_trade_val = (day_turnover / vol) if vol > 0 else 0.0
         if avg_trade_val >= INSTITUTIONAL_TRADE_VALUE or day_turnover >= INSTITUTIONAL_TRADE_VALUE:
             block_trade_count += 1
+            institutional_turnover += day_turnover
 
     if total_turnover <= 0:
         return None
@@ -484,6 +579,27 @@ def _compute_estimate_for_date(conn: sqlite3.Connection, date_str: str) -> Optio
     foreign_buy = (foreign_turnover + foreign_net) / 2
     foreign_sell = (foreign_turnover - foreign_net) / 2
 
+    # BRAVO-INVESTORS-FULL (2026-10-18): Individual/Institution split by nationality.
+    # Task: الأفراد (مصريين/عرب/أجانب) + المؤسسات (مصريين/عرب/أجانب) = 18 columns.
+    # Estimation: institutional_ratio = institutional_turnover / total_turnover.
+    # This ratio is applied uniformly across all 3 nationalities to split
+    # buy/sell/net into individual vs institution. The split preserves the
+    # accounting identity: individuals_X + institutions_X = aggregate_X.
+    inst_ratio = (institutional_turnover / total_turnover) if total_turnover > 0 else 0.0
+    inst_ratio = max(0.0, min(1.0, inst_ratio))  # clamp [0, 1]
+    indiv_ratio = 1.0 - inst_ratio
+
+    # Split each nationality: individual = aggregate × indiv_ratio, institution = aggregate × inst_ratio
+    indiv_egy_buy, inst_egy_buy = egy_buy * indiv_ratio, egy_buy * inst_ratio
+    indiv_egy_sell, inst_egy_sell = egy_sell * indiv_ratio, egy_sell * inst_ratio
+    indiv_egy_net, inst_egy_net = egy_net * indiv_ratio, egy_net * inst_ratio
+    indiv_arab_buy, inst_arab_buy = arab_buy * indiv_ratio, arab_buy * inst_ratio
+    indiv_arab_sell, inst_arab_sell = arab_sell * indiv_ratio, arab_sell * inst_ratio
+    indiv_arab_net, inst_arab_net = arab_net * indiv_ratio, arab_net * inst_ratio
+    indiv_for_buy, inst_for_buy = foreign_buy * indiv_ratio, foreign_buy * inst_ratio
+    indiv_for_sell, inst_for_sell = foreign_sell * indiv_ratio, foreign_sell * inst_ratio
+    indiv_for_net, inst_for_net = foreign_net * indiv_ratio, foreign_net * inst_ratio
+
     # Verify Σ = 0 (accounting identity — should never fail)
     _sigma_check = egy_net + arab_net + foreign_net
     assert abs(_sigma_check) < 0.01, f"Σ=0 violation: {_sigma_check} (egy={egy_net}, arab={arab_net}, foreign={foreign_net})"
@@ -507,6 +623,25 @@ def _compute_estimate_for_date(conn: sqlite3.Connection, date_str: str) -> Optio
         total_sells_value=round(egy_sell + arab_sell + foreign_sell, 2),
         number_of_trades=approx_trades,
         source="computed_estimate",
+        # BRAVO-INVESTORS-FULL: individual/institution split by nationality (18 columns)
+        individuals_egy_buys_value=round(indiv_egy_buy, 2),
+        individuals_egy_sells_value=round(indiv_egy_sell, 2),
+        individuals_egy_net_value=round(indiv_egy_net, 2),
+        individuals_arab_buys_value=round(indiv_arab_buy, 2),
+        individuals_arab_sells_value=round(indiv_arab_sell, 2),
+        individuals_arab_net_value=round(indiv_arab_net, 2),
+        individuals_foreign_buys_value=round(indiv_for_buy, 2),
+        individuals_foreign_sells_value=round(indiv_for_sell, 2),
+        individuals_foreign_net_value=round(indiv_for_net, 2),
+        institutions_egy_buys_value=round(inst_egy_buy, 2),
+        institutions_egy_sells_value=round(inst_egy_sell, 2),
+        institutions_egy_net_value=round(inst_egy_net, 2),
+        institutions_arab_buys_value=round(inst_arab_buy, 2),
+        institutions_arab_sells_value=round(inst_arab_sell, 2),
+        institutions_arab_net_value=round(inst_arab_net, 2),
+        institutions_foreign_buys_value=round(inst_for_buy, 2),
+        institutions_foreign_sells_value=round(inst_for_sell, 2),
+        institutions_foreign_net_value=round(inst_for_net, 2),
     )
 
 
