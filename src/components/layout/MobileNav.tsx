@@ -29,7 +29,7 @@ import {
   TrendingUp,
   Wallet,
   Activity,
-  BarChart3,
+  CandlestickChart,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -41,10 +41,10 @@ import type { AppView } from '@/types';
  * السيولة) is one tap away. settings remains accessible via MobileMoreSheet. */
 const bottomNavItems: Array<{ id: AppView; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: 'dashboard',       label: 'الرئيسية', icon: LayoutDashboard },
-  { id: 'recommendations', label: 'التوقعات', icon: TrendingUp },
+  { id: 'stocks',           label: 'الأسهم',   icon: CandlestickChart },
+  { id: 'recommendations', label: 'التوصيات', icon: TrendingUp },
   { id: 'portfolio',       label: 'المحفظة',  icon: Wallet },
   { id: 'liquidity-radar', label: 'الرادار',  icon: Activity },
-  { id: 'trading-chart',   label: 'الشارت',   icon: BarChart3 },
 ];
 
 export function MobileNav() {

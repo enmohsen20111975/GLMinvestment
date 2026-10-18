@@ -36,12 +36,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  LayoutDashboard, CandlestickChart, Filter, TrendingUp, Target,
-  Crown, Sparkles, FileBarChart, Newspaper, GraduationCap, Gamepad2,
-  Wallet, Eye, HandCoins, Shield, RadioTower, Brain,
-  Activity, BarChart3, Settings, Menu, X, ChevronDown,
-  Bell, Sun, Moon, DollarSign, Search, Globe, LogIn, LogOut, UserCircle, ShieldCheck,
-  Stethoscope, type LucideIcon,
+  LayoutDashboard, CandlestickChart, Target,
+  Crown, Newspaper, GraduationCap,
+  Wallet, Eye,
+  Activity, Settings, Menu, X, ChevronDown,
+  Bell, Sun, Moon, DollarSign, Search, Globe, LogIn, LogOut, UserCircle,
+  type LucideIcon,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
@@ -93,7 +93,17 @@ interface NavSection {
   items: NavItem[];
 }
 
-// ── الأقسام الخمسة الرئيسية ─────────────────────────────────────────────
+// ── الأقسام الخمسة الرئيسية — RESTRUCT-A-P1: ≤10 top-level (CEO John directive) ─
+// Items removed from MENU (not from routing — hash links still work per Rule 67):
+// - stock-filters → tab inside StocksView (A-P2)
+// - trading-chart → sub-view inside StockDetail (mandate)
+// - market-depth → deep-link #market-depth
+// - specialist-analysis → tab/drawer inside StockDetail (mandate)
+// - reports → tab inside MarketAnalysisView (A-P2)
+// - live-monitor → deep-link #live-monitor
+// - trading-memory → deep-link #trading-memory
+// - simulation → deep-link #simulation
+// - sharia/rescue/zakat/tithes/about → Settings section or deep-link
 const navSections: NavSection[] = [
   {
     id: 'home',
@@ -109,41 +119,24 @@ const navSections: NavSection[] = [
     icon: CandlestickChart,
     items: [
       { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
-      { id: 'stock-filters', label: 'فلاتر الأسهم', icon: Filter },
-      { id: 'trading-chart', label: 'الشارت التفاعلي', icon: TrendingUp },
       { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity, highlight: true },
-      // MARKET-DEPTH-VIEW: شاشة عمق السوق المنفصلة (عملات/ذهب + سيولة + مستثمرون + ضغط جلسة).
-      // Owner directive: "في شاشة منفصلة من قائمة الأعلى" — نقلنا الـ 4 widgets من
-      // DashboardView لشاشة مستقلة عشان الـ Dashboard يبقى نضيف.
-      { id: 'market-depth', label: 'عمق السوق', icon: BarChart3, highlight: true },
-      // ملاحظة: 'smart-confluence' و 'screener' اتشالوا من القائمة:
-      // - smart-confluence: المستخدم قال إنها بلا معنى/هدف — الـ hash لسه شغّال للـ backwards compat
-      // - screener: كان بيستخدم نفس TradingChartView (تكرار بلا معنى)
     ],
   },
   {
     id: 'predictions',
-    label: 'التوقعات',
+    label: 'التحليل',
     icon: Target,
     items: [
-      { id: 'recommendations', label: 'متابعة التوقعات', icon: Target },
-      // picks-management REMOVED 2026-09-28 — merged into recommendations
-      { id: 'specialist-analysis', label: 'تحليل المتخصصين', icon: Sparkles },
-      { id: 'reports', label: 'التقارير', icon: FileBarChart },
+      { id: 'recommendations', label: 'التوصيات', icon: Target },
     ],
   },
   {
     id: 'finance',
-    label: 'أموالي',
+    label: 'محفظتي',
     icon: Wallet,
     items: [
-      { id: 'portfolio', label: 'المحفظة الموحدة', icon: Wallet },
-      { id: 'watchlist', label: 'قوائم المراقبة', icon: Eye },
-      // wealth REMOVED 2026-10-04 (Task 40-B) — merged into portfolio as a sub-tab.
-      // Hash link #wealth still works (kept in VALID_VIEWS + page.tsx switch).
-      { id: 'alerts-center', label: 'مركز التنبيهات', icon: Shield },
-      { id: 'live-monitor', label: 'المراقبة الحية', icon: RadioTower },
-      { id: 'trading-memory', label: 'ذاكرة التداول', icon: Brain },
+      { id: 'portfolio', label: 'المحفظة', icon: Wallet },
+      { id: 'watchlist', label: 'قائمة المتابعة', icon: Eye },
     ],
   },
   {
@@ -151,21 +144,9 @@ const navSections: NavSection[] = [
     label: 'المزيد',
     icon: Menu,
     items: [
-      { id: 'news', label: 'الأخبار والتحليلات', icon: Newspaper },
-      { id: 'simulation', label: 'المحاكاة', icon: Gamepad2 },
       { id: 'academy', label: 'الأكاديمية', icon: GraduationCap },
-      // TASK 31-C — disaster-rescue entry REMOVED from More menu 2026-10-04 (Task 40-B):
-      // merged into portfolio as a sub-tab (🆘 إنقاذ سهم). Hash link still works
-      // (kept in VALID_VIEWS + page.tsx switch).
-      // الكريبتو اتدمج في الـ Market Switcher (قائمة منسدلة الأسواق في أعلى الـ TopBar).
-      // المستخدم بيبدّل لسوق CRYPTO من هناك، وكل شاشات السوق (stocks/trading-chart/إلخ)
-      // بتعمل mirror تلقائياً وتعرض بيانات الكريبتو. مفيش حاجة لـ 8 إدخالات crypto منفصلة.
-      { id: 'sharia', label: 'التوافق الشرعي', icon: ShieldCheck, highlight: true },
-      { id: 'rescue', label: 'عيادة الإنقاذ', icon: Stethoscope, highlight: true },
-      { id: 'zakat', label: 'حاسبة الزكاة', icon: HandCoins },
-      { id: 'tithes', label: 'حاسبة العُشر', icon: HandCoins },
-      { id: 'subscription', label: 'الباقات والاشتراكات', icon: Crown, highlight: true },
-      { id: 'about', label: 'من نحن', icon: Sparkles },
+      { id: 'news', label: 'الأخبار', icon: Newspaper },
+      { id: 'subscription', label: 'الاشتراك', icon: Crown, highlight: true },
       { id: 'settings', label: 'الإعدادات', icon: Settings },
     ],
   },

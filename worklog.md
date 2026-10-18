@@ -69246,3 +69246,38 @@ Stage Summary:
 - ⚠️ FLAG: لقيت 22 مش 21. الفرق محتمل إن كيمي لقت 21 في audit سابق. محتاج cross-check مع كيمي.
 - ⚠️ FLAG: مفيش pytest للـ admin tests حاليًا (مفيش test_phase_a_hotfix.py بـ covers admin_routes.py endpoints). لو محتاج، تكليف منفصل.
 - 🔁 Push gate محترم — مفيش commit، مفيش push. مستني موافقة المالك.
+---
+---
+Task ID: RESTRUCT-A-P1
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: TopBar ≤10 — تنفيذ الـ CEO directive (جون): طوي 14 item من القائمة، أبقي 10 top-level بس.
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (up to date). قرأت RESTRUCTURE-MIGRATION-PLAN.md (commit 5f3c100 — الموجود، ما أعدتش إنشاؤه).
+- قرأت TopBar.tsx navSections (24 item موزعة على 5 أقسام). قرأت MobileNav bottomNavItems (5 items).
+- **TopBar.tsx** — عدّلت navSections:
+  * شلت 14 item من المينو (مش من الـ routing — hash links لسه شغّالة per Rule 67):
+    - stock-filters → tab inside StocksView (A-P2)
+    - trading-chart → sub-view inside StockDetail (mandate)
+    - market-depth → deep-link #market-depth
+    - specialist-analysis → tab/drawer inside StockDetail (mandate)
+    - reports → tab inside MarketAnalysisView (A-P2)
+    - alerts-center → tab inside portfolio (CEO directive)
+    - live-monitor → deep-link #live-monitor
+    - trading-memory → deep-link #trading-memory
+    - simulation → deep-link #simulation
+    - sharia/rescue/zakat/tithes/about → Settings section or deep-link
+  * أبقي 10 top-level: dashboard / stocks / liquidity-radar / recommendations / portfolio / watchlist / academy / news / subscription / settings
+  * نظّفت 12 dead import (Filter, FileBarChart, Gamepad2, RadioTower, Brain, HandCoins, ShieldCheck, Stethoscope, BarChart3, TrendingUp, Sparkles, Shield)
+- **MobileNav.tsx** — بدّلت trading-chart بـ stocks في الـ bottom bar (5 items: dashboard / stocks / recommendations / portfolio / liquidity-radar). عدّلت import (BarChart3 → CandlestickChart).
+- **page.tsx switch** — ما لمسته. كل hash links لسه شغّالة ( Rule 67 backwards-compat).
+
+Stage Summary:
+- ✅ TopBar: 24 → 10 top-level items (CEO directive ≤10 محقّق).
+- ✅ MobileNav: trading-chart → stocks (أهم screen للمستخدم).
+- ✅ 14 item اتشالوا من المينيو بس hash links لسه شغّالة (backwards-compat Rule 67).
+- ✅ lint: 0 errors.
+- ✅ agent-browser: / route بترندر، title صح، مفيش errors.
+- ✅ git diff --stat: 2 files, 27 insertions, 46 deletions (صافي -19 سطر).
+- 🚫 NO push (push gate ملك المالك).
+- ⏳ A-P2 (tab integration: stock-filters→stocks tab, reports→recommendations tab, alerts-center→portfolio tab) — محتاج تنفيذ منفصل.
