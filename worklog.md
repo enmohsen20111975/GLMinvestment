@@ -69851,3 +69851,73 @@ Stage Summary:
 - ⚠️ prerequisite fix: apiClient object (regression من A-DB-1) — لازم للـ Guest Mode verification.
 - ⚠️ dev.log: errors سابقة مش من A-P3 (StockDetailDrawer import مكسور، stocks.db not found في sandbox).
 - 🔁 Push gate: جون (Rule 75 معلّقة). الـ changes uncommitted + unpushed (6 files modified + 1 new file PaywallListener.tsx).
+
+---
+Task ID: DESIGN-SYSTEM-1 (audit)
+Agent: Alpha (Explore subagent)
+Task: Audit frontend duplication + visual inconsistencies across `src/components/` and `src/modules/`. Planning only — no code changes.
+
+Work Log:
+- Read `tail -60 worklog.md` (prior context: A-P3 guest-mode + paywall system; LockModal / LockedContent / PaywallListener / AuthGate already shared).
+- Read `src/app/globals.css` (467 lines) → CSS variables for primary/emerald/success/warning/danger already defined. Card/button polish layer present. `.card-hover`, `.skeleton-shimmer`, `.price-flash-up/down`, `.tabular-nums` utilities exist.
+- Read `tailwind.config.ts` → only maps a subset of CSS vars (no success/warning/danger tokens — they exist in :root but are NOT wired into tailwind theme extend).
+- Confirmed NO `src/lib/design-tokens.ts` or `src/lib/theme*` file exists. `src/lib/token-helper.ts` is auth-token (not design).
+- Listed `src/components/ui/` (shadcn) inventory: 53 files. Custom additions = `stat-card.tsx`, `mini-sparkline.tsx`, `toaster.tsx` (rest are stock shadcn).
+- Listed `src/components/shared/` inventory: 11 files (UnifiedTable, LazyTabLoader, PredictionCard, StockSearchSelector, ErrorBoundary, ExpertIntelligencePanel, FlashingPriceCell, MarketSelector, LiquidityRadarView, FormulaEngine, FlashingChangeCell).
+- Ran aggregate grep counts (sampled):
+  * Loading/spinner patterns (`isLoading|Loader2|animate-spin|جار[ٍي]?\s*التحميل|بيتحمّل`): 482 occurrences across 147 .ts/.tsx files.
+  * Empty-state patterns (`لا توجد بيانات|لا يوجد|No data|empty`): 523 occurrences across 241 files.
+  * Direct Tailwind color classes (`text-emerald|text-red|text-green|text-amber|text-rose|text-blue|bg-emerald|bg-red|bg-green|...`): 5,505 occurrences across 231 files.
+  * Hardcoded hex colors (`#[0-9a-fA-F]{3,8}`): 1,359 occurrences across 88 files.
+  * Buy/Sell/Hold label tokens: 2,278 occurrences across 250+ files (mostly logic-level, but a sizable share are inline UI badge renderings).
+  * Border-radius mix: rounded-xl=902 occurrences / rounded-lg=367 / rounded-2xl=310 → inconsistency in card radius choice.
+  * Shadow utility: 106 occurrences across 33 files (low adoption of consistent shadow tokens).
+  * StatCard (`@/components/ui/stat-card`): used in ONLY 2 files despite existing. Massive adoption gap.
+  * FlashingChangeCell (`@/components/shared/FlashingChangeCell`): used in ONLY 1 file.
+  * LockModal/LockedContent/PaywallListener/AuthGate family: 81 occurrences in 11 files → tightly scoped, well-isolated.
+- Sampled `src/components/shared/PredictionCard.tsx`, `FlashingPriceCell.tsx`, `LazyTabLoader.tsx`, `ErrorBoundary.tsx`, `src/components/auth/LockModal.tsx`, `src/components/ui/stat-card.tsx`, `src/lib/format.ts`, `src/modules/sharia/components/ShariaBadge.tsx` → confirmed good shared primitives exist but adoption is uneven.
+- Confirmed `src/lib/format.ts` (formatPrice/formatNumber/formatPercent/formatVolume/formatDate) is the canonical util — but many components still inline `toLocaleString`, `.toFixed(2) + ' ج.م'`, custom formatPrice copies (e.g. `PredictionCard.tsx` defines its own local `formatPrice` instead of importing the shared one).
+
+Stage Summary:
+- Design token foundation EXISTS (CSS vars in globals.css + tailwind color mapping) BUT (a) success/warning/danger vars are NOT wired into tailwind theme extend, (b) no TypeScript `design-tokens.ts` reference file, (c) components bypass the tokens and use raw Tailwind palette (5,505 hits) + raw hex (1,359 hits).
+- Shared primitive set EXISTS (StatCard, PredictionCard, FlashingPriceCell, FlashingChangeCell, LazyTabLoader, ErrorBoundary, LockModal, LockedContent, MiniSparkline, ShariaBadge, UnifiedTable) but adoption is poor: StatCard=2/231 files, FlashingChangeCell=1/231 files, LazyTabLoader used only inside next/dynamic wrappers.
+- Worst duplication: (1) ad-hoc loading spinners in 147 files, (2) ad-hoc empty-state copy in 241 files, (3) inline buy/sell signal badges scattered across market-analysis/radar/predictions/portfolio modules, (4) StatCard-like ad-hoc card patterns in 40+ files despite StatCard primitive existing, (5) formatPrice reimplementations in 4+ files.
+- Visual inconsistency: rounded-xl (902) vs rounded-lg (367) vs rounded-2xl (310) used for similar card surfaces across modules with no documented rule.
+- Top 5 refactor priorities identified below in final report.
+
+---
+Task ID: DESIGN-SYSTEM-1 (audit+plan)
+Agent: Alpha (Frontend Dragon — Z.ai Code, with Explore subagent for audit scan)
+Task: جون — DESIGN-SYSTEM-1: audit الـ frontend duplication + inconsistencies + design unified component library + design tokens + refactor strategy (planning only — .md بس، بلا كود).
+
+Work Log:
+- STEP 1 REVIEW (recovery check): git status clean (A-P3 auto-committed by platform as 0d7b2bc). lint exit 0. مفيش crash damage.
+- git pull --rebase origin main: دمج 4 commits جديدة من برافو (docs team personality + predictions fix + liquidity-radar route + SESSION-STATE). HEAD=92197fe. مفيش conflict (origin ما لمستش ملفات A-P3).
+- PUSH: المالك رفع الـ push gate ("ارفع بستمرار"). push origin main: e9dd708..92197fe. A-P3 بقى على origin.
+- AUDIT (Explore subagent): مسح src/components + src/modules (medium thoroughness):
+  * Loading states: 482 occurrences / 147 files (HIGH).
+  * Empty states: 523 occurrences / 241 files (HIGH).
+  * Signal badges inline: 2,278 occurrences / 250+ files (HIGH) — SIGNAL_STYLES map متكررة.
+  * StatCard adoption gap: ad-hoc in 40+ files, StatCard used in 2 بس (HIGH).
+  * Direct Tailwind palette: 5,505 occurrences / 231 files (HIGH — root cause: --success/--warning/--danger CSS vars موجودة بس tailwind.config مش بـ extendهم).
+  * Hardcoded hex: 1,359 / 88 files (MED — gالبيتهم في SVG/canvas templates).
+  * formatPrice reimplementations: ~10 copies (MED).
+  * Paywall family (A-P3): already shared + well-isolated (DONE).
+- PLAN: wrote DESIGN-SYSTEM-PLAN.md (6 sections):
+  * §1 Audit map (10 ad-hoc components + 7 inconsistency categories + existing inventory).
+  * §2 Unified library structure (primitives/states/cards + 8 component contracts + visual style table).
+  * §3 Design tokens (fix root cause: extend tailwind.config success/warning/danger + design-tokens.ts + migration mapping).
+  * §4 Refactor strategy (5 phases priority-ordered: tokens→states→signal→cards→codemod + acceptance criteria).
+  * §5 The rule (new components في library First + tokens mandatory + migration per-PR + exceptions documented).
+  * §6 Next steps (after John approval).
+
+Stage Summary:
+- ✅ DESIGN-SYSTEM-PLAN.md موجود في root (planning only — مفيش كود).
+- ✅ Audit map: 4 HIGH-severity duplications + 1 root-cause (tokens مش wired) + 3 MED + 1 DONE (paywall family).
+- ✅ Library proposal: primitives/{SignalBadge,SectorBadge,PriceDisplay,StatCard,Sparkline} + states/{LoadingState,EmptyState,ErrorState} + cards/{StockCard,PredictionCardView,MetricRow} + barrel index.ts.
+- ✅ Tokens: extend tailwind.config (success/warning/danger) + design-tokens.ts (SEMANTIC_TONES/RADIUS/SPACING/TYPOGRAPHY).
+- ✅ Refactor: 5 phases (tokens→states→signal→cards→codemod) — priority-ordered + acceptance criteria per phase.
+- ✅ Rule: new components في library First + tokens mandatory + migration per-PR.
+- 🔁 Push gate: المالك رفعه ("ارفع بستمرار"). A-P3 متدفع. DESIGN-SYSTEM-PLAN.md + worklog هـ commit + push.
+- ⚠️ Phase 5 (codemod 5,505 occurrences) محتاج visual smoke-test per module.
+- ⚠️ Hardcoded hex (1,359) في SVG/canvas templates — out of scope (future Phase 2).
