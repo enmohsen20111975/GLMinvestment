@@ -22,8 +22,11 @@
 | 8 | SCREENS-MAP-1 | `a1a407e` | docs | جرد شامل للشاشات (59 view + 26 admin tab) |
 | 9 | ALPHA-FAB-FIX-SPARKLINE-001 | `515f373` | fabric | قتل Math.sin() fabrication في sparkline |
 | 10 | SOSO-AUDIT (worklog vs reality) | — | audit | تحقق من تطابق worklog مع الكود الفعلي |
+| 11 | ALPHA-FAB-FIX-SPECIALIST-001 | `553c2d4` | fabric | قتل entry*0.99/1.01 fabrication في SpecialistAnalysisView |
+| 12 | ALPHA-FAB-FIX-DYN-ANALYSIS-001 | `4e35e02` | fabric | قتل entry*0.97 fabrication في dynamic-analysis-engine |
+| 13 | ALPHA-FAB-FIX-UI-MATH-001 | `544aa89` | audit | مراجعة Math.sin() في 8 UI files — كله exceptions (0 fabrication) |
 
-**الإجمالي:** 9 commits منفردة على origin/main + 1 audit (REBASE-SKIPPED) + 1 verification audit.
+**الإجمالي:** 12 commits منفردة على origin/main + 1 audit (REBASE-SKIPPED) + 1 verification audit.
 
 ---
 
@@ -218,6 +221,67 @@
 
 ---
 
+### 11. ALPHA-FAB-FIX-SPECIALIST-001 — قتل entry*0.99/1.01 Fabrication
+
+**Commit:** `553c2d4`
+**النوع:** fabrication cleanup (Rule 27 — CRITICAL)
+**الملف:** `src/components/advanced-analysis/SpecialistAnalysisView.tsx`
+
+**الشغل:**
+- لقيت fabrication في L1583-1584:
+  * `const entryLow = current != null ? current * 0.99 : null;`
+  * `const entryHigh = current != null ? current * 1.01 : null;`
+  * الكومنت بيقول "Entry zone = current ± 1% (since we don't have ATR)"
+- التعديل: شلت الـ fabrication. entryLow/entryHigh = null. الـ display بيكمل "—" لو null.
+- entry zone لازم من API (predictions.db entry_price_min/max). لو مفيش → null (سياسة الفراغ).
+
+**النتيجة:** lint 0 errors. diff: 3 insertions / 3 deletions (pure fabrication removal).
+
+---
+
+### 12. ALPHA-FAB-FIX-DYN-ANALYSIS-001 — قتل entry*0.97 Fabrication
+
+**Commit:** `4e35e02`
+**النوع:** fabrication cleanup (Rule 27 + Rule 20 — CRITICAL)
+**الملف:** `src/lib/dynamic-analysis-engine.ts`
+
+**الشغل:**
+- لقيت 3 fabrication lines في L429-431:
+  * `if (stopLoss <= 0) stopLoss = entry * (isBuy ? 0.97 : 1.03);`
+  * `if (isBuy && stopLoss >= entry) stopLoss = entry * 0.97;`
+  * `if (!isBuy && stopLoss <= entry) stopLoss = entry * 1.03;`
+- التعديل:
+  * شلت الـ 3 fabrication lines.
+  * حلّ محله: `if (stopLoss invalid) return null` (سياسة الفراغ Rule 27).
+  * غيّرت return type لـ `StructuralTargets | null`.
+  * أضفت `if (targets)` null check في caller (L827) قبل الـ access لـ targets.target.
+- الـ stop من Python فقط (Rule 20 Python=Brain). لو الـ ATR-based computation فشل → null (ممنوع حد محسوب client-side).
+
+**النتيجة:** lint 0 errors. diff: 18 insertions / 7 deletions. الـ caller (`let targets: StructuralTargets | null`) كان already nullable — بتـ handle null صح.
+
+---
+
+### 13. ALPHA-FAB-FIX-UI-MATH-001 — مراجعة Math.sin() في UI
+
+**Commit:** `544aa89`
+**النوع:** audit (classification — Rule 27 review)
+**النطاق:** 8 ملفات في src/ بـ Math.sin() usage
+
+**الشغل:**
+- فحصت 22 Math.sin() usage في 8 ملفات:
+  * **StrategySandbox.tsx (13):** `Math.sin(i * 0.5) * 0.6` = drift simulation في educational paper-trading sandbox → **EXCEPTION** (تعليمي، مش أسعار حقيقية)
+  * **chart-generator.ts (2):** `Math.sin(currentAngle)` = pie chart Y coordinate → **EXCEPTION** (geometry)
+  * **StockInfographicCard.tsx (1):** `Math.sin(a)` = circle point → **EXCEPTION** (geometry)
+  * **MarketPulseWidget.tsx (1):** `Math.sin(rad)` = gauge arc Y → **EXCEPTION** (geometry)
+  * **ContentStudioHub.tsx (1):** `Math.sin(progress * PI * 2)` = pulse animation → **EXCEPTION** (animation)
+  * **VideoEditor.tsx (1):** نفس الـ pulse pattern → **EXCEPTION** (animation)
+  * **LearningVisuals.tsx (1):** `Math.sin(rad)` = circle point → **EXCEPTION** (geometry)
+  * **text-effects.ts (1):** `Math.sin(localProgress * PI * 4)` = text pulse → **EXCEPTION** (animation)
+
+**النتيجة:** **0 fabrication found.** كل الـ 22 usages لـ animation/geometry/education. مفيش ولا واحد بيفبرك أسعار. الـ fabrication الوحيد اللي كان موجود (sparkline) اتمسح في Sub-task 1. مفيش تعديل كود لازم — بس توثيق.
+
+---
+
 ### 10. SOSO-AUDIT — تحقق Worklog vs Reality
 
 **النوع:** audit (verification)
@@ -240,13 +304,14 @@
 
 | المؤشر | القيمة |
 |---------|--------|
-| Commits على origin/main | 9 |
+| Commits على origin/main | 12 |
 | Commits REBASE-SKIPPED | 1 |
-| Files معدّلة في src/ | 5 |
-| Lines أتشتالت (fabrication + dead code) | ~150 |
+| Files معدّلة في src/ | 8 |
+| Lines أتشتالت (fabrication + dead code) | ~180 |
 | API routes اتدّقت | 111 |
 | Fetch call sites اتدّقت | 428 |
 | Screens اتجرّدت | 59 views + 26 admin tabs |
+| Math.sin() usages classified | 22 (0 fabrication — all exceptions) |
 | Findings موثّقة | 29 (18 + 11) |
 | CRITICAL findings | 6 |
 | HIGH findings | 8 |
@@ -307,9 +372,9 @@
 1. **🔴 `AlertsCenterView.tsx:433-443`** — hardcoded mock alerts (Rule 27 violation). محتاج إزالة فورية (11 سطر edit).
 2. **🟠 `src/lib/db-paths.ts`** — إنشاء Node-side DBPaths SSOT لاستبدال 105+ hardcoded paths.
 3. **🟠 `useApiFetch<T>()` hook** — توحيد الـ error handling لـ ~20+ file بـ silent-fail pattern.
-4. **🟡 Sub-task 2 (ALPHA-FAB-FIX-SPECIALIST)** — قتل `entry*0.99/1.01` في SpecialistAnalysisView.tsx (تكليف قادم).
-5. **🟡 Sub-task 3 (ALPHA-FAB-FIX-DYN-ANALYSIS)** — قتل `entry*0.97` في dynamic-analysis-engine.ts (تكليف قادم).
-6. **🟡 Sub-task 4 (ALPHA-FAB-FIX-UI-MATH)** — مراجعة Math.sin() في 9 UI files (تكليف قادم).
+4. ~~**🟡 Sub-task 2 (ALPHA-FAB-FIX-SPECIALIST)** — قتل `entry*0.99/1.01` في SpecialistAnalysisView.tsx~~ ✅ DONE (commit `553c2d4`)
+5. ~~**🟡 Sub-task 3 (ALPHA-FAB-FIX-DYN-ANALYSIS)** — قتل `entry*0.97` في dynamic-analysis-engine.ts~~ ✅ DONE (commit `4e35e02`)
+6. ~~**🟡 Sub-task 4 (ALPHA-FAB-FIX-UI-MATH)** — مراجعة Math.sin() في 9 UI files~~ ✅ DONE (commit `544aa89` — 0 fabrication, all exceptions)
 
 ---
 
