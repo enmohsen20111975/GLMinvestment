@@ -69658,3 +69658,34 @@ Stage Summary:
 - ✅ 0 فقدان قدرة: V40.2 veto شغّال + daily_opportunities شغّالة + helpers لسه شغّالة.
 - ⚠️ STEP 5 (kill 4 analyzers) اتعمل SKIP بأمر جون ("متشيلش الـ 4 analyzers").
 - 🔁 Push gate: جون وافق → هـ commit + push.
+
+---
+Task ID: DATA-ENGINE-AUDIT-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — DATA-ENGINE-AUDIT-1: فحص عميق لمحرك البيانات (فهم، مش fix)
+
+Work Log:
+- Step 0: شيلت 4 dead files (recorder + 3 maestro scripts) — git rm.
+- Step 1: فحصت data_engine/ (port 5000):
+  * main.py (1,165 lines، 18 endpoints).
+  * sync.py (5 sync functions: current/historical/crypto/metals/full).
+  * realtime_sync.py (webhook notifications لـ Next.js).
+  * intraday_storage.py (stock/crypto/commodity tick storage).
+  * 22 scrapers: TradingView + Yahoo + CoinGecko + EGKSCO + EGXPilot + Investing + Forex.
+- Step 2: فحصت كل DBs بـ SELECT (قراءة بس):
+  * 12 DBs + 40+ tables فحصت.
+  * row counts + last update لكل table.
+- Step 3: رسمت data flow map (ASCII diagram + per-domain flow).
+- Step 4: لقّيت 5 findings:
+  * 🔴 STALE: stocks.db.stocks (4 months!), intraday.stock_intraday (4 days), aiPrediction (7 days), historical_data (3 days), historical_prices (8 days).
+  * ✅ NO mismatch: egksco vs price_history (100/100 sample match).
+  * 🟡 6 empty tables (egksco_stocks, news_articles, metrics, daily_prices, cryptos).
+  * 🟡 bottlenecks: crypto_prices=2M, gold_prices=850K.
+- Step 5: كتبت DATA-ENGINE-MAP.md (تقرير كامل).
+
+Stage Summary:
+- ✅ DATA-ENGINE-MAP.md اتكتب (map + DB audit + flow + findings).
+- ✅ 4 dead files اتشالوا (git rm).
+- 🔴 Top 3 risks: stocks.db.stocks stale 4 months + intraday.stock_intraday stale 4 days + aiPrediction stale 7 days.
+- ✅ NO mismatch بين egksco + price_history (100% match).
+- 🚫 مفيش أي fix — audit only per mandate.
