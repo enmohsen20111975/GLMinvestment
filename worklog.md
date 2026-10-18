@@ -9969,9 +9969,7 @@ Stage Summary:
 - الجزء 3 (delete top-performers) محتاج Part 2 finishes أول (لأن الـ merge بـ يـ happen جوه StockScreener الجديد)
 - إجمالي تقدير الوقت: 12-16 ساعة (sandbox فقط — لا push على الإنتاج)
 
-============================================================
 # خطة تنفيذ إعادة بناء الـ 4 شاشات + stop-loss
-============================================================
 
 ## 0) خريطة الـ dependency بين الأجزاء
 ```
@@ -29553,9 +29551,7 @@ Stage Summary:
 - الجزء 3 (delete top-performers) محتاج Part 2 finishes أول (لأن الـ merge بـ يـ happen جوه StockScreener الجديد)
 - إجمالي تقدير الوقت: 12-16 ساعة (sandbox فقط — لا push على الإنتاج)
 
-============================================================
 # خطة تنفيذ إعادة بناء الـ 4 شاشات + stop-loss
-============================================================
 
 ## 0) خريطة الـ dependency بين الأجزاء
 ```
@@ -58972,9 +58968,7 @@ Work Log:
 Stage Summary:
 - The engine uses ONLY ~HALF its power. RADAR = bypass + score boost + 1-of-8 counter-trend conditions; it is NOT a hard first gate. ORDER FLOW (buy_volume/sell_volume/delta_volume/pressure) = DISPLAY ONLY (explicitly disabled per A/B test). VOLUME PROFILE / POC = SOFT signal (boost/penalty to position size, not a hard gate). The 6 PROOFS + ENTRY GATE + REGIME are the actual hard decision drivers. See full structured report below for the 10 sections.
 
-============================================================
 FULL ARCHITECTURE MAP — PREDICTION / DECISION PIPELINE
-============================================================
 
 ╔══ SECTION 1 — MAIN PREDICTION / DECISION ENGINE ══╗
 
@@ -59404,9 +59398,7 @@ VERDICT (§9): **RS IS BOTH A HARD GATE (Entry Gate check #4) AND A PROOF (#6) T
 
 VERDICT (§10): **egksco_scraper writes OHLCV + buy/sell/delta/pressure to TWO tables; prediction engine reads back the OHLCV (prices + regime + benchmark) but explicitly IGNORES the buy/sell/delta columns (display-only).**
 
-============================================================
 FINAL VERDICT — IS THE ENGINE USING FULL POWER?
-============================================================
 
 The engine is using ONLY ~HALF of its power:
 
@@ -59514,9 +59506,7 @@ Work Log:
 
 Stage Summary:
 
-============================================================
 FINAL MAPPING — TELEGRAM + LIQUIDITY ALERT SYSTEM
-============================================================
 
 **1. Telegram messaging — current state (16 files in vps-service/telegram/)**
 
@@ -59634,9 +59624,7 @@ What's missing from a customer's perspective:
 4. ❌ NO radar path shown to customer — the A_pre_surge / B_quiet_accumulation_strong state is internal, never reaches the customer
 5. ❌ NO exit_radar warnings to customer — X1_distribution_strong / X5_kill_switch are internal blocks only, customer doesn't know WHICH stocks to avoid
 
-============================================================
 OVERALL VERDICT — TELEGRAM-LIQUIDITY-EXPLORE
-============================================================
 
 The 4 new alert types the owner wants are FULLY FEASIBLE with existing data:
 
@@ -60640,7 +60628,6 @@ Work Log:
 - Generated full report → /home/z/my-project/tmp_audit/data_audit_report.txt (785 lines)
 
 Findings — Section 1: ALL TABLES (29 total)
-==========================================
 1.  btc_local_prices          (122,072 rows)   timestamp   latest 2026-10-06 15:39:44
 2.  crypto_prices             (1,596,614 rows) timestamp   latest 2026-10-06 16:21:11
 3.  egksco_price_history      (73,986 rows)    price_date  latest 2026-10-06       ← primary price feed
@@ -60666,7 +60653,6 @@ Findings — Section 1: ALL TABLES (29 total)
 29. sharia_purification_rates (covered above)
 
 Findings — Section 3 & 4: DTPP & HRHO
-=====================================
 DTPP (دلتا للطباعة والتغليف — Egyptian stock) appears in 14 tables; price-bearing ones are:
 - egksco_price_history: 55 rows. latest price_date = 2026-10-06, close_price = 315.99
   • ⚠ ANOMALY: 2026-09-12 close=124.68 (market='مصر', source='yahoo'); 2026-09-13 close=361.76 (market='US', source='egksco') → 2.9× jump in one day with source/market flip → feed switch carrying stale June price (124.68 matches the June 7 price in stock_prices table verbatim)
@@ -60683,7 +60669,6 @@ HRHO (هيرميس / EFG Hermes — Egyptian stock) appears in 13 tables:
 - sharia_metrics: market='EGX'
 
 Findings — Section 5: Cross-table close_price comparison
-========================================================
 Only egksco_price_history contains a (date, close_price) pair for DTPP/HRHO — no other table has both a date column and a price column matching the symbol. Therefore cross-table disagreement at the SAME date cannot happen for DTPP/HRHO inside data_engine.db (the price disagreement exists in OTHER dbs — predictions.db/stocks.db per worklog Task 1).
 However, the egksco_price_history table itself has CONFLICTING market/source labels on consecutive days:
 - DTPP 2026-09-12: close=124.68, market='مصر',   source='yahoo'
@@ -60692,7 +60677,6 @@ However, the egksco_price_history table itself has CONFLICTING market/source lab
 - HRHO 2026-09-13: close=25.73,  market='US',    source='egksco'
 
 Findings — Section 6: MARKET column inconsistency
-================================================
 egksco_price_history: 'US'=70,511, 'مصر'=3,129, 'أمريكا'=346 → 95%+ of rows are EGX stocks (DTPP/HRHO/TORA/ACRO/ALEX) mislabeled 'US'
 stocks:                'TADAWUL'=392, 'EGX'=205, 'مصر'=190, 'US'=62, 'KSE'=137, 'QSE'=67 — SAME market ('EGX' vs 'مصر') labeled two ways; 62 'US' rows are likely mis-tagged Egyptian stocks
 historical_data:      'US'=28,363, 'EGX'=350 — should be reviewed; 'US' here likely includes EGX tickers under a generic label
@@ -60702,7 +60686,6 @@ tab_balance_sheet / cash_flow / income_statement: market column POLLUTED with fi
 tab_technical_analysis: market column POLLUTED with rating strings ('شراء قوي','بيع', etc.)
 
 CRITICAL FINDINGS (customer "out of sync" root causes)
-======================================================
 1. egksco_price_history (primary price feed for 73,986 rows) mislabels ~95% of Egyptian rows as market='US' — any per-market filter or currency conversion downstream sees wrong context.
 2. DTPP carries STALE JUNE PRICE (124.68) for 8 rows in egksco_price_history dated up to 2026-09-12. Any prediction/radar computed before the 2026-09-13 feed switch was based on that stale price (matches the customer complaint of "stale prices").
 3. The DTPP price jumps from 124.68 → 361.76 between 2026-09-12 and 2026-09-13 in the SAME table — the only signal of the feed switch is the `source` and `market` columns flipping. No reconciliation/backfill was done for the older rows.
@@ -60713,7 +60696,6 @@ CRITICAL FINDINGS (customer "out of sync" root causes)
 8. tab_balance_sheet / cash_flow / income_statement / technical_analysis have schema-collision garbage in the `market` column (fiscal-period and rating strings) — column-shifted scraper output. Any "WHERE market=..." filter on these tables is unreliable.
 
 NEXT ACTIONS RECOMMENDED
-========================
 A. Backfill/normalize the `market` column in egksco_price_history: replace 'US' → 'EGX' for Egyptian symbols (and 'أمريكا' → 'US' only for genuine US tickers).
 B. Re-fetch and overwrite the 8 stale DTPP rows (2026-09-12 and earlier) and the corresponding yahoo-sourced rows for all affected EGX tickers — they hold wrong June prices in Sept dates.
 C. Truncate or stop using stock_prices (stale since June 7). Migrate readers to egksco_price_history.
@@ -69765,3 +69747,25 @@ Stage Summary:
 - ✅ Script enhanced بـ --check-refs + --exclude.
 - ⚠️ FLAG: 9 tables NOT referenced خالص → safe to drop بـ confirmed (alert_history, gold_alerts, morning_reports, إلخ).
 - ⚠️ FLAG: للـ production run: استخدم --check-refs + --exclude=paper_trades,signal_logs (precaution).
+---
+Task ID: repo-transfer-1
+Agent: Z.ai Code (Alpha Team Lead, acting directly — no subagents)
+Task: نقل مستودع GLMinvestment إلى /home/z/my-project (الساندبوكس الدستوري) + التحقق من git state + التشغيل.
+
+Work Log:
+- قرأت Documentation/00-CONSTITUTION.md (الدستور) — أكّد إن /home/z/my-project هو الساندبوكس الدستوري (Next على 3000 + Python على 8010 + Caddy على 81).
+- أوقفت الـ dev server بتاع الساندبوكس (PID 1160) لعمل swap.
+- نقلت الساندبوكس القديم؛ 注意: `upload` (fuse mount ossfs) لا يُنقل — بقي في مكانه.
+- clone لـ GLMinvestment main (depth 100, single-branch, no-tags) عبر credential helper (token في env مش في URL/config).
+- overlay محتوى الريبو على /home/z/my-project (الحفاظ على mount الـ upload). origin = HTTPS نظيف (من غير token).
+- عدّلت package.json: dev script من `setsid -f bash scripts/watchdog.sh; sleep 10` إلى `next dev -p 3000 2>&1 | tee dev.log` (عقد platform + دستور: Next على 3000). تغيير غير مُلتزم به — ينتظر موافقة جون.
+- bun install: نجح (1150 package، Next 14.2.28، postinstall عدى).
+- bun run lint: نجح (exit 0).
+- تشغيل next dev على 3000: HTTP 200، صفحة / تـ render (عنوان عربي "دليل الاستثمار..."، app shell، hydration شغّال، مفيش runtime errors قاتلة). التحقق بـ agent-browser (title/url/screenshot/eval).
+- Page عالقة على "جارٍ التحميل..." لأن Python على 8010 + Data-Engine على 5000 مش شغّالين في الساندبوكس (سلوك صادق — loading، مفيش بيانات مزوّرة).
+
+Stage Summary:
+- الريبو في مكانه الصحيح على main، origin نظيف، git status نظيف ما عدا M package.json.
+- التطبيق يـ compile ويخدم 200 على 3000.
+- findings حرجة لجون: (1) التوكن اتسرب في البرومبت — لازم rotation فوري. (2) كدبة نسخة: package.json بـ pin Next 14.2.28 لكن الدستور/README بيقولوا Next 16. (3) imports مكسورة في كودهم: 'apiClient' مش exported من '@/lib/api-client'، 'StockDetailDrawer' مش exported (warnings مش قاتلة). (4) dev server مش بـ persists بين tool calls (platform reap) — Preview Panel هيفضي لحد ما platform يرمّم `bun run dev` (دلوقتي الـ script صحيح).
+- skills/ (platform-managed) ضاع في الـ swap (مش جزء من الريبو) — مش مطلوب للمهمة دي.

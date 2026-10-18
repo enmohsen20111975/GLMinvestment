@@ -3,7 +3,7 @@
   "version": "3.4.41",
   "private": true,
   "scripts": {
-    "dev": "setsid -f bash scripts/watchdog.sh; sleep 10",
+    "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "prebuild": "prisma generate && prisma generate --schema=prisma/auth-schema.prisma && prisma generate --schema=prisma/predictions-schema.prisma",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 next build --no-lint",
     "build:prod": "NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 next build --no-lint",
