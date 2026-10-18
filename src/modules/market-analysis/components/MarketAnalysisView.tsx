@@ -12,6 +12,9 @@ import { useTranslation } from '@/lib/i18n-context';
 import { OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
 import { MarketSelector } from '@/components/shared/MarketSelector';
 import { RefreshAnalyticsButton } from '@/components/recommendations/RefreshAnalyticsButton';
+// BLUEPRINT Phase 1: unified component library
+import { ActionMenu } from '@/components/shared/ui';
+import { Share2, Copy, Image as ImageIcon, FileText } from 'lucide-react';
 // FOCUS-AUDIT-FIX (2026-10-01): UnifiedPredictionsTab بديل الـ 3 تابات المنفصلة
 // (متابعة + ملخص + التوقعات) — كلهم بيقرأوا من نفس المصدر فدمجناهم في تاب واحد
 // بـ 3 sub-views (الحالية / الأداء / الملخص) → بيانات متوافقة 100%.
@@ -182,11 +185,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 flex-shrink-0" />
+          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-profit flex-shrink-0" />
           <span>{t('marketAnalysis.title')}</span>
           {/* v3.66.9 LIVE badge — بيتحدث تلقائياً خلال جلسة EGX */}
           {isLive && (
-            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 animate-pulse">
+            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-profit/10 text-profit animate-pulse">
               <Activity className="h-3 w-3" />
               LIVE · {liveCountdown}s
             </span>
@@ -211,7 +214,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 h-auto gap-1">
           {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل الـ 3 المنفصلة */}
           <TabsTrigger value="predictions" className="flex items-center gap-1">
-            <Target className="h-4 w-4 text-emerald-600" />
+            <Target className="h-4 w-4 text-profit" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.predictions')}</span>
           </TabsTrigger>
           <TabsTrigger value="status" className="flex items-center gap-1">
@@ -220,20 +223,20 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           </TabsTrigger>
           {/* Phase P5: تتبع حركة القطاعات */}
           <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
-            <Layers className="h-4 w-4 text-teal-600" />
+            <Layers className="h-4 w-4 text-whale" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.sectorsTracking')}</span>
           </TabsTrigger>
           <TabsTrigger value="historical-trades" className="flex items-center gap-1">
-            <History className="h-4 w-4 text-blue-600" />
+            <History className="h-4 w-4 text-warning" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.historicalTrades')}</span>
           </TabsTrigger>
           <TabsTrigger value="net-picks" className="flex items-center gap-1">
-            <Target className="h-4 w-4 text-emerald-600" />
+            <Target className="h-4 w-4 text-profit" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.netPicks')}</span>
           </TabsTrigger>
           {/* RESTRUCT-A-P2: reports tab merged from top-level menu */}
           <TabsTrigger value="reports" className="flex items-center gap-1">
-            <FileBarChart className="h-4 w-4 text-amber-600" />
+            <FileBarChart className="h-4 w-4 text-warning" />
             <span className="hidden sm:inline">التقارير</span>
           </TabsTrigger>
         </TabsList>
@@ -274,10 +277,31 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         </TabsContent>
       </Tabs>
 
-      {/* Social Share Footer */}
+      {/* Social Share Footer — BLUEPRINT Phase 2: ActionMenu موحد */}
       <Card className="mt-4 bg-muted/50">
-        <CardContent className="p-3 text-center text-sm text-muted-foreground">
-          <p>{t('marketAnalysis.socialFollow')}</p>
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-sm text-muted-foreground">{t('marketAnalysis.socialFollow')}</p>
+            <ActionMenu
+              triggerVariant="button"
+              triggerLabel="خيارات المشاركة"
+              items={[
+                { id: 'share', label: 'مشاركة الرابط', icon: Share2 },
+                { id: 'copy', label: 'نسخ النص', icon: Copy },
+                { id: 'image', label: 'تصدير صورة', icon: ImageIcon },
+                { id: 'text', label: 'تصدير نص', icon: FileText },
+              ]}
+              onSelect={(id) => {
+                if (typeof window !== 'undefined') {
+                  if (id === 'share' && navigator.share) {
+                    navigator.share({ title: 'دليل الاستثمار', url: window.location.href }).catch(() => {});
+                  } else if (id === 'copy') {
+                    navigator.clipboard?.writeText(window.location.href).catch(() => {});
+                  }
+                }
+              }}
+            />
+          </div>
           <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
             <a href={OFFICIAL_LINKS.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               invist.m2y.net

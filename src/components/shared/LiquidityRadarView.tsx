@@ -33,6 +33,8 @@ import { useAppStore } from '@/lib/store';
 import { useSession } from 'next-auth/react';
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
+// BLUEPRINT Phase 1: unified component library
+import { FlowPhaseTag, UnifiedEmptyState } from '@/components/shared/ui';
 
 // ============================================================================
 // Types
@@ -84,10 +86,10 @@ interface RadarStock {
 type BucketKey = 'all' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
 const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: string }> = [
   { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted text-muted-foreground' },
-  { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
-  { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' },
-  { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30' },
-  { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' },
+  { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-profit/10 text-profit border-profit/30' },
+  { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-loss/10 text-loss border-loss/30' },
+  { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-whale/10 text-whale border-whale/30' },
+  { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-warning/10 text-warning border-warning/30' },
 ];
 const PAGE_SIZE = 25;
 const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive
@@ -135,9 +137,9 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 const PHASE_COLORS: Record<string, string> = {
-  'بيبلع على الهادي': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  'بيتحضر': 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
-  'بيصرف': 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+  'بيبلع على الهادي': 'bg-profit/10 text-profit border-profit/20',
+  'بيتحضر': 'bg-whale/10 text-whale border-whale/20',
+  'بيصرف': 'bg-loss/10 text-loss border-loss/20',
   'بيانات غير كافية': 'bg-muted text-muted-foreground border-border',
 };
 
@@ -273,7 +275,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         const pct = row.change_percent;
         const isPositive = (pct ?? 0) >= 0;
         return (
-          <span className={cn('font-mono tabular-nums font-semibold', isPositive ? 'text-emerald-500' : 'text-rose-500')}>
+          <span className={cn('font-mono tabular-nums font-semibold', isPositive ? 'text-profit' : 'text-loss')}>
             {fmtPct(pct)}
           </span>
         );
@@ -299,7 +301,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         const flow = row.whale?.net_flow_egp;
         const isPositive = (flow ?? 0) >= 0;
         return (
-          <span className={cn('font-mono tabular-nums font-bold', isPositive ? 'text-emerald-500' : 'text-rose-500')}>
+          <span className={cn('font-mono tabular-nums font-bold', isPositive ? 'text-profit' : 'text-loss')}>
             {fmtFlow(flow)}
           </span>
         );
@@ -334,7 +336,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
             <Lock className="w-3 h-3" /> بعد التسجيل
           </span>
         ) : (
-          <span className="font-mono tabular-nums font-semibold text-emerald-500">
+          <span className="font-mono tabular-nums font-semibold text-profit">
             {fmtPrice(row.entry_defense?.entry_level)}
           </span>
         )
@@ -351,7 +353,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
             <Lock className="w-3 h-3" /> بعد التسجيل
           </span>
         ) : (
-          <span className="font-mono tabular-nums font-semibold text-rose-500">
+          <span className="font-mono tabular-nums font-semibold text-loss">
             {fmtPrice(row.entry_defense?.defense_level)}
           </span>
         )
@@ -368,7 +370,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
             <Lock className="w-3 h-3" /> بعد التسجيل
           </span>
         ) : (
-          <span className="font-mono tabular-nums font-semibold text-teal-500">
+          <span className="font-mono tabular-nums font-semibold text-whale">
             {fmtPrice(row.entry_defense?.resistance_level)}
           </span>
         )
@@ -387,26 +389,19 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     );
   }
 
-  // ─── Error / empty state ───
+  // ─── Error / empty state — BLUEPRINT Phase 3: UnifiedEmptyState ───
   if (error || !data || !data.stocks || data.stocks.length === 0) {
     return (
       <div className="space-y-4 p-4" dir="rtl">
         <MarketSelectorBar activeMarket={market} onSelect={setActiveMarket} currency={currency} />
         <PulseRibbon market={market} scannedCount={data?.scanned_count ?? 0} />
-        <Card className="bg-card border-border">
-          <CardContent className="p-8 text-center space-y-3">
-            <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
-            <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-              {error || 'لا توجد بيانات رادار متاحة حالياً'}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها
-            </p>
-            <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
-              <RefreshCw className="w-3.5 h-3.5" /> إعادة المحاولة
-            </Button>
-          </CardContent>
-        </Card>
+        <UnifiedEmptyState
+          variant={error ? 'error' : 'empty'}
+          title={error ? 'تعذّر تحميل الرادار' : 'لا توجد إشارات رادار حالياً'}
+          description={error || 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'}
+          actionLabel="إعادة المحاولة"
+          onAction={fetchData}
+        />
       </div>
     );
   }
@@ -444,7 +439,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
               className={cn(
                 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1',
                 active
-                  ? f.cls + ' shadow-sm ring-1 ring-emerald-500/20'
+                  ? f.cls + ' shadow-sm ring-1 ring-profit/20'
                   : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
               )}
             >
@@ -459,7 +454,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
             type="checkbox"
             checked={hideInactive}
             onChange={(e) => setHideInactive(e.target.checked)}
-            className="w-3.5 h-3.5 accent-emerald-500"
+            className="w-3.5 h-3.5 accent-profit"
           />
           إخفاء الأسهم الخاملة (&lt;100K)
         </label>
@@ -550,10 +545,10 @@ function PulseRibbon({ market, scannedCount }: { market: string; scannedCount: n
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-profit opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-profit" />
           </span>
-          <span className="font-mono text-[10px] text-emerald-500 uppercase tracking-widest">WYCKOFF-RADAR-V4</span>
+          <span className="font-mono text-[10px] text-profit uppercase tracking-widest">WYCKOFF-RADAR-V4</span>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-1.5 text-xs">
@@ -563,7 +558,7 @@ function PulseRibbon({ market, scannedCount }: { market: string; scannedCount: n
       </div>
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Shield className="w-3.5 h-3.5 text-emerald-500" />
+          <Shield className="w-3.5 h-3.5 text-profit" />
           <span>بروتوكول Rule 80 نشط</span>
         </div>
         <div className="h-4 w-px bg-border" />
@@ -597,7 +592,7 @@ function MarketSelectorBar({
             className={cn(
               'px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors',
               activeMarket === m.code
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-profit text-profit-foreground shadow-sm'
                 : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
           >
@@ -607,7 +602,7 @@ function MarketSelectorBar({
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-xs text-muted-foreground">العملة:</span>
-        <span className="font-mono text-sm font-bold text-emerald-500 bg-muted px-2 py-0.5 rounded-md">
+        <span className="font-mono text-sm font-bold text-profit bg-muted px-2 py-0.5 rounded-md">
           {currency}
         </span>
       </div>

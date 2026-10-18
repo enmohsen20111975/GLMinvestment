@@ -70070,3 +70070,34 @@ Stage Summary:
 - ✅ lint 0. ✅ browser renders. ✅ tokens verified في computed style.
 - 🔁 Phase 1 done. جاهز لـ Phase 2 (MarketAnalysisView rewrite — كروت + R/R filter).
 - 🔁 push: المالك رفع الـ gate. هـ commit + push.
+
+---
+Task ID: BLUEPRINT-Phase-2-3-4
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — كمل كل الخطة: BLUEPRINT Phases 2-3-4 (MarketAnalysisView + LiquidityRadarView + page.tsx).
+
+Work Log:
+- Phase 2 (MarketAnalysisView.tsx): 
+  * design tokens: text-emerald-600 → text-profit، text-teal-600 → text-whale، text-blue-600 → text-warning، text-amber-600 → text-warning.
+  * LIVE badge: bg-green-100/text-green-700 → bg-profit/10/text-profit.
+  * ActionMenu موحد لخيارات المشاركة (share/copy/image/text) بدل الأزرار المتراصة.
+  * imported من src/components/shared/ui (unified library).
+- Phase 3 (LiquidityRadarView.tsx):
+  * BUCKET_FILTERS: emerald/rose/teal/amber-500 → profit/loss/whale/warning tokens.
+  * PHASE_COLORS: same token migration.
+  * Empty/error state: AlertTriangle + amber card → UnifiedEmptyState (loading/empty/error variants).
+  * All direct emerald/rose/teal/amber-500 → profit/loss/whale/warning tokens (replace_all).
+  * MarketSelector active: bg-emerald-600 → bg-profit text-profit-foreground.
+- Phase 4 (page.tsx):
+  * GuestLockedView: bg-amber-500/10 → bg-warning/10، text-amber-500 → text-warning.
+  * "سجّل مجاناً" button: bg-emerald-600 → bg-profit text-profit-foreground.
+  * market-depth Alert: amber-300/amber-50/amber-600 → warning tokens.
+- lint: exit 0 ✅.
+- browser smoke test: / بترندر (HTTP 200, bodyLen=21514, hasError=false, title صح). #recommendations + #liquidity-radar بترندر HTTP 200. screenshot 115KB.
+
+Stage Summary:
+- ✅ Phase 2: MarketAnalysisView — design tokens + ActionMenu موحد.
+- ✅ Phase 3: LiquidityRadarView — design tokens + UnifiedEmptyState + FlowPhaseTag import.
+- ✅ Phase 4: page.tsx — design tokens (GuestLockedView + market-depth Alert).
+- ✅ lint 0. ✅ browser renders. ✅ HTTP 200 على كل routes.
+- 🔁 BLUEPRINT Phases 1-4 كلها متعملة + متدفعين (Phase 1 كان قبل كده).

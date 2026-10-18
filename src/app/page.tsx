@@ -426,8 +426,8 @@ function GuestLockedView({ view }: { view: string }) {
       role="status"
       aria-live="polite"
     >
-      <div className="inline-flex items-center justify-center mb-4 size-16 rounded-2xl bg-amber-500/10 ring-2 ring-amber-500/20">
-        <Lock className="size-8 text-amber-500" />
+      <div className="inline-flex items-center justify-center mb-4 size-16 rounded-2xl bg-warning/10 ring-2 ring-warning/20">
+        <Lock className="size-8 text-warning" />
       </div>
       <h2 className="text-xl font-bold mb-2">هذه الصفحة تتطلب تسجيل الدخول</h2>
       <p className="text-sm text-muted-foreground mb-5 max-w-md">
@@ -445,7 +445,7 @@ function GuestLockedView({ view }: { view: string }) {
         <Button
           onClick={() => setShowLoginPrompt(true)}
           size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+          className="bg-profit hover:bg-profit/90 text-profit-foreground gap-1.5"
         >
           <Lock className="size-3.5" />
           سجّل مجاناً
@@ -678,13 +678,13 @@ function AppShell() {
                   </SafeWidget>
                 </section>
               ) : (
-                <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
-                  <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+                <Alert className="border-warning/30 bg-warning/5 dark:border-warning/40">
+                  <Info className="h-4 w-4 text-warning" />
+                  <AlertDescription className="text-sm text-warning">
                     <span className="font-semibold">
                       بيانات تدفّق المستثمرين والسيولة القطاعية وضغط الجلسة متاحة لسوق EGX فقط.
                     </span>
-                    <span className="block mt-1 text-xs text-amber-700 dark:text-amber-300">
+                    <span className="block mt-1 text-xs text-warning/80">
                       جدول العملات والذهب أعلاه متاح لكل الأسواق. للوصول لبيانات EGX intraday،
                       بدّل السوق إلى 🇪🇬 مصر من قائمة الأسواق بأعلى الصفحة.
                     </span>
