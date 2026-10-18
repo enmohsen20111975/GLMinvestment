@@ -70038,3 +70038,35 @@ Stage Summary:
 - ✅ lint 0. ✅ grep clean. ✅ routes don't crash.
 - ⚠️ data_engine.db + price_history.db مش موجودين في sandbox (backend/data concern). الـ acceptance tests للـ gold 7160 + crypto ~81500 محتاجة data_engine.db present. الـ code صحيح للـ production.
 - 🔁 push: المالك رفع الـ gate. هـ commit + push بعد verification.
+
+---
+Task ID: BLUEPRINT-Phase-1
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — BLUEPRINT-UNIFIED-SCREENS Phase 1: بناء مكتبة المكونات الموحدة (8 components) + design tokens.
+
+Work Log:
+- قرأت Documentation/BLUEPRINT-UNIFIED-SCREENS.md (العقد النهائي لألفا — 4 phases).
+- git pull --rebase: دمج 3 commits (BLUEPRINT + Jimmy profile + Bravo correction). HEAD=42ea579.
+- Phase 1a: design tokens:
+  * globals.css: أضفت --profit / --loss / --whale (+ foreground) في :root + .dark (light + dark mode).
+  * tailwind.config.ts: أضفت profit/loss/whale + success/warning/danger لـ colors.extend (كانوا missing).
+  * verified: getComputedStyle(--profit)=160 84% 39%, --loss=0 84% 60%, --whale=189 95% 43% ✅.
+- Phase 1b-h: بنيت الـ 8 components في src/components/shared/ui/:
+  1. PriceDisplay.tsx — سعر + change% + سهم + currency (sm/md/lg, tabular-nums).
+  2. SignalBadge.tsx — BUY/SELL/HOLD/WAIT/STRONG_*/AVOID + عربي + strength (soft/solid).
+  3. RiskRewardBadge.tsx — R/R ratio + red لو < 1.8 (Rule 18 دستوري).
+  4. FlowPhaseTag.tsx — تعريب أكواد الباك إند (B_quiet_accumulation_strong → "تجميع هادئ مؤسسي").
+  5. UnifiedEmptyState.tsx — loading/empty/error variants + animated pulse.
+  6. FilterDrawer.tsx — Sheet right-side + apply/reset buttons.
+  7. StockDetailDrawer.tsx — Sheet wide + sticky header + ticker badge.
+  8. ActionMenu.tsx — DropdownMenu + items[] + danger tone.
+  + index.ts barrel export.
+- lint: exit 0 ✅.
+- browser smoke test: صفحة / بترندر (title + 168KB screenshot)، tokens متوصلة (computed style verified).
+
+Stage Summary:
+- ✅ 8 components مبنية في src/components/shared/ui/ + barrel index.ts.
+- ✅ design tokens (profit/loss/whale/success/warning/danger) متوصلة في globals.css + tailwind.config.
+- ✅ lint 0. ✅ browser renders. ✅ tokens verified في computed style.
+- 🔁 Phase 1 done. جاهز لـ Phase 2 (MarketAnalysisView rewrite — كروت + R/R filter).
+- 🔁 push: المالك رفع الـ gate. هـ commit + push.
