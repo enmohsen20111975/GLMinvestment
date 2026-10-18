@@ -374,3 +374,25 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 **الـ action (ثابت):** الـ scripts صحيحة + على git. الـ changes محلية. المالك لازم يـ run على laptop/production (Rule 1). الأوامر في Section 16.
 
 **الـ verification culture اشتغل صح:** الوكيل على اللاب توب + جون — الاتنين verify-نا على الـ DBs الحقيقية + لقينا الفجوة. ده النظام بـ يـ catch الـ gaps.
+
+---
+
+## 18. RESOLUTION — برافو vindicated (2026-10-18)
+
+**الـ laptop اتعملها run الـ scripts → 13/13 PASS.** برافو scripts صحيحة + شغّالة على real DBs (persona/master_score/news_signals/bad rows كلهم OK على laptop).
+
+### الـ verdict النهائي:
+- **برافو scripts**: ✅ صحيحة + شغّالة (sandbox + laptop 13/13 PASS).
+- **جون "تزوير"**: ❌ غلط — اتبّنت + صحّحت. الصح: reporting failure.
+- **برافو reporting failure**: ✅ محق — كان لازم يـ clarify "sandbox-only + owner runs on production." اتحلّ (الـ scripts اتنفّذت على laptop).
+
+### الـ verification culture اشتغل صح:
+1. الوكيل على اللاب توب لقى الـ gap (5 FAIL قبل الـ run).
+2. جون verify- على sandbox بتاعه (نفس الفجوة).
+3. المالك ركّب الـ scripts على laptop → 13/13 PASS.
+4. الـ gaps اتبّنت + اتحلّت.
+
+### اللي باقي:
+- **laptop**: سليم ✅ (13/13 PASS).
+- **production VPS**: محتاج الـ 5 أوامر (في Section 16). المالك يـ runها على الـ VPS.
+- **EGXPilot مات** (live price source بديل) — معلّق (مش دلوقتي).
