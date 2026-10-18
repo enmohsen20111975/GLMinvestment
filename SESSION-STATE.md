@@ -5,8 +5,8 @@
 > **التاريخ:** 2026-10-18 (آخر تحديث: see below).  
 > **المستودع:** `/home/z/my-project` (origin/main).  
 > **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
-> **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق منهم + متدفعين لـ origin (`77b9988`). باقي: A-P3/A-P4 + B-P2/B-P3 + الـ data-conflict fixes.  
-> **آخر تحديث:** 2026-10-18 — A-P1 + A-P2 + B-P1 متحقق منهم (page.tsx untouched، tabs مدمجة، paywall middleware + py_compile PASS).
+> **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق + متدفعين. B-P2 green-lit (split: برافو Python + ألفا A-P2.5 subscription-gate.ts). باقي: A-P3/A-P4 + B-P3 + data fixes.  
+> **آخر تحديث:** 2026-10-18 — B-P1 متحقق (4/4 logic tests + fail-safe/closed decision) + B-P2 green-lit + A-P2.5 لألفا. **B-P3 BLOCKED على canonical price decision (الماك).**
 
 ---
 
@@ -70,13 +70,15 @@
 | ✅ **B-P1** | برافو | PASS + متدفع — `require_role` + `require_trial_or_paid` في auth_middleware، مستخدم في ai_routes، py_compile PASS، `API-CONTRACT-PAYWALL.md` مكتوب |
 | 🔜 **A-P3** | ألفا | Auth UI (Guest Mode + Trial soft + soft paywall بالاَ contract) |
 | 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
-| 🔜 **B-P2** | برافو | trial fix (14 + populate `trial_ends_at` + admin reset) |
+| 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | green-lit — برافو: register trigger + admin reset + auth.db migration (write-only) + fail-closed للـ paid. ألفا: `TRIAL_DAYS 7→14` + امسح كومنت 30 + seed free=14 |
 | 🔜 **B-P3** | برافو | stocks/crypto unification (canonical `stocks.db`) — BLOCKED لحد canonical price decision |
 
 ### ملاحظات verify (جون):
 - A-P1: تبّت `page.tsx` ما اتلمس (git log empty للملف في الـ A-P1/A-P2 commits) → Rule 67 محترمة.
 - A-P2: لقيت comments `RESTRUCT-A-P2` في الـ 3 views + TabsTrigger imports — tabs فعلًا مدمجة.
-- B-P1: `require_role(min_tier, require_trial)` + `require_trial_or_paid` موجودين + مستوردين + مستخدمين في ai_routes. ⚠️ محتاج تبّيت إن الـ decorator متطبّق على كل الـ advanced endpoints (مش بس ai_routes) — follow-up.
+- B-P1: `require_role(min_tier, require_trial)` + `require_trial_or_paid` موجودين + مستوردين + مستخدمين في ai_routes + py_compile PASS. برافو بلّغ 4/4 logic tests ضد auth.db حقيقي (premium→paid، free+NULL→trial_not_set، guest→no_user، nonexistent→not_found). ✅ متحقق.
+- ⚠️ B-P1 follow-up (B-P1.5): الـ decorator متطبّق على `/api/ai/live/scan` بس (1 من 469 endpoint). باقي الـ advanced endpoints محتاجة تطبيق في mandate منفصل بعد B-P2.
+- 🎯 قرار CEO (fail-safe vs fail-closed): fail-SAFE للـ guest/public reads؛ fail-CLOSED للـ paid gates (`@require_trial_or_paid`، `@require_role('premium')`).
 
 ---
 
@@ -170,7 +172,7 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | 1 | 22 unauthed admin endpoints | B-P0 | برافو | ✅ خلص + متدفع |
 | 2 | 58→10 شاشات + bloat | A-P1 + A-P2 خلصوا | ألفا | ✅ جزئي (A-P3 + A-P4 لسه) |
 | 3 | paywall في Next.js | B-P1 | برافو | ✅ خلص (middleware + contract) |
-| 4 | trial 4-source | B-P2 → 14 | برافو | 🔜 |
+| 4 | trial 4-source | B-P2 (split: برافو Python + ألفا A-P2.5) | برافو+ألفا | 🔄 green-lit |
 | 5 | price split-brain | B-P3 → canonical `stocks.db` + Rule 12 amendment | برافو | 🔜 |
 | 6 | frontend direct-DB | mandate لألفا (proxy للـ Python) | ألفا | 🔜 |
 | 7 | R/R stale 1.5 | cleanup دستوري | ألفا | 🔜 |
