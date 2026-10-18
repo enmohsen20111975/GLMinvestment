@@ -61,9 +61,16 @@ if str(_VPS_SERVICE_ROOT) not in sys.path:
 try:
     from api.canonical_flow import classify_liquidity_bucket as _classify_liquidity_bucket
     from api.canonical_flow import BUCKET_LABEL_AR as _BUCKET_LABEL_AR
+    # BRAVO-RADAR-PRED-AUDIT-001 Fix 4: unify Falling Knife with canonical.
+    from api.canonical_flow import _is_falling_knife as _canonical_is_falling_knife
+    from api.canonical_flow import _compute_ma as _canonical_compute_ma
+    from api.canonical_flow import SMA50_PERIOD as _CANONICAL_SMA50_PERIOD
 except Exception as _cf_err:  # graceful — radar still works without canonical classifier
     _classify_liquidity_bucket = None
     _BUCKET_LABEL_AR = {'neutral': 'حياد'}
+    _canonical_is_falling_knife = None
+    _canonical_compute_ma = None
+    _CANONICAL_SMA50_PERIOD = 50
     print(f"[liquidity_radar_v2] WARN: canonical_flow import failed: {_cf_err}", flush=True)
 
 
@@ -790,16 +797,17 @@ def check_falling_knife(
     stock_info: Dict[str, Any],
     market_regime: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """فحص السكين الساقط — Rule 78/79 (CONDITIONAL-TRADE-EXPOSURE).
+    """فحص السكين الساقط — CANONICAL FIRST + structural layer.
 
-    سهم "سكين ساقط" = تحت MA50 بـ >5% + MA50 < MA200.
-    في هذه الحالة: targets_available = False (لا أهداف صاعدة).
+    BRAVO-RADAR-PRED-AUDIT-001 Fix 4 (unify Falling Knife):
+    طبقتان متكاملتان (مش متناقضتان):
+      1. CANONICAL (api/canonical_flow.py:_is_falling_knife): short-term crash
+         — drop_3d > 10% AND price < SMA50.
+      2. STRUCTURAL (Rule 78/79): deviation_from_ma50 < -5% + MA50 < MA200
+         + bear market + stock down.
 
-    أيضاً: لو السوق هابط (Risk-Off) + السهم هابط → targets_available = False.
-
-    Rule 79: Falling-Knife-Quant-Guard
-      - السهم تحت MA50 بـ >5% + MA50 < MA200 → targets_available = False
-      - القمم = مقاومات تصريفية (لا أهداف شراء)
+    لو canonical يقول FK → نرجّع FK على طول (short-term crash = highest priority).
+    لو canonical مش متاح OR مش FK → نطبق structural check.
 
     Returns:
         {
@@ -808,9 +816,26 @@ def check_falling_knife(
             'reason': str,               # سبب عربي مختصر
         }
     """
+    current_price = _to_float(stock_info.get('current_price'))
+
+    # ─── Layer 1: CANONICAL short-term crash detector (drop_3d > 10% + below SMA50) ──
+    # BRAVO-AUDIT Fix 4: ده الكنسي. لو متاح، نطبقه الأول عشان نتطابق مع
+    # canonical_flow.classify_liquidity_bucket (نفس السهم = نفس الحكم).
+    if _canonical_is_falling_knife is not None and candles:
+        closes = [c for c in (_to_float(x.get('close')) for x in candles) if c > 0]
+        sma50_canonical = _canonical_compute_ma(closes, _CANONICAL_SMA50_PERIOD) if _canonical_compute_ma else None
+        if current_price > 0 and sma50_canonical is not None:
+            is_fk, reason = _canonical_is_falling_knife(candles, current_price, sma50_canonical)
+            if is_fk:
+                return {
+                    'is_falling_knife': True,
+                    'targets_available': False,
+                    'reason': f'[CANONICAL] {reason}',
+                }
+
+    # ─── Layer 2: STRUCTURAL breakdown (Rule 78/79 — deviation + MA200) ──────────
     ma_50 = _to_float(stock_info.get('ma_50'))
     ma_200 = _to_float(stock_info.get('ma_200'))
-    current_price = _to_float(stock_info.get('current_price'))
     change_pct = _to_float(stock_info.get('change_percent'))
 
     # Task BRAVO-MA200-UNCHOKE: لو MA200 أو MA50 مفقود من جدول stocks،
@@ -843,7 +868,7 @@ def check_falling_knife(
             return {
                 'is_falling_knife': True,
                 'targets_available': False,
-                'reason': f'سكين ساقط: السعر تحت MA50 بـ {deviation_from_ma50:.1f}% + MA50 < MA200 — لا أهداف صاعدة (Rule 79)',
+                'reason': f'[STRUCTURAL] سكين ساقط: السعر تحت MA50 بـ {deviation_from_ma50:.1f}% + MA50 < MA200 — لا أهداف صاعدة (Rule 79)',
             }
 
     # Rule 78: سوق هابط + السهم هابط → لا أهداف
