@@ -250,7 +250,11 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | الـ DBs stale عمومًا | **sample مش كاملة** + كان فيه جمع+سبت إجازة. آخر تحديث ~امبارح. | ✅ مفهوم |
 | egksco vs price_history | **100/100 match** — متطابقين. | ✅ تمام |
 
-### 🔜 DROP-EMPTY-TABLES-1 (mandate لبرافو — جاري)
+### ✅ DROP-EMPTY-TABLES-1 (خلص + متتحقق — commit 0b47eb6 + 45f6d43)
+- برافو شال **78 empty tables** من sandbox (مش 6). 0 data loss.
+- **متتحقق آمن**: كل الـ 38 referenced tables فيهم `CREATE TABLE IF NOT EXISTS` → auto-recreate. daily_predictor EXIT=0.
+- السكربت **enhanced** (`--check-refs` + `--exclude` + `_check_auto_create`) — جاهز للـ production بـ إذن المالك.
+- production run: `python3 scripts/drop_empty_tables.py --check-refs --exclude=paper_trades,signal_logs`
 - سكربت يمسح الجداول الفاضية (egksco_stocks + news_articles + metrics.resource_snapshot_* + historical.daily_prices + crypto.cryptos + أي تاني فاضي).
 - أمان: verify row=0 قبل DROP، --dry-run، idempotent، Rule 17، sandbox copy بس.
 
