@@ -486,15 +486,15 @@ export interface TrialStatus {
 }
 
 // ─── CANONICAL-CALCULATIONS (Task SUBSCRIPTION-FIX-2026-10-07, Rule 67) ─────
-// TRIAL_DAYS exported — كان hardcoded في subscription/status/route.ts (14)
-// مختلف عن القيمة هنا (7). الحل: استيرادها من هنا (مصدر واحد).
-export const TRIAL_DAYS = 7;
+// RESTRUCT-A-P2.5: TRIAL_DAYS = 14 (CEO John directive — spec المالك "Trial 14 days").
+// كان 7 (bug). الحل: استيرادها من هنا (مصدر واحد).
+export const TRIAL_DAYS = 14;
 const WARNING_DAYS = 0; // انتهاء الفترة التجريبية = حظر فوري (من غير فترة سماح)
 
 /**
  * Calculate free trial status for a user based on registration date (created_at).
- * Free users get 30 days of full access from account creation date.
- * After 30 days, they are forced to subscribe to continue using protected features.
+ * RESTRUCT-A-P2.5: Trial = 14 days (was incorrectly stated as 30 above — fixed).
+ * After 14 days, soft paywall encourages subscription (not hard block).
  */
 export function getTrialStatus(
   user?: { subscription_tier?: string | null; created_at?: string | Date | null; trial_ends_at?: string | Date | null } | null

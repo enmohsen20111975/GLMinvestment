@@ -69341,3 +69341,12 @@ Stage Summary:
 - ✅ alerts-center → tab جوه EnhancedPortfolioView (shadcn Tabs).
 - ✅ lint: 0 errors.
 - 🚫 NO push (gate ملك المالك — جون بيوافق).
+
+---
+Task ID: RESTRUCT-A-P2.5
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: trial_days canonical = 14 (CEO John directive — spec المالك "Trial 14 days").
+Work Log:
+- subscription-gate.ts:491: TRIAL_DAYS 7 → 14. شلت كومنت "30 days of full access" المضلّل. حدّثته لـ "14 days, soft paywall not hard block".
+- seed-subscriptions.ts:17: free plan trial_days 0 → 14.
+Stage Summary: ✅ TRIAL_DAYS = 14 canonical (مصدر واحد). lint 0 errors.
