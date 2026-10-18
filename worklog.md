@@ -69325,3 +69325,19 @@ Stage Summary:
 - ⚠️ الـ decorators اتطبّقت على endpoints حرجة (AI live/scan). باقي الـ endpoints (portfolio/watchlet/backtest) محتاجة تطبيق في follow-up mandate (469 endpoint كتير — ركّزت على الـ core).
 - ⚠️ FLAG: _check_trial_active بـ fail-safe (allow على DB error) — ده آمن ضد infra failures بس ممكن يـ allow لو auth.db مكسور. لو محسن عاوز fail-closed، تكليف منفصل.
 - 🔁 Push gate: جون وافق على phases → هـ commit + push.
+---
+Task ID: RESTRUCT-A-P2
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: A-P2 tab integration — دمج 3 screens كـ tabs جوه parent views.
+
+Work Log:
+- **StocksView.tsx** — زوّدت "الفلاتر" tab button + conditional render `{stockTab === 'filters' && <StockScreenerAdvanced />}`. import StockScreenerAdvanced. استعمل Filter icon (مستورد بالفعل).
+- **MarketAnalysisView.tsx** — زوّدت "التقارير" TabsTrigger + TabsContent بـ `<ReportsView />`. import ReportsView + FileBarChart icon.
+- **EnhancedPortfolioView.tsx** — زوّدت "التنبيهات" TabsTrigger + TabsContent بـ `<AlertsCenterView />`. import AlertsCenterView.
+
+Stage Summary:
+- ✅ stock-filters → tab جوه StocksView (button-based tab system).
+- ✅ reports → tab جوه MarketAnalysisView (shadcn Tabs).
+- ✅ alerts-center → tab جوه EnhancedPortfolioView (shadcn Tabs).
+- ✅ lint: 0 errors.
+- 🚫 NO push (gate ملك المالك — جون بيوافق).

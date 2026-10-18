@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, Layers, Target, History } from 'lucide-react';
+import { Activity, Layers, Target, History, FileBarChart } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { useTranslation } from '@/lib/i18n-context';
@@ -22,6 +22,7 @@ import { ExecutiveReportView } from '@/modules/reports/components/ExecutiveRepor
 import { HorizontalSectorsBar } from '@/modules/market-analysis/components/MorningBellSection';
 import { MARKET_CODES, _isEgxIntradayNow } from '@/modules/market-analysis/components/helpers';
 import type { MarketAnalysisViewProps } from '@/modules/market-analysis/components/types';
+import { ReportsView } from '@/modules/reports/components/ReportsView';
 // Task 9-B Step 2: The 5 radar tabs (exit-radar / weekly-report /
 // multi-market-radar / radar-accuracy / personalized-radar) have been MOVED
 // from #recommendations (here) INTO #liquidity-radar (MakerRadarTab) as
@@ -230,6 +231,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Target className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.netPicks')}</span>
           </TabsTrigger>
+          {/* RESTRUCT-A-P2: reports tab merged from top-level menu */}
+          <TabsTrigger value="reports" className="flex items-center gap-1">
+            <FileBarChart className="h-4 w-4 text-amber-600" />
+            <span className="hidden sm:inline">التقارير</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل 3 تابات منفصلة.
@@ -260,6 +266,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             MakerRadarTab.tsx. */}
         <TabsContent value="net-picks" className="mt-4">
           <NetPicksTab market={currentMarket} />
+        </TabsContent>
+
+        {/* RESTRUCT-A-P2: reports merged from #reports top-level */}
+        <TabsContent value="reports" className="mt-4">
+          <ReportsView />
         </TabsContent>
       </Tabs>
 

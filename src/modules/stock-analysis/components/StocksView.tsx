@@ -52,6 +52,7 @@ import { StockPublisher, type StockPublishData } from '@/modules/publishing/comp
 // `ReferenceError: t is not defined` (minified name of `useTranslation`)
 // at runtime → RootErrorBoundary → page dead → users couldn't log in.
 import { useTranslation } from '@/lib/i18n-context';
+import { StockScreenerAdvanced } from '@/modules/screener/components/StockScreenerAdvanced';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1780,11 +1781,27 @@ export function StocksView() {
               {t('stocks.tabs.bonds')}
             </button>
           )}
+          {/* RESTRUCT-A-P2: filters tab merged from top-level #stock-filters */}
+          <button
+            onClick={() => setStockTab('filters')}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
+              stockTab === 'filters'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <Filter className="w-4 h-4" />
+            الفلاتر
+          </button>
         </div>
 
         {/* ── Bonds View ── */}
         {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
         {stockTab === 'bonds' && <TreasuryBondsView key="stocks-bonds-view" />}
+
+        {/* RESTRUCT-A-P2: Filters merged from #stock-filters top-level */}
+        {stockTab === 'filters' && <StockScreenerAdvanced key="stocks-filters-view" />}
 
         {/* ── Stocks View ── */}
         {/* UI-STABILITY fix (2026-09-28): stable key on conditional fragment wrapper */}

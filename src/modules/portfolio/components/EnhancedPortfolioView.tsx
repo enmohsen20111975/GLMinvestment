@@ -117,6 +117,7 @@ import {
   type WealthAllocationAlert,
 } from '@/lib/persona-dynamic';
 import { DynamicRiskProfilerModal } from '@/components/persona/DynamicRiskProfilerModal';
+import { AlertsCenterView } from '@/components/alerts/AlertsCenterView';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import type {
   AssetType,
@@ -3333,6 +3334,8 @@ export function EnhancedPortfolioView() {
             <TabsTrigger value="income-expense" className="flex-1">{t('portfolio.tabs.incomeExpense')}</TabsTrigger>
             <TabsTrigger value="obligations" className="flex-1">{t('portfolio.tabs.obligations')}</TabsTrigger>
             <TabsTrigger value="reports" className="flex-1">{t('portfolio.tabs.reports')}</TabsTrigger>
+            {/* RESTRUCT-A-P2: alerts merged from #alerts-center top-level */}
+            <TabsTrigger value="alerts" className="flex-1">التنبيهات</TabsTrigger>
 
           </TabsList>
 
@@ -3350,6 +3353,11 @@ export function EnhancedPortfolioView() {
 
           <TabsContent value="reports" key="portfolio-tab-reports">
             <ReportsTab />
+          </TabsContent>
+
+          {/* RESTRUCT-A-P2: alerts merged from #alerts-center top-level */}
+          <TabsContent value="alerts" key="portfolio-tab-alerts">
+            <AlertsCenterView />
           </TabsContent>
 
 
