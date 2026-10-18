@@ -6,7 +6,7 @@
 > **المستودع:** `/home/z/my-project` (origin/main).  
 > **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
 > **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق + متدفعين. B-P2 green-lit (split: برافو Python + ألفا A-P2.5 subscription-gate.ts). باقي: A-P3/A-P4 + B-P3 + data fixes.  
-> **آخر تحديث:** 2026-10-18 — ★ canonical data map متقرّر (المالك مسك الداتا بالمليمتر): egksco فاضي/ميت، price_history هو canonical للأسعار التاريخية. Rule 46 غلط (أعلنت egksco canonical). DATA-LAYER-1 + A-DB-1 = أولوية قصوى. DEAD-ENGINE-1 معلّق.
+> **آخر تحديث:** 2026-10-18 — ⚠️ **CORRECTION مهم:** `engines/backtest_engine.py` (V38BacktestEngine) **مش ميت — ده LIVE** = محرك V40.2 الحقيقي (daily_predictor.py بـ يستورده + crontab بيـ شغّله 3am+1:30pm). كدلك `maestro_orchestrator.py` LIVE. DEAD-ENGINE-1 mandate اتقلب: RED LINE على الملفين الحيين، الـ cancer الحقيقي = 5 broken scripts + 3 zombie duplicates. DATA-LAYER-1 + A-DB-1 = أولوية قصوى.
 
 ---
 
@@ -91,7 +91,7 @@
 | 🔜 **B-P3** | برافو | stocks/crypto unification — canonical محدّد (price_history للأسعار التاريخية) في DATA-LAYER-1 |
 | 🔴 **DATA-LAYER-1** | برافو | **أولوية قصوى** — أصلّح prices.py + 10 ملفات (shيل egksco-first checks، route لـ canonical per map) + canonical_sources.py SSOT + حدّث Rule 46 |
 | 🔴 **A-DB-1** | ألفا | **أولوية قصوى** — شيل direct-DB من shared-db.ts/data-engine-db-sqljs.ts → proxy للـ Python (Rule 20). unified api-client.ts |
-| ⏸️ **DEAD-ENGINE-1** | برافو | **معلّق** بأمر المالك (الـ data-layer كارثة أكبر). v38 removal يجي لاحقًا |
+| ⏸️ **DEAD-ENGINE-1** | برافو | **معلّق + متصحّح** (الأولوية = DATA-LAYER-1). ⚠️ الخلاصة الجديدة: `engines/backtest_engine.py` + `analyzers/maestro_orchestrator.py` = **RED LINE (LIVE)** — ممنوع اللمس. الـ cancer الحقيقي = 5 broken scripts (diagnose_v402_filters/full، diagnose_entry_gate، retrospective_analysis، run_full_backtest_daemon.sh) + 3 zombie duplicates (scripts/backtesting_engine.py sys.exit guard، analysis_engine_v2.py، analyzers/backtest_engine.py). **triple-verify قبل أي إزالة**: not imported by daily_predictor/core/jobs/live_signals + not in crontab |
 | ~~CANONICAL-DB-1~~ | برافو | ✅ متقرّر (المالك جاوب بالـ data — شوف Section 3.5) |
 
 ### ملاحظات verify (جون):
@@ -197,7 +197,7 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | 5 | price split-brain | ✅ متفهم (egksco فاضي/ميت، price_history canonical) — DATA-LAYER-1 هـ يصلّحه | برافو | 🔴 أولوية قصوى |
 | 6 | frontend direct-DB | mandate لألفا (proxy للـ Python) | ألفا | 🔜 |
 | 7 | R/R stale 1.5 | cleanup دستوري | ألفا | 🔜 |
-| 8 | **dead-engine cancer** (v38_backtest_engine 109KB + 4 broken-import scripts + duplicated engines + analysis_engine_v2 root) | DEAD-ENGINE-1 | برافو | 🔜 |
+| 8 | ~~dead-engine cancer~~ → **تصحيح**: `engines/backtest_engine.py` LIVE (V40.2 driver). الـ cancer الحقيقي = 5 broken scripts + 3 zombie duplicate engines. DEAD-ENGINE-1 معلّق + متصحّح | برافو | ⏸️ معلّق (DATA-LAYER أولوية) |
 
 ---
 
