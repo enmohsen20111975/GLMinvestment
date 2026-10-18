@@ -46,6 +46,15 @@ if str(_VPS_ROOT) not in sys.path:
 
 from utils.db_paths import DBPaths  # noqa: E402
 
+# BRAVO-JIMMY Phase 2 (2026-10-18): wire evaluate_risk() into the canonical
+# flow classification. This eliminates dead-code status and enforces the
+# R/R >= 1.8 floor + position cap (2.5%) at the canonical classifier level
+# (Rule 67 — this is the ONLY sanctioned classifier). Any BUY-side signal
+# that survives _determine_target's R/R check is re-verified + position-capped
+# here before leaving the pipeline.
+from engine.flow_system import evaluate_risk as _evaluate_risk  # noqa: E402
+from engine.flow_system import MAX_POSITION_SIZE as _MAX_POSITION_SIZE  # noqa: E402
+
 logger = logging.getLogger(__name__)
 
 canonical_flow_bp = Blueprint('canonical_flow_bp', __name__)
@@ -486,15 +495,27 @@ def classify_liquidity_bucket(
             )
             expected_target, expected_rr = _determine_target(current_price, recent_low_10, stock_res, candles)
             if expected_rr is not None and expected_rr >= RR_FLOOR:
-                rsi_str = f'{rsi:.1f}' if rsi is not None else 'N/A'
-                return _result(
-                    'whale_inflow', net_flow_5d, current_price, ma20, rsi,
-                    atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
-                    f'صافي تدفق 5 جلسات {net_flow_5d/1e6:+.2f}M ج.م (>{WHALE_INFLOW_MIN_EGP/1e6:.0f}M) '
-                    f'+ السعر {current_price:.2f} فوق MA20 {ma20:.2f} '
-                    f'+ RSI {rsi_str} (<{WHALE_INFLOW_RSI_MAX:.0f}) + R/R {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — تجميع حيتان صريح',
-                    expected_rr=expected_rr,
+                # BRAVO-JIMMY Phase 2: wire evaluate_risk() — enforce R/R floor
+                # + position cap (2.5%) at the canonical classifier. Defense in
+                # depth: re-verify R/R + allocate position_size. If killed, fall
+                # through to neutral (signal MUST NOT leave pipeline with R/R<1.8).
+                risk_eval = _evaluate_risk(
+                    entry_price=current_price,
+                    stop_loss=recent_low_10,
+                    target_price=expected_target,
+                    calculated_position_size=_MAX_POSITION_SIZE,
                 )
+                if not risk_eval['killed']:
+                    rsi_str = f'{rsi:.1f}' if rsi is not None else 'N/A'
+                    return _result(
+                        'whale_inflow', net_flow_5d, current_price, ma20, rsi,
+                        atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
+                        f'صافي تدفق 5 جلسات {net_flow_5d/1e6:+.2f}M ج.م (>{WHALE_INFLOW_MIN_EGP/1e6:.0f}M) '
+                        f'+ السعر {current_price:.2f} فوق MA20 {ma20:.2f} '
+                        f'+ RSI {rsi_str} (<{WHALE_INFLOW_RSI_MAX:.0f}) + R/R {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — تجميع حيتان صريح',
+                        expected_rr=expected_rr,
+                        position_size=risk_eval['position_size'],
+                    )
 
         # 2. whale_outflow
         recent_lows = [c['low'] for c in candles[-5:] if c['low'] > 0]
@@ -519,14 +540,24 @@ def classify_liquidity_bucket(
             if net_flow_5d > 0 and in_proximity and quiet_atr:
                 expected_target, expected_rr = _determine_target(current_price, low_52w, stock_res, candles)
                 if expected_rr is not None and expected_rr >= RR_FLOOR:
-                    return _result(
-                        'bottom_absorption', net_flow_5d, current_price, ma20, rsi,
-                        atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
-                        f'صافي تدفق موجب {net_flow_5d/1e6:+.2f}M ج.م '
-                        f'+ السعر {proximity_pct:.1f}% فوق قاع 52 أسبوع ({low_52w:.2f}) '
-                        f'+ ATR {atr_current:.2f} < متوسطه {atr_avg:.2f} + R/R {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — تجميع قيعان هادئ',
-                        expected_rr=expected_rr,
+                    # BRAVO-JIMMY Phase 2: wire evaluate_risk() — enforce R/R floor
+                    # + position cap (2.5%) at the canonical classifier.
+                    risk_eval = _evaluate_risk(
+                        entry_price=current_price,
+                        stop_loss=low_52w,
+                        target_price=expected_target,
+                        calculated_position_size=_MAX_POSITION_SIZE,
                     )
+                    if not risk_eval['killed']:
+                        return _result(
+                            'bottom_absorption', net_flow_5d, current_price, ma20, rsi,
+                            atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
+                            f'صافي تدفق موجب {net_flow_5d/1e6:+.2f}M ج.م '
+                            f'+ السعر {proximity_pct:.1f}% فوق قاع 52 أسبوع ({low_52w:.2f}) '
+                            f'+ ATR {atr_current:.2f} < متوسطه {atr_avg:.2f} + R/R {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — تجميع قيعان هادئ',
+                            expected_rr=expected_rr,
+                            position_size=risk_eval['position_size'],
+                        )
 
         # 4. correction_exhaustion
         if (
@@ -540,13 +571,23 @@ def classify_liquidity_bucket(
             )
             expected_target, expected_rr = _determine_target(current_price, recent_low_10, stock_res, candles)
             if expected_rr is not None and expected_rr >= RR_FLOOR:
-                return _result(
-                    'correction_exhaustion', net_flow_5d, current_price, ma20, rsi,
-                    atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
-                    f'هبوط {drop_15d:.1f}% خلال 15 جلسة + شمعة خضراء مبتلعة '
-                    f'+ تدفق اليوم موجب + R/R متوقع {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — نهاية تصحيح وارتداد',
-                    expected_rr=expected_rr,
+                # BRAVO-JIMMY Phase 2: wire evaluate_risk() — enforce R/R floor
+                # + position cap (2.5%) at the canonical classifier.
+                risk_eval = _evaluate_risk(
+                    entry_price=current_price,
+                    stop_loss=recent_low_10,
+                    target_price=expected_target,
+                    calculated_position_size=_MAX_POSITION_SIZE,
                 )
+                if not risk_eval['killed']:
+                    return _result(
+                        'correction_exhaustion', net_flow_5d, current_price, ma20, rsi,
+                        atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
+                        f'هبوط {drop_15d:.1f}% خلال 15 جلسة + شمعة خضراء مبتلعة '
+                        f'+ تدفق اليوم موجب + R/R متوقع {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — نهاية تصحيح وارتداد',
+                        expected_rr=expected_rr,
+                        position_size=risk_eval['position_size'],
+                    )
 
         # 5. neutral
         rsi_str = f'{rsi:.1f}' if rsi is not None else 'N/A'
@@ -570,6 +611,7 @@ def _result(
     drop_15d: Optional[float], flow_history: List[Dict[str, Any]],
     reason: str,
     expected_rr: Optional[float] = None,
+    position_size: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Build the canonical result dict.
 
@@ -578,10 +620,13 @@ def _result(
     `correction_exhaustion`). This makes R/R structurally readable for
     callers — required for the radar's R/R filter (Rule 18).
 
-    For BUY-side buckets (whale_inflow, bottom_absorption,
-    correction_exhaustion): expected_rr is computed and ≥ RR_FLOOR.
-    For SELL-side (whale_outflow) and neutral: expected_rr stays None
-    (R/R doesn't apply to bearish signals).
+    BRAVO-JIMMY Phase 2 (2026-10-18): `position_size` is now a top-level
+    key. BUY-side buckets (whale_inflow, bottom_absorption,
+    correction_exhaustion) are run through evaluate_risk() which enforces:
+      - R/R >= 1.8 floor (Rule 18) — signals below floor are KILLED.
+      - position_size = min(calculated, 0.025) (Rule 19 — 2.5% cap).
+    For SELL-side (whale_outflow), avoid_falling_knife, and neutral:
+    position_size stays None (no BUY → no position allocation).
     """
     return {
         'bucket': bucket,
@@ -601,6 +646,9 @@ def _result(
         'expected_rr': expected_rr,
         # Include the floor for transparency (callers can verify the gate)
         'rr_floor': RR_FLOOR,
+        # BRAVO-JIMMY Phase 2: position size (None for non-BUY buckets).
+        'position_size': position_size,
+        'max_position_size': _MAX_POSITION_SIZE,
     }
 
 

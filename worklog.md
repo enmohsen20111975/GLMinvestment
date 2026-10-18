@@ -68149,3 +68149,47 @@ Stage Summary:
 - ⚠️ تعديلي أنا اترفض (rebase --skip) لأنه redundant — ما عملتش `--force` ولا حاولت أخسر تعديل فريق تاني.
 - ⚠️ FLAG (مش في scope): worklog.md فيه stale git conflict markers (lines 67499/67534/67735) متكوميتة في origin/main نفسه من قبل. غلطلة سابقة. لو المالك عاوز، تكليف منفصل لتنظيفها.
 - ⚠️ FLAG: المالك وزّع تكليف redundant على فريقين بالتوازي — ذي ما ظهر من cbf12d2 vs تكليفي. التنسيق بين الفرق محتاج تحسين عشان نتجنّب عمل متكرر.
+
+---
+Task ID: BRAVO-JIMMY-PHASE2-ATR-STOP-EVALUATE-RISK-WIRING
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: Jimmy Phase 2 — Wire evaluate_risk() to Production + Link Stop Loss to ATR (Rule 8)
+
+Work Log:
+- بروتوكول البدء: git pull --rebase origin main (fast-forward). جاب commits جديدة من فريق تاني:
+  * 84255fc fix(flow_system): ربط stop/target بـ ATR canonical + clamp [5%,9%] — Action 1 الأساسي اتعمل
+  * d1baffe fix(daily_predictor): رفع min_rr fallback من 1.5 لـ 1.8 (Rule 18)
+- قرأت آخر 30 سطر في worklog: تكليف الفريق التاني (جيمي+جروك+كيمي) على MakerRadarTab + worklog stale markers.
+- فحص الأرضية:
+  * Action 1 (ATR stop): `_compute_atr_stop_target` موجودة في flow_system.py:732 + بتتستدعى فعلاً في السطر 851 لـ FIRE/SPARK. clamp(ATR_pct×1.5, [5%,9%]) مطبّق. **بس fallback كان 5% (min_pct)، التكليف عاوز 6%.**
+  * Action 2 (wire evaluate_risk): **مش معمول.** evaluate_risk مفيهاش أي call site في الإنتاج (dead code). canonical_flow مش بيستوردها. v40_2_daily_generator.py مش موجود أصلاً.
+
+- التعديل 1 — engine/flow_system.py (Action 1 fix: fallback 6%):
+  * السطر 764-768: غيّر fallback من `min_pct` (5%) لـ `6.0` صريح.
+  * السبب: التكليف صريح "fallback safely to default 0.06 (6%)". 6% = safe middle within Rule 8 [5%,9%].
+
+- التعديل 2 — api/canonical_flow.py (Action 2: wire evaluate_risk):
+  * import: `from engine.flow_system import evaluate_risk as _evaluate_risk, MAX_POSITION_SIZE as _MAX_POSITION_SIZE`
+  * `_result()`: أضفت `position_size: Optional[float] = None` param + output keys `position_size` + `max_position_size`.
+  * 3 BUY-side buckets مربوطين بـ evaluate_risk:
+    1. whale_inflow (سطر 502): entry=current_price, stop=recent_low_10, target=expected_target
+    2. bottom_absorption (سطر 545): entry=current_price, stop=low_52w, target=expected_target
+    3. correction_exhaustion (سطر 576): entry=current_price, stop=recent_low_10, target=expected_target
+  * Logic: بعد _determine_target يرجّع target صالح + R/R≥1.8، استدعِ evaluate_risk(). لو killed → fall through لـ neutral (signal MUST NOT leave pipeline). لو not killed → return bucket مع position_size=min(0.025, calculated).
+
+- التحقق (proof-of-work، الكل PASS):
+  * py_compile: الملفين PASS
+  * git diff scope: vps-service/ بس، src/ مش متلموس
+  * TEST 1 (ATR dynamic stop): LOW-VOL ATR=1%→5% (clamp up) | MED ATR=3%→5% (clamp up) | NORMAL ATR=4%→6% | HIGH ATR=5%→7.5% | EXTREME ATR=7%→9% (clamp down) | NO-ATR→6% (fallback). R/R=1.8 في كل الحالات ✓
+  * TEST 2 (evaluate_risk LIVE): 3 production call sites في canonical_flow ✓
+  * TEST 3 (position cap + R/R kill): Strong BUY R/R=2.5 pos=5%→capped 2.5% ✓ | Weak BUY R/R=1.6→KILLED CASH_WAIT ✓
+
+Stage Summary:
+- ✅ Action 1: ATR dynamic stop — scales with volatility, clamp [5%,9%], fallback 6% (was 5%). Rule 8 compliant.
+- ✅ Action 2: evaluate_risk() WIRED — 3 BUY buckets (whale_inflow, bottom_absorption, correction_exhaustion) route through it. Dead code ELIMINATED.
+- ✅ position_size capped to 0.025 (2.5%) + R/R<1.8 killed → falls to neutral (no leak).
+- ✅ py_compile PASS + proof-of-work PASS + scope نظيف (vps-service/ بس، src/ سليم).
+- ⚠️ FLAG 1 (parallel work): فريق تاني (84255fc) عمل Action 1 الأساسي. أنا كملت اللي ناقص (fallback 6% + Action 2 wiring). مفيش تعارض — diffs مكمّلة.
+- ⚠️ FLAG 2 (defense in depth): evaluate_risk بتعمل re-verify لـ R/R بعد _determine_target. ده redundant رقميًا بس قيمته: (a) position cap جديد، (b) لو _determine_target فيه bug، evaluate_risk هتقتل، (c) dead code eliminated.
+- ⚠️ FLAG 3 (v40_2_daily_generator.py): الملف مش موجود أصلاً رغم إن الدستور Rule 18 بيتكلم عنه كـ canonical R/R gate. محتاج توضيح من Jimmy: هل اتعمل rename ولا في path تاني.
+- 🔁 Rule 75: commit + push فوري.

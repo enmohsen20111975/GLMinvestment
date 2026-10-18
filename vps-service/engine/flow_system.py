@@ -762,8 +762,10 @@ class FlowSystemEngine:
 
         atr = self._get_atr_for_ticker(ticker)
         if not atr or atr <= 0:
-            # مفيش ATR → استخدم min_pct كـ fallback محافظ (مش 3% ثابت قديم)
-            stop_dist = min_pct
+            # BRAVO-JIMMY Phase 2 (2026-10-18): fallback safely to 6% (0.06)
+            # if ATR is missing/unavailable. 6% = safe middle ground within
+            # Rule 8 clamp [5%, 9%] — not the old fixed 3%/5% (Rule 8 violation).
+            stop_dist = 6.0
         else:
             atr_pct = (atr / entry_price) * 100.0
             # stop = 1.5× ATR (buffer تحت القاع) — نفس منطق opportunity_quality
