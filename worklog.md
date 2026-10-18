@@ -69108,3 +69108,28 @@ Agent: Alpha
 Task: شيل entry*0.97 fabrication في dynamic-analysis-engine.ts (Rule 27+20).
 Work Log: شلت 3 fabrication lines (L429-431: `entry*0.97` + `entry*1.03`). حلّ محله `if (stopLoss invalid) return null`. غيّرت return type لـ `StructuralTargets | null`. أضفت `if (targets)` null check في caller (L827). lint 0 errors.
 Stage Summary: ✅ fabrication اتمسحت. لو stop غير صالح → null (سياسة الفراغ).
+
+---
+Task ID: ALPHA-FAB-FIX-UI-MATH-001
+Agent: Alpha
+Task: مراجعة Math.sin() في 9 UI files — classify: animation/geometry → exception؛ price fabrication → kill (Rule 27 review).
+
+Work Log:
+- فحصت 8 ملفات (sidebar.tsx = 0 hits، اتشال من القائمة). 22 Math.sin() usage إجمالي.
+- Classification:
+  * **StrategySandbox.tsx (13):** `Math.sin(i * 0.5) * 0.6` = drift simulation في educational paper-trading sandbox. EXCEPTION (تعليمي، مش أسعار حقيقية).
+  * **chart-generator.ts (2):** `Math.sin(currentAngle)` = pie chart Y coordinate. EXCEPTION (geometry).
+  * **StockInfographicCard.tsx (1):** `Math.sin(a)` = circle point. EXCEPTION (geometry).
+  * **MarketPulseWidget.tsx (1):** `Math.sin(rad)` = gauge arc Y. EXCEPTION (geometry).
+  * **ContentStudioHub.tsx (1):** `Math.sin(progress * PI * 2)` = pulse animation. EXCEPTION (animation).
+  * **VideoEditor.tsx (1):** نفس الـ pulse pattern. EXCEPTION (animation).
+  * **LearningVisuals.tsx (1):** `Math.sin(rad)` = circle point. EXCEPTION (geometry).
+  * **text-effects.ts (1):** `Math.sin(localProgress * PI * 4)` = text pulse. EXCEPTION (animation).
+- **0 fabrication found.** كل الـ 22 usages لـ animation/geometry/education. مفيش ولا واحد بيفبرك أسعار.
+- الـ fabrication الوحيد اللي كان موجود (sparkline Math.sin noise) اتمسح في ALPHA-FAB-FIX-SPARKLINE-001.
+
+Stage Summary:
+- ✅ 22 Math.sin() usages classified — كلها EXCEPTIONS (animation/geometry/education).
+- ✅ 0 price fabrication found في UI components.
+- ✅ مفيش تعديل كود لازم — بس توثيق.
+- 🔁 Rule 75: commit + push.
