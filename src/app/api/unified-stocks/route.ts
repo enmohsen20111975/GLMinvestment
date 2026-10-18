@@ -6,8 +6,8 @@
  * Routes to the right DB based on ?market:
  *   EGX|TADAWUL|KSE|QSE  → stocks.db . stocks (filter by market column)
  *   US                   → stocks.db . stocks WHERE market='US' (fallback to EGX)
- *   CRYPTO               → crypto.db . cryptos
- *   GOLD                 → gold_prices.db . gold_prices
+ *   CRYPTO               → data_engine.db . crypto_prices  (RESTRUCT-CLEANUP-1: was crypto.db)
+ *   GOLD                 → data_engine.db . gold_prices    (RESTRUCT-CLEANUP-1: was gold_prices.db)
  *
  * Public (no auth) — list endpoint, taste content.
  *
@@ -96,8 +96,9 @@ export async function GET(req: NextRequest) {
     const cwd = process.cwd();
 
     // ── CRYPTO ──────────────────────────────────────────────────────────────
+    // RESTRUCT-CLEANUP-1: redirect crypto.db → data_engine.db.crypto_prices (live source).
     if (market === 'CRYPTO') {
-      const db = openRo(path.join(cwd, 'db', 'crypto.db'));
+      const db = openRo(path.join(cwd, 'db', 'data_engine.db'));
       if (!db) {
         return NextResponse.json({
           success: true,
@@ -106,10 +107,12 @@ export async function GET(req: NextRequest) {
           total: 0,
           returned: 0,
           stocks: [],
-          message: 'crypto.db غير متاح',
+          message: 'data_engine.db غير متاح',
         });
       }
       try {
+        // RESTRUCT-CLEANUP-1: crypto_prices is the canonical live crypto source.
+        // Schema (per mandate): symbol, name, price_usd, price_change_24h, total_volume, market_cap, timestamp.
         const conditions: string[] = [];
         const params: unknown[] = [];
         if (search) {
@@ -121,15 +124,16 @@ export async function GET(req: NextRequest) {
           : '';
         const rows = db
           .prepare(
-            `SELECT symbol AS ticker, name, current_price, change_24h AS change_percent,
-                    volume_24h AS volume, market_cap, last_updated
-             FROM cryptos ${where}
+            `SELECT symbol AS ticker, name, price_usd AS current_price,
+                    price_change_24h AS change_percent, total_volume AS volume,
+                    market_cap, timestamp
+             FROM crypto_prices ${where}
              ORDER BY market_cap DESC NULLS LAST
              LIMIT ?`
           )
           .all(...params, limit) as Array<Record<string, unknown>>;
         const totalRow = db
-          .prepare(`SELECT COUNT(*) AS c FROM cryptos ${where}`)
+          .prepare(`SELECT COUNT(*) AS c FROM crypto_prices ${where}`)
           .get(...params) as { c: number };
         db.close();
         const stocks = rows.map((r) => ({
@@ -139,7 +143,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           success: true,
           market,
-          source: 'crypto.db',
+          source: 'data_engine.db',
           total: totalRow.c,
           returned: stocks.length,
           stocks,
@@ -164,8 +168,9 @@ export async function GET(req: NextRequest) {
     }
 
     // ── GOLD ───────────────────────────────────────────────────────────────
+    // RESTRUCT-CLEANUP-1: redirect gold_prices.db → data_engine.db.gold_prices (live source).
     if (market === 'GOLD') {
-      const db = openRo(path.join(cwd, 'db', 'gold_prices.db'));
+      const db = openRo(path.join(cwd, 'db', 'data_engine.db'));
       if (!db) {
         return NextResponse.json({
           success: true,
@@ -177,12 +182,13 @@ export async function GET(req: NextRequest) {
         });
       }
       try {
+        // RESTRUCT-CLEANUP-1: gold_prices is the canonical live gold source.
+        // Schema (per mandate): karat, price_per_gram, price_per_ounce, currency, country, timestamp.
         const rows = db
           .prepare(
-            `SELECT
-               id, date, karat, price_per_gram, change, currency, name_ar, created_at
+            `SELECT karat, price_per_gram, price_per_ounce, currency, country, timestamp
              FROM gold_prices
-             ORDER BY date DESC
+             ORDER BY timestamp DESC
              LIMIT ?`
           )
           .all(limit) as Array<Record<string, unknown>>;
@@ -193,21 +199,22 @@ export async function GET(req: NextRequest) {
         const stocks = rows.map((r) => ({
           ticker: `GOLD-${r.karat || '24'}`,
           name: `Gold ${r.karat || '24'}K`,
-          name_ar: (r.name_ar as string) || `ذهب عيار ${r.karat || '24'}`,
+          name_ar: `ذهب عيار ${r.karat || '24'}`,
           market: 'GOLD',
           sector: 'METALS',
           current_price: Number(r.price_per_gram) || null,
           previous_close: null,
-          change_percent: r.change != null ? Number(r.change) : null,
+          change_percent: null,
           volume: null,
           karat: r.karat,
           currency: r.currency || 'EGP',
-          date: r.date,
+          country: r.country || null,
+          date: r.timestamp,
         }));
         return NextResponse.json({
           success: true,
           market,
-          source: 'gold_prices.db',
+          source: 'data_engine.db',
           total: totalRow.c,
           returned: stocks.length,
           stocks,

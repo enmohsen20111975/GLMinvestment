@@ -65,11 +65,13 @@ function num(v: unknown, fallback = 0): number {
 }
 
 /**
- * Look up the latest crypto price from crypto.db. Returns 0 on any failure.
+ * Look up the latest crypto price from data_engine.db.crypto_prices.
+ * RESTRUCT-CLEANUP-1: was crypto.db.cryptos → now data_engine.db.crypto_prices.
+ * Returns 0 on any failure.
  */
 function fetchCryptoPrice(symbol: string): number {
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'crypto.db');
+    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
     if (!fs.existsSync(dbPath)) return 0;
     const Database = require('better-sqlite3');
     const db = new Database(dbPath, { readonly: true });
@@ -77,7 +79,9 @@ function fetchCryptoPrice(symbol: string): number {
     try {
       const row = db
         .prepare(
-          'SELECT current_price FROM cryptos WHERE UPPER(symbol) = ? ORDER BY last_updated DESC LIMIT 1'
+          `SELECT price_usd AS current_price FROM crypto_prices
+           WHERE UPPER(symbol) = ?
+           ORDER BY timestamp DESC LIMIT 1`
         )
         .get(symbol.toUpperCase()) as { current_price: number } | undefined;
       if (row && Number(row.current_price) > 0) {
@@ -98,12 +102,13 @@ function fetchCryptoPrice(symbol: string): number {
 }
 
 /**
- * Look up the latest gold price per gram (24K) from gold_prices.db. Used as
- * a fallback when the user simulates a "GOLD" ticker.
+ * Look up the latest gold price per gram (24K) from data_engine.db.gold_prices.
+ * RESTRUCT-CLEANUP-1: was gold_prices.db → now data_engine.db.gold_prices.
+ * Used as a fallback when the user simulates a "GOLD" ticker.
  */
 function fetchGoldPrice(): number {
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'gold_prices.db');
+    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
     if (!fs.existsSync(dbPath)) return 0;
     const Database = require('better-sqlite3');
     const db = new Database(dbPath, { readonly: true });
@@ -111,7 +116,9 @@ function fetchGoldPrice(): number {
     try {
       const row = db
         .prepare(
-          'SELECT price_per_gram FROM gold_prices ORDER BY date DESC LIMIT 1'
+          `SELECT price_per_gram FROM gold_prices
+           WHERE karat = '24' OR karat = '24K' OR karat LIKE '%24%'
+           ORDER BY timestamp DESC LIMIT 1`
         )
         .get() as { price_per_gram: number } | undefined;
       if (row && Number(row.price_per_gram) > 0) {
@@ -178,8 +185,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Try to get the real current price from crypto.db (or gold_prices.db
-    //    if the user is simulating a gold CFD).
+    // 1. Try to get the real current price from data_engine.db (crypto_prices or
+    //    gold_prices if the user is simulating a gold CFD).
+    //    RESTRUCT-CLEANUP-1: was crypto.db/gold_prices.db → now data_engine.db.
     let entryPrice = 0;
     if (ticker === 'GOLD' || ticker === 'XAU') {
       entryPrice = fetchGoldPrice();
@@ -189,7 +197,7 @@ export async function POST(req: NextRequest) {
 
     // 2. If price unknown, fall back to a deterministic stub value so the
     //    simulation still returns a usable envelope.
-    let source: 'crypto.db' | 'gold_prices.db' | 'stub' = 'stub';
+    let source: 'data_engine.db' | 'stub' = 'stub';
     if (entryPrice <= 0) {
       // Deterministic pseudo-price for the stub (range 1..1000 USD).
       let h = 0;
@@ -198,7 +206,7 @@ export async function POST(req: NextRequest) {
       }
       entryPrice = 1 + (h % 999);
     } else {
-      source = ticker === 'GOLD' || ticker === 'XAU' ? 'gold_prices.db' : 'crypto.db';
+      source = 'data_engine.db';
     }
 
     // 3. Try to record via paper-trading-v2 if the helpers are available.

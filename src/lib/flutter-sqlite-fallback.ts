@@ -76,7 +76,7 @@ export function getStockByTickerFallback(
     const row = db
       .prepare(
         `SELECT ticker, name, name_ar, market, sector, industry,
-                current_price, previous_close, open_price, high_price, low_price,
+                current_price, close AS close_price, previous_close, open_price, high_price, low_price,
                 change_percent, volume, market_cap, pe_ratio, pb_ratio, ps_ratio,
                 eps, roe, roa, debt_to_equity, current_ratio, book_value_per_share,
                 ma_50, ma_200, rsi, support, resistance, signal, trend,
@@ -188,7 +188,7 @@ export function getTopMoversFallback(
     const stmtArgs = market ? [market] : [];
     const rows = db
       .prepare(
-        `SELECT ticker, name, name_ar, current_price, previous_close,
+        `SELECT ticker, name, name_ar, current_price, close AS close_price, previous_close,
                 change_percent, volume, market_cap, sector, market
          FROM stocks
          ${whereClause}
@@ -242,7 +242,7 @@ export function getMovementClassificationFallback(
   try {
     return db
       .prepare(
-        `SELECT ticker, name_ar, current_price, change_percent, volume, sector, market
+        `SELECT ticker, name_ar, current_price, close AS close_price, change_percent, volume, sector, market
          FROM stocks
          WHERE is_active = 1 AND change_percent IS NOT NULL
          ORDER BY ABS(change_percent) DESC

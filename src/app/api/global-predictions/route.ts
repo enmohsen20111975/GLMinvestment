@@ -92,80 +92,82 @@ export async function GET(_req: NextRequest) {
       }
     }
 
-    // 2. Crypto predictions from crypto.db.
-    const cryptoDbPath = path.join(cwd, 'db', 'crypto.db');
-    const cdb = openRo(cryptoDbPath);
+    // 2. Crypto prices from data_engine.db.crypto_prices (RESTRUCT-CLEANUP-1: was crypto.db).
+    const dataEnginePath = path.join(cwd, 'db', 'data_engine.db');
+    const dedb = openRo(dataEnginePath);
     let cryptoPredictions: Array<Record<string, unknown>> = [];
     let cryptoLastDate: string | null = null;
-    if (cdb) {
+    if (dedb) {
       try {
-        const rows = cdb
+        // RESTRUCT-CLEANUP-1: read latest crypto prices as "crypto state" (price + 24h change as signal).
+        const rows = dedb
           .prepare(
-            `SELECT id, coin_id, symbol, signal, score, confidence,
-                    entry_price, target_price, stop_loss, rationale, created_at
-             FROM crypto_prediction_logs
-             ORDER BY created_at DESC
+            `SELECT symbol, name, price_usd, price_change_24h, market_cap, timestamp
+             FROM crypto_prices
+             WHERE timestamp = (SELECT MAX(timestamp) FROM crypto_prices)
+             ORDER BY market_cap DESC NULLS LAST
              LIMIT 50`
           )
           .all() as Array<Record<string, unknown>>;
-        cryptoPredictions = rows.map((r) => ({
-          symbol: r.symbol || r.coin_id,
-          signal: r.signal,
-          score: r.score != null ? num(r.score) : null,
-          confidence: r.confidence != null ? num(r.confidence) : null,
-          entry_price: r.entry_price != null ? num(r.entry_price) : null,
-          target_price:
-            r.target_price != null ? num(r.target_price) : null,
-          stop_loss: r.stop_loss != null ? num(r.stop_loss) : null,
-          rationale: r.rationale || null,
-          created_at: r.created_at || null,
-        }));
+        cryptoPredictions = rows.map((r) => {
+          const change = num(r.price_change_24h, 0);
+          const signal = change > 1 ? 'BULLISH' : change < -1 ? 'BEARISH' : 'NEUTRAL';
+          return {
+            symbol: r.symbol,
+            name: r.name || null,
+            signal,
+            entry_price: r.price_usd != null ? num(r.price_usd) : null,
+            change_percent: r.price_change_24h != null ? num(r.price_change_24h) : null,
+            market_cap: r.market_cap != null ? num(r.market_cap) : null,
+            created_at: r.timestamp || null,
+          };
+        });
         if (rows.length > 0) {
-          cryptoLastDate = (rows[0].created_at as string) || null;
+          cryptoLastDate = (rows[0].timestamp as string) || null;
         }
       } catch (e) {
-        console.error('[global-predictions] crypto.db query:', e);
+        console.error('[global-predictions] data_engine.db crypto_prices query:', e);
       }
       try {
-        cdb.close();
+        dedb.close();
       } catch {
         /* ignore */
       }
     }
 
-    // 3. Gold signal (latest gold price row).
-    const goldDbPath = path.join(cwd, 'db', 'gold_prices.db');
-    const gdb = openRo(goldDbPath);
+    // 3. Gold signal (latest gold price row from data_engine.db.gold_prices).
+    // RESTRUCT-CLEANUP-1: was gold_prices.db → now data_engine.db.gold_prices.
+    const dedb2 = openRo(dataEnginePath);
     let goldSignal: Record<string, unknown> | null = null;
-    if (gdb) {
+    if (dedb2) {
       try {
-        const row = gdb
+        const row = dedb2
           .prepare(
-            `SELECT date, karat, price_per_gram, change, currency, name_ar
+            `SELECT karat, price_per_gram, price_per_ounce, currency, country, timestamp
              FROM gold_prices
-             ORDER BY date DESC
+             WHERE karat = '24' OR karat = '24K' OR karat LIKE '%24%'
+             ORDER BY timestamp DESC
              LIMIT 1`
           )
           .get() as Record<string, unknown> | undefined;
         if (row) {
-          const change = num(row.change, 0);
-          const signal =
-            change > 0.5 ? 'BULLISH' : change < -0.5 ? 'BEARISH' : 'NEUTRAL';
+          const pricePerGram = num(row.price_per_gram, 0);
           goldSignal = {
-            date: row.date,
+            date: row.timestamp,
             karat: row.karat,
-            price_per_gram: num(row.price_per_gram, 0),
-            change,
+            price_per_gram: pricePerGram,
+            price_per_ounce: row.price_per_ounce != null ? num(row.price_per_ounce) : null,
+            change: 0,
             currency: row.currency || 'EGP',
-            name_ar: row.name_ar || null,
-            signal,
+            country: row.country || null,
+            signal: 'NEUTRAL',
           };
         }
       } catch (e) {
-        console.error('[global-predictions] gold_prices.db query:', e);
+        console.error('[global-predictions] data_engine.db gold_prices query:', e);
       }
       try {
-        gdb.close();
+        dedb2.close();
       } catch {
         /* ignore */
       }

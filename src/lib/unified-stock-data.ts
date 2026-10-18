@@ -277,7 +277,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
     });
     stock = (stocksDb
       .prepare(`
-        SELECT ticker, name, name_ar, current_price, previous_close, change_percent, volume,
+        SELECT ticker, name, name_ar, current_price, close AS close_price, previous_close, change_percent, volume,
                market_cap, pe_ratio, pb_ratio, ps_ratio, roe, eps, roa, dividend_yield,
                sector, industry, ma_50, ma_200, rsi, support, resistance, signal, trend,
                high_52w, low_52w, beta, avg_volume, last_update
