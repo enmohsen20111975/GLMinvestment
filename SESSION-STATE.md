@@ -312,3 +312,27 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - trial_migration + drop_empty_tables: **dry-run الأول دايماً**.
 - cron (daily_predictor): المالك بـ يـ check الـ logs + يشغّله بنفسه.
 - EGXPilot scraper مات (الموقع اتقفل) = مفيش live price source. محتاج مصدر بديل (Yahoo؟ TradingView؟) — **مش دلوقتي**.
+
+---
+
+## 15. LIVE TESTING (جون عمل runtime test بنفسه — 2026-10-18)
+
+الـ stack اشتغل في ساندبوخ جون: Python 8010 ✅ + Next.js 3000 ✅ + الـ DBs متسترجعة من /data.
+
+### الـ data contradictions المتأكدة بـ أرقام حية:
+| الداتا | canonical (طازج) | ميت | الفرق |
+|---|---|---|---|
+| GOLD عيار 24 | data_engine.db = 7,160 EGP/g @ Oct 18 | gold_prices.db (3,897 @ يونيو على اللاب توب) | 3,262 EGP |
+| BTC | data_engine.db = $81,119 @ Oct 18 | crypto.db (78,183 @ أغسطس على اللاب توب) | ~$3,000 |
+| COMI | stocks.db = 124.97 @ Oct 18 14:48 | price_history.db = 123.36 @ Oct 18 | 1.61 (نفس اليوم) |
+
+### الـ root cause (مفصل في الكود):
+`src/app/api/unified-stocks/route.ts`:
+- L100: `openRo('db/crypto.db')` — بـ يقرا CRYPTO من DB ميت.
+- L168: `openRo('db/gold_prices.db')` — بـ يقرا GOLD من DB ميت.
+- المفروض: كلاهم يقرا من `data_engine.db` (الـ canonical الطازة per الـ ground-truth map).
+
+### ملاحظات:
+- `unified-stocks` API رجّع HTML مش JSON (محتاج investigation — middleware أو compile).
+- Python 8010 شغّال (market-pulse 200).
+- جون دلوقتي بـ عمل LIVE testing (مش بس grep) — بـ يـ catch الـ runtime contradictions اللي الـ grep بـ يفوتها.
