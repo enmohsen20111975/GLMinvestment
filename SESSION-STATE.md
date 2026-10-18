@@ -396,3 +396,26 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - **laptop**: سليم ✅ (13/13 PASS).
 - **production VPS**: محتاج الـ 5 أوامر (في Section 16). المالك يـ runها على الـ VPS.
 - **EGXPilot مات** (live price source بديل) — معلّق (مش دلوقتي).
+
+---
+
+## 19. DEEP DATA ENGINE EXAMINATION (جون — من الكود، مش من كومنتات) — 2026-10-18
+
+### الـ ACTUAL data flow (متتبّن من الكود):
+| الداتا | المصدر الحقيقي | الـ DB | الحالة |
+|---|---|---|---|
+| Live EGX prices | `tradingview_ta` (TA_Handler) في `vps-service/jobs/market_scheduler.py` L1720 → يكتب stocks.db (L1658) | stocks.db | ✅ طازج (Oct 18 14:48) |
+| crypto/gold | CoinGecko + metals → data_engine.db | data_engine.db | ✅ طازج (Oct 18) |
+| historical | Yahoo → price_history.db | price_history.db | ✅ 1.3M rows |
+| telegram | daily_opportunities_v402 → predictions.db (V40.2) | predictions.db | ✅ maestro gone |
+| EGXPilot | ❌ ميت (الموقع اتقفل) — بس TradingView هو الـ live source → مفيش أزمة | — | ✅ |
+
+### Contradictions status:
+1. ✅ unified-stocks dead-DB read = FIXED (Alpha حوّل لـ data_engine). 0 routes لسه بـ تقرا dead DBs.
+2. ✅ telegram = V40.2 (predictions.db، مش maestro).
+3. 🟡 COMI live (124.97) vs historical close (123.36) = intraday vs daily (متوقع، مش contradiction).
+
+### الخلاصة:
+- **TradingView هو الأساس** (زي ما المالك قال) — عبر `tradingview_ta` في `market_scheduler.py`. EGXPilot ميت بس مش أزمة.
+- **الـ data layer متناسق**: الـ dead-DB contradiction اتحلّ + telegram على V40.2 + live source شغّال.
+- باقي: فحص أعمق للـ sub-screens (tabs جوه stock detail + specialist analysis).
