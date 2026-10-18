@@ -1579,9 +1579,10 @@ function RecommendationSection({ info }: { info: StockInfo }) {
     return null;
   }
 
-  // Entry zone = current ± 1% (since we don't have ATR in stock_info)
-  const entryLow = current != null ? current * 0.99 : null;
-  const entryHigh = current != null ? current * 1.01 : null;
+  // ALPHA-FAB-FIX-SPECIALIST-001: removed current*0.99/1.01 fabrication (Rule 27).
+  // entry zone لازم من API (predictions.db entry_price_min/max). لو مفيش → null.
+  const entryLow: number | null = null;
+  const entryHigh: number | null = null;
 
   // R:R = (resistance - current) / (current - support) — only if all values available
   const rr = current != null && resistance != null && support != null && current > support

@@ -69094,3 +69094,10 @@ Stage Summary:
 - ✅ ملف `ALPHA-TEAM-WORK.md` اتكتب على root المستودع.
 - ✅ يوثّق كل شغل ألفا في الجلسة بشكل منظّم.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: ALPHA-FAB-FIX-SPECIALIST-001
+Agent: Alpha
+Task: شيل entry*0.99/1.01 fabrication في SpecialistAnalysisView.tsx (Rule 27).
+Work Log: شلت `current * 0.99` + `current * 1.01` (L1583-1584). حلّ محله `null`. الـ display بيكمل "—" لو null. lint 0 errors.
+Stage Summary: ✅ fabrication اتمسحت. entry zone من API أو null.
