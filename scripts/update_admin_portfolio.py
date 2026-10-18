@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-update_admin_portfolio.py — تحديث محفظة الأدمن ببيانات الأسهم الجديدة
+update_admin_portfolio.py — تحديث محفظة الأدمن ببيانات الأسهم والأصول الحقيقية
 =================================================================================
 يتبع منطق المحفظة الموجود في stocks.db:
 - type: 'stock' (للأسهم), 'gold' (للذهب), 'bank' (للصناديق + الادخار)
 - asset_class: 'stock', 'fund', 'gold', 'savings'
 - portfolio_id: 'default' (المحفظة الأم)
 - market: 'EGX', currency: 'EGP'
+
+حسابات الأدمن المستهدفة:
+- 48457b7f-40f2-4a7e-8955-d4d2cd1d79bd (enmohsen20111975@gmail.com - حساب المالك الأساسي)
+- cmo8o12ix0000jqfcl9mbsi1s (Admin)
+- mohseny-admin-cuid (mohseny)
+- default (المحفظة الافتراضية)
 
 Usage:
   python3 scripts/update_admin_portfolio.py           # dry-run (عرض بس)
@@ -20,11 +26,17 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
 
-# الأدمن = 'default' user_id (المحفظة الأم)
-ADMIN_USER_ID = 'default'
+# حسابات الأدمن المستهدفة للتحديث
+TARGET_ADMIN_IDS = [
+    '48457b7f-40f2-4a7e-8955-d4d2cd1d79bd', # enmohsen20111975@gmail.com
+    'cmo8o12ix0000jqfcl9mbsi1s',             # admin
+    'mohseny-admin-cuid',                    # mohseny
+    'default',                               # fallback
+]
+
 PORTFOLIO_ID = 'default'
 
-# الأسهم من صورة المحفظة
+# الأسهم من محفظة Thndr
 # (ticker, current_value, return_egp, return_pct)
 PORTFOLIO_STOCKS = [
     ('KORR', 3508, 3508, 0.00),       # KORA_r1
@@ -72,7 +84,7 @@ PORTFOLIO_SAVINGS = [
 ]
 
 
-def update_portfolio(apply=False):
+def update_portfolio(apply=False, user_ids=None):
     """تحديث محفظة الأدمن."""
     if not STOCKS_DB.exists():
         print(f"❌ stocks.db غير موجود: {STOCKS_DB}")
@@ -81,101 +93,104 @@ def update_portfolio(apply=False):
     conn = sqlite3.connect(str(STOCKS_DB))
     c = conn.cursor()
 
-    # 1. عرض الأسهم القديمة
-    c.execute("SELECT id, stock_ticker, current_value, total_invested FROM portfolio_assets WHERE user_id = ? AND type = 'stock'", (ADMIN_USER_ID,))
-    old_stocks = c.fetchall()
-    print(f"📊 الأسهم الحالية في محفظة الأدمن: {len(old_stocks)}")
-    for r in old_stocks[:5]:
-        print(f"  {r[1]}: value={r[2]} | invested={r[3]}")
+    target_users = user_ids or TARGET_ADMIN_IDS
+
+    # 1. عرض الأصول الحالية
+    print(f"📊 فحص حسابات الأدمن المستهدفة ({len(target_users)} حساب):")
+    for uid in target_users:
+        c.execute("SELECT COUNT(*), type FROM portfolio_assets WHERE user_id = ? GROUP BY type", (uid,))
+        counts = c.fetchall()
+        summary = ", ".join([f"{t}: {cnt}" for cnt, t in counts]) if counts else "فارغة (0 أصول)"
+        print(f"  - [{uid}]: {summary}")
 
     if not apply:
-        print("\n--- DRY RUN (استخدم --apply للتنفيذ) ---")
-        print(f"\n📊 الأسهم الجديدة: {len(PORTFOLIO_STOCKS)}")
+        print("\n--- DRY RUN (استخدم --apply للتنفيذ الفعلي) ---")
+        print(f"\n📊 الأسهم الجديدة المجهزة ({len(PORTFOLIO_STOCKS)} سهم):")
         for ticker, value, ret, pct in PORTFOLIO_STOCKS:
-            print(f"  {ticker}: {value} ج.م | عائد: {ret} ({pct}%)")
-        print(f"\n💰 الصناديق: {len(PORTFOLIO_FUNDS)}")
+            print(f"  {ticker}: {value:,.0f} ج.م | عائد: {ret:,.2f} ({pct:.2f}%)")
+        print(f"\n💰 الصناديق ({len(PORTFOLIO_FUNDS)}):")
         for name, value, ret, pct, yld in PORTFOLIO_FUNDS:
-            print(f"  {name}: {value} ج.م | عائد: {ret} ({pct}%) | yield: {yld}%")
-        print(f"\n🥇 الذهب: {len(PORTFOLIO_GOLD)}")
+            print(f"  {name}: {value:,.0f} ج.م | عائد: {ret:,.2f} ({pct:.2f}%) | yield: {yld}%")
+        print(f"\n🥇 الذهب ({len(PORTFOLIO_GOLD)}):")
         for name, value, ret, pct in PORTFOLIO_GOLD:
-            print(f"  {name}: {value} ج.م | عائد: {ret} ({pct}%)")
-        print(f"\n🏦 الادخار: {len(PORTFOLIO_SAVINGS)}")
+            print(f"  {name}: {value:,.0f} ج.م | عائد: {ret:,.2f} ({pct:.2f}%)")
+        print(f"\n🏦 الادخار ({len(PORTFOLIO_SAVINGS)}):")
         for name, value, ret, pct, rate in PORTFOLIO_SAVINGS:
-            print(f"  {name}: {value} ج.م | عائد: {ret} ({pct}%) | rate: {rate}%")
+            print(f"  {name}: {value:,.0f} ج.م | عائد: {ret:,.2f} ({pct:.2f}%) | rate: {rate}%")
         conn.close()
         return
 
-    # 2. حذف الأصول القديمة (كل الأنواع)
-    c.execute("DELETE FROM portfolio_assets WHERE user_id = ?", (ADMIN_USER_ID,))
-    deleted = c.rowcount
-    print(f"\n🗑️  تم حذف {deleted} أصل قديم")
-
     now = datetime.now().isoformat()
 
-    # 3. إضافة الأسهم الجديدة (type='stock')
-    inserted = 0
-    for ticker, current_value, return_egp, return_pct in PORTFOLIO_STOCKS:
-        total_invested = current_value - return_egp
-        # حساب avg_buy_price من return_pct
-        if return_pct != 0:
-            avg_buy_price = current_value / (1 + return_pct / 100)
-        else:
-            avg_buy_price = current_value
-        quantity = current_value / avg_buy_price if avg_buy_price > 0 else 1
+    for uid in target_users:
+        # 2. حذف الأصول القديمة
+        c.execute("DELETE FROM portfolio_assets WHERE user_id = ?", (uid,))
+        deleted = c.rowcount
+        print(f"\n🗑️  [{uid}] تم حذف {deleted} أصل قديم")
 
-        c.execute("""
-            INSERT INTO portfolio_assets (
-                user_id, type, name, stock_ticker, quantity, avg_buy_price,
-                current_value, total_invested, market, currency,
-                portfolio_id, is_active, asset_class, annual_yield,
-                added_at, updated_at
-            ) VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, 'EGX', 'EGP', ?, 1, 'stock', 0.0, ?, ?)
-        """, (ADMIN_USER_ID, ticker, ticker, round(quantity, 4), round(avg_buy_price, 4),
-              current_value, round(total_invested, 2), PORTFOLIO_ID, now, now))
-        inserted += 1
+        # 3. إضافة الأسهم الجديدة (type='stock')
+        inserted_stocks = 0
+        for ticker, current_value, return_egp, return_pct in PORTFOLIO_STOCKS:
+            total_invested = current_value - return_egp
+            if return_pct != 0:
+                avg_buy_price = current_value / (1 + return_pct / 100)
+            else:
+                avg_buy_price = current_value
+            quantity = current_value / avg_buy_price if avg_buy_price > 0 else 1
 
-    print(f"✅ تم إضافة {inserted} سهم")
+            c.execute("""
+                INSERT INTO portfolio_assets (
+                    user_id, type, name, stock_ticker, quantity, avg_buy_price,
+                    current_value, total_invested, market, currency,
+                    portfolio_id, asset_class, annual_yield,
+                    added_at, updated_at
+                ) VALUES (?, 'stock', ?, ?, ?, ?, ?, ?, 'EGX', 'EGP', ?, 'stock', 0.0, ?, ?)
+            """, (uid, ticker, ticker, round(quantity, 4), round(avg_buy_price, 4),
+                  current_value, round(total_invested, 2), PORTFOLIO_ID, now, now))
+            inserted_stocks += 1
 
-    # 4. إضافة الصناديق (type='bank', asset_class='fund')
-    for name, value, ret, pct, yld in PORTFOLIO_FUNDS:
-        c.execute("""
-            INSERT INTO portfolio_assets (
-                user_id, type, name, bank_name, current_value, total_invested,
-                market, currency, portfolio_id, is_active, asset_class, annual_yield,
-                added_at, updated_at
-            ) VALUES (?, 'bank', ?, ?, ?, ?, 'EGX', 'EGP', ?, 1, 'fund', ?, ?, ?)
-        """, (ADMIN_USER_ID, name, name, value, value - ret, PORTFOLIO_ID, yld, now, now))
-    print(f"💰 تم إضافة {len(PORTFOLIO_FUNDS)} صندوق")
+        # 4. إضافة الصناديق (type='bank', asset_class='fund')
+        for name, value, ret, pct, yld in PORTFOLIO_FUNDS:
+            c.execute("""
+                INSERT INTO portfolio_assets (
+                    user_id, type, name, bank_name, fund_name, current_value, total_invested,
+                    market, currency, portfolio_id, asset_class, annual_yield,
+                    added_at, updated_at
+                ) VALUES (?, 'bank', ?, ?, ?, ?, ?, 'EGX', 'EGP', ?, 'fund', ?, ?, ?)
+            """, (uid, name, name, name, value, value - ret, PORTFOLIO_ID, yld, now, now))
 
-    # 5. إضافة الذهب (type='gold')
-    for name, value, ret, pct in PORTFOLIO_GOLD:
-        c.execute("""
-            INSERT INTO portfolio_assets (
-                user_id, type, name, current_value, total_invested,
-                market, currency, portfolio_id, is_active, asset_class, annual_yield,
-                added_at, updated_at
-            ) VALUES (?, 'gold', ?, ?, ?, 'EGX', 'EGP', ?, 1, 'gold', 0.0, ?, ?)
-        """, (ADMIN_USER_ID, name, value, value - ret, PORTFOLIO_ID, now, now))
-    print(f"🥇 تم إضافة {len(PORTFOLIO_GOLD)} أصل ذهب")
+        # 5. إضافة الذهب (type='gold')
+        for name, value, ret, pct in PORTFOLIO_GOLD:
+            c.execute("""
+                INSERT INTO portfolio_assets (
+                    user_id, type, name, current_value, total_invested,
+                    market, currency, portfolio_id, asset_class, annual_yield,
+                    added_at, updated_at
+                ) VALUES (?, 'gold', ?, ?, ?, 'EGX', 'EGP', ?, 'gold', 0.0, ?, ?)
+            """, (uid, name, value, value - ret, PORTFOLIO_ID, now, now))
 
-    # 6. إضافة الادخار (type='bank', asset_class='savings')
-    for name, value, ret, pct, rate in PORTFOLIO_SAVINGS:
-        c.execute("""
-            INSERT INTO portfolio_assets (
-                user_id, type, name, bank_name, current_value, total_invested,
-                interest_rate, market, currency, portfolio_id, is_active, asset_class, annual_yield,
-                added_at, updated_at
-            ) VALUES (?, 'bank', ?, ?, ?, ?, ?, 'EGX', 'EGP', ?, 1, 'savings', ?, ?, ?)
-        """, (ADMIN_USER_ID, name, name, value, value - ret, rate, PORTFOLIO_ID, rate, now, now))
-    print(f"🏦 تم إضافة {len(PORTFOLIO_SAVINGS)} أصل ادخار")
+        # 6. إضافة الادخار (type='bank', asset_class='savings')
+        for name, value, ret, pct, rate in PORTFOLIO_SAVINGS:
+            c.execute("""
+                INSERT INTO portfolio_assets (
+                    user_id, type, name, bank_name, current_value, total_invested,
+                    interest_rate, market, currency, portfolio_id, asset_class, annual_yield,
+                    added_at, updated_at
+                ) VALUES (?, 'bank', ?, ?, ?, ?, ?, 'EGX', 'EGP', ?, 'savings', ?, ?, ?)
+            """, (uid, name, name, value, value - ret, rate, PORTFOLIO_ID, rate, now, now))
+
+        print(f"✅ [{uid}] تم إضافة {inserted_stocks} سهم + {len(PORTFOLIO_FUNDS)} صندوق + {len(PORTFOLIO_GOLD)} ذهب + {len(PORTFOLIO_SAVINGS)} ادخار")
 
     conn.commit()
     conn.close()
-    print(f"\n🎉 تم تحديث المحفظة بنجاح!")
+    print(f"\n🎉 تم تحديث محفظة الأدمن بنجاح لكافة حسابات الأدمن!")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='تحديث محفظة الأدمن')
     parser.add_argument('--apply', action='store_true', help='تنفيذ فعلي (بدونها = dry-run)')
+    parser.add_argument('--user-id', type=str, default=None, help='تحديد user_id معين بدلاً من كل حسابات الأدمن')
     args = parser.parse_args()
-    update_portfolio(apply=args.apply)
+
+    user_ids = [args.user_id] if args.user_id else None
+    update_portfolio(apply=args.apply, user_ids=user_ids)
