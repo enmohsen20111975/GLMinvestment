@@ -142,9 +142,9 @@ interface InvestorsRow {
   individuals_buys_value: number | null;
   individuals_sells_value: number | null;
   individuals_net_value: number | null;
-  arab_institutions_buys_value: number | null;
-  arab_institutions_sells_value: number | null;
-  arab_institutions_net_value: number | null;
+  arab_buys_value: number | null;
+  arab_sells_value: number | null;
+  arab_net_value: number | null;
   foreign_buys_value: number | null;
   foreign_sells_value: number | null;
   foreign_net_value: number | null;
@@ -160,9 +160,9 @@ function normalizeRow(r: Record<string, unknown>): InvestorsRow {
     individuals_buys_value: safeNum(r.individuals_buys_value ?? r.individuals_buys),
     individuals_sells_value: safeNum(r.individuals_sells_value ?? r.individuals_sells),
     individuals_net_value: safeNum(r.individuals_net_value ?? r.individuals_net),
-    arab_institutions_buys_value: safeNum(r.arab_institutions_buys_value ?? r.arab_buys_value ?? r.arab_buys),
-    arab_institutions_sells_value: safeNum(r.arab_institutions_sells_value ?? r.arab_sells_value ?? r.arab_sells),
-    arab_institutions_net_value: safeNum(r.arab_institutions_net_value ?? r.arab_net_value ?? r.arab_net),
+    arab_buys_value: safeNum(r.arab_buys_value ?? r.arab_buys),
+    arab_sells_value: safeNum(r.arab_sells_value ?? r.arab_sells),
+    arab_net_value: safeNum(r.arab_net_value ?? r.arab_net),
     foreign_buys_value: safeNum(r.foreign_buys_value ?? r.foreign_buys),
     foreign_sells_value: safeNum(r.foreign_sells_value ?? r.foreign_sells),
     foreign_net_value: safeNum(r.foreign_net_value ?? r.foreign_net),
@@ -188,7 +188,7 @@ function computeStats(rows: InvestorsRow[]) {
   let tradesSum = 0;
   for (const r of rows) {
     if (r.individuals_net_value != null) { indSum += r.individuals_net_value; indCnt++; }
-    if (r.arab_institutions_net_value != null) { arabSum += r.arab_institutions_net_value; arabCnt++; }
+    if (r.arab_net_value != null) { arabSum += r.arab_net_value; arabCnt++; }
     if (r.foreign_net_value != null) { forSum += r.foreign_net_value; forCnt++; }
     if (r.number_of_trades != null) tradesSum += r.number_of_trades;
   }
@@ -310,9 +310,9 @@ function computeAndUpsertForDate(
     individuals_buys_value: round2(egyBuy),
     individuals_sells_value: round2(egySell),
     individuals_net_value: round2(egyNet),
-    arab_institutions_buys_value: round2(arabBuy),
-    arab_institutions_sells_value: round2(arabSell),
-    arab_institutions_net_value: round2(arabNet),
+    arab_buys_value: round2(arabBuy),
+    arab_sells_value: round2(arabSell),
+    arab_net_value: round2(arabNet),
     foreign_buys_value: round2(foreignBuy),
     foreign_sells_value: round2(foreignSell),
     foreign_net_value: round2(foreignNet),
@@ -328,9 +328,9 @@ function computeAndUpsertForDate(
       row.individuals_buys_value,
       row.individuals_sells_value,
       row.individuals_net_value,
-      row.arab_institutions_buys_value,
-      row.arab_institutions_sells_value,
-      row.arab_institutions_net_value,
+      row.arab_buys_value,
+      row.arab_sells_value,
+      row.arab_net_value,
       row.foreign_buys_value,
       row.foreign_sells_value,
       row.foreign_net_value,

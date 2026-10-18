@@ -68231,3 +68231,31 @@ Stage Summary:
 - ✅ lint: 0 errors.
 - ✅ scope نظيف: src/modules/dashboard/components/InvestorsFlowPanel.tsx بس.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: ALPHA-INVESTORS-RENAME-001
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: في src/app/api/egx/investors/route.ts — ترجمة arab_institutions_* → arab_* في الـ response لتطابق DB columns + Python API (تكليف من كيمي).
+
+Work Log:
+- قرأت route.ts. لقيت 13 موضع فيه `arab_institutions_*` (interface L145-147 + normalizeRow output L163-165 + stats L191 + seed row L313-315 + seed INSERT params L331-333).
+- لقيت إن الـ DB schema (CREATE_TABLE_SQL L53-55 + UPSERT_SQL L72) بتستخدم `arab_buys_value`, `arab_sells_value`, `arab_net_value` (الصح). الـ route كان بيعمل rename للـ DB columns لـ `arab_institutions_*` في الـ JSON response → كسر consistency مع Python API (`egx_investors_scraper.py` بيستخدم `arab_net_value`).
+- التعديلات (6 edits بالـ MultiEdit):
+  1. replace_all: `arab_institutions_buys_value` → `arab_buys_value` (4 مواضع: interface, normalizeRow, seed row, seed INSERT).
+  2. replace_all: `arab_institutions_sells_value` → `arab_sells_value` (4 مواضع).
+  3. replace_all: `arab_institutions_net_value` → `arab_net_value` (5 مواضع: + stats calculation).
+  4. تنظيف redundant lookup (ظهر بعد replace_all): `r.arab_buys_value ?? r.arab_buys_value ?? r.arab_buys` → `r.arab_buys_value ?? r.arab_buys`.
+  5. نفس النمط للـ sells.
+  6. نفس النمط للـ net.
+- التحقق:
+  * `grep -c "arab_institutions"` → 0 leftover.
+  * `bun run lint` → exit 0، 0 errors.
+  * field names دلوقتي consistent مع DB schema + Python scraper.
+
+Stage Summary:
+- ✅ 13 موضع `arab_institutions_*` اتعملهم rename لـ `arab_*` (match Python API + DB schema).
+- ✅ redundant lookups اتظبطت (normalizeRow pattern: `r.arab_*_value ?? r.arab_*`).
+- ✅ lint: 0 errors.
+- ✅ scope نظيف: src/app/api/egx/investors/route.ts بس.
+- ⚠️ FLAG: لو فيه Flutter app خارجي بيتعامل مع `arab_institutions_*` field name، هيتكسر. المالك لازم يأكد.
+- 🔁 Rule 75: commit + push فوري.
