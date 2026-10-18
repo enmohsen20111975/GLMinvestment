@@ -5,8 +5,8 @@
 > **التاريخ:** 2026-10-18 (آخر تحديث: see below).  
 > **المستودع:** `/home/z/my-project` (origin/main).  
 > **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
-> **الحالة:** B-P0 خلص + متحقق + متدفع (`13ae02f`). الباقي in-flight.  
-> **آخر تحديث:** 2026-10-18 — إنشاء الملف + رفعه على origin.
+> **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق منهم + متدفعين لـ origin (`77b9988`). باقي: A-P3/A-P4 + B-P2/B-P3 + الـ data-conflict fixes.  
+> **آخر تحديث:** 2026-10-18 — A-P1 + A-P2 + B-P1 متحقق منهم (page.tsx untouched، tabs مدمجة، paywall middleware + py_compile PASS).
 
 ---
 
@@ -60,17 +60,23 @@
 
 ---
 
-## 5. الـ Phases اللي لسه (in-flight)
+## 5. الـ Phases — الحالة المحدّثة
 
-| Task ID | الفريق | الـ scope | الحالة |
-|---|---|---|---|
-| **A-P1** | ألفا | TopBar 24→10 + MobileNav | موافق push، مستني |
-| **A-P2** | ألفا | tab integration (stock-filters→stocks، reports→recommendations، alerts→portfolio) | بعد A-P1 |
-| **A-P3** | ألفا | Auth UI (Guest Mode + Trial soft + soft paywall) | بالاَ contract |
-| **A-P4** | ألفا | admin 26→4-5 hubs | بعد A-P1 |
-| **B-P1** | برافو | paywall في Python (`@require_role` middleware) | **GO** (contract جاهز) |
-| **B-P2** | برافو | trial fix (14 + populate `trial_ends_at` + admin reset) | بعد B-P1 |
-| **B-P3** | برافو | stocks/crypto unification (canonical `stocks.db`) | بعد B-P2 |
+| Task ID | الفريق | الحالة |
+|---|---|---|
+| ✅ **B-P0** | برافو | PASS + متدفع (`13ae02f`) — 22 admin endpoints محميين |
+| ✅ **A-P1** | ألفا | PASS + متدفع — TopBar 24→10، `page.tsx` UNTOUCHED (Rule 67) |
+| ✅ **A-P2** | ألفا | PASS + متدفع — tabs مدمجة (stock-filters→StocksView، reports→MarketAnalysisView، alerts→EnhancedPortfolioView) |
+| ✅ **B-P1** | برافو | PASS + متدفع — `require_role` + `require_trial_or_paid` في auth_middleware، مستخدم في ai_routes، py_compile PASS، `API-CONTRACT-PAYWALL.md` مكتوب |
+| 🔜 **A-P3** | ألفا | Auth UI (Guest Mode + Trial soft + soft paywall بالاَ contract) |
+| 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
+| 🔜 **B-P2** | برافو | trial fix (14 + populate `trial_ends_at` + admin reset) |
+| 🔜 **B-P3** | برافو | stocks/crypto unification (canonical `stocks.db`) — BLOCKED لحد canonical price decision |
+
+### ملاحظات verify (جون):
+- A-P1: تبّت `page.tsx` ما اتلمس (git log empty للملف في الـ A-P1/A-P2 commits) → Rule 67 محترمة.
+- A-P2: لقيت comments `RESTRUCT-A-P2` في الـ 3 views + TabsTrigger imports — tabs فعلًا مدمجة.
+- B-P1: `require_role(min_tier, require_trial)` + `require_trial_or_paid` موجودين + مستوردين + مستخدمين في ai_routes. ⚠️ محتاج تبّيت إن الـ decorator متطبّق على كل الـ advanced endpoints (مش بس ai_routes) — follow-up.
 
 ---
 
@@ -162,8 +168,8 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | # | الـ mess | الحل | الفريق | الحالة |
 |---|---|---|---|---|
 | 1 | 22 unauthed admin endpoints | B-P0 | برافو | ✅ خلص + متدفع |
-| 2 | 58→10 شاشات + bloat | A-P1→A-P4 | ألفا | 🔜 |
-| 3 | paywall في Next.js | B-P1 | برافو | 🔜 |
+| 2 | 58→10 شاشات + bloat | A-P1 + A-P2 خلصوا | ألفا | ✅ جزئي (A-P3 + A-P4 لسه) |
+| 3 | paywall في Next.js | B-P1 | برافو | ✅ خلص (middleware + contract) |
 | 4 | trial 4-source | B-P2 → 14 | برافو | 🔜 |
 | 5 | price split-brain | B-P3 → canonical `stocks.db` + Rule 12 amendment | برافو | 🔜 |
 | 6 | frontend direct-DB | mandate لألفا (proxy للـ Python) | ألفا | 🔜 |
