@@ -68985,3 +68985,34 @@ Stage Summary:
 - ✅ audit trail محفوظ (original_status في quality_flags/notes).
 - ✅ Relative paths (Rule 17) — يشتغل على laptop + VPS + sandbox.
 - ⚠️ 809 rows في aiPrediction عندها invalid geometry (stop>=entry أو target<=entry) — مش هيتعملها backfill. لو محتاج إصلاح، تكليف منفصل.
+
+---
+Task ID: BRAVO-PRICE-UNIFICATION-001
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: كيمي P1 — canonical price source unification
+
+Work Log:
+- Sub-task 1 (canonical decision):
+  * canonical = stocks.db.stock_daily_prices (Rule 11 SSOT)
+  * data_engine.db.historical_data + price_history.db.price_history = FALLBACK only
+  * حدّثت Documentation/DATA-SOURCES.md بقسم 2.7 جديد (CANONICAL PRICE SOURCE) فيه القرار + القواعد + mismatches.
+- Sub-task 2 (migration script — vps-service/scripts/price_unification.py):
+  * Rule 17: relative paths (parents[2] = project root).
+  * AUDIT: يطلع (ticker, date) موجودة في fallback بس مش في canonical.
+  * REPLENISH: INSERT OR IGNORE للـ missing rows (idempotent عبر UNIQUE index).
+  * MISMATCH LOG: يـ log الـ rows اللي canonical.close != data_engine.close (audit only، مفيش overwrite).
+  * idempotent test: RUN 2 = 0 new inserts ✓
+- BEFORE: stocks.db.stock_daily_prices = 82,011 rows, 1,240 tickers
+- AFTER: 1,396,939 rows, 1,570 tickers (+1,314,928 rows، +330 tickers)
+  * من data_engine.historical_data: +115,899 rows
+  * من price_history.price_history: +1,199,029 rows
+- Mismatches: 2,356/10,000 sample (23.56%) فيها اختلاف بسيط (0.1-0.5 EGP) — canonical = آخر سعر، مفيش overwrite.
+
+Stage Summary:
+- ✅ canonical decision موثّق في DATA-SOURCES.md §2.7.
+- ✅ migration script idempotent (RUN 2 = 0 new).
+- ✅ +1.3M rows replenished لـ canonical.
+- ✅ 330 tickers جديدة في canonical.
+- ✅ Relative paths (Rule 17) — يشتغل على laptop + VPS + sandbox.
+- ⚠️ FLAG: 23.56% mismatch بين canonical و data_engine — لو محسن عاوز reconcile (overwrite canonical بـ data_engine)، تكليف منفصل. حاليًا canonical = آخر سعر متاح (آمن).
+- ⚠️ FLAG: backtest_engine.py + market_regime.py لسه بيقروا من data_engine/price_history مباشرة. لازم refactoring لتغييرهم لـ canonical (تكليف منفصل لـ Bravo).

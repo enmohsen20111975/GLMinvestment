@@ -107,23 +107,48 @@ sl, tp1, tp2, rr_ratio_tp1, rr_ratio_tp2
 | `task_runs` | 75 | سجل تشغيل المهام | `task_runner.py` |
 | `watchlist` | — | قوائم المتابعة | `watchlist_manager.py` |
 
-### 2.4 `intraday.db` — بيانات Intraday (BLOCKED)
+### 2.4 `intraday.db` — بيانات Intraday
 
-- 1.1M rows (per DBPaths comment) — tick-level data
+- 1.1M rows — tick-level data (6 tables: stock_intraday, crypto_intraday, commodity_intraday, intraday_prices, intraday_meta)
 - المستخدمون: `backfill_intraday.py`, `dual_track_generator.py`, `intraday_scanner.py`
-- **غير متاح في الساندبوكس** — محتاج VPS الإنتاجي
+- ✅ RESTORED (BRAVO-DB-RESTORE-FINAL-001)
 
-### 2.5 `price_history.db` — الأسعار التاريخية (BLOCKED)
+### 2.5 `price_history.db` — الأسعار التاريخية (FALLBACK)
 
-- المستخدمون: `backtest_engine.py`, `market_regime.py`
-- **غير متاح في الساندبوكس** — محتاج VPS الإنتاجي
+- 1,309,893 rows — 1,557 tickers (16 columns incl. buy_volume, sell_volume, delta_volume, pressure)
+- **القرار الكنسي (BRAVO-PRICE-UNIFICATION-001): FALLBACK فقط** — canonical = `stocks.db.stock_daily_prices`
+- المستخدمون السابقون: `backtest_engine.py`, `market_regime.py` → لازم يقرأوا من canonical
+- ✅ RESTORED + replenished canonical بـ 1,199,029 rows منه
 
-### 2.6 `data_engine.db` — بيانات الـ data-engine (BLOCKED)
+### 2.6 `data_engine.db` — بيانات الـ data-engine (FALLBACK)
 
-- يشمل: `gold_prices` (187K rows), `historical_data`, `fundamentals`
-- المستخدمون: `backtest_engine.py`, `repair_data_engine.py`, `market_regime.py`
-- Aliases: `GOLD_PRICES_DB`, `HISTORICAL_DB`
-- **غير متاح في الساندبوكس** — محتاج VPS الإنتاجي
+- يشمل: `gold_prices` (850K rows), `historical_data` (174K rows), `crypto_prices` (2M), `egx_fundamentals`, `sharia_*`, 29 tables
+- **القرار الكنسي (BRAVO-PRICE-UNIFICATION-001): historical_data = FALLBACK فقط** — canonical = `stocks.db.stock_daily_prices`
+- المستخدمون السابقون: `backtest_engine.py`, `repair_data_engine.py`, `market_regime.py` → لازم يقرأوا من canonical
+- Aliases: `GOLD_PRICES_DB` (ده لسه canonical لـ gold)، `HISTORICAL_DB` (FALLBACK دلوقتي)
+- ✅ RESTORED + replenished canonical بـ 115,899 rows منه
+
+### 2.7 🔴 CANONICAL PRICE SOURCE (BRAVO-PRICE-UNIFICATION-001)
+
+**القرار الكنسي (2026-10-18 — كيمي P1 directive):**
+
+| المصدر | الدور | الجداول |
+|--------|------|---------|
+| `stocks.db.stock_daily_prices` | **CANONICAL** | 1,396,939 rows, 1,570 tickers (بعد replenish) |
+| `data_engine.db.historical_data` | FALLBACK | 174,616 rows, 1,147 symbols |
+| `price_history.db.price_history` | FALLBACK | 1,309,893 rows, 1,557 tickers |
+
+**القواعد:**
+1. كل الـ Python code لازم يقرأ أسعار EGX daily من `stocks.db.stock_daily_prices` فقط.
+2. `data_engine.db.historical_data` + `price_history.db.price_history` = fallback (للـ tickers اللي مش في canonical).
+3. لو ticker مش موجود في canonical → اقرأ من fallback + log warning.
+4. ممنوع الـ write لـ fallback DBs من الـ production code (بس الـ scrapers تقدر تكتب فيهم).
+5. الـ migration script (`vps-service/scripts/price_unification.py`) بيعمل replenish idempotent.
+
+**الـ mismatches المكتشفة (23.56% في sample 10K):**
+- 2,356 rows فيها اختلاف بين canonical و data_engine (أغلبها 0.1-0.5 EGP).
+- السبب: scrapers مختلفة (egksco vs eodhd) + أوقات fetch مختلفة.
+- **القرار: canonical = آخر سعر متاح. مفيش overwrite تلقائي.** لو محسن عاوز reconcile، تكليف منفصل.
 
 ---
 
