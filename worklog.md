@@ -69133,3 +69133,26 @@ Stage Summary:
 - ✅ 0 price fabrication found في UI components.
 - ✅ مفيش تعديل كود لازم — بس توثيق.
 - 🔁 Rule 75: commit + push.
+
+---
+Task ID: RESTRUCTURE-WAVE1-B
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: كيمي — RESTRUCTURE-WAVE1-B backend audit (paywall/trial/guest/stocks-crypto/admin) — AUDIT ONLY
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = 4494f32، clean). قرأت worklog tail 200 + أعمال-فريق-برافو.md + Constitution Rules 11/18/20/27/73/75 + DATA-SOURCES.md.
+- (a) Paywall Gates: grep على subscription/paywall في vps-service/api + core → 0 matches. مفيش paywall logic في Python خالص — كله في Next.js (Rule 20 violation). Telegram bot فيه check_subscription بس بـ يستعلم Next.js.
+- (b) Trial System: auth.db.User فيه trial_ends_at + trial_warning_sent_at + trial_deletion_scheduled_at + subscription_tier. SubscriptionPlan = 10 plans. **gap**: free plan trial_days=30 (مش 14 زي ما كيمي قالت). 3/3 sample users عندهم trial_ends_at=NULL (trial مش بيـ trigger).
+- (c) Guest Mode: مفيش role model في Python. auth_middleware.py فيه @require_admin بس. كل read endpoints مفتوحة. محتاج schema migration + middleware جديد.
+- (d) Stocks/Crypto: 7 stocks endpoints + 14 crypto endpoints. duplication: /api/flow/<ticker> vs /api/crypto/flow/<symbol> + /api/explosive/<ticker> vs /api/crypto/explosive/<symbol>. logic مش موحّد.
+- (e) Admin: 74 endpoint في admin_routes.py (4980 سطر). 52 محمية بـ @require_admin. **22 بدون حماية** (CRITICAL security risk).
+- كتبت RESTRUCTURE-BACKEND-AUDIT.md (التقرير الكامل).
+- 🚫 مفيش push. 🚫 مفيش code touch. scope: vps-service/ + db/ read-only.
+
+Stage Summary:
+- ✅ التقرير اتعمل في /home/z/my-project/RESTRUCTURE-BACKEND-AUDIT.md.
+- 🔴 CRITICAL findings (3): 22 admin endpoint بدون auth + مفيش paywall في Python + مفيش role model.
+- 🟡 HIGH findings (3): trial_days=30 مش 14 + trial_ends_at=NULL + stocks/crypto duplication.
+- 🟢 المسار المقترح: 3 waves (Security → Architecture → Unification).
+- ⚠️ Risks للمالك: أي تنفيذ محتاج تكليف منفصل + تنسيق مع ألفا + human approval للـ DB migration.
+- 🚫 Push gate محترم — مفيش commit، مفيش push.
