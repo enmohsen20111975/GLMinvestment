@@ -1185,22 +1185,25 @@ async def post_daily_opportunities(market: str = 'EGX') -> Dict:
     يستدعي /api/maestro/daily-opportunities
     """
     print(f"[{datetime.now()}] 🎯 Generating daily opportunities post...")
-    
+
+    # BRAVO MAESTRO-CANCER-1 STEP 2: swapped maestro import → V40.2 native.
+    # OLD: from analyzers.maestro_orchestrator import daily_opportunities
+    # NEW: from utils.daily_opportunities_v402 import daily_opportunities_v402
     try:
-        from analyzers.maestro_orchestrator import daily_opportunities
+        from utils.daily_opportunities_v402 import daily_opportunities_v402 as daily_opportunities
     except Exception as e:
-        print(f"[{datetime.now()}] ❌ daily_opportunities not available: {e}")
+        print(f"[{datetime.now()}] ❌ daily_opportunities_v402 not available: {e}")
         return {"success": False, "error": f"Module not available: {e}"}
-    
+
     try:
         # جيب أفضل 5 فرص
         result = daily_opportunities(market=market, limit=5)
-        opportunities = result.get('opportunities', [])
-        
+        opportunities = result.get('top_3', [])  # V40.2 returns 'top_3' (was 'opportunities')
+
         if not opportunities:
             print(f"[{datetime.now()}] ⚠️ No opportunities found")
             return {"success": False, "error": "No opportunities found"}
-        
+
         # هيئ نص البوست
         post_text = _format_daily_opportunities_post(result, market)
         

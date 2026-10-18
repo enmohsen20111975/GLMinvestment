@@ -69461,6 +69461,7 @@ Stage Summary:
 - 🔁 Push gate: جون وافق → هـ commit + push.
 
 ---
+<<<<<<< HEAD
 Task ID: MAESTRO-CANCER-1
 Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
 Task: فصل الـ live maestro calls من الـ frontend. الـ maestro بيرجّع contradictory recs (55/42) vs V40.2 canonical (78/65/55).
@@ -69487,3 +69488,82 @@ Stage Summary:
 - ✅ lint: 0 errors.
 - ✅ التوصيات دلوقتي بتيجي من V40.2 canonical (predictions.db) — مش متناقضة.
 - 🚫 NO push (gate جون).
+=======
+Task ID: MAESTRO-CANCER-1-STEP0
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — MAESTRO-CANCER-1 STEP 0: TRACE (map all maestro callers before any touch)
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = eeb1fe8). قرأت worklog tail + Constitution Rules 11/20/27/75.
+- فحص maestro_orchestrator.py (4,416 lines) + maestro_routes.py (13 endpoints) + كل imports.
+- كتبت MAESTRO-MAP.md (خريطة كاملة).
+
+🔴 STEP 0 FINDING — STOP (جون قال: "لو أي حاجة live → STOP، ابعتلي"):
+
+الـ 4 "zombie analyzers" مش zombies — ليهم LIVE callers:
+
+1. hunting_engine.py → مستورد في api/stock_analysis_routes.py:43 (LIVE API endpoint!)
+2. background_analyzer.py → مستورد في jobs/market_scheduler.py:114 (CRON job!)
+3. crypto_maestro.py → مستورد في live_signals/recorder.py:39 (signals recorder)
+4. unified_maestro.py → مستورد في background_analyzer.py:118 (chain to cron)
+
+maestro_orchestrator متغلغل في 5 live callers (مش 2):
+- daily_predictor L3811 (optional shim — safe)
+- telegram L1190 (hard dependency — needs V40.2 replacement)
+- stock_analysis_routes (LIVE API via hunting_engine)
+- market_scheduler (CRON via background_analyzer → unified_maestro)
+- live_signals/recorder (via crypto_maestro)
+
+الـ plan بتاع جون (6 steps) مفترض إن الـ 4 zombies safe to kill. ده غلط — قتلهم هـ يكسر:
+- stock_analysis_routes (API)
+- market_scheduler (cron)
+- live_signals/recorder
+
+Stage Summary:
+- ✅ MAESTRO-MAP.md اتكتب (خريطة كاملة).
+- 🔴 STOP: الـ cancer أعمق من المتوقع. محتاج 7-step surgical plan (مش 6).
+- ⚠️ John decision needed: هل أبدأ STEP 1-3 (safe: frontend + telegram + V40.2 heart) وأوقف قبل STEP 4-6؟ ولا نراجع الـ scope كامل؟
+- ⚠️ thresholds contradiction (55/42 vs 78/65/55) لسه محتاج إصلاح بس ده standalone.
+>>>>>>> 3c853ad (75ed4e90-e49a-4e0b-94a0-87e489e7fc33)
+
+---
+Task ID: MAESTRO-CANCER-1-STEP3-STEP2
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — MAESTRO-CANCER-1 STEP 3 (re-implement veto) + STEP 2 (V40.2 daily_opportunities)
+
+Work Log:
+- STEP 3 (V40.2 lesson-veto re-implementation):
+  * قرأت run_expert_memory_phase (maestro_orchestrator.py L1478-1663، 185 lines).
+  * 🔴 اكتشاف حرج: الـ veto في daily_predictor كان **DEAD CODE**. الـ function بـ return 'proceed'/'caution'/'boost' فقط، بس daily_predictor كان بـ check 'block' (مستحيل يتحقق). الـ veto مكسور أصلاً.
+  * كتبت vps-service/utils/expert_memory_v402.py (180 lines):
+    - ExpertMemoryResultV402 dataclass (نفس fields).
+    - run_expert_memory_phase_v402(): نفس logic، بـ تقرأ من نفس lesson_store (utils.lesson_store).
+    - Rule 17 relative paths.
+  * بدّلت import في daily_predictor.py L3811:
+    - OLD: from analyzers.maestro_orchestrator import run_expert_memory_phase
+    - NEW: from utils.expert_memory_v402 import run_expert_memory_phase_v402
+    - Fix: check 'caution' (مش 'block' الميت) → الـ veto دلوقتي شغّال فعلاً.
+  * verify: COMI test → قرا 1,973 lessons (1,960 persona + 13 ticker)، win_rate=49% (neutral → proceed). logic صحيح.
+
+- STEP 2 (V40.2 daily_opportunities for telegram):
+  * قرأت maestro daily_opportunities (L4311-4417، 106 lines). معقدة بـ تستخدم MaestroOrchestrator.analyze.
+  * كتبت vps-service/utils/daily_opportunities_v402.py (95 lines):
+    - بـ تقرأ من predictions.db.aiPrediction مباشرة (canonical V40.2 source per Rule 21).
+    - فلتر: signal IN (BUY, STRONG_BUY, ACCUMULATE) + status NOT QUARANTINED + R/R >= 1.8 + geometry valid.
+    - Rule 27 NO-FAKE-DATA: كل رقم من predictions.db.
+  * بدّلت import في telegram/auto_post_scheduler.py L1190:
+    - OLD: from analyzers.maestro_orchestrator import daily_opportunities
+    - NEW: from utils.daily_opportunities_v402 import daily_opportunities_v402 as daily_opportunities
+    - Fix: result.get('top_3') بدل 'opportunities' (V40.2 shape).
+  * verify: daily_opportunities_v402('EGX', 3) → رجّع 3 فرص (LUTS R/R=4.5, HELI R/R=14.1, BIGP R/R=5.5). كلهم >= 1.8 ✓.
+
+- py_compile: expert_memory_v402.py + daily_opportunities_v402.py + daily_predictor.py + auto_post_scheduler.py = ALL PASS.
+- verify: 0 maestro imports في daily_predictor (بس comment) + 0 في telegram (بس comment).
+
+Stage Summary:
+- ✅ STEP 3: V40.2 lesson-veto منفّذ + شغّال (قرا 1,973 lessons لـ COMI).
+- ✅ STEP 2: V40.2 daily_opportunities منفّذ + شغّال (3 فرص من predictions.db).
+- ✅ Bug fix إضافي: الـ veto الميت ('block' check) اتصحّح لـ 'caution' check → الـ veto دلوقتي شغّال فعلاً لأول مرة.
+- ✅ maestro_orchestrator import اتشال من daily_predictor + telegram (2 من 5 live callers disconnected).
+- ⚠️ 3 live callers لسه: stock_analysis_routes (via hunting_engine) + market_scheduler (via background_analyzer) + live_signals/recorder (via crypto_maestro). محتاجين STEP 4-6 (BLOCKED على John decision).
+- 🔁 Push gate: جون وافق على phases → هـ commit + push.

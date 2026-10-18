@@ -3807,9 +3807,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     # ── Phase 2 Fix: Read lessons BEFORE finalizing prediction ──
                     # This connects the closed loop: close → lesson → next prediction reads it.
                     # Safe-by-design: if lesson_store fails, prediction proceeds normally.
+                    # BRAVO MAESTRO-CANCER-1 STEP 3: swapped maestro import → V40.2 native.
+                    # OLD: from analyzers.maestro_orchestrator import run_expert_memory_phase
+                    # NEW: from utils.expert_memory_v402 import run_expert_memory_phase_v402
+                    # Also fixed dead veto: old checked 'block' (never returned) → now checks 'caution'.
                     try:
-                        from analyzers.maestro_orchestrator import run_expert_memory_phase
-                        _em = run_expert_memory_phase(
+                        from utils.expert_memory_v402 import run_expert_memory_phase_v402
+                        _em = run_expert_memory_phase_v402(
                             db_path=PREDICTIONS_DB,
                             ticker=sig['ticker'],
                             sector=_sector_change if isinstance(_sector_change, str) else '',
@@ -3818,13 +3822,15 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             month=int(scan_date.split('-')[1]) if '-' in scan_date else 1,
                             persona_name='balanced',
                         )
-                        if _em and _em.recommendation == 'block':
-                            # Expert memory says BLOCK this ticker → skip
-                            print(f"🚫 [EXPERT-MEMORY] Block {sig['ticker']} on {scan_date} — lesson-based veto", flush=True)
+                        # V40.2 lesson-veto: 'caution' = lesson says reduce/skip (was 'block' dead code)
+                        if _em and _em.recommendation == 'caution':
+                            print(
+                                f"🚫 [EXPERT-MEMORY-V402] Caution {sig['ticker']} on {scan_date} "
+                                f"— lesson-based veto: {_em.reason}", flush=True
+                            )
                             continue
                     except Exception:
                         pass  # Safe-by-design — lessons optional
-                    pass
                     # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل persona_predictions writing ──
                     # المنطق الموحد: مفيش persona تانية غير balanced. الكود القديم
                     # بـ يكتب persona_predictions للأسهم اللي strongly fit gambler/conservative.
