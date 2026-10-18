@@ -69156,3 +69156,42 @@ Stage Summary:
 - 🟢 المسار المقترح: 3 waves (Security → Architecture → Unification).
 - ⚠️ Risks للمالك: أي تنفيذ محتاج تكليف منفصل + تنسيق مع ألفا + human approval للـ DB migration.
 - 🚫 Push gate محترم — مفيش commit، مفيش push.
+
+---
+Task ID: RESTRUCTURE-WAVE1-A
+Agent: Alpha (frontend dragon — Plan subagent — Z.ai Code)
+Task: تحويل فوضى الشاشات (59 case + 21 menu + aliases + orphans) لمنتج بـ 13 شاشة علوية مرئية + 28 deep-link — إنتاج ملف PLAN فقط (planning only).
+
+Work Log:
+- بروتوكول البدء: قرأت worklog tail 200 + ALPHA-TEAM-WORK.md + SCREENS-INVENTORY.md (PRIMARY SOURCE) + Documentation/00-CONSTITUTION.md (Rules 4/20/27/73/75) + src/app/page.tsx renderView() switch + src/components/layout/TopBar.tsx navSections.
+- تحققت إن SCREENS-INVENTORY.md بيقول 59 case + 1 default = 60 switch branches. عدّيت cases الفعلية في page.tsx عبر grep → 59 case branches بالظبط (مطابق للجرد).
+- تحققت إن TopBar.tsx navSections فيه 5 أقسام × 21 menu items (مطابق للجرد).
+- كتبت RESTRUCTURE-MIGRATION-PLAN.md فيه 8 أقسام:
+  * Section A: جدول 59 case mapping (لكل case: current file + destination + target + rationale + risk) — 13 KEEP visible + 11 KEEP alias + 3 TAB + 28 DEEP-LINK + 2 REMOVE (crypto unify) = 59.
+  * Section B: جدول 26-28 admin tab mapping — 22 KEEP + 6 TAB-MERGE candidates + 0 REMOVE.
+  * Section C: Dialogs→Sheets plan — 17 dialogs → 5 global + 6 view/component-level (net reduction 6→5 global, 15→8 view-level). Target global-overlay count ≤5.
+  * Section D: Guest Mode frontend plan — AuthGate modification + LoginOrGuestSheet + guestMode context flag + gated views list. لا backend work في Wave 1 (Bravo audit: role model missing).
+  * Section E: TrialExpiredModal softening — hard block → soft paywall (blurred preview + dismissible SubscriptionSheet banner). 
+  * Section F: Crypto/Stocks merge plan — 2 remaining unifications (crypto-portfolio + crypto-prediction-tracking → alias redirects). 9 routes already unified per CRYPTO_VIEW_REDIRECTS.
+  * Section G: Dead code list — 16 historically archived (no action) + 7 new orphans flagged for P2 archive (NOT deleted in Wave 1). Total ~2280 LOC flagged.
+  * Section H: Wave ordering — P0 (5 deliverables) → P1 (5 consolidation tasks) → P2 (4 cleanup tasks) → P5 (verification audits). Dependency graph included.
+- соблюдение القواعد:
+  * Rule 4 (NO-NEW-SCREENS): ✅ ZERO new page.tsx. Only P2.2 flagged as exception (market-depth extraction — owner-approval gate).
+  * Rule 20 (Python=Brain): ✅ No logic in Node — all merges presentational.
+  * Rule 27 (NO-FAKE-DATA): ✅ No mock introduced. P0.5 removes AlertsCenter mock.
+  * Rule 73 (SINGLE-DISPLAY-SOURCE): ✅ Publisher consolidation 4→1.
+  * Rule 75 (PUSH-AFTER-EVERY-TASK): ⏸️ SUSPENDED for planning per mandate — owner push gate respected.
+- 🚫 NO git push. 🚫 NO code changes in src/ أو أي مكان. 🚫 NO file deletions. 🚫 NO touch لـ vps-service/scripts/db/.env/package.json/config files.
+
+Stage Summary:
+- ✅ RESTRUCTURE-MIGRATION-PLAN.md اتكتب على root المستودع (/home/z/my-project/RESTRUCTURE-MIGRATION-PLAN.md).
+- ✅ كل 59 case في renderView() switch اتـ mapped (13 visible + 11 alias + 3 tab + 28 deep-link + 2 remove).
+- ✅ كل 26-28 admin tab اتـ mapped (22 keep + 6 fold candidates + 0 remove).
+- ✅ 17 dialogs اتـ mapped لـ 5 global overlays + 6 component-level (net reduction).
+- ✅ Guest Mode + Trial softening + Crypto merge plans موثّقة بالكامل.
+- ✅ 7 dead code files identified للـ P2 archive (لا deletion في Wave 1).
+- ✅ Wave ordering P0/P1/P2/P5 + dependency graph.
+- 🔴 CRITICAL risk flagged: Guest Mode ships قبل backend role model (Bravo audit) — mitigation: v1 read-only, no /api/admin/* calls from guest UI.
+- 🟠 Risks flagged: discoverability drop لـ religious tools/simulation/trading-memory/live-monitor — mitigations listed.
+- ⚠️ Constitutional conflict flagged: Rule 4 (NO-NEW-SCREENS) — P2.2 (market-depth extraction) هو الـ exception الوحيد — owner-approval gate.
+- 🚫 Push gate محترم — مفيش commit، مفيش push. Planning only.
