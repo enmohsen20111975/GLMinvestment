@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2, AlertTriangle } from 'lucide-react';
+import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,27 +53,6 @@ function isWeekendDateStr(dateStr: string | null): boolean {
   return isEGXWeekend(date);
 }
 
-/**
- * Count trading days (Sun→Thu) strictly between `latestDate` and `today`.
- * If the gap exceeds 3 trading days, the data is considered stale.
- */
-function isDataStale(latestDateStr: string | null): boolean {
-  const latestDate = parseLocalDate(latestDateStr);
-  if (!latestDate) return true; // no date = stale
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  latestDate.setHours(0, 0, 0, 0);
-  if (latestDate >= today) return false; // today or future = fresh
-  // Count trading days from (latestDate + 1) to today (inclusive)
-  let count = 0;
-  const cur = new Date(latestDate);
-  cur.setDate(cur.getDate() + 1);
-  while (cur <= today) {
-    if (!isEGXWeekend(cur)) count++;
-    cur.setDate(cur.getDate() + 1);
-  }
-  return count > 3;
-}
 
 interface InvestorsDataRow {
   date: string | null;
@@ -458,11 +437,8 @@ export function InvestorsFlowPanel() {
           // ALPHA-FIX: filter out Friday/Saturday rows (EGX weekend — no trading)
           const filteredRows = invData.filter((r) => !isWeekendDateStr(r.date));
           if (filteredRows.length === 0) return null;
-          // ALPHA-FIX: check if latest valid date is older than 3 trading days
-          const latestDate = filteredRows[0]?.date ?? null;
-          const stale = isDataStale(latestDate);
           return (
-            <InvestorsTable rows={filteredRows} source={invSource} autoSeeded={invAutoSeeded} stale={stale} />
+            <InvestorsTable rows={filteredRows} source={invSource} autoSeeded={invAutoSeeded} />
           );
         })()}
 
@@ -484,24 +460,19 @@ export function InvestorsFlowPanel() {
 
 /**
  * InvestorsTable — جدول تدفّق المستثمرين (مصريين / عرب / أجانب)
- * يعرض آخر 3 جلسات من investors_data.
- *
- * ALPHA-FIX: لو `stale=true` (أحدث تاريخ أقدم من 3 أيام تداول) → بيظهر شارة
- * تحذيرية صفراء "البيانات قيد التحديث من البورصة" بدلاً من عرض الأرقام القديمة
- * اللي ممكن تضلل المستخدم.
+ * يعرض آخر 5 جلسات من investors_data. الجدول دائماً يظهر بالبيانات
+ * الحقيقية المتاحة — لا fabrication ولا إخفاء بتحذيرات وهمية (Rule 27).
  */
 function InvestorsTable({
   rows,
   source,
   autoSeeded,
-  stale,
 }: {
   rows: InvestorsDataRow[];
   source: string;
   autoSeeded: boolean;
-  stale: boolean;
 }) {
-  // ALPHA-FIX: دائماً نعرض جدول المستثمرين الحقيقي، وإذا كانت البيانات قديمة نعرض تنبيه صغير مع الجدول
+  // الجدول دائماً يظهر بالبيانات الحقيقية المتاحة (Rule 27 NO-FAKE-DATA).
   const slice = rows.slice(0, 5);
   if (slice.length === 0) return null;
 

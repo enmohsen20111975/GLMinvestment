@@ -68198,3 +68198,36 @@ FLAGS لألفا (src/ scope):
 1. MakerRadarTab.tsx فيه range_10d_pct/2.8 + range_10d_pct/2 client-side calc — محتاج إصلاح حسب DATA-SOURCES.md spec.
 
 القرار النهائي لكيمي.
+---
+---
+Task ID: ALPHA-DEAD-CODE-CLEANUP-001
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: تنظيف dead code في InvestorsFlowPanel.tsx — شيل isDataStale function + AlertTriangle import + stale prop + ALPHA-FIX comments (تكليف من كيمي — المديرة التنفيذية + مسؤولة الجودة).
+
+Work Log:
+- بروتوكول البدء: git pull --rebase origin main (fast-forward لـ 23e0b46). HEAD دلوقتي 23e0b46.
+- قرأت آخر 30 سطر في worklog + Documentation/00-CONSTITUTION.md (Rules 20, 27, 73).
+- scope مؤكد: src/ فقط. ما لمست vps-service/.
+- قرأت src/modules/dashboard/components/InvestorsFlowPanel.tsx (586 سطر قبل التعديل).
+- شيك على cross-file references: grep -rn "isDataStale" src/ → 0 hits خارج InvestorsFlowPanel.tsx ✓.
+- AlertTriangle: مستخدم بس في import (الـ if(stale) block اللي كان بيستخدمه اتمسح في 299d646).
+- التعديلات (4 edits بالـ MultiEdit):
+  1. شلت `AlertTriangle` من lucide-react import (L17).
+  2. شلت `isDataStale` function بالكامل (L55-74 — 20 سطر 包括 JSDoc comment + function body).
+  3. شلت caller's stale computation (L462-463: `const latestDate = ...; const stale = isDataStale(latestDate);`) + `stale={stale}` prop من InvestorsTable call (L465).
+  4. استبدلت ALPHA-FIX comment (L489-491) + InvestorsTable signature (شلت `stale` prop + `stale: boolean` type) + الـ inline comment (L506).
+- التحقق:
+  * `grep -c "stale\|isDataStale\|AlertTriangle"` → 0 leftover.
+  * `bun run lint` → exit 0، 0 errors.
+  * `git diff --stat` → 1 file, 5 insertions(+), 34 deletions(-). صافي -29 سطر (dead code اتمسح).
+- `parseLocalDate` + `isEGXWeekend` لسه مستخدمين بواسطة `isWeekendDateStr` (محفوظين).
+- `isWeekendDateStr` لسه مستخدم بواسطة caller (L438: `invData.filter((r) => !isWeekendDateStr(r.date))`).
+
+Stage Summary:
+- ✅ isDataStale function اتمسحت بالكامل (20 سطر).
+- ✅ AlertTriangle اتعملها remove من import (dead — الـ block اللي بيستخدمها اتمسح قبل كده).
+- ✅ stale prop اتعملها remove من InvestorsTable signature + caller + type.
+- ✅ ALPHA-FIX comments (الـ 3 اللي بيتذكروا stale) اتمسحت/اتعدلت.
+- ✅ lint: 0 errors.
+- ✅ scope نظيف: src/modules/dashboard/components/InvestorsFlowPanel.tsx بس.
+- 🔁 Rule 75: commit + push فوري.
