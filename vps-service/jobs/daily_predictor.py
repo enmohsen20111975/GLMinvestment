@@ -3564,7 +3564,53 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _sig_target = float(sig.get('target', 0) or 0)
                 _sig_stop = float(sig.get('stop', 0) or 0)
 
-                # 1. R:R ≥ 1.5 check (احتياطي لو r_multiple محسوب غلط — نحسب من entry/target/stop)
+                # BRAVO-WIRE-EVALUATE-RISK-001 (2026-10-18 — كيمي P0 directive):
+                # Gate every prediction INSERT with evaluate_risk() before it reaches
+                # tracker.record_prediction(). Rule 18 (R/R ≥ 1.8) + Rule 19 (position
+                # cap 2.5%) + Rule 8 (ATR stop [5%,9%]) enforced CANONICALLY here.
+                # This is the SSOT gate — replaces the ad-hoc 1.5 check below.
+                # Works on laptop + VPS (relative import via sys.path, no hardcoded paths).
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
+                    try:
+                        from engine.flow_system import evaluate_risk as _evaluate_risk_gate
+                        _risk_eval = _evaluate_risk_gate(
+                            entry_price=_sig_entry,
+                            stop_loss=_sig_stop,
+                            target_price=_sig_target,
+                            calculated_position_size=0.025,  # Rule 19 cap
+                            confidence=_sig_conf,
+                        )
+                        if _risk_eval['killed']:
+                            print(
+                                f"[BRAVO-EVALUATE-RISK-KILL] {sig['ticker']} {_sig_signal} "
+                                f"entry={_sig_entry:.2f} stop={_sig_stop:.2f} target={_sig_target:.2f} "
+                                f"rr={_risk_eval['rr']} → {_risk_eval['kill_reason']} "
+                                f"→ SKIP INSERT (Rule 18/27)",
+                                flush=True,
+                            )
+                            continue
+                        # Capture capped position_size for the prediction record.
+                        _bravo_position_size = _risk_eval['position_size']
+                    except ImportError:
+                        # Fallback: if engine.flow_system import fails (rare), use the
+                        # legacy ad-hoc check but with the CORRECT 1.8 floor (not 1.5).
+                        _bravo_position_size = 0.025
+                        _risk = _sig_entry - _sig_stop if _sig_entry > _sig_stop else 0
+                        _reward = _sig_target - _sig_entry if _sig_target > _sig_entry else 0
+                        _computed_rr = (_reward / _risk) if _risk > 0 else 0.0
+                        _effective_rr = max(_sig_rr, _computed_rr)
+                        if _effective_rr < 1.8:
+                            print(
+                                f"[BRAVO-EVALUATE-RISK-FALLBACK-KILL] {sig['ticker']} {_sig_signal} "
+                                f"R:R={_effective_rr:.2f} < 1.8 (Rule 18) → SKIP INSERT",
+                                flush=True,
+                            )
+                            continue
+                else:
+                    _bravo_position_size = 0.025  # non-BUY signals — default cap
+
+                # Legacy ad-hoc R/R check (KEPT for visibility, but evaluate_risk above
+                # is now the canonical gate. This block is now defensive-only.)
                 _computed_rr = 0.0
                 if _sig_entry > 0 and _sig_target > _sig_entry and _sig_entry > _sig_stop:
                     _risk = _sig_entry - _sig_stop
@@ -3572,11 +3618,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     _computed_rr = _reward / _risk if _risk > 0 else 0.0
                 _effective_rr = max(_sig_rr, _computed_rr)
 
-                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _effective_rr < 1.5:
+                # BRAVO-AUDIT: gate raised from 1.5 → 1.8 (Rule 18 — was violation).
+                # evaluate_risk above is canonical; this is defensive double-check.
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _effective_rr < 1.8:
                     print(
                         f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
-                        f"R:R={_effective_rr:.2f} < 1.5 (computed={_computed_rr:.2f}, stored={_sig_rr:.2f}) "
-                        f"→ SKIP (Rule: R:R ≥ 1.5 إلزامي)",
+                        f"R:R={_effective_rr:.2f} < 1.8 (computed={_computed_rr:.2f}, stored={_sig_rr:.2f}) "
+                        f"→ SKIP (Rule 18: R:R ≥ 1.8 إلزامي)",
                         flush=True,
                     )
                     continue

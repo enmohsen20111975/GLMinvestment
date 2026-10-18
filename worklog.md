@@ -68922,3 +68922,36 @@ Stage Summary:
 - ⚠️ الـ silent-fail pattern (H-1) منتشر في ~20+ file — محتاج `useApiFetch<T>()` hook موحّد. ده refactor كبير (تكليف منفصل).
 - ⚠️ 3 DIRECT-SQLite endpoints (H-2 + H-3) — الـ frontend consistent بس الـ backend بيخالف Rule 20. Fix للـ Bravo.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: BRAVO-WIRE-EVALUATE-RISK-001
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: كيمي P0 — ربط evaluate_risk() في daily_predictor.py قبل أي INSERT
+
+Work Log:
+- فحصت daily_predictor.py (4284→4333 سطر). لقيت الـ INSERT hook point عند line 3621 (tracker.record_prediction).
+- 🔴 كشفت bug إضافي: الـ gate القديم (line 3575) كان بـ check `< 1.5` مش `< 1.8` (Rule 18 violation صريح).
+- التعديل (vps-service/jobs/daily_predictor.py:3567-3630):
+  * أضفت evaluate_risk() gate قبل tracker.record_prediction().
+  * لو signal ∈ (BUY, STRONG_BUY, ACCUMULATE) → استدعي evaluate_risk(entry, stop, target, 0.025, confidence).
+  * لو killed=True → print [BRAVO-EVALUATE-RISK-KILL] + continue (skip INSERT).
+  * لو not killed → _bravo_position_size = risk_eval['position_size'] (capped 0.025).
+  * Fallback: لو ImportError → استخدم legacy check بس بـ 1.8 floor (مش 1.5).
+  * رفعت الـ legacy gate من 1.5 → 1.8 (defensive double-check).
+- Rule 17 (relative paths): import `from engine.flow_system import evaluate_risk` — relative، يشتغل على laptop + VPS + sandbox.
+- Verification test (vps-service/tests/test_wire_evaluate_risk.py): 10/10 PASS
+  * R/R=1.0 → KILLED + skipped ✓
+  * R/R=1.5 → KILLED + skipped ✓
+  * R/R=1.8 → PASS + inserted ✓
+  * R/R=2.5 → PASS + inserted + position capped 2.5% ✓
+  * invalid geometry (stop>=entry) → KILLED + skipped ✓
+  * non-BUY (HOLD) → not gated ✓
+- py_compile PASS.
+
+Stage Summary:
+- ✅ evaluate_risk() مربوط في daily_predictor.py قبل INSERT (canonical gate).
+- ✅ أي prediction R/R < 1.8 هيت SKIP (مش هيكتب في predictions.db).
+- ✅ position_size دايماً ≤ 0.025 (Rule 19).
+- ✅ Bug fix إضافي: gate 1.5 → 1.8 (كان Rule 18 violation).
+- ✅ Relative paths (Rule 17) — يشتغل على laptop + VPS + sandbox.
+- ⚠️ FLAG: line 2305-2310 فيه regime-aware floor 1.5 لـ range markets (computation layer). evaluate_risk gate هيمسك أي R/R < 1.8 بغض النظر، بس الـ computation ممكن يـ generate signals 1.5-1.8 للـ range markets (هتتـ skip). لو محسن عاوز ينقي ده، تكليف منفصل.
