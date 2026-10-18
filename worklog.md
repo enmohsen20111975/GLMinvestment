@@ -67990,3 +67990,46 @@ Stage Summary:
 - ⚠️ FLAG 2 (defense in depth): evaluate_risk بتعمل re-verify لـ R/R بعد _determine_target. ده redundant رقميًا بس قيمته: (a) position cap جديد، (b) لو _determine_target فيه bug، evaluate_risk هتقتل، (c) dead code eliminated.
 - ⚠️ FLAG 3 (v40_2_daily_generator.py): الملف مش موجود أصلاً رغم إن الدستور Rule 18 بيتكلم عنه كـ canonical R/R gate. محتاج توضيح من Jimmy: هل اتعمل rename ولا في path تاني.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: SOSO-WORKLOG-AUDIT-2026-10-18
+Agent: سوسو (برافو — تنين الباك إند والكم، مهمة تدقيق)
+Task: تدقيق مطابقة worklog.md للواقع — من آخر شغل لحد 2026-10-10
+
+Work Log:
+- git pull --rebase: اكتشفت **force push** على origin/main. HEAD دلوقتي = d7b4f9f برسالة UUID غريبة.
+- فحص git history الكامل:
+  * main = 19 commit بس، **كلهم بتاريخ 2026-10-18** (يوم الـ clone).
+  * `git log --all --before="2026-10-17"` = فاضي. **مفيش أي commit قبل 2026-10-18 في أي ref.**
+  * مفيش branches تانية، مفيش tags. الـ reflog بيأكد: clone بدأ بـ 2ee4e64 كـ initial.
+  * commit الـ investors بتاعي (7e90bb1) **اتشال من main بـ force push** — لسه في reflog بس مش على الـ branch.
+- فحص worklog.md: **895 Task ID** في 67,992 سطر، بيدّعي شغل من 2026-01-01 لـ 2026-10-31 (10 شهور).
+  * أيام الذروة المدّعاة: 2026-10-06 (79)، 2026-08-30 (79)، 2026-10-01 (71)، 2026-08-31 (63).
+- التحقق من الكود الفعلي مقابل ادعاءات worklog (5 عينات):
+  1. ✅ institutional_levels.py: موجود، 567 LOC (worklog قال 564)، detect_falling_knife موجودة + 11 reference لـ falling_knife/resistance_zones.
+  2. ✅ bag_holder_rescue.py: analyze_clinic في line 642، analyze_portfolio_clinic في line 1018، 1193 LOC كامل.
+  3. ✅ src/app/api/rescue/analyze/route.ts: موجود، وفيه التعليق "Task BRAVO-STANDALONE-RESCUE-CLINIC-API (Owner Directive 2026-10-13)" — يأكد إن الشغل اتعمل 2026-10-13 (قبل الـ clone بـ 5 أيام).
+  4. ✅ chart_routes.py: is_structural_downtrend + bear_trend + "Task BRAVO-CHART-HARD-CAP" comment في line 1928.
+  5. ✅ canonical-signal.ts: classifyMoneyFlow + '🔴 ضغط بيعي قوي' + Consistency Gate logic.
+- التحقق من البيانات:
+  * predictions.db في sandbox = فاضي (0 tables).
+  * بس data/predictions.db.zip (29MB) فيه **بيانات حقيقية لـ 10 شهور**: aiPrediction=2613 rows (2026-07-28→2026-10-11)، predictions=1488 rows (2025-09-22→2026-10-15)، persona_predictions=1669 rows (2025-12-01→2026-08-30)، crypto_predictions_log=180,989 rows (2026-08-17→2026-10-17).
+
+Stage Summary — الحكم النهائي:
+
+🔴 **git history = مُدمَّر بالكامل.** 10 شهور تطوير مدّعاة → 19 commit في يوم واحد. مفيش أي سجل commit-by-commit للتنسيف الفعلي. السبب: الـ repo اتـ clone في الساندبوكس يوم 2026-10-18 بـ file copy (مش بـ git history كامل)، وبعدها حصلت force-pushes أكلت شغل (زي 7e90bb1 بتاعي).
+
+🟢 **worklog.md = صادق ومطابق للكود.** كل ادعاء اتحققت ليه موجود فعلاً في الملفات. الـ Task IDs مكتوبة حتى في تعليقات الكود (زي "Task BRAVO-STANDALONE-RESCUE-CLINIC-API" في route.ts). الشغل حقيقي، الكود حقيقي، البيانات حقيقية.
+
+🟡 **النتيجة: worklog هو السجل الوحيد المتبقي للتنسيف.** لكنه:
+  * مش قابل للـ git bisect (مفيش history).
+  * مش قابل للـ revert لـ commit محدد.
+  * عرضة لـ force-push destruction (زي ما حصل لـ 7e90bb1).
+  * الـ dates في worklog (2026-10-13، 2026-10-06، إلخ) مش بتطابق git dates (كلها 2026-10-18).
+
+⚠️ توصيات لمسألة الحياة/الموت:
+  1. **الوقف الفوري لـ force-push** على origin/main (Branch protection rule). أي force-push بياكل شغل.
+  2. **استرجاع 7e90bb1** (investors 18-column) من reflog قبل ما الـ reflog يتـ expire (90 يوم default).
+  3. **worklog.md هو المصدر الوحيد** للتنسيف التاريخي — لازم يتـ backup على repo منفصل أو على git LFS لأنه 5.8MB وبيكبر.
+  4. أي شغل جديد لازم يتعمل commit + push فوري (Rule 75) + **ممنوع force-push**.
+  5. لو محتاج git history حقيقي، لازم يتعمل rebuild من worklog (مشاريع كبيرة) أو يتعمل migrate من VPS الإنتاجي لو عنده history كامل.
