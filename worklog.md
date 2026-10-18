@@ -68095,3 +68095,56 @@ Stage Summary — Final Audit Statement:
 4. ⚠️ _classify_bucket_safe فيه except Exception → fallback silent (مش pass بس محتاج logging).
 
 القرار النهائي لكيمي. أنا خلّصت الـ scope بتاعي (vps-service/ + scripts/). الـ src/ flag لألفا.
+
+---
+Task ID: BRAVO-DB-RESTORE-001
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: كيمي — استرجاع الـ DBs الـ 7 في db/
+
+Work Log:
+- فحص db/ الأولي: predictions.db (0 bytes)، auth.db (0 bytes)، custom.db (24KB Prisma). stocks.db + 5 DBs تانيين = MISSING.
+- فحص data/ للـ backups:
+  * data/predictions.db.zip (30MB) → predictions.db (281MB uncompressed)
+  * data/db_backup_2026-10-08T10-08-10_part1.zip → auth.db (356KB)
+  * data/db_backup_2026-10-08T10-08-10_part7.zip → stocks.db (29MB)
+  * parts 2-6 = MISSING (مفيش backups لـ intraday/price_history/data_engine)
+- فحص DBPaths.py للـ canonical mapping:
+  * NEWS_DB = STOCKS_DB (news في stocks.db — مغطاة بـ restore stocks.db)
+  * HISTORICAL_DB = DATA_ENGINE_DB (historical_data في data_engine.db)
+  * GOLD_PRICES_DB = DATA_ENGINE_DB
+- RESTORE (3 DBs):
+  * db/predictions.db: 281,575,424 bytes — 46 tables (aiPrediction=2,613, crypto_predictions_log=180,989, historical_trades=22,650, learned_lessons=19,983, persona_predictions=1,669, predictions=1,488, live_ai_signals=1,636, liquidity_signal_outcomes=1,308)
+  * db/stocks.db: 28,999,680 bytes — 68 tables (stocks, stock_daily_prices, investors_data=30 rows, news, news_items, market_indices, telegram_news, egksco_stocks=256, indicator_trust_scores=10, conjunction_patterns=150)
+  * db/auth.db: 356,352 bytes — 23 tables (User=122, Account=5, SubscriptionPlan=10, api_tokens=36, task_runs=75, PromoCode=5)
+- BLOCKED (3 DBs — محتاجة VPS الإنتاجي):
+  * db/intraday.db — referenced في backfill_intraday.py, dual_track_generator.py (tick-level data, 1.1M rows per DBPaths comment)
+  * db/price_history.db — referenced في backtest_engine.py, market_regime.py
+  * db/data_engine.db — referenced في backtest_engine.py, repair_data_engine.py (= HISTORICAL_DB + GOLD_PRICES_DB)
+- ملاحظة: .gitignore بيتجاهل *.db (line 17, 28) → الـ DBs مش متcommitة (data files، مش code). الـ restore موثّق هنا.
+
+Stage Summary:
+- ✅ 3/7 DBs restored من backups المحلية (predictions + stocks + auth).
+- ✅ 2/7 DBs مغطاة كـ aliases (news.db → stocks.db ✓، historical.db → data_engine.db ✗ محتاجة data_engine).
+- 🔴 3/7 DBs BLOCKED (intraday + price_history + data_engine) — مفيش VPS access، مفيش parts 2-6.
+- ✅ الـ 3 DBs اللي اتعملهم restore فيهم بيانات إنتاج حقيقية (aiPrediction 2,613 rows من 2026-07-28 لـ 2026-10-11، investors_data 30 rows، User 122).
+- 🔁 الـ DBs gitignored → مفيش commit للملفات نفسها. التوثيق في worklog بس.
+
+---
+Task ID: BRAVO-DB-RESTORE-BLOCKED
+Agent: برافو
+Task: Finding — 3 DBs مش متاحة في الساندبوكس
+
+Finding (BLOCKED):
+- Severity: High (blocker لـ backtest_engine + market_regime + intraday scanner)
+- DBs: intraday.db, price_history.db, data_engine.db
+- السبب: مفيش VPS الإنتاجي access في الساندبوكس. backups parts 2-6 مش متاحة (part1=auth.db, part7=stocks.db بس).
+- التأثير:
+  * backtest_engine.py مش هيقدر يشغّل backtests (محتاج price_history + data_engine)
+  * market_regime.py مش هيحسب الـ regime صح (محتاج price_history)
+  * backfill_intraday.py + dual_track_generator.py مش هيشتغلوا (محتاجين intraday)
+  * gold_prices + historical_data مش متاحين (في data_engine.db)
+- الإجراء المقترح:
+  1. المالك يرفع backups parts 2-6 لـ data/ في المستودع، OR
+  2. المالك يوفّر VPS access لـ scp الـ DBs، OR
+  3. المالك يـ runs الـ scrapers (data_engine) من جديد في الساندبوكس (وقت طويل)
+- Status: BLOCKED — منتظر قرار المالك.
