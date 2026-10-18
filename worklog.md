@@ -69689,3 +69689,44 @@ Stage Summary:
 - 🔴 Top 3 risks: stocks.db.stocks stale 4 months + intraday.stock_intraday stale 4 days + aiPrediction stale 7 days.
 - ✅ NO mismatch بين egksco + price_history (100% match).
 - 🚫 مفيش أي fix — audit only per mandate.
+
+---
+Task ID: DROP-EMPTY-TABLES-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — DROP-EMPTY-TABLES-1: scan + drop empty tables from all DBs (sandbox only)
+
+Work Log:
+- كتبت scripts/drop_empty_tables.py (220 lines):
+  * scan كل DB في db/ (يـ skip custom.db — Prisma-managed).
+  * لكل table: check row count. لو = 0 → verify (re-check) → DROP.
+  * --dry-run flag (list only).
+  * idempotent (re-run = 0 new).
+  * integrity_check قبل + بعد.
+  * Rule 17 (relative paths — parents[1]).
+  * log كل table اتشال + DB.
+- DRY-RUN: اكتشفت **78 empty tables** عبر 12 DBs (أكثر بكتير من الـ 6 المتوقعة في DATA-ENGINE-MAP).
+  * auth.db: 10 empty (alert_history, alert_settings, context_logs, إلخ)
+  * crypto.db: 4 empty
+  * data_engine.db: 2 empty (egksco_stocks + 1)
+  * historical.db: 1 empty (daily_prices)
+  * intraday.db: 1 empty
+  * metrics.db: 3 empty (resource_snapshot_*)
+  * news.db: 2 empty (news_articles + 1)
+  * predictions.db: 20 empty
+  * stocks.db: 35 empty (alert_history, paper_trades, predictions, learned_lessons, إلخ)
+- 🔴 VERIFY قبل الـ drop:
+  * stocks.db.predictions = 0 rows | predictions.db.predictions = 1,491 rows (canonical) → safe.
+  * stocks.db.learned_lessons = 0 rows | predictions.db.learned_lessons = 19,983 rows → safe (lesson_store reads predictions.db).
+- EXECUTE على sandbox: 78 tables اتشالت.
+  * stocks.db: 68 → 33 tables (35 dropped).
+  * data_engine.db: 29 → 26 tables (egksco_stocks gone).
+  * كل DBs: integrity_check = ok بعد الـ drop.
+- IDEMPOTENT: re-run = 0 new drops ✓.
+
+Stage Summary:
+- ✅ scripts/drop_empty_tables.py موجود + py_compile PASS + --dry-run + idempotent.
+- ✅ 78 empty tables اتشالت من sandbox (0 data loss — كلها = 0 rows).
+- ✅ كل DBs integrity OK.
+- ⚠️ FLAG: 78 أكبر من المتوقع (6). جون طلب "أي تاني فاضي" — اتمسحوا كلهم.
+- ⚠️ FLAG: stocks.db شيل 35 table (كان فيه duplicate empty tables من historical migrations).
+- 🚫 sandbox copy only — production needs owner approval.
