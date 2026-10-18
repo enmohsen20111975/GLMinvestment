@@ -6,7 +6,7 @@
 > **المستودع:** `/home/z/my-project` (origin/main).  
 > **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
 > **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق + متدفعين. B-P2 green-lit (split: برافو Python + ألفا A-P2.5 subscription-gate.ts). باقي: A-P3/A-P4 + B-P3 + data fixes.  
-> **آخر تحديث:** 2026-10-18 — ⚠️ **CORRECTION مهم:** `engines/backtest_engine.py` (V38BacktestEngine) **مش ميت — ده LIVE** = محرك V40.2 الحقيقي (daily_predictor.py بـ يستورده + crontab بيـ شغّله 3am+1:30pm). كدلك `maestro_orchestrator.py` LIVE. DEAD-ENGINE-1 mandate اتقلب: RED LINE على الملفين الحيين، الـ cancer الحقيقي = 5 broken scripts + 3 zombie duplicates. DATA-LAYER-1 + A-DB-1 = أولوية قصوى.
+> **آخر تحديث:** 2026-10-18 — ✅ ✅✅✅✅ 4 mandates متحقق منها PASS: DATA-LAYER-1 (prices.py price_history-first + Rule 46 amended) + A-P2.5 (TRIAL_DAYS=14) + A-DB-1 (api-client.ts) + B-P2 (TRIAL_DAYS_CANONICAL=14 + fail-closed + migration). 🚨 المحركات الحية (backtest_engine + maestro_orchestrator) ما اتلمستش — المنصة بأمان. الـ DEAD-ENGINE-1 misclassification اتصلّح. 3 نقط follow-up (stale docstring + egksco row-count reconcile + A-DB-1 56 routes pending).
 
 ---
 
@@ -87,10 +87,11 @@
 | ✅ **B-P1** | برافو | PASS + متدفع — `require_role` + `require_trial_or_paid` في auth_middleware، مستخدم في ai_routes، py_compile PASS، `API-CONTRACT-PAYWALL.md` مكتوب |
 | 🔜 **A-P3** | ألفا | Auth UI (Guest Mode + Trial soft + soft paywall بالاَ contract) |
 | 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
-| 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | green-lit — برافو: register trigger + admin reset + auth.db migration (write-only) + fail-closed للـ paid. ألفا: `TRIAL_DAYS 7→14` + امسح كومنت 30 + seed free=14 |
-| 🔜 **B-P3** | برافو | stocks/crypto unification — canonical محدّد (price_history للأسعار التاريخية) في DATA-LAYER-1 |
-| 🔴 **DATA-LAYER-1** | برافو | **أولوية قصوى** — أصلّح prices.py + 10 ملفات (shيل egksco-first checks، route لـ canonical per map) + canonical_sources.py SSOT + حدّث Rule 46 |
-| 🔴 **A-DB-1** | ألفا | **أولوية قصوى** — شيل direct-DB من shared-db.ts/data-engine-db-sqljs.ts → proxy للـ Python (Rule 20). unified api-client.ts |
+| 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | ✅ PASS + متدفع — TRIAL_DAYS_CANONICAL=14 + fail-closed للـ paid (قرار جون اتـ implement) + trial_migration.py + admin reset |
+| 🔜 **B-P3** | برافو | stocks/crypto unification — canonical محدّد (price_history للأسعار التاريخية) |
+| ✅ **DATA-LAYER-1** | برافو | ✅ PASS + متدفع — prices.py price_history-first (L399) + canonical_sources.py SSOT + Rule 46 amended (egksco DEPRECATED). 🟡 nit: module docstring stale |
+| ✅ **A-DB-1** | ألفا | ✅ PASS (جزئي) + متدفع — api-client.ts + shared-db deprecated. 🟡 56 routes pending migration |
+| ✅ **A-P2.5** | ألفا | ✅ PASS + متدفع — TRIAL_DAYS=14 + امسح كومنت 30 + seed free=14 |
 | ⏸️ **DEAD-ENGINE-1** | برافو | **معلّق + متصحّح** (الأولوية = DATA-LAYER-1). ⚠️ الخلاصة الجديدة: `engines/backtest_engine.py` + `analyzers/maestro_orchestrator.py` = **RED LINE (LIVE)** — ممنوع اللمس. الـ cancer الحقيقي = 5 broken scripts (diagnose_v402_filters/full، diagnose_entry_gate، retrospective_analysis، run_full_backtest_daemon.sh) + 3 zombie duplicates (scripts/backtesting_engine.py sys.exit guard، analysis_engine_v2.py، analyzers/backtest_engine.py). **triple-verify قبل أي إزالة**: not imported by daily_predictor/core/jobs/live_signals + not in crontab |
 | ~~CANONICAL-DB-1~~ | برافو | ✅ متقرّر (المالك جاوب بالـ data — شوف Section 3.5) |
 
@@ -99,7 +100,11 @@
 - A-P2: لقيت comments `RESTRUCT-A-P2` في الـ 3 views + TabsTrigger imports — tabs فعلًا مدمجة.
 - B-P1: `require_role(min_tier, require_trial)` + `require_trial_or_paid` موجودين + مستوردين + مستخدمين في ai_routes + py_compile PASS. برافو بلّغ 4/4 logic tests ضد auth.db حقيقي (premium→paid، free+NULL→trial_not_set، guest→no_user، nonexistent→not_found). ✅ متحقق.
 - ⚠️ B-P1 follow-up (B-P1.5): الـ decorator متطبّق على `/api/ai/live/scan` بس (1 من 469 endpoint). باقي الـ advanced endpoints محتاجة تطبيق في mandate منفصل بعد B-P2.
-- 🎯 قرار CEO (fail-safe vs fail-closed): fail-SAFE للـ guest/public reads؛ fail-CLOSED للـ paid gates (`@require_trial_or_paid`، `@require_role('premium')`).
+- 🎯 قرار CEO (fail-safe vs fail-closed): fail-SAFE للـ guest/public reads؛ fail-CLOSED للـ paid gates. ✅ متـ implement في B-P2 (auth_middleware L296 `fail_closed` param).
+- 🚨 CRITICAL AVOIDED: DEAD-ENGINE-1 misclassification (delete live engine) اتصلّح قبل أي ضرر. المحركات الحية (backtest_engine.py + maestro_orchestrator.py) ما اتلمستش في أي commit.
+- 🟡 NIT 1: prices.py module docstring (L1-90) stale (لسه egksco-first) — الـ function الفعلي (L340+) صح. برافو ينظّف.
+- 🟡 NIT 2: egksco row-count تعارض — المالك قال 0، برافو قال 59,109 (Rule 46 amendment L1576). reconcile إنتاج vs ساندبوكس.
+- 🟡 NIT 3: A-DB-1 جزئي — 56 routes pending migration لـ Python proxy.
 
 ---
 
@@ -193,9 +198,9 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | 1 | 22 unauthed admin endpoints | B-P0 | برافو | ✅ خلص + متدفع |
 | 2 | 58→10 شاشات + bloat | A-P1 + A-P2 خلصوا | ألفا | ✅ جزئي (A-P3 + A-P4 لسه) |
 | 3 | paywall في Next.js | B-P1 | برافو | ✅ خلص (middleware + contract) |
-| 4 | trial 4-source | B-P2 (split: برافو Python + ألفا A-P2.5) | برافو+ألفا | 🔄 green-lit |
-| 5 | price split-brain | ✅ متفهم (egksco فاضي/ميت، price_history canonical) — DATA-LAYER-1 هـ يصلّحه | برافو | 🔴 أولوية قصوى |
-| 6 | frontend direct-DB | mandate لألفا (proxy للـ Python) | ألفا | 🔜 |
+| 4 | trial 4-source | B-P2 + A-P2.5 | برافو+ألفا | ✅ خلص — TRIAL_DAYS=14 canonical |
+| 5 | price split-brain | DATA-LAYER-1 | برافو | ✅ خلص — prices.py price_history-first + Rule 46 amended |
+| 6 | frontend direct-DB | A-DB-1 | ألفا | ✅ جزئي — api-client.ts + shared-db deprecated، 56 routes pending |
 | 7 | R/R stale 1.5 | cleanup دستوري | ألفا | 🔜 |
 | 8 | ~~dead-engine cancer~~ → **تصحيح**: `engines/backtest_engine.py` LIVE (V40.2 driver). الـ cancer الحقيقي = 5 broken scripts + 3 zombie duplicate engines. DEAD-ENGINE-1 معلّق + متصحّح | برافو | ⏸️ معلّق (DATA-LAYER أولوية) |
 
