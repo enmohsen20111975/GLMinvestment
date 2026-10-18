@@ -2072,7 +2072,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 try:
                     _regime_for_target = result.get('market_regime_trend', 'range')
                     if _regime_cfg is not None:
-                        _market_min_rr_for_target = float(_regime_cfg.get("min_rr", 1.5))
+                        _market_min_rr_for_target = float(_regime_cfg.get("min_rr", 1.8))  # Rule 18 floor (was 1.5)
                         # لو السوق DEFENSIVE → استخدم max(market_min_rr, 2.5)
                         # علشان الـ counter-trend mode بيطلب R/R ≥ 2.5
                         if _regime_cfg.get('regime_name', '').lower() in ('defensive', 'bear', 'strong_bear') or _market_min_rr_for_target >= 2.0:
@@ -2167,7 +2167,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # If MarketRegimeEngine says DEFENSIVE → require min_rr=2.0 regardless of ticker regime.
             # We take the MAX so the stricter of (per-ticker regime, market regime) wins.
             if _regime_cfg is not None:
-                _market_min_rr = float(_regime_cfg.get("min_rr", 1.5))
+                _market_min_rr = float(_regime_cfg.get("min_rr", 1.8))  # Rule 18 floor (was 1.5)
                 if _market_min_rr > _min_rr:
                     if r_mult < _market_min_rr:
                         print(f"[REGIME-RR-SKIP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
