@@ -205,7 +205,7 @@ const TradingChartView = withErrorBoundary(
   { height: 'h-[600px]' },
 );
 const LiquidityRadarView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/predictions/components/MakerRadarTab').then(m => ({ default: m.MakerRadarTab })), {
+  dynamicImport(() => import('@/components/shared/LiquidityRadarView').then(m => ({ default: m.LiquidityRadarView })), {
     ssr: false,
     loading: () => <LazyTabLoader label="رادار السيولة" />,
   }),
