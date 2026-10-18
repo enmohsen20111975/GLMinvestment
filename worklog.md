@@ -69461,7 +69461,6 @@ Stage Summary:
 - 🔁 Push gate: جون وافق → هـ commit + push.
 
 ---
-<<<<<<< HEAD
 Task ID: MAESTRO-CANCER-1
 Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
 Task: فصل الـ live maestro calls من الـ frontend. الـ maestro بيرجّع contradictory recs (55/42) vs V40.2 canonical (78/65/55).
@@ -69488,7 +69487,7 @@ Stage Summary:
 - ✅ lint: 0 errors.
 - ✅ التوصيات دلوقتي بتيجي من V40.2 canonical (predictions.db) — مش متناقضة.
 - 🚫 NO push (gate جون).
-=======
+
 Task ID: MAESTRO-CANCER-1-STEP0
 Agent: Bravo (backend/quant dragon — Z.ai Code copy)
 Task: جون — MAESTRO-CANCER-1 STEP 0: TRACE (map all maestro callers before any touch)
@@ -69524,7 +69523,6 @@ Stage Summary:
 - 🔴 STOP: الـ cancer أعمق من المتوقع. محتاج 7-step surgical plan (مش 6).
 - ⚠️ John decision needed: هل أبدأ STEP 1-3 (safe: frontend + telegram + V40.2 heart) وأوقف قبل STEP 4-6؟ ولا نراجع الـ scope كامل؟
 - ⚠️ thresholds contradiction (55/42 vs 78/65/55) لسه محتاج إصلاح بس ده standalone.
->>>>>>> 3c853ad (75ed4e90-e49a-4e0b-94a0-87e489e7fc33)
 
 ---
 Task ID: MAESTRO-CANCER-1-STEP3-STEP2
