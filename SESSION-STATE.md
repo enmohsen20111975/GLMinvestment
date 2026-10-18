@@ -6,7 +6,24 @@
 > **المستودع:** `/home/z/my-project` (origin/main).  
 > **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
 > **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق + متدفعين. B-P2 green-lit (split: برافو Python + ألفا A-P2.5 subscription-gate.ts). باقي: A-P3/A-P4 + B-P3 + data fixes.  
-> **آخر تحديث:** 2026-10-18 — dead-engine cancer شِفته (v38_backtest_engine 109KB + 4 broken-import scripts + duplicated engines) + canonical DB متفوّض لبرافو (بـ يجاوب بالـ data) + DEAD-ENGINE-1 mandate لبرافو + تأكيد هندسي لألفا.
+> **آخر تحديث:** 2026-10-18 — ★ canonical data map متقرّر (المالك مسك الداتا بالمليمتر): egksco فاضي/ميت، price_history هو canonical للأسعار التاريخية. Rule 46 غلط (أعلنت egksco canonical). DATA-LAYER-1 + A-DB-1 = أولوية قصوى. DEAD-ENGINE-1 معلّق.
+
+---
+
+## 3.5 ★ CANONICAL DATA MAP (Ground Truth — من المالك، مسك الداتا بالمليمتر)
+
+| Domain | Canonical DB.table | ملاحظة |
+|---|---|---|
+| أسعار أسهم تاريخية (شموع/RSI/MACD) | `price_history.db.price_history` | 1,310,184 صف، طازج ★ |
+| Live stocks (سعر حالي) | `stocks.db.stocks` | current_price, close_price, change_percent, volume, last_updated |
+| Stock intraday (دقيقة بدقيقة) | `intraday.db.stock_intraday` | — |
+| Crypto prices | `data_engine.db.crypto_prices` + `btc_local_prices` | Top 50 CoinGecko + BTC بالعملات العربية |
+| Crypto intraday | `intraday.db.crypto_intraday` | 104K+ سجل |
+| Gold/metals | `data_engine.db.gold_prices` + `gold_prices_clean` + `silver_prices` | كل العيارات 24/21/18 + كل الدول |
+| Forex | `data_engine.db.exchange_rates` | صرف العملات |
+| Commodity intraday | `intraday.db.commodity_intraday` | — |
+
+🔴 **الـ bug الجذري:** `data_engine.db.egksco_price_history` = **0 صفوف (فاضي)**. بس `vps-service/data/prices.py` + **10 ملفات** بـ check egksco FIRST (بنص صريح في prices.py L23/42/52) — بـ يـ waste I/O + بـ يسبب split-brain. **Rule 46 نفسها غلط** (أعلنت egksco canonical). الحل: prices.py بـ يـ check price_history FIRST، شيل egksco checks، حدّث Rule 46.
 
 ---
 
@@ -71,9 +88,11 @@
 | 🔜 **A-P3** | ألفا | Auth UI (Guest Mode + Trial soft + soft paywall بالاَ contract) |
 | 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
 | 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | green-lit — برافو: register trigger + admin reset + auth.db migration (write-only) + fail-closed للـ paid. ألفا: `TRIAL_DAYS 7→14` + امسح كومنت 30 + seed free=14 |
-| 🔜 **B-P3** | برافو | stocks/crypto unification — **BLOCKED لحد CANONICAL-DB-1** (برافو بـ يحدد canonical من الـ data) |
-| 🔜 **DEAD-ENGINE-1** | برافو | شيل v38_backtest_engine السرطان جزء جزء (triple-verify → 4 dead scripts → engine file 109KB → consolidate duplicate engines → analysis_engine_v2) + `py_compile`+`grep`+V40.2 sanity بعد كل إزالة |
-| 🔜 **CANONICAL-DB-1** | برافو | قارن الـ 3 DBs (stocks.db / price_history / data_engine.egksco) — row count + ticker coverage + freshness + quality → حدد canonical + unblock B-P3 |
+| 🔜 **B-P3** | برافو | stocks/crypto unification — canonical محدّد (price_history للأسعار التاريخية) في DATA-LAYER-1 |
+| 🔴 **DATA-LAYER-1** | برافو | **أولوية قصوى** — أصلّح prices.py + 10 ملفات (shيل egksco-first checks، route لـ canonical per map) + canonical_sources.py SSOT + حدّث Rule 46 |
+| 🔴 **A-DB-1** | ألفا | **أولوية قصوى** — شيل direct-DB من shared-db.ts/data-engine-db-sqljs.ts → proxy للـ Python (Rule 20). unified api-client.ts |
+| ⏸️ **DEAD-ENGINE-1** | برافو | **معلّق** بأمر المالك (الـ data-layer كارثة أكبر). v38 removal يجي لاحقًا |
+| ~~CANONICAL-DB-1~~ | برافو | ✅ متقرّر (المالك جاوب بالـ data — شوف Section 3.5) |
 
 ### ملاحظات verify (جون):
 - A-P1: تبّت `page.tsx` ما اتلمس (git log empty للملف في الـ A-P1/A-P2 commits) → Rule 67 محترمة.
@@ -175,7 +194,7 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | 2 | 58→10 شاشات + bloat | A-P1 + A-P2 خلصوا | ألفا | ✅ جزئي (A-P3 + A-P4 لسه) |
 | 3 | paywall في Next.js | B-P1 | برافو | ✅ خلص (middleware + contract) |
 | 4 | trial 4-source | B-P2 (split: برافو Python + ألفا A-P2.5) | برافو+ألفا | 🔄 green-lit |
-| 5 | price split-brain | B-P3 → canonical `stocks.db` + Rule 12 amendment | برافو | 🔜 |
+| 5 | price split-brain | ✅ متفهم (egksco فاضي/ميت، price_history canonical) — DATA-LAYER-1 هـ يصلّحه | برافو | 🔴 أولوية قصوى |
 | 6 | frontend direct-DB | mandate لألفا (proxy للـ Python) | ألفا | 🔜 |
 | 7 | R/R stale 1.5 | cleanup دستوري | ألفا | 🔜 |
 | 8 | **dead-engine cancer** (v38_backtest_engine 109KB + 4 broken-import scripts + duplicated engines + analysis_engine_v2 root) | DEAD-ENGINE-1 | برافو | 🔜 |
