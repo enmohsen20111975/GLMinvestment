@@ -69016,3 +69016,33 @@ Stage Summary:
 - ✅ Relative paths (Rule 17) — يشتغل على laptop + VPS + sandbox.
 - ⚠️ FLAG: 23.56% mismatch بين canonical و data_engine — لو محسن عاوز reconcile (overwrite canonical بـ data_engine)، تكليف منفصل. حاليًا canonical = آخر سعر متاح (آمن).
 - ⚠️ FLAG: backtest_engine.py + market_regime.py لسه بيقروا من data_engine/price_history مباشرة. لازم refactoring لتغييرهم لـ canonical (تكليف منفصل لـ Bravo).
+---
+Task ID: SCREENS-MAP-1
+Agent: Explore sub-agent (for Alpha — frontend dragon)
+Task: Create comprehensive SCREENS INVENTORY for the GLMinvestment Next.js 14.2.28 investment platform — map every screen (main views, sub-tabs, dialogs, admin screens, user screens, orphaned views).
+
+Work Log:
+- Read `/home/z/my-project/src/app/page.tsx` (1028 LOC) fully — extracted the 58 explicit `case` branches + default in `renderView()` switch. Identified all dynamic imports (35+ views wrapped with `withErrorBoundary` + `LazyTabLoader`).
+- Read `/home/z/my-project/src/lib/valid-views.ts` (97 LOC) — extracted `VALID_VIEWS` array (60 strings) + `CRYPTO_VIEW_REDIRECTS` mapping table (8 crypto routes that redirect to unified views with `currentMarket='CRYPTO'`).
+- Read `/home/z/my-project/src/components/layout/TopBar.tsx` (556 LOC) — extracted `navSections` array (5 dropdown sections × 21 total menu items) + Market Switcher (6 markets: EGX/TADAWUL/KSE/QSE/US/CRYPTO).
+- For EACH of the ~38 distinct view components rendered by the switch, located the source file via Glob (`src/**/*View.tsx`, `src/**/*Panel.tsx`, `src/**/*Dashboard*.tsx`), read its header (40-130 lines), and grepped for `TabsTrigger value=`, `<Dialog|AlertDialog|Drawer`, `open={`, `activeTab`, `setActiveTab`, `setOpen` to identify internal tabs + dialogs.
+- Admin inventory: Read `/home/z/my-project/src/modules/admin/components/AdminView.tsx` (2084 LOC) — extracted `AdminTab` union type (26 tabs) + `ADMIN_HUBS` array (6 hubs: health/maestro/data/users/telegram + learning merged). Mapped every `activeTab === 'X'` branch to its sub-component.
+- Dialog inventory: Grepped `src/` for `Dialog|AlertDialog|Drawer|Modal` in `.tsx` files → 52 files matched. Filtered out shadcn UI primitives (`src/components/ui/{dialog,alert-dialog,drawer,command}.tsx`) and test files. For each dialog component, noted the parent view that opens it.
+- Orphan check: Cross-referenced every `*View.tsx`/`*Panel.tsx`/`*Dashboard.tsx` file found in `src/` against the switch in page.tsx. Found that 30+ view-shaped files exist but are NOT directly routed — they are sub-components rendered inside parent views (e.g., `GateAnalysisView` is rendered inside `StockDetail`, `ExecutiveReportView` is rendered inside `UnifiedPredictionsTab` sub-view `summary`). These are NOT orphans — they're internal building blocks.
+- True orphans check: Read comments in page.tsx (lines 64-266) — identified 16 historically-orphaned view files that have been DELETED or archived (LearningView, CryptoSimulationView, CryptoScreenerView, CryptoTradingChartView, CryptoAdvancedAnalysisView, CryptoRecommendationsView, CryptoAnalysisView, SniperView, PicksManagementView, StoredAnalysisView, IterativeLearningView, SimpleRecommendationsView, PredictionPerformanceView, PredictionCredibilityTable, MaestroWidget, MaestroCommandCenter). Confirmed via `find` + `archive/` directory listing that all files are moved to `archive/*-2026-10-01/` or `archive/_archived_v404/` or deleted.
+- Standalone Next.js pages: Globbed `src/app/**/page.tsx` → found 11 separate Next.js routes outside AppShell: `/admin` (redirect), `/admin/educational-cards`, `/admin/honest-predictions`, `/admin/reports`, `/backtest`, `/payment/success`, `/rescue`, `/legal/{privacy,terms,disclaimer}`.
+- Global overlays inventory: Read `src/components/Providers.tsx` (94 LOC) — confirmed `SessionExpiredModal` is mounted globally. Read `src/components/auth/AuthGate.tsx` (474 LOC) — confirmed `LoginPromptModal` is hosted inside. Read `page.tsx` lines 817-870 — confirmed `BotLinkHandler` + `TrialExpiredModal` + `TrialCountdownBanner` + `AppGuideAutoOpen` (PlatformGuide Sheet) + `CentralAlertMonitor` + `DesktopNotificationPrompt` + `RealtimeTicker` + `RoboNotifierToggle` are all mounted at AppShell level.
+- Wrote final inventory to `/home/z/my-project/SCREENS-INVENTORY.md` (≈600 lines, hierarchical grouping by TopBar menu section, with file path + type + parent + function + description + tabs + dialogs + used/orphan status for every screen).
+
+Stage Summary:
+- ✅ Comprehensive SCREENS INVENTORY created at `/home/z/my-project/SCREENS-INVENTORY.md`.
+- ✅ 59 distinct switch cases mapped (58 explicit + 1 default = DashboardView).
+- ✅ 38 distinct main view components identified + file paths.
+- ✅ 14 main views with internal shadcn Tabs (~60 tab values total) catalogued.
+- ✅ ~15 view-level dialogs + 9 global overlays (modals/sheets) inventoried.
+- ✅ Admin: 26 tabs across 6 hubs fully mapped with file paths.
+- ✅ 11 standalone Next.js pages outside AppShell documented.
+- ✅ 16 archived/deleted orphan views confirmed + their archive paths noted.
+- ✅ 30+ sub-view building blocks (not directly routed but used inside parent views) catalogued in a separate section to distinguish them from true screens.
+- ✅ ASCII navigation reachability map included at end of inventory.
+- 🔁 Ready for Alpha to consume when building the UI refactor plan.
