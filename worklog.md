@@ -68955,3 +68955,33 @@ Stage Summary:
 - ✅ Bug fix إضافي: gate 1.5 → 1.8 (كان Rule 18 violation).
 - ✅ Relative paths (Rule 17) — يشتغل على laptop + VPS + sandbox.
 - ⚠️ FLAG: line 2305-2310 فيه regime-aware floor 1.5 لـ range markets (computation layer). evaluate_risk gate هيمسك أي R/R < 1.8 بغض النظر، بس الـ computation ممكن يـ generate signals 1.5-1.8 للـ range markets (هتتـ skip). لو محسن عاوز ينقي ده، تكليف منفصل.
+
+---
+Task ID: BRAVO-DB-CLEANUP-001
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: كيمي P0 — backfill risk_reward + flag 660 RR violators + 633 stop violators
+
+Work Log:
+- كتبت scripts/db_cleanup.py ( Rule 17: relative paths — Path(__file__).resolve().parents[1]).
+- Sub-task 1 (backfill risk_reward):
+  * predictions: 152 rows كانوا rr=0/null → backfilled (100%)
+  * aiPrediction: 1804/2613 rows backfilled (809 skipped — invalid geometry: stop>=entry أو target<=entry)
+  * AFTER: predictions 0 rr=0/null، aiPrediction 809 rr=0/null (invalid geometry فقط)
+- Sub-task 2 (flag violators):
+  * predictions: 320 RR violations + 63 stop violations flagged
+  * aiPrediction: 2081 RR violations + 407 stop violations flagged
+  * TOTAL: 2401 RR violations + 470 stop violations = 2871 quarantined
+  * Audit trail: original status محفوظ في quality_flags (predictions) + notes (aiPrediction)
+- Idempotency test: RUN 2 = 0 new updates + 2871 skipped (already quarantined) ✓
+- ممنوع DELETE — بس UPDATE.
+- BEFORE/AFTER counts:
+  * predictions: 1491 total | rr=0/null: 152→0 | quarantined: 0→383
+  * aiPrediction: 2613 total | rr=0/null: 2613→809 | quarantined: 0→2488
+
+Stage Summary:
+- ✅ risk_reward backfilled لـ 1956 rows (152 + 1804).
+- ✅ 2871 violator flagged (2401 RR + 470 stop) — ممنوع DELETE، بس status = QUARANTINED_*.
+- ✅ idempotent (RUN 2 = 0 updates).
+- ✅ audit trail محفوظ (original_status في quality_flags/notes).
+- ✅ Relative paths (Rule 17) — يشتغل على laptop + VPS + sandbox.
+- ⚠️ 809 rows في aiPrediction عندها invalid geometry (stop>=entry أو target<=entry) — مش هيتعملها backfill. لو محتاج إصلاح، تكليف منفصل.
