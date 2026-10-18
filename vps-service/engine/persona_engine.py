@@ -38,13 +38,22 @@ class RiskParameters:
     time_stop_days: int              # Time Stop بالأيام
     leverage_allowed: float          # الرافعة المسموحة
     daily_loss_limit_pct: float      # حد الخسارة اليومي
-    
+
     # توزيع المحفظة
     egx_allocation: float = 0.0
     crypto_allocation: float = 0.0
     gold_allocation: float = 0.0
     forex_allocation: float = 0.0
     cash_allocation: float = 0.0
+
+    def __post_init__(self) -> None:
+        # BRAVO-RADAR-PRED-AUDIT-001 Fix 2 (Rule 19 — Position Cap 2.5%):
+        # أي persona مايتعرضش max_position_pct > 2.5% للمستخدم/الـ API.
+        # القيم القديمة (3/5/7/8/10/15) كانت بتعرض مخاطرة أكبر من الـ cap
+        # الكنسي (flow_system.MAX_POSITION_SIZE = 0.025 + evaluate_risk cap).
+        # الـ cap هنا بسيط: clamp القيمة لـ 2.5% مع الحفاظ على الـ type signature.
+        if self.max_position_pct > 2.5:
+            self.max_position_pct = 2.5
 
 
 @dataclass
