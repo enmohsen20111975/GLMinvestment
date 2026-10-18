@@ -31,16 +31,25 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Call rebuild-predictions
-    const targetUrl = `${PY}/api/daily/rebuild-predictions${qs ? `?${qs}` : ''}`;
-    const options: RequestInit = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: bodyText || '{}',
-      signal: AbortSignal.timeout(30000),
-    };
-
-    const res = await fetch(targetUrl, options);
-    const data = await res.json();
+    let data;
+    try {
+      const targetUrl = `${PY}/api/daily/rebuild-predictions${qs ? `?${qs}` : ''}`;
+      const options: RequestInit = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyText || '{}',
+        signal: AbortSignal.timeout(30000),
+      };
+      const res = await fetch(targetUrl, options);
+      data = await res.json();
+    } catch (pyErr) {
+      console.error('[predictions:generate-all] Python backend unavailable:', pyErr);
+      return NextResponse.json({
+        success: false,
+        error: 'python_backend_unavailable',
+        message: 'محرك التوقعات (Python backend) غير متاح حالياً',
+      }, { status: 503 });
+    }
 
     if (data.success && !data.predictions_count) {
       // REALITY-CHECK-025: شيلنا fallback لـ 151 الكاذب
