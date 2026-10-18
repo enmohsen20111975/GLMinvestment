@@ -1896,7 +1896,8 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
     );
   }
 
-  const maestro = data.maestro;
+  // MAESTRO-CANCER-1: maestro data removed (contradictory recs). Canonical = V40.2.
+  const maestro = null;
   const hunter = data.hunter;
   const board = data.board;
   const news = data.news ?? [];
@@ -1935,7 +1936,7 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
   return (
     <SectionCard
       icon={<Activity className="w-4 h-4" />}
-      title="التحليل الشامل (Maestro + Hunter + Board + News)"
+      title="التحليل الشامل (Hunter + Board + News)"
       description="من /api/stocks/X/comprehensive — 10 أقسام (graceful degrade عند توقف Python)"
       accent="emerald"
     >

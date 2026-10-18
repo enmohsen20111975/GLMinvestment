@@ -139,44 +139,13 @@ export async function GET(
   }
 
   // ----------------------------------------------------------------
-  // Path 2: live analysis via /api/maestro/persona/<ticker> (تحليل فوري)
+  // MAESTRO-CANCER-1: removed live /api/maestro/persona call.
+  // كان بيجيب contradictory recs (55/42) vs V40.2 canonical (78/65/55).
+  // Stored analysis (Path 1) is the canonical source. If it fails → 404 (Rule 27).
   // ----------------------------------------------------------------
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-
-    const liveUrl = `${PYTHON_BACKEND.replace(/\/$/, '')}/api/maestro/persona/${ticker}?persona=all`;
-    const resp = await fetch(liveUrl, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (resp.ok) {
-      const data = await resp.json();
-
-      // الـ persona endpoint بيرجع gambler + investor + narrative + price + stock_info
-      const responseBody: DualPersonaResponse = {
-        success: true,
-        ticker,
-        price: data.price || data.stock_info?.current_price,
-        market: data.stock_info?.market || 'EGX',
-        updated_at: new Date().toISOString(),
-        story: undefined, // الـ live path ما بيبنيش story_arc (بيتعمل في background_analyzer بس)
-        gambler: data.gambler,
-        investor: data.investor,
-        narrative: data.narrative,
-        source: 'live',
-      };
-      return NextResponse.json(responseBody);
-    }
-  } catch (err) {
-    console.warn(`[dual-persona] live path failed for ${ticker}:`, err);
-  }
 
   // ----------------------------------------------------------------
-  // Path 3: فشل الاتنين → 404
+  // Path 3: فشل stored → 404
   // ----------------------------------------------------------------
   return NextResponse.json<DualPersonaResponse>(
     {

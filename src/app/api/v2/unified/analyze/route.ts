@@ -141,11 +141,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2) Compose locally from confluence + dual-persona
-    const [confluence, dualPersona] = await Promise.all([
+    // 2) Compose locally from confluence (maestro persona removed — MAESTRO-CANCER-1)
+    const [confluence] = await Promise.all([
       getPython(`/api/confluence/analyze/${encodeURIComponent(ticker)}`),
-      getPython(`/api/maestro/persona/${encodeURIComponent(ticker)}?persona=all`).catch(() => null),
     ]);
+    // MAESTRO-CANCER-1: removed /api/maestro/persona call (contradictory recs). Canonical = confluence.
+    const dualPersona = null;
 
     // ---- Build the unified analysis object ----
     const boardConsensus = confluence?.board_consensus || confluence?.consensus || confluence;
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
     // Master score from confluence (0..100) → use as a baseline
     let score = num(boardConsensus?.master_score, 50);
 
-    // Persona overlay from /api/maestro/persona/<ticker>
+    // MAESTRO-CANCER-1: persona overlay removed (was from /api/maestro/persona)
     const personaBlock: any = dualPersona?.[persona] || dualPersona?.persona_block || null;
     if (personaBlock) {
       const pScore = signalToScore(personaBlock.signal, score);

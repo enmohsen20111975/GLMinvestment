@@ -69459,3 +69459,31 @@ Stage Summary:
 - ⚠️ FLAG: registration trigger في Next.js (scope ألفا) — محتاج يـ set trial_ends_at عند signup.
 - ⚠️ FLAG: 112 users لسه بـ NULL trial_ends_at (admin/premium — مش محتاجين trial).
 - 🔁 Push gate: جون وافق → هـ commit + push.
+
+---
+Task ID: MAESTRO-CANCER-1
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: فصل الـ live maestro calls من الـ frontend. الـ maestro بيرجّع contradictory recs (55/42) vs V40.2 canonical (78/65/55).
+
+Work Log:
+- STEP 1 — فصل live maestro calls (4 routes):
+  1. dual-persona/[ticker]/route.ts: شلت Path 2 (live /api/maestro/persona fetch, L141-176). الـ flow دلوقتي: Path 1 (stored) → 404.
+  2. ai/analyze-stock/route.ts: شلت tryPythonProxy function + maestro call block (L198-209). صلّحت TODO (freshness check متعمل دلوقتي). الـ flow: predictions.db مباشرة.
+  3. persona/analyze/[ticker]/route.ts: شلت Python /api/persona/analyze call (was 404 + maestro). الـ route دلوقتي: alias لـ dual-persona فقط.
+  4. v2/unified/analyze/route.ts: شلت getPython(/api/maestro/persona) من Promise.all. الـ confluence call محفوظ.
+- STEP 2 — امسح data.maestro من UI:
+  5. SpecialistAnalysisView.tsx L1899: `const maestro = data.maestro` → `const maestro = null`. حدّثت title من "(Maestro + Hunter + Board + News)" لـ "(Hunter + Board + News)". الـ phase badge مش هيظهر (meta = null).
+  6. MaestroWidget.tsx: already returns null (zombie — disabled from PHASE-2-MAESTRO-KILL). ما لمسته.
+- STEP 3 — verify:
+  * `grep -rn "fetch.*maestro\|getPython.*maestro" src/` → 0 live calls (بس comments + 410 route).
+  * `bun run lint` → exit 0، 0 errors.
+  * browser: / route بترندر.
+  * git diff --stat: 5 files, 19 insertions, 95 deletions (صافي -76 سطر maestro code).
+
+Stage Summary:
+- ✅ 4 live maestro calls اتمسحت (dual-persona + ai/analyze-stock + persona/analyze + v2/unified/analyze).
+- ✅ data.maestro = null في SpecialistAnalysisView (UI ما بعرضش maestro recs).
+- ✅ MaestroWidget.tsx already zombie (returns null).
+- ✅ lint: 0 errors.
+- ✅ التوصيات دلوقتي بتيجي من V40.2 canonical (predictions.db) — مش متناقضة.
+- 🚫 NO push (gate جون).

@@ -69,34 +69,10 @@ export async function GET(
       );
     }
 
-    // 1) Try Python /api/persona/analyze/<ticker> first (currently 404 — kept for future-proofing)
-    if (PY) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        const pyRes = await fetch(
-          `${PY}/api/persona/analyze/${encodeURIComponent(ticker)}?persona=${encodeURIComponent(persona)}`,
-          { method: 'GET', headers: { Accept: 'application/json' }, signal: controller.signal, cache: 'no-store' }
-        );
-        clearTimeout(timeout);
-        if (pyRes.ok) {
-          const pyData = await pyRes.json();
-          if (pyData && pyData.success !== false && (pyData.analysis || pyData.investor || pyData.gambler)) {
-            return NextResponse.json({
-              success: true,
-              ticker,
-              analysis: pyData.analysis || pyData,
-              ...pyData,
-              source: 'python',
-            });
-          }
-        }
-      } catch {
-        // Fall through to Next.js dual-persona
-      }
-    }
+    // MAESTRO-CANCER-1: removed Python /api/persona/analyze call (was 404 + maestro cancer).
+    // Canonical: /api/stocks/dual-persona/<ticker> (predictions.db V40.2).
 
-    // 2) Proxy to /api/stocks/dual-persona/<ticker> (existing Next.js route)
+    // 1) Proxy to /api/stocks/dual-persona/<ticker> (existing Next.js route)
     const dual = await getNext(request, `/api/stocks/dual-persona/${encodeURIComponent(ticker)}`);
 
     if (dual.ok && dual.data && dual.data.success !== false) {

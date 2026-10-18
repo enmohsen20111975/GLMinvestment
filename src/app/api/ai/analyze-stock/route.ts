@@ -85,28 +85,16 @@ interface PredictionRow {
   market: string | null;
 }
 
-function tryPythonProxy(ticker: string, market: string): Promise<any | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  return fetch(`${PY}/api/maestro/stock/${encodeURIComponent(ticker)}?market=${encodeURIComponent(market)}`, {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
-    signal: controller.signal,
-    cache: 'no-store',
-  }).then(async (res) => {
-    clearTimeout(timeout);
-    if (!res.ok) return null;
-    return await res.json();
-  }).catch(() => null);
-}
+// MAESTRO-CANCER-1: removed tryPythonProxy — was calling /api/maestro/stock/ (contradictory recs).
+// Canonical source: predictions.db stored_analyses + predictions (V40.2).
 
 function fetchStoredAnalysis(db: any, ticker: string): StoredAnalysisRow | null {
   try {
-    // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-    // TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses.
-    //       Currently a row from 2 weeks ago appears "alive" — users see old predictions.
+    // FRESHNESS-CHECK (Task PHASE-3, Rule 72): filter analyses older than 2 days.
     const row = db.prepare(`
-      SELECT * FROM stored_analyses WHERE ticker = ? COLLATE NOCASE LIMIT 1
+      SELECT * FROM stored_analyses WHERE ticker = ? COLLATE NOCASE
+      AND updated_at >= datetime('now', '-2 days')
+      LIMIT 1
     `).get(ticker) as StoredAnalysisRow | undefined;
     return row ?? null;
   } catch {
@@ -195,20 +183,10 @@ export async function POST(req: NextRequest) {
     const market = String(body.market || 'EGX').toUpperCase();
     const marketArabic = marketCodeToArabic(market);
 
-    // 1) جرّب Python maestro أولاً
-    const pyResult = await tryPythonProxy(ticker, market);
-    if (pyResult && (pyResult.success !== false || pyResult.maestro_score || pyResult.signal)) {
-      return NextResponse.json({
-        success: true,
-        ticker,
-        market,
-        source: 'python_maestro',
-        analysis: pyResult,
-        generated_at: new Date().toISOString(),
-      });
-    }
+    // MAESTRO-CANCER-1: removed Python maestro call (contradictory recs 55/42 vs 78/65/55).
+    // Canonical: predictions.db stored_analyses + predictions (V40.2).
 
-    // 2) fallback إلى predictions.db (stored_analyses + predictions)
+    // 1) predictions.db (stored_analyses + predictions)
     if (!dbExists(PREDICTIONS_DB_PATH)) {
       return NextResponse.json(
         {
