@@ -69958,3 +69958,41 @@ Stage Summary:
 - ⚠️ DB schema mismatches: stored_analyses ناقصة columns (persona, sector, name_ar, status, exit_type, horizon, evidence_count, kill_filter_result, explosive_score) — الـ route دلوقتي resilient (guards). الـ schema نفسها محتاجة update من برافو/المالك.
 - ⚠️ #recommendations hash بيتمسح للـ Guest — UX nit (مش crash). محتاج تحقيق مستقبلي.
 - 🔁 push: المالك رفع الـ gate. هـ commit + push.
+
+---
+Task ID: BRAVO-SECURE-RULES-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: تأمين القواعد والمحركات — 4 مراحل
+
+Work Log:
+- 🔴 اكتشاف: كل الـ 11 DBs اتمسحت من db/ (force-upload أكلها). أعيد استرجاعهم من /data backups.
+- Phase 1 (أرشفة gold_prices.db + crypto.db): SKIP — الملفات مش موجودة أصلاً (data_engine.db = canonical).
+- Phase 2 (sanitize stocks — 35 dead stocks):
+  * scripts/sanitize_stocks_table.py (NEW، 85 lines): UPDATE is_active=0 للـ dead stocks.
+  * النتيجة: كل الـ 35 dead stocks بالفعل is_active=0 (مفيش updates محتاجة).
+  * API queries بـ check is_active=1 + current_price>0 ✅ (verified في 15+ locations).
+- Phase 3a (stored_analyses schema migration):
+  * أضفت persona TEXT DEFAULT 'balanced' + master_score REAL (backfilled from maestro_score).
+  * كل الأعمدة المطلوبة موجودة: market, signal, confidence, persona, master_score ✅.
+- Phase 3b (news_signals VIEW):
+  * عملت VIEW news_signals AS SELECT * FROM market_news في news.db.
+  * 1019 rows ✅ (يضمن إن الكود القديم اللي بـ يبحث عن news_signals مش هيـ crash).
+- Phase 4 (sanitize stock_daily_prices):
+  * حذف 7893 rows (close_price <= 0 or NULL) + 11305 rows (close <= 0 or NULL).
+  * Total deleted: 19198 bad rows. Remaining: 62813 clean rows.
+  * 0 bad rows بعد ✅.
+- Acceptance:
+  * scratch/audit_data_integrity.py: 13/13 PASS ✅.
+  * py_compile vps-service/data/prices.py: PASS ✅.
+  * 0 أسهم فعالة بأسعار صفرية ✅.
+  * 0 أسعار تاريخية شاذة ✅.
+  * كل DBs integrity OK ✅.
+
+Stage Summary:
+- ✅ Phase 1: SKIP (gold_prices.db + crypto.db مش موجودين — data_engine.db canonical).
+- ✅ Phase 2: 35 dead stocks كلهم is_active=0 + API queries بـ verify is_active.
+- ✅ Phase 3: stored_analyses schema migration (persona + master_score) + news_signals VIEW (1019 rows).
+- ✅ Phase 4: 19198 bad rows اتشالت من stock_daily_prices (0 bad remaining).
+- ✅ Acceptance: 13/13 PASS + py_compile PASS.
+- ⚠️ FLAG: الـ 11 DBs اتمسحت + اتعملهم restore من /data (force-upload أكلهم). محتاج owner يـ verify إن الـ DBs على production سليمة.
+- ⚠️ FLAG: stock_daily_prices = 62813 rows بس (بعد حذف 19198 bad). الـ replenish من price_history (DATA-LAYER-1) محتاج إعادة لو محتاجين الـ 1.4M rows.
