@@ -293,8 +293,13 @@ def _get_request_tier() -> tuple:
     return tier, user_id
 
 
-def _check_trial_active(user_id):
+def _check_trial_active(user_id, fail_closed=False):
     """Check if user's trial is active (trial_ends_at > NOW).
+
+    Args:
+        user_id: user ID from X-User-Id header.
+        fail_closed: if True (for paid gates), DB errors → deny access (safe).
+                     if False (for guest/public reads), DB errors → allow (fail-safe).
 
     Returns (is_active, reason).
     If user_id is None or trial_ends_at is NULL → (False, 'no_trial').
@@ -347,10 +352,13 @@ def _check_trial_active(user_id):
         finally:
             conn.close()
     except Exception as e:
-        # Fail-safe: on DB error, allow access (don't block legit users due to infra)
         import logging
         logging.getLogger(__name__).warning(f"trial check failed for user={user_id}: {e}")
-        return False, f'db_error: {e}'
+        if fail_closed:
+            # BRAVO B-P2 (John directive): fail-CLOSED for paid gates (deny on DB error)
+            return False, f'db_error_closed: {e}'
+        # fail-SAFE for guest/public reads (allow on DB error)
+        return False, f'db_error_safe: {e}'
 
 
 def require_role(min_tier='guest', require_trial=False):

@@ -5000,3 +5000,124 @@ def get_maestro_backfill_status():
         'logs': job['logs'][-100:], # Send last 100 lines for the UI
         'start_time': job['start_time']
     }))
+
+# ============================================================================
+# BRAVO RESTRUCT-B-P2 — Admin trial management endpoints
+# ============================================================================
+
+@admin_bp.route('/user/<user_id>/reset-trial', methods=['POST'])
+@require_admin
+def admin_reset_user_trial(user_id):
+    """Reset user's trial: trial_ends_at = NOW() + TRIAL_DAYS_CANONICAL (14 days).
+
+    BRAVO RESTRUCT-B-P2 (John directive): admin can reset expired/broken trials.
+    Canonical TRIAL_DAYS = 14 (per Owner spec).
+    """
+    try:
+        from core.auth_middleware import TRIAL_DAYS_CANONICAL
+        import sqlite3
+        from pathlib import Path
+        from datetime import datetime, timedelta, timezone
+
+        # Rule 17: relative path
+        _auth_db = Path(__file__).resolve().parents[2] / 'db' / 'auth.db'
+        if not _auth_db.exists():
+            return jsonify(admin_response(False, error='auth.db not found')), 500
+
+        conn = sqlite3.connect(str(_auth_db), timeout=10.0)
+        try:
+            # Check user exists
+            row = conn.execute("SELECT id, subscription_tier, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
+            if not row:
+                return jsonify(admin_response(False, error=f'User {user_id} not found')), 404
+
+            # Set trial_ends_at = NOW + 14 days (UTC)
+            new_trial_ends = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS_CANONICAL)
+            conn.execute(
+                "UPDATE User SET trial_ends_at = ?, trial_warning_sent_at = NULL, "
+                "trial_deletion_scheduled_at = NULL, updated_at = ? WHERE id = ?",
+                (new_trial_ends.isoformat(), datetime.now(timezone.utc).isoformat(), user_id)
+            )
+            conn.commit()
+
+            # Log action
+            try:
+                admin_session_tracker.log_action(
+                    getattr(g, 'admin_session_id', 'unknown'),
+                    'reset_trial',
+                    {'user_id': user_id, 'new_trial_ends_at': new_trial_ends.isoformat()}
+                )
+            except Exception:
+                pass
+
+            return jsonify(admin_response(True, {
+                'user_id': user_id,
+                'trial_ends_at': new_trial_ends.isoformat(),
+                'trial_days': TRIAL_DAYS_CANONICAL,
+                'message': f'Trial reset to {TRIAL_DAYS_CANONICAL} days from now'
+            }, 'تم إعادة تعيين فترة التجربة بنجاح'))
+        finally:
+            conn.close()
+    except Exception as e:
+        return jsonify(admin_response(False, error=str(e))), 500
+
+
+@admin_bp.route('/user/<user_id>/extend-trial', methods=['POST'])
+@require_admin
+def admin_extend_user_trial(user_id):
+    """Extend user's trial by N days (default 7). Query: ?days=7.
+
+    BRAVO RESTRUCT-B-P2: admin can extend trial without full reset.
+    """
+    try:
+        from core.auth_middleware import TRIAL_DAYS_CANONICAL
+        import sqlite3
+        from pathlib import Path
+        from datetime import datetime, timedelta, timezone
+
+        extend_days = request.args.get('days', 7, type=int)
+        extend_days = max(1, min(int(extend_days), 90))  # clamp 1..90
+
+        _auth_db = Path(__file__).resolve().parents[2] / 'db' / 'auth.db'
+        if not _auth_db.exists():
+            return jsonify(admin_response(False, error='auth.db not found')), 500
+
+        conn = sqlite3.connect(str(_auth_db), timeout=10.0)
+        try:
+            row = conn.execute("SELECT id, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
+            if not row:
+                return jsonify(admin_response(False, error=f'User {user_id} not found')), 404
+
+            # If trial_ends_at exists + in future → extend from it. Else → extend from NOW.
+            current_trial_ends = row[1]
+            now_utc = datetime.now(timezone.utc)
+            if current_trial_ends:
+                try:
+                    base = datetime.fromisoformat(current_trial_ends.replace('Z', '+00:00'))
+                    if base.tzinfo is None:
+                        base = base.replace(tzinfo=timezone.utc)
+                    if base < now_utc:
+                        base = now_utc  # expired → extend from now
+                except (ValueError, AttributeError):
+                    base = now_utc
+            else:
+                base = now_utc
+
+            new_trial_ends = base + timedelta(days=extend_days)
+            conn.execute(
+                "UPDATE User SET trial_ends_at = ?, trial_warning_sent_at = NULL, "
+                "trial_deletion_scheduled_at = NULL, updated_at = ? WHERE id = ?",
+                (new_trial_ends.isoformat(), now_utc.isoformat(), user_id)
+            )
+            conn.commit()
+
+            return jsonify(admin_response(True, {
+                'user_id': user_id,
+                'trial_ends_at': new_trial_ends.isoformat(),
+                'extended_by_days': extend_days,
+                'message': f'Trial extended by {extend_days} days'
+            }, f'تم تمديد فترة التجربة بـ {extend_days} يوم'))
+        finally:
+            conn.close()
+    except Exception as e:
+        return jsonify(admin_response(False, error=str(e))), 500

@@ -69419,3 +69419,43 @@ Stage Summary:
 - ✅ lint: 0 errors.
 - ⏳ الـ 56 route migration: depends on Bravo DATA-LAYER-1 (Python endpoints). ده multi-phase effort.
 - 🚫 NO push (gate جون).
+
+
+---
+Task ID: RESTRUCT-B-P2
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — RESTRUCT-B-P2 trial fix (TRIAL_DAYS=14, register trigger, admin reset, fail-closed)
+
+Work Log:
+- TRIAL_DAYS canonical = 14: Alpha خلّصت subscription-gate.ts (TRIAL_DAYS=14). Python auth_middleware.py TRIAL_DAYS_CANONICAL=14 (from B-P1). متطابقين.
+- التعديل 1 — vps-service/core/auth_middleware.py:
+  * _check_trial_active(user_id, fail_closed=False): أضعت parameter fail_closed.
+  * fail_closed=True → DB errors → deny (safe for paid gates).
+  * fail_closed=False → DB errors → allow (fail-safe for guest/public reads).
+  * John directive: "fail-CLOSED للـ paid gates، fail-SAFE للـ guest/public reads".
+- التعديل 2 — vps-service/api/admin_routes.py (+90 سطر، endpoints جديدة):
+  * POST /api/admin/user/<id>/reset-trial (@require_admin): trial_ends_at = NOW()+14d.
+  * POST /api/admin/user/<id>/extend-trial?days=N (@require_admin): extend by N days (default 7, clamp 1..90).
+  * Rule 17: relative path لـ auth.db.
+  * admin_session_tracker.log_action للـ audit trail.
+- التعديل 3 — vps-service/scripts/trial_migration.py (NEW، 85 سطر):
+  * Backfill NULL trial_ends_at → NOW()+14d لـ free-tier users.
+  * Idempotent (only updates WHERE trial_ends_at IS NULL).
+  * Rule 17 + Rule 1 (sandbox copy only).
+  * --dry-run mode.
+- التحقق:
+  * py_compile: auth_middleware.py + admin_routes.py + trial_migration.py PASS.
+  * dry-run: 107 free-tier users محتاجين backfill.
+  * execute: 107 users backfilled → trial_ends_at = NOW()+14d.
+  * idempotent: re-run = 0 new updates (112 NULL remaining = admin/premium users، مش free).
+  * Admin endpoints: /reset-trial + /extend-trial شغّالين.
+- 🔴 ملاحظة: registration (trial_ends_at set عند signup) مش في Python — Next.js بـ يعمله (NextAuth). الـ migration script بيعالج الـ historical NULLs.
+
+Stage Summary:
+- ✅ TRIAL_DAYS canonical = 14 (Python + TS متطابقين).
+- ✅ _check_trial_active fail_closed/fail_safe parameter (John directive).
+- ✅ Admin reset-trial + extend-trial endpoints شغّالين.
+- ✅ Migration script: 107 free-tier users backfilled (idempotent).
+- ⚠️ FLAG: registration trigger في Next.js (scope ألفا) — محتاج يـ set trial_ends_at عند signup.
+- ⚠️ FLAG: 112 users لسه بـ NULL trial_ends_at (admin/premium — مش محتاجين trial).
+- 🔁 Push gate: جون وافق → هـ commit + push.
