@@ -681,6 +681,104 @@ class FlowSystemEngine:
 
         return {'bonus': min(bonus, 10), 'factors': factors}
 
+    def _get_atr_for_ticker(self, ticker: str, period: int = 14) -> Optional[float]:
+        """احسب ATR canonical (Wilder's) من stock_daily_prices.
+
+        Rule 67(b) (CALCULATION-CANONICAL): ATR canonical source هو
+        analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+        Rule 12 (DATA-UNIFY-007): بيانات الأسعار من stock_daily_prices.
+
+        Returns: ATR value (absolute, بالجنيه) أو None لو مفيش بيانات كافية.
+        """
+        conn = None
+        try:
+            conn = self._get_connection()
+            cur = conn.cursor()
+            rows = cur.execute("""
+                SELECT high, low, close FROM stock_daily_prices
+                WHERE ticker = ? AND COALESCE(close, 0) > 0
+                  AND COALESCE(high, 0) > 0 AND COALESCE(low, 0) > 0
+                ORDER BY price_date ASC
+                LIMIT ?
+            """, (ticker, period + 50)).fetchall()  # +50 buffer للـ Wilder's seed
+            if not rows or len(rows) < period + 1:
+                return None
+            highs = [self._safe_float(r['high']) for r in rows]
+            lows = [self._safe_float(r['low']) for r in rows]
+            closes = [self._safe_float(r['close']) for r in rows]
+            # canonical ATR
+            try:
+                from analyzers.indicators.atr import calc_atr as _canonical_atr
+                atr = _canonical_atr(highs, lows, closes, period)
+                return atr
+            except ImportError:
+                # fallback: SMA-based ATR (مش canonical بس يقوم بالغرض)
+                trs = []
+                for i in range(1, len(rows)):
+                    h, l = highs[i], lows[i]
+                    pc = closes[i - 1]
+                    tr = max(h - l, abs(h - pc), abs(l - pc))
+                    trs.append(tr)
+                if len(trs) < period:
+                    return None
+                return sum(trs[-period:]) / period
+        except Exception as e:
+            logger.debug(f"ATR error for {ticker}: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def _compute_atr_stop_target(self, ticker: str, entry_price: float,
+                                  min_pct: float = 5.0, max_pct: float = 9.0,
+                                  min_rr: float = 1.8) -> Tuple[Optional[float], Optional[float]]:
+        """احسب stop_loss + target ديناميكيًا من ATR + clamp [5%, 9%].
+
+        Rule 8 (PILLAR-3): atr_stop_min_pct=5.0, atr_stop_max_pct=9.0.
+        Rule 18: R/R ≥ 1.8 (dynamic_rr_normal).
+        Rule 67(b): ATR canonical (Wilder's).
+
+        المنطق:
+          - atr_pct = (ATR / entry) × 100
+          - stop_dist = clamp(atr_pct × 1.5, [min_pct, max_pct])  [1.5× buffer]
+          - stop = entry × (1 - stop_dist/100)
+          - target_dist = stop_dist × min_rr (≥ 1.8 × risk)
+          - target = entry × (1 + target_dist/100)
+
+        Returns: (stop_pct, target_pct) — قيم بالنسبة المئوية (مثال: -5.8, +10.4).
+                 None, None لو مفيش ATR أو entry غير صالح.
+        """
+        if not entry_price or entry_price <= 0:
+            return None, None
+
+        # اقرأ thresholds من engine_settings (SSOT — Rule 11)
+        try:
+            from analyzers.engine_settings import get_setting
+            min_pct = float(get_setting('atr_stop_min_pct', default=min_pct))
+            max_pct = float(get_setting('atr_stop_max_pct', default=max_pct))
+            min_rr = float(get_setting('dynamic_rr_normal', default=min_rr))
+        except Exception:
+            pass  # fallback للـ defaults (5%, 9%, 1.8)
+
+        atr = self._get_atr_for_ticker(ticker)
+        if not atr or atr <= 0:
+            # مفيش ATR → استخدم min_pct كـ fallback محافظ (مش 3% ثابت قديم)
+            stop_dist = min_pct
+        else:
+            atr_pct = (atr / entry_price) * 100.0
+            # stop = 1.5× ATR (buffer تحت القاع) — نفس منطق opportunity_quality
+            stop_dist = atr_pct * 1.5
+            # clamp لـ [min_pct, max_pct]
+            if stop_dist < min_pct:
+                stop_dist = min_pct
+            elif stop_dist > max_pct:
+                stop_dist = max_pct
+
+        # target = entry + (stop_dist × min_rr) → R/R ≥ 1.8
+        target_dist = stop_dist * min_rr
+
+        return -round(stop_dist, 2), round(target_dist, 2)
+
     def _calculate_flow_score_impl(self, ticker: str) -> Optional[FlowScore]:
         """Implementation - may throw, wrapped by calculate_flow_score"""
         conn = self._get_connection()
@@ -724,28 +822,37 @@ class FlowSystemEngine:
         total_score = min(100, total_score + fundamentals_bonus['bonus'])
 
         # Label
-        # POSITION-CAP (2026-10-18 — Owner directive via جيمي + جروك + كيمي):
-        # تم خفض position size ليتوافق مع shared_liquidity.py (PRE_SURGE=1.5%,
-        # EXPLOSIVE_SURGE=2%). 30% الأصلية = انتحار مالي. 15% السابقة برضه عالية.
-        # النطاق الآمن: 2-3% كحد أقصى للمركز الواحد (Rule 19 حماية رأس المال).
-        # stop/target لسه ثابتين مؤقتًا — TODO: ربط ديناميكي بـ ATR / unified
-        # (Rule 8 ATR [5%,9%] EGX + Rule 73 SINGLE-DISPLAY-SOURCE).
+        # POSITION-CAP + ATR-STOP-TARGET (2026-10-18 — Owner directive via جيمي + جروك + كيمي):
+        # POSITION: 2-3% كحد أقصى (Rule 19 حماية رأس المال — يتوافق مع shared_liquidity.py).
+        # STOP/TARGET: ديناميكي من ATR canonical (Wilder's) + clamp [5%, 9%] (Rule 8).
+        #              target = stop_dist × 1.8 (R/R ≥ 1.8 — Rule 18).
+        #              لو مفيش ATR → stop=min_pct (5%) + target=5%×1.8=9%.
+        # القيم الثابتة القديمة (-3/-5/+8/+12) اتمسحت — كانت بتخالف Rule 8 + Rule 18.
         if total_score >= 75:
             label, label_en, color = "نار", "FIRE", "red"
             action, action_en = "دخول قوي", "STRONG_ENTRY"
-            position, stop, target = 2, -3, 8  # أقصى حجم مركز 2% (Rule 19)
+            position = 2  # أقصى حجم مركز 2% (Rule 19)
         elif total_score >= 60:
             label, label_en, color = "شرارة", "SPARK", "orange"
             action, action_en = "دخول حذر", "CAUTIOUS_ENTRY"
-            position, stop, target = 2.5, -5, 12  # أقصى حجم مركز 2.5% (Rule 19 cap — BRAVO-JIMMY task)
+            position = 2.5  # أقصى حجم مركز 2.5% (Rule 19 cap — BRAVO-JIMMY task)
         elif total_score >= 40:
             label, label_en, color = "رماد", "ASH", "gray"
             action, action_en = "استنى", "WAIT"
-            position, stop, target = 0, 0, 0
+            position = 0
         else:
             label, label_en, color = "بارد", "COLD", "blue"
             action, action_en = "ماتدخلش", "AVOID"
-            position, stop, target = 0, 0, 0
+            position = 0
+
+        # احسب stop/target ديناميكيًا من ATR (Rule 8 + Rule 18 + Rule 67b)
+        # للأسهم اللي تستحق دخول (FIRE/SPARK) → احسب. للباقي → 0.
+        if position > 0 and price > 0:
+            _stop_pct, _target_pct = self._compute_atr_stop_target(ticker, price)
+            stop = _stop_pct if _stop_pct is not None else 0.0
+            target = _target_pct if _target_pct is not None else 0.0
+        else:
+            stop, target = 0.0, 0.0
 
         return FlowScore(
             ticker=ticker,
