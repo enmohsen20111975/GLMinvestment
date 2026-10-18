@@ -6,7 +6,7 @@
 > **المستودع:** `/home/z/my-project` (origin/main).  
 > **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
 > **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق + متدفعين. B-P2 green-lit (split: برافو Python + ألفا A-P2.5 subscription-gate.ts). باقي: A-P3/A-P4 + B-P3 + data fixes.  
-> **آخر تحديث:** 2026-10-18 — B-P1 متحقق (4/4 logic tests + fail-safe/closed decision) + B-P2 green-lit + A-P2.5 لألفا. **B-P3 BLOCKED على canonical price decision (الماك).**
+> **آخر تحديث:** 2026-10-18 — dead-engine cancer شِفته (v38_backtest_engine 109KB + 4 broken-import scripts + duplicated engines) + canonical DB متفوّض لبرافو (بـ يجاوب بالـ data) + DEAD-ENGINE-1 mandate لبرافو + تأكيد هندسي لألفا.
 
 ---
 
@@ -71,7 +71,9 @@
 | 🔜 **A-P3** | ألفا | Auth UI (Guest Mode + Trial soft + soft paywall بالاَ contract) |
 | 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
 | 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | green-lit — برافو: register trigger + admin reset + auth.db migration (write-only) + fail-closed للـ paid. ألفا: `TRIAL_DAYS 7→14` + امسح كومنت 30 + seed free=14 |
-| 🔜 **B-P3** | برافو | stocks/crypto unification (canonical `stocks.db`) — BLOCKED لحد canonical price decision |
+| 🔜 **B-P3** | برافو | stocks/crypto unification — **BLOCKED لحد CANONICAL-DB-1** (برافو بـ يحدد canonical من الـ data) |
+| 🔜 **DEAD-ENGINE-1** | برافو | شيل v38_backtest_engine السرطان جزء جزء (triple-verify → 4 dead scripts → engine file 109KB → consolidate duplicate engines → analysis_engine_v2) + `py_compile`+`grep`+V40.2 sanity بعد كل إزالة |
+| 🔜 **CANONICAL-DB-1** | برافو | قارن الـ 3 DBs (stocks.db / price_history / data_engine.egksco) — row count + ticker coverage + freshness + quality → حدد canonical + unblock B-P3 |
 
 ### ملاحظات verify (جون):
 - A-P1: تبّت `page.tsx` ما اتلمس (git log empty للملف في الـ A-P1/A-P2 commits) → Rule 67 محترمة.
@@ -176,6 +178,7 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 | 5 | price split-brain | B-P3 → canonical `stocks.db` + Rule 12 amendment | برافو | 🔜 |
 | 6 | frontend direct-DB | mandate لألفا (proxy للـ Python) | ألفا | 🔜 |
 | 7 | R/R stale 1.5 | cleanup دستوري | ألفا | 🔜 |
+| 8 | **dead-engine cancer** (v38_backtest_engine 109KB + 4 broken-import scripts + duplicated engines + analysis_engine_v2 root) | DEAD-ENGINE-1 | برافو | 🔜 |
 
 ---
 
