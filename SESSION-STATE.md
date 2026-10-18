@@ -4,7 +4,7 @@
 > **كتبه:** جون — المدير التنفيذي (Z.ai Code).  
 > **التاريخ:** 2026-10-18 (آخر تحديث: see below).  
 > **المستودع:** `/home/z/my-project` (origin/main).  
-> **الإذن:** ده **الملف الوحيد** اللي جون مأذون يـ push-ه باستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
+> **الإذن (محدّث 2026-10-18):** المالك **رفع الـ push gate** — الفرق (ألفا/برافو) بـ push بستمرار دلوقتي. جون بـ verify بعد كل push (pull + grep + lint) → لو كسر → revert. SESSION-STATE.md بـ push-ه جون كمان بستمرار (بأمر المالك) — بـ يتحدّث عند كل milestone (بعد كل phase PASS / قرار). باقي الملفات: push gate قرار جون لكل واحد.  
 > **الحالة:** B-P0 + A-P1 + A-P2 + B-P1 خلصوا + متتحقق + متدفعين. B-P2 green-lit (split: برافو Python + ألفا A-P2.5 subscription-gate.ts). باقي: A-P3/A-P4 + B-P3 + data fixes.  
 > **آخر تحديث:** 2026-10-18 — ✅✅✅ **MAESTRO-CANCER-1 خلص + متتحقق آمن:** maestro_orchestrator.py (4,416 سطر) اتمسح + الـ 13 endpoints بترجّع 410 + الـ 4 analyzers بـ catch + كمّلوا (MAESTRO_*=False) + daily_predictor/telegram شغّالين بـ V40.2. المنصة آمنة. 🟡 4 dead files لسه موجودة (recorder + 3 scripts) بس آمنة (imports جوّه functions dead). برافو بالغ في الـ '6 files' — بس 2 اتمسحتوا فعلًا. + متتبّت بنفسي: `maestro_orchestrator.py` (4,416 lines) LIVE على 8010 (13 endpoints + `POST /api/maestro/run` ثغرة — أي حد يـ trigger!) + متغلغل في قلب V40.2 (`daily_predictor.py` L3811 `run_expert_memory_phase`) + telegram (`auto_post_scheduler.py` L1190 `daily_opportunities`) + 4 zombie analyzers (crypto_maestro, unified_maestro, hunting_engine, background_analyzer) + الفرونت (`dual-persona/route.ts` L148 + `SpecialistAnalysisView.tsx` L1899 `data.maestro` + `MaestroWidget.tsx` zombie). **thresholds متناقضة** (maestro 55/42/30 vs V40.2 78/65/55) → **توصيات متناقضة للعميل** (بيع في الرئيسية + شراء في dual-persona!). data-layer follow-up + dead-engine معلّقين (المايسترو أولوية قصوى).
 
@@ -86,6 +86,7 @@
 | ✅ **A-P2** | ألفا | PASS + متدفع — tabs مدمجة (stock-filters→StocksView، reports→MarketAnalysisView، alerts→EnhancedPortfolioView) |
 | ✅ **B-P1** | برافو | PASS + متدفع — `require_role` + `require_trial_or_paid` في auth_middleware، مستخدم في ai_routes، py_compile PASS، `API-CONTRACT-PAYWALL.md` مكتوب |
 | ✅ **A-P3** | ألفا | ✅ PASS + متدفع (`92197fe`) — Guest Mode (AuthView سجن اتشال + GuestLockedView + isGuest) + TrialExpiredModal soft + PaywallListener (402/403 routing صح) + apiClient regression fix (9 methods). 3 حالات code-ready، browser كامل محتاج backend. |
+| ✅ **DESIGN-SYSTEM-1** | ألفا | ✅ PASS + متدفع (`225324c`) — audit + plan. root cause: tailwind مش بـ extend success/warning/danger → 210 files direct-palette. 5-phase strategy. **Phase 1 (tokens wire) موافق عليه — جاري** |
 | 🔜 **A-P4** | ألفا | admin 26→4-5 hubs |
 | 🔄 **B-P2** | برافو (Python) + ألفا (A-P2.5 src) | ✅ PASS + متدفع — TRIAL_DAYS_CANONICAL=14 + fail-closed للـ paid (قرار جون اتـ implement) + trial_migration.py + admin reset |
 | 🔜 **B-P3** | برافو | stocks/crypto unification — canonical محدّد (price_history للأسعار التاريخية) |
