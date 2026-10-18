@@ -882,6 +882,7 @@ def backtest_results():
 
 
 @admin_bp.route('/backtest/params', methods=['GET'])
+@require_admin
 def get_backtest_parameters():
     """
     الحصول على معاملات الـ Backtest.
@@ -907,6 +908,7 @@ def get_backtest_parameters():
 
 
 @admin_bp.route('/backtest/params', methods=['POST'])
+@require_admin
 def update_backtest_parameters():
     """
     تحديث معاملات الـ Backtest.
@@ -947,6 +949,7 @@ def update_backtest_parameters():
 
 
 @admin_bp.route('/backtest/run-enhanced', methods=['POST'])
+@require_admin
 def run_enhanced_backtest():
     """
     تشغيل Backtest المحسن مع المعاملات الحالية.
@@ -1406,6 +1409,7 @@ PROVEN_PARAMS = {
 
 
 @admin_bp.route('/iterative-learning/start', methods=['POST'])
+@require_admin
 def start_iterative_learning():
     """
     بدء التعلم الذاتي التكراري.
@@ -1476,6 +1480,7 @@ def start_iterative_learning():
 
 
 @admin_bp.route('/iterative-learning/step', methods=['POST'])
+@require_admin
 def run_learning_step():
     """
     تنفيذ خطوة تعلم واحدة.
@@ -1578,6 +1583,7 @@ def run_learning_step():
 
 
 @admin_bp.route('/iterative-learning/run-auto', methods=['POST'])
+@require_admin
 def run_auto_learning():
     """
     تشغيل التعلم التلقائي الكامل.
@@ -1716,6 +1722,7 @@ def run_auto_learning():
 
 
 @admin_bp.route('/iterative-learning/status', methods=['GET'])
+@require_admin
 def get_learning_status():
     """حالة التعلم الذاتي."""
     return jsonify(admin_response(True, {
@@ -1733,6 +1740,7 @@ def get_learning_status():
 
 
 @admin_bp.route('/iterative-learning/stop', methods=['POST'])
+@require_admin
 def stop_learning():
     """إيقاف التعلم الذاتي."""
     global _iterative_learning_state
@@ -1766,6 +1774,7 @@ PROVEN_COMBINATIONS = [
 
 
 @admin_bp.route('/iterative-learning/grid-search', methods=['POST'])
+@require_admin
 def run_grid_search():
     """
     تشغيل Grid Search للعثور على أفضل مجموعة معاملات.
@@ -1915,6 +1924,7 @@ def run_grid_search():
 
 
 @admin_bp.route('/iterative-learning/smart-optimize', methods=['POST'])
+@require_admin
 def run_smart_optimize():
     """
     تحسين ذكي - يجرب المعاملات الأكثر تأثيراً أولاً.
@@ -2250,6 +2260,7 @@ def update_sector_benchmarks():
 
 
 @admin_bp.route('/sectors/rotation', methods=['GET'])
+@require_admin
 def get_sector_rotation():
     """كشف دوران السيولة بين القطاعات — PREDICTIVE."""
     try:
@@ -2382,6 +2393,7 @@ def classify_stock_by_keywords(ticker: str, name: str) -> str:
 
 
 @admin_bp.route('/sectors/classify-stocks', methods=['POST'])
+@require_admin
 def classify_all_stocks():
     """
     تصنيف كل الأسهم بدون قطاع.
@@ -2443,6 +2455,7 @@ def classify_all_stocks():
 
 
 @admin_bp.route('/sectors/stats', methods=['GET'])
+@require_admin
 def get_sector_stats():
     """
     إحصائيات القطاعات.
@@ -2632,6 +2645,7 @@ PERSONAS = {
 
 
 @admin_bp.route('/historical-backfill/run', methods=['POST'])
+@require_admin
 def run_historical_backfill():
     """
     تشغيل عملية التعلم من البيانات التاريخية.
@@ -2770,6 +2784,7 @@ def run_historical_backfill():
 
 
 @admin_bp.route('/historical-backfill/status', methods=['GET'])
+@require_admin
 def get_historical_backfill_status():
     """
     الحصول على حالة عملية التعلم من الماضي.
@@ -2835,6 +2850,7 @@ def get_historical_backfill_status():
 
 
 @admin_bp.route('/historical-backfill/results', methods=['GET'])
+@require_admin
 def get_historical_backfill_results():
     """
     الحصول على نتائج آخر عملية تعلم من الماضي.
@@ -4047,6 +4063,7 @@ __all__ = ['admin_bp']
 
 
 @admin_bp.route('/sync-stocks', methods=['POST'])
+@require_admin
 def sync_stocks_public():
     """
     تحديث أسهم EGX من EGXPilot (بدون مصادقة).
@@ -4079,6 +4096,7 @@ def sync_stocks_public():
 
 
 @admin_bp.route('/sync-to-custom', methods=['POST'])
+@require_admin
 def sync_to_custom():
     """
     مزامنة الأسعار من stocks.db إلى stocks.db.
@@ -4178,6 +4196,7 @@ def _is_weekend(date_str):
 
 
 @admin_bp.route('/predictions/analyze', methods=['GET'])
+@require_admin
 def analyze_predictions():
     """
     تحليل توقعات الذكاء الاصطناعي.
@@ -4291,6 +4310,7 @@ def analyze_predictions():
 
 
 @admin_bp.route('/predictions/clean', methods=['POST'])
+@require_admin
 def clean_predictions():
     """
     تنظيف توقعات الذكاء الاصطناعي.
@@ -4915,6 +4935,7 @@ from pathlib import Path
 _maestro_backfills = {}
 
 @admin_bp.route('/maestro-backfill/run', methods=['POST'])
+@require_admin
 def run_maestro_backfill():
     try:
         data = request.get_json() or {}
@@ -4966,6 +4987,7 @@ def run_maestro_backfill():
         return jsonify(admin_response(False, error=str(e))), 500
 
 @admin_bp.route('/maestro-backfill/status', methods=['GET'])
+@require_admin
 def get_maestro_backfill_status():
     job_id = request.args.get('job_id')
     if not job_id or job_id not in _maestro_backfills:

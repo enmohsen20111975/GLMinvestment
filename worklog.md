@@ -69195,3 +69195,54 @@ Stage Summary:
 - 🟠 Risks flagged: discoverability drop لـ religious tools/simulation/trading-memory/live-monitor — mitigations listed.
 - ⚠️ Constitutional conflict flagged: Rule 4 (NO-NEW-SCREENS) — P2.2 (market-depth extraction) هو الـ exception الوحيد — owner-approval gate.
 - 🚫 Push gate محترم — مفيش commit، مفيش push. Planning only.
+
+Task ID: RESTRUCT-B-P0
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: كيمي — RESTRUCT-B-P0 CRITICAL security: 21 admin endpoints without @require_admin
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = 6d7df36, clean). قرأت worklog tail + أعمال-فريق-برافو.md + RESTRUCTURE-BACKEND-AUDIT.md + Constitution Rules 20/11/18/27/73/75.
+- 🔴 تصحيح verification لكيمي: كيمي صححت إن ادعائي "trial_days=30 مش 14" كان **غلط**. الـ"30" ده `premium_days` (حقل تاني). الـ bug الحقيقي = TRIAL_DAYS 14-vs-7 inconsistency (subscription-gate.ts=7 vs hardcoded 14 vs bonus_days=14). هتعالج ده في B-P2. الـ RESTRUCTURE-BACKEND-AUDIT.md محتاج تصحيح.
+- B-P0 enumeration: عملت Python script بـ AST-style scan على admin_routes.py. النتيجة:
+  * Total @admin_bp.route: 74
+  * Protected (@require_admin): 52
+  * UNPROTECTED: **22** (مش 21 زي ما كيمي قالت — أنا لقيت 22، الفرق محتمل endpoint ناقص في audit بتاع كيمي)
+- الـ 22 endpoint غير المحمية:
+  * L884 /backtest/params (GET)
+  * L909 /backtest/params (POST)
+  * L949 /backtest/run-enhanced (POST) — CRITICAL (DoS risk)
+  * L1408 /iterative-learning/start (POST)
+  * L1478 /iterative-learning/step (POST)
+  * L1580 /iterative-learning/run-auto (POST)
+  * L1718 /iterative-learning/status (GET)
+  * L1735 /iterative-learning/stop (POST)
+  * L1768 /iterative-learning/grid-search (POST)
+  * L1917 /iterative-learning/smart-optimize (POST)
+  * L2252 /sectors/rotation (GET)
+  * L2384 /sectors/classify-stocks (POST) — CRITICAL (data write)
+  * L2445 /sectors/stats (GET)
+  * L2634 /historical-backfill/run (POST) — CRITICAL (DB write)
+  * L2772 /historical-backfill/status (GET)
+  * L2837 /historical-backfill/results (GET)
+  * L4049 /sync-stocks (POST)
+  * L4081 /sync-to-custom (POST)
+  * L4180 /predictions/analyze (POST)
+  * L4293 /predictions/clean (POST)
+  * L4917 /maestro-backfill/run (POST)
+  * L4968 /maestro-backfill/status (GET)
+- الإصلاح: عملت Python script بـ inserts @require_admin قبل كل def بتاع الـ 22 endpoint.
+- التحقق:
+  * py_compile PASS ✓
+  * grep -c '@require_admin' = 75 (1 import + 74 decorators) ✓
+  * re-enumerate: 74/74 protected, 0 unauthed ✓
+  * critical endpoints (kimi's list) كلها اتحمت: /backtest/run-enhanced ✓, /iterative-learning/* (9) ✓, /historical-backfill/run ✓, /sectors/classify-stocks ✓
+  * git diff --stat: +22 insertions (الـ decorators بس، مفيش كود اتشال)
+- 🚫 مفيش push (Rule 75 معلّقة بأمر المالك). مفيش لمس src/. مفيش لمس .env.
+
+Stage Summary:
+- ✅ 22/22 admin endpoint اتحمت بـ @require_admin.
+- ✅ 74/74 total admin endpoints محمية دلوقتي (0 unauthed).
+- ✅ py_compile PASS + 0 unauthed + critical endpoints confirmed.
+- ⚠️ FLAG: لقيت 22 مش 21. الفرق محتمل إن كيمي لقت 21 في audit سابق. محتاج cross-check مع كيمي.
+- ⚠️ FLAG: مفيش pytest للـ admin tests حاليًا (مفيش test_phase_a_hotfix.py بـ covers admin_routes.py endpoints). لو محتاج، تكليف منفصل.
+- 🔁 Push gate محترم — مفيش commit، مفيش push. مستني موافقة المالك.
