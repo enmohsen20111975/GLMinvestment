@@ -268,3 +268,37 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 
 ### ملاحظة مستقبلية:
 - EGXPilot مات = مفيش live price source. هنحتاج مصدر بديل (Yahoo؟ TradingView live؟) في مرحلة جاية. **مش دلوقتي**.
+
+---
+
+## 14. أوامر الإنتاج + اللاب توب (scripts برافو — تنفّذ بإذن المالك)
+
+السكربتات دي عملها فريق برافو. **تنفّذ على الإنتاج VPS + اللاب توب بإذن المالك بس** (Rule 1). جون ما يـ run-sh على الإنتاج.
+
+### 1. drop_empty_tables.py (تنظيف الجداول الفاضية)
+- جاهز + متتحقق آمن. كل الـ referenced tables فيهم `CREATE TABLE IF NOT EXISTS` → auto-recreate.
+- **dry-run الأول** (يبّن بس):
+  `python3 scripts/drop_empty_tables.py --dry-run --check-refs`
+- **الـ run الحقيقي** (بعد مراجعة الـ dry-run):
+  `python3 scripts/drop_empty_tables.py --check-refs --exclude=paper_trades,signal_logs`
+
+### 2. trial_migration.py (backfill trial_ends_at)
+- يـ backfill NULL trial_ends_at → NOW()+14d لـ free-tier users. idempotent + --dry-run.
+- **dry-run الأول**:
+  `python3 vps-service/scripts/trial_migration.py --dry-run`
+- **الـ run الحقيقي**:
+  `python3 vps-service/scripts/trial_migration.py`
+- على auth.db (Rule 1 — إذن المالك).
+
+### 3. daily_predictor (cron — بـ يشتغل تلقائي على الإنتاج)
+- crontab (Sun-Thu):
+  `0 3 * * 0-4 cd /root/GLMinvestment && .venv/bin/python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5 >> /tmp/v40_2_morning.log 2>&1`
+  `30 13 * * 0-4 cd /root/GLMinvestment && .venv/bin/python3 vps-service/jobs/daily_predictor.py --yesterday-only --max-picks 5 >> /tmp/v40_2_evening.log 2>&1`
+- logs: `/tmp/v40_2_morning.log` + `/tmp/v40_2_evening.log`.
+- run يدوي (لو محتاج): `python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5`
+
+### ⚠️ ملاحظات مهمة
+- كل الـ commands دي **بإذن المالك**. جون ما يلمس الإنتاج.
+- trial_migration + drop_empty_tables: **dry-run الأول دايماً**.
+- cron (daily_predictor): المالك بـ يـ check الـ logs + يشغّله بنفسه.
+- EGXPilot scraper مات (الموقع اتقفل) = مفيش live price source. محتاج مصدر بديل (Yahoo؟ TradingView؟) — **مش دلوقتي**.
