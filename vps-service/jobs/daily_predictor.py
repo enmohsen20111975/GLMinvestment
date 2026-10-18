@@ -48,6 +48,27 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from contextlib import contextmanager
 
+
+def _whale_distribution_guard(opens, highs, lows, closes, volumes):
+    """Phase 2 #1: فحص تصريف الحيتان — لو صافي التدفق سالب (تصريف) → أمنع BUY.
+    يحمي المتداول من مصايد الثيران (bull traps) على أسهم بنزف مؤسسي."""
+    try:
+        _scripts = Path(__file__).resolve().parents[2] / "scripts"
+        if str(_scripts) not in sys.path:
+            sys.path.insert(0, str(_scripts))
+        n = min(len(opens), len(highs), len(lows), len(closes), len(volumes))
+        if n < 5:
+            return False  # بيانات غير كافية للفحص — لا تمنع
+        candles = [{'open': opens[i], 'high': highs[i], 'low': lows[i], 'close': closes[i], 'volume': volumes[i]} for i in range(n)]
+        from liquidity_radar_v2 import compute_whale_flow
+        whale = compute_whale_flow(candles)
+        return (whale.get('net_flow_egp', 0) or 0) < 0  # distributing → block BUY
+    except Exception as e:
+        # لا بلع أخطاء — يُسجّل صراحة + fail-open (لا يمنع BUY لو الفحص فشل).
+        sys.stderr.write(f"[daily_predictor] whale_distribution_guard error: {e}\n")
+        return False
+
+
 # Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect
 try:
     from core.db_manager import db_manager as _dbm
@@ -159,6 +180,27 @@ DEFAULT_END = '2026-06-10'  # historical default (sandbox run)
 SCAN_INTERVAL = int(get_setting('v402_scan_interval', default=1))
 MAX_PICKS_PER_DAY = int(get_setting('v402_max_picks_per_day', default=5))
 MIN_TICKER_DAYS = int(get_setting('v402_min_ticker_days', default=30))
+
+# ============================================================================
+# STABLECOINS BLACKLIST (Task CRYPTO-1 — Owner Directive 2026-10-12)
+# ============================================================================
+# العملات المستقرة والرموز المغلفة ممنوعة من التوقعات لأن ثبات سعرها
+# (≈1.00$) يخدع محركات التجميع ويسجل إشارات وهمية. WBTC/WETH رموز مغلفة.
+STABLECOINS = frozenset({
+    'USDT', 'USDC', 'FDUSD', 'DAI', 'USDD', 'TUSD', 'BUSD',
+    'PYUSD', 'EURC', 'WBTC', 'WETH', 'U',
+})
+
+
+def is_stablecoin(ticker: str) -> bool:
+    """فحص: هل هذا الـ ticker عملة مستقرة أو رمز مغلّف؟ (ممنوع من التوقعات)."""
+    if not ticker:
+        return False
+    t = str(ticker).strip().upper()
+    if t in STABLECOINS:
+        return True
+    base = t.split('-')[0].split('.')[0].split('/')[0].split('_')[0]
+    return base in STABLECOINS
 
 # ── V68 ORACLE FEATURE TOGGLES (A/B testing — 2026-08-31) ──
 # كل ميزة V68 ممكن تتعطل/تتفعل عبر env var عشان نعمل A/B backtest.
@@ -524,7 +566,30 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
 
     If start_date/end_date provided, only delete predictions in that range.
     Otherwise, delete ALL V40 predictions.
+
+    🔴 DISABLED (2026-10-12 — PRODUCTION-AUDIT):
+    This function DELETES legit V40.2 predictions (WHERE kill_filter_result
+    LIKE 'V40 evidence%') — the ONLY sanctioned predictions! It leaves rogue
+    predictions (evidence=0, kill_filter empty) untouched.
+
+    Production evidence: sanctioned=10 on production (was 38 in sample) →
+    28 legit V40.2 predictions were DELETED by this function.
+
+    Per Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA) + Rule 67
+    (ROOT-CAUSE-FIRST): this function is disabled. V40.2 predictions must
+    NEVER be deleted — they are the canonical truth.
+
+    To re-enable (NOT RECOMMENDED): remove the early-return below.
     """
+    print(
+        "[RULE35-DISABLED] delete_old_v40_predictions() — BLOCKED. "
+        "This function deletes legit V40.2 predictions (the only sanctioned ones). "
+        "Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA).",
+        flush=True,
+    )
+    return  # safe exit — do NOT delete anything
+
+    # ─── ORIGINAL CODE BELOW — preserved for reference (Rule 16 VERIFY-BEFORE-DELETE) ───
     # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
     _v402_dov_ctx = None
     try:
@@ -539,12 +604,12 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
     cur = conn.cursor()
     if start_date and end_date:
         cur.execute(
-            "DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%' "
+            "DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%' "  # DEV-06 verified-disabled (dead code — early-return at L548)
             "AND prediction_date >= ? AND prediction_date <= ?",
             (start_date, end_date),
         )
     else:
-        cur.execute("DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%'")
+        cur.execute("DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%'")  # DEV-06 verified-disabled (dead code — early-return at L548)
     deleted = cur.rowcount
     conn.commit()
     conn.close()
@@ -698,8 +763,15 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         except Exception:
             _regime_cfg = None
 
+    # DEV-01 (2026-10-12 — PRODUCTION-AUDIT / DUAL-TRACK):
+    # delete_old_v40_predictions() is DISABLED — it deletes legit V40.2 predictions.
+    # The function itself has an early-return guard, so calling it is safe (no-op),
+    # but we skip the call entirely for clarity + to avoid the print noise.
+    # Per Rule 35 (ENGINE-UNIFY): V40.2 predictions must NEVER be deleted.
     if not dry_run and not keep_old:
-        delete_old_v40_predictions(start_date, end_date)
+        # OLD: delete_old_v40_predictions(start_date, end_date)
+        # NEW: no-op (function is disabled internally too — defense in depth)
+        print("[DEV-01] delete_old_v40_predictions() call skipped — function is DISABLED (Rule 35)", flush=True)
     elif keep_old:
         print("ℹ️  --keep-old: skipping deletion of old V40 predictions", flush=True)
 
@@ -826,6 +898,12 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # DNA-DEBUG: trace AMOC
             if ticker == 'AMOC':
                 print(f"[DNA-TRACE] AMOC: signal={signal} score={result.get('score')} on {scan_date}", flush=True)
+            # Phase 2 #1: حظر BUY للأسهم اللي بتشهد تصريف حيتان (Whale Distributing).
+            if signal in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
+                if _whale_distribution_guard(opens[:day_idx+1], highs[:day_idx+1], lows[:day_idx+1], closes[:day_idx+1], volumes[:day_idx+1]):
+                    signal = 'HOLD'
+                    result['signal'] = 'HOLD'
+                    result.setdefault('rejection_reason', 'whale distributing — BUY blocked (Phase 2)')
             # PILLAR-4: قبول BUY عادي (مش بس STRONG_BUY/INSTITUTIONAL_BUY)
             # لو الإشارة مش شراء، نفحص صيادي الانفجار والتجميع (Surge / Accumulation / Recovery Hunters)
             # Task IMPROVEMENT-12-2026-10-07: لو مفيش إشارة شراء → اكتب SELL/HOLD بدل ما ترفض
@@ -978,7 +1056,31 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                             result['entry'] = round(_entry_soft, 4)
                                             result['target'] = round(_target_soft, 4)
                                             result['stop_loss'] = round(_stop_soft, 4)
-                                            result['score'] = 50  # score وسط (الـ entry_gate هـ يفحص الباقي)
+                                            # SEALED-DISPATCH Step 4 (2026-10-17):
+                                            # Eliminate `score = 50` placeholder — replace with a
+                                            # DERIVED score from the soft-surge heuristics
+                                            # (vol_ratio + ROC5 + R/R). The HARD-QUANT-KILL filter
+                                            # at line ~3536 requires confidence ≥ 65 for BUY signals,
+                                            # so a borderline SOFT-SURGE that just barely meets the
+                                            # vol_ratio ≥ 2.0 + ROC5 > 3% thresholds will NOT
+                                            # survive (intentional — don't fake confidence).
+                                            #
+                                            # Formula:
+                                            #   base = 40 (below BUY threshold of 65 — must be
+                                            #              boosted by downstream proofs: maker
+                                            #              flow +12, sector +8, etc.)
+                                            #   + vol_ratio bonus: 2.0x → +10, 3.0x → +20 (cap +20)
+                                            #   + ROC5 bonus:       3% → +6,  10% → +15 (cap +15)
+                                            #   + R/R bonus:        1.5 → +0, 3.0 → +15 (cap +15)
+                                            # Total max = 40 + 20 + 15 + 15 = 90 (clear BUY)
+                                            # Total min (threshold) = 40 + 10 + 6 + 0 = 56 (killed)
+                                            _derived_score = (
+                                                40.0
+                                                + min(20.0, max(0.0, (_vol_ratio_soft - 1.0) * 10.0))
+                                                + min(15.0, max(0.0, _roc5_soft * 2.0))
+                                                + min(15.0, max(0.0, (_rr_soft - 1.5) * 10.0))
+                                            )
+                                            result['score'] = round(_derived_score, 2)
                                             result['signal'] = 'STRONG_BUY'
                                             # أضف stock_roc + benchmark_change عشان entry_gate يفحص RS
                                             result['stock_roc'] = round(_roc5_soft, 2)
@@ -1661,6 +1763,31 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _ob_state = detect_order_blocks_and_sweeps(
                     highs[:day_idx+1], lows[:day_idx+1], closes[:day_idx+1], lookback=5
                 )
+                # SEALED-DISPATCH Step 4b (2026-10-17): expose SMC analysis as a
+                # structured proof in result['proofs']['smc'] (was previously only
+                # printed to stdout). This makes the SMC analysis count toward
+                # `count_evidence()` (≥3 ✅ markers required by EVIDENCE GATE).
+                # Per dispatch: "MasterAnalyzer مش بيشتغل كامل — بس نأخذ SMC +
+                # Conviction كـ proofs". detect_order_blocks_and_sweeps IS the
+                # SMC analyzer we route as a proof (BOS bull + sweep low + ChoCH bear).
+                _smc_markers = []
+                if _ob_state.broke_resistance:
+                    _smc_markers.append(f'BOS bull (res={_ob_state.last_resistance:.2f})')
+                if _ob_state.sweep_low:
+                    _smc_markers.append(f'sweep low (sup={_ob_state.last_support:.2f})')
+                if _ob_state.broke_support and not _ob_state.sweep_low:
+                    _smc_markers.append(f'ChoCH bear (broke sup={_ob_state.last_support:.2f})')
+                # Add as proof (count_evidence counts ✅ markers — SMC bullish signals earn one)
+                if 'proofs' not in result or result['proofs'] is None:
+                    result['proofs'] = {}
+                if _smc_markers:
+                    # Bullish SMC signals (BOS bull + sweep low) earn a ✅ marker
+                    _smc_bull = _ob_state.broke_resistance or _ob_state.sweep_low
+                    result['proofs']['smc'] = (
+                        f"{'✅' if _smc_bull else '⚠️'} SMC: {', '.join(_smc_markers)}"
+                    )
+                else:
+                    result['proofs']['smc'] = '⚠️ SMC: لا إشارات صريحة (no BOS/sweep)'
                 # ChoCH bear: السعر كسر آخر دعم → ترند هابط → رفض
                 if _ob_state.broke_support and not _ob_state.sweep_low:
                     print(f"[CHOCH-BEAR] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
@@ -2147,6 +2274,34 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _dyn_err:
                 pass  # safe-by-design: لو فشل، سيب الـ stop/target القديم
 
+            # ─── PREDICTION-INTEGRITY (2026-10-11): validate stop/target direction ───
+            # FIX: daily_predictor.py ما كانش بيستدعي validate_target_stop_direction.
+            # ده السبب الجذري لـ DOMT (stop=25.91 > entry=24.90 مع signal=HOLD).
+            # validate_target_stop_direction بتـ fix تلقائياً: stop > entry للـ BUY → entry*0.97.
+            # القاعدة 8 (ATR stop [5%,9%]) + القاعدة 18 (R:R ≥ 1.8) + Rule 67 (canonical).
+            try:
+                from core.opportunity_quality import validate_target_stop_direction
+                _dir_check = validate_target_stop_direction(
+                    signal, entry, target, stop
+                )
+                if not _dir_check['valid'] and _dir_check['action'] == 'fix_target' and _dir_check['fixed']:
+                    if 'stop_loss' in _dir_check['fixed']:
+                        _old_stop = stop
+                        stop = _dir_check['fixed']['stop_loss']
+                        print(f"[DIR-FIX] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"stop {_old_stop:.2f}→{stop:.2f} ({_dir_check['reason']})", flush=True)
+                    if 'target_price' in _dir_check['fixed']:
+                        _old_target = target
+                        target = _dir_check['fixed']['target_price']
+                        print(f"[DIR-FIX] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"target {_old_target:.2f}→{target:.2f} ({_dir_check['reason']})", flush=True)
+                    # إعادة حساب R:R بعد الـ fix
+                    risk = abs(entry - stop)
+                    reward = abs(target - entry)
+                    r_mult = round(reward / risk, 2) if risk > 0 else 0
+            except Exception as _dir_err:
+                print(f"[DIR-FIX-WARN] {ticker}: validate_target_stop_direction failed: {_dir_err}", flush=True)
+
             # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
             # Owner directive: replace flat dynamic_rr_normal with get_dynamic_min_rr(regime).
             #   bull  → 2.0  (نطمع أكتر)
@@ -2241,10 +2396,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # - BOOST (IPO/beat/MA) → رفع score
             # NOTE: في backtest mode، الأخبار التاريخية مش متاحة → skip (NEUTRAL)
             # NOTE: في production، news_fetcher_analyzer بـ يجيب أخبار حقيقية + يحللها
-            # Toggle: V40_2_NEWS_IMPACT=1 (default OFF للـ backtest)
-            # Toggle: V40_2_FORCE_NEWS_IN_BACKTEST=1 → بيـ skip الـ backtest guard عشان
-            #         نقدر نختبر تأثير الأخبار في backtest (لما news.db فيه أخبار للفترة)
-            if os.environ.get('V40_2_NEWS_IMPACT', '0') == '1':
+            # P1-FIX (2026-10-09, Round 2): default ON (كان OFF)
+            # قبل كده: default '0' → الأخبار مش بتأثر على التوقعات
+            # دلوقتي: default '1' → الأخبار بتأثر على الـ score (لو news-agent شغّال)
+            # الأثر: لو news-agent مش متثبت cron أو news.db فاضي، الـ code بيتخطاه بأمان
+            if os.environ.get('V40_2_NEWS_IMPACT', '1') == '1':
                 _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
                 _force_news_in_backtest = os.environ.get('V40_2_FORCE_NEWS_IN_BACKTEST', '0') == '1'
                 if not _is_backtest or _force_news_in_backtest:
@@ -3204,10 +3360,12 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     #  it now runs even in dry-run mode so users see the picks)
 
     for scan_date in sorted(signals_by_date.keys()):
-        day_signals = signals_by_date[scan_date]
+        all_day_signals = signals_by_date[scan_date]
+        # Only tradeable BUY signals can be candidate picks (Rule GLM5.2-S1: HOLD is not a trade)
+        buy_signals = [s for s in all_day_signals if s.get('signal') in ('BUY', 'STRONG_BUY', 'INSTITUTIONAL_BUY')]
         # Sort: evidence DESC → R-multiple DESC → tech_score DESC
-        day_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
-        picks = day_signals[:max_picks]
+        buy_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
+        picks = buy_signals[:max_picks]
 
         # REGIME-ENGINE (2026-09-27): apply regime-aware min_score filter
         # DEFENSIVE → min_score=75 (was 60). AGGRESSIVE → min_score=70.
@@ -3220,13 +3378,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 print(f"🌐 [REGIME] {scan_date}: dropped {_picks_before - len(picks)} picks "
                       f"(score < {_regime_min_score} for {_regime_name} regime)", flush=True)
 
-        # RADAR FALLBACK (2026-10-05): لو DEFENSIVE regime و مفيش picks → استخدم radar explosive_list
+        # RADAR FALLBACK (2026-10-05): لو DEFENSIVE regime و مفيش picks → استخدم radar candidates
         if len(picks) == 0 and _regime_cfg is not None and _regime_name == 'DEFENSIVE':
             try:
                 from utils.shared_liquidity import detect_pre_surge, detect_quiet_accumulation
                 # Get tickers with radar signals for this date
                 _radar_candidates = []
-                for sig in day_signals:
+                for sig in all_day_signals:
                     ticker = sig['ticker']
                     # Re-check radar for this ticker
                     _ticker_closes = sig.get('_closes_for_radar')
@@ -3250,6 +3408,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                 'evidence': sig['evidence'],
                                 'r_multiple': sig['r_multiple'],
                                 'atr': sig.get('atr', 0),
+                                'target_2': sig.get('target_2') or (round(sig['target'] * 1.5, 2) if sig.get('target') else 0),
                                 'exit_price': sig['exit_price'],
                                 'exit_date': sig['exit_date'],
                                 'exit_reason': sig['exit_reason'],
@@ -3305,23 +3464,175 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             fit_tag = sig.get('persona_fit', 'balanced')
             fit_scores = sig.get('persona_fit_scores', {})
             fit_score = fit_scores.get(fit_tag, 0.0)
+
+            # ── V40.2 EVIDENCE GATE (2026-10-12 — PRED-WRITE-GUARD) ─────────
+            # B.3 FIX: When V40.2 evidence engine fails (e.g., stale
+            # egksco_price_history → institutional_decision_engine exception
+            # → fallback returns evidence=0), skip the prediction instead of
+            # writing a placeholder.
+            #
+            # This is the root-cause fix for the 2026-09-27 catastrophe:
+            # IMPROVEMENT-12 was converting WAIT→HOLD and writing placeholder
+            # predictions (evidence=0 + kill_filter=NULL). The PREDICTION-
+            # WRITE-GUARD in record_prediction() will block these anyway,
+            # but this early-skip prevents:
+            #   1. The DB write attempt (cleaner audit trail)
+            #   2. The notebook integration for placeholder predictions
+            #   3. Confusion in logs (explicit skip vs. silent guard reject)
+            #
+            # Threshold: evidence >= 3 (V40.2 minimum — Rule 21 lists 6
+            # evidences; 3 is the floor for "engine actually computed evidence")
+            _sig_signal = (sig.get('signal') or '').upper()
+            _sig_evidence = int(sig.get('evidence', 0) or 0)
+            if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _sig_evidence < 3:
+                print(
+                    f"[V40_2-EVIDENCE-SKIP] {sig['ticker']} {_sig_signal} "
+                    f"evidence={_sig_evidence}/6 < 3 → SKIP "
+                    f"(Rule 21 — placeholder prevention, B.3 fix)",
+                    flush=True,
+                )
+                continue
+
+            # ── LGBM GATEKEEPER (Task BRAVO-CODEPLOY-B2.3) ───────────────────
+            # حارس البوابة الذكي يفحص كل توصية BUY قبل إدراجها في predictions table.
+            # النموذج (models/lgbm_signal_gatekeeper.joblib) مُدرّب على 619 صفقة
+            # حقيقية بـ threshold=0.65 (78.95% win rate على 57 صفقة out-of-sample).
+            # لو proba < 0.65 → لا تُدرج التوصية (لا تُكتب في predictions)،
+            #   و تُسجّل في log فقط (للـ audit trail — التتبع المؤسسي).
+            # لو ACCEPTED أو SKIPPED_INSUFFICIENT_DATA → تُدرج التوصية كالمعتاد.
+            # Rule 27 (NO-FAKE-DATA): لو الـ features لا يمكن حسابها (بيانات ناقصة)،
+            #   verdict='SKIPPED_INSUFFICIENT_DATA' → السماح بالمرور conservative.
+            if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
+                try:
+                    from analyzers.lgbm_gatekeeper import (
+                        predict_signal_probability,
+                        open_stocks_db_readonly,
+                    )
+                    _gk_conn = open_stocks_db_readonly()
+                    if _gk_conn is not None:
+                        try:
+                            _gk_proba, _gk_features, _gk_verdict = predict_signal_probability(
+                                sig['ticker'], scan_date, float(sig['entry']),
+                                str(sig.get('signal', '')), _gk_conn
+                            )
+                        finally:
+                            _gk_conn.close()
+                    else:
+                        _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
+                except Exception as _gk_err:
+                    _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
+                    print(
+                        f"[LGBM-GATEKEEPER] WARN {sig['ticker']} gatekeeper exception: {_gk_err} "
+                        f"→ SKIPPED (conservative pass)",
+                        flush=True,
+                    )
+                if _gk_verdict == 'REJECTED_BY_AI_GATEKEEPER':
+                    print(
+                        f"[LGBM-GATEKEEPER] REJECTED {sig['ticker']} "
+                        f"proba={_gk_proba:.2f} < 0.65 threshold "
+                        f"(signal={_sig_signal}, evidence={_sig_evidence}/6) → SKIP prediction",
+                        flush=True,
+                    )
+                    continue
+                # ACCEPTED أو SKIPPED_INSUFFICIENT_DATA → نكمّل وندخل التوصية
+                if _gk_verdict == 'ACCEPTED':
+                    print(
+                        f"[LGBM-GATEKEEPER] ACCEPTED {sig['ticker']} "
+                        f"proba={_gk_proba:.2f} >= 0.65 (signal={_sig_signal})",
+                        flush=True,
+                    )
+                else:
+                    print(
+                        f"[LGBM-GATEKEEPER] SKIPPED {sig['ticker']} "
+                        f"insufficient data → conservative pass (signal={_sig_signal})",
+                        flush=True,
+                    )
+
             try:
+                # ── HARD QUANT KILL FILTER (Task B-22, 2026-10-14) ─────────────
+                # حارس كمي صارم قبل أي كتابة في predictions.db/stocks.db.
+                # القواعد القطعية (Zero-Tolerance — Owner Directive):
+                #   1. R:R ≥ 1.5 (المستهدف ≥ 2.0) — أي صفقة تخاطر بأكثر من مكسبها تُقتل
+                #   2. الثقة ≥ 65% — ثقة 50% رمية عملة ممنوعة
+                #   3. Falling Knife Prevention: لو السعر تحت MA50 بـ ≥5% والمسار هابط
+                #      صريح (MA50 < MA200) → ممنوع إعطاء أهداف صاعدة للشراء
+                # المنطق: skip كامل للصفقة (continue) — لا تُكتب في DB إطلاقًا.
+                _sig_rr = float(sig.get('r_multiple', 0) or 0)
+                _sig_master_raw = float(sig.get('combined_score', sig.get('tech_score', 0)) or 0)
+                _sig_conf = _sig_master_raw
+                _sig_entry = float(sig.get('entry', 0) or 0)
+                _sig_target = float(sig.get('target', 0) or 0)
+                _sig_stop = float(sig.get('stop', 0) or 0)
+
+                # 1. R:R ≥ 1.5 check (احتياطي لو r_multiple محسوب غلط — نحسب من entry/target/stop)
+                _computed_rr = 0.0
+                if _sig_entry > 0 and _sig_target > _sig_entry and _sig_entry > _sig_stop:
+                    _risk = _sig_entry - _sig_stop
+                    _reward = _sig_target - _sig_entry
+                    _computed_rr = _reward / _risk if _risk > 0 else 0.0
+                _effective_rr = max(_sig_rr, _computed_rr)
+
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _effective_rr < 1.5:
+                    print(
+                        f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
+                        f"R:R={_effective_rr:.2f} < 1.5 (computed={_computed_rr:.2f}, stored={_sig_rr:.2f}) "
+                        f"→ SKIP (Rule: R:R ≥ 1.5 إلزامي)",
+                        flush=True,
+                    )
+                    continue
+
+                # 2. الثقة ≥ 65% check
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _sig_conf < 65.0:
+                    print(
+                        f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
+                        f"confidence={_sig_conf:.1f}% < 65% → SKIP "
+                        f"(Rule: الثقة ≥ 65% إلزامي)",
+                        flush=True,
+                    )
+                    continue
+
+                # 3. Falling Knife Prevention: لو السعر تحت MA50 بـ ≥5% + MA50 < MA200
+                #    → ممنوع أهداف صاعدة للشراء
+                try:
+                    _ma50 = float(sig.get('ma_50', 0) or 0)
+                    _ma200 = float(sig.get('ma_200', 0) or 0)
+                    _current = _sig_entry if _sig_entry > 0 else float(sig.get('current_price', 0) or 0)
+                    if _ma50 > 0 and _ma200 > 0 and _current > 0:
+                        _below_ma50_pct = ((_ma50 - _current) / _ma50) * 100
+                        _is_falling_knife = (_current < _ma50 * 0.95) and (_ma50 < _ma200)
+                        if _is_falling_knife and _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _sig_target > _sig_entry:
+                            print(
+                                f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
+                                f"FALLING KNIFE: price={_current:.2f} < MA50({_ma50:.2f})×0.95 "
+                                f"AND MA50 < MA200({_ma200:.2f}) → SKIP ascending target "
+                                f"(Rule: لا أهداف صاعدة على سكين ساقط)",
+                                flush=True,
+                            )
+                            continue
+                except Exception:
+                    pass  # safe-by-design: لو MA غير متاح → نكمّل
+
                 # Rule 54 BUG FIX: master_score كان = tech_score (نفس القيمة في العمودين)
                 # دلوقتي master_score = combined_score (يشمل تأثير الأخبار + كل التعديلات)
                 # technical_score = tech_score (الدرجة الفنية الخام من V38)
                 # ده بـ يخلي master_score مختلف عن technical_score و يعكس الدرجة الكلية الحقيقية
                 _master_score = sig.get('combined_score', sig['tech_score'])
+                _tp2 = sig.get('target_2') or (round(sig['target'] * 1.5, 2) if sig.get('target') else None)
                 pred_id = tracker.record_prediction(
                     ticker=sig['ticker'], signal=sig['signal'],
                     entry_price=sig['entry'], target_price=sig['target'],
                     stop_loss=sig['stop'], master_score=_master_score,
                     technical_score=sig['tech_score'], persona='balanced',
                     fundamental_score=sig.get('fundamental_score'),  # REAL DATA ONLY — no placeholder (per owner directive + Rule 24) — None when missing
-                    atr_at_entry=sig['atr'], target_price_2=sig['target_2'],
+                    atr_at_entry=sig.get('atr', 0), target_price_2=_tp2,
                     prediction_date=scan_date, evidence_count=sig['evidence'],
-                    morning_bell=sig['morning_bell'],
+                    morning_bell=sig.get('morning_bell', 0),
                     risk_reward=sig.get('r_multiple'),  # P0 FIX (V402-DIAGNOSIS R5): كان محسوب لكن غير مكتوب
                     who_is_buying_state=sig.get('who_is_buying_state', ''),  # P0 FIX (V402-DIAGNOSIS R6)
+                    # FIX (PREDICTION-INTEGRITY 2026-10-11): S/R levels من الـ analysis result
+                    # السبب: كانت 0.0 في 87% من التوقعات لأنها ما كانتش بتـ تمرر لـ record_prediction.
+                    support_level=sig.get('support_level', 0.0),
+                    resistance_level=sig.get('resistance_level', 0.0),
                     kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}" + f" | V68:prob={sig.get('v68_probability', 0)}/100 dir={sig.get('v68_future_direction', 'flat')}" + (" | A+GRAB" if sig.get('v68_liquidity_grab') else "") + (" | QUIET-ACC" if sig.get('v68_quiet_accumulation') else ""),
                 ) if tracker else None
                 if pred_id and tracker:
@@ -3594,6 +3905,10 @@ def main():
                         help='⚡ BATCH MODE: skip أول N tickers (للـ resume بعد run سابق)')
     parser.add_argument('--force', action='store_true',
                         help='تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل')
+    parser.add_argument('--incremental', action='store_true',
+                        help='⚡ INCREMENTAL MODE: skip التواريخ المحسوبة بالفعل في predictions.db (يبدأ من آخر تاريخ مسجل + 1)')
+    parser.add_argument('--full', action='store_true',
+                        help='⚡ FULL MODE: إعادة المسح الكامل من 2026-01-01 (تعطيل التراكمي التلقائي)')
     parser.add_argument('--market', default='EGX', choices=['EGX', 'KSA', 'KSE', 'QSE', 'CRYPTO'],
                         help='السوق: EGX (افتراضي) / KSA / KSE / QSE / CRYPTO')
     args = parser.parse_args()
@@ -3635,6 +3950,44 @@ def main():
     if start_date > end_date:
         print(f"❌ تاريخ البداية ({start_date}) بعد تاريخ النهاية ({end_date})", flush=True)
         sys.exit(1)
+
+    # AUTO-INCREMENTAL DEFAULT (2026-10-18 — Owner Directive via Jimmy):
+    # الوضع التراكمي أصبح هو الافتراضي! يبدأ من آخر تاريخ مسجل في predictions.db
+    # عشان ما يعيدش حساب شهور كاملة ويضيع الداتا.
+    auto_incremental = not getattr(args, 'full', False) and (args.incremental or (args.start is None and not args.today_only and not args.yesterday_only))
+    if auto_incremental:
+        _db_dir_inc = Path(__file__).resolve().parents[2] / 'db'
+        _pred_db_path = str(_db_dir_inc / 'predictions.db')
+        if os.path.exists(_pred_db_path):
+            try:
+                _inc_conn = sqlite3.connect(_pred_db_path, timeout=10.0)
+                _inc_row = _inc_conn.execute("""
+                    SELECT MAX(max_d) FROM (
+                        SELECT MAX(prediction_date) AS max_d FROM predictions WHERE prediction_date IS NOT NULL
+                        UNION ALL
+                        SELECT MAX(prediction_date) AS max_d FROM aiPrediction WHERE prediction_date IS NOT NULL
+                    )
+                """).fetchone()
+                _inc_conn.close()
+                _last_pred_date = _inc_row[0] if _inc_row and _inc_row[0] else None
+                if _last_pred_date:
+                    from datetime import timedelta as _td
+                    _last_dt = datetime.strptime(_last_pred_date, '%Y-%m-%d')
+                    _new_start = (_last_dt + _td(days=1)).strftime('%Y-%m-%d')
+                    if _new_start > start_date:
+                        print(f"⚡ AUTO-INCREMENTAL: آخر توقع مسجل = {_last_pred_date}. بدء المسح من {_new_start} فقط (بدل {start_date})", flush=True)
+                        start_date = _new_start
+                        if start_date > end_date:
+                            print(f"✅ لا توجد تواريخ جديدة للمعالجة ({start_date} > {end_date}). كل شيء محدّث تماماً.", flush=True)
+                            sys.exit(0)
+                    else:
+                        print(f"⚡ AUTO-INCREMENTAL: آخر توقع {_last_pred_date}، لكن start_date المطلوب ({start_date}) أحدث. بنعالج من {start_date}.", flush=True)
+                else:
+                    print("⚡ AUTO-INCREMENTAL: predictions.db فاضي — بنعالج من البداية.", flush=True)
+            except Exception as _inc_err:
+                print(f"⚠️ AUTO-INCREMENTAL: فشل قراءة آخر توقع ({_inc_err}) — بنكمل من {start_date}.", flush=True)
+        else:
+            print("⚡ AUTO-INCREMENTAL: predictions.db مش موجود — بنعالج من البداية.", flush=True)
 
     # FIX (Aug 2026): route لـ CRYPTO generator لو --market CRYPTO
     if args.market == 'CRYPTO':
@@ -3686,7 +4039,13 @@ def get_crypto_tickers(min_days=30):
         """, (min_days,))
         tickers = [row[0] for row in cur.fetchall()]
         conn.close()
-        print(f"[V40.2-CRYPTO] crypto_prices — {len(tickers)} coins with >= {min_days} snapshots", flush=True)
+        # Task CRYPTO-1: استبعاد العملات المستقرة والرموز المغلفة
+        pre_stablecoin_count = len(tickers)
+        tickers = [t for t in tickers if not is_stablecoin(t)]
+        stablecoin_filtered = pre_stablecoin_count - len(tickers)
+        if stablecoin_filtered > 0:
+            print(f"[V40.2-CRYPTO] 🚫 STABLECOINS blacklist: {stablecoin_filtered} عملة مستقرة/مغلّفة مستبعدة", flush=True)
+        print(f"[V40.2-CRYPTO] crypto_prices — {len(tickers)} coins with >= {min_days} snapshots (after stablecoin filter)", flush=True)
     except Exception as e:
         print(f"[V40.2-CRYPTO] ⚠️ Failed to load crypto tickers: {e}", flush=True)
     return tickers
@@ -3871,21 +4230,42 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                         pass  # safe-by-design
 
                 # تخزين التوقع
+                # ── RULE 35 HARD DISABLE (2026-10-12 — PRED-WRITE-GUARD) ─────
+                # CRYPTO path was writing placeholder predictions:
+                #   - evidence_count=0 (default — V40.2 evidence engine not run)
+                #   - kill_filter_result='' (default — no V40.2 kill filters)
+                #   - master_score=60+(100-rsi) — FAKE formula, not from V40.2
+                #     evidence pipeline (Rule 27 NO-FAKE-DATA + Rule 67 breach)
+                #   - persona='crypto_balanced' — not in 3 canonical personas
+                #     (gambler/balanced/conservative) per Rule 23
+                #   - technical_score=rsi — RSI is NOT the technical_score
+                #
+                # This violates Rule 35 (V40.2 is the only writer) + Rule 21
+                # (BUY requires 6 evidences) + Rule 27 (no fake data) + Rule 67
+                # (CALCULATION-CANONICAL).
+                #
+                # The PREDICTION-WRITE-GUARD in record_prediction() will REJECT
+                # this call anyway, but we add this explicit early-skip so:
+                #   1. No DB write attempt is made (cleaner logs)
+                #   2. The CRYPTO path is documented as disabled pending a real
+                #      V40.2 CRYPTO evidence pipeline implementation
+                #   3. Rule 16 VERIFY-BEFORE-DELETE: code preserved for reference
+                #
+                # TODO: Implement V40.2 CRYPTO evidence pipeline (6 evidences
+                # adapted for crypto markets: Trend + Makers + DNA + On-chain
+                # + Sentiment + Benchmark). Until then, CRYPTO predictions are
+                # served by the live crypto_lab_scheduler.py + crypto_predictions
+                # table (separate from predictions.db).
                 if tracker and not dry_run:
-                    try:
-                        pred_id = tracker.record_prediction(
-                            ticker=ticker, signal=signal,
-                            entry_price=entry, target_price=target,
-                            stop_loss=stop, master_score=60 + (100 - rsi),
-                            technical_score=rsi, persona='crypto_balanced',
-                            prediction_date=scan_date,
-                        )
-                        if pred_id:
-                            total_generated += 1
-                            daily_picks += 1
-                            print(f"  ✓ {ticker} {signal} entry=${entry:.2f} target=${target:.2f} RSI={rsi:.0f}", flush=True)
-                    except Exception as e:
-                        print(f"  ⚠️ Store error {ticker}: {e}", flush=True)
+                    print(
+                        f"[RULE35-DISABLED] CRYPTO path for {ticker} {signal} "
+                        f"entry=${entry:.2f} RSI={rsi:.0f} — placeholder "
+                        f"prediction BLOCKED (Rule 35 ENGINE-UNIFY). CRYPTO "
+                        f"V40.2 evidence pipeline not yet implemented. "
+                        f"Use crypto_lab_scheduler.py for live crypto signals.",
+                        flush=True,
+                    )
+                    pred_id = None  # Rule 35: no INSERT
                 else:
                     print(f"  [DRY] {ticker} {signal} entry=${entry:.2f} RSI={rsi:.0f}", flush=True)
                     daily_picks += 1
