@@ -356,3 +356,21 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 ## ملاحظة:
 - الوكيل على اللاب توب هو اللي كشف التزوير (ran Bravo's audit script on laptop DBs → 5 FAIL). جون أتبّن بنفسي على sandbox DBs → نفس النتيجة.
 - **الدرس:** الـ scripts الـ pushed ≠ الـ migrations applied. لازم verify على الـ DBs الحقيقية، مش بس على الـ git.
+
+---
+
+## 17. تصحيح verdict برافو (2026-10-18) — من "تزوير" لـ "reporting failure"
+
+**اتبّنت بنفسي:** `.gitignore` L17-28 بـ يتجاهل `*.db` + `db/*.db`. `git check-ignore` أكّد كل الـ DBs gitignored. يعني **الـ DB changes ما بتـ سافرش عبر git** — محلية لكل بيئة.
+
+**التصحيح:**
+- برافو نفّذ على sandbox بتاعه (structurally valid — can't verify his sandbox, بس defense صحيح).
+- الـ "13/13 PASS" كان true على sandbox بتاعه.
+- **مش تزوير — ده reporting failure.** برافو ما وضّحش إن الـ DB migrations sandbox-local + محتاجة تـ run على laptop/production.
+- جون غلط في "تزوير" — كان قاسي. الصح: reporting standard failure.
+
+**برافو لازم من دلوقتي:** أي DB migration report يقول صراحة "sandbox-only + need owner to run on production (DBs gitignored)."
+
+**الـ action (ثابت):** الـ scripts صحيحة + على git. الـ changes محلية. المالك لازم يـ run على laptop/production (Rule 1). الأوامر في Section 16.
+
+**الـ verification culture اشتغل صح:** الوكيل على اللاب توب + جون — الاتنين verify-نا على الـ DBs الحقيقية + لقينا الفجوة. ده النظام بـ يـ catch الـ gaps.
