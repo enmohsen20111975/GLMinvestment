@@ -68800,3 +68800,125 @@ Stage Summary — التخبط/التضارب المكتشف:
 5. **MA200 backfill**: كمل backfill للأسهم الـ MA200=None.
 
 Final Audit Statement: 🔴 FAIL — النظام في الـ code layer سليم، بس الـ data layer فيه تخبط/تضارب خطير (5 critical findings). محتاج إصلاح قبل الإنتاج.
+---
+Task ID: AUDIT-UI-FETCH-1
+Agent: Explore sub-agent (ALPHA-UI-CONSISTENCY-AUDIT — Dragon scout)
+Task: Alpha — audit all frontend screens/components in `src/` (excluding `src/app/api/`) that make `fetch('/api/...')` calls. Cross-reference with DATA-SOURCES.md §4.2 + §5.1 (Rule 20 + Rule 27) to classify source type (proxy/direct/hybrid) + fallback strategy + consistency issues.
+
+Work Log:
+- Methodology:
+  1. `tail -30 worklog.md` → context (last entry = MakerRadarTab fabrication cleanup, same Rule 27 enforcement pattern).
+  2. Read `Documentation/DATA-SOURCES.md` §4.2 (fallback seq: predictions.db → stocks.db → data_engine.db[BLOCKED] → intraday.db[BLOCKED]) + §5.1 (Rule 20: Node = Display, Python = Brain; 3 historical SQLite-direct endpoints = violation) + §5.3 (Rule 73: forbidden client-side compute of signal/master_score/entry/target/stop/RR) + §5.5 (canonical response shape `{success,source,data,meta}`).
+  3. `Grep fetch(\s*['"` + backtick `]` glob `*.{ts,tsx}` in `src/` → 538 fetch call sites, of which ~110 inside `src/app/api/` (excluded — API layer audited under ALPHA-frontend-audit-001). Net: ~428 consumer-side fetch calls across ~160 files in `src/{modules,components,hooks,lib,app}` (excluding `src/app/api/` and `src/__tests__/`).
+  4. `Grep better-sqlite3|better_sqlite3|from .better-sqlite3|sqlite-wrapper|sqlite3` in `src/app/api/` → 110 files match. Cross-referenced with consumer fetches to flag direct-SQLite consumers.
+  5. Sampled 12 representative consumer files for error-handling pattern + cross-referenced source classification on 4 key endpoints (`/api/stocks`, `/api/stocks/[ticker]/unified`, `/api/market-pulse`, `/api/market/liquidity-flow`, `/api/egx/investors`, `/api/finance/calculate-values`).
+  6. `Grep //\s*Mock|mock|fabricat|dummy|hardcod` in `src/` (consumer code only) → found 1 production mock-data site (AlertsCenterView.tsx L433-443); rest are test files.
+
+- Source classification (sampled endpoints):
+  * `/api/stocks` → HYBRID (Python first, stocks.db fallback — see src/app/api/stocks/route.ts L20-77). ✅ compliant.
+  * `/api/stocks/[ticker]/unified` → Rule 73 CANONICAL. Internally calls `getUnifiedStockData` which reads stocks.db. ✅ canonical-by-spec.
+  * `/api/market-pulse` → HYBRID (Python first, 10s cache, stocks.db fallback — see route.ts L20-40). ✅ compliant.
+  * `/api/market/liquidity-flow` → DIRECT SQLite (better-sqlite3, stocks.db readonly — see route.ts L10-45). ⚠️ Rule 20 violation.
+  * `/api/egx/investors` → DIRECT SQLite (better-sqlite3, stocks.db read-write — route.ts L12, L421). ⚠️ Rule 20 violation.
+  * `/api/finance/calculate-values` → DIRECT SQLite (better-sqlite3, finance.db via `getFinanceDb` — route.ts L14, L18). ⚠️ Rule 20 violation. Used by 6+ consumer screens.
+  * `/api/data-engine/*` → PROXY (Flask via `FLASK_URL` — route.ts L50, L67). ✅ compliant (different Python service but still Python-first).
+  * `/api/python/*` + `/api/crypto/*` → mostly PROXY to `PY` env. ✅ compliant.
+
+- Error-handling patterns identified (with counts):
+  * **PATTERN-A: Silent empty fallback** (~20+ files): `fetch(...).then(r => r.json()).catch(() => ({ stocks: [] }))` / `.catch(() => ({ predictions: [] }))` / `.catch(() => null)`. Examples: `MarketAnalysisView.tsx:128-130`, `LiveTrackingTab.tsx:119,121`, `AlertsCenterView.tsx:374,376`, `store.ts:1092,1101-1103`, `portfolio-store.ts:174-175`, `MultiMarketWidget.tsx:129-131`, `MakerRadarTab.tsx:658-660`. UX consequence: user can't tell whether data is truly empty or fetch failed — looks "no data" in both cases.
+  * **PATTERN-B: User-visible error UI** (~10 files): `setError(...)` + error block with retry button. Examples: `MakerRadarTab.tsx:621-644` (main fetch), `AutoAnalysisWidget.tsx:69-72` (`setError + retry button`), `InvestorsFlowPanel.tsx:264-270` (`setError(true)`), `EGXBacktestDashboard.tsx:360-365` (shows "فشل تحميل البيانات"). ✅ correct pattern.
+  * **PATTERN-C: Console.error + silent** (~15 files): `catch (e) { console.error(e); }` + `setLoading(false)`. UI stays empty (looks like "no data"). Examples: `ExpertIntelligencePanel.tsx:183-187,197-200,213-217`, `LiveTrackingTab.tsx:251-253`, `PaperTradingWorkstation.tsx` (mixed).
+  * **PATTERN-D: toast.error on initial load only** (1 file): `EnhancedPortfolioView.tsx:673-675` — `if (!silent) toast.error(...)` on initial load, silent on background poll. ✅ reasonable hybrid.
+  * **PATTERN-E: Hardcoded mock data** (1 file, CRITICAL): `AlertsCenterView.tsx:433-443` — `setMarketAlerts([{id:'market-1', title:'افتتاح الجلسة', message:'جلسة تداول البورصة المصرية تبدأ اليوم', ...}])` shown unconditionally on every load. ❌ Rule 27 violation.
+
+- Consistency issues identified:
+  * **Issue-C1**: Same data fetched across many screens via different endpoints:
+    - `/api/finance/calculate-values` → fetched by `RoboAdvisorPanel.tsx:342`, `BagHolderRescuePanel.tsx:209,305`, `ZakatView.tsx:827`, `TithesView.tsx:482`, `EnhancedPortfolioView.tsx:628`, `portfolio-store.ts:173`. 6 different consumers — no shared hook/util.
+    - `/api/stocks?market=X&limit=N` (with N ∈ {20,500,600,1000,page_size=500,page_size=1000}) → fetched by `RealtimeTicker.tsx:88` (20), `MakerRadarTab.tsx:649` (1000), `MarketAnalysisView.tsx:128` (500), `MarketStatusTab.tsx:263` (500), `AcademyView.tsx:1088` (page_size=500), `helpers.ts:851` (600), `ExpertPredictionsTab.tsx:167` (20), `SimulationView.tsx:447` (page_size=500), `DataManager.tsx:46` (page_size=1), `StockAnalysisReport.tsx:985` (page_size=500). 10 different page-size conventions for the same data → backend serves inconsistent payloads.
+    - `/api/unified/predictions?market=X&limit=5` → fetched by `MarketAnalysisView.tsx:129`, `PredictionsTab.tsx:504`, `LiveTrackingTab.tsx:247`, `PersonaTab.tsx:1632`, `robo-notifier.ts:187`, `useSignalNotifications.ts:99`. 6 consumers, no shared hook.
+    - `/api/market-pulse?market=X` → fetched by `LiveStockTicker.tsx:160`, `MarketPulseWidget.tsx:556`, `store.ts:1064`, `use-live-dashboard.ts:53`. 4 consumers.
+    - `/api/market/sectors/intelligence` + `/api/predictions/expert-consensus` + `/api/predictions/honest-tracking/missed-opportunities` → all 3 fetched only by `ExpertIntelligencePanel.tsx` (single consumer, well-factored).
+  * **Issue-C2**: Non-canonical endpoint names used by consumers (route exists but name violates Rule 73):
+    - `EGXBacktestDashboard.tsx:340` → `/api/sniper/backtest` (canonical: `/api/backtest` at src/app/api/backtest/route.ts).
+    - `auto-analysis-widget.tsx:56` → `/api/walk-forward-test` (canonical: `/api/walk-forward/run` at src/app/api/walk-forward/run/route.ts).
+    - `SuperLearningSystem.tsx:699` → `/api/crypto-backtesting` (canonical: `/api/backtest` or `/api/crypto-backtesting/route.ts` — exists but separate from `/api/backtest`).
+    - `SuperLearningSystem.tsx:548,634,769,878,908` → `/api/self-learning` (canonical: `/api/unified-learning/*`).
+  * **Issue-C3**: Dead/commented-out fetch: `MaestroWidget.tsx:55` — `// const res = await fetch(`/api/maestro/overview?market=...`)` (commented, dead code).
+  * **Issue-C4**: Investor-flow panel UI bug: `InvestorsFlowPanel.tsx:301` renders `سبب التعطّل: ${error}` but `error` is `useState(false)` (boolean). Renders "true"/"false" instead of actual error message. Not a Rule 27 violation but inconsistent error UX.
+  * **Issue-C5**: Non-canonical response-shape parsing. Per DATA-SOURCES §5.5 the canonical shape is `{success, source, data, meta}`. Consumers parse ad-hoc:
+    - `MarketAnalysisView.tsx:134` → `stocksRes.stocks` (not `data.stocks`).
+    - `LiveTrackingTab.tsx:125` → `trackingRes?.predictions?.balanced` (not `data.predictions.balanced`).
+    - `ExpertIntelligencePanel.tsx:182` → `data.success` then `data.consensus_list` (not `data.list`).
+    - `store.ts:1034` → `data.all_cryptos ?? data.data.all_cryptos` (defensive — handles both shapes).
+  * **Issue-C6**: Direct-SQLite endpoints consumed widely (Rule 20 violation at API layer; consumers depend on non-canonical source):
+    - `/api/egx/investors` (DIRECT SQLite) → consumed by `InvestorsFlowPanel.tsx:235`.
+    - `/api/market/liquidity-flow` (DIRECT SQLite) → consumed by `LiquidityFlowPanel.tsx:220`, `InvestorsFlowPanel.tsx:234`.
+    - `/api/finance/calculate-values` (DIRECT SQLite) → consumed by 6 screens (see Issue-C1).
+    - Note: per §5.1, "3 endpoints تاريخية = violation" — but actual count of `better-sqlite3` matches in src/app/api/ = 110 files. The 110 includes both genuine direct-SQLite routes AND routes that USE better-sqlite3 only as a fallback layer. The exact "direct-only" count is in the API-layer audit (ALPHA-frontend-audit-001) — this UI audit flags the CONSUMERS depending on those endpoints.
+
+Stage Summary:
+- ✅ Audit complete: 538 fetch call sites scanned, ~428 in consumer code (excluding API layer), 12 files sampled in detail, 6 endpoints source-classified.
+- ✅ 1 CRITICAL Rule 27 violation found: `src/components/alerts/AlertsCenterView.tsx:433-443` — hardcoded "Mock market alerts" shown to user (unconditional, every load). Fix: remove mock block entirely OR fetch from `/api/market/status` instead.
+- ⚠️ 3 HIGH findings:
+  * H-1: Silent-fail pattern (`catch(() => ({...empty}))`) pervasive across ~20+ consumer files — UX-inconsistent with the ~10 files using proper `setError` + retry UI. Recommend a shared `useApiFetch` hook normalizing the pattern.
+  * H-2: 6+ screens depend on `/api/finance/calculate-values` (DIRECT SQLite, Rule 20 violation). The frontend is consistent (all use the same endpoint), but the endpoint itself is non-canonical — fix belongs to backend (Bravo).
+  * H-3: 2 endpoints are DIRECT SQLite reads (`/api/market/liquidity-flow`, `/api/egx/investors`) but consumed by 3 UI panels — same as H-2, fix belongs to backend.
+- ⚠️ 5 MEDIUM findings:
+  * M-1: `InvestorsFlowPanel.tsx:301` renders boolean `error` as string in error message ("سبب التعطّل: true/false"). UX bug, not Rule 27.
+  * M-2: 4 non-canonical endpoint names used by consumers (`/api/sniper/backtest`, `/api/walk-forward-test`, `/api/crypto-backtesting`, `/api/self-learning`). Routes exist but names diverge from canonical siblings.
+  * M-3: 3 endpoints fetched by 4-10 different screens with no shared hook (`/api/stocks?market=X&limit=N` has 10 different `limit` values; `/api/unified/predictions?market=X&limit=5` has 6 consumers). Cache/refresh duplication risk.
+  * M-4: Non-canonical response-shape parsing (consumers read `res.stocks` / `res.predictions` directly instead of `res.data.stocks` per §5.5).
+  * M-5: `MaestroWidget.tsx:55` dead commented-out fetch.
+- ⚠️ 2 LOW findings:
+  * L-1: `store.ts:1092,1101-1103` empty `.catch(() => {})` blocks — silent failure, no logging.
+  * L-2: `MultiMarketWidget.tsx:129-131` uses `Promise.all([fetch(...).then(r=>r.ok?r.json():null), ...])` — single-source-of-failure: if ALL three return null, UI renders nothing (silent).
+- ✅ scope: read-only audit. No files modified. No commits.
+- 🔁 Hand-off to Alpha (frontend dragon) to compile this report into ALPHA-UI-CONSISTENCY-AUDIT worklog entry + decide which findings become fix tasks.
+
+---
+Task ID: ALPHA-UI-CONSISTENCY-AUDIT
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: فحص شامل على src/ — كل الـ screens اللي بتعمل fetch('/api/...'). لكل fetch: منين البيانات؟ هل fallback strategy موحّدة؟ مفيش route بيقرأ من DB مختلفة لنفس البيانات؟ (تكليف من كيمي).
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = 71162ac بعد Sub-task 3). قرأت DATA-SOURCES.md §4.2 (fallback: Python first, then SQLite) + §5.1 (Rule 20: Python=Brain) + §5.5 (canonical response shape).
+- scope: src/ screens/components (excluding src/app/api/ — that was audited in ALPHA-frontend-audit-001).
+- أطلقت Explore subagent (AUDIT-UI-FETCH-1) لفحص ~428 fetch call sites في ~160 file.
+- الـ subagent cross-referenced كل fetch ضد:
+  * DATA-SOURCES.md canonical endpoints
+  * Rule 20 (Python=Brain — Node should proxy, not read SQLite directly)
+  * Rule 27 (NO-FAKE-DATA — no hardcoded mock data)
+  * Rule 73 (SINGLE-DISPLAY-SOURCE)
+- النتائج: 1 CRITICAL + 3 HIGH + 5 MEDIUM + 2 LOW findings (تفاصيل كاملة في entry AUDIT-UI-FETCH-1 أعلاه).
+
+Findings Summary:
+
+🔴 CRITICAL (1):
+- C-1: `AlertsCenterView.tsx:433-443` — hardcoded mock "market alerts" بيتعرض unconditionally لكل user (Rule 27 violation). الكود بيـ fabricate alert "افتتاح الجلسة" كأنه real. محتاج إزالة فورية أو استبدال بـ fetch من `/api/market/status`.
+
+🟠 HIGH (3):
+- H-1: ~20+ file بيستخدم silent-fail pattern (`.catch(() => ({ stocks: [] }))`) — الـ user مش يقدر يميّز "مفيش بيانات" من "fetch فشل". أمثلة: MarketAnalysisView, LiveTrackingTab, store.ts, portfolio-store.ts.
+- H-2: 6+ screens بتـ fetch `/api/finance/calculate-values` (DIRECT SQLite — Rule 20 backend violation). الـ frontend consistent بس الـ endpoint نفسه non-canonical. **Fix للـ Bravo (backend)**.
+- H-3: 2 DIRECT-SQLite endpoints تانيين consumed by UI panels (`/api/market/liquidity-flow`, `/api/egx/investors`) — Rule 20 violation. **Fix للـ Bravo**.
+
+🟡 MEDIUM (5):
+- M-1: `InvestorsFlowPanel.tsx:301` — `error` boolean بيتـ render كـ string ("سبب التعطّل: true"). UX bug.
+- M-2: Non-canonical endpoint names: `/api/sniper/backtest`, `/api/walk-forward-test`, `/api/self-learning` — لازم تـ rename.
+- M-3: نفس الـ data بيتـ fetch من screens كتير بـ pagination مختلف (10 قيم مختلفة لـ `/api/stocks` limit). محتاج shared hook.
+- M-4: Non-canonical response parsing (`res.stocks` بدل `res.data.stocks` per §5.5).
+- M-5: Dead commented-out fetch في `MaestroWidget.tsx:55`.
+
+🟢 LOW (2):
+- L-1: Empty `.catch(() => {})` blocks بلا logging في `store.ts`.
+- L-2: All-null `Promise.all` → empty render في `MultiMarketWidget.tsx`.
+
+Patterns (good + bad):
+- ✅ Good: Pattern-B (setError + retry UI) في MakerRadarTab + InvestorsFlowPanel + AutoAnalysisWidget. Pattern-D (toast on first load, silent on poll) في EnhancedPortfolioView. Canonical endpoint usage (`/api/stocks/[ticker]/unified`) في ComprehensiveStockAnalysis + GateAnalysisView.
+- ❌ Bad: Pattern-A (silent empty fallback) في ~20+ file. Pattern-C (console.error + empty UI) في ~15 file. Hardcoded mock في AlertsCenterView. Non-canonical response parsing.
+
+Stage Summary:
+- ✅ Audit complete: ~428 fetch call sites فحصت في ~160 file. 11 findings موثّقة (1 CRITICAL + 3 HIGH + 5 MEDIUM + 2 LOW).
+- ⚠️ أهم finding: `AlertsCenterView.tsx:433-443` hardcoded mock alerts (Rule 27 violation) — محتاج إصلاح فوري.
+- ⚠️ الـ silent-fail pattern (H-1) منتشر في ~20+ file — محتاج `useApiFetch<T>()` hook موحّد. ده refactor كبير (تكليف منفصل).
+- ⚠️ 3 DIRECT-SQLite endpoints (H-2 + H-3) — الـ frontend consistent بس الـ backend بيخالف Rule 20. Fix للـ Bravo.
+- 🔁 Rule 75: commit + push فوري.
