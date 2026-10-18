@@ -1032,39 +1032,67 @@ def morning_recommendations():
             if stock_info:
                 current_price = float(stock_info.get('current_price', 0) or 0)
 
-            # Recalculate entry/target/stop from current price instead of using stale stored values
+            # V40.2-SOURCE (2026-10-18 — Owner directive via جيمي + جروك + كيمي):
+            # قراءة entry/target/stop من جدول aiPrediction في predictions.db
+            # (Rule 21: V40.2 هو المصدر الإنتاجي الوحيد + Rule 73: SINGLE-DISPLAY-SOURCE).
+            # ممنوع فبركة بنسب ثابتة (current_price * 0.995 / * 0.92 / * 1.10) — Rule 27.
+            # لو مفيش توقع BUY-side نشط → entry/stop/target = None (الواجهة تعرض "—").
             signal = stock.get('signal', 'HOLD')
-            is_buy = signal in ('STRONG_BUY', 'BUY', 'ACCUMULATE', 't1_buy', 'swing_buy')
-            if is_buy and current_price > 0:
-                entry = round(current_price * 0.995, 3)
-                if signal == 't1_buy':
-                    sl_pct, tp_pct = 8.0, 4.0
-                elif signal == 'swing_buy':
-                    sl_pct, tp_pct = 8.0, 10.0
-                else:
-                    sl_pct, tp_pct = 8.0, 10.0
-                stop = round(entry * (1 - sl_pct / 100), 3)
-                target1 = round(entry * (1 + tp_pct / 100), 3)
-            else:
-                entry = round(current_price, 3) if current_price > 0 else 0
-                stop = round(entry * 0.92, 3) if entry > 0 else 0
-                target1 = round(entry * 1.10, 3) if entry > 0 else 0
+            from api.ai_predictions_routes import query_db as _qdb, PREDICTIONS_DB as _pdb
+            _pred_row = None
+            try:
+                _pred_row = _qdb(_pdb, """
+                    SELECT entry_price, target_price, stop_loss, risk_reward, signal_type
+                    FROM aiPrediction
+                    WHERE stock_symbol = ? COLLATE NOCASE
+                      AND signal_type IN ('BUY', 'STRONG_BUY', 'ACCUMULATE')
+                      AND (status IS NULL OR status = '' OR status = 'PENDING')
+                    ORDER BY prediction_date DESC, id DESC
+                    LIMIT 1
+                """, (ticker,))
+            except Exception:
+                pass  # table may not exist yet — fall through to None
 
-            risk_amount = entry - stop
-            target2 = round(entry + (risk_amount * 2.0), 3) if risk_amount > 0 else round(target1 * 1.15, 3)
-            target3 = round(entry + (risk_amount * 3.5), 3) if risk_amount > 0 else round(target1 * 1.30, 3)
+            entry, stop, target1 = None, None, None
+            _stored_rr = None
+            if _pred_row and len(_pred_row) > 0:
+                _p = dict(_pred_row[0])
+                _e = _p.get('entry_price')
+                _t = _p.get('target_price')
+                _s = _p.get('stop_loss')
+                _stored_rr = _p.get('risk_reward')
+                # Validate: BUY-side geometry (stop < entry < target)
+                if _e and float(_e) > 0 and _s and float(_s) > 0 and float(_s) < float(_e) \
+                   and _t and float(_t) > float(_e):
+                    entry = round(float(_e), 3)
+                    stop = round(float(_s), 3)
+                    target1 = round(float(_t), 3)
+                # else: invalid geometry → leave as None (Rule 27)
 
-            # Entry range
-            entry_low = round(entry * 0.99, 3)
-            entry_high = round(entry * 1.01, 3)
+            # target2/target3/entry_range = None when no V40.2 prediction
+            # (ممنوع الحساب من risk_amount ثابت — Rule 73)
+            risk_amount = (entry - stop) if (entry and stop) else None
+            target2 = None
+            target3 = None
+            entry_low = None
+            entry_high = None
 
             # Rule 54: استخدم canonical compute_risk_reward
-            _rr_v2 = round((target1 - entry) / (entry - stop), 2) if (entry > 0 and stop > 0 and entry > stop) else 1.5
-            try:
-                from utils.risk_reward import compute_risk_reward
-                _rr_v2 = compute_risk_reward(entry, target1, stop, fallback=_rr_v2)
-            except Exception:
-                pass  # keep inline _rr_v2 computed above
+            # V40.2-SOURCE: لو entry/stop/target = None (مفيش توقع) → R/R = None
+            # (ممنوع fallback=1.5 ثابت — Rule 27 + Rule 18 floor = 1.8).
+            _rr_v2 = None
+            if entry and stop and target1 and entry > 0 and entry > stop and target1 > entry:
+                _rr_v2 = round((target1 - entry) / (entry - stop), 2)
+                try:
+                    from utils.risk_reward import compute_risk_reward
+                    _rr_v2 = compute_risk_reward(entry, target1, stop, fallback=_rr_v2)
+                except Exception:
+                    pass  # keep inline _rr_v2 computed above
+            elif _stored_rr:
+                try:
+                    _rr_v2 = float(_stored_rr)
+                except (TypeError, ValueError):
+                    _rr_v2 = None
 
             # Signal strength description
             if signal == 'STRONG_BUY':
@@ -1077,11 +1105,20 @@ def morning_recommendations():
                 signal_strength = "تجميع تدريجي"
                 signal_emoji = "📈"
 
+            # V40.2-SOURCE: helper لـ round() يدعم None (Rule 27: NULL → null في JSON)
+            def _r(v, n=3):
+                return round(v, n) if isinstance(v, (int, float)) and v > 0 else None
+
+            def _pct(target, entry):
+                if target and entry and entry > 0 and target > entry:
+                    return round((target - entry) / entry * 100, 1)
+                return None
+
             recommendation = {
                 "rank": i,
                 "ticker": ticker,
                 "name_ar": name_ar,
-                "current_price": round(current_price, 3) if current_price > 0 else round(entry, 3),
+                "current_price": round(current_price, 3) if current_price > 0 else None,
                 "signal": signal,
                 "signal_ar": stock.get('signal_ar', 'احتفاظ'),
                 "signal_strength": signal_strength,
@@ -1092,36 +1129,36 @@ def morning_recommendations():
 
                 # Entry
                 "entry": {
-                    "primary": round(entry, 3),
+                    "primary": _r(entry),
                     "range_low": entry_low,
                     "range_high": entry_high,
-                    "description": f"شراء من {entry_low} إلى {entry_high}"
+                    "description": f"شراء من {entry_low} إلى {entry_high}" if (entry_low and entry_high) else "غير متاح — لا يوجد توقع V40.2 نشط"
                 },
 
                 # Targets
                 "targets": {
                     "target_1": {
-                        "price": round(target1, 3),
-                        "pct": round((target1 - entry) / entry * 100, 1) if entry > 0 else 0,
+                        "price": _r(target1),
+                        "pct": _pct(target1, entry),
                         "description": "هدف البيع الأول"
                     },
                     "target_2": {
-                        "price": round(target2, 3),
-                        "pct": round((target2 - entry) / entry * 100, 1) if entry > 0 else 0,
+                        "price": _r(target2),
+                        "pct": _pct(target2, entry),
                         "description": "هدف البيع الثاني"
                     },
                     "target_3": {
-                        "price": round(target3, 3),
-                        "pct": round((target3 - entry) / entry * 100, 1) if entry > 0 else 0,
+                        "price": _r(target3),
+                        "pct": _pct(target3, entry),
                         "description": "هدف استثماري"
                     }
                 },
 
                 # Stop Loss
                 "stop_loss": {
-                    "price": round(stop, 3),
-                    "pct": round(sl_pct if is_buy else 8.0, 1),
-                    "description": f"استوب كسر {round(stop, 3)} إغلاق"
+                    "price": _r(stop),
+                    "pct": None,
+                    "description": f"استوب كسر {_r(stop)} إغلاق" if stop else "غير متاح — لا يوجد توقع V40.2 نشط"
                 },
 
                 # Risk/Reward
@@ -1132,19 +1169,19 @@ def morning_recommendations():
 
                 # Time horizon
                 "time_stop_days": 30,
-                
+
                 # Full formatted message
                 "formatted_message": format_recommendation_message(
                     rank=i,
                     ticker=ticker,
                     name_ar=name_ar,
-                    current_price=round(current_price, 3) if current_price > 0 else round(entry, 3),
+                    current_price=round(current_price, 3) if current_price > 0 else None,
                     entry_low=entry_low,
                     entry_high=entry_high,
-                    target1=round(target1, 3),
-                    target2=round(target2, 3),
-                    target3=round(target3, 3),
-                    stop=round(stop, 3),
+                    target1=_r(target1),
+                    target2=_r(target2),
+                    target3=_r(target3),
+                    stop=_r(stop),
                     signal_ar=stock.get('signal_ar', 'احتفاظ')
                 )
             }

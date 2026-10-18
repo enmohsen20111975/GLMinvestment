@@ -68032,3 +68032,25 @@ Stage Summary:
 - ⚠️ FLAG 2: التعليق `# طبقاً لـ Rule 19` مش متطابق مع نص Rule 19 في الدستور (اللي بنتكلم عن loss ceilings/cooldowns مش position size). نُفّذ كما طُلب بس المرجع محتاج تصحيح من المالك.
 - ⚠️ FLAG 3 (security): git remote origin URL فيه GitHub token plaintext (من إعداد transfer-1). دستوريًا التوكن مكانه credential helper/env، مش .git/config. مش في scope التعديل بس لازم يترفع.
 - 🔁 Rule 75 (PUSH-AFTER-EVERY-TASK): commit + push فوري بعد التعديل.
+
+---
+Task ID: 3-KIMI-PHASE1
+Agent: كيمي (Z.ai Code) — المديرة التنفيذية + مسؤولة الجودة
+Task: المرحلة 1 — إيقاف النزيف (4 ملفات) بناءً على توجيه المالك + جيمي + جروك.
+
+Work Log:
+- pull --rebase لجلب canonical_flow.py و flow_system.py الجديد من origin/main.
+- تأكيد إن FIRE position اتعمله cap لـ 5% في commit 7d91d89 — خفضته لـ 2% (أدق مع shared_liquidity.py).
+- ملف 1: canonical_flow.py — RR_FLOOR من 1.5 → 1.8 (Rule 18 restore). syntax valid.
+- ملف 2: flow_system.py — FIRE position 5→2, SPARK 15→3. syntax valid. (stop/target لسه ثابتين مؤقتًا — TODO لمرحلة 2).
+- ملف 3: v2_routes.py — استبدال fabricator block (current_price * 0.995 / * 0.92 / * 1.10) بقراءة من جدول aiPrediction في predictions.db. لو مفيش توقع BUY-side نشط → entry/stop/target = None. helper _r() و _pct() لـ round-safe. syntax valid.
+- ملف 4: MakerRadarTab.tsx — إلغاء Branch 3 (Mathematical Volatility Model) نهائيًا. إلغاء DEEP-DIRECTIVE. type 'math' اتشال من union + badge logic. lint: 0 errors.
+
+Stage Summary:
+- 4 ملفات اتعدلت، 122 insertions / 80 deletions.
+- مخالفات Rule 27 + Rule 73 الـ Tier 1 اتمسحت (fabrication في v2_routes + MakerRadarTab).
+- مخالفة Rule 18 اتمسحت (R/R floor 1.5→1.8).
+- مخالفة Rule 19 اتمسحت (position 30%→2%).
+- FLAG 1: stop=-3% في FIRE + -5% في SPARK لسه ثابتين (مخالفة Rule 8 ATR [5%,9%]). محتاج تكليف منفصل للمرحلة 2.
+- FLAG 2: التوكن لسه في git remote URL. المالك لازم يعمل revoke فورًا بعد الـ push ده.
+- ⚠️ لم أُشغّل Flask/FastAPI للتأكد من runtime (بيئة الساندبوكس مفيهاش flask). syntax + lint فقط.

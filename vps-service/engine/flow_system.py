@@ -616,14 +616,20 @@ class FlowSystemEngine:
         total_score = min(100, total_score + fundamentals_bonus['bonus'])
 
         # Label
+        # POSITION-CAP (2026-10-18 — Owner directive via جيمي + جروك + كيمي):
+        # تم خفض position size ليتوافق مع shared_liquidity.py (PRE_SURGE=1.5%,
+        # EXPLOSIVE_SURGE=2%). 30% الأصلية = انتحار مالي. 15% السابقة برضه عالية.
+        # النطاق الآمن: 2-3% كحد أقصى للمركز الواحد (Rule 19 حماية رأس المال).
+        # stop/target لسه ثابتين مؤقتًا — TODO: ربط ديناميكي بـ ATR / unified
+        # (Rule 8 ATR [5%,9%] EGX + Rule 73 SINGLE-DISPLAY-SOURCE).
         if total_score >= 75:
             label, label_en, color = "نار", "FIRE", "red"
             action, action_en = "دخول قوي", "STRONG_ENTRY"
-            position, stop, target = 5, -3, 8  # أقصى حجم مركز 5% طبقاً لـ Rule 19
+            position, stop, target = 2, -3, 8  # أقصى حجم مركز 2% (Rule 19)
         elif total_score >= 60:
             label, label_en, color = "شرارة", "SPARK", "orange"
             action, action_en = "دخول حذر", "CAUTIOUS_ENTRY"
-            position, stop, target = 15, -5, 12
+            position, stop, target = 3, -5, 12  # أقصى حجم مركز 3% (Rule 19)
         elif total_score >= 40:
             label, label_en, color = "رماد", "ASH", "gray"
             action, action_en = "استنى", "WAIT"

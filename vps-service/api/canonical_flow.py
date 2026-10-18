@@ -60,13 +60,16 @@ BOTTOM_ABSORPTION_52W_PROXIMITY_PCT: float = 8.0
 CORRECTION_DROP_PCT: float = 8.0
 
 # SEALED-DISPATCH-BRAVO-UNIFIED-RADAR (2026-10-17) — Step 3:
-# Unified R/R floor = 1.5 for ALL BUY-side buckets (was 1.8 only for
-# `correction_exhaustion`). Dispatch said: "R/R = 1.5 floor (مش 1.8 —
-# محتاج توحيد بعدين في مهمة منفصلة)". Rule 18 (CALCULATION-CANONICAL):
-# any BUY signal must offer ≥1.5 reward per 1.0 risk — no exceptions.
+# Unified R/R floor for ALL BUY-side buckets.
+#
+# RULE-18-RESTORE (2026-10-18 — Owner directive via جيمي + جروك + كيمي):
+# رفعنا RR_FLOOR رسميًا لـ 1.8 ليتطابق مع Rule 18 (dynamic_rr_normal=1.8).
+# السبب: 1.5 كان حل وسط مؤقت (SEALED-DISPATCH Step 3). 1.8 هي النسبة
+# المؤسسية الحقيقية لمحرك V40.2 — المكسب لازم يكون ضعف الخسارة تقريبًا.
+# أي إشارة R/R < 1.8 تُرفض قبل الكتابة لـ predictions.db (Rule 18).
 #
 # `whale_outflow` is SELL-side (bearish), so R/R doesn't apply — skip.
-RR_FLOOR: float = 1.5  # was: CORRECTION_MIN_RR = 1.8
+RR_FLOOR: float = 1.8  # was: 1.5 (transient compromise); restored to Rule 18 floor
 
 RSI_PERIOD: int = 14
 ATR_PERIOD: int = 14
