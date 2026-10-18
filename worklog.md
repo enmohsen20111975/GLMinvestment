@@ -68110,3 +68110,42 @@ Stage Summary:
 - ⚠️ FLAG 2 (سابق): stop=-3%/-5% في flow_system بيخالف Rule 8 (ATR [5%,9%]). مش في scope دلوقتي.
 - ⚠️ FLAG 3 (تكامل): evaluate_risk موجودة كـ function مستقلة، لسه مربطتش في الـ flow الإنتاجي (classify_liquidity_bucket / v40_2_daily_generator). ربطها تكليف منفصل عشان مايكونش silent dead code.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: ALPHA-RADAR-NO-FAB-1 (REBASE-SKIPPED — parallel work)
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: إلغاء فبركة المستويات client-side في `src/modules/predictions/components/MakerRadarTab.tsx` (السطور 2190–2213) — حذف Mathematical Volatility Model + تعديل `resolveLevels` للأخذ من AI → technical → none (nulls).
+
+Work Log:
+- بروتوكول البدء (3 خطوات):
+  1. `git pull --rebase origin main` — ضرب conflict في worklog.md (auto-commit سابق a8cb942 لقسمتي SANDBOX-IMPORT-1 ضد origin e58c083). اتحل بـ `git checkout --ours worklog.md`. HEAD دلوقتي = e58c083. لاحظة: origin/main فيه stale git conflict markers في worklog (lines 67499/67534/67735) متكوميتة — غلطلة سابقة، مش في scope.
+  2. قريت آخر 50 سطر في worklog: transfer-1 (Bravo نقل المشروع) + BRAVO-FIRE-POSITION-CAP-5PCT (Bravo cap FIRE 30%→5%).
+  3. scope مؤكد: `src/` فقط.
+- قريت `MakerRadarTab.tsx` (3936 سطر). لقيت `resolveLevels` (2150-2213) فيه 3 tiers: AI / technical / **math (المفبرك)**. لقيت الـ render badge فيه branches لـ source='math'.
+- عملت 3 edits بالـ MultiEdit:
+  * type def: شلت `'math'` → `source: 'ai' | 'technical' | 'none'`.
+  * `resolveLevels` body: مسحت math model بالكامل، استبدلته بـ `if (dbStop == null && dbTarget == null) { return nulls } ... return technical`.
+  * render badge: شلت branch `: source === 'math' ? '📊 مستوى حسابي'` و `|| source === 'math'` من badgeCls.
+- `bun run lint` → exit 0، 0 errors. `git diff --stat` → 14 insertions / 20 deletions.
+- اعملت `git commit -m "fix(radar-ui): eliminate client-side level fabrication in MakerRadarTab"` = commit 1308f10 (شامل: الملف + قسمتي في worklog).
+- **`git push origin main` اترفض** — origin تقدّم بـ commitين:
+  * `cbf12d2 fix(phase1): إيقاف نزيف fabrication + توحيد R/R + خفض position size` — **فريق تاني "جيمي + جروك + كيمي"** عمل نفس الحل.
+  * `7e405dd fix(portfolio): remove invalid is_active column and sync across all admin accounts`.
+- `git pull --rebase origin main` ضرب conflict تاني في `MakerRadarTab.tsx` + `worklog.md`.
+- فحصت conflict `MakerRadarTab.tsx`: origin's HEAD عنده نفس الحل بالظبط — شال `'math'` من type، شال الـ Mathematical Volatility Model بالكامل، استبدله بـ `if (dbStop != null || dbTarget != null) { technical } else { none }`. نفس الـ semantic بتاعي بالظبط. كمان زوّد `DEEP-DIRECTIVE-CANCELLED` comment block يوثّق القرار.
+- **القرار**: تعديلي بقى redundant. ما عملتش `--force` (دستور ألفا + Rule 75). عملت `git rebase --skip` لإسقاط commit 1308f10 بتاعي. ده الإجراء الصح — تعديل تاني فوق تعديل شغال = تشويش، مش قيمة.
+- post-skip verification:
+  * HEAD دلوقتي = 7e405dd (origin/main)، 0 ahead/0 behind.
+  * `grep -cE "'math'|mathStop|mathTarget|مستوى حسابي" MakerRadarTab.tsx` → 0 (مفيش leftover).
+  * `bun run lint` → exit 0، 0 errors (على كود origin اللي فيه الحل).
+  * `git diff e58c083..7e405dd -- src/modules/predictions/components/MakerRadarTab.tsx` بيوضّح حذف السطور 2190-2213 بالظبط (الـ math model بالكامل) + استبدالها بـ fallback nulls + technical-only path + comment block `DEEP-DIRECTIVE-CANCELLED`. ده الـ diff اللي طلبه المالك.
+- ملخص الـ intent: المالك وزّع نفس التكليف على فريقين بالتوازي (ألفا + فريق جيمي/جروك/كيمي). هما خلّصوا الأول بـ cbf12d2 ودمجوا في origin. أنا خلّصت متأخر بدقايق. الـ fabrication اتمسح — ده الهدف، وأتحقّق.
+
+Stage Summary:
+- ✅ Mathematical Volatility Model اتمسح بالكامل من `resolveLevels` في origin/main 7e405dd (بواسطة cbf12d2 من فريق جيمي+جروك+كيمي). مفيش `mathStop`/`mathTarget`/`rangePct`/`stopPct` في الكود.
+- ✅ `resolveLevels` بترجّع `source='none'` بـ nulls لو مفيش AI ولا DB technical levels — مش بتخترع.
+- ✅ جدول العرض: source='none' بينور "—" رمادي، مفيش أرقام، مفيش "رياضي محض".
+- ✅ lint: 0 errors على كود origin.
+- ⚠️ تعديلي أنا اترفض (rebase --skip) لأنه redundant — ما عملتش `--force` ولا حاولت أخسر تعديل فريق تاني.
+- ⚠️ FLAG (مش في scope): worklog.md فيه stale git conflict markers (lines 67499/67534/67735) متكوميتة في origin/main نفسه من قبل. غلطلة سابقة. لو المالك عاوز، تكليف منفصل لتنظيفها.
+- ⚠️ FLAG: المالك وزّع تكليف redundant على فريقين بالتوازي — ذي ما ظهر من cbf12d2 vs تكليفي. التنسيق بين الفرق محتاج تحسين عشان نتجنّب عمل متكرر.
