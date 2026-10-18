@@ -68637,3 +68637,57 @@ Stage Summary:
 - ⚠️ Rule 27 violation (M-1): `/api/stocks/sparkline` بيـ fabricate prices بـ `Math.sin()`. ده حرج — محتاج إصلاح فوري (تكليف منفصل).
 - ⚠️ الـ canonical DB mapping (DBPaths في Python) محتاج Node equivalent. ده gap معماري.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: BRAVO-DB-RESTORE-FINAL-001
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: كيمي — استخراج كل الـ DBs الـ 11 من data/ لـ db/
+
+Work Log:
+- git pull --rebase: HEAD = c87ca09 (DB snapshot upload من المالك + ألفا audit).
+- فحص data/ للـ backup الجديد (2026-10-18T14:54:47): 8 parts + splits.
+  * part1 (50KB): auth.db + crypto.db (single zip)
+  * part2 (5 splits, 120MB total): data_engine.db (482MB uncompressed)
+  * part3 (3.8MB): decision_log.db + historical.db (single zip)
+  * part4 (2 splits, 50MB total): intraday.db (448MB uncompressed)
+  * part5 (1.9MB): metrics.db + news.db + paper_trading.db (single zip)
+  * part6 (2 splits, 31MB total): predictions.db (291MB uncompressed)
+  * part7 (3 splits, 65MB total): price_history.db (352MB uncompressed)
+  * part8 (6.2MB): stocks.db (29MB, single zip)
+- STEP 1: Single-part zips (part1,3,5,8) — extractall لـ db/
+- STEP 2: Split zips (part2,4,6,7) — cat splits بالترتيب → combined zip → extractall
+- مشكلة واجهتني: intraday.db + stocks.db كان فيهم corruption بعد الـ extraction الأول:
+  * intraday.db: freelist size mismatch + index corruption (idx_crypto_symbol_ts)
+  * stocks.db: database disk image is malformed
+- الإصلاح:
+  * intraday.db: VACUUM (rebuild file) → REINDEX (rebuild indexes) → integrity OK
+  * stocks.db: re-extract من part8 (الـ corruption كان من الـ extract الأول) → integrity OK
+- Verification script: vps-service/scripts/verify_db_restore_final.py
+  * يفحص: exists + size > 0 + opens + table count + sample row counts + integrity_check
+  * النتيجة النهائية: 73 PASS / 0 FAIL (كل الـ 12 DBs سليمة)
+
+Stage Summary:
+- ✅ 11/11 DBs restored + 1 Prisma-managed (custom.db) = 12 DBs في db/
+- ✅ كل DB: integrity_check = ok
+- ✅ حجم إجمالي: ~1.3GB بيانات إنتاج حقيقية
+- ✅ verification script: 73/73 checks PASS
+- ✅ DBs gitignored (*.db) — مش مترفع على GitHub (محلي بس)
+- ✅ scope: db/ + vps-service/scripts/ بس، src/ سليم
+
+الـ DBs اللي اتعملهم restore (11):
+| DB | الحجم | الجداول | مصدر الـ restore |
+|----|-------|---------|------------------|
+| predictions.db | 291MB | 46 | part6 (2 splits combined) |
+| stocks.db | 29MB | 69 | part8 (re-extracted after corruption fix) |
+| auth.db | 376KB | 23 | part1 |
+| crypto.db | 45KB | 5 | part1 |
+| historical.db | 20MB | 3 | part3 |
+| decision_log.db | 65KB | 2 | part3 |
+| metrics.db | 6.6MB | 6 | part5 |
+| news.db | 3.9MB | 4 | part5 |
+| paper_trading.db | 29KB | 3 | part5 |
+| data_engine.db | 483MB | 29 | part2 (5 splits combined) |
+| intraday.db | 161MB (after VACUUM) | 6 | part4 (2 splits combined, VACUUM+REINDEX) |
+| price_history.db | 352MB | 3 | part7 (3 splits combined) |
+
+الـ BLOCKED السابق (BRAVO-DB-RESTORE-BLOCKED) اتلغى — كل الـ 3 DBs (intraday + price_history + data_engine) دلوقتي متاحة.
