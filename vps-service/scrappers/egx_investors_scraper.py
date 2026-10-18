@@ -9,10 +9,10 @@ type for the Egyptian Exchange (EGX).
 
 Strategy
 --------
-1. **Primary source** — EGX official site `egyptse.com` publishes
+1. **Primary source** — EGX official site `egx.com.eg` publishes
    daily investor-flow reports at:
-       - https://www.egyptse.com/en/markets/foreign-trading  (English)
-       - https://www.egyptse.com/ar/markets/foreign-trading  (Arabic)
+       - https://www.egx.com.eg/en/Market/ForeignInvestorsTrading  (English)
+       - https://www.egx.com.eg/ar/Market/ForeignInvestorsTrading  (Arabic)
    The scraper attempts an HTTP fetch with a strict 10s timeout
    and graceful failure. If the page is blocked or the structure
    cannot be parsed, it falls back to (2).
@@ -95,8 +95,14 @@ EGX_RATIO_FOREIGNERS = 0.20
 # Stocks with average trade value > this threshold are treated as institutional flow
 INSTITUTIONAL_TRADE_VALUE = 1_000_000.0
 
-EGX_FOREIGN_TRADING_URL_EN = "https://www.egyptse.com/en/markets/foreign-trading"
-EGX_FOREIGN_TRADING_URL_AR = "https://www.egyptse.com/ar/markets/foreign-trading"
+# BRAVO-URGENT-FIX (2026-10-18): Realistic EGX session turnover caps.
+# Normal EGX session: 2-8 billion EGP daily turnover.
+# If DB data exceeds this, it's likely bad data — clamp to realistic range.
+MAX_DAILY_TURNOVER_EGP = 8_000_000_000.0   # 8 billion EGP — hard cap
+MIN_DAILY_TURNOVER_EGP = 2_000_000_000.0   # 2 billion EGP — floor (for sanity check)
+
+EGX_FOREIGN_TRADING_URL_EN = "https://www.egx.com.eg/en/Market/ForeignInvestorsTrading"
+EGX_FOREIGN_TRADING_URL_AR = "https://www.egx.com.eg/ar/Market/ForeignInvestorsTrading"
 HTTP_TIMEOUT_SECONDS = 10.0
 
 USER_AGENT = (
@@ -423,6 +429,15 @@ def _compute_estimate_for_date(conn: sqlite3.Connection, date_str: str) -> Optio
     if total_turnover <= 0:
         return None
 
+    # BRAVO-URGENT-FIX #3 (2026-10-18): Volume cap — clamp to realistic EGX range.
+    # Normal EGX session: 2-8 billion EGP. If DB has bad data (e.g., 100B), clamp.
+    if total_turnover > MAX_DAILY_TURNOVER_EGP:
+        log.warning(
+            "Turnover %.2fB exceeds cap %.2fB — clamping (likely bad DB data)",
+            total_turnover / 1e9, MAX_DAILY_TURNOVER_EGP / 1e9,
+        )
+        total_turnover = MAX_DAILY_TURNOVER_EGP
+
     # Buy/sell split from advancing vs declining turnover. The ratio is
     # smoothed so a flat market doesn't produce a 0% buy side.
     adv_share = advancing_turnover / total_turnover
@@ -439,23 +454,57 @@ def _compute_estimate_for_date(conn: sqlite3.Connection, date_str: str) -> Optio
     arab_turnover = total_turnover * EGX_RATIO_ARABS
     foreign_turnover = total_turnover * EGX_RATIO_FOREIGNERS
 
+    # BRAVO-URGENT-FIX #2 (2026-10-18): Accounting equation Σ = 0.
+    # Rule: Egyptians_Net + Arabs_Net + Foreigners_Net == 0 (zero-sum market).
+    # Every buy has a matching sell — if foreigners net buy (+X), then
+    # Egyptians + Arabs must net sell (-X) to balance.
+    #
+    # Model:
+    #   1. Foreigners follow the trend: foreign_net = foreign_turnover × (buy - sell)
+    #   2. Egyptians + Arabs absorb the counter-side: counter = -foreign_net
+    #   3. Split counter-flow by turnover share: egy_share + arab_share = 1
+    #   4. buy/sell derived from turnover + net (buy = (T+net)/2, sell = (T-net)/2)
+    foreign_net = foreign_turnover * (buy_ratio - sell_ratio)
+    counter_flow = -foreign_net  # what Egyptians + Arabs must absorb (Σ = 0)
+    total_counter_turnover = egy_turnover + arab_turnover
+    if total_counter_turnover > 0:
+        egy_share = egy_turnover / total_counter_turnover
+        arab_share = arab_turnover / total_counter_turnover
+    else:
+        egy_share = 0.875  # fallback: 70/10 → egy=70/80=0.875, arab=10/80=0.125
+        arab_share = 0.125
+    egy_net = counter_flow * egy_share
+    arab_net = counter_flow * arab_share
+
+    # Derive buy/sell from turnover + net: buy = (T + net) / 2, sell = (T - net) / 2
+    egy_buy = (egy_turnover + egy_net) / 2
+    egy_sell = (egy_turnover - egy_net) / 2
+    arab_buy = (arab_turnover + arab_net) / 2
+    arab_sell = (arab_turnover - arab_net) / 2
+    foreign_buy = (foreign_turnover + foreign_net) / 2
+    foreign_sell = (foreign_turnover - foreign_net) / 2
+
+    # Verify Σ = 0 (accounting identity — should never fail)
+    _sigma_check = egy_net + arab_net + foreign_net
+    assert abs(_sigma_check) < 0.01, f"Σ=0 violation: {_sigma_check} (egy={egy_net}, arab={arab_net}, foreign={foreign_net})"
+
     # Approximate number_of_trades from volume (assumed avg trade size = 1000 shares).
     approx_trades = int(total_volume / 1000) if total_volume > 0 else block_trade_count
 
     return InvestorFlowRow(
         date=date_str,
         session_type="day",
-        individuals_buys_value=round(egy_turnover * buy_ratio, 2),
-        individuals_sells_value=round(egy_turnover * sell_ratio, 2),
-        individuals_net_value=round(egy_turnover * (buy_ratio - sell_ratio), 2),
-        arab_buys_value=round(arab_turnover * buy_ratio, 2),
-        arab_sells_value=round(arab_turnover * sell_ratio, 2),
-        arab_net_value=round(arab_turnover * (buy_ratio - sell_ratio), 2),
-        foreign_buys_value=round(foreign_turnover * buy_ratio, 2),
-        foreign_sells_value=round(foreign_turnover * sell_ratio, 2),
-        foreign_net_value=round(foreign_turnover * (buy_ratio - sell_ratio), 2),
-        total_buys_value=round(total_turnover * buy_ratio, 2),
-        total_sells_value=round(total_turnover * sell_ratio, 2),
+        individuals_buys_value=round(egy_buy, 2),
+        individuals_sells_value=round(egy_sell, 2),
+        individuals_net_value=round(egy_net, 2),
+        arab_buys_value=round(arab_buy, 2),
+        arab_sells_value=round(arab_sell, 2),
+        arab_net_value=round(arab_net, 2),
+        foreign_buys_value=round(foreign_buy, 2),
+        foreign_sells_value=round(foreign_sell, 2),
+        foreign_net_value=round(foreign_net, 2),
+        total_buys_value=round(egy_buy + arab_buy + foreign_buy, 2),
+        total_sells_value=round(egy_sell + arab_sell + foreign_sell, 2),
         number_of_trades=approx_trades,
         source="computed_estimate",
     )
@@ -499,6 +548,16 @@ def run_pipeline(
 
     results: List[Dict[str, object]] = []
     for d in target_dates:
+        # BRAVO-URGENT-FIX #4 (2026-10-18): Skip Fridays + Saturdays (EGX weekend).
+        # Python weekday(): Monday=0, Tuesday=1, ..., Friday=4, Saturday=5, Sunday=6
+        try:
+            dt = datetime.strptime(d, "%Y-%m-%d")
+            if dt.weekday() in (4, 5):  # Friday or Saturday
+                log.info("Skipping EGX weekend: %s (%s)", d, dt.strftime("%A"))
+                continue
+        except (ValueError, TypeError):
+            pass  # If date parsing fails, proceed anyway (don't block on bad date format)
+
         # 1) try real scrape first
         row = fetch_egx_real(session_date=d)
         # 2) fallback to computed estimate

@@ -38,6 +38,10 @@ const EGX_RATIO_FOREIGNERS = 0.20;
 const INSTITUTIONAL_TRADE_VALUE = 1_000_000.0;
 const AVG_TRADE_SIZE_SHARES = 1000;
 
+// BRAVO-URGENT-FIX (2026-10-18): Realistic EGX session turnover caps.
+const MAX_DAILY_TURNOVER_EGP = 8_000_000_000.0;   // 8 billion EGP — hard cap
+const MIN_DAILY_TURNOVER_EGP = 2_000_000_000.0;   // 2 billion EGP — floor (sanity check)
+
 const CREATE_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS investors_data (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -247,6 +251,13 @@ function computeAndUpsertForDate(
 
   if (totalTurnover <= 0) return null;
 
+  // BRAVO-URGENT-FIX #3 (2026-10-18): Volume cap — clamp to realistic EGX range.
+  // Normal EGX session: 2-8 billion EGP. If DB has bad data (e.g., 100B), clamp.
+  if (totalTurnover > MAX_DAILY_TURNOVER_EGP) {
+    console.warn(`[investors] Turnover ${(totalTurnover/1e9).toFixed(2)}B exceeds cap — clamping (bad DB data)`);
+    totalTurnover = MAX_DAILY_TURNOVER_EGP;
+  }
+
   const advShare = advancingTurnover / totalTurnover;
   const decShare = decliningTurnover / totalTurnover;
   const flatShare = flatTurnover / totalTurnover;
@@ -261,20 +272,52 @@ function computeAndUpsertForDate(
   const approxTrades = totalVolume > 0 ? Math.round(totalVolume / AVG_TRADE_SIZE_SHARES) : blockTrades;
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
+  // BRAVO-URGENT-FIX #2 (2026-10-18): Accounting equation Σ = 0.
+  // Rule: Egyptians_Net + Arabs_Net + Foreigners_Net == 0 (zero-sum market).
+  // Foreigners follow the trend; Egyptians + Arabs absorb the counter-side.
+  // buy/sell derived from turnover + net: buy = (T + net) / 2, sell = (T - net) / 2
+  const foreignNet = foreignTurnover * (buyRatio - sellRatio);
+  const counterFlow = -foreignNet;  // what Egyptians + Arabs must absorb (Σ = 0)
+  const totalCounterTurnover = egyTurnover + arabTurnover;
+  let egyShare: number, arabShare: number;
+  if (totalCounterTurnover > 0) {
+    egyShare = egyTurnover / totalCounterTurnover;
+    arabShare = arabTurnover / totalCounterTurnover;
+  } else {
+    egyShare = 0.875;  // fallback: 70/10 → egy=70/80=0.875
+    arabShare = 0.125;
+  }
+  const egyNet = counterFlow * egyShare;
+  const arabNet = counterFlow * arabShare;
+
+  // Derive buy/sell from turnover + net
+  const egyBuy = (egyTurnover + egyNet) / 2;
+  const egySell = (egyTurnover - egyNet) / 2;
+  const arabBuy = (arabTurnover + arabNet) / 2;
+  const arabSell = (arabTurnover - arabNet) / 2;
+  const foreignBuy = (foreignTurnover + foreignNet) / 2;
+  const foreignSell = (foreignTurnover - foreignNet) / 2;
+
+  // Verify Σ = 0 (accounting identity)
+  const sigmaCheck = egyNet + arabNet + foreignNet;
+  if (Math.abs(sigmaCheck) > 0.01) {
+    console.error(`[investors] Σ=0 violation: ${sigmaCheck} (egy=${egyNet}, arab=${arabNet}, foreign=${foreignNet})`);
+  }
+
   const row: InvestorsRow = {
     date: dateStr,
     session_type: 'day',
-    individuals_buys_value: round2(egyTurnover * buyRatio),
-    individuals_sells_value: round2(egyTurnover * sellRatio),
-    individuals_net_value: round2(egyTurnover * (buyRatio - sellRatio)),
-    arab_institutions_buys_value: round2(arabTurnover * buyRatio),
-    arab_institutions_sells_value: round2(arabTurnover * sellRatio),
-    arab_institutions_net_value: round2(arabTurnover * (buyRatio - sellRatio)),
-    foreign_buys_value: round2(foreignTurnover * buyRatio),
-    foreign_sells_value: round2(foreignTurnover * sellRatio),
-    foreign_net_value: round2(foreignTurnover * (buyRatio - sellRatio)),
-    total_buys_value: round2(totalTurnover * buyRatio),
-    total_sells_value: round2(totalTurnover * sellRatio),
+    individuals_buys_value: round2(egyBuy),
+    individuals_sells_value: round2(egySell),
+    individuals_net_value: round2(egyNet),
+    arab_institutions_buys_value: round2(arabBuy),
+    arab_institutions_sells_value: round2(arabSell),
+    arab_institutions_net_value: round2(arabNet),
+    foreign_buys_value: round2(foreignBuy),
+    foreign_sells_value: round2(foreignSell),
+    foreign_net_value: round2(foreignNet),
+    total_buys_value: round2(egyBuy + arabBuy + foreignBuy),
+    total_sells_value: round2(egySell + arabSell + foreignSell),
     number_of_trades: approxTrades,
   };
 
