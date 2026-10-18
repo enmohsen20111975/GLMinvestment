@@ -14,13 +14,66 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2 } from 'lucide-react';
+import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { cn } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
+
+// ─── ALPHA-FIX: Data freshness + holiday filtering ──────────────────────────
+// EGX weekend = Friday (5) + Saturday (6). Trading days = Sunday→Thursday.
+// We filter out any rows whose date falls on a weekend, and warn the user
+// if the latest valid data is older than 3 trading days.
+
+/**
+ * Parse a "YYYY-MM-DD" date string as a LOCAL date (not UTC) so the weekday
+ * is correct regardless of timezone. Returns null if invalid.
+ */
+function parseLocalDate(dateStr: string | null): Date | null {
+  if (!dateStr) return null;
+  const parts = dateStr.trim().split('-');
+  if (parts.length !== 3) return null;
+  const [y, m, d] = parts.map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+/** Returns true if the date is Friday (5) or Saturday (6) — EGX weekend. */
+function isEGXWeekend(date: Date): boolean {
+  const day = date.getDay(); // 0=Sun, 5=Fri, 6=Sat
+  return day === 5 || day === 6;
+}
+
+/** Returns true if a date string falls on Friday or Saturday. */
+function isWeekendDateStr(dateStr: string | null): boolean {
+  const date = parseLocalDate(dateStr);
+  if (!date) return false;
+  return isEGXWeekend(date);
+}
+
+/**
+ * Count trading days (Sun→Thu) strictly between `latestDate` and `today`.
+ * If the gap exceeds 3 trading days, the data is considered stale.
+ */
+function isDataStale(latestDateStr: string | null): boolean {
+  const latestDate = parseLocalDate(latestDateStr);
+  if (!latestDate) return true; // no date = stale
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  latestDate.setHours(0, 0, 0, 0);
+  if (latestDate >= today) return false; // today or future = fresh
+  // Count trading days from (latestDate + 1) to today (inclusive)
+  let count = 0;
+  const cur = new Date(latestDate);
+  cur.setDate(cur.getDate() + 1);
+  while (cur <= today) {
+    if (!isEGXWeekend(cur)) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count > 3;
+}
 
 interface InvestorsDataRow {
   date: string | null;
@@ -401,9 +454,17 @@ export function InvestorsFlowPanel() {
         </div>
 
         {/* Egyptians / Arabs / Foreigners buy/sell/net — investor-flow table */}
-        {invData && invData.length > 0 && (
-          <InvestorsTable rows={invData} source={invSource} autoSeeded={invAutoSeeded} />
-        )}
+        {invData && invData.length > 0 && (() => {
+          // ALPHA-FIX: filter out Friday/Saturday rows (EGX weekend — no trading)
+          const filteredRows = invData.filter((r) => !isWeekendDateStr(r.date));
+          if (filteredRows.length === 0) return null;
+          // ALPHA-FIX: check if latest valid date is older than 3 trading days
+          const latestDate = filteredRows[0]?.date ?? null;
+          const stale = isDataStale(latestDate);
+          return (
+            <InvestorsTable rows={filteredRows} source={invSource} autoSeeded={invAutoSeeded} stale={stale} />
+          );
+        })()}
 
         {/* Summary */}
         <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
@@ -424,16 +485,53 @@ export function InvestorsFlowPanel() {
 /**
  * InvestorsTable — جدول تدفّق المستثمرين (مصريين / عرب / أجانب)
  * يعرض آخر 3 جلسات من investors_data.
+ *
+ * ALPHA-FIX: لو `stale=true` (أحدث تاريخ أقدم من 3 أيام تداول) → بيظهر شارة
+ * تحذيرية صفراء "البيانات قيد التحديث من البورصة" بدلاً من عرض الأرقام القديمة
+ * اللي ممكن تضلل المستخدم.
  */
 function InvestorsTable({
   rows,
   source,
   autoSeeded,
+  stale,
 }: {
   rows: InvestorsDataRow[];
   source: string;
   autoSeeded: boolean;
+  stale: boolean;
 }) {
+  // ALPHA-FIX: لو البيانات قديمة → اعرض شارة تحذيرية بدل الأرقام
+  if (stale) {
+    const latestDate = rows[0]?.date ?? 'غير معروف';
+    return (
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground pb-1 border-b border-border/50">
+          <span className="flex items-center gap-1">
+            <Globe2 className="w-3 h-3" />
+            تدفّق المستثمرين (مصريين / عرب / أجانب)
+          </span>
+          <Badge
+            variant="outline"
+            className="text-[9px] px-1 py-0 text-amber-600 dark:text-amber-400 border-amber-500/50 bg-amber-500/10"
+            title={`أحدث بيانات: ${latestDate}`}
+          >
+            بيانات قديمة
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-[11px] text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
+          <div className="space-y-0.5">
+            <p className="font-semibold">البيانات قيد التحديث من البورصة</p>
+            <p className="text-[10px] text-amber-600 dark:text-amber-400">
+              آخر بيانات متاحة بتاريخ {latestDate} — يتم تحديث الجدول تلقائياً فور توفر بيانات الجلسة الأحدث.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const slice = rows.slice(0, 3);
   if (slice.length === 0) return null;
 
