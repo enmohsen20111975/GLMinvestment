@@ -208,3 +208,23 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 ---
 
 **جون — بالدليل مش بالكلام. استكمل من هنا لو ضاع حاجة.**
+
+---
+
+## 12. MAESTRO-CANCER-1 — STEP 0 TRACE نتائج + القرار (2026-10-18)
+
+### الـ 5 live callers (تبّت جون):
+1. `daily_predictor.py L3811` run_expert_memory_phase — optional shim (try/except) **بس بـ يعمل lesson-veto** (شيلانه = فقدان الـ veto، مش crash).
+2. `telegram/auto_post_scheduler.py L1190` daily_opportunities — HARD dependency.
+3. `api/stock_analysis_routes.py L43` → hunting_engine helpers (ممكن مش محتاجين maestro مباشرة — verify).
+4. `jobs/market_scheduler.py L114` → background_analyzer — **مش في crontab** (ممكن dead — verify).
+5. `live_signals/recorder.py L39/116` → crypto_maestro — HARD LIVE.
+
+### 🔴 V40.2 ماعندهش بدائل جاهزة لـ daily_opportunities/hunting/background/crypto → STEP 4-6 = BUILD مش swap.
+
+### القرار (reordered للسرعة + الحرص):
+- **فورية (ألفا)**: بدّل الفرونت لـ V40.2 canonical → يوقف التناقض للعميل فورًا.
+- **برافو NOW (safe)**: STEP 3 (شيل shim، افقد lesson-veto) + STEP 2 (ابني V40.2 daily_opportunities للـ telegram).
+- **STOP قبل STEP 4-6**: BUILD scope (V40.2 equivalents) — حقق + ابعتلي.
+- **STEP 1 (410)**: بعد ما ألفا بدّل الفرونت.
+- **STEP 7 (kill maestro)**: LAST.
