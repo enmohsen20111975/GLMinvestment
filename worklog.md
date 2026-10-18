@@ -69046,3 +69046,29 @@ Stage Summary:
 - ✅ 30+ sub-view building blocks (not directly routed but used inside parent views) catalogued in a separate section to distinguish them from true screens.
 - ✅ ASCII navigation reachability map included at end of inventory.
 - 🔁 Ready for Alpha to consume when building the UI refactor plan.
+
+---
+Task ID: ALPHA-FAB-FIX-SPARKLINE-001
+Agent: Alpha (تنين الفرونت إند المجنح — Z.ai Code)
+Task: في src/app/api/stocks/sparkline/route.ts:136 — شيل Math.sin() fabrication (Rule 27). كان بيخترع 15 نقطة سعر من current_value واحد + noise. لو مفيش OHLCV حقيقي → empty (سياسة الفراغ).
+
+Work Log:
+- بروتوكول البدء: git pull --rebase (HEAD = a1a407e). قرأت worklog tail.
+- قرأت src/app/api/stocks/sparkline/route.ts (201 سطر). لقيت fabrication block في L120-153:
+  * الـ block كان بياخد `market_indices.current_value` (رقم واحد) + بيخترع 15 نقطة سعر بـ linear interpolation + Math.sin(i * 1.2) * 0.003 * cur كـ noise.
+  * النتيجة: prices array بيتبعرض كأنه OHLCV حقيقي + source: 'market_indices'.
+- التعديل: شلت الـ fabrication block بالكامل (34 سطر). حلّ محله `stocksDb.close()` + comment. الـ flow دلوقتي:
+  1. price_history.db (canonical OHLCV) → real prices
+  2. stocks.db stock_daily_prices (real OHLCV) → real prices
+  3. لو مفيش → empty { prices: [], source: 'none' } (Rule 27 NO-FAKE-DATA)
+- التحقق:
+  * `grep -c "Math.sin"` → 0 leftover.
+  * `bun run lint` → exit 0، 0 errors.
+  * `git diff --stat` → 34 deletions (fabrication block اتمسح بالكامل).
+
+Stage Summary:
+- ✅ Math.sin() fabrication اتمسحت بالكامل من sparkline route.
+- ✅ لو مفيش OHLCV حقيقي → empty array + source: 'none' (Rule 27).
+- ✅ lint: 0 errors.
+- ✅ scope نظيف: src/app/api/stocks/sparkline/route.ts بس.
+- 🔁 Rule 75: commit + push فوري.
