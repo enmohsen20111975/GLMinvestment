@@ -67977,3 +67977,58 @@ Stage Summary:
 - ✅ ABUK (cp=90 > sma50*0.95=79.3): لا Hard Cap → القرار الطبيعي
 - ✅ classifyMoneyFlow: buy=35%+net<0 → 🔴 ضغط بيعي قوي | buy=38%+تخفيض → 🔴 ضغط بيعي قوي | buy=42% → 🟡 متوازنة
 - ✅ py_compile PASS + tsc clean
+
+---
+Task ID: transfer-1
+Agent: Bravo (backend/quant dragon)
+Task: نقل مستودع GLMinvestment الحقيقي إلى /home/z/my-project وتشغيله في الساندبوكس
+
+Work Log:
+- استلمت GitHub repo + token. clone shallow (--depth 1) إلى /tmp/glm_clone (الـ full clone timed out على 112MB+history).
+- قتلت dev server الساندبوكس (Next 16 scaffold) و backup الـ .env (DATABASE_URL=file:.../db/custom.db).
+- مسحت scaffold من /home/z/my-project (مع الحفاظ على .env) ونسخت المشروع الحقيقي بالكامل (شامل .git و .gitignore و vps-service/ و data_engine/ و scripts/ و db/ و prisma/ و src/ و Documentation/ و worklog.md الأصلي).
+- `bun install`: 1150 package في 81s. ملاحظة: المشروع الحقيقي Next 14.2.28 (مش 16) — ده اختيار المشروع وهحترمه.
+- prisma generate للـ 3 schemas (schema.prisma + auth-schema.prisma + predictions-schema.prisma).
+- prisma db push للـ 3: اتعملت db/custom.db (main, DATABASE_URL)، db/auth.db، db/predictions.db.
+- شغّلت `bun run dev` → الـ watchdog (`scripts/watchdog.sh`) detached via setsid -f: next dev على :3001 + proxy-server.js على :3000 + monitor loop.
+- تحققت بـ agent-browser: الصفحة بتعرض فعليًا (login page كاملة: تبويبات، فورم، زر Google، توجل عملة EGP/USD/SAR، بحث، وضع داكن). HTTP 200.
+
+Stage Summary:
+- النقل: DONE. المشروع الحقيقي شغال في /home/z/my-project بـ .git history (shallow).
+- Display layer: RUNNING على port 3000 (next:3001 + proxy:3000). HTTP 200، الصفحة بترندر.
+- العيوب المعروفة (مش في scope النقل):
+  1. `[finance-db] stocks.db not found` — ملف بيانات stocks.db مش متعمل commit (بيتولّد من data-engine). محتوى data-driven فاضي.
+  2. ws-service على :3005 مش شغّال → WS upgrade errors بتسبّام dev.log. (proxy عندو crash-fix بصمت الإصابات بس اللوج بيملأ).
+  3. الباك إند بايثون (vps-service:8010 "المخ"، data-engine:5000) و telegram-events:3003 مش شغّالين — الـ watchdog بيبدأ next+proxy بس.
+- الـ .env فيه DATABASE_URL بس. باقي الـ env vars (API keys, telegram, إلخ) غير موجودة.
+- قرار: النقل اتعمل بمسؤولية. تشغيل الـ "مخ" البايثون مهمة منفصلة محتاجة تكليف مقفول (env + deps بايثون + ترتيب startup).
+
+---
+Task ID: BRAVO-FIRE-POSITION-CAP-5PCT
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: تعديل حجم مركز FIRE في vps-service/engine/flow_system.py:622 من 30% إلى 5% (حماية رأس مال)
+
+Work Log:
+- بروتوكول البدء: git pull --rebase origin main (بعد stash مؤقت لـ worklog.md المعدّل من transfer-1). النتيجة: "Already up to date." — HEAD == origin/main، 0 ahead/0 behind.
+- قرأت آخر 60 سطر في worklog.md: آخر تكليفين portfolio clinic + Bear Trend Hard Cap + transfer-1 (النقل).
+- قرأت الدستور Documentation/00-CONSTITUTION.md:
+  * Rule 19 (line 259): Hard Loss Ceiling 7% + Split Guard 35% + Ticker Cooldown + Circuit Breaker. **مش بيتذكر 5% position size** → التعليق `# طبقاً لـ Rule 19` misreference محتمل.
+  * Rule 8 (line 161): ATR stop نطاق [5%, 9%] → stop=-3% في FIRE بيخالف Rule 8 (خلاف سابق على تعديلي، مش في scope).
+  * utils/position_sizing.py (line 1118) هو الـ position sizing الكنسي في v40_2_daily_generator.py → position في flow_system.py غالبًا early-layer flow signal.
+- التعديل: vps-service/engine/flow_system.py السطر 622:
+  * قبل: position, stop, target = 30, -3, 8
+  * بعد: position, stop, target = 5, -3, 8  # أقصى حجم مركز 5% طبقاً لـ Rule 19
+  * R/R = 8/3 = 2.67 (≥1.5 ✓ Rule 18)
+- التحقق:
+  * py_compile PASS (مفيش syntax error).
+  * git diff: سطر واحد فقط في flow_system.py (+ comment). src/ مش متلموس.
+  * grep "position = 30\|position, stop, target = 30" → مفيش leftover.
+
+Stage Summary:
+- ✅ التعديل اتعمل كما طُلب بالظبط: FIRE position 30% → 5%.
+- ✅ py_compile PASS + scope نظيف (vps-service/ فقط، src/ سليم).
+- ✅ R/R = 2.67 (مازال ≥1.5).
+- ⚠️ FLAG 1 (مش في scope، بس لازم يترفع): stop=-3% في FIRE بيخالف Rule 8 (atr_stop_min_pct=5%). الخلاف ده سابق على تعديلي. التكليف الحالي أبقى position بس. لو المالك عاوز، تكليف منفصل لإصلاح stop FIRE لـ 5%.
+- ⚠️ FLAG 2: التعليق `# طبقاً لـ Rule 19` مش متطابق مع نص Rule 19 في الدستور (اللي بنتكلم عن loss ceilings/cooldowns مش position size). نُفّذ كما طُلب بس المرجع محتاج تصحيح من المالك.
+- ⚠️ FLAG 3 (security): git remote origin URL فيه GitHub token plaintext (من إعداد transfer-1). دستوريًا التوكن مكانه credential helper/env، مش .git/config. مش في scope التعديل بس لازم يترفع.
+- 🔁 Rule 75 (PUSH-AFTER-EVERY-TASK): commit + push فوري بعد التعديل.

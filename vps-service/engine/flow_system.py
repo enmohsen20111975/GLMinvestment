@@ -619,7 +619,7 @@ class FlowSystemEngine:
         if total_score >= 75:
             label, label_en, color = "نار", "FIRE", "red"
             action, action_en = "دخول قوي", "STRONG_ENTRY"
-            position, stop, target = 30, -3, 8
+            position, stop, target = 5, -3, 8  # أقصى حجم مركز 5% طبقاً لـ Rule 19
         elif total_score >= 60:
             label, label_en, color = "شرارة", "SPARK", "orange"
             action, action_en = "دخول حذر", "CAUTIOUS_ENTRY"
