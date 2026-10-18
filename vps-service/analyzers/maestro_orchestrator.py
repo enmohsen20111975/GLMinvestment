@@ -3791,14 +3791,15 @@ class MaestroOrchestrator:
                         result.signal_id = None
                         return result
                     # 1ج: enforce R:R ≥ min_rr
-                    # 🔥 P0-v7 TASK #4: min_rr من optimizer_params.json (default 1.5)
-                    #    الـ learning loop يقدر يرفعها (أكثر صرامة) أو يخفضها.
-                    _p07_min_rr = 1.5
+                    # BRAVO-RADAR-PRED-AUDIT-001 Fix 3 (Rule 18 — RR floor 1.8):
+                    #   default اترفع من 1.5 لـ 1.8 + floor إلزامي. لو optimizer_params
+                    #   رجّع قيمة < 1.8 → نرفعها لـ 1.8 (ممنوع أي R/R < 1.8 يخرج).
+                    _p07_min_rr = 1.8
                     if _p07_opt_params:
                         try:
-                            _p07_min_rr = float(_p07_opt_params.get('min_rr_ratio', 1.5) or 1.5)
+                            _p07_min_rr = max(1.8, float(_p07_opt_params.get('min_rr_ratio', 1.8) or 1.8))
                         except (TypeError, ValueError):
-                            _p07_min_rr = 1.5
+                            _p07_min_rr = 1.8
                     _rr_check = enforce_min_rr(_sig_upper, entry_price, target, stop_loss, min_rr=_p07_min_rr)
                     if _rr_check['action'] == 'widen_target' and _rr_check['fixed']:
                         _old_t = target
@@ -3962,12 +3963,13 @@ class MaestroOrchestrator:
                         validate_target_stop_direction,
                     )
                     _sig_final = recommendation.upper()
-                    _final_min_rr = 1.5
+                    # BRAVO-RADAR-PRED-AUDIT-001 Fix 3 (Rule 18 — RR floor 1.8):
+                    _final_min_rr = 1.8
                     if _p07_opt_params:
                         try:
-                            _final_min_rr = float(_p07_opt_params.get('min_rr_ratio', 1.5) or 1.5)
+                            _final_min_rr = max(1.8, float(_p07_opt_params.get('min_rr_ratio', 1.8) or 1.8))
                         except (TypeError, ValueError):
-                            _final_min_rr = 1.5
+                            _final_min_rr = 1.8
 
                     # Direction re-check on final values
                     _final_dir = validate_target_stop_direction(_sig_final, entry_price, target, stop_loss)
