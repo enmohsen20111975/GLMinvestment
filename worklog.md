@@ -69565,3 +69565,62 @@ Stage Summary:
 - ✅ maestro_orchestrator import اتشال من daily_predictor + telegram (2 من 5 live callers disconnected).
 - ⚠️ 3 live callers لسه: stock_analysis_routes (via hunting_engine) + market_scheduler (via background_analyzer) + live_signals/recorder (via crypto_maestro). محتاجين STEP 4-6 (BLOCKED على John decision).
 - 🔁 Push gate: جون وافق على phases → هـ commit + push.
+
+---
+Task ID: MAESTRO-CANCER-1-INVESTIGATE-3CALLERS
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: جون — تحقيق في الـ 3 live callers الباقيين (market_scheduler, stock_analysis_routes, recorder)
+
+Work Log (3 investigations):
+
+=== INVESTIGATION 1: market_scheduler ===
+- جون قال "مش في crontab → غالبًا dead". برافو قال "CRON" — غلط.
+- الحقيقة: market_scheduler **LIVE** — مستورد في main.py:150 + sniper_routes.py:475.
+- main.py هو الـ entry point (ecosystem.config.js L152: script='main.py').
+- market_scheduler بيـ instantiate MarketScheduler + بـ register tick() مع SchedulerManager.
+- market_scheduler._import_engines() L114 بـ import background_analyzer (try/except safe).
+- 🔴 بس: background_analyzer L1378 فيه `return None  # Maestro disabled — V40.2 is the only engine`.
+  → background_analyzer **مش بـ يستدعي maestro.analyze() فعلاً** — الكود بعد return None = DEAD CODE.
+  → الـ import موجود بس الـ call متعطل. maestro_orchestrator بـ يـ load بس ما حدش بـ يناديه.
+- **النتيجة: market_scheduler LIVE بس maestro call جواه DEAD (return None). لو شلنا maestro، market_scheduler هيكمل شغل (background_analyzer هـ catch ImportError + MAESTRO_ORCHESTRATOR_AVAILABLE=False).**
+
+=== INVESTIGATION 2: stock_analysis_routes (via hunting_engine) ===
+- جون قال "helpers بس (_connect, _safe_float...) — أدوات، ممكن متأثرش".
+- الحقيقة: **جون صح**. stock_analysis_routes بـ import بس helpers (L44-46):
+  _connect, _safe_float, _safe_int, _parse_volume, _market_filter, _get_price_stats,
+  _calculate_support_resistance, _get_30d_max_high, STOCKS_DB, PRICE_HISTORY_DB, NEWS_DB, PREDICTIONS_DB
+- **مفيش import لـ gather_context/calculate_personas/generate_narrative** (maestro functions) في stock_analysis_routes.
+- hunting_engine L53 بـ import maestro functions (try/except) + L1066 MaestroHumanContext (try/except).
+  → لو maestro اتشال، hunting_engine هـ set MAESTRO_AVAILABLE=False + الـ helpers اللي stock_analysis_routes بـ يستخدمها لسه شغّالة (مش معتمدة على maestro).
+- **النتيجة: stock_analysis_routes مش هيتكسر لو شلنا maestro. helpers مستقلة.**
+
+=== INVESTIGATION 3: recorder (via crypto_maestro) ===
+- جون قال "ده الـ live الوحيد الواضح".
+- الحقيقة: **recorder مش live** — 0 imports في أي ملف. 0 mentions في crontab/ecosystem.
+  (trade_recorder في market_scheduler/portfolio/ai_routes = module مختلف خالص).
+- 🔴🔴🔴 **crypto_maestro مستقل تمامًا عن maestro_orchestrator** (0 mentions!).
+  → CryptoMaestroOrchestrator class خاص بيه (L124)، فيه regime_detector + analyze methods.
+  → مش بـ inherits من MaestroOrchestrator، مش بـ import منه.
+- **النتيجة: recorder مش live + crypto_maestro مستقل. مفيش blocker هنا.**
+
+Stage Summary — BUILD scope أصغر بكتير:
+
+| Caller | جون's concern | الحقيقة | Blocker? |
+|--------|---------------|---------|----------|
+| market_scheduler | "dead?" | LIVE بس maestro call جواه DEAD (return None) | ❌ NO |
+| stock_analysis_routes | "helpers بس?" | صح — helpers مستقلة | ❌ NO |
+| recorder | "live الوحيد" | مش live + crypto_maestro مستقل | ❌ NO |
+
+🔴 **مفيش BUILD scope!** الـ 3 callers مش بـ يعتمدوا فعليًا على maestro_orchestrator:
+1. market_scheduler: background_analyzer return None (maestro disabled)
+2. stock_analysis_routes: helpers مستقلة (مش maestro functions)
+3. recorder: مش live + crypto_maestro مستقل
+
+**التوصية لجون:**
+- ممكن نـ proceed لـ STEP 4 (kill 13 endpoints) + STEP 5 (kill 4 zombies) + STEP 6 (kill maestro_orchestrator.py) بدون بناء V40.2 equivalents.
+- الـ 4 "zombies" (hunting_engine, unified_maestro, background_analyzer, crypto_maestro) كلها بـ import maestro في try/except → هـ set MAESTRO_AVAILABLE=False + تكمل شغل.
+- crypto_maestro مستقل خالص → مش هيتأثر.
+- hunting_engine helpers لسه شغّالة.
+- background_analyzer return None = مش بـ ينادي maestro أصلاً.
+
+**مفيش فقدان قدرة لأن مفيش حد بـ يستدعي maestro فعلاً (بعد STEP 2+3).**
