@@ -117,40 +117,10 @@ function fetchSingleSparkline(t: string, days: number) {
       }
     }
 
-    // 3. Fallback for market_indices if index has current_value
-    const idxRow = stocksDb.prepare(`
-      SELECT current_value, previous_close, change_percent
-      FROM market_indices
-      WHERE symbol = ? OR name LIKE ?
-    `).get(t.toUpperCase(), `%${t}%`) as { current_value: number; previous_close: number; change_percent: number } | undefined;
+    // ALPHA-FAB-FIX-SPARKLINE-001: removed market_indices fabrication block.
+    // كان بيخترع 15 نقطة سعر من current_value واحد + Math.sin() noise (Rule 27 violation).
+    // لو مفيش OHLCV حقيقي → empty (سياسة الفراغ Rule 27 NO-FAKE-DATA).
     stocksDb.close();
-
-    if (idxRow && idxRow.current_value > 0) {
-      const cur = idxRow.current_value;
-      const prev = idxRow.previous_close || cur;
-      const chgPct = idxRow.change_percent || 0;
-      const pointsCount = Math.min(15, days);
-      const prices: number[] = [];
-      for (let i = 0; i < pointsCount; i++) {
-        const factor = 1 - ((pointsCount - 1 - i) / pointsCount) * (chgPct / 100);
-        const noise = Math.sin(i * 1.2) * 0.003 * cur;
-        prices.push(Number((cur * factor + noise).toFixed(2)));
-      }
-      prices[prices.length - 1] = cur;
-      const result = {
-        ticker: t,
-        prices,
-        min: Math.min(...prices),
-        max: Math.max(...prices),
-        first: prices[0],
-        last: cur,
-        change_pct: chgPct,
-        days: prices.length,
-        source: 'market_indices',
-      };
-      setCache(key, result);
-      return result;
-    }
   } catch {}
 
   const empty = {
