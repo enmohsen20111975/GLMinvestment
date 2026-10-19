@@ -73800,3 +73800,26 @@ Stage Summary — الصورة الكاملة:
 
 الخلاصة للمالك:
 الكود جاهز. المحركات جاهزة. الـ fixes كلها متدفعة. المنصة محتاجة تشغيل على الإنتاج.
+
+---
+Task ID: API-FIX-SHARIA-V82-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — 503 على /api/sharia + 500 على /api/v82. شوف السبب + أصلح.
+
+Work Log:
+- المرحلة 1 (تشخيص):
+  * /api/sharia (503): route بـ read مباشرة من data_engine.db (better-sqlite3). 503 بيرجع لو DB مش موجود OR table مش موجود. على الساندبوكس DB موجودة + tables فيها data (254 rows). على الإنتاج: غالباً DB path مختلف أو better-sqlite3 مش متثبت.
+  * /api/v82 (500): route بـ spawn('python3', v82_analyzer.py). الملف مش موجود! برافو أرشفوه في garage (commit 2eea891). الـ route لسه بـ referenceه → Python fail → 500.
+- المرحلة 2 (fix v82):
+  * ارجعت v82_analyzer.py من archive/garage/ → vps-service/analyzers/.
+  * py_compile PASS ✅.
+- المرحلة 3 (sharia diagnosis):
+  * dbOpen() بـ return null لو file مش موجود → 503.
+  * tableExists بـ return false لو table مش موجود → 503.
+  * على الإنتاج: الـ 503 معناه إن data_engine.db مش موجود في المسار المتوقع (process.cwd()/db/data_engine.db).
+  * الخلاصة: ده إنتاج deployment issue — الـ DB path محتاج يتظبط على الإنتاج. الكود سليم.
+
+Stage Summary:
+- ✅ v82_analyzer.py اتـ restore من garage → /api/v82 هتشتغل.
+- 🟡 /api/sharia الكود سليم — الـ 503 على الإنتاج بسبب DB path. محتاج: تحقق إن db/data_engine.db موجود على الإنتاج + better-sqlite3 متثبت.
+- ⚠️ برافو أرشفت v82_analyzer.py بالغلط في Dead Code Cleanup — الـ route لسه بـ referenceه. ده درس: قبل أرشفة أي ملف، تحقق إن مفيش route بـ referenceه.
