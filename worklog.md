@@ -73267,3 +73267,77 @@ Stage Summary:
 - ✅ Limit at Close = best (Test PF=2.68, Stress 1.5% PF=2.16)
 - ✅ No lookahead (limit order = executable)
 - 🎉 Ready for Paper Trading!
+
+---
+Task ID: BRAVO-REALISTIC-LIMIT-ORDER-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — Realistic Limit Order (corrected logic — no cherry-picking)
+
+Work Log:
+
+- ✅ CORRECTED Limit Order Logic:
+  * Buy Limit at closes[i]
+  * IF low[i+1] <= closes[i] → limit filled → entry = min(opens[i+1], closes[i])
+  * IF low[i+1] > closes[i] → price never reached limit → SKIP
+  * ده = لا lookahead + لا cherry-picking + execution realistic
+
+- 📊 الـ Results (4 scenarios, Train/Test, cost=1.0%):
+
+  | Scenario                    | Period | closed | WR    | PF    | MaxDD | Return   |
+  |-----------------------------|--------|--------|-------|-------|-------|----------|
+  | Next-Day Open (realistic)   | Train  |    245 | 37.6% | 1.09  | 3.9%  | +2.38%   |
+  | Next-Day Open (realistic)   | Test   |    175 | 41.7% | 1.48  | 1.6%  | +8.57%   |
+  | **Realistic Limit**         | Train  |    211 | 36.0% | 1.11  | 2.8%  | +2.53%   |
+  | **Realistic Limit**         | Test   |    153 | 47.7% | **1.92** | 1.7% | **+12.18%** |
+  | Wait 1 Rebound              | Train  |    188 | 37.2% | 1.04  | 3.7%  | +0.77%   |
+  | Wait 1 Rebound              | Test   |    140 | 40.0% | 1.13  | 4.0%  | +1.92%   |
+  | Close (LOOKAHEAD ref)       | Train  |    246 | 41.9% | 1.55  | 3.2%  | +12.63%  |
+  | Close (LOOKAHEAD ref)       | Test   |    169 | 49.7% | 2.20  | 2.2%  | +15.67%  |
+
+- 📊 Stress Test على Realistic Limit:
+  | Cost  | Train PF | Test PF | Test Return |
+  |-------|----------|---------|-------------|
+  | 1.0%  | 1.11     | 1.92    | +12.18%     |
+  | 1.5%  | 0.90     | 1.55    | +8.36%      |
+
+- 🔥 الـ findings:
+
+  1. ✅ Realistic Limit = الأفضل realistic!
+     * Test PF = 1.92 > 1.3 ✅
+     * Test Return = +12.18%
+     * Test MaxDD = 1.7% < 15% ✅
+     * Stress 1.5%: Test PF = 1.55 > 1.0 ✅
+
+  2. ✅ Limit Order بيضيف قيمة:
+     * Realistic Limit PF = 1.92 vs Next-Day Open PF = 1.48
+     * الفرق = +0.43 PF (limit better)
+     * الـ limit بـ يـدخل بـ سعر أحسن لما السعر يوصل لـ limit
+
+  3. ⚠️ Close (LOOKAHEAD ref) = 2.20 (أعلى من Realistic Limit 1.92)
+     * الـ lookahead لسه بـ يـدي أفضل بـ 0.28 PF
+     * بس الـ Realistic Limit بـ يـحقق 87% من الـ lookahead edge
+     * ده = الـ limit بـ يـحافظ على معظم الـ edge
+
+  4. ⚠️ Train = marginal (PF = 1.11)
+     * Train PF = 1.11 → barely profitable
+     * Test PF = 1.92 → profitable
+     * Test > Train → ممكن يكون حظ (2026 = سنة جيدة)
+
+  5. ⚠️ Stress 1.5%: Train PF = 0.90 (خسارة)
+     * بس Test PF = 1.55 (مربح)
+     * التناقض: Train خسران + Test رابح = غير مستقر
+
+- 🎯 الاستنتاج:
+
+  ✅ Realistic Limit PASSES: PF = 1.92 > 1.3
+  ✅ Limit adds value: +0.43 PF over Next-Day Open
+  ✅ No lookahead + no cherry-picking
+  ⚠️ Train marginal (PF = 1.11) — Test > Train = possible luck
+  ⚠️ Stress 1.5%: Train PF = 0.90 — not robust on Train
+
+Stage Summary:
+- ✅ Realistic Limit: Test PF=1.92, Return=+12.18%, MaxDD=1.7%
+- ✅ No lookahead (low[i+1] <= closes[i] → fill at min(open, limit))
+- ✅ Limit adds +0.43 PF over Next-Day Open
+- ⚠️ Train marginal (PF=1.11) — Test > Train
+- ⚠️ Stress 1.5%: Train PF=0.90 — not robust
