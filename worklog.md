@@ -68052,3 +68052,46 @@ Stage Summary:
 - ⚠️ FLAG 4 (Rule 20 — سابق): Node بيعمل computation بدل Python. لو محتاج إصلاح، تكليف منفصل لـ Python endpoint في vps-service/.
 - ⚠️ FLAG 5 (EGX real scrape): parser الحالي بيسحب الجنسية بس. لو EGX site متاح، ممكن توسيع الـ parser ليسحب الـ type breakdown كمان.
 - 🔁 Rule 75: commit + push فوري.
+
+---
+Task ID: BRAVO-SANDBOX-RESET-RECOVERY-1
+Agent: Bravo (Z.ai Code — backend recovery)
+Task: محسن — الساندبوكس اترست. استعادة كل الـ DBs + الـ modifications + الـ scripts من GitHub + git history.
+
+Work Log:
+- 🔥 اكتشاف الـ reset: كل الـ modifications (breakout_signal + Kill Criteria + Breakout Fusion) + scripts (axis1, breakout_audit, trend_following, paper_trading_live) + DBs (price_history + stocks + intraday + predictions) اتمسحت.
+- ✅ استخراج predictions.db (281MB) من data/predictions.db.zip
+- ✅ استخراج auth.db + stocks.db (partial) من db_backup_2026-10-08 parts
+- 🔥 اكتشاف backup جديد على GitHub: db_backup_2026-10-18T14-54-47 (8 parts + 16 split files)
+- ✅ سحب كل الـ 16 part من GitHub (261MB إجمالي)
+- ✅ تجميع الـ split parts (part2: 5 splits, part4: 2 splits, part6: 2 splits, part7: 3 splits)
+- ✅ استخراج كل الـ DBs:
+  * price_history.db (336MB) — 1,309,893 صف، 1,557 ticker، آخر date 2026-10-18 ✅
+  * predictions.db (278MB) — 46 tables، 1,491 توقع، آخر 2026-10-18 ✅
+  * intraday.db (428MB) — 6 tables (stock + crypto + commodity intraday) ✅
+  * data_engine.db (461MB) — 29 tables (crypto + gold + forex + fundamentals) ✅
+  * stocks.db (28MB) — معطوب (malformed) → تم rebuild من data_engine.db (1,098 سهم) ✅
+  * paper_trading.db + metrics.db + news.db + historical.db + decision_log.db + crypto.db ✅
+- ✅ استرجاع الـ analysis scripts من git history:
+  * scripts/axis1_kill_context.py (555 lines) — من commit 06f47b7
+  * scripts/breakout_audit.py (588 lines) — من commit fb1251c
+  * scripts/trend_following_test.py (457 lines) — من commit fa2f8e9
+  * scripts/paper_trading_live.py (690 lines) — من commit a2d0352
+- ✅ إعادة إنشاء breakout_signal.py (module جديد — 200 سطر)
+- ✅ إعادة تحديث prediction_tracker.py (Kill Criteria الجديد: Risk + Warning + Performance + MarketContext)
+- ✅ إعادة تحديث daily_predictor.py (Breakout Fusion — env var V402_BREAKOUT_FUSION)
+- ✅ إعادة تحديث paper_trading_live.py (Kill Criteria الجديد + إصلاح constants)
+- ✅ py_compile شامل: كل 8 modules PASS
+- ✅ test imports: breakout_signal + prediction_tracker + daily_predictor + backtest_engine كلها PASS
+- ✅ تشغيل axis1 test بـ الـ restored data: PF=3.33, Alpha=+18.70% (مقارنة بـ القديم PF=2.64, Alpha=+22.87% — لسة ممتاز)
+
+Stage Summary:
+- ✅ كل الـ DBs اتـrestored من GitHub (1.5GB إجمالي)
+- ✅ كل الـ analysis scripts اتـrestored من git history
+- ✅ كل الـ modifications (breakout_signal + Kill Criteria + Breakout Fusion) اتـrestored
+- ✅ backtest_engine syntax fix لسة موجود (محفوظ من قبل الـ reset)
+- ✅ axis1 test: PF=3.33, Alpha=+18.70% — النظام شغّال بـ الـ restored data
+- 🔥 الـ data أحدث من قبل (آخر date 2026-10-18 بدل 2026-10-15)
+- ⚠️ stocks.db اتعمله rebuild من data_engine.db (1,098 سهم) — ممكن يكون ناقص شوية columns
+- ⚠️ auth.db لسه معطوب (مش critical للـ analysis)
+- 🎯 النظام جاهز للتشغيل بعد الـ reset

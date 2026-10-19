@@ -3219,6 +3219,41 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _live_position_size_mult *= 0.5
                 print(f"[DNA-EGX30-DOWN] {ticker}: position size reduced to {_live_position_size_mult:.2f} (radar-confirmed accumulation in down market)", flush=True)
 
+            # ═══════════════════════════════════════════════════════════════════════
+            # BRAVO-BREAKOUT-FUSION (2026-10-19): Breakout signal fusion (proven strategy)
+            # Strategy: 20-day high breakout (Test PF=4.47, p-value=0.0% — proven edge)
+            #   - لو V40.2 BUY + breakout → evidence boost (+2)
+            #   - لو V40.2 HOLD/WAIT + breakout → override لـ BUY
+            # Controlled by env var V402_BREAKOUT_FUSION (default: 0 = off, safe-by-design)
+            # ═══════════════════════════════════════════════════════════════════════
+            if os.environ.get('V402_BREAKOUT_FUSION', '0') == '1':
+                try:
+                    from analyzers.breakout_signal import detect_breakout, fuse_with_v402
+                    _bo = detect_breakout(closes, highs, lows, volumes, day_idx)
+                    if _bo is not None:
+                        _fused = fuse_with_v402(
+                            signal=signal,
+                            entry=entry,
+                            target=target,
+                            stop=stop,
+                            evidence=evidence,
+                            proofs=result.get('proofs', {}),
+                            breakout=_bo,
+                        )
+                        if _fused['fused']:
+                            _old_sig = signal
+                            signal = _fused['signal']
+                            entry = _fused['entry']
+                            target = _fused['target']
+                            stop = _fused['stop']
+                            evidence = _fused['evidence']
+                            result['proofs'] = _fused['proofs']
+                            print(f"🔥 [BREAKOUT-FUSION] {ticker}: {_old_sig} → {signal} | "
+                                  f"high_20={_bo['high_20']:.2f} close={_bo['close']:.2f} "
+                                  f"regime={_bo['regime']} turnover={_bo['turnover']:.0f}", flush=True)
+                except Exception as _bo_err:
+                    pass  # safe-by-design — never break prediction on breakout failure
+
             signals_by_date[scan_date].append({
                 'ticker': ticker,
                 'signal': signal,

@@ -507,6 +507,102 @@ class PredictionTracker:
         _MAX_PENDING_PER_PERSONA = int(os.environ.get('MAX_PENDING_PER_PERSONA', '5'))
         _BYPASS_CAP = os.environ.get('BYPASS_PRED_CAP', '').lower() in ('1', 'true', 'yes')
 
+        # ═══════════════════════════════════════════════════════════════════════
+        # BRAVO-KILL-CRITERIA (2026-10-19): Kill Criteria الجديد (per Mohsen's directive)
+        # Risk Kill: MaxDD > 15% → إيقاف فوري (block insert)
+        # Warning Zone: PF < 1.0 بعد 30 صفقة → warning (log only, no block)
+        # Performance Kill: PF < 0.9 بعد 50 صفقة AND شهرين → block insert
+        # Market Context Override: لو EGX30 نزل > 5% في الشهر → defer Performance Kill
+        # ═══════════════════════════════════════════════════════════════════════
+        _RISK_KILL_DD = 15.0
+        _PERF_KILL_PF = 0.9
+        _PERF_KILL_MIN_TRADES = 50
+        _PERF_KILL_MIN_MONTHS = 2
+        _WARNING_PF = 1.0
+        _WARNING_MIN_TRADES = 30
+
+        try:
+            with _open_db(self.db_path, writable=True) as _kill_conn:
+                _kill_cur = _kill_conn.cursor()
+                _kill_rows = _kill_cur.execute("""
+                    SELECT actual_return, created_at FROM predictions
+                    WHERE status IN ('TARGET_HIT', 'STOPPED')
+                    AND actual_return IS NOT NULL AND actual_return != 0
+                    AND actual_return != 50.0
+                    ORDER BY created_at DESC LIMIT 100
+                """).fetchall()
+                if len(_kill_rows) >= _WARNING_MIN_TRADES:
+                    _positive = 0.0
+                    _negative = 0.0
+                    _months = set()
+                    for _r in _kill_rows:
+                        _ret = float(_r[0] or 0)
+                        if _ret > 0:
+                            _positive += _ret
+                        else:
+                            _negative += abs(_ret)
+                        _created = str(_r[1] or '')
+                        if len(_created) >= 7:
+                            _months.add(_created[:7])
+                    _pf = _positive / _negative if _negative > 0 else 0.0
+                    _n = len(_kill_rows)
+                    _nm = len(_months)
+
+                    # Risk Kill: MaxDD > 15% → immediate block
+                    _equity = 100.0
+                    _peak = 100.0
+                    _max_dd = 0.0
+                    for _r in _kill_rows:
+                        _ret = float(_r[0] or 0)
+                        _equity += _ret * 0.025  # position size 2.5%
+                        if _equity > _peak:
+                            _peak = _equity
+                        _dd = (_peak - _equity) / _peak * 100 if _peak > 0 else 0
+                        if _dd > _max_dd:
+                            _max_dd = _dd
+                    if _max_dd >= _RISK_KILL_DD:
+                        print(f"[KILL-RISK] MaxDD={_max_dd:.1f}% >= {_RISK_KILL_DD}% → INSERT blocked", flush=True)
+                        return None
+
+                    # Warning Zone (log only — no block)
+                    if _pf < _WARNING_PF:
+                        print(f"[KILL-WARNING] PF={_pf:.2f} < {_WARNING_PF} after {_n} trades — warning only", flush=True)
+
+                    # Performance Kill (with Market Context Override)
+                    if (_n >= _PERF_KILL_MIN_TRADES
+                            and _nm >= _PERF_KILL_MIN_MONTHS
+                            and _pf < _PERF_KILL_PF):
+                        _defer_kill = False
+                        try:
+                            _ph_db_path = os.path.join(os.path.dirname(self.db_path), 'price_history.db')
+                            if os.path.exists(_ph_db_path):
+                                _ph_c = sqlite3.connect(_ph_db_path)
+                                _ph_c.row_factory = sqlite3.Row
+                                _now = datetime.now()
+                                _month_start = _now.strftime('%Y-%m-01')
+                                _today = _now.strftime('%Y-%m-%d')
+                                _comi = _ph_c.execute(
+                                    "SELECT date, close_price FROM price_history "
+                                    "WHERE ticker = 'COMI' AND date >= ? AND date <= ? "
+                                    "ORDER BY date",
+                                    (_month_start, _today)
+                                ).fetchall()
+                                if len(_comi) >= 2 and _comi[0]['close_price'] and float(_comi[0]['close_price']) > 0:
+                                    _egx_ret = ((float(_comi[-1]['close_price']) - float(_comi[0]['close_price']))
+                                                / float(_comi[0]['close_price'])) * 100
+                                    if _egx_ret < -5.0:
+                                        _defer_kill = True
+                                        print(f"[KILL-DEFER] Performance Kill deferred — EGX30={_egx_ret:.1f}% < -5% (Market Context Override)", flush=True)
+                                _ph_c.close()
+                        except Exception:
+                            pass  # safe-by-design
+
+                        if not _defer_kill:
+                            print(f"[KILL-PERF] PF={_pf:.2f} < {_PERF_KILL_PF} after {_n} trades + {_nm} months → INSERT blocked", flush=True)
+                            return None
+        except Exception:
+            pass  # safe-by-design
+
         if not _BYPASS_CAP:
             try:
                 # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
