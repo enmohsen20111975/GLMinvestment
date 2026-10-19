@@ -419,3 +419,29 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - **TradingView هو الأساس** (زي ما المالك قال) — عبر `tradingview_ta` في `market_scheduler.py`. EGXPilot ميت بس مش أزمة.
 - **الـ data layer متناسق**: الـ dead-DB contradiction اتحلّ + telegram على V40.2 + live source شغّال.
 - باقي: فحص أعمق للـ sub-screens (tabs جوه stock detail + specialist analysis).
+
+---
+
+## 20. CUSTOMER AUDIT (جون — عميل مدقق) — 2026-10-19
+
+### 🔴 MISTAKES found in aiPrediction (predictions.db):
+| # | الغلطة | العدد | الخطورة |
+|---|---|---|---|
+| 1 | BUY entry >= target (مستحيل — target تحت entry) | 16 | 🔴 CRITICAL |
+| 2 | BUY stop >= entry (وقف خسارة فوري) | 13 | 🔴 CRITICAL |
+| 3 | NULL/0 entry/stop/target | 3 | 🔴 CRITICAL |
+| 4 | DCRC +73% daily (مشبوه — data error/corporate event) | 1 | 🟡 HIGH |
+| 5 | R/R = 0 لكل 2613 (backup — laptop متعملها backfill) | 2613 | 🟡 backup-timing |
+
+**مجموع predictions واخمة: 32 من 2613.** العميل بـ يـ تبع الـ recommendations دي بـ يدخل صفقات خاسرة.
+
+### ✅ Sليم:
+- R/R < 1.8: 0 violations (بس R/R=0 على backup).
+- stale: 3 أسهم بس (من 1205).
+- numeric tickers: أسهم سعودية (Tadawul) — مش garbage.
+- COMI live/historical: intraday vs daily (متوقع).
+
+### Action مطلوب:
+- برافو/المالك: تنظيف الـ 32 predictions الواخمة (16 entry>=target + 13 stop>=entry + 3 NULL) — DELETE or QUARANTINE + regenerate بـ geometry صحيح.
+- DCRC +73%: verify (corporate action ولا data error؟).
+- R/R backfill: على laptop/production (الـ scripts بتاعت برافو — DATASET-1).
