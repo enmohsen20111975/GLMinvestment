@@ -71557,3 +71557,55 @@ Stage Summary:
 - 🟡 NEEDS-BRAVO: Bug 2 — لو entry_price_min/max + support/resistance ×2 مفروض تكون في predictions.db → تکلیف migration لبرافو. لو لأ → الكود کده صح (null-guarded).
 - 🟡 tsc codebase-wide: 1679 pre-existing errors (مش نطاق ألفا) — تکلیف منفصل لو المالك عاوز.
 - ⚠️ ما عملتش push (Rule 75 معلّقة — انتظر قرار المالك).
+
+---
+Task ID: STOCKS-DEDUP-A-1 (مراحل 1-3)
+Agent: Bravo proxy (general-purpose، شغل برافو لأنها مشغولة في جراحة)
+Task: تشخيص 52 زوج alias + canonical map + scraper fix (المرحلة 4 migration محظورة)
+
+Work Log:
+- استلمت التکلیف (rich box في agent-ctx/STOCKS-DEDUP-A-1-bravo.md). قرأت JOHN-PROFILE + 00-CONSTITUTION (Rules 1/4/17/25/27/46/67) + ذيل worklog.md. النطاق: vps-service/ + scripts/ + db/ (read-only) + data_engine/. محظور: لمس src/، لمس DBs (SELECT بس)، force push، except:pass، TODO، invent canonical.
+- المرحلة 0 (تشخيص root cause — فحص data_engine.db + stocks.db):
+  * فحصت db/stocks.db.stocks (schema: 60 columns، 1240 rows) + db/data_engine.db.stocks (schema: 20 columns، 1098 rows).
+  * كشفت إن المشكلة في data_engine.db.stocks: 82 row عندها name_ar = "<SYMBOL><name>D" (ticker prefix + truncated name + trailing D). الـ alias rows عندها market='EGX' (إنجليزي) + last_update=None (stale)، بينما الـ canonical rows عندها market='مصر' (عربي) + last_update حديث.
+  * ربطت الـ bug بـ comprehensive_production_fix.py:486-545 اللي وثّق إن الـ OLD tradingview_scraper.py كان بـ يستخدم aTags[0].textContent اللي بـ يدمج ticker+name+D. الـ fix الحالي (post-comprehensive_production_fix) بـ يستخدم a[href*="/symbols/"] كـ primary path + regex fallback. الـ fallback regex `^[A-Z0-9_]{2,8}` لسه عنده latent bug (greedy match بـ ياخد أول حرف من اسم الشركة).
+  * كشفت إن clean_merged_tickers.py بـ ينظّف الـ ticker/symbol column بس، ما بـ يلمسش name_ar — فالـ name_ar لسه فيه الـ concat الأصلي.
+- المرحلة 1 (تشخيص كامل + alias map):
+  * كتبت scripts/diagnose_alias_duplicates.py (715 سطر). مسارات relative (Path(__file__).resolve().parents[1]). DB read-only (sqlite3 file:...?mode=ro URI).
+  * الـ script بـ يكتشف الأزواج بـ 4 معايير: (a) name متطابق، (b) name_ar متطابق، (c) truncation pattern (name = other name[1:])، (d) ticker-prefix pollution في name_ar.
+  * بـ يستخدم union-find لـ clustering، وبـ يـ emit pair records لكل cluster.
+  * الـ output: JSON في scripts/output/alias_pairs_<timestamp>.json + summary.txt.
+  * الاختبار: 126 pairs detected (122 clear + 4 ambiguous) — way above الـ 52+ bar.
+- المرحلة 2 (تحديد canonical ticker لكل زوج):
+  * كتبت _score_row (11 signals: name_ar_has_arabic +3، name_first_char_uppercase +1، name_differs_from_ticker +1، ticker_short_alpha_official_style +1، name_ar_ticker_prefix_pollution -5، name_is_merged_ticker_remainder -5، name_first_char_lowercase_truncation -2، name_ar_is_english_swap -1، name_ar_null_or_empty -1، ticker_isin_like_egs_prefix -2، ticker_has_r2_suffix -2).
+  * كتبت _break_tie_by_data_quality (volume > last_update > ticker length) مع _is_likely_corrupted_volume (يكتشف avg_volume bleed-through: float < 100).
+  * كتبت guardين لـ Rule 27 (NO-FAKE-DATA):
+    - FALSE_POSITIVE_GUARD: لو name fields في scripts مختلفة (عربي vs لاتيني) AND shared name_ar مش بـ يطابق أي name → غالباً شركتين مختلفتين بـ يتشاركوا name_ar مضروب (زي MNHD/MASR و PACL/EGCH).
+    - TRANSLATION_PAIR_GUARD: لو name fields في scripts مختلفة AND shared name_ar بـ يطابق واحد منهم → translation pair (زي KAHA/POUL و CALT/COSG) — الـ data وحده ما بـ يقدرش يحدد أنهي canonical.
+  * النتيجة: 122 clear decisions (high confidence) + 4 ambiguous (مرفوعة لـ جون).
+- المرحلة 3 (إصلاح scraper source bug):
+  * حدّدت الـ bug في data_engine/scrapers/tradingview_scraper.py: الـ fallback regex `^[A-Z0-9_]{2,8}` greedy بـ يـ over-match (زي "LUTSL" من "LUTSLotus").
+  * أصلحت الـ JS extraction logic:
+    - Primary path: a[href*="/symbols/"] (آمن — URL parsing).
+    - Fallback 1: `^[A-Z]{2,8}` + CamelCase-boundary trim (لو الحرف اللي بعد الـ match lowercase، trim آخر حرف من sym — زي format_clean_ticker في clean_merged_tickers.py).
+    - Fallback 2: `^\d{4,5}` (TADAWUL numeric tickers).
+    - Fallback 3: `^[A-Z0-9_]{2,8}` (last resort، backward compat).
+    - Name guard: لو name بـ يبدأ بـ sym + remainder uppercase، strip الـ sym prefix.
+  * أضفت Python-side guard `_is_polluted_scrape_record` في save_to_db: لو name بـ يبدأ بـ symbol + بـ يخلص بـ 'D' + len > symbol+2 → skip + log warning. ده بـ يمنع regression مستقبلاً.
+  * الاختبار (inline test، 3 suites):
+    - Test 1: 17 polluted records (LUTSL/LUTSLotus...D، GTHEG/GTHEGGlobal...D، RRMTV/RRMTVRowad...D، EEEP/EEEPEgypt...D، ...) → كلها True ✓.
+    - Test 2: 13 clean records (COMI/البنك التجاري الدولي، LUTS/Lotus...، EFG/EFG Holding، EFIH/e-finance...، IWM/iShares...) → كلها False ✓ (مفيش false positives).
+    - Test 3: 15 JS extraction cases (LUTSLotus→LUTS، GTHEGGlobal→GTHEG، GTHEGlobal→GTHE، SHUAIBA→SHUAIBA، 6022 Armah→6022، ...) → كلها PASS ✓.
+
+Stage Summary:
+- المرحلة 1: 126 pairs detected (125 clusters) في scripts/output/alias_pairs_20261019T131938Z.json. breakdown: 63 legacy_tradingview_scraper_bug + 46 alias_has_null_name_ar + 8 alias_name_ar_is_english_swap + 7 manual_review_match + 2 normalized_name_match.
+- المرحلة 2: 122 clear canonical decisions (high confidence) + 4 ambiguous (مرفوعة لـ جون). كل زوج clear ليه canonical_decision + alias_to_archive + decision_reason + decision_confidence موثّقين في الـ JSON.
+- المرحلة 3: scraper bug متصلّح في data_engine/scrapers/tradingview_scraper.py. الـ fix بـ يـ harden الـ JS extraction (CamelCase-boundary trim) + بـ يضيف Python guard _is_polluted_scrape_record اللي بـ يـ skip أي record فيه name = "<SYMBOL>...D" pattern. الـ guard اتعمله test بـ 17 polluted + 13 clean cases → ALL PASS.
+- أزواج مش واضحة محتاجة قرار جون (4):
+  1. MNHD vs MASR (EGX) — FALSE_POSITIVE: غالباً شركتين مختلفتين (Madinet Nasr Housing vs Egyptian Housing) بـ يتشاركوا name_ar مضروب='مدينة مصر للإسكان والتعمير'.
+  2. KAHA vs POUL (EGX) — TRANSLATION_PAIR: name fields في scripts مختلفة (English 'Cairo Poultry' vs Arabic 'القاهرة للدواجن'). POUL مش EGX ticker رسمي (KAHA هو الـ official). محتاج John يقرر بـ external EGX listing lookup.
+  3. CALT vs COSG (EGX) — TRANSLATION_PAIR: name fields في scripts مختلفة (English 'Cairo Oils & Soap' vs Arabic 'القاهرة للزيوت والصابون'). محتاج John يقرر.
+  4. PACL vs EGCH (EGX) — FALSE_POSITIVE: غالباً شركتين مختلفتين (Paints & Chemicals/PAKIN vs Egyptian Chemical Industries/KIMA) بـ يتشاركوا name_ar مضروب='الصناعات الكيماوية المصرية - كيما'.
+- py_compile: scripts/diagnose_alias_duplicates.py PASS ✓ | data_engine/scrapers/tradingview_scraper.py PASS ✓ (مع SyntaxWarning pre-existing على \/ في JS regex string — مش من شغلي).
+- ما لمستش أي DB (SELECT بس — Rule 1). ما لمستش src/ (نطاق ألفا). ما عملتش push (Rule 75 معلّقة — انتظر قرار جون).
+- ⛔ المرحلة 4 (migration) محظورة — محتاجة إذن المالك. الـ alias_pairs JSON جاهز لـ جون يـ review قبل الـ migration.
