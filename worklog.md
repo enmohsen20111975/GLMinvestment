@@ -70630,3 +70630,23 @@ Stage Summary:
 - ✅ py_compile PASS + canonical library test PASS.
 - ⚠️ خطوات 2-5 لسه (backtest_engine + master_analyzer + market_regime + core_scoring).
 - ⚠️ خطوة 6: V40.2 egksco → price_history.db (DATA-LAYER-1).
+
+---
+Task ID: BRAVO-INDICATOR-UNIFY-2
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — خطوة 2: backtest_engine.py توحيد
+
+Work Log:
+- backtest_engine.py: استبدال 4 implementations:
+  * calc_sma → delegates to canonical analyzers.indicators.ma.sma per point
+  * calc_ema → delegates to canonical analyzers.indicators.ma.ema per point
+  * _calc_rsi_series → delegates to canonical analyzers.indicators.rsi.calc_rsi per point
+  * calc_atr → delegates to canonical analyzers.indicators.atr.calc_atr per point
+  * أضفت import للـ canonical library.
+  * py_compile PASS.
+  * test: SMA=119.75, EMA=119.75, RSI=100.0, ATR=2.0 ✓
+
+Stage Summary:
+- ✅ خطوة 2: backtest_engine.py — 4 implementations → canonical delegates.
+- ✅ إجمالي: 10/19 duplicates fixed (steps 1+2).
+- ⚠️ خطوات 3-5 لسه.
