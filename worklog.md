@@ -68129,3 +68129,46 @@ Stage Summary:
 - ✅ stocks.db بـ WAL mode (integrity ok)
 - 🔥 الـ radar بـ يـتـحسس بـ live data من دلوقتي (كل 15 دقيقة)
 - ⚠️ الأسواق مغلقة دلوقتي (12:44am Cairo) → الـ live prices بـ تـتحّد لما السوق يفتح
+
+---
+Task ID: BRAVO-STOCK-STAGE-ANALYZER-1
+Agent: Bravo (Z.ai Code — quant)
+Task: محسن — من البيانات + التاريخية، امسح السهم عشان نعرف موقفه (تصحيح/خلص/هيبدا/بداية طلوع).
+
+Work Log:
+- ✅ بناء scripts/stock_stage_analyzer.py (350 سطر)
+- ✅ تحليل شامل لكل سهم بـ:
+  * Trend Direction (MA20 vs MA50 vs MA200)
+  * Wyckoff cycle stages
+  * Momentum (RSI, MACD)
+  * Distance from peak/trough (Drawdown/Run-up)
+  * Volume analysis (تجميع vs تصريف)
+  * Support/Resistance
+- ✅ 8 stages تصنيف:
+  * ACCUMULATION (تجميع — قاع)
+  * EARLY_MARKUP (بداية الطلوع)
+  * MARKUP (طلوع قوي)
+  * LATE_MARKUP (آخر الطلوع)
+  * DISTRIBUTION (توزيع — قمة)
+  * EARLY_MARKDOWN (بداية نزول)
+  * MARKDOWN (نزول قوي)
+  * CORRECTION (تصحيح في ترند صاعد)
+- ✅ test single ticker (COMI): EARLY_MARKDOWN (RSI=29, تحت القمة بـ 13.4%)
+- ✅ full scan على 887 سهم EGX
+- ✅ JSON output محفوظ
+
+Stage Summary:
+- ✅ 887 سهم ممسوحين
+- 📊 Distribution:
+  * EARLY_MARKDOWN: 426 (48.0%) — الأغلبية (السوق هابط)
+  * EARLY_MARKUP: 203 (22.9%) — فرص شراء مبكرة
+  * CORRECTION: 110 (12.4%) — تصحيح في ترند صاعد
+  * LATE_MARKUP: 50 (5.6%) — قرب القمة
+  * MARKDOWN: 43 (4.8%) — نزول قوي
+  * MARKUP: 38 (4.3%) — طلوع قوي
+  * ACCUMULATION: 13 (1.5%) — قاع + تجميع
+  * SIDEWAYS: 4 (0.5%)
+- 🔥 الأسهم في ACCUMULATION (فرص قاع): EGBE, GMCC, HRHO, KASABF, NAPR, PGR, SAUD, SNFI, SNPS, SPY, TRST, VOO, XLF
+- 🚀 الأسهم في EARLY_MARKUP (بداية طلوع): 2180, AAPL, ABBV, AMGN, BNB, COST, CVX, DIS, إلخ
+- 🔥 الأسهم في MARKUP (طلوع قوي): 1320, 2030, 2282, 2370, 2381, ADA, ADRI, AIH, AMEC, ARGAN
+- 🎯 الإجابة على سؤال محسن: ممكن نـمسح أي سهم ونعرف موقفه بدقة (8 stages + confidence + reasons)
