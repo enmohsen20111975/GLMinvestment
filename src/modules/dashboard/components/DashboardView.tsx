@@ -46,6 +46,8 @@ import { StockSelector } from '@/modules/stock-analysis/components/StockSelector
 import { toast } from 'sonner';
 import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
 import { DevelopmentNotice } from '@/modules/dashboard/components/DevelopmentNotice';
+// ALPHA-UX-FIX-2: guest signup enticement banner (shows only for unauthenticated users)
+import { GuestSignupBanner } from '@/components/auth/GuestSignupBanner';
 // MultiMarketWidget اتشال من هنا — بقى في شاشة #market-depth المنفصلة (Owner directive).
 // Owner directive: "الأسواق المتعددة → عملات + ذهب فقط" بقت شاشة مستقلة مع حركة
 // السيولة + تدفّق المستثمرين + ضغط الجلسة (عمق السوق من قائمة الأعلى).
@@ -315,6 +317,8 @@ export function DashboardView() {
  title={t('dashboard.title')}
  subtitle={`${t('dashboard.subtitle')} — ${marketNameAr}`}
  />
+ {/* ALPHA-UX-FIX-2: guest signup enticement (shows only for unauthenticated users) */}
+ <GuestSignupBanner />
  <div className="px-3 md:px-4 print:hidden">
  {/* Quick Stock Lookup */}
  <Card className="mb-3 py-0 gap-0">
