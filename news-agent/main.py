@@ -70,13 +70,17 @@ class NewsAgent:
         self.running  = False
 
         self.collectors = [WebScraper(self.store), RSSCollector(self.store)]
-        if os.getenv('TELEGRAM_WEB_ENABLED', '1').lower() in ('1', 'true', 'yes', 'on'):
+        # DATA-ENGINE-UNIFY-1 / News: التليجرام معطّل — التركيز على السحب من المواقع
+        # المالك: "مش عايز أخبار من التليجرام، التركيز على السحب من المواقع"
+        # لو محتاجين تفعيله تاني: TELEGRAM_WEB_ENABLED=1
+        if os.getenv('TELEGRAM_WEB_ENABLED', '0').lower() in ('1', 'true', 'yes', 'on'):
             self.collectors.append(TelegramWebCollector(self.store))
         telegram_creds = all([
             os.getenv('TELEGRAM_API_ID'),
             os.getenv('TELEGRAM_API_HASH'),
         ])
-        if telegram_creds:
+        # Telethon (MTProto) معطّل كمان — لو محتاجينه: TELEGRAM_MTPROTO_ENABLED=1
+        if telegram_creds and os.getenv('TELEGRAM_MTPROTO_ENABLED', '0').lower() in ('1', 'true', 'yes'):
             self.collectors.insert(0, TelegramCollector(self.store))
         if os.getenv('ENABLE_EGYPTIAN_SOURCES', '0').lower() in ('1', 'true', 'yes'):
             self.collectors.append(EgyptianSourcesCollector(self.store))

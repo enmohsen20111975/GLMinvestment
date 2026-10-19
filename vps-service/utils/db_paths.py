@@ -115,7 +115,10 @@ class DBPaths:
     # Aliases for legacy code (توجّه للـ canonical source — updated P0-8-DB-UNIFY 2026-09-27)
     GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices — canonical: data_engine.db (187K rows). Dropped: stocks.db (3 stale rows).
     HISTORICAL_DB: str = DATA_ENGINE_DB   # historical_data (ticker format رقمي)
-    NEWS_DB: str = STOCKS_DB              # news still in stocks.db (target: content.db).
+    # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+    # Was STOCKS_DB (phantom — stocks.db has no market_news table, only an empty legacy table).
+    # news.db.market_news is the canonical source (1019 rows, written by news-agent db_writer).
+    NEWS_DB: str = _resolve("NEWS_DB", "news.db")
     COMMUNITY_DB: str = CONTENT_DB        # community tables in content.db
     ANALYTICS_DB: str = STOCKS_DB          # cached_analysis — canonical: stocks.db (143 rows). Dropped: predictions.db (0 rows, fallback-cache recreated by migrator).
     CRYPTO_LEARNING_DB: str = PREDICTIONS_DB  # crypto_learning tables in predictions.db
@@ -204,7 +207,7 @@ class DBPaths:
             'egksco_sync_status', 'market_indices', 'market_regime_log',
             'system_settings', 'tuned_predictions_summary',
             'real_evaluated_predictions', 'analytics_events',
-            'gold_price_history', 'currency_rates', 'news', 'news_items',
+            'gold_price_history', 'currency_rates', 'news',
         }
 
         # predictions.db tables (canonical — predictions + learning + outcome logs)
@@ -229,11 +232,15 @@ class DBPaths:
 
         # content.db tables (target architecture — not yet on production)
         content_tables = {
-            'market_news', 'telegram_messages', 'scraping_status',
+            'telegram_messages', 'scraping_status',
             'tracked_channels',
         }
 
         t = table_name.lower()
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        # market_news lives in news.db (1019 rows), NOT content.db (target arch, empty on prod).
+        if t == 'market_news':
+            return cls.NEWS_DB
         if t in {x.lower() for x in data_engine_tables}:
             return cls.DATA_ENGINE_DB
         if t in {x.lower() for x in stocks_tables}:

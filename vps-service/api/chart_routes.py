@@ -2602,7 +2602,9 @@ def chart_full_analysis():
         # =====================================================================
         # 11d. NEWS PHASE (TOOLKIT-UNIFY-013 — unify with maestro)
         # =====================================================================
-        # Reads news_items table from stocks.db (same db_path as maestro).
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        # Reads market_news from news.db (via news_stop_filter, which resolves the
+        # canonical news.db internally regardless of the db_path passed here).
         # Phase mapping:
         #   has_cbe_news → 'distribution' (high risk → expect selling pressure)
         #   has_news (no CBE) → 'neutral' (medium risk → wait)

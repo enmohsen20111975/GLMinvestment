@@ -3913,8 +3913,9 @@ class MasterAnalyzer:
             # ── AI Sentiment (from news) ────────────────────────────────────
             sentiment_score = 50  # neutral default
             try:
-                from analyzers.ai_sentiment import get_stock_news_sentiment
-                sentiment_result = get_stock_news_sentiment(ticker)
+                # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+                from analyzers.ai_sentiment import get_market_news_sentiment
+                sentiment_result = get_market_news_sentiment(ticker)
                 sentiment_score = sentiment_result.get('score', 50)
             except Exception as e:
                 print(f"[MasterAnalyzer] Sentiment unavailable for {ticker}: {e}")

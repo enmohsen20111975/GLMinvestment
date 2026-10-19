@@ -76,19 +76,19 @@ if os.path.exists(pred_db):
 else:
     check_skip("aiPrediction (predictions.db not available)")
 
-# 5. news_signals view exists
-print("\n5. news_signals view:")
+# 5. market_news table exists (DATA-ENGINE-UNIFY-1 / News Stage 2: canonical news source)
+print("\n5. market_news table:")
 news_db = str(PROJECT_ROOT / 'db/news.db')
 if os.path.exists(news_db):
     c = sqlite3.connect(news_db)
     tables = [r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')").fetchall()]
-    check("news_signals exists", 'news_signals' in tables)
-    if 'news_signals' in tables:
-        n = c.execute("SELECT COUNT(*) FROM news_signals").fetchone()[0]
-        check(f"news_signals has data ({n} rows)", n > 0)
+    check("market_news exists", 'market_news' in tables)
+    if 'market_news' in tables:
+        n = c.execute("SELECT COUNT(*) FROM market_news").fetchone()[0]
+        check(f"market_news has data ({n} rows)", n > 0)
     c.close()
 else:
-    check_skip("news_signals (news.db not available)")
+    check_skip("market_news (news.db not available)")
 
 # 6. DB integrity
 print("\n6. DB integrity:")

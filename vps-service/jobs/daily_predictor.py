@@ -2452,13 +2452,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # يقرأ الأخبار المحللة من وكيل الأخبار المحلي (اللاب توب)
             # وبيطبّق تحيز −15 → +15 على الـ score
             # الفكرة: اللاب توب بيجمع أخبار من تيليجرام + ويب + RSS
-            #         ويبعتها للسيرفر كـ JSON منظم في جدول news_signals
+            #         ويبعتها للسيرفر كـ JSON منظم في news.db.market_news
             # Toggle: V40_2_LOCAL_NEWS=1 (default OFF للـ backtest)
             if os.environ.get('V40_2_LOCAL_NEWS', '0') == '1':
                 _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
                 if not _is_backtest:
                     try:
-                        from ai.news_signals_reader import apply_news_bias_to_score
+                        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+                        from ai.market_news_reader import apply_news_bias_to_score
                         _current_score = result.get('score', 0) if isinstance(result.get('score'), (int, float)) else 0
                         _adj_score, _news_ctx = apply_news_bias_to_score(_current_score, ticker)
                         if _news_ctx['has_news'] and _news_ctx['bias'] != 0:

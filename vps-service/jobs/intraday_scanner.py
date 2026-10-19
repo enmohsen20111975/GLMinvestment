@@ -181,7 +181,8 @@ def analyze_intraday_opportunity(ticker_info: Dict[str, Any]) -> Optional[Dict[s
 
     # 5.5 فحص تحيز الأخبار الواردة من Local News Agent
     try:
-        from ai.news_signals_reader import get_news_bias
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        from ai.market_news_reader import get_news_bias
         news_ctx = get_news_bias(ticker, hours_back=12)
         if news_ctx.get('has_news'):
             # VETO Kill Switch: خبر سلبي شديد الأهمية يمنع الدخول فوراً

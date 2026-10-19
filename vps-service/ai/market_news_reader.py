@@ -1,8 +1,11 @@
 """
-news_signals_reader.py — يقرأ الأخبار المحقونة من Local News Agent
+market_news_reader.py — يقرأ الأخبار المحقونة من Local News Agent
 =====================================================================
 يُستخدم من V40.2 لاسترجاع الأخبار ذات الصلة بسهم معين
 وإضافة درجة تعديل (news_bias) على قرار التداول
+
+DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical).
+Was reading a phantom table in predictions.db (never existed there).
 """
 
 import sqlite3
@@ -13,7 +16,13 @@ from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
 
-PREDICTIONS_DB = Path(__file__).parent.parent.parent / 'db' / 'predictions.db'
+# DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+# Was predictions.db (phantom — no such table exists there).
+try:
+    from utils.db_paths import DBPaths
+    NEWS_DB = Path(DBPaths.NEWS_DB)
+except Exception:
+    NEWS_DB = Path(__file__).parent.parent.parent / 'db' / 'news.db'
 
 # وزن تأثير الأخبار على القرار النهائي (−15 → +15)
 NEWS_WEIGHT_MAP = {
@@ -50,35 +59,37 @@ def get_news_bias(ticker: str, hours_back: int = 12) -> dict:
         'news_count': 0, 'top_news': [], 'has_news': False,
     }
 
-    if not PREDICTIONS_DB.exists():
+    if not NEWS_DB.exists():
         return default
 
     try:
-        conn = sqlite3.connect(str(PREDICTIONS_DB), timeout=10.0)
+        conn = sqlite3.connect(str(NEWS_DB), timeout=10.0)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        # تأكد إن الجدول موجود
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='news_signals'")
+        # تأكد إن الجدول موجود (market_news = canonical)
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='market_news'")
         if not cur.fetchone():
             conn.close()
             return default
 
-        cutoff_modifier = f"-{hours_back} hours"
+        cutoff = (datetime.utcnow() - timedelta(hours=hours_back)).isoformat()
 
-        # ابحث عن أخبار السهم
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        # ابحث عن أخبار السهم (أو أخبار EGX/EGX30 العامة) خلال الـ hours_back الأخيرة
         cur.execute('''
-            SELECT id, summary_ar, importance, sentiment, impact_type, tickers
-            FROM news_signals
-            WHERE (received_at >= datetime('now', ?) OR published_at >= datetime('now', ?))
+            SELECT summary_ar, importance, sentiment, impact_type, tickers, published_at
+            FROM market_news
+            WHERE (tickers LIKE ? OR tickers LIKE '%"EGX"%' OR tickers LIKE '%"EGX30"%')
+              AND published_at >= ?
               AND importance > 0
             ORDER BY importance DESC
             LIMIT 30
-        ''', (cutoff_modifier, cutoff_modifier))
+        ''', (f'%"{ticker.upper()}"%', cutoff))
         rows = cur.fetchall()
         conn.close()
 
-        # فلتر الأسهم المتعلقة
+        # فلتر الأسهم المتعلقة (تأكيد Python-side على الـ ticker)
         relevant = []
         for row in rows:
             tickers_raw = row['tickers'] or '[]'

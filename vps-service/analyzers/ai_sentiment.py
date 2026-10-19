@@ -105,7 +105,7 @@ OLLAMA_MODEL = (
 )
 
 
-async def analyze_news_sentiment(ticker: str, news_items: list) -> dict:
+async def analyze_news_sentiment(ticker: str, news_list: list) -> dict:
     """
     Use Ollama to analyze news sentiment for a stock.
     
@@ -113,14 +113,14 @@ async def analyze_news_sentiment(ticker: str, news_items: list) -> dict:
     
     Args:
         ticker: Stock ticker symbol (e.g. "COMI")
-        news_items: List of dicts with 'title' and 'summary' keys
+        news_list: List of dicts with 'title' and 'summary' keys
     
     Returns:
         dict with keys: score (20-80), summary (str), confidence (0-1), source (str)
     """
     import httpx
 
-    if not news_items:
+    if not news_list:
         return {
             'score': 50,
             'summary': 'لا توجد أخبار',
@@ -131,7 +131,7 @@ async def analyze_news_sentiment(ticker: str, news_items: list) -> dict:
     # Build news summary (max 500 chars)
     news_text = ' | '.join(
         f"- {n.get('title', '')}: {n.get('summary', '')[:100]}"
-        for n in news_items[:10]
+        for n in news_list[:10]
     )[:500]
 
     prompt = f"""حلل أخبار السهم {ticker} وحدد:
@@ -184,7 +184,7 @@ async def analyze_news_sentiment(ticker: str, news_items: list) -> dict:
     # Fallback: keyword-based
     all_text = ' '.join(
         n.get('title', '') + ' ' + n.get('summary', '')
-        for n in news_items
+        for n in news_list
     )
     score = get_sentiment_score(all_text)
     return {
@@ -196,20 +196,22 @@ async def analyze_news_sentiment(ticker: str, news_items: list) -> dict:
 
 
 # ============================================================================
-# INTEGRATION FUNCTION — reads from stocks.db news table
+# INTEGRATION FUNCTION — reads from news.db.market_news (canonical)
 # ============================================================================
+# DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+# Was reading a phantom table in stocks.db (never existed there).
 
-def get_stock_news_sentiment(ticker: str, db=None) -> dict:
+def get_market_news_sentiment(ticker: str, db=None) -> dict:
     """
-    Get sentiment from news stored in stocks.db for a ticker.
+    Get sentiment from news stored in news.db for a ticker.
     
     This is the synchronous entry point used by master_analyzer.py.
-    It reads recent news from the database and applies keyword-based
+    It reads recent news from news.db.market_news and applies keyword-based
     sentiment scoring (fast, no network required).
     
     Args:
         ticker: Stock ticker symbol
-        db: Optional DatabaseManager instance (will auto-create if not provided)
+        db: Optional DatabaseManager instance (will auto-create pointing at news.db)
     
     Returns:
         dict with keys: score (20-80), summary (str), confidence (0-1),
@@ -218,7 +220,9 @@ def get_stock_news_sentiment(ticker: str, db=None) -> dict:
     if db is None:
         try:
             from core.database import DatabaseManager
-            db = DatabaseManager()
+            from utils.db_paths import DBPaths
+            # DATA-ENGINE-UNIFY-1 / News Stage 2: point at news.db (canonical)
+            db = DatabaseManager(db_path=DBPaths.NEWS_DB)
         except Exception:
             return {
                 'score': 50,
@@ -229,12 +233,15 @@ def get_stock_news_sentiment(ticker: str, db=None) -> dict:
             }
 
     try:
-        # Query recent news for this ticker from stocks.db (last 7 days)
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        # tickers column = JSON array (e.g. ["COMI"]) → filter with LIKE.
+        # summary_ar is the canonical Arabic summary column.
         news = db.execute_query(
-            "SELECT title, summary FROM stock_news WHERE ticker = ? "
+            "SELECT title, summary_ar AS summary FROM market_news "
+            "WHERE tickers LIKE ? "
             "AND published_at > datetime('now', '-7 days') "
             "ORDER BY published_at DESC LIMIT 10",
-            (ticker,),
+            (f'%"{ticker}"%',),
         )
 
         if news:

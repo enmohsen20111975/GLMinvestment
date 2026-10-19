@@ -79,6 +79,8 @@ except ImportError:
         AUTH_DB = _resolve("AUTH_DB", "auth.db")
         CRYPTO_DB = _resolve("CRYPTO_DB", "crypto.db")
         CRYPTO_LEARNING_DB = _resolve("CRYPTO_LEARNING_DB", "crypto_learning.db")
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        NEWS_DB = _resolve("NEWS_DB", "news.db")
 
     def get_db_path(name: str) -> str:
         name = name.lower().strip()
@@ -103,7 +105,9 @@ _DB_ALIASES: Dict[str, str] = {
     'crypto_learning': DBPaths.CRYPTO_LEARNING_DB,
     # أسماء شائعة تانية (aliasing للقواعد المدمجة)
     'telegram_data': DBPaths.STOCKS_DB,        # Consolidated July 2026
-    'news': DBPaths.STOCKS_DB,                 # Consolidated July 2026
+    # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+    # Was STOCKS_DB (phantom — stocks.db has no market_news table). news.db is canonical.
+    'news': DBPaths.NEWS_DB,
     'analytics': DBPaths.STOCKS_DB,            # Consolidated July 2026
     # v3.65.1: gold_prices canonical = data_engine.db (live, written by metals_forex_fetcher.py).
     # OLD: pointed at GOLD_PRICES_DB which defaulted to non-existent `gold_prices.db`.
