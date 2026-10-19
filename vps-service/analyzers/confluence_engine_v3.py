@@ -751,50 +751,20 @@ class ConfluenceEngineV3:
             except Exception:
                 de_conn = sqlite3.connect(data_engine_path)
             de_cur = de_conn.cursor()
-            
-            # محاولة جلب أداء القطاع
-            de_cur.execute('''SELECT change_1m FROM tab_performance WHERE sector_name = ? LIMIT 1''', (sector_name,))
-            sector_row = de_cur.fetchone()
-            de_conn.close()
-            
-            if not sector_row:
-                conn.close()
-                return None
-            
-            sector_change = float(sector_row[0] or 0)
-            difference = round(stock_change - sector_change, 2)
-            
-            # تحديد الحالة
-            stock_abs = abs(stock_change)
-            sector_abs = abs(sector_change)
-            
-            if stock_change < -10 and difference < -5:
-                verdict = f'السهم أضعف من القطاع بـ {abs(difference):.1f}% — فيه مشكلة داخلية'
-                impact = 'negative'
-            elif stock_change < 0 and difference > 5:
-                verdict = f'السهم أقوى من القطاع بـ {difference:.1f}% — لو القطاع رجع ده يطير'
-                impact = 'positive'
-            elif stock_change > 10 and sector_change < -3:
-                verdict = f'السهم يتمرد على القطاع (القطاع نازل {sector_abs:.1f}%) — خطر'
-                impact = 'negative'
-            elif stock_change > 5 and sector_change > 0:
-                verdict = f'زخم حقيقي — السهم والقطاع صاعدين'
-                impact = 'positive'
-            else:
-                verdict = f'السهم والقطاع متقاربين (الفرق {difference:.1f}%)'
-                impact = 'neutral'
-            
+
+            # DATA-ENGINE-UNIFY-1 Stage 2b: tab_performance has no sector_name column
+            # and no change_1m (perf_1m is the closest alternative). Sector perf
+            # must be derived via JOIN with stocks.db.stocks.sector (not implemented).
+            # Graceful degrade: close connections and return None (caller handles None).
+            try:
+                de_conn.close()
+            except Exception:
+                pass
             conn.close()
-            
-            return {
-                'stock_perf': stock_change,
-                'sector_name': sector_name,
-                'sector_perf': sector_change,
-                'difference': difference,
-                'verdict': verdict,
-                'impact': impact,
-            }
-            
+            print(f"[ConfluenceV3] Sector confluence skipped for {ticker}: "
+                  f"tab_performance.sector_name not in schema")
+            return None
+
         except Exception as e:
             print(f"[ConfluenceV3] Sector confluence error for {ticker}: {e}")
             return None

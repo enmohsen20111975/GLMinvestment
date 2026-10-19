@@ -2425,8 +2425,9 @@ def chart_full_analysis():
                     logger.debug(f"[chart_routes] fundamentals valuation query failed: {e}")
 
                 # balance sheet — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
+                # DATA-ENGINE-UNIFY-1 Stage 2b: ORDER BY id DESC (last_updated column not in schema)
                 try:
-                    fe_cur.execute("SELECT total_assets, total_liabilities FROM tab_balance_sheet WHERE symbol = ? ORDER BY last_updated DESC LIMIT 1", (ticker,))
+                    fe_cur.execute("SELECT total_assets, total_liabilities FROM tab_balance_sheet WHERE symbol = ? ORDER BY id DESC LIMIT 1", (ticker,))
                     row = fe_cur.fetchone()
                     if row and row[0] and row[1]:
                         ta = _safe_num(row[0])

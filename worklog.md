@@ -72539,14 +72539,13 @@ Stage Summary:
 - 🔥 اكتشفت إن إحنا أعدنا اختراع العجلة في عدة مجالات
 - ✅ الـ findings الجديدة (fabricated + leakage + Mean Reversion) مـشـ duplicates
 - 📋 الـ roadmap الجديد: استخدام V40 engine الموجود + تفعيل Mean Reversion
-=======
+
 - ✅ 100% tokenization (11002→0). 211 files unified.
 - ✅ lint 0. ✅ browser renders all screens. ✅ 0 direct palette.
 - ✅ User-facing screens تستخدم shared/ui library (FlashingPriceCell, LiquidityFlashCell, UnifiedEmptyState, SignalBadge, DeltaBadge, etc.).
 - ⚠️ Admin screens لسه فيها ad-hoc patterns (35 files) — مش user-facing.
 - ⚠️ tsc 1260 (خفّ 40% من 2097).
 - 🔁 push: متدفع.
->>>>>>> 4257bd3 (ENGINEERING-CLEANUP FINAL: architecture audit + 100% tokenization + all screens verified)
 
 ---
 Task ID: GARAGE-CLEANUP-1
@@ -72575,3 +72574,98 @@ Stage Summary:
 - ✅ lint 0. ✅ browser renders. ✅ 0 broken imports.
 - 🔁 push: متدفع.
 >>>>>>> 31c4f80 (GARAGE-CLEANUP-1: archive 15 dead files (4859 LOC) + update INDEX.md)
+=======
+- ✅ py_compile PASS على الـ 5 ملفات (python3 -m py_compile).
+- ✅ bun run lint PASS (0 errors, exit 0).
+- ✅ tab-to-tab JOINs (ON x.ticker = y.ticker على tab_*): 0 matches بعد الإصلاح.
+- ✅ tab_* WHERE ticker / LIKE ticker: 0 matches بعد الإصلاح.
+- ⚠️  الـ grep الحرفي المكتوب في الـ task (`WHERE ticker.*tab_|FROM tab_.*ticker|...`)
+   بـ يـرجّع false positives بسبب (أ) Python param var `(ticker,)` بـ يظهر في نفس
+   السطر وراء الـ SQL string (matches `FROM tab_.*ticker` عبر `.*`) و(ب) `s.ticker =
+   v.symbol` في sync_data_engine (s.ticker = stocks column صح). تحققت بـ grep أدق
+   (WHERE ticker\b + JOIN ON x.ticker=y.ticker) — كل الـ WHERE ticker المتبقية ضد
+   `stocks`/`predictions`/`stored_analyses`/`egx_fundamentals` بس (مش tab_*).
+- ⚠️  dev server Next.js مش شغّال في الـ session دي (ما كانش شغّال قبل ما أبدأ).
+   تعديلاتي Python-only (مش TS/JS) → ما أثّرتش عليه. محتاج قرار جون لو لازم نشغّله.
+- 🔁 Stage 2b محتاج: إصلاح `ORDER BY last_updated` في chart_routes + misc_routes
+   (last_updated مش موجود في tab_* schema — wrapped في try/except فـ silent failure
+   دلوقتي، بس الـ ORDER BY ما بيـ فرزش فعلياً).
+
+---
+Task ID: DATA-ENGINE-UNIFY-1 / Stage 2b (phantom columns)
+Agent: Bravo proxy
+Task: fix phantom columns (last_updated, date, fair_value, change_1m, sector_name, roic)
+
+Work Log:
+- Phase 1 — Recon: grep عبر vps-service/ لكل phantom pattern. حددت 6 مواقع tab_*
+  actual (مش false positives): chart_routes.py:2429, misc_routes.py:3567,
+  daily_predictor.py:1850, persona_investor.py:227, confluence_engine_v3.py:756,
+  stock_fundamentals.py:218. الـ 2 matches المتبقية لـ `ORDER BY last_updated`
+  في live_price.py (egksco_stocks) + dynamic_context_engine.py (market_indices)
+  → NOT tab_* → ما لمستهاش (rule: ما تلمسش queries بـ columns موجودة).
+
+- Phase 2 — Fix 1 (ORDER BY last_updated → id DESC):
+  * chart_routes.py:2429 — tab_balance_sheet query.
+  * misc_routes.py:3567 — tab_profitability query (db_manager.query_one).
+  → البديل `ORDER BY id DESC` (آخر row inserted = آخر تحديث؛ `id` موجود في كل
+    tab_* tables per PRAGMA).
+  → comment: `# DATA-ENGINE-UNIFY-1 Stage 2b: ORDER BY id DESC (last_updated column not in schema)`
+
+- Phase 3 — Fix 2 (ORDER BY date DESC → id DESC):
+  * daily_predictor.py:1850 — tab_valuation query (V62 story-stock check).
+  → comment: `# DATA-ENGINE-UNIFY-1 Stage 2b: ORDER BY id DESC (date column not in tab_valuation schema)`
+
+- Phase 4 — Fix 3 (fair_value من tab_valuation SELECT):
+  * persona_investor.py:217-235 — `_get_fair_value_from_data_engine()`.
+  → شيلت `fair_value` من SELECT (الآن `SELECT symbol, pe_ratio, pb_ratio`).
+  → الـ caller (line 570) بيـ handle None أصلاً (elif chain على calc_fv → de_fv →
+    book_value estimate). graceful degrade: يرجّع None دايماً دلوقتي.
+  → comment inline قبل SELECT يوضح إن fair_value مش في schema.
+
+- Phase 5 — Fix 4 (change_1m + sector_name من tab_performance):
+  * confluence_engine_v3.py:712-770 — `_calculate_sector_confluence()`.
+  → المشكلة أعمق من SELECT بس: الـ WHERE clause كمان بيستخدم `sector_name = ?`
+    (مش موجود في tab_performance) — والـ query كله بيـ silent-fail عبر try/except.
+  → graceful degrade: شيلت الـ broken query block + الـ verdict logic (dead code)
+    وخليت الـ method ترجّع None بـ log واضح:
+    `"[ConfluenceV3] Sector confluence skipped for {ticker}: tab_performance.sector_name not in schema"`
+  → الـ caller (line 708 `sector_context=`) بيـ handle None أصلاً.
+  → comment: `# DATA-ENGINE-UNIFY-1 Stage 2b: tab_performance has no sector_name column and no change_1m (perf_1m is the closest alternative). Sector perf must be derived via JOIN with stocks.db.stocks.sector (not implemented).`
+
+- Phase 6 — Fix 5 (roic من tab_profitability):
+  * stock_fundamentals.py:206-223 — profitability dict construction.
+  → ملاحظة: الـ query `SELECT * FROM tab_profitability` (مش SELECT roic صريح).
+    الـ phantom كان في dict construction: `'roic': _sf(row['roic']) if 'roic' in row.keys() else 0`.
+  → البديل: `'roic': _sf(row['roc']) if 'roc' in row.keys() else 0` (roc موجود في
+    tab_profitability schema كبديل، والـ dict shape بـ يـ preserve للـ downstream/API).
+  → comment inline يوضح mapping roic ← roc.
+
+- Phase 7 — Verification:
+  * py_compile PASS على الـ 6 ملفات (python3 -m py_compile).
+  * bun run lint PASS (exit 0, 0 errors).
+  * grep phantom patterns في tab_* context:
+    - ORDER BY last_updated قرب tab_*: 0 matches.
+    - ORDER BY date DESC قرب tab_*: 0 matches.
+    - SELECT.*fair_value.*FROM tab_: 0 matches.
+    - SELECT.*change_1m.*FROM tab_: 0 matches.
+    - SELECT.*sector_name.*FROM tab_: 0 matches (comment match only).
+    - SELECT.*roic.*FROM tab_: 0 matches.
+  * dev server Next.js (v14.2.28, port 3000) لسه شغّال — PID 25088.
+  * ما عملتش push.
+
+Stage Summary:
+- 6 ملفات معدّلة، 6 تعديلات (MultiEdit/Edit) — كلها surgical + commented.
+- كل الـ readers بـ gracefully degrade على missing columns (None fallback أو
+  column substitution roc←roic). ما كسّرتش أي logic شغّال.
+- ما أضفتش columns جديدة للـ DB (ده Stage تاني لو محتاج).
+- الـ 2 matches المتبقية لـ `ORDER BY last_updated` (egksco_stocks +
+  market_indices) مش tab_* — تلك الـ tables عندها last_updated فعلياً.
+- Decisions محتاجة من جون:
+  (1) tab_performance.sector_name لو محتاج sector confluence فعلاً → لازم JOIN
+      مع stocks.db.stocks.sector في Stage لاحق (موجود كـ TODO في comment).
+  (2) fair_value من tab_valuation → لو محتاج فعلاً، لازم يـ add column للـ schema
+      (Stage تاني) أو يـ calculate من EPS × P/E قطاع (فيه fair_value_calculator.py
+      أصلاً يعمل ده — persona_investor بيـ استخدمه قبل _get_fair_value_from_data_engine).
+  (3) roic → roc mapping: لو الـ downstream/frontend بيفرّق بين roic و roc
+      semantically، يبقى لازم يـ add roic column فعلي للـ tab_profitability.
+>>>>>>> 8601a89 (fix(bravo): DATA-ENGINE-UNIFY-1 Stage 2b — fix phantom columns (no DB migration))

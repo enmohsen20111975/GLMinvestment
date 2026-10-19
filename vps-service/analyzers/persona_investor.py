@@ -222,15 +222,14 @@ def _get_fair_value_from_data_engine(ticker: str) -> Optional[float]:
         conn = sqlite3.connect(DATA_ENGINE_DB)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-        # جدول tab_valuation فيه fair_value أو similar
+        # DATA-ENGINE-UNIFY-1 Stage 2b: fair_value column not in tab_valuation schema.
+        # Reader gracefully degrades: returns None (caller falls back to other estimates).
         cur.execute('''
-            SELECT symbol, pe_ratio, pb_ratio, fair_value FROM tab_valuation
+            SELECT symbol, pe_ratio, pb_ratio FROM tab_valuation
             WHERE symbol = ? LIMIT 1
         ''', (ticker.upper(),))
-        row = cur.fetchone()
+        cur.fetchone()
         conn.close()
-        if row and row['fair_value']:
-            return float(row['fair_value'])
         return None
     except Exception:
         return None

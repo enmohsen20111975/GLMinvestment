@@ -215,7 +215,10 @@ class StockFundamentals:
                         'fcf_margin': _sf(row['fcf_margin']),
                         'roe': _sf(row['roe']) if 'roe' in row.keys() else 0,
                         'roa': _sf(row['roa']) if 'roa' in row.keys() else 0,
-                        'roic': _sf(row['roic']) if 'roic' in row.keys() else 0,
+                        # DATA-ENGINE-UNIFY-1 Stage 2b: roic column not in tab_profitability
+                        # schema (roc is the closest alternative). Map roic ← roc so the
+                        # downstream dict shape is preserved; falls back to 0 when roc is absent.
+                        'roic': _sf(row['roc']) if 'roc' in row.keys() else 0,
                     }
             except: pass
 

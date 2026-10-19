@@ -1846,8 +1846,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 try:
                     import sqlite3 as _v62_sql
                     _v62_de_conn = _v62_sql.connect(str(_PROJECT_ROOT / 'db' / 'data_engine.db'))
+                    # DATA-ENGINE-UNIFY-1 Stage 2b: ORDER BY id DESC (date column not in tab_valuation schema)
                     _v62_pe = _v62_de_conn.execute(
-                        "SELECT pe_ratio FROM tab_valuation WHERE symbol = ? ORDER BY date DESC LIMIT 1",
+                        "SELECT pe_ratio FROM tab_valuation WHERE symbol = ? ORDER BY id DESC LIMIT 1",
                         (ticker,)
                     ).fetchone()
                     _v62_de_conn.close()
