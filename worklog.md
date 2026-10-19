@@ -70273,3 +70273,49 @@ Stage Summary:
   * scripts/sanitize_stocks_table.py — sanitize script (idempotent).
   * scratch/audit_data_integrity.py — acceptance test.
   كل واحد ليه هدف واضح + idempotent + Rule 17. مش طوب.
+
+---
+Task ID: BRAVO-RADAR-CLASSIFY-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — ضبط التصنيفات + تعدد الأسواق (تعديل في الموجود بس)
+
+Work Log:
+- 🔴 التزام بالبنية: مفيش ملفات جديدة. كل التعديلات في scripts/liquidity_radar_v2.py (موجود).
+
+- الجزء 1: إعادة تعريف التصنيفات (Phases):
+  * 5 مراحل (كانت 4، أضفت PHASE_NEUTRAL):
+    1. trend_accumulation → "تراكم مع اتجاه" (MFM+ قوي + فوق MA20)
+    2. quiet_accumulation → "تراكم هادئ" (MFM+ ضعيف + فوق MA20 OR MFM+ قوي + تحت MA20)
+    3. distribution → "تصريف" (MFM− سالب OR سوق هابط)
+    4. neutral → "محايد" (MFM+ ضعيف + تحت MA20 = مش واضح)
+    5. insufficient_data → "بيانات غير كافية"
+  * الأولوية صريحة (8 levels): insufficient > bear_market > MFM− > whale+MA20 > whale−MA20 > weak+MA20 > weak−MA20 > default neutral
+  * مفيش شروط فضفاضة. كل condition = IF واضحة + threshold محدد.
+
+- الجزء 2: تعدد الأسواق — القرار: الحل ج (هجين):
+  * MFM calculation = unified (نفس المعادلة لكل الأسواق)
+  * العتبات = per-market (MARKET_CONFIG dict):
+    - EGX:     min_turnover=3M,  whale_mult=0.6, fk_crash=12%, rsi_max=70
+    - TADAWUL: min_turnover=10M, whale_mult=0.6, fk_crash=10%, rsi_max=70
+    - KSE:     min_turnover=2M,  whale_mult=0.6, fk_crash=12%, rsi_max=70
+    - QSE:     min_turnover=2M,  whale_mult=0.6, fk_crash=12%, rsi_max=70
+    - US:      min_turnover=5M,  whale_mult=0.6, fk_crash=10%, rsi_max=70
+    - CRYPTO:  min_turnover=1M,  whale_mult=0.7, fk_crash=25%, rsi_max=80
+    - GOLD:    min_turnover=1M,  whale_mult=0.6, fk_crash=10%, rsi_max=75
+  * التخزين: في MARKET_CONFIG dict داخل liquidity_radar_v2.py (مش file جديد).
+  * get_market_config(market) function للـ lookup (fallback = EGX).
+  * قابل للتوسع: إضافة سوق = إضافة entry في الـ dict (مش تعديل كود).
+
+- التحقق:
+  * py_compile PASS.
+  * 5 phases موجودة (PHASE_NEUTRAL جديد).
+  * MARKET_CONFIG + get_market_config موجودة.
+  * 7 أسواق مدعومة (EGX + TADAWUL + KSE + QSE + US + CRYPTO + GOLD).
+  * مفيش ملفات جديدة.
+
+Stage Summary:
+- ✅ 5 phases بشروط صارمة + أولوية صريحة.
+- ✅ 7 أسواق بـ per-market config (الحل ج الهجين).
+- ✅ مفيش ملفات جديدة (تعديل في liquidity_radar_v2.py بس).
+- ⚠️ buckets (canonical_flow.py) محتاجة update منفصل (strong_whale_inflow vs moderate_inflow).
+- ⚠️ check_falling_knife محتاج يستخدم get_market_config للـ fk_hard_crash_pct.

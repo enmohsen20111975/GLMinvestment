@@ -121,6 +121,60 @@ MARKET_BEAR_THRESHOLD = -2.0    # لو المؤشر change% ≤ -2% → سوق �
 MARKET_BULL_THRESHOLD = 1.0     # لو المؤشر change% ≥ +1% → سوق صاعد
 # لو بين -2% و +1% → عرضي
 
+# ─── BRAVO RADAR-MULTI-MARKET: per-market config (Solution C — Hybrid) ─────
+# MFM calculation = unified (same formula). Thresholds = per-market.
+# Rationale: "whale" in EGX (3M floor) ≠ "whale" in US (50M floor).
+# Crypto volatility ≠ stock volatility → FK threshold differs.
+MARKET_CONFIG: Dict[str, Dict[str, Any]] = {
+    'EGX': {
+        'min_turnover': 3_000_000,      # 3M EGP — EGX avg daily turnover
+        'whale_threshold_mult': 0.6,    # 60% of avg (standard)
+        'fk_hard_crash_pct': 12.0,      # 12% in 3d = crash (EGX volatility)
+        'rsi_max': 70,                  # standard overbought
+    },
+    'TADAWUL': {
+        'min_turnover': 10_000_000,     # 10M SAR — TADAWUL higher liquidity
+        'whale_threshold_mult': 0.6,    # same ratio (relative = unified)
+        'fk_hard_crash_pct': 10.0,      # 10% (lower volatility than EGX)
+        'rsi_max': 70,
+    },
+    'KSE': {
+        'min_turnover': 2_000_000,      # 2M KWD — lower liquidity
+        'whale_threshold_mult': 0.6,
+        'fk_hard_crash_pct': 12.0,      # similar to EGX
+        'rsi_max': 70,
+    },
+    'QSE': {
+        'min_turnover': 2_000_000,      # 2M QAR
+        'whale_threshold_mult': 0.6,
+        'fk_hard_crash_pct': 12.0,
+        'rsi_max': 70,
+    },
+    'US': {
+        'min_turnover': 5_000_000,      # 5M USD — high liquidity
+        'whale_threshold_mult': 0.6,
+        'fk_hard_crash_pct': 10.0,      # lower volatility (large caps)
+        'rsi_max': 70,
+    },
+    'CRYPTO': {
+        'min_turnover': 1_000_000,      # 1M USD — 24/7 market
+        'whale_threshold_mult': 0.7,    # 70% — crypto is noisier, higher bar
+        'fk_hard_crash_pct': 25.0,      # 25% — crypto normal volatility is high
+        'rsi_max': 80,                  # crypto runs hotter
+    },
+    'GOLD': {
+        'min_turnover': 1_000_000,      # 1M USD
+        'whale_threshold_mult': 0.6,
+        'fk_hard_crash_pct': 10.0,
+        'rsi_max': 75,                  # gold runs hotter than stocks
+    },
+}
+
+
+def get_market_config(market: str) -> Dict[str, Any]:
+    """رجّع إعدادات السوق (per-market thresholds). fallback = EGX."""
+    return MARKET_CONFIG.get(market.upper(), MARKET_CONFIG['EGX'])
+
 # ─── Task B-26: خريطة العملات + المؤشرات لكل سوق (Multi-Market SSOT) ──
 # كل سوق ليه عملته الحقيقية + رمز مؤشره (مع fallbacks لو المؤشر مش في DB)
 MARKET_CURRENCY_MAP = {
@@ -149,10 +203,11 @@ def get_market_currency(market: str) -> Dict[str, str]:
     """رجّع عملة السوق الحقيقية (SSOT)."""
     return MARKET_CURRENCY_MAP.get(market.upper(), MARKET_CURRENCY_MAP['EGX'])
 
-# 3 مراحل بس (ممنوع أي تسميات تانية)
+# 5 مراحل (مصطلحات واضحة، ممنوع Wyckoff)
 PHASE_ABSORBING = "تراكم مع اتجاه"           # MFM موجب قوي + سعر فوق MA20
 PHASE_PREPARING = "تراكم هادئ"               # MFM موجب ضعيف/محايد + هيكل صاعد
 PHASE_DISTRIBUTING = "تصريف"                 # MFM سالب
+PHASE_NEUTRAL = "محايد"                      # MFM ضعيف جداً + مش واضح
 PHASE_INSUFFICIENT = "بيانات غير كافية"
 
 
@@ -659,83 +714,68 @@ def classify_phase(
     candles: List[Dict[str, Any]],
     stock_info: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """تصنيف المرحلة — 3 حالات (مصطلحات واضحة، ممنوع Wyckoff).
+    """تصنيف الطور — 5 حالات (شروط صارمة + أولوية واضحة).
 
-    BRAVO RADAR-REBUILD: شيلنا "بيبلع على الهادي" / "بيبلع في الخفاء" (Wyckoff متناقض).
-    بدّلناها بـ:
-      - تراكم مع اتجاه (Trend Accumulation): MFM+ قوي + سعر فوق MA20
-      - تراكم هادئ (Quiet Accumulation): MFM+ ضعيف/محايد + هيكل صاعد
-      - تصريف (Distribution): MFM− سالب
-      - بيانات غير كافية
+    BRAVO RADAR-CLASSIFY: شروط دقيقة + أولوية صريحة (لو شرطين تحققوا، الأولوية تحسم).
 
-    القواعد الكمية الصارمة:
-      - لو السوق هابط/Risk-Off → ممنوع تراكم → تصريف
-      - لو MFM سالب → تصريف
-      - لو whale_present + close > MA20 → تراكم مع اتجاه
-      - لو net_flow > 0 + close > MA20 → تراكم هادئ
-      - غير كده → تصريف (افتراضي محافظ)
+    الأولوية (من الأعلى للأقل):
+      1. بيانات ناقصة          → insufficient_data
+      2. سوق هابط              → distribution (ممنوع تراكم في Risk-Off)
+      3. MFM سالب قوي           → distribution
+      4. whale_present + > MA20 → trend_accumulation
+      5. whale_present + < MA20 → quiet_accumulation
+      6. MFM+ ضعيف + > MA20     → quiet_accumulation
+      7. MFM+ ضعيف + < MA20     → neutral (مش واضح)
+      8. افتراضي                → neutral
     """
-    # 1. بيانات ناقصة
+    # 1. بيانات ناقصة (أعلى أولوية)
     if whale['flow_strength'] == 'بيانات غير كافية':
-        return {
-            'phase': PHASE_INSUFFICIENT,
-            'reason': whale['reason'],
-        }
+        return {'phase': PHASE_INSUFFICIENT, 'reason': whale['reason']}
 
-    # 2. السوق هابط → ممنوع تراكم
+    # 2. سوق هابط → distribution (ممنوع تراكم في Risk-Off)
     if market['is_bear']:
         if whale['net_flow_egp'] < 0:
-            return {
-                'phase': PHASE_DISTRIBUTING,
-                'reason': f"سوق هابط + MFM سالب ({whale['net_flow_egp']/1e6:.1f}M) — تصريف",
-            }
-        return {
-            'phase': PHASE_DISTRIBUTING,
-            'reason': f"سوق هابط ({market['change_pct']:.2f}%) — ممنوع تراكم في Risk-Off",
-        }
+            return {'phase': PHASE_DISTRIBUTING,
+                    'reason': f"سوق هابط + MFM سالب ({whale['net_flow_egp']/1e6:.1f}M) — تصريف"}
+        return {'phase': PHASE_DISTRIBUTING,
+                'reason': f"سوق هابط ({market['change_pct']:.2f}%) — ممنوع تراكم في Risk-Off"}
 
-    # 3. MFM سالب → تصريف
+    # 3. MFM سالب قوي → distribution
     if whale['net_flow_egp'] < 0:
-        return {
-            'phase': PHASE_DISTRIBUTING,
-            'reason': f"MFM سالب ({whale['net_flow_egp']/1e6:.1f}M EGP) — تصريف",
-        }
+        return {'phase': PHASE_DISTRIBUTING,
+                'reason': f"MFM سالب ({whale['net_flow_egp']/1e6:.1f}M EGP) — تصريف"}
 
-    # 4. حساب هيكل السعر
+    # 4-7. محتاج هيكل السعر
     closes = [_to_float(c.get('close')) for c in candles if _to_float(c.get('close')) > 0]
     if len(closes) < 20:
-        return {
-            'phase': PHASE_INSUFFICIENT,
-            'reason': 'أقل من 20 شمعة للحكم على الهيكل',
-        }
+        return {'phase': PHASE_INSUFFICIENT, 'reason': 'أقل من 20 شمعة للحكم على الهيكل'}
+
     ma20 = sum(closes[-20:]) / 20
     last_close = closes[-1]
+    above_ma20 = last_close > ma20
 
-    # 5. whale_present + close > MA20 → تراكم مع اتجاه
-    if whale['whale_present']:
-        if last_close > ma20:
-            return {
-                'phase': PHASE_ABSORBING,
-                'reason': f"MFM+ قوي ({whale['net_flow_egp']/1e6:.1f}M EGP) فوق MA20 — تراكم مع اتجاه",
-            }
-        else:
-            return {
-                'phase': PHASE_PREPARING,
-                'reason': f"MFM+ قوي ({whale['net_flow_egp']/1e6:.1f}M EGP) تحت MA20 — تراكم هادئ",
-            }
+    # 4. whale_present + فوق MA20 → تراكم مع اتجاه
+    if whale['whale_present'] and above_ma20:
+        return {'phase': PHASE_ABSORBING,
+                'reason': f"MFM+ قوي ({whale['net_flow_egp']/1e6:.1f}M) فوق MA20 — تراكم مع اتجاه"}
 
-    # 6. MFM+ بدون حوت → تراكم هادئ
-    if whale['net_flow_egp'] > 0:
-        return {
-            'phase': PHASE_PREPARING,
-            'reason': f"MFM+ ضعيف ({whale['net_flow_egp']/1e6:.1f}M EGP) — تراكم هادئ",
-        }
+    # 5. whale_present + تحت MA20 → تراكم هادئ
+    if whale['whale_present'] and not above_ma20:
+        return {'phase': PHASE_PREPARING,
+                'reason': f"MFM+ قوي ({whale['net_flow_egp']/1e6:.1f}M) تحت MA20 — تراكم هادئ"}
 
-    # 7. افتراضي → تصريف
-    return {
-        'phase': PHASE_DISTRIBUTING,
-        'reason': f"MFM سالب ({whale['net_flow_egp']/1e6:.1f}M EGP) — تصريف",
-    }
+    # 6. MFM+ ضعيف + فوق MA20 → تراكم هادئ
+    if whale['net_flow_egp'] > 0 and above_ma20:
+        return {'phase': PHASE_PREPARING,
+                'reason': f"MFM+ ضعيف ({whale['net_flow_egp']/1e6:.1f}M) فوق MA20 — تراكم هادئ"}
+
+    # 7. MFM+ ضعيف + تحت MA20 → محايد (مش واضح)
+    if whale['net_flow_egp'] > 0 and not above_ma20:
+        return {'phase': PHASE_NEUTRAL,
+                'reason': f"MFM+ ضعيف ({whale['net_flow_egp']/1e6:.1f}M) تحت MA20 — مش واضح"}
+
+    # 8. افتراضي → محايد
+    return {'phase': PHASE_NEUTRAL, 'reason': 'تدفق محايد — مش واضح'}
 
 
 # ─── 4. مستوى الدخول والدفاع ──────────────────────────────────────────────
