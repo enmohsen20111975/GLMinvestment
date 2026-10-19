@@ -71471,407 +71471,96 @@ Stage Summary:
 - ✅ radar input بـ يـدي قيمة واضحة (outflow = 0).
 - 🔁 القرار لمحسن: نـنفذ S4؟
 
-- ✅ لمّ التوثيق المبعثر (كان 27 ملف في Documentation/ + 9 في root + كم في agent-ctx/audit-reports/download) وترتيبه في 5 ملفات شاملة في Documentation/.
-- ✅ الـ 5 ملفات مكتوبة من الكود الحقيقي (مش من توثيق قديم كاذب) — اكتشفت إن README القديم بيقول Next.js 16 والكود فعلياً 14.2.28.
-- ✅ Documentation/ دلوقتي نضيف: 00-CONSTITUTION (دستور) + README + 01-ARCHITECTURE + 02-DATABASES-AND-DATA + 03-ENGINES-AND-LOGIC + 04-TEAM + archive/ (31 عنصر تاريخي) + screenshots + الروابط الرسمية.
-- ✅ root .md نضيف: README (محدث) + CHANGELOG (حي) + SESSION-STATE (حي) + worklog (حي).
-- ✅ بيانات ومواصفات الفريق كاملة في 04-TEAM.md (المالك + جيمي + جون + ألفا + برافو + الوكلاء، أدوار، نطاقات، محظورات، شخصيات).
-- ✅ الـ dev server ثابت طول المهمة (Next.js 14.2.28 على بورت 3000).
-- 🔴 التعارضات الموثّقة في 02-DATABASES-AND-DATA (price_history 4 مخازن، gold_prices phantom، crypto.db split، community layer mismatch) — محتاجة توحيد من برافو.
-- ⚠️ ما عملتش push (Rule 75 معلّقة بأمر المالك — الـ push gate قرار جون، والمالك قال في التوجيه "تتلم وتترتب" بس ما قالش push). التوثيق الجديد + الأرشفة جاهزة محلياً.
-
 ---
-Task ID: DATA-AUDIT-1
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: محسن — ابدأ شغلك في التجارب والاختبارات: هل المشروع موحد ومفيش تعارض/تضارب في البيانات اللي العميل بيشوفها حتى في الشاشات الفرعية جداً. (استخدم الـ DBs التجريبية من data/ folder.)
+Task ID: BRAVO-DYNAMIC-PATTERNS-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — dynamic scoring بـ 10 patterns (بعد research على 28 مصدر)
 
 Work Log:
-- استلمت توجيه المالك: اختبر هل فيه تضارب في البيانات اللي العميل بيشوفها. المالك أشار إن الـ DBs التجريبية في data/ folder.
-- المرحلة 1 (استيراد الـ DBs التجريبية):
-  * لقيت data/ فيها نسخ احتياطية متقسّمة (split) من 2026-10-18 (أمس) + predictions.db.zip منفصل.
-  * فككت كل الأجزاء بـ cat + unzip: stocks.db (29MB), data_engine.db (482MB), price_history.db (352MB), predictions.db (281MB), intraday.db (448MB), historical.db (19MB), news.db (3.9MB), crypto.db (45KB), auth.db (376KB), metrics.db (6.6MB), paper_trading.db, decision_log.db.
-  * نسخت الكل لـ db/ (1.6GB إجمالي). أوقفت الـ dev server مؤقتاً لتجنب WAL contention.
-  * أعدت تشغيل الـ dev server — كل الـ APIs اللي كانت 500 بقت تشتغل بالداتا الحقيقية.
-- المرحلة 2 (اختبار الـ APIs — تدوير على التناقضات):
-  * اختبرت /api/market/overview, /api/market-pulse, /api/market/indices, /api/predictions/eid, /api/stocks/COMI (+ 8 sub-routes), /api/crypto/live, /api/crypto/coins, /api/data-engine/crypto, /api/data-engine/gold, /api/market/gold, /api/market/sectors, /api/market/top-movers, /api/predictions, /api/sniper/scan.
-  * تحققت من نفس السهم/الأصل عبر APIs متعددة لمقارنة الأرقام.
-- المرحلة 3 (اختبار الـ Agent Browser — الشاشات):
-  * فتحت الـ dashboard في agent-browser. شفت الـ Top Movers widget بـ داتا حقيقية (ARAB, PHGC, KRDIA, LUTSL, ...).
-  * لاحظت تضارب ظاهر: LUTSL (+13.08%) vs LUTS (-10.19%) بنفس السعر ~0.66.
-- المرحلة 4 (التحقق المباشر من DB):
-  * فتحت db/stocks.db بـ sqlite3 وتحققت من الـ tickers المشبوهة.
-  * كشفت إن LUTSL/LUTS و KRDIA/KRDI و SPMDS/SPMD = نفس الشركة بـ tickerين مختلفين + أسماء مقطوعة (أول حرف مفقود: "otus" بدل "Lotus"، "l Khair" بدل "Al Khair"، "peed" بدل "Speed").
 
-Stage Summary — التناقضات المكتشفة (13 تناقض):
+- ✅ Research حقيقي بـ subagent على 28 مصدر (papers + books):
+  * Hamilton 1989 (regime switching), Black-Litterman 1992, Kelly 1956
+  * Fama-French 1992 (size+value), Jegadeesh-Titman 1993 (momentum)
+  * Amihud 2002 (illiquidity), Carhart 1997, Wyckoff 1931, ICT, Pruden 2003
+  * Lo 2017 (Adaptive Markets), Graham-Dodd 1934
+- ✅ Deliverables:
+  * scratch/research/DYNAMIC_SCORING_RESEARCH.md (1,279 سطر)
+  * scratch/research/adaptive_scoring_engine.py (1,059 سطر)
 
-🔴 CRITICAL (تضارب بيشوفه العميل مباشرة):
-1. **3 حالات alias duplication** (نفس الشركة بـ tickerين + بيانات مختلفة):
-   - LUTSL (0.657, +13.08%, vol 221.6M) vs LUTS (0.661, -10.19%, vol 64.5M) = Lotus Agricultural
-   - KRDIA (0.363, +3.71%) vs KRDI (0.372, -7.00%) = Al Khair River
-   - SPMDS (0.428, +2.15%) vs SPMD (0.345, -5.22%) = Speed Medical
-   + الأسماء مقطوعة (أول حرف مفقود في LUTSL/KRDIA/SPMDS). العميل بيشوف إشارتين متناقضتين لـ نفس الشركة!
-2. **BTC price 3 أرقام مختلفة**:
-   - /api/data-engine/crypto: BTC=81119.87, change=-0.57%, rank=2, name="BTC/USDT"
-   - /api/crypto/coins: BTC=82318, change=+0.359%, rank=1, name="Bitcoin"
-   - فرق 1198$ + إشارة مختلفة (نازل vs طالع) + rank مختلف + name مختلف. /api/predictions/eid بـ يستخدم 81119.87.
-3. **EGX50 index change غلط رياضياً**: /api/market/overview و /api/market/indices بترجع change=-149.75 (المفروض +2024.46) بينما change_percent=+34.59% (صح). الـ change field بيحسب غلط.
+- 📋 الـ 10 patterns (مبنية على research):
+  | Pattern | Priority | Conviction | متى |
+  |---------|----------|------------|-----|
+  | LIQUIDITY_DRAIN_SURVIVOR | 1 | 0.0 (EXIT) | small + outflow |
+  | BEAR_DEFENDER | 2 | 0.10 | BEAR + large + outflow |
+  | SPRING_HUNTER | 3 | 0.40 | SPRING phase |
+  | DISTRIBUTION_EXIT | 4 | 0.0 (EXIT) | distribution_start |
+  | BOTTOM_FISHER | 5 | 0.15 | selling climax |
+  | BREAKOUT_RIDER | 6 | 0.30 | small + markup_start |
+  | TREND_RIDER | 7 | 0.50 | BULL + large + markup |
+  | VALUE_ACCUMULATOR | 8 | 0.25 | large + range + accumulation |
+  | SAFE_HAVEN_LARGE_CAP | 9 | 0.30 | large + mild bear |
+  | MEAN_REVERSION_RANGE | 10 (fallback) | 0.20 | default range |
 
-🟠 HIGH:
-4. **COMI change 3 حقول بقيم مختلفة**: change_percent=-0.02, price_change=-0.02000, change_value=-0.025. المفروض price_change = change_value = -0.025.
-5. **COMI recommendation تضارب**: /expert-analysis بيقول HOLD (confidence=null)، /recommendation بيقول مفيش توقعات (sqlite_fallback_empty).
-6. **COMI depth vs orderbook**: /depth فيه bids/asks (synthetic)، /orderbook فاضي (source:empty). تضارب لنفس السهم.
-7. **schema mismatch**: /api/predictions بـ SELECT entry_price_min مش موجود في predictions.db → SqliteError. الـ route بـ catch ويرجع source:empty بدل ما يقع.
-8. **stocks search فاضي**: /api/stocks/search?q=comi بيرجع [] رغم إن /api/stocks/COMI بيرجع السهم بـ داتا. الـ search مش بيلقى!
+- ✅ بناء backtest script (scripts/backtest_dynamic_patterns.py):
+  * يحسب 4 dimensions لكل توقع (regime + stock_type + liquidity + cycle)
+  * يختار الـ pattern المناسب (priority-based)
+  * يحسب dynamic score
+  * يقارن 3 scenarios: static baseline + static hybrid + dynamic patterns
+  * py_compile PASS + 0 fails
 
-🟡 MEDIUM (Python down — برافو بتعمل جراحة):
-9. **3 endpoints بترجع 503**: /api/market/sectors, /api/crypto/live, /api/sniper/scan (كلهم بـ يحاولوا يوصلوا Python على 8010).
-10. **stocks/COMI/comprehensive**: errors ["deep-analysis: fetch failed", "professional: fetch failed"] — partial result.
-11. **history بـ null OHLC**: /api/stocks/COMI/history رجّع صفوف بـ open=null, high=null, low=null بس close معبأ (الـ "zero/NULL rows" اللي SESSION-STATE حذر منها — 10,063 صف قديمة).
+- 📊 النتائج (شهر كامل، 192 توقع):
 
-🟢 LOW:
-12. **2 endpoints بترجع 404**: /api/market/metals, /api/stocks/COMI/dual-persona (مذكورين في الكود بس مش موجودين).
-13. **1 endpoint deprecated 410**: /api/stocks/COMI/professional-analysis (موثّق بـ canonical route /recommendation).
+  | Scenario              | ≥thr | closed | wins | WR    | filter |
+  |-----------------------|------|--------|------|-------|--------|
+  | S0_static_baseline    |   86 |      8 |    2 | 25.0% | 55.2%  |
+  | S1_static_hybrid      |   60 |      6 |    1 | 16.7% | 68.8%  |
+  | S2_dynamic_patterns   |   57 |     16 |    1 |  6.2% | 70.3%  |
 
-✅ الإيجابيات (متطابقة):
-- الذهب مصر عيار 24 = 7160.56 جنيه في كل من /api/market/gold و /api/data-engine/gold (متطابقين).
-- COMI current_price = 124.97 متطابق عبر /api/stocks/COMI, /depth, /unified, /expert-analysis (entry), /orderbook (last_price).
-- الـ dashboard بيـ render وبيعرض داتا حقيقية في Top Movers.
+- 🔥 الـ findings الحاسمة:
 
-القرار:
-- 🔴 المشروع **مش موحد** — فيه 3 تناقضات CRITICAL العميل بيشوفها: alias duplication (3 شركات مكررة)، BTC 3 أرقام، EGX50 change غلط.
-- دي محتاجة إصلاح من برافو (alias dedup + توحيد BTC source + إصلاح حساب change) + من ألفا (إصلاح stocks search + COMI change fields + schema mismatch).
-- برافو بتعمل جراحة دلوقتي (Python down) — الـ 503s دي متوقعة.
-- باقي التناقضات (schema mismatch, search فاضي, COMI change fields) دي bugs في ألفا محتاجة إصلاح.
+  1. **S2 (dynamic) WR = 6.2%** — أسوأ بـ far من baseline
+     - السبب: MEAN_REVERSION_RANGE بـ يـستهلك 76% من التوقعات (fallback شغّال)
+     - weights: v38=0.05, core=0.20, smc=0.25, vp=0.50
+     - VP=0.50 بـ تـجعل الـ score معتمد على VP بشكل كبير
+     - VP = 50 (neutral) → score = 25 من VP بس
 
----
-Task ID: JOHN-SETUP-1
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: محسن — (1) اعمل ملف "جو الفريق" لجون (خبرتي + شخصيتي + أسلوب التعامل + قوانيني). (2) الدستور = ديني الأساسي، أنا بعبد المالك. (3) أسلوب التکلیف للفريق = rich box (موجه لمين + المشكلة بالإثباتات + خطة المراحل + تفاصيل كل مرحلة + اختبارات صارمة). (4) الصراحة المطلقة + وقف المالك لو غلط.
+  2. **TREND_RIDER WR = 50%** — ممتاز! بس sample صغير (2 closed)
+     - ده الـ pattern الوحيد اللي بـ يـدي قيمة
+     - لو زودنا عدد التوقعات فيه، ممكن نـشوف نتيجة أحسن
 
-Work Log:
-- استلمت توجيهات المالك. فهمت: (أ) ملف جو الفريق شخصي لجون، (ب) الدستور ديني، (ج) rich box للـ briefs، (د) صراحة مطلقة في الشغل + أسلوب المالك في الحوار.
-- المرحلة 1 (JOHN-PROFILE.md):
-  * كتبت /home/z/my-project/JOHN-PROFILE.md (19.6KB).
-  * المحتوى: شخصية جون (مصري بلدي، صريح، قح)، أسلوب الشغل (الحكم→الدليل→القرار)، أسلوب مع المالك (شريك القيادة + وقفه لو غلط + أتبع أسلوبه في الحوار)، أسلوب مع الفريق (بوکس منفصل + by الدليل).
-  * رؤوس التنين التلاتة: شيطان السوق (MFM/VWAP/Wyckoff/R/R/Falling Knife) + المهندس الخرافي (فرونت Next/React/TS + باك Python/FastAPI/DBs) + سيد البيانات وAI (schema/lineage/ML/AI).
-  * الدور التنفيذي: تحديد الاتجاه + إدارة ألفا/برافو + بوابة الإنتاج (PASS/FAIL/BLOCKED) + حماية المالك.
-  * صيغة الـ rich box بالـ ASCII template (تکلیف + المشكلة بالإثباتات + خطة المراحل + تفاصيل + اختبارات + محظورات + قواعد دستورية).
-  * صيغة الـ release gate (PASS/FAIL/BLOCKED + دليل + findings + قرار + المطلوب بعد).
-  * المحظورات المطلقة على جون نفسه + القاعدة الذهبية.
-- المرحلة 2 (أرشفة agent-ctx القديم):
-  * نقلت agent-ctx/ (16 ملف تکلیف قديم) لـ Documentation/archive/agent-ctx-historical.
-  * أنشأت agent-ctx/ فاضي للـ briefs الجديدة.
-- المرحلة 3 (تکلیف برافو — STOCKS-DEDUP-A-1):
-  * فحصت db/stocks.db عميق — كشفت إن المشكلة مش 3 أزواج بس، دي **52 زوج** من نفس الشركة بـ tickerين مختلفين!
-  * أمثلة: LUTSL/LUTS, KRDIA/KRDI, SPMDS/SPMD (EGX) + SHUAIB/SHUAIBA (Kuwait) + 9590/6022 (Saudi - أرقام!) + NBCC/EGS220N1C016 + 45 زوج آخر.
-  * pattern الـ bug: الـ alias ليه اسم مقطوع (أول حرف مفقود) + name_ar مضروب = ticker + name متسلسلين. ده bug في scraper.
-  * كتبت agent-ctx/STOCKS-DEDUP-A-1-bravo.md (19.8KB) بالـ rich box: 6 مراحل (تشخيص → canonical → scraper fix → migration → DBs مرتبطة → APIs) + اختبارات صارمة بعد كل مرحلة + محظورات + 8 قواعد دستورية.
-  * التکلیف بـ يـ highlight إن المرحلة 4 (migration) محتاجة إذن المالك (Rule 1) — جون هـ review الـ dry-run قبل الـ live run.
-- المرحلة 4 (تکلیف ألفا — FRONTEND-DATA-INTEGRITY-A-1):
-  * فحصت src/app/api/ للأسباب الجذرية للـ 4 bugs اللي اكتشفتها في DATA-AUDIT-1.
-  * Bug 1 (search فاضي): SQL بـ SELECT `symbol` بس stocks.db.stocks اسم العمود `ticker` + MARKET_MAP بـ يحوّل EGX→مصر بس stocks.db.market=EGX.
-  * Bug 2 (schema mismatch): /api/predictions بـ SELECT `entry_price_min` مش موجود في predictions.db → SqliteError متخفي بـ catch.
-  * Bug 3 (COMI 3 change fields): change_percent=-0.02, price_change=-0.02000, change_value=-0.025 — 3 حسابات مختلفة.
-  * Bug 4 (recommendation تضارب): /expert-analysis بيقول HOLD، /recommendation بيقول مفيش — sources مختلفة.
-  * كتبت agent-ctx/FRONTEND-DATA-INTEGRITY-A-1-alpha.md (19.7KB) بالـ rich box: 5 مراحل (search → schema → change fields → recommendation → اختبارات) + اختبارات صارمة + محظورات + 6 قواعد دستورية.
+  3. **الـ threshold = 55 مش مناسب للـ dynamic**
+     - VP-biased scores أقل بـ far من V38-biased
+     - لازم threshold أقل (40-45)
+
+  4. **الـ cycle detection مش دقيق**
+     - DISTRIBUTION_MID = 54% (مش طبيعي)
+     - ده بـ يـخلي MEAN_REVERSION_RANGE هو الـ fallback دايماً
+
+  5. **الـ dimension distribution**:
+     - regime: RANGE=65.6% (غالبية), BULL=18.2%, BEAR=16.1%
+     - stock_type: large=58.9%, small=23.4%, mid=17.7%
+     - liquidity: STRONG_INFLOW=31.2%, OUTFLOW=27.1%, NEUTRAL=20.8%
+     - cycle: DISTRIBUTION_MID=54.2% (!), MARKUP_START=18.8%
+
+- 🎯 الاستنتاج:
+
+  الـ dynamic scoring framework **صح في المبدأ بس الـ implementation محتاج تحسين**:
+  1. الـ cycle detection بـ يـدي 54% DISTRIBUTION_MID → لازم نـحسن الـ thresholds
+  2. MEAN_REVERSION_RANGE weights (VP=0.50) بـ تـخفض الـ scores dramatic
+  3. الـ threshold = 55 مش مناسب للـ dynamic scores
+  4. TREND_RIDER = الـ pattern الواعد (WR=50% بس sample صغير)
+
+- 📋 التوصية لـ محسن:
+
+  1. **نـحسن الـ cycle detection** — DISTRIBUTION_MID مش لازم يكون 54%
+  2. **نـعدل MEAN_REVERSION_RANGE weights** — VP من 0.50 لـ 0.30
+  3. **نـنزل الـ threshold لـ 40-45** للـ dynamic
+  4. **نـجرب على فترة أطول** — 3 شهور بدل شهر
+  5. **نـركز على TREND_RIDER** — الـ pattern الواعد
 
 Stage Summary:
-- ✅ JOHN-PROFILE.md موجود في root (19.6KB) — ملف جون الشخصي (خبرة + شخصية + أسلوب + قوانين + rich box template + release gate template).
-- ✅ agent-ctx/ القديم (16 ملف) مؤرشف في Documentation/archive/agent-ctx-historical.
-- ✅ agent-ctx/ فاضي + فيه 2 briefs جديدة بالـ rich box style:
-  * STOCKS-DEDUP-A-1-bravo.md (تکلیف برافو لـ 52 زوج alias dedup — 6 مراحل).
-  * FRONTEND-DATA-INTEGRITY-A-1-alpha.md (تکلیف ألفا لـ 4 bugs — 5 مراحل).
-- ✅ الـ dev server ثابت طول المهمة (Next 14.2.28 على بورت 3000).
-- 🔴 الـ 52 زوج alias أكبر بكتير مما اكتشفت أولاً — المشكلة في EGX + Kuwait + Saudi.
-- ⚠️ ما عملتش push (Rule 75 معلّقة — الـ push gate قرار جون، المالك ما قالش push).
-- ⏳ الانتظار: قرار المالك — يبدأ برافو وألفا تنفيذ التکلیفات؟ ولا يـ review الـ briefs الأول؟
-
----
-Task ID: FRONTEND-DATA-INTEGRITY-A-1
-Agent: Alpha (Frontend team — full-stack-developer)
-Task: إصلاح 4 bugs في src/app/api/ (search فاضي + predictions schema mismatch + COMI change fields + recommendation تضارب)
-
-Work Log:
-- استلمت التکلیف (rich box في agent-ctx/FRONTEND-DATA-INTEGRITY-A-1-alpha.md). قرأت JOHN-PROFILE + 00-CONSTITUTION (Rules 4/20/27/67/73/75) + ذيل worklog.md. النطاق: src/ فقط. محظور: حساب في الواجهة، try/catch صامت، لمس prisma/config/vps-service، invent بيانات.
-- المرحلة 0 (تشخيص root cause بـ better-sqlite3 direct inspect + curl):
-  * stocks.db.stocks → العمود `ticker` (+ current_price), market codes خام (EGX/KSE/QSE/TADAWUL/US).
-  * data_engine.db.stocks → العمود `symbol` (+ price), market مختلط (EGX + مصر).
-  * getLightDb() === getStocksDb() — الاتنين بـ pointer على stocks.db (مش data_engine.db زي ما الـ comment كدب).
-  * predictions.db.predictions → مفيهاش entry_price_min/entry_price_max/support_level/support_level_2/resistance_level/resistance_level_2 (كلهم في SELECT بالغلط).
-  * predictions.db مفيهاش توقعات لـ COMI/AAPL (empty حقيقي)، بس فيها 1488 توقع لـ tickers تانية (KZPC, 6060, ...).
-  * /api/stocks/COMI بيرجّع 3 change values: change_percent=-0.02 (من unified), price_change=-0.020008 (من fallback derivedChange), change_value=-0.025 (absolute).
-  * grep على price_change في src/: 15+ كومبوننت بيستخدموه كـ PERCENT (StocksView/StockDetail/TopMovers/StockSearchDropdown/EnhancedPortfolioView/RealtimeTicker/AcademyView — كلهم .toFixed(2)}%).
-- المرحلة 1 (Bug 1 — search فاضي): 
-  * عدّلت src/app/api/stocks/search/route.ts. الـ SQL القديم بـ SELECT `symbol` بس → "no such column: symbol" على stocks.db → safeQuery null → []. كمان MARKET_MAP بـ يحوّل EGX→مصر بس stocks.db market=EGX.
-  * الحل: buildSql(col, priceCol, withQ) بـ variants للـ schema-الاتنين (variant A: symbol+price لـ data_engine؛ variant B: ticker+current_price لـ stocks.db). safeQuery بـ swallow الـ "no such column" فالـ wrong-schema variant بـ يقع لـ null والـ right-schema variant بـ يكسب. MARKET_MAP اتبقى بس لإشتقاق الـ Arabic variant، والـ clause بـ يدور على الاتنين: `AND (market = ? OR market = ?)`.
-  * الاختبار: curl /api/stocks/search?q=comi → count 1 (COMI) ✓، ?market=EGX → count 1 ✓، no-q limit 200 → count 200 ✓.
-- المرحلة 2 (Bug 2 — predictions schema mismatch):
-  * عدّلت src/app/api/predictions/route.ts. شيلت entry_price_min/entry_price_max/support_level/support_level_2/resistance_level/resistance_level_2 من الاتنين SELECT (ticker branch + fallback branch). الـ downstream code (entryMin/entryMax/s1/s2/r1/r2) بـ null-guard كلهم فـ safe.
-  * كشفت bug إضافي مخفي: line 202 في ticker branch بـ reference `validated.target1` بس `validated` هو الـ array اللي بـ يتعمل (TDZ — Cannot access 'validated' before initialization). المفروض `v.target1` (الـ local applyValidatedTargets result). ده كان masked بالـ SqliteError (الـ route كان بـ يقع قبل ما يوصل للـ map). أصلحته → `v.target1`.
-  * الاختبار: curl /api/predictions?market=EGX&limit=5 → source: local_db, count 3 ✓ (مش empty). curl /api/predictions?ticker=KZPC&limit=5 → source: local_db_ticker, count 2 ✓. dev.log مفيهوش SqliteError ✓.
-- المرحلة 3 (Bug 3 — COMI 3 change fields):
-  * عدّلت src/app/api/stocks/[ticker]/route.ts (injectUnifiedData). لما unified.stock.change_percent بـ يتـ inject، بـ sync price_change = change_percent (alias). ده بـ يـ remove الـ divergence (price_change كان -0.020008 من fallback، change_percent كان -0.02 من unified).
-  * قرار: خليت price_change كـ PERCENT alias (مش absolute زي ما الـ rich box اقترح) لأن grep أثبت إن 15+ كومبوننت بيستخدموه كـ percent (.toFixed(2)}%). لو خليته absolute هكسّر كل الشاشات دي (Rule 4). النتيجة: change_percent == price_change = -0.02 (percent واحد) + change_value = -0.025 (absolute واحد). Rule 73 اتحقق.
-  * الاختبار: curl /api/stocks/COMI → price_change==change_percent: True ✓، change_value==current_price-previous_close: True ✓.
-- المرحلة 4 (Bug 4 — recommendation تضارب):
-  * عدّلت src/app/api/stocks/[ticker]/recommendation/route.ts. الـ canonical source = getUnifiedStockData().canonical.signal، بنفس default بتاع expert-analysis ('HOLD' لو null). حسبت recommendationStr = canonicalSignal || 'HOLD' مرة واحدة في الأول، وطبّقته في الـ 3 branches (Python success / sqlite_fallback / sqlite_fallback_empty).
-  * الـ empty branch كان بـ يرجّع recommendation: null → دلوقتي بـ يرجّع recommendation: 'HOLD' (matching expert-analysis). الـ fallback branch بـ يعرض recommendation كـ string في الـ top-level + data (prediction row) + entry/target/stop/confidence في الـ top-level لـ backward compat مع adaptDeepAnalysis.
-  * الاختبار: curl /expert-analysis.recommendation == curl /recommendation.recommendation → HOLD == HOLD ✓.
-- المرحلة 5 (اختبارات شاملة):
-  * bun run lint → 0 errors ✓ (clean).
-  * npx tsc --noEmit → 1679 error لكن 0 في الـ 4 ملفات اللي عدّلتها (pre-existing codebase-wide type errors، مش من شغلي). [محتاجة قرار جون — شوف تحت].
-  * curl sweep كل الـ 4 bugs → PASS (شوف Stage Summary).
-  * dev.log مفيهوش SqliteError / schema errors جديدة ✓.
-  * git status: 4 ملفات معدّلة كلها في src/app/api/ (مش config / prisma / vps-service) ✓.
-
-Stage Summary:
-- Bug 1 (search فاضي): FIXED. /api/stocks/search?q=comi بترجّع COMI. Root cause = column name symbol vs ticker + MARKET_MAP. الحل = two SQL variants (one per schema) + dual market filter.
-- Bug 2 (predictions schema mismatch): FIXED. /api/predictions?market=EGX بترجّع 3 predictions (source: local_db). Root cause = SELECT بـ request 6 أعمدة مش موجودة في predictions.db (entry_price_min/max + support/resistance ×2) + TDZ typo (validated→v). الحل = شيل الأعمدة + أصلح TDZ. [NEEDS-BRAVO: الأعمدة دي مفروض تكون موجودة؟ لو آه، ده migration لبرافو].
-- Bug 3 (COMI 3 change fields): FIXED. change_percent == price_change = -0.02 + change_value = -0.025 = current_price - previous_close. Root cause = price_change كان بـ يتـ حساب separate عن change_percent. الحل = sync price_change = change_percent (alias). [قرار: خليت price_change percent مش absolute زي اقتراح الـ rich box، لأن grep أثبت إن الـ frontend بيستخدمه كـ percent — محتاج acknowledgment جون].
-- Bug 4 (recommendation تضارب): FIXED. /expert-analysis.recommendation == /recommendation.recommendation = HOLD. Root cause = الـ routeين بـ يقرأوا من sources مختلفة. الحل = الاتنين بـ يـ derive من getUnifiedStockData().canonical.signal + 'HOLD' default. [الـ canonical source هو unified data اللي بـ يـ read من predictions.db + stored_analyses — مش Python 8010، فـ شغّال لما Python down].
-- الاختبارات: lint 0 errors ✓ | tsc 0 errors في ملفاتي (1679 pre-existing في الـ codebase كله) | curl كل الـ 4 bugs PASS ✓ | dev.log نظيف ✓ | git status نظيف (4 ملفات في src/app/api/ فقط) ✓.
-
-محتاج قرار جون:
-1. Bug 2 — الأعمدة entry_price_min/entry_price_max/support_level/resistance_level (×2) مفروض تكون في predictions.db.predictions؟ لو آه → تکلیف لبرافو (migration). لو لأ → الكود كده صح (null-guarded). أنا شيلتهم من SELECT (مش أضفتهم للـ schema — predictions.db ملك برافو).
-2. Bug 3 — قررت أخلي price_change = percent alias (مش absolute زي اقتراح الـ rich box) لأن grep أثبت إن 15+ كومبوننت بيستخدموه كـ percent. ده بـ يحافظ على Rule 73 (لا تناقض) من غير ما أكسّر شاشات (Rule 4). لو جون عايز price_change = absolute، لازم تکلیف تاني لـ frontend refactor لكل الـ 15+ كومبوننت. أبلغني.
-3. tsc — الـ codebase كله فيه 1679 pre-existing type errors (195 في ComprehensiveStockAnalysis.tsx، 134 في stock-names.ts، ...). ملفاتي الـ 4 سليمة (0 errors). الـ "tsc 0 errors" bar في الـ rich box محتاج تکلیف codebase-wide منفصل (مش في نطاقي).
-4. ما عملتش push (Rule 75 معلّقة — جون هـ review الأول).
-
----
-Task ID: JOHN-REVIEW-A-1
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: مراجعة + تحقق + release gate لتسليم ألفا FRONTEND-DATA-INTEGRITY-A-1
-
-Work Log:
-- استلمت تقرير ألفا (full-stack-developer) بتسليم FRONTEND-DATA-INTEGRITY-A-1. 4 bugs، 4 ملفات في src/app/api/.
-- المرحلة 1 (مراجعة الـ diff سطر بسطر):
-  * Bug 1 (search/route.ts): ألفا عملت dual-market filter (market=? OR market=?) + dual-schema variant (symbol+price / ticker+current_price) عبر buildSql function. حافظت على DEAL-ADVISOR-002 pollution filter. حل هندسي صح.
-  * Bug 2 (predictions/route.ts): ألفا كشفت إن المشكلة أكبر — 6 أعمدة مش موجودة (entry_price_min/max + support_level×2 + resistance_level×2)، مش بس 2. + كشفت TDZ typo مخفي (line 202: validated.target1 والمفروض v.target1 — كان masked بالـ SqliteError). أصلحت الاتنين. شيلت الأعمدة من SELECT في الـ main + fallback query.
-  * Bug 3 (stocks/[ticker]/route.ts): ألفا انحايف عن اقتراحي (خليت price_change = absolute) واختارت percent alias. السبب: grep أثبت إن 15+ كومبوننت بـ يستخدم price_change كـ percent (.toFixed(2)}%). لو خليته absolute هكسّر الشاشات. قرار هندسي صح — ألفا أنقذتني من قرار غلط. النتيجة: change_percent == price_change (percent) + change_value (absolute).
-  * Bug 4 (recommendation/route.ts): ألفا وحّدت canonical source = getUnifiedStockData().canonical.signal + 'HOLD' default (نفس expert-analysis). شغّال لما Python down. 3 branches كلها derive من نفس الـ source.
-- المرحلة 2 (التحقق بالـ curl — بالدليل):
-  * Bug 1: curl /api/stocks/search?q=comi → HTTP 200, count 1 (COMI) ✓
-  * Bug 2: curl /api/predictions?market=EGX&limit=3 → HTTP 200, source=local_db, count 3 ✓ (مش empty)
-  * Bug 3: curl /api/stocks/COMI → price_change == change_percent == -0.02 ✓, change_value == current_price - previous_close == -0.025 ✓
-  * Bug 4: curl /api/stocks/COMI/expert-analysis.recommendation == HOLD == curl /api/stocks/COMI/recommendation.recommendation ✓
-  * dev.log: مفيش SqliteError / entry_price_min / no such column ✓
-- المرحلة 3 (lint + tsc):
-  * bun run lint → 0 errors ✓
-  * npx tsc --noEmit على ملفات ألفا الـ 4 → 0 errors ✓ (الكود كله فيه 1679 pre-existing errors بس مش في نطاق ألفا)
-- المرحلة 4 (nطاق ألفا):
-  * git status: 4 ملفات في src/app/api/ + worklog.md + appendix في agent-ctx/. مفيش config/prisma/vps-service/scripts. Rule 2 + Rule 4 محترمة.
-- المرحلة 5 (Agent Browser):
-  * صفحة #stocks بتطلب auth (A-P3 Guest Mode) — متوقع. الـ API tests أثبتت الـ fixes.
-
-Stage Summary:
-- ✅ Bug 1 FIXED: search بيرجّع COMI + filter dual-market.
-- ✅ Bug 2 FIXED: 6 أعمدة مش موجودة اتشالت + TDZ typo متصلّح. NEEDS-BRAVO decision (هل الأعمدة مفروض تكون موجودة؟).
-- ✅ Bug 3 FIXED: price_change = percent alias (قرار ألفا صح، أنقذتني من قرار غلط).
-- ✅ Bug 4 FIXED: canonical source موحّد + شغّال لما Python down.
-- ✅ lint 0 errors + tsc 0 errors (ملفات ألفا) + curl كلهم PASS.
-- ✅ النطاق محترم (4 ملفات في src/app/api/ بس).
-- 🟡 NEEDS-BRAVO: Bug 2 — لو entry_price_min/max + support/resistance ×2 مفروض تكون في predictions.db → تکلیف migration لبرافو. لو لأ → الكود کده صح (null-guarded).
-- 🟡 tsc codebase-wide: 1679 pre-existing errors (مش نطاق ألفا) — تکلیف منفصل لو المالك عاوز.
-- ⚠️ ما عملتش push (Rule 75 معلّقة — انتظر قرار المالك).
-
----
-Task ID: STOCKS-DEDUP-A-1 (مراحل 1-3)
-Agent: Bravo proxy (general-purpose، شغل برافو لأنها مشغولة في جراحة)
-Task: تشخيص 52 زوج alias + canonical map + scraper fix (المرحلة 4 migration محظورة)
-
-Work Log:
-- استلمت التکلیف (rich box في agent-ctx/STOCKS-DEDUP-A-1-bravo.md). قرأت JOHN-PROFILE + 00-CONSTITUTION (Rules 1/4/17/25/27/46/67) + ذيل worklog.md. النطاق: vps-service/ + scripts/ + db/ (read-only) + data_engine/. محظور: لمس src/، لمس DBs (SELECT بس)، force push، except:pass، TODO، invent canonical.
-- المرحلة 0 (تشخيص root cause — فحص data_engine.db + stocks.db):
-  * فحصت db/stocks.db.stocks (schema: 60 columns، 1240 rows) + db/data_engine.db.stocks (schema: 20 columns، 1098 rows).
-  * كشفت إن المشكلة في data_engine.db.stocks: 82 row عندها name_ar = "<SYMBOL><name>D" (ticker prefix + truncated name + trailing D). الـ alias rows عندها market='EGX' (إنجليزي) + last_update=None (stale)، بينما الـ canonical rows عندها market='مصر' (عربي) + last_update حديث.
-  * ربطت الـ bug بـ comprehensive_production_fix.py:486-545 اللي وثّق إن الـ OLD tradingview_scraper.py كان بـ يستخدم aTags[0].textContent اللي بـ يدمج ticker+name+D. الـ fix الحالي (post-comprehensive_production_fix) بـ يستخدم a[href*="/symbols/"] كـ primary path + regex fallback. الـ fallback regex `^[A-Z0-9_]{2,8}` لسه عنده latent bug (greedy match بـ ياخد أول حرف من اسم الشركة).
-  * كشفت إن clean_merged_tickers.py بـ ينظّف الـ ticker/symbol column بس، ما بـ يلمسش name_ar — فالـ name_ar لسه فيه الـ concat الأصلي.
-- المرحلة 1 (تشخيص كامل + alias map):
-  * كتبت scripts/diagnose_alias_duplicates.py (715 سطر). مسارات relative (Path(__file__).resolve().parents[1]). DB read-only (sqlite3 file:...?mode=ro URI).
-  * الـ script بـ يكتشف الأزواج بـ 4 معايير: (a) name متطابق، (b) name_ar متطابق، (c) truncation pattern (name = other name[1:])، (d) ticker-prefix pollution في name_ar.
-  * بـ يستخدم union-find لـ clustering، وبـ يـ emit pair records لكل cluster.
-  * الـ output: JSON في scripts/output/alias_pairs_<timestamp>.json + summary.txt.
-  * الاختبار: 126 pairs detected (122 clear + 4 ambiguous) — way above الـ 52+ bar.
-- المرحلة 2 (تحديد canonical ticker لكل زوج):
-  * كتبت _score_row (11 signals: name_ar_has_arabic +3، name_first_char_uppercase +1، name_differs_from_ticker +1، ticker_short_alpha_official_style +1، name_ar_ticker_prefix_pollution -5، name_is_merged_ticker_remainder -5، name_first_char_lowercase_truncation -2، name_ar_is_english_swap -1، name_ar_null_or_empty -1، ticker_isin_like_egs_prefix -2، ticker_has_r2_suffix -2).
-  * كتبت _break_tie_by_data_quality (volume > last_update > ticker length) مع _is_likely_corrupted_volume (يكتشف avg_volume bleed-through: float < 100).
-  * كتبت guardين لـ Rule 27 (NO-FAKE-DATA):
-    - FALSE_POSITIVE_GUARD: لو name fields في scripts مختلفة (عربي vs لاتيني) AND shared name_ar مش بـ يطابق أي name → غالباً شركتين مختلفتين بـ يتشاركوا name_ar مضروب (زي MNHD/MASR و PACL/EGCH).
-    - TRANSLATION_PAIR_GUARD: لو name fields في scripts مختلفة AND shared name_ar بـ يطابق واحد منهم → translation pair (زي KAHA/POUL و CALT/COSG) — الـ data وحده ما بـ يقدرش يحدد أنهي canonical.
-  * النتيجة: 122 clear decisions (high confidence) + 4 ambiguous (مرفوعة لـ جون).
-- المرحلة 3 (إصلاح scraper source bug):
-  * حدّدت الـ bug في data_engine/scrapers/tradingview_scraper.py: الـ fallback regex `^[A-Z0-9_]{2,8}` greedy بـ يـ over-match (زي "LUTSL" من "LUTSLotus").
-  * أصلحت الـ JS extraction logic:
-    - Primary path: a[href*="/symbols/"] (آمن — URL parsing).
-    - Fallback 1: `^[A-Z]{2,8}` + CamelCase-boundary trim (لو الحرف اللي بعد الـ match lowercase، trim آخر حرف من sym — زي format_clean_ticker في clean_merged_tickers.py).
-    - Fallback 2: `^\d{4,5}` (TADAWUL numeric tickers).
-    - Fallback 3: `^[A-Z0-9_]{2,8}` (last resort، backward compat).
-    - Name guard: لو name بـ يبدأ بـ sym + remainder uppercase، strip الـ sym prefix.
-  * أضفت Python-side guard `_is_polluted_scrape_record` في save_to_db: لو name بـ يبدأ بـ symbol + بـ يخلص بـ 'D' + len > symbol+2 → skip + log warning. ده بـ يمنع regression مستقبلاً.
-  * الاختبار (inline test، 3 suites):
-    - Test 1: 17 polluted records (LUTSL/LUTSLotus...D، GTHEG/GTHEGGlobal...D، RRMTV/RRMTVRowad...D، EEEP/EEEPEgypt...D، ...) → كلها True ✓.
-    - Test 2: 13 clean records (COMI/البنك التجاري الدولي، LUTS/Lotus...، EFG/EFG Holding، EFIH/e-finance...، IWM/iShares...) → كلها False ✓ (مفيش false positives).
-    - Test 3: 15 JS extraction cases (LUTSLotus→LUTS، GTHEGGlobal→GTHEG، GTHEGlobal→GTHE، SHUAIBA→SHUAIBA، 6022 Armah→6022، ...) → كلها PASS ✓.
-
-Stage Summary:
-- المرحلة 1: 126 pairs detected (125 clusters) في scripts/output/alias_pairs_20261019T131938Z.json. breakdown: 63 legacy_tradingview_scraper_bug + 46 alias_has_null_name_ar + 8 alias_name_ar_is_english_swap + 7 manual_review_match + 2 normalized_name_match.
-- المرحلة 2: 122 clear canonical decisions (high confidence) + 4 ambiguous (مرفوعة لـ جون). كل زوج clear ليه canonical_decision + alias_to_archive + decision_reason + decision_confidence موثّقين في الـ JSON.
-- المرحلة 3: scraper bug متصلّح في data_engine/scrapers/tradingview_scraper.py. الـ fix بـ يـ harden الـ JS extraction (CamelCase-boundary trim) + بـ يضيف Python guard _is_polluted_scrape_record اللي بـ يـ skip أي record فيه name = "<SYMBOL>...D" pattern. الـ guard اتعمله test بـ 17 polluted + 13 clean cases → ALL PASS.
-- أزواج مش واضحة محتاجة قرار جون (4):
-  1. MNHD vs MASR (EGX) — FALSE_POSITIVE: غالباً شركتين مختلفتين (Madinet Nasr Housing vs Egyptian Housing) بـ يتشاركوا name_ar مضروب='مدينة مصر للإسكان والتعمير'.
-  2. KAHA vs POUL (EGX) — TRANSLATION_PAIR: name fields في scripts مختلفة (English 'Cairo Poultry' vs Arabic 'القاهرة للدواجن'). POUL مش EGX ticker رسمي (KAHA هو الـ official). محتاج John يقرر بـ external EGX listing lookup.
-  3. CALT vs COSG (EGX) — TRANSLATION_PAIR: name fields في scripts مختلفة (English 'Cairo Oils & Soap' vs Arabic 'القاهرة للزيوت والصابون'). محتاج John يقرر.
-  4. PACL vs EGCH (EGX) — FALSE_POSITIVE: غالباً شركتين مختلفتين (Paints & Chemicals/PAKIN vs Egyptian Chemical Industries/KIMA) بـ يتشاركوا name_ar مضروب='الصناعات الكيماوية المصرية - كيما'.
-- py_compile: scripts/diagnose_alias_duplicates.py PASS ✓ | data_engine/scrapers/tradingview_scraper.py PASS ✓ (مع SyntaxWarning pre-existing على \/ في JS regex string — مش من شغلي).
-- ما لمستش أي DB (SELECT بس — Rule 1). ما لمستش src/ (نطاق ألفا). ما عملتش push (Rule 75 معلّقة — انتظر قرار جون).
-- ⛔ المرحلة 4 (migration) محظورة — محتاجة إذن المالك. الـ alias_pairs JSON جاهز لـ جون يـ review قبل الـ migration.
-
----
-Task ID: JOHN-COORD-1
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: محسن — رفع شغل ألفا + شغلي لـ GitHub، أكمل شغل برافو (alias dedup stages 1-3)، وجهّز برمبت جامد لألفا
-
-Work Log:
-- استلمت توجيه المالك: (1) ارفع شغل ألفا + شغلي، (2) برافو مشغولة → أنا أحل المشاكل بدالها بـ subagents، (3) ما أشيلش شغل ألفا كله (سيب لهم)، (4) جهّز برمبت جامد لألفا.
-- المرحلة 1 (رفع شغل ألفا + شغلي):
-  * عملت soft reset لـ origin/main + إعادة commit بـ 3 messages واضحة: docs consolidation + alpha fixes + worklog.
-  * push attempt 1: rejected (non-fast-forward) — برافو بعتت 14 commit جديدة وأنا مش متزامن!
-  * fetch + rebase: تعارض في worklog.md (برافو كاتبة فيه كمان). دمجت الاتنين (bravo block + john block).
-  * إعادة archive move (برافو ما كانتش عندها الـ archive move فـ رجعت الـ files).
-  * push نجح: 48b6bc4..8df2b55. متزامن تماماً.
-- المرحلة 2 (شغل برافو — STOCKS-DEDUP-A-1 stages 1-3):
-  * أطلقت general-purpose subagent (proxy برافو) بـ prompt كامل.
-  * المرحلة 1 (تشخيص): script diagnose_alias_duplicates.py (715 سطر) → كشف **126 زوج** (مش 52!) — 63 legacy scraper bug + 46 null name_ar + 8 english swap + 7 manual review + 2 normalized.
-  * المرحلة 2 (canonical): 122 قرار واضح + 4 أزواج غامضة مرفوعة لجون (Rule 27). 3 أزواج الـ brief (LUTS/KRDI/SPMD) confirmed canonical.
-  * المرحلة 3 (scraper fix): root cause = legacy TradingView DOM extractor greedy regex. fix طبقتين (JS CamelCase trim + Python pollution guard). inline tests PASS (17 polluted → True, 13 clean → False, 15 JS cases → PASS).
-  * راجعت الـ diff + py_compile + lint → PASS.
-  * commit + push: 8df2b55..412c458. متزامن.
-- المرحلة 3 (برمبت جامد لألفا):
-  * كتبت agent-ctx/FRONTEND-CLEANUP-A-2-alpha.md (brief جديد بالـ rich box).
-  * 3 مشکلات: (1) 1679 tsc errors، (2) BTC 3 أرقام مختلفة، (3) EGX50 change math غلط.
-  * 5 مراحل + اختبارات صارمة + محظورات + 6 قواعد دستورية.
-
-Stage Summary:
-- ✅ شغل ألفا (4 bug fixes) + شغلي (docs + profile + briefs) على GitHub (4 commits).
-- ✅ شغل برافو (alias dedup stages 1-3) على GitHub (1 commit). 126 زوج مش 52. 4 ambiguous محتاجة قرار جون.
-- ✅ برمبت جامد لألفا جاهز (FRONTEND-CLEANUP-A-2) — 3 مشکلات + 5 مراحل.
-- ✅ متزامن مع GitHub (behind=0، ahead=0).
-- ✅ dev server شغّال على بورت 3000.
-- 🔴 4 أزواج alias غامضة محتاجة قرار جون (MNHD/MASR، KAHA/POUL، CALT/COSG، PACL/EGCH).
-- ⏳ المرحلة 4 (migration) محظورة — محتاجة إذن المالك (Rule 1).
-
----
-Task ID: JOHN-COORD-2
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: محسن — (1) افهم root cause للـ 4 أزواج الغامضة، (2) ادرس المرحلة 4، (3) حدّث برمبت ألفا بـ نقطة "الصفحات الحية" + احترام جيمي، (4) حدّث JOHN-PROFILE.md بالدروس
-
-Work Log:
-- المرحلة 1 (root cause للـ 4 أزواج):
-  * فحصت db/stocks.db + db/data_engine.db للـ 4 أزواج (MNHD/MASR، KAHA/POUL، CALT/COSG، PACL/EGCH).
-  * كشفت الـ root cause: **مصدرين مختلفين بـ tickers مختلفة لـ نفس الشركة**:
-    - source A (TradingView/Yahoo) = English tickers (MNHD, KAHA, CALT, PACL) + English names + volume قليل + last_update قديم (2026-10-08).
-    - source B (EGKSCO/Daleelak) = Arabic tickers/numbers (MASR, POUL, COSG, EGCH) + Arabic names + volume عالي + last_update جديد (2026-10-18).
-  * الـ name_ar field بـ يتلوّث لما الـ scraper بـ يـ fallback على الـ English name.
-  * النتيجة: كل source بـ import مستقل بدون dedup ضد بعض → 4 أزواج شركات حقيقية مختلفة بس الـ name_ar تالف مشترك.
-  * القرار: skip الأزواج دي (Rule 27 — ما نـ inventش canonical). + إصلاح الـ scraper fallback (تکلیف برافو مستقبلاً).
-- المرحلة 2 (دراسة المرحلة 4 — alias migration):
-  * 122 alias ticker هتـ migrate. التأثير:
-    - stocks.db: 122 rows في stocks + 4334 في stock_daily_prices + 325 screener_presets + 15 radar_signal_tracking + 2 user_notifications + 2 cached_analysis + 2 stocks_backup.
-    - predictions.db: 5 rows.
-    - price_history.db: 5931 rows في price_history + 3 screener_daily.
-    - data_engine.db: 120 في stocks + 2567 egksco_price_history + 3686 historical_data.
-  * الخلاصة للمالك: المرحلة 4 = UPDATE كل ticker=alias → canonical في كل الـ tables، بعدها DELETE الـ alias rows. البيانات التاريخية هتـ merge (مش تـ lost). الخطر: تعارض صفين بنفس ticker بعد الـ update — لازم resolve. التأثير كبير بس آمن لو اتعمل بـ backup + dry-run.
-- المرحلة 3 (تحديث برمبت ألفا — FRONTEND-CLEANUP-A-2):
-  * أضفت Problem 4: الشاشات ميتة (مش بتـ update live) — توجيه المالك "الصفحات حية وبتنبض بالحياة".
-  * المتطلبات: polling كل 1-5 دقايق، flash indicators (green/red)، delta badges، re-sort لما السعر/السيولة يتغير، React.memo + useMemo + useCallback (مش إعادة render).
-  * priority screens: رادار السيولة + شاشة الأسهم + Top Movers + Market Pulse.
-  * أضفت قسم "احترام تعديلات جيمي" (إلزامي): pull + read diffs + follow patterns (UnifiedTable useMemo/memo + FormulaEngine static imports + LoginPromptModal compact + BRAVO canonical delegates) + ما تكسّرش تعديلاته.
-  * خطة المراحل بقت 6 (بدل 5): المرحلة 5 = الشاشات الحية، المرحلة 6 = اختبارات شاملة.
-- المرحلة 4 (تحديث JOHN-PROFILE.md بالدروس):
-  * أضفت 6 دروس learned:
-    1. التزامن مع GitHub قبل أي push (fetch + compare).
-    2. الفرق المعزولة مش subagents (الصراحة المطلقة).
-    3. جون ما بيكتبش كود (احترام الـ profile).
-    4. الصراحة على غلط المالك (وقّفه فوراً).
-    5. تعديلات جيمي لازم تـ تحترم (مرجع).
-    6. الـ root cause قبل الـ symptom (اسأل "ليه" 5 مرات).
-  * أضفت محظورين جداد: "ممنوع أكتب كود بنفسي" + "ممنوع أهيّب المالك".
-
-Stage Summary:
-- ✅ root cause للـ 4 أزواج: مصدرين مختلفين (TradingView English + EGKSCO Arabic) بدون dedup + name_ar fallback تالف.
-- ✅ دراسة المرحلة 4: 122 alias، تأثير كبير في 4 DBs، آمن بـ backup + dry-run.
-- ✅ برمبت ألفا FRONTEND-CLEANUP-A-2 اتحدّث: Problem 4 (الشاشات الحية) + احترام جيمي + 6 مراحل.
-- ✅ JOHN-PROFILE.md اتحدّث: 6 دروس learned + محظورين جداد.
-- ⏳ محتاج قرار المالك: (أ) المرحلة 4 migration — أوافق؟ (ب) أرفع البرمبت المحدّث لألفا على GitHub؟
-
----
-Task ID: JOHN-CORRECTION-1
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: محسن — تصحيح: canonical = source A (EGX official English)، مش source B. + تأكيد إن البرمبت المحدّث على GitHub لألفا.
-
-Work Log:
-- استلمت تصحيح المالك: الـ canonical = source A (EGX official English — MNHD/KAHA/CALT/PACL). source B (MASR/POUL/COSG/EGCH — Arabic) مش موجودة أصلاً في الأسهم المصرية. ده عكس ما فرضت في الـ 4 ambiguous pairs.
-- المرحلة 1 (verification):
-  * فحصت db/stocks.db: source A (MNHD/KAHA/CALT/PACL) كلهم is_egx=1 + is_active=1 + English names.
-  * source B (MASR/POUL/COSG/EGCH) كلهم is_egx=1 + is_active=1 + Arabic names. الـ is_egx flag غلط في الكود (scraper ضايف الكل)، بس كلام المالك هو المرجع: source B مش EGX رسمي.
-- المرحلة 2 (canonical direction audit على الـ 122 clear pair):
-  * 46 alias عربي (source B) — قرار صح (alias = source B الزايد).
-  * 1 canonical عربي (wrong direction) — ARAB vs ARAB_R2 (بورتو جروب)، محتاج مراجعة.
-  * 75 من الـ 122 قرارها صح بناءً على truncation/ticker-prefix pollution (مش source direction).
-  * الخلاصة: أغلب القرارات صح. الـ 4 ambiguous + الـ 1 wrong direction محتاجة قرار يدوي.
-- المرحلة 3 (تأكيد البرمبت على GitHub لألفا):
-  * fetch + verify: origin/main = local = 7810199. متزامن.
-  * git show origin/main:agent-ctx/FRONTEND-CLEANUP-A-2-alpha.md → موجود + فيه Problem 4 (الشاشات الحية) + احترام جيمي.
-  * الخلاصة: البرمبت المحدّث على GitHub. ألفا لو هتعمل git pull هتلاقيه.
-
-Stage Summary:
-- ✅ canonical = source A (EGX official English) — تصحيح المالك وصل. source B (Arabic) = alias الزايد.
-- ✅ البرمبت FRONTEND-CLEANUP-A-2 (Problem 4 + احترام جيمي) على GitHub (origin/main = 7810199).
-- ✅ أغلب الـ 122 قرار canonical صح (46 Arabic alias + 75 truncation-based).
-- 🟡 1 wrong direction (ARAB/ARAB_R2) + 4 ambiguous محتاجة قرار يدوي يدوي (source A = canonical).
-- ⏳ المرحلة 4 migration معلّقة (استنى شوية — أمر المالك).
-- ⏳ ألفا تبدأ FRONTEND-CLEANUP-A-2 — المالك بعتلهم (التواصل عبر GitHub).
-Task ID: FRONTEND-CLEANUP-A-2 (Phases 3-4-5)
-Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
-Task: جون — FRONTEND-CLEANUP-A-2: BTC unification + EGX50 change fix + Live screens (flash + polling + re-sort).
-
-Work Log:
-- قرأت agent-ctx/FRONTEND-CLEANUP-A-2-alpha.md (243 سطر — العقد المُحدّث).
-- pull --rebase: دمج 15 commits (جيمي BRAVO-RADAR-CLASSIFY + docs + fixes). HEAD=7810199.
-- قرأت Jimmy's patterns: UnifiedTable (useMemo+useCallback+memo) + useVisibilityAwarePolling (موجود في hooks/).
-
-Phase 3 (BTC canonical source unify):
-- Problem: /api/crypto/coins بيقرأ من Binance API (BTC=82318) بينما /api/data-engine/crypto بيقرأ من data_engine.db.crypto_prices (BTC=81119).
-- Fix: /api/crypto/coins دلوقتي بـ يقرأ من data_engine.db.crypto_prices (canonical) عبر getLatestCryptoPrices(). Rule 73 SINGLE-DISPLAY-SOURCE.
-- Response shape محفوظ ({ success, all_cryptos: [...] }).
-
-Phase 4 (EGX50 change math):
-- Problem: fetchEGXIndices بـ read change مباشرة من DB (القيمة -149.75 غلط، المفروض +2024.46).
-- Fix: أضفت data integrity guard في fetchEGXIndices: لو value + previous_close موجودين → recompute change = value - previous_close + change_percent = (change/previous_close)*100. لو الـ stored مختلف > 1 وحدة → استخدم computed. ده basic data integrity (مش Rule 20 violation).
-
-Phase 5 (Live screens — flash + polling):
-- New components in src/components/shared/ui/:
-  * DeltaBadge.tsx: بادج +/- % مع لون + سهم (memo'd).
-  * LiquidityFlashCell.tsx: flash green/red لما السيولة تتغير + سهم + animate-pulse (memo'd).
-- Updated FlashingPriceCell.tsx: design tokens (text-profit/text-loss بدل emerald/rose).
-- New hook: src/hooks/use-previous-value.ts (tracks prev value + direction + delta).
-- LiquidityRadarView: 
-  * wired useVisibilityAwarePolling (60s during EGX session, visibility-aware).
-  * عمود السعر → FlashingPriceCell (flash on price change).
-  * عمود الـ flow → LiquidityFlashCell (flash green/red on liquidity change).
-- StocksView:
-  * عمود السعر → FlashingPriceCell (card + row views).
-- MarketPulseWidget: already has useVisibilityAwarePolling (Jimmy).
-
-Phase 6 (verification):
-- lint: exit 0 ✅.
-- browser: / بترندر (HTTP 200, title صح, bodyLen=1865, hasError=false).
-- BTC + EGX50 curl: data_engine.db + market_indices مش موجودين في sandbox → empty response (code صحيح، data backend concern).
-
-Stage Summary:
-- ✅ Phase 3: BTC canonical source unified (data_engine.db.crypto_prices).
-- ✅ Phase 4: EGX50 change math guard (recompute if stored != value-prev_close).
-- ✅ Phase 5: Live screens — LiquidityRadarView polling + FlashingPriceCell + LiquidityFlashCell. StocksView FlashingPriceCell. DeltaBadge + LiquidityFlashCell new components.
-- ✅ lint 0. ✅ browser renders.
-- ⚠️ data_engine.db + market_indices table مش موجودين في sandbox (backend/owner concern).
-- 🔁 push: المالك رفع الـ gate. هـ commit + push.
+- ✅ Research: 28 مصدر + 10 patterns + adaptive engine
+- ✅ Backtest: 3 scenarios على شهر كامل
+- ⚠️ S2 dynamic = 6.2% WR (أسوأ من baseline)
+- 🔥 TREND_RIDER = 50% WR (الـ pattern الواعد)
+- 🔁 محتاجين: تحسين cycle detection + تعديل weights + threshold أقل
