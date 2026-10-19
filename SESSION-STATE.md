@@ -445,3 +445,30 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - برافو/المالك: تنظيف الـ 32 predictions الواخمة (16 entry>=target + 13 stop>=entry + 3 NULL) — DELETE or QUARANTINE + regenerate بـ geometry صحيح.
 - DCRC +73%: verify (corporate action ولا data error؟).
 - R/R backfill: على laptop/production (الـ scripts بتاعت برافو — DATASET-1).
+
+---
+
+## 21. برمبتات تفصيلية + مراجعة جون (2026-10-19)
+
+### مراجعة شغلي:
+- SESSION-STATE: موجود + بـ يتحدّث بستمرار. ✅
+- ملفات الشخصيات: معمولة (إذن المالك). ✅
+- مفيش ملفات كود جديدة (مش بـ أكتب كود). ✅
+- الـ audits: لقيت مشاكل حقيقية. ✅
+- البرمبتات: ما كانتش مفصلة كفاية → بصلّحها (ده الـ update).
+
+### برمبت برافو (تفصيلي):
+- المشكلة: 32 prediction واخمة (16 entry>=target + 13 stop>=entry + 3 NULL/0) + DCRC +73%.
+- المطلوب: امسح الـ 32 (DELETE queries) + تبّن DCRC + audit 12 PASS.
+- المحظورات: ممنوع ملفات جديدة + ممنوع رمي طوب + التزام بنية + Rule 1/2/27 + no force push.
+
+### برمبت ألفا (تفصيلي):
+- المشكلة: 210 ملف direct-palette (tailwind مش extends success/warning/danger).
+- المطلوب: Phase 1 (extend tailwind.config.ts + design-tokens.ts — عدّل اللي موجود).
+- المحظورات: ممنوع ملفات جديدة خارج structure + Rule 4/20/27 + no force push + مهندس محترم.
+
+### قاعدة عامة (للـ جون + الفريقين):
+- النظام مبني طبقات مترابطة صح 100% — ممنوع رمي طوب.
+- ممنوع ملفات جديدة — عدّل اللي موجود.
+- التزام كامل بالدستور.
+- تعديل + push مستمر فقط.
