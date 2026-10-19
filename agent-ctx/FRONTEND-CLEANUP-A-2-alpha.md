@@ -2,8 +2,8 @@
 
 > **موجہ لـ:** ألفا (Frontend)
 > **من:** جون (المدير التنفيذي)
-> **التاريخ:** 2026-10-19
-> **الخطورة:** 🟠 HIGH — كود مكسور + تضارب بيانات العميل
+> **التاريخ:** 2026-10-19 (تحديث 2: إضافة Problem 4 الصفحات الحية + احترام تعديلات جيمي)
+> **الخطورة:** 🟠 HIGH — كود مكسور + تضارب بيانات العميل + شاشات ميتة
 > **القواعد الدستورية:** Rule 4, Rule 20, Rule 27, Rule 67, Rule 73, Rule 75
 
 ---
@@ -48,13 +48,44 @@
 ║  - الـ change field بيحسب غلط (إشارة سالبة + قيمة غلط).          ║
 ║  - السبب: في src/app/api/market/ (overview/indices)، الـ change   ║
 ║    بيتحسب من formula غلط أو بيـ read من field مختلف.             ║
+║                                                                  ║
+║  Problem 4 — الشاشات ميتة (مش بتـ update live):                  ║
+║  - توجيه المالك: «الصفحات لازم تكون حية وبتنبض بالحياة»           ║
+║  - الدليل:                                                        ║
+║    * رادار السيولة: الترتيب ثابت، ما بيتغيرش لما السيولة تزيد/قل  ║
+║    * شاشة الأسهم: الترتيب ثابت رغم تغير السعر/الحجم                ║
+║    * مفيش indicator بصري لـ "سيولة زادت" / "سيولة قلت"            ║
+║  - المطلوب:                                                       ║
+║    * تحديث البيانات بالـ polling (كل 1-5 دقايق للـ data،          ║
+║      مش كل شوية)                                                  ║
+║    * التغيير يكون data update (مش إعادة رسم الشاشة كلها)          ║
+║    * مؤشرات بصرية لـ التغير (flash green/red، arrow up/down،     ║
+║      delta badges)                                                ║
+║    * الترتيب يتـ re-sort لما السعر/السيولة يتغير                  ║
+║  - القاعدة التقنية: React.memo + useMemo + useCallback عشان       ║
+║    ما تـ re-renderش كومبوننت لو الـ data ما اتغيرش.               ║
+║  - جيمي عمل ده في UnifiedTable.tsx (useMemo + useCallback +       ║
+║    memo) — اتبع نفس الـ pattern.                                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║  ⚠️ احترام تعديلات جيمي (إلزامي):                                 ║
+║  جيمي (شريك المالك) عمل تعديلات كتير آخر فترة. ألفا لازم:         ║
+║  1. تـ pull آخر الكود من origin/main قبل ما تبدأ                  ║
+║  2. تقرأ الـ diffs بتاعة جيمي وتفهم الـ patterns:                 ║
+║     * UnifiedTable.tsx: useMemo + useCallback + memo للـ perf     ║
+║     * FormulaEngine.ts: static imports للـ client bundle          ║
+║     * LoginPromptModal.tsx: compact design pattern                ║
+║     * BRAVO-INDICATOR-UNIFY: canonical delegates (مش تنفيذ مكرر)  ║
+║  3. تتبع نفس الـ patterns في شغلك الجديد                          ║
+║  4. ما تكسّرش أي تعديل من تعديلات جيمي                            ║
+║  5. لو لقيت تعارض بين تعديلاتك وتعديلات جيمي → ارفعه لجون         ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  خطة المراحل (overview):                                         ║
 ║  - المرحلة 1: تشخيص الـ 1679 tsc errors + تصنيفها                ║
 ║  - المرحلة 2: إصلاح الـ tsc errors (أكبر 10 ملفات الأول)         ║
 ║  - المرحلة 3: توحيد BTC canonical source (Rule 73)              ║
 ║  - المرحلة 4: إصلاح EGX50 change math                            ║
-║  - المرحلة 5: اختبارات شاملة + Agent Browser verify             ║
+║  - المرحلة 5: الشاشات الحية (live polling + flash updates)       ║
+║  - المرحلة 6: اختبارات شاملة + Agent Browser verify             ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  تفاصيل كل مرحلة (بالخطوات):                                     ║
 ║                                                                  ║
@@ -102,17 +133,46 @@
 ║    4.5. لو الـ change بـ يـ compute في الـ route → أصلح الـ math  ║
 ║    4.6. تأكد إن change_percent = (change / previous_close) × 100 ║
 ║                                                                  ║
-║  المرحلة 5 — اختبارات شاملة:                                     ║
-║    5.1. lint: bun run lint → 0 errors                           ║
-║    5.2. tsc: npx tsc --noEmit → أقل من 500 (من 1679)            ║
-║    5.3. curl tests:                                              ║
+║  المرحلة 5 — الشاشات الحية (live polling + flash updates):       ║
+║    5.1. حدد الـ priority screens (توجيه المالك):                  ║
+║         * رادار السيولة (LiquidityRadarView)                     ║
+║         * شاشة الأسهم (StocksView)                               ║
+║         * Top Movers                                             ║
+║         * Market Pulse widget                                    ║
+║    5.2. لكل شاشة:                                                 ║
+║         (a) ابحث عن polling mechanism موجود (useVisibilityAware-  ║
+║             Polling موجود في src/hooks/)                         ║
+║         (b) حدد الـ refresh interval (1-5 دقايق حسب الشاشة)       ║
+║         (c) استخدم React.memo + useMemo + useCallback عشان       ║
+║             ما تـ re-renderش كومبوننت لو الـ data ما اتغيرش      ║
+║         (d) أضف flash indicator (green/red) لما السعر يتغير      ║
+║         (e) أضف delta badge (+/- %) لـ التغير                    ║
+║         (f) الترتيب يتـ re-sort لما السعر/السيولة يتغير          ║
+║    5.3. لـ رادار السيولة بالذات:                                  ║
+║         * أضف indicator بصري لـ "سيولة زادت" (green up arrow)    ║
+║         * أضف indicator بصري لـ "سيولة قلت" (red down arrow)     ║
+║         * الـ row يتـ re-order حسب الـ liquidity score           ║
+║    5.4. الـ pattern المرجعي: UnifiedTable.tsx (جيمي) —            ║
+║         useMemo + useCallback + memo                             ║
+║    5.5. ما تـ re-renderش الشاشة كلها — بس الـ rows اللي اتغيرت   ║
+║    5.6. اختبر بـ Agent Browser:                                  ║
+║         * شاهد السعر لمدة دقيقة                                  ║
+║         * لازم يـ flash لو اتغير                                 ║
+║         * الـ DOM ما يتـ re-mountش (React DevTools)              ║
+║                                                                  ║
+║  المرحلة 6 — اختبارات شاملة:                                     ║
+║    6.1. lint: bun run lint → 0 errors                           ║
+║    6.2. tsc: npx tsc --noEmit → أقل من 500 (من 1679)            ║
+║    6.3. curl tests:                                              ║
 ║         - /api/crypto/coins BTC == /api/data-engine/crypto BTC   ║
 ║         - /api/market/overview EGX50 change == value - prev      ║
 ║         - /api/market/indices EGX50 change == value - prev       ║
-║    5.4. Agent Browser:                                           ║
+║    6.4. Agent Browser:                                           ║
 ║         - dashboard مفيهوش BTC بـ رقمين                          ║
 ║         - index card الـ change صح                               ║
-║    5.5. dev.log نظيف                                             ║
+║         - رادار السيولة بـ flash + re-order                      ║
+║         - شاشة الأسهم بـ flash + re-sort                         ║
+║    6.5. dev.log نظيف                                             ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  الاختبارات الصارمة بعد كل مرحلة (معيار القبول):                  ║
 ║                                                                  ║
