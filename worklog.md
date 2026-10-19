@@ -70763,3 +70763,75 @@ Stage Summary:
 - ✅ الـ API الرئيسي (load_price_history/load_merged_history) بيقرأ من price_history.db + بـ يدمج egksco live candle → بيانات عميقة + طازجة لـ 2026-10-19.
 - ⚠️ 3 محركات لسه على egksco الضحلة (backtest_engine + daily_predictor + load_egksco_history المباشر).
 - 🔁 قرار محسن: هل نكمل خطوة 6 (تحويل الـ 3 محركات لـ price_history.db) قبل توحيد المؤشرات؟
+
+---
+Task ID: BRAVO-DATA-SOURCE-VERIFY-2
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — تصحيح: قرأت الكومنتات مش الكود + بناء baseline backtest
+
+Work Log:
+
+- 🔴 الاعتراف بالغلط: محسن لاحظ إنني قلت "egksco_scraper هو الـ scraper الرئيسي" — ده نتيجة قراءة الكومنتات مش الكود. محسن محق: الـ scraper الأساسي هو `tradingview_scraper` (data_engine/scrapers/).
+
+- 🔬 فحص الكود الفعلي (مش الكومنتات):
+  * `data_engine/scrapers/tradingview_scraper.py`:
+    - L19: DB_FILE = data_engine.db
+    - L162-211: INSERT INTO data_engine.db.stocks (symbol, name, price, change_percent, ...)
+    - L177-188: CREATE tab_technical_analysis, tab_profitability, tab_valuation, ...
+    - L272-286: subprocess.run لـ sync.py (sync لـ stocks.db)
+    - ⚠️ tradingview_scraper **مش بيكتب في price_history أصلاً** — بـ يكتب في data_engine.db.stocks + tab_*
+  * `vps-service/data/egksco_scraper.py`:
+    - L721-786: INSERT OR REPLACE INTO price_history (ticker, date, ...) ← بيكتب في price_history
+    - L790-869: INSERT OR REPLACE INTO egksco_price_history ← propagation للـ mirror
+
+- 📊 فحص فعلي للـ `source` column في price_history (آخر 30 يوم):
+  | Source             | Rows    | Tickers | Latest       |
+  |--------------------|---------|---------|--------------|
+  | stocks.db          | 19,266  | 1,240   | 2026-10-14   |
+  | yahoo_us           | 2,000   | 100     | 2026-10-16   |
+  | tradingview_live   | 378     | 314     | 2026-10-18   |
+  | egksco             | 186     | 186     | 2026-10-18   |
+
+  → **stocks.db propagation هو الـ main writer لـ price_history** (مش egkscoScraper مباشرة).
+  → tradingview_live بـ يكتب في price_history عبر propagation تانية.
+
+- 🧪 BASELINE BACKTEST (قبل أي تعديل في الموجة 7):
+
+  TEST 1 — load_egksco_history (V40.2 PRIMARY الحالي):
+  | Ticker | Depth | Range                       |
+  |--------|-------|-----------------------------|
+  | COMI   | 46    | 2026-07-28 → 2026-10-18     |
+  | HRHO   | 46    | 2026-07-28 → 2026-10-18     |
+  | SWDY   | 46    | 2026-07-28 → 2026-10-18     |
+  | EFIH   | 46    | 2026-07-28 → 2026-10-18     |
+  | EAST   | 46    | 2026-07-28 → 2026-10-18     |
+
+  TEST 2 — load_price_history (canonical API — اللي عاوزين نحول ليه):
+  | Ticker | Depth | Range                       |
+  |--------|-------|-----------------------------|
+  | COMI   | 301   | 2025-04-22 → 2026-10-19     |
+  | HRHO   | 301   | 2025-04-22 → 2026-10-19     |
+  | SWDY   | 301   | 2025-04-22 → 2026-10-19     |
+  | EFIH   | 301   | 2025-04-22 → 2026-10-19     |
+  | EAST   | 301   | 2025-04-22 → 2026-10-19     |
+
+  الفرق: 6.5× أعمق + بـ يوصل لـ 2026-10-19 (أحدث بيوم).
+
+- 📈 BASELINE predictions.db stats:
+  * total: 1,488 | BUY: 1,415 | closed: 430 (TARGET_HIT=296, STOPPED=134)
+  * EXPIRED: 1,058 | date range: 2025-09-22 → 2026-10-15
+  * BASELINE Win Rate: 68.84% (296/430)
+  * R/R: 858 ≥3.0, 203 <1.8 (KILL zone), 193 2-3, 145 NULL/0, 16 1.8-2.0
+  * Score vs WR: ≥70 → 40.5% WR (664 closed=111) | NULL → 80.3% WR | 65-70 → 88.2% WR
+
+- 📝 تحديث ملف الذاكرة القديم:
+  * Documentation/أعمال-فريق-برافو.md: أضفت "الموجة 6" كاملة بكل التفاصيل.
+  * 27 Task IDs (17-27) موثّقين بـ commit + verdict + state.
+
+Stage Summary:
+- ✅ محسن محق: tradingview_scraper مش بيكتب في price_history — أنا قريت الكومنتات مش الكود.
+- ✅ الـ actual writer لـ price_history = stocks.db propagation (19K صف) + tradingview_live (378) + egksco (186).
+- ✅ BASELINE BACKTEST محفوظ: 5 tickers مرجعية + predictions.db stats.
+- ✅ BASELINE Win Rate: 68.84% (296/430) — ده اللي هـ نقارن عليه بعد أي تعديل.
+- ✅ ملف الذاكرة `أعمال-فريق-برافو.md` محدّث بكل الموجة 6.
+- 🔁 القرار لمحسن: نبدأ خطوة 6 (DATA-LAYER-1) أم في حاجة تانية؟
