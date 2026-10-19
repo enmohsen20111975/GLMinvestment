@@ -105,8 +105,28 @@ function shortDate(s: string): string {
     if (isNaN(d.getTime())) return s.slice(0, 10);
     return `${d.getDate()}/${d.getMonth() + 1}`;
   } catch {
+    // FRONTEND-CLEANUP-A-2: type-safe accessors for Record<string, unknown> fields.
+    // تحل الـ TS2339/TS18046/TS18049 errors بدون logic changes (type-only).
     return s.slice(0, 10);
   }
+}
+
+// FRONTEND-CLEANUP-A-2: type-safe value extractors (fix TS2339/TS18046/TS18049).
+// بـ تستخرج القيمة من Record<string, unknown> وتحوّلها للنوع الصحيح بأمان.
+function numVal(v: unknown): number | null {
+  if (v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function strVal(v: unknown): string {
+  if (v == null) return '';
+  return String(v);
+}
+
+function numOr(v: unknown, fallback: number = 0): number {
+  const n = numVal(v);
+  return n !== null ? n : fallback;
 }
 
 // Color helpers
@@ -249,10 +269,11 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
   if (!data) return null;
 
-  const price = data.price || {};
-  const basic = data.basic || {};
-  const rawTech = data.technical || {};
-  const currentPriceNum = Number(price.current_price || price.close || 0);
+  // FRONTEND-CLEANUP-A-2: type-safe accessors (fix TS2339/TS18046/TS18049).
+  const price: Record<string, unknown> = data.price || {};
+  const basic: Record<string, unknown> = data.basic || {};
+  const rawTech: Record<string, unknown> = data.technical || {};
+  const currentPriceNum = numOr(price.current_price ?? price.close, 0);
   const tech: Record<string, any> = { ...rawTech };
 
   // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
@@ -305,9 +326,9 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
     tech.low_52w = l52;
   }
 
-  const metrics = data.keyMetrics || {};
-  const maestro = data.maestro?.maestroAnalysis || data.maestro || {};
-  const change = Number(price.change_percent || 0);
+  const metrics: Record<string, unknown> = data.keyMetrics || {};
+  const maestro: Record<string, unknown> = (data.maestro as Record<string, unknown> | undefined)?.maestroAnalysis as Record<string, unknown> || data.maestro || {};
+  const change = numOr(price.change_percent, 0);
   const isPositive = change >= 0;
 
   return (
@@ -315,10 +336,10 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
       {/* Header — Stock Identity + Price */}
       <StockHeaderBar
         ticker={data.ticker}
-        name={basic.name_ar || basic.name || data.ticker}
+        name={strVal(basic.name_ar) || strVal(basic.name) || data.ticker}
         market={data.market}
-        sector={basic.sector}
-        price={price.current_price}
+        sector={strVal(basic.sector)}
+        price={numOr(price.current_price, 0)}
         change={change}
         isPositive={isPositive}
         onRefresh={fetchData}
@@ -364,7 +385,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
         {/* Technical Tab */}
         <TabsContent value="technical" className="mt-4">
-          <TechnicalTab tech={tech} price={price} priceHistory={data.priceHistory} />
+          <TechnicalTab tech={tech} price={price} priceHistory={data.priceHistory || []} />
         </TabsContent>
 
         {/* Fundamental Tab */}
@@ -374,17 +395,17 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
         {/* Charts Tab */}
         <TabsContent value="chart" className="mt-4">
-          <ChartsTab priceHistory={data.priceHistory} tech={tech} />
+          <ChartsTab priceHistory={data.priceHistory || []} tech={tech} />
         </TabsContent>
 
         {/* News Tab */}
         <TabsContent value="news" className="mt-4">
-          <NewsTab news={data.news} />
+          <NewsTab news={data.news || []} />
         </TabsContent>
 
         {/* Predictions Tab */}
         <TabsContent value="predictions" className="mt-4">
-          <PredictionsTab predictions={data.predictions} />
+          <PredictionsTab predictions={data.predictions || []} />
         </TabsContent>
       </Tabs>
     </div>
@@ -459,27 +480,32 @@ function StockHeaderBar({
 // ============================================================================
 
 function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown> | null | undefined; tech: Record<string, unknown> | null | undefined; metrics: Record<string, unknown> | null | undefined }) {
+  const p: Record<string, unknown> = price || {};
+  const t: Record<string, unknown> = tech || {};
+  const m: Record<string, unknown> = metrics || {};
+  const rsiVal = numOr(t.rsi, 0);
+  const peVal = numOr(m.pe_ratio, 0);
   const stats = [
     {
       label: 'السعر',
-      value: formatPrice(price.current_price),
-      sub: `إغلاق سابق: ${formatPrice(price.previous_close)}`,
+      value: formatPrice(numVal(p.current_price)),
+      sub: `إغلاق سابق: ${formatPrice(numVal(p.previous_close))}`,
       icon: DollarSign,
-      color: 'text-teal-600 dark:text-teal-400',
+      color: 'text-whale',
     },
     {
       label: 'RSI (14)',
-      value: tech.rsi ? (tech.rsi ?? 0).toFixed(1) : '—',
-      sub: tech.rsi > 70 ? 'تشبع شرائي' : tech.rsi < 30 ? 'تشبع بيعي' : 'محايد',
+      value: t.rsi ? rsiVal.toFixed(1) : '—',
+      sub: rsiVal > 70 ? 'تشبع شرائي' : rsiVal < 30 ? 'تشبع بيعي' : 'محايد',
       icon: Activity,
-      color: tech.rsi > 70 ? 'text-red-500' : tech.rsi < 30 ? 'text-emerald-500' : 'text-amber-500',
+      color: rsiVal > 70 ? 'text-loss' : rsiVal < 30 ? 'text-profit' : 'text-warning',
     },
     {
       label: 'P/E',
-      value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : '—',
-      sub: metrics.pe_ratio < 15 ? 'رخيص' : metrics.pe_ratio > 30 ? 'غالي' : 'عادل',
+      value: m.pe_ratio ? peVal.toFixed(1) : '—',
+      sub: peVal < 15 ? 'رخيص' : peVal > 30 ? 'غالي' : 'عادل',
       icon: BarChart3,
-      color: 'text-purple-600 dark:text-purple-400',
+      color: 'text-primary',
     },
   ];
 
@@ -643,15 +669,17 @@ function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedDa
 // ============================================================================
 
 function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unknown> | null | undefined; price: Record<string, unknown> | null | undefined; priceHistory: Array<Record<string, unknown>> }) {
-  const rsi = Number(tech.rsi || 0);
+  const t: Record<string, unknown> = tech || {};
+  const p: Record<string, unknown> = price || {};
+  const rsi = numOr(t.rsi, 0);
   const rsiStatus = rsi > 70 ? 'تشبع شرائي ⚠️' : rsi < 30 ? 'تشبع بيعي ✅' : 'محايد';
-  const rsiColor = rsi > 70 ? 'text-red-500' : rsi < 30 ? 'text-emerald-500' : 'text-amber-500';
+  const rsiColor = rsi > 70 ? 'text-loss' : rsi < 30 ? 'text-profit' : 'text-warning';
 
-  const ma50 = Number(tech.ma_50 || 0);
-  const ma200 = Number(tech.ma_200 || 0);
-  const current = Number(price.current_price || 0);
+  const ma50 = numOr(t.ma_50, 0);
+  const ma200 = numOr(t.ma_200, 0);
+  const current = numOr(p.current_price, 0);
   const trend = ma50 > ma200 ? 'صاعد' : ma50 < ma200 ? 'هابط' : 'عرضي';
-  const trendColor = ma50 > ma200 ? 'text-emerald-600' : ma50 < ma200 ? 'text-red-600' : 'text-amber-600';
+  const trendColor = ma50 > ma200 ? 'text-profit' : ma50 < ma200 ? 'text-loss' : 'text-warning';
 
   return (
     <div className="space-y-4">
@@ -730,20 +758,20 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
           <CardContent className="pt-2 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-red-600">المقاومة</span>
-              <span className="font-bold tabular-nums text-red-600">{formatPrice(tech.resistance)}</span>
+              <span className="font-bold tabular-nums text-loss">{formatPrice(numVal(t.resistance))}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">السعر الحالي</span>
               <span className="font-bold tabular-nums">{formatPrice(current)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-emerald-600">الدعم</span>
-              <span className="font-bold tabular-nums text-emerald-600">{formatPrice(tech.support)}</span>
+              <span className="text-sm text-profit">الدعم</span>
+              <span className="font-bold tabular-nums text-profit">{formatPrice(numVal(t.support))}</span>
             </div>
             <Separator className="my-2" />
-            {tech.resistance && tech.support && current > 0 && (
+            {t.resistance && t.support && current > 0 && (
               <div className="text-xs text-muted-foreground">
-                المدى: {formatPct(((tech.resistance - tech.support) / tech.support) * 100)} من الدعم للمقاومة
+                المدى: {formatPct(((numOr(t.resistance, 0) - numOr(t.support, 0)) / numOr(t.support, 1)) * 100)} من الدعم للمقاومة
               </div>
             )}
           </CardContent>
@@ -760,24 +788,24 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
           <CardContent className="pt-2 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm">أعلى 52 أسبوع</span>
-              <span className="font-bold tabular-nums text-emerald-600">{formatPrice(tech.high_52w)}</span>
+              <span className="font-bold tabular-nums text-profit">{formatPrice(numVal(t.high_52w))}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">أدنى 52 أسبوع</span>
-              <span className="font-bold tabular-nums text-red-600">{formatPrice(tech.low_52w)}</span>
+              <span className="font-bold tabular-nums text-loss">{formatPrice(numVal(t.low_52w))}</span>
             </div>
-            {tech.high_52w && tech.low_52w && current > 0 && (
+            {t.high_52w && t.low_52w && current > 0 && (
               <>
-                <div className="relative h-2 bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500 rounded-full mt-2">
+                <div className="relative h-2 bg-gradient-to-r from-loss via-warning to-profit rounded-full mt-2">
                   <div
                     className="absolute top-0 -mt-1 w-1 h-4 bg-foreground rounded"
                     style={{
-                      left: `${Math.min(100, Math.max(0, ((current - tech.low_52w) / (tech.high_52w - tech.low_52w)) * 100))}%`,
+                      left: `${Math.min(100, Math.max(0, ((current - numOr(t.low_52w, 0)) / (numOr(t.high_52w, 1) - numOr(t.low_52w, 0))) * 100))}%`,
                     }}
                   />
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  السعر عند {formatPct(((current - tech.low_52w) / (tech.high_52w - tech.low_52w)) * 100, 0)} من المدى
+                  السعر عند {formatPct(((current - numOr(t.low_52w, 0)) / (numOr(t.high_52w, 1) - numOr(t.low_52w, 0))) * 100, 0)} من المدى
                 </div>
               </>
             )}
@@ -805,20 +833,22 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
 // ============================================================================
 
 function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> | null | undefined; basic: Record<string, unknown> | null | undefined }) {
+  const m: Record<string, unknown> = metrics || {};
+  const b: Record<string, unknown> = basic || {};
   const items = [
-    { label: 'القيمة السوقية', value: formatMarketCap(metrics.market_cap), icon: DollarSign },
-    { label: 'P/E (السعر/الربح)', value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : '—', icon: BarChart3 },
-    { label: 'P/B (السعر/القيمة الدفترية)', value: metrics.pb_ratio ? (metrics.pb_ratio ?? 0).toFixed(2) : '—', icon: BarChart3 },
-    { label: 'P/S (السعر/المبيعات)', value: metrics.ps_ratio ? (metrics.ps_ratio ?? 0).toFixed(2) : '—', icon: BarChart3 },
-    { label: 'EPS (ربحية السهم)', value: metrics.eps ? (metrics.eps ?? 0).toFixed(2) : '—', icon: DollarSign },
-    { label: 'ROE (العائد على حقوق الملكية)', value: metrics.roe ? `${(metrics.roe ?? 0).toFixed(1)}%` : '—', icon: TrendingUp },
-    { label: 'ROA (العائد على الأصول)', value: metrics.roa ? `${(metrics.roa ?? 0).toFixed(1)}%` : '—', icon: TrendingUp },
-    { label: 'هامش الربح', value: metrics.profit_margin ? `${(metrics.profit_margin ?? 0).toFixed(1)}%` : '—', icon: PieChart },
-    { label: 'توزيعات الأرباح', value: metrics.dividend_yield ? `${(metrics.dividend_yield ?? 0).toFixed(2)}%` : '—', icon: DollarSign },
-    { label: 'دين/حقوق ملكية', value: metrics.debt_to_equity ? (metrics.debt_to_equity ?? 0).toFixed(2) : '—', icon: Shield },
-    { label: 'السيولة (Current Ratio)', value: metrics.current_ratio ? (metrics.current_ratio ?? 0).toFixed(2) : '—', icon: Activity },
-    { label: 'القيمة الدفترية/السهم', value: metrics.book_value_per_share ? (metrics.book_value_per_share ?? 0).toFixed(2) : '—', icon: DollarSign },
-    { label: 'Beta', value: metrics.beta ? (metrics.beta ?? 0).toFixed(2) : '—', icon: Activity },
+    { label: 'القيمة السوقية', value: formatMarketCap(numVal(m.market_cap)), icon: DollarSign },
+    { label: 'P/E (السعر/الربح)', value: m.pe_ratio ? numOr(m.pe_ratio, 0).toFixed(1) : '—', icon: BarChart3 },
+    { label: 'P/B (السعر/القيمة الدفترية)', value: m.pb_ratio ? numOr(m.pb_ratio, 0).toFixed(2) : '—', icon: BarChart3 },
+    { label: 'P/S (السعر/المبيعات)', value: m.ps_ratio ? numOr(m.ps_ratio, 0).toFixed(2) : '—', icon: BarChart3 },
+    { label: 'EPS (ربحية السهم)', value: m.eps ? numOr(m.eps, 0).toFixed(2) : '—', icon: DollarSign },
+    { label: 'ROE (العائد على حقوق الملكية)', value: m.roe ? `${numOr(m.roe, 0).toFixed(1)}%` : '—', icon: TrendingUp },
+    { label: 'ROA (العائد على الأصول)', value: m.roa ? `${numOr(m.roa, 0).toFixed(1)}%` : '—', icon: TrendingUp },
+    { label: 'هامش الربح', value: m.profit_margin ? `${numOr(m.profit_margin, 0).toFixed(1)}%` : '—', icon: PieChart },
+    { label: 'توزيعات الأرباح', value: m.dividend_yield ? `${numOr(m.dividend_yield, 0).toFixed(2)}%` : '—', icon: DollarSign },
+    { label: 'دين/حقوق ملكية', value: m.debt_to_equity ? numOr(m.debt_to_equity, 0).toFixed(2) : '—', icon: Shield },
+    { label: 'السيولة (Current Ratio)', value: m.current_ratio ? numOr(m.current_ratio, 0).toFixed(2) : '—', icon: Activity },
+    { label: 'القيمة الدفترية/السهم', value: m.book_value_per_share ? numOr(m.book_value_per_share, 0).toFixed(2) : '—', icon: DollarSign },
+    { label: 'Beta', value: m.beta ? numOr(m.beta, 0).toFixed(2) : '—', icon: Activity },
   ];
 
   return (
@@ -851,30 +881,30 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
           <CardTitle className="text-sm">تقييم التقييم</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {metrics.pe_ratio && (
+          {m.pe_ratio && (
             <ValuationRow
               label="P/E"
-              value={metrics.pe_ratio}
+              value={numOr(m.pe_ratio, 0)}
               low={15}
               high={30}
               lowLabel="رخيص"
               highLabel="غالي"
             />
           )}
-          {metrics.pb_ratio && (
+          {m.pb_ratio && (
             <ValuationRow
               label="P/B"
-              value={metrics.pb_ratio}
+              value={numOr(m.pb_ratio, 0)}
               low={1.5}
               high={3}
               lowLabel="رخيص"
               highLabel="غالي"
             />
           )}
-          {metrics.roe && (
+          {m.roe && (
             <ValuationRow
               label="ROE"
-              value={metrics.roe}
+              value={numOr(m.roe, 0)}
               low={15}
               high={25}
               lowLabel="ضعيف"
@@ -882,10 +912,10 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
               reverse
             />
           )}
-          {metrics.debt_to_equity && (
+          {m.debt_to_equity && (
             <ValuationRow
               label="دين/حقوق ملكية"
-              value={metrics.debt_to_equity}
+              value={numOr(m.debt_to_equity, 0)}
               low={1}
               high={2}
               lowLabel="آمن"
