@@ -68331,3 +68331,59 @@ Work Log:
 1. استخدام النظام الهجين كـ Screener (مش توصيات)
 2. الـ Breakout + Hybrid Filter أحسن من Breakout لوحده (بس لسه مش edge)
 3. لازم بحث جديد لإشارة حقيقية تـتفوق على random في EGX
+
+---
+Task ID: BRAVO-SCREENER-API-MEAN-REVERSION-1
+Agent: Bravo (Z.ai Code — implementation)
+Task: محسن — تنفيذ خطة الـ 3 مسارات (Screener API + Mean Reversion محسّن).
+
+Work Log:
+- ✅ المسار 1: بناء Stock Screener API
+  * scripts/stock_screener_api.py (350 سطر) — Flask API على port 8012
+  * Endpoints:
+    - GET /api/stock-screener/health ✅
+    - GET /api/stock-screener/market-context ✅
+    - GET /api/stock-screener/analyze?ticker=COMI ✅ (شغّال، رجع تحليل COMI)
+    - GET /api/stock-screener/scan?market=EGX&limit=100
+    - GET /api/stock-screener/recommendations?rec=BUY&limit=50
+  * Cache بسيط (5 دقايق لكل request)
+  * test ناجح: COMI → REDUCE (score=-15, RANGE regime, Stage 3 Top)
+  * API شغّال على port 8012
+
+- ✅ المسار 2: اختبار Mean Reversion محسّن
+  * scripts/mean_reversion_enhanced.py (400 سطر)
+  * Config محسّن (per Mohsen's directive):
+    - RSI < 30 (تشبع بيعي)
+    - SL = 2% (محسن من 3%)
+    - TGT = 5% (محسن من 10%)
+    - Hold = 5 أيام
+    - MinTurnover = 20M EGP (محسن من 5M)
+    - Cost = 1% round-trip
+  * اختبار على 3 فترات منفصلة: 2024، 2025، 2026
+  * Null Model لكل فترة (100+ signals)
+
+🔥🔥🔥 النتائج الفعلية (Mean Reversion Enhanced):
+
+| Period | MR n  | MR WR | MR PF | MR mean  | Null mean | p-value | Edge? |
+|--------|-------|-------|-------|----------|-----------|---------|-------|
+| 2024   | 475   | 46.7% | 1.12  | +0.18%   | -0.60%    | 34.7%   | ❌    |
+| 2025   | 1416  | 35.1% | 0.70  | -0.55%   | -0.54%    | 36.8%   | ❌    |
+| 2026   | 3535  | 31.9% | 0.59  | -0.78%   | -0.63%    | 36.7%   | ❌    |
+
+الـ findings:
+1. ❌ Mean Reversion مفيش edge في أي فترة (p > 5%)
+2. ⚠️ في 2024: MR كان موجب (+0.18%) والـ null سالب (-0.60%) → MR أحسن، بس p=34.7%
+3. ❌ في 2025 و 2026: MR والـ null كليهم خسرانين → الاستراتيجية مش شغّالة
+4. ⚠️ Sample كبير (475 → 3535 signals) → النتائج إحصائية
+5. ⚠️ Exit reasons: STOP_LOSS > 50% → الـ SL بـ يضرب كتير (falling knife)
+
+الخلاصة:
+- Mean Reversion (حتى محسّن) مفيش edge على EGX
+- السوق المصري في 2025 و 2026 كان bearish → MR بـ يخسر
+- في 2024 MR كان أحسن من random بس مش edge إحصائي
+- النظام الهجين v2 كـ Screener API جاهز للمنصة
+
+التوصية:
+1. ✅ استخدام Screener API في المنصة (أداة تحليل)
+2. ❌ Mean Reversion مش suitable لـ EGX (في الـ bearish periods)
+3. 🔁 محاولة استراتيجيات تانية: Event-driven, Trend على EGX30
