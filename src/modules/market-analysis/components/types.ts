@@ -84,6 +84,9 @@ export interface StockData {
   regime?: string | null;
   persona?: string | null;
   persona_type?: string | null;
+  // FRONTCLEANUP-A-2: legacy/extra fields surfaced by stored-analysis + predictions pipelines
+  recommendation?: string | null;
+  hit_stop?: number | string | null;
 }
 
 /** Lightweight live-price snapshot returned by the market-prices API. */
@@ -258,14 +261,21 @@ export interface PersonaData {
   low?: number | null;
   support?: number | null;
   resistance?: number | null;
+  // FRONTCLEANUP-A-2: legacy TPs + ar name surfaced by some stored-analysis payloads
+  tp1?: number | null;
+  tp2?: number | null;
+  name_ar?: string;
 }
 
 
 export interface AnalysisJson {
   gambler?: PersonaData;
   investor?: PersonaData;
+  balanced?: PersonaData;
   narrative?: { line1?: string; line2?: string; line3?: string };
   story_arc?: { price_movement?: string; historical_context?: string };
+  // FRONTCLEANUP-A-2: legacy context block (kept for compat — accessed via type-safe accessor)
+  context?: { historical?: { current_price_zone?: number | string | null } };
 }
 
 
@@ -328,6 +338,12 @@ export interface StoredAnalysisItem {
     sector_role?: 'leader' | 'mid' | 'laggard';
     sector_role_boost?: number;
   } | null;
+  // FRONTCLEANUP-A-2: stale / mismatch flags (filled by stored-analysis backend)
+  stale?: boolean | null;
+  priceTargetMismatch?: boolean | null;
+  staleReason?: string | null;
+  stalePct?: number | string | null;
+  sector?: string | null;
 }
 
 /** لون الـ verdict حسب الكلمة */

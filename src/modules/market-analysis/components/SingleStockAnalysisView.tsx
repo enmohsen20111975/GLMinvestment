@@ -192,6 +192,9 @@ interface FullAnalysisResponse {
     cmf?: number;
     obv_trend_ar?: string;
     atr?: number;
+    // FRONTCLEANUP-A-2: SMA values accessed via type-safe accessor in render
+    sma20?: number;
+    sma50?: number;
   };
   volume_analysis?: {
     ratio?: number;
@@ -225,6 +228,22 @@ interface FullAnalysisResponse {
       tp1: number;
       tp2: number;
     };
+    // FRONTCLEANUP-A-2: extended fusion_metrics shape (mirrors InteractiveChart prop)
+    score?: number;
+    signal?: string;
+    signal_ar?: string;
+    fair_value?: number;
+    fair_premium?: number;
+    bigbeluga?: {
+      trend: number;
+      in_pocket: boolean;
+      fib_618: number;
+      fib_786: number;
+      basis: number;
+      upper_band: number;
+      lower_band: number;
+    };
+    ready?: boolean;
   };
   signal_adjusted?: boolean;
   adjustment_reason?: string;
@@ -238,6 +257,24 @@ interface FullAnalysisResponse {
   stock_dna?: StockDNA | null;
 // V34-INSTITUTIONAL-DECISION: محرك القرار المؤسسي الموحّد
   institutional_decision?: import('./InstitutionalDecisionPanel').InstitutionalDecision | null;
+  // FRONTCLEANUP-A-2: extra backend fields surfaced to chart + fundamentals panel.
+  //   - confidence: legacy AI confidence percent (mirrors confluence.score but as percent)
+  //   - cmf_data / macd_projection / smart_markers / smc_data: chart-only overlays
+  //   - fundamentals.valuation / profitability: fundamentals panel block
+  confidence?: number | null;
+  cmf_data?: Array<{ time: string; value: number | null }>;
+  macd_projection?: Array<number | null>;
+  smart_markers?: Array<{ time: string; type: string; position: string; color: string; shape: string; text: string }>;
+  smc_data?: {
+    order_blocks?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+    fvgs?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+    liquidity_sweeps?: Array<{ type: string; price: number; time?: number }>;
+    smc_zones?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+  };
+  fundamentals?: {
+    valuation?: { pe_ratio?: number | null };
+    profitability?: { eps?: number | null; roe?: number | null };
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -768,11 +805,11 @@ export function SingleStockAnalysisView({
                 bbSqueezeLevel={data.bb_squeeze?.state}
                 bosEvents={data.bos_events}
                 livePrice={liveData?.today_candle?.close ?? null}
-                cmfData={(data as Record<string, unknown>).cmf_data}
-                macdProjection={(data as Record<string, unknown>).macd_projection}
-                smartMarkers={(data as Record<string, unknown>).smart_markers}
-                smcData={(data as Record<string, unknown>).smc_data}
-                fusionMetrics={(data as Record<string, unknown>).fusion_metrics}
+                cmfData={data.cmf_data}
+                macdProjection={data.macd_projection}
+                smartMarkers={data.smart_markers}
+                smcData={data.smc_data as unknown as React.ComponentProps<typeof InteractiveChart>['smcData']}
+                fusionMetrics={data.fusion_metrics as unknown as NonNullable<React.ComponentProps<typeof InteractiveChart>['fusionMetrics']>}
               />
             ) : (
               <div className="flex flex-col justify-center items-center h-full min-h-[440px] text-muted-foreground text-xs">
@@ -1383,7 +1420,7 @@ export function SingleStockAnalysisView({
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">SMA 20 / 50:</span>
-                      <span className="font-mono text-foreground">{(data.current_indicators as Record<string, unknown>).sma20?.toFixed(2) || '—'} / {(data.current_indicators as Record<string, unknown>).sma50?.toFixed(2) || '—'}</span>
+                      <span className="font-mono text-foreground">{data.current_indicators?.sma20 != null ? Number(data.current_indicators.sma20).toFixed(2) : '—'} / {data.current_indicators?.sma50 != null ? Number(data.current_indicators.sma50).toFixed(2) : '—'}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">التقلب (ATR):</span>
@@ -1419,24 +1456,24 @@ export function SingleStockAnalysisView({
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">مكرر الربحية (P/E):</span>
                     <span className="font-mono font-bold text-foreground">
-                      {(data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio
-                        ? `${Number((data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio).toFixed(2)}x`
+                      {(data.fundamentals?.valuation?.pe_ratio != null)
+                        ? `${Number(data.fundamentals?.valuation?.pe_ratio).toFixed(2)}x`
                         : '— بيانات غير متاحة'}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">ربحية السهم (EPS):</span>
                     <span className="font-mono text-foreground">
-                      {(data as Record<string, unknown>).fundamentals?.profitability?.eps
-                        ? `${Number((data as Record<string, unknown>).fundamentals?.profitability?.eps).toFixed(2)} ${currencyLabel}`
+                      {(data.fundamentals?.profitability?.eps != null)
+                        ? `${Number(data.fundamentals?.profitability?.eps).toFixed(2)} ${currencyLabel}`
                         : '— بيانات غير متاحة'}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">العائد على الاستثمار:</span>
                     <span className="font-mono text-foreground">
-                      {(data as Record<string, unknown>).fundamentals?.profitability?.roe
-                        ? `${Number((data as Record<string, unknown>).fundamentals?.profitability?.roe).toFixed(1)}%`
+                      {(data.fundamentals?.profitability?.roe != null)
+                        ? `${Number(data.fundamentals?.profitability?.roe).toFixed(1)}%`
                         : '— بيانات غير متاحة'}
                     </span>
                   </div>

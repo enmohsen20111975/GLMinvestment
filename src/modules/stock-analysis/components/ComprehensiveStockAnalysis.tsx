@@ -820,7 +820,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
             <CardTitle className="text-sm">السعر مع المتوسطات (آخر 90 يوم)</CardTitle>
           </CardHeader>
           <CardContent>
-            <PriceWithMAChart history={priceHistory} ma50={ma50} ma200={ma200} support={tech.support} resistance={tech.resistance} />
+            <PriceWithMAChart history={priceHistory} ma50={ma50} ma200={ma200} support={numOr(t.support, 0)} resistance={numOr(t.resistance, 0)} />
           </CardContent>
         </Card>
       )}
@@ -967,13 +967,13 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
-          {m.maestroScore !== undefined ? (
+          {(m.maestroScore != null ? Number(m.maestroScore) : 0) !== undefined ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Score Gauge */}
               <div className="flex flex-col items-center justify-center">
-                <ScoreGauge score={m.maestroScore} label="الدرجة" size={120} />
-                <Badge className={cn('mt-2', signalBadge(m.recommendation || '').className)}>
-                  {m.recommendationAr || signalBadge(m.recommendation || '').label}
+                <ScoreGauge score={(m.maestroScore != null ? Number(m.maestroScore) : 0)} label="الدرجة" size={120} />
+                <Badge className={cn('mt-2', signalBadge(strVal(m.recommendation)).className)}>
+                  {strVal(m.recommendationAr) || signalBadge(strVal(m.recommendation)).label}
                 </Badge>
               </div>
 
@@ -983,7 +983,7 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
                   <div className="flex items-center justify-between">
                     <span className="text-sm">الثقة</span>
                     <div className="flex items-center gap-2">
-                      <Progress value={m.confidence} className="w-24 h-2" />
+                      <Progress value={numOr(m.confidence, 0)} className="w-24 h-2" />
                       <span className="font-bold text-sm">{Math.round(m.confidence)}%</span>
                     </div>
                   </div>

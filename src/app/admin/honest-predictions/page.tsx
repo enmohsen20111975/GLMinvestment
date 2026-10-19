@@ -219,7 +219,7 @@ export default function HonestPredictionsPage() {
   const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyStat[]>([]);
   const [cumulativeReturns, setCumulativeReturns] = useState<CumulativePoint[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [testReport, setTestReport] = useState<Record<string, unknown>>(null);
+  const [testReport, setTestReport] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -238,7 +238,7 @@ export default function HonestPredictionsPage() {
 
   // Advanced Settings
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [dynamicParams, setDynamicParams] = useState<Record<string, unknown>>(null);
+  const [dynamicParams, setDynamicParams] = useState<Record<string, unknown> | null>(null);
   const [dynamicSource, setDynamicSource] = useState<string>('defaults');
 
   const fetchDynamicParams = useCallback(async () => {
@@ -402,8 +402,9 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل التوليد: ${data.error}`);
       }
-    } catch (e: Record<string, unknown>) {
-      toast.error(`خطأ: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`خطأ: ${msg}`);
     } finally {
       setGenerating(false);
     }
@@ -440,8 +441,9 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل التحقق: ${data.error}`);
       }
-    } catch (e: Record<string, unknown>) {
-      toast.error(`خطأ: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`خطأ: ${msg}`);
     } finally {
       setVerifying(false);
     }
@@ -471,8 +473,9 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل التعلم: ${data.error}`);
       }
-    } catch (e: Record<string, unknown>) {
-      toast.error(`خطأ: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`خطأ: ${msg}`);
     } finally {
       setLearning(false);
     }
@@ -517,8 +520,9 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل الاختبار الكامل: ${data.error}`);
       }
-    } catch (e: Record<string, unknown>) {
-      toast.error(`خطأ في الاختبار: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`خطأ في الاختبار: ${msg}`);
     } finally {
       setTesting(false);
     }
@@ -561,7 +565,7 @@ export default function HonestPredictionsPage() {
             {verifying ? <RefreshCw className="h-4 w-4 animate-spin ml-2" /> : <RefreshCw className="h-4 w-4 ml-2" />}
             {verifying ? 'جارٍ التحقق...' : 'تحقق من المعلقة'}
           </Button>
-          <Button onClick={handleLearn} disabled={learning} variant="outline" size="sm">
+          <Button onClick={() => handleLearn()} disabled={learning} variant="outline" size="sm">
             {learning ? <RefreshCw className="h-4 w-4 animate-spin ml-2" /> : <Brain className="h-4 w-4 ml-2" />}
             {learning ? 'جارٍ التحليل...' : 'تعلّم من الأخطاء'}
           </Button>
@@ -743,7 +747,7 @@ export default function HonestPredictionsPage() {
                     <span className="font-semibold">معاملات ديناميكية:</span>{' '}
                     <span className="text-muted-foreground">
                       {dynamicSource === 'market-regime'
-                        ? `معدلة تلقائياً بناءً على السوق (RSI=${dynamicParams.meta?.avgRsi ?? '-'}، تقلب=${dynamicParams.meta?.avgAtrPct ?? '-'}%)`
+                        ? `معدلة تلقائياً بناءً على السوق (RSI=${(dynamicParams.meta as Record<string, unknown> | undefined)?.avgRsi ?? '-'}, تقلب=${(dynamicParams.meta as Record<string, unknown> | undefined)?.avgAtrPct ?? '-'}%)`
                         : 'قيم افتراضية'}
                     </span>
                   </div>
@@ -1004,36 +1008,36 @@ export default function HonestPredictionsPage() {
               تقرير الاختبار الكامل للنظام
             </CardTitle>
             <CardDescription>
-              TS Generation + Verify + Learn + Python Cycle — {testReport.timestamp ? new Date(testReport.timestamp).toLocaleString('ar-EG') : ''}
+              TS Generation + Verify + Learn + Python Cycle — {testReport.timestamp ? new Date(testReport.timestamp as string).toLocaleString('ar-EG') : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground">التوليد (Historical)</div>
-                <div className="text-sm font-bold">{testReport.generation?.generated ?? '—'} توقع</div>
-                <div className="text-xs text-muted-foreground">Scan: {testReport.generation?.tickers_scanned ?? '—'} | Skip: {testReport.generation?.tickers_skipped ?? '—'}</div>
+                <div className="text-sm font-bold">{String((testReport.generation as Record<string, unknown> | undefined)?.generated ?? '—')} توقع</div>
+                <div className="text-xs text-muted-foreground">Scan: {String((testReport.generation as Record<string, unknown> | undefined)?.tickers_scanned ?? '—')} | Skip: {String((testReport.generation as Record<string, unknown> | undefined)?.tickers_skipped ?? '—')}</div>
               </div>
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground">التنفيذ (Verify)</div>
-                <div className="text-sm font-bold">{testReport.verify?.checked ?? '—'} تم فحصه</div>
-                <div className="text-xs text-muted-foreground">هدف: {testReport.verify?.target_hits ?? 0} | وقف: {testReport.verify?.stopped ?? 0} | جني أرباح: {testReport.verify?.profit_taken ?? 0}</div>
+                <div className="text-sm font-bold">{String((testReport.verify as Record<string, unknown> | undefined)?.checked ?? '—')} تم فحصه</div>
+                <div className="text-xs text-muted-foreground">هدف: {String((testReport.verify as Record<string, unknown> | undefined)?.target_hits ?? 0)} | وقف: {String((testReport.verify as Record<string, unknown> | undefined)?.stopped ?? 0)} | جني أرباح: {String((testReport.verify as Record<string, unknown> | undefined)?.profit_taken ?? 0)}</div>
               </div>
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground">التعلم (Lessons)</div>
-                <div className="text-sm font-bold">{testReport.lessons_extracted ?? '—'} درس</div>
-                <div className="text-xs text-muted-foreground">نسبة الفوز: {testReport.stats?.real_win_rate ?? '—'}%</div>
+                <div className="text-sm font-bold">{String(testReport.lessons_extracted ?? '—')} درس</div>
+                <div className="text-xs text-muted-foreground">نسبة الفوز: {String((testReport.stats as Record<string, unknown> | undefined)?.real_win_rate ?? '—')}%</div>
               </div>
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground">Python Backend + AI</div>
-                <div className="text-sm font-bold">{testReport.python_test?.closer?.success ? '✅ Daily Closer' : '❌ Daily Closer'}</div>
-                <div className="text-sm font-bold">{testReport.python_test?.learning?.success ? '✅ Learning Engine' : '❌ Learning Engine'}</div>
-                <div className="text-xs text-muted-foreground">AI: {testReport.python_test?.ai_status?.ollama?.available ? `✅ Ollama (${testReport.python_test.ai_status.ollama.models?.join(',') || ''})` : '❌ غير متاح'}</div>
+                <div className="text-sm font-bold">{((testReport.python_test as Record<string, unknown> | undefined)?.closer as Record<string, unknown> | undefined)?.success ? '✅ Daily Closer' : '❌ Daily Closer'}</div>
+                <div className="text-sm font-bold">{((testReport.python_test as Record<string, unknown> | undefined)?.learning as Record<string, unknown> | undefined)?.success ? '✅ Learning Engine' : '❌ Learning Engine'}</div>
+                <div className="text-xs text-muted-foreground">AI: {((testReport.python_test as Record<string, unknown> | undefined)?.ai_status as Record<string, unknown> | undefined)?.ollama ? `✅ Ollama` : '❌ غير متاح'}</div>
               </div>
             </div>
-            {testReport.python_test?.errors?.length > 0 && (
+            {(((testReport.python_test as Record<string, unknown> | undefined)?.errors as unknown[]) ?? []).length > 0 && (
               <div className="mt-3 text-xs text-red-600 bg-red-500/10 p-2 rounded">
-                أخطاء Python: {testReport.python_test.errors.join(' | ')}
+                أخطاء Python: {(((testReport.python_test as Record<string, unknown> | undefined)?.errors as unknown[]) ?? []).join(' | ')}
               </div>
             )}
           </CardContent>
@@ -1099,7 +1103,7 @@ export default function HonestPredictionsPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" domain={[0, 100]} />
               <YAxis type="category" dataKey="market" tickFormatter={(v) => MARKET_NAMES[v] || v} width={70} />
-              <ReTooltip formatter={(val: Record<string, unknown>, name: string) => [`${val}%`, name === 'win_rate' ? 'نسبة الفوز' : '']} />
+              <ReTooltip formatter={(val: number | string | Array<number | string>, name: string) => [`${val}%`, name === 'win_rate' ? 'نسبة الفوز' : '']} />
               <Bar dataKey="win_rate" fill="#10b981" radius={[0, 4, 4, 0]} name="نسبة الفوز %" />
               <Bar dataKey="sr_adoption" fill="#8884d8" radius={[0, 4, 4, 0]} name="اعتماد S/R %" />
             </BarChart>
@@ -1178,7 +1182,7 @@ export default function HonestPredictionsPage() {
                   const map: Record<string, string> = { DOJI: 'دوجي', HAMMER: 'شاكوش', BULLISH_ENGULFING: 'ابتلاع صاعد', BEARISH_ENGULFING: 'ابتلاع هابط', MORNING_STAR: 'نجمة الصباح' };
                   return map[v] || v;
                 }} width={90} fontSize={11} />
-                <ReTooltip formatter={(val: Record<string, unknown>) => [`${val}%`, 'نسبة النجاح']} />
+                <ReTooltip formatter={(val: number | string | Array<number | string>) => [`${val}%`, 'نسبة النجاح']} />
                 <Bar dataKey="win_rate" fill="#f97316" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -1288,7 +1292,7 @@ export default function HonestPredictionsPage() {
                 <YAxis fontSize={11} tickFormatter={(v) => `${v.toFixed(0)}%`} />
                 <ReTooltip
                   contentStyle={{ direction: 'ltr', textAlign: 'left' }}
-                  formatter={(val: Record<string, unknown>, name: string) => [`${Number(val).toFixed(2)}%`, name === 'cumulative_return' ? 'العائد التراكمي' : '']}
+                  formatter={(val: number | string | Array<number | string>, name: string) => [`${Number(val).toFixed(2)}%`, name === 'cumulative_return' ? 'العائد التراكمي' : '']}
                   labelFormatter={(l) => `التاريخ: ${l}`}
                 />
                 <Area
@@ -1358,7 +1362,7 @@ export default function HonestPredictionsPage() {
                 <YAxis fontSize={11} tickFormatter={(v) => `${v}%`} />
                 <ReTooltip
                   contentStyle={{ direction: 'ltr', textAlign: 'left' }}
-                  formatter={(val: Record<string, unknown>, name: string) => {
+                  formatter={(val: number | string | Array<number | string>, name: string) => {
                     if (name === 'net_pl') return [`${Number(val).toFixed(2)}%`, 'صافي العائد'];
                     if (name === 'win_rate') return [`${Number(val).toFixed(1)}%`, 'نسبة الفوز'];
                     return [val, name];
@@ -1493,7 +1497,7 @@ export default function HonestPredictionsPage() {
             <div className="text-center py-8">
               <Lightbulb className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground mb-3">لم يتم استخراج دروس بعد</p>
-              <Button onClick={handleLearn} disabled={learning} variant="outline" size="sm">
+              <Button onClick={() => handleLearn()} disabled={learning} variant="outline" size="sm">
                 <Brain className="h-4 w-4 ml-2" />
                 ابدأ التعلم من الأخطاء
               </Button>

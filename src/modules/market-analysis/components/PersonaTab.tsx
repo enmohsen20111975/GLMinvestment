@@ -170,7 +170,7 @@ function PersonaCard({
   const colors = getVerdictColor(data.verdict);
   const score = data.score ?? 0;
   // P26: isInvestor بقى معناها "أفق طويل" = conservative (conservative = alias قديم لـ investor)
-  const isInvestor = persona === 'conservative' || persona === 'investor';
+  const isInvestor = persona === 'conservative' || (persona as string) === 'investor';
   // PAYWALL Gate 1: fair value locked for free users post-trial
   const fairValueSubStatus = getTrialStatus(subscriptionUser);
   const fairValueLocked = fairValueSubStatus.isFreeUser && fairValueSubStatus.isTrialExpired;
@@ -450,7 +450,7 @@ function PersonaCard({
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-1">
                 <Crosshair className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs text-muted-foreground">بوابات التصفية ({data.gates.passed}/5)</span>
+                <span className="text-xs text-muted-foreground">بوابات التصفية ({data.gates?.passed ?? 0}/5)</span>
               </div>
             </div>
             <div className="flex gap-1">
@@ -694,7 +694,7 @@ function PersonaCard({
                 nameAr: data.name_ar,
                 name: ticker,
                 analysisJson: { [persona]: data },
-              } as StoredAnalysisItem, persona, market);
+              } as unknown as StoredAnalysisItem, persona, market);
               navigator.clipboard.writeText(text);
               toast.success('تم نسخ التوقع ✓');
             }}
@@ -712,7 +712,7 @@ function PersonaCard({
                 nameAr: data.name_ar,
                 name: ticker,
                 analysisJson: { [persona]: data },
-              } as StoredAnalysisItem, persona, market);
+              } as unknown as StoredAnalysisItem, persona, market);
               if (navigator.share) {
                 try {
                   await navigator.share({ title: `توقعة ${ticker}`, text });
@@ -736,7 +736,7 @@ function PersonaCard({
                 nameAr: data.name_ar,
                 name: ticker,
                 analysisJson: { [persona]: data },
-              } as StoredAnalysisItem, persona, market);
+              } as unknown as StoredAnalysisItem, persona, market);
               navigator.clipboard.writeText(text);
               window.open('https://www.facebook.com/', '_blank');
               toast.success('تم نسخ التوقع وجاري فتح فيسبوك لصق المنشور 💙');
@@ -774,10 +774,11 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
   const stocksMap = React.useMemo(() => {
     const map = new Map<string, any>();
     stocks.forEach((s) => {
-      if (s.ticker) {
-        const clean = s.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
+      const sTicker = String((s as Record<string, unknown>).ticker || '');
+      if (sTicker) {
+        const clean = sTicker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
         map.set(clean, s);
-        map.set(s.ticker.toUpperCase(), s);
+        map.set(sTicker.toUpperCase(), s);
       }
     });
     return map;
@@ -838,7 +839,7 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
               stockInfo?.low_price
             );
             const style = verdictStyle(pd.verdict);
-            const rr = computeRR(pd);
+            const rr = computeRR(pd as unknown as Record<string, unknown>);
             const score = pd.score ?? it.maestroScore ?? 0;
             // 🔥 P0-UI FIX: STALE/MISMATCH flags من الـ backend
             // it.stale = السعر الحي بعيد عن entry بـ >20% (توقع قديمة)
@@ -953,7 +954,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
 
   // P43-VIRAL-SHARE: نسخ التحليل الشامل (نص غني + Footer ثابت)
   const handleCopyComprehensive = useCallback(() => {
-    const text = formatComprehensiveStockText(item, market, stockDetail);
+    const text = formatComprehensiveStockText(item, market, stockDetail ?? undefined);
     navigator.clipboard.writeText(text);
     toast.success('تم نسخ التحليل الشامل ✓', {
       description: 'جاهز للّصق في تليجرام / فيسبوك / واتساب',
@@ -1020,7 +1021,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
       link.click();
       document.body.removeChild(link);
       // نسخ النص الشامل في نفس الوقت
-      const text = formatComprehensiveStockText(item, market, stockDetail);
+      const text = formatComprehensiveStockText(item, market, stockDetail ?? undefined);
       try {
         await navigator.clipboard.writeText(text);
         toast.success('تم نسخ النص وتحميل بطاقة التحليل ✓', {
@@ -1111,7 +1112,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">السعر وقت التحليل</p>
-                    <p className="font-bold">{stockDetail?.current_price ? `${(stockDetail.current_price ?? 0).toFixed(2)} ${currencyLabel}` : pd.entry?.price ? `${(pd.entry.price ?? 0).toFixed(2)} ${currencyLabel}` : '—'}</p>
+                    <p className="font-bold">{stockDetail?.current_price ? `${(stockDetail.current_price ?? 0).toFixed(2)} ${currencyLabel}` : pd.entry ? `${(pd.entry ?? 0).toFixed(2)} ${currencyLabel}` : '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">التغير</p>
@@ -1119,7 +1120,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">الحجم</p>
-                    <p className="font-bold">{stockDetail?.volume ? formatVolume(stockDetail.volume) : '—'}</p>
+                    <p className="font-bold">{stockDetail?.volume ? formatVolumeShort(Number(stockDetail.volume) || 0) : '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">القطاع</p>
@@ -1131,11 +1132,11 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">P/B</p>
-                    <p className="font-bold">{stockDetail?.pb_ratio ? (stockDetail.pb_ratio ?? 0).toFixed(2) : '—'}</p>
+                    <p className="font-bold">{stockDetail?.pb_ratio ? (Number(stockDetail.pb_ratio) ?? 0).toFixed(2) : '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">القيمة السوقية</p>
-                    <p className="font-bold">{stockDetail?.market_cap ? formatNumber(stockDetail.market_cap) : '—'}</p>
+                    <p className="font-bold">{stockDetail?.market_cap ? formatNumber(Number(stockDetail.market_cap) || 0) : '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">الرأي</p>
@@ -1168,7 +1169,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3 rounded bg-muted text-center">
                   <p className="text-xs text-muted-foreground">الدخول</p>
-                  <p className="font-bold">{pd.entry?.price ? (pd.entry.price ?? 0).toFixed(2) : '—'}</p>
+                  <p className="font-bold">{pd.entry ? (pd.entry ?? 0).toFixed(2) : '—'}</p>
                 </div>
                 <div className="p-3 rounded bg-muted text-center">
                   <p className="text-xs text-muted-foreground">الهدف</p>
@@ -1476,7 +1477,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         if (cancelled) return;
         const prev = Array.isArray(data.previous_predictions) ? data.previous_predictions : [];
         // P26: isLongTerm = conservative (أفق طويل) — للـ balanced و gambler نعرض كل التوقعات.
-        const isLongTerm = persona === 'conservative' || persona === 'investor';
+        const isLongTerm = persona === 'conservative' || (persona as string) === 'investor';
         // فلترة خفيفة حسب البرسونا:
         // - المستثمر: يهتم بالأسهم الشرائية (BUY/STRONG_BUY/ACCUMULATE/HOLD).
         // - المتوازن/المضارب: يشوف كل التوقعات بما فيها البيع (SELL/STRONG_SELL/REDUCE).
@@ -1644,11 +1645,11 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
             //  HOLD was masking the real bug instead of fixing it)
             if (signal !== 'BUY' && signal !== 'STRONG_BUY') return null;
             // P26: isLongTerm = conservative (أفق طويل). balanced و gambler = أفق أقصر.
-            const isLongTerm = persona === 'conservative' || persona === 'investor';
+            const isLongTerm = persona === 'conservative' || (persona as string) === 'investor';
             let verdict = isLongTerm ? 'شراء قوي' : 'شراء';
             const personaReason = isLongTerm
-              ? `توقع ${signal === 'BUY' ? 'صاعد' : signal === 'SELL' ? 'هابط' : 'متعادل'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى متوسط/طويل`
-              : `زخم ${signal === 'BUY' ? 'إيجابي' : signal === 'SELL' ? 'سلبي' : 'محايد'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى قصير`;
+              ? `توقع ${signal === 'BUY' ? 'صاعد' : (signal as string) === 'SELL' ? 'هابط' : 'متعادل'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى متوسط/طويل`
+              : `زخم ${signal === 'BUY' ? 'إيجابي' : (signal as string) === 'SELL' ? 'سلبي' : 'محايد'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى قصير`;
             // P26: _personaKey معرّف على مستوى الـ component (مش محتاجين نعيد تعريفه هنا)
             const pd: PersonaData = {
               verdict,
@@ -1658,12 +1659,12 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               entry: p.entry_price !== null && p.entry_price !== undefined ? Number(p.entry_price) : null,
               target: p.target_price !== null && p.target_price !== undefined ? Number(p.target_price) : null,
               stop: p.stop_loss !== null && p.stop_loss !== undefined ? Number(p.stop_loss) : null,
-              signal: p.signal,
+              signal: p.signal != null ? String(p.signal) : undefined,
               timeframe: isLongTerm ? '6-12 شهر' : (persona === 'balanced' ? '2-6 أسابيع' : 'يومي-أسبوعي'),
               fair_value: null,
             };
             return {
-              ticker: (p.symbol || p.ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, ''),
+              ticker: String(p.symbol || p.ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, ''),
               market: marketCode,
               name: p.name || p.stock_name || p.name_ar || p.symbol || p.ticker || '',
               nameAr: p.name_ar || p.name || p.stock_name || p.symbol || p.ticker || '',
@@ -1688,7 +1689,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                   line3: p.regime ? `نظام السوق: ${p.regime}` : undefined,
                 },
               },
-            } as StoredAnalysisItem;
+            } as unknown as StoredAnalysisItem;
           });
           const mappedFiltered = mappedPreds.filter((x): x is StoredAnalysisItem => x !== null);
           if (mappedFiltered.length > 0) {
@@ -1756,7 +1757,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
   }, [fetchPersona, market, persona]);
 
   // P26: isLongTerm = conservative (أفق طويل). balanced & gambler = أفق أقصر.
-  const isLongTerm = persona === 'conservative' || persona === 'investor';
+  const isLongTerm = persona === 'conservative' || (persona as string) === 'investor';
   // P42-NO-FREEZE: ترقيم الصفحات — نرسم 5 كروت بس في كل لحظة عشان المتصفح مايموتش
   const personaTotalPages = Math.max(1, Math.ceil(items.length / PERSONA_PAGE_SIZE));
   const personaPageItems = items.slice(personaPage * PERSONA_PAGE_SIZE, (personaPage + 1) * PERSONA_PAGE_SIZE);

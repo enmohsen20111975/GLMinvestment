@@ -124,15 +124,13 @@ export function mapPredictionToStockData(p: PredictionRow): StockData {
   const predDate = p.prediction_date || p.created_at || p.updated_at || p.date || '';
 
   return {
-    id: p.id,
+    id: p.id != null ? String(p.id) : undefined,
     ticker: (p.symbol || p.ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, ''),
     name: p.name || p.symbol || '',
     name_ar: p.name || p.symbol,
     current_price: currPrice,
     high_price: Number(p.high_price) || Number(p.high) || 0,
     low_price: Number(p.low_price) || Number(p.low) || 0,
-    max_high_since_pred: Number(p.max_high_since_pred ?? p.highest_price_reached ?? p.high_price ?? 0),
-    min_low_since_pred: Number(p.min_low_since_pred ?? p.lowest_price_reached ?? p.low_price ?? 0),
     change_percent: 0,
     signal: p.signal,
     signal_ar: p.signal_ar,
@@ -146,31 +144,30 @@ export function mapPredictionToStockData(p: PredictionRow): StockData {
     rsi_value: p.rsi_value !== null && p.rsi_value !== undefined ? Number(p.rsi_value) : null,
     technical_score: Number(p.score) || 0,
     prediction_date: predDate,
-    // Lifecycle:
     status: p.status || 'PENDING',
     final_price: p.final_price !== null && p.final_price !== undefined ? Number(p.final_price) : null,
     profit_loss_percent: p.profit_loss_percent !== null && p.profit_loss_percent !== undefined ? Number(p.profit_loss_percent) : null,
-    hit_target: p.hit_target ?? null,
-    hit_stop_loss: p.hit_stop_loss ?? null,
-    target_hit_date: p.target_hit_date || null,
-    stop_hit_date: p.stop_hit_date || null,
-    evaluation_date: p.evaluation_date || null,
+    hit_target: p.hit_target != null ? Number(p.hit_target) : null,
+    hit_stop_loss: p.hit_stop_loss != null ? Number(p.hit_stop_loss) : null,
+    target_hit_date: p.target_hit_date != null ? String(p.target_hit_date) : null,
+    stop_hit_date: p.stop_hit_date != null ? String(p.stop_hit_date) : null,
+    evaluation_date: p.evaluation_date != null ? String(p.evaluation_date) : null,
     max_profit_percent: p.max_profit_percent !== null && p.max_profit_percent !== undefined ? Number(p.max_profit_percent) : null,
     max_loss_percent: p.max_loss_percent !== null && p.max_loss_percent !== undefined ? Number(p.max_loss_percent) : null,
     holding_days: p.holding_days !== null && p.holding_days !== undefined ? Number(p.holding_days) : null,
     // Rich analysis:
     analysis_methods: Array.isArray(p.analysis_methods) ? p.analysis_methods : null,
     reasons: Array.isArray(p.reasons) ? p.reasons : null,
-    trend_direction: p.trend_direction || null,
+    trend_direction: p.trend_direction != null ? String(p.trend_direction) : null,
     macd_histogram: p.macd_histogram !== null && p.macd_histogram !== undefined ? Number(p.macd_histogram) : null,
     candle_patterns: Array.isArray(p.candle_patterns) ? p.candle_patterns : null,
-    sr_zone: p.sr_zone || null,
+    sr_zone: p.sr_zone != null ? String(p.sr_zone) : null,
     sr_support: p.sr_support !== null && p.sr_support !== undefined ? Number(p.sr_support) : null,
     sr_resistance: p.sr_resistance !== null && p.sr_resistance !== undefined ? Number(p.sr_resistance) : null,
     atr_value: p.atr_value !== null && p.atr_value !== undefined ? Number(p.atr_value) : null,
-    regime: p.regime || null,
-    market_ar: p.market_ar || undefined,
-    logo_url: p.logo_url || null,
+    regime: p.regime != null ? String(p.regime) : null,
+    market_ar: p.market_ar != null ? String(p.market_ar) : undefined,
+    logo_url: p.logo_url != null ? String(p.logo_url) : null,
     // P6-PREDICTIONS: القيم التاريخية المُتتبَعة منذ التوقع
     // الأولوية: max_high_since_pred → highest_price_reached → null
     max_high_since_pred: p.max_high_since_pred !== null && p.max_high_since_pred !== undefined
@@ -695,8 +692,8 @@ export function evalPrediction(stock: StockData, liveStock?: LiveStock) {
   const maxHighUsed = hasHistMax;
   const minLowUsed = hasHistMin;
 
-  const hitTargetFlag = Boolean(stock.hit_target === 1 || stock.hit_target === true || stock.hit_target === '1' || stock.hit_target === 'true');
-  const hitStopFlag = Boolean(stock.hit_stop === 1 || stock.hit_stop === true || stock.hit_stop_loss === 1 || stock.hit_stop_loss === true || stock.hit_stop_loss === '1');
+  const hitTargetFlag = Boolean(Number(stock.hit_target) === 1 || Boolean(stock.hit_target as unknown) === true);
+  const hitStopFlag = Boolean(Number(stock.hit_stop) === 1 || Number(stock.hit_stop_loss) === 1 || Boolean(stock.hit_stop_loss as unknown) === true);
   const statusStr = String(stock.status || '').toUpperCase();
 
   // ─── P6-PREDICTIONS: منطق الـ status حسب القيم التاريخية (PRIMARY) ───

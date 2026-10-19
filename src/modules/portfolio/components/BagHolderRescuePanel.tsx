@@ -50,7 +50,9 @@ import { DynamicRiskProfilerModal } from '@/components/persona/DynamicRiskProfil
 interface RescueResult {
   success: boolean;
   ticker: string;
+  name?: string;
   buy_price: number;
+  buy_date?: string;
   current_price: number;
   quantity: number;
   invested_egp: number;
@@ -69,6 +71,7 @@ interface RescueResult {
   recommendation_ar: string;
   urgency: 'low' | 'medium' | 'high';
   reasoning: string;
+  journal_template?: string;
 }
 
 const REC_COLORS: Record<string, string> = {
@@ -120,6 +123,10 @@ export function BagHolderRescuePanel({
   const [profilerOpen, setProfilerOpen] = useState(false);
   const [profitEGP, setProfitEGP] = useState('');
   const [portfolioNetWorth, setPortfolioNetWorth] = useState(0);
+  // FRONTEND-CLEANUP-A-2: add missing journal state hooks (were referenced but not declared).
+  const [journalDecision, setJournalDecision] = useState<'HOLD' | 'AVERAGE_DOWN' | 'CUT_LOSS' | ''>('');
+  const [journalSaving, setJournalSaving] = useState(false);
+  const [journalReason, setJournalReason] = useState('');
   // Guard so the auto-open profiler effect fires at most once per result.
   const lastAutoTriggeredResultRef = useRef<RescueResult | null>(null);
 
