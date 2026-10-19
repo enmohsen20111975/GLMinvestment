@@ -70650,3 +70650,29 @@ Stage Summary:
 - ✅ خطوة 2: backtest_engine.py — 4 implementations → canonical delegates.
 - ✅ إجمالي: 10/19 duplicates fixed (steps 1+2).
 - ⚠️ خطوات 3-5 لسه.
+
+---
+Task ID: BRAVO-INDICATOR-UNIFY-345
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — خطوات 3-5: master_analyzer + market_regime + core_scoring_engine توحيد
+
+Work Log:
+- خطوة 3: master_analyzer.py — استبدال 2 implementations:
+  * _ema_seeded → delegates to canonical analyzers.indicators.ma.ema per point
+  * _calc_macd → delegates to canonical analyzers.indicators.ma.macd per point
+  * py_compile PASS.
+
+- خطوة 4: market_regime.py — استبدال 1 implementation:
+  * _calc_sma → delegates to canonical analyzers.indicators.ma.sma
+  * py_compile PASS.
+
+- خطوة 5: core_scoring_engine.py — استبدال 2 implementations:
+  * calc_macd → delegates to canonical analyzers.indicators.ma.macd
+  * calc_sma → delegates to canonical analyzers.indicators.ma.sma
+  * py_compile PASS.
+
+Stage Summary:
+- ✅ خطوات 3-5: 5 implementations → canonical delegates.
+- ✅ إجمالي: 15/19 duplicates fixed (steps 1-5).
+- ✅ ALL py_compile PASS.
+- ⚠️ خطوة 6: V40.2 egksco → price_history.db (DATA-LAYER-1) — لسه.

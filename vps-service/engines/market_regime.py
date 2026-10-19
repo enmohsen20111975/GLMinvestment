@@ -11,12 +11,18 @@ Data Source: price_history.db (EGX30/EGX100 ticker, 2021-2026)
 """
 
 import sqlite3
+import sys
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from pathlib import Path
 import os
+# BRAVO INDICATOR-UNIFY: canonical SMA
+_VPS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if _VPS_ROOT not in sys.path:
+    sys.path.insert(0, _VPS_ROOT)
+from analyzers.indicators.ma import sma as _canonical_sma
 
 logger = logging.getLogger(__name__)
 
@@ -237,10 +243,8 @@ class MarketRegimeEngine:
     # ------------------------------------------------------------------
 
     def _calc_sma(self, closes: list, period: int) -> Optional[float]:
-        """Simple moving average over the last `period` values."""
-        if len(closes) < period:
-            return None
-        return sum(closes[-period:]) / period
+        """SMA — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma."""
+        return _canonical_sma(closes, period)
 
     def _calc_slope(self, closes: list, period: int, lookback: int = 5) -> Optional[float]:
         """

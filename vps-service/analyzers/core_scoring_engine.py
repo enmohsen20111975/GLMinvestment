@@ -42,7 +42,8 @@ from analyzers.engine_settings import get_setting
 # `from analyzers.core_scoring_engine import calc_rsi` أو `core_scoring_engine.calc_rsi`
 # بدون أي تغيير في الـ API. يرجع None لو البيانات غير كافية (per Rule 24).
 # ============================================================================
-from analyzers.indicators.rsi import calc_rsi  # noqa: F401 — re-exported for backward compat
+from analyzers.indicators.rsi import calc_rsi
+from analyzers.indicators.ma import macd as _canonical_macd_cse, sma as _canonical_sma_cse  # BRAVO INDICATOR-UNIFY  # noqa: F401 — re-exported for backward compat
 
 
 # ============================================================================
@@ -51,46 +52,28 @@ from analyzers.indicators.rsi import calc_rsi  # noqa: F401 — re-exported for 
 
 
 def calc_macd(closes: List[float]) -> Tuple[float, float, str]:
-    """حساب MACD → (macd, signal, direction)
-    Bug 12.6/12.7 fix: استخدم EMA-9 حقيقي على كامل السلسلة
-    بدل macd_val * 0.9 و آخر 12 شمعة فقط
+    """MACD — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.macd.
+    Returns: (macd_value, signal_value, direction)
     """
-    if len(closes) < 26:
+    if len(closes) < 35:  # 26 + 9
         return 0.0, 0.0, "neutral"
-
-    def ema_full(data, period):
-        """EMA على كامل السلسلة (مش آخر N شمعة فقط)"""
-        k = 2 / (period + 1)
-        result = [data[0]]
-        for i in range(1, len(data)):
-            result.append(data[i] * k + result[-1] * (1 - k))
-        return result
-
-    ema12 = ema_full(closes, 12)
-    ema26 = ema_full(closes, 26)
-    macd_line = [a - b for a, b in zip(ema12, ema26)]
-    # Signal line = EMA-9 of MACD line (حقيقي، مش macd * 0.9)
-    signal_line = ema_full(macd_line, 9)
-
-    macd_val = macd_line[-1]
-    signal_val = signal_line[-1]
-
+    result = _canonical_macd_cse(closes)
+    if result is None:
+        return 0.0, 0.0, "neutral"
+    macd_val = result.get('line', 0.0)
+    signal_val = result.get('signal', 0.0)
     if macd_val > signal_val and macd_val > 0:
         direction = "bullish"
     elif macd_val < signal_val and macd_val < 0:
         direction = "bearish"
     else:
         direction = "neutral"
-
-    return round(macd_val, 4), round(signal_val, 4), direction
-
+    return macd_val, signal_val, direction
 
 def calc_sma(data: List[float], period: int) -> float:
-    """حساب المتوسط البسيط"""
-    if len(data) < period:
-        return data[-1] if data else 0
-    return sum(data[-period:]) / period
-
+    """SMA — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma."""
+    val = _canonical_sma_cse(data, period)
+    return val if val is not None else 50.0
 
 def calc_atr(highs: List[float], lows: List[float], closes: List[float],
              period: int = 14) -> float:
