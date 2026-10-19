@@ -70101,3 +70101,35 @@ Stage Summary:
 - ✅ Phase 4: page.tsx — design tokens (GuestLockedView + market-depth Alert).
 - ✅ lint 0. ✅ browser renders. ✅ HTTP 200 على كل routes.
 - 🔁 BLUEPRINT Phases 1-4 كلها متعملة + متدفعين (Phase 1 كان قبل كده).
+
+---
+Task ID: UNIFIED-TABLE-UPGRADE
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — تطوير مكون UnifiedTable: فرز نصي + فلتر دروب داون لكل عمود + auto-size + فرز متعدد.
+
+Work Log:
+- فحصت UnifiedTable.tsx الحالي (2601 LOC). لقيت إن الـ multi-sort (Shift+click) + filter popover + resize-by-drag موجودين بالفعل.
+- الـ gaps الحقيقية: (1) auto-size مش موجود، (2) sortable default false (المفروض true).
+- الميزة 1 (فرز أي عمود نصي/رسوم): 
+  * عدّلت Column.sortable default من false → true (col.sortable !== false).
+  * handleSort: بـ check col.sortable === false بس (مش !col.sortable).
+  * header render: col.sortable !== false بدل col.sortable.
+  * compareValues (موجود): بـ يـ handle نصوص + أرقام + mixed types بـ localeCompare.
+  * sortValue auto-derive: لو col.sortValue مش معرّف → بـ يستخدم filterValue أو القيمة الخام.
+- الميزة 2 (فلتر دروب داون لكل عمود): موجود بالفعل (AutoFilter Popover — multi-select + range + search). لكل عمود filterable، زر فلتَر في الـ header بـ يفتح popover فيه: بحث نصي + تحديد الكل + checkbox لكل قيمة.
+- الميزة 3 (Auto-size للأعمدة):
+  * أضفت autoSizeColumns() function: بـ يستخدم canvas.measureText لحساب أعرض خلية (header + body sample 50 rows).
+  * padding 48px (cell padding + sort/filter icons + margin). min 80px, max 400px.
+  * بيتـ persist لـ localStorage.
+  * زر "احتواء تلقائي" (MoveHorizontal icon) في الـ toolbar.
+  * أضفت tableRef (useRef<HTMLTableElement>) + ربطته بـ <Table ref={tableRef}>.
+  * عدّلت src/components/ui/table.tsx: أضفت ref prop لـ Table (React 19 pattern).
+- الميزة 4 (فرز متعدد الأعمدة): موجود بالفعل (Shift+click → sortStack + rank badge ❶❷❸ + reorder/remove via Popover).
+- lint: exit 0 ✅.
+- browser smoke test: / بترندر (HTTP 200, title صح, screenshot 168KB).
+
+Stage Summary:
+- ✅ 4 ميزات كلها شغّالة: فرز نصي (default sortable=true) + فلتر دروب داون (موجود) + auto-size (جديد) + فرز متعدد (موجود).
+- ✅ lint 0. ✅ browser renders. ✅ HTTP 200.
+- ✅ table.tsx update: Table بيقبل ref الآن (React 19 pattern).
+- 🔁 push: المالك رفع الـ gate. هـ commit + push.

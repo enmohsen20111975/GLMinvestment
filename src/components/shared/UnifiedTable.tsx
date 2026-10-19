@@ -68,7 +68,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import {
   ChevronUp, ChevronDown, ChevronsUpDown, Inbox, Filter, X, Plus,
   Pin, GripVertical, Save, Download, Search, Calculator, Trash2, ListFilter, Columns3,
-  ArrowUpDown,
+  ArrowUpDown, MoveHorizontal,
 } from 'lucide-react';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -111,7 +111,7 @@ export interface Column<T> {
   headerAr?: string;
   /** دالة render مخصصة للخلية */
   render?: (row: T) => React.ReactNode;
-  /** هل العمود قابل للترتيب؟ (default: false) */
+  /** هل العمود قابل للترتيب؟ (default: true — كل عمود sortable ما لم يُعطَ false صراحةً) */
   sortable?: boolean;
   /** عرض العمود (Tailwind class fragment) مثلاً: 'w-24' أو 'min-w-[120px]' */
   width?: string;
@@ -389,6 +389,8 @@ export function UnifiedTable<T extends object>({
 }: UnifiedTableProps<T>) {
   // ref للـ table wrapper عشان نقدر نلتقطه كصورة
   const tableWrapperRef = useRef<HTMLDivElement>(null);
+  // ref للـ <table> element (للـ auto-size + DOM queries)
+  const tableRef = useRef<HTMLTableElement>(null);
   // ref للـ formula textarea (لإدراج المتغيرات عند الـ cursor)
   const formulaTextareaRef = useRef<HTMLTextAreaElement>(null);
   // ─── Multi-sort: قائمة من {key, dir} بدلاً من عمود واحد ─────────────
@@ -607,7 +609,8 @@ export function UnifiedTable<T extends object>({
 
 
   const handleSort = useCallback((col: Column<T>, isShift: boolean = false) => {
-    if (!col.sortable) return;
+    // (UNIFIED-TABLE-SORT) default sortable=true — كل عمود قابل للترتيب ما لم يُعطَ false صراحةً.
+    if (col.sortable === false) return;
     const colKey = String(col.key);
     setSortStack(prev => {
       const existing = prev.find(s => s.key === colKey);
@@ -958,6 +961,53 @@ export function UnifiedTable<T extends object>({
     }
     return cells;
   }, [excelGrid, selectionStart, selectionEnd, visibleColumns]);
+
+  // ─── (UNIFIED-TABLE-AUTOSIZE) Auto-fit columns to content ───
+  // بيحسب أعرض خلية (header + body) لكل عمود ويضبط الـ width تلقائياً.
+  // بيستخدم canvas measureText للنصوص — مفيش DOM layout thrashing.
+  const autoSizeColumns = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const newWidths: Record<string, number> = { ...columnWidths };
+
+    // canvas لقياس النصوص
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.font = '500 11px "Cairo", "Tajawal", sans-serif';
+
+    for (const col of visibleColumns) {
+      const colKey = String(col.key);
+      let maxW = 0;
+
+      // 1. header width
+      const headerText = col.headerAr || col.header || '';
+      maxW = Math.max(maxW, ctx.measureText(headerText).width);
+
+      // 2. body widths (sample first 50 rows for perf)
+      const sample = filteredData.slice(0, 50);
+      for (const row of sample) {
+        let text = '';
+        if (col.filterValue) {
+          try { text = String(col.filterValue(row) ?? ''); } catch { /* ignore */ }
+        } else if (col.sortValue) {
+          try { text = String(col.sortValue(row) ?? ''); } catch { /* ignore */ }
+        } else {
+          const v = getCellValue(row, col.key);
+          text = v == null ? '' : String(v);
+        }
+        maxW = Math.max(maxW, ctx.measureText(text).width);
+      }
+
+      // padding (cell padding ~24px) + sort/filter icons (~40px) + margin
+      const finalWidth = Math.max(80, Math.min(400, Math.ceil(maxW) + 48));
+      newWidths[colKey] = finalWidth;
+    }
+
+    setColumnWidths(newWidths);
+    try {
+      window.localStorage.setItem(widthsStorageKey, JSON.stringify(newWidths));
+    } catch { /* ignore */ }
+  }, [columnWidths, visibleColumns, filteredData, widthsStorageKey, getCellValue]);
 
   // ─── (Task 37) Cell click + double-click handlers (declared AFTER ─────
   //  visibleColumns + computedSelection so TS doesn't flag use-before-decl).
@@ -1401,6 +1451,18 @@ export function UnifiedTable<T extends object>({
             </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {/* ─── (UNIFIED-TABLE-AUTOSIZE) Auto-fit columns button ─── */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={autoSizeColumns}
+              className="h-7 text-xs gap-1"
+              title="ضبط عرض الأعمدة تلقائياً حسب المحتوى"
+            >
+              <MoveHorizontal className="w-3 h-3 text-emerald-600" />
+              احتواء تلقائي
+            </Button>
+
             {/* ─── (Task 34-A) Calculated Columns button ─── */}
             {excelGrid && (
               <Button
@@ -1782,7 +1844,7 @@ export function UnifiedTable<T extends object>({
       {/* الجدول كله — بيتطوى لو isCollapsed=true */}
       {!isCollapsed && (
       <div className={wrapperCls} ref={tableWrapperRef}>
-        <Table className="text-xs">
+        <Table className="text-xs" ref={tableRef}>
           <TableHeader className={headerCls}>
             <TableRow className="bg-muted/40 hover:bg-transparent">
               {expandable && (
@@ -1814,18 +1876,19 @@ export function UnifiedTable<T extends object>({
                       excelGrid && 'relative',
                       alignClass(col.align),
                       col.width,
-                      col.sortable && 'cursor-pointer select-none hover:bg-muted/60 transition-colors',
+                      // (UNIFIED-TABLE-SORT) default sortable=true
+                      col.sortable !== false && 'cursor-pointer select-none hover:bg-muted/60 transition-colors',
                       // (Task 34-A) pinned column = sticky right for RTL
                       isPinned && 'sticky right-0 z-10 bg-muted/95 backdrop-blur shadow-l',
                       col.headerClassName,
                     )}
-                    onClick={col.sortable ? (e) => handleSort(col, e.shiftKey) : undefined}
+                    onClick={col.sortable !== false ? (e) => handleSort(col, e.shiftKey) : undefined}
                     aria-sort={isActiveSort ? (currentDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                    title={col.sortable ? 'اضغط للترتيب (مفرد) • Shift+Click لإضافة مستوى ترتيب (متعدد)' : undefined}
+                    title={col.sortable !== false ? 'اضغط للترتيب (مفرد) • Shift+Click لإضافة مستوى ترتيب (متعدد)' : undefined}
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.headerAr || col.header}
-                      {col.sortable && (
+                      {col.sortable !== false && (
                         <span className="inline-flex items-center gap-0.5">
                           {isActiveSort ? (
                             <>
