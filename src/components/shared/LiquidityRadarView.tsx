@@ -130,7 +130,7 @@ function fmtPct(n: number | null | undefined): string {
 }
 
 const PHASE_LABELS: Record<string, string> = {
-  'بيبلع على الهادي': 'تجميع',
+  'بيبلع على الهادي': 'تجميع هادئ',
   'بيتحضر': 'صعود',
   'بيصرف': 'تصريف',
   'بيانات غير كافية': 'غير كافية',
@@ -142,6 +142,33 @@ const PHASE_COLORS: Record<string, string> = {
   'بيصرف': 'bg-loss/10 text-loss border-loss/20',
   'بيانات غير كافية': 'bg-muted text-muted-foreground border-border',
 };
+
+function getPhaseInfo(rawPhase?: string | null): { label: string; cls: string } {
+  if (!rawPhase) return { label: '—', cls: 'bg-muted text-muted-foreground border-border' };
+  const p = rawPhase.toLowerCase().trim();
+  if (p.includes('quiet_accumulation') || p.includes('b_quiet') || p.includes('بيبلع') || p.includes('تجميع هادئ')) {
+    return { label: 'تجميع هادئ', cls: 'bg-whale/10 text-whale border-whale/20' };
+  }
+  if (p.includes('accumulation') || p.includes('تجميع')) {
+    return { label: 'تجميع قوي', cls: 'bg-profit/10 text-profit border-profit/20' };
+  }
+  if (p.includes('distribution') || p.includes('بيصرف') || p.includes('تصريف') || p.includes('outflow')) {
+    return { label: 'تصريف وحذر', cls: 'bg-loss/10 text-loss border-loss/20' };
+  }
+  if (p.includes('inflow') || p.includes('بيتحضر') || p.includes('صعود') || p.includes('surge')) {
+    return { label: 'صعود وتدفق', cls: 'bg-profit/10 text-profit border-profit/20' };
+  }
+  if (p.includes('absorption') || p.includes('قيعان')) {
+    return { label: 'تجميع قيعان', cls: 'bg-whale/10 text-whale border-whale/20' };
+  }
+  if (p.includes('correction') || p.includes('تصحيح')) {
+    return { label: 'نهاية تصحيح', cls: 'bg-warning/10 text-warning border-warning/20' };
+  }
+  return {
+    label: PHASE_LABELS[rawPhase] || rawPhase,
+    cls: PHASE_COLORS[rawPhase] || 'bg-muted text-muted-foreground border-border'
+  };
+}
 
 const MARKET_OPTIONS = [
   { code: 'EGX', label: '🇪🇬 مصر', currency: 'ج.م' },
@@ -240,6 +267,8 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       header: 'السهم',
       sortable: true,
       width: 'min-w-[120px]',
+      sortValue: (row) => row.ticker,
+      filterValue: (row) => `${row.ticker} ${row.name || ''}`,
       render: (row) => (
         <div className="flex flex-col">
           <span className="font-bold text-sm font-mono tabular-nums text-foreground">{row.ticker}</span>
@@ -253,9 +282,8 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       sortable: true,
       width: 'w-20',
       align: 'center',
-      // LIQUIDITY-RADAR-AUDIT: اعرض current_price الحقيقي للسهم (من Python)
-      // مش entry_defense.entry_level (ده سعر الدخول، مش السعر الحالي)
       sortValue: (row) => row.current_price ?? 0,
+      filterValue: (row) => fmtPrice(row.current_price),
       render: (row) => (
         <span className="font-mono tabular-nums font-semibold text-foreground">
           {fmtPrice(row.current_price)}
@@ -268,9 +296,8 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       sortable: true,
       width: 'w-20',
       align: 'center',
-      // LIQUIDITY-RADAR-AUDIT: اعرض change_percent بتاع السهم (من Python)
-      // مش market_regime.change_pct (ده بتاع مؤشر السوق — بيتكرر في كل الصفوف)
       sortValue: (row) => row.change_percent ?? 0,
+      filterValue: (row) => fmtPct(row.change_percent),
       render: (row) => {
         const pct = row.change_percent;
         const isPositive = (pct ?? 0) >= 0;
@@ -284,8 +311,10 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     {
       key: 'sparkline',
       header: 'شارت 7 أيام',
+      sortable: true,
       width: 'w-28',
       align: 'center',
+      sortValue: (row) => row.change_percent ?? 0,
       render: (row) => (
         <MiniSparkline ticker={row.ticker} height={35} width={90} showArea />
       ),
@@ -297,6 +326,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       width: 'w-28',
       align: 'center',
       sortValue: (row) => row.whale?.net_flow_egp ?? 0,
+      filterValue: (row) => fmtFlow(row.whale?.net_flow_egp),
       render: (row) => {
         const flow = row.whale?.net_flow_egp;
         const isPositive = (flow ?? 0) >= 0;
@@ -311,15 +341,16 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       key: 'phase',
       header: '📊 المرحلة',
       sortable: true,
-      width: 'w-24',
+      width: 'w-28',
       align: 'center',
+      sortValue: (row) => getPhaseInfo(row.phase).label,
+      filterValue: (row) => getPhaseInfo(row.phase).label,
       render: (row) => {
-        const label = PHASE_LABELS[row.phase] || row.phase || '—';
-        const colorClass = PHASE_COLORS[row.phase] || 'bg-muted text-muted-foreground border-border';
+        const info = getPhaseInfo(row.phase);
         return (
-          <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', colorClass)}>
+          <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', info.cls)}>
             <Layers className="w-3 h-3" />
-            {label}
+            {info.label}
           </span>
         );
       },
@@ -327,8 +358,11 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     {
       key: 'entry',
       header: 'الدخول',
+      sortable: true,
       width: 'w-20',
       align: 'center',
+      sortValue: (row) => row.entry_defense?.entry_level ?? 0,
+      filterValue: (row) => fmtPrice(row.entry_defense?.entry_level),
       // GUEST: اعرض قفل بدل السعر
       render: (row) => (
         isGuest ? (
@@ -345,8 +379,11 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     {
       key: 'defense',
       header: 'الوقف',
+      sortable: true,
       width: 'w-20',
       align: 'center',
+      sortValue: (row) => row.entry_defense?.defense_level ?? 0,
+      filterValue: (row) => fmtPrice(row.entry_defense?.defense_level),
       render: (row) => (
         isGuest ? (
           <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
@@ -362,8 +399,11 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     {
       key: 'target',
       header: 'الهدف',
+      sortable: true,
       width: 'w-20',
       align: 'center',
+      sortValue: (row) => row.entry_defense?.resistance_level ?? 0,
+      filterValue: (row) => fmtPrice(row.entry_defense?.resistance_level),
       render: (row) => (
         isGuest ? (
           <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
@@ -468,6 +508,7 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
         dense
         filterable
         columnToggle
+        excelGrid
         onRowClick={(row) => {
           // GUEST: لو مش مسجل → اعرض LockModal بدل ما يفتح التفاصيل
           if (isGuest) {

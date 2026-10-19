@@ -286,26 +286,63 @@ function getCellValue<T>(row: T, key: keyof T | string): unknown {
   return (row as Record<string, unknown>)[key as string];
 }
 
+export function extractTextFromNode(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractTextFromNode).join(' ').trim();
+  if (React.isValidElement(node)) {
+    const props = node.props as { children?: React.ReactNode };
+    if (props && props.children) {
+      return extractTextFromNode(props.children);
+    }
+  }
+  return '';
+}
+
+export function parseFinancialValue(s: string): number | null {
+  if (!s || typeof s !== 'string') return null;
+  const clean = s.trim().replace(/,/g, '');
+  // Match "+3.8M", "-24.1M", "100K", "12.5%", "13.84", "3.44%+"
+  const m = clean.match(/^([+-]?\d+(?:\.\d+)?)\s*([KkMmBb%]|M\+|M-|K\+|K-|\+|-\+)?$/);
+  if (!m) return null;
+  let val = parseFloat(m[1]);
+  if (isNaN(val)) return null;
+  const unit = (m[2] || '').toUpperCase();
+  if (unit.startsWith('M')) val *= 1_000_000;
+  else if (unit.startsWith('B')) val *= 1_000_000_000;
+  else if (unit.startsWith('K')) val *= 1_000;
+  if (clean.includes('-') && val > 0 && !clean.startsWith('+')) val = -val;
+  return val;
+}
+
 function compareValues(a: unknown, b: unknown): number {
-  // null/undefined تروح للآخر دائماً (Task 35-F fix: كان بيتعكس في desc → nulls بتطلع فوق)
+  // null/undefined تروح للآخر دائماً
   if (a == null && b == null) return 0;
   if (a == null) return 1;  // a بعد b (دائماً في الآخر)
   if (b == null) return -1; // b بعد a (دائماً في الآخر)
   // أرقام
   if (typeof a === 'number' && typeof b === 'number') return a - b;
-  // نصوص رقمية (محتملة): جرّب تحويل لأرقام لو ممكن
+  // نصوص أو قيم مالية مُنسقة
   if (typeof a === 'string' && typeof b === 'string') {
+    const pA = parseFinancialValue(a);
+    const pB = parseFinancialValue(b);
+    if (pA !== null && pB !== null) {
+      return pA - pB;
+    }
     const na = Number(a);
     const nb = Number(b);
     if (!isNaN(na) && !isNaN(nb) && isFinite(na) && isFinite(nb)) {
       return na - nb;
     }
-    return a.localeCompare(b, 'ar');
+    return a.localeCompare(b, 'ar', { numeric: true, sensitivity: 'base' });
   }
   // mixed types — حوّل لنص
   const aStr = String(a);
   const bStr = String(b);
-  return aStr.localeCompare(bStr, 'ar');
+  const pA = parseFinancialValue(aStr);
+  const pB = parseFinancialValue(bStr);
+  if (pA !== null && pB !== null) return pA - pB;
+  return aStr.localeCompare(bStr, 'ar', { numeric: true });
 }
 
 function alignClass(align?: 'right' | 'center' | 'left'): string {
@@ -446,6 +483,9 @@ export function UnifiedTable<T extends object>({
   // (UNIFIED-TABLE-UPGRADE) Multi-sort Popover drag state — index of the
   // sort level being dragged for reorder (null = no drag in progress).
   const [sortDragIdx, setSortDragIdx] = useState<number | null>(null);
+  // (EXCEL-MULTI-SORT) New sort level draft in multi-sort Popover
+  const [newSortColKey, setNewSortColKey] = useState<string>('');
+  const [newSortDir, setNewSortDir] = useState<'asc' | 'desc'>('desc');
 
   // ─── (Task 37) «الجدول المتقدّم» — Excel-clone cell-level state ───
   // Rule 67 root cause: AG Grid theme mismatch + npm install failure on VPS →
@@ -502,7 +542,6 @@ export function UnifiedTable<T extends object>({
 
   // ─── (Task 37) Load column widths from localStorage on mount ───
   useEffect(() => {
-    if (!excelGrid) return;
     try {
       const raw = typeof window !== 'undefined' ? window.localStorage.getItem(widthsStorageKey) : null;
       if (raw) {
@@ -512,16 +551,15 @@ export function UnifiedTable<T extends object>({
         }
       }
     } catch { /* ignore parse errors */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [excelGrid]);
+  }, [widthsStorageKey]);
 
   // ─── (Task 37) Persist column widths to localStorage on change ───
   useEffect(() => {
-    if (!excelGrid) return;
+    if (Object.keys(columnWidths).length === 0) return;
     try {
       window.localStorage.setItem(widthsStorageKey, JSON.stringify(columnWidths));
     } catch { /* ignore quota errors */ }
-  }, [excelGrid, columnWidths, widthsStorageKey]);
+  }, [columnWidths, widthsStorageKey]);
 
   // ─── (Task 37) mutableData — applies local edits on top of incoming data ───
   // الـ edits بتعيش في localEdits overlay (rowKey → colKey → newValue).
@@ -678,11 +716,32 @@ export function UnifiedTable<T extends object>({
       for (const { key, dir } of sortStack) {
         // Task IMPROVEMENT-20: استخدم sortValue من الـ column لو موجود
         const col = columns.find(c => String(c.key) === key);
-        const av = col?.sortValue ? col.sortValue(a) : getCellValue(a, key);
-        const bv = col?.sortValue ? col.sortValue(b) : getCellValue(b, key);
+        let av = col?.sortValue ? col.sortValue(a) : getCellValue(a, key);
+        let bv = col?.sortValue ? col.sortValue(b) : getCellValue(b, key);
+
+        // Fallback: If av or bv is null/undefined and col.render is available
+        if (av == null && col?.render) {
+          try {
+            const textA = extractTextFromNode(col.render(a));
+            if (textA !== '') av = textA;
+          } catch { /* ignore */ }
+        }
+        if (bv == null && col?.render) {
+          try {
+            const textB = extractTextFromNode(col.render(b));
+            if (textB !== '') bv = textB;
+          } catch { /* ignore */ }
+        }
+
+        // Visual fallback (e.g. sparkline / chart with no text)
+        if (av == null && (key === 'sparkline' || key.includes('chart') || key.includes('spark'))) {
+          av = (a as Record<string, unknown>).change_percent ?? (a as Record<string, unknown>).change_pct ?? (a as Record<string, unknown>).current_price ?? 0;
+        }
+        if (bv == null && (key === 'sparkline' || key.includes('chart') || key.includes('spark'))) {
+          bv = (b as Record<string, unknown>).change_percent ?? (b as Record<string, unknown>).change_pct ?? (b as Record<string, unknown>).current_price ?? 0;
+        }
+
         // Task 35-F fix: nulls ALWAYS go to bottom, regardless of asc/desc.
-        // compareValues returns 1 for null→bottom, -1 for non-null→top.
-        // We must NOT reverse this for desc — only reverse the actual value comparison.
         const aNull = av == null;
         const bNull = bv == null;
         if (aNull && bNull) continue; // both null → skip to next sort key
@@ -695,19 +754,22 @@ export function UnifiedTable<T extends object>({
       return 0;
     });
     return arr;
-  }, [data, mutableData, excelGrid, sortStack]);
+  }, [data, mutableData, excelGrid, sortStack, columns]);
 
   // ─── (Task 34-A) AutoFilter helpers ───────────────────────────────────
   // (UNIFIED-TABLE-UPGRADE) Universal value extraction — respects `col.filterValue`
-  // لو الـ render بيرجّع JSX، نستخدم filterValue (لو موجودة) عشان الفلتر يشتغل
+  // لو الـ render بيرجّع JSX، نستخدم filterValue أو extractTextFromNode عشان الفلتر يشتغل
   // على القيمة المعروضة فعلاً (مش القيمة الخام في row). كده أي عمود يشتغل.
-  // NOTE: نستخدم `columns` (مش `allColumns`) لأن allColumns معرّفة بعدين (TDZ).
-  // calc columns لها filterValue implicitly عبر render؛ الـ distinct values لهم
-  // بتتعمل بشكل صحيح من render ( Rule 67 — لا fabrication).
   const getCellFilterValue = useCallback((row: T, colKey: string): unknown => {
     const col = columns.find(c => String(c.key) === colKey);
     if (col?.filterValue) {
       try { return col.filterValue(row); } catch { /* fallthrough */ }
+    }
+    if (col?.render) {
+      try {
+        const text = extractTextFromNode(col.render(row));
+        if (text && text.trim() !== '') return text.trim();
+      } catch { /* fallthrough */ }
     }
     return getCellValue(row, colKey);
   }, [columns]);
@@ -967,7 +1029,7 @@ export function UnifiedTable<T extends object>({
   // بيستخدم canvas measureText للنصوص — مفيش DOM layout thrashing.
   const autoSizeColumns = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const newWidths: Record<string, number> = { ...columnWidths };
+    const newWidths: Record<string, number> = {};
 
     // canvas لقياس النصوص
     const canvas = document.createElement('canvas');
@@ -983,14 +1045,18 @@ export function UnifiedTable<T extends object>({
       const headerText = col.headerAr || col.header || '';
       maxW = Math.max(maxW, ctx.measureText(headerText).width);
 
-      // 2. body widths (sample first 50 rows for perf)
-      const sample = filteredData.slice(0, 50);
+      // 2. body widths (sample first 60 rows for perf)
+      const sample = filteredData.slice(0, 60);
       for (const row of sample) {
         let text = '';
         if (col.filterValue) {
           try { text = String(col.filterValue(row) ?? ''); } catch { /* ignore */ }
         } else if (col.sortValue) {
           try { text = String(col.sortValue(row) ?? ''); } catch { /* ignore */ }
+        } else if (col.render) {
+          try {
+            text = extractTextFromNode(col.render(row));
+          } catch { /* ignore */ }
         } else {
           const v = getCellValue(row, col.key);
           text = v == null ? '' : String(v);
@@ -998,8 +1064,24 @@ export function UnifiedTable<T extends object>({
         maxW = Math.max(maxW, ctx.measureText(text).width);
       }
 
-      // padding (cell padding ~24px) + sort/filter icons (~40px) + margin
-      const finalWidth = Math.max(80, Math.min(400, Math.ceil(maxW) + 48));
+      // 3. Base minimum width for specific columns
+      let minColW = 85;
+      if (colKey === 'sparkline' || colKey.includes('chart') || colKey.includes('spark')) minColW = 120;
+      if (colKey === 'ticker' || colKey === 'symbol') minColW = 110;
+      if (col.width) {
+        const pxMatch = col.width.match(/\[(\d+)px\]/);
+        if (pxMatch) {
+          minColW = Math.max(minColW, parseInt(pxMatch[1], 10));
+        } else {
+          const wMatch = col.width.match(/w-(\d+)/);
+          if (wMatch) {
+            minColW = Math.max(minColW, parseInt(wMatch[1], 10) * 4);
+          }
+        }
+      }
+
+      // padding (cell padding ~24px) + sort/filter icons (~48px) + safety margin
+      const finalWidth = Math.max(minColW, Math.min(420, Math.ceil(maxW) + 54));
       newWidths[colKey] = finalWidth;
     }
 
@@ -1007,7 +1089,27 @@ export function UnifiedTable<T extends object>({
     try {
       window.localStorage.setItem(widthsStorageKey, JSON.stringify(newWidths));
     } catch { /* ignore */ }
-  }, [columnWidths, visibleColumns, filteredData, widthsStorageKey, getCellValue]);
+  }, [visibleColumns, filteredData, widthsStorageKey]);
+
+  // Auto-fit columns automatically on mount if no saved widths exist
+  useEffect(() => {
+    if (data && data.length > 0 && visibleColumns.length > 0) {
+      let hasSavedWidths = false;
+      try {
+        const raw = typeof window !== 'undefined' ? window.localStorage.getItem(widthsStorageKey) : null;
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            hasSavedWidths = true;
+          }
+        }
+      } catch { /* ignore */ }
+
+      if (!hasSavedWidths) {
+        autoSizeColumns();
+      }
+    }
+  }, [data, visibleColumns.length, widthsStorageKey, autoSizeColumns]);
 
   // ─── (Task 37) Cell click + double-click handlers (declared AFTER ─────
   //  visibleColumns + computedSelection so TS doesn't flag use-before-decl).
@@ -1554,43 +1656,47 @@ export function UnifiedTable<T extends object>({
             )}
 
             {/* ─── (UNIFIED-TABLE-UPGRADE) Multi-Sort Control Popover ─── */}
-            {sortStack.length > 0 && (
+            {(visibleColumns.some(c => c.sortable !== false) || sortStack.length > 0) && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs gap-1"
-                    title="إدارة مستويات الترتيب النشطة (سحب لإعادة الترتيب + حذف)"
+                    title="إدارة مستويات الترتيب (ترتيب بأكثر من عمود بالتتابع)"
                   >
                     <ArrowUpDown className="w-3 h-3 text-emerald-600" />
                     ترتيب مخصص ⇕
-                    <span className="bg-emerald-600 text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold">
-                      {sortStack.length}
-                    </span>
+                    {sortStack.length > 0 && (
+                      <span className="bg-emerald-600 text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold">
+                        {sortStack.length}
+                      </span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-80 p-3">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-semibold">مستويات الترتيب النشطة</div>
-                      <button
-                        onClick={clearAllSorts}
-                        className="text-[10px] text-rose-500 hover:text-rose-700"
-                        title="مسح كل مستويات الترتيب"
-                      >
-                        مسح الكل
-                      </button>
+                      {sortStack.length > 0 && (
+                        <button
+                          onClick={clearAllSorts}
+                          className="text-[10px] text-rose-500 hover:text-rose-700"
+                          title="مسح كل مستويات الترتيب"
+                        >
+                          مسح الكل
+                        </button>
+                      )}
                     </div>
                     <div className="text-[10px] text-muted-foreground leading-relaxed">
-                      رتّب المستويات بالسحب (الأعلى = أولوية أعلى). اضغط على اسم العمود لعكس الاتجاه.
+                      رتّب المستويات بالسحب (الأعلى = أولوية أولى). اضغط على اسم العمود لعكس الاتجاه.
                     </div>
                     {sortStack.length === 0 ? (
-                      <div className="text-[11px] text-muted-foreground text-center py-3">
-                        لا يوجد ترتيب نشط — اضغط على أي عمود لبدء الترتيب.
+                      <div className="text-[11px] text-muted-foreground text-center py-2 bg-muted/20 rounded">
+                        لا يوجد ترتيب نشط حالياً — أضف مستوى أدناه أو اضغط على أي عمود.
                       </div>
                     ) : (
-                      <div className="space-y-1">
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
                         {sortStack.map((s, idx) => {
                           const col = allColumns.find(c => String(c.key) === s.key);
                           const label = col ? (col.headerAr || col.header) : s.key;
@@ -1643,6 +1749,45 @@ export function UnifiedTable<T extends object>({
                         })}
                       </div>
                     )}
+
+                    {/* (EXCEL-MULTI-SORT) Add sort level picker */}
+                    <div className="pt-2 border-t border-border/60 flex items-center gap-1.5">
+                      <select
+                        value={newSortColKey}
+                        onChange={(e) => setNewSortColKey(e.target.value)}
+                        className="h-7 text-[11px] rounded border border-border bg-background px-1.5 flex-1 min-w-0"
+                      >
+                        <option value="">+ اختر عموداً للترتيب...</option>
+                        {visibleColumns
+                          .filter((c) => c.sortable !== false && !sortStack.some((s) => s.key === String(c.key)))
+                          .map((c) => (
+                            <option key={String(c.key)} value={String(c.key)}>
+                              {c.headerAr || c.header}
+                            </option>
+                          ))}
+                      </select>
+                      <select
+                        value={newSortDir}
+                        onChange={(e) => setNewSortDir(e.target.value as 'asc' | 'desc')}
+                        className="h-7 text-[10px] rounded border border-border bg-background px-1 text-muted-foreground shrink-0"
+                      >
+                        <option value="desc">تنازلي (الأعلى)</option>
+                        <option value="asc">تصاعدي (الأدنى)</option>
+                      </select>
+                      <Button
+                        size="sm"
+                        disabled={!newSortColKey}
+                        onClick={() => {
+                          if (!newSortColKey) return;
+                          setSortStack((prev) => [...prev, { key: newSortColKey, dir: newSortDir }]);
+                          setNewSortColKey('');
+                        }}
+                        className="h-7 px-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5 ml-0.5" />
+                        أضف
+                      </Button>
+                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -1860,9 +2005,9 @@ export function UnifiedTable<T extends object>({
                 const isPinned = excelGrid && pinnedColumns.has(colKey);
                 const filterActive = filterable && isColumnFilterActive(colKey);
                 const filterCount = filterable ? activeFilterCount(colKey) : 0;
-                const colIsNumeric = filterable && col.filterable && isNumericColumn(colKey);
-                // (Task 37) Column resize — explicit pixel width overrides Tailwind class
-                const headerWidthPx = excelGrid && columnWidths[colKey]
+                const colIsNumeric = filterable && col.filterable !== false && isNumericColumn(colKey);
+                // (Task 37 + AutoSize) Column resize / auto-size — explicit pixel width overrides Tailwind class
+                const headerWidthPx = columnWidths[colKey]
                   ? `${columnWidths[colKey]}px`
                   : undefined;
                 return (
@@ -1915,7 +2060,7 @@ export function UnifiedTable<T extends object>({
                         </span>
                       )}
                       {/* AutoFilter Popover — available for ALL filterable tables */}
-                      {filterable && col.filterable && (
+                      {filterable && col.filterable !== false && (
                         <Popover>
                           <PopoverTrigger asChild>
                             <button
@@ -2132,7 +2277,7 @@ export function UnifiedTable<T extends object>({
                         && editingCell?.colKey === colKey;
                       const isSelected = excelGrid
                         && computedSelection.has(`${ri}-${colKey}`);
-                      const cellWidthPx = excelGrid && columnWidths[colKey]
+                      const cellWidthPx = columnWidths[colKey]
                         ? `${columnWidths[colKey]}px`
                         : undefined;
                       let content: React.ReactNode;
