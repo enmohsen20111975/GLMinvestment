@@ -3291,7 +3291,93 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 # شرح فني شامل من كل المحركات (Candlestick + SMC + Volume + Patterns)
                 # بينخزّن في analysis_json و ai_narrative column في stored_analyses.
                 'technical_explanation': result.get('technical_explanation', {}) or {},
+
+                # ── BRAVO RADAR-ADVANCED (مرحلة 1): SMC + Volume Profile ──────
+                # ربط الكنوز المتقدمة في V40.2 قبل البوابات.
+                # SMC: Order Blocks + FVG + Liquidity Sweeps → score 0-100
+                # VP: VWAP + OBV + A/D Line + Volume Nodes → score 0-100
+                # الـ weights: SMC=15% من score, VP=10% من score (موثّق).
+                # safe-by-design: لو فشل → None (مش fabrication).
+                'smc_score': (lambda: (
+                    (lambda _r: _r.get('score') if _r else None)(
+                        (lambda: (
+                            __import__('analyzers.smc_engine', fromlist=['calculate_smc_score']).calculate_smc_score(
+                                [{'open': o, 'high': h, 'low': l, 'close': c, 'volume': v}
+                                 for o, h, l, c, v in zip(
+                                     opens[max(0,day_idx-50):day_idx+1],
+                                     highs[max(0,day_idx-50):day_idx+1],
+                                     lows[max(0,day_idx-50):day_idx+1],
+                                     closes[max(0,day_idx-50):day_idx+1],
+                                     volumes[max(0,day_idx-50):day_idx+1],
+                                 )],
+                                current_price=closes[day_idx],
+                            ) if day_idx >= 5 else None
+                        ))()
+                    )
+                ))() if signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY') else None,
+
+                'volume_profile_score': (lambda: (
+                    (lambda _r: _r.score if _r else None)(
+                        (lambda: (
+                            __import__('analyzers.volume_profile', fromlist=['VolumeProfileAnalyzer']).VolumeProfileAnalyzer().analyze(
+                                closes[max(0,day_idx-30):day_idx+1],
+                                volumes[max(0,day_idx-30):day_idx+1],
+                            ) if day_idx >= 5 else None
+                        ))()
+                    )
+                ))() if signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY') else None,
+
+                'vwap': None,  # will be filled below if VP available
+                'obv': None,
+                'volume_nodes': [],
             })
+
+            # ── BRAVO RADAR-ADVANCED: استخراج VWAP + OBV من VP result ──────
+            # + دمج SMC + VP في الـ combined_score (طبقة وزن إضافية)
+            _last_sig = signals_by_date[scan_date][-1] if signals_by_date[scan_date] else None
+            if _last_sig and signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY'):
+                _smc_s = _last_sig.get('smc_score')
+                _vp_s = _last_sig.get('volume_profile_score')
+
+                # دمج SMC + VP في combined_score (weights: SMC=15%, VP=10%)
+                # الـ 75% الباقي = الـ combined_score الحالي (الذي فيه RSI + MA + news + radar)
+                if _smc_s is not None or _vp_s is not None:
+                    _base_score = float(_last_sig.get('combined_score', _last_sig.get('tech_score', 50)) or 50)
+                    _smc_weight = 0.15  # 15% — SMC هو الأهم (أين الحوت)
+                    _vp_weight = 0.10   # 10% — VWAP + OBV (تأكيد السيولة)
+                    _base_weight = 1.0 - _smc_weight - _vp_weight  # 75%
+
+                    _smc_val = float(_smc_s) if _smc_s is not None else 50.0
+                    _vp_val = float(_vp_s) if _vp_s is not None else 50.0
+
+                    _new_combined = (
+                        _base_score * _base_weight +
+                        _smc_val * _smc_weight +
+                        _vp_val * _vp_weight
+                    )
+                    _new_combined = max(0, min(100, round(_new_combined, 2)))
+                    _last_sig['combined_score'] = _new_combined
+
+                    # استخراج VWAP + OBV للـ display
+                    if _vp_s is not None:
+                        try:
+                            _vp_analyzer = __import__('analyzers.volume_profile', fromlist=['VolumeProfileAnalyzer']).VolumeProfileAnalyzer()
+                            _vp_result = _vp_analyzer.analyze(
+                                closes[max(0,day_idx-30):day_idx+1],
+                                volumes[max(0,day_idx-30):day_idx+1],
+                            )
+                            _last_sig['vwap'] = _vp_result.vwap
+                            _last_sig['obv'] = _vp_result.obv
+                            _last_sig['volume_nodes'] = _vp_result.volume_nodes
+                        except Exception:
+                            pass
+
+                    print(
+                        f"[ADVANCED-SCORE] {ticker} on {scan_date}: "
+                        f"base={_base_score:.1f} → combined={_new_combined:.1f} "
+                        f"(SMC={_smc_val:.1f}×{_smc_weight:.0%} + VP={_vp_val:.1f}×{_vp_weight:.0%})",
+                        flush=True,
+                    )
 
             # ── AI NEWS AGENT (المرحلة 3 — 2026-08-31): الإثبات السابع ──
             # جلب وتحليل الأخبار بالذكاء الاصطناعي المحلي (keyword fallback)

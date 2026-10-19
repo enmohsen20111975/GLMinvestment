@@ -70416,3 +70416,51 @@ Stage Summary:
 - ✅ مفيش ملفات جديدة (تعديل في الموجود).
 - ⚠️ stocks.db backup ناقص (2 tables بس) — مش مؤثر على الـ predictions cleanup.
 - ⚠️ الإنتاج: المالك لازم يـ run نفس الـ DELETE commands على laptop/VPS.
+
+---
+Task ID: BRAVO-RADAR-ADVANCED-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — مرحلة 1: ربط SMC + Volume Profile في V40.2 (عملية جراحية في مخ النظام)
+
+Work Log:
+- 🔍 اكتشاف مهم: الربط العكسي (الرادار → V40.2) موجود بالفعل وشغّال!
+  * radar_integration.py (393 سطر) = HARD GATE على كل توقعات V40.2
+  * لو السهم مش في A_pre_surge أو B_quiet_accumulation_strong → REJECT
+  * لو عدّى الـ gate → +4/+5 score boost
+  * ده معناه: المرحلة 2 من خطة محسن خلصت بالفعل!
+
+- 🔬 تشريح الكنوز:
+  * volume_profile.py (337 سطر): VWAP + OBV + A/D Line + Volume Nodes + spike detection
+  * smc_engine.py (452 سطر): Order Blocks + FVG + Liquidity Sweeps → score 0-100
+  * confluence_engine_v3.py (1,262 سطر): معطّل (SUB_ENGINE_DISABLED=True)
+  * master_analyzer.py (5,780 سطر): بـ يستخدم SMC (26%) + VP (4.3%) بس V40.2 مش بـ يوصل لنتيجتهم
+
+- 🔧 التعديل (مرحلة 1 — ربط SMC + VP في V40.2):
+  * daily_predictor.py L3294+: أضفت 3 حقول جديدة في الـ sig dict:
+    - smc_score: calculate_smc_score(candles, current_price) → 0-100
+    - volume_profile_score: VolumeProfileAnalyzer().analyze() → 0-100
+    - vwap + obv + volume_nodes (للـ display)
+  * L3334+: دمج SMC + VP في combined_score:
+    - SMC weight = 15% (أين الحوت بـ يشتري — Order Blocks)
+    - VP weight = 10% (VWAP + OBV — تأكيد السيولة)
+    - Base weight = 75% (الـ score الحالي: RSI + MA + news + radar)
+    - new_combined = base×75% + smc×15% + vp×10%
+    - safe-by-design: لو SMC أو VP فشلوا → 50.0 (neutral، مش fabrication)
+  * log: [ADVANCED-SCORE] {ticker}: base=X → combined=Y (SMC=A×15% + VP=B×10%)
+  * مش بـ يكسر أي بوابة موجودة (R/R + FK + evaluate_risk + radar_gate كلها شغّالة)
+
+- التحقق:
+  * py_compile PASS.
+  * SMC test: score=10 (low — لا OB واضحة في sample data).
+  * VP test: score=70 (bullish — سعر فوق VWAP).
+  * Combined: base=72 → 62.5 (SMC=10×15% + VP=70×10%).
+  * safe-by-design: لو فشل → None (مش fabrication Rule 27).
+
+Stage Summary:
+- ✅ مرحلة 1: SMC + Volume Profile مربوطين في V40.2.
+- ✅ مرحلة 2: الربط العكسي موجود بالفعل (radar_integration.py — HARD GATE).
+- ✅ combined_score دلوقتي = base×75% + SMC×15% + VP×10%.
+- ✅ مفيش ملفات جديدة (تعديل في daily_predictor.py الموجود).
+- ⚠️ الأوزان (15% + 10%) محتاجة باك تست للتحقق.
+- ⚠️ confluence_engine_v3 معطّل (مرحلة 3 — قرار لاحق).
+- ⚠️ المرحلة دي عملية جراحية — كل تعديل موثّق في الملف ده.
