@@ -72952,3 +72952,78 @@ Stage Summary:
 - ✅ Liquidity: FIXED (5M EGP)
 - ✅ Test > Train: 2024 loss, 2025-2026 win
 - 🎉 Still passes: PF=2.43, MaxDD=3.3%, not killed
+
+---
+Task ID: BRAVO-2024-ANALYSIS-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — 2024 Analysis + Gap Risk + Block Bootstrap
+
+Work Log:
+
+- ✅ 2024 Analysis:
+  * closed: 24 (قليل جداً!)
+  * WR: 37.5%
+  * PF: 1.40 (مربح! مش 0.76 زي ما اتـوقع)
+  * MaxDD: 2.0%
+  * Return: +1.99%
+  * Killed: False
+  * MaxConsec: 4
+  * ملاحظة: النتايج هنا مختلفة عن الـ audit_fix لأن الـ liquidity filter بـ 5M EGP بـ يقلل الـ signals بشكل dramatic (887 → 591 tickers, 2024 بس 24 closed)
+
+- ✅ Point-in-Time Liquidity Filter: VERIFIED
+  * avg_vol_20 = sum(volumes[i-20:i]) / 20 (BEFORE entry day)
+  * No future data → Point-in-Time ✅
+
+- ✅ Gap Risk Stress Test:
+  | Gap  | Train PF | Train MaxDD | Test PF | Test MaxDD |
+  |------|----------|-------------|---------|------------|
+  | 0%   | 2.33     | 2.3%        | 2.24    | 2.0%       |
+  | 2%   | 1.62     | 3.6%        | 1.57    | 4.1%       |
+  | 5%   | 1.12     | 5.6%        | 1.09    | 8.2%       |
+  | 10%  | 0.73     | 12.1%       | 0.76    | 15.8%      |
+  
+  → Gap 5%: PF = 1.12 (بس مربح)
+  → Gap 10%: PF = 0.76 (خسارة + MaxDD = 15.8% → Kill Switch triggered)
+
+- ✅ Block Bootstrap Monte Carlo (1000 sims, block_size=10):
+  | Metric      | baseline | MC median | p-value |
+  |-------------|----------|-----------|---------|
+  | PF          | 2.24     | 2.33      | 57.3%   |
+  | MaxDD       | 2.0%     | 2.0%      | 52.3%   |
+  | Return      | 17.62%   | 18.14%    | 54.3%   |
+  
+  → p-value = 57% → random بـ يـدي نتايج مشابهة
+  → الـ edge مش إحصائياً significant
+
+- 🔥 الـ findings:
+
+  1. ✅ 2024 مش خسران! (PF = 1.40, Return = +1.99%)
+     * السبب: الـ liquidity filter (5M EGP) بـ يـقلل الـ signals جداً
+     * بس 24 closed فقط → sample صغير جداً
+     * النتيجة السابقة (PF = 0.76) كانت بـ liquidity filter قديم (100K EGP)
+
+  2. ✅ Gap Risk: بـ يتحمل gap لـ 5% (PF = 1.12)
+     * gap 10% بـ يـسبب Kill Switch (MaxDD = 15.8%)
+     * realistic gap في EGX = 2-5% (PF = 1.12-1.62)
+
+  3. ❌ Block Bootstrap: p-value = 57% (مش significant)
+     * random بـ يـدي نفس النتايج
+     * الـ edge مش مـتـأكد إحصائياً
+
+- 🎯 الاستنتاج:
+
+  ⚠️ الـ strategy مربحة (PF > 1 في كل السنين) 
+  ⚠️ بس Block Bootstrap p-value = 57% (مش significant)
+  ⚠️ الـ edge موجود بس مش قوي كفاية إحصائياً
+  
+  الأسباب المحتملة:
+  1. Sample صغير (24-174 closed per year)
+  2. Block Bootstrap بـ يـحافظ على الـ returns distribution → الـ shuffled بـ يـدي نفس النتايج
+  3. الـ edge حقيقي بس ضعيف
+
+Stage Summary:
+- ✅ 2024: مش خسران (PF = 1.40, بس sample = 24)
+- ✅ Gap Risk: بـ يتحمل لـ 5% (PF = 1.12)
+- ✅ Liquidity filter: Point-in-Time verified
+- ❌ Block Bootstrap: p-value = 57% (مش significant)
+- 🔁 الـ edge موجود بس مش مـتـأكد إحصائياً
