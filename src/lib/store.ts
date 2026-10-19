@@ -657,6 +657,9 @@ interface AppStore {
   selectedTicker: string | null;
   sidebarOpen: boolean;
   currentMarket: MarketType;
+  // ALPHA-CHART-TOGGLE-1: user chart preference (TradingView iframe vs InteractiveChart)
+  chartPreference: 'tradingview' | 'interactive';
+  setChartPreference: (pref: 'tradingview' | 'interactive') => void;
   setCurrentView: (view: AppView) => void;
   setCurrentViewFromHash: (view: AppView) => void;
   setSelectedTicker: (ticker: string | null) => void;
@@ -795,6 +798,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedTicker: null,
   sidebarOpen: false,
   currentMarket: hydrateFromStorage<MarketType>(CURRENT_MARKET_KEY, 'EGX'),
+  chartPreference: hydrateFromStorage<'tradingview' | 'interactive'>('chart-pref', 'interactive'),
+  setChartPreference: (pref) => {
+    set({ chartPreference: pref });
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('chart-pref', JSON.stringify(pref));
+      }
+    } catch { /* silent */ }
+  },
   setCurrentMarket: (market) => {
     set({ currentMarket: market });
     // persist to localStorage (survives page refresh)
