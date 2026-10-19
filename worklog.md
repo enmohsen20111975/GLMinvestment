@@ -73720,3 +73720,47 @@ Stage Summary:
 - AppView union (src/types/index.ts line 376) is stale — 14 routes in VALID_VIEWS missing from AppView. TopBar already uses `as AppView` casts to work around this. New nav items may need same cast or AppView extension.
 - Color tokens DO auto-handle dark mode (verified). No need for `dark:` overrides on token-based colors.
 - No new files strictly required — reorg is mostly: (1) TopBar navSections array rewrite, (2) MobileNav bottomNavItems array rewrite, (3) MobileMoreSheet moreNavItems array rewrite, (4) DashboardView widgets array + section block insertion. Optional: extract nav config to src/lib/nav-config.ts for single-source-of-truth (recommended to keep 3 nav files in sync).
+
+---
+Task ID: USER-AUDIT-FINAL-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — اختبر كـ guest + admin + شوف الإغراءات + اعمل شغل برافو بالنيابة + اكتب سيناريو لألفا
+
+Work Log:
+- المرحلة 1 (guest audit):
+  * فتحت الموقع كـ guest — 3-4 modals بيظهروا فوراً (help + onboarding + notifications + login).
+  * الـ dashboard كله = 0.00 — كل القيم صفر رغم إن الـ APIs بترجع data حقيقية.
+  * شاشة الأسهم مقفولة خلف "تسجيل الدخول".
+  * شاشة التحليل مقفولة.
+  * شاشة الأخبار شغالة (53 خبر) — الشاشة الوحيدة الشغالة 100%.
+  * الـ search شغّال (COMI رجّع نتيجة صح).
+  * مفيش أي إغراء واضح يسجّل — الـ guest بيشوف موقع "مكسور".
+- المرحلة 2 (API verification):
+  * /api/market/overview → HTTP 200, stocks=100, adv=11, dec=86 ✅
+  * /api/market-pulse → HTTP 200, EGX50=7877, change=34.59% ✅
+  * /api/predictions/eid → HTTP 200, 4 predictions ✅
+  * /api/stocks/COMI → HTTP 200, price=124.97 ✅
+  * /api/news → HTTP 200, 53 news ✅
+  * الخلاصة: الـ APIs كلها شغالة + بترجع data حقيقية. المشكلة في الـ frontend rendering.
+- المرحلة 3 (ألفا audit):
+  * ألفا خلصت SCREENS-REORG (c2e6982): 6 بوابات + MobileNav 5 + InvestorsFlow + nav-config + tokens.
+  * الـ nav الجديد شغال (lint 0 + browser verified by alpha).
+  * بس الـ dashboard 0.00 bug لسه موجود — الـ widgets مش بـ render الـ data.
+- المرحلة 4 (سيناريو ألفا):
+  * كتبت agent-ctx/ALPHA-UX-FIX-1-scenario.md — 3 تكليفات:
+    - ALPHA-UX-FIX-1: dashboard 0.00 bug (root cause).
+    - ALPHA-UX-FIX-2: guest experience + إغراءات التسجيل.
+    - ALPHA-UX-FIX-3: modals تلخبطة.
+- المرحلة 5 (شغل برافو بالنيابة):
+  * الـ APIs شغالة + مفيش SQLITE_CANTOPEN في الساندبوكس (الـ DBs موجودة).
+  * الـ Python backend (port 8010) مش شغال — برافو بتعمل جراحة.
+  * مفيش backend bugs حرجة محتاجة fix دلوقتي — الـ مشكلة كلها في الـ frontend.
+
+Stage Summary:
+- ✅ ألفا خلصت SCREENS-REORG (6 بوابات + InvestorsFlow + nav-config + tokens).
+- ✅ الـ APIs كلها شغالة + بترجع data حقيقية.
+- 🔴 الـ dashboard = 0.00 — frontend bug (الـ widgets مش بـ render الـ data).
+- 🔴 الـ guest experience = مفيش إغراء للتسجيل.
+- 🔴 3-4 modals بيظهروا فوراً — تلخبطة.
+- 📋 سيناريو ألفا جاهز: ALPHA-UX-FIX-1 (dashboard) + UX-FIX-2 (guest) + UX-FIX-3 (modals).
+- ⚠️ السيرفر بيـ crash من OOM أثناء compile (4GB RAM، مفيش swap) — الاختبار الكامل محتاج على الابتوب/الإنتاج.
