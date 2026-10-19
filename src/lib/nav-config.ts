@@ -1,20 +1,21 @@
 /**
  * nav-config.ts — المصدر الوحيد للقوائم الثلاث (TopBar / MobileNav / MobileMoreSheet)
  * =====================================================================
- * SCREENS-REORG-VISION (تنفيذ رؤية سارة + عم رشاد):
- * - TopBar: 6 بوابات (الرئيسية / السوق / التحليل / محفظتي / التعلّم / المزيد)
- * - MobileNav: 5 أزرار (الرئيسية / الأسهم / التوصيات / المحفظة / السيولة)
- * - MobileMoreSheet: مبسّط (أخبار / اشتراك / إعدادات / من نحن / زكاة / عشور / دخول)
+ * الترتيب المطلوب من المالك (2026-10-19):
  *
- * مبدأ "التوحيد": كل الـ nav items معرّفة هنا مرة واحدة. أي تعديل في القوائم
- * يبقى هنا بس — مش لازم تعدّل 3 ملفات. الـ 3 مكوّنات بتـ import من هنا.
+ * TopBar → 6 بوابات:
+ * 1. home — الرئيسية → dashboard
+ * 2. market — السوق → stocks / liquidity-radar / trading-chart
+ * 3. analysis — التحليل → recommendations / market-depth ★
+ * 4. portfolio — محفظتي → portfolio / watchlist / alerts-center / bagholder-rescue
+ * 5. education — التعلّم → academy / simulation
+ * 6. more — المزيد → news / subscription ★ / settings / sharia 🇪🇬 / zakat / tithes / about
  *
- * مبدأ "عدم التكرار": مفيش array مكرّر في TopBar/MobileNav/MobileMoreSheet.
+ * MobileNav → 5 أزرار (بدون تغيير):
+ * dashboard / stocks / recommendations / portfolio / market-depth
  *
- * مبدأ "البنية الهندسية": types صارمة (AppView) — لا casts.
- *
- * الألوان: كل الـ active/inactive states بتستخدم tokens (text-primary / text-muted-
- * foreground / text-warning / text-profit) — الـ tokens بـ handle dark mode أوتوماتيكياً.
+ * MobileMoreSheet → أقسام أخرى (بدون تغيير):
+ * bagholder-rescue / watchlist / simulation / academy / news / subscription / zakat / tithes / settings / about
  */
 
 import {
@@ -26,7 +27,6 @@ import {
   Eye,
   Bell,
   LifeBuoy,
-  BookOpen,
   GraduationCap,
   Gamepad2,
   Menu,
@@ -35,16 +35,9 @@ import {
   Settings,
   Info,
   ShieldCheck,
-  Filter,
   BarChart3,
-  Microscope,
-  Layers,
-  Gauge,
-  GitBranch,
-  Sparkles,
   TrendingUp,
   Landmark,
-  LogIn,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppView } from '@/types';
@@ -64,21 +57,7 @@ export interface NavSection {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
- * TopBar — 6 بوابات (رؤية عم رشاد: كل أداة تحليلية في مكانها المنطقي)
- *
- * 1. 🏠 الرئيسية    → dashboard + market-depth (سيولة المستثمرين — رجّعت!)
- * 2. 📊 السوق       → stocks / stock-filters / liquidity-radar / trading-chart / sharia 🇪🇬
- * 3. 🎯 التحليل     → recommendations + الاستشارة الكاملة (specialist / unified / v82 / dual-track / smart-confluence)
- * 4. 💼 محفظتي     → portfolio / watchlist / alerts-center / bagholder-rescue / trading-journal
- * 5. 🎓 التعلّم     → academy + simulation (بوابة جديدة — طلب الأونر)
- * 6. ☰ المزيد      → news / subscription / settings / about
- *
- * ملاحظات:
- * - Sharia انتقلت لبوابة "السوق" (كانت معزولة على MobileMoreSheet) — 🇪🇬 badge
- *   يوضّح إنها للسوق المصري. الـ view نفسه مابيفحصش currentMarket (hardcoded EGX).
- * - شاشات الـ URL-only (wealth / trading-memory / publishing / live-monitor /
- *   advanced-portfolio / rescue / zakat / tithes / seasonality / backtesting /
- *   reports / prediction-tracking) لسه routable عبر الـ hash (Rule 67 — backward-compat).
+ * TopBar — 6 بوابات (الترتيب المطلوب من المالك)
  * ════════════════════════════════════════════════════════════════════════ */
 export const navSections: NavSection[] = [
   {
@@ -87,8 +66,6 @@ export const navSections: NavSection[] = [
     icon: LayoutDashboard,
     items: [
       { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
-      // P0-1: رجّعنا سيولة المستثمرين (أجانب/عرب/مصريين) لبوابة الرئيسية
-      { id: 'market-depth', label: 'سيولة المستثمرين', icon: Activity, highlight: true },
     ],
   },
   {
@@ -97,11 +74,8 @@ export const navSections: NavSection[] = [
     icon: CandlestickChart,
     items: [
       { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
-      { id: 'stock-filters', label: 'فلاتر الأسهم', icon: Filter },
       { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity },
       { id: 'trading-chart', label: 'الشارت التفاعلي', icon: BarChart3 },
-      // P0-2: Sharia رجعت لبوابة واضحة (كانت معزولة على الموبايل)
-      { id: 'sharia', label: 'التوافق الشرعي 🇪🇬', icon: ShieldCheck },
     ],
   },
   {
@@ -110,12 +84,7 @@ export const navSections: NavSection[] = [
     icon: Target,
     items: [
       { id: 'recommendations', label: 'التوصيات', icon: Target },
-      // P0-4: الاستشارة الكاملة لسهم — كل الشاشات التحليلية واضحة هنا
-      { id: 'specialist-analysis', label: 'التحليل المتخصص', icon: Microscope },
-      { id: 'unified-analysis', label: 'التحليل الموحّد', icon: Layers },
-      { id: 'v82', label: 'قرار V82', icon: Gauge },
-      { id: 'dual-track', label: 'التوقعات المزدوجة', icon: GitBranch },
-      { id: 'smart-confluence', label: 'المساعد الذكي', icon: Sparkles },
+      { id: 'market-depth', label: 'سيولة المستثمرين', icon: Activity, highlight: true },
     ],
   },
   {
@@ -127,7 +96,6 @@ export const navSections: NavSection[] = [
       { id: 'watchlist', label: 'قائمة المتابعة', icon: Eye },
       { id: 'alerts-center', label: 'مركز التنبيهات', icon: Bell },
       { id: 'bagholder-rescue', label: '🆘 إنقاذ سهم خاسر', icon: LifeBuoy },
-      { id: 'trading-journal', label: 'يوميات التداول', icon: BookOpen },
     ],
   },
   {
@@ -147,24 +115,16 @@ export const navSections: NavSection[] = [
       { id: 'news', label: 'الأخبار', icon: Newspaper },
       { id: 'subscription', label: 'الاشتراك', icon: Crown, highlight: true },
       { id: 'settings', label: 'الإعدادات', icon: Settings },
+      { id: 'sharia', label: 'التوافق الشرعي 🇪🇬', icon: ShieldCheck },
+      { id: 'zakat', label: 'الزكاة', icon: Landmark },
+      { id: 'tithes', label: 'العُشر', icon: Landmark },
       { id: 'about', label: 'من نحن', icon: Info },
     ],
   },
 ];
 
 /* ════════════════════════════════════════════════════════════════════════
- * MobileNav — 5 أزرار سفلية (رؤية سارة: الأكثر استخداماً يومياً)
- *
- * 1. الرئيسية     → dashboard
- * 2. الأسهم       → stocks
- * 3. التوصيات     → recommendations
- * 4. المحفظة      → portfolio
- * 5. السيولة      → market-depth (استبدل liquidity-radar — لأن الأخير أعمق:
- *                    يشمل المؤسسات + الأجانب/عرب/مصريين — ده اللي سارة
- *                    محتاجاه يومياً للـ EGX)
- *
- * التعلّم (academy + simulation) بقى في بوابة TopBar + MobileMoreSheet —
- * reachable من الموبايل عبر زر "أقسام أخرى" في الـ Header.
+ * MobileNav — 5 أزرار سفلية (بدون تغيير)
  * ════════════════════════════════════════════════════════════════════════ */
 export const bottomNavItems: NavItem[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
@@ -175,15 +135,7 @@ export const bottomNavItems: NavItem[] = [
 ];
 
 /* ════════════════════════════════════════════════════════════════════════
- * MobileMoreSheet — "أقسام أخرى" مبسّط
- *
- * العناصر الإضافية اللي مش في الـ bottom bar ولا ليها مكان واضح:
- * - bagholder-rescue / watchlist / simulation / academy / about (كانوا هنا)
- * - zakat / tithes (حسابات دينية — surfaced من الـ URL-only)
- * - news / subscription / settings (موجودة في TopBar أكتر — برضو هنا للموبايل)
- *
- * الأزرار التفاعلية (بحث عن سهم + الإشعارات + الحساب) لسه في الـ MobileMoreSheet
- * نفسها (مش nav items — بتفتح panels) — مابتتعملش هنا.
+ * MobileMoreSheet — أقسام أخرى (بدون تغيير)
  * ════════════════════════════════════════════════════════════════════════ */
 export const moreNavItems: NavItem[] = [
   { id: 'bagholder-rescue', label: '🆘 إنقاذ سهم خاسر', icon: LifeBuoy },
@@ -196,7 +148,4 @@ export const moreNavItems: NavItem[] = [
   { id: 'tithes', label: 'العُشر', icon: Landmark },
   { id: 'settings', label: 'الإعدادات', icon: Settings },
   { id: 'about', label: 'من نحن', icon: Info },
-  // ملاحظة: 'auth' مش هنا — زر «الحساب/تسجيل الدخول» في MobileMoreSheet
-  // بيـ handle الـ user state (logged in → settings، logged out → auth) وهو
-  // زر ذكي مش nav item عادي. ده منع التكرار.
 ];
