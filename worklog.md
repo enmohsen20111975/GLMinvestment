@@ -73432,3 +73432,17 @@ Stage Summary:
 - ✅ 2026: PF=1.92 (good)
 - ⚠️ PF CV = 48.5% → UNSTABLE
 - 🔁 محتاجين: فلتر لـ falling knife (إشارة أقوى)
+
+---
+Task ID: BRAVO-CLEAN-2026-BASELINE-1
+Agent: Bravo
+Task: Clean 2026 Baseline (May-Oct only)
+
+Results (cost=1.0%, realistic limit, no filters):
+- Full: PF=1.77, WR=43.3%, MaxDD=1.8%, Return=+6.84%, SL=26.5%
+- Train (May-Jul): PF=1.70, WR=43.9%
+- Test (Aug-Oct): PF=1.31, WR=35.1%
+- Gen Ratio=0.77 (stable)
+- All months profitable
+- PF > 1.5 → no filters needed
+
