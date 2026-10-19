@@ -60,9 +60,18 @@ export async function GET(request: NextRequest) {
     const limitRaw = parseInt(searchParams.get('limit') || '30', 10);
     const limit = Number.isFinite(limitRaw) ? Math.min(200, Math.max(1, limitRaw)) : 30;
 
-    const mappedMarket = MARKET_MAP[marketRaw] || marketRaw;
-    const marketClause = mappedMarket && mappedMarket !== 'ALL' ? 'AND market = ?' : '';
-    const marketParams = mappedMarket && mappedMarket !== 'ALL' ? [mappedMarket] : [];
+    // BUG-FIX (FRONTEND-DATA-INTEGRITY-A-1, Bug 1):
+    // MARKET_MAP previously converted "EGX" → "مصر" and the SQL filtered on
+    // that mapped value alone. But stocks.db stores the raw code "EGX"
+    // (data_engine.db stores "مصر"), so the single-sided filter matched
+    // NOTHING in stocks.db → empty results even though the stock exists.
+    // Now we filter on BOTH the raw code and the Arabic mapping so the same
+    // clause works on either DB. MARKET_MAP is kept only to derive the
+    // Arabic variant; it no longer replaces the raw value.
+    const mappedMarket = MARKET_MAP[marketRaw] || '';
+    const hasMarket = marketRaw && marketRaw !== 'ALL';
+    const marketClause = hasMarket ? 'AND (market = ? OR market = ?)' : '';
+    const marketParams = hasMarket ? [marketRaw, mappedMarket] : [];
 
     // Try data_engine.db first (via getLightDb), then fall back to stocks.db
     // (via getStocksDb). Either may be missing the `stocks` table depending on
@@ -71,57 +80,68 @@ export async function GET(request: NextRequest) {
     const lightDb = (() => { try { return getLightDb(); } catch { return null; } })();
     const stocksDb = (() => { try { return getStocksDb(); } catch { return null; } })();
 
-    if (!q) {
-      // FIX (DEAL-ADVISOR-002, 2026-08-19): filter out polluted rows where the
-      // scraper merged ticker + name into the `symbol` column (93 rows like
-      // "VALUU Consumer Finance S.A.ED"). Real EGX tickers are <= 12 chars and
-      // contain no spaces. Dedup by symbol (GROUP BY) so the same ticker never
-      // appears twice. Prefer rows with a non-null price.
-      const sql = `SELECT id, symbol, symbol AS ticker, name, name AS name_ar, sector,
-                  price AS current_price, change_percent AS price_change, volume, market
-           FROM stocks
-           WHERE 1=1 ${marketClause}
-             AND symbol NOT LIKE '% %'
-             AND LENGTH(symbol) <= 12
-           GROUP BY symbol
-           ORDER BY MAX(volume) DESC
-           LIMIT ?`;
-      const params = [...marketParams, limit];
-
-      const rows =
-        safeQuery(lightDb, sql, params) ||
-        safeQuery(stocksDb, sql, params) ||
-        [];
-
-      return NextResponse.json({ success: true, stocks: rows });
-    }
-
-    // FIX (DEAL-ADVISOR-002): same pollution filter + dedup applied to the
-    // search query. Previously a search for "VALU" returned both "VALU"
-    // (correct, 11.35) and "VALUU Consumer Finance S.A.ED" (polluted, 11.79),
-    // which the user saw as "the same stock with two weird prices".
-    const term = `%${q}%`;
-    const sql = `SELECT id, symbol, symbol AS ticker, name, name AS name_ar, sector,
-                price AS current_price, change_percent AS price_change, volume, market
+    // BUG-FIX (FRONTEND-DATA-INTEGRITY-A-1, Bug 1):
+    // stocks.db.stocks uses the column `ticker` (+ current_price), while
+    // data_engine.db.stocks uses `symbol` (+ price). The previous SQL only
+    // referenced `symbol`, which threw "no such column: symbol" on stocks.db
+    // → safeQuery returned null → empty `stocks: []` even though COMI exists.
+    // (getLightDb() currently returns stocks.db, so both DB handles point at
+    // the ticker-schema DB.) We now build two SQL variants — one per schema —
+    // and try each against its matching column set. safeQuery swallows the
+    // "no such column" error so the wrong-schema query degrades to null and
+    // the right-schema query wins. The response always exposes BOTH `ticker`
+    // and `symbol` aliases so callers using either field keep working.
+    const buildSql = (
+      col: 'symbol' | 'ticker',
+      priceCol: 'price' | 'current_price',
+      withQ: boolean,
+    ): { sql: string; params: unknown[] } => {
+      // DEAL-ADVISOR-002: filter out polluted rows where the scraper merged
+      // ticker + name into the identifier column (e.g. "VALUU Consumer
+      // Finance S.A.ED"). Real tickers are <= 12 chars and contain no spaces.
+      // Dedup by the identifier column (GROUP BY) so the same ticker never
+      // appears twice. Prefer rows with the highest volume.
+      const base = `SELECT id, ${col} AS ticker, ${col} AS symbol, name, name AS name_ar, sector,
+                ${priceCol} AS current_price, change_percent AS price_change, volume, market
          FROM stocks
          WHERE 1=1 ${marketClause}
-           AND symbol NOT LIKE '% %'
-           AND LENGTH(symbol) <= 12
-           AND (symbol LIKE ? OR name LIKE ?)
-         GROUP BY symbol
-         ORDER BY
-           CASE
-             WHEN symbol LIKE ? THEN 1
-             WHEN symbol = ? THEN 2
-             ELSE 3
-           END,
-           MAX(volume) DESC
-         LIMIT ?`;
-    const params = [...marketParams, term, term, term, q.toUpperCase(), limit];
+           AND ${col} NOT LIKE '% %'
+           AND LENGTH(${col}) <= 12`;
+      if (!withQ) {
+        return {
+          sql: `${base}
+           GROUP BY ${col}
+           ORDER BY MAX(volume) DESC
+           LIMIT ?`,
+          params: [...marketParams, limit],
+        };
+      }
+      const term = `%${q}%`;
+      return {
+        sql: `${base}
+           AND (${col} LIKE ? OR name LIKE ?)
+           GROUP BY ${col}
+           ORDER BY
+             CASE
+               WHEN ${col} LIKE ? THEN 1
+               WHEN ${col} = ? THEN 2
+               ELSE 3
+             END,
+             MAX(volume) DESC
+           LIMIT ?`,
+        params: [...marketParams, term, term, term, q.toUpperCase(), limit],
+      };
+    };
+
+    const withQ = !!q;
+    // Variant A targets the data_engine.db schema (symbol + price).
+    // Variant B targets the stocks.db schema (ticker + current_price).
+    const variantA = buildSql('symbol', 'price', withQ);
+    const variantB = buildSql('ticker', 'current_price', withQ);
 
     const rows =
-      safeQuery(lightDb, sql, params) ||
-      safeQuery(stocksDb, sql, params) ||
+      safeQuery(lightDb, variantA.sql, variantA.params) ||
+      safeQuery(stocksDb, variantB.sql, variantB.params) ||
       [];
 
     // FIX (DEAL-ADVISOR-002): normalize the price field — if current_price is
