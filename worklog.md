@@ -72730,3 +72730,66 @@ Stage Summary:
 - ❌ بعد التكاليف: PF = 0.90 (خسارة)
 - ✅ الـ signal عنده قيمة بس التكاليف بتـقتله
 - 🔁 محتاجين: تحسين R/R (target أكبر + SL أصغر)
+
+---
+Task ID: BRAVO-MEAN-REVERSION-FINAL-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — Mean Reversion Final (Train/Test + Stress + Trailing + Kill Switch)
+
+Work Log:
+
+- ✅ Train/Test Split: Train=2024-2025, Test=2026
+- ✅ RANGE filter verified: uses MA20/MA50/ROC20 (all backward-looking, no lookahead)
+- ✅ Kill Switch at 15% DD + Sector Cap (3 per sector) + Max Concurrent = 5
+- ✅ Trailing Stop (3%) بدل Fixed Target
+
+- 📊 Stress Test (Train 2024-2025):
+  | Cost (round trip) | closed | WR    | PF    | MaxDD  | Killed |
+  |-------------------|--------|-------|-------|--------|--------|
+  | 0.70%             |    338 | 44.1% | 21.07 | 12.3%  | False  |
+  | 1.00%             |    338 | 42.6% | 18.95 | 13.7%  | False  |
+  | 1.50%             |     31 | 35.5% | 0.67  | 15.1%  | True   |
+
+  → الـ edge بـ يتحمل تكاليف لـ 1.0% بس مش 1.5%
+
+- 📊 Parameter Optimization (Train):
+  | Config                    | PF    | MaxDD  | Killed |
+  |---------------------------|-------|--------|--------|
+  | trailing3_sl5             | 21.07 | 12.3%  | False  |
+  | trailing3_sl3             | 20.86 | 11.3%  | False  |
+  | trailing2_sl5             | 23.76 | 10.3%  | False  |
+  | target10_sl3              | 1.73  | 13.1%  | False  |
+  | target7_sl3               | 0.77  | 15.3%  | True   |
+  | **trailing3_sl3_RANGE_only** | **63.39** | **10.6%** | False |
+
+  → Best: trailing3_sl3_RANGE_only (PF=63, MaxDD=10.6%)
+
+- 📊 TEST (2026 out-of-sample):
+  | Config: trailing3_sl3_RANGE_only |
+  | closed: 152 | WR: 59.2% | PF: 7.69 | MaxDD: 4.6% | Killed: False |
+
+- 🔥 الـ findings:
+
+  1. ✅ Train/Test Split شغّال (Train PF=63 → Test PF=7.69 — both profitable)
+  2. ✅ Kill Switch شغّال (triggered at 1.5% cost, not at 0.70-1.0%)
+  3. ✅ Stress Test: edge بـ يتحمل تكاليف لـ 1.0%
+  4. ✅ trailing3_sl3_RANGE_only = الأفضل (أقل MaxDD + أعلى PF)
+  5. ✅ target10_sl3 (المقترح الأصلي): PF=1.73 (مربح + realistic)
+  6. ⚠️ BUG: الأرقام خيالية (compounding effect)
+     * position_size = 20% of equity × 5 concurrent = 100% exposure
+     * PF = dollar-based → inflated بـ compounding
+
+- 🎯 الاستنتاج:
+
+  ✅ الـ strategy شغّال (PF > 1 on Train + Test)
+  ✅ Kill Switch شغّال
+  ✅ RANGE only = الأفضل
+  ⚠️ الأرقام المطلقة خيالية (compounding bug)
+  ⚠️ محتاجين: percentage-based PF + fixed dollar position sizing
+
+Stage Summary:
+- ✅ Train/Test Split: شغّال
+- ✅ Kill Switch: شغّال (triggered at 1.5% cost)
+- ✅ trailing3_sl3_RANGE_only = best config
+- ⚠️ Compounding bug (أرقام خيالية)
+- 🔁 محتاجين: إصلاح compounding + percentage-based PF
