@@ -6,7 +6,7 @@
 // notes referring to when MACD was computed by the maestro backend; they are
 // not engine invocations and are left intact for traceability.
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
  createChart,
  createSeriesMarkers,
@@ -20,6 +20,26 @@ import {
  type Time,
 } from 'lightweight-charts';
 import { useTheme } from 'next-themes';
+// ALPHA-CHART-MERGE-1: imports for the professional sections
+import { Badge } from '@/components/ui/badge';
+import {
+ Collapsible,
+ CollapsibleContent,
+ CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+ TrendingUp,
+ TrendingDown,
+ Minus,
+ Activity,
+ Target,
+ ShieldAlert,
+ Gauge,
+ Wallet,
+ ChevronDown,
+ AlertTriangle,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -123,6 +143,49 @@ interface FullChartProps {
  };
  ready: boolean;
  };
+ // === ALPHA-CHART-MERGE-1: Professional sections (from ProfessionalTradingChart) ===
+ // These optional props enable the 7 professional sections (Decision Header, Trade
+ // Plan, Reasons, Technical Details, Rescue CTA). When omitted, the chart renders
+ // in props-only mode (SingleStockAnalysisView) and no sections appear.
+ canonical?: {
+ signal?: string;
+ signal_ar?: string;
+ entry_price?: number | null;
+ stop_loss?: number | null;
+ target_price?: number | null;
+ target_price_2?: number | null;
+ tech_score?: number | null;
+ risk_reward?: number | null;
+ };
+ decisionData?: {
+ path_taken?: string;
+ adjustment_reason?: string;
+ };
+ flightState?: { state?: string };
+ makerState?: { state?: string };
+ stockDna?: {
+ typical_range?: { current_position?: string };
+ };
+ confluence?: {
+ breakdown?: {
+ trend?: { detail?: string; passed?: boolean };
+ };
+ };
+ currentIndicators?: {
+ rsi?: number;
+ macd?: number;
+ atr?: number;
+ };
+ suggestedPositionSizePct?: number;
+ analysisText?: string;
+ smcAnalysis?: { bias_ar?: string };
+ showDecisionHeader?: boolean;
+ showTradePlan?: boolean;
+ showReasons?: boolean;
+ showTechnicalDetails?: boolean;
+ showRescueCTA?: boolean;
+ tickerName?: string;
+ currencyLabel?: string;
 }
 
 // ─── Theme Constants (CHART-UX-030: TradingView Dark Theme) ──────────────────
@@ -416,6 +479,24 @@ export function InteractiveChart(props: FullChartProps) {
  smartMarkers,
  smcData,
  fusionMetrics,
+ // ALPHA-CHART-MERGE-1: professional sections props
+ canonical,
+ decisionData,
+ flightState,
+ makerState,
+ stockDna,
+ confluence,
+ currentIndicators,
+ suggestedPositionSizePct,
+ analysisText,
+ smcAnalysis,
+ showDecisionHeader,
+ showTradePlan,
+ showReasons,
+ showTechnicalDetails,
+ showRescueCTA,
+ tickerName,
+ currencyLabel,
  } = props;
 
  const containerRef = useRef<HTMLDivElement>(null);
@@ -1612,7 +1693,56 @@ export function InteractiveChart(props: FullChartProps) {
  return (n ?? 0).toFixed(0);
  }
 
- return (
+ // ── ALPHA-CHART-MERGE-1: Professional sections derived state ──
+ // signal/score/entry/stop/target/R:R come ONLY from canonical (single source of truth)
+ const signalFinal = canonical?.signal || '';
+ const signalAr = canonical?.signal_ar || signalToArabic(signalFinal);
+ const techScore = canonical?.tech_score ?? null;
+ const entry = canonical?.entry_price ?? null;
+ const stop = canonical?.stop_loss ?? null;
+ const target1 = canonical?.target_price ?? null;
+ const target2 = canonical?.target_price_2 ?? null;
+ const rr = canonical?.risk_reward ?? null;
+ // Buy-signal gate: trade plan + entry/stop/target numbers only render for BUY signals.
+ const isBuySignal = Boolean(
+ signalFinal && (
+ signalFinal.toUpperCase().includes('BUY') ||
+ signalFinal.toUpperCase().includes('ACCUMULATE')
+ )
+ );
+
+ // §2 Regime badge + market warning (only when flight/maker state is provided)
+ const regimeBadge = (() => {
+ if (flightState?.state === 'falling_down' || makerState?.state === 'distribution') {
+ return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-loss', bg: 'bg-loss/30', border: 'border-loss' };
+ }
+ if (flightState?.state === 'taking_off') {
+ return { label: '🟢 مسار صاعد صحي', color: 'text-profit', bg: 'bg-profit/30', border: 'border-profit' };
+ }
+ if (makerState?.state === 'accumulation') {
+ return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-warning', bg: 'bg-warning/30', border: 'border-warning' };
+ }
+ return null;
+ })();
+ const hasMarketWarning =
+ makerState?.state === 'distribution' ||
+ flightState?.state === 'falling_down' ||
+ (techScore !== null && techScore < 40);
+
+ // Decide whether to render the outer wrapper as `space-y-3` (sections visible)
+ // or keep the original `relative w-full h-full` (props-only mode → preserves
+ // SingleStockAnalysisView layout that depends on the chart filling the parent).
+ const anySectionVisible = Boolean(
+ (canonical && showDecisionHeader) ||
+ regimeBadge ||
+ hasMarketWarning ||
+ (isBuySignal && showTradePlan) ||
+ showReasons ||
+ showTechnicalDetails ||
+ showRescueCTA
+ );
+
+ const chartBlock = (
  <div className="relative w-full h-full">
  {/* Regime Badge */}
  {regimeLabel && regimeColor && (
@@ -1699,4 +1829,360 @@ export function InteractiveChart(props: FullChartProps) {
  />
  </div>
  );
+
+ // ── Props-only mode (SingleStockAnalysisView): keep the original layout ──
+ if (!anySectionVisible) {
+ return chartBlock;
+ }
+
+ // ── Professional mode (TradingChartView): wrap with sections ──
+ return (
+ <div className="space-y-3" dir="rtl">
+ {/* ════════════════════════════════════════════════════════════════════════
+ §1 — Decision Header (signal + entry/stop/target/R:R/techScore)
+ First thing the eye sees. Only renders when canonical + showDecisionHeader.
+ ════════════════════════════════════════════════════════════════════════ */}
+ {canonical && showDecisionHeader && (
+ <div className="px-4 py-3 border-b border-border bg-gradient-to-l from-muted/50 to-card rounded-t-xl">
+ <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+ {/* Right: ticker name + signal */}
+ <div className="flex items-center gap-3 flex-wrap">
+ {tickerName && (
+ <div className="min-w-0">
+ <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px]">
+ {tickerName}
+ </div>
+ </div>
+ )}
+ <Badge
+ className={cn(
+ 'text-sm font-bold px-3 py-1.5 rounded-lg border-2 shadow-sm',
+ signalFinal?.includes('SELL') || signalFinal?.includes('AVOID') || signalFinal?.includes('KILL')
+ ? 'bg-loss/40 text-loss border-loss'
+ : signalFinal?.includes('BUY')
+ ? 'bg-profit/40 text-profit border-profit'
+ : 'bg-warning/40 text-warning border-warning'
+ )}
+ >
+ {signalFinal?.includes('SELL') || signalFinal?.includes('AVOID') || signalFinal?.includes('KILL')
+ ? <TrendingDown className="w-4 h-4 ml-1" />
+ : signalFinal?.includes('BUY')
+ ? <TrendingUp className="w-4 h-4 ml-1" />
+ : <Minus className="w-4 h-4 ml-1" />}
+ {signalAr || '— بيانات غير متاحة'}
+ </Badge>
+ </div>
+
+ {/* Middle: entry/stop/target/R:R/techScore (BUY signals only) */}
+ {isBuySignal ? (
+ <div className="flex items-center gap-2 text-xs flex-wrap">
+ {entry !== null && entry !== undefined && entry > 0 && (
+ <div className="flex flex-col items-center">
+ <span className="text-xs text-muted-foreground">الدخول</span>
+ <span className="font-mono font-bold text-foreground">{(entry ?? 0).toFixed(2)}</span>
+ </div>
+ )}
+ {stop !== null && stop !== undefined && stop > 0 && (
+ <div className="flex flex-col items-center">
+ <span className="text-xs text-muted-foreground">الوقف</span>
+ <span className="font-mono font-bold text-loss">{(stop ?? 0).toFixed(2)}</span>
+ </div>
+ )}
+ {target1 !== null && target1 !== undefined && target1 > 0 && (
+ <div className="flex flex-col items-center">
+ <span className="text-xs text-muted-foreground">الهدف</span>
+ <span className="font-mono font-bold text-profit">{(target1 ?? 0).toFixed(2)}</span>
+ </div>
+ )}
+ {rr !== null && rr !== undefined && rr > 0 && (
+ <div className="flex flex-col items-center">
+ <span className="text-xs text-muted-foreground">R:R</span>
+ <span className="font-mono font-bold text-foreground">{(rr ?? 0).toFixed(2)}</span>
+ </div>
+ )}
+ {techScore !== null && techScore !== undefined && (
+ <div className="flex flex-col items-center">
+ <span className="text-xs text-muted-foreground">الثقة</span>
+ <span className="font-mono font-bold text-foreground">{(techScore ?? 0).toFixed(0)}%</span>
+ </div>
+ )}
+ </div>
+ ) : (
+ <div className="p-2 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
+ <ShieldAlert className="w-4 h-4 text-warning shrink-0" />
+ <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً</span>
+ </div>
+ )}
+ </div>
+
+ {/* Wait/reject reason (single line) */}
+ {(signalFinal === 'HOLD' || signalFinal === 'WAIT' || signalFinal?.includes('KILL') || signalFinal?.includes('AVOID')) && (
+ <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+ <AlertTriangle className="w-3 h-3 text-warning" />
+ <span>
+ {decisionData?.path_taken || decisionData?.adjustment_reason || 'السهم في مرحلة انتظار — راجع التفاصيل بالأسفل'}
+ </span>
+ </div>
+ )}
+ </div>
+ )}
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ §2 — Regime badge + Market warning
+ ════════════════════════════════════════════════════════════════════════ */}
+ {regimeBadge && (
+ <div className={cn('px-4 py-1.5 border-b text-xs flex items-center gap-2 rounded-md', regimeBadge.bg, regimeBadge.border)}>
+ <span className={cn('font-bold', regimeBadge.color)}>{regimeBadge.label}</span>
+ </div>
+ )}
+ {hasMarketWarning && (
+ <div className="px-4 py-1.5 bg-loss/20 border border-loss text-xs text-loss flex items-center gap-2 rounded-md">
+ <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+ <span className="font-semibold">
+ {makerState?.state === 'distribution' && '🔴 تصريف مؤسسي — احذر'}
+ {flightState?.state === 'falling_down' && '🩸 سكين هابط — تجنّب'}
+ {techScore !== null && techScore < 40 && '⚠️ درجة فنية ضعيفة'}
+ </span>
+ </div>
+ )}
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ §3 — The actual chart (preserved exactly as the original return)
+ ════════════════════════════════════════════════════════════════════════ */}
+ {chartBlock}
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ §4 — Trade Plan (BUY signals only)
+ Entry / Stop / TP1 / TP2 + R:R + position size
+ ════════════════════════════════════════════════════════════════════════ */}
+ {isBuySignal && showTradePlan && (entry !== null || target1 !== null || stop !== null) && (
+ <div className="px-4 py-3 border-t border-border rounded-xl border border-border bg-card">
+ <div className="rounded-xl border border-border bg-muted/30 p-3">
+ <div className="flex items-center justify-between mb-2">
+ <div className="flex items-center gap-1.5">
+ <Target className="w-4 h-4 text-profit" />
+ <span className="text-xs font-bold">خطة الصفقة</span>
+ </div>
+ {rr !== null && rr !== undefined && rr > 0 && (
+ <Badge variant="outline" className="text-xs font-mono">
+ R:R 1:{(rr ?? 0).toFixed(2)}
+ </Badge>
+ )}
+ </div>
+ <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+ <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel || 'ج.م'} color="text-foreground" />
+ <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel || 'ج.م'} color="text-loss" />
+ <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel || 'ج.م'} color="text-profit" />
+ <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel || 'ج.م'} color="text-profit" />
+ </div>
+ {suggestedPositionSizePct && (
+ <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+ <Wallet className="w-3 h-3" />
+ حجم المحفظة المقترح: <strong className="font-mono text-profit">{suggestedPositionSizePct}%</strong>
+ {analysisText && (
+ <span className="text-muted-foreground mr-2">• {analysisText.slice(0, 80)}</span>
+ )}
+ </div>
+ )}
+ </div>
+ </div>
+ )}
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ §5 — Reasons for the decision (5 cards)
+ Trend / Relative strength / Liquidity / Accumulation / Price position
+ ════════════════════════════════════════════════════════════════════════ */}
+ {showReasons && (
+ <div className="px-4 py-3 border-t border-border rounded-xl border border-border bg-card">
+ <div className="text-xs font-bold mb-2 flex items-center gap-1">
+ <Activity className="w-3.5 h-3.5 text-profit" />
+ أسباب القرار
+ </div>
+ <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+ <ReasonCard
+ label="الاتجاه"
+ value={flightState?.state ? (flightState.state === 'taking_off' ? 'صاعد' : flightState.state === 'falling_down' ? 'هابط' : 'عرضي') : '—'}
+ positive={flightState?.state === 'taking_off'}
+ negative={flightState?.state === 'falling_down'}
+ />
+ <ReasonCard
+ label="القوة النسبية"
+ value={confluence?.breakdown?.trend?.detail || '—'}
+ positive={confluence?.breakdown?.trend?.passed}
+ negative={!confluence?.breakdown?.trend?.passed && confluence?.breakdown?.trend !== undefined}
+ />
+ <ReasonCard
+ label="السيولة"
+ value={makerState?.state === 'accumulation' ? 'جيدة' : makerState?.state === 'distribution' ? 'ضعيفة' : 'متوازنة'}
+ positive={makerState?.state === 'accumulation'}
+ negative={makerState?.state === 'distribution'}
+ />
+ <ReasonCard
+ label="التجميع"
+ value={makerState?.state === 'accumulation' ? 'موجود' : 'غير موجود'}
+ positive={makerState?.state === 'accumulation'}
+ />
+ <ReasonCard
+ label="موقع السعر"
+ value={stockDna?.typical_range?.current_position || '—'}
+ positive={stockDna?.typical_range?.current_position?.includes('قرب دعم')}
+ negative={stockDna?.typical_range?.current_position?.includes('قرب مقاومة')}
+ />
+ </div>
+ </div>
+ )}
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ §6 — Collapsible Technical Details (collapsed by default)
+ RSI / MACD / ATR / TechScore + SMC analysis
+ ════════════════════════════════════════════════════════════════════════ */}
+ {showTechnicalDetails && (
+ <CollapsibleSection
+ currentIndicators={currentIndicators}
+ techScore={techScore}
+ smcAnalysis={smcAnalysis}
+ />
+ )}
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ §7 — Rescue Clinic CTA
+ ════════════════════════════════════════════════════════════════════════ */}
+ {showRescueCTA && tickerName && (
+ <a
+ href={`/rescue?ticker=${encodeURIComponent(tickerName)}`}
+ className="block p-4 rounded-xl border border-border bg-gradient-to-l from-warning/10 to-transparent hover:from-warning/20 transition-all group"
+ >
+ <div className="flex items-center justify-between gap-3">
+ <div className="flex items-center gap-2">
+ <span className="text-xl">🚑</span>
+ <div>
+ <p className="text-sm font-bold text-foreground">هل أنت عالق في هذا السهم بخسارة؟</p>
+ <p className="text-xs text-muted-foreground">افتح عيادة الإنقاذ المالي للتشخيص وخطة التعافي</p>
+ </div>
+ </div>
+ <span className="text-xs font-semibold text-primary group-hover:translate-x-[-4px] transition-transform">
+ ←
+ </span>
+ </div>
+ </a>
+ )}
+ </div>
+ );
+}
+
+// ─── ALPHA-CHART-MERGE-1: Helper components for the professional sections ──────
+
+function PlanLevel({ label, value, currencyLabel, color }: {
+ label: string;
+ value: number | null | undefined;
+ currencyLabel: string;
+ color: string;
+}) {
+ return (
+ <div className="flex flex-col items-center p-2 rounded-lg bg-card border border-border/50">
+ <span className="text-xs text-muted-foreground">{label}</span>
+ <span className={cn('font-mono font-bold text-sm', color)}>
+ {value !== null && value !== undefined && value > 0
+ ? `${(value ?? 0).toFixed(2)} ${currencyLabel}`
+ : '— بيانات غير متاحة'}
+ </span>
+ </div>
+ );
+}
+
+function ReasonCard({ label, value, positive, negative }: {
+ label: string;
+ value: string;
+ positive?: boolean;
+ negative?: boolean;
+}) {
+ return (
+ <div className={cn(
+ 'p-2 rounded-lg border text-center',
+ positive
+ ? 'bg-profit/30 border-profit'
+ : negative
+ ? 'bg-loss/30 border-loss'
+ : 'bg-muted/30 border-border'
+ )}>
+ <div className="text-xs text-muted-foreground mb-0.5">{label}</div>
+ <div className={cn(
+ 'text-xs font-bold',
+ positive ? 'text-profit' : negative ? 'text-loss' : 'text-foreground'
+ )}>
+ {value}
+ </div>
+ </div>
+ );
+}
+
+function DetailItem({ label, value }: { label: string; value: string | number | undefined | null }) {
+ return (
+ <div className="flex justify-between p-1.5 rounded bg-muted/30 border border-border/50">
+ <span className="text-muted-foreground">{label}:</span>
+ <span className="font-mono font-bold text-foreground">{value === undefined || value === null || value === '' ? '—' : String(value)}</span>
+ </div>
+ );
+}
+
+function CollapsibleSection({
+ currentIndicators,
+ techScore,
+ smcAnalysis,
+}: {
+ currentIndicators?: { rsi?: number; macd?: number; atr?: number };
+ techScore?: number | null;
+ smcAnalysis?: { bias_ar?: string };
+}) {
+ const [open, setOpen] = useState(false);
+ return (
+ <Collapsible open={open} onOpenChange={setOpen} className="border-t border-border rounded-xl border border-border bg-card overflow-hidden">
+ <CollapsibleTrigger asChild>
+ <button className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors">
+ <div className="flex items-center gap-2">
+ <Gauge className="w-4 h-4 text-muted-foreground" />
+ <span className="text-xs font-bold">التفاصيل الفنية</span>
+ <span className="text-xs text-muted-foreground">(للخبراء)</span>
+ </div>
+ <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
+ </button>
+ </CollapsibleTrigger>
+ <CollapsibleContent>
+ <div className="px-4 py-3 space-y-3 border-t border-border/50 bg-muted/20">
+ {currentIndicators && (
+ <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+ <DetailItem label="RSI (14)" value={currentIndicators.rsi?.toFixed(1)} />
+ <DetailItem label="MACD" value={currentIndicators.macd?.toFixed(3)} />
+ <DetailItem label="ATR" value={currentIndicators.atr?.toFixed(3)} />
+ <DetailItem label="Tech Score" value={techScore?.toFixed(0)} />
+ </div>
+ )}
+ {smcAnalysis?.bias_ar && (
+ <div className="text-xs">
+ <div className="font-bold mb-1 text-muted-foreground">تحليل SMC:</div>
+ <div className="text-foreground">{smcAnalysis.bias_ar}</div>
+ </div>
+ )}
+ {!currentIndicators && !smcAnalysis?.bias_ar && (
+ <div className="text-xs text-muted-foreground">لا توجد تفاصيل فنية متاحة</div>
+ )}
+ </div>
+ </CollapsibleContent>
+ </Collapsible>
+ );
+}
+
+// ─── ALPHA-CHART-MERGE-1: signal → Arabic translation (matches V40.2) ──────────
+function signalToArabic(signal: string | undefined | null): string {
+ if (!signal) return '— بيانات غير متاحة';
+ const s = signal.toUpperCase();
+ if (s.includes('STRONG_BUY') || s.includes('INSTITUTIONAL')) return 'شراء قوي';
+ if (s === 'BUY') return 'شراء';
+ if (s === 'ACCUMULATE') return 'تجميع';
+ if (s === 'HOLD' || s === 'WAIT') return 'انتظار';
+ if (s === 'REDUCE') return 'تقليل';
+ if (s === 'SELL') return 'تجنب';
+ if (s === 'STRONG_SELL' || s === 'AVOID') return 'تجنب قوي';
+ if (s.includes('KILL') || s.includes('REJECT')) return 'تجنب';
+ return '— بيانات غير متاحة';
 }

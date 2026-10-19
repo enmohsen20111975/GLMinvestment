@@ -73906,3 +73906,83 @@ Stage Summary:
 - 🔴 MakerRadarTab (3908 سطر) ميت — محتاج قرار المالك (archive ولا revive).
 - 🔴 MobileMoreSheet ميت — محتاج fix.
 - 🔴 5 عائلات تكرار وظيفي — محتاجة توحيد.
+
+---
+Task ID: ALPHA-CHART-MERGE-1
+Agent: ألفا (Frontend)
+Task: دمج مميزات ProfessionalTradingChart.tsx (825 سطر) INTO InteractiveChart.tsx (1701 سطر) — مش نقل كود، بس props + render sections.
+
+Work Log:
+- المرحلة 1 — قرأت الملفات بالكامل:
+  * InteractiveChart.tsx (1701 سطر): chart logic (createChart, addPane, sanitization, indicators) + empty state + return مع Regime Badge + Info Overlay.
+  * ProfessionalTradingChart.tsx (825 سطر): 7 أقسام (Decision Header + Regime/Warning + Chart + Trade Plan + Reasons + Technical Details + Rescue CTA) + helper components (PlanLevel, ReasonCard, DetailItem).
+  * TradingChartView.tsx (309 سطر): multi-ticker workspace (1-6 tickers) + publish to Telegram.
+  * SingleStockAnalysisView.tsx: بيرندر InteractiveChart بـ props-only mode (بدون sections).
+  * market-analysis/index.ts: مفيهوش export لـ ProfessionalTradingChart (مش محتاج تعديل).
+
+- المرحلة 2 — أضفت 16 prop جديدة لـ FullChartProps في InteractiveChart.tsx:
+  * canonical (signal, signal_ar, entry_price, stop_loss, target_price, target_price_2, tech_score, risk_reward)
+  * decisionData (path_taken, adjustment_reason)
+  * flightState, makerState, stockDna, confluence (breakdown.trend), currentIndicators (rsi/macd/atr)
+  * suggestedPositionSizePct, analysisText, smcAnalysis
+  * showDecisionHeader, showTradePlan, showReasons, showTechnicalDetails, showRescueCTA
+  * tickerName, currencyLabel
+
+- المرحلة 3 — أضفت 7 sections في الـ return:
+  * §1 Decision Header (لو canonical + showDecisionHeader): signal badge + entry/stop/target/R:R/techScore + wait/reject reason
+  * §2 Regime badge + Market warning (لو flightState/makerState): falling_down/taking_off/accumulation + distribution warning
+  * §3 الـ chart الفعلي — زي ما هو بالظبط (محفوظ في chartBlock variable)
+  * §4 Trade Plan (BUY only — لو canonical.signal.includes('BUY')): PlanLevel × 4 (entry/stop/TP1/TP2) + R:R + position size
+  * §5 Reasons (5 ReasonCards): trend, relative strength, liquidity, accumulation, price position
+  * §6 Collapsible Technical Details: RSI/MACD/ATR/TechScore + SMC analysis (مطوي افتراضياً)
+  * §7 Rescue CTA: بانر عيادة الإنقاذ بـ لينك /rescue?ticker=
+
+- المرحلة 4 — أضفت helper components تحت الـ export:
+  * PlanLevel (entry/stop/TP1/TP2 display)
+  * ReasonCard (positive/negative/neutral states)
+  * DetailItem (RSI/MACD/ATR/TechScore display)
+  * CollapsibleSection (technical details مع useState لـ open/close)
+  * signalToArabic (signal → Arabic translation، matches V40.2)
+
+- المرحلة 5 — حافظت على الـ chart logic بالظبط:
+  * ما لمستش السطور 1-1599 (types, helpers, chart creation, sanitization, indicators, empty state).
+  * الـ return الأصلي اتعمله extract لـ `chartBlock` variable عشان يتـ reuse في الـ professional mode.
+  * Props-only mode: لو `anySectionVisible === false`، الـ component بيرجع `chartBlock` مباشرة (نفس الـ layout القديم: `<div className="relative w-full h-full">`). ده بيحافظ على SingleStockAnalysisView اللي بيعتمد على إن الشارت بياخذ h-full من الـ parent.
+
+- المرحلة 6 — TradingChartView.tsx (309 → 540 سطر):
+  * شيلت import ProfessionalTradingChart.
+  * import InteractiveChart + AlertPanel + UnifiedStockData type.
+  * عرفت ChartAnalysisData interface محلي (مش لمست SingleStockAnalysisView).
+  * نقلت الـ data fetch logic بالكامل من ProfessionalTradingChart (fetchData, state, canonical fetch, visibleIndicators).
+  * قسمت الـ component لـ:
+    - TradingChartView (الأب): multi-ticker grid + add/remove + publish all.
+    - TickerChartCard (الابن): per-ticker state + tooling header + InteractiveChart.
+  * الـ tooling header (search/timeframe/refresh/alerts/screenshot/maximize) اتحط في TickerChartCard.
+  * بيرندر InteractiveChart بـ كل الـ props (أصلية + 16 جديدة + showDecisionHeader/showTradePlan/showReasons/showTechnicalDetails/showRescueCTA = true).
+
+- المرحلة 7 — شيلت ProfessionalTradingChart.tsx:
+  * `rm` (مميزاته اتنقلت لـ InteractiveChart + TradingChartView).
+
+- المرحلة 8 — fix الـ 3 bugs (تلقائياً):
+  * BUG #1 (regimeColor غلط): ProfessionalTradingChart كان بـ pass marketRegime. اتشال → TradingChartView دلوقتي بـ pass `regimeColor={data.market_regime?.color}` صح.
+  * BUG #2 (bbSqueezeLevel غلط): ProfessionalTradingChart كان بـ pass bbSqueeze. اتشال → TradingChartView دلوقتي بـ pass `bbSqueezeLevel={data.bb_squeeze?.state}` صح.
+  * BUG #3 (8 props ناقصة): ProfessionalTradingChart كان ناقص target3Price + livePrice + cmfData + macdProjection + smartMarkers + smcData + fusionMetrics + regimeColor. اتشال → TradingChartView دلوقتي بـ pass كل الـ props الصح.
+
+الاختبارات:
+- ✅ bun run lint → 0 errors.
+- ✅ npx tsc --noEmit → 0 errors في الـ files المعدّلة (InteractiveChart.tsx, TradingChartView.tsx, market-analysis/index.ts).
+  * ملاحظة: في error واحد pre-existing في InteractiveChart.tsx line 1524 (`MACD_PANE_INDEX` referenced before declaration) — ده في الـ chart logic (untouched). Pre-existing قبل التكليف (verified بـ git stash). ممنوع لمسه per task spec.
+- ✅ ما كسّرتش SingleStockAnalysisView — props-only mode محفوظ (anySectionVisible=false → chartBlock مباشرة).
+- ✅ ما لمستش TradingViewChart.tsx.
+- ✅ ما لمستش الـ chart logic (السطور 1-1599).
+- ✅ ما لمستش الـ empty state (lines 1571-1598 في الأصل، lines 1651-1680 بعد إضافتي).
+- ✅ ما pushش (Rule 75 معلّقة).
+
+Stage Summary:
+- ✅ InteractiveChart.tsx (1701 → 2188 سطر): +16 props + 7 sections + 4 helper components + signalToArabic. Chart logic + empty state محفوظين بالظبط.
+- ✅ TradingChartView.tsx (309 → 540 سطر): import InteractiveChart + per-ticker TickerChartCard + data fetch logic + tooling header.
+- ✅ ProfessionalTradingChart.tsx: اتشال (مميزاته اتنقلت).
+- ✅ market-analysis/index.ts: مفيهوش export لـ ProfessionalTradingChart أصلاً (مش محتاج تعديل).
+- ✅ 3 bugs اتصلحتوا تلقائياً (regimeColor + bbSqueezeLevel + 8 props ناقصة).
+- ✅ lint PASS + tsc 0 errors في الـ files المعدّلة.
+- 🔴 Pre-existing tsc error في InteractiveChart.tsx line 1524 (MACD_PANE_INDEX في chart logic — ممنوع لمسه).
