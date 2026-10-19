@@ -93,9 +93,10 @@ MA_PERIOD: int = 20
 NET_FLOW_SESSIONS: int = 5
 
 BUCKET_LABEL_AR: Dict[str, str] = {
-    'whale_inflow': 'تجميع حيتان',
+    'strong_whale_inflow': 'تدفق حيتان قوي',
+    'moderate_inflow': 'تدفق إيجابي متوسط',
     'whale_outflow': 'تصريف وهروب كاش',
-    'bottom_absorption': 'تجميع قيعان هادئ',
+    'bottom_absorption': 'امتصاص عند القاع',
     'correction_exhaustion': 'نهاية تصحيح وارتداد',
     'avoid_falling_knife': 'سقوط حر — تجنب',
     'neutral': 'حياد',
@@ -482,7 +483,9 @@ def classify_liquidity_bucket(
                 expected_rr=None,  # NO upward target on falling knife
             )
 
-        # 1. whale_inflow
+        # 1. strong_whale_inflow (was whale_inflow — BRAVO RADAR-CLASSIFY)
+        # Strong = net_flow > 2× WHALE_INFLOW_MIN_EGP (double the floor)
+        # Moderate = net_flow > WHALE_INFLOW_MIN_EGP (meets floor)
         if (
             net_flow_5d > WHALE_INFLOW_MIN_EGP
             and ma20 is not None
@@ -495,10 +498,6 @@ def classify_liquidity_bucket(
             )
             expected_target, expected_rr = _determine_target(current_price, recent_low_10, stock_res, candles)
             if expected_rr is not None and expected_rr >= RR_FLOOR:
-                # BRAVO-JIMMY Phase 2: wire evaluate_risk() — enforce R/R floor
-                # + position cap (2.5%) at the canonical classifier. Defense in
-                # depth: re-verify R/R + allocate position_size. If killed, fall
-                # through to neutral (signal MUST NOT leave pipeline with R/R<1.8).
                 risk_eval = _evaluate_risk(
                     entry_price=current_price,
                     stop_loss=recent_low_10,
@@ -507,12 +506,17 @@ def classify_liquidity_bucket(
                 )
                 if not risk_eval['killed']:
                     rsi_str = f'{rsi:.1f}' if rsi is not None else 'N/A'
+                    # BRAVO RADAR-CLASSIFY: split strong vs moderate by flow magnitude
+                    _is_strong = net_flow_5d > (WHALE_INFLOW_MIN_EGP * 2)
+                    _bucket_name = 'strong_whale_inflow' if _is_strong else 'moderate_inflow'
+                    _bucket_ar = 'تدفق حيتان قوي' if _is_strong else 'تدفق إيجابي متوسط'
+                    _flow_desc = 'قوي' if _is_strong else 'متوسط'
                     return _result(
-                        'whale_inflow', net_flow_5d, current_price, ma20, rsi,
+                        _bucket_name, net_flow_5d, current_price, ma20, rsi,
                         atr_current, atr_avg, low_52w, high_52w, drop_15d, flow_history,
-                        f'صافي تدفق 5 جلسات {net_flow_5d/1e6:+.2f}M ج.م (>{WHALE_INFLOW_MIN_EGP/1e6:.0f}M) '
+                        f'صافي تدفق 5 جلسات {net_flow_5d/1e6:+.2f}M ({_flow_desc}) '
                         f'+ السعر {current_price:.2f} فوق MA20 {ma20:.2f} '
-                        f'+ RSI {rsi_str} (<{WHALE_INFLOW_RSI_MAX:.0f}) + R/R {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — تجميع حيتان صريح',
+                        f'+ RSI {rsi_str} (<{WHALE_INFLOW_RSI_MAX:.0f}) + R/R {expected_rr:.2f} (≥{RR_FLOOR:.1f}) — {_bucket_ar}',
                         expected_rr=expected_rr,
                         position_size=risk_eval['position_size'],
                     )
@@ -707,7 +711,8 @@ def liquidity_buckets():
         logger.error(f'[canonical_flow] mid-scan DB error: {e}')
         return jsonify({
             'success': True, 'market': market, 'scanned_count': scanned,
-            'whale_inflow': buckets['whale_inflow'],
+            'strong_whale_inflow': buckets.get('strong_whale_inflow', []),
+            'moderate_inflow': buckets.get('moderate_inflow', []),
             'whale_outflow': buckets['whale_outflow'],
             'bottom_absorption': buckets['bottom_absorption'],
             'correction_exhaustion': buckets['correction_exhaustion'],
@@ -722,7 +727,8 @@ def liquidity_buckets():
 
     return jsonify({
         'success': True, 'market': market, 'scanned_count': scanned,
-        'whale_inflow': buckets['whale_inflow'],
+        'strong_whale_inflow': buckets.get('strong_whale_inflow', []),
+        'moderate_inflow': buckets.get('moderate_inflow', []),
         'whale_outflow': buckets['whale_outflow'],
         'bottom_absorption': buckets['bottom_absorption'],
         'correction_exhaustion': buckets['correction_exhaustion'],

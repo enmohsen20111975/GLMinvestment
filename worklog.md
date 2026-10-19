@@ -70319,3 +70319,37 @@ Stage Summary:
 - ✅ مفيش ملفات جديدة (تعديل في liquidity_radar_v2.py بس).
 - ⚠️ buckets (canonical_flow.py) محتاجة update منفصل (strong_whale_inflow vs moderate_inflow).
 - ⚠️ check_falling_knife محتاج يستخدم get_market_config للـ fk_hard_crash_pct.
+
+---
+Task ID: BRAVO-RADAR-CLASSIFY-2
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — wire get_market_config + update buckets (تعديل في الموجود بس)
+
+Work Log:
+- Wiring: compute_whale_flow + check_falling_knife بـ market parameter:
+  * compute_whale_flow(candles, cash_ratio, market='EGX') → بـ يستخدم get_market_config(market)['whale_threshold_mult']
+  * check_falling_knife(candles, stock_info, market_regime, market='EGX') → بـ يستخدم get_market_config(market)['fk_hard_crash_pct']
+  * scan_ticker بـ يمرر market للاتنين.
+  * النتيجة: EGX بـ يستخدم 0.6 whale + 12% FK، CRYPTO بـ يستخدم 0.7 whale + 25% FK، إلخ.
+
+- Buckets update في canonical_flow.py:
+  * شيلت: 'whale_inflow' (قديم)
+  * أضفت: 'strong_whale_inflow' (net_flow > 2× floor = تدفق قوي)
+  * أضفت: 'moderate_inflow' (net_flow > floor = تدفق متوسط)
+  * الـ split: net_flow_5d > WHALE_INFLOW_MIN_EGP × 2 → strong، else → moderate
+  * BUCKET_LABEL_AR اتحدّث: 7 buckets (was 6)
+  * jsonify output اتحدّث: strong_whale_inflow + moderate_inflow بدل whale_inflow
+
+- التحقق:
+  * py_compile: liquidity_radar_v2.py + canonical_flow.py = PASS.
+  * get_market_config wired في compute_whale_flow (whale_threshold_mult per market).
+  * get_market_config wired في check_falling_knife (fk_hard_crash_pct per market).
+  * 0 'whale_inflow' (old name) متبقّي في canonical_flow.
+  * strong_whale_inflow + moderate_inflow في BUCKET_LABEL_AR + jsonify + classify logic.
+  * مفيش ملفات جديدة.
+
+Stage Summary:
+- ✅ compute_whale_flow: whale_mult per market (0.6 EGX / 0.7 CRYPTO).
+- ✅ check_falling_knife: FK threshold per market (12% EGX / 25% CRYPTO).
+- ✅ canonical_flow buckets: strong_whale_inflow + moderate_inflow (was whale_inflow).
+- ✅ مفيش ملفات جديدة (تعديل في liquidity_radar_v2.py + canonical_flow.py بس).

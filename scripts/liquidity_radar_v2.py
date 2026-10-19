@@ -571,7 +571,7 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
 # ─── 2. الحوت فين؟ (صافي الكاش المطلق) ────────────────────────────────────
 
 
-def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float] = None) -> Dict[str, Any]:
+def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float] = None, market: str = 'EGX') -> Dict[str, Any]:
     """حساب تدفق السيولة بـ Money Flow Multiplier (MFM) — BRAVO RADAR-REBUILD.
 
     🔴 FIX (DeepSeek + Grock audit): شيلنا close vs open (غلط جوهريًا).
@@ -656,9 +656,9 @@ def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float
     net_flow = sum(daily_flows)  # موجب = buying، سالب = selling
     avg_daily_flow = sum(abs(f) for f in daily_flows) / len(daily_flows) if daily_flows else 0
 
-    # Whale threshold — RELATIVE (not absolute 2M)
-    # 0.6 = 60% of avg daily flow. Documented: whale = flow > 60% of average.
-    WHALE_THRESHOLD_MULT = 0.6
+    # Whale threshold — RELATIVE (not absolute 2M) + per-market (Solution C)
+    _market_cfg = get_market_config(market)
+    WHALE_THRESHOLD_MULT = _market_cfg['whale_threshold_mult']
     whale_threshold = avg_daily_flow * WHALE_THRESHOLD_MULT
 
     # Cash ratio — kept in output for RISK ASSESSMENT only (not whale detection)
@@ -896,6 +896,7 @@ def check_falling_knife(
     candles: List[Dict[str, Any]],
     stock_info: Dict[str, Any],
     market_regime: Dict[str, Any],
+    market: str = 'EGX',
 ) -> Dict[str, Any]:
     """فحص السكين الساقط — CANONICAL FIRST + structural layer.
 
@@ -919,8 +920,8 @@ def check_falling_knife(
     current_price = _to_float(stock_info.get('current_price'))
 
     # ─── BRAVO RADAR-REBUILD Finding #7: Hard crash = AVOID regardless of MA50 ──
-    # لو السهم نزل > 12% في 3 جلسات → سقوط حر → AVOID فوري.
-    # ده OR مش AND — السهم ممكن يكون لسه فوق SMA50 بس النزول > 12% = خطر.
+    # لو السهم نزل > fk_hard_crash_pct في 3 جلسات → سقوط حر → AVOID فوري.
+    # per-market: CRYPTO=25%, EGX=12%, US=10% (Solution C Hybrid)
     if candles and len(candles) >= 3:
         recent_3 = candles[-3:]
         highs_3 = [_to_float(c.get('high')) for c in recent_3 if _to_float(c.get('high')) > 0]
@@ -928,7 +929,8 @@ def check_falling_knife(
         if highs_3 and last_close_3 > 0:
             peak_3d = max(highs_3)
             drop_3d_pct = ((peak_3d - last_close_3) / peak_3d) * 100.0
-            HARD_CRASH_THRESHOLD = 12.0  # موثّق: 12% في 3 جلسات = سقوط حر
+            _market_cfg = get_market_config(market)
+            HARD_CRASH_THRESHOLD = _market_cfg['fk_hard_crash_pct']
             if drop_3d_pct > HARD_CRASH_THRESHOLD:
                 return {
                     'is_falling_knife': True,
@@ -1126,7 +1128,7 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
     tv_whale = _check_tv_whale(ticker, de_conn)
 
     # 1. الحوت فين؟ (+ Cash Safety Multiplier من cash_ratio)
-    whale = compute_whale_flow(candles, cash_ratio=fundamentals.get('cash_ratio'))
+    whale = compute_whale_flow(candles, cash_ratio=fundamentals.get('cash_ratio'), market=market)
     if de_conn is not None:
         de_conn.close()
 
@@ -1193,7 +1195,7 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         }
 
     # 5. Task BRAVO-FALLING-KNIFE: فحص السكين الساقط (Rule 78/79)
-    falling_knife = check_falling_knife(candles, stock_info, market_regime)
+    falling_knife = check_falling_knife(candles, stock_info, market_regime, market=market)
 
     # Rule 78/79: لو falling knife → تعطيل entry_level حتى لو في توقع نشط
     # (السهم في هبوط حر — حتى V40.2's targets بتتعطّل)
