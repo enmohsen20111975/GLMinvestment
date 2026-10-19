@@ -472,3 +472,35 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - ممنوع ملفات جديدة — عدّل اللي موجود.
 - التزام كامل بالدستور.
 - تعديل + push مستمر فقط.
+
+---
+
+## 22. المنطق التفصيلى للتفكير (من الكود — مش كومنتات) — 2026-10-19
+
+### (أ) التوقع — V40.2 (backtest_engine.py → analyze_single_day):
+10 خطوات لكل سهم:
+1. مؤشرات: ATR(14) + EMA200 (trend) + بولينجر + حجم (surge > 1.3×).
+2. Order Blocks (lookback 5).
+3. الميكرز (detect_maker_state).
+4. Fair Value + premium.
+5. DNA pattern matching (10 شموع → توقّع 10).
+6. الأساسيات (PE, ROE).
+7. Flight State (🚀/📉/عرضي).
+8. 5 Proofs + Score: base=30. Trend+15, Makers+20/-20, DNA+15, Fund+15, Sector+10 (+5 bonus). clamp 0-100.
+9. Signal: INSTITUTIONAL_BUY (maker+flight) / STRONG_BUY (score≥threshold) / AVOID (≤30) / WAIT.
+10. Risk: entry=close, stop=OB-(ATR×0.5) أو entry-(ATR×1.5), tp1/tp2 = entry+(risk×rr). evaluate_risk gate: R/R≥1.8 أو KILLED.
+
+### (ب) رادار السيولة (canonical_flow.py → classify_liquidity_bucket):
+1. stock + 60 شمعة → MA20, RSI, ATR, net_flow_5d, drop_15d, SMA50.
+2. بيانات ناقصة → neutral.
+3. 🔴 Falling Knife (الأول): هبط >10% في 3 جلسات + تحت SMA50 → avoid_falling_knife (ممنوع هدف صاعد).
+4. whale_inflow: تدفق > 2M + > MA20 + RSI<68 + R/R≥1.8.
+5. whale_outflow: تدفق <-threshold + < MA20 أو كسر قاع 5 أيام.
+6. bottom_absorption: تدفق>0 + ضمن 8% من 52w_low + ATR<avg + R/R≥1.8.
+7. correction_exhaustion: drop_15d≥8% + green engulfing + تدفق اليوم>0 + R/R≥1.8.
+
+### القواعد:
+- first-match-wins (مفيش overlap).
+- Falling Knife = الأول (يلغي أي BUY).
+- R/R ≥ 1.8 (RR_FLOOR) لـ كل BUY.
+- evaluate_risk gate على الـ 3 BUY buckets + position cap 2.5%.
