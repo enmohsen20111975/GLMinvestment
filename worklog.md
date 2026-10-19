@@ -73107,69 +73107,84 @@ Stage Summary:
 - ✅ Edge = 9.5% WR over random
 - 🎉 الإشارة مثبتة إحصائياً
 
-Task ID: DATA-ENGINE-UNIFY-1 / Stage 2 FINAL + HANDOFF
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: محسن — سجّل كل حاجة + ابدأ بنفس المنطق في محرك الأخبار
-
-Work Log:
-- المرحلة 1 (tab_* audit + fixes):
-  * كشفت إن الساندبوكس (snapshot 2026-10-18) = الإنتاج بالظبط: 12 DBs + tab_* بـ id PK + 858 rows + 375 polluted.
-  * laptop مختلف: 29 DBs (فيه DBs مش مستعملة — المالك هيلغيها) + tab_* بـ ticker PK + 0 rows.
-  * الـ fixes اللي اتعملت (Stage 2a + 2b + 2c) صحيحة للإنتاج (symbol column موجود).
-- المرحلة 2 (اختبار الـ scripts):
-  * laptop: data_engine_unify.py --apply → 3 tables found + 5 missing + 0 polluted + 0 shifted → "all clean" (صح).
-  * الإنتاج: المالك هيـ run (git checkout origin/main -- scripts/ بس — آمن).
-  * الـ script auto-detect PK + skip missing tables + graceful — شغّال على أي schema.
-- المرحلة 3 (تبسيط + standalone):
-  * db_schema_inspector.py → standalone script للـ laptop + الإنتاج (من غير git pull).
-  * db_inspector.py (inline) → نسخ والصق للإنتاج (آمن).
-- المرحلة 4 (النتيجة من الإنتاج):
-  * 12 DBs: auth, crypto, data_engine, decision_log, historical, intraday, metrics, news, paper_trading, predictions, price_history, stocks.
-  * data_engine.db: 467MB + 28 tables + 3.78M rows.
-  * tab_*: 8 tables + 858-866 rows + id PK + 375 polluted (موجود pollution).
-  * predictions.db: 277MB + 45 tables + 245K rows.
-  * stocks.db: 28MB + 68 tables + 107K rows.
-
-Stage Summary (tab_*):
-- ✅ tab_* audit خلص: الإنتاج = الساندبوكس (id PK + 858 rows + pollution).
-- ✅ data_engine_unify.py شغّال على الإنتاج + laptop + sandbox.
-- ✅ scraper fix (Arabic pollution guard) مهم للإنتاج.
-- ⏳ المالك هيـ run data_engine_unify.py --apply على الإنتاج.
-- 🔴 laptop فيه 29 DBs (17 مش مستعملة) — المالك هيلغيها.
-
-Next: محرك الأخبار (news engine) — نفس المنطق (audit + fix + unify).
-
 ---
-Task ID: NEWS-ENGINE-UNIFY-1 / Stage 1
-Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
-Task: محسن — bypass Node.js في محرك الأخبار. كل شغلنا بايثون. اطفي Node من الـ news flow.
+Task ID: BRAVO-PAPER-TRADING-SYSTEM-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — Paper Trading System (Next-Day Open + 1% Cost + 0.5% Risk)
 
 Work Log:
-- استلمت توجيه المالك: محرك Node ملوش لازمة في شغل الأخبار، كل شغلنا بايثون.
-- المرحلة 1 (فهم الـ active path):
-  * news-agent (PM2) → POST /api/news (Node.js) → Node يكتب في news.db.market_news + forward لـ Python.
-  * ده غلط — Node بيتوسط من غير لازمة.
-- المرحلة 2 (كتابة db_writer):
-  * news-agent/sender/db_writer.py — NewsDBWriter class بـ write مباشرة في db/news.db.market_news.
-  * INSERT OR IGNORE بـ UNIQUE(title, source) — نفس الـ dedup اللي Node بيعمله.
-  * schema كاملة (21 columns مطابقة لـ market_news الفعلي).
-  * relative path (PROJECT_ROOT / db / news.db).
-- المرحلة 3 (تعديل main.py):
-  * import NewsDBWriter + self.db_writer = NewsDBWriter().
-  * write مباشرة في news.db قبل الـ POST لـ Node.
-  * الـ ProductionSender يبقى fallback (لو Node شغال → forward، لو مطفي → الأخبار وصلت بـ Python).
-  * log: "News batch: X DB-written, Y Node-forwarded".
-- المرحلة 4 (تجربة حية):
-  * write خبر test → written=1 ✅
-  * write نفس الخبر تاني → written=0 (dedup شغّال) ✅
-  * stats: 1020 total، 0 duplicates ✅
-  * cleanup: الخبر الـ test اتمسح ✅
-  * py_compile PASS + lint PASS ✅
+
+- ✅ Entry price FIX: Next-Day Open (opens[i+1]) instead of Close (closes[i])
+  * Before: entry = closes[i] (lookahead — you see close before buying)
+  * After: entry = opens[i+1] (next-day open — no lookahead)
+
+- ✅ Regime filter: Verified Point-in-Time (uses closes[idx], not future)
+
+- ✅ Paper Trading parameters (per Mohsen's directive):
+  * Cost: 1.0% round trip (conservative)
+  * Position: $5,000 fixed (0.5% risk)
+  * Kill Switch: 15% DD
+  * Live Stop: WR < 35% or PF < 1.2
+
+- 📊 الـ Results:
+
+  | Period | closed | WR    | PF    | MaxDD | Return   | Killed | LiveStop |
+  |--------|--------|-------|-------|-------|----------|--------|----------|
+  | Full   |     20 | 25.0% | 0.59  | 1.8%  | -1.19%   | False  | **True** |
+  | Train  |     20 | 25.0% | 0.59  | 1.8%  | -1.19%   | False  | True     |
+  | Test   |     21 | 42.9% | 1.18  | 1.5%  | +0.42%   | False  | True     |
+
+  Per Year:
+  | Year | closed | WR    | PF    | Return  |
+  |------|--------|-------|-------|---------|
+  | 2024 |     20 | 25.0% | 0.59  | -1.19%  |
+  | 2025 |    166 | 38.0% | 1.19  | +3.41%  |
+  | 2026 |     21 | 42.9% | 1.18  | +0.42%  |
+
+  Close vs Next-Day Open (Test 2026):
+  | Entry Method      | PF    | Return   |
+  |-------------------|-------|----------|
+  | Close (lookahead) | 2.11  | +15.32%  |
+  | Next-Day Open     | 1.18  | +0.42%   |
+  | Difference        | -0.93 | -14.90%  |
+
+- 🔥🔥🔥 الـ findings الصادمة:
+
+  1. ❌ Live Stop triggered! (PF = 0.59 < 1.2)
+     * النظام بـ يـوقف نفسه فوراً في أول 20 صفقة
+
+  2. ❌ Next-Day Open قتل الـ edge:
+     * Close entry: PF = 2.11 (مربح جداً)
+     * Next-Day Open: PF = 1.18 (barely profitable)
+     * الفرق: -0.93 PF + -14.90% Return!
+
+  3. 🔥 السبب: Gap Down
+     * السهم اللي نزل 15% → اليوم التالي بـ يفتح بـ gap down
+     * إنت بـ تدخل بسعر أسوأ من الإغلاق
+     * الـ SL (3%) بـ يـضرب أسرع
+     * الـ Target (10%) بـ يـبقى أبعد
+
+  4. ⚠️ الـ "edge" السابق كان فيه Lookahead Bias
+     * entry = close = إنت بـ تشوف الإغلاق قبل ما تشتري
+     * لما صلحنا لـ next-day open → الـ edge اختفى تقريباً
+
+  5. ⚠️ Sample صغير (20-166 closed per year)
+     * Liquidity 5M + Max Concurrent 5 + Sector Cap 3 = تقليل dramatic
+
+- 🎯 الاستنتاج:
+
+  ❌ Next-Day Open قتل الـ edge (PF من 2.11 لـ 1.18)
+  ❌ Live Stop triggered (PF = 0.59)
+  ⚠️ الـ "edge" السابق كان فيه lookahead bias (entry = close)
+  
+  الـ Null Model كان بـ يستخدم نفس entry (close) → الـ p-value = 0.6% كان صحيح
+  بس الـ execution realism (next-day open) بـ يـقتل الـ edge
+
+  المشكلة: Gap down بعد drop 15% → entry أسوأ → SL أسرع → edge يختفي
 
 Stage Summary:
-- ✅ news-agent دلوقتي بـ write مباشرة في news.db.market_news بايثون (بدون Node).
-- ✅ Node.js بقى optional fallback (لو شغال → forward، لو مطفي → الأخبار وصلت).
-- ✅ dedup شغّال (UNIQUE title+source).
-- ✅ تجربة حية نجحت على الساندبوكس.
-- ⏳ Stage 2: fix db_manager alias + phantom readers (Python only).
-- ⏳ Stage 3: stop duplicate writer (news_agent_articles).
+- ✅ Entry FIX: Next-Day Open (no lookahead)
+- ❌ Next-Day Open قتل الـ edge (PF 2.11 → 1.18)
+- ❌ Live Stop triggered (PF = 0.59)
+- ⚠️ الـ edge السابق كان فيه lookahead bias
+- 🔁 محتاجين: approach جديد (next-day open من البداية)
