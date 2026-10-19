@@ -68,6 +68,22 @@ def detect_wyckoff_phase(
 
     current_price = closes[-1]
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # BRAVO-LEAKAGE-FIX (2026-10-19): منع تسريب البيانات (Data Leakage)
+    #
+    # المشكلة: volume_nodes كانت بـ تـحسب على كل الـ closes (including اليوم الحالي)
+    # + min(closes)/max(closes) بـ يستخدم آخر سعر = بـ يـعطي معلومات عن المستقبل.
+    #
+    # الحل: نـحسب الـ volume_nodes + range على closes[:-1] (بدون اليوم الحالي).
+    # ده بـ يـضمن إن الـ State Machine بـ يستخدم بس البيانات المتاحة قبل القرار.
+    # ═══════════════════════════════════════════════════════════════════════
+
+    # البيانات التاريخية (بدون اليوم الحالي) — للـ volume_nodes + range
+    hist_closes = closes[:-1] if len(closes) > 1 else closes
+    hist_highs = highs[:-1] if len(highs) > 1 else highs
+    hist_lows = lows[:-1] if len(lows) > 1 else lows
+    hist_volumes = volumes[:-1] if len(volumes) > 1 else volumes
+
     # === استخراج بيانات VP ===
     poc = 0.0
     volume_nodes: List[float] = []
@@ -78,15 +94,15 @@ def detect_wyckoff_phase(
         volume_nodes = list(getattr(vp_result, 'volume_nodes', []) or [])
         vol_trend = str(getattr(vp_result, 'volume_trend', 'neutral') or 'neutral')
 
-    # لو مفيش VP result، احسب volume nodes يدوياً
+    # لو مفيش VP result، احسب volume nodes يدوياً (على البيانات التاريخية فقط)
     if not volume_nodes:
-        volume_nodes = _find_volume_nodes(closes, volumes)
+        volume_nodes = _find_volume_nodes(hist_closes, hist_volumes)
 
-    # POC = النود الأوسط (لو مفيش، نستخدم آخر price)
+    # POC = النود الأوسط (لو مفيش، نستخدم آخر price تاريخي)
     if not poc and volume_nodes:
         poc = volume_nodes[len(volume_nodes) // 2]
 
-    # === تحديد النطاق (range) ===
+    # === تحديد النطاق (range) — من البيانات التاريخية فقط ===
     # النطاق = بين أعلى وأقل volume node
     if len(volume_nodes) >= 2:
         range_high = max(volume_nodes)
@@ -95,9 +111,9 @@ def detect_wyckoff_phase(
         range_high = volume_nodes[0] * 1.03
         range_low = volume_nodes[0] * 0.97
     else:
-        # fallback: استخدم swing high/low
-        range_high = max(highs[-20:]) if len(highs) >= 20 else max(highs)
-        range_low = min(lows[-20:]) if len(lows) >= 20 else min(lows)
+        # fallback: استخدم swing high/low من البيانات التاريخية
+        range_high = max(hist_highs[-20:]) if len(hist_highs) >= 20 else max(hist_highs)
+        range_low = min(hist_lows[-20:]) if len(hist_lows) >= 20 else min(hist_lows)
 
     # === هل السعر جوه النطاق؟ ===
     range_width = range_high - range_low
