@@ -504,3 +504,32 @@ Next.js (الـ auth gateway) بـ يبعت `X-User-Id` + `X-User-Tier` headers 
 - Falling Knife = الأول (يلغي أي BUY).
 - R/R ≥ 1.8 (RR_FLOOR) لـ كل BUY.
 - evaluate_risk gate على الـ 3 BUY buckets + position cap 2.5%.
+
+---
+
+## 23. الحالة النهائية — الفريق خلّص (2026-10-19)
+
+### ✅ خلّص + متتحقق (الكود على origin):
+- مايسترو gone (4,416 سطر) + data layer موحّد (price_history canonical + unified-stocks fixed).
+- paywall في Python (@require_role + @require_trial_or_paid) + trial=14 + Guest Mode + soft Trial.
+- design-system Phase 1 (design-tokens.ts + tailwind extends success/warning/danger — root cause fixed).
+- radar محسّن (strong/moderate split) + 22 admin endpoints مؤمّنة.
+- الـ 32 bad predictions: برافو مسح 30 + DCRC=data error + audit 15/15 (على laptop — gitignored، المالك يـ verify).
+
+### 🟡 باقي (production + lower-priority):
+- **الـ production VPS**: شغّل الـ 5 DB scripts (Section 16). المالك.
+- **A-P4** (admin 26→4-5 hubs) — لسه.
+- **design-system Phases 2-5** — لسه.
+- **EGXPilot** ميت بس TradingView شغّال (مش أزمة).
+
+### الـ verification culture اشتغل طول الجلسة:
+- الوكيل على اللاب توب + جون — الاتنين verify-نا على الـ DBs الحقيقية + لقينا الـ gaps.
+- الـ gaps اتبّنت + اتحلّت (dead-DB contradiction + maestro + bad predictions + reporting failure).
+- جون بـ correct نفسه لما يغلط (زي "تزوير" → reporting failure).
+
+### المراجع:
+- SESSION-STATE.md (هذا الملف) — المرجع الكامل للحالة.
+- Documentation/جون-المدير-التنفيذي.md + الفريق/ألفا.md + برافو.md — الشخصيات + الأدوار.
+- DATA-ENGINE-MAP.md — خريطة محرك البيانات.
+- API-CONTRACT-PAYWALL.md — عقد الـ paywall.
+- DESIGN-SYSTEM-PLAN.md — خطة الـ design system (5 phases).
