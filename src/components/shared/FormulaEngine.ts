@@ -20,79 +20,45 @@
  * @module FormulaEngine
  */
 
-// ─── Parser setup (lazy-loaded — Rule 68 robustness) ──────────────────────
-// The `expr-eval` import is wrapped in a lazy loader so that:
-//  1. `npm run build` does NOT fail if expr-eval isn't installed yet (the owner
-//     just needs `npm install` to pick it up — this prevents a hard build crash).
-//  2. At runtime, if the package is missing, evaluateFormula returns a clear
-//     Arabic error instead of crashing the page.
-//  3. The parser is only instantiated once (singleton) on first use.
+import { Parser } from 'expr-eval';
 
-// TypeScript declaration for webpack's escape hatch (avoids build-time resolution).
-declare const __non_webpack_require__: NodeRequire | undefined;
+// ─── Parser setup (Singleton instance with strict security whitelist) ─────
+const _parser = new Parser({
+  operators: {
+    // Disabled (security/correctness):
+    concatenate: false,
+    factorial: false,
+    assignment: false,
+    fndef: false, // function definition
+    length: false,
+    in: false,
+    random: false,
+    // Enabled (financial math needs):
+    add: true,
+    subtract: true,
+    multiply: true,
+    divide: true,
+    remainder: true,
+    power: true,
+    comparison: true,
+    logical: true,
+    conditional: true,
+    sin: true, cos: true, tan: true,
+    asin: true, acos: true, atan: true,
+    sinh: true, cosh: true, tanh: true,
+    asinh: true, acosh: true, atanh: true,
+    sqrt: true, log: true, ln: true, lg: true, log10: true,
+    abs: true, ceil: true, floor: true, round: true, trunc: true,
+    exp: true, expm1: true, log1p: true, sign: true, log2: true,
+    cbrt: true,
+    min: true, max: true,
+  },
+});
 
-let _parser: unknown = null;
-let _parserInit = false;
-let _parserError: string | null = null;
+const _parserError: string | null = null;
 
 function getParser(): { parse: (expr: string) => { evaluate: (scope: Record<string, unknown>) => unknown } } | null {
-  if (_parserInit) {
-    return _parser as { parse: (expr: string) => { evaluate: (scope: Record<string, unknown>) => unknown } } | null;
-  }
-  _parserInit = true;
-  try {
-    // Dynamic require — hidden from webpack's static analysis via eval so the
-    // build doesn't fail on a missing package. At runtime in the browser,
-    // webpack will have bundled expr-eval into the chunk (because it's in
-    // dependencies), so this resolves to the bundled copy.
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    const _require = typeof __non_webpack_require__ !== 'undefined'
-      ? __non_webpack_require__
-      : typeof require !== 'undefined'
-        ? require
-        : null;
-    if (!_require) {
-      _parserError = 'محرك المعادلات غير متاح في هذا البيان';
-      return null;
-    }
-    const { Parser } = _require('expr-eval');
-    _parser = new Parser({
-      operators: {
-        // Disabled (security/correctness):
-        concatenate: false,
-        factorial: false,
-        assignment: false,
-        fndef: false, // function definition
-        length: false,
-        in: false,
-        random: false,
-        // Enabled (financial math needs):
-        add: true,
-        subtract: true,
-        multiply: true,
-        divide: true,
-        remainder: true,
-        power: true,
-        comparison: true,
-        logical: true,
-        conditional: true,
-        sin: true, cos: true, tan: true,
-        asin: true, acos: true, atan: true,
-        sinh: true, cosh: true, tanh: true,
-        asinh: true, acosh: true, atanh: true,
-        sqrt: true, log: true, ln: true, lg: true, log10: true,
-        abs: true, ceil: true, floor: true, round: true, trunc: true,
-        exp: true, expm1: true, log1p: true, sign: true, log2: true,
-        cbrt: true,
-        min: true, max: true,
-      },
-    });
-  } catch (e: unknown) {
-    const err = e as { message?: string };
-    _parserError = err?.message || 'expr-eval غير مثبت — نفّذ npm install';
-    _parser = null;
-  }
-  return _parser as { parse: (expr: string) => { evaluate: (scope: Record<string, unknown>) => unknown } } | null;
+  return _parser;
 }
 
 // ─── Types ─────────────────────────────────────────────────────────────────
