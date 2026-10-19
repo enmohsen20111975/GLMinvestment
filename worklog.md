@@ -68095,3 +68095,37 @@ Stage Summary:
 - ⚠️ stocks.db اتعمله rebuild من data_engine.db (1,098 سهم) — ممكن يكون ناقص شوية columns
 - ⚠️ auth.db لسه معطوب (مش critical للـ analysis)
 - 🎯 النظام جاهز للتشغيل بعد الـ reset
+
+---
+Task ID: BRAVO-SERVICES-START-RADAR-1
+Agent: Bravo (Z.ai Code — services launch)
+Task: محسن — شغل الـ Python + شوف الورانة في الرادار.
+
+Work Log:
+- ✅ تشغيل vps-service على port 8010 (THE BRAIN) — FastAPI + jobs
+- ✅ تثبيت flask + flask-cors + تشغيل data-engine على port 5000
+- ✅ data-engine بـ يجلب live data (crypto + metals + intraday)
+- ✅ rebuild stocks.db بـ schema كامل + WAL mode (7 tables + radar_signal_tracking)
+- ✅ إضافة الـ columns الناقصة في radar_signal_tracking (signal_type, reason, status, outcomes, إلخ)
+- 🔥 كشف الورانة في الرادار:
+  * scripts/maker_radar.py = 1327 سطر (module ضخم)
+  * بـ يقرأ من stocks.db.stock_daily_prices + data_engine.db.egksco_price_history + live prices من stocks table
+  * فيه 6 gates للـ signals: volume_high_recurring, buy_pressure, compressed, volume_not_low, not_explosive, no_distribution
+  * بـ يصنف الـ signals لـ: A_pre_surge, B_quiet_accumulation_strong, C_quiet_accumulation_weak, D_explosive_surge, E_early_break
+- ✅ test radar script: 15 EGX signals detected + saved لـ radar_signal_tracking
+  * أمثلة: ORAS, CPCI, ADRI (B_quiet_accumulation_strong)
+- ✅ إنشاء radar_scheduler.py (بديل cron — مفيش crontab في sandbox)
+  * بيـrefresh كل 15 دقيقة
+  * بيـشغل maker_radar.py لـ 5 أسواق: EGX, TADAWUL, KSE, QSE, US
+- ✅ radar_scheduler شغّال في background + بيعمل refresh دوري
+- ✅ JSON output files اتـgenerated لكل الأسواق الخمسة
+
+Stage Summary:
+- ✅ vps-service شغّال على 8010 (Python brain)
+- ✅ data-engine شغّال على 5000 (Python data feeder)
+- ✅ radar_scheduler شغّال (refresh كل 15 دقيقة)
+- ✅ 15 EGX signals detected + saved لـ DB
+- ✅ radar_signal_tracking table بـ 26 columns كاملة
+- ✅ stocks.db بـ WAL mode (integrity ok)
+- 🔥 الـ radar بـ يـتـحسس بـ live data من دلوقتي (كل 15 دقيقة)
+- ⚠️ الأسواق مغلقة دلوقتي (12:44am Cairo) → الـ live prices بـ تـتحّد لما السوق يفتح
