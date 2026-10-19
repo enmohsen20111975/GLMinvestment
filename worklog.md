@@ -73341,3 +73341,94 @@ Stage Summary:
 - ✅ Limit adds +0.43 PF over Next-Day Open
 - ⚠️ Train marginal (PF=1.11) — Test > Train
 - ⚠️ Stress 1.5%: Train PF=0.90 — not robust
+
+---
+Task ID: BRAVO-TRAIN-ANALYSIS-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — Train Analysis بالتفصيل + Walk-Forward
+
+Work Log:
+
+- 📊 Per-Year Analysis (Realistic Limit Order):
+
+  | Year | closed | WR    | PF @1.0% | PF @1.5% | Verdict |
+  |------|--------|-------|----------|----------|---------|
+  | 2024 |     50 | 28.0% | **0.66** | **0.54** | ❌ LOSS  |
+  | 2025 |    161 | 38.5% | 1.29     | 1.04     | ⚠️      |
+  | 2026 |    153 | 47.7% | 1.92     | 1.55     | ✅      |
+
+  Stability: PF range = 1.25, CV = 48.5% → ⚠️ UNSTABLE
+
+- 📊 Exit Reasons per Year:
+  | Year | STOP_LOSS | TIME_EXIT | TARGET |
+  |------|-----------|-----------|--------|
+  | 2024 | 66.2% ❌   | 18.5%     | 15.4%  |
+  | 2025 | 36.7%     | 39.4%     | 23.9%  |
+  | 2026 | 26.9%     | 43.1%     | 30.0%  |
+
+  → 2024: 66% ضربوا SL! (كارثة)
+  → 2026: 27% ضربوا SL + 30% وصلوا Target (أحسن توزيع)
+
+- 📊 Avg Return per Trade:
+  | Year | avg_net  | median   |
+  |------|----------|----------|
+  | 2024 | -1.10%   | -4.00%   |
+  | 2025 | +1.09%   | -0.73%   |
+  | 2026 | +2.11%   | +0.72%   |
+
+  → 2024: median = -4% (أغلب الصفقات خسرانة)
+  → 2026: median = +0.72% (أغلب الصفقات رابحة)
+
+- 📊 Walk-Forward:
+  | WF              | Train PF | Test PF | Gen Ratio |
+  |-----------------|----------|---------|-----------|
+  | 2024 → 2025     | 0.66     | 1.29    | 1.95      |
+  | 2024-2025 → 2026| 1.11     | 1.92    | 1.72      |
+  | 2025 → 2026     | 1.29     | 1.92    | 1.48      |
+
+  → Gen Ratio > 1.0 في كل الحالات (Test أحسن من Train)
+  → ده = الـ edge بـ يـتحسن مع الوقت (أو 2024 كان سنة سيئة)
+
+- 🔥 الـ findings:
+
+  1. ❌ 2024 = سنة خاسرة (PF = 0.66, WR = 28%, 66% SL)
+     * الـ SL بـ يـضرب في 66% من الصفقات
+     * median return = -4% (أغلب الصفقات خسرانة)
+     * السبب: 2024 كان فيه ترند قوي (أسهم بتنزل وبتكمل نزول = falling knife)
+
+  2. ⚠️ 2025 = marginal (PF = 1.29, WR = 38.5%)
+     * أحسن من 2024 بس لسه مش قوي
+     * 37% SL + 39% Time Exit + 24% Target
+
+  3. ✅ 2026 = سنة جيدة (PF = 1.92, WR = 47.7%)
+     * 27% SL + 43% Time Exit + 30% Target
+     * median return = +0.72% (أغلب الصفقات رابحة)
+
+  4. ⚠️ PF CV = 48.5% → UNSTABLE
+     * الـ PF بـ يتـغير من 0.66 لـ 1.92
+     * ده = الـ edge موسمي
+
+  5. ⚠️ Walk-Forward: Gen Ratio > 1.0 دائماً
+     * Test أحسن من Train دائماً
+     * ده = الـ edge بـ يـتحسن مع الوقت (أو 2024 كان outlier)
+
+- 🎯 الاستنتاج:
+
+  ❌ 2024 خسران (PF = 0.66, 66% SL)
+  ⚠️ 2025 marginal (PF = 1.29)
+  ✅ 2026 جيد (PF = 1.92)
+  
+  الـ edge موسمي — مش مستقر عبر السنين
+  PF CV = 48.5% → UNSTABLE
+
+  المشكلة في 2024: أسهم بتنزل 15% وبتكمل نزول (falling knife)
+  ده = الـ drop 15% signal مش بـ يـفرق بين:
+  - ارتداد (mean reversion) ← بـ يربح
+  - falling knife ← بـ يخسر
+
+Stage Summary:
+- ❌ 2024: PF=0.66, 66% SL (falling knife)
+- ⚠️ 2025: PF=1.29 (marginal)
+- ✅ 2026: PF=1.92 (good)
+- ⚠️ PF CV = 48.5% → UNSTABLE
+- 🔁 محتاجين: فلتر لـ falling knife (إشارة أقوى)
