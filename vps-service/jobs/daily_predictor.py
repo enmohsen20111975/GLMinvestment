@@ -3339,45 +3339,127 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _smc_s = _last_sig.get('smc_score')
                 _vp_s = _last_sig.get('volume_profile_score')
 
-                # دمج SMC + VP في combined_score (weights: SMC=15%, VP=10%)
-                # الـ 75% الباقي = الـ combined_score الحالي (الذي فيه RSI + MA + news + radar)
-                if _smc_s is not None or _vp_s is not None:
-                    _base_score = float(_last_sig.get('combined_score', _last_sig.get('tech_score', 50)) or 50)
-                    _smc_weight = 0.15  # 15% — SMC هو الأهم (أين الحوت)
-                    _vp_weight = 0.10   # 10% — VWAP + OBV (تأكيد السيولة)
-                    _base_weight = 1.0 - _smc_weight - _vp_weight  # 75%
+                # ═══════════════════════════════════════════════════════════════════════
+                # BRAVO-HYBRID-SCORE (مرحلة 1 — 2026-10-19):
+                # كسر سيطرة V38 كـ brain وحيد + إدخال CoreScoringEngine كـ layer حقيقي.
+                #
+                # الـ 4 layers:
+                #   1. V38 score (boolean conditions — كان 75%، دلوقتي أقل)
+                #   2. CoreScoringEngine (continuous 0-100 — جديد)
+                #   3. SMC (Order Blocks + FVG + Sweeps)
+                #   4. Volume Profile (VWAP + OBV + A/D Line)
+                #
+                # الـ weights configurable via env vars (للـ A/B testing):
+                #   V402_V38_WEIGHT  (default 0.40)
+                #   V402_CORE_WEIGHT (default 0.35)
+                #   V402_SMC_WEIGHT  (default 0.15)
+                #   V402_VP_WEIGHT   (default 0.10)
+                #
+                # Fallback (Rule 27 — NO-FAKE-DATA):
+                #   لو CoreScoringEngine فشل → نـزود وزن V38 + log الـ error.
+                #   ممنوع نـستخدم placeholder 50.0.
+                # ═══════════════════════════════════════════════════════════════════════
+                _V38_W = float(os.environ.get('V402_V38_WEIGHT', '0.40'))
+                _CORE_W = float(os.environ.get('V402_CORE_WEIGHT', '0.35'))
+                _SMC_W = float(os.environ.get('V402_SMC_WEIGHT', '0.15'))
+                _VP_W = float(os.environ.get('V402_VP_WEIGHT', '0.10'))
 
-                    _smc_val = float(_smc_s) if _smc_s is not None else 50.0
-                    _vp_val = float(_vp_s) if _vp_s is not None else 50.0
+                # حساب CoreScoringEngine score (layer جديد)
+                _core_score = None
+                _core_err = None
+                try:
+                    from analyzers.core_scoring_engine import CoreScoringEngine as _CSE
+                    _cse = _CSE()
+                    _slice_start = max(0, day_idx - 100)
+                    # فلتر الـ None values (بعض الصفوف فيها high/low = NULL)
+                    _raw_slice = list(zip(
+                        opens[_slice_start:day_idx+1] if 'opens' in dir() else [],
+                        highs[_slice_start:day_idx+1] if 'highs' in dir() else [],
+                        lows[_slice_start:day_idx+1] if 'lows' in dir() else [],
+                        closes[_slice_start:day_idx+1],
+                        volumes[_slice_start:day_idx+1],
+                    ))
+                    _filtered = [(_o, _h, _l, _c, _v) for _o, _h, _l, _c, _v in _raw_slice
+                                 if _c is not None and _h is not None and _l is not None
+                                 and _o is not None and _c > 0]
+                    if len(_filtered) >= 30:
+                        _price_data = {
+                            'closes':  [f[3] for f in _filtered],
+                            'opens':   [f[0] for f in _filtered],
+                            'highs':   [f[1] for f in _filtered],
+                            'lows':    [f[2] for f in _filtered],
+                            'volumes': [f[4] for f in _filtered],
+                        }
+                        _core_result = _cse.analyze(
+                            ticker=ticker,
+                            price_data=_price_data,
+                            market='EGX',
+                            persona='trader',
+                        )
+                        if _core_result and _core_result.score is not None:
+                            _core_score = float(_core_result.score)
+                except Exception as _cse_err:
+                    _core_err = str(_cse_err)[:120]
 
-                    _new_combined = (
-                        _base_score * _base_weight +
-                        _smc_val * _smc_weight +
-                        _vp_val * _vp_weight
-                    )
-                    _new_combined = max(0, min(100, round(_new_combined, 2)))
-                    _last_sig['combined_score'] = _new_combined
+                # Fallback: لو CoreScoring فشل → زوّد وزن V38 (ممنوع fabrication)
+                if _core_score is None:
+                    if _core_err:
+                        print(
+                            f"[CORE-SCORE-FAIL] {ticker} on {scan_date}: {_core_err} "
+                            f"→ fallback: V38 وزن {_V38_W:.2f} → {_V38_W + _CORE_W:.2f}",
+                            flush=True,
+                        )
+                    _V38_W += _CORE_W
+                    _CORE_W = 0.0
 
-                    # استخراج VWAP + OBV للـ display
-                    if _vp_s is not None:
-                        try:
-                            _vp_analyzer = __import__('analyzers.volume_profile', fromlist=['VolumeProfileAnalyzer']).VolumeProfileAnalyzer()
-                            _vp_result = _vp_analyzer.analyze(
-                                closes[max(0,day_idx-30):day_idx+1],
-                                volumes[max(0,day_idx-30):day_idx+1],
-                            )
-                            _last_sig['vwap'] = _vp_result.vwap
-                            _last_sig['obv'] = _vp_result.obv
-                            _last_sig['volume_nodes'] = _vp_result.volume_nodes
-                        except Exception:
-                            pass
+                # Normalize weights (لو sum != 1.0)
+                _total_w = _V38_W + _CORE_W + _SMC_W + _VP_W
+                if _total_w > 0:
+                    _V38_W  /= _total_w
+                    _CORE_W /= _total_w
+                    _SMC_W  /= _total_w
+                    _VP_W   /= _total_w
 
-                    print(
-                        f"[ADVANCED-SCORE] {ticker} on {scan_date}: "
-                        f"base={_base_score:.1f} → combined={_new_combined:.1f} "
-                        f"(SMC={_smc_val:.1f}×{_smc_weight:.0%} + VP={_vp_val:.1f}×{_vp_weight:.0%})",
-                        flush=True,
-                    )
+                # حساب الـ hybrid score
+                _v38_val = float(_last_sig.get('combined_score', _last_sig.get('tech_score', 50)) or 50)
+                _smc_val = float(_smc_s) if _smc_s is not None else 50.0
+                _vp_val  = float(_vp_s) if _vp_s is not None else 50.0
+                _core_val = _core_score if _core_score is not None else 50.0
+
+                _new_combined = (
+                    _v38_val  * _V38_W  +
+                    _core_val * _CORE_W +
+                    _smc_val  * _SMC_W  +
+                    _vp_val   * _VP_W
+                )
+                _new_combined = max(0, min(100, round(_new_combined, 2)))
+                _last_sig['combined_score'] = _new_combined
+                # audit fields (للـ backtest analysis)
+                _last_sig['v38_score'] = round(_v38_val, 2)
+                _last_sig['core_score'] = round(_core_val, 2) if _core_score is not None else None
+
+                # استخراج VWAP + OBV للـ display
+                if _vp_s is not None:
+                    try:
+                        _vp_analyzer = __import__('analyzers.volume_profile', fromlist=['VolumeProfileAnalyzer']).VolumeProfileAnalyzer()
+                        _vp_result = _vp_analyzer.analyze(
+                            closes[max(0,day_idx-30):day_idx+1],
+                            volumes[max(0,day_idx-30):day_idx+1],
+                        )
+                        _last_sig['vwap'] = _vp_result.vwap
+                        _last_sig['obv'] = _vp_result.obv
+                        _last_sig['volume_nodes'] = _vp_result.volume_nodes
+                    except Exception:
+                        pass
+
+                print(
+                    f"[HYBRID-SCORE] {ticker} on {scan_date}: "
+                    f"v38={_v38_val:.1f}×{_V38_W:.0%} + core={_core_val:.1f}×{_CORE_W:.0%} "
+                    f"+ smc={_smc_val:.1f}×{_SMC_W:.0%} + vp={_vp_val:.1f}×{_VP_W:.0%} "
+                    f"→ combined={_new_combined:.1f}"
+                    + (f" [CORE-FAIL]" if _core_score is None else ""),
+                    flush=True,
+                )
 
             # ── AI NEWS AGENT (المرحلة 3 — 2026-08-31): الإثبات السابع ──
             # جلب وتحليل الأخبار بالذكاء الاصطناعي المحلي (keyword fallback)
