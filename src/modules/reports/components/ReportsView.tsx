@@ -505,7 +505,7 @@ function SectorReport() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Predictions Report — fetches /api/reports/proxy?type=weekly (Python brain)
-// Owner directive: "تقرير التوقعات" (NOT "توصيات") — Rule 67 word compliance.
+// Owner directive: "تقرير التوقعات" — Rule 67 word compliance.
 // ─────────────────────────────────────────────────────────────────────────────
 function PredictionsReport() {
  const [report, setReport] = useState<WeeklyReportPayload | null>(null);

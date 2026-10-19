@@ -83,7 +83,7 @@ export const navSections: NavSection[] = [
     label: 'التحليل',
     icon: Target,
     items: [
-      { id: 'recommendations', label: 'التوصيات', icon: Target },
+      { id: 'recommendations', label: 'التحليلات', icon: Target },
       { id: 'market-depth', label: 'سيولة المستثمرين', icon: Activity, highlight: true },
     ],
   },
@@ -129,7 +129,7 @@ export const navSections: NavSection[] = [
 export const bottomNavItems: NavItem[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
   { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
-  { id: 'recommendations', label: 'التوصيات', icon: TrendingUp },
+  { id: 'recommendations', label: 'التحليلات', icon: TrendingUp },
   { id: 'portfolio', label: 'المحفظة', icon: Wallet },
   { id: 'market-depth', label: 'السيولة', icon: Activity },
 ];

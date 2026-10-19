@@ -6,7 +6,7 @@
  *
  * 1. الرئيسية  → dashboard
  * 2. الأسهم    → stocks
- * 3. التوصيات  → recommendations
+ * 3. التحليلات  → recommendations
  * 4. المحفظة   → portfolio
  * 5. السيولة   → market-depth (استبدل liquidity-radar — الأخير أعمق:
  *                 يشمل المؤسسات + الأجانب/عرب/مصريين — ده اللي العميل
@@ -29,7 +29,7 @@ import React from 'react';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 // SCREENS-REORG: bottomNavItems مصدر واحد من nav-config.
-// (5 أزرار: الرئيسية/الأسهم/التوصيات/المحفظة/السيولة)
+// (5 أزرار: الرئيسية/الأسهم/التحليلات/المحفظة/السيولة)
 import { bottomNavItems } from '@/lib/nav-config';
 
 export function MobileNav() {
