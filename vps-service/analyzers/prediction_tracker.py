@@ -747,16 +747,34 @@ class PredictionTracker:
                 _evidence_count, _morning_bell, _kill_filter_result,
                 risk_reward, who_is_buying_state,
             ))
-        except Exception:
+        except Exception as _primary_err:
+            # BRAVO-LOG-EXCEPT (2026-10-19): كان الـ except بـ يبتلع الـ exception
+            # بصمت. ده خفى مشكلة حقيقية: الـ INSERT الأول بـ يفشل بسبب DEV-13
+            # trigger (لو prices = NaN/None/<=0)، والـ fallback بـ يكتب بدون
+            # risk_reward → 145 توقع بـ R/R=None في الـ DB.
+            # دلوقتي بنـ log الـ exception الحقيقي عشان نـعرف السبب.
+            print(
+                f"[PRED-TRACKER-PRIMARY-FAIL] ticker={ticker} signal={signal} "
+                f"entry={entry_price} target={target_price} stop={stop_loss} "
+                f"score={master_score} R/R={risk_reward} | "
+                f"{type(_primary_err).__name__}: {_primary_err}",
+                flush=True,
+            )
             # fallback: schema قديم مفيهوش atr_at_entry/T2 columns
+            # BRAVO-FIX (2026-10-19): ضفنا risk_reward + evidence_count + morning_bell
+            # + kill_filter_result + who_is_buying + target_price_2 في الـ fallback
+            # عشان لو الـ INSERT الأول فشل، الـ fields المهمة مـتـكتبة (مش NULL).
             try:
                 cursor.execute('''
                     INSERT INTO predictions (
                         ticker, signal, signal_type,
                         prediction_date, entry_price, target_price, stop_loss, master_score,
                         technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                        notes, persona, created_at, atr_at_entry
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        notes, persona, created_at, atr_at_entry,
+                        target_price_2, explosive_score, explosive_label,
+                        evidence_count, morning_bell, kill_filter_result,
+                        risk_reward, who_is_buying
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     ticker, signal, signal_type,
                     get_prediction_date_str(datetime.now()),
@@ -765,9 +783,18 @@ class PredictionTracker:
                     notes, _persona,
                     _created_at_iso,
                     atr_at_entry,
+                    _target_price_2, _explosive_score, _explosive_label,
+                    _evidence_count, _morning_bell, _kill_filter_result,
+                    risk_reward, who_is_buying_state,
                 ))
-            except Exception:
-                # fallback 2: أقدم schema
+            except Exception as _fallback_err:
+                # BRAVO-LOG-EXCEPT: log الـ fallback exception كمان
+                print(
+                    f"[PRED-TRACKER-FALLBACK-FAIL] ticker={ticker} signal={signal} "
+                    f"| {type(_fallback_err).__name__}: {_fallback_err}",
+                    flush=True,
+                )
+                # fallback 2: أقدم schema (بدون risk_reward — last resort)
                 cursor.execute('''
                     INSERT INTO predictions (
                         ticker, signal, signal_type,

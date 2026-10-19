@@ -192,6 +192,9 @@ interface FullAnalysisResponse {
     cmf?: number;
     obv_trend_ar?: string;
     atr?: number;
+    // FRONTCLEANUP-A-2: SMA values accessed via type-safe accessor in render
+    sma20?: number;
+    sma50?: number;
   };
   volume_analysis?: {
     ratio?: number;
@@ -225,6 +228,22 @@ interface FullAnalysisResponse {
       tp1: number;
       tp2: number;
     };
+    // FRONTCLEANUP-A-2: extended fusion_metrics shape (mirrors InteractiveChart prop)
+    score?: number;
+    signal?: string;
+    signal_ar?: string;
+    fair_value?: number;
+    fair_premium?: number;
+    bigbeluga?: {
+      trend: number;
+      in_pocket: boolean;
+      fib_618: number;
+      fib_786: number;
+      basis: number;
+      upper_band: number;
+      lower_band: number;
+    };
+    ready?: boolean;
   };
   signal_adjusted?: boolean;
   adjustment_reason?: string;
@@ -238,6 +257,24 @@ interface FullAnalysisResponse {
   stock_dna?: StockDNA | null;
 // V34-INSTITUTIONAL-DECISION: محرك القرار المؤسسي الموحّد
   institutional_decision?: import('./InstitutionalDecisionPanel').InstitutionalDecision | null;
+  // FRONTCLEANUP-A-2: extra backend fields surfaced to chart + fundamentals panel.
+  //   - confidence: legacy AI confidence percent (mirrors confluence.score but as percent)
+  //   - cmf_data / macd_projection / smart_markers / smc_data: chart-only overlays
+  //   - fundamentals.valuation / profitability: fundamentals panel block
+  confidence?: number | null;
+  cmf_data?: Array<{ time: string; value: number | null }>;
+  macd_projection?: Array<number | null>;
+  smart_markers?: Array<{ time: string; type: string; position: string; color: string; shape: string; text: string }>;
+  smc_data?: {
+    order_blocks?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+    fvgs?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+    liquidity_sweeps?: Array<{ type: string; price: number; time?: number }>;
+    smc_zones?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+  };
+  fundamentals?: {
+    valuation?: { pe_ratio?: number | null };
+    profitability?: { eps?: number | null; roe?: number | null };
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -298,6 +335,32 @@ export function SingleStockAnalysisView({
   // V34-PORTFOLIO-TRACKER: بيانات مركز المستخدم عشان نعرضها في InstitutionalDecisionPanel
   const [userEntryPrice, setUserEntryPrice] = useState(0);
   const [userEntryQty, setUserEntryQty] = useState(0);
+
+  // P0-TV-CHART: تبديل بين شارت TradingView الأصلي الرسمي وشارت SMC التفاعلي
+  const [chartEngine, setChartEngine] = useState<'tradingview_widget' | 'native'>('tradingview_widget');
+
+  const tvSymbol = useMemo(() => {
+    const t = (ticker || 'EGX30').toUpperCase().trim().replace(/\.(CA|SR|KW|AE|BH|QA)$/, '');
+    if ((currentMarket as string) === 'CRYPTO' || ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'].includes(t)) {
+      return `BINANCE:${t}USDT`;
+    }
+    if ((currentMarket as string) === 'SAUDI' || currentMarket === 'TADAWUL' || /^\d{4}$/.test(t)) {
+      return `TADAWUL:${t}`;
+    }
+    if (currentMarket === 'US') {
+      return `NASDAQ:${t}`;
+    }
+    return `EGX:${t}`;
+  }, [ticker, currentMarket]);
+
+  const tvInterval = useMemo(() => {
+    if (timeframe === '5M' || timeframe === '5m') return '5';
+    if (timeframe === '15M' || timeframe === '15m') return '15';
+    if (timeframe === '1H' || timeframe === '60m') return '60';
+    if (timeframe === 'WEEK' || timeframe === 'W') return 'W';
+    if (timeframe === 'MONTH' || timeframe === 'M') return 'M';
+    return 'D';
+  }, [timeframe]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [screenshotting, setScreenshotting] = useState(false);
@@ -517,8 +580,8 @@ export function SingleStockAnalysisView({
         <CanonicalWhoIsBuyingBanner data={canonical} currencyLabel={currencyLabel} />
       )}
       {canonicalLoading && (
-        <div className="mb-3 p-3 rounded-lg border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/10 flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+        <div className="mb-3 p-3 rounded-lg border border-profit/30 bg-profit/50 dark:bg-profit/10 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-profit" />
           <span>جارٍ تحميل قرار المحرك المؤسسي الموحّد…</span>
         </div>
       )}
@@ -527,9 +590,9 @@ export function SingleStockAnalysisView({
           لما العميل يفتح النافذة الشاملة من جدول التوقعات، بنعرض التوقّع الأصلي
           فوق الشارت عشان مايحصلش تناقض بين جدول التوقعات والتحليل الفني. */}
       {predictionContext && (
-        <div className="mb-3 p-3 rounded-lg border-2 border-emerald-500/40 bg-emerald-950/20 flex items-center justify-between gap-3 flex-wrap">
+        <div className="mb-3 p-3 rounded-lg border-2 border-profit/40 bg-profit/20 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-2 py-1 rounded-full bg-emerald-600 text-white">
+            <span className="text-xs font-bold px-2 py-1 rounded-full bg-profit text-white">
               📊 توقّع نشط
             </span>
             <span className="font-bold text-sm" style={{ color: predictionContext.ratingColor || '#10b981' }}>
@@ -541,14 +604,14 @@ export function SingleStockAnalysisView({
           </div>
           <div className="flex items-center gap-3 text-xs">
             {predictionContext.entryPrice && <span>الدخول: <b className="font-mono">{(predictionContext.entryPrice ?? 0).toFixed(2)}</b></span>}
-            {predictionContext.targetPrice && <span className="text-emerald-600">الهدف: <b className="font-mono">{(predictionContext.targetPrice ?? 0).toFixed(2)}</b></span>}
-            {predictionContext.stopLoss && <span className="text-red-600">الوقف: <b className="font-mono">{(predictionContext.stopLoss ?? 0).toFixed(2)}</b></span>}
+            {predictionContext.targetPrice && <span className="text-profit">الهدف: <b className="font-mono">{(predictionContext.targetPrice ?? 0).toFixed(2)}</b></span>}
+            {predictionContext.stopLoss && <span className="text-loss">الوقف: <b className="font-mono">{(predictionContext.stopLoss ?? 0).toFixed(2)}</b></span>}
             {predictionContext.riskReward && <span>R/R: <b>{(predictionContext.riskReward ?? 0).toFixed(2)}</b></span>}
           </div>
         </div>
       )}
 
-      <CardHeader className="px-4 py-3 border-b border-border bg-gradient-to-r from-slate-50 via-white to-emerald-50/50 space-y-3">
+      <CardHeader className="px-4 py-3 border-b border-border bg-gradient-to-r from-slate-50 via-white to-profit/50 space-y-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <StockSearchSelector
@@ -570,8 +633,8 @@ export function SingleStockAnalysisView({
               className={cn(
                 'font-mono text-xs font-black px-2.5 py-1 border rounded-full',
                 isUp
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                  ? 'bg-profit text-profit border-profit'
+                  : 'bg-loss text-loss border-loss'
               )}
             >
               {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
@@ -583,7 +646,7 @@ export function SingleStockAnalysisView({
             {data?.confluence?.signal && (
               <Badge
                 style={{ backgroundColor: data.confluence.signal_color || '#10b981' }}
-                className="text-white text-[10px] font-bold px-2.5 py-1 shadow-sm rounded-full"
+                className="text-foreground text-[10px] font-bold px-2.5 py-1 shadow-sm rounded-full"
               >
                 {data.confluence.signal} ({data.confluence.score?.toFixed(1)}/10)
               </Badge>
@@ -594,8 +657,8 @@ export function SingleStockAnalysisView({
                 className={cn(
                   'text-[9px] font-bold rounded-full',
                   liveData?.delayed_mode
-                    ? 'bg-amber-500 text-white border border-amber-600'
-                    : 'bg-rose-600 text-white animate-pulse'
+                    ? 'bg-warning text-white border border-warning'
+                    : 'bg-loss text-white animate-pulse'
                 )}
               >
                 {liveData?.delayed_mode ? `DELAYED ${liveData.delayed_minutes || 5}M` : 'LIVE'}
@@ -620,7 +683,7 @@ export function SingleStockAnalysisView({
                   className={cn(
                     'px-2 py-1 rounded-lg transition-colors',
                     timeframe === tf.key
-                      ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                      ? 'bg-profit text-white font-bold shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -629,13 +692,39 @@ export function SingleStockAnalysisView({
               ))}
             </div>
 
+            {/* P0-TV-CHART: Mode Switch (TradingView الأصلي vs شارت الذكاء الاصطناعي SMC) */}
+            <div className="flex items-center gap-1 bg-muted border border-border rounded-xl p-0.5 text-[10px]">
+              <button
+                type="button"
+                onClick={() => setChartEngine('tradingview_widget')}
+                className={cn(
+                  'px-2 py-1 rounded-lg transition-all font-semibold flex items-center gap-1',
+                  chartEngine === 'tradingview_widget' ? 'bg-card text-profit shadow-sm' : 'text-muted-foreground'
+                )}
+                title="عرض شارت TradingView الأصلي الرسمي مباشرة"
+              >
+                <span>TradingView الأصلي</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartEngine('native')}
+                className={cn(
+                  'px-2 py-1 rounded-lg transition-all font-semibold flex items-center gap-1',
+                  chartEngine === 'native' ? 'bg-card text-whale shadow-sm' : 'text-muted-foreground'
+                )}
+                title="عرض شارت الذكاء الاصطناعي مع مستويات SMC ومصايد الحيتان"
+              >
+                <span>شارت الذكاء (SMC)</span>
+              </button>
+            </div>
+
             <div className="flex items-center gap-1 bg-muted border border-border rounded-xl p-0.5 text-[10px]">
               <button
                 type="button"
                 onClick={() => setAdvancedMode(false)}
                 className={cn(
                   'px-2 py-1 rounded-lg transition-all font-semibold',
-                  !advancedMode ? 'bg-card text-emerald-700 shadow-sm' : 'text-muted-foreground'
+                  !advancedMode ? 'bg-card text-profit shadow-sm' : 'text-muted-foreground'
                 )}
               >
                 مبسط
@@ -645,7 +734,7 @@ export function SingleStockAnalysisView({
                 onClick={() => setAdvancedMode(true)}
                 className={cn(
                   'px-2 py-1 rounded-lg transition-all font-semibold',
-                  advancedMode ? 'bg-card text-teal-700 shadow-sm' : 'text-muted-foreground'
+                  advancedMode ? 'bg-card text-whale shadow-sm' : 'text-muted-foreground'
                 )}
               >
                 محترفين
@@ -655,10 +744,10 @@ export function SingleStockAnalysisView({
             <Button variant="ghost" size="sm" onClick={() => fetchData(ticker, timeframe, userState)} disabled={loading} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
               <RefreshCw className={cn('h-3.5 w-3.5', loading ? 'animate-spin' : '')} />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setAlertPanelOpen(true)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-amber-50 hover:text-amber-600 relative">
-              {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-amber-500" /> : <Bell className="h-3.5 w-3.5" />}
+            <Button variant="ghost" size="sm" onClick={() => setAlertPanelOpen(true)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-warning hover:text-warning relative">
+              {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-warning" /> : <Bell className="h-3.5 w-3.5" />}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className={cn('h-8 w-8 p-0 rounded-lg', quickAdded ? 'text-emerald-600 hover:bg-emerald-50' : 'text-muted-foreground hover:bg-amber-50')}>
+            <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className={cn('h-8 w-8 p-0 rounded-lg', quickAdded ? 'text-profit hover:bg-profit' : 'text-muted-foreground hover:bg-warning')}>
               {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5" /> : <Star className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setIsMaximized((v) => !v)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
@@ -668,7 +757,7 @@ export function SingleStockAnalysisView({
               {screenshotting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Image className="w-3.5 h-3.5" />}
             </Button>
             {canRemove && (
-              <Button variant="ghost" size="sm" onClick={onRemove} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-600">
+              <Button variant="ghost" size="sm" onClick={onRemove} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-loss hover:text-loss">
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             )}
@@ -678,8 +767,8 @@ export function SingleStockAnalysisView({
         <div className="flex items-center gap-2 pt-1 text-[10px] flex-wrap">
           <span className="text-muted-foreground font-bold">وضعي:</span>
           <div className="flex bg-card border border-border rounded-xl p-0.5">
-            <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-emerald-50 text-emerald-700' : 'text-muted-foreground')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
-            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-amber-50 text-amber-700' : 'text-muted-foreground')}> <Wallet className="w-3 h-3 inline ml-1" /> {isCrypto ? 'أملك العملة' : 'أملك السهم'} </button>
+            <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-profit text-profit' : 'text-muted-foreground')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
+            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-warning text-warning' : 'text-muted-foreground')}> <Wallet className="w-3 h-3 inline ml-1" /> {isCrypto ? 'أملك العملة' : 'أملك السهم'} </button>
           </div>
           {data?.adjustment_reason && (
             <span className="text-muted-foreground truncate max-w-md">💡 {data.adjustment_reason}</span>
@@ -707,7 +796,7 @@ export function SingleStockAnalysisView({
               className={cn(
                 'px-1.5 py-1 rounded-lg border transition-all font-mono',
                 visibleIndicators[ind.key]
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold'
+                  ? 'bg-profit text-profit border-profit font-bold'
                   : 'bg-muted text-muted-foreground border-border hover:bg-muted'
               )}
             >
@@ -723,27 +812,38 @@ export function SingleStockAnalysisView({
             <div className="text-muted-foreground font-bold border-b border-border pb-1 text-center">السعر اللحظي</div>
             <div className="text-center">
               <div className="text-[10px] text-muted-foreground">إغلاق</div>
-              <div className={cn('text-lg font-black font-mono', isUp ? 'text-emerald-600' : 'text-rose-600')}>{(livePrice ?? 0).toFixed(2)}</div>
-              <div className={cn('font-bold', isUp ? 'text-emerald-600' : 'text-rose-600')}>{isUp ? '+' : ''}{(chgPct ?? 0).toFixed(2)}%</div>
+              <div className={cn('text-lg font-black font-mono', isUp ? 'text-profit' : 'text-loss')}>{(livePrice ?? 0).toFixed(2)}</div>
+              <div className={cn('font-bold', isUp ? 'text-profit' : 'text-loss')}>{isUp ? '+' : ''}{(chgPct ?? 0).toFixed(2)}%</div>
             </div>
             <div className="space-y-1 pt-2 border-t border-border">
               <div className="flex justify-between"><span className="text-muted-foreground">افتتاح:</span><span className="font-mono">{(tc?.open ?? 0).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">أعلى:</span><span className="font-mono text-emerald-600">{(tc?.high ?? 0).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">أدنى:</span><span className="font-mono text-rose-600">{(tc?.low ?? 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">أعلى:</span><span className="font-mono text-profit">{(tc?.high ?? 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">أدنى:</span><span className="font-mono text-loss">{(tc?.low ?? 0).toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">حجم:</span><span className="font-mono">{(tc?.volume ?? 0).toLocaleString()}</span></div>
             </div>
           </div>
 
-          <div className="flex-1 min-h-[440px] rounded-xl overflow-hidden border border-border bg-card relative">
-            {loading ? (
+          <div className="flex-1 min-h-[460px] rounded-xl overflow-hidden border border-border bg-card relative">
+            {chartEngine === 'tradingview_widget' ? (
+              <div className="w-full h-full min-h-[460px] relative bg-card overflow-hidden">
+                <iframe
+                  src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(
+                    tvSymbol
+                  )}&interval=${tvInterval}&theme=dark&style=1&timezone=Africa%2FCairo&locale=ar_AE&enable_publishing=false&allow_symbol_change=1&save_image=1&hide_side_toolbar=0&utm_source=invist.m2y.net`}
+                  className="w-full h-full min-h-[460px] border-0"
+                  title={`TradingView ${ticker}`}
+                  allowFullScreen
+                />
+              </div>
+            ) : loading ? (
               <div className="flex flex-col justify-center items-center h-full min-h-[440px] gap-2">
-                <RefreshCw className="w-6 h-6 text-emerald-500 animate-spin" />
+                <RefreshCw className="w-6 h-6 text-profit animate-spin" />
                 <span className="text-xs text-muted-foreground">جاري تحميل بيانات {ticker}...</span>
               </div>
             ) : error ? (
               <div className="flex flex-col justify-center items-center h-full min-h-[440px] gap-2 p-4 text-center">
-                <AlertTriangle className="w-8 h-8 text-rose-500" />
-                <span className="text-xs font-bold text-rose-400">{error}</span>
+                <AlertTriangle className="w-8 h-8 text-loss" />
+                <span className="text-xs font-bold text-loss">{error}</span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -768,11 +868,11 @@ export function SingleStockAnalysisView({
                 bbSqueezeLevel={data.bb_squeeze?.state}
                 bosEvents={data.bos_events}
                 livePrice={liveData?.today_candle?.close ?? null}
-                cmfData={(data as Record<string, unknown>).cmf_data}
-                macdProjection={(data as Record<string, unknown>).macd_projection}
-                smartMarkers={(data as Record<string, unknown>).smart_markers}
-                smcData={(data as Record<string, unknown>).smc_data}
-                fusionMetrics={(data as Record<string, unknown>).fusion_metrics}
+                cmfData={data.cmf_data}
+                macdProjection={data.macd_projection}
+                smartMarkers={data.smart_markers}
+                smcData={data.smc_data as unknown as React.ComponentProps<typeof InteractiveChart>['smcData']}
+                fusionMetrics={data.fusion_metrics as unknown as NonNullable<React.ComponentProps<typeof InteractiveChart>['fusionMetrics']>}
               />
             ) : (
               <div className="flex flex-col justify-center items-center h-full min-h-[440px] text-muted-foreground text-xs">
@@ -790,16 +890,16 @@ export function SingleStockAnalysisView({
             {/* Row 1: Always Visible — Executive Summary (Score + Trade Plan) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Score Card & Confluence — الملخص التنفيذي */}
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+              <div className="p-3 rounded-lg bg-profit/10 border border-profit/30 space-y-1.5">
                 <div className="flex justify-between items-center font-bold text-[11px]">
-                  <span className="text-emerald-700 dark:text-emerald-300">📋 الملخص التنفيذي:</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black text-base">
+                  <span className="text-profit dark:text-profit">📋 الملخص التنفيذي:</span>
+                  <span className="font-mono text-profit dark:text-profit font-black text-base">
                     {data.confluence?.score?.toFixed(1) || '0.0'}/10
                   </span>
                 </div>
                 <Badge
                   style={{ backgroundColor: data.confluence?.signal_color || '#10b981' }}
-                  className="text-white text-xs font-bold w-full justify-center py-1 shadow-xs"
+                  className="text-foreground text-xs font-bold w-full justify-center py-1 shadow-xs"
                 >
                   {data.confluence?.signal || 'حيادي'}
                 </Badge>
@@ -835,11 +935,11 @@ export function SingleStockAnalysisView({
                       <span className="text-[9px] text-muted-foreground block font-sans">سعر الدخول</span>
                       <span className="font-bold text-xs">{data.risk.entry?.toFixed(2)} {currencyLabel}</span>
                     </div>
-                    <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <div className="p-1.5 rounded bg-profit/10 text-profit dark:text-profit">
                       <span className="text-[9px] block font-sans">🎯 الهدف 1</span>
                       <span className="font-bold text-xs">{data.risk.target?.toFixed(2)} {currencyLabel}</span>
                     </div>
-                    <div className="p-1.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                    <div className="p-1.5 rounded bg-loss/10 text-loss dark:text-loss">
                       <span className="text-[9px] block font-sans">🛑 الوقف</span>
                       <span className="font-bold text-xs">{data.risk.stop_loss?.toFixed(2)} {currencyLabel}</span>
                     </div>
@@ -848,13 +948,13 @@ export function SingleStockAnalysisView({
                   {data.risk.target_2 && (
                     <div className="flex justify-between text-[10px] text-muted-foreground">
                       <span>الهدف الثاني (TP2):</span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(data.risk.target_2 ?? 0).toFixed(2)} {currencyLabel}</span>
+                      <span className="font-mono font-bold text-profit dark:text-profit">{(data.risk.target_2 ?? 0).toFixed(2)} {currencyLabel}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
                     <span>R:R: <strong className="font-mono text-foreground">{data.risk.rr_ratio?.toFixed(2)}R</strong></span>
                     {data.suggested_position_size_pct && (
-                      <span>حجم المحفظة: <strong className="font-mono text-emerald-500">{data.suggested_position_size_pct}%</strong></span>
+                      <span>حجم المحفظة: <strong className="font-mono text-profit">{data.suggested_position_size_pct}%</strong></span>
                     )}
                   </div>
                 </div>
@@ -890,7 +990,7 @@ export function SingleStockAnalysisView({
             {data.institutional_decision && (() => {
               const d = data.institutional_decision;
               const sig = d.signal || '—';
-              const sigColor = sig.includes('BUY') || sig.includes('شراء') ? 'text-emerald-600' : sig.includes('SELL') || sig.includes('بيع') ? 'text-rose-600' : 'text-amber-600';
+              const sigColor = sig.includes('BUY') || sig.includes('شراء') ? 'text-profit' : sig.includes('SELL') || sig.includes('بيع') ? 'text-loss' : 'text-warning';
               return (
                 <Card className="border border-border bg-card shadow-sm overflow-hidden mt-2" dir="rtl">
                   <CardHeader className="p-3 pb-2 border-b border-border bg-muted">
@@ -945,11 +1045,11 @@ export function SingleStockAnalysisView({
                       </div>
                       <div>
                         <span className="text-muted-foreground">الوقف: </span>
-                        <span className="font-medium font-mono text-rose-600">{d.stop_loss ? (d.stop_loss ?? 0).toFixed(2) : '—'}</span>
+                        <span className="font-medium font-mono text-loss">{d.stop_loss ? (d.stop_loss ?? 0).toFixed(2) : '—'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">الهدف 1: </span>
-                        <span className="font-medium font-mono text-emerald-600">{d.target_price ? (d.target_price ?? 0).toFixed(2) : '—'}</span>
+                        <span className="font-medium font-mono text-profit">{d.target_price ? (d.target_price ?? 0).toFixed(2) : '—'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">R:R: </span>
@@ -994,19 +1094,19 @@ export function SingleStockAnalysisView({
                       <CardContent className="p-3 space-y-2.5 text-xs">
                         {/* Big up vs down display */}
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="text-center p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                            <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold mb-0.5">
+                          <div className="text-center p-2 rounded-lg bg-profit/10 border border-profit/30">
+                            <div className="text-[10px] text-profit dark:text-profit font-bold mb-0.5">
                               🟢 صعود
                             </div>
-                            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none">
+                            <div className="text-2xl font-black text-profit dark:text-profit font-mono leading-none">
                               {(upPct ?? 0).toFixed(1)}%
                             </div>
                           </div>
-                          <div className="text-center p-2 rounded-lg bg-rose-500/10 border border-rose-500/30">
-                            <div className="text-[10px] text-rose-700 dark:text-rose-300 font-bold mb-0.5">
+                          <div className="text-center p-2 rounded-lg bg-loss/10 border border-loss/30">
+                            <div className="text-[10px] text-loss dark:text-loss font-bold mb-0.5">
                               🔴 هبوط
                             </div>
-                            <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono leading-none">
+                            <div className="text-2xl font-black text-loss dark:text-loss font-mono leading-none">
                               {(dnPct ?? 0).toFixed(1)}%
                             </div>
                           </div>
@@ -1015,12 +1115,12 @@ export function SingleStockAnalysisView({
                         {/* Split bar visualization (up vs down) */}
                         <div className="flex h-3 rounded-full overflow-hidden bg-muted border border-border/40">
                           <div
-                            className="bg-emerald-500 transition-all duration-500"
+                            className="bg-profit transition-all duration-500"
                             style={{ width: `${upPct}%` }}
                             title={`صعود ${(upPct ?? 0).toFixed(1)}%`}
                           />
                           <div
-                            className="bg-rose-500 transition-all duration-500"
+                            className="bg-loss transition-all duration-500"
                             style={{ width: `${dnPct}%` }}
                             title={`هبوط ${(dnPct ?? 0).toFixed(1)}%`}
                           />
@@ -1036,41 +1136,41 @@ export function SingleStockAnalysisView({
 
                         {/* Breakout probabilities */}
                         <div className="grid grid-cols-2 gap-1.5">
-                          <div className="p-1.5 rounded bg-emerald-500/5 border border-emerald-500/20">
-                            <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold mb-1">
+                          <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
+                            <div className="text-[10px] text-profit dark:text-profit font-bold mb-1">
                               📈 احتمال كسر القمة السابقة ({cp.prev_high?.toFixed(2)})
                             </div>
                             <div className="font-mono text-[10px] text-foreground/80 space-y-0.5">
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">+0%:</span>
-                                <span className="text-emerald-500 font-bold">{cp.break_high_0pct?.toFixed(1)}%</span>
+                                <span className="text-profit font-bold">{cp.break_high_0pct?.toFixed(1)}%</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">+1%:</span>
-                                <span className="text-emerald-500 font-bold">{cp.break_high_1pct?.toFixed(1)}%</span>
+                                <span className="text-profit font-bold">{cp.break_high_1pct?.toFixed(1)}%</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">+2%:</span>
-                                <span className="text-emerald-500 font-bold">{cp.break_high_2pct?.toFixed(1)}%</span>
+                                <span className="text-profit font-bold">{cp.break_high_2pct?.toFixed(1)}%</span>
                               </div>
                             </div>
                           </div>
-                          <div className="p-1.5 rounded bg-rose-500/5 border border-rose-500/20">
-                            <div className="text-[10px] text-rose-700 dark:text-rose-300 font-bold mb-1">
+                          <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
+                            <div className="text-[10px] text-loss dark:text-loss font-bold mb-1">
                               📉 احتمال كسر القاع السابق ({cp.prev_low?.toFixed(2)})
                             </div>
                             <div className="font-mono text-[10px] text-foreground/80 space-y-0.5">
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">-0%:</span>
-                                <span className="text-rose-500 font-bold">{cp.break_low_0pct?.toFixed(1)}%</span>
+                                <span className="text-loss font-bold">{cp.break_low_0pct?.toFixed(1)}%</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">-1%:</span>
-                                <span className="text-rose-500 font-bold">{cp.break_low_1pct?.toFixed(1)}%</span>
+                                <span className="text-loss font-bold">{cp.break_low_1pct?.toFixed(1)}%</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">-2%:</span>
-                                <span className="text-rose-500 font-bold">{cp.break_low_2pct?.toFixed(1)}%</span>
+                                <span className="text-loss font-bold">{cp.break_low_2pct?.toFixed(1)}%</span>
                               </div>
                             </div>
                           </div>
@@ -1078,27 +1178,27 @@ export function SingleStockAnalysisView({
 
                         {/* Target prices */}
                         <div className="grid grid-cols-4 gap-1 text-center">
-                          <div className="p-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                          <div className="p-1 rounded bg-profit/10 border border-profit/20">
                             <div className="text-[9px] text-muted-foreground">هدف +1%</div>
-                            <div className="font-mono font-bold text-emerald-500 text-[11px]">
+                            <div className="font-mono font-bold text-profit text-[11px]">
                               {cp.target_up_1pct?.toFixed(2) ?? '—'}
                             </div>
                           </div>
-                          <div className="p-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                          <div className="p-1 rounded bg-profit/10 border border-profit/20">
                             <div className="text-[9px] text-muted-foreground">هدف +2%</div>
-                            <div className="font-mono font-bold text-emerald-500 text-[11px]">
+                            <div className="font-mono font-bold text-profit text-[11px]">
                               {cp.target_up_2pct?.toFixed(2) ?? '—'}
                             </div>
                           </div>
-                          <div className="p-1 rounded bg-rose-500/10 border border-rose-500/20">
+                          <div className="p-1 rounded bg-loss/10 border border-loss/20">
                             <div className="text-[9px] text-muted-foreground">هدف -1%</div>
-                            <div className="font-mono font-bold text-rose-500 text-[11px]">
+                            <div className="font-mono font-bold text-loss text-[11px]">
                               {cp.target_dn_1pct?.toFixed(2) ?? '—'}
                             </div>
                           </div>
-                          <div className="p-1 rounded bg-rose-500/10 border border-rose-500/20">
+                          <div className="p-1 rounded bg-loss/10 border border-loss/20">
                             <div className="text-[9px] text-muted-foreground">هدف -2%</div>
-                            <div className="font-mono font-bold text-rose-500 text-[11px]">
+                            <div className="font-mono font-bold text-loss text-[11px]">
                               {cp.target_dn_2pct?.toFixed(2) ?? '—'}
                             </div>
                           </div>
@@ -1107,7 +1207,7 @@ export function SingleStockAnalysisView({
                         {/* Footer: prev candle + confidence + sample */}
                         <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/40">
                           الشمعة السابقة:{' '}
-                          <strong className={cp.prev_candle === 'خضراء' ? 'text-emerald-500' : 'text-rose-500'}>
+                          <strong className={cp.prev_candle === 'خضراء' ? 'text-profit' : 'text-loss'}>
                             {cp.prev_candle}
                           </strong>{' '}
                           | الثقة:{' '}
@@ -1146,7 +1246,7 @@ export function SingleStockAnalysisView({
                           </div>
                           {dna.personality_type && (
                             <Badge
-                              className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold shrink-0"
+                              className="bg-warning/15 text-warning dark:text-warning border border-warning/30 text-[10px] font-bold shrink-0"
                               title={dna.personality_type_en || dna.personality_type}
                             >
                               {dna.personality_type}
@@ -1169,8 +1269,8 @@ export function SingleStockAnalysisView({
                                 dna.annual_return === null
                                   ? 'text-muted-foreground'
                                   : dna.annual_return >= 0
-                                    ? 'text-emerald-500'
-                                    : 'text-rose-500'
+                                    ? 'text-profit'
+                                    : 'text-loss'
                               )}
                             >
                               {dna.annual_return !== null
@@ -1178,15 +1278,15 @@ export function SingleStockAnalysisView({
                                 : '—'}
                             </span>
                           </div>
-                          <div className="p-1.5 rounded bg-emerald-500/5 border border-emerald-500/20">
+                          <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
                             <span className="text-[10px] text-muted-foreground block">أفضل يوم</span>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">
+                            <span className="font-bold text-profit dark:text-profit text-[11px]">
                               {dna.best_weekday || '—'}
                             </span>
                           </div>
-                          <div className="p-1.5 rounded bg-rose-500/5 border border-rose-500/20">
+                          <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
                             <span className="text-[10px] text-muted-foreground block">أضعف يوم</span>
-                            <span className="font-bold text-rose-600 dark:text-rose-400 text-[11px]">
+                            <span className="font-bold text-loss dark:text-loss text-[11px]">
                               {dna.worst_weekday || '—'}
                             </span>
                           </div>
@@ -1201,7 +1301,7 @@ export function SingleStockAnalysisView({
                                 {tr.min?.toFixed(2)} — {tr.max?.toFixed(2)}
                               </span>
                             </div>
-                            <div className="relative h-2.5 bg-gradient-to-l from-rose-500/30 via-amber-500/30 to-emerald-500/30 rounded-full border border-border/40">
+                            <div className="relative h-2.5 bg-gradient-to-l from-loss/30 via-warning/30 to-profit/30 rounded-full border border-border/40">
                               <div
                                 className="absolute top-1/2 -translate-y-1/2 h-3.5 w-1 bg-foreground rounded-sm shadow-sm transition-all"
                                 style={{
@@ -1226,15 +1326,15 @@ export function SingleStockAnalysisView({
                         {/* Best & worst months */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {dna.best_months && dna.best_months.length > 0 && (
-                            <div className="p-1.5 rounded bg-emerald-500/5 border border-emerald-500/20">
-                              <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold mb-1">
+                            <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
+                              <div className="text-[10px] text-profit dark:text-profit font-bold mb-1">
                                 🏆 أفضل الشهور:
                               </div>
                               <div className="flex flex-wrap gap-1">
                                 {dna.best_months.map((m) => (
                                   <Badge
                                     key={`bm-${m.month_num}`}
-                                    className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[9px] font-bold"
+                                    className="bg-profit/15 text-profit dark:text-profit border border-profit/30 text-[9px] font-bold"
                                   >
                                     {m.month}{' '}
                                     <span className="font-mono">+{(m.avg_change ?? 0).toFixed(1)}%</span>
@@ -1244,15 +1344,15 @@ export function SingleStockAnalysisView({
                             </div>
                           )}
                           {dna.worst_months && dna.worst_months.length > 0 && (
-                            <div className="p-1.5 rounded bg-rose-500/5 border border-rose-500/20">
-                              <div className="text-[10px] text-rose-700 dark:text-rose-300 font-bold mb-1">
+                            <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
+                              <div className="text-[10px] text-loss dark:text-loss font-bold mb-1">
                                 ⚠️ أضعف الشهور:
                               </div>
                               <div className="flex flex-wrap gap-1">
                                 {dna.worst_months.map((m) => (
                                   <Badge
                                     key={`wm-${m.month_num}`}
-                                    className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 text-[9px] font-bold"
+                                    className="bg-loss/15 text-loss dark:text-loss border border-loss/30 text-[9px] font-bold"
                                   >
                                     {m.month}{' '}
                                     <span className="font-mono">{(m.avg_change ?? 0).toFixed(1)}%</span>
@@ -1310,13 +1410,13 @@ export function SingleStockAnalysisView({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 pt-1">
                 {/* SMC & Order Blocks */}
                 {data.smc_analysis && (
-                  <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-teal-500/30 text-teal-700 dark:text-teal-300">
+                  <div className="p-3 rounded-lg bg-whale/10 border border-whale/30 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-whale/30 text-whale dark:text-whale">
                       🏛️ تحليل سلوك السيولة (SMC):
                     </span>
                     <div className="flex justify-between text-[11px]">
                       <span className="text-muted-foreground">الاتجاه الهيكلي:</span>
-                      <span className="font-bold text-teal-600 dark:text-teal-400">{data.smc_analysis.bias_ar || 'متوازن'}</span>
+                      <span className="font-bold text-whale dark:text-whale">{data.smc_analysis.bias_ar || 'متوازن'}</span>
                     </div>
                     {data.smc_analysis.nearest_ob && (
                       <div className="flex justify-between text-[10px]">
@@ -1337,14 +1437,14 @@ export function SingleStockAnalysisView({
 
                 {/* Candlestick Patterns — للخبراء */}
                 {data.candlestick_patterns && data.candlestick_patterns.length > 0 && (
-                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-amber-500/30 text-amber-700 dark:text-amber-300">
+                  <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-warning/30 text-warning dark:text-warning">
                       🕯️ الأنماط اليابانية المكتشفة:
                     </span>
                     {data.candlestick_patterns.slice(0, 5).map((p, i) => (
                       <div key={i} className="flex justify-between text-[10px]">
                         <span className="text-muted-foreground">{p.name_ar || p.name}</span>
-                        <span className={`font-bold ${p.signal === 'bullish' ? 'text-emerald-600 dark:text-emerald-400' : p.signal === 'bearish' ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
+                        <span className={`font-bold ${p.signal === 'bullish' ? 'text-profit dark:text-profit' : p.signal === 'bearish' ? 'text-loss dark:text-loss' : 'text-muted-foreground'}`}>
                           {p.signal === 'bullish' ? 'صعودي' : p.signal === 'bearish' ? 'هبوطي' : 'محايد'}
                         </span>
                       </div>
@@ -1354,8 +1454,8 @@ export function SingleStockAnalysisView({
 
                 {/* Liquidity Sweeps — للخبراء */}
                 {data.smc_analysis?.liquidity_sweeps && data.smc_analysis.liquidity_sweeps.length > 0 && (
-                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-purple-700 dark:text-purple-300">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-primary dark:text-primary">
                       💧 سحب السيولة (Liquidity Sweeps):
                     </span>
                     {data.smc_analysis.liquidity_sweeps.slice(0, 3).map((s, i) => (
@@ -1383,7 +1483,7 @@ export function SingleStockAnalysisView({
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">SMA 20 / 50:</span>
-                      <span className="font-mono text-foreground">{(data.current_indicators as Record<string, unknown>).sma20?.toFixed(2) || '—'} / {(data.current_indicators as Record<string, unknown>).sma50?.toFixed(2) || '—'}</span>
+                      <span className="font-mono text-foreground">{data.current_indicators?.sma20 != null ? Number(data.current_indicators.sma20).toFixed(2) : '—'} / {data.current_indicators?.sma50 != null ? Number(data.current_indicators.sma50).toFixed(2) : '—'}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">التقلب (ATR):</span>
@@ -1394,13 +1494,13 @@ export function SingleStockAnalysisView({
 
                 {/* V20 Fusion Metrics */}
                 {data.fusion_metrics && (
-                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-purple-700 dark:text-purple-300">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-primary dark:text-primary">
                       التحليل الفني الموحد:
                     </span>
                     <div className="flex justify-between text-[11px]">
                       <span className="text-muted-foreground">درجة النموذج:</span>
-                      <span className="font-mono font-bold text-purple-600 dark:text-purple-400">{data.fusion_metrics.fusion_score?.toFixed(1) || '0.0'}/10</span>
+                      <span className="font-mono font-bold text-primary dark:text-primary">{data.fusion_metrics.fusion_score?.toFixed(1) || '0.0'}/10</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground leading-tight pt-0.5">
                       {data.fusion_metrics.summary_ar || 'تحليل فني شامل'}
@@ -1409,8 +1509,8 @@ export function SingleStockAnalysisView({
                 )}
 
                 {/* Fundamental Valuation */}
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-1">
-                  <span className="font-bold text-[11px] block border-b border-amber-500/30 text-amber-700 dark:text-amber-300">
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
+                  <span className="font-bold text-[11px] block border-b border-warning/30 text-warning dark:text-warning">
                     🏛️ التقييم والتحليل الأساسي:
                   </span>
                   {/* P0-REDESIGN FIX (Rule 27 NO-FAKE-DATA): أزلت القيم الوهمية
@@ -1419,24 +1519,24 @@ export function SingleStockAnalysisView({
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">مكرر الربحية (P/E):</span>
                     <span className="font-mono font-bold text-foreground">
-                      {(data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio
-                        ? `${Number((data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio).toFixed(2)}x`
+                      {(data.fundamentals?.valuation?.pe_ratio != null)
+                        ? `${Number(data.fundamentals?.valuation?.pe_ratio).toFixed(2)}x`
                         : '— بيانات غير متاحة'}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">ربحية السهم (EPS):</span>
                     <span className="font-mono text-foreground">
-                      {(data as Record<string, unknown>).fundamentals?.profitability?.eps
-                        ? `${Number((data as Record<string, unknown>).fundamentals?.profitability?.eps).toFixed(2)} ${currencyLabel}`
+                      {(data.fundamentals?.profitability?.eps != null)
+                        ? `${Number(data.fundamentals?.profitability?.eps).toFixed(2)} ${currencyLabel}`
                         : '— بيانات غير متاحة'}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">العائد على الاستثمار:</span>
                     <span className="font-mono text-foreground">
-                      {(data as Record<string, unknown>).fundamentals?.profitability?.roe
-                        ? `${Number((data as Record<string, unknown>).fundamentals?.profitability?.roe).toFixed(1)}%`
+                      {(data.fundamentals?.profitability?.roe != null)
+                        ? `${Number(data.fundamentals?.profitability?.roe).toFixed(1)}%`
                         : '— بيانات غير متاحة'}
                     </span>
                   </div>

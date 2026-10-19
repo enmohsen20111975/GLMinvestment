@@ -193,6 +193,8 @@ export async function GET(req: NextRequest) {
     cached: true,
     cache_age_seconds: cacheAgeSec,
     cache_stale: stale,
+    data_stale: stale,  // BRAVO RADAR-REBUILD Finding #8: explicit stale flag for UI
+    stale_minutes: cacheAgeSec ? Math.floor(cacheAgeSec / 60) : null,
     warmup_running: isWarmupRunning(),
     cache_generated_at: status.cache_generated_at,
     db_source: status.db_source,

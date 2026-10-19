@@ -435,20 +435,27 @@ class SentimentAnalyzer:
         """Analyze news sentiment if available."""
         if not self.db_path:
             return None
-        
+
         try:
-            conn = sqlite3.connect(self.db_path)
+            # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+            # Was reading a legacy table in stocks.db via self.db_path (0 rows — phantom).
+            try:
+                from utils.db_paths import DBPaths
+                _news_db = DBPaths.NEWS_DB
+            except Exception:
+                _news_db = self.db_path
+            conn = sqlite3.connect(_news_db)
             cursor = conn.cursor()
-            
-            # Check for recent news
+
+            # Check for recent news (tickers column = JSON array, filter with LIKE)
             cursor.execute('''
-                SELECT title, content, category, published_at
-                FROM news_items
-                WHERE ticker = ?
+                SELECT title, content, impact_type AS category, published_at
+                FROM market_news
+                WHERE tickers LIKE ?
                 ORDER BY published_at DESC
                 LIMIT 5
-            ''', (ticker,))
-            
+            ''', (f'%"{ticker}"%',))
+
             news = cursor.fetchall()
             conn.close()
             

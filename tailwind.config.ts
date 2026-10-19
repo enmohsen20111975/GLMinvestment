@@ -49,6 +49,36 @@ const config: Config = {
                                 DEFAULT: 'hsl(var(--destructive))',
                                 foreground: 'hsl(var(--destructive-foreground))'
                         },
+                        /* BLUEPRINT-UNIFIED-SCREENS semantic tokens (Phase 1) */
+                        success: {
+                                DEFAULT: 'hsl(var(--success))',
+                                foreground: 'hsl(var(--success-foreground))'
+                        },
+                        warning: {
+                                DEFAULT: 'hsl(var(--warning))',
+                                foreground: 'hsl(var(--warning-foreground))'
+                        },
+                        danger: {
+                                DEFAULT: 'hsl(var(--danger))',
+                                foreground: 'hsl(var(--danger-foreground))'
+                        },
+                        profit: {
+                                DEFAULT: 'hsl(var(--profit))',
+                                foreground: 'hsl(var(--profit-foreground))'
+                        },
+                        loss: {
+                                DEFAULT: 'hsl(var(--loss))',
+                                foreground: 'hsl(var(--loss-foreground))'
+                        },
+                        whale: {
+                                DEFAULT: 'hsl(var(--whale))',
+                                foreground: 'hsl(var(--whale-foreground))'
+                        },
+                        /* Amendment A1: info token */
+                        info: {
+                                DEFAULT: 'hsl(var(--info))',
+                                foreground: 'hsl(var(--info-foreground))'
+                        },
                         border: 'hsl(var(--border))',
                         input: 'hsl(var(--input))',
                         ring: 'hsl(var(--ring))',

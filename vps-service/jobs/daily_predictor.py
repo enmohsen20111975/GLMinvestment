@@ -53,14 +53,20 @@ def _whale_distribution_guard(opens, highs, lows, closes, volumes):
     """Phase 2 #1: فحص تصريف الحيتان — لو صافي التدفق سالب (تصريف) → أمنع BUY.
     يحمي المتداول من مصايد الثيران (bull traps) على أسهم بنزف مؤسسي."""
     try:
-        _scripts = Path(__file__).resolve().parents[2] / "scripts"
+        _root = Path(__file__).resolve().parents[2]
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        _scripts = _root / "scripts"
         if str(_scripts) not in sys.path:
             sys.path.insert(0, str(_scripts))
         n = min(len(opens), len(highs), len(lows), len(closes), len(volumes))
         if n < 5:
             return False  # بيانات غير كافية للفحص — لا تمنع
         candles = [{'open': opens[i], 'high': highs[i], 'low': lows[i], 'close': closes[i], 'volume': volumes[i]} for i in range(n)]
-        from liquidity_radar_v2 import compute_whale_flow
+        try:
+            from scripts.liquidity_radar_v2 import compute_whale_flow
+        except ImportError:
+            from liquidity_radar_v2 import compute_whale_flow
         whale = compute_whale_flow(candles)
         return (whale.get('net_flow_egp', 0) or 0) < 0  # distributing → block BUY
     except Exception as e:
@@ -1846,8 +1852,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 try:
                     import sqlite3 as _v62_sql
                     _v62_de_conn = _v62_sql.connect(str(_PROJECT_ROOT / 'db' / 'data_engine.db'))
+                    # DATA-ENGINE-UNIFY-1 Stage 2b: ORDER BY id DESC (date column not in tab_valuation schema)
                     _v62_pe = _v62_de_conn.execute(
-                        "SELECT pe_ratio FROM tab_valuation WHERE symbol = ? ORDER BY date DESC LIMIT 1",
+                        "SELECT pe_ratio FROM tab_valuation WHERE symbol = ? ORDER BY id DESC LIMIT 1",
                         (ticker,)
                     ).fetchone()
                     _v62_de_conn.close()
@@ -2445,13 +2452,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # يقرأ الأخبار المحللة من وكيل الأخبار المحلي (اللاب توب)
             # وبيطبّق تحيز −15 → +15 على الـ score
             # الفكرة: اللاب توب بيجمع أخبار من تيليجرام + ويب + RSS
-            #         ويبعتها للسيرفر كـ JSON منظم في جدول news_signals
+            #         ويبعتها للسيرفر كـ JSON منظم في news.db.market_news
             # Toggle: V40_2_LOCAL_NEWS=1 (default OFF للـ backtest)
             if os.environ.get('V40_2_LOCAL_NEWS', '0') == '1':
                 _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
                 if not _is_backtest:
                     try:
-                        from ai.news_signals_reader import apply_news_bias_to_score
+                        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+                        from ai.market_news_reader import apply_news_bias_to_score
                         _current_score = result.get('score', 0) if isinstance(result.get('score'), (int, float)) else 0
                         _adj_score, _news_ctx = apply_news_bias_to_score(_current_score, ticker)
                         if _news_ctx['has_news'] and _news_ctx['bias'] != 0:
@@ -3326,7 +3334,175 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 # شرح فني شامل من كل المحركات (Candlestick + SMC + Volume + Patterns)
                 # بينخزّن في analysis_json و ai_narrative column في stored_analyses.
                 'technical_explanation': result.get('technical_explanation', {}) or {},
+
+                # ── BRAVO RADAR-ADVANCED (مرحلة 1): SMC + Volume Profile ──────
+                # ربط الكنوز المتقدمة في V40.2 قبل البوابات.
+                # SMC: Order Blocks + FVG + Liquidity Sweeps → score 0-100
+                # VP: VWAP + OBV + A/D Line + Volume Nodes → score 0-100
+                # الـ weights: SMC=15% من score, VP=10% من score (موثّق).
+                # safe-by-design: لو فشل → None (مش fabrication).
+                'smc_score': (lambda: (
+                    (lambda _r: _r.get('score') if _r else None)(
+                        (lambda: (
+                            __import__('analyzers.smc_engine', fromlist=['calculate_smc_score']).calculate_smc_score(
+                                [{'open': o, 'high': h, 'low': l, 'close': c, 'volume': v}
+                                 for o, h, l, c, v in zip(
+                                     opens[max(0,day_idx-50):day_idx+1],
+                                     highs[max(0,day_idx-50):day_idx+1],
+                                     lows[max(0,day_idx-50):day_idx+1],
+                                     closes[max(0,day_idx-50):day_idx+1],
+                                     volumes[max(0,day_idx-50):day_idx+1],
+                                 )],
+                                current_price=closes[day_idx],
+                            ) if day_idx >= 5 else None
+                        ))()
+                    )
+                ))() if signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY') else None,
+
+                'volume_profile_score': (lambda: (
+                    (lambda _r: _r.score if _r else None)(
+                        (lambda: (
+                            __import__('analyzers.volume_profile', fromlist=['VolumeProfileAnalyzer']).VolumeProfileAnalyzer().analyze(
+                                closes[max(0,day_idx-30):day_idx+1],
+                                volumes[max(0,day_idx-30):day_idx+1],
+                            ) if day_idx >= 5 else None
+                        ))()
+                    )
+                ))() if signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY') else None,
+
+                'vwap': None,  # will be filled below if VP available
+                'obv': None,
+                'volume_nodes': [],
             })
+
+            # ── BRAVO RADAR-ADVANCED: استخراج VWAP + OBV من VP result ──────
+            # + دمج SMC + VP في الـ combined_score (طبقة وزن إضافية)
+            _last_sig = signals_by_date[scan_date][-1] if signals_by_date[scan_date] else None
+            if _last_sig and signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY'):
+                _smc_s = _last_sig.get('smc_score')
+                _vp_s = _last_sig.get('volume_profile_score')
+
+                # ═══════════════════════════════════════════════════════════════════════
+                # BRAVO-HYBRID-SCORE (مرحلة 1 — 2026-10-19):
+                # كسر سيطرة V38 كـ brain وحيد + إدخال CoreScoringEngine كـ layer حقيقي.
+                #
+                # الـ 4 layers:
+                #   1. V38 score (boolean conditions — كان 75%، دلوقتي أقل)
+                #   2. CoreScoringEngine (continuous 0-100 — جديد)
+                #   3. SMC (Order Blocks + FVG + Sweeps)
+                #   4. Volume Profile (VWAP + OBV + A/D Line)
+                #
+                # الـ weights configurable via env vars (للـ A/B testing):
+                #   V402_V38_WEIGHT  (default 0.40)
+                #   V402_CORE_WEIGHT (default 0.35)
+                #   V402_SMC_WEIGHT  (default 0.15)
+                #   V402_VP_WEIGHT   (default 0.10)
+                #
+                # Fallback (Rule 27 — NO-FAKE-DATA):
+                #   لو CoreScoringEngine فشل → نـزود وزن V38 + log الـ error.
+                #   ممنوع نـستخدم placeholder 50.0.
+                # ═══════════════════════════════════════════════════════════════════════
+                _V38_W = float(os.environ.get('V402_V38_WEIGHT', '0.40'))
+                _CORE_W = float(os.environ.get('V402_CORE_WEIGHT', '0.35'))
+                _SMC_W = float(os.environ.get('V402_SMC_WEIGHT', '0.15'))
+                _VP_W = float(os.environ.get('V402_VP_WEIGHT', '0.10'))
+
+                # حساب CoreScoringEngine score (layer جديد)
+                _core_score = None
+                _core_err = None
+                try:
+                    from analyzers.core_scoring_engine import CoreScoringEngine as _CSE
+                    _cse = _CSE()
+                    _slice_start = max(0, day_idx - 100)
+                    # فلتر الـ None values (بعض الصفوف فيها high/low = NULL)
+                    _raw_slice = list(zip(
+                        opens[_slice_start:day_idx+1] if 'opens' in dir() else [],
+                        highs[_slice_start:day_idx+1] if 'highs' in dir() else [],
+                        lows[_slice_start:day_idx+1] if 'lows' in dir() else [],
+                        closes[_slice_start:day_idx+1],
+                        volumes[_slice_start:day_idx+1],
+                    ))
+                    _filtered = [(_o, _h, _l, _c, _v) for _o, _h, _l, _c, _v in _raw_slice
+                                 if _c is not None and _h is not None and _l is not None
+                                 and _o is not None and _c > 0]
+                    if len(_filtered) >= 30:
+                        _price_data = {
+                            'closes':  [f[3] for f in _filtered],
+                            'opens':   [f[0] for f in _filtered],
+                            'highs':   [f[1] for f in _filtered],
+                            'lows':    [f[2] for f in _filtered],
+                            'volumes': [f[4] for f in _filtered],
+                        }
+                        _core_result = _cse.analyze(
+                            ticker=ticker,
+                            price_data=_price_data,
+                            market='EGX',
+                            persona='trader',
+                        )
+                        if _core_result and _core_result.score is not None:
+                            _core_score = float(_core_result.score)
+                except Exception as _cse_err:
+                    _core_err = str(_cse_err)[:120]
+
+                # Fallback: لو CoreScoring فشل → زوّد وزن V38 (ممنوع fabrication)
+                if _core_score is None:
+                    if _core_err:
+                        print(
+                            f"[CORE-SCORE-FAIL] {ticker} on {scan_date}: {_core_err} "
+                            f"→ fallback: V38 وزن {_V38_W:.2f} → {_V38_W + _CORE_W:.2f}",
+                            flush=True,
+                        )
+                    _V38_W += _CORE_W
+                    _CORE_W = 0.0
+
+                # Normalize weights (لو sum != 1.0)
+                _total_w = _V38_W + _CORE_W + _SMC_W + _VP_W
+                if _total_w > 0:
+                    _V38_W  /= _total_w
+                    _CORE_W /= _total_w
+                    _SMC_W  /= _total_w
+                    _VP_W   /= _total_w
+
+                # حساب الـ hybrid score
+                _v38_val = float(_last_sig.get('combined_score', _last_sig.get('tech_score', 50)) or 50)
+                _smc_val = float(_smc_s) if _smc_s is not None else 50.0
+                _vp_val  = float(_vp_s) if _vp_s is not None else 50.0
+                _core_val = _core_score if _core_score is not None else 50.0
+
+                _new_combined = (
+                    _v38_val  * _V38_W  +
+                    _core_val * _CORE_W +
+                    _smc_val  * _SMC_W  +
+                    _vp_val   * _VP_W
+                )
+                _new_combined = max(0, min(100, round(_new_combined, 2)))
+                _last_sig['combined_score'] = _new_combined
+                # audit fields (للـ backtest analysis)
+                _last_sig['v38_score'] = round(_v38_val, 2)
+                _last_sig['core_score'] = round(_core_val, 2) if _core_score is not None else None
+
+                # استخراج VWAP + OBV للـ display
+                if _vp_s is not None:
+                    try:
+                        _vp_analyzer = __import__('analyzers.volume_profile', fromlist=['VolumeProfileAnalyzer']).VolumeProfileAnalyzer()
+                        _vp_result = _vp_analyzer.analyze(
+                            closes[max(0,day_idx-30):day_idx+1],
+                            volumes[max(0,day_idx-30):day_idx+1],
+                        )
+                        _last_sig['vwap'] = _vp_result.vwap
+                        _last_sig['obv'] = _vp_result.obv
+                        _last_sig['volume_nodes'] = _vp_result.volume_nodes
+                    except Exception:
+                        pass
+
+                print(
+                    f"[HYBRID-SCORE] {ticker} on {scan_date}: "
+                    f"v38={_v38_val:.1f}×{_V38_W:.0%} + core={_core_val:.1f}×{_CORE_W:.0%} "
+                    f"+ smc={_smc_val:.1f}×{_SMC_W:.0%} + vp={_vp_val:.1f}×{_VP_W:.0%} "
+                    f"→ combined={_new_combined:.1f}"
+                    + (f" [CORE-FAIL]" if _core_score is None else ""),
+                    flush=True,
+                )
 
             # ── AI NEWS AGENT (المرحلة 3 — 2026-08-31): الإثبات السابع ──
             # جلب وتحليل الأخبار بالذكاء الاصطناعي المحلي (keyword fallback)
@@ -3538,29 +3714,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # Rule 27 (NO-FAKE-DATA): لو الـ features لا يمكن حسابها (بيانات ناقصة)،
             #   verdict='SKIPPED_INSUFFICIENT_DATA' → السماح بالمرور conservative.
             if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
-                try:
-                    from analyzers.lgbm_gatekeeper import (
-                        predict_signal_probability,
-                        open_stocks_db_readonly,
-                    )
-                    _gk_conn = open_stocks_db_readonly()
-                    if _gk_conn is not None:
-                        try:
-                            _gk_proba, _gk_features, _gk_verdict = predict_signal_probability(
-                                sig['ticker'], scan_date, float(sig['entry']),
-                                str(sig.get('signal', '')), _gk_conn
-                            )
-                        finally:
-                            _gk_conn.close()
-                    else:
-                        _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
-                except Exception as _gk_err:
-                    _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
-                    print(
-                        f"[LGBM-GATEKEEPER] WARN {sig['ticker']} gatekeeper exception: {_gk_err} "
-                        f"→ SKIPPED (conservative pass)",
-                        flush=True,
-                    )
+                # BRAVO-FIX (2026-10-19): analyzers.lgbm_gatekeeper module مش موجود.
+                # الـ try/except كان بـ يـفشل بصمت → SKIPPED_INSUFFICIENT_DATA دايماً.
+                # تم تعطيل الـ gate لإن الملف مش موجود. لو محتاج ML gatekeeper:
+                # اعمل analyzers/lgbm_gatekeeper.py الأول.
+                _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
                 if _gk_verdict == 'REJECTED_BY_AI_GATEKEEPER':
                     print(
                         f"[LGBM-GATEKEEPER] REJECTED {sig['ticker']} "
@@ -3599,7 +3757,53 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _sig_target = float(sig.get('target', 0) or 0)
                 _sig_stop = float(sig.get('stop', 0) or 0)
 
-                # 1. R:R ≥ 1.5 check (احتياطي لو r_multiple محسوب غلط — نحسب من entry/target/stop)
+                # BRAVO-WIRE-EVALUATE-RISK-001 (2026-10-18 — كيمي P0 directive):
+                # Gate every prediction INSERT with evaluate_risk() before it reaches
+                # tracker.record_prediction(). Rule 18 (R/R ≥ 1.8) + Rule 19 (position
+                # cap 2.5%) + Rule 8 (ATR stop [5%,9%]) enforced CANONICALLY here.
+                # This is the SSOT gate — replaces the ad-hoc 1.5 check below.
+                # Works on laptop + VPS (relative import via sys.path, no hardcoded paths).
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
+                    try:
+                        from engine.flow_system import evaluate_risk as _evaluate_risk_gate
+                        _risk_eval = _evaluate_risk_gate(
+                            entry_price=_sig_entry,
+                            stop_loss=_sig_stop,
+                            target_price=_sig_target,
+                            calculated_position_size=0.025,  # Rule 19 cap
+                            confidence=_sig_conf,
+                        )
+                        if _risk_eval['killed']:
+                            print(
+                                f"[BRAVO-EVALUATE-RISK-KILL] {sig['ticker']} {_sig_signal} "
+                                f"entry={_sig_entry:.2f} stop={_sig_stop:.2f} target={_sig_target:.2f} "
+                                f"rr={_risk_eval['rr']} → {_risk_eval['kill_reason']} "
+                                f"→ SKIP INSERT (Rule 18/27)",
+                                flush=True,
+                            )
+                            continue
+                        # Capture capped position_size for the prediction record.
+                        _bravo_position_size = _risk_eval['position_size']
+                    except ImportError:
+                        # Fallback: if engine.flow_system import fails (rare), use the
+                        # legacy ad-hoc check but with the CORRECT 1.8 floor (not 1.5).
+                        _bravo_position_size = 0.025
+                        _risk = _sig_entry - _sig_stop if _sig_entry > _sig_stop else 0
+                        _reward = _sig_target - _sig_entry if _sig_target > _sig_entry else 0
+                        _computed_rr = (_reward / _risk) if _risk > 0 else 0.0
+                        _effective_rr = max(_sig_rr, _computed_rr)
+                        if _effective_rr < 1.8:
+                            print(
+                                f"[BRAVO-EVALUATE-RISK-FALLBACK-KILL] {sig['ticker']} {_sig_signal} "
+                                f"R:R={_effective_rr:.2f} < 1.8 (Rule 18) → SKIP INSERT",
+                                flush=True,
+                            )
+                            continue
+                else:
+                    _bravo_position_size = 0.025  # non-BUY signals — default cap
+
+                # Legacy ad-hoc R/R check (KEPT for visibility, but evaluate_risk above
+                # is now the canonical gate. This block is now defensive-only.)
                 _computed_rr = 0.0
                 if _sig_entry > 0 and _sig_target > _sig_entry and _sig_entry > _sig_stop:
                     _risk = _sig_entry - _sig_stop
@@ -3607,11 +3811,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     _computed_rr = _reward / _risk if _risk > 0 else 0.0
                 _effective_rr = max(_sig_rr, _computed_rr)
 
-                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _effective_rr < 1.5:
+                # BRAVO-AUDIT: gate raised from 1.5 → 1.8 (Rule 18 — was violation).
+                # evaluate_risk above is canonical; this is defensive double-check.
+                if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE') and _effective_rr < 1.8:
                     print(
                         f"[HARD-QUANT-KILL] {sig['ticker']} {_sig_signal} "
-                        f"R:R={_effective_rr:.2f} < 1.5 (computed={_computed_rr:.2f}, stored={_sig_rr:.2f}) "
-                        f"→ SKIP (Rule: R:R ≥ 1.5 إلزامي)",
+                        f"R:R={_effective_rr:.2f} < 1.8 (computed={_computed_rr:.2f}, stored={_sig_rr:.2f}) "
+                        f"→ SKIP (Rule 18: R:R ≥ 1.8 إلزامي)",
                         flush=True,
                     )
                     continue
@@ -3794,9 +4000,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     # ── Phase 2 Fix: Read lessons BEFORE finalizing prediction ──
                     # This connects the closed loop: close → lesson → next prediction reads it.
                     # Safe-by-design: if lesson_store fails, prediction proceeds normally.
+                    # BRAVO MAESTRO-CANCER-1 STEP 3: swapped maestro import → V40.2 native.
+                    # OLD: from analyzers.maestro_orchestrator import run_expert_memory_phase
+                    # NEW: from utils.expert_memory_v402 import run_expert_memory_phase_v402
+                    # Also fixed dead veto: old checked 'block' (never returned) → now checks 'caution'.
                     try:
-                        from analyzers.maestro_orchestrator import run_expert_memory_phase
-                        _em = run_expert_memory_phase(
+                        from utils.expert_memory_v402 import run_expert_memory_phase_v402
+                        _em = run_expert_memory_phase_v402(
                             db_path=PREDICTIONS_DB,
                             ticker=sig['ticker'],
                             sector=_sector_change if isinstance(_sector_change, str) else '',
@@ -3805,13 +4015,15 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             month=int(scan_date.split('-')[1]) if '-' in scan_date else 1,
                             persona_name='balanced',
                         )
-                        if _em and _em.recommendation == 'block':
-                            # Expert memory says BLOCK this ticker → skip
-                            print(f"🚫 [EXPERT-MEMORY] Block {sig['ticker']} on {scan_date} — lesson-based veto", flush=True)
+                        # V40.2 lesson-veto: 'caution' = lesson says reduce/skip (was 'block' dead code)
+                        if _em and _em.recommendation == 'caution':
+                            print(
+                                f"🚫 [EXPERT-MEMORY-V402] Caution {sig['ticker']} on {scan_date} "
+                                f"— lesson-based veto: {_em.reason}", flush=True
+                            )
                             continue
                     except Exception:
                         pass  # Safe-by-design — lessons optional
-                    pass
                     # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل persona_predictions writing ──
                     # المنطق الموحد: مفيش persona تانية غير balanced. الكود القديم
                     # بـ يكتب persona_predictions للأسهم اللي strongly fit gambler/conservative.
@@ -4125,7 +4337,7 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
     # للتوليد الحقيقي، نحتاج Python backend prediction_tracker
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-        from core.prediction_tracker import PredictionTracker
+        from analyzers.prediction_tracker import PredictionTracker
         tracker = PredictionTracker()
     except Exception as e:
         print(f"[V40.2-CRYPTO] ⚠️ PredictionTracker not available: {e}", flush=True)

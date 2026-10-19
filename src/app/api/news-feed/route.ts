@@ -128,14 +128,20 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
     const predPath = getPredictionsDbPath();
     if (fs.existsSync(predPath)) {
       const db = new Database(predPath, { readonly: true, timeout: 3000 });
-      const rows = db.prepare(`
+      // RESTRUCT-TEST-FIX-1: guard against missing news_signals table (schema varies).
+      const hasNewsSignals = (
+        db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='news_signals'").get() as
+          | { name: string }
+          | undefined
+      )?.name === 'news_signals';
+      if (hasNewsSignals) {
+        const rows = db.prepare(`
         SELECT id, title, body, source, url, published_at, tickers,
                importance, sentiment, impact_type, summary_ar, reasoning, received_at
         FROM news_signals
         ORDER BY COALESCE(importance, 0) DESC, received_at DESC
         LIMIT ?
       `).all(limit) as any[];
-      db.close();
 
       for (const row of rows) {
         const hasValidReasoning = Boolean(
@@ -165,6 +171,8 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
           published_at: row.published_at || undefined,
         });
       }
+      } // else: news_signals table absent — skip silently (not a crash).
+      db.close();
     }
   } catch (e) {
     console.warn('[news-feed] predictions.db news_signals fetch failed:', e);

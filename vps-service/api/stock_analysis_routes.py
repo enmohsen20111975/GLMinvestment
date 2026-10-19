@@ -60,7 +60,8 @@ except Exception as _e:
     # نعرف fallbacks عشان الـ endpoint ما يقعش لو hunting_engine فشل
     STOCKS_DB = str(_vps_root.parent / 'db' / 'stocks.db')
     PRICE_HISTORY_DB = str(_vps_root.parent / 'db' / 'price_history.db')
-    NEWS_DB = str(_vps_root.parent / 'db' / 'stocks.db')  # Consolidated July 2026
+    # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+    NEWS_DB = str(_vps_root.parent / 'db' / 'news.db')
     PREDICTIONS_DB = str(_vps_root.parent / 'db' / 'predictions.db')
 
 # ── Board of Analysts Integration ─────────────────────────────────────────

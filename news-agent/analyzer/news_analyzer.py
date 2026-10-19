@@ -48,6 +48,17 @@ except Exception as _e:
     def enrich_news_with_deepseek(title: str, content: str = '', tickers: list = None) -> dict:
         return {}
 
+# Task NEWS-TICKER-EXTRACTION-1: ticker_extractor جديد يعتمد على stocks.db كـ canonical
+# dictionary + multi-tier matching (ticker / full-name / partial-root) مع Arabic normalization.
+# بيعمل union مع tickers اللي AI (Ollama) بيرجّعها + validation على EGX tickers الحقيقية.
+try:
+    from analyzer.ticker_extractor import extract_tickers as _extract_tickers_v2
+    from analyzer.ticker_extractor import merge_tickers as _merge_tickers_v2
+    _TICKER_EXTRACTOR_V2_OK = True
+except Exception as _tk_imp_err:
+    log.warning('تعذر استيراد ticker_extractor (NEWS-TICKER-EXTRACTION-1): %s', _tk_imp_err)
+    _TICKER_EXTRACTOR_V2_OK = False
+
 TICKER_HINTS = {}
 try:
     if GLM_VPS is None:
@@ -259,8 +270,27 @@ class NewsAnalyzer:
         if len(clean_text.strip()) < 20:
             is_spam = True
 
-        # 4. استخراج tickers بدقة تامة اعتماداً على القاموس المعتمد
-        tickers = _extract_tickers_enhanced(original_text, clean_text, text_lower)
+        # 4. استخراج tickers — Task NEWS-TICKER-EXTRACTION-1
+        #    union من tickers الـ AI (Ollama) + ticker_extractor الجديد (stocks.db canonical).
+        #    - لو الـ AI رجّع tickers → نستخدمهم (بعد validation على stocks.db).
+        #    - لو لأ → نستخدم الـ extractor.
+        #    - لو الاتنين رجّعوا → union (validated + capped at 5).
+        #    - fallback على الـ legacy extractor لو الـ module الجديد مش متاح.
+        ai_tickers = ai_meta.get('tickers') or []
+        if isinstance(ai_tickers, str):
+            try:
+                ai_tickers = json.loads(ai_tickers)
+            except Exception:
+                ai_tickers = []
+        if _TICKER_EXTRACTOR_V2_OK:
+            try:
+                extractor_tickers = _extract_tickers_v2(f"{original_text}\n{clean_text}")
+                tickers = _merge_tickers_v2(ai_tickers, extractor_tickers)
+            except Exception as _tk_err:
+                log.warning('ticker_extractor v2 failed, fallback to legacy: %s', _tk_err)
+                tickers = _extract_tickers_enhanced(original_text, clean_text, text_lower)
+        else:
+            tickers = _extract_tickers_enhanced(original_text, clean_text, text_lower)
 
         # 5. حساب الأهمية
         importance = 20  # قاعدة أعلى للأخبار المالية

@@ -307,20 +307,21 @@ def is_radar_strong_accumulation(ticker: str, market: str = 'EGX') -> bool:
     RADAR-HARD-GATE (2026-10-07 — owner directive):
     "الرادار ده المفروض يكون من الحاجات المهمة جداً"
 
-    STRICTER من is_radar_confirmed_accumulation — بـ تقبل بس:
-      - A_pre_surge (قبل الانفجار السعري — أقوى إشارة)
-      - B_quiet_accumulation_strong (تجميع قوي هادئ — 5+ إشارات)
+    BRAVO RADAR-ADVANCED (2026-10-19): تحديث لـ يدعم الـ Phase/Bucket الجديد
+    بالإضافة لـ‏ paths القديمة (backward compat).
 
-    وترفض صراحةً:
-      - C_quiet_accumulation_weak (4 إشارات بس — أضعف من أن يكون hard gate)
-      - D_explosive_surge (انفجار سيولة — ممكن يكون false signal لوحده)
-      - E_early_break (كسر مبكر — false signal موثَّق في audit)
+    بـ تقبل:
+      OLD: A_pre_surge / B_quiet_accumulation_strong
+      NEW: phase IN ('تراكم مع اتجاه', 'تراكم هادئ')
+           OR liquidity_bucket IN ('strong_whale_inflow', 'moderate_inflow')
 
-    ده الـ HARD GATE الأساسي للـ prediction pipeline: لو السهم مش في A أو B
-    → مفيش توقع أصلاً (مش بس score boost أو bypass).
+    بيرفض:
+      OLD: C/D/E
+      NEW: phase IN ('تصريف', 'محايد')
+           OR liquidity_bucket = 'whale_outflow'
 
     Returns:
-        bool: True لو السهم في A_pre_surge أو B_quiet_accumulation_strong فقط
+        bool: True لو السهم مؤكد تجميع (old path OR new phase/bucket)
     """
     global _maker_radar_cache, _ticker_path_cache
 
@@ -328,11 +329,32 @@ def is_radar_strong_accumulation(ticker: str, market: str = 'EGX') -> bool:
         _maker_radar_cache = _load_maker_radar(market)
         _ticker_path_cache = None
 
+    ticker_upper = ticker.upper().strip()
+
+    # ── OLD: check maker_radar paths (backward compat) ──
     path_map = _build_ticker_path_map()
-    path = path_map.get(ticker.upper().strip(), '')
-    return path in {'A_pre_surge', 'B_quiet_accumulation_strong'}
+    path = path_map.get(ticker_upper, '')
+    if path in {'A_pre_surge', 'B_quiet_accumulation_strong'}:
+        return True
 
+    # ── NEW: check phase + liquidity_bucket from scan_market output ──
+    stocks = _maker_radar_cache.get('stocks', [])
+    if not stocks:
+        stocks = _maker_radar_cache.get('under_microscope', [])
 
+    for stock in stocks:
+        if isinstance(stock, dict) and str(stock.get('ticker', '')).upper().strip() == ticker_upper:
+            phase = str(stock.get('phase', '')).strip()
+            bucket = str(stock.get('liquidity_bucket', '')).strip()
+            if phase in ('تراكم مع اتجاه', 'تراكم هادئ'):
+                return True
+            if bucket in ('strong_whale_inflow', 'moderate_inflow'):
+                return True
+            if phase in ('تصريف',) or bucket in ('whale_outflow',):
+                return False
+            break
+
+    return False
 def get_radar_state(ticker: str, market: str = 'EGX') -> Optional[str]:
     """
     RADAR-HARD-GATE helper: بـ يرجع اسم الـ radar state للسهم.

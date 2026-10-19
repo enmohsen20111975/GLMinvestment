@@ -306,25 +306,30 @@ class DatabaseManager:
     # ==================== News ====================
 
     def save_news(self, news_data: Dict) -> int:
-        """حفظ خبر"""
+        """حفظ خبر تليجرام في stocks.db.telegram_news (schema A).
+
+        DATA-ENGINE-UNIFY-1 / Telegram Phase 1: fixed phantom INSERT.
+        Previously tried to INSERT into non-existent columns (message_id,
+        channel_id, content, importance, symbols_mentioned, original_text).
+        Now uses the actual schema: title, summary, sentiment, symbols,
+        raw_text, channel_name, market, date.
+        """
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO telegram_news
-                (message_id, channel_id, channel_name, title, content, market,
-                 sentiment, importance, symbols_mentioned, original_text)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (title, summary, sentiment, symbols, raw_text,
+                 channel_name, market, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                news_data.get('message_id'),
-                news_data.get('channel_id'),
-                news_data.get('channel_name'),
-                news_data.get('title'),
-                news_data.get('content'),
-                news_data.get('market', 'general'),
+                news_data.get('title', ''),
+                news_data.get('summary', news_data.get('content', '')),
                 news_data.get('sentiment', 'neutral'),
-                news_data.get('importance', 1),
-                json.dumps(news_data.get('symbols_mentioned', [])),
-                news_data.get('original_text')
+                news_data.get('symbols', news_data.get('symbols_mentioned', '')),
+                news_data.get('raw_text', news_data.get('original_text', '')),
+                news_data.get('channel_name', ''),
+                news_data.get('market', 'EGX'),
+                news_data.get('date', datetime.now().isoformat()),
             ))
             conn.commit()
             return cursor.lastrowid

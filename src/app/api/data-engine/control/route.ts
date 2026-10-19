@@ -38,7 +38,7 @@ let fallbackState = {
   logs: [] as string[],
   errors: [] as string[],
   active_jobs: [] as string[],
-  historical_progress: null as Record<string, unknown>
+  historical_progress: null as unknown as Record<string, unknown>
 };
 
 // Check if Flask server is running
@@ -59,7 +59,7 @@ async function checkFlaskServer(): Promise<boolean> {
 }
 
 // Call Flask API
-async function callFlaskAPI(endpoint: string, method: string = 'GET'): Promise<Record<string, unknown>> {
+async function callFlaskAPI(endpoint: string, method: string = 'GET'): Promise<Record<string, unknown> | null> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -72,7 +72,7 @@ async function callFlaskAPI(endpoint: string, method: string = 'GET'): Promise<R
     
     clearTimeout(timeoutId);
     return await res.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -115,11 +115,11 @@ function loadHistoricalStatus() {
 // Get all database stats
 function getAllDbStats() {
   const stats: Record<string, unknown> = {
-    data_engine: { stocks: 0, crypto: 0, gold: 0, silver: 0, forex: 0 },
-    stocks_db: { stocks: 0, daily_prices: 0 },
-    historical: { records: 0, symbols: 0, categories: [] },
+    data_engine: { stocks: 0, crypto: 0, gold: 0, silver: 0, forex: 0 } as Record<string, number>,
+    stocks_db: { stocks: 0, daily_prices: 0 } as Record<string, number>,
+    historical: { records: 0, symbols: 0, categories: [] } as Record<string, unknown>,
     news: 0,
-    by_market: {}
+    by_market: {} as Record<string, number>
   };
 
   // Data engine DB
@@ -129,34 +129,34 @@ function getAllDbStats() {
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
-      stats.data_engine.stocks = result?.count || 0;
+      (stats.data_engine as Record<string, number>).stocks = result?.count || 0;
     } catch {}
     
     try {
       const marketRows = db.prepare('SELECT market, COUNT(*) as count FROM stocks GROUP BY market').all() as { market: string; count: number }[];
       for (const row of marketRows) {
-        stats.by_market[row.market] = row.count;
+        (stats.by_market as Record<string, number>)[row.market] = row.count;
       }
     } catch {}
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM crypto_prices').get() as { count: number };
-      stats.data_engine.crypto = result?.count || 0;
+      (stats.data_engine as Record<string, number>).crypto = result?.count || 0;
     } catch {}
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM gold_prices').get() as { count: number };
-      stats.data_engine.gold = result?.count || 0;
+      (stats.data_engine as Record<string, number>).gold = result?.count || 0;
     } catch {}
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM silver_prices').get() as { count: number };
-      stats.data_engine.silver = result?.count || 0;
+      (stats.data_engine as Record<string, number>).silver = result?.count || 0;
     } catch {}
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM exchange_rates').get() as { count: number };
-      stats.data_engine.forex = result?.count || 0;
+      (stats.data_engine as Record<string, number>).forex = result?.count || 0;
     } catch {}
     
     db.close();
@@ -171,12 +171,12 @@ function getAllDbStats() {
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
-      stats.stocks_db.stocks = result?.count || 0;
+      (stats.stocks_db as Record<string, number>).stocks = result?.count || 0;
     } catch {}
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM stock_daily_prices').get() as { count: number };
-      stats.stocks_db.daily_prices = result?.count || 0;
+      (stats.stocks_db as Record<string, number>).daily_prices = result?.count || 0;
     } catch {}
     
     db.close();
@@ -189,12 +189,12 @@ function getAllDbStats() {
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM historical_prices').get() as { count: number };
-      stats.historical.records = result?.count || 0;
+      (stats.historical as Record<string, unknown>).records = result?.count || 0;
     } catch {}
     
     try {
       const result = db.prepare('SELECT COUNT(DISTINCT symbol) as count FROM historical_prices').get() as { count: number };
-      stats.historical.symbols = result?.count || 0;
+      (stats.historical as Record<string, unknown>).symbols = result?.count || 0;
     } catch {}
     
     try {
@@ -202,7 +202,7 @@ function getAllDbStats() {
         SELECT category, COUNT(DISTINCT symbol) as symbols, COUNT(*) as records
         FROM historical_prices GROUP BY category
       `).all() as { category: string; symbols: number; records: number }[];
-      stats.historical.categories = rows;
+      (stats.historical as Record<string, unknown>).categories = rows;
     } catch {}
     
     db.close();
@@ -249,13 +249,14 @@ async function runScraper(scraperName: string): Promise<{ success: boolean; mess
       cwd: scrapersDir,
       timeout: 600000,
       maxBuffer: 1024 * 1024 * 10
-    }, (error: Record<string, unknown>, stdout: string, stderr: string) => {
+    }, (error: unknown, stdout: string, stderr: string) => {
       const ts = new Date().toLocaleTimeString('en-GB');
+      const errMsg = error instanceof Error ? error.message : String(error);
       if (error) {
-        fallbackState.logs.push(`[${ts}] ❌ ${scraperName} error: ${error.message.slice(0, 100)}`);
-        fallbackState.errors.push(`[${ts}] ${scraperName}: ${error.message.slice(0, 100)}`);
+        fallbackState.logs.push(`[${ts}] ❌ ${scraperName} error: ${errMsg.slice(0, 100)}`);
+        fallbackState.errors.push(`[${ts}] ${scraperName}: ${errMsg.slice(0, 100)}`);
         saveStatus();
-        resolve({ success: false, message: `Error: ${error.message}` });
+        resolve({ success: false, message: `Error: ${errMsg}` });
       } else {
         fallbackState.logs.push(`[${ts}] ✅ ${scraperName} completed successfully`);
         // Update timestamp
@@ -281,12 +282,13 @@ async function runSync(): Promise<{ success: boolean; message: string }> {
   return new Promise((resolve) => {
     exec(`python3 "${syncScript}"`, {
       timeout: 120000
-    }, (error: Record<string, unknown>, stdout: string, stderr: string) => {
+    }, (error: unknown, stdout: string, stderr: string) => {
       const ts = new Date().toLocaleTimeString('en-GB');
+      const errMsg = error instanceof Error ? error.message : String(error);
       if (error) {
-        fallbackState.logs.push(`[${ts}] ❌ Sync error: ${error.message.slice(0, 100)}`);
+        fallbackState.logs.push(`[${ts}] ❌ Sync error: ${errMsg.slice(0, 100)}`);
         saveStatus();
-        resolve({ success: false, message: `Error: ${error.message}` });
+        resolve({ success: false, message: `Error: ${errMsg}` });
       } else {
         fallbackState.logs.push(`[${ts}] ✅ Sync completed`);
         fallbackState.last_sync = new Date().toISOString();
@@ -311,7 +313,7 @@ export async function GET(request: NextRequest) {
       const flaskStatus = await callFlaskAPI('/status');
       if (flaskStatus?.success) {
         source = 'Flask Server (Live)';
-        engineData = { ...engineData, ...flaskStatus.engine };
+        engineData = { ...engineData, ...(flaskStatus.engine as Record<string, unknown>) };
       }
     } else {
       // Load from file
@@ -321,6 +323,9 @@ export async function GET(request: NextRequest) {
     
     const dbStats = getAllDbStats();
     const historicalStatus = loadHistoricalStatus();
+    const deStats = dbStats.data_engine as Record<string, number>;
+    const sdbStats = dbStats.stocks_db as Record<string, number>;
+    const histStats = dbStats.historical as Record<string, unknown>;
     
     return NextResponse.json({
       success: true,
@@ -328,26 +333,26 @@ export async function GET(request: NextRequest) {
       flask_running: flaskRunning,
       engine: {
         ...engineData,
-        historical_progress: historicalStatus?.progress || null
+        historical_progress: (historicalStatus as Record<string, unknown> | null)?.progress || null
       },
       db_stats: dbStats,
       historical_status: historicalStatus,
       counts: {
-        stocks: dbStats.data_engine.stocks,
-        crypto: dbStats.data_engine.crypto,
-        gold: dbStats.data_engine.gold,
-        silver: dbStats.data_engine.silver,
-        forex: dbStats.data_engine.forex,
+        stocks: deStats.stocks,
+        crypto: deStats.crypto,
+        gold: deStats.gold,
+        silver: deStats.silver,
+        forex: deStats.forex,
         news: dbStats.news,
-        historical_records: dbStats.historical.records,
-        historical_symbols: dbStats.historical.symbols,
-        daily_prices: dbStats.stocks_db.daily_prices
+        historical_records: histStats.records as number,
+        historical_symbols: histStats.symbols as number,
+        daily_prices: sdbStats.daily_prices
       },
       by_market: dbStats.by_market,
-      historical_categories: dbStats.historical.categories,
+      historical_categories: histStats.categories,
       timestamp: new Date().toISOString()
     });
-  } catch (error: Record<string, unknown>) {
+  } catch (error: unknown) {
     console.error('[data-engine:control]', error);
     return NextResponse.json({
       success: false,
@@ -454,7 +459,7 @@ export async function POST(request: NextRequest) {
         console.error('[data-engine:control] unknown action:', action);
         return NextResponse.json({ success: false, error: `Unknown action: ${action}` }, { status: 400 });
     }
-  } catch (error: Record<string, unknown>) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
   }
 }

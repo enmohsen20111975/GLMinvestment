@@ -6,12 +6,12 @@
  */
 
 export const OFFICIAL_LINKS = {
-  website: 'https://invist.m2y.net',
-  android: 'https://play.google.com/store/apps/details?id=com.egx.investment',
-  facebook: 'https://www.facebook.com/profile.php?id=61590600300048',
-  telegram: 'https://t.me/Arabian_investment_guide',
-  whatsapp: 'https://chat.whatsapp.com/L9hjEpJloAZAUvwMzB10Tc',
-  bot: 'https://t.me/investusernamebot', // بوت التحليل الذكي للأسهم
+ website: 'https://invist.m2y.net',
+ android: 'https://play.google.com/store/apps/details?id=com.egx.investment',
+ facebook: 'https://www.facebook.com/profile.php?id=61590600300048',
+ telegram: 'https://t.me/Arabian_investment_guide',
+ whatsapp: 'https://chat.whatsapp.com/L9hjEpJloAZAUvwMzB10Tc',
+ bot: 'https://t.me/investusernamebot', // بوت التحليل الذكي للأسهم
 };
 
 /**
@@ -48,5 +48,5 @@ export const OFFICIAL_LINKS_SHORT = `🔗 ${OFFICIAL_LINKS.website} | 🤖 ${OFF
  * دالة مساعدة: إضافة بلوك الروابط لأي نص
  */
 export function withOfficialLinks(text: string): string {
-  return `${text}${OFFICIAL_LINKS_BLOCK}`;
+ return `${text}${OFFICIAL_LINKS_BLOCK}`;
 }

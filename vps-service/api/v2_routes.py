@@ -2003,41 +2003,50 @@ def v2_recommend():
             target_price_v = float(d.get('target_price') or 0)
             stop_loss_v = float(d.get('stop_loss') or 0)
 
-            # ضمان منطقية الأهداف (نفس منطق /api/unified/predictions)
+            # BRAVO-RADAR-PRED-AUDIT-001 Fix 1 (Rule 27 NO-FAKE-DATA + Rule 8 ATR):
+            # اتمسح fabrication القديمة (entry×0.92 / entry×1.10 / entry×1.15).
+            # القاعدة: entry/stop/target بيتقرأ من predictions.db (V40.2 source).
+            # لو مفيش prediction نشط → null (مش مفبرك). سياسة الفراغ Rule 27.
+            # ممنوع stop بنسبة ثابتة — لازم ATR canonical [5%, 9%] (Rule 8).
             if entry_price_v > 0:
                 if target_price_v <= entry_price_v:
-                    target_price_v = round(entry_price_v * 1.10, 2)
+                    target_price_v = 0.0  # NULL — لا fabrication
                 if stop_loss_v == 0 or stop_loss_v >= entry_price_v:
-                    stop_loss_v = round(entry_price_v * 0.92, 2)
+                    stop_loss_v = 0.0  # NULL — لا fabrication (كان entry×0.92 = -8% ثابت)
 
             # فحص حي ومباشر للأهداف ووقف الخسارة إذا كان السعر الحي متحركاً
             if current_price > 0 and entry_price_v > 0:
                 if signal_norm in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
-                    if current_price >= target_price_v and target_price_v > entry_price_v:
+                    if target_price_v > 0 and current_price >= target_price_v and target_price_v > entry_price_v:
                         signal_norm = 'TARGET_REACHED'
                         signal_ar_norm = '🎯 تم تحقيق الهدف'
-                    elif current_price <= stop_loss_v and stop_loss_v < entry_price_v:
+                    elif stop_loss_v > 0 and current_price <= stop_loss_v and stop_loss_v < entry_price_v:
                         signal_norm = 'STOP_LOSS_BROKEN'
                         signal_ar_norm = '🚨 ضرب وقف الخسارة'
 
-            # أهداف إضافية (للـ copy/share في SimpleRecommendationsView)
-            target_price_2_v = round(entry_price_v * 1.10, 2) if entry_price_v > 0 else 0
-            investment_target_v = round(entry_price_v * 1.15, 2) if entry_price_v > 0 else 0
-            support_level_v = stop_loss_v
+            # أهداف إضافية — NULL لو مفيش prediction (لا fabrication بنسب ثابتة)
+            target_price_2_v = 0.0
+            investment_target_v = 0.0
+            support_level_v = stop_loss_v if stop_loss_v > 0 else 0.0
 
-            # R/R ratio (موجب)
-            risk_amt = entry_price_v - stop_loss_v
-            reward_amt = target_price_v - entry_price_v
+            # R/R ratio — محسوب من القيم الحقيقية، fallback لـ 0.0 (مش 2.0 ثابت)
+            risk_amt = entry_price_v - stop_loss_v if stop_loss_v > 0 else 0.0
+            reward_amt = target_price_v - entry_price_v if target_price_v > 0 else 0.0
             if risk_amt > 0 and reward_amt > 0:
                 risk_reward_ratio_v = round(reward_amt / risk_amt, 2)
                 # Rule 54: استخدم canonical compute_risk_reward
                 try:
                     from utils.risk_reward import compute_risk_reward
                     risk_reward_ratio_v = compute_risk_reward(entry_price_v, target_price_v, stop_loss_v, fallback=risk_reward_ratio_v)
-                except Exception:
-                    pass  # keep inline risk_reward_ratio_v computed above
+                except Exception as exc:
+                    # BRAVO-AUDIT: log بدل silent pass (ممنوع except: pass)
+                    import logging as _logging
+                    _logging.getLogger(__name__).warning(
+                        "compute_risk_reward failed entry=%s target=%s stop=%s: %s",
+                        entry_price_v, target_price_v, stop_loss_v, exc
+                    )
             else:
-                risk_reward_ratio_v = 2.0
+                risk_reward_ratio_v = 0.0  # NULL — لا fabrication (كان 2.0 ثابت)
 
             # change_percent من stocks.db (لو موجود)
             change_percent_v = float(si.get('change_percent') or si.get('change_1d') or 0)

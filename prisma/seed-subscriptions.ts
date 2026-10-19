@@ -14,7 +14,7 @@ async function main() {
       name_ar: 'مجانى',
       price: 0,
       price_yearly: 0,
-      trial_days: 0,
+      trial_days: 14, // RESTRUCT-A-P2.5: was 0 → 14 (CEO John: trial = 14 days canonical)
       features: JSON.stringify([
         'بيانات السوق الأساسية',
         '5 أسهم في قائمة المراقبة',

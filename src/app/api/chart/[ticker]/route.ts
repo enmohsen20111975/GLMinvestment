@@ -409,7 +409,7 @@ function getLocalDailyData(
                COALESCE(volume, 0) as volume,
                source
         FROM price_history
-        WHERE ticker = ?
+        WHERE ticker = ? AND close_price > 0 AND close_price IS NOT NULL
         ORDER BY date DESC
         LIMIT ?
       `).all(ticker, limit) as any[];
@@ -519,7 +519,7 @@ function getLocalDailyData(
                COALESCE(close, close_price) as close,
                COALESCE(volume, 0) as volume
         FROM stock_daily_prices
-        WHERE ticker = ?
+        WHERE ticker = ? AND COALESCE(close, close_price) > 0 AND COALESCE(close, close_price) IS NOT NULL
         ORDER BY price_date DESC
         LIMIT ?
       `).all(ticker, limit) as any[];

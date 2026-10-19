@@ -37,9 +37,31 @@ class NewsStopFilterResult:
 
 # ==================== DATABASE FUNCTIONS ====================
 
+# DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+# market_news lives in news.db (1019 rows). Was reading a legacy table in stocks.db (0 rows).
+try:
+    from utils.db_paths import DBPaths as _DBPaths
+    _CANONICAL_NEWS_DB = _DBPaths.NEWS_DB
+except Exception:
+    import os as _os
+    _CANONICAL_NEWS_DB = str(_os.path.join(
+        _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))),
+        'db', 'news.db'))
+
+
+def _resolve_news_db(db_path: str) -> str:
+    """ارجع المسار الكنسي لـ news.db (DBPaths.NEWS_DB).
+
+    الـ db_path اللي بيت PASS من الـ callers بيتجاهل عمدًا لأن market_news موجودة
+    فقط في news.db (stocks.db عندها جدول أخبار قديم فاضي). ده بيحافظ على الـ signature
+    مع ضمان إن القراءة دايماً من المصدر الكنسي.
+    """
+    return _CANONICAL_NEWS_DB
+
+
 def get_db_connection(db_path: str):
-    """الحصول على اتصال قاعدة البيانات"""
-    conn = sqlite3.connect(db_path)
+    """الحصول على اتصال قاعدة البيانات (يفتح دايماً news.db الكنسي)."""
+    conn = sqlite3.connect(_resolve_news_db(db_path))
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -68,19 +90,21 @@ def check_news_stop_filter(
         
         start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
         
-        # جلب أخبار السهم
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        # جلب أخبار السهم (tickers column = JSON array، فلترة بـ LIKE)
         cursor.execute('''
-            SELECT * FROM news_items 
-            WHERE ticker = ? AND published_at >= ?
+            SELECT * FROM market_news
+            WHERE tickers LIKE ? AND published_at >= ?
             ORDER BY published_at DESC
             LIMIT 5
-        ''', (ticker.upper(), start_date))
-        stock_news = cursor.fetchall()
+        ''', (f'%"{ticker.upper()}"%', start_date))
+        recent_news = cursor.fetchall()
         
-        # جلب أخبار CBE (market-wide)
+        # جلب أخبار CBE (market-wide) — كشف بالمحتوى (مفيش عمود category='cbe')
         cursor.execute('''
-            SELECT * FROM news_items 
-            WHERE category = 'cbe' AND published_at >= ?
+            SELECT * FROM market_news
+            WHERE (content LIKE '%بنك مركزي%' OR content LIKE '%CBE%')
+              AND published_at >= ?
             ORDER BY published_at DESC
             LIMIT 3
         ''', (start_date,))
@@ -88,9 +112,9 @@ def check_news_stop_filter(
         
         conn.close()
         
-        has_news = len(stock_news) > 0
+        has_news = len(recent_news) > 0
         has_cbe_news = len(cbe_news) > 0
-        news_count = len(stock_news)
+        news_count = len(recent_news)
         
         # تحديد القرار
         if has_cbe_news:
@@ -114,7 +138,7 @@ def check_news_stop_filter(
                 reason=f'{news_count} news item(s) in last 24h - volatility expected',
                 reason_ar=f'{news_count} خبر في آخر 24 ساعة - توقع تقلب',
                 risk_level='medium',
-                latest_news_date=stock_news[0]['published_at'] if stock_news else None
+                latest_news_date=recent_news[0]['published_at'] if recent_news else None
             )
         
         # مفيش أخبار - عادي
@@ -157,9 +181,12 @@ def has_recent_cbe_news(db_path: str, days_back: int = 1) -> bool:
         # Phase 2: بيفحص كمان أخبار مجدولة في الـ 24 ساعة الجاية
         end_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
         
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        # CBE news veto — كشف بالمحتوى (مفيش عمود category='cbe' في market_news)
         cursor.execute('''
-            SELECT COUNT(*) as count FROM news_items 
-            WHERE category = 'cbe' AND published_at >= ? AND published_at <= ?
+            SELECT COUNT(*) as count FROM market_news
+            WHERE (content LIKE '%بنك مركزي%' OR content LIKE '%CBE%')
+              AND published_at >= ? AND published_at <= ?
         ''', (start_date, end_date))
         
         result = cursor.fetchone()

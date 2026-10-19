@@ -45,16 +45,19 @@ sys.path.insert(0, str(_PROJECT_ROOT / 'vps-service'))
 STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
 PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
 DATA_ENGINE_DB = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
-NEWS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')  # Consolidated July 2026
+# DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+# Was stocks.db (phantom — no market_news table there). market_news lives in news.db.
+NEWS_DB = str(_PROJECT_ROOT / 'db' / 'news.db')
 PREDICTIONS_DB = str(_PROJECT_ROOT / 'db' / 'predictions.db')
 
 # استيراد دوال maestro بدون ما نلمس الكود القديم
 try:
-    from analyzers.maestro_orchestrator import (
-        gather_context, calculate_personas, generate_narrative,
-        MaestroHumanContext, MaestroPersonas, MaestroNarrative,
-    )
-    MAESTRO_AVAILABLE = True
+    # BRAVO-FIX (2026-10-19): maestro_orchestrator.py removed (MAESTRO-CANCER-1)
+    # from analyzers.maestro_orchestrator import (
+    #     gather_context, calculate_personas, generate_narrative,
+    #     MaestroHumanContext, MaestroPersonas, MaestroNarrative,
+    # )
+    MAESTRO_AVAILABLE = False  # was True — maestro removed
 except Exception as _e:
     MAESTRO_AVAILABLE = False
     _MAESTRO_IMPORT_ERROR = str(_e)
@@ -1063,7 +1066,8 @@ def stage3_boss_pick(tickers_list: List[Dict[str, Any]], market: str = 'EGX') ->
 
         # نبني MaestroHumanContext يدوي
         try:
-            from analyzers.maestro_orchestrator import MaestroHumanContext
+            # BRAVO-FIX (2026-10-19): maestro_orchestrator.py removed (MAESTRO-CANCER-1)
+            # from analyzers.maestro_orchestrator import MaestroHumanContext
             context = MaestroHumanContext(
                 time_context=time_context,
                 sector_context=sector_context,

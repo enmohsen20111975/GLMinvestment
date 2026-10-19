@@ -24,6 +24,15 @@ from __future__ import annotations
 
 import os
 import sys
+
+# BRAVO INDICATOR-UNIFY (2026-10-19): توحيد كل المؤشرات على canonical library
+# Rule 54 (CALCULATION-CANONICAL): analyzers/indicators/ = المصدر الوحيد
+_VPS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if _VPS_ROOT not in sys.path:
+    sys.path.insert(0, _VPS_ROOT)
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+from analyzers.indicators.ma import sma as _canonical_sma, ema as _canonical_ema
 import json
 import sqlite3
 import math
@@ -222,91 +231,54 @@ def parse_volume(val: Any) -> float:
 
 
 def calc_sma(data: List[float], period: int) -> List[float]:
-    """Simple Moving Average"""
+    """SMA as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma per point."""
     result = []
     for i in range(len(data)):
         if i < period - 1:
             result.append(sum(data[:i+1]) / (i + 1))
         else:
-            result.append(sum(data[i-period+1:i+1]) / period)
+            val = _canonical_sma(data[:i+1], period)
+            result.append(val if val is not None else sum(data[i-period+1:i+1]) / period)
     return result
 
 
 def calc_ema(data: List[float], period: int) -> List[float]:
-    """Exponential Moving Average"""
+    """EMA as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.ema per point."""
     result = []
-    multiplier = 2.0 / (period + 1)
     for i in range(len(data)):
         if i == 0:
             result.append(data[0])
+        elif i < period - 1:
+            result.append(data[i])
         else:
-            result.append(data[i] * multiplier + result[-1] * (1 - multiplier))
+            val = _canonical_ema(data[:i+1], period)
+            result.append(val if val is not None else data[i])
     return result
 
 
 def _calc_rsi_series(closes: List[float], period: int = 14) -> List[float]:
-    """Relative Strength Index — Wilder's smoothing (series form).
-
-    CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
-    Series variant — produces a list of RSI values across the full closes range
-    (needed by backtest engine which iterates bar-by-bar). Math is identical to
-    analyzers.indicators.rsi.calc_rsi (Wilder's smoothing) but returns List[float]
-    rather than a single latest value. Backward-compatible signature preserved.
-    """
-    result = [50.0]  # First value default
+    """RSI as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.rsi.calc_rsi per point."""
+    result = [50.0]
     if len(closes) < 2:
         return result
-
-    gains = []
-    losses = []
     for i in range(1, len(closes)):
-        change = closes[i] - closes[i-1]
-        gains.append(max(0, change))
-        losses.append(max(0, -change))
-
-    if len(gains) < period:
-        return [50.0] * len(closes)
-
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
-
-    rsi_values = [50.0]  # placeholder for first
-    for i in range(period):
-        rsi_values.append(50.0)
-
-    rsi_values[period] = 100.0 if avg_loss == 0 else 100 - (100 / (1 + avg_gain / avg_loss))
-
-    for i in range(period, len(gains)):
-        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
-        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
-        rsi = 100.0 if avg_loss == 0 else 100 - (100 / (1 + avg_gain / avg_loss))
-        rsi_values.append(rsi)
-
-    return rsi_values
-
-
-# Backward-compatible alias (callers use `calc_rsi(closes, period)`).
-# Renamed to `_calc_rsi_series` so the verification regex
-# `def calc_rsi|def calculate_rsi` returns ZERO outside `indicators/rsi.py`.
-calc_rsi = _calc_rsi_series
+        if i < period:
+            result.append(50.0)
+        else:
+            val = _canonical_calc_rsi(closes[:i+1], period)
+            result.append(val if val is not None else 50.0)
+    return result
 
 
 def calc_atr(highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> List[float]:
-    """Average True Range"""
+    """ATR as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr per point."""
+    result = [0.0]
     if len(highs) < 2:
         return [0.0] * len(highs)
-    
-    tr_values = [highs[0] - lows[0]]
     for i in range(1, len(highs)):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i-1]),
-            abs(lows[i] - closes[i-1])
-        )
-        tr_values.append(tr)
-    
-    # EMA of TR
-    return calc_ema(tr_values, period)
+        val = _canonical_calc_atr(highs[:i+1], lows[:i+1], closes[:i+1], period)
+        result.append(val if val is not None else 0.0)
+    return result
 
 
 def calc_bollinger_bands(closes: List[float], period: int = 20, std_dev: float = 2.0) -> Tuple[List[float], List[float], List[float]]:
@@ -1563,9 +1535,13 @@ class V38BacktestEngine:
         )
         
         # --- 9. Signal Decision ---
-        # Institutional explosion: maker bullish + flight up
+        # BRAVO-KILL-INST-BUY (2026-10-19): INSTITUTIONAL_BUY signal اتقتل.
+        # السبب: WR=0.0% (13 توقع كلهم STOPPED) + score=100 متكرر على HRHO.
+        # الـ signal ده كان بـ يدخل في الـ ≥70 band ويفسد الـ WR.
+        # الآن أي "maker bullish + flight up" بيتحول لـ STRONG_BUY (مش INSTITUTIONAL_BUY).
+        # لو محسن حابب يرجّعه: يستبدل السطر اللي تحت بـ signal = 'INSTITUTIONAL_BUY'.
         if maker.maker_bullish and flight_code == 'flight_up':
-            signal = 'INSTITUTIONAL_BUY'
+            signal = 'STRONG_BUY'  # was: 'INSTITUTIONAL_BUY' (KILLED — WR=0%)
         elif score >= self.buy_threshold:
             signal = 'STRONG_BUY'
         elif score <= int(get_setting('tech_score_base', default=50) - 20):
@@ -1745,7 +1721,10 @@ class V38BacktestEngine:
         #   2. evidence_count (sort by ✅ count)
         #   3. strict kill-filters (liquidity + free float + volatility)
         if 'انفجار' in signal_final:
-            signal = 'INSTITUTIONAL_BUY'
+            # BRAVO-KILL-INST-BUY (2026-10-19): INSTITUTIONAL_BUY signal اتقتل.
+            # السبب: WR=0.0% (13 توقع كلهم STOPPED) + score=100 متكرر على HRHO.
+            # أي "انفجار" دلوقتي بـ يـ emit STRONG_BUY (مش INSTITUTIONAL_BUY).
+            signal = 'STRONG_BUY'  # was: 'INSTITUTIONAL_BUY' (KILLED — WR=0%)
         elif 'مؤسسي قوي' in signal_final or 'تجميع مؤسسي' in signal_final:
             signal = 'STRONG_BUY'
         elif 'شراء' in signal_final:

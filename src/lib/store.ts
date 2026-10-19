@@ -249,23 +249,26 @@ export function adaptMarketOverview(raw: Record<string, unknown>): MarketOvervie
       current_session: (marketStatus.current_session as string) || ((marketStatus.is_open as boolean) ? 'trading' : 'closed'),
     },
     summary: {
-      total_stocks: (summary.total_stocks as number) || 0,
-      gainers: (summary.gainers as number) || 0,
-      losers: (summary.losers as number) || 0,
-      unchanged: (summary.unchanged as number) || 0,
-      egx30_stocks: (summary.egx30_stocks as number) || 0,
-      egx70_stocks: (summary.egx70_stocks as number) || 0,
-      egx100_stocks: (summary.egx100_stocks as number) || 0,
-      egx30_value: (summary.egx30_value as number) || (summary.total_volume as number) || 0,
+      // ALPHA-UX-FIX-1: API fallback بيرجع advancing/declining مش gainers/losers.
+      // بنستخدم ?? (nullish) عشان 0 قيمة صحيحة (مفيش ارتفاع) — || كانت بتعملها 0 خطأً.
+      total_stocks: (summary.total_stocks ?? summary.total_stocks_in_market ?? 0) as number,
+      gainers: (summary.gainers ?? summary.advancing ?? 0) as number,
+      losers: (summary.losers ?? summary.declining ?? 0) as number,
+      unchanged: (summary.unchanged ?? 0) as number,
+      egx30_stocks: (summary.egx30_stocks ?? 0) as number,
+      egx70_stocks: (summary.egx70_stocks ?? 0) as number,
+      egx100_stocks: (summary.egx100_stocks ?? 0) as number,
+      egx30_value: (summary.egx30_value ?? summary.total_volume ?? 0) as number,
     },
     indices: indices.map((idx) => ({
       symbol: (idx.symbol as string) || (idx.name as string) || '',
       name: (idx.name as string) || '',
       name_ar: (idx.name_ar as string) || '',
-      value: (idx.value as number) || (idx.current_value as number) || 0,
-      previous_close: (idx.previous_close as number) || 0,
-      change: (idx.change as number) || 0,
-      change_percent: (idx.change_percent as number) || 0,
+      // ALPHA-UX-FIX-1: fallbacks إضافية لاسم حقل القيمة (last_price/price/close)
+      value: (idx.value ?? idx.current_value ?? idx.last_price ?? idx.price ?? idx.close ?? 0) as number,
+      previous_close: (idx.previous_close ?? 0) as number,
+      change: (idx.change ?? 0) as number,
+      change_percent: (idx.change_percent ?? 0) as number,
       last_updated: (idx.last_updated as string) || (idx.last_update as string) || null,
     })),
     top_gainers: topGainers.map((s) => ({
@@ -654,6 +657,9 @@ interface AppStore {
   selectedTicker: string | null;
   sidebarOpen: boolean;
   currentMarket: MarketType;
+  // ALPHA-CHART-TOGGLE-1: user chart preference (TradingView iframe vs InteractiveChart)
+  chartPreference: 'tradingview' | 'interactive';
+  setChartPreference: (pref: 'tradingview' | 'interactive') => void;
   setCurrentView: (view: AppView) => void;
   setCurrentViewFromHash: (view: AppView) => void;
   setSelectedTicker: (ticker: string | null) => void;
@@ -792,6 +798,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedTicker: null,
   sidebarOpen: false,
   currentMarket: hydrateFromStorage<MarketType>(CURRENT_MARKET_KEY, 'EGX'),
+  chartPreference: hydrateFromStorage<'tradingview' | 'interactive'>('chart-pref', 'interactive'),
+  setChartPreference: (pref) => {
+    set({ chartPreference: pref });
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('chart-pref', JSON.stringify(pref));
+      }
+    } catch { /* silent */ }
+  },
   setCurrentMarket: (market) => {
     set({ currentMarket: market });
     // persist to localStorage (survives page refresh)
@@ -1001,11 +1016,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     apiClient.getStocks(params as Parameters<typeof apiClient.getStocks>[0])
       .then((response: StockListResponse) => {
         // Filter out null/undefined items and items without ticker
-        const validStocks = (response.stocks || []).filter((s): s is Record<string, unknown> => s != null && (s as Record<string, unknown>).ticker);
+        const list = Array.isArray(response.stocks)
+          ? response.stocks
+          : Array.isArray((response as unknown as { data?: unknown[] })?.data)
+          ? ((response as unknown as { data: unknown[] }).data)
+          : Array.isArray((response as unknown as { data?: { stocks?: unknown[] } })?.data?.stocks)
+          ? ((response as unknown as { data: { stocks: unknown[] } }).data.stocks)
+          : [];
+        const validStocks = list.filter((s): s is Record<string, unknown> => s != null && typeof s === 'object' && Boolean((s as Record<string, unknown>).ticker));
         const stocks = validStocks.map((s) => adaptStock(s as unknown as Record<string, unknown>)).filter(s => s.ticker);
         set({
           stocks,
-          stocksTotal: response.total,
+          stocksTotal: response.total ?? stocks.length,
           stocksPage: page,
           isLoading: false,
         });

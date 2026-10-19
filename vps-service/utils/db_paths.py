@@ -115,10 +115,35 @@ class DBPaths:
     # Aliases for legacy code (توجّه للـ canonical source — updated P0-8-DB-UNIFY 2026-09-27)
     GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices — canonical: data_engine.db (187K rows). Dropped: stocks.db (3 stale rows).
     HISTORICAL_DB: str = DATA_ENGINE_DB   # historical_data (ticker format رقمي)
-    NEWS_DB: str = STOCKS_DB              # news still in stocks.db (target: content.db).
+    # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+    # Was STOCKS_DB (phantom — stocks.db has no market_news table, only an empty legacy table).
+    # news.db.market_news is the canonical source (1019 rows, written by news-agent db_writer).
+    NEWS_DB: str = _resolve("NEWS_DB", "news.db")
     COMMUNITY_DB: str = CONTENT_DB        # community tables in content.db
     ANALYTICS_DB: str = STOCKS_DB          # cached_analysis — canonical: stocks.db (143 rows). Dropped: predictions.db (0 rows, fallback-cache recreated by migrator).
     CRYPTO_LEARNING_DB: str = PREDICTIONS_DB  # crypto_learning tables in predictions.db
+
+    # ─── BRAVO DATA-LAYER-1: canonical table names per domain (SSOT) ──────────
+    # Added 2026-10-18 per owner directive. These replace the separate
+    # canonical_sources.py file (merged here to respect existing architecture).
+    PRICE_HISTORY_TABLE: str = "price_history"          # canonical historical
+    STOCKS_TABLE: str = "stocks"                          # live/current
+    STOCK_DAILY_PRICES_TABLE: str = "stock_daily_prices"  # daily candles
+    STOCK_INTRADAY_TABLE: str = "stock_intraday"          # minute ticks
+    CRYPTO_PRICES_TABLE: str = "crypto_prices"            # CoinGecko
+    BTC_LOCAL_PRICES_TABLE: str = "btc_local_prices"      # BTC in Arab currencies
+    CRYPTO_INTRADAY_TABLE: str = "crypto_intraday"        # crypto ticks
+    GOLD_PRICES_TABLE: str = "gold_prices"                # all karats
+    GOLD_PRICES_CLEAN_TABLE: str = "gold_prices_clean"
+    SILVER_PRICES_TABLE: str = "silver_prices"
+    EXCHANGE_RATES_TABLE: str = "exchange_rates"
+    COMMODITY_INTRADAY_TABLE: str = "commodity_intraday"
+    DEPRECATED_EGKSCO_TABLE: str = "egksco_price_history"  # DEPRECATED (Rule 46 amended)
+
+    @classmethod
+    def is_deprecated_table(cls, table_name: str) -> bool:
+        """Check if a table name is deprecated (per Rule 46 amendment)."""
+        return table_name.lower() == cls.DEPRECATED_EGKSCO_TABLE.lower()
 
     @classmethod
     def all_dbs(cls) -> dict[str, str]:
@@ -182,7 +207,7 @@ class DBPaths:
             'egksco_sync_status', 'market_indices', 'market_regime_log',
             'system_settings', 'tuned_predictions_summary',
             'real_evaluated_predictions', 'analytics_events',
-            'gold_price_history', 'currency_rates', 'news', 'news_items',
+            'gold_price_history', 'currency_rates', 'news',
         }
 
         # predictions.db tables (canonical — predictions + learning + outcome logs)
@@ -207,11 +232,15 @@ class DBPaths:
 
         # content.db tables (target architecture — not yet on production)
         content_tables = {
-            'market_news', 'telegram_messages', 'scraping_status',
+            'telegram_messages', 'scraping_status',
             'tracked_channels',
         }
 
         t = table_name.lower()
+        # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+        # market_news lives in news.db (1019 rows), NOT content.db (target arch, empty on prod).
+        if t == 'market_news':
+            return cls.NEWS_DB
         if t in {x.lower() for x in data_engine_tables}:
             return cls.DATA_ENGINE_DB
         if t in {x.lower() for x in stocks_tables}:
@@ -236,3 +265,85 @@ def get_db_path(name: str) -> str:
         name = name[:-3]
     env_key = f"{name.upper()}_DB"
     return _resolve(env_key, f"{name}.db")
+
+
+# ============================================================================
+# tab_* PK auto-detection helper (DATA-ENGINE-UNIFY-1 Stage 2a-fix)
+# ============================================================================
+# المشكلة: tab_* tables ليها schema مختلفة بين الساندبوكس + الإنتاج:
+#   - الساندبوكس (snapshot قديم): symbol PK + TEXT metrics + 8 tables
+#   - الإنتاج (laptop + VPS): ticker PK + REAL metrics + 3 tables (valuation/
+#     profitability/balance_sheet) — والباقي مش موجود
+# الـ readers كانت بـ query بـ ticker (صح للإنتاج) → جون غيّرها لـ symbol
+# (غلط للإنتاج) في Stage 2a. الـ fix الصح: auto-detect الـ PK column.
+# ============================================================================
+
+import sqlite3 as _sqlite3
+
+# Cache: table_pk_cache[db_path][table] = 'ticker' | 'symbol' | None
+_table_pk_cache: dict[str, dict[str, str]] = {}
+
+
+def detect_tab_pk_column(db_path: str, table: str) -> str:
+    """
+    Detect الـ PK column لـ tab_* table (ticker أو symbol أو غيرهم).
+
+    Returns:
+        - 'ticker' لو الـ table فيها column اسمه ticker (الـ schema الكنسي للإنتاج).
+        - 'symbol' لو الـ table فيها column اسمه symbol (الـ schema القديم للساندبوكس).
+        - 'ticker' كـ default لو لا ticker ولا symbol موجودين.
+
+    الـ detection بـ يتـ cached per (db_path, table) عشان الـ performance.
+
+    Usage:
+        from utils.db_paths import detect_tab_pk_column
+        pk = detect_tab_pk_column(DBPaths.DATA_ENGINE_DB, 'tab_valuation')
+        # pk = 'ticker' or 'symbol'
+        cur.execute(f"SELECT * FROM tab_valuation WHERE {pk} = ?", (ticker,))
+    """
+    global _table_pk_cache
+
+    db_key = str(db_path)
+    if db_key not in _table_pk_cache:
+        _table_pk_cache[db_key] = {}
+
+    if table in _table_pk_cache[db_key]:
+        return _table_pk_cache[db_key][table]
+
+    pk = "ticker"  # default (production schema)
+    try:
+        conn = _sqlite3.connect(db_path, timeout=5.0)
+        cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+        conn.close()
+        if "ticker" in cols:
+            pk = "ticker"
+        elif "symbol" in cols:
+            pk = "symbol"
+        # else: keep default 'ticker'
+    except Exception:
+        # لو الـ table مش موجود أو DB مش موجود → default 'ticker'
+        pass
+
+    _table_pk_cache[db_key][table] = pk
+    return pk
+
+
+def tab_table_exists(db_path: str, table: str) -> bool:
+    """
+    تحقق إن tab_* table موجود في الـ DB.
+
+    Usage:
+        from utils.db_paths import tab_table_exists, DBPaths
+        if tab_table_exists(DBPaths.DATA_ENGINE_DB, 'tab_dividends'):
+            cur.execute("SELECT * FROM tab_dividends ...")
+    """
+    try:
+        conn = _sqlite3.connect(db_path, timeout=5.0)
+        exists = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table,),
+        ).fetchone()
+        conn.close()
+        return exists is not None
+    except Exception:
+        return False

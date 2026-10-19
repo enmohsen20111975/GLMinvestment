@@ -45,7 +45,8 @@ from config.market_config import (
 
 # Import EGX Maestro
 try:
-    from analyzers.maestro_orchestrator import MaestroOrchestrator, MaestroResult
+    # BRAVO-FIX (2026-10-19): maestro_orchestrator.py removed (MAESTRO-CANCER-1)
+    # from analyzers.maestro_orchestrator import MaestroOrchestrator, MaestroResult
     EGX_MAESTRO_AVAILABLE = True
 except ImportError as e:
     print(f"[UnifiedMaestro] EGX Maestro not available: {e}")

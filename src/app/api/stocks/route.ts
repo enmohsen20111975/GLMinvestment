@@ -33,14 +33,25 @@ export async function GET(req: NextRequest) {
         // DEEP-MARKET-FIX: لو Python رجّع array فاضي (مش null)، نـ skip للـ fallback
         // عشان stocks.db يرجّع أسهم US اللي موجودة فعلاً.
         if (data && Array.isArray(data.data) && data.data.length > 0) {
+          // ALPHA-UX-FIX: NO `data` field — apiClient's unwrap extracts `data` as the
+          // payload, but here `data` would be the stocks ARRAY → store loses .stocks.
+          // Response shape: {success, stocks, total} → apiFetch sets payload.data=body
+          // → unwrap returns body → store's response.stocks works.
           return NextResponse.json({
             success: true,
             stocks: data.data,
             total: data.count || data.data.length,
+            source: 'python',
           });
         }
         if (data && Array.isArray(data.stocks) && data.stocks.length > 0) {
-          return NextResponse.json(data);
+          // ALPHA-UX-FIX: explicit shape (no `data` field, no spread that may carry one)
+          return NextResponse.json({
+            success: true,
+            stocks: data.stocks,
+            total: data.total ?? data.stocks.length,
+            source: data.source ?? 'python',
+          });
         }
         // لو وصلنا هنا → Python رجّع array فاضي → نـ fall through للـ fallback
       }
@@ -54,7 +65,14 @@ export async function GET(req: NextRequest) {
     await ensureInitialized();
     const fallback = readStocksFromLightDb(req);
     if (fallback.stocks.length > 0) {
-      return NextResponse.json(fallback);
+      // ALPHA-UX-FIX: explicit shape (no `data` field — apiClient's unwrap would
+      // extract `data` as the stocks array → store loses .stocks access)
+      return NextResponse.json({
+        success: true,
+        stocks: fallback.stocks,
+        total: fallback.total ?? fallback.stocks.length,
+        source: fallback.source ?? 'stocks.db',
+      });
     }
   } catch (err) {
     console.error('[GET /api/stocks] stocks.db fallback failed:', err);
@@ -144,7 +162,7 @@ function readStocksFromLightDb(req: NextRequest): {
     .prepare(
       `SELECT
          id, ticker, name, name_ar, sector, industry, market,
-         current_price, previous_close, open_price, high_price, low_price,
+         current_price, close AS close_price, previous_close, open_price, high_price, low_price,
          change_percent, volume, market_cap, pe_ratio, pb_ratio, ps_ratio,
          eps, roe, roa, debt_to_equity, current_ratio, book_value_per_share,
          ma_50, ma_200, rsi, support, resistance, signal, trend,

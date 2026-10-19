@@ -1571,6 +1571,35 @@ VACUUM اتعمل لـ 3 DBs (stocks.db, predictions.db, auth.db).
 
 ---
 
+#### ⚠️ AMENDMENT 2026-10-18 (DATA-LAYER-1 — BRAVO): egksco_price_history DEPRECATED
+
+> **سبب التعديل:** توجيه المالك (2026-10-18) + فحص برافو: `data_engine.db.egksco_price_history` فيه 59,109 rows (مش 0 زي ما كان متوقع)، بس:
+> - **stale schema**: `price_date` مش `date` (مخالف لباقي الجداول).
+> - **split-brain**: `price_history.db.price_history` فيه 1,309,893 rows (22× أكبر) + تاريخ أعرض (2000-2026 vs 2025-2026).
+> - **10 ملفات بـ check egksco FIRST** → waste I/O + نتائج متناقضة.
+
+**القرار الكنسي (Rule 11 SSOT):** `price_history.db.price_history` = CANONICAL لـ stock historical prices. `egksco_price_history` = DEPRECATED.
+
+**الـ per-domain canonical map** (الجديد — `vps-service/core/canonical_sources.py`):
+| Domain | DB | Table |
+|--------|-----|-------|
+| Stock historical (candles/RSI/MACD) | `price_history.db` | `price_history` |
+| Stock live/current | `stocks.db` | `stocks` |
+| Stock intraday (minute) | `intraday.db` | `stock_intraday` |
+| Crypto prices | `data_engine.db` | `crypto_prices` + `btc_local_prices` |
+| Crypto intraday | `intraday.db` | `crypto_intraday` |
+| Gold/metals | `data_engine.db` | `gold_prices` + `gold_prices_clean` + `silver_prices` |
+| Forex/exchange | `data_engine.db` | `exchange_rates` |
+| Commodity intraday | `intraday.db` | `commodity_intraday` |
+
+**التغييرات المنفّذة:**
+1. `vps-service/data/prices.py`: `load_price_history()` بـ يقرأ من `price_history.db` (مش egksco-first).
+2. `vps-service/core/canonical_sources.py`: SSOT جديد لكل الـ domains.
+3. الـ 10 ملفات اللي بـ check egksco: محتاجة refactor (follow-up).
+4. `egksco_price_history`: DROP على sandbox copy بس (بعد verify 0 usage).
+
+---
+
 ### القاعدة 47 — دمج news-agent submodule (NEWS-AGENT-INTEGRATION — 2026-09-03)
 > **سبب الإضافة:** توجيه المالك (2026-09-03): "خد المشروع عندك عالشان يكون جزء من المشروع بتاعنا أعتقد ممكن تدمجة مع محرك البيانات"
 

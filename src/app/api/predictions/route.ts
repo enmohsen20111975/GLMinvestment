@@ -136,12 +136,24 @@ export async function GET(request: NextRequest) {
       const marketParams = marketVariants;
       // NOTE: schema uses `risk_reward` (not `risk_reward_ratio`) — the validator
       // below derives `risk_reward_ratio` numerically and merges it into the row.
+      // BUG-FIX (FRONTEND-DATA-INTEGRITY-A-1, Bug 2):
+      // predictions.db.predictions does NOT have `entry_price_min` /
+      // `entry_price_max` / `support_level` / `support_level_2` /
+      // `resistance_level` / `resistance_level_2` (verified via PRAGMA
+      // table_info). The previous SELECT referenced them → SqliteError
+      // "no such column: ..." → the route caught it silently and returned
+      // source:empty / *_ticker_empty, hiding the real failure behind a
+      // "no predictions" message. We drop the missing columns from the SELECT.
+      // The downstream code (entryMin/entryMax + s1/s2/r1/r2 below) already
+      // null-guards every one of these fields, so when they are absent the row
+      // simply yields null bounds — no fabricated data (Rule 27). NOTE:
+      // predictions.db is owned by Bravo; if these columns are meant to exist,
+      // that is a Bravo migration task.
       const query = `
         SELECT
           id, ticker, signal, signal_type, prediction_date,
-          entry_price, entry_price_min, entry_price_max,
+          entry_price,
           target_price, target_price_2, stop_loss,
-          support_level, support_level_2, resistance_level, resistance_level_2,
           master_score, technical_score, fundamental_score, confidence, persona,
           market, outcome_date, exit_price, actual_return,
           hit_target, hit_stop, is_correct, holding_days,
@@ -187,7 +199,7 @@ export async function GET(request: NextRequest) {
         const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
         const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
         const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
-        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
+        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (v.target1 ?? null);
         const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
 
         return enrichWithTechnical({
@@ -340,6 +352,13 @@ export async function GET(request: NextRequest) {
       ? `WHERE market IN (${fbMarketVariants.map(() => '?').join(',')})`
       : '';
     const fbMarketParams = fbMarketVariants;
+    // BUG-FIX (FRONTEND-DATA-INTEGRITY-A-1, Bug 2): `entry_price_min` /
+    // `entry_price_max` / `support_level` / `support_level_2` /
+    // `resistance_level` / `resistance_level_2` are not present in
+    // predictions.db.predictions (see PRAGMA table_info). They were removed
+    // from this SELECT to stop the SqliteError that the route used to swallow
+    // into source:empty. The entryMin/entryMax + s1/s2/r1/r2 derivation below
+    // already null-guards these fields.
     let query = `
       SELECT
         id,
@@ -348,15 +367,9 @@ export async function GET(request: NextRequest) {
         signal_type,
         prediction_date,
         entry_price,
-        entry_price_min,
-        entry_price_max,
         target_price,
         target_price_2,
         stop_loss,
-        support_level,
-        support_level_2,
-        resistance_level,
-        resistance_level_2,
         master_score,
         confidence,
         market,

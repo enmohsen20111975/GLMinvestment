@@ -12,6 +12,17 @@ export const dynamic = 'force-dynamic';
 // Fallback (FLUTTER-FULL-AUDIT): predictions.db predictions filtered by ticker.
 //   Returns the most recent prediction row (signal, target, stop, scores).
 // UNIFIED-DATA-CONTRACT: regardless of source, canonical values are injected.
+//
+// BUG-FIX (FRONTEND-DATA-INTEGRITY-A-1, Bug 4, Rule 73):
+// The `recommendation` value exposed by this route MUST agree with
+// /api/stocks/[ticker]/expert-analysis. Both routes now derive the displayed
+// recommendation from the SAME canonical source — getUnifiedStockData().canonical.signal
+// — using the SAME default ('HOLD' when no fresh signal exists) that
+// expert-analysis applies inside generateExpertAnalysis(). Previously this
+// route returned `recommendation: null` whenever the Python service was down
+// AND no prediction row existed for the ticker (e.g. COMI), while
+// expert-analysis returned 'HOLD' for the same ticker — a direct
+// contradiction the client could see when swapping screens.
 
 export async function GET(
   request: NextRequest,
@@ -21,6 +32,13 @@ export async function GET(
   const tickerUpper = ticker.toUpperCase();
   const url = new URL(request.url);
   const qs = url.searchParams.toString();
+
+  // Resolve the canonical recommendation ONCE so every branch agrees.
+  // Mirrors expert-analysis: rec = (canonical.signal || prediction.signal) || 'HOLD'.
+  const unified = getUnifiedStockData(tickerUpper);
+  const canonicalSignal = unified?.canonical?.signal ?? null;
+  const recommendationStr = canonicalSignal || 'HOLD';
+  const recommendationAr = unified?.canonical?.signal_ar || 'انتظار';
 
   const targetUrl = `${PYTHON_BACKEND_URL}/api/professional-analysis/${tickerUpper}${qs ? `?${qs}` : ''}`;
 
@@ -34,14 +52,14 @@ export async function GET(
     if (res.ok) {
       const data = await res.json();
       // UNIFIED-DATA-CONTRACT: inject canonical signal/score/rsi into Python response
-      const unified = getUnifiedStockData(tickerUpper);
       if (unified && data && typeof data === 'object') {
         const d = data as Record<string, unknown>;
         d.signal = unified.canonical.signal;
         d.signal_ar = unified.canonical.signal_ar;
         d.master_score = unified.canonical.master_score;
-        d.recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
-        d.recommendation_ar = unified.canonical.signal_ar;
+        // Bug 4: canonical recommendation (uppercase, 'HOLD' default) — matches expert-analysis.
+        d.recommendation = recommendationStr;
+        d.recommendation_ar = recommendationAr;
         d.rsi = unified.technical.rsi ?? d.rsi;
         d.support = unified.technical.support ?? d.support;
         d.resistance = unified.technical.resistance ?? d.resistance;
@@ -66,31 +84,47 @@ export async function GET(
   const rec = getStockRecommendationFallback(tickerUpper);
   if (rec) {
     // UNIFIED-DATA-CONTRACT: inject canonical values into fallback too
-    const unified = getUnifiedStockData(tickerUpper);
     if (unified) {
       (rec as any).signal = unified.canonical.signal;
       (rec as any).signal_ar = unified.canonical.signal_ar;
       (rec as any).master_score = unified.canonical.master_score;
-      (rec as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
-      (rec as any).recommendation_ar = unified.canonical.signal_ar;
+      (rec as any).recommendation = recommendationStr;
+      (rec as any).recommendation_ar = recommendationAr;
       (rec as any).rsi = unified.technical.rsi ?? (rec as any).rsi;
       (rec as any).unified = true;
       (rec as any).unified_source = unified.canonical.master_score_source;
     }
+    // Bug 4: expose the canonical recommendation STRING at the top level so it
+    // matches expert-analysis.recommendation exactly. The prediction row is
+    // kept under `data` (and its key fields are also surfaced at the top level
+    // so adaptDeepAnalysis, which reads raw.target_price / raw.entry_price as
+    // a fallback, keeps working without the prediction row being the
+    // `recommendation` field itself).
     return NextResponse.json({
       success: true,
       source: 'sqlite_fallback',
       ticker: tickerUpper,
-      recommendation: rec,
+      recommendation: recommendationStr,
+      recommendation_ar: recommendationAr,
+      signal: canonicalSignal,
       data: rec,
+      entry_price: (rec as any).entry_price ?? null,
+      target_price: (rec as any).target_price ?? null,
+      stop_loss: (rec as any).stop_loss ?? null,
+      confidence: (rec as any).confidence ?? null,
     });
   }
 
+  // No prediction row AND Python unreachable — still return the canonical
+  // recommendation (with the 'HOLD' default) so this route never contradicts
+  // expert-analysis. `data` is null because there is genuinely no prediction.
   return NextResponse.json({
     success: true,
     source: 'sqlite_fallback_empty',
     ticker: tickerUpper,
-    recommendation: null,
+    recommendation: recommendationStr,
+    recommendation_ar: recommendationAr,
+    signal: canonicalSignal,
     data: null,
     message: 'لا توجد توقعات متاحة حالياً',
   });

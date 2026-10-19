@@ -872,50 +872,14 @@ class EGKSCOScraper:
         except Exception as e:
             logger.error(f"Error updating main stocks table: {e}")
         
-        # === SYNC TO FRONTEND DATABASE (stocks.db) ===
-        # Frontend uses stocks.db for stocks, so we need to sync prices there too
+        # === DATA-ENGINE-UNIFY-1 Stage 1: removed direct stocks.db propagation ===
+        # sync.py is the only transporter from data_engine.db to stocks.db. Any direct
+        # write to stocks.db from a scraper is a violation of the canonical flow.
+        # Previously this block UPDATEd stocks.db.stocks (current_price/open/high/...)
+        # directly from the EGKSCO scrape — bypassing sync.py and racing with it.
+        # The `frontend_db_updated` counter is kept at 0 for backward-compatible
+        # result-shape (callers reading this field will simply see 0).
         frontend_db_updated = 0
-        try:
-            from pathlib import Path
-            frontend_db_path = Path(__file__).parent.parent.parent / 'db' / 'stocks.db'
-            
-            if frontend_db_path.exists():
-                conn_front = sqlite3.connect(str(frontend_db_path))
-                cursor_front = conn_front.cursor()
-                
-                for stock in stocks:
-                    symbol = stock.get('symbol')
-                    if not symbol or not stock.get('last'):
-                        continue
-                    
-                    cursor_front.execute('''
-                        UPDATE stocks SET
-                            current_price = ?,
-                            previous_close = ?,
-                            open_price = ?,
-                            high_price = ?,
-                            low_price = ?,
-                            volume = ?,
-                            last_update = ?
-                        WHERE ticker = ?
-                    ''', (
-                        stock.get('last'),
-                        stock.get('prev_close'),
-                        stock.get('open'),
-                        stock.get('high'),
-                        stock.get('low'),
-                        stock.get('volume'),
-                        datetime.now().isoformat(),
-                        symbol
-                    ))
-                    if cursor_front.rowcount > 0:
-                        frontend_db_updated += 1
-                
-                conn_front.commit()
-                conn_front.close()
-                logger.info(f"Synced {frontend_db_updated} stocks to frontend database (stocks.db)")
-        except Exception as e:
-            logger.error(f"Error syncing to frontend database: {e}")
         
         duration = time.time() - start_time
         

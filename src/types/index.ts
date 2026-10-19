@@ -383,21 +383,35 @@ export type AppView =
   | 'trading-chart'      // الشارت التفاعلي (Task 40-B: added to AppView union)
   | 'liquidity-radar'    // رادار السيولة (Task 40-B: added to AppView union)
   | 'market-depth'       // عمق السوق — عملات/ذهب + سيولة + مستثمرون + ضغط جلسة (MARKET-DEPTH-VIEW)
+  | 'market-status'      // حالة السوق (ALPHA-UX-FIX-7: standalone — moved from #recommendations tab)
+  | 'historical-trades'  // الصفقات التاريخية (ALPHA-UX-FIX-7: standalone — moved from #recommendations tab)
   | 'portfolio'          // المحفظة الموحدة
   | 'advanced-portfolio' // إدارة المحافظ المتقدمة
   | 'watchlist'          // قوائم المراقبة الموحدة
   | 'recommendations'    // التحليلات
-  | 'advanced-analysis'  // التحليل المتقدم
+  | 'advanced-analysis'  // التحليل المتقدم (alias — backward-compat لـ recommendations)
+  | 'analysis'           // alias — backward-compat لـ recommendations
   | 'specialist-analysis'// تحليل المتخصصين
+  | 'unified-analysis'   // التحليل الموحّد (SCREENS-REORG: surfaced في بوابة التحليل)
+  | 'v82'                // قرار V82 (SCREENS-REORG: surfaced في بوابة التحليل)
+  | 'dual-track'         // التوقعات المزدوجة (SCREENS-REORG: surfaced في بوابة التحليل)
+  | 'smart-confluence'   // المساعد الذكي (SCREENS-REORG: surfaced في بوابة التحليل)
   | 'prediction-performance' // تقييم التحليلات
   | 'prediction-credibility' // جدول المصداقية
+  | 'prediction-tracking'    // تتبّع التوقعات
+  | 'picks-management'   // alias — backward-compat لـ prediction-tracking
+  | 'top-performers'     // الأعلى أداءً (tab في StockScreenerAdvancedView)
   | 'seasonality'        // محرك الموسمية - Paper Trading
   | 'sniper'             // القناص
   | 'reports'            // التقارير
+  | 'v2-analysis'        // alias — backward-compat لـ recommendations
   | 'news'               // الأخبار والتحليلات
   | 'simulation'         // المحاكاة
   | 'academy'            // أكاديمية دليل الاستثمار ومحاكي التداول الحي
-  | 'bagholder-rescue'  // محرك إنقاذ الأسهم المزنوقة (Task 31-C)
+  | 'bagholder-rescue'   // محرك إنقاذ الأسهم المزنوقة (Task 31-C)
+  | 'trading-journal'    // يوميات التداول (SCREENS-REORG: surfaced في بوابة محفظتي)
+  | 'publishing'         // نشر المستخدمين
+  | 'rescue'             // صفحة الإنقاذ
   // === إدارة الأموال ===
   | 'alerts-center'      // مركز التنبيهات الموحد
   | 'wealth'             // إدارة الأموال - الرسوم البيانية
@@ -413,6 +427,9 @@ export type AppView =
   | 'crypto-learning'    // تعلم العملات
   | 'crypto-simulation'  // محاكاة العملات
   | 'crypto-live'        // الجدول الحي للعملات
+  | 'crypto-trading-chart'  // UI-mirror لـ trading-chart
+  | 'crypto-screener'       // UI-mirror لـ stock-filters
+  | 'crypto-prediction-tracking' // تتبّع توقعات الكريبتو
   // === حسابات دينية ===
   | 'zakat'              // حاسبة الزكاة
   | 'tithes'             // حاسبة العُشر
@@ -423,14 +440,12 @@ export type AppView =
   | 'auth'               // تسجيل الدخول
   | 'admin'              // لوحة الإدارة
   | 'about'              // من نحن — النص الترويجي والرؤية
-  // === مخفية مؤقتاً ===
+  // === مخفية مؤقتاً (URL-only — مش في قوائم الـ nav) ===
   | 'currency'           // محول العملات
   | 'gold'               // الذهب والفضة
-  | 'finance'
-  | 'analysis'
+  | 'finance'            // alias — backward-compat لـ portfolio
   | 'backtesting'
-  | 'ai-analysis'
-  | 'v2-analysis';
+  | 'ai-analysis';
 
 export interface AppState {
   currentView: AppView;

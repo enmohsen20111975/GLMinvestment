@@ -682,28 +682,13 @@ _CACHED_ANALYSIS_DDL: List[Tuple[str, str]] = [
     ('index', "CREATE INDEX IF NOT EXISTS idx_cached_ticker ON cached_analysis(ticker)"),
     ('index', "CREATE INDEX IF NOT EXISTS idx_cached_date ON cached_analysis(analysis_date)"),
     ('index', "CREATE INDEX IF NOT EXISTS idx_cached_tradeable ON cached_analysis(is_tradeable, analysis_date)"),
-    # --- news_items (أغسطس 2026): analyzers/news_stop_filter.py does SELECT * FROM
-    # news_items WHERE ticker=? AND published_at>=? AND category='cbe'. The table was
-    # missing on production → every news-check raised OperationalError and suppressed
-    # the analysis. Create it idempotently here. ---
-    ('table', """
-        CREATE TABLE IF NOT EXISTS news_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ticker TEXT,
-            published_at TEXT,
-            category TEXT DEFAULT 'general',
-            title TEXT,
-            content TEXT,
-            sentiment TEXT DEFAULT 'neutral',
-            importance INTEGER DEFAULT 1,
-            source TEXT,
-            url TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    """),
-    ('index', "CREATE INDEX IF NOT EXISTS idx_news_ticker ON news_items(ticker)"),
-    ('index', "CREATE INDEX IF NOT EXISTS idx_news_published ON news_items(published_at DESC)"),
-    ('index', "CREATE INDEX IF NOT EXISTS idx_news_category ON news_items(category, published_at DESC)"),
+    # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+    # The legacy news table that lived in stocks.db has been retired — every reader
+    # now reads news.db.market_news (1019 rows). The DDL + indexes were removed
+    # because nothing reads or writes the old table anymore (verified: 0 rows,
+    # 0 INSERT/UPDATE/DELETE references). Existing tables are left in place
+    # (idempotent — CREATE IF NOT EXISTS was the only op, so fresh builds simply
+    # skip creating it). See worklog NEWS-ENGINE-UNIFY-1 / Stage 2.
 ]
 
 # Helper: news.db DDL (added to news.db by _build_schema).

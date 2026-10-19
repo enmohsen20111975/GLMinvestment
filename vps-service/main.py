@@ -128,12 +128,16 @@ except ImportError:
         logger.error(f"❌ Failed to mount portfolio_router: {e}")
 
 # Mount AI Analysis Router
-try:
-    from ai.api_routes import ai_router
-    app.include_router(ai_router)
-    logger.info("✅ Mounted ai_router")
-except Exception as e:
-    logger.warning(f"⚠️ Note on ai_router: {e}")
+# BRAVO-FIX (2026-10-19): ai.api_routes module مش موجود — الـ try/except
+# كان بـ يـفشل بصمت. تم تعطيل الـ mount لإن الملف مش موجود.
+# لو محتاج AI router: اعمل ai/api_routes.py الأول.
+# try:
+#     from ai.api_routes import ai_router
+#     app.include_router(ai_router)
+#     logger.info("✅ Mounted ai_router")
+# except Exception as e:
+#     logger.warning(f"⚠️ Note on ai_router: {e}")
+logger.info("ℹ️ ai_router disabled (module not found — BRAVO-FIX 2026-10-19)")
 
 # Start MarketScheduler in background thread
 _scheduler_thread = None

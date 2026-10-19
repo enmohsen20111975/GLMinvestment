@@ -138,27 +138,19 @@ def _try_egksco() -> Tuple[List[Dict], str]:
 # ---------------------------------------------------------------------------
 
 def _try_egxpilot() -> Tuple[List[Dict], str]:
-    """DEPRECATED: EGXPilot (HTTP) — المصدر ميت. محتفظين بالدالة للتوافق فقط."""
-    log("⚠️ EGXPilot deprecated in Phase 1 (dead source).", 'warning')
-    try:
-        from egxpilot_scraper import fetch_egxpilot_stocks
-        return fetch_egxpilot_stocks()
-    except ImportError as e:
-        return [], f"EGXPilot: ImportError - {e}"
-    except Exception as e:
-        return [], f"EGXPilot: خطأ غير متوقع {str(e)[:100]}"
+    """DEPRECATED: EGXPilot (HTTP) — المصدر ميت. محتفظين بالدالة للتوافق فقط.
+    DATA-ENGINE-UNIFY-1 Stage 1: egxpilot_scraper.py اتـ archive لـ archive/garage/.
+    الدالة دي بقت no-op — بترجّع empty من غير ما تـ import."""
+    log("⚠️ EGXPilot deprecated in Phase 1 (dead source, scraper archived).", 'warning')
+    return [], "EGXPilot: deprecated + scraper archived (DATA-ENGINE-UNIFY-1 Stage 1)"
 
 
 def _try_yahoo() -> Tuple[List[Dict], str]:
-    """DEPRECATED: Yahoo Finance — بيرجّع بيانات أمس. محتفظين بالدالة للتوافق فقط."""
-    log("⚠️ Yahoo deprecated in Phase 1 (returns yesterday's data).", 'warning')
-    try:
-        from yahoo_scraper import fetch_yahoo_stocks
-        return fetch_yahoo_stocks()
-    except ImportError as e:
-        return [], f"Yahoo: ImportError - {e}"
-    except Exception as e:
-        return [], f"Yahoo: خطأ غير متوقع {str(e)[:100]}"
+    """DEPRECATED: Yahoo Finance — بيرجّع بيانات أمس. محتفظين بالدالة للتوافق فقط.
+    DATA-ENGINE-UNIFY-1 Stage 1: yahoo_scraper.py اتـ archive لـ archive/garage/.
+    الدالة دي بقت no-op — بترجّع empty من غير ما تـ import."""
+    log("⚠️ Yahoo deprecated in Phase 1 (returns yesterday's data, scraper archived).", 'warning')
+    return [], "Yahoo: deprecated + scraper archived (DATA-ENGINE-UNIFY-1 Stage 1)"
 
 
 # ============================================================================

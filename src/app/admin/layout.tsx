@@ -36,9 +36,17 @@ export default async function AdminLayout({
     host.startsWith('192.168.') ||
     process.env.NODE_ENV === 'development';
 
+  // Check admin_session cookie (password / dev login)
+  const cookieStore = (await import('next/headers')).cookies();
+  const adminCookie = cookieStore.get('admin_session')?.value;
+  const adminSessionToken = process.env.ADMIN_SESSION_TOKEN;
+  if (adminCookie && adminSessionToken && adminCookie === adminSessionToken) {
+    isAdmin = true;
+  }
+
   if (isLocalhost) {
     isAdmin = true;
-  } else {
+  } else if (!isAdmin) {
     try {
       const session = await getServerSession(authOptions);
 

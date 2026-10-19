@@ -39,6 +39,7 @@ from analyzer.vision_analyzer import VisionAnalyzer
 from analyzer.recommendation_aggregator import RecommendationAggregator
 from sender.production_sender import ProductionSender
 from sender.social_publisher import SocialPublisher
+from sender.db_writer import NewsDBWriter
 from data.news_store import NewsStore
 
 # ── إعداد اللوج ───────────────────────────────────────
@@ -62,18 +63,24 @@ class NewsAgent:
         self.analyzer = NewsAnalyzer()
         self.vision   = VisionAnalyzer()
         self.sender   = ProductionSender()
+        # DATA-ENGINE-UNIFY-1 / News Stage 1: bypass Node.js — write directly to news.db
+        self.db_writer = NewsDBWriter()
         self.social   = SocialPublisher()
         self.recommender = RecommendationAggregator(self.store)
         self.running  = False
 
         self.collectors = [WebScraper(self.store), RSSCollector(self.store)]
-        if os.getenv('TELEGRAM_WEB_ENABLED', '1').lower() in ('1', 'true', 'yes', 'on'):
+        # DATA-ENGINE-UNIFY-1 / News: التليجرام معطّل — التركيز على السحب من المواقع
+        # المالك: "مش عايز أخبار من التليجرام، التركيز على السحب من المواقع"
+        # لو محتاجين تفعيله تاني: TELEGRAM_WEB_ENABLED=1
+        if os.getenv('TELEGRAM_WEB_ENABLED', '0').lower() in ('1', 'true', 'yes', 'on'):
             self.collectors.append(TelegramWebCollector(self.store))
         telegram_creds = all([
             os.getenv('TELEGRAM_API_ID'),
             os.getenv('TELEGRAM_API_HASH'),
         ])
-        if telegram_creds:
+        # Telethon (MTProto) معطّل كمان — لو محتاجينه: TELEGRAM_MTPROTO_ENABLED=1
+        if telegram_creds and os.getenv('TELEGRAM_MTPROTO_ENABLED', '0').lower() in ('1', 'true', 'yes'):
             self.collectors.insert(0, TelegramCollector(self.store))
         if os.getenv('ENABLE_EGYPTIAN_SOURCES', '0').lower() in ('1', 'true', 'yes'):
             self.collectors.append(EgyptianSourcesCollector(self.store))
@@ -151,10 +158,17 @@ class NewsAgent:
             f"(threshold={threshold}, تم فلترة {len(items) - len(valid_items)})...[/magenta]"
         )
 
-        # 1. إرسال للموقع الرسمي
+        # 1. كتابة مباشرة في news.db.market_news (بايثون — بدون Node.js)
+        # DATA-ENGINE-UNIFY-1 / News Stage 1: canonical path = direct DB write
+        db_written = await self.db_writer.write_batch(valid_items)
+
+        # 2. (fallback) إرسال للموقع الرسمي عبر Node.js — لو Node شغال
+        # لو Node مطفي، الأخبار بتوصل بـ Python مباشرة
         sent = await self.sender.send_batch(valid_items)
         sent_ids = [i['id'] for i in valid_items[:sent]]
         self.store.mark_sent(sent_ids)
+
+        log.info(f'  📊 News batch: {db_written} DB-written, {sent} Node-forwarded')
 
         # 2. نشر على منصات التواصل (تيليجرام) للأخبار المؤثرة وذات الصلة بالأسهم
         # ─── TELEGRAM-FILTER (Task PHASE-2-COMPLETE-2026-10-07) ────────────────

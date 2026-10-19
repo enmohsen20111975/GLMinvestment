@@ -121,19 +121,26 @@ class EODHDFetcher:
             existing = cur.execute("SELECT id FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
             if existing:
                 # Update name if missing
+                # DATA-ENGINE-UNIFY-1 Stage 1: name_ar must stay Arabic-only.
+                # Previously this UPDATE injected the English `name` into name_ar
+                # when name_ar was empty — same pollution bug as the INSERT branch.
+                # Now name_ar is left untouched here (Arabic names come from EGKSCO
+                # via sync.py, not from EODHD). Only `name` (English) is filled.
                 cur.execute("""
                     UPDATE stocks SET name = COALESCE(NULLIF(name, ''), ?),
-                                      name_ar = COALESCE(NULLIF(name_ar, ''), ?),
                                       market = 'EGX'
                     WHERE ticker = ?
-                """, (name, name, ticker))
+                """, (name, ticker))
                 updated += 1
             else:
                 # Insert new stock
+                # DATA-ENGINE-UNIFY-1 Stage 1: name_ar must be NULL — Arabic names come
+                # from EGKSCO only, not EODHD. Inserting the English `name` into
+                # `name_ar` was polluting the column and masking alias detection.
                 cur.execute("""
                     INSERT INTO stocks (ticker, name, name_ar, market, is_active, created_at, updated_at)
                     VALUES (?, ?, ?, 'EGX', 1, datetime('now'), datetime('now'))
-                """, (ticker, name, name))
+                """, (ticker, name, None))
                 added += 1
 
         conn.commit()

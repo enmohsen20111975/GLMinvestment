@@ -1206,14 +1206,17 @@ class SniperEngine:
                 # Try to get more fundamental data
                 try:
                     conn2 = _conn(self.data_engine_db)
+                    # DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses `symbol` column (NOT ticker).
+                    # The "PILLAR-2.5: tab_* uses ticker PK" comment was wrong — verified
+                    # via PRAGMA table_info(tab_valuation): column is `symbol`, no `ticker`.
                     val_row = conn2.execute(
-                        "SELECT * FROM tab_valuation WHERE ticker=?", (ticker,)  # PILLAR-2.5: tab_* uses ticker PK
+                        "SELECT * FROM tab_valuation WHERE symbol=?", (ticker,)
                     ).fetchone()
                     prof_row = conn2.execute(
-                        "SELECT * FROM tab_profitability WHERE ticker=?", (ticker,)  # PILLAR-2.5: tab_* uses ticker PK
+                        "SELECT * FROM tab_profitability WHERE symbol=?", (ticker,)
                     ).fetchone()
                     div_row = conn2.execute(
-                        "SELECT * FROM tab_dividends WHERE ticker=?", (ticker,)  # PILLAR-2.5: tab_* uses ticker PK
+                        "SELECT * FROM tab_dividends WHERE symbol=?", (ticker,)
                     ).fetchone()
                     conn2.close()
                     if val_row:

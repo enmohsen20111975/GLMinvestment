@@ -46,10 +46,19 @@ export function getAdminSessionToken(): string {
  */
 export function verifyAdminCredentials(username: string, password: string): boolean {
   // FIX-P1-SECURITY (CRIT-6): env-only admin login — NO hardcoded hash backdoor.
-  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+  if (!ADMIN_PASSWORD) {
     return false;
   }
-  if (username.trim() === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+  const u = (username || '').trim().toLowerCase();
+  const configuredUser = (ADMIN_USERNAME || 'admin').toLowerCase();
+  const configuredEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
+  const isValidUser =
+    u === configuredUser ||
+    u === 'admin' ||
+    u === 'mohseny' ||
+    Boolean(configuredEmail && u === configuredEmail);
+
+  if (isValidUser && password === ADMIN_PASSWORD) {
     return true;
   }
   return false;

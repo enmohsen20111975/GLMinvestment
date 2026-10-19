@@ -506,17 +506,17 @@ def add_news_bulk():
             return jsonify({"success": False, "error": "Unauthorized"}), 401
         
         data = request.get_json() or {}
-        news_items = data.get('news', [])
-        
-        if not news_items:
+        incoming_news = data.get('news', [])
+
+        if not incoming_news:
             return jsonify({"success": False, "error": "news array is required"}), 400
-        
+
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
         try:
             from core.db_manager import db_manager
             init_news_db()
             params_list = []
-            for item in news_items:
+            for item in incoming_news:
                 if item.get('title'):
                     params_list.append((
                         item.get('title'),
@@ -542,7 +542,7 @@ def add_news_bulk():
             cursor = conn.cursor()
             init_news_db()
             added = 0
-            for item in news_items:
+            for item in incoming_news:
                 if item.get('title'):
                     cursor.execute('''
                         INSERT INTO news (title, title_ar, summary, summary_ar, source, url, category, ticker, sentiment, importance, published_at)

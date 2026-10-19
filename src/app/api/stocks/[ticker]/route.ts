@@ -137,8 +137,26 @@ function injectUnifiedData(data: unknown, ticker: string): unknown {
     if (unified.stock.current_price != null) {
       next.current_price = unified.stock.current_price;
     }
+    // BUG-FIX (FRONTEND-DATA-INTEGRITY-A-1, Bug 3, Rule 73):
+    // Previously `change_percent` was overridden here with the canonical
+    // unified value, while `price_change` (set earlier by the stocks.db
+    // fallback) retained a SEPARATELY-computed percent (derivedChange =
+    // (curr-prev)/prev*100). The two percents diverged by rounding/source —
+    // e.g. COMI returned change_percent=-0.02 but price_change=-0.020008 —
+    // so the client saw three different "change" numbers for one stock
+    // (change_percent, price_change, change_value). Grep across src/ confirms
+    // `price_change` is consumed as a RELATIVE percent by 15+ frontend
+    // modules (StocksView, StockDetail, TopMovers, StockSearchDropdown,
+    // EnhancedPortfolioView, RealtimeTicker, AcademyView all render it with
+    // a `%` suffix or feed it into changePct). Making it absolute would
+    // break every one of those screens, so we keep it as a percent ALIAS of
+    // change_percent and sync the two whenever the canonical value is
+    // injected. The absolute change lives in `change_value` (a separate
+    // concept, already correct at curr - prev). Result: one percent
+    // (change_percent == price_change) + one absolute (change_value).
     if (unified.stock.change_percent != null) {
       next.change_percent = unified.stock.change_percent;
+      next.price_change = unified.stock.change_percent;
     }
     if (unified.stock.last_update != null) {
       next.last_update = unified.stock.last_update;

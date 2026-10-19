@@ -882,6 +882,7 @@ def backtest_results():
 
 
 @admin_bp.route('/backtest/params', methods=['GET'])
+@require_admin
 def get_backtest_parameters():
     """
     الحصول على معاملات الـ Backtest.
@@ -907,6 +908,7 @@ def get_backtest_parameters():
 
 
 @admin_bp.route('/backtest/params', methods=['POST'])
+@require_admin
 def update_backtest_parameters():
     """
     تحديث معاملات الـ Backtest.
@@ -947,6 +949,7 @@ def update_backtest_parameters():
 
 
 @admin_bp.route('/backtest/run-enhanced', methods=['POST'])
+@require_admin
 def run_enhanced_backtest():
     """
     تشغيل Backtest المحسن مع المعاملات الحالية.
@@ -958,7 +961,9 @@ def run_enhanced_backtest():
         params = get_backtest_params()
         
         # Import and run the enhanced backtest
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         
         engine = EnhancedBacktest(
             _get_db_path()
@@ -1406,6 +1411,7 @@ PROVEN_PARAMS = {
 
 
 @admin_bp.route('/iterative-learning/start', methods=['POST'])
+@require_admin
 def start_iterative_learning():
     """
     بدء التعلم الذاتي التكراري.
@@ -1476,6 +1482,7 @@ def start_iterative_learning():
 
 
 @admin_bp.route('/iterative-learning/step', methods=['POST'])
+@require_admin
 def run_learning_step():
     """
     تنفيذ خطوة تعلم واحدة.
@@ -1499,7 +1506,9 @@ def run_learning_step():
         current_params = get_backtest_params()
         
         # Run backtest
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         engine = EnhancedBacktest(_get_db_path())
         results = engine.run_backtest(
             start_year=2026, start_month=1,
@@ -1578,6 +1587,7 @@ def run_learning_step():
 
 
 @admin_bp.route('/iterative-learning/run-auto', methods=['POST'])
+@require_admin
 def run_auto_learning():
     """
     تشغيل التعلم التلقائي الكامل.
@@ -1620,7 +1630,9 @@ def run_auto_learning():
             current_params = get_backtest_params()
             print(f"[LEARNING] Starting with CURRENT params: {current_params}")
         
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         
         all_results = []
         
@@ -1716,6 +1728,7 @@ def run_auto_learning():
 
 
 @admin_bp.route('/iterative-learning/status', methods=['GET'])
+@require_admin
 def get_learning_status():
     """حالة التعلم الذاتي."""
     return jsonify(admin_response(True, {
@@ -1733,6 +1746,7 @@ def get_learning_status():
 
 
 @admin_bp.route('/iterative-learning/stop', methods=['POST'])
+@require_admin
 def stop_learning():
     """إيقاف التعلم الذاتي."""
     global _iterative_learning_state
@@ -1766,6 +1780,7 @@ PROVEN_COMBINATIONS = [
 
 
 @admin_bp.route('/iterative-learning/grid-search', methods=['POST'])
+@require_admin
 def run_grid_search():
     """
     تشغيل Grid Search للعثور على أفضل مجموعة معاملات.
@@ -1783,7 +1798,9 @@ def run_grid_search():
         - all_results: كل النتائج
     """
     try:
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         import itertools
         
         data = request.get_json() or {}
@@ -1915,6 +1932,7 @@ def run_grid_search():
 
 
 @admin_bp.route('/iterative-learning/smart-optimize', methods=['POST'])
+@require_admin
 def run_smart_optimize():
     """
     تحسين ذكي - يجرب المعاملات الأكثر تأثيراً أولاً.
@@ -1926,7 +1944,9 @@ def run_smart_optimize():
     4. اختيار أفضل توليفة
     """
     try:
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         
         data = request.get_json() or {}
         
@@ -2250,6 +2270,7 @@ def update_sector_benchmarks():
 
 
 @admin_bp.route('/sectors/rotation', methods=['GET'])
+@require_admin
 def get_sector_rotation():
     """كشف دوران السيولة بين القطاعات — PREDICTIVE."""
     try:
@@ -2382,6 +2403,7 @@ def classify_stock_by_keywords(ticker: str, name: str) -> str:
 
 
 @admin_bp.route('/sectors/classify-stocks', methods=['POST'])
+@require_admin
 def classify_all_stocks():
     """
     تصنيف كل الأسهم بدون قطاع.
@@ -2443,6 +2465,7 @@ def classify_all_stocks():
 
 
 @admin_bp.route('/sectors/stats', methods=['GET'])
+@require_admin
 def get_sector_stats():
     """
     إحصائيات القطاعات.
@@ -2632,6 +2655,7 @@ PERSONAS = {
 
 
 @admin_bp.route('/historical-backfill/run', methods=['POST'])
+@require_admin
 def run_historical_backfill():
     """
     تشغيل عملية التعلم من البيانات التاريخية.
@@ -2770,6 +2794,7 @@ def run_historical_backfill():
 
 
 @admin_bp.route('/historical-backfill/status', methods=['GET'])
+@require_admin
 def get_historical_backfill_status():
     """
     الحصول على حالة عملية التعلم من الماضي.
@@ -2835,6 +2860,7 @@ def get_historical_backfill_status():
 
 
 @admin_bp.route('/historical-backfill/results', methods=['GET'])
+@require_admin
 def get_historical_backfill_results():
     """
     الحصول على نتائج آخر عملية تعلم من الماضي.
@@ -4047,6 +4073,7 @@ __all__ = ['admin_bp']
 
 
 @admin_bp.route('/sync-stocks', methods=['POST'])
+@require_admin
 def sync_stocks_public():
     """
     تحديث أسهم EGX من EGXPilot (بدون مصادقة).
@@ -4079,6 +4106,7 @@ def sync_stocks_public():
 
 
 @admin_bp.route('/sync-to-custom', methods=['POST'])
+@require_admin
 def sync_to_custom():
     """
     مزامنة الأسعار من stocks.db إلى stocks.db.
@@ -4178,6 +4206,7 @@ def _is_weekend(date_str):
 
 
 @admin_bp.route('/predictions/analyze', methods=['GET'])
+@require_admin
 def analyze_predictions():
     """
     تحليل توقعات الذكاء الاصطناعي.
@@ -4291,6 +4320,7 @@ def analyze_predictions():
 
 
 @admin_bp.route('/predictions/clean', methods=['POST'])
+@require_admin
 def clean_predictions():
     """
     تنظيف توقعات الذكاء الاصطناعي.
@@ -4915,6 +4945,7 @@ from pathlib import Path
 _maestro_backfills = {}
 
 @admin_bp.route('/maestro-backfill/run', methods=['POST'])
+@require_admin
 def run_maestro_backfill():
     try:
         data = request.get_json() or {}
@@ -4966,6 +4997,7 @@ def run_maestro_backfill():
         return jsonify(admin_response(False, error=str(e))), 500
 
 @admin_bp.route('/maestro-backfill/status', methods=['GET'])
+@require_admin
 def get_maestro_backfill_status():
     job_id = request.args.get('job_id')
     if not job_id or job_id not in _maestro_backfills:
@@ -4978,3 +5010,124 @@ def get_maestro_backfill_status():
         'logs': job['logs'][-100:], # Send last 100 lines for the UI
         'start_time': job['start_time']
     }))
+
+# ============================================================================
+# BRAVO RESTRUCT-B-P2 — Admin trial management endpoints
+# ============================================================================
+
+@admin_bp.route('/user/<user_id>/reset-trial', methods=['POST'])
+@require_admin
+def admin_reset_user_trial(user_id):
+    """Reset user's trial: trial_ends_at = NOW() + TRIAL_DAYS_CANONICAL (14 days).
+
+    BRAVO RESTRUCT-B-P2 (John directive): admin can reset expired/broken trials.
+    Canonical TRIAL_DAYS = 14 (per Owner spec).
+    """
+    try:
+        from core.auth_middleware import TRIAL_DAYS_CANONICAL
+        import sqlite3
+        from pathlib import Path
+        from datetime import datetime, timedelta, timezone
+
+        # Rule 17: relative path
+        _auth_db = Path(__file__).resolve().parents[2] / 'db' / 'auth.db'
+        if not _auth_db.exists():
+            return jsonify(admin_response(False, error='auth.db not found')), 500
+
+        conn = sqlite3.connect(str(_auth_db), timeout=10.0)
+        try:
+            # Check user exists
+            row = conn.execute("SELECT id, subscription_tier, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
+            if not row:
+                return jsonify(admin_response(False, error=f'User {user_id} not found')), 404
+
+            # Set trial_ends_at = NOW + 14 days (UTC)
+            new_trial_ends = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS_CANONICAL)
+            conn.execute(
+                "UPDATE User SET trial_ends_at = ?, trial_warning_sent_at = NULL, "
+                "trial_deletion_scheduled_at = NULL, updated_at = ? WHERE id = ?",
+                (new_trial_ends.isoformat(), datetime.now(timezone.utc).isoformat(), user_id)
+            )
+            conn.commit()
+
+            # Log action
+            try:
+                admin_session_tracker.log_action(
+                    getattr(g, 'admin_session_id', 'unknown'),
+                    'reset_trial',
+                    {'user_id': user_id, 'new_trial_ends_at': new_trial_ends.isoformat()}
+                )
+            except Exception:
+                pass
+
+            return jsonify(admin_response(True, {
+                'user_id': user_id,
+                'trial_ends_at': new_trial_ends.isoformat(),
+                'trial_days': TRIAL_DAYS_CANONICAL,
+                'message': f'Trial reset to {TRIAL_DAYS_CANONICAL} days from now'
+            }, 'تم إعادة تعيين فترة التجربة بنجاح'))
+        finally:
+            conn.close()
+    except Exception as e:
+        return jsonify(admin_response(False, error=str(e))), 500
+
+
+@admin_bp.route('/user/<user_id>/extend-trial', methods=['POST'])
+@require_admin
+def admin_extend_user_trial(user_id):
+    """Extend user's trial by N days (default 7). Query: ?days=7.
+
+    BRAVO RESTRUCT-B-P2: admin can extend trial without full reset.
+    """
+    try:
+        from core.auth_middleware import TRIAL_DAYS_CANONICAL
+        import sqlite3
+        from pathlib import Path
+        from datetime import datetime, timedelta, timezone
+
+        extend_days = request.args.get('days', 7, type=int)
+        extend_days = max(1, min(int(extend_days), 90))  # clamp 1..90
+
+        _auth_db = Path(__file__).resolve().parents[2] / 'db' / 'auth.db'
+        if not _auth_db.exists():
+            return jsonify(admin_response(False, error='auth.db not found')), 500
+
+        conn = sqlite3.connect(str(_auth_db), timeout=10.0)
+        try:
+            row = conn.execute("SELECT id, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
+            if not row:
+                return jsonify(admin_response(False, error=f'User {user_id} not found')), 404
+
+            # If trial_ends_at exists + in future → extend from it. Else → extend from NOW.
+            current_trial_ends = row[1]
+            now_utc = datetime.now(timezone.utc)
+            if current_trial_ends:
+                try:
+                    base = datetime.fromisoformat(current_trial_ends.replace('Z', '+00:00'))
+                    if base.tzinfo is None:
+                        base = base.replace(tzinfo=timezone.utc)
+                    if base < now_utc:
+                        base = now_utc  # expired → extend from now
+                except (ValueError, AttributeError):
+                    base = now_utc
+            else:
+                base = now_utc
+
+            new_trial_ends = base + timedelta(days=extend_days)
+            conn.execute(
+                "UPDATE User SET trial_ends_at = ?, trial_warning_sent_at = NULL, "
+                "trial_deletion_scheduled_at = NULL, updated_at = ? WHERE id = ?",
+                (new_trial_ends.isoformat(), now_utc.isoformat(), user_id)
+            )
+            conn.commit()
+
+            return jsonify(admin_response(True, {
+                'user_id': user_id,
+                'trial_ends_at': new_trial_ends.isoformat(),
+                'extended_by_days': extend_days,
+                'message': f'Trial extended by {extend_days} days'
+            }, f'تم تمديد فترة التجربة بـ {extend_days} يوم'))
+        finally:
+            conn.close()
+    except Exception as e:
+        return jsonify(admin_response(False, error=str(e))), 500

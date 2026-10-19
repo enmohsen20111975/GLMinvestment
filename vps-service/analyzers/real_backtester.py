@@ -226,7 +226,8 @@ class RealBacktester:
         
         # Create analyzers — نستخدم MaestroOrchestrator (الأحدث) بدل MasterAnalyzer
         try:
-            from analyzers.maestro_orchestrator import MaestroOrchestrator
+            # BRAVO-FIX (2026-10-19): maestro_orchestrator.py removed (MAESTRO-CANCER-1)
+            # from analyzers.maestro_orchestrator import MaestroOrchestrator
             orchestrator = MaestroOrchestrator(self.db_path)
             use_maestro = True
         except Exception:

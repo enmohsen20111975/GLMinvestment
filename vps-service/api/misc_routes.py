@@ -3560,10 +3560,12 @@ def bag_holder_rescue():
         fundamentals_note = ''
         try:
             if _DBM_AVAILABLE:
+                # DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
+                # DATA-ENGINE-UNIFY-1 Stage 2b: ORDER BY id DESC (last_updated column not in schema)
                 frow = _dbm.query_one(
                     'data_engine',
                     "SELECT roe, net_margin FROM tab_profitability "
-                    "WHERE ticker LIKE ? ORDER BY last_updated DESC LIMIT 1",
+                    "WHERE symbol LIKE ? ORDER BY id DESC LIMIT 1",
                     (f"{ticker}%",),
                 )
                 if frow:

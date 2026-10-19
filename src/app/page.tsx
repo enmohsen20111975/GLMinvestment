@@ -12,6 +12,7 @@ import { MobileNav } from '@/components/layout/MobileNav';
 import { TopBar } from '@/components/layout/TopBar';
 import { DashboardView } from '@/modules/dashboard/components/DashboardView';
 import { AuthGate } from '@/components/auth/AuthGate';
+import { PaywallListener } from '@/components/auth/PaywallListener';
 import { RealtimeTicker } from '@/modules/dashboard/components/RealtimeTicker';
 import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
 import { CentralAlertMonitor } from '@/components/notifications/CentralAlertMonitor';
@@ -19,6 +20,7 @@ import { DesktopNotificationPrompt } from '@/components/notifications/DesktopNot
 import { TrialExpiredModal } from '@/modules/subscription/components/TrialExpiredModal';
 import { TrialCountdownBanner } from '@/modules/subscription/components/TrialCountdownBanner';
 import { DevLoginForm } from '@/modules/auth/components/DevLoginForm';
+import { isGuestUser, isViewAllowedForGuest } from '@/lib/subscription-gate';
 
 import { Footer } from '@/components/layout/Footer';
 import { PlatformGuide, usePlatformGuide } from '@/components/help/PlatformGuide';
@@ -27,7 +29,7 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
 import { Header } from '@/components/layout/Header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -69,6 +71,15 @@ const StockScreenerAdvancedView = withErrorBoundary(
 const ReportsView = withErrorBoundary(
   dynamicImport(() => import('@/modules/reports/components/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
   'التقارير',
+);
+// ALPHA-UX-FIX-7: standalone routes (moved from #recommendations tabs to السوق nav)
+const MarketStatusView = withErrorBoundary(
+  dynamicImport(() => import('@/modules/market-analysis/components/MarketStatusTab').then(m => ({ default: m.MarketStatusTab })), { ssr: false, loading: () => <LazyTabLoader label="حالة السوق" /> }),
+  'حالة السوق',
+);
+const HistoricalTradesView = withErrorBoundary(
+  dynamicImport(() => import('@/modules/market-analysis/components/HistoricalTradesTable').then(m => ({ default: m.HistoricalTradesTable })), { ssr: false, loading: () => <LazyTabLoader label="الصفقات التاريخية" /> }),
+  'الصفقات التاريخية',
 );
 const NewsFeedView = withErrorBoundary(
   dynamicImport(() => import('@/modules/news/components/NewsFeedView').then(m => ({ default: m.NewsFeedView })), { ssr: false, loading: () => <LazyTabLoader label="الأخبار" /> }),
@@ -205,7 +216,7 @@ const TradingChartView = withErrorBoundary(
   { height: 'h-[600px]' },
 );
 const LiquidityRadarView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/predictions/components/MakerRadarTab').then(m => ({ default: m.MakerRadarTab })), {
+  dynamicImport(() => import('@/components/shared/LiquidityRadarView').then(m => ({ default: m.LiquidityRadarView })), {
     ssr: false,
     loading: () => <LazyTabLoader label="رادار السيولة" />,
   }),
@@ -228,20 +239,7 @@ const MarketDepthInvestorsFlow = withErrorBoundary(
   }),
   'تدفّق المستثمرين',
 );
-const MarketDepthLiquidityFlow = withErrorBoundary(
-  dynamicImport(() => import('@/modules/dashboard/components/LiquidityFlowPanel').then(m => ({ default: m.LiquidityFlowPanel })), {
-    ssr: false,
-    loading: () => <LazyTabLoader label="حركة السيولة" />,
-  }),
-  'حركة السيولة القطاعية',
-);
-const MarketDepthIntradayPressure = withErrorBoundary(
-  dynamicImport(() => import('@/modules/dashboard/components/IntradayPressurePanel').then(m => ({ default: m.IntradayPressurePanel })), {
-    ssr: false,
-    loading: () => <LazyTabLoader label="ضغط الجلسة" />,
-  }),
-  'ضغط الشراء والبيع',
-);
+
 const AboutView = dynamicImport(() => import('@/components/about/AboutView').then(m => ({ default: m.AboutView })), { ssr: false });
 // ALPHA-P0: Rescue Clinic standalone page
 const RescuePage = dynamicImport(() => import('@/app/rescue/page'), { ssr: false, loading: () => <LazyTabLoader label="عيادة الإنقاذ" /> });
@@ -398,8 +396,8 @@ function SessionSync() {
       if (!user || user.id !== session?.user?.id) {
         syncFromSession(session ?? null);
       }
-    } else if (status === 'unauthenticated' && user) {
-      // Session was cleared — reset store
+    } else if (status === 'unauthenticated' && user && !user.is_admin && user.subscription_tier !== 'admin') {
+      // Session was cleared — reset store (preserve admin if authenticated via admin_session cookie)
       syncFromSession(null);
     }
   }, [status, session, syncFromSession, user]);
@@ -417,18 +415,72 @@ function SessionSync() {
   return null; // no UI
 }
 
+// ============================================================================
+// RESTRUCT-A-P3: GuestLockedView — placeholder للـ Guest لما يحاول يفتح view مقفول.
+// (مش شاشة جديدة — Rule 4: placeholder component جوّه page.tsx.)
+// ============================================================================
+function GuestLockedView({ view }: { view: string }) {
+  const setShowLoginPrompt = useAppStore((s) => s.setShowLoginPrompt);
+  const setCurrentView = useAppStore((s) => s.setCurrentView);
+
+  React.useEffect(() => {
+    // افتح LoginPromptModal فورًا — Guest لازم يسجل عشان يفتح view مقفول.
+    setShowLoginPrompt(true);
+  }, [setShowLoginPrompt]);
+
+  return (
+    <div
+      className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center"
+      dir="rtl"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="inline-flex items-center justify-center mb-4 size-16 rounded-2xl bg-warning/10 ring-2 ring-warning/20">
+        <Lock className="size-8 text-warning" />
+      </div>
+      <h2 className="text-xl font-bold mb-2">هذه الصفحة تتطلب تسجيل الدخول</h2>
+      <p className="text-sm text-muted-foreground mb-5 max-w-md">
+        سجّل مجاناً للوصول إلى {view || 'هذه الصفحة'} — توقعات، تحليلات، محفظة، وتنبيهات.
+        تجربة 14 يوماً مجاناً بدون بطاقة ائتمان.
+      </p>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => setCurrentView('dashboard')}
+          variant="outline"
+          size="sm"
+        >
+          تصفّح السوق مجاناً
+        </Button>
+        <Button
+          onClick={() => setShowLoginPrompt(true)}
+          size="sm"
+          className="bg-profit hover:bg-profit/90 text-profit-foreground gap-1.5"
+        >
+          <Lock className="size-3.5" />
+          سجّل مجاناً
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function AppShell() {
   const { currentView } = useAppStore();
   const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
   const currentMarket = useAppStore((s) => s.currentMarket);
   const setCurrentMarket = useAppStore((s) => s.setCurrentMarket);
   const selectedTicker = useAppStore((s) => s.selectedTicker);
+  // RESTRUCT-A-P3: Guest Mode flags — بنحدد Guest + restrict views.
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const user = useAppStore((s) => s.user);
+  const setShowLoginPrompt = useAppStore((s) => s.setShowLoginPrompt);
 
-  // SEC-AUTH-GATE (2026-09-30): مفيش وصول للمنصة من غير تسجيل.
-  // لو status === 'unauthenticated' → نعرض AuthView (شاشة تسجيل الدخول)
-  // لو status === 'loading' → نعرض skeleton
-  // لو status === 'authenticated' → نكمل الـ AppShell العادي
+  // SEC-AUTH-GATE (RESTRUCT-A-P3): Guest Mode — مش AuthView سجن.
+  // Guest (unauthenticated) بيوصل لـ AppShell محدود (market + radar-limited + news).
+  // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
+  // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
   const { status: authStatus } = useSession();
+  const isGuest = authStatus === 'unauthenticated' || isGuestUser(user, isAuthenticated);
 
   // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
   // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)
@@ -503,6 +555,14 @@ function AppShell() {
   }, [setCurrentViewFromHash]);
 
   const renderView = () => {
+    // RESTRUCT-A-P3: Guest Mode restrictions.
+    // Guest (مش مسجّل) بيشوف بس: dashboard + market + radar-limited + news + about.
+    // لو ضغط view مقفول → نعرض GuestLockedView placeholder + نفتح LoginPromptModal.
+    // (AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal تلقائياً،
+    //  بس هنا بنعرض placeholder كمان لو الـ view وصل لـ render قبل الـ redirect.)
+    if (isGuest && !isViewAllowedForGuest(currentView)) {
+      return <GuestLockedView view={currentView} />;
+    }
     switch (currentView) {
       // === البورصة المصرية (EGX) ===
       case 'dashboard':
@@ -526,6 +586,26 @@ function AppShell() {
       case 'recommendations':
       case 'analysis':
         return <MarketAnalysisView />;
+      case 'market-status':
+        // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header title="حالة السوق" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
+            <main className="flex-1 p-3 md:p-4">
+              <MarketStatusView market={currentMarket} />
+            </main>
+          </div>
+        );
+      case 'historical-trades':
+        // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header title="الصفقات التاريخية" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
+            <main className="flex-1 p-3 md:p-4">
+              <HistoricalTradesView />
+            </main>
+          </div>
+        );
       case 'advanced-analysis':
       case 'v2-analysis':
         // advanced-analysis REMOVED — features distributed to:
@@ -619,34 +699,21 @@ function AppShell() {
                 </SafeWidget>
               </section>
 
-              {/* ── الصف 2: بيانات EGX اللحظية (تدفّق المستثمرين + السيولة + ضغط الجلسة) ── */}
+              {/* ── الصف 2: بيانات EGX اللحظية (تدفّق المستثمرين وحركة السيولة) ── */}
               {isEGX ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                  {/* تدفّق المستثمرين + السيولة القطاعية — 7 أعمدة */}
-                  <section aria-label="تدفّق المستثمرين وحركة السيولة" className="lg:col-span-7 space-y-4">
-                    <SafeWidget name="تدفّق المستثمرين">
-                      <MarketDepthInvestorsFlow />
-                    </SafeWidget>
-                    <SafeWidget name="حركة السيولة القطاعية">
-                      <MarketDepthLiquidityFlow />
-                    </SafeWidget>
-                  </section>
-
-                  {/* ضغط الجلسة — 5 أعمدة */}
-                  <section aria-label="ضغط الشراء والبيع داخل الجلسة" className="lg:col-span-5">
-                    <SafeWidget name="ضغط الشراء والبيع">
-                      <MarketDepthIntradayPressure initialTicker={selectedTicker || 'COMI'} />
-                    </SafeWidget>
-                  </section>
-                </div>
+                <section aria-label="تدفّق المستثمرين وحركة السيولة" className="space-y-4">
+                  <SafeWidget name="تدفّق المستثمرين وحركة السيولة">
+                    <MarketDepthInvestorsFlow />
+                  </SafeWidget>
+                </section>
               ) : (
-                <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
-                  <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+                <Alert className="border-warning/30 bg-warning/5 dark:border-warning/40">
+                  <Info className="h-4 w-4 text-warning" />
+                  <AlertDescription className="text-sm text-warning">
                     <span className="font-semibold">
                       بيانات تدفّق المستثمرين والسيولة القطاعية وضغط الجلسة متاحة لسوق EGX فقط.
                     </span>
-                    <span className="block mt-1 text-xs text-amber-700 dark:text-amber-300">
+                    <span className="block mt-1 text-xs text-warning/80">
                       جدول العملات والذهب أعلاه متاح لكل الأسواق. للوصول لبيانات EGX intraday،
                       بدّل السوق إلى 🇪🇬 مصر من قائمة الأسواق بأعلى الصفحة.
                     </span>
@@ -767,8 +834,10 @@ function AppShell() {
 
   const isChartView = currentView === 'trading-chart' || currentView === 'screener';
 
-  // SEC-AUTH-GATE: لو مش مسجل → نعرض شاشة تسجيل الدخول فقط (مفيش وصول للمنصة)
-  // SEC-DEV-LOGIN (2026-09-30): لو في ?dev=1 → نعرض DevLoginForm (للسيرفر التجريبي)
+  // SEC-AUTH-GATE (RESTRUCT-A-P3): Guest Mode — مش AuthView سجن.
+  // لو status === 'unauthenticated' → Guest بيوصل لـ AppShell محدود (market + radar-limited + news).
+  // ?dev=1 → DevLoginForm. ?bot_link → AuthView container (لازم يسجل عشان يربط البوت).
+  // باقي cases → Guest يكمل لـ <AuthGate> + renderView مع Guest restrictions.
   if (authStatus === 'unauthenticated') {
     // فحص ?dev=1 في الـ URL
     const isDevLogin = typeof window !== 'undefined'
@@ -792,7 +861,7 @@ function AppShell() {
           <div className="max-w-md w-full rounded-xl border border-primary/30 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
             <h2 className="text-lg font-bold mb-1">ربط بوت تليجرام بحسابك</h2>
             <p className="text-sm text-muted-foreground">
-              سجّل دخولك أو أنشئ حساب (تجربة 7 أيام مجاناً) لتأكيد ربط البوت بحسابك في الموقع.
+              سجّل دخولك أو أنشئ حساب (تجربة 14 يوماً مجاناً) لتأكيد ربط البوت بحسابك في الموقع.
             </p>
           </div>
           <div className="w-full max-w-md">
@@ -802,27 +871,9 @@ function AppShell() {
       );
     }
 
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background p-4 relative overflow-hidden"
-        dir="rtl"
-      >
-        {/* Subtle emerald pattern overlay — adds texture without distraction
-            (Rule 29 NO-HYPE: alpha ≤ 0.04) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, hsl(var(--primary)) 1px, transparent 0)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div className="relative w-full max-w-md">
-          <AuthView />
-        </div>
-      </div>
-    );
+    // RESTRUCT-A-P3: Guest Mode — Guest بيوصل لـ AppShell محدود (مش AuthView سجن).
+    // يكمل لـ <AuthGate> + renderView مع Guest restrictions (isGuestUser + isViewAllowedForGuest).
+    // LoginPromptModal بيتفتح تلقائياً لو Guest ضغط view مقفول (عبر AuthGate route guard).
   }
 
   // لو الـ session لسه بيتحمّل → skeleton
@@ -847,6 +898,9 @@ function AppShell() {
         <SessionSync />
         <UrlHashSync />
         <RealtimeTicker />
+        {/* RESTRUCT-A-P3: PaywallListener — بيسمع paywall:blocked events من api-client
+            (402/403) + بيـ trigger المودال الصح (LoginPrompt/Lock/TrialExpired) حسب user state. */}
+        <PaywallListener />
         {/* BOT-SUBSCRIPTION-GATE (2026-10-01): لو في ?bot_link=TOKEN →
             اعرض Dialog تأكيد ربط البوت بحساب المستخدم المسجّل. */}
         <BotLinkHandler />
@@ -855,7 +909,8 @@ function AppShell() {
         <CentralAlertMonitor />
         {/* إشعار تفعيل تنبيهات سطح المكتب بنظام الواتساب حتى لو الموقع مصغر */}
         <DesktopNotificationPrompt />
-        {/* Trial expired modal — block كامل للـ free users بعد 14 يوم */}
+        {/* RESTRUCT-A-P3: Trial expired — soft paywall (dismissable + CTA).
+            لو trialExpired=true → soft modal. (مش hard block اللي كان قبل كده.) */}
         <TrialExpiredModal isExpired={trialExpired} />
         {/* Trial countdown banner — بانر تنبيهي بالأيام المتبقية في الفترة المجانية */}
         <TrialCountdownBanner

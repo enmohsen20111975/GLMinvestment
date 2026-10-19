@@ -146,6 +146,8 @@ from analyzers.sector_relative import SectorRelativeAnalyzer
 # Conviction Engine — "هل الوقت مناسب للدخول؟"
 from analyzers.conviction_engine import calculate_conviction, ConvictionResult
 from analyzers.smc_engine import calculate_smc_score
+# BRAVO INDICATOR-UNIFY: canonical MACD
+from analyzers.indicators.ma import macd as _canonical_macd_fn, ema as _canonical_ema_fn
 # PHASE 11: V20 Ultimate Fusion Engine (LuxAlgo + BigBeluga + SMC)
 from analyzers.fusion_engine import FusionEngineV20, calculate_fusion_metrics
 # MARKET-REALITY-SLAP-027 (يوليو 2026): Explosive Scanner — كشف التجميع الخفي
@@ -536,61 +538,42 @@ CONFLUENCE_THRESHOLDS = {
 # لـ master_analyzer.py مباشرة. الـ 4 helpers دول بنفس signatures بتوع chart_routes.
 
 def _ema_seeded(values, period):
-    """Exponential Moving Average (SMA-seeded) — standard for MACD.
-
-    Returns array same length as `values`, with None for indices < period-1
-    (before enough data to seed the SMA), then SMA at index period-1, then EMA
-    onward.
-    """
+    """EMA as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.ema per point."""
     n = len(values)
     if n < period:
         return [None] * n
-    multiplier = 2.0 / (period + 1)
-    ema = [None] * (period - 1)
-    sma = sum(values[:period]) / period
-    ema.append(sma)
-    for i in range(period, n):
-        ema_val = (values[i] - ema[-1]) * multiplier + ema[-1]
-        ema.append(ema_val)
-    return ema
-
-
+    result = []
+    for i in range(n):
+        if i < period - 1:
+            result.append(None)
+        else:
+            val = _canonical_ema_fn(values[:i+1], period)
+            result.append(val)
+    return result
 def _calc_macd(closes, fast=12, slow=26, signal=9):
-    """حساب MACD line + signal line + histogram as arrays.
-
-    Mirrors chart_routes._calc_macd semantics (SMA-seeded EMA + signal EMA).
-    Returns: (macd_line, signal_line, histogram) — each same length as closes.
-    """
+    """MACD as arrays — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.macd per point."""
     n = len(closes)
     if n < slow + signal:
         return [None] * n, [None] * n, [None] * n
-    ema_fast = _ema_seeded(closes, fast)
-    ema_slow = _ema_seeded(closes, slow)
     macd_line = []
-    for f, s in zip(ema_fast, ema_slow):
-        if f is None or s is None:
-            macd_line.append(None)
-        else:
-            macd_line.append(f - s)
-    # Seed signal EMA with macd_line values (replace None with 0 for EMA calc)
-    macd_for_signal = [v if v is not None else 0 for v in macd_line]
-    signal_line_raw = _ema_seeded(macd_for_signal, signal)
-    # Align: signal_line is None wherever macd_line is None.
     signal_line = []
-    for m, s in zip(macd_line, signal_line_raw):
-        if m is None or s is None:
-            signal_line.append(None)
-        else:
-            signal_line.append(s)
     histogram = []
-    for m, s in zip(macd_line, signal_line):
-        if m is None or s is None:
+    for i in range(n):
+        if i < slow + signal - 1:
+            macd_line.append(None)
+            signal_line.append(None)
             histogram.append(None)
         else:
-            histogram.append(m - s)
+            result = _canonical_macd_fn(closes[:i+1], fast, slow, signal)
+            if result is not None:
+                macd_line.append(result.get('line'))
+                signal_line.append(result.get('signal'))
+                histogram.append(result.get('histogram'))
+            else:
+                macd_line.append(None)
+                signal_line.append(None)
+                histogram.append(None)
     return macd_line, signal_line, histogram
-
-
 def _detect_candlestick_patterns(ohlcv):
     """كشف أنماط الشموع اليابانية على آخر شمعتين.
 
@@ -3930,8 +3913,9 @@ class MasterAnalyzer:
             # ── AI Sentiment (from news) ────────────────────────────────────
             sentiment_score = 50  # neutral default
             try:
-                from analyzers.ai_sentiment import get_stock_news_sentiment
-                sentiment_result = get_stock_news_sentiment(ticker)
+                # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+                from analyzers.ai_sentiment import get_market_news_sentiment
+                sentiment_result = get_market_news_sentiment(ticker)
                 sentiment_score = sentiment_result.get('score', 50)
             except Exception as e:
                 print(f"[MasterAnalyzer] Sentiment unavailable for {ticker}: {e}")

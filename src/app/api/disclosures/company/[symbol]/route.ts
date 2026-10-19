@@ -69,6 +69,8 @@ export async function GET(
     }
 
     // 2) Try stocks.db.news_items (filter by ticker, type='disclosure')
+    // DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
+    // Column renamed to image_paths (canonical market_news column; news_items is legacy/empty).
     const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
     if (dbExists(stocksDbPath)) {
       try {
@@ -77,7 +79,7 @@ export async function GET(
         const cols = (db.prepare("PRAGMA table_info(news_items)").all() as any[]).map(c => c.name);
         if (cols.includes('ticker')) {
           const rows = db.prepare(`
-            SELECT title, content, ticker, published_at, url, image_url, source
+            SELECT title, content, ticker, published_at, url, image_paths, source
             FROM news_items
             WHERE UPPER(ticker) = ?
             ORDER BY published_at DESC
@@ -90,7 +92,7 @@ export async function GET(
               title: r.title,
               details: r.content,
               url: r.url,
-              image_url: r.image_url,
+              image_paths: r.image_paths,
               source: r.source || 'news_items',
             });
           }
@@ -105,7 +107,7 @@ export async function GET(
       try {
         const db = openDb(newsDbPath);
         const rows = db.prepare(`
-          SELECT title, content, summary_ar, tickers, published_at, url, image_url, source
+          SELECT title, content, summary_ar, tickers, published_at, url, image_paths, source
           FROM market_news
           WHERE tickers LIKE ?
           ORDER BY published_at DESC
@@ -118,7 +120,7 @@ export async function GET(
             title: r.title,
             details: r.content || r.summary_ar,
             url: r.url,
-            image_url: r.image_url,
+            image_paths: r.image_paths,
             source: r.source || 'market_news',
             tickers: r.tickers,
           });

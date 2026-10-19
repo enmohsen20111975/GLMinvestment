@@ -27,6 +27,75 @@ MARKETS = {
 
 TABS = ['الأداء', 'القيمة', 'أرباح', 'الربحية', 'بيانات الدخل', 'بَيَانُ المُوَازَنَة', 'التدفقات النقدية', 'تحليلات فنية']
 
+
+# ============================================================================
+# STOCKS-DEDUP-A-1 — pollution guard
+# ============================================================================
+# The legacy TradingView DOM extractor merged "<TICKER><Name>D" into a single
+# text node and the greedy `^[A-Z0-9_]{2,8}` regex over-matched (taking the
+# first letter of the company name as part of the ticker). The result was
+# 82 alias rows in data_engine.db.stocks with patterns like:
+#     symbol='LUTSL'  name='otus For Agricultural Investments And DevelopmentD'
+#     symbol='FWRYF'  name='awry For Banking Technology And Electronic PaymentD'
+#
+# This guard inspects each scraped record BEFORE insert. If the record matches
+# the pollution signature, we skip it (and log a warning) so the bad data
+# never enters the DB. This prevents future regressions from re-introducing
+# the 82-row alias problem we just spent a task diagnosing.
+#
+# Reference: scripts/diagnose_alias_duplicates.py (STOCKS-DEDUP-A-1, stage 3).
+# ============================================================================
+
+def _is_polluted_scrape_record(symbol, name):
+    """
+    Return True if the (symbol, name) pair matches the legacy TradingView
+    merge-pollution signature.
+
+    DATA-ENGINE-UNIFY-1 Stage 2c: expanded to catch Arabic pollution too.
+    Previously only caught Latin pollution (name ends with 'D' status badge).
+    Now catches two patterns:
+      Pattern A (Latin): symbol='LUTSL', name='LUTSLotus For Agricultural...D'
+      Pattern B (Arabic): symbol='COMI', name='COMIالبنك' (ticker + Arabic name)
+
+    Detection criteria:
+      1. symbol and name are both non-empty.
+      2. name is meaningfully longer than the symbol (len > len(symbol) + 2).
+      3. name starts with the symbol (case-sensitive).
+      4. AND one of:
+         (a) name ends with 'D' (Latin pollution — legacy DOM status badge), OR
+         (b) the remainder (name after symbol) contains Arabic chars
+             (\u0600-\u06FF) — Arabic company name bleed-through.
+
+    Examples that trigger:
+      symbol='LUTSL', name='LUTSLotus For Agricultural...D'  -> True (Pattern A)
+      symbol='COMI',  name='COMIالبنك'                        -> True (Pattern B)
+      symbol='AALR',  name='AALRالعامة'                       -> True (Pattern B)
+    Examples that do NOT trigger:
+      symbol='COMI',  name='البنك التجاري الدولي'             -> False (doesn't start with symbol)
+      symbol='LUTS',  name='Lotus For Agricultural...'         -> False (no trailing D, no Arabic)
+      symbol='EFG',   name='EFG Holding'                       -> False (no trailing D, no Arabic)
+    """
+    if not symbol or not name:
+        return False
+    if len(name) <= len(symbol) + 2:
+        return False
+    if not name.startswith(symbol):
+        return False
+
+    # Pattern A: Latin pollution — trailing 'D' status badge (legacy DOM).
+    # Legitimate company names very rarely end with a bare capital 'D'.
+    if name.endswith('D'):
+        return True
+
+    # Pattern B: Arabic pollution — remainder contains Arabic chars.
+    # This catches "COMIالبنك" where symbol="COMI" and remainder="البنك".
+    remainder = name[len(symbol):]
+    if any('\u0600' <= ch <= '\u06FF' for ch in remainder):
+        return True
+
+    return False
+
+
 def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
@@ -66,7 +135,17 @@ async def scrape_market(page, market, url):
                 rows.forEach(row => {
                     const cells = row.querySelectorAll('td, [data-name="cell"], .cell');
                     if (cells.length >= 4) {
-                        // Robust symbol & name extraction
+                        // Robust symbol & name extraction.
+                        // HISTORY (STOCKS-DEDUP-A-1): the legacy scraper used
+                        // `aTags[0].textContent` which merged "<TICKER><Name>D"
+                        // into a single string. The greedy regex `^[A-Z0-9_]{2,8}`
+                        // then over-matched (e.g. "LUTSLotus..." -> "LUTSL"),
+                        // leaving the truncated remainder ("otus For Agricultural...")
+                        // as the company name. We now (a) prefer the /symbols/
+                        // href as the authoritative ticker source, and (b) apply
+                        // a CamelCase-boundary trim on the fallback regex so the
+                        // trailing uppercase letter that begins a company name
+                        // word (next char is lowercase) is dropped from sym.
                         let sym = '';
                         let name = '';
                         const link = cells[0].querySelector('a[href*="/symbols/"]');
@@ -77,11 +156,69 @@ async def scrape_market(page, market, url):
                         }
                         if (!sym) {
                             const raw = cells[0].querySelector('[class*="tickerName"], a')?.textContent?.trim() || '';
-                            const m = raw.match(/^[A-Z0-9_]{2,8}|^\d{4,5}/);
-                            sym = m ? m[0] : '';
+                            // CamelCase-boundary-aware symbol extraction.
+                            // 1. Try pure-alpha uppercase prefix first (EGX/KSE style:
+                            //    "LUTS", "COMI", "SHUAIBA"). Up to 8 chars to accommodate
+                            //    longer KSE tickers.
+                            let m = raw.match(/^[A-Z]{2,8}/);
+                            if (m) {
+                                let s = m[0];
+                                // Trim trailing uppercase letter if the next char
+                                // is lowercase — that letter is the start of
+                                // the company name (CamelCase boundary), not
+                                // part of the ticker.
+                                // e.g. "LUTSLotus" -> match "LUTSL" -> trim -> "LUTS".
+                                while (s.length > 2 && s.length < raw.length) {
+                                    const nextChar = raw[s.length];
+                                    if (/[a-z]/.test(nextChar)) {
+                                        s = s.slice(0, -1);
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                sym = s;
+                            }
+                            // 2. Fallback: numeric ticker (Saudi TADAWUL: 4-5 digits)
+                            if (!sym) {
+                                m = raw.match(/^\d{4,5}/);
+                                if (m) sym = m[0];
+                            }
+                            // 3. Last-resort: original greedy match (kept for
+                            //    backward compat with non-standard ticker formats
+                            //    that include digits/underscores).
+                            if (!sym) {
+                                m = raw.match(/^[A-Z0-9_]{2,8}/);
+                                if (m) sym = m[0];
+                            }
                         }
                         const nameElem = cells[0].querySelector('[class*="tickerDescription"], [class*="description"]');
                         name = nameElem ? nameElem.textContent.trim() : (cells[0].querySelectorAll('a')[1]?.textContent?.trim() || sym);
+                        // STOCKS-DEDUP-A-1 + DATA-ENGINE-UNIFY-1 Stage 2c guard:
+                        // if the extracted name still contains the symbol as a prefix
+                        // (merge bleed-through from TradingView DOM layout), strip the
+                        // symbol prefix. This catches two pollution patterns:
+                        //   1. Latin remainder: "LUTSLotus For Agricultural..." → "Lotus For Agricultural..."
+                        //   2. Arabic remainder: "COMIالبنك" → "البنك" (Arabic company name)
+                        // Previously the guard only stripped Latin-uppercase remainders
+                        // (regex /^[A-Z]/), which let Arabic-prefixed pollution like
+                        // "COMIالبنك" through unchanged. The Arabic range \u0600-\u06FF
+                        // is now also accepted as a valid name start.
+                        if (name && sym && name.startsWith(sym) && name.length > sym.length + 2) {
+                            const stripped = name.slice(sym.length);
+                            // Strip if remainder starts with uppercase Latin (company name)
+                            // OR Arabic letter (Arabic company name). Avoid stripping when
+                            // the symbol is legitimately a prefix of the name (rare).
+                            if (/^[A-Z\u0600-\u06FF]/.test(stripped)) {
+                                name = stripped;
+                                // Also fix the symbol itself if it got polluted:
+                                // if the raw textContent was "COMIالبنك" and we extracted
+                                // sym via the href regex, sym is already clean. But if sym
+                                // came from the fallback regex on the polluted raw, sym
+                                // might be "COMI" (correct) — no action needed. The
+                                // _is_polluted_scrape_record() Python guard (line ~49)
+                                // catches any remaining pollution at save time.
+                            }
+                        }
                         const priceText = cells[1]?.textContent || '0';
                         const price = parseFloat(priceText.match(/[\\d.]+/)?.[0] || 0);
                         const changeText = cells[2]?.textContent || '0';
@@ -187,7 +324,18 @@ def save_to_db(stocks, market):
     for table_name, cols in tab_tables:
         cursor.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({cols})')
 
+    # STOCKS-DEDUP-A-1 guard: skip records that match the legacy pollution
+    # pattern (symbol+name merge from the old DOM extractor). Without this
+    # guard, a regression in the JS extractor would silently re-introduce
+    # the 82 alias rows we just spent a task diagnosing.
+    skipped_polluted = 0
     for s in stocks:
+        symbol = (s.get('symbol') or '').strip()
+        name = (s.get('name') or '').strip()
+        if _is_polluted_scrape_record(symbol, name):
+            log(f"⚠️ SKIP polluted record (symbol/name merge): symbol={symbol!r} name={name!r}")
+            skipped_polluted += 1
+            continue
         cursor.execute('''
             INSERT INTO stocks
             (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update)
@@ -210,6 +358,8 @@ def save_to_db(stocks, market):
             datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         ))
 
+    if skipped_polluted:
+        log(f"🛡️ STOCKS-DEDUP-A-1 guard: skipped {skipped_polluted} polluted record(s)")
     conn.commit()
     conn.close()
 

@@ -116,9 +116,24 @@ def fetch_fundamentals_from_tv() -> list:
 
 
 def save_to_db(fundamentals: list) -> int:
-    """حفظ الأساسيات في tab_valuation + tab_profitability"""
+    """حفظ الأساسيات في tab_valuation + tab_profitability.
+
+    DATA-ENGINE-UNIFY-1 Stage 2a: fix 2 bugs.
+    Bug 1 (critical): `now_iso` was undefined → NameError swallowed by
+    `except: pass` → INSERT never executed → tab_* stayed stale while
+    `saved += 1` lied. Now `now_iso` is defined at function entry.
+    Bug 2 (data loss): `INSERT OR REPLACE` with only 5 columns would wipe
+    the rich columns (market_cap_perf, peg_ratio, ps_ratio, pcf_ratio,
+    pfcf_ratio, pcash_ratio, ev, ev_revenue, ev_ebit, ev_ebitda, data)
+    that the TradingView Arabic scraper populated. Switched to
+    `ON CONFLICT(symbol) DO UPDATE SET` — only touches the 4 TV columns.
+    Bug 3 (anti-pattern): `except: pass` violated Rule (no silent failures).
+    Replaced with logged warnings.
+    """
     if not fundamentals:
         return 0
+
+    now_iso = datetime.now().isoformat()
 
     try:
         conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
@@ -136,7 +151,7 @@ def save_to_db(fundamentals: list) -> int:
             roe REAL, roa REAL, eps REAL,
             dividend_yield REAL, last_updated TEXT
         )''')
-        
+
         # UNIFY-FIX: لو الجدول موجود بـ schema قديم (symbol بدل ticker)
         # نستخدم symbol كـ PK. نكتشف العمود الفعلي
         try:
@@ -151,33 +166,83 @@ def save_to_db(fundamentals: list) -> int:
             prof_pk = 'ticker'
 
         saved = 0
+        skipped = 0
 
         for f in fundamentals:
             ticker = f['ticker']
 
             # tab_valuation — استخدم val_pk (ticker أو symbol حسب الـ schema الموجود)
+            # DATA-ENGINE-UNIFY-1 Stage 2a: ON CONFLICT DO UPDATE (مش INSERT OR REPLACE)
+            # عشان ما نـ wipeش الـ rich columns (market_cap_perf, peg_ratio, ...).
+            # بس لازم نتأكد إن فيه UNIQUE/PK على val_pk — لو لأ، نـ fallback لـ UPDATE.
             try:
                 cur.execute(f'''
-                    INSERT OR REPLACE INTO tab_valuation
+                    INSERT INTO tab_valuation
                     ({val_pk}, pe_ratio, pb_ratio, market_cap, last_updated)
                     VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT({val_pk}) DO UPDATE SET
+                        pe_ratio = COALESCE(excluded.pe_ratio, tab_valuation.pe_ratio),
+                        pb_ratio = COALESCE(excluded.pb_ratio, tab_valuation.pb_ratio),
+                        market_cap = COALESCE(excluded.market_cap, tab_valuation.market_cap),
+                        last_updated = excluded.last_updated
                 ''', (ticker, f.get('pe_ratio'), f.get('pb_ratio'),
                       f.get('market_cap'), now_iso))
-            except Exception:
-                pass  # لو الـ schema مختلف جدًا، skip
+                saved += 1
+            except sqlite3.OperationalError as e:
+                # لو مفيش UNIQUE/PK → نـ fallback لـ UPDATE الموجود
+                if 'no column' in str(e).lower() or 'unique' in str(e).lower() or 'constraint' in str(e).lower():
+                    try:
+                        cur.execute(f'''
+                            UPDATE tab_valuation SET
+                                pe_ratio = COALESCE(?, pe_ratio),
+                                pb_ratio = COALESCE(?, pb_ratio),
+                                market_cap = COALESCE(?, market_cap),
+                                last_updated = ?
+                            WHERE {val_pk} = ?
+                        ''', (f.get('pe_ratio'), f.get('pb_ratio'),
+                              f.get('market_cap'), now_iso, ticker))
+                        if cur.rowcount > 0:
+                            saved += 1
+                        else:
+                            skipped += 1
+                    except Exception as e2:
+                        log(f"  ⚠️ tab_valuation UPDATE فشل لـ {ticker}: {e2}", 'WARN')
+                        skipped += 1
+                else:
+                    log(f"  ⚠️ tab_valuation INSERT فشل لـ {ticker}: {e}", 'WARN')
+                    skipped += 1
 
             # tab_profitability
             try:
                 cur.execute(f'''
-                    INSERT OR REPLACE INTO tab_profitability
+                    INSERT INTO tab_profitability
                     ({prof_pk}, roe, roa, eps, dividend_yield, last_updated)
                     VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT({prof_pk}) DO UPDATE SET
+                        roe = COALESCE(excluded.roe, tab_profitability.roe),
+                        roa = COALESCE(excluded.roa, tab_profitability.roa),
+                        eps = COALESCE(excluded.eps, tab_profitability.eps),
+                        dividend_yield = COALESCE(excluded.dividend_yield, tab_profitability.dividend_yield),
+                        last_updated = excluded.last_updated
                 ''', (ticker, f.get('roe'), f.get('roa'), f.get('eps'),
                       f.get('dividend_yield'), now_iso))
-            except Exception:
-                pass
-
-            saved += 1
+            except sqlite3.OperationalError as e:
+                if 'no column' in str(e).lower() or 'unique' in str(e).lower() or 'constraint' in str(e).lower():
+                    try:
+                        cur.execute(f'''
+                            UPDATE tab_profitability SET
+                                roe = COALESCE(?, roe),
+                                roa = COALESCE(?, roa),
+                                eps = COALESCE(?, eps),
+                                dividend_yield = COALESCE(?, dividend_yield),
+                                last_updated = ?
+                            WHERE {prof_pk} = ?
+                        ''', (f.get('roe'), f.get('roa'), f.get('eps'),
+                              f.get('dividend_yield'), now_iso, ticker))
+                    except Exception as e2:
+                        log(f"  ⚠️ tab_profitability UPDATE فشل لـ {ticker}: {e2}", 'WARN')
+                else:
+                    log(f"  ⚠️ tab_profitability INSERT فشل لـ {ticker}: {e}", 'WARN')
 
         conn.commit()
         conn.close()
@@ -187,6 +252,8 @@ def save_to_db(fundamentals: list) -> int:
         has_roe = sum(1 for f in fundamentals if f.get('roe') is not None)
         log(f"  📊 P/E متاح: {has_pe}/{len(fundamentals)}")
         log(f"  📊 ROE متاح: {has_roe}/{len(fundamentals)}")
+        if skipped:
+            log(f"  ⚠️ skipped: {skipped}")
 
         return saved
     except Exception as e:
