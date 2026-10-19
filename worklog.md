@@ -73636,3 +73636,40 @@ Task: محسن — الاحتفال بالأعجاز (3 فرق + 3 محركات)
 - جون: ظبط محرك الأخبار (NEWS-ENGINE-UNIFY-1: bypass Node + ticker extraction + Python readers).
 
 المرحلة اللي فاضلة: التليجرام — شغال 100% بس محتاج يتفحص بنفس أسلوب جون.
+
+---
+Task ID: TELEGRAM-ENGINE-UNIFY-1 / Phase 1 (low risk)
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — فحص التليجرام + شيل التضارب + رتب المحرك. الحطة 1 (أقل خطورة) — نفذها دلوقتي. الحطة 2 (أعلى خطورة) — مع جيمي على الابتوب.
+
+Work Log:
+- المرحلة 0 (فهم البنية الحقيقية):
+  * 3 layers: SCHEDULER (auto_post_scheduler) → SENDERS (auto_poster Telethon + telegram_notifier HTTP Bot API) → EVENTS (telegram-events port 3003).
+  * flow: أخبار → تليجرام + صفقات خلصت → تليجرام + توقعات → تليجرام + تقارير → تليجرام.
+  * النظام شغال على الإنتاج — ما نقدرش نـ test على الساندبوكس (single session).
+- المرحلة 1 (تحديد التضارب):
+  * telegram_interactive_bot.py مش موجود (في garage) بس PM2 بيـ try يشغله → crash-loop.
+  * 3 modules في garage بس مستوردة بـ silent fallback (telegram_report_card + telegram_target_hit_tracker + egx_arabic_lookup).
+  * 3 schema مختلفة لـ telegram_news (stocks.db 10 cols ≠ predictions.db 8 cols ≠ database.py code 12 cols).
+  * database.py::save_news بـ INSERT في columns مش موجودة.
+  * chart_routes.py phantom query (message_text, source_group, ticker مش موجودة).
+- المرحلة 2 (تنفيذ الحطة 1 — أقل خطورة):
+  * 1أ: ارجع telegram_interactive_bot.py من garage → vps-service/telegram/ ✅
+  * 1ب: ارجع telegram_report_card.py + telegram_target_hit_tracker.py + egx_arabic_lookup.py من garage ✅
+  * 1ج: أصلح database.py::save_news — استخدم schema A الصح (title, summary, sentiment, symbols, raw_text, channel_name, market, date) ✅
+  * 1د: أصلح chart_routes.py phantom query — message_text→summary, source_group→channel_name, ticker=symbols LIKE ✅
+  * 1هـ: الـ 3 imports في auto_post_scheduler.py دلوقتي هتشتغل (الـ modules موجودة) ✅
+- المرحلة 3 (اختبارات):
+  * py_compile PASS على 6 files ✅
+  * lint 0 errors ✅
+  * chart_routes: 0 phantom columns ✅
+  * dev server شغّال ✅
+  * نظّفت 3.5GB disk space (شيلت __pycache__ + tmp + backups).
+
+Stage Summary:
+- ✅ الحطة 1 (أقل خطورة) مكتملة: 4 modules restored + 2 bugs fixed.
+- ✅ telegram_interactive_bot.py بقى موجود → PM2 مش هيـ crash.
+- ✅ telegram_report_card + target_hit_tracker + egx_arabic_lookup بقوا موجودين → features مش معطّلة.
+- ✅ database.py::save_news بـ INSERT في columns موجودة.
+- ✅ chart_routes.py news confirmation بـ query columns موجودة.
+- ⏳ الحطة 2 (أعلى خطورة): unify schema + drop dead tables + fix TelegramSignalImporter — مع جيمي على الابتوب.

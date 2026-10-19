@@ -1394,15 +1394,15 @@ def chart_full_analysis():
                 from datetime import datetime as _dt_news, timedelta as _td_news
                 _news_cutoff = (_dt_news.now() - _td_news(hours=3)).isoformat()
                 _news_row = _conn_news.execute(
-                    """SELECT message_text, source_group FROM telegram_news
-                       WHERE ticker = ? AND created_at >= ?
+                    """SELECT summary, channel_name FROM telegram_news
+                       WHERE symbols LIKE ? AND created_at >= ?
                        ORDER BY created_at DESC LIMIT 1""",
-                    (ticker, _news_cutoff),
+                    (f'%{ticker}%', _news_cutoff),
                 ).fetchone()
                 if _news_row:
                     news_confirmed = True
-                    news_title = _news_row['message_text'][:200] if _news_row['message_text'] else ''
-                    news_source = _news_row['source_group'] or ''
+                    news_title = _news_row['summary'][:200] if _news_row['summary'] else ''
+                    news_source = _news_row['channel_name'] or ''
                 _conn_news.close()
             except Exception:
                 pass
