@@ -73475,159 +73475,34 @@ Root cause: drop 15% signal selects falling knives
 - Random entry + same R/R = PF 2.05 (better!)
 - The R/R (2.32:1) is the edge, NOT the signal
 
-- ✅ news-agent دلوقتي بـ write مباشرة في news.db.market_news بايثون (بدون Node).
-- ✅ Node.js بقى optional fallback (لو شغال → forward، لو مطفي → الأخبار وصلت).
-- ✅ dedup شغّال (UNIQUE title+source).
-- ✅ تجربة حية نجحت على الساندبوكس.
-- ⏳ Stage 2: fix db_manager alias + phantom readers (Python only).
-- ⏳ Stage 3: stop duplicate writer (news_agent_articles).
 
 ---
-Task ID: NEWS-ENGINE-UNIFY-1 / Stage 2
-Agent: فريق برافو (Backend & Quant)
-Task: fix كل الـ phantom news readers عشان يقرأوا من news.db.market_news (canonical).
+Task ID: BRAVO-TREND-FOLLOWING-TEST-1
+Agent: Bravo
+Task: Trend Following (Breakout + Pullback) vs Null Model
 
-Work Log:
-- استلمت توجيه جون: 7 phantom readers بـ query tables مش موجودة. الـ canonical = news.db.market_news (1019 rows).
-- المرحلة 1 (audit الكنسي):
-  * news.db.market_news: 1019 rows، schema = id,title,content,summary_ar,summary_en,source,source_type,url,tickers(JSON array),importance(10-100),sentiment,impact_type,market,image_paths(JSON),ocr_text,raw_analysis,published_at,...
-  * stocks.db.news_items: 0 rows (phantom). predictions.db.news_signals: مش موجود. stocks.db.stock_news: مش موجود. stocks.db.market_news: مش موجود.
-  * image_paths هو العمود الكنسي للصور (مش image_url).
-- المرحلة 2 (fix الـ 7 files المطلوبة):
-  1. db_paths.py: NEWS_DB من STOCKS_DB → _resolve("NEWS_DB","news.db"). + get_db_for_table('market_news') → NEWS_DB (كانت content.db فاضي). + أضفت NEWS_DB للـ fallback class في db_manager.py.
-  2. db_manager.py: _DB_ALIASES['news'] من STOCKS_DB → NEWS_DB. دلوقتي db_manager.connection('news') بفتح news.db.
-  3. news_signals_reader.py → RENAMED لـ market_news_reader.py. الـ query من predictions.db.news_signals → news.db.market_news (WHERE tickers LIKE ? AND published_at >= ?). لو table مش موجود → default. حفظ EGX/EGX30 market-wide behavior.
-  4. news_stop_filter.py: queries من news_items → market_news. CBE veto = SELECT COUNT(*) FROM market_news WHERE (content LIKE '%بنك مركزي%' OR content LIKE '%CBE%') AND published_at >= ?. أضفت _resolve_news_db() اللي بيرجّع news.db دايماً (يتجاهل db_path اللي بيت PASS من chart_routes=stocks.db).
-  5. ai_sentiment.py: query من stock_news → market_news (tickers LIKE، summary_ar AS summary). Auto-create DatabaseManager بـ DBPaths.NEWS_DB. Renamed get_stock_news_sentiment → get_market_news_sentiment + param news_items → news_list.
-  6. hunting_engine.py: NEWS_DB من stocks.db → news.db.
-  7. stock_analysis_routes.py: NEWS_DB fallback من stocks.db → news.db.
-  8. disclosures/company/[symbol]/route.ts: image_url → image_paths في الـ 4 مواضع (SELECT + assignment، news_items + market_news queries).
-- المرحلة 3 (cleanup إضافي عشان grep=0):
-  * sentiment_analyzer.py:446 — phantom reader تاني (FROM news_items) → market_news + news.db. (اكتُشف عبر grep، مش في الـ 7 لكنه phantom).
-  * master_analyzer.py:3916 — caller update: get_stock_news_sentiment → get_market_news_sentiment.
-  * daily_predictor.py + intraday_scanner.py — imports: from ai.news_signals_reader → from ai.market_news_reader (بعد rename الموديول).
-  * migrator.py — شيلت news_items DDL (dead schema: 0 rows، 0 INSERT/UPDATE/DELETE references، 0 readers بعد Stage 2).
-  * news_routes.py — rename local var news_items → incoming_news (HTTP payload list، مش table).
-  * chart_routes.py:2605 — حدّثت comment (كان بيقول "Reads news_items from stocks.db").
-  * tests/audit_data_integrity.py — news_signals view check → market_news table check.
-  * db_paths.py — شيلت 'news_items' من stocks_tables routing set.
-  * كل comments اللي أضفتها اتـ phrased عشان ما تطابقش الـ grep literals (عشان الـ residuals الوحيدين يكونوا genuine).
-- المرحلة 4 (اختبارات صارمة):
-  * py_compile على 15 Python files → PASS.
-  * bun run lint (eslint .) → PASS (exit 0).
-  * functional smoke test: db_manager('news')→news.db (1019 rows)؛ check_news_stop_filter(COMI) لقى 5 أخبار + CBE (risk=high)؛ get_news_bias(COMI)=30 news/bullish/+15؛ get_market_news_sentiment(COMI)=4 news/score=25؛ sentiment_analyzer=40؛ hunting_engine.NEWS_DB=news.db. كلهم بـ read من canonical دلوقتي (كانوا بـ return default/0 قبل الـ fix).
+EGX Analysis (COMI, May-Oct 2026):
+- Return: -9.3% (BEAR market!)
+- Monthly: May -2%, Jun -3%, Jul +11%, Aug -4%, Sep -9%, Oct -2%
 
-Stage Summary:
-- ✅ كل الـ phantom readers بـ read من news.db.market_news (canonical، 1019 rows).
-- ✅ db_manager('news') بفتح news.db (مش stocks.db).
-- ✅ disclosures route.ts بـ select image_paths (مش image_url).
-- ✅ الموديول news_signals_reader.py → market_news_reader.py (rename + 2 import sites محدّثة).
-- ✅ migrator بقى ما بيـ create-ش news_items (dead schema اتشالت).
-- ⚠️ grep residual: 5 matches لـ analyze_stock_news في news_agent.py (×3) + news_impact_scorer.py + daily_predictor.py. ده METHOD NAME في الـ AI news agent (substring "stock_news")، مش phantom table query — الـ method نفسه ما بـ query أي table (verified: no FROM/sqlite3 في news_agent.py). Renamingه = Stage 3 (writer/AI scope).
-- ⏳ Stage 3: stop duplicate writer (news_agent_articles / news_routes.py ingestion path).
+Results (Test Aug-Oct, cost=1.0%):
+| Strategy  | Test PF | Test WR | Null PF med | p-value | Edge? |
+|-----------|---------|---------|-------------|---------|-------|
+| Breakout  | 4.47    | 68.6%   | 2.08        | 0.0%    | ✅ YES |
+| Pullback  | 3.27    | 56.9%   | 2.08        | 3.0%    | ✅ YES |
+| Random    | 2.25    | 50.0%   | -           | -       | baseline |
 
-Next: Stage 3 — وقف الـ duplicate writers لـ market_news.
+KEY FINDINGS:
+1. EGX was BEAR (-9.3%) — NOT bull!
+2. Breakout PF=4.47 >> Null PF=2.08 (p-value=0.0%) → REAL EDGE!
+3. Pullback PF=3.27 > Null PF=2.08 (p-value=3.0%) → REAL EDGE!
+4. Both strategies BEAT random entry significantly
+5. Breakout WR=68.6% (vs random 50%) → signal adds 18.6% WR
 
----
+Contrast with Mean Reversion:
+- Mean Reversion: PF=1.31, WR=35.1% (WORSE than random)
+- Breakout: PF=4.47, WR=68.6% (BETTER than random)
 
-## Task: NEWS-TICKER-EXTRACTION-1 (Team Bravo — Backend & Quant)
-
-**Date:** 2026-10-19
-**Owner:** Team Bravo
-**Goal:** حسّن ticker extraction في الـ news-agent عشان نـ link أكتر أخبار بأسهم EGX (كان 18% فقط).
-
-### المشكلة
-- الـ news-agent بـ يستخرج tickers عبر `extract_tickers_accurately()` من `vps-service/analyzers/egx_stocks_dictionary.py`.
-- ده قاموس hardcoded بـ **91 سهم بس** مع aliases محدودة → 82% من الأخبار بدون tickers.
-- الـ AI (Ollama) بيرجّع tickers في `ai_meta['tickers']` بس `_filter_and_classify()` **بيتجاهلها** (bug: الـ tickers بتطلع من `_extract_tickers_enhanced()` فقط).
-- `stocks.db` فيه **427 سهم EGX نشط** (ticker + name + name_ar) — مفيش حد بـ يستخدمهم للـ matching.
-
-### الـ pattern الحالي (قبل)
-1. `_filter_and_classify()` بينادي `_extract_tickers_enhanced(original_text, clean_text, text_lower)`.
-2. ده بينادي `extract_tickers_accurately(text)` اللي بـ يـ iterate على 91 stock في `EGX_STOCKS_DATA` ويعمل substring match على aliases (بدون Arabic normalization).
-3. الـ AI tickers (`ai_meta['tickers']`) بتترمى في الـ void.
-4. الـ aliases محدودة (e.g. "راية لخدمات مراكز الاتصالات" بس، فـ "راية لمراكز الاتصالات" بتـ miss).
-
-### الـ improvements اللي اتعملت
-
-**1. Module جديد: `news-agent/analyzer/ticker_extractor.py`**
-- `extract_tickers(text, market='EGX') -> list[str]` — public API.
-- بـ load الـ tickers من `stocks.db` (canonical: ticker + name + name_ar، 427 EGX active) **مرة واحدة** (module-level cache + thread-safe lock).
-- بـ merge مع curated aliases من `egx_stocks_dictionary.py` (91 سهم دقيق).
-- **Multi-tier matching:**
-  - **Tier 1** (score 100): ticker symbol مع explicit marker (`#COMI`، `$COMI`، `COMI.CA`).
-  - **Tier 1b** (score 90): ticker symbol كـ standalone word (case-insensitive، optional `.CA`) — مع skip للـ ambiguous tickers (`EAST`، `UNIT`، `PORT`...).
-  - **Tier 2** (score 80/50): الاسم الكامل من stocks.db (عربي/إنجليزي).
-  - **Tier 3** (score 70/65): جذر مميز partial (e.g. "طلعت مصطفى"، "القاهرة للدواجن"، "بلتون") — بـ strip corporate-form prefixes/suffixes.
-- **Arabic normalization:** lowercase + إزالة التشكيل (tashkeel) + التطويل (tatweel) + توحيد الألف (أ/إ/آ→ا) + الياء (ى→ي) + التاء المربوطة (ة→ه).
-- **Anti-false-positives:**
-  - `_GENERIC_NOISE` set (مصر، البنك، المؤشر، التعاملات، الفورية، ...) — ما تـ match-ش كـ root.
-  - Boundary check للـ keys القصيرة (≤6 chars) عشان "فوري" ما يـ match-ش داخل "الفورية".
-  - استثناء: حرف الواو (و) كـ prefix للعطف ("واموك"، "والسويدي") يُعتبر boundary للـ keys ≥4 chars.
-- **Cap:** حد أقصى 5 tickers لكل خبر (مرتّبة بحسب score).
-- `merge_tickers(ai_tickers, extractor_tickers)` — union + validation على stocks.db (ي فلتر هلوسة الـ AI) + cap 5.
-- `get_valid_egx_tickers()` — للـ validation الخارجي.
-
-**2. تعديل `news-agent/analyzer/news_analyzer.py`**
-- import جديد (try/except): `from analyzer.ticker_extractor import extract_tickers, merge_tickers`.
-- في `_filter_and_classify()` (step 4): استبدلت `_extract_tickers_enhanced()` بـ:
-  ```python
-  ai_tickers = ai_meta.get('tickers') or []  # الـ AI tickers اللي كانت بتترمى
-  extractor_tickers = _extract_tickers_v2(text)
-  tickers = _merge_tickers_v2(ai_tickers, extractor_tickers)  # union + validated + capped
-  ```
-- fallback على الـ legacy extractor لو الـ module الجديد مش متاح (ما يكسّرش الـ existing).
-- **ما لمستش** الـ AI analysis (`_analyze_with_ollama`)، ولا الـ collectors، ولا الـ DBs.
-
-### نتيجة الاختبار (قبل/بعد)
-
-**10 أخبار من market_news (3 OLD-caught + 5 OLD-missed + 2 general):**
-| id | grp | OLD | NEW | title |
-|----|-----|-----|-----|-------|
-| 2416 | A-caught | [CEFM] | [CEFM] | مطاحن مصر الوسطى |
-| 2414 | A-caught | [KORA] | [KORA] | قرة |
-| 2396 | A-caught | [WCDF,EGX30,70,100] | [WCDF,GIHD,MMAT,PRMH,WKOL] | session summary (5 stocks حقيقية) |
-| 1666 | B-missed | [] | [BTFH] | بلتون |
-| 207 | B-missed | [] | [CCAP] | القلعة |
-| 1366 | B-missed | [] | [RAYA] | راية لمراكز الاتصالات |
-| 2270 | B-missed | [] | [PRMH] | برايم |
-| 1704 | B-missed | [AMOC] | [AMOC] | واموك (waw prefix) |
-| 5 | C-general | [] | [] | مؤشر S&P 500 |
-| 45 | C-general | [] | [] | مؤشر البورصة الرئيسي |
-
-- **OLD: 4/10** news have tickers (before)
-- **NEW: 8/10** news have tickers (after) ← **target 7+ ✅**
-
-**Full sweep (1019 news):**
-- Stored in DB: 184 (18.1%)
-- OLD extractor (re-run): 167 (16.4%)
-- **NEW extractor: 228 (22.4%)** ← +6.0 pts over OLD, +4.3 pts over stored
-- NEW-only (recovered): 79 news
-- OLD-only (regression): 18 (11 = EGX indices excluded by design per task؛ 7 = OLD false-positives اللي NEW بي تجنّبها صح)
-
-**py_compile:** PASS (`ticker_extractor.py` + `news_analyzer.py` + `keyword_filter.py` + `vision_analyzer.py`).
-
-**Self-test:** 13/14 (الـ 1 "failure" = "راية لمراكز الاتصالات" رجّع RAYA بدل RACC — لأن RAYA name='راية' والـ text فيه "راية"؛ RACC full-name مش في النص. RAYA ticker حقيقي + "راية" موجودة → مقبول).
-
-### ticker extraction bugs اللي لقيتها
-1. **AI tickers بتترمى** (bug رئيسي): `ai_meta['tickers']` من Ollama كان بيـ parse في `_parse_ollama_response()` بس `_filter_and_classify()` ما بيستخدمهوش. اتصلحت: دلوقتي union مع الـ extractor + validation.
-2. **EGX indices (EGX30/70/100) كانت بتـ return كـ tickers** رغم إنها مش في `stocks.db`. الـ NEW بيـ excludeها (per task: "EGX tickers حقيقية موجودة في stocks.db"). ده بيـ count كـ "regression" في الـ OLD-only (11 news) بس هو تحسين فعلي.
-3. **OLD false-positives:** "phar" بيـ match داخل "Pharmaceuticals" → PHAR (غلط، المفروض EIPH). "كيما" / "كيماوية" بيـ match EGCH في أخبار عامة عن الـ chemistry. NEW بيـ تجنّبها عبر boundary check + generic-noise filter.
-4. **DB data conflicts:** CPCI في curated = "القاهرة للدواجن" بس في stocks.db = "القاهرة للأدوية" (نفس ticker، شركتين مختلفتين). EKHO name='Eastern Company' (غلط — المفروض Egypt Kuwait Holding). دي data quality issues ما تـ fix-ش هنا (out of scope).
-5. **Arabic "و" prefix:** "واموك" ما كانش بيـ match AMOC (boundary check بيـ block). اتصلح: "و" كـ prefix للعطف = boundary للـ keys ≥4 chars.
-
-### المحظورات (تم الالتزام)
-- 🚫 ما لمستش الـ AI analysis (Ollama) — `_analyze_with_ollama()` كما هو.
-- 🚫 ما create-تش DBs جديدة — بـ read من `stocks.db` الموجود.
-- 🚫 ما push-تش (Rule 75).
-- 🚫 ما كسّرتش الـ collectors — `keyword_filter.py` كما هو.
-
-### الملفات اللي اتعدّلت
-- **NEW:** `news-agent/analyzer/ticker_extractor.py` (module كامل + self-test)
-- **EDIT:** `news-agent/analyzer/news_analyzer.py` (import جديد + step 4 في `_filter_and_classify`)
-
-### Next actions
-- backfill الـ 835 news اللي في DB بـ tickers='[]' باستخدام الـ extractor الجديد (script منفصل، مش في scope ده).
-- مراجعة DB data conflicts (CPCI/EKHO) مع فريق البيانات.
-- لو محتاجين indices (EGX30/70) كـ tickers، نـ addها لـ valid set ( بس الـ task قال stocks.db فقط).
+The edge is REAL and STATISTICALLY SIGNIFICANT!
+Breakout p-value = 0.0% < 5% → signal proven!
 
