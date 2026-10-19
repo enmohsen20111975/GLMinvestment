@@ -73446,3 +73446,32 @@ Results (cost=1.0%, realistic limit, no filters):
 - All months profitable
 - PF > 1.5 → no filters needed
 
+
+---
+Task ID: BRAVO-PAPER-TRADING-AUDIT-1
+Agent: Bravo
+Task: Paper Trading Audit (3 checks before going live)
+
+CHECK 1: Stress Test
+- 1.0% cost: Full PF=1.77, Test PF=1.31
+- 1.5% cost: Full PF=1.43, Test PF=1.06 (barely profitable)
+
+CHECK 2: Null Model (1000 random sims, Test Aug-Oct)
+- Strategy PF=1.31 | Null median PF=2.05
+- Strategy WR=35.1% | Null WR=47.5%
+- p-value (PF) = 90.7% → random BETTER than signal!
+- p-value (WR) = 96.4% → random BETTER than signal!
+
+CHECK 3: Walk-Forward
+- May-Jul → Aug-Oct: Gen=0.77 (declining)
+- Jun-Aug → Sep-Oct: Gen=0.41 (severe decline)
+
+VERDICT: ⚠️ Issues found:
+- Null Model p-value = 90.7% >= 5%
+- Strategy WORSE than random entry!
+
+Root cause: drop 15% signal selects falling knives
+- Signal can't distinguish mean reversion from falling knife
+- Random entry + same R/R = PF 2.05 (better!)
+- The R/R (2.32:1) is the edge, NOT the signal
+
