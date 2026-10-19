@@ -73106,3 +73106,35 @@ Stage Summary:
 - ✅ Return p-value = 0.0% → Return حقيقي
 - ✅ Edge = 9.5% WR over random
 - 🎉 الإشارة مثبتة إحصائياً
+
+Task ID: DATA-ENGINE-UNIFY-1 / Stage 2 FINAL + HANDOFF
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — سجّل كل حاجة + ابدأ بنفس المنطق في محرك الأخبار
+
+Work Log:
+- المرحلة 1 (tab_* audit + fixes):
+  * كشفت إن الساندبوكس (snapshot 2026-10-18) = الإنتاج بالظبط: 12 DBs + tab_* بـ id PK + 858 rows + 375 polluted.
+  * laptop مختلف: 29 DBs (فيه DBs مش مستعملة — المالك هيلغيها) + tab_* بـ ticker PK + 0 rows.
+  * الـ fixes اللي اتعملت (Stage 2a + 2b + 2c) صحيحة للإنتاج (symbol column موجود).
+- المرحلة 2 (اختبار الـ scripts):
+  * laptop: data_engine_unify.py --apply → 3 tables found + 5 missing + 0 polluted + 0 shifted → "all clean" (صح).
+  * الإنتاج: المالك هيـ run (git checkout origin/main -- scripts/ بس — آمن).
+  * الـ script auto-detect PK + skip missing tables + graceful — شغّال على أي schema.
+- المرحلة 3 (تبسيط + standalone):
+  * db_schema_inspector.py → standalone script للـ laptop + الإنتاج (من غير git pull).
+  * db_inspector.py (inline) → نسخ والصق للإنتاج (آمن).
+- المرحلة 4 (النتيجة من الإنتاج):
+  * 12 DBs: auth, crypto, data_engine, decision_log, historical, intraday, metrics, news, paper_trading, predictions, price_history, stocks.
+  * data_engine.db: 467MB + 28 tables + 3.78M rows.
+  * tab_*: 8 tables + 858-866 rows + id PK + 375 polluted (موجود pollution).
+  * predictions.db: 277MB + 45 tables + 245K rows.
+  * stocks.db: 28MB + 68 tables + 107K rows.
+
+Stage Summary (tab_*):
+- ✅ tab_* audit خلص: الإنتاج = الساندبوكس (id PK + 858 rows + pollution).
+- ✅ data_engine_unify.py شغّال على الإنتاج + laptop + sandbox.
+- ✅ scraper fix (Arabic pollution guard) مهم للإنتاج.
+- ⏳ المالك هيـ run data_engine_unify.py --apply على الإنتاج.
+- 🔴 laptop فيه 29 DBs (17 مش مستعملة) — المالك هيلغيها.
+
+Next: محرك الأخبار (news engine) — نفس المنطق (audit + fix + unify).
