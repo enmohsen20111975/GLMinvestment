@@ -672,10 +672,25 @@ export function isGuestUser(
  * Views اللي Guest (مش مسجّل) يقدر يشوفها في Guest Mode.
  * جون: "السوق + رادار محدود + الأخبار".
  * dashboard مدرجة عشان Guest يفضل في AppShell (مش AuthView).
+ *
+ * ALPHA-UX-FIX-2: أضفنا عناصر بوابة "السوق" الفعلية (stocks / stock-filters /
+ * liquidity-radar / trading-chart / screener / top-performers / market-depth).
+ * قبل كده كان بس 'market' (البوابة) بس مش الـ routes اللي بتحتها → كان بيـ block
+ * الـ guest عن #stocks + بيـ trigger LoginPromptModal بالغلط (بيغطي الشاشة).
+ * جون: "login modal ما يظهرش فورًا — بس لما المستخدم يضغط على feature مقفول".
+ * الـ limit (أول 50 سهم، رادار محدود) ده backend tier enforcement — برافو.
  */
 export const GUEST_ALLOWED_VIEWS = new Set<string>([
   'dashboard',
+  // بوابة السوق — كل الـ routes اللي بتحتها (guest يقدر يشوفها، الـ limit من backend)
   'market',
+  'stocks',
+  'stock-filters',
+  'liquidity-radar',
+  'trading-chart',
+  'screener',
+  'top-performers',
+  'market-depth',
   'market-overview',
   'market-pulse',
   'recommendations', // public landing driver (يـ limit server-side لـ 3 items)

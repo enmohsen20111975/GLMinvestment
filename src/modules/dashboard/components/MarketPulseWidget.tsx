@@ -11,7 +11,7 @@
  * - شريط اتساع السوق (gainers vs losers)
  * - القطاع الأكثر امتصاصاً للسيولة
  * - تحديث تلقائي كل 10 ثوانٍ مع وميض خفيف عند التحديث
- * - "آخر تحديث: منذ X ثانية" — يُعاد حسابه كل ثانية
+ * -"آخر تحديث: منذ X ثانية" — يُعاد حسابه كل ثانية
  *
  * يجلب البيانات من `/api/market-pulse`.
  * يعمل بالكامل في RTL، ألوان emerald/rose/amber فقط (لا أزرق/إنديغو).
@@ -57,7 +57,7 @@ interface IndexSnapshot {
 
 interface PulseInfo {
  score: number; // -5..+5
- label: string; // "قوي صاعد" / "صاعد" / "محايد" / "هابط" / "قوي هابط"
+ label: string; //"قوي صاعد" /"صاعد" /"محايد" /"هابط" /"قوي هابط"
  label_en: string;
  color: 'emerald' | 'green' | 'amber' | 'orange' | 'rose';
 }
@@ -189,9 +189,9 @@ function fmtVolume(value: number | null | undefined): string {
  return intFmt.format(value);
 }
 
-/** "منذ X ثانية/دقيقة" — نسخة محلية (بدون التأثير على جذر التطبيق).
+/**"منذ X ثانية/دقيقة" — نسخة محلية (بدون التأثير على جذر التطبيق).
  * ALPHA-P0: معالجة الـ UTC offset — إذا كان الـ timestamp بدون 'Z' أو timezone،
- * نضيف 'Z' تلقائياً لنتجنب ظهور "منذ 5 ساعات" للبيانات الطازجة.
+ * نضيف 'Z' تلقائياً لنتجنب ظهور"منذ 5 ساعات" للبيانات الطازجة.
  */
 function relTime(dateString: string | null | undefined): string {
  if (!dateString) return '—';
@@ -316,7 +316,7 @@ function PulseGauge({ score }: { score: number }) {
  stroke="currentColor"
  strokeWidth={1}
  strokeDasharray="2 4"
- className="text-slate-300 dark:text-slate-700"
+ className="text-muted-foreground"
  opacity={0.5}
  />
 
@@ -335,13 +335,13 @@ function PulseGauge({ score }: { score: number }) {
  y2={p2.y}
  stroke="currentColor"
  strokeWidth={1.5}
- className="text-slate-400 dark:text-slate-500"
+ className="text-muted-foreground"
  />
  <text
  x={labelP.x}
  y={labelP.y + 4}
  textAnchor="middle"
- className="fill-slate-500 dark:fill-slate-400"
+ className="fill-muted-foreground"
  style={{ fontSize: '10px', fontWeight: 600 }}
  >
  {s > 0 ? `+${s}` : s}
@@ -366,14 +366,14 @@ function PulseGauge({ score }: { score: number }) {
  stroke="currentColor"
  strokeWidth={3}
  strokeLinecap="round"
- className="text-slate-900 "
+ className="text-foreground"
  />
  {/* رأس الإبرة (دائرة صغيرة) */}
  <circle
  cx={needleTip.x}
  cy={needleTip.y}
  r={3}
- className="fill-slate-900 dark:fill-white"
+ className="fill-muted-foreground dark:fill-white"
  />
  </g>
  {/* محور المؤشر */}
@@ -381,13 +381,13 @@ function PulseGauge({ score }: { score: number }) {
  cx={GAUGE_CX}
  cy={GAUGE_CY}
  r={6}
- className="fill-slate-900 dark:fill-white"
+ className="fill-muted-foreground dark:fill-white"
  />
  <circle
  cx={GAUGE_CX}
  cy={GAUGE_CY}
  r={3}
- className="fill-slate-100 dark:fill-slate-900"
+ className="fill-muted-foreground"
  />
  </svg>
  );
@@ -434,9 +434,9 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
  };
  default:
  return {
- bg: 'bg-slate-50 dark:bg-slate-900/50',
- text: 'text-slate-700 dark:text-slate-300',
- border: 'border-slate-200 dark:border-slate-800',
+ bg: 'bg-muted/50 ',
+ text: 'text-foreground ',
+ border: 'border-border ',
  icon: AlertTriangle,
  };
  }
@@ -455,7 +455,7 @@ function pulseColorClasses(color: PulseInfo['color']): string {
  case 'rose':
  return 'text-loss ';
  default:
- return 'text-slate-600 dark:text-slate-400';
+ return 'text-muted-foreground ';
  }
 }
 
@@ -473,9 +473,9 @@ function IndexMiniCard({
  const up = (idx?.change_percent ?? 0) >= 0;
  const hasData = !!idx && typeof idx.value === 'number';
  return (
- <div className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 dark:border-slate-800 dark:bg-slate-900/40">
+ <div className="flex flex-col gap-0.5 rounded-lg border border-border bg-muted/60 p-2.5">
  <div className="flex items-center justify-between">
- <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+ <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
  {label}
  </span>
  {hasData && (
@@ -498,12 +498,12 @@ function IndexMiniCard({
  )}
  </div>
  <div
- className="font-mono text-lg font-bold tabular-nums text-slate-900 "
+ className="font-mono text-lg font-bold tabular-nums text-foreground"
  dir="ltr"
  >
  {hasData ? fmtNum(idx?.value) : '—'}
  </div>
- <div className="text-xs text-slate-400 dark:text-slate-500" dir="ltr">
+ <div className="text-xs text-muted-foreground" dir="ltr">
  إغلاق سابق: {hasData ? fmtNum(idx?.previous_close) : '—'}
  </div>
  </div>
@@ -531,23 +531,23 @@ function BreadthBar({
  return (
  <div className="space-y-1.5">
  <div className="flex items-center justify-between text-xs font-medium">
- <span className="text-profit ">
+ <span className="text-profit">
  ▲ {gainers} صاعد
  </span>
- <span className="text-slate-400 dark:text-slate-500">
+ <span className="text-muted-foreground">
  {unchanged} ثابت
  </span>
- <span className="text-loss ">
+ <span className="text-loss">
  ▼ {losers} هابط
  </span>
  </div>
- <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+ <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
  <div
  className="h-full bg-profit transition-all duration-700 ease-out"
  style={{ width: `${gPct}%` }}
  />
  <div
- className="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-700 ease-out"
+ className="h-full bg-muted-foreground/30 transition-all duration-700 ease-out"
  style={{ width: `${uPct}%` }}
  />
  <div
@@ -639,7 +639,7 @@ export function MarketPulseWidget() {
 
  // الجلب الأولي + التحديث الدوري — P37-PHASE-2B-4A: visibility-aware polling
  // (clears the interval when the tab is hidden, fires immediately on resume).
- // The 1-second "آخر تحديث" clock ticker below stays on its own cadence.
+ // The 1-second"آخر تحديث" clock ticker below stays on its own cadence.
  useEffect(() => {
  void fetchData();
  return () => {
@@ -650,7 +650,7 @@ export function MarketPulseWidget() {
 
  useVisibilityAwarePolling(() => { void fetchData(); }, REFRESH_INTERVAL_MS, [fetchData]);
 
- // تحديث نص "آخر تحديث: منذ X" كل ثانية
+ // تحديث نص"آخر تحديث: منذ X" كل ثانية
  useEffect(() => {
  if (!data?.latest_update) {
  setLastUpdateStr('—');
@@ -682,16 +682,16 @@ export function MarketPulseWidget() {
  <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
  <WifiOff className="h-8 w-8 text-loss" />
  <div className="space-y-1">
- <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+ <p className="text-sm font-semibold text-foreground">
  انقطاع الاتصال
  </p>
- <p className="text-xs text-slate-500 dark:text-slate-400">
+ <p className="text-xs text-muted-foreground">
  تعذّر جلب بيانات نبض السوق
  </p>
  </div>
  <button
  onClick={() => void fetchData()}
- className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+ className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:hover:bg-muted"
  >
  <RefreshCw className="h-3.5 w-3.5" />
  إعادة المحاولة
@@ -731,7 +731,7 @@ export function MarketPulseWidget() {
  'flex h-7 w-7 items-center justify-center rounded-md',
  isOpen
  ? 'bg-profit text-profit /60 '
- : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400',
+ : 'bg-muted text-muted-foreground ',
  )}
  >
  <Zap className="h-4 w-4" />
@@ -755,11 +755,11 @@ export function MarketPulseWidget() {
  'relative inline-flex h-2 w-2 rounded-full',
  isOpen
  ? 'bg-profit'
- : 'bg-slate-400 dark:bg-slate-600',
+ : 'bg-muted-foreground/40 ',
  )}
  />
  </span>
- <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+ <span className="text-xs font-medium text-muted-foreground">
  {isOpen ? 'مباشر' : 'مغلق'}
  </span>
 
@@ -767,7 +767,7 @@ export function MarketPulseWidget() {
  {error && (
  <Badge
  variant="outline"
- className="border-loss bg-loss text-xs text-loss /50 "
+ className="border-loss bg-loss text-xs text-loss /50"
  >
  <WifiOff className="h-2.5 w-2.5" />
  انقطاع
@@ -779,7 +779,7 @@ export function MarketPulseWidget() {
  onClick={() => void fetchData()}
  disabled={isRefreshing}
  title="تحديث"
- className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+ className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted dark:hover:text-muted-foreground"
  >
  {isRefreshing ? (
  <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -807,7 +807,7 @@ export function MarketPulseWidget() {
  >
  {pulse ? (pulse.score >= 0 ? `+${(pulse.score ?? 0).toFixed(1)}` : (pulse.score ?? 0).toFixed(1)) : '—'}
  </span>
- <span className="text-xs text-slate-400 dark:text-slate-500">
+ <span className="text-xs text-muted-foreground">
  من +5
  </span>
  </div>
@@ -822,7 +822,7 @@ export function MarketPulseWidget() {
  >
  {pulse?.label ?? '—'}
  </div>
- <div className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+ <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
  {pulse?.label_en ?? ''}
  </div>
  </div>
@@ -849,7 +849,7 @@ export function MarketPulseWidget() {
  <div className={cn('text-xs font-bold', divStyle.text)}>
  {div.regime_ar}
  </div>
- <div className="text-xs text-slate-500 dark:text-slate-400">
+ <div className="text-xs text-muted-foreground">
  التباعد: {fmtPct(div.value)} • {div.action_ar}
  </div>
  </div>
@@ -858,13 +858,13 @@ export function MarketPulseWidget() {
  )}
 
  {/* اتساع السوق */}
- <div className="rounded-lg border border-slate-200 bg-white/60 p-2.5 dark:border-slate-800 dark:bg-slate-950/30">
+ <div className="rounded-lg border border-border bg-white/60 p-2.5">
  <div className="mb-1.5 flex items-center justify-between">
- <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+ <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
  اتساع السوق
  </span>
  {bread && (
- <span className="text-xs text-slate-400 dark:text-slate-500">
+ <span className="text-xs text-muted-foreground">
  السيولة: {fmtVolume(bread.total_turnover)} ج.م
  </span>
  )}
@@ -882,9 +882,9 @@ export function MarketPulseWidget() {
 
  {/* القطاع الأكثر نشاطاً */}
  {top && (
- <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-gradient-to-l from-profit/60 to-transparent px-2.5 py-2 dark:border-slate-800 /30">
+ <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-gradient-to-l from-profit/60 to-transparent px-2.5 py-2 /30">
  <div className="flex items-center gap-2">
- <div className="flex h-7 w-7 items-center justify-center rounded-md bg-profit text-profit /60 ">
+ <div className="flex h-7 w-7 items-center justify-center rounded-md bg-profit text-profit /60">
  {top.avg_change >= 0 ? (
  <Signal className="h-3.5 w-3.5" />
  ) : (
@@ -892,16 +892,16 @@ export function MarketPulseWidget() {
  )}
  </div>
  <div>
- <div className="text-xs text-slate-500 dark:text-slate-400">
+ <div className="text-xs text-muted-foreground">
  القطاع الأكثر امتصاصاً للسيولة
  </div>
- <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+ <div className="text-xs font-bold text-foreground">
  {top.sector}
  </div>
  </div>
  </div>
  <div className="text-left" dir="ltr">
- <div className="text-xs font-bold tabular-nums text-profit ">
+ <div className="text-xs font-bold tabular-nums text-profit">
  {fmtPct(top.turnover_pct)}
  </div>
  <div
@@ -919,7 +919,7 @@ export function MarketPulseWidget() {
  )}
 
  {/* آخر تحديث */}
- <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs text-slate-400 dark:border-slate-800 dark:text-slate-500">
+ <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
  <span>آخر تحديث: {lastUpdateStr}</span>
  <span dir="ltr" className="tabular-nums">
  {data.cairo_time?.split(' ')?.[1] ?? ''}

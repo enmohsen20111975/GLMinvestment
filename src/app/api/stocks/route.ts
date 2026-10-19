@@ -33,17 +33,24 @@ export async function GET(req: NextRequest) {
         // DEEP-MARKET-FIX: لو Python رجّع array فاضي (مش null)، نـ skip للـ fallback
         // عشان stocks.db يرجّع أسهم US اللي موجودة فعلاً.
         if (data && Array.isArray(data.data) && data.data.length > 0) {
+          // ALPHA-UX-FIX: NO `data` field — apiClient's unwrap extracts `data` as the
+          // payload, but here `data` would be the stocks ARRAY → store loses .stocks.
+          // Response shape: {success, stocks, total} → apiFetch sets payload.data=body
+          // → unwrap returns body → store's response.stocks works.
           return NextResponse.json({
             success: true,
             stocks: data.data,
-            data: data.data,
             total: data.count || data.data.length,
+            source: 'python',
           });
         }
         if (data && Array.isArray(data.stocks) && data.stocks.length > 0) {
+          // ALPHA-UX-FIX: explicit shape (no `data` field, no spread that may carry one)
           return NextResponse.json({
-            ...data,
-            data: data.stocks,
+            success: true,
+            stocks: data.stocks,
+            total: data.total ?? data.stocks.length,
+            source: data.source ?? 'python',
           });
         }
         // لو وصلنا هنا → Python رجّع array فاضي → نـ fall through للـ fallback
@@ -58,9 +65,13 @@ export async function GET(req: NextRequest) {
     await ensureInitialized();
     const fallback = readStocksFromLightDb(req);
     if (fallback.stocks.length > 0) {
+      // ALPHA-UX-FIX: explicit shape (no `data` field — apiClient's unwrap would
+      // extract `data` as the stocks array → store loses .stocks access)
       return NextResponse.json({
-        ...fallback,
-        data: fallback.stocks,
+        success: true,
+        stocks: fallback.stocks,
+        total: fallback.total ?? fallback.stocks.length,
+        source: fallback.source ?? 'stocks.db',
       });
     }
   } catch (err) {
