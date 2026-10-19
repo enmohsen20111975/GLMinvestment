@@ -72020,3 +72020,207 @@ Stage Summary:
 - ✅ Drawdown Audit: PF = 0.51 (خسارة حقيقية)
 - ❌ النظام مش عنده edge — الـ features نفسها غلط
 - 🔁 محتاجين: مراجعة جذرية لـ SMC + VP + Core engines
+
+- ✅ root cause للـ 4 أزواج: مصدرين مختلفين (TradingView English + EGKSCO Arabic) بدون dedup + name_ar fallback تالف.
+- ✅ دراسة المرحلة 4: 122 alias، تأثير كبير في 4 DBs، آمن بـ backup + dry-run.
+- ✅ برمبت ألفا FRONTEND-CLEANUP-A-2 اتحدّث: Problem 4 (الشاشات الحية) + احترام جيمي + 6 مراحل.
+- ✅ JOHN-PROFILE.md اتحدّث: 6 دروس learned + محظورين جداد.
+- ⏳ محتاج قرار المالك: (أ) المرحلة 4 migration — أوافق؟ (ب) أرفع البرمبت المحدّث لألفا على GitHub؟
+
+---
+Task ID: JOHN-CORRECTION-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — تصحيح: canonical = source A (EGX official English)، مش source B. + تأكيد إن البرمبت المحدّث على GitHub لألفا.
+
+Work Log:
+- استلمت تصحيح المالك: الـ canonical = source A (EGX official English — MNHD/KAHA/CALT/PACL). source B (MASR/POUL/COSG/EGCH — Arabic) مش موجودة أصلاً في الأسهم المصرية. ده عكس ما فرضت في الـ 4 ambiguous pairs.
+- المرحلة 1 (verification):
+  * فحصت db/stocks.db: source A (MNHD/KAHA/CALT/PACL) كلهم is_egx=1 + is_active=1 + English names.
+  * source B (MASR/POUL/COSG/EGCH) كلهم is_egx=1 + is_active=1 + Arabic names. الـ is_egx flag غلط في الكود (scraper ضايف الكل)، بس كلام المالك هو المرجع: source B مش EGX رسمي.
+- المرحلة 2 (canonical direction audit على الـ 122 clear pair):
+  * 46 alias عربي (source B) — قرار صح (alias = source B الزايد).
+  * 1 canonical عربي (wrong direction) — ARAB vs ARAB_R2 (بورتو جروب)، محتاج مراجعة.
+  * 75 من الـ 122 قرارها صح بناءً على truncation/ticker-prefix pollution (مش source direction).
+  * الخلاصة: أغلب القرارات صح. الـ 4 ambiguous + الـ 1 wrong direction محتاجة قرار يدوي.
+- المرحلة 3 (تأكيد البرمبت على GitHub لألفا):
+  * fetch + verify: origin/main = local = 7810199. متزامن.
+  * git show origin/main:agent-ctx/FRONTEND-CLEANUP-A-2-alpha.md → موجود + فيه Problem 4 (الشاشات الحية) + احترام جيمي.
+  * الخلاصة: البرمبت المحدّث على GitHub. ألفا لو هتعمل git pull هتلاقيه.
+
+Stage Summary:
+- ✅ canonical = source A (EGX official English) — تصحيح المالك وصل. source B (Arabic) = alias الزايد.
+- ✅ البرمبت FRONTEND-CLEANUP-A-2 (Problem 4 + احترام جيمي) على GitHub (origin/main = 7810199).
+- ✅ أغلب الـ 122 قرار canonical صح (46 Arabic alias + 75 truncation-based).
+- 🟡 1 wrong direction (ARAB/ARAB_R2) + 4 ambiguous محتاجة قرار يدوي يدوي (source A = canonical).
+- ⏳ المرحلة 4 migration معلّقة (استنى شوية — أمر المالك).
+- ⏳ ألفا تبدأ FRONTEND-CLEANUP-A-2 — المالك بعتلهم (التواصل عبر GitHub).
+
+---
+Task ID: DATA-ENGINE-AUDIT-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — راجع محرك البيانات بأقصى حرص ودقة، ماتعتمدش على الكومنت اعتمد على الكود. إيه اللي فيه حل كل الألغاز.
+
+Work Log:
+- استلمت توجيه المالك: اقرأ الكود الفعلي في data_engine/ (مش الكومنتات).
+- أطلقت Explore agent عشان يفحص كل scrapers + main + sync + realtime_sync + intraday_storage من الكود.
+- قرأت data_engine/main.py بنفسي (150 سطر) للتأكد.
+- فحصت db/data_engine.db + db/stocks.db بنفسي عشان أتحقق من الألغاز.
+
+Stage Summary — 8 ألغاز/تعارضات من الكود الفعلي:
+
+🔴 اللغز 1 (الأخطر — root cause للـ alias duplication):
+**المصدرين مختلفين بيكتبوا في stocks.db بدون ما يتـ dedupوا:**
+- المصدر A: vps-service/scripts/seed_egx_stocks.py + seed_official_stocks.py + seed_multi_market_stocks.py + data/eodhd_fetcher.py → بيكتبوا tickers رسمية (MNHD, KAHA, CALT, PACL) في stocks.db مباشرة بـ market='EGX'.
+- المصدر B: data_engine/scrapers/egksco_scraper.py + tradingview_*.py → بيكتبوا tickers تانية (MASR, POUL, COSG, EGCH) في data_engine.db.stocks بـ market='مصر'.
+- data_engine/sync.py بينقل من data_engine.db لـ stocks.db → بيـ insert الـ Arabic tickers (MASR...) بـ market='مصر' في stocks.db اللي فيها MNHD بـ market='EGX'.
+- النتيجة: MNHD و MASR **شركتين مختلفتين فعلاً** (مفيش alias)، بس الكود شافهم alias بسبب name_ar تالف مشترك. **المالك كان صح 100%.**
+
+🔴 اللغز 2 (market codes مختلطة في نفس الـ DB):
+data_engine.db.stocks فيها 3 market codes لـ EGX: 'مصر' (239 row) + 'EGX' (156 row). sync.py بيعمل map 'مصر'→'EGX' بس الـ data الأصلية لسه مختلطة. ده بيـ cause filters غلط.
+
+🔴 اللغز 3 (sync.py بـ sync بس stocks — الباقي COUNT-only):
+sync_historical_prices + sync_crypto_prices + sync_metals_prices اسمهم "sync" بس فعلياً بـ COUNT من الـ source tables. مفيش نقل بيانات فعلي للـ destination. الـ sync الحقيقي بس للـ stocks.
+
+🔴 اللغز 4 (realtime_sync.NOTIFY_SOURCES ناقصة):
+NOTIFY_SOURCES = {stocks, crypto, metals, gold, forex, historical, sync} بس main.py بيمرر بس stocks/crypto/metals/news → news مش في القائمة، و gold/forex/historical عمرهم ما بيـ notify من الـ scheduler التلقائي.
+
+🔴 اللغز 5 (intraday_storage RETENTION_DAYS mismatch):
+الكود RETENTION_DAYS = 30 بس main.py log بيقول "7-day retention". mismatch بين الكود والـ log.
+
+🔴 اللغز 6 (intraday_storage _normalize_ticker بـ mask تعارضات):
+_normalize_ticker بيعمل re.sub(r'(.)\1+', r'\1', clean) — بيشيل الحروف المتكررة (NBKK→NBK). ده bug-prone لأنه ممكن يـ mask tickers حقيقية فيها تكرار (BPNN→BPN).
+
+🔴 اللغز 7 (tab_valuation + tab_profitability schema conflict):
+tradingview_scraper.py بينشئ tab_valuation بـ symbol PK + data TEXT.
+update_fundamentals.py بينشئ tab_valuation بـ ticker PK + pe_ratio REAL + pb_ratio REAL + market_cap REAL.
+update_fundamentals.py بـ auto-detect الـ PK ولو الـ table موجودة بـ symbol بيكتب في symbol (losing rich columns). ده silent schema conflict.
+
+🔴 اللغز 8 (technical_fetcher.py مش scraper حقيقي):
+technical_fetcher.py ما بيكتبش في DB إطلاقاً — بس JSON file (db/technical_data.json). ده غريب لأن اسمه "scraper" ومكانه في scrapers/.
+
+🟡 اللغز 9 (مصادر deprecated بس لسه في الكود):
+egxpilot_scraper.py + yahoo_scraper.py deprecated في fallback_chain.py بس الكود سليم وقابل للتشغيل standalone. auto_refresh_scheduler.py + smart_scheduler.py legacy بس main.py مش بيستخدمهم.
+
+🟡 اللغز 10 (EGKSCO regex ملتزم uppercase Latin):
+egksco_scraper.py regex Code=([A-Z]+)\.CA بياخد Latin uppercase بس. الـ Arabic aliases (MASR/POUL/COSG/EGCH) اللي المالك شافها جاية من EGKSCO بس الـ ticker Latin (MASR مش عربي، ده ticker Latin لشركة عربية الاسم).
+
+الخلاصة للمالك:
+- الـ 4 "ambiguous alias pairs" (MNHD/MASR، KAHA/POUL، CALT/COSG، PACL/EGCH) **مش aliases** — شركات مختلفة. الكود شافهم alias بسبب name_ar تالف مشترك.
+- الـ root cause الحقيقي للـ alias duplication اللي برافو اشتغلت عليه = **مصدرين بيكتبوا في stocks.db بدون dedup** (seed scripts + eodhd في stocks.db مباشرة، EGKSCO/TradingView في data_engine.db، sync.py بـ ينقل).
+- الـ 122 "clear pair" اللي برافو اكتشفتها محتاجة مراجعة تانية — ممكن فيها حالات زي دي (شركات مختلفة شافها الكود alias).
+- محرك البيانات فيه 8 ألغاز حقيقية محتاجة حل. الأولوية: اللغز 1 (root cause) + اللغز 2 (market codes).
+
+---
+Task ID: DATA-ENGINE-UNIFY-PLAN-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — وقف الـ scraping + تصميم خطة توحيد محرك البيانات (كتلة واحدة) + garage للأكواد الميتة + اختبارات قبل الحذف. النقطة 2 (structure/DBs) مؤجلة.
+
+Work Log:
+- استلمت توجيه المالك: (1) اوقف الـ scraping دلوقتي، (2) أجلّ النقطة 2 (structure/DBs توحيد) لحد ما نخلص الباقي، (3) وحد محرك البيانات لـ كتلة واحدة، (4) اودّي الأكواد للـ garage + حدّث index هناك، (5) ابعَ الزبالة بعد اختبارات كتير.
+- المرحلة 0 (إيقاف الـ scraping):
+  * فحصت كل processes: مفيش data_engine (5000) ولا vps-service (8010) ولا ws-service (3005) شغّالين. الـ scraping متوقف طبيعياً.
+  * PID 913 (/app/.venv/bin/python main.py) ده من الـ sandbox infra، مش من مشروعنا.
+  * أعدت تشغيل الـ dev server Next.js (بورت 3000) — شغّال.
+- المرحلة 1 (تصميم الخطة):
+  * فحصت الـ bugs الحرجين من الكود: seed_official_stocks.py (ticker=عربي) + eodhd_fetcher.py:141 (English في name_ar) + tab_valuation schema conflict (symbol PK من tradingview_scraper، ticker PK من update_fundamentals).
+  * فحصت tab_* tables الفعلية في data_engine.db: كلها بـ symbol PK + rich columns (858 rows في tab_valuation).
+  * كتبت agent-ctx/DATA-ENGINE-UNIFY-1-john.md — خطة 8 مراحل.
+- المرحلة 2 (الـ canonical flow المستهدف):
+  * مصدر واحد per asset class (EGX→EGKSCO، TADAWUL/KSE/QSE→TV REST، Crypto→CoinGecko، Metals→metals.dev، News→NewsAPI).
+  * data_engine.db = المصدر الوحيد للـ raw data.
+  * sync.py = الناقل الوحيد لـ stocks.db.
+  * ممنوع أي ملف يكتب في stocks.db مباشرة.
+  * ticker canonical = English uppercase (MNHD مش MASR).
+  * market canonical = 'EGX' (مش 'مصر').
+  * name_ar = Arabic only (NULL لو مش متوفر، مش English fallback).
+
+Stage Summary:
+- ✅ الـ scraping متوقف طبيعياً (مفيش processes شغّالة من مشروعنا).
+- ✅ الـ dev server Next.js شغّال على بورت 3000.
+- ✅ خطة توحيد محرك البيانات جاهزة في agent-ctx/DATA-ENGINE-UNIFY-1-john.md (8 مراحل).
+- ✅ الـ canonical flow واضح: 1 source per asset class → data_engine.db → sync.py → stocks.db.
+- ⏳ النقطة 2 (structure/DBs توحيد) مؤجلة لحد ما نخلص الباقي.
+- ⏳ انتظر قرار المالك على الخطة قبل بدء المرحلة 1.
+
+---
+Task ID: DATA-ENGINE-UNIFY-1 / Stage 1
+Agent: Bravo proxy (general-purpose)
+Task: إيقاف الـ pollution sources (archive seed scripts + deprecated scrapers + fix eodhd name_ar + remove egksco propagation)
+
+Work Log:
+- قرأت الأول (إلزامي): JOHN-PROFILE.md (أسلوب + صيغة التسليم) + agent-ctx/DATA-ENGINE-UNIFY-1-john.md (خطة الـ 8 مراحل — Stage 1 نطاقي) + آخر 150 سطر في worklog.md.
+- التحقق من النطاق قبل أي تعديل:
+  * ls vps-service/scripts/ + vps-service/data/ + data_engine/scrapers/ — كل الـ 5 ملفات موجودة في أماكنها الأصلية.
+  * grep على imports حية للـ seed scripts في vps-service/ + data_engine/ + src/ → مفيش نتايج (الـ seed scripts عمرهم ما اتعملهم import).
+  * grep على imports لـ egxpilot_scraper + yahoo_scraper → بس في data_engine/scrapers/fallback_chain.py جوّه _try_egxpilot() + _try_yahoo() (الاتنين deprecated + داخل try/except ImportError، مش بـ يتندوا من الـ main chain). النقل آمن — الـ functions رجّعت graceful ImportError لو اتنادت يدوياً.
+- التحقق من الـ backup قبل البدء: db/backup-pre-unify/ فيه stocks.db + data_engine.db + predictions.db (تم بالفعل من المرحلة السابقة).
+- المرحلة 1.1 (أرشفة الـ 3 seed scripts):
+  * mkdir -p archive/garage/.
+  * git mv vps-service/scripts/seed_official_stocks.py → archive/garage/seed_official_stocks.py (BUG: ticker=عربي).
+  * git mv vps-service/scripts/seed_egx_stocks.py → archive/garage/seed_egx_stocks.py (write مباشر في stocks.db).
+  * git mv vps-service/scripts/seed_multi_market_stocks.py → archive/garage/seed_multi_market_stocks.py (write مباشر في stocks.db).
+- المرحلة 1.2 (أرشفة الـ 2 deprecated scrapers):
+  * git mv data_engine/scrapers/egxpilot_scraper.py → archive/garage/egxpilot_scraper.py (deprecated في fallback_chain — مصدر ميت).
+  * git mv data_engine/scrapers/yahoo_scraper.py → archive/garage/yahoo_scraper.py (deprecated في fallback_chain — بيرجّع أمس).
+- المرحلة 1.3 (Fix Bug 2 — eodhd_fetcher.py:136):
+  * المشكلة الأصلية: INSERT بـ `(ticker, name, name)` → الـ name التالت (English) بيروح لـ name_ar = pollution.
+  * الـ fix: عدّلت tuple لـ `(ticker, name, None)` + أضفت 3 سطور comment يوضّحون السبب (DATA-ENGINE-UNIFY-1 Stage 1: name_ar must be NULL — Arabic names come from EGKSCO only, not EODHD).
+  * ملاحظة: ما لمستش الـ UPDATE branch (line 124-129) لأنه خارج نطاق الـ task (الـ task بيقول "للـ rows الجديدة" = INSERT بس). الـ UPDATE branch فيه bug مشابه (`name_ar = COALESCE(NULLIF(name_ar, ''), name)`) بس ده finding للمراجعة، مش fix في Stage 1.
+- المرحلة 1.4 (Fix Bug 3 — egksco_scraper.py:875-918):
+  * المشكلة الأصلية: block كامل بـ UPDATE stocks.db مباشرة (current_price, open_price, high_price, ...) من الـ EGKSCO scrape — bypass لـ sync.py.
+  * الـ fix: شيلت الـ block كامل (44 سطر) + حطيت مكانه comment (DATA-ENGINE-UNIFY-1 Stage 1: removed direct stocks.db propagation — sync.py is the only transporter) + حتفظت بـ `frontend_db_updated = 0` عشان الـ result dict (line 886-895) يفضل يـ reference المتغير من غير NameError. الـ API contract (shape of result dict) اتـ حفظ.
+- المرحلة 1.5 (archive/garage/INDEX.md):
+  * عملت archive/garage/INDEX.md يـ list الـ 5 ملفات + السبب + التاريخ + الـ rule (Rule 16 VERIFY-BEFORE-DELETE + Rule 4 NO-NEW-FILES) + acceptance tests.
+- الاختبارات الصارمة (معيار القبول):
+  * py_compile على vps-service/data/eodhd_fetcher.py → PASS.
+  * py_compile على vps-service/data/egksco_scraper.py → PASS.
+  * py_compile على الـ 5 archived files → PASS (تأكيد إن الـ نقل ما كسرش syntax).
+  * bun run lint (eslint .) → EXIT=0، 0 errors / 0 warnings.
+  * grep -n "frontend_db_path|SYNC TO FRONTEND" vps-service/data/egksco_scraper.py → No matches (الـ block اتمسح بالكامل).
+  * grep -A2 "INSERT INTO stocks.*name_ar" vps-service/data/eodhd_fetcher.py → `(ticker, name, None)` (name_ar = None ✅).
+  * grep -rn "seed_official_stocks|seed_egx_stocks|seed_multi_market_stocks" vps-service/ data_engine/ src/ → No matches (مفيش imports حية).
+  * ls vps-service/scripts/seed_*.py + data_engine/scrapers/{egxpilot,yahoo}_scraper.py → "No such file or directory" لكل الـ 5.
+  * ls archive/garage/ → الـ 5 files + INDEX.md موجودة.
+  * dev server Next.js على بورت 3000 → HTTP 200 (لسه شغّال).
+- تنظيف: مسحت archive/garage/__pycache__ (build artifact من py_compile، مش source). مفيش stale .pyc في data_engine/scrapers/__pycache__ ولا vps-service/data/__pycache__ للـ moved files.
+- ما عملتش push (Rule 75 معلّقة — جون هـ push).
+
+Stage Summary:
+- ✅ Stage 1.1: 3 seed scripts اتـ archive لـ archive/garage/ (git mv — التاريخ محفوظ).
+- ✅ Stage 1.2: 2 deprecated scrapers (egxpilot + yahoo) اتـ archive لـ archive/garage/.
+- ✅ Stage 1.3: eodhd_fetcher.py:136 — name_ar بقى NULL للـ new rows (مش English fallback). +3 سطور comment.
+- ✅ Stage 1.4: egksco_scraper.py:875-918 — الـ direct stocks.db propagation block اتمسح (44 سطر → 8 سطور comment + frontend_db_updated=0). API contract محفوظ.
+- ✅ Stage 1.5: archive/garage/INDEX.md موجود بـ كل الـ 5 files + السبب + التاريخ.
+- ✅ py_compile PASS على الـ 2 modified + الـ 5 archived files.
+- ✅ bun run lint PASS (EXIT=0، 0 errors).
+- ✅ كل الـ grep acceptance tests pass.
+- ✅ dev server Next.js شغّال على بورت 3000 (HTTP 200).
+- 🟡 Finding للمراجعة (مش fix في Stage 1): eodhd_fetcher.py:124-129 — الـ UPDATE branch فيه bug مشابه (`name_ar = COALESCE(NULLIF(name_ar, ''), name)` بـ يحط English في name_ar لو فاضي). خارج نطاق Stage 1 (الـ task قال "للـ rows الجديدة" = INSERT بس). محتاج قرار جون لو هيتـ fix في Stage 1 extension ولا Stage 3.
+- ⏳ ما عملتش push (استنى جون).
+- ⏳ Stage 2 (توحيد tab_* schema) معلّقة على قرار جون بـ PASS للـ Stage 1.
+
+---
+Task ID: DATA-ENGINE-UNIFY-1 / Stage 1 (review + extra fixes)
+Agent: جون (المدير التنفيذي + كبير المهندسين) — مراجعة + fixes إضافية
+Task: مراجعة تسليم برافو proxy لـ Stage 1 + fix bugs إضافية (eodhd UPDATE branch + fallback_chain imports)
+
+Work Log:
+- راجعت تسليم برافو proxy: 5 files اتـ archive + 2 bugs اتـ fix (eodhd INSERT + egksco propagation).
+- كشفت bug إضافي: eodhd_fetcher.py:124-129 (UPDATE branch) فيه نفس مشكلة name_ar pollution (بيحط English name في name_ar لو فاضي).
+- كشفت bug تاني: fallback_chain.py لسه بـ import من egxpilot_scraper + yahoo_scraper جوّه _try_egxpilot() + _try_yahoo() — بس أنا أرشفتهم! ده هيـ break لو حد استدعى الدوال.
+- fix Bug 2b (eodhd UPDATE): شيلت name_ar من الـ UPDATE (name_ar يفضل Arabic-only من EGKSCO).
+- fix Bug 4 (fallback_chain):حوّلت _try_egxpilot() + _try_yahoo() لـ no-op (return empty من غير import).
+- py_compile PASS على الـ 3 files (eodhd + egksco + fallback_chain).
+- lint PASS (0 errors).
+- grep tests كلها clean:
+  * frontend_db_path / SYNC TO FRONTEND في egksco = 0
+  * name_ar = COALESCE في eodhd = 0
+  * from egxpilot_scraper / from yahoo_scraper في fallback_chain = 0
+- الـ dev server شغّال.
+
+Stage Summary:
+- ✅ Stage 1 مكمل: 5 files archived + 4 bugs fixed (eodhd INSERT + eodhd UPDATE + egksco propagation + fallback_chain imports).
+- ✅ py_compile + lint + grep tests PASS.
+- ✅ archive/garage/INDEX.md موجود + منظم.
+- ✅ backup الـ DBs في db/backup-pre-unify/.
+- ⏳ Stage 2 (tab_* schema unification) محتاجة إذن المالك (DB migration).
