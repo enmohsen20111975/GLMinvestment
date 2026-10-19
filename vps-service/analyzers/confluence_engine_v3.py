@@ -30,14 +30,15 @@ from pathlib import Path as _P
 _PROJECT_ROOT = _P(__file__).resolve().parent.parent.parent
 _DEFAULT_STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
 
-# SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73: SINGLE-DISPLAY-SOURCE)
-# Confluence Engine v3 uses thresholds (75/65) that differ from the canonical
-# thresholds (78/65) defined in canonical_signal.py. Producing a competing
-# `signal` field here violates Rule 67 (CALCULATION-CANONICAL).
-# Canonical signal comes from master_analyzer.py + canonical_signal.py.
-# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
-# ConfluenceEngine.analyze() now short-circuits and returns None.
-SUB_ENGINE_DISABLED = True
+# BRAVO RADAR-ADVANCED (2026-10-19): قرار مرحلة 3
+# المشكلة: THRESHOLDS (75/65) بتتنافس مع canonical (78/65) → Rule 67 violation.
+# الحل: مش إعادة تفعيل كامل (خطر). بدلاً من ذلك:
+# 1. الـ SMC score + Veto logic = مستخرج لـ V40.2 مباشرة (عبر smc_engine.py)
+# 2. الـ signal classification = تبقى DISABLED (canonical_signal.py = SSOT)
+# 3. الـ weights (SMC 60% + Volume 10% + Technical 15% trap + Fundamental 15%)
+#    = مرجع موثّق لأي reuse مستقبلي
+# قرار: استخراج القيم المفيدة + إبقاء signal disabled.
+SUB_ENGINE_DISABLED = True  # signal classification stays disabled (Rule 67)
 
 
 # ============================================================================
