@@ -463,9 +463,10 @@ export function usePlatformGuide() {
  }
  // Otherwise: re-show after 30 days (long-time-no-see → remind user)
  }
- // Auto-open after 3s delay (let the page load first)
- const timer = setTimeout(() => setOpen(true), 3000);
- return () => clearTimeout(timer);
+ // ALPHA-UX-FIX-3: NO auto-open. The guide opens ONLY via PlatformGuideButton
+ // (user clicks "المساعدة"). Was: setTimeout 3s auto-open on first visit / after
+ // 30 days — caused modal chaos (onboarding + guide + notif-prompt all popping).
+ // Deferred per John's directive: one modal (onboarding) on first-visit, rest on interaction.
  }, []);
 
  return { open, setOpen };

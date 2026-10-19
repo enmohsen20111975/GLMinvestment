@@ -20,9 +20,26 @@ export function DesktopNotificationPrompt() {
  const dismissed = sessionStorage.getItem(DISMISS_KEY);
 
  if (perm === 'default' && !dismissed) {
- // إظهار البانر بعد ثانيتين من دخول الصفحة حتى لا يشتت العميل فوراً
- const timer = setTimeout(() => setShow(true), 2000);
- return () => clearTimeout(timer);
+ // ALPHA-UX-FIX-3: NO auto-pop after 2s. Defer to FIRST user interaction
+ // (pointerdown/keydown/scroll) — not part of first-visit modal chaos.
+ // 5-min window: if no interaction, don't show a stale prompt.
+ let triggered = false;
+ const cleanup = () => {
+ window.removeEventListener('pointerdown', fire);
+ window.removeEventListener('keydown', fire);
+ window.removeEventListener('scroll', fire, true);
+ };
+ const fire = () => {
+ if (triggered) return;
+ triggered = true;
+ setShow(true);
+ cleanup();
+ };
+ window.addEventListener('pointerdown', fire);
+ window.addEventListener('keydown', fire);
+ window.addEventListener('scroll', fire, true);
+ const expiry = setTimeout(cleanup, 5 * 60 * 1000);
+ return () => { clearTimeout(expiry); cleanup(); };
  }
  }, []);
 
