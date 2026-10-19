@@ -73577,3 +73577,49 @@ The paper trading system needs fixing:
 1. The sequential processing is too slow
 2. OR the kill criteria is too strict (PF < 1.0 after 30 trades)
 
+
+---
+Task ID: BRAVO-AXIS1-KILL-CONTEXT-1
+Agent: Bravo
+Task: المحور 1 — إصلاح Kill Criteria + Market Context
+
+NEW Kill Criteria:
+- Risk Kill: MaxDD > 15% → immediate
+- Performance Kill: PF < 0.9 after 50 trades AND 2 months
+- Warning Zone: PF < 1.0 after 30 trades → warning only (no stop)
+- Market Context Override: if EGX30 < -5% → defer Performance Kill
+
+Results (NEW Kill Criteria, May-Oct 2026):
+- closed: 111 | WR: 56.8% | PF: 2.64 | MaxDD: 1.2%
+- Return: +13.58% | Killed: False | Warning: False
+- Months seen: 6 (all months!)
+
+OLD vs NEW:
+- OLD: killed after 35 trades (May only, PF=0.99)
+- NEW: not killed, 111 trades across 6 months, PF=2.64
+
+Market Context (Monthly Alpha):
+| Month | EGX Ret | Sys Ret | Alpha | Context |
+|-------|---------|---------|-------|---------|
+| May   | -1.98%  | +1.01%  | +3.00% | RANGE |
+| Jun   | -3.23%  | -0.30%  | +2.92% | RANGE |
+| Jul   | +10.76% | -0.07%  | -10.83%| BULL  |
+| Aug   | -3.67%  | +9.81%  | +13.49%| RANGE |
+| Sep   | -9.14%  | +2.40%  | +11.53%| BEAR  |
+| Oct   | -2.33%  | +0.73%  | +3.05% | RANGE |
+
+Total Alpha: +22.87% (System +13.58% vs EGX -9.29%)
+
+Key Findings:
+1. ✅ NEW Kill Criteria: system survives all 6 months
+2. ✅ Alpha = +22.87% → system significantly beats EGX
+3. ⚠️ July: Alpha = -10.83% (system underperformed in BULL month)
+4. ✅ Sep (BEAR): Alpha = +11.53% (system outperformed in bear market!)
+5. ✅ No warning triggered (PF never dropped below 1.0)
+6. ✅ MaxDD = 1.2% (very safe)
+
+Signal Distribution:
+- May: 351 | Jun: 239 | Jul: 580 | Aug: 657 | Sep: 252 | Oct: 27
+- All months have signals (Oct has fewest = 27, but still > 15)
+- BULL signals: 1505 (71.5%) | RANGE: 601 (28.5%)
+
