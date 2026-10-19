@@ -72539,3 +72539,39 @@ Stage Summary:
 - 🔥 اكتشفت إن إحنا أعدنا اختراع العجلة في عدة مجالات
 - ✅ الـ findings الجديدة (fabricated + leakage + Mean Reversion) مـشـ duplicates
 - 📋 الـ roadmap الجديد: استخدام V40 engine الموجود + تفعيل Mean Reversion
+=======
+- ✅ 100% tokenization (11002→0). 211 files unified.
+- ✅ lint 0. ✅ browser renders all screens. ✅ 0 direct palette.
+- ✅ User-facing screens تستخدم shared/ui library (FlashingPriceCell, LiquidityFlashCell, UnifiedEmptyState, SignalBadge, DeltaBadge, etc.).
+- ⚠️ Admin screens لسه فيها ad-hoc patterns (35 files) — مش user-facing.
+- ⚠️ tsc 1260 (خفّ 40% من 2097).
+- 🔁 push: متدفع.
+>>>>>>> 4257bd3 (ENGINEERING-CLEANUP FINAL: architecture audit + 100% tokenization + all screens verified)
+
+---
+Task ID: GARAGE-CLEANUP-1
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — دور على الزبالة في كل الملفات + طلّعها برة + حطها في garage + حدّث INDEX.md.
+
+Work Log:
+- AUDIT: scanned كل .tsx/.ts files في src/ للـ orphans (مش مستوردة في أي مكان).
+- لقيت 56 orphan. صنّفتهم:
+  * 21 test files (تبقى — مش مستوردة بس بتشتغل).
+  * 15 shadcn/ui components (تبقى — standard library).
+  * 3 Next.js special files (robots.ts, sitemap.ts, instrumentation.ts — تبقى).
+  * 16 true dead code (4,959 LOC). استثنيت design-tokens.ts (مستورد في SignalBadge.tsx).
+- نقلت 15 dead file لـ archive/garage/ بـ git mv (history محفوظ):
+  * src/hooks/: useSmartChart, use-previous-value, use-persona-results, useSignalNotifications (4 files, 631 LOC).
+  * src/modules/personalized/lib/: personalized-radar (1 file, 583 LOC).
+  * src/data/: crypto-learning-content (1 file, 612 LOC).
+  * src/lib/: unified-db, external-data-fetcher, community-db, crypto-learning-store, new-db-queries, vps-client, m2ySyncClient, chart-generator, engine-control-store (9 files, 3,033 LOC).
+- حدّثت archive/garage/INDEX.md بـ 15 entry جداد (المسار الأصلي → المسار الجديد + السبب + التاريخ).
+- lint: exit 0 ✅.
+- browser: / renders (HTTP 200, bodyLen=2329, hasError=false, 0 Module not found errors).
+
+Stage Summary:
+- ✅ 15 dead files (4,859 LOC) moved to archive/garage/ (git mv — history محفوظ).
+- ✅ INDEX.md updated بـ 15 entry جداد.
+- ✅ lint 0. ✅ browser renders. ✅ 0 broken imports.
+- 🔁 push: متدفع.
+>>>>>>> 31c4f80 (GARAGE-CLEANUP-1: archive 15 dead files (4859 LOC) + update INDEX.md)
