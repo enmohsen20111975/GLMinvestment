@@ -71139,3 +71139,120 @@ Stage Summary:
 - 📊 BASELINE WR النهائي: 55.56% (مش 68.84%).
 - 🔥 الـ scoring system مقلوبة: ≥90 = 9.1% WR، 65-70 = 88.2% WR.
 - 🔁 الخطوة الجاية: تحقيق في score inflation (15+ boosts في daily_predictor.py).
+
+---
+Task ID: BRAVO-BOOST-AUDIT-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — جرد كل الـ boosts في daily_predictor.py (بدون أي تعديل)
+
+Work Log:
+
+- 🔍 جرد كامل لكل boosts في daily_predictor.py: 17 boost location.
+
+- 📋 الجدول الكامل لكل boost:
+
+  | # | Line | الشرط | القيمة | نوع |
+  |---|------|-------|--------|-----|
+  | 1 | L1284 | feedback_loop: pattern WR ≥ 75% | +5 | boost |
+  | 2 | L1322 | SECTOR-HOT: avg_change > +2% | +8 | boost |
+  | 3 | L1333 | MAKER-BUYING: confidence > 60 | +12 | boost |
+  | 4 | L1495 | context_boost: POC + accumulation | +variable (max +5) | boost |
+  | 5 | L1609 | RADAR-GATE passed (B_quiet=+5 / A_pre_surge=+4) | +4 أو +5 | boost |
+  | 6 | L1973 | V68-A-PLUS: probability ≥ 70% | +10 | boost |
+  | 7 | L2056 | V72-PULLBACK-BUY | +8 | boost |
+  | 8 | L2152 | V76-PUMP-FROM-DESERT | +15 | boost |
+  | 9 | L2160 | V76-GOLDEN-RETEST | +10 | boost |
+  | 10 | L2435 | NEWS-BOOST: news_score × 10 | +variable | boost/penalty |
+  | 11 | L2520 | EXPERT-BOOST: expert_delta | +variable | boost/penalty |
+  | 12 | L2576 | NOTEBOOK: score_adjustment | +variable | boost/penalty |
+  | 13 | L2715 | DISCLOSURE: disc_score × 10 | +variable (±10..±20) | boost/penalty |
+  | 14 | L3096 | HMM-ACCUMULATION | +3 | boost |
+  | 15 | L3100 | HMM-MARKUP | +5 | boost |
+  | 16 | L3118 | RADAR-BOOST: radar_boost | +variable | boost/penalty |
+  | 17 | L3160 | WHO-INST-BUY (≥65) | +5 | boost |
+
+  theoretical max boost = +5+8+12+5+5+10+8+15+10+10+10+10+10+3+5+5+5 = 136
+  (bس cap عند 100)
+
+- 🔥🔥🔥 الاكتشاف الحاسم (يحطم الفرضية):
+
+  تحليل boost_added = master_score - technical_score في الـ DB:
+
+  | boost_added | count | % |
+  |-------------|-------|---|
+  | 0 (مـفيش boost) | 1,199 | 97.9% |
+  | 1-10 (boost بسيط) | 2 | 0.2% |
+  | NEGATIVE (penalty) | 24 | 2.0% |
+
+  → **الـ boosts مش شغّالة في الـ DB!** 97.9% من التوقعات master_score = technical_score.
+
+- 🔬 ليه الـ boosts مش شغّالة؟
+  كل الـ boosts بـ require conditions:
+  - sector hot, maker buying, V68/V72/V76 signals, news, expert, notebook, disclosure, HMM regime
+  - الـ conditions دي غالباً مش بتتحقق في الـ backfill mode (الـ backfill بـ يستخدم historical data من غير live signals).
+  - في الـ production mode الـ boosts هـ تشتغل، بس الـ DB الحالي = backfill.
+
+- 📊 الإجابة على سؤال محسن:
+  سؤال: كام سهم في آخر 30 يوم وصل ≥90؟ وكم منهم كان المفروض يوصل لو شلنا الـ boosts؟
+
+  **في أكتوبر 2026 (30 يوم):**
+  - ≥90 master_score: 2 توقع
+  - منهم technical_score < 80: **0** (كلهم technical_score ≥90 برضه)
+  - يعني شلنا الـ boosts = مفيش فرق
+
+  **في الكل (كل الشهور):**
+  - ≥90 master_score: 62 توقع
+  - منهم technical_score < 80: **0**
+  - منهم technical_score < 70: **0**
+  - كلهم technical_score ≥90 برضه
+
+  → **0 توقع كان هيفضل تحت 80 لو شلنا الـ boosts** — لأن الـ boosts أصلاً مش شغّالة.
+
+- 🎯 السبب الحقيقي للـ score inflation (الاكتشاف الحاسم):
+
+  الـ V38 engine نفسه (`calculate_score_and_proofs` في backtest_engine.py L622-701):
+
+  ```python
+  score = 30  # base (tech_score_base=50 - 20)
+  if trend_up: score += 15        # +15
+  if maker_bullish: score += 20   # +20
+  if dna_bullish: score += 15     # +15
+  if fundamentals_strong: score += 15  # +15
+  if sector_change > 0: score += 10    # +10
+  if sector_change > 1.0: score += 5   # +5 (momentum bonus)
+  # max = 110 → capped at 100
+  ```
+
+  **6 conditions كلها boolean** — أي سهم بـ يحققهم = 100.
+
+  الـ conditions دي **سهلة** في ترند صاعد:
+  - trend_up ✅ (سهل لو السهم في uptrend)
+  - maker_bullish ✅ (سهل لو volume increasing)
+  - dna_bullish ✅ (سهل لو bullish pattern)
+  - fundamentals_strong ✅ (سهل لو P/E كويس)
+  - sector_change > 0 ✅ (سهل لو القطاع أخضر)
+  - sector_change > 1.0 ✅ (سهل لو القطاع شايل زخم)
+
+  → **أي سهم صاعد في قطاع أخضر = 100**. ده structural flaw، مش boosts.
+
+- 📊 مقارنة WR: master_score vs technical_score:
+
+  | Band | master_score WR | technical_score WR | الفرق |
+  |------|-----------------|---------------------|-------|
+  | <50 | 60.0% | 60.0% | 0 |
+  | 50-60 | 86.4% | **42.3%** | -44.1% (!!) |
+  | 60-65 | 85.7% | 85.7% | 0 |
+  | 65-70 | 88.2% | **93.8%** | +5.6% |
+  | 70-80 | 58.8% | 56.6% | -2.2% |
+  | 80-90 | 38.9% | 38.9% | 0 |
+  | ≥90 | 9.1% | 9.1% | 0 |
+
+  → الـ 24 NEGATIVE boosts رفعوا الـ WR في band 50-60 (من 42.3% لـ 86.4%).
+  → لو شلنا الـ boosts كلها، الـ WR في 65-70 بـ يزيد لـ 93.8%.
+
+Stage Summary:
+- ✅ جرد 17 boost location كامل.
+- ✅ الحساب: 0 توقع كان هيفضل تحت 80 لو شلنا الـ boosts (لأنهم مش شغّالة).
+- 🔥 الفرضية اتـحطمت: الـ boosts مش السبب في الـ score inflation.
+- 🔥 السبب الحقيقي: V38 calculate_score_and_proofs بـ يـ produce score=100 بسهولة (6 boolean conditions).
+- 🔁 القرار لمحسن: إعادة تصميم V38 scoring (weights أقل + continuous بدل boolean).
