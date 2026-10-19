@@ -73084,3 +73084,56 @@ Notable: `v73_sniper.py`, `v76_golden_hunter.py`, `fusion_engine.py` were NOT ar
 4. `archive/wave-2-cleanup-2026-10-01/src/modules/admin/components/` contains 14 archived admin tabs — worth re-auditing whether any feature was lost during admin consolidation.
 
 >>>>>>> 75cf10f (SCREENS-INVENTORY-FULL: detailed inventory of every screen (live + archived))
+
+---
+
+## SCREENS-REORG-VISION (2026-10-22) — Client-focused review (Sarah + Uncle Rashad)
+
+**Task:** SCREENS-REORG-VISION. Research-only — NO code changes.
+**Output:** `/home/z/my-project/SCREENS-REORG-VISION.md` (4 sections, ~500 LOC).
+
+### Findings (P0 — owner-flagged)
+
+1. **InvestorsFlowPanel (EGX أجانب/عرب)** — CRITICAL MISSING
+   - File: `src/modules/dashboard/components/InvestorsFlowPanel.tsx` (557 LOC)
+   - Was: widget on DashboardView
+   - Removed at: `DashboardView.tsx` line 295 ("InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel اتشالوا")
+   - Now: ONLY rendered in `case 'market-depth'` (`src/app/page.tsx` lines 656-698)
+   - `#market-depth` NOT in: TopBar `navSections`, MobileNav `bottomNavItems`, MobileMoreSheet `moreNavItems`
+   - → URL-only access. 3 levels deep. No user can discover it.
+   - Fix recommendation: add `market-depth` to home portal + replace `liquidity-radar` with `market-depth` in MobileNav #5.
+
+2. **ShariaView (الشريعة — خاص بالمصريين)** — DESKTOP STRANDED
+   - File: `src/modules/sharia/components/ShariaView.tsx` (1490 LOC)
+   - Hash: `#sharia` (`page.tsx` line 777)
+   - TopBar: NOT in `navSections` (line 106 comment: `sharia → Settings section or deep-link` — but Settings has no actual link)
+   - MobileMoreSheet: ✅ present (line 46)
+   - → Desktop users cannot reach it via UI.
+
+3. **Education + Simulation** — OWNER REQUESTED SEPARATE MENU
+   - Academy (`AcademyView` 2483 LOC, `#academy`) — in TopBar "more" ✅, in MobileMoreSheet ✅
+   - Simulation (`SimulationView` 2130 LOC, `#simulation`) — NOT in TopBar (line 105 comment: `simulation → deep-link #simulation`), in MobileMoreSheet ✅
+   - → Recommendation: new 6th TopBar portal "education" containing both.
+
+4. **"Full stock consultation" — 5 candidate screens, ZERO in TopBar**
+   - `SpecialistAnalysisView` (`#specialist-analysis`, 2916 LOC) — URL only
+   - `UnifiedAnalysisView` (`#unified-analysis`, 562 LOC) — URL only
+   - `SmartConfluenceView` (`#smart-confluence`, 276 LOC) — URL only
+   - `V82DecisionPanel` (`#v82`, 294 LOC) — URL only
+   - `TradingChartView` (`#trading-chart`, 309 LOC) — URL only
+   - `BagHolderRescuePanel` (`#bagholder-rescue`, 1124 LOC) — URL only on desktop, MobileMoreSheet on mobile
+   - TopBar.tsx line 101 comment: `specialist-analysis → tab/drawer inside StockDetail (mandate)` — intent was to make it a drawer inside StockDetail, but no visible UI does this.
+   - → Recommendation: unified "stock consultation" drawer inside StockDetailDrawer + entry in analysis portal.
+
+### Stats
+
+- **Total canonical screens:** 28 unique
+- **Currently visible in TopBar navSections:** 8 (dashboard, stocks, liquidity-radar, recommendations, portfolio, watchlist, academy, news, subscription, settings) — wait, that's 10. So 10 of 28 = 36% visible
+- **URL-only screens:** 20 of 28 (71%)
+- **P0 issues:** 4 (owner flagged)
+- **Proposed new structure:** 6 portals in TopBar (home / market / analysis / portfolio / education / more) + unchanged 5 MobileNav icons (with `liquidity-radar` → `market-depth` swap) + expanded MobileMoreSheet.
+
+### Next action
+
+This is research-only. Implementation requires separate task. Recommendation: file `SCREENS-REORG-IMPL` task to update `navSections` in `TopBar.tsx`, `bottomNavItems` in `MobileNav.tsx`, `moreNavItems` in `MobileMoreSheet.tsx`, AND restore InvestorsFlow/LiquidityFlow/IntradayPressure widgets in `DashboardView.tsx` line 295.
+
