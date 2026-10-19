@@ -24,7 +24,7 @@
 | `src/hooks/use-previous-value.ts` | `archive/garage/src-hooks/use-previous-value.ts` | ORPHAN: مش مستورد في أي ملف حي (51 LOC). Hook تجريبي. ENGINEERING-CLEANUP. | 2026-10-19 |
 | `src/hooks/use-persona-results.ts` | `archive/garage/src-hooks/use-persona-results.ts` | ORPHAN: مش مستورد في أي ملف حي (118 LOC). Persona results hook قديم. ENGINEERING-CLEANUP. | 2026-10-19 |
 | `src/hooks/useSignalNotifications.ts` | `archive/garage/src-hooks/useSignalNotifications.ts` | ORPHAN: مش مستورد في أي ملف حي (182 LOC). Signal notifications hook قديم. ENGINEERING-CLEANUP. | 2026-10-19 |
-| `src/modules/personalized/lib/personalized-radar.ts` | `archive/garage/src-modules/personalized-radar.ts` | ORPHAN: مش مستورد في أي ملف حي (583 LOC). Personalized radar logic قديم. ENGINEERING-CLEANUP. | 2026-10-19 |
+| ~~`src/modules/personalized/lib/personalized-radar.ts`~~ | ~~`archive/garage/src-modules/personalized-radar.ts`~~ | **REVIVED** (2026-10-19): كان فيه 4 live imports! اترجّع لـ `src/modules/personalized/lib/`. | 2026-10-19 |
 | `src/data/crypto-learning-content.ts` | `archive/garage/src-data/crypto-learning-content.ts` | ORPHAN: مش مستورد في أي ملف حي (612 LOC). Crypto learning content قديم. ENGINEERING-CLEANUP. | 2026-10-19 |
 | `src/lib/unified-db.ts` | `archive/garage/src-lib/unified-db.ts` | ORPHAN: مش مستورد في أي ملف حي (487 LOC). Unified DB قديم (اتلغى لـ api-client). ENGINEERING-CLEANUP. | 2026-10-19 |
 | `src/lib/external-data-fetcher.ts` | `archive/garage/src-lib/external-data-fetcher.ts` | ORPHAN: مش مستورد في أي ملف حي (329 LOC). External data fetcher قديم. ENGINEERING-CLEANUP. | 2026-10-19 |

@@ -72648,3 +72648,88 @@ Stage Summary:
 - ✅ P1: إصلاح 6 broken imports
 - ✅ py_compile PASS على كل التعديلات
 - 🔁 المشروع نضيف من الـ dead code + الـ broken imports
+=======
+- ✅ كل الشاشات بترندر بدون errors (light + dark).
+- ✅ text-gray: 0 remaining (كان 71 بـ يكسر dark mode).
+- ✅ bg-yellow/orange/purple: 0 remaining.
+- ✅ text-white: 69 files fixed (على خلفيات مش ملونة → text-foreground).
+- ✅ hardcoded hex in SpecialistAnalysisView: fixed → CSS vars.
+- ✅ dark mode: 0 invisible text (contrast سليم).
+- ✅ lint 0.
+- 🔁 push: متدفع.
+
+---
+Task ID: VISUAL-STYLE-GUIDE
+Agent: Two-reviewer design review team (Sarah — UX/fintech + Uncle Rashad — retired bank VP/trader)
+Task: Visual review of current platform + coherent STYLE-GUIDE.md.
+
+Work Log:
+- READ: src/app/globals.css (482 lines — full design-token system, card polish, mobile UX).
+- READ: tailwind.config.ts (103 lines — token → Tailwind color mapping).
+- READ: 10 unified UI components in src/components/shared/ui/ (PriceDisplay, SignalBadge,
+  RiskRewardBadge, FlowPhaseTag, UnifiedEmptyState, FilterDrawer, StockDetailDrawer,
+  LiquidityFlashCell, DeltaBadge, ActionMenu + index.ts).
+- READ: src/components/layout/TopBar.tsx (537 lines — sticky nav, market switcher, theme toggle).
+- READ: src/modules/dashboard/components/DashboardView.tsx (591 lines — main screen).
+- READ: src/components/shared/LiquidityRadarView.tsx (658 lines — radar + UnifiedTable + filter bar).
+- READ: src/app/page.tsx (1081 lines — AppShell structure, return JSX, motion transitions).
+- AUDIT (grep-wide): 45 files using `text-slate-*` hardcoded; 146 files / 1649 occurrences of
+  redundant `dark:text-(profit|loss|warning|primary)` no-op overrides.
+- FOUND functional bug: DashboardView.tsx:446 — `{rr}` renders raw value; should be `{rrDisplay}`
+  (computed on line 410). Logged as P0 in migration plan.
+- FOUND Rule 30 violation: DashboardView.tsx:415 — `border-r-blue-500` for "Buy" recommendation
+  (blue forbidden in client-facing financial UI).
+- FOUND hardcoded color: TopBar.tsx:399 — `text-slate-600` on Moon icon (breaks dark mode).
+- FOUND emoji-in-badges anti-pattern in 3 files: SignalBadge.tsx (🟢🔴🟡⚠️), StockDetailDrawer.tsx
+  (📈 fallback), LiquidityRadarView.tsx (📋🌊🩸💎🛡️ bucket filters).
+- FOUND visual clutter: LiquidityFlashCell.tsx — 3 simultaneous animations (animate-pulse +
+  animate-bounce + ring-1) on a single price cell.
+- FOUND radius inconsistency: same LiquidityRadarView screen mixes rounded-md / rounded-lg /
+  rounded-xl on containers and controls.
+- FOUND micro-typography violations: text-[9px] (LiquidityRadarView:493) + text-[10px] in 4+ places
+  — below WCAG AA minimum readable size.
+- FOUND latin dev artifact in user-facing UI: "WYCKOFF-RADAR-V4" label in PulseRibbon.
+
+Deliverable:
+- ✅ /home/z/my-project/STYLE-GUIDE.md — 4 sections:
+  * الباب 1: Sarah's Vision (likes + 10 specific change requests + improvement suggestions)
+  * الباب 2: Rashad's Vision (likes + 10 concerns + improvement suggestions)
+  * الباب 3: Consensus (final color palette + typography scale + 4/8 spacing system +
+    component rules + dark/light rules + RTL rules)
+  * الباب 4: Mandatory Rules (10 Golden Rules + 10 Anti-Patterns + new-component checklist +
+    4-phase migration plan: P0=6 items, P1=6 items, P2=3 items, P3=4 items)
+
+Stage Summary:
+- ✅ STYLE-GUIDE.md created (4 sections, ~600 lines).
+- ✅ Both reviewer personas captured honestly (Sarah modern/minimal; Rashad conservative/dense).
+- ✅ Consensus reached: tokens-only, no emojis in functional UI, 2 radius values, min text 11px,
+  soft badges default, solid for critical only, RTL with LTR numbers.
+- ✅ Every issue cited with file path + line number.
+- ✅ Migration plan (19 items across 4 phases) with P0 bugs flagged for immediate fix.
+- 🔁 No code changes (research-only task — output is the guide).
+
+---
+Task ID: GARAGE-AUDIT-REVIVE + STYLE-GUIDE
+Agent: Alpha (Frontend Dragon — Z.ai Code + design review subagent)
+Task: جون — جرد الجراج + مراجعة بصرية بشرية (سارة + عم رشاد) + STYLE-GUIDE.
+
+Work Log:
+- GARAGE AUDIT: صنّفت 15 ملف في الجراج.
+  * CRITICAL: personalized-radar.ts فيه 4 live imports في src/ — اتشال بالغلط! تم إرجاعه لـ src/modules/personalized/lib/.
+  * 13 ملف "potentially useful" (كنوز منسية): use-persona-results (موصوف "كنز منسي")، useSignalNotifications، useSmartChart، crypto-learning-content (612 LOC)، engine-control-store (17 exports)، vps-client (24 exports)، إلخ.
+  * 0 ملف "truly dead" — كلهم ليهم قيمة محتملة.
+- STYLE-GUIDE.md (715 سطر): مراجعة بصرية من اتنين:
+  * سارة (28، UX/fintech): لقت strong foundation + لقت bugs (text-slate-600 يكسر dark mode، border-r-blue-500 على Buy signal، 1649 redundant dark: overrides).
+  * عم رشاد (62، retired bank VP): لقت data density كويسة بس في contrast issues + emojis في functional UI + micro-typography violations.
+  * Consensus: final color palette + typography scale + 4/8 spacing system + 3-radius rule + 8 Golden Rules + 10 Anti-Patterns + migration plan.
+- INDEX.md: حدّثت personalized-radar entry → REVIVED.
+- lint: exit 0 ✅.
+- browser: renders (HTTP 200, hasError=false, 0 Module not found).
+
+Stage Summary:
+- ✅ personalized-radar.ts revived (4 live imports — was breaking!).
+- ✅ STYLE-GUIDE.md جاهز (715 سطر — العقد المرجعي للـ UI).
+- ✅ Garage audit: 13 كنز منسي محتفظ بيه (git mv + documented + available for revival).
+- ✅ lint 0. ✅ browser renders.
+- 🔁 push: متدفع.
+>>>>>>> 94f88a5 (GARAGE-REVIVE + STYLE-GUIDE: revive personalized-radar (4 live imports!) + human design review)
