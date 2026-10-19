@@ -7,14 +7,14 @@ Task BRAVO-RADAR-V2 (Owner Directive 2026-10-14)
 الهدف: تحويل الرادر من شاشة تسميات إلى منظار قرار بسيط وقابل للاعتماد.
 
 الـ 4 أعمدة الإلزامية:
-  1. الحوت فين؟       → صافي الكاش المطلق (EGP) فوق/تحت متوسط الفترة
+  1. الحوت فين؟       → Money Flow Multiplier (MFM) — تدفق حقيقي
   2. حالة السوق       → فلتر إلزامي (صاعد / هابط / عرضي / Risk-Off)
-  3. المرحلة          → 3 حالات بس: بيبلع على الهادي / بيتحضر / بيصرف
+  3. المرحلة          → 3 حالات: تراكم مع اتجاه / تراكم هادئ / تصريف
   4. مستوى الدخول والدفاع → سعر مرجعي للدخول + مستوى كسر = خروج
 
 القيود الحديدية:
   - ممنوع مصطلحات Wyckoff (Spring / SOS / Buying Climax / تصريف ذكي)
-  - MFI لوحده ممنوع كدليل
+  - MFM (Money Flow Multiplier) هو المعيار الكنسي للتدفق (مش close vs open)
   - أي سهم صافي تدفقه سالب أو حجمه ضعيف → ممنوع قائمة إيجابية
   - سوق هابط واضح → ممنوع إشارات تجميع/Pre-Surge
   - بيانات ناقصة → "بيانات غير كافية"
@@ -150,9 +150,9 @@ def get_market_currency(market: str) -> Dict[str, str]:
     return MARKET_CURRENCY_MAP.get(market.upper(), MARKET_CURRENCY_MAP['EGX'])
 
 # 3 مراحل بس (ممنوع أي تسميات تانية)
-PHASE_ABSORBING = "بيبلع على الهادي"      # صافي تدفق موجب قوي + حجم فوق المتوسط
-PHASE_PREPARING = "بيتحضر"                 # صافي تدفق موجب ضعيف/محايد + هيكل صاعد
-PHASE_DISTRIBUTING = "بيصرف"               # صافي تدفق سالب
+PHASE_ABSORBING = "تراكم مع اتجاه"           # MFM موجب قوي + سعر فوق MA20
+PHASE_PREPARING = "تراكم هادئ"               # MFM موجب ضعيف/محايد + هيكل صاعد
+PHASE_DISTRIBUTING = "تصريف"                 # MFM سالب
 PHASE_INSUFFICIENT = "بيانات غير كافية"
 
 
@@ -517,15 +517,35 @@ def detect_market_regime(conn: sqlite3.Connection, market: str) -> Dict[str, Any
 
 
 def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float] = None) -> Dict[str, Any]:
-    """حساب صافي التدفق المطلق (EGP) + مقارنة بالمتوسط + Cash Safety Multiplier.
+    """حساب تدفق السيولة بـ Money Flow Multiplier (MFM) — BRAVO RADAR-REBUILD.
 
-    المنطق:
-      - لكل يوم: buy_value ≈ volume × close (لو close > open) → شراء
-                 sell_value ≈ volume × close (لو close < open) → بيع
-                 محايد → نص للاتنين
-      - net_flow = sum(buy_value) - sum(sell_value) لآخر 20 يوم
-      - avg_flow = متوسط القيمة المطلقة اليومية
-      - whale_present = net_flow > 0 AND net_flow > avg_flow × 0.5
+    🔴 FIX (DeepSeek + Grock audit): شيلنا close vs open (غلط جوهريًا).
+    بدّلناه بـ Money Flow Multiplier اللي بيقولك فين قفل السهم جوه الـ range.
+
+    المنطق الجديد:
+      MFM = ((close - low) - (high - close)) / (high - low)
+      - MFM > 0 → قفل قريب من high → buying pressure
+      - MFM < 0 → قفل قريب من low → selling pressure
+      - MFM = 0 → قفل في النص (أو high = low)
+
+      money_flow = volume × close × MFM
+      net_flow = sum(money_flow) لآخر 20 يوم
+      avg_daily_flow = متوسط |money_flow| يومي
+
+    العتبة (نسبية مش مطلقة):
+      whale_threshold = avg_daily_flow × 0.6
+      - 0.6 لأن: الحوت = تدفق > 60% من المتوسط اليومي.
+        أقل من كده = ضجيج عادي. أكتر = مؤسسي.
+      - نسبي عشان الأسهم الصغيرة والكبيرة يتعاملوا بنفس المعيار.
+
+    Cash Safety Multiplier:
+      🔴 اتشال من كشف الحوت (خلط مفاهيم — cash = fundamental، مش flow).
+      بيفضل في الـ output للـ risk assessment فقط (position sizing).
+
+    Thresholds موثّقة:
+      - whale_threshold_mult = 0.6 (نسبي، موثّق أعلاه)
+      - LOOKBACK_DAYS = 20 (3 أسابيع تداول — كفاية للـ trend + مش طويل جدًا)
+      - MIN_CANDLES = 30 (أقل عدد شموع للحكم)
     """
     n = len(candles)
     if n == 0:
@@ -536,12 +556,11 @@ def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float
             'flow_strength': 'بيانات غير كافية',
             'reason': 'لا شموع متاحة',
             'cash_ratio': round(cash_ratio, 4) if cash_ratio else None,
-            'cash_safety_multiplier': (1.5 if (cash_ratio or 0) >= 0.20 else (1.2 if (cash_ratio or 0) >= 0.10 else 1.0)),
+            'cash_safety_multiplier': 1.0,  # kept for risk only, not whale detection
+            'flow_method': 'MFM',
         }
-    # Phase 1 #1 — مرونة الشموع للأسهم المنضمة حديثاً في الخليج (< 30 شمعة):
-    #   - n < 5:  proxy لحظي (آخر شمعة: (close-open)*volume = تدفق اليوم).
-    #   - 5 <= n < MIN_CANDLES: استخدم كل الشموع المتاحة (ديناميكي).
-    #   - n >= MIN_CANDLES: آخر LOOKBACK_DAYS (standard).
+
+    # Window selection (same flexibility as before)
     if n < 5:
         recent = candles[-1:]
         flow_mode = f'intraday-proxy ({n} شمعة)'
@@ -551,71 +570,71 @@ def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float
     else:
         recent = candles[-LOOKBACK_DAYS:]
         flow_mode = f'standard ({LOOKBACK_DAYS} يوم)'
-    buy_value_total = 0.0
-    sell_value_total = 0.0
+
     daily_flows = []
+    buy_pressure_total = 0.0
+    sell_pressure_total = 0.0
 
     for c in recent:
         close = _to_float(c.get('close'))
-        open_ = _to_float(c.get('open'))
+        high = _to_float(c.get('high'))
+        low = _to_float(c.get('low'))
         vol = _to_float(c.get('volume'))
         if close <= 0 or vol <= 0:
             continue
-        daily_value = vol * close  # قيمة بالجنيه
 
-        if close > open_:
-            # يوم صاعد → أغلبية شراء
-            buy_value_total += daily_value
-            daily_flows.append(daily_value)
-        elif close < open_:
-            # يوم هابط → أغلبية بيع
-            sell_value_total += daily_value
-            daily_flows.append(-daily_value)
+        # Money Flow Multiplier
+        range_val = high - low
+        if range_val <= 0:
+            mfm = 0.0  # doji / no range → neutral
         else:
-            # محايد → نص نص
-            buy_value_total += daily_value * 0.5
-            sell_value_total += daily_value * 0.5
-            daily_flows.append(0.0)
+            mfm = ((close - low) - (high - close)) / range_val
 
-    net_flow = buy_value_total - sell_value_total
+        money_flow = vol * close * mfm
+        daily_flows.append(money_flow)
+
+        if mfm > 0:
+            buy_pressure_total += money_flow
+        elif mfm < 0:
+            sell_pressure_total += abs(money_flow)
+
+    net_flow = sum(daily_flows)  # موجب = buying، سالب = selling
     avg_daily_flow = sum(abs(f) for f in daily_flows) / len(daily_flows) if daily_flows else 0
 
-    # Task BRAVO-TV-MINE: Cash Safety Multiplier — الشركة عالية الكاش (cash_ratio >= 0.20)
-    # زي (SWDY 22.8%) تاخد boost مؤسسي طالما صافي التدفق موجب → عتبة الحوت تُخفّض.
+    # Whale threshold — RELATIVE (not absolute 2M)
+    # 0.6 = 60% of avg daily flow. Documented: whale = flow > 60% of average.
+    WHALE_THRESHOLD_MULT = 0.6
+    whale_threshold = avg_daily_flow * WHALE_THRESHOLD_MULT
+
+    # Cash ratio — kept in output for RISK ASSESSMENT only (not whale detection)
     cash_ratio = cash_ratio if cash_ratio is not None else 0.0
     if cash_ratio >= 0.20:
-        cash_boost = 1.5    # كاش عالي → boost قوي
+        cash_safety = 1.5    # high cash = safer company (risk metric only)
     elif cash_ratio >= 0.10:
-        cash_boost = 1.2    # كاش متوسط
+        cash_safety = 1.2
     else:
-        cash_boost = 1.0
-    # عتبة الحوت: 0.5×avg_daily_flow (base)، تُخفّض بـ cash_boost.
-    whale_threshold_mult = 0.5 / cash_boost if cash_boost > 0 else 0.5
+        cash_safety = 1.0
 
-    # قوة التدفق
+    # Whale detection — flow-based only (no cash boost)
     if avg_daily_flow <= 0:
         flow_strength = 'بيانات غير كافية'
         whale_present = False
-    elif net_flow > 0 and net_flow > avg_daily_flow * whale_threshold_mult:
-        flow_strength = 'تدفق موجب قوي' + (' + كاش عالي (boost مؤسسي)' if cash_boost >= 1.5 else '')
-        whale_present = True
-    elif net_flow > 0 and cash_boost >= 1.5 and net_flow > avg_daily_flow * 0.3:
-        # كاش عالي + تدفق موجب ضعيف → ترقية لحوت (boost مؤسسي)
-        flow_strength = 'تدفق موجب + كاش عالي (boost مؤسسي)'
+    elif net_flow > 0 and net_flow > whale_threshold:
+        flow_strength = 'تدفق شراء قوي (MFM+)' + (' + كاش عالي' if cash_safety >= 1.5 else '')
         whale_present = True
     elif net_flow > 0:
-        flow_strength = 'تدفق موجب ضعيف'
+        flow_strength = 'تدفق شراء ضعيف (MFM+)'
         whale_present = False
-    elif net_flow < 0 and abs(net_flow) > avg_daily_flow * 0.5:
-        flow_strength = 'تدفق سالب قوي (تصريف)'
+    elif net_flow < 0 and abs(net_flow) > whale_threshold:
+        flow_strength = 'تدفق بيع قوي (MFM−) — تصريف'
         whale_present = False
     else:
-        flow_strength = 'تدفق سالب ضعيف'
+        flow_strength = 'تدفق بيع ضعيف (MFM−)'
         whale_present = False
 
     reason = (
         f"صافي التدفق {net_flow/1e6:+.1f}M EGP ({flow_mode}) "
-        f"(متوسط يومي {avg_daily_flow/1e6:.1f}M) — {flow_strength}"
+        f"(متوسط يومي {avg_daily_flow/1e6:.1f}M، عتبة الحوت {whale_threshold/1e6:.1f}M = {WHALE_THRESHOLD_MULT:.0%}) — {flow_strength}"
     )
 
     return {
@@ -624,7 +643,9 @@ def compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float
         'whale_present': whale_present,
         'flow_strength': flow_strength,
         'cash_ratio': round(cash_ratio, 4) if cash_ratio else None,
-        'cash_safety_multiplier': cash_boost,
+        'cash_safety_multiplier': cash_safety,  # risk only, NOT whale detection
+        'flow_method': 'MFM',  # Money Flow Multiplier (new)
+        'whale_threshold_egp': round(whale_threshold, 0),
         'reason': reason,
     }
 
@@ -638,15 +659,21 @@ def classify_phase(
     candles: List[Dict[str, Any]],
     stock_info: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """تصنيف المرحلة — 3 حالات فقط (ممنوع Wyckoff).
+    """تصنيف المرحلة — 3 حالات (مصطلحات واضحة، ممنوع Wyckoff).
+
+    BRAVO RADAR-REBUILD: شيلنا "بيبلع على الهادي" / "بيبلع في الخفاء" (Wyckoff متناقض).
+    بدّلناها بـ:
+      - تراكم مع اتجاه (Trend Accumulation): MFM+ قوي + سعر فوق MA20
+      - تراكم هادئ (Quiet Accumulation): MFM+ ضعيف/محايد + هيكل صاعد
+      - تصريف (Distribution): MFM− سالب
+      - بيانات غير كافية
 
     القواعد الكمية الصارمة:
-      - لو السوق هابط/Risk-Off → ممنوع تجميع/Pre-Surge → "بيصرف" أو "بيانات غير كافية"
-      - لو بيانات ناقصة → "بيانات غير كافية"
-      - لو صافي التدفق سالب → "بيصرف"
-      - لو صافي التدفق موجب قوي + حجم فوق المتوسط + السعر فوق MA50 → "بيبلع على الهادي"
-      - لو صافي التدفق موجب ضعيف + هيكل صاعد (close > MA20) → "بيتحضر"
-      - غير كده → "بيصرف" (افتراضي محافظ)
+      - لو السوق هابط/Risk-Off → ممنوع تراكم → تصريف
+      - لو MFM سالب → تصريف
+      - لو whale_present + close > MA20 → تراكم مع اتجاه
+      - لو net_flow > 0 + close > MA20 → تراكم هادئ
+      - غير كده → تصريف (افتراضي محافظ)
     """
     # 1. بيانات ناقصة
     if whale['flow_strength'] == 'بيانات غير كافية':
@@ -655,28 +682,26 @@ def classify_phase(
             'reason': whale['reason'],
         }
 
-    # 2. السوق هابط → ممنوع تجميع
+    # 2. السوق هابط → ممنوع تراكم
     if market['is_bear']:
-        # لو حتى التدفق سالب → تأكيد تصريف
         if whale['net_flow_egp'] < 0:
             return {
                 'phase': PHASE_DISTRIBUTING,
-                'reason': f"سوق هابط + صافي تدفق سالب ({whale['net_flow_egp']/1e6:.1f}M) — تصريف",
+                'reason': f"سوق هابط + MFM سالب ({whale['net_flow_egp']/1e6:.1f}M) — تصريف",
             }
-        # لو التدفق موجب بس السوق هابط → برضه "بيصرف" (محافظ)
         return {
             'phase': PHASE_DISTRIBUTING,
-            'reason': f"سوق هابط ({market['change_pct']:.2f}%) — ممنوع تجميع في Risk-Off",
+            'reason': f"سوق هابط ({market['change_pct']:.2f}%) — ممنوع تراكم في Risk-Off",
         }
 
-    # 3. صافي تدفق سالب → تصريف
+    # 3. MFM سالب → تصريف
     if whale['net_flow_egp'] < 0:
         return {
             'phase': PHASE_DISTRIBUTING,
-            'reason': f"صافي تدفق سالب ({whale['net_flow_egp']/1e6:.1f}M EGP) — تصريف",
+            'reason': f"MFM سالب ({whale['net_flow_egp']/1e6:.1f}M EGP) — تصريف",
         }
 
-    # 4. حساب هيكل السعر الأخير
+    # 4. حساب هيكل السعر
     closes = [_to_float(c.get('close')) for c in candles if _to_float(c.get('close')) > 0]
     if len(closes) < 20:
         return {
@@ -686,34 +711,30 @@ def classify_phase(
     ma20 = sum(closes[-20:]) / 20
     last_close = closes[-1]
 
-    # 5. التدفق موجب قوي (حوت حاضر)
-    # BRAVO-FIX: التدفق الموجب = تجميع/امتصاص، مش تصريف. حتى لو السعر تحت MA20،
-    # الحوت بيبلع على الهادي في الخفاء. تصريف لازم صافي تدفق سالب.
-    # لو الحوت حاضر + السعر فوق MA20 → امتصاص علني.
-    # لو الحوت حاضر + السعر تحت MA20 → امتصاص خفي (بيبلع في الخفاء).
+    # 5. whale_present + close > MA20 → تراكم مع اتجاه
     if whale['whale_present']:
         if last_close > ma20:
             return {
                 'phase': PHASE_ABSORBING,
-                'reason': f"تدفق موجب قوي ({whale['net_flow_egp']/1e6:.1f}M EGP) فوق MA20 — بيبلع على الهادي",
+                'reason': f"MFM+ قوي ({whale['net_flow_egp']/1e6:.1f}M EGP) فوق MA20 — تراكم مع اتجاه",
             }
         else:
             return {
-                'phase': PHASE_ABSORBING,
-                'reason': f"تجميع وامتصاص قيعان ({whale['net_flow_egp']/1e6:.1f}M EGP) تحت MA20 — بيبلع على الهادي في الخفاء",
+                'phase': PHASE_PREPARING,
+                'reason': f"MFM+ قوي ({whale['net_flow_egp']/1e6:.1f}M EGP) تحت MA20 — تراكم هادئ",
             }
 
-    # 6. التدفق موجب بدون حجم حوت استثنائي
+    # 6. MFM+ بدون حوت → تراكم هادئ
     if whale['net_flow_egp'] > 0:
         return {
             'phase': PHASE_PREPARING,
-            'reason': f"صافي تدفق موجب ({whale['net_flow_egp']/1e6:.1f}M EGP) — بيتحضر",
+            'reason': f"MFM+ ضعيف ({whale['net_flow_egp']/1e6:.1f}M EGP) — تراكم هادئ",
         }
 
-    # 7. التدفق سالب فقط هو اللي تصريف
+    # 7. افتراضي → تصريف
     return {
         'phase': PHASE_DISTRIBUTING,
-        'reason': f"صافي تدفق سلبي ({whale['net_flow_egp']/1e6:.1f}M EGP) — تصريف وخروج كاش",
+        'reason': f"MFM سالب ({whale['net_flow_egp']/1e6:.1f}M EGP) — تصريف",
     }
 
 

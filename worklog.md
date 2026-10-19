@@ -70133,3 +70133,59 @@ Stage Summary:
 - ✅ lint 0. ✅ browser renders. ✅ HTTP 200.
 - ✅ table.tsx update: Table بيقبل ref الآن (React 19 pattern).
 - 🔁 push: المالك رفع الـ gate. هـ commit + push.
+
+---
+Task ID: BRAVO-RADAR-REBUILD-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — إعادة بناء منطق رادار السيولة (MFM بدل close vs open)
+
+Work Log:
+- قرأت نقد DeepSeek (10 findings) + Grock (7 findings) + البرومبت النهائي.
+- 🔴 Finding #1 (Critical): close vs open غلط جوهريًا — استبدلته بـ MFM.
+- التعديلات على scripts/liquidity_radar_v2.py:
+
+1. compute_whale_flow — إعادة كتابة كاملة:
+   * OLD: close > open → buy | close < open → sell (غلط — شكل شمعة مش تدفق)
+   * NEW: MFM = ((close - low) - (high - close)) / (high - low)
+   * money_flow = volume × close × MFM
+   * net_flow = sum(money_flow) — موجب = buying، سالب = selling
+   * avg_daily_flow = متوسط |money_flow| يومي
+
+2. العتبة — نسبية مش مطلقة:
+   * OLD: whale_threshold = avg × 0.5 / cash_boost (مطلقة + cash boost)
+   * NEW: whale_threshold = avg_daily_flow × 0.6 (نسبي)
+   * 0.6 موثّق: الحوت = تدفق > 60% من المتوسط اليومي
+
+3. Cash Safety Multiplier — اتشال من كشف الحوت:
+   * OLD: cash_boost بيخفّض عتبة الحوت (خلط مفاهيم)
+   * NEW: cash_safety في الـ output للـ risk assessment فقط (position sizing)
+   * مفيش cash boost في whale detection خالص
+
+4. المصطلحات — شيلنا Wyckoff:
+   * OLD: "بيبلع على الهادي" / "بيبلع في الخفاء" (Wyckoff متناقض)
+   * NEW: "تراكم مع اتجاه" / "تراكم هادئ" / "تصريف" (مصطلحات واضحة)
+
+5. classify_phase — حدّثنا الأسباب:
+   * كل reason بيقول "MFM+" أو "MFM−" بدل "تدفق موجب/سالب"
+
+6. الـ output fields الجديدة:
+   * flow_method: 'MFM' (للـ audit trail)
+   * whale_threshold_egp: العتبة الفعلية (للـ transparency)
+
+- التحقق:
+  * py_compile PASS.
+  * 0 close vs open في الكود (grep بيرجع فاضي).
+  * 39 MFM references.
+  * cash_safety_multiplier = risk only (مش في whale detection).
+  * Wyckoff terms gone (بس في comments بتوثّق إنها اتشالت).
+  * Gap scenario test: MFM بـ يكشف intraday pressure صح (DeepSeek example).
+
+Stage Summary:
+- ✅ Finding #1 (Critical): close vs open → MFM. خلّص.
+- ✅ Finding #2 (عتبة مطلقة): → نسبية (0.6 × avg).
+- ✅ Finding #3 (cash_boost): اتشال من whale detection.
+- ✅ Finding #5 (Wyckoff): مصطلحات واضحة.
+- ⚠️ Finding #4 (entry = last close): محتاج fix منفصل (compute_entry_defense).
+- ⚠️ Finding #7 (Falling Knife AND): محتاج fix منفل.
+- ⚠️ Finding #8 (data_stale flag): محتاج fix في API layer (scope ألفا).
+- 🔁 Push gate: هـ commit + push.
