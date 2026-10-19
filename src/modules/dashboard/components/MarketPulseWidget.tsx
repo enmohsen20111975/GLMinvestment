@@ -83,16 +83,19 @@ interface SectorInfo {
 
 interface MarketPulseData {
  cairo_time: string;
- weekday: string;
- is_trading_hours: boolean;
+ weekday?: string;
+ is_trading_hours?: boolean;
  market_status: 'OPEN' | 'CLOSED';
- latest_update: string;
- egx30: IndexSnapshot;
- egx70: IndexSnapshot;
- divergence: DivergenceInfo;
- pulse: PulseInfo;
- sectors: SectorInfo[];
- top_sector: { sector: string; turnover_pct: number; avg_change: number } | null;
+ latest_update?: string;
+ // ALPHA-UX-FIX-1: egx30/egx70/pulse/divergence/sectors optional —
+ // الـ API fallback بيرجع index/index_70/indices بدل egx30/egx70، ومبيرجعش
+ // pulse/divergence/sectors. الـ normalizer بيـ mapهم؛ الـ render بيـ handle undefined بـ '—'.
+ egx30?: IndexSnapshot;
+ egx70?: IndexSnapshot;
+ divergence?: DivergenceInfo;
+ pulse?: PulseInfo;
+ sectors?: SectorInfo[];
+ top_sector?: { sector: string; turnover_pct: number; avg_change: number } | null;
  breadth: {
  gainers: number;
  losers: number;
@@ -101,12 +104,59 @@ interface MarketPulseData {
  total_turnover: number;
  total_turnover_bn: number;
  };
+ // ALPHA-UX-FIX-1: حقول الـ fallback shape (من /api/market-pulse لما Python down)
+ index?: IndexSnapshot;
+ index_70?: IndexSnapshot;
+ indices?: IndexSnapshot[];
+ advancing?: number;
+ declining?: number;
+ unchanged?: number;
 }
 
 interface ApiResponse {
  success?: boolean;
  data?: MarketPulseData;
  error?: string;
+}
+
+/**
+ * normalizePulseData — ALPHA-UX-FIX-1
+ * ============================================
+ * الـ API بيرجع شكلين محتملين:
+ * 1) Python backend (غني): {egx30, egx70, pulse, divergence, sectors, breadth{object}}
+ * 2) sqlite_fallback (أساسي): {index, index_70, indices[], breadth(number), advancing, declining}
+ *
+ * الـ widget متوقع الشكل الغني. هنا بنمّط الشكل الأساسي للغني عشان الـ widget
+ * يعرض القيم الحقيقية (index value = EGX30) بدل '—'.
+ *
+ * مبدأ الأمانة: الـ pulse/divergence/sectors لو مش موجودة بتفضل undefined →
+ * الـ render بيـ show '—' (مش اختراع بيانات). بنمّط بس الـ index + breadth.
+ */
+function normalizePulseData(raw: MarketPulseData | undefined | null): MarketPulseData | null {
+ if (!raw || typeof raw !== 'object') return null;
+ const r = raw as MarketPulseData & Record<string, unknown>;
+ // 1) خريطة الـ index fields: egx30 ← index ← indices[0]
+ const egx30 = r.egx30 ?? r.index ?? r.indices?.[0];
+ const egx70 = r.egx70 ?? r.index_70 ?? r.indices?.[1];
+ // 2) breadth: لو رقم (fallback) → بناء object من advancing/declining/unchanged
+ const rawBreadth = r.breadth as unknown;
+ let breadth: MarketPulseData['breadth'];
+ if (rawBreadth && typeof rawBreadth === 'object' && !Array.isArray(rawBreadth)) {
+ breadth = rawBreadth as MarketPulseData['breadth'];
+ } else {
+ const advancing = r.advancing ?? 0;
+ const declining = r.declining ?? 0;
+ const unchanged = r.unchanged ?? 0;
+ breadth = {
+ gainers: advancing,
+ losers: declining,
+ unchanged,
+ adv_dec_ratio: declining > 0 ? advancing / declining : (advancing > 0 ? Infinity : 0),
+ total_turnover: 0,
+ total_turnover_bn: 0,
+ };
+ }
+ return { ...r, egx30, egx70, breadth };
 }
 
 // ============================================================
@@ -574,7 +624,7 @@ export function MarketPulseWidget() {
  throw new Error(json.error ?? 'استجابة غير صالحة');
  }
 
- setData(payload);
+ setData(normalizePulseData(payload));
  setError(null);
  setIsFresh(true);
  if (freshTimerRef.current) clearTimeout(freshTimerRef.current);
