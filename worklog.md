@@ -70835,3 +70835,126 @@ Stage Summary:
 - ✅ BASELINE Win Rate: 68.84% (296/430) — ده اللي هـ نقارن عليه بعد أي تعديل.
 - ✅ ملف الذاكرة `أعمال-فريق-برافو.md` محدّث بكل الموجة 6.
 - 🔁 القرار لمحسن: نبدأ خطوة 6 (DATA-LAYER-1) أم في حاجة تانية؟
+
+---
+Task ID: BRAVO-SCORE-INVESTIGATION-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — التحقيق في مشكلة Score ≥70 → 40.5% WR (الخيار ب)
+
+Work Log:
+
+- 🔍 الـ finding الأساسي (من BASELINE):
+  | Score | Count | Wins | Closed | WR    |
+  |-------|-------|------|--------|-------|
+  | <50   |    35 |    3 |      5 | 60.0% |
+  | 50-60 |   103 |   19 |     22 | 86.4% |
+  | 60-65 |   139 |   24 |     28 | 85.7% |
+  | 65-70 |   239 |   30 |     34 | 88.2% |
+  | ≥70   |   664 |   45 |    111 | 40.5% | ← !!! كارثة
+  | NULL  |   235 |  171 |    213 | 80.3% |
+
+- 🔬 التحقيق 1: عينة من ≥70 STOPPED:
+  * HRHO ظهر 9 مرات في أعلى STOPPED بـ score=100.0!
+  * كلهم R/R=None + actual_return=-7.0 (stop hit)
+  * كلهم persona=balanced
+  * INSTITUTIONAL_BUY ظهر بشكل ملحوظ
+
+- 🔬 التحقيق 2: R/R distribution في ≥70 (111 closed):
+  | R/R band     | count | wins | losses | WR    |
+  |--------------|-------|------|--------|-------|
+  | R/R=NULL     |    22 |    1 |     21 |  4.5% | ← كارثة!
+  | R/R ≥50      |    24 |    5 |     19 | 20.8% |
+  | R/R 10-50    |    26 |   22 |      4 | 84.6% |
+  | R/R <1.8     |    12 |    9 |      3 | 75.0% |
+  | R/R 3-10     |    15 |    4 |     11 | 26.7% |
+  | R/R 1.8-3    |    12 |    4 |      8 | 33.3% |
+
+- 🔬 التحقيق 3: INSTITUTIONAL_BUY (13 توقع كلهم STOPPED):
+  * HRHO: 6 توقعات score=100.0 كلها STOPPED
+  * BTFH: 2 توقعات score=100.0 كلها STOPPED
+  * EDFM, EFIH, PHTV, EASB: 1 لكل واحد، كلهم STOPPED
+  * كلهم R/R=None + holding_days=1-2 (خرجوا فوراً على stop)
+  * كلهم persona=balanced
+
+- 🔬 التحقيق 4: target distance:
+  | target_upside | count | wins | losses | WR    |
+  |---------------|-------|------|--------|-------|
+  | ≥100%         |    26 |    7 |     19 | 26.9% | ← targets مرفوعة جداً
+  | 50-100%       |    26 |   22 |      4 | 84.6% |
+  | <10%          |    24 |    7 |     17 | 29.2% | ← targets قريبة جداً
+  | 10-20%        |    24 |    7 |     17 | 29.2% |
+
+- 🔬 التحقيق 5: R/R=None التوزيع الزمني:
+  | Month    | BUY  | R/R=None | %     |
+  |----------|------|----------|-------|
+  | 2026-09  |  274 |       19 |  6.9% |
+  | 2026-10  |  130 |       69 | 53.1% | ← انكسار كامل!
+  * قبل أكتوبر: ~7% R/R=None (طبيعي)
+  * أكتوبر: 53.1% R/R=None (كارثة)
+  * 145 توقع بـ R/R=None، كلهم persona=balanced
+
+- 🔬 التحقيق 6: الـ tickers الرقمية (9558, 9608, 9530, 6060):
+  * موجودة في price_history.db بـ 58 صف لكل واحد
+  * موجودة في stocks.db بـ ticker واحد لكل واحد
+  * كلهم مسجلين بـ market=EGX (غلط — دول TADAWUL سعودية)
+  * 58 صف = ~3 شهر بس (ضحلة)
+
+- 🔬 التحقيق 7: عينة من أكتوبر بـ R/R=None:
+  | ticker | date       | signal     | score | R/R   | kf   | ev | mb | tp2  | wb   |
+  |--------|------------|------------|-------|-------|------|----|----|------|------|
+  | KZPC   | 2026-10-15 | BUY        | 70.0  | None  | EMPTY|  0 |  0 | None | EMPTY|
+  | KZPC   | 2026-10-14 | BUY        | 69.0  | None  | EMPTY|  0 |  0 | None | EMPTY|
+  | 9558   | 2026-10-13 | STRONG_BUY | 78.0  | None  | EMPTY|  0 |  0 | None | EMPTY|
+  | 9608   | 2026-10-13 | STRONG_BUY | 83.0  | None  | EMPTY|  0 |  0 | None | EMPTY|
+  * كلهم: kf=EMPTY + ev=0 + mb=0 + tp2=None + wb=EMPTY
+  * ده = الـ fallback INSERT path شغال!
+
+- 🔬 التحقيق 8 (الـ smoking gun النهائي): prediction_tracker.py L631-669
+  ```python
+  try:
+      cursor.execute(INSERT 24-column)  # بـ يشمل risk_reward + evidence_count + إلخ
+  except Exception:
+      try:
+          cursor.execute(INSERT 16-column)  # بدون risk_reward! بدون evidence_count!
+      except Exception:
+          cursor.execute(INSERT 15-column)  # الأقدم
+  ```
+  * الـ except Exception بـ يبتلع الـ exception بدون logging
+  * الـ fallback paths مش بـ تكتب: risk_reward, evidence_count, morning_bell, kill_filter_result, target_price_2, who_is_buying, explosive_score, explosive_label
+  * confirmed: كل 130 توقع في أكتوبر = FALLBACK_PATH
+
+- 🔬 التحقيق 9: ليه الـ INSERT الأول بـ يفشل؟
+  * 4 triggers على predictions table:
+    1. trg_prevent_invalid_prices_insert (DEV-13): لو entry/target/stop = NULL أو ≤ 0 → ABORT
+    2. trg_prevent_wrong_direction (DEV-13): BUY و target ≤ entry → ABORT
+    3. trg_prevent_wrong_direction_sell (DEV-20): SELL و target ≥ entry → ABORT
+  * testing confirmed:
+    - entry_price=NaN → FAILED (DEV-13)
+    - target_price=NaN → FAILED (DEV-13)
+    - stop_loss=None → FAILED (DEV-13)
+    - prediction_date=None → FAILED (NOT NULL constraint)
+  * لكن: كل الـ 145 توقع بـ R/R=None عندهم prices صحيحة (entry/target/stop > 0 + target > entry)
+  * يعني الـ prices مـتـكتبة صح في الـ DB — لكن في الـ INSERT الأول كانت NaN/None!
+  * الاستنتاج: الـ daily_predictor بـ يـ pass NaN/None prices لـ record_prediction()،
+    الـ INSERT الأول بـ يفشل، الـ fallback بـ يـ retry بـ 16 column (بدون risk_reward)،
+    وبعدها حاجة تانية بـ يـ UPDATE prices للقيم الصحيحة.
+
+- 🎯 السبب الجذري النهائي (root cause):
+  في أكتوبر 2026، الـ daily_predictor بـ يستدعي record_prediction() بـ قيم NaN/None
+  للـ entry_price/target_price/stop_loss. الـ trigger DEV-13 بـ يرفض الـ INSERT الأول.
+  الـ fallback path (L657-672) بـ يـ retry بـ 16 column — بدون كتابة risk_reward.
+  النتيجة: 145 توقع بـ risk_reward=NULL + score عالي → بـ تـفسد الـ WR للـ ≥70 band.
+
+  + المشكلة التانية: الـ except Exception بـ يبتلع الـ exception بصمت (بدون logging).
+  محسن مكنش بـ يعرف إن فيه مشكلة أساساً.
+
+Stage Summary:
+- ✅ السبب الجذري: prediction_tracker.py L654-689 — fallback INSERT بـ 16 column بدون risk_reward.
+- ✅ السبب التاني: except Exception silent (بدون logging) — بـ يخفي المشكلة.
+- ✅ السبب التالت: daily_predictor بـ يـ pass NaN/None prices (محتاج تحقيق منفصل).
+- 🔁 التوصية لـ محسن:
+  1. URGENT: أضف logging في الـ except Exception (عشان نعرف الـ exception الحقيقي).
+  2. URGENT: ضيف risk_reward + evidence_count + morning_bell + kill_filter_result
+     في الـ fallback INSERT (عشان لو فشل الـ INSERT الأول، نـكتب الـ fields المهمة).
+  3. ROOT FIX: ابحث في daily_predictor.py ليه بـ يـ pass NaN/None prices.
+  4. CLEANUP: 145 توقع بـ R/R=None لازم يـتـ backfilled بـ R/R الصحيح (entry/target/stop موجودة).
