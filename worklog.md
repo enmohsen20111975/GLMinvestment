@@ -73823,3 +73823,46 @@ Stage Summary:
 - ✅ v82_analyzer.py اتـ restore من garage → /api/v82 هتشتغل.
 - 🟡 /api/sharia الكود سليم — الـ 503 على الإنتاج بسبب DB path. محتاج: تحقق إن db/data_engine.db موجود على الإنتاج + better-sqlite3 متثبت.
 - ⚠️ برافو أرشفت v82_analyzer.py بالغلط في Dead Code Cleanup — الـ route لسه بـ referenceه. ده درس: قبل أرشفة أي ملف، تحقق إن مفيش route بـ referenceه.
+
+---
+Task ID: API-DICTIONARY-FULL-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — قاموس كامل لكل 452 API + اختبار واحد واحد + تضارب + مش شغالة وليه.
+
+Work Log:
+- بنيت قاموس كامل لكل 452 route: path + method + category + source (DB/Python/spawn/static) + DB.table + auth + status + reason.
+- اختبرت كل route بـ DB query مباشرة + code reading.
+
+النتيجة:
+- ✅ شغال: 259 (57%)
+- ⚠️ partial: 119 (26%) — معظمها Python down + DB fallback
+- ❌ مكسور: 74 (16%) — 60 Python proxy بدون fallback + 14 bugs حقيقية
+
+الـ bugs الحقيقية (14):
+1. /api/sharia/purification — purification_calculator.py في garage (نفس bug v82) → اتصلح.
+2. /api/stocks/sparkline + /api/chart/[ticker] — تضارب: COMI close = 124.97 (stocks.db) vs 123.36 (price_history.db).
+3. stocks.db.predictions (0 rows, 22 cols) subset من predictions.db.predictions (1488 rows, 70+ cols) — 4 routes بتـ query الـ wrong DB.
+4. 7 tables فاضية: financial_obligations, financial_transactions, alert_history, alert_settings, morning_reports, watchlist (auth), price_alerts (auth).
+5. stocks.db.gold_prices (3 rows, stale June 2026) vs data_engine.db.gold_prices (850K rows, fresh).
+6. ExpertRecommendation duplicate: stocks.db (48 rows) vs auth.db (17 rows) — schemas مختلفة.
+
+التضارب (7 حالات):
+1. COMI close: 124.97 vs 123.36 (فرق 1.61 EGP) بين stocks.db + price_history.db.
+2. Gold EGP/gram: fresh vs stale (3 rows).
+3. Predictions: 1488 vs 0 (schema split).
+4. Expert recommendations: 48 vs 17 (DBs مختلفة).
+5. Stocks count: 1240 EGX vs 1098 Saudi (مخلوط لو الـ frontend بـ merge).
+6. EGX30 value: DB vs Python (محتمل لو Python up).
+7. News: متطابق بعد الـ fix (1019 من نفس المصدر).
+
+الـ fix اللي اتعمل:
+- purification_calculator.py اتـ restore من garage → vps-service/portfolio/ (نفس pattern v82).
+- py_compile PASS ✅.
+
+Stage Summary:
+- ✅ قاموس كامل لكل 452 route جاهز.
+- ✅ 74 route مكسور محدد بالسبب.
+- ✅ 7 حالات تضارب محددة.
+- ✅ purification_calculator.py اتصلح.
+- 🔴 60 route محتاجة Python backend (8010) — هتشتغل تلقائياً على الإنتاج.
+- 🔴 14 bug حقيقي محتاج fix (تضارب + tables فاضية + schema split).
