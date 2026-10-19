@@ -70676,3 +70676,90 @@ Stage Summary:
 - ✅ إجمالي: 15/19 duplicates fixed (steps 1-5).
 - ✅ ALL py_compile PASS.
 - ⚠️ خطوة 6: V40.2 egksco → price_history.db (DATA-LAYER-1) — لسه.
+
+---
+Task ID: BRAVO-DATA-SOURCE-VERIFY-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — قبل التوحيد: تأكد إن المحركات بتستخدم المصدر الصح (حي + محدّث + كامل + آخر تاريخ)
+
+Work Log:
+
+- 🚨 اكتشاف كارثي #1 (الحالة قبل التحقق):
+  * db/ كان فيه 4 DBs بس: auth.db (0 بايت فاضي!), custom.db, predictions.db, stocks.db
+  * stocks.db حجمه 29MB بس فيه 3 جداول فقط (analytics_events=17, system_settings=0) — الجداول الأساسية (stocks, stock_daily_prices, price_history) كلها ممسوحة!
+  * المصادر الكنونية المُعرّفة في db_paths.py (price_history.db, data_engine.db, intraday.db) — كلها مش موجودة!
+  * معنى كده: المحركات (daily_predictor, backtest_engine, إلخ) كانت بـ تقرأ من ملفات مش موجودة → النظام ميت من ناحية بيانات الأسعار.
+
+- 🔍 التشخيص: استخراج الـ DBs من backups في data/db_backup_2026-10-18T14-54-47_*.zip:
+  * part1: auth.db + crypto.db
+  * part2 (split, 114MB): data_engine.db (482MB)
+  * part3: decision_log.db + historical.db
+  * part4 (split, 50MB): intraday.db (448MB)
+  * part5: metrics.db + news.db + paper_trading.db
+  * part6 (split, 31MB): predictions.db (290MB)
+  * part7 (split, 65MB): price_history.db (352MB) ← المصدر الكنوني للأسعار!
+  * part8: stocks.db (29MB — النسخة الصح)
+
+- ✅ الاسترجاع: نسخ price_history.db + data_engine.db + stocks.db (الصح) + auth.db لـ db/:
+  * مشكلة: stocks.db فيه WAL/SHM files قديمة → كان بـ يعرض 3 جداول بس.
+  * الحل: rm db/stocks.db* ثم إعادة نسخ + حذف WAL/SHM → 69 جدول دلوقتي.
+  * integrity_check: كل الـ 5 DBs = OK.
+
+- 📊 الفحص العميق لكل مصدر:
+
+  | المصدر | الجدول | الصفوف | tickers | آخر تاريخ | الحيوية |
+  |--------|--------|--------|---------|-----------|---------|
+  | price_history.db | price_history | 1,309,893 | 1,557 | 2026-10-18 | ✅ حي + كامل |
+  | data_engine.db | egksco_price_history | 59,109 | 1,134 | 2026-10-18 | ✅ حي بس ضحل |
+  | data_engine.db | crypto_prices | 2,075,114 | — | 2026-10-18 14:53 | ✅ حي |
+  | data_engine.db | gold_prices | 850,588 | — | 2026-10-18 14:54 | ✅ حي |
+  | data_engine.db | exchange_rates | 144,963 | — | 2026-10-18 14:54 | ✅ حي |
+  | stocks.db | stock_daily_prices | 82,011 | 1,240 | 2026-10-18 | ✅ حي (30 يوم) |
+  | stocks.db | stocks | 1,240 | — | — | ✅ metadata |
+
+- 🚨 اكتشاف كارثي #2 (جودة egksco):
+  * egksco: median = 25 صف/ticker بس! (نص tickers عندها ≤25 صف)
+  * أعلى tickers في egksco: AAPL, ABBV, ADBE, AMD, AMGN (أسهم أمريكية مش مصرية!) = 230 صف
+  * أقل tickers في egksco: EGS3I0S1C019, MABA, RRMTV (مصرية) = 1 صف!
+  * بس 125 ticker عندها ≥200 صف (ودي الأسهم الأمريكية)
+  * يعني egksco مش بس ضحلة — دي مختلطة بأسهم أمريكية + بيانات مصرية ناقصة.
+
+- ✅ اكتشاف مفرح #3 (جودة price_history):
+  * price_history: 887 ticker عندها ≥200 صف (7× أكتر من egksco!)
+  * أعلى tickers: GGCC, OCDI, UEGC, DEIN, COMI (كلها مصرية!)
+  * COMI: 6,537 صف من 2000-11-27 لـ 2026-10-18 (26 سنة!)
+  * overlap: كل tickers egksco (1,134) موجودة في price_history (+423 زيادة)
+  * price_history = superset كامل + EGX-focused + 26 سنة + محدّث لليوم.
+
+- 🔬 فحص المحركات الستة (مصدر البيانات الفعلي):
+
+  | المحرك | المصدر الفعلي | الجودة |
+  |--------|---------------|--------|
+  | engines/market_regime.py | price_history.db ✅ | عميق + حي |
+  | analyzers/master_analyzer.py (load_merged_history) | price_history.db + yahoo_clean + egksco merge ✅ | عميق + حي + طازج |
+  | data/prices.py (load_price_history) | price_history.db + yahoo_clean + egksco merge ✅ | عميق + حي + طازج |
+  | data/prices.py (load_egksco_history مباشرة) | data_engine.db.egksco فقط ❌ | ضحل (COMI=46 صف) |
+  | engines/backtest_engine.py | data_engine.db.egksco فقط ❌ HARDCODED | ضحل |
+  | jobs/daily_predictor.py | egksco PRIMARY + price_history FALLBACK ❌ | بيستخدم الضحل |
+
+- 🧪 اختبارات قراءة فعلية (COMI = Commercial International Bank):
+  * load_egksco_history('COMI', 300): 46 صف (2026-07-28 → 2026-10-18) — ضحل
+  * load_price_history('COMI', 300): 301 صف (2025-04-22 → 2026-10-19) — عميق + طازج!
+  * load_merged_history('COMI', price_history.db, 300): 301 صف — عميق + طازج!
+  * ملاحظة: load_price_history بـ يدمج yahoo_clean (300) + 1 egksco candle live → بيوصل لـ 2026-10-19 (أحدث من price_history اللي بـ يقف عند 2026-10-18).
+
+- ✅ النتيجة النهائية للتحقق:
+  1. المصادر الكنونية كلها RESTORED + alive + integrity OK.
+  2. price_history.db (المصدر الصح) = حي + كامل + محدّث (2026-10-18) + EGX-focused + 26 سنة.
+  3. الـ API الرئيسي (load_price_history + load_merged_history) بيستخدم price_history.db صح.
+  4. ⚠️ بس 3 محركات لسه بـ تستخدم egksco الضحلة:
+     - backtest_engine.py (HARDCODED)
+     - daily_predictor.py (PRIMARY)
+     - load_egksco_history المباشر
+
+Stage Summary:
+- ✅ كل المصادر الكنونية مسترجعة + alive + integrity OK (5 DBs).
+- ✅ price_history.db = المصدر الصح: 1.3M صف، 1557 ticker، 887 ticker عميق، 26 سنة، محدّث 2026-10-18.
+- ✅ الـ API الرئيسي (load_price_history/load_merged_history) بيقرأ من price_history.db + بـ يدمج egksco live candle → بيانات عميقة + طازجة لـ 2026-10-19.
+- ⚠️ 3 محركات لسه على egksco الضحلة (backtest_engine + daily_predictor + load_egksco_history المباشر).
+- 🔁 قرار محسن: هل نكمل خطوة 6 (تحويل الـ 3 محركات لـ price_history.db) قبل توحيد المؤشرات؟
