@@ -25,6 +25,9 @@ import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { LockModal } from '@/components/auth/LockModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StockDetailDrawer } from '@/modules/predictions/components/MakerRadarTab';
+// ALPHA-UX-FIX-6: guest CTA + sectors tracking (moved from #recommendations)
+import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
+import { SectorTrackingTab } from '@/modules/market-analysis/components/SectorTrackingTab';
 import {
   Shield, RefreshCw, AlertTriangle, Activity,
   TrendingUp, TrendingDown, Layers, ChevronLeft, ChevronRight, Lock,
@@ -449,6 +452,8 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
           actionLabel="إعادة المحاولة"
           onAction={fetchData}
         />
+        {/* ALPHA-UX-FIX-6: تتبع القطاعات يظهر حتى لو الرادار فاضي (تحليل مستقل) */}
+        <SectorTrackingTab market={market} />
       </div>
     );
   }
@@ -548,6 +553,12 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
           </div>
         </div>
       )}
+
+      {/* ALPHA-UX-FIX-6: guest freemium CTA — بتشوف 5 من N، سجل للمزيد */}
+      <GuestLimitCta shown={pagedStocks.length} total={filteredStocks.length} itemLabel="إشارة" itemLabelPlural="إشارات" />
+
+      {/* ALPHA-UX-FIX-6: تتبع القطاعات — اتنقل من #recommendations لرادار السيولة */}
+      <SectorTrackingTab market={market} />
 
       {/* ─── Rich StockDetailDrawer Dialog (SSOT Maker Radar Modal) ─── */}
       <Dialog open={!!selectedTicker} onOpenChange={(open) => { if (!open) setSelectedTicker(null); }}>

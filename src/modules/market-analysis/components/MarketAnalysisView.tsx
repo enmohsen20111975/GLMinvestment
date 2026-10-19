@@ -211,7 +211,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  #liquidity-radar (MakerRadarTab) as internal sub-tabs. #recommendations
  now has 5 tabs only: predictions / status / sectors-tracking /
  historical-trades / net-picks. */}
- <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 h-auto gap-1">
+ <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-2 lg:grid-cols-4 h-auto gap-1">
  {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل الـ 3 المنفصلة */}
  <TabsTrigger value="predictions" className="flex items-center gap-1">
  <Target className="h-4 w-4 text-profit" />
@@ -221,19 +221,14 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  <Activity className="h-4 w-4" />
  <span className="hidden sm:inline">{t('marketAnalysis.tabs.marketStatus')}</span>
  </TabsTrigger>
- {/* Phase P5: تتبع حركة القطاعات */}
- <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
- <Layers className="h-4 w-4 text-whale" />
- <span className="hidden sm:inline">{t('marketAnalysis.tabs.sectorsTracking')}</span>
- </TabsTrigger>
+ {/* Phase P5: تتبع حركة القطاعات — ALPHA-UX-FIX-6: اتنقل لرادار السيولة (#liquidity-radar) */}
+ {/* TabsTrigger value="sectors-tracking" removed — see LiquidityRadarView */}
  <TabsTrigger value="historical-trades" className="flex items-center gap-1">
  <History className="h-4 w-4 text-warning" />
  <span className="hidden sm:inline">{t('marketAnalysis.tabs.historicalTrades')}</span>
  </TabsTrigger>
- <TabsTrigger value="net-picks" className="flex items-center gap-1">
- <Target className="h-4 w-4 text-profit" />
- <span className="hidden sm:inline">{t('marketAnalysis.tabs.netPicks')}</span>
- </TabsTrigger>
+ {/* ALPHA-UX-FIX-6: الغِ تبويب «صافى التوقعات» (net-picks) — حسب طلب المالك */}
+ {/* TabsTrigger value="net-picks" removed */}
  {/* RESTRUCT-A-P2: reports tab merged from top-level menu */}
  <TabsTrigger value="reports" className="flex items-center gap-1">
  <FileBarChart className="h-4 w-4 text-warning" />
@@ -252,24 +247,14 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  <MarketStatusTab market={currentMarket} />
  </TabsContent>
 
- {/* Phase P5: تتبع حركة القطاعات */}
- <TabsContent value="sectors-tracking" className="mt-4">
- <SectorTrackingTab market={currentMarket} />
- </TabsContent>
+ {/* ALPHA-UX-FIX-6: sectors-tracking اتنقل لرادار السيولة — شوف LiquidityRadarView */}
 
  {/* P1-GEMS-WIRING: الصفقات التاريخية (13,117 صف) */}
  <TabsContent value="historical-trades" className="mt-4">
  <HistoricalTradesTable market={currentMarket} />
  </TabsContent>
 
- {/* Task 9-B Step 2: 5 radar tabs (exit-radar / weekly-report /
- multi-market-radar / radar-accuracy / personalized-radar) moved to
- #liquidity-radar (MakerRadarTab) as internal sub-tabs. The 5
- TabsContent blocks that used to live here are now sub-tabs inside
- MakerRadarTab.tsx. */}
- <TabsContent value="net-picks" className="mt-4">
- <NetPicksTab market={currentMarket} />
- </TabsContent>
+ {/* ALPHA-UX-FIX-6: net-picks tab اتشال — حسب طلب المالك */}
 
  {/* RESTRUCT-A-P2: reports merged from #reports top-level */}
  <TabsContent value="reports" className="mt-4">

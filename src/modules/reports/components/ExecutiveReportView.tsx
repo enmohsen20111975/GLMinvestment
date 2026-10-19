@@ -195,11 +195,11 @@ const PERSONA_FILTER_OPTIONS: Array<{ value: FilterPersona; label: string; emoji
 
 // RL-FIX-7: خيارات فلتر النتيجة
 const OUTCOME_FILTER_OPTIONS: Array<{ value: FilterOutcome; label: string; color: string }> = [
- { value: 'ALL', label: 'الكل', color: 'text-slate-300' },
+ { value: 'ALL', label: 'الكل', color: 'text-foreground' },
  { value: 'WIN', label: 'رابحة', color: 'text-profit' },
  { value: 'LOSS', label: 'خاسرة', color: 'text-loss' },
  { value: 'PENDING', label: 'معلقة', color: 'text-warning' },
- { value: 'EXPIRED', label: 'منتهية', color: 'text-slate-400' },
+ { value: 'EXPIRED', label: 'منتهية', color: 'text-muted-foreground' },
 ];
 
 // RL-FIX-7: خيارات فلتر الإشارة
@@ -307,7 +307,7 @@ export function ExecutiveReportView({
  // حدد الـ outcome
  // RL-FIX-16 (HONEST-WIN): WIN = actual_return > 0 (يتطابق مع Python API).
  // قبل الإصلاح: TARGET_HIT → WIN دائماً، حتى لو actual_return <= 0.
- // ده سبب 103 "false wins" في الإحصائيات. دلوقتي actual_return هو الفاصل.
+ // ده سبب 103"false wins" في الإحصائيات. دلوقتي actual_return هو الفاصل.
  //
  // RL-FIX-16-FE: معالجة حالة actual_return === 0.
  // قبل كده: returnPct=0 + status=TARGET_HIT → WIN (خطأ).
@@ -521,7 +521,7 @@ export function ExecutiveReportView({
  // RL-FIX-8: فلترة بالفترة الزمنية — بنستخدم entryDate (تاريخ التوقع) دايماً
  // لكل الصفقات (مقفولة ومعلقة). السبب: لو استخدمنا closedAt للمقفولة، وهي كلها
  // بتتقفل في نفس اليوم (لما الـ daily_closer يشتغل)، الأرقام ما بتتغيرش مع الفترة.
- // المستخدم عايز "التوقعات اللي اتعملت في آخر X يوم" — ده معناه entryDate.
+ // المستخدم عايز"التوقعات اللي اتعملت في آخر X يوم" — ده معناه entryDate.
  if (days !== 0) {
  result = result.filter((p) => {
  try {
@@ -598,7 +598,7 @@ export function ExecutiveReportView({
  }, []);
 
  // ═══════════════════════════════════════════════════════════════════════
- // RL-FIX-15: القياس على أساس "سهم واحد" (مش "توقع واحد")
+ // RL-FIX-15: القياس على أساس"سهم واحد" (مش"توقع واحد")
  // ═══════════════════════════════════════════════════════════════════════
  // المشكلة: generate_persona_predictions.py بيولّد 3 توقعات لكل سهم يومياً
  // (مضارب/متوازن/مستثمر). لو حسبنا الأداء على الـ 3، نفس السهم بيتحسب 3 مرات
@@ -606,7 +606,7 @@ export function ExecutiveReportView({
  //
  // الحل: طبقتين قياس:
  // (1) uniqueStocks — نُجمّع التوقعات الـ 3 لنفس (سهم، يوم دخول) في توقع واحد
- // ممثّل (نفضّل "المتوازن" لأنه الاستراتيجية الوسطى، وبعدها أعلى score).
+ // ممثّل (نفضّل"المتوازن" لأنه الاستراتيجية الوسطى، وبعدها أعلى score).
  // القياس العام (KPI الرئيسي، الرسوم، أعلى مكاسب/خسائر) بيبقى على ده.
  // (2) allPredictions (3 لكل سهم) — بنستخدمها بس لمقارنة الشخصيات (PersonaCard
  // + Radar)، لأن مقارنة الاستراتيجيات هي المكان اللي الـ 3-لكل-سهم فيه منطقي.
@@ -696,7 +696,7 @@ export function ExecutiveReportView({
  };
  }, []);
 
- // RL-FIX-15: القياس العام على أساس "سهم فريد" (توقع واحد لكل سهم/يوم)
+ // RL-FIX-15: القياس العام على أساس"سهم فريد" (توقع واحد لكل سهم/يوم)
  // ده اللي بيظهر في الـ KPI الرئيسية + الرسوم + الهيدر.
  const statsByStock = useMemo(() => computeStats(uniqueStocks), [computeStats, uniqueStocks]);
 
@@ -853,7 +853,7 @@ export function ExecutiveReportView({
 
  // FIX-5C: TRAILING_PROFIT counter — عدد الصفقات اللي خرجت بربح جزئي (exit_type ===
  // 'trailing_profit'). الـ outcome الرسمي بـ يفضل WIN، لكن الـ UI بـ يـ differentiate
- // علشان المالك يفرّق بين "هدف محقق كامل" و"جني أرباح قبل الهدف" (trailing stop ratchet).
+ // علشان المالك يفرّق بين"هدف محقق كامل" و"جني أرباح قبل الهدف" (trailing stop ratchet).
  const trailingProfitCount = useMemo(() => {
  return uniqueStocks.filter((p) => {
  const et = (p.exitType || p.exit_type || '').toString().toLowerCase().trim();
@@ -888,7 +888,7 @@ export function ExecutiveReportView({
  cacheBust: true,
  quality: 0.98,
  pixelRatio: 2,
- backgroundColor: '#0a0f1c',
+ backgroundColor: 'hsl(var(--card))',
  });
  const link = document.createElement('a');
  const timeLabel = TIMEFRAME_OPTIONS.find((t) => t.value === days)?.badge || `${days}d`;
@@ -951,7 +951,7 @@ export function ExecutiveReportView({
  <span className="text-xs text-muted-foreground">
  · {uniqueStockCount} سهم فريد
  {totalPredictionCount > uniqueStockCount && (
- <span className="text-slate-500"> ({totalPredictionCount} توقع · 3 شخصيات/سهم)</span>
+ <span className="text-muted-foreground"> ({totalPredictionCount} توقع · 3 شخصيات/سهم)</span>
  )}
  </span>
  </div>
@@ -1170,7 +1170,7 @@ export function ExecutiveReportView({
  {/* ════════════════ MAIN REPORT (PNG snapshot target) ════════════════ */}
  <div
  ref={reportContainerRef}
- className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-[#0c1220] via-[#0a0f1c] to-[#0c1220] border-2 border-warning/25 text-foreground shadow-2xl overflow-hidden"
+ className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-primary/10 via-card to-muted border-2 border-warning/25 text-foreground shadow-2xl overflow-hidden"
  >
  {/* Decorative background glows — subtle, not overwhelming */}
  <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-warning/8 blur-[140px] pointer-events-none rounded-full" />
@@ -1184,12 +1184,12 @@ export function ExecutiveReportView({
  <span className="px-3 py-1 rounded-full text-xs font-black bg-warning/15 text-warning border border-warning/30 tracking-wider">
  ملخص الأداء
  </span>
- <span className="text-xs text-slate-400 font-mono">
+ <span className="text-xs text-muted-foreground font-mono">
  {timeframeLabel} · {market}
  </span>
  {/* RL-FIX-7/8: Data source indicator */}
  {data?.source && (
- <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-700/50 text-slate-300 border border-slate-600/50 flex items-center gap-1">
+ <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-muted text-foreground border border-border flex items-center gap-1">
  <Database className="w-3 h-3" />
  {data.source.includes('vps') || data.source.includes('prod') || data.source.includes('production')
  ? 'بيانات الإنتاج'
@@ -1207,7 +1207,7 @@ export function ExecutiveReportView({
  'px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1',
  qualityMode === 'top_picks'
  ? 'bg-profit/15 text-profit border-profit/40'
- : 'bg-slate-700/50 text-slate-300 border-slate-600/50'
+ : 'bg-muted text-foreground border-border'
  )}>
  <Sparkles className="w-3 h-3" />
  {qualityMode === 'top_picks'
@@ -1219,13 +1219,13 @@ export function ExecutiveReportView({
  <Gauge className="w-8 h-8 sm:w-9 sm:h-9 text-warning flex-shrink-0" />
  <span>ملخص أداء التوقعات</span>
  </h1>
- <p className="text-sm sm:text-base text-slate-300 mt-2 max-w-2xl leading-relaxed">
+ <p className="text-sm sm:text-base text-foreground mt-2 max-w-2xl leading-relaxed">
  ملخص لنتائج التوقعات خلال {timeframeLabel}، يعرض الأرقام الفعلية للصفقات.
  {!loading && totalTrades > 0 && (
  <>
  <span className="text-warning font-bold"> — {uniqueStockCount} سهم فريد في النتائج</span>
  {totalPredictionCount > uniqueStockCount && (
- <span className="text-slate-400"> ({totalPredictionCount} توقع · 3 شخصيات لكل سهم)</span>
+ <span className="text-muted-foreground"> ({totalPredictionCount} توقع · 3 شخصيات لكل سهم)</span>
  )}
  </>
  )}
@@ -1233,8 +1233,8 @@ export function ExecutiveReportView({
  </div>
 
  {/* Market + key metric badge */}
- <div className="flex flex-col items-start md:items-end justify-center bg-slate-900/70 px-5 py-4 rounded-2xl border border-warning/20 md:min-w-[220px]">
- <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">سوق {market}</span>
+ <div className="flex flex-col items-start md:items-end justify-center bg-card px-5 py-4 rounded-2xl border border-warning/20 md:min-w-[220px]">
+ <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">سوق {market}</span>
  <span className="text-2xl font-black text-profit mt-1 leading-none">
  {(winRate ?? 0).toFixed(1)}%
  </span>
@@ -1243,15 +1243,15 @@ export function ExecutiveReportView({
  </span>
  {/* RL-FIX-7: Settled count transparency */}
  {!loading && totalTrades > 0 && (
- <span className="text-xs text-slate-400 mt-1.5">
+ <span className="text-xs text-muted-foreground mt-1.5">
  {stats.wins} رابحة / {stats.losses} خاسرة / {stats.pending} معلقة
  {/* FIX-5C: TRAILING_PROFIT counter — لو فيه صفقات خرجت بربح جزئي، */}
- {/* نعرض عددها جنب الـ settled count علشان المالك يفرّق بين "هدف */}
+ {/* نعرض عددها جنب الـ settled count علشان المالك يفرّق بين"هدف */}
  {/* محقق" و"جني أرباح قبل الهدف". */}
  {trailingProfitCount > 0 && (
  <span className="text-whale font-bold"> · {trailingProfitCount} 💰 خرجت بربح</span>
  )}
- <span className="text-slate-500"> · قياس على الأسهم الفريدة</span>
+ <span className="text-muted-foreground"> · قياس على الأسهم الفريدة</span>
  </span>
  )}
  </div>
@@ -1261,21 +1261,21 @@ export function ExecutiveReportView({
  <div className="space-y-6 py-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
  {[0, 1, 2, 3].map((i) => (
- <Skeleton key={i} className="h-36 w-full bg-slate-800/50 rounded-2xl" />
+ <Skeleton key={i} className="h-36 w-full bg-card rounded-2xl" />
  ))}
  </div>
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
- <Skeleton className="h-64 w-full bg-slate-800/50 rounded-2xl" />
- <Skeleton className="h-64 w-full bg-slate-800/50 rounded-2xl" />
+ <Skeleton className="h-64 w-full bg-card rounded-2xl" />
+ <Skeleton className="h-64 w-full bg-card rounded-2xl" />
  </div>
  </div>
  ) : totalTrades === 0 ? (
  <div className="text-center py-16">
- <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
- <p className="text-slate-400 text-base">
+ <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+ <p className="text-muted-foreground text-base">
  لا توجد توقعات خلال الفترة المحددة
  </p>
- <p className="text-slate-500 text-sm mt-1">
+ <p className="text-muted-foreground text-sm mt-1">
  جرّب فترة زمنية أطول لعرض المزيد من البيانات
  </p>
  </div>
@@ -1327,19 +1327,19 @@ export function ExecutiveReportView({
 
  {/* FIX-5C: TRAILING_PROFIT KPI Card منفصل — لو فيه صفقات خرجت بربح جزئي،
  نعرض counter منفصل بـ لون زمردي مميز عن WIN الأخضر العادي. ده بـ
- يـ differentiate بين "هدف محقق كامل" و"جني أرباح قبل الهدف" (trailing
+ يـ differentiate بين"هدف محقق كامل" و"جني أرباح قبل الهدف" (trailing
  stop ratchet). الكارد بـ يظهر بس لو فيه عدد > 0 علشان ما يـ clutterش
  الـ UI لو مفيش بيانات. */}
  {trailingProfitCount > 0 && (
  <div className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-whale/10 border border-whale/30">
  <span className="text-2xl">💰</span>
  <div className="flex flex-col">
- <span className="text-xs text-slate-400 font-bold">خرجت بربح (Trailing Profit)</span>
+ <span className="text-xs text-muted-foreground font-bold">خرجت بربح (Trailing Profit)</span>
  <span className="text-whale font-black text-lg font-mono">
  {trailingProfitCount} صفقة
  </span>
  </div>
- <span className="text-xs text-slate-500 mr-2 max-w-[200px]">
+ <span className="text-xs text-muted-foreground mr-2 max-w-[200px]">
  وصلت لربح جزئي ثم ارتدت — تم جني الأرباح قبل الهدف الكامل
  </span>
  </div>
@@ -1348,7 +1348,7 @@ export function ExecutiveReportView({
  {/* ═══ 2. CHARTS GRID — 3 رسوم بيانية جمالية ═══ */}
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
  {/* 2A. Donut: توزيع النتائج */}
- <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
+ <div className="bg-card p-5 rounded-2xl border border-white/10">
  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
  <PieIcon className="w-5 h-5 text-warning" />
  <h3 className="text-base font-bold text-foreground">توزيع النتائج</h3>
@@ -1375,7 +1375,7 @@ export function ExecutiveReportView({
  </Pie>
  <RTooltip
  contentStyle={{
- backgroundColor: '#0a0f1c',
+ backgroundColor: 'hsl(var(--card))',
  border: '1px solid rgba(255,255,255,0.1)',
  borderRadius: '12px',
  fontSize: '12px',
@@ -1389,21 +1389,21 @@ export function ExecutiveReportView({
  {outcomeDistribution.map((d) => (
  <div key={d.name} className="flex items-center gap-1.5">
  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
- <span className="text-slate-300">{d.name}</span>
+ <span className="text-foreground">{d.name}</span>
  <span className="text-foreground font-bold mr-auto">{d.value}</span>
  </div>
  ))}
  </div>
  </>
  ) : (
- <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
+ <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
  لا توجد بيانات
  </div>
  )}
  </div>
 
  {/* 2B. Area: الأرباح التراكمية */}
- <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10 lg:col-span-2">
+ <div className="bg-card p-5 rounded-2xl border border-white/10 lg:col-span-2">
  <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
  <div className="flex items-center gap-2">
  <TrendingUp className="w-5 h-5 text-profit" />
@@ -1431,7 +1431,7 @@ export function ExecutiveReportView({
  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={40} />
  <RTooltip
  contentStyle={{
- backgroundColor: '#0a0f1c',
+ backgroundColor: 'hsl(var(--card))',
  border: '1px solid rgba(255,255,255,0.1)',
  borderRadius: '12px',
  fontSize: '12px',
@@ -1453,7 +1453,7 @@ export function ExecutiveReportView({
  </ResponsiveContainer>
  </div>
  ) : (
- <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
+ <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
  لا توجد صفقات مغلقة كافية
  </div>
  )}
@@ -1463,7 +1463,7 @@ export function ExecutiveReportView({
  {/* ═══ 3. CHARTS GRID 2 — Bar شهري + Radar للشخصيات ═══ */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
  {/* 3A. Bar: العائد الشهري */}
- <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
+ <div className="bg-card p-5 rounded-2xl border border-white/10">
  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
  <BarChart3 className="w-5 h-5 text-warning" />
  <h3 className="text-base font-bold text-foreground">العائد الشهري</h3>
@@ -1477,7 +1477,7 @@ export function ExecutiveReportView({
  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={40} />
  <RTooltip
  contentStyle={{
- backgroundColor: '#0a0f1c',
+ backgroundColor: 'hsl(var(--card))',
  border: '1px solid rgba(255,255,255,0.1)',
  borderRadius: '12px',
  fontSize: '12px',
@@ -1494,14 +1494,14 @@ export function ExecutiveReportView({
  </ResponsiveContainer>
  </div>
  ) : (
- <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
+ <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
  لا توجد بيانات شهرية كافية
  </div>
  )}
  </div>
 
  {/* 3B. Radar: مقارنة الشخصيات */}
- <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
+ <div className="bg-card p-5 rounded-2xl border border-white/10">
  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
  <Gauge className="w-5 h-5 text-profit" />
  <h3 className="text-base font-bold text-foreground">مقارنة الشخصيات</h3>
@@ -1514,7 +1514,7 @@ export function ExecutiveReportView({
  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
  <RTooltip
  contentStyle={{
- backgroundColor: '#0a0f1c',
+ backgroundColor: 'hsl(var(--card))',
  border: '1px solid rgba(255,255,255,0.1)',
  borderRadius: '12px',
  fontSize: '12px',
@@ -1590,8 +1590,7 @@ export function ExecutiveReportView({
 
  {/* FIX-5C: TRAILING_PROFIT highlights — لو فيه صفقات خرجت بربح جزئي،
  نعرض أعلى 4 منها في HighlightCard منفصلة بـ لون زمردي مميز عن Top Gains
- (الأصفر). ده بـ يـ differentiate بين "هدف محقق كامل" (Top Gains) و
- "جني أرباح قبل الهدف" (Trailing Profit). الكارد بـ يظهر بس لو فيه عدد > 0. */}
+ (الأصفر). ده بـ يـ differentiate بين"هدف محقق كامل" (Top Gains) و"جني أرباح قبل الهدف" (Trailing Profit). الكارد بـ يظهر بس لو فيه عدد > 0. */}
  {topTrailingProfit.length > 0 && (
  <div className="mt-5">
  <HighlightCard
@@ -1723,17 +1722,17 @@ export function ExecutiveReportView({
  </div>
 
  {/* ═══ 7. Win/Loss Proportion Bar + Footer ═══ */}
- <div className="bg-slate-900/60 p-6 rounded-2xl border border-white/10 space-y-5">
+ <div className="bg-card p-6 rounded-2xl border border-white/10 space-y-5">
  <div className="flex justify-between items-center text-sm">
- <span className="text-slate-300 font-bold">توازن الأداء</span>
+ <span className="text-foreground font-bold">توازن الأداء</span>
  <span className="text-profit font-bold">
- {stats.wins} رابحة <span className="text-slate-500">/</span>{' '}
+ {stats.wins} رابحة <span className="text-muted-foreground">/</span>{' '}
  <span className="text-loss">{stats.losses} خاسرة</span>
  </span>
  </div>
 
  {/* Proportion bar */}
- <div className="h-5 w-full bg-slate-800 rounded-full overflow-hidden flex border border-white/10">
+ <div className="h-5 w-full bg-card rounded-full overflow-hidden flex border border-white/10">
  <div
  className="h-full bg-gradient-to-l from-profit to-whale transition-all duration-1000 flex items-center justify-center"
  style={{ width: `${winRate}%` }}
@@ -1758,13 +1757,13 @@ export function ExecutiveReportView({
 
  {/* Footer */}
  <div className="pt-4 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3 text-sm">
- <div className="flex items-center gap-2 text-slate-300">
+ <div className="flex items-center gap-2 text-foreground">
  <CheckCircle2 className="w-4 h-4 text-profit flex-shrink-0" />
  <span className="text-xs sm:text-sm text-center md:text-right">
  ملخص أداء التوقعات — {timeframeLabel}
  </span>
  </div>
- <span className="font-mono text-xs text-slate-500 flex-shrink-0">
+ <span className="font-mono text-xs text-muted-foreground flex-shrink-0">
  {new Date().toLocaleDateString('ar-EG')}
  </span>
  </div>
@@ -1807,11 +1806,11 @@ function KpiCard({
  const a = KPI_ACCENTS[accent];
  return (
  <div className={cn(
- 'relative bg-slate-900/70 p-5 rounded-2xl border overflow-hidden flex flex-col justify-between min-h-[140px]'
+ 'relative bg-card p-5 rounded-2xl border overflow-hidden flex flex-col justify-between min-h-[140px]'
  , a.ring)}>
  <div className={cn('absolute top-0 right-0 w-1.5 h-full', a.bar)} />
  <div className="flex items-center justify-between gap-2">
- <p className="text-sm text-slate-300 font-bold leading-snug">{label}</p>
+ <p className="text-sm text-foreground font-bold leading-snug">{label}</p>
  {icon && <span className={cn('flex-shrink-0', a.value)}>{icon}</span>}
  </div>
  <div className="mt-3 flex items-baseline gap-1.5 flex-wrap">
@@ -1819,10 +1818,10 @@ function KpiCard({
  {value}
  </span>
  {valueSuffix && (
- <span className="text-base font-bold text-slate-400">{valueSuffix}</span>
+ <span className="text-base font-bold text-muted-foreground">{valueSuffix}</span>
  )}
  </div>
- <p className="text-xs text-slate-400 mt-2 leading-relaxed">{subtext}</p>
+ <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{subtext}</p>
  </div>
  );
 }
@@ -1852,13 +1851,13 @@ function HighlightCard({
  placeholder: string;
 }) {
  return (
- <div className={cn('bg-slate-900/70 p-6 rounded-2xl border space-y-4', accentBorder)}>
+ <div className={cn('bg-card p-6 rounded-2xl border space-y-4', accentBorder)}>
  <div className="flex items-center justify-between pb-3 border-b border-white/10">
  <div className="flex items-center gap-2">
  {icon}
  <h3 className="text-base sm:text-lg font-bold text-foreground">{title}</h3>
  </div>
- <Badge variant="outline" className="text-xs text-slate-300 border-white/20 bg-white/5">
+ <Badge variant="outline" className="text-xs text-foreground border-white/20 bg-white/5">
  {subtitle}
  </Badge>
  </div>
@@ -1868,7 +1867,7 @@ function HighlightCard({
  items.map((item, idx) => (
  <div
  key={`${title}-${item.ticker}-${idx}`}
- className="bg-slate-950/70 p-4 rounded-xl border border-white/10 hover:border-white/25 transition-colors flex flex-col gap-2"
+ className="bg-muted p-4 rounded-xl border border-white/10 hover:border-white/25 transition-colors flex flex-col gap-2"
  >
  <div className="flex items-center justify-between gap-2">
  <span className="font-black text-foreground text-base font-mono">{item.ticker}</span>
@@ -1876,15 +1875,15 @@ function HighlightCard({
  {item.returnPct >= 0 ? '+' : ''}{(item.returnPct ?? 0).toFixed(1)}%
  </span>
  </div>
- <p className="text-xs text-slate-300 truncate">{item.nameAr || item.ticker}</p>
- <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/5">
+ <p className="text-xs text-foreground truncate">{item.nameAr || item.ticker}</p>
+ <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-white/5">
  <span>{item.meta}</span>
- <span className="font-bold text-slate-300">{item.rightMeta}</span>
+ <span className="font-bold text-foreground">{item.rightMeta}</span>
  </div>
  </div>
  ))
  ) : (
- <div className="col-span-2 text-center py-8 text-slate-400 text-sm">
+ <div className="col-span-2 text-center py-8 text-muted-foreground text-sm">
  {placeholder}
  </div>
  )}
@@ -1921,7 +1920,7 @@ function PersonaCard({
  winRateColor: string;
 }) {
  return (
- <div className={cn('relative bg-slate-900/70 p-6 rounded-2xl border space-y-4 overflow-hidden', accentRing)}>
+ <div className={cn('relative bg-card p-6 rounded-2xl border space-y-4 overflow-hidden', accentRing)}>
  <div className={cn('absolute top-0 right-0 w-1.5 h-full', accentBar)} />
 
  {/* Header */}
@@ -1931,16 +1930,16 @@ function PersonaCard({
  {icon}
  <span className="font-black text-lg text-foreground">{title}</span>
  </div>
- <Badge variant="outline" className="text-xs text-slate-300 border-white/20 bg-white/5 whitespace-nowrap">
+ <Badge variant="outline" className="text-xs text-foreground border-white/20 bg-white/5 whitespace-nowrap">
  {subtitle}
  </Badge>
  </div>
- <p className="text-sm text-slate-400 mt-1.5">{description}</p>
+ <p className="text-sm text-muted-foreground mt-1.5">{description}</p>
  </div>
 
  {/* Big win rate */}
  <div className="py-3 border-y border-white/10 text-center">
- <p className="text-xs text-slate-400 font-bold mb-1">نسبة النجاح</p>
+ <p className="text-xs text-muted-foreground font-bold mb-1">نسبة النجاح</p>
  <p className={cn('text-3xl font-black leading-none', winRateColor)}>
  {(stats.winRate ?? 0).toFixed(1)}%
  </p>
@@ -1967,8 +1966,8 @@ function StatRow({
  valueClass: string;
 }) {
  return (
- <div className="bg-slate-950/40 px-3 py-2 rounded-lg border border-white/5">
- <p className="text-xs text-slate-400 leading-tight">{label}</p>
+ <div className="bg-muted px-3 py-2 rounded-lg border border-white/5">
+ <p className="text-xs text-muted-foreground leading-tight">{label}</p>
  <p className={cn('font-black text-base mt-0.5', valueClass)}>{value}</p>
  </div>
  );
@@ -1993,7 +1992,7 @@ function signalBadgeClass(signal: string): string {
  if (s === 'SELL' || s === 'STRONG_SELL') {
  return 'text-loss border-loss/30 bg-loss/10';
  }
- return 'text-slate-300 border-white/20 bg-white/5';
+ return 'text-foreground border-white/20 bg-white/5';
 }
 
 function MissedOppCard({
@@ -2016,7 +2015,7 @@ function MissedOppCard({
  const count = items?.length ?? 0;
 
  return (
- <div className={cn('relative bg-slate-900/70 p-5 rounded-2xl border space-y-3 overflow-hidden', a.ring)}>
+ <div className={cn('relative bg-card p-5 rounded-2xl border space-y-3 overflow-hidden', a.ring)}>
  <div className={cn('absolute top-0 right-0 w-1.5 h-full', a.bar)} />
 
  {/* Header */}
@@ -2025,7 +2024,7 @@ function MissedOppCard({
  {icon}
  <div className="min-w-0">
  <h4 className="text-sm sm:text-base font-bold text-foreground truncate">{title}</h4>
- <p className="text-xs sm:text-xs text-slate-400 truncate">{subtitle}</p>
+ <p className="text-xs sm:text-xs text-muted-foreground truncate">{subtitle}</p>
  </div>
  </div>
  <Badge variant="outline" className={cn('text-xs flex-shrink-0', a.value, a.ring, 'bg-transparent')}>
@@ -2037,11 +2036,11 @@ function MissedOppCard({
  {loading ? (
  <div className="space-y-2">
  {[0, 1, 2].map((i) => (
- <Skeleton key={`mo-sk-${i}`} className="h-14 w-full bg-slate-800/50 rounded-lg" />
+ <Skeleton key={`mo-sk-${i}`} className="h-14 w-full bg-card rounded-lg" />
  ))}
  </div>
  ) : list.length === 0 ? (
- <div className="text-center py-6 text-slate-500 text-sm">
+ <div className="text-center py-6 text-muted-foreground text-sm">
  لا توجد بيانات
  </div>
  ) : (
@@ -2052,7 +2051,7 @@ function MissedOppCard({
  return (
  <div
  key={`mo-${item.id}-${item.ticker}`}
- className="bg-slate-950/70 p-3 rounded-lg border border-white/10 hover:border-white/25 transition-colors flex flex-col gap-1.5"
+ className="bg-muted p-3 rounded-lg border border-white/10 hover:border-white/25 transition-colors flex flex-col gap-1.5"
  >
  <div className="flex items-center justify-between gap-2">
  <div className="flex items-center gap-2 min-w-0">
@@ -2066,14 +2065,14 @@ function MissedOppCard({
  </span>
  </div>
  {item.name && (
- <p className="text-xs text-slate-300 truncate">{item.name}</p>
+ <p className="text-xs text-foreground truncate">{item.name}</p>
  )}
- <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-white/5">
+ <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-white/5">
  <span className="font-mono">
  {fmtPrice(item.entry_price)} → {fmtPrice(item.current_price)}
  </span>
  {item.prediction_date && (
- <span className="text-slate-500 font-mono">
+ <span className="text-muted-foreground font-mono">
  {String(item.prediction_date).slice(0, 10)}
  </span>
  )}

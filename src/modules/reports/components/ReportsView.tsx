@@ -5,7 +5,7 @@
  * =========================================================================
  *
  * Owner directive (EXACT — translated):
- * "The reports screen needs professional financial report quality (PDF + print).
+ *"The reports screen needs professional financial report quality (PDF + print).
  * There's data source duplication across the project — every team works with
  * different code/APIs causing data conflicts. Node.js is ONLY for display.
  * Python is the brain — ALL thinking must come from Python."
@@ -161,14 +161,14 @@ function ProfessionalHeader({
 }) {
  return (
  <div
- className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
+ className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-primary/10 via-card to-muted p-5 print:break-inside-avoid"
  dir="rtl"
  >
  <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
  <div className="flex items-center justify-between gap-4 flex-wrap">
  <div className="flex items-center gap-3">
  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-warning via-warning to-profit flex items-center justify-center shadow-lg shadow-amber-500/20">
- <FileBarChart className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
+ <FileBarChart className="w-7 h-7 text-warning-foreground" strokeWidth={2.5} />
  </div>
  <div>
  <h1 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
@@ -181,7 +181,7 @@ function ProfessionalHeader({
  </div>
  <div className="text-left">
  <h2 className="text-base sm:text-lg font-bold text-warning">{title}</h2>
- <p className="text-xs text-slate-300/90">{subtitle}</p>
+ <p className="text-xs text-foreground">{subtitle}</p>
  <div className="flex items-center justify-end gap-2 mt-1">
  <Badge
  variant="outline"
@@ -189,7 +189,7 @@ function ProfessionalHeader({
  >
  {market} · LIVE
  </Badge>
- <span className="text-xs text-slate-400">{dateStr}</span>
+ <span className="text-xs text-muted-foreground">{dateStr}</span>
  </div>
  </div>
  </div>
@@ -219,8 +219,8 @@ function OfflineState({ reason }: { reason: string }) {
  >
  <AlertTriangle className="w-12 h-12 mb-3 text-warning" />
  <p className="text-base font-bold text-warning mb-1">تعذّر تحميل التقرير</p>
- <p className="text-xs text-slate-400 max-w-md">{reason}</p>
- <p className="text-xs text-slate-500 mt-3 max-w-md">
+ <p className="text-xs text-muted-foreground max-w-md">{reason}</p>
+ <p className="text-xs text-muted-foreground mt-3 max-w-md">
  محرك التقارير (Python) هو المسؤول عن توليد كل التقارير — Node.js للعرض فقط.
  </p>
  </div>
@@ -267,7 +267,7 @@ function SectorReport() {
  await exportReportToPng(reportRef.current, {
  filename: `sector_report_${new Date().toISOString().split('T')[0]}`,
  pixelRatio: 2,
- backgroundColor: '#0a0e1a',
+ backgroundColor: 'hsl(var(--card))',
  filter: (node) => {
  if (node instanceof HTMLElement) {
  if (node.dataset?.noExport === 'true') return false;
@@ -308,7 +308,7 @@ function SectorReport() {
  return (
  <div
  ref={reportRef}
- className="space-y-5 print:space-y-3 bg-[#0a0e1a] print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+ className="space-y-5 print:space-y-3 bg-card print:bg-white p-4 sm:p-5 rounded-2xl border border-border print:border-0"
  dir="rtl"
  >
  <ProfessionalHeader
@@ -330,25 +330,25 @@ function SectorReport() {
  {/* KPIs */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
  <div className="rounded-xl border border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
- <p className="text-xs text-slate-300 mb-1">عدد القطاعات</p>
+ <p className="text-xs text-foreground mb-1">عدد القطاعات</p>
  <p className="text-2xl font-extrabold text-warning tabular-nums">
  {safeFmtNum(sectors.length, 0)}
  </p>
  </div>
- <div className="rounded-xl border border-slate-500/30 bg-slate-500/10 p-3.5">
- <p className="text-xs text-slate-300 mb-1">إجمالي الأسهم</p>
- <p className="text-2xl font-extrabold text-slate-200 tabular-nums">
+ <div className="rounded-xl border border-border bg-muted p-3.5">
+ <p className="text-xs text-foreground mb-1">إجمالي الأسهم</p>
+ <p className="text-2xl font-extrabold text-foreground tabular-nums">
  {safeFmtNum(totalStocks, 0)}
  </p>
  </div>
  <div className="rounded-xl border border-profit/30 bg-profit/10 p-3.5">
- <p className="text-xs text-slate-300 mb-1">متوسط التغيّر</p>
+ <p className="text-xs text-foreground mb-1">متوسط التغيّر</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', avgChange >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(avgChange, 2)}
  </p>
  </div>
  <div className="rounded-xl border border-warning/30 bg-warning/10 p-3.5">
- <p className="text-xs text-slate-300 mb-1">درجة السوق</p>
+ <p className="text-xs text-foreground mb-1">درجة السوق</p>
  <p className="text-2xl font-extrabold text-warning tabular-nums">
  {safeFmtNum(report.summary?.market_breadth ?? 0, 0)}
  </p>
@@ -360,7 +360,7 @@ function SectorReport() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  <Card className="border-profit/30 bg-profit/5">
  <CardContent className="p-4">
- <p className="text-xs text-slate-300 mb-1 flex items-center gap-1">
+ <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <ArrowUpRight className="w-3.5 h-3.5 text-profit" />
  أفضل قطاع
  </p>
@@ -368,12 +368,12 @@ function SectorReport() {
  <p className="text-2xl font-extrabold text-profit tabular-nums">
  {safeFmtPct(bestSector.avg_change_percent, 2)}
  </p>
- <p className="text-xs text-slate-400">{bestSector.count ?? 0} سهم</p>
+ <p className="text-xs text-muted-foreground">{bestSector.count ?? 0} سهم</p>
  </CardContent>
  </Card>
  <Card className="border-loss/30 bg-loss/5">
  <CardContent className="p-4">
- <p className="text-xs text-slate-300 mb-1 flex items-center gap-1">
+ <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <ArrowDownRight className="w-3.5 h-3.5 text-loss" />
  أسوأ قطاع
  </p>
@@ -381,26 +381,26 @@ function SectorReport() {
  <p className="text-2xl font-extrabold text-loss tabular-nums">
  {safeFmtPct(worstSector.avg_change_percent, 2)}
  </p>
- <p className="text-xs text-slate-400">{worstSector.count ?? 0} سهم</p>
+ <p className="text-xs text-muted-foreground">{worstSector.count ?? 0} سهم</p>
  </CardContent>
  </Card>
  </div>
  )}
 
  {/* Sector Heatmap */}
- <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+ <Card className="overflow-hidden border-border bg-[#0d1320] print:break-inside-avoid">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Layers className="w-5 h-5" />
  خريطة أداء القطاعات
- <span className="text-xs font-normal text-slate-400">
+ <span className="text-xs font-normal text-muted-foreground">
  Sector Heatmap
  </span>
  </CardTitle>
  </CardHeader>
  <CardContent>
  {sectors.length === 0 ? (
- <p className="text-xs text-slate-500 text-center py-6">
+ <p className="text-xs text-muted-foreground text-center py-6">
  بيانات القطاعات متاحة عند تضمينها في تقرير Python اليومي
  </p>
  ) : (
@@ -421,7 +421,7 @@ function SectorReport() {
  <p className="text-xs font-semibold text-foreground truncate">
  {sector.name || '—'}
  </p>
- <p className="text-xs text-slate-200 mb-1">
+ <p className="text-xs text-foreground mb-1">
  {sector.count ?? 0} سهم
  </p>
  <p
@@ -442,7 +442,7 @@ function SectorReport() {
 
  {/* Sector Comparison Table */}
  {sectors.length > 0 && (
- <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
+ <Card className="overflow-hidden border-border bg-[#0d1320] print:break-inside-avoid">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <BarChart3 className="w-5 h-5" />
@@ -451,7 +451,7 @@ function SectorReport() {
  </CardHeader>
  <CardContent className="p-0">
  <table className="w-full text-sm">
- <thead className="bg-[#0a0e1a]/60 text-xs text-slate-400 uppercase">
+ <thead className="bg-card/60 text-xs text-muted-foreground uppercase">
  <tr>
  <th className="text-right py-2 px-3 font-medium">#</th>
  <th className="text-right py-2 px-3 font-medium">القطاع</th>
@@ -466,17 +466,17 @@ function SectorReport() {
  const isUp = change >= 0;
  const barWidth = Math.min(Math.abs(change) * 10, 100);
  return (
- <tr key={`row-${sector.name ?? i}`} className="border-t border-slate-700/30">
- <td className="py-2 px-3 text-slate-400 tabular-nums">{i + 1}</td>
- <td className="py-2 px-3 font-medium text-slate-100">{sector.name || '—'}</td>
- <td className="py-2 px-3 text-left tabular-nums text-slate-300">
+ <tr key={`row-${sector.name ?? i}`} className="border-t border-border">
+ <td className="py-2 px-3 text-muted-foreground tabular-nums">{i + 1}</td>
+ <td className="py-2 px-3 font-medium text-muted-foreground">{sector.name || '—'}</td>
+ <td className="py-2 px-3 text-left tabular-nums text-foreground">
  {sector.count ?? 0}
  </td>
  <td className={cn('py-2 px-3 text-left tabular-nums font-bold', isUp ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(change, 2)}
  </td>
  <td className="py-2 px-3">
- <div className="w-24 h-2 bg-slate-700/60 rounded-full overflow-hidden">
+ <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
  <div
  className={cn('h-full rounded-full', isUp ? 'bg-profit' : 'bg-loss')}
  style={{ width: `${Math.max(barWidth, 3)}%` }}
@@ -493,7 +493,7 @@ function SectorReport() {
  )}
 
  {/* Footer */}
- <div className="text-center pt-3 border-t border-slate-700/40 text-xs text-slate-500 print:pt-2">
+ <div className="text-center pt-3 border-t border-border text-xs text-muted-foreground print:pt-2">
  <p className="mb-0.5">تم إنشاء هذا التقرير بواسطة محرك التقارير (Python reports_engine)</p>
  <p className="text-xs">
  Rule 20: Node.js للعرض فقط — كل التحليل من Python · Rule 67: مصدر موحد للبيانات
@@ -505,7 +505,7 @@ function SectorReport() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Predictions Report — fetches /api/reports/proxy?type=weekly (Python brain)
-// Owner directive: "تقرير التوقعات" — Rule 67 word compliance.
+// Owner directive:"تقرير التوقعات" — Rule 67 word compliance.
 // ─────────────────────────────────────────────────────────────────────────────
 function PredictionsReport() {
  const [report, setReport] = useState<WeeklyReportPayload | null>(null);
@@ -543,7 +543,7 @@ function PredictionsReport() {
  await exportReportToPng(reportRef.current, {
  filename: `predictions_report_${new Date().toISOString().split('T')[0]}`,
  pixelRatio: 2,
- backgroundColor: '#0a0e1a',
+ backgroundColor: 'hsl(var(--card))',
  filter: (node) => {
  if (node instanceof HTMLElement) {
  if (node.dataset?.noExport === 'true') return false;
@@ -583,7 +583,7 @@ function PredictionsReport() {
  return (
  <div
  ref={reportRef}
- className="space-y-5 print:space-y-3 bg-[#0a0e1a] print:bg-white p-4 sm:p-5 rounded-2xl border border-slate-700/50 print:border-0"
+ className="space-y-5 print:space-y-3 bg-card print:bg-white p-4 sm:p-5 rounded-2xl border border-border print:border-0"
  dir="rtl"
  >
  <ProfessionalHeader
@@ -612,7 +612,7 @@ function PredictionsReport() {
  </div>
  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
  <div className="rounded-xl border border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
- <p className="text-xs text-slate-300 mb-1">أداء EGX30 الأسبوعي</p>
+ <p className="text-xs text-foreground mb-1">أداء EGX30 الأسبوعي</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', egx30Perf >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(egx30Perf, 2)}
  </p>
@@ -621,13 +621,13 @@ function PredictionsReport() {
  )}
  </div>
  <div className="rounded-xl border border-warning/30 bg-warning/10 p-3.5">
- <p className="text-xs text-slate-300 mb-1">أداء الذهب</p>
+ <p className="text-xs text-foreground mb-1">أداء الذهب</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', goldPerf >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(goldPerf, 2)}
  </p>
  </div>
- <div className="rounded-xl border border-slate-500/30 bg-slate-500/10 p-3.5">
- <p className="text-xs text-slate-300 mb-1">أداء الدولار</p>
+ <div className="rounded-xl border border-border bg-muted p-3.5">
+ <p className="text-xs text-foreground mb-1">أداء الدولار</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', usdPerf >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(usdPerf, 2)}
  </p>
@@ -640,7 +640,7 @@ function PredictionsReport() {
  {bestStock && (
  <Card className="border-profit/30 bg-profit/5">
  <CardContent className="p-4">
- <p className="text-xs text-slate-300 mb-1 flex items-center gap-1">
+ <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <Trophy className="w-3.5 h-3.5 text-warning" />
  أفضل سهم متوقع
  </p>
@@ -656,7 +656,7 @@ function PredictionsReport() {
  {worstStock && (
  <Card className="border-loss/30 bg-loss/5">
  <CardContent className="p-4">
- <p className="text-xs text-slate-300 mb-1 flex items-center gap-1">
+ <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <AlertTriangle className="w-3.5 h-3.5 text-loss" />
  أسوأ سهم متوقع (خسارة صريحة)
  </p>
@@ -696,7 +696,7 @@ function PredictionsReport() {
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-sm font-bold text-foreground">{p.symbol || '—'}</p>
- <p className="text-xs text-slate-400 truncate">{p.name || ''}</p>
+ <p className="text-xs text-muted-foreground truncate">{p.name || ''}</p>
  </div>
  <span className="text-sm font-bold text-profit tabular-nums">
  <ArrowUpRight className="w-3.5 h-3.5 inline -mt-0.5" />{' '}
@@ -728,14 +728,14 @@ function PredictionsReport() {
  </div>
  <div className="flex-1 min-w-0">
  <p className="text-sm font-bold text-foreground">{worstStock.symbol || '—'}</p>
- <p className="text-xs text-slate-400 truncate">{worstStock.name || ''}</p>
+ <p className="text-xs text-muted-foreground truncate">{worstStock.name || ''}</p>
  </div>
  <span className="text-sm font-bold text-loss tabular-nums">
  <ArrowDownRight className="w-3.5 h-3.5 inline -mt-0.5" />{' '}
  {safeFmtPct(worstStock.change_percent, 2)}
  </span>
  </div>
- <p className="text-xs text-slate-500 text-center mt-2">
+ <p className="text-xs text-muted-foreground text-center mt-2">
  Rule 67: عرض الخسائر بصراحة — لا إخفاء للنتائج السلبية.
  </p>
  </CardContent>
@@ -754,7 +754,7 @@ function PredictionsReport() {
  </CardTitle>
  </CardHeader>
  <CardContent>
- <ol className="space-y-2 list-decimal list-inside text-xs text-slate-200">
+ <ol className="space-y-2 list-decimal list-inside text-xs text-foreground">
  {lessons.map((l, i) => (
  <li key={`lesson-${i}`}>{l}</li>
  ))}
@@ -802,7 +802,7 @@ function PredictionsReport() {
  </CardHeader>
  <CardContent>
  <pre
- className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200 font-sans bg-black/20 rounded-lg p-3 border border-slate-700/40"
+ className="whitespace-pre-wrap text-sm leading-relaxed text-foreground font-sans bg-black/20 rounded-lg p-3 border border-border"
  dir="rtl"
  >
 {report.content}
@@ -812,7 +812,7 @@ function PredictionsReport() {
  )}
 
  {/* Footer */}
- <div className="text-center pt-3 border-t border-slate-700/40 text-xs text-slate-500 print:pt-2">
+ <div className="text-center pt-3 border-t border-border text-xs text-muted-foreground print:pt-2">
  <p className="mb-0.5">تم إنشاء هذا التقرير بواسطة محرك التقارير (Python reports_engine)</p>
  <p className="text-xs">
  Rule 20: Node.js للعرض فقط — كل التحليل من Python · Rule 67: مصدر موحد للبيانات
@@ -874,17 +874,17 @@ function Sparkline({
 export function ReportsView() {
  const t = useTranslation();
  return (
- <div className="min-h-screen flex flex-col bg-[#0a0e1a] text-slate-100">
- <header className="sticky top-0 z-30 bg-[#0a0e1a]/95 backdrop-blur-sm border-b border-slate-700/50 print:hidden">
+ <div className="min-h-screen flex flex-col bg-card text-muted-foreground">
+ <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-sm border-b border-border print:hidden">
  <div className="flex items-center gap-3 px-4 py-3">
  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-profit flex items-center justify-center">
- <FileBarChart className="w-5 h-5 text-[#0a0e1a]" strokeWidth={2.5} />
+ <FileBarChart className="w-5 h-5 text-warning-foreground" strokeWidth={2.5} />
  </div>
  <div className="min-w-0 mr-auto">
  <h1 className="text-lg font-extrabold text-warning flex items-center gap-2">
  {t('reports.view.title')}
  </h1>
- <p className="text-xs text-slate-400">
+ <p className="text-xs text-muted-foreground">
  Professional Financial Reports · Python Brain · Rule 67 Unified Source
  </p>
  <p className="text-xs text-warning/60 italic mt-0.5">
@@ -897,31 +897,31 @@ export function ReportsView() {
  <main className="flex-1 print:p-0">
  <div className="p-4 md:p-6">
  <Tabs defaultValue="daily" dir="rtl" className="w-full">
- <TabsList className="mb-6 w-full flex h-auto flex-wrap gap-1 bg-[#0d1320] border border-slate-700/40 p-1 rounded-xl print:hidden">
+ <TabsList className="mb-6 w-full flex h-auto flex-wrap gap-1 bg-[#0d1320] border border-border p-1 rounded-xl print:hidden">
  <TabsTrigger
  value="daily"
- className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+ className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-warning-foreground rounded-lg py-2 font-bold"
  >
  <BarChart3 className="w-3.5 h-3.5" />
  التقرير اليومي
  </TabsTrigger>
  <TabsTrigger
  value="stock"
- className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+ className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-warning-foreground rounded-lg py-2 font-bold"
  >
  <Activity className="w-3.5 h-3.5" />
  تقرير السهم
  </TabsTrigger>
  <TabsTrigger
  value="sector"
- className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+ className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-warning-foreground rounded-lg py-2 font-bold"
  >
  <Layers className="w-3.5 h-3.5" />
  تقرير القطاعات
  </TabsTrigger>
  <TabsTrigger
  value="predictions"
- className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+ className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-warning-foreground rounded-lg py-2 font-bold"
  >
  <Shield className="w-3.5 h-3.5" />
  تقرير التوقعات
