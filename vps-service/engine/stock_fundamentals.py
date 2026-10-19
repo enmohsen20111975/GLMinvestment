@@ -145,12 +145,12 @@ class StockFundamentals:
         if conn_de:
             cur_de = conn_de.cursor()
             symbol = ticker.replace('.EGX', '')
-            # PILLAR-2: tab_* tables use `ticker` PRIMARY KEY (not `symbol`);
+            # DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             # exact match replaces the old fuzzy LIKE pattern.
 
             # Balance Sheet
             try:
-                row = cur_de.execute("SELECT * FROM tab_balance_sheet WHERE ticker = ? ORDER BY fiscal_end DESC LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_balance_sheet WHERE symbol = ? ORDER BY fiscal_end DESC LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['balance_sheet'] = {
                         'total_assets': _sf(row['total_assets']),
@@ -161,9 +161,9 @@ class StockFundamentals:
                     }
             except: pass
 
-            # Income Statement
+            # Income Statement — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             try:
-                row = cur_de.execute("SELECT * FROM tab_income_statement WHERE ticker = ? ORDER BY fiscal_end DESC LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_income_statement WHERE symbol = ? ORDER BY fiscal_end DESC LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['income_statement'] = {
                         'revenue': _sf(row['revenue']),
@@ -176,9 +176,9 @@ class StockFundamentals:
                     }
             except: pass
 
-            # Cash Flow
+            # Cash Flow — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             try:
-                row = cur_de.execute("SELECT * FROM tab_cash_flow WHERE ticker = ? ORDER BY fiscal_end DESC LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_cash_flow WHERE symbol = ? ORDER BY fiscal_end DESC LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['cash_flow'] = {
                         'operating_cf': _sf(row['operating_cf']),
@@ -189,9 +189,9 @@ class StockFundamentals:
                     }
             except: pass
 
-            # Valuation
+            # Valuation — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             try:
-                row = cur_de.execute("SELECT * FROM tab_valuation WHERE ticker = ? LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_valuation WHERE symbol = ? LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['valuation'] = {
                         'market_cap': _sf(row['market_cap']),
@@ -203,9 +203,9 @@ class StockFundamentals:
                     }
             except: pass
 
-            # Profitability
+            # Profitability — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             try:
-                row = cur_de.execute("SELECT * FROM tab_profitability WHERE ticker = ? LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_profitability WHERE symbol = ? LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['profitability'] = {
                         'gross_margin': _sf(row['gross_margin']),
@@ -219,9 +219,9 @@ class StockFundamentals:
                     }
             except: pass
 
-            # Performance
+            # Performance — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             try:
-                row = cur_de.execute("SELECT * FROM tab_performance WHERE ticker = ? LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_performance WHERE symbol = ? LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['performance'] = {
                         'price': _sf(row['price']),
@@ -235,9 +235,9 @@ class StockFundamentals:
                     }
             except: pass
 
-            # Dividends
+            # Dividends — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             try:
-                row = cur_de.execute("SELECT * FROM tab_dividends WHERE ticker = ? LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_dividends WHERE symbol = ? LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['dividends'] = {
                         'dps_ttm': _sf(row['dps_ttm']),
@@ -248,9 +248,9 @@ class StockFundamentals:
                     }
             except: pass
 
-            # Technical Analysis
+            # Technical Analysis — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
             try:
-                row = cur_de.execute("SELECT * FROM tab_technical_analysis WHERE ticker = ? LIMIT 1", (symbol,)).fetchone()
+                row = cur_de.execute("SELECT * FROM tab_technical_analysis WHERE symbol = ? LIMIT 1", (symbol,)).fetchone()
                 if row:
                     result['technical'] = {
                         'technical_rating': row['technical_rating'],
@@ -596,13 +596,13 @@ class StockFundamentals:
             overview['top_performers'] = [dict(r) for r in rows]
         except: overview['top_performers'] = []
 
-        # Best value (low P/E)
+        # Best value (low P/E) — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
         try:
             rows = cur.execute("""
-                SELECT v.ticker AS symbol, v.pe_ratio, v.ps_ratio, v.market_cap,
+                SELECT v.symbol AS symbol, v.pe_ratio, v.ps_ratio, v.market_cap,
                        p.net_margin, p.roe
                 FROM tab_valuation v
-                LEFT JOIN tab_profitability p ON v.ticker = p.ticker
+                LEFT JOIN tab_profitability p ON v.symbol = p.symbol AND v.market = p.market
                 WHERE CAST(v.pe_ratio AS REAL) > 0 AND CAST(v.pe_ratio AS REAL) < 15
                 ORDER BY CAST(v.pe_ratio AS REAL) ASC LIMIT 10
             """).fetchall()

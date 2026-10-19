@@ -72391,3 +72391,52 @@ Stage Summary:
 - ✅ المرحلة 2: Mean Reversion edge حقيقي (WR p-value = 0.0%)
 - ⚠️ الأرقام الضخمة فيها bug (محتاجين إصلاح)
 - 🔁 محتاجين: إصلاح position sizing + CPCV + بناء استراتيجية
+
+Task ID: DATA-ENGINE-UNIFY-1 / Stage 2a (readers fix)
+Agent: Bravo proxy
+Task: fix 5 readers (ticker → symbol) في tab_* queries
+
+Work Log:
+- قرأت الـ schema الفعلي لـ data_engine.db.tab_* (sqlite_master): كل الـ 8 tab_* tables
+  بـ schema الموحد (id, symbol, market, ...) — أكدت إن `symbol` هو الـ column الصح
+  وإن `market` موجود + إن `last_updated` مش موجود (bug مرحلة تانية).
+- صلحت 5 ملفات (20 query إجمالاً):
+  1. vps-service/engine/flow_system.py — 3 queries (tab_profitability, tab_valuation,
+     tab_dividends) WHERE ticker → WHERE symbol. حدّثت الـ PILLAR-2 comment الغلطاط.
+  2. vps-service/engine/stock_fundamentals.py — 8 queries (balance_sheet,
+     income_statement, cash_flow, valuation, profitability, performance, dividends,
+     technical_analysis) WHERE ticker → WHERE symbol. سيبت ORDER BY fiscal_end (صح).
+     + اكتشفت query إضافي مش في الـ task list (line 602-605: best_value JOIN
+     tab_valuation v LEFT JOIN tab_profitability p ON v.ticker=p.ticker + SELECT
+     v.ticker AS symbol) — نفس الـ bug class. أصلته: v.symbol AS symbol + JOIN ON
+     v.symbol=p.symbol AND v.market=p.market.
+  3. vps-service/api/chart_routes.py — 6 queries (valuation, balance_sheet,
+     profitability, dividends, performance, technical_analysis) WHERE ticker=? →
+     WHERE symbol=?. سيبت ORDER BY last_updated (bug تاني، wrapped في try/except).
+  4. vps-service/scripts/sync_data_engine.py — 2 JOIN conditions:
+     `ON s.ticker=v.ticker` → `ON s.ticker=v.symbol AND s.market=v.market` (s.ticker
+     = stocks table column صح، v.symbol = tab_* column الصح). أصلحت الـ comment
+     الغلطاط اللي بيقول "tab_* has no market column" (غلط — tab_* فيها market).
+  5. vps-service/api/misc_routes.py — 1 query (tab_profitability WHERE ticker LIKE ?)
+     → WHERE symbol LIKE ?. سيبت ORDER BY last_updated (bug تاني).
+- أضفت comment `# DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)`
+  قبل كل تعديل.
+- ما لمستش أي query بـ query `stocks`/`predictions`/`stored_analyses`/`egx_fundamentals`
+  (دي بـ ticker صح per task rules).
+
+Stage Summary:
+- ✅ py_compile PASS على الـ 5 ملفات (python3 -m py_compile).
+- ✅ bun run lint PASS (0 errors, exit 0).
+- ✅ tab-to-tab JOINs (ON x.ticker = y.ticker على tab_*): 0 matches بعد الإصلاح.
+- ✅ tab_* WHERE ticker / LIKE ticker: 0 matches بعد الإصلاح.
+- ⚠️  الـ grep الحرفي المكتوب في الـ task (`WHERE ticker.*tab_|FROM tab_.*ticker|...`)
+   بـ يـرجّع false positives بسبب (أ) Python param var `(ticker,)` بـ يظهر في نفس
+   السطر وراء الـ SQL string (matches `FROM tab_.*ticker` عبر `.*`) و(ب) `s.ticker =
+   v.symbol` في sync_data_engine (s.ticker = stocks column صح). تحققت بـ grep أدق
+   (WHERE ticker\b + JOIN ON x.ticker=y.ticker) — كل الـ WHERE ticker المتبقية ضد
+   `stocks`/`predictions`/`stored_analyses`/`egx_fundamentals` بس (مش tab_*).
+- ⚠️  dev server Next.js مش شغّال في الـ session دي (ما كانش شغّال قبل ما أبدأ).
+   تعديلاتي Python-only (مش TS/JS) → ما أثّرتش عليه. محتاج قرار جون لو لازم نشغّله.
+- 🔁 Stage 2b محتاج: إصلاح `ORDER BY last_updated` في chart_routes + misc_routes
+   (last_updated مش موجود في tab_* schema — wrapped في try/except فـ silent failure
+   دلوقتي، بس الـ ORDER BY ما بيـ فرزش فعلياً).

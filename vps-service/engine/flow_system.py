@@ -642,11 +642,10 @@ class FlowSystemEngine:
             conn = _sql_f.connect(_de_path)
             conn.row_factory = _sql_f.Row
             cur = conn.cursor()
-            # PILLAR-2: tab_* tables use `ticker` PRIMARY KEY (not `symbol`);
-            # exact match replaces the old fuzzy LIKE pattern.
+            # DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
 
             # Profitability
-            prof = cur.execute("SELECT * FROM tab_profitability WHERE ticker = ? LIMIT 1", (ticker,)).fetchone()
+            prof = cur.execute("SELECT * FROM tab_profitability WHERE symbol = ? LIMIT 1", (ticker,)).fetchone()
             if prof:
                 def _extract_num(val):
                     if val is None: return 0
@@ -661,15 +660,15 @@ class FlowSystemEngine:
                 if net_margin > 10:
                     bonus += 2; factors.append(f"هامش صافي {net_margin:.1f}% > 10%")
 
-            # Valuation
-            val = cur.execute("SELECT * FROM tab_valuation WHERE ticker = ? LIMIT 1", (ticker,)).fetchone()
+            # Valuation — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
+            val = cur.execute("SELECT * FROM tab_valuation WHERE symbol = ? LIMIT 1", (ticker,)).fetchone()
             if val:
                 pe = _extract_num(val['pe_ratio']) if val['pe_ratio'] else 0
                 if 0 < pe < 10:
                     bonus += 3; factors.append(f"P/E {pe:.1f} < 10 (رخيص)")
 
-            # Dividends
-            div = cur.execute("SELECT * FROM tab_dividends WHERE ticker = ? LIMIT 1", (ticker,)).fetchone()
+            # Dividends — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
+            div = cur.execute("SELECT * FROM tab_dividends WHERE symbol = ? LIMIT 1", (ticker,)).fetchone()
             if div:
                 div_yield = _extract_num(div['div_yield']) if div['div_yield'] else 0
                 if div_yield > 3:

@@ -56,11 +56,12 @@ def get_egyptian_stocks_from_data_engine():
             p.net_margin,
             p.gross_margin
         FROM stocks s
-        -- PILLAR-2: `stocks` table uses `ticker` PK; `tab_valuation`/`tab_profitability`
-        -- use `ticker` PK too. tab_* tables have no `market` column, so the
-        -- `s.market = v.market` join condition was dropped.
-        LEFT JOIN tab_valuation v ON s.ticker = v.ticker
-        LEFT JOIN tab_profitability p ON s.ticker = p.ticker
+        -- DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
+        -- `stocks` table uses `ticker` PK; `tab_valuation`/`tab_profitability`
+        -- use `symbol` (NOT NULL) + `market` columns. Join on both
+        -- ticker→symbol and market to avoid cross-market collisions.
+        LEFT JOIN tab_valuation v ON s.ticker = v.symbol AND s.market = v.market
+        LEFT JOIN tab_profitability p ON s.ticker = p.symbol AND s.market = p.market
         WHERE s.market = 'مصر'
     ''')
     

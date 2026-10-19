@@ -2394,9 +2394,9 @@ def chart_full_analysis():
                     s = str(val).strip()
                     return s if s and s.lower() not in ('none', 'nan', '-') else None
 
-                # valuation
+                # valuation — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
                 try:
-                    fe_cur.execute("SELECT pe_ratio, pb_ratio, peg_ratio FROM tab_valuation WHERE ticker = ? LIMIT 1", (ticker,))
+                    fe_cur.execute("SELECT pe_ratio, pb_ratio, peg_ratio FROM tab_valuation WHERE symbol = ? LIMIT 1", (ticker,))
                     row = fe_cur.fetchone()
                     if row:
                         pe = _safe_num(row[0])
@@ -2424,9 +2424,9 @@ def chart_full_analysis():
                 except Exception as e:
                     logger.debug(f"[chart_routes] fundamentals valuation query failed: {e}")
 
-                # balance sheet
+                # balance sheet — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
                 try:
-                    fe_cur.execute("SELECT total_assets, total_liabilities FROM tab_balance_sheet WHERE ticker = ? ORDER BY last_updated DESC LIMIT 1", (ticker,))
+                    fe_cur.execute("SELECT total_assets, total_liabilities FROM tab_balance_sheet WHERE symbol = ? ORDER BY last_updated DESC LIMIT 1", (ticker,))
                     row = fe_cur.fetchone()
                     if row and row[0] and row[1]:
                         ta = _safe_num(row[0])
@@ -2446,9 +2446,9 @@ def chart_full_analysis():
                 except Exception as e:
                     logger.debug(f"[chart_routes] fundamentals balance_sheet query failed: {e}")
 
-                # profitability
+                # profitability — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
                 try:
-                    fe_cur.execute("SELECT roe, net_margin FROM tab_profitability WHERE ticker = ? LIMIT 1", (ticker,))
+                    fe_cur.execute("SELECT roe, net_margin FROM tab_profitability WHERE symbol = ? LIMIT 1", (ticker,))
                     row = fe_cur.fetchone()
                     if row:
                         roe = _safe_num(row[0])
@@ -2474,9 +2474,9 @@ def chart_full_analysis():
                 except Exception as e:
                     logger.debug(f"[chart_routes] fundamentals profitability query failed: {e}")
 
-                # dividends
+                # dividends — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
                 try:
-                    fe_cur.execute("SELECT div_yield FROM tab_dividends WHERE ticker = ? LIMIT 1", (ticker,))
+                    fe_cur.execute("SELECT div_yield FROM tab_dividends WHERE symbol = ? LIMIT 1", (ticker,))
                     row = fe_cur.fetchone()
                     if row:
                         dy = _safe_num(row[0])
@@ -2494,9 +2494,9 @@ def chart_full_analysis():
                 except Exception as e:
                     logger.debug(f"[chart_routes] fundamentals dividends query failed: {e}")
 
-                # performance
+                # performance — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
                 try:
-                    fe_cur.execute("SELECT perf_1w, perf_1m, perf_3m FROM tab_performance WHERE ticker = ? LIMIT 1", (ticker,))
+                    fe_cur.execute("SELECT perf_1w, perf_1m, perf_3m FROM tab_performance WHERE symbol = ? LIMIT 1", (ticker,))
                     row = fe_cur.fetchone()
                     if row:
                         perf = {'1w': _safe_num(row[0]), '1m': _safe_num(row[1]), '3m': _safe_num(row[2])}
@@ -2515,9 +2515,9 @@ def chart_full_analysis():
                 except Exception as e:
                     logger.debug(f"[chart_routes] fundamentals performance query failed: {e}")
 
-                # technical analysis
+                # technical analysis — DATA-ENGINE-UNIFY-1 Stage 2a: tab_* uses symbol (not ticker)
                 try:
-                    fe_cur.execute("SELECT technical_rating, ma_rating, oscillators_rating FROM tab_technical_analysis WHERE ticker = ? LIMIT 1", (ticker,))
+                    fe_cur.execute("SELECT technical_rating, ma_rating, oscillators_rating FROM tab_technical_analysis WHERE symbol = ? LIMIT 1", (ticker,))
                     row = fe_cur.fetchone()
                     if row:
                         tr = _safe_str(row[0])
