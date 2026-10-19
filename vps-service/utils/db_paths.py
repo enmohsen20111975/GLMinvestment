@@ -258,3 +258,85 @@ def get_db_path(name: str) -> str:
         name = name[:-3]
     env_key = f"{name.upper()}_DB"
     return _resolve(env_key, f"{name}.db")
+
+
+# ============================================================================
+# tab_* PK auto-detection helper (DATA-ENGINE-UNIFY-1 Stage 2a-fix)
+# ============================================================================
+# المشكلة: tab_* tables ليها schema مختلفة بين الساندبوكس + الإنتاج:
+#   - الساندبوكس (snapshot قديم): symbol PK + TEXT metrics + 8 tables
+#   - الإنتاج (laptop + VPS): ticker PK + REAL metrics + 3 tables (valuation/
+#     profitability/balance_sheet) — والباقي مش موجود
+# الـ readers كانت بـ query بـ ticker (صح للإنتاج) → جون غيّرها لـ symbol
+# (غلط للإنتاج) في Stage 2a. الـ fix الصح: auto-detect الـ PK column.
+# ============================================================================
+
+import sqlite3 as _sqlite3
+
+# Cache: table_pk_cache[db_path][table] = 'ticker' | 'symbol' | None
+_table_pk_cache: dict[str, dict[str, str]] = {}
+
+
+def detect_tab_pk_column(db_path: str, table: str) -> str:
+    """
+    Detect الـ PK column لـ tab_* table (ticker أو symbol أو غيرهم).
+
+    Returns:
+        - 'ticker' لو الـ table فيها column اسمه ticker (الـ schema الكنسي للإنتاج).
+        - 'symbol' لو الـ table فيها column اسمه symbol (الـ schema القديم للساندبوكس).
+        - 'ticker' كـ default لو لا ticker ولا symbol موجودين.
+
+    الـ detection بـ يتـ cached per (db_path, table) عشان الـ performance.
+
+    Usage:
+        from utils.db_paths import detect_tab_pk_column
+        pk = detect_tab_pk_column(DBPaths.DATA_ENGINE_DB, 'tab_valuation')
+        # pk = 'ticker' or 'symbol'
+        cur.execute(f"SELECT * FROM tab_valuation WHERE {pk} = ?", (ticker,))
+    """
+    global _table_pk_cache
+
+    db_key = str(db_path)
+    if db_key not in _table_pk_cache:
+        _table_pk_cache[db_key] = {}
+
+    if table in _table_pk_cache[db_key]:
+        return _table_pk_cache[db_key][table]
+
+    pk = "ticker"  # default (production schema)
+    try:
+        conn = _sqlite3.connect(db_path, timeout=5.0)
+        cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+        conn.close()
+        if "ticker" in cols:
+            pk = "ticker"
+        elif "symbol" in cols:
+            pk = "symbol"
+        # else: keep default 'ticker'
+    except Exception:
+        # لو الـ table مش موجود أو DB مش موجود → default 'ticker'
+        pass
+
+    _table_pk_cache[db_key][table] = pk
+    return pk
+
+
+def tab_table_exists(db_path: str, table: str) -> bool:
+    """
+    تحقق إن tab_* table موجود في الـ DB.
+
+    Usage:
+        from utils.db_paths import tab_table_exists, DBPaths
+        if tab_table_exists(DBPaths.DATA_ENGINE_DB, 'tab_dividends'):
+            cur.execute("SELECT * FROM tab_dividends ...")
+    """
+    try:
+        conn = _sqlite3.connect(db_path, timeout=5.0)
+        exists = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table,),
+        ).fetchone()
+        conn.close()
+        return exists is not None
+    except Exception:
+        return False

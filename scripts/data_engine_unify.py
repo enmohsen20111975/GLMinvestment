@@ -55,6 +55,55 @@ DATA_ENGINE_DB = DATA_DIR / "data_engine.db"
 STOCKS_DB = DATA_DIR / "stocks.db"
 REPAIR_SCRIPT = PROJECT_ROOT / "scripts" / "repair_tab_symbols.py"
 
+# Auto-detect PK helper (from vps-service/utils/db_paths.py)
+# We inline a minimal version here to avoid import path issues.
+_PK_CACHE: dict[str, dict[str, str]] = {}
+
+
+def detect_pk_column(db_path: Path, table: str) -> str:
+    """Auto-detect الـ PK column (ticker أو symbol). Default = 'ticker' (production)."""
+    db_key = str(db_path)
+    if db_key not in _PK_CACHE:
+        _PK_CACHE[db_key] = {}
+    if table in _PK_CACHE[db_key]:
+        return _PK_CACHE[db_key][table]
+
+    pk = "ticker"  # default (production schema)
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=5.0)
+        cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+        conn.close()
+        if "ticker" in cols:
+            pk = "ticker"
+        elif "symbol" in cols:
+            pk = "symbol"
+    except Exception:
+        pass
+    _PK_CACHE[db_key][table] = pk
+    return pk
+
+
+def table_exists(db_path: Path, table: str) -> bool:
+    """تحقق إن table موجود في الـ DB."""
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=5.0)
+        exists = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table,),
+        ).fetchone()
+        conn.close()
+        return exists is not None
+    except Exception:
+        return False
+
+
+def get_pk_column(db_path: Path, table: str) -> str | None:
+    """رجّع الـ PK column لو الـ table موجود، else None."""
+    if not table_exists(db_path, table):
+        return None
+    return detect_pk_column(db_path, table)
+
+
 # tab_* tables الـ 8
 TAB_TABLES = [
     "tab_valuation",
@@ -67,7 +116,7 @@ TAB_TABLES = [
     "tab_cash_flow",
 ]
 
-# Shifted rows = symbol = اسم سوق (مش ticker فعلي)
+# Shifted rows = PK column = اسم سوق (مش ticker فعلي)
 SHIFTED_MARKETS = ["السعودية", "مصر", "الكويت", "قطر"]
 
 
@@ -93,29 +142,39 @@ def backup_dbs(backup_dir: Path):
 
 
 def count_polluted(db_path: Path, table: str) -> int:
-    """عد الـ rows اللي symbol فيها فيه حروف عربية (pollution)."""
+    """عد الـ rows اللي الـ PK فيها فيه حروف عربية (pollution).
+    Returns -1 لو الـ table مش موجود."""
+    pk = get_pk_column(db_path, table)
+    if pk is None:
+        return -1  # table missing
     try:
         conn = sqlite3.connect(str(db_path), timeout=30.0)
         cnt = conn.execute(
-            f"SELECT COUNT(*) FROM {table} WHERE symbol GLOB '*[\u0600-\u06ff]*'"
+            f"SELECT COUNT(*) FROM {table} WHERE {pk} GLOB '*[\u0600-\u06ff]*'"
         ).fetchone()[0]
         conn.close()
         return cnt
-    except Exception:
+    except Exception as e:
+        log(f"  ⚠️ count_polluted({table}): {e}", "WARN")
         return -1
 
 
 def count_shifted(db_path: Path, table: str) -> int:
-    """عد الـ rows اللي symbol = اسم سوق (shifted)."""
+    """عد الـ rows اللي الـ PK = اسم سوق (shifted).
+    Returns -1 لو الـ table مش موجود."""
+    pk = get_pk_column(db_path, table)
+    if pk is None:
+        return -1  # table missing
     try:
         conn = sqlite3.connect(str(db_path), timeout=30.0)
         placeholders = ",".join([f"'{m}'" for m in SHIFTED_MARKETS])
         cnt = conn.execute(
-            f"SELECT COUNT(*) FROM {table} WHERE symbol IN ({placeholders})"
+            f"SELECT COUNT(*) FROM {table} WHERE {pk} IN ({placeholders})"
         ).fetchone()[0]
         conn.close()
         return cnt
-    except Exception:
+    except Exception as e:
+        log(f"  ⚠️ count_shifted({table}): {e}", "WARN")
         return -1
 
 
@@ -147,15 +206,23 @@ def run_repair(apply: bool, verbose: bool) -> dict:
 
 
 def delete_shifted_rows(db_path: Path, apply: bool, verbose: bool) -> dict:
-    """DELETE الـ shifted rows (symbol = اسم سوق)."""
+    """DELETE الـ shifted rows (PK column = اسم سوق).
+    Skip missing tables gracefully."""
     deleted = {}
     conn = sqlite3.connect(str(db_path), timeout=30.0)
 
     for table in TAB_TABLES:
+        pk = get_pk_column(db_path, table)
+        if pk is None:
+            deleted[table] = "table_missing"
+            if verbose:
+                log(f"  {table}: ⏭️ skipped (table not found)")
+            continue
+
         try:
             placeholders = ",".join([f"'{m}'" for m in SHIFTED_MARKETS])
             count = conn.execute(
-                f"SELECT COUNT(*) FROM {table} WHERE symbol IN ({placeholders})"
+                f"SELECT COUNT(*) FROM {table} WHERE {pk} IN ({placeholders})"
             ).fetchone()[0]
 
             if count == 0:
@@ -164,15 +231,15 @@ def delete_shifted_rows(db_path: Path, apply: bool, verbose: bool) -> dict:
 
             if apply:
                 conn.execute(
-                    f"DELETE FROM {table} WHERE symbol IN ({placeholders})"
+                    f"DELETE FROM {table} WHERE {pk} IN ({placeholders})"
                 )
                 deleted[table] = count
                 if verbose:
-                    log(f"  {table}: deleted {count} shifted rows")
+                    log(f"  {table} (pk={pk}): deleted {count} shifted rows")
             else:
                 deleted[table] = count
                 if verbose:
-                    log(f"  {table}: {count} shifted rows (dry-run — not deleted)")
+                    log(f"  {table} (pk={pk}): {count} shifted rows (dry-run — not deleted)")
         except Exception as e:
             deleted[table] = -1
             log(f"  ⚠️ {table}: error — {e}", "WARN")
@@ -184,9 +251,20 @@ def delete_shifted_rows(db_path: Path, apply: bool, verbose: bool) -> dict:
 
 
 def verify_results() -> dict:
-    """تحقق من النتائج النهائية."""
+    """تحقق من النتائج النهائية. Skip missing tables gracefully."""
     results = {}
     for table in TAB_TABLES:
+        pk = get_pk_column(DATA_ENGINE_DB, table)
+        if pk is None:
+            results[table] = {
+                "status": "table_missing",
+                "total": 0,
+                "polluted_remaining": 0,
+                "shifted_remaining": 0,
+                "clean": 0,
+            }
+            continue
+
         polluted = count_polluted(DATA_ENGINE_DB, table)
         shifted = count_shifted(DATA_ENGINE_DB, table)
         total = -1
@@ -197,10 +275,11 @@ def verify_results() -> dict:
         except Exception:
             pass
         results[table] = {
+            "pk": pk,
             "total": total,
             "polluted_remaining": polluted,
             "shifted_remaining": shifted,
-            "clean": total - polluted - shifted if total > 0 else -1,
+            "clean": total - polluted - shifted if total > 0 else 0,
         }
     return results
 
@@ -249,35 +328,89 @@ def main():
     # 2. قبل الإصلاح: عد الـ pollution
     log("\n📊 Step 2: عد الـ pollution قبل الإصلاح")
     before = {}
+    tables_found = 0
+    tables_missing = 0
     for table in TAB_TABLES:
+        pk = get_pk_column(DATA_ENGINE_DB, table)
+        if pk is None:
+            before[table] = {"polluted": 0, "shifted": 0, "status": "table_missing"}
+            tables_missing += 1
+            log(f"  {table}: ⏭️ table not found")
+            continue
+
+        tables_found += 1
         polluted = count_polluted(DATA_ENGINE_DB, table)
         shifted = count_shifted(DATA_ENGINE_DB, table)
-        before[table] = {"polluted": polluted, "shifted": shifted}
-        if args.verbose or polluted > 0:
-            log(f"  {table}: polluted={polluted}, shifted={shifted}")
+        before[table] = {"polluted": polluted, "shifted": shifted, "pk": pk}
+        if args.verbose or polluted > 0 or shifted > 0:
+            log(f"  {table} (pk={pk}): polluted={polluted}, shifted={shifted}")
 
-    total_polluted_before = sum(v["polluted"] for v in before.values())
-    total_shifted_before = sum(v["shifted"] for v in before.values())
+    log(f"  📊 tables: {tables_found} found, {tables_missing} missing")
+    # sum بس الـ existing tables (ignore -1)
+    total_polluted_before = sum(
+        v["polluted"] for v in before.values()
+        if v.get("status") != "table_missing" and v["polluted"] >= 0
+    )
+    total_shifted_before = sum(
+        v["shifted"] for v in before.values()
+        if v.get("status") != "table_missing" and v["shifted"] >= 0
+    )
     log(f"  📊 إجمالي قبل: {total_polluted_before} polluted + {total_shifted_before} shifted")
 
-    # 3. شغل repair_tab_symbols.py
+    if tables_found == 0:
+        log("  ⚠️ مفيش ولا tab_* table موجود — الـ DB سليم أو الـ schema مختلف", "WARN")
+        log("  ✅ مفيش حاجة محتاجة repair. اختبار ناجح.", "INFO")
+        # 6. report (early)
+        report = {
+            "task": "DATA-ENGINE-UNIFY-1",
+            "timestamp": datetime.now().isoformat(),
+            "mode": "apply" if args.apply else "dry-run",
+            "status": "no_tables_found",
+            "tables_found": tables_found,
+            "tables_missing": tables_missing,
+            "backups": backed_up,
+        }
+        report_file = PROJECT_ROOT / "scripts" / "output" / f"data_engine_unify_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(report_file, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2, ensure_ascii=False, default=str)
+        log(f"\n📄 Report: {report_file}")
+        log("=" * 60)
+        log("✅ خلص. مفيش tab_* tables — الـ DB سليم.")
+        log("=" * 60)
+        return
+
+    # 3. شغل repair_tab_symbols.py (لو فيه pollution)
     log("\n🔧 Step 3: شغل repair_tab_symbols.py")
-    repair_result = run_repair(args.apply, args.verbose)
-    if not repair_result["success"]:
-        log("  ❌ repair failed", "ERROR")
-        sys.exit(1)
+    if total_polluted_before == 0:
+        log("  ⏭️ skipped — مفيش pollution محتاجة repair")
+        repair_result = {"success": True, "output": "skipped (no pollution)"}
+    else:
+        repair_result = run_repair(args.apply, args.verbose)
+        if not repair_result["success"]:
+            log("  ❌ repair failed", "ERROR")
+            sys.exit(1)
 
     # 4. DELETE الـ shifted rows
-    log("\n🧹 Step 4: DELETE الـ shifted rows (symbol = اسم سوق)")
+    log("\n🧹 Step 4: DELETE الـ shifted rows (PK = اسم سوق)")
     deleted = delete_shifted_rows(DATA_ENGINE_DB, args.apply, args.verbose)
-    total_deleted = sum(v for v in deleted.values() if v > 0)
+    total_deleted = sum(
+        v for v in deleted.values() if isinstance(v, int) and v > 0
+    )
     log(f"  📊 إجمالي shifted rows: {total_deleted}")
 
     # 5. verify
     log("\n✅ Step 5: verify النتائج")
     after = verify_results()
-    total_polluted_after = sum(v["polluted_remaining"] for v in after.values())
-    total_shifted_after = sum(v["shifted_remaining"] for v in after.values())
+    # sum بس الـ existing tables
+    total_polluted_after = sum(
+        v["polluted_remaining"] for v in after.values()
+        if v.get("status") != "table_missing" and v["polluted_remaining"] >= 0
+    )
+    total_shifted_after = sum(
+        v["shifted_remaining"] for v in after.values()
+        if v.get("status") != "table_missing" and v["shifted_remaining"] >= 0
+    )
     log(f"  📊 إجمالي بعد: {total_polluted_after} polluted + {total_shifted_after} shifted")
 
     if total_polluted_after == 0 and total_shifted_after == 0:
@@ -290,6 +423,8 @@ def main():
         "task": "DATA-ENGINE-UNIFY-1",
         "timestamp": datetime.now().isoformat(),
         "mode": "apply" if args.apply else "dry-run",
+        "tables_found": tables_found,
+        "tables_missing": tables_missing,
         "backups": backed_up,
         "before": before,
         "after": after,
@@ -300,7 +435,7 @@ def main():
             "total_polluted_after": total_polluted_after,
             "total_shifted_before": total_shifted_before,
             "total_shifted_after": total_shifted_after,
-            "total_repaired": total_polluted_before - total_polluted_after,
+            "total_repaired": max(0, total_polluted_before - total_polluted_after),
             "total_deleted": total_deleted if args.apply else 0,
         },
     }
