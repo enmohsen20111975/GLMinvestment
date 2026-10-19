@@ -71044,3 +71044,98 @@ Stage Summary:
   3. URGENT: Fix prediction_tracker fallback (Path 1) — ضيف risk_reward + logging.
   4. KILL: INSTITUTIONAL_BUY signal.
   5. BACKFILL: R/R للـ 145 توقع بـ prices صحيحة.
+
+---
+Task ID: BRAVO-CLEANUP-FIX-0a-0b-1-4
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — تنفيذ Fix 0a + 0b + 1 + 4 (التنظيف قبل أي تحسين)
+
+Work Log:
+
+- 🔥 الاكتشاف الأكبر: 157 توقع fabricated (مش 50)!
+  * كلهم status=TARGET_HIT (بـ يدّعوا إنهم رابحة)
+  * كلهم notes="صفقة رابحة مرصودة من رادار السيولة والتجميع"
+  * التوزيع: 107 في سبتمبر + 50 في أكتوبر
+  * الأثر: كانوا بـ يرفعوا الـ WR بـ 38% (من 32.69% الحقيقي لـ 70.70% الوهمي)
+
+- ✅ Fix 0a: تعليم الـ 157 توقع fabricated
+  * UPDATE predictions SET status='INVALID_FABRICATED'
+  * notes: أضفنا [FABRICATED-PHASE3-MARKER] original_status=TARGET_HIT | ...
+  * مـا حذفناش (audit trail زي محسن طلب)
+
+- ✅ Fix 0b: KILL INSTITUTIONAL_BUY signal
+  * engines/backtest_engine.py L1540: signal='INSTITUTIONAL_BUY' → 'STRONG_BUY'
+  * engines/backtest_engine.py L1724: signal='INSTITUTIONAL_BUY' → 'STRONG_BUY'
+  * 28 توقع قديمين (مش 13) اتعلموا بـ INVALID_INST_BUY_KILLED_*
+  * py_compile PASS
+
+- ✅ Fix 1: Logging حقيقي في prediction_tracker.py except
+  * L654: except Exception → except Exception as _primary_err
+  * أضفنا print بـ details كاملة (ticker, signal, prices, score, R/R, exception)
+  * L694: نفس الشيء للـ fallback except
+  * BRAVO-FIX: ضفنا risk_reward + evidence_count + morning_bell + kill_filter_result
+    + who_is_buying + target_price_2 في الـ fallback INSERT (L672-693)
+    عشان لو الـ primary فشل، الـ fields المهمة مـتـكتبة.
+  * py_compile PASS
+
+- ✅ Fix 4: Backfill R/R للـ 121 توقع نظيف
+  * UPDATE predictions SET risk_reward = ROUND((target-entry)/(entry-stop), 2)
+  * WHERE risk_reward IS NULL AND prices valid AND target > entry AND stop < entry
+  * 121 توقع اتـ backfilled (من 145 → 24 لسه None بـ prices ناقصة)
+
+- 📊 BASELINE النهائي (بعد كل التنظيف):
+
+  | Metric | القيمة |
+  |--------|--------|
+  | INVALID (مستبعدة) | 185 (157 fabricated + 28 INST_BUY_KILLED) |
+  | closed (TARGET_HIT + STOPPED) | 243 |
+  | TARGET_HIT | 135 |
+  | STOPPED | 108 |
+  | **BASELINE WR النهائي** | **55.56%** |
+
+- 📊 Score distribution النهائي (الحقيقة الكاملة):
+
+  | Band | count | wins | closed | WR |
+  |------|-------|------|--------|-----|
+  | <50 | 35 | 3 | 5 | 60.0% |
+  | 50-60 | 103 | 19 | 22 | **86.4%** |
+  | 60-65 | 139 | 24 | 28 | **85.7%** |
+  | 65-70 | 239 | 30 | 34 | **88.2%** ← الأحسن |
+  | 70-80 | 396 | 30 | 51 | 58.8% |
+  | 80-90 | 197 | 14 | 36 | 38.9% |
+  | ≥90 | 71 | 1 | 11 | **9.1%** ← كارثة! |
+  | NULL | 235 | 14 | 56 | 25.0% |
+
+  🔥 الـ finding الحاسم: كل ما الـ score يزيد، الـ WR بينزل!
+  - 65-70 = 88.2% (الأحسن)
+  - ≥90 = 9.1% (الأسوأ)
+  - ده معناه إن الـ scoring system مقلوبة — score inflation مشكلة هيكلية.
+
+- 📊 R/R vs WR (بعد backfill):
+
+  | R/R band | count | wins | closed | WR |
+  |----------|-------|------|--------|-----|
+  | <1.8 (KILL) | 284 | 22 | 69 | 31.9% |
+  | 1.8-2.0 | 24 | 0 | 2 | **0.0%** |
+  | 2.0-3.0 | 221 | 19 | 41 | 46.3% |
+  | 3.0-10 | 345 | 24 | 37 | 64.9% |
+  | ≥10 | 513 | 70 | 94 | **74.5%** ← أحسن! |
+
+  🔥 الـ finding الغريب: R/R ≥10 بـ يـدي 74.5% WR (أحسن من R/R 2-3).
+  - الـ targets البعيدة بـ تـنجح أكتر (لأن السهم بيـنمو فعلاً).
+  - R/R 1.8-2.0 = 0% WR (sample صغير: 2 closed).
+
+- 🎯 إجابة سؤال محسن عن PREDICTION-WRITE-GUARD:
+  * الـ Guards موجودين في record_prediction() (geometry + W1-W9 + 5-max cap).
+  * بس مـفيش DB-level trigger بـ يمنع الـ writers التانية.
+  * أي script بـ يكتب SQL مباشرة بـ يتخطى الـ Guards (زي sniper/track route).
+  * ده ثغرة معمارية محتاجة DB-level trigger.
+
+Stage Summary:
+- ✅ Fix 0a: 157 توقع fabricated اتعلموا بـ INVALID_FABRICATED.
+- ✅ Fix 0b: INSTITUTIONAL_BUY KILLED (2 places) + 28 توقع قديمين اتعلموا.
+- ✅ Fix 1: Logging حقيقي + fallback بـ يكتب كل الـ fields.
+- ✅ Fix 4: 121 توقع backfilled بـ R/R.
+- 📊 BASELINE WR النهائي: 55.56% (مش 68.84%).
+- 🔥 الـ scoring system مقلوبة: ≥90 = 9.1% WR، 65-70 = 88.2% WR.
+- 🔁 الخطوة الجاية: تحقيق في score inflation (15+ boosts في daily_predictor.py).

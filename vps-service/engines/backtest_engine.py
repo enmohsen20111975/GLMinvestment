@@ -1535,9 +1535,13 @@ class V38BacktestEngine:
         )
         
         # --- 9. Signal Decision ---
-        # Institutional explosion: maker bullish + flight up
+        # BRAVO-KILL-INST-BUY (2026-10-19): INSTITUTIONAL_BUY signal اتقتل.
+        # السبب: WR=0.0% (13 توقع كلهم STOPPED) + score=100 متكرر على HRHO.
+        # الـ signal ده كان بـ يدخل في الـ ≥70 band ويفسد الـ WR.
+        # الآن أي "maker bullish + flight up" بيتحول لـ STRONG_BUY (مش INSTITUTIONAL_BUY).
+        # لو محسن حابب يرجّعه: يستبدل السطر اللي تحت بـ signal = 'INSTITUTIONAL_BUY'.
         if maker.maker_bullish and flight_code == 'flight_up':
-            signal = 'INSTITUTIONAL_BUY'
+            signal = 'STRONG_BUY'  # was: 'INSTITUTIONAL_BUY' (KILLED — WR=0%)
         elif score >= self.buy_threshold:
             signal = 'STRONG_BUY'
         elif score <= int(get_setting('tech_score_base', default=50) - 20):
@@ -1717,7 +1721,10 @@ class V38BacktestEngine:
         #   2. evidence_count (sort by ✅ count)
         #   3. strict kill-filters (liquidity + free float + volatility)
         if 'انفجار' in signal_final:
-            signal = 'INSTITUTIONAL_BUY'
+            # BRAVO-KILL-INST-BUY (2026-10-19): INSTITUTIONAL_BUY signal اتقتل.
+            # السبب: WR=0.0% (13 توقع كلهم STOPPED) + score=100 متكرر على HRHO.
+            # أي "انفجار" دلوقتي بـ يـ emit STRONG_BUY (مش INSTITUTIONAL_BUY).
+            signal = 'STRONG_BUY'  # was: 'INSTITUTIONAL_BUY' (KILLED — WR=0%)
         elif 'مؤسسي قوي' in signal_final or 'تجميع مؤسسي' in signal_final:
             signal = 'STRONG_BUY'
         elif 'شراء' in signal_final:
