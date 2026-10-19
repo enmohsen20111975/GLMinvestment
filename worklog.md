@@ -73138,3 +73138,38 @@ Stage Summary (tab_*):
 - 🔴 laptop فيه 29 DBs (17 مش مستعملة) — المالك هيلغيها.
 
 Next: محرك الأخبار (news engine) — نفس المنطق (audit + fix + unify).
+
+---
+Task ID: NEWS-ENGINE-UNIFY-1 / Stage 1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — bypass Node.js في محرك الأخبار. كل شغلنا بايثون. اطفي Node من الـ news flow.
+
+Work Log:
+- استلمت توجيه المالك: محرك Node ملوش لازمة في شغل الأخبار، كل شغلنا بايثون.
+- المرحلة 1 (فهم الـ active path):
+  * news-agent (PM2) → POST /api/news (Node.js) → Node يكتب في news.db.market_news + forward لـ Python.
+  * ده غلط — Node بيتوسط من غير لازمة.
+- المرحلة 2 (كتابة db_writer):
+  * news-agent/sender/db_writer.py — NewsDBWriter class بـ write مباشرة في db/news.db.market_news.
+  * INSERT OR IGNORE بـ UNIQUE(title, source) — نفس الـ dedup اللي Node بيعمله.
+  * schema كاملة (21 columns مطابقة لـ market_news الفعلي).
+  * relative path (PROJECT_ROOT / db / news.db).
+- المرحلة 3 (تعديل main.py):
+  * import NewsDBWriter + self.db_writer = NewsDBWriter().
+  * write مباشرة في news.db قبل الـ POST لـ Node.
+  * الـ ProductionSender يبقى fallback (لو Node شغال → forward، لو مطفي → الأخبار وصلت بـ Python).
+  * log: "News batch: X DB-written, Y Node-forwarded".
+- المرحلة 4 (تجربة حية):
+  * write خبر test → written=1 ✅
+  * write نفس الخبر تاني → written=0 (dedup شغّال) ✅
+  * stats: 1020 total، 0 duplicates ✅
+  * cleanup: الخبر الـ test اتمسح ✅
+  * py_compile PASS + lint PASS ✅
+
+Stage Summary:
+- ✅ news-agent دلوقتي بـ write مباشرة في news.db.market_news بايثون (بدون Node).
+- ✅ Node.js بقى optional fallback (لو شغال → forward، لو مطفي → الأخبار وصلت).
+- ✅ dedup شغّال (UNIQUE title+source).
+- ✅ تجربة حية نجحت على الساندبوكس.
+- ⏳ Stage 2: fix db_manager alias + phantom readers (Python only).
+- ⏳ Stage 3: stop duplicate writer (news_agent_articles).

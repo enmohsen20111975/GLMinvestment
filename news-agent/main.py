@@ -39,6 +39,7 @@ from analyzer.vision_analyzer import VisionAnalyzer
 from analyzer.recommendation_aggregator import RecommendationAggregator
 from sender.production_sender import ProductionSender
 from sender.social_publisher import SocialPublisher
+from sender.db_writer import NewsDBWriter
 from data.news_store import NewsStore
 
 # ── إعداد اللوج ───────────────────────────────────────
@@ -62,6 +63,8 @@ class NewsAgent:
         self.analyzer = NewsAnalyzer()
         self.vision   = VisionAnalyzer()
         self.sender   = ProductionSender()
+        # DATA-ENGINE-UNIFY-1 / News Stage 1: bypass Node.js — write directly to news.db
+        self.db_writer = NewsDBWriter()
         self.social   = SocialPublisher()
         self.recommender = RecommendationAggregator(self.store)
         self.running  = False
@@ -151,10 +154,17 @@ class NewsAgent:
             f"(threshold={threshold}, تم فلترة {len(items) - len(valid_items)})...[/magenta]"
         )
 
-        # 1. إرسال للموقع الرسمي
+        # 1. كتابة مباشرة في news.db.market_news (بايثون — بدون Node.js)
+        # DATA-ENGINE-UNIFY-1 / News Stage 1: canonical path = direct DB write
+        db_written = await self.db_writer.write_batch(valid_items)
+
+        # 2. (fallback) إرسال للموقع الرسمي عبر Node.js — لو Node شغال
+        # لو Node مطفي، الأخبار بتوصل بـ Python مباشرة
         sent = await self.sender.send_batch(valid_items)
         sent_ids = [i['id'] for i in valid_items[:sent]]
         self.store.mark_sent(sent_ids)
+
+        log.info(f'  📊 News batch: {db_written} DB-written, {sent} Node-forwarded')
 
         # 2. نشر على منصات التواصل (تيليجرام) للأخبار المؤثرة وذات الصلة بالأسهم
         # ─── TELEGRAM-FILTER (Task PHASE-2-COMPLETE-2026-10-07) ────────────────
