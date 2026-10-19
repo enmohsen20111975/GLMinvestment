@@ -71609,3 +71609,37 @@ Stage Summary:
 - py_compile: scripts/diagnose_alias_duplicates.py PASS ✓ | data_engine/scrapers/tradingview_scraper.py PASS ✓ (مع SyntaxWarning pre-existing على \/ في JS regex string — مش من شغلي).
 - ما لمستش أي DB (SELECT بس — Rule 1). ما لمستش src/ (نطاق ألفا). ما عملتش push (Rule 75 معلّقة — انتظر قرار جون).
 - ⛔ المرحلة 4 (migration) محظورة — محتاجة إذن المالك. الـ alias_pairs JSON جاهز لـ جون يـ review قبل الـ migration.
+
+---
+Task ID: JOHN-COORD-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — رفع شغل ألفا + شغلي لـ GitHub، أكمل شغل برافو (alias dedup stages 1-3)، وجهّز برمبت جامد لألفا
+
+Work Log:
+- استلمت توجيه المالك: (1) ارفع شغل ألفا + شغلي، (2) برافو مشغولة → أنا أحل المشاكل بدالها بـ subagents، (3) ما أشيلش شغل ألفا كله (سيب لهم)، (4) جهّز برمبت جامد لألفا.
+- المرحلة 1 (رفع شغل ألفا + شغلي):
+  * عملت soft reset لـ origin/main + إعادة commit بـ 3 messages واضحة: docs consolidation + alpha fixes + worklog.
+  * push attempt 1: rejected (non-fast-forward) — برافو بعتت 14 commit جديدة وأنا مش متزامن!
+  * fetch + rebase: تعارض في worklog.md (برافو كاتبة فيه كمان). دمجت الاتنين (bravo block + john block).
+  * إعادة archive move (برافو ما كانتش عندها الـ archive move فـ رجعت الـ files).
+  * push نجح: 48b6bc4..8df2b55. متزامن تماماً.
+- المرحلة 2 (شغل برافو — STOCKS-DEDUP-A-1 stages 1-3):
+  * أطلقت general-purpose subagent (proxy برافو) بـ prompt كامل.
+  * المرحلة 1 (تشخيص): script diagnose_alias_duplicates.py (715 سطر) → كشف **126 زوج** (مش 52!) — 63 legacy scraper bug + 46 null name_ar + 8 english swap + 7 manual review + 2 normalized.
+  * المرحلة 2 (canonical): 122 قرار واضح + 4 أزواج غامضة مرفوعة لجون (Rule 27). 3 أزواج الـ brief (LUTS/KRDI/SPMD) confirmed canonical.
+  * المرحلة 3 (scraper fix): root cause = legacy TradingView DOM extractor greedy regex. fix طبقتين (JS CamelCase trim + Python pollution guard). inline tests PASS (17 polluted → True, 13 clean → False, 15 JS cases → PASS).
+  * راجعت الـ diff + py_compile + lint → PASS.
+  * commit + push: 8df2b55..412c458. متزامن.
+- المرحلة 3 (برمبت جامد لألفا):
+  * كتبت agent-ctx/FRONTEND-CLEANUP-A-2-alpha.md (brief جديد بالـ rich box).
+  * 3 مشکلات: (1) 1679 tsc errors، (2) BTC 3 أرقام مختلفة، (3) EGX50 change math غلط.
+  * 5 مراحل + اختبارات صارمة + محظورات + 6 قواعد دستورية.
+
+Stage Summary:
+- ✅ شغل ألفا (4 bug fixes) + شغلي (docs + profile + briefs) على GitHub (4 commits).
+- ✅ شغل برافو (alias dedup stages 1-3) على GitHub (1 commit). 126 زوج مش 52. 4 ambiguous محتاجة قرار جون.
+- ✅ برمبت جامد لألفا جاهز (FRONTEND-CLEANUP-A-2) — 3 مشکلات + 5 مراحل.
+- ✅ متزامن مع GitHub (behind=0، ahead=0).
+- ✅ dev server شغّال على بورت 3000.
+- 🔴 4 أزواج alias غامضة محتاجة قرار جون (MNHD/MASR، KAHA/POUL، CALT/COSG، PACL/EGCH).
+- ⏳ المرحلة 4 (migration) محظورة — محتاجة إذن المالك (Rule 1).
