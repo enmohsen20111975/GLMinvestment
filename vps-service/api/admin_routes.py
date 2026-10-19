@@ -961,7 +961,9 @@ def run_enhanced_backtest():
         params = get_backtest_params()
         
         # Import and run the enhanced backtest
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         
         engine = EnhancedBacktest(
             _get_db_path()
@@ -1504,7 +1506,9 @@ def run_learning_step():
         current_params = get_backtest_params()
         
         # Run backtest
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         engine = EnhancedBacktest(_get_db_path())
         results = engine.run_backtest(
             start_year=2026, start_month=1,
@@ -1626,7 +1630,9 @@ def run_auto_learning():
             current_params = get_backtest_params()
             print(f"[LEARNING] Starting with CURRENT params: {current_params}")
         
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         
         all_results = []
         
@@ -1792,7 +1798,9 @@ def run_grid_search():
         - all_results: كل النتائج
     """
     try:
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         import itertools
         
         data = request.get_json() or {}
@@ -1936,7 +1944,9 @@ def run_smart_optimize():
     4. اختيار أفضل توليفة
     """
     try:
-        from api.kimi_backtest import EnhancedBacktest
+        # BRAVO-FIX (2026-10-19): api.kimi_backtest module مش موجود
+        raise ImportError('api.kimi_backtest module not found — BRAVO-FIX 2026-10-19')
+        # from api.kimi_backtest import EnhancedBacktest
         
         data = request.get_json() or {}
         

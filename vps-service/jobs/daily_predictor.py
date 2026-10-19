@@ -60,7 +60,7 @@ def _whale_distribution_guard(opens, highs, lows, closes, volumes):
         if n < 5:
             return False  # بيانات غير كافية للفحص — لا تمنع
         candles = [{'open': opens[i], 'high': highs[i], 'low': lows[i], 'close': closes[i], 'volume': volumes[i]} for i in range(n)]
-        from liquidity_radar_v2 import compute_whale_flow
+        from scripts.liquidity_radar_v2 import compute_whale_flow
         whale = compute_whale_flow(candles)
         return (whale.get('net_flow_egp', 0) or 0) < 0  # distributing → block BUY
     except Exception as e:
@@ -3672,29 +3672,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # Rule 27 (NO-FAKE-DATA): لو الـ features لا يمكن حسابها (بيانات ناقصة)،
             #   verdict='SKIPPED_INSUFFICIENT_DATA' → السماح بالمرور conservative.
             if _sig_signal in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
-                try:
-                    from analyzers.lgbm_gatekeeper import (
-                        predict_signal_probability,
-                        open_stocks_db_readonly,
-                    )
-                    _gk_conn = open_stocks_db_readonly()
-                    if _gk_conn is not None:
-                        try:
-                            _gk_proba, _gk_features, _gk_verdict = predict_signal_probability(
-                                sig['ticker'], scan_date, float(sig['entry']),
-                                str(sig.get('signal', '')), _gk_conn
-                            )
-                        finally:
-                            _gk_conn.close()
-                    else:
-                        _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
-                except Exception as _gk_err:
-                    _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
-                    print(
-                        f"[LGBM-GATEKEEPER] WARN {sig['ticker']} gatekeeper exception: {_gk_err} "
-                        f"→ SKIPPED (conservative pass)",
-                        flush=True,
-                    )
+                # BRAVO-FIX (2026-10-19): analyzers.lgbm_gatekeeper module مش موجود.
+                # الـ try/except كان بـ يـفشل بصمت → SKIPPED_INSUFFICIENT_DATA دايماً.
+                # تم تعطيل الـ gate لإن الملف مش موجود. لو محتاج ML gatekeeper:
+                # اعمل analyzers/lgbm_gatekeeper.py الأول.
+                _gk_proba, _gk_features, _gk_verdict = 0.0, {}, 'SKIPPED_INSUFFICIENT_DATA'
                 if _gk_verdict == 'REJECTED_BY_AI_GATEKEEPER':
                     print(
                         f"[LGBM-GATEKEEPER] REJECTED {sig['ticker']} "
@@ -4313,7 +4295,7 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
     # للتوليد الحقيقي، نحتاج Python backend prediction_tracker
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-        from core.prediction_tracker import PredictionTracker
+        from analyzers.prediction_tracker import PredictionTracker
         tracker = PredictionTracker()
     except Exception as e:
         print(f"[V40.2-CRYPTO] ⚠️ PredictionTracker not available: {e}", flush=True)
