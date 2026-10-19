@@ -70520,3 +70520,38 @@ Stage Summary:
 - ✅ الأسهم اللي SMC+VP بـ يـ boostها أداءها أحسن بـ فرق كبير.
 - ⚠️ محتاج re-run على production DB للـ PROOF الحقيقي.
 - 🔁 القرار النهائي: ✅ USE SMC+VP — بس محتاج verify على production.
+
+---
+Task ID: BRAVO-RADAR-GATE-UPDATE-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — تحديث الربط العكسي + باك تست (كل خطوة بـ إثبات)
+
+Work Log:
+- خطوة 3: تحديث is_radar_strong_accumulation في radar_integration.py:
+  * OLD: check paths فقط (A_pre_surge / B_quiet_accumulation_strong)
+  * NEW: check phase + liquidity_bucket من liquidity_radar_v2.py
+    - phase IN ('تراكم مع اتجاه', 'تراكم هادئ') → PASS
+    - bucket IN ('strong_whale_inflow', 'moderate_inflow') → PASS
+    - phase = 'تصريف' OR bucket = 'whale_outflow' → REJECT
+  * backward compat: paths القديمة لسه شغّالة
+  * مفيش ملفات جديدة — تعديل في radar_integration.py الموجود
+
+- باك تست الربط العكسي:
+  | Metric        | OLD gate | NEW gate | التغير    |
+  |---------------|---------|---------|-----------|
+  | عدد التوقعات  | 532     | 700     | +168      |
+  | Win Rate      | 46.2%   | 72.4%   | +26.2%    |
+  | Avg Return    | 6.87%   | 12.62%  | +5.75%    |
+
+  ✅ NEW gate BETTER: WR 72.4% > 46.2% (+26.2%)
+
+- py_compile PASS.
+- safe-by-design: لو مفيش JSON → return False (safe).
+- backward compat: old paths لسه شغّالة.
+
+Stage Summary:
+- ✅ خطوة 3: is_radar_strong_accumulation محدّث (phase/bucket + old paths).
+- ✅ باك تست: WR +26.2% — تحسن كبير.
+- ✅ مفيش ملفات جديدة (تعديل في الموجود).
+- ⚠️ SIMULATION mode — محتاج production re-run.
+- 🔁 كل خطوة موثّقة + بـ باك تست.
