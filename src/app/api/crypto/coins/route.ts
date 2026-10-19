@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server';
+import { getLatestCryptoPrices } from '@/lib/data-engine-db';
 
 /**
  * /api/crypto/coins?limit=250
  *
  * Unified crypto coin-list endpoint (UI-mirror protocol).
  *
- * Fetches the top USDT pairs from Binance's public ticker API (no API key
- * required, generous rate limits) and returns them in the shape that
- * `loadCryptoList()` in the store expects:
- *   `{ success, all_cryptos: [{ symbol, name, price_usd, change_24h,
- *      change_7d, market_cap, market_cap_rank, volume_24h }] }`
+ * FRONTEND-CLEANUP-A-2 (Problem 2 — BTC price split-brain):
+ * كان بـ يقرأ من Binance API مباشرة (BTC=82318) بينما /api/data-engine/crypto
+ * بـ يقرأ من data_engine.db.crypto_prices (BTC=81119). ده بـ cause تضارب على الشاشة.
  *
- * The coins are adapted to the same field names the stocks list uses so
- * the unified StocksView can render crypto exactly like EGX stocks.
+ * الحل (Rule 73 — SINGLE-DISPLAY-SOURCE): خلي الـ route ده يقرأ من نفس الـ canonical
+ * source (data_engine.db.crypto_prices) زي /api/data-engine/crypto. كده BTC price
+ * واحد في كل الشاشات. Binance fallback اتعمل skip — الـ data_engine scraper هو اللي
+ * بـ يجيب الأسعار من CoinGecko (canonical per SESSION-STATE).
+ *
+ * Returns: { success, all_cryptos: [{ symbol, name, price_usd, change_24h,
+ *            change_7d, market_cap, market_cap_rank, volume_24h }] }
  */
 
 export const dynamic = 'force-dynamic';
@@ -20,25 +24,6 @@ export const dynamic = 'force-dynamic';
 // 60-second in-memory cache
 const cache: { data: unknown; ts: number } | null = { data: null, ts: 0 };
 const CACHE_MS = 60_000;
-
-// Human-readable names for the most common symbols (Binance only returns
-// the trading pair, not the coin name). Unknown symbols fall back to the
-// symbol itself.
-const SYMBOL_NAMES: Record<string, string> = {
-  BTC: 'Bitcoin', ETH: 'Ethereum', BNB: 'BNB', SOL: 'Solana', XRP: 'XRP',
-  ADA: 'Cardano', DOGE: 'Dogecoin', DOT: 'Polkadot', LTC: 'Litecoin',
-  AVAX: 'Avalanche', LINK: 'Chainlink', MATIC: 'Polygon', UNI: 'Uniswap',
-  XLM: 'Stellar', ATOM: 'Cosmos', TRX: 'TRON', ETC: 'Ethereum Classic',
-  XMR: 'Monero', ALGO: 'Algorand', NEAR: 'NEAR', APT: 'Aptos', FIL: 'Filecoin',
-  ICP: 'Internet Computer', VET: 'VeChain', FTM: 'Fantom', GRT: 'The Graph',
-  SAND: 'The Sandbox', MANA: 'Decentraland', AXS: 'Axie Infinity',
-  SHIB: 'Shiba Inu', PEPE: 'Pepe', ARB: 'Arbitrum', OP: 'Optimism',
-  INJ: 'Injective', SUI: 'Sui', SEI: 'Sei', TIA: 'Celestia', RUNE: 'THORChain',
-  FET: 'Fetch.ai', RNDR: 'Render', IMX: 'Immutable', GALA: 'Gala',
-  AAVE: 'Aave', MKR: 'Maker', COMP: 'Compound', SNX: 'Synthetix',
-  CRV: 'Curve DAO', LDO: 'Lido DAO', SUSHI: 'SushiSwap', DYDX: 'dYdX',
-  ZEC: 'Zcash', DASH: 'Dash', ENJ: 'Enjin', CHZ: 'Chiliz', ANKR: 'Ankr',
-};
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -49,42 +34,24 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Binance 24hr ticker — returns ALL pairs in one call (no pagination)
-    const res = await fetch('https://api.binance.com/api/v3/ticker/24hr', {
-      headers: { Accept: 'application/json' },
-      // NOTE: no `next: { revalidate }` — the Binance 24hr ticker response is
-      // ~2.5MB which exceeds Next.js's 2MB data-cache limit. We rely on the
-      // 60-second in-memory cache above instead.
-      signal: AbortSignal.timeout(15000),
-    });
+    // FRONTEND-CLEANUP-A-2: read from data_engine.db.crypto_prices (canonical source).
+    // getLatestCryptoPrices returns the most recent snapshot sorted by market_cap_rank.
+    const prices = getLatestCryptoPrices(limit);
 
-    if (!res.ok) {
-      return NextResponse.json(
-        { success: false, error: `Binance error: ${res.status}` },
-        { status: 502 }
-      );
-    }
-
-    const raw = (await res.json()) as Array<Record<string, string>>;
-
-    const all_cryptos = raw
-      // Keep only USDT quote pairs (the liquid majors)
-      .filter((t) => t.symbol && String(t.symbol).endsWith('USDT'))
-      .map((t, idx) => {
-        const pair = String(t.symbol);
-        const sym = pair.slice(0, -4); // strip "USDT"
-        return {
-          symbol: sym,
-          name: SYMBOL_NAMES[sym] || sym,
-          price_usd: Number(t.lastPrice) || 0,
-          change_24h: Number(t.priceChangePercent) || 0,
-          change_7d: 0, // Binance 24hr ticker doesn't include 7d change
-          market_cap: 0, // Binance doesn't provide market cap
-          market_cap_rank: idx + 1,
-          volume_24h: Number(t.quoteVolume) || 0,
-        };
-      })
-      // Filter out stablecoins (price pegged to $1, not interesting for analysis)
+    // Adapt to the same shape the store expects (all_cryptos array).
+    const all_cryptos = prices
+      .filter((c) => c.symbol && c.price_usd != null)
+      .map((c) => ({
+        symbol: c.symbol,
+        name: c.name || c.symbol,
+        price_usd: Number(c.price_usd) || 0,
+        change_24h: Number(c.price_change_24h) || 0,
+        change_7d: Number(c.price_change_7d) || 0,
+        market_cap: Number(c.market_cap) || 0,
+        market_cap_rank: c.market_cap_rank || 0,
+        volume_24h: Number(c.total_volume) || 0,
+      }))
+      // Filter out stablecoins (price pegged to $1)
       .filter((c) => !['USDT', 'BUSD', 'USDC', 'TUSD', 'FDUSD', 'DAI', 'USDP', 'EUR'].includes(c.symbol))
       // Sort by volume descending (most liquid first)
       .sort((a, b) => b.volume_24h - a.volume_24h)

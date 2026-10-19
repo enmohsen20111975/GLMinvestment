@@ -71831,3 +71831,47 @@ Stage Summary:
 - 🟡 1 wrong direction (ARAB/ARAB_R2) + 4 ambiguous محتاجة قرار يدوي يدوي (source A = canonical).
 - ⏳ المرحلة 4 migration معلّقة (استنى شوية — أمر المالك).
 - ⏳ ألفا تبدأ FRONTEND-CLEANUP-A-2 — المالك بعتلهم (التواصل عبر GitHub).
+Task ID: FRONTEND-CLEANUP-A-2 (Phases 3-4-5)
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — FRONTEND-CLEANUP-A-2: BTC unification + EGX50 change fix + Live screens (flash + polling + re-sort).
+
+Work Log:
+- قرأت agent-ctx/FRONTEND-CLEANUP-A-2-alpha.md (243 سطر — العقد المُحدّث).
+- pull --rebase: دمج 15 commits (جيمي BRAVO-RADAR-CLASSIFY + docs + fixes). HEAD=7810199.
+- قرأت Jimmy's patterns: UnifiedTable (useMemo+useCallback+memo) + useVisibilityAwarePolling (موجود في hooks/).
+
+Phase 3 (BTC canonical source unify):
+- Problem: /api/crypto/coins بيقرأ من Binance API (BTC=82318) بينما /api/data-engine/crypto بيقرأ من data_engine.db.crypto_prices (BTC=81119).
+- Fix: /api/crypto/coins دلوقتي بـ يقرأ من data_engine.db.crypto_prices (canonical) عبر getLatestCryptoPrices(). Rule 73 SINGLE-DISPLAY-SOURCE.
+- Response shape محفوظ ({ success, all_cryptos: [...] }).
+
+Phase 4 (EGX50 change math):
+- Problem: fetchEGXIndices بـ read change مباشرة من DB (القيمة -149.75 غلط، المفروض +2024.46).
+- Fix: أضفت data integrity guard في fetchEGXIndices: لو value + previous_close موجودين → recompute change = value - previous_close + change_percent = (change/previous_close)*100. لو الـ stored مختلف > 1 وحدة → استخدم computed. ده basic data integrity (مش Rule 20 violation).
+
+Phase 5 (Live screens — flash + polling):
+- New components in src/components/shared/ui/:
+  * DeltaBadge.tsx: بادج +/- % مع لون + سهم (memo'd).
+  * LiquidityFlashCell.tsx: flash green/red لما السيولة تتغير + سهم + animate-pulse (memo'd).
+- Updated FlashingPriceCell.tsx: design tokens (text-profit/text-loss بدل emerald/rose).
+- New hook: src/hooks/use-previous-value.ts (tracks prev value + direction + delta).
+- LiquidityRadarView: 
+  * wired useVisibilityAwarePolling (60s during EGX session, visibility-aware).
+  * عمود السعر → FlashingPriceCell (flash on price change).
+  * عمود الـ flow → LiquidityFlashCell (flash green/red on liquidity change).
+- StocksView:
+  * عمود السعر → FlashingPriceCell (card + row views).
+- MarketPulseWidget: already has useVisibilityAwarePolling (Jimmy).
+
+Phase 6 (verification):
+- lint: exit 0 ✅.
+- browser: / بترندر (HTTP 200, title صح, bodyLen=1865, hasError=false).
+- BTC + EGX50 curl: data_engine.db + market_indices مش موجودين في sandbox → empty response (code صحيح، data backend concern).
+
+Stage Summary:
+- ✅ Phase 3: BTC canonical source unified (data_engine.db.crypto_prices).
+- ✅ Phase 4: EGX50 change math guard (recompute if stored != value-prev_close).
+- ✅ Phase 5: Live screens — LiquidityRadarView polling + FlashingPriceCell + LiquidityFlashCell. StocksView FlashingPriceCell. DeltaBadge + LiquidityFlashCell new components.
+- ✅ lint 0. ✅ browser renders.
+- ⚠️ data_engine.db + market_indices table مش موجودين في sandbox (backend/owner concern).
+- 🔁 push: المالك رفع الـ gate. هـ commit + push.

@@ -2,6 +2,11 @@
 
 import React, { useEffect, useRef, useState, memo } from 'react';
 
+/**
+ * FlashingPriceCell — BLUEPRINT Phase 5: design tokens (profit/loss بدل emerald/rose).
+ * بـ يـ flash أخضر/أحمر لما السعر يتغير + سهم صعود/هبوط.
+ * Pattern: memo + useRef + useState (Jimmy's UnifiedTable style).
+ */
 export interface FlashingPriceCellProps {
   price: number | null | undefined;
   className?: string;
@@ -51,19 +56,20 @@ export const FlashingPriceCell = memo(function FlashingPriceCell({
   const isUp = flash === 'up';
   const isDown = flash === 'down';
 
+  // BLUEPRINT Phase 5: design tokens (text-profit/text-loss) بدل direct palette.
   return (
     <span
       className={`inline-flex items-center justify-end gap-1 font-mono tabular-nums text-xs md:text-sm transition-all duration-300 rounded px-1.5 py-0.5 ${
         isUp
-          ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/50 font-bold shadow-sm scale-105'
+          ? 'bg-profit/20 text-profit ring-1 ring-profit/50 font-bold shadow-sm scale-105'
           : isDown
-          ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/50 font-bold shadow-sm scale-105'
+          ? 'bg-loss/20 text-loss ring-1 ring-loss/50 font-bold shadow-sm scale-105'
           : 'text-foreground font-semibold'
       } ${className}`}
       title={isUp ? 'ارتفع السعر للتو' : isDown ? 'انخفض السعر للتو' : undefined}
     >
-      {isUp && <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold animate-pulse">▲</span>}
-      {isDown && <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold animate-pulse">▼</span>}
+      {isUp && <span className="text-[10px] text-profit font-bold animate-pulse">▲</span>}
+      {isDown && <span className="text-[10px] text-loss font-bold animate-pulse">▼</span>}
       <span>{format(price)}</span>
     </span>
   );

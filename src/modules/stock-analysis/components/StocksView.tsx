@@ -14,6 +14,7 @@ import { cn, safeNum } from '@/lib/utils';
 // الحل: نعرض الـ signal الصريح من الـ DB (ولو NULL → "—").
 import { signalAr } from '@/lib/canonical-signal';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
+import { FlashingPriceCell } from '@/components/shared/FlashingPriceCell';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -488,12 +489,10 @@ const StockCard = memo(function StockCard({
           </div>
         </div>
 
-        {/* Price + Change */}
+        {/* Price + Change — BLUEPRINT Phase 5: FlashingPriceCell */}
         <div className="flex items-end justify-between mb-3">
           <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight">
-              {safeNum(stock.current_price).toFixed(2)}
-            </p>
+            <FlashingPriceCell price={safeNum(stock.current_price) || null} className="text-2xl font-bold tabular-nums tracking-tight" />
             <p className="text-[10px] text-muted-foreground">{stock.market === 'CRYPTO' ? 'دولار' : 'جنيه مصري'}</p>
           </div>
           <div
@@ -614,9 +613,7 @@ const MobileStockRow = memo(function MobileStockRow({
           <span className="text-[11px] text-muted-foreground">{stock.sector}</span>
         </div>
         <div className="text-left flex-shrink-0">
-          <p className="font-bold text-sm tabular-nums">
-            {safeNum(stock.current_price).toFixed(2)}
-          </p>
+          <FlashingPriceCell price={safeNum(stock.current_price) || null} className="font-bold text-sm" />
           <p
             className={cn(
               'text-xs font-medium tabular-nums flex items-center gap-0.5 justify-end',

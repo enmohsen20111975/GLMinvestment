@@ -34,7 +34,9 @@ import { useSession } from 'next-auth/react';
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library
-import { FlowPhaseTag, UnifiedEmptyState } from '@/components/shared/ui';
+import { FlowPhaseTag, UnifiedEmptyState, LiquidityFlashCell } from '@/components/shared/ui';
+import { FlashingPriceCell } from '@/components/shared/FlashingPriceCell';
+import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 
 // ============================================================================
 // Types
@@ -232,6 +234,15 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // BLUEPRINT Phase 5: Live polling — كل 60 ثانية خلال جلسة EGX (visibility-aware).
+  // بـ re-fetch + re-sort لو السيولة اتغيرت. ما بـ re-renderش غير الـ rows اللي اتغيرت.
+  useVisibilityAwarePolling(
+    () => { fetchData(); },
+    60_000, // 60s during market session
+    [market],
+    { market, allowOffMarket: false }
+  );
+
   // ─── TASK-ALPHA-C: client-side bucket + inactive filtering + pagination ───
   const filteredStocks = React.useMemo(() => {
     const list = data?.stocks ?? [];
@@ -284,10 +295,9 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       align: 'center',
       sortValue: (row) => row.current_price ?? 0,
       filterValue: (row) => fmtPrice(row.current_price),
+      // BLUEPRINT Phase 5: FlashingPriceCell — flash green/red لما السعر يتغير.
       render: (row) => (
-        <span className="font-mono tabular-nums font-semibold text-foreground">
-          {fmtPrice(row.current_price)}
-        </span>
+        <FlashingPriceCell price={row.current_price ?? null} />
       ),
     },
     {
@@ -327,15 +337,10 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
       align: 'center',
       sortValue: (row) => row.whale?.net_flow_egp ?? 0,
       filterValue: (row) => fmtFlow(row.whale?.net_flow_egp),
-      render: (row) => {
-        const flow = row.whale?.net_flow_egp;
-        const isPositive = (flow ?? 0) >= 0;
-        return (
-          <span className={cn('font-mono tabular-nums font-bold', isPositive ? 'text-profit' : 'text-loss')}>
-            {fmtFlow(flow)}
-          </span>
-        );
-      },
+      // BLUEPRINT Phase 5: LiquidityFlashCell — flash green/red لما السيولة تتغير.
+      render: (row) => (
+        <LiquidityFlashCell value={row.whale?.net_flow_egp ?? null} />
+      ),
     },
     {
       key: 'phase',
