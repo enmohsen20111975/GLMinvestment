@@ -68,7 +68,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import {
   ChevronUp, ChevronDown, ChevronsUpDown, Inbox, Filter, X, Plus,
   Pin, GripVertical, Save, Download, Search, Calculator, Trash2, ListFilter, Columns3,
-  ArrowUpDown, MoveHorizontal,
+  ArrowUpDown, MoveHorizontal, Pencil, Check,
 } from 'lucide-react';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -475,6 +475,7 @@ export function UnifiedTable<T extends object>({
   // Formula dialog state
   const [formulaName, setFormulaName] = useState('');
   const [formulaText, setFormulaText] = useState('');
+  const [editingCalcId, setEditingCalcId] = useState<string | null>(null);
   // Column picker search + drag state
   const [columnPickerSearch, setColumnPickerSearch] = useState('');
   const [draggedColKey, setDraggedColKey] = useState<string | null>(null);
@@ -1256,7 +1257,21 @@ export function UnifiedTable<T extends object>({
     });
   }, [formulaText]);
 
-  // ─── (Task 34-A) Save calculated column ────────────────────────────────
+  // ─── (Task 34-A) Start/Cancel editing calculated column ─────────────────
+  const startEditCalculatedColumn = useCallback((col: CalculatedColumn) => {
+    setEditingCalcId(col.id);
+    setFormulaName(col.name);
+    setFormulaText(col.formula);
+    setShowCalcDialog(true);
+  }, []);
+
+  const cancelEditCalculatedColumn = useCallback(() => {
+    setEditingCalcId(null);
+    setFormulaName('');
+    setFormulaText('');
+  }, []);
+
+  // ─── (Task 34-A) Save calculated column (create or update) ─────────────
   const saveCalculatedColumn = useCallback(() => {
     const name = formulaName.trim();
     const formula = formulaText.trim();
@@ -1266,21 +1281,31 @@ export function UnifiedTable<T extends object>({
       // surface error in UI (live preview already shows it)
       return;
     }
-    const id = `calc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    setCalculatedColumns(prev => [...prev, { id, name, formula }]);
+    if (editingCalcId) {
+      setCalculatedColumns(prev => prev.map(c => (c.id === editingCalcId ? { ...c, name, formula } : c)));
+    } else {
+      const id = `calc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      setCalculatedColumns(prev => [...prev, { id, name, formula }]);
+    }
+    setEditingCalcId(null);
     setFormulaName('');
     setFormulaText('');
     setShowCalcDialog(false);
-  }, [formulaName, formulaText]);
+  }, [formulaName, formulaText, editingCalcId]);
 
   const deleteCalculatedColumn = useCallback((id: string) => {
     setCalculatedColumns(prev => prev.filter(c => c.id !== id));
+    if (editingCalcId === id) {
+      setEditingCalcId(null);
+      setFormulaName('');
+      setFormulaText('');
+    }
     setPinnedColumns(prev => {
       const next = new Set(prev);
       next.delete(id);
       return next;
     });
-  }, []);
+  }, [editingCalcId]);
 
   // ─── (Task 34-A) Preset save/load/delete ──────────────────────────────
   const savePreset = useCallback(() => {
@@ -1570,7 +1595,12 @@ export function UnifiedTable<T extends object>({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowCalcDialog(true)}
+                onClick={() => {
+                  setEditingCalcId(null);
+                  setFormulaName('');
+                  setFormulaText('');
+                  setShowCalcDialog(true);
+                }}
                 className="h-7 text-xs gap-1"
                 title="إنشاء عمود بمعادلة مخصصة (Excel-style)"
               >
@@ -2033,6 +2063,21 @@ export function UnifiedTable<T extends object>({
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.headerAr || col.header}
+                      {/* (Task 34-A) Calculated column edit shortcut in header */}
+                      {String(col.key).startsWith('calc_') && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const target = calculatedColumns.find(c => c.id === String(col.key));
+                            if (target) startEditCalculatedColumn(target);
+                          }}
+                          className="inline-flex items-center justify-center w-4 h-4 rounded text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/15 transition-colors"
+                          title="تعديل صيغة المعادلة"
+                        >
+                          <Pencil className="w-2.5 h-2.5" />
+                        </button>
+                      )}
                       {col.sortable !== false && (
                         <span className="inline-flex items-center gap-0.5">
                           {isActiveSort ? (
@@ -2380,19 +2425,44 @@ export function UnifiedTable<T extends object>({
 
       {/* ─── (Task 34-A) Calculated Column Dialog ─── */}
       {excelGrid && (
-        <Dialog open={showCalcDialog} onOpenChange={setShowCalcDialog}>
+        <Dialog open={showCalcDialog} onOpenChange={(open) => {
+          setShowCalcDialog(open);
+          if (!open) {
+            setEditingCalcId(null);
+            setFormulaName('');
+            setFormulaText('');
+          }
+        }}>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-emerald-600" />
-                إنشاء عمود بمعادلة
+                {editingCalcId ? 'تعديل عمود بمعادلة' : 'إنشاء عمود بمعادلة'}
               </DialogTitle>
               <DialogDescription>
-                اكتب معادلة تستخدم متغيرات الحقول بين أقواس معقوفة. مثال: <code dir="ltr" className="bg-muted px-1 rounded font-mono text-[10px]">{'({current_price} - {support_level}) / {current_price} * 100'}</code>
+                {editingCalcId
+                  ? 'عدّل اسم العمود أو صيغة المعادلة وسيتم تحديث الحساب فوراً.'
+                  : <>اكتب معادلة تستخدم متغيرات الحقول بين أقواس معقوفة. مثال: <code dir="ltr" className="bg-muted px-1 rounded font-mono text-[10px]">{'({current_price} - {support_level}) / {current_price} * 100'}</code></>}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3">
+              {/* Active edit mode alert banner */}
+              {editingCalcId && (
+                <div className="flex items-center justify-between px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                    وضع التعديل للعمود: <strong>{formulaName || 'المحدد'}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={cancelEditCalculatedColumn}
+                    className="text-[11px] font-semibold underline hover:text-amber-900 dark:hover:text-amber-200"
+                  >
+                    إلغاء والإنشاء كعمود جديد
+                  </button>
+                </div>
+              )}
               {/* Name input */}
               <div className="space-y-1">
                 <Label htmlFor="calc-name" className="text-xs">اسم العمود</Label>
@@ -2527,35 +2597,89 @@ export function UnifiedTable<T extends object>({
               {/* Existing calculated columns */}
               {calculatedColumns.length > 0 && (
                 <div className="space-y-1">
-                  <Label className="text-xs">الأعمدة المحسوبة الموجودة</Label>
-                  <div className="space-y-1 max-h-24 overflow-y-auto">
-                    {calculatedColumns.map(c => (
-                      <div key={c.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border bg-background">
-                        <Calculator className="w-3 h-3 text-emerald-600 shrink-0" />
-                        <span className="text-xs font-semibold truncate flex-1">{c.name}</span>
-                        <code dir="ltr" className="text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">{c.formula}</code>
-                        <button
-                          onClick={() => deleteCalculatedColumn(c.id)}
-                          className="text-rose-500 hover:text-rose-700 p-0.5 shrink-0"
-                          title="حذف"
+                  <Label className="text-xs">الأعمدة المحسوبة الموجودة (اضغط للتعديل)</Label>
+                  <div className="space-y-1 max-h-28 overflow-y-auto">
+                    {calculatedColumns.map(c => {
+                      const isEditingThis = editingCalcId === c.id;
+                      return (
+                        <div
+                          key={c.id}
+                          className={cn(
+                            'flex items-center gap-2 px-2 py-1.5 rounded border transition-colors',
+                            isEditingThis
+                              ? 'border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                              : 'border-border bg-background hover:bg-muted/40'
+                          )}
                         >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
+                          <Calculator className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <button
+                            type="button"
+                            onClick={() => startEditCalculatedColumn(c)}
+                            className="text-xs font-semibold truncate flex-1 text-right hover:underline"
+                            title="اضغط لتعديل المعادلة"
+                          >
+                            {c.name}
+                          </button>
+                          <code dir="ltr" className="text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">{c.formula}</code>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => startEditCalculatedColumn(c)}
+                              className={cn(
+                                'p-1 rounded transition-colors',
+                                isEditingThis
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                              )}
+                              title="تعديل المعادلة"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteCalculatedColumn(c.id)}
+                              className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-500/10 transition-colors"
+                              title="حذف"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCalcDialog(false)}>إلغاء</Button>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCalcDialog(false);
+                  setEditingCalcId(null);
+                  setFormulaName('');
+                  setFormulaText('');
+                }}
+              >
+                إلغاء
+              </Button>
               <Button
                 onClick={saveCalculatedColumn}
                 disabled={!formulaName.trim() || !formulaText.trim() || (formulaValidation != null && !formulaValidation.ok)}
+                className={editingCalcId ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : undefined}
               >
-                <Plus className="w-3.5 h-3.5" />
-                إضافة العمود
+                {editingCalcId ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    حفظ التعديل
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    إضافة العمود
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
