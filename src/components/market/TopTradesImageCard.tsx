@@ -14,15 +14,15 @@
  */
 
 export {
-  StockLeagueImageCard,
-  type TopTrade,
+ StockLeagueImageCard,
+ type TopTrade,
 } from '@/components/market/StockLeagueImageCard';
 
 import { StockLeagueImageCard } from '@/components/market/StockLeagueImageCard';
 
 export interface TopTradesImageCardProps {
-  trades: import('@/components/market/StockLeagueImageCard').TopTrade[];
-  monthName?: string;
+ trades: import('@/components/market/StockLeagueImageCard').TopTrade[];
+ monthName?: string;
 }
 
 /**
@@ -30,13 +30,13 @@ export interface TopTradesImageCardProps {
  * via the canonical StockLeagueImageCard in `mode='trades'`.
  */
 export function TopTradesImageCard({ trades, monthName }: TopTradesImageCardProps) {
-  return (
-    <StockLeagueImageCard
-      mode="trades"
-      trades={trades}
-      monthName={monthName}
-    />
-  );
+ return (
+ <StockLeagueImageCard
+ mode="trades"
+ trades={trades}
+ monthName={monthName}
+ />
+ );
 }
 
 export default TopTradesImageCard;

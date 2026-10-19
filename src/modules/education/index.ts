@@ -1,10 +1,10 @@
 // src/modules/education/index.ts
 // Public API for the education module.
 // Rule 63 (NO-NEW-SCREENS-FILES — Education Unification 2026-10-01):
-//   LearningView + learning-content.ts + learning-store.ts archived to
-//   archive/education-duplicate-2026-10-01/. Single canonical education
-//   screen is now #academy (AcademyView) which already hosts the
-//   encyclopedia + 3 simulators + LessonPDFExporter.
+// LearningView + learning-content.ts + learning-store.ts archived to
+// archive/education-duplicate-2026-10-01/. Single canonical education
+// screen is now #academy (AcademyView) which already hosts the
+// encyclopedia + 3 simulators + LessonPDFExporter.
 
 // Reusable visual primitives (still consumed by AcademyEncyclopedia + CryptoLearningView)
 export { MathText } from './components/MathRenderer';

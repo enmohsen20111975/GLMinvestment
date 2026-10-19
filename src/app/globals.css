@@ -53,6 +53,9 @@
   --loss-foreground: 0 0% 100%;
   --whale: 189 95% 43%;           /* Cyan-500 #06b6d4 — institutional liquidity */
   --whale-foreground: 0 0% 100%;
+  /* Amendment A1: info token — للأزرار المعلوماتية (مش محدود بقائمة مغلقة) */
+  --info: 217 91% 60%;            /* Blue-500 #3b82f6 — informational */
+  --info-foreground: 0 0% 100%;
   --sidebar: 160 20% 98%;
   --sidebar-foreground: 160 5% 10%;
   --sidebar-primary: 160 84% 39%;
@@ -104,6 +107,9 @@
   --loss-foreground: 0 0% 100%;
   --whale: 189 95% 55%;
   --whale-foreground: 0 0% 100%;
+  /* Amendment A1: info token (dark mode) */
+  --info: 217 91% 65%;
+  --info-foreground: 0 0% 100%;
   --sidebar: 160 5% 8%;
   --sidebar-foreground: 160 5% 95%;
   --sidebar-primary: 160 84% 50%;

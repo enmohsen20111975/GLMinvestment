@@ -16,60 +16,60 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { ShareButton } from '@/modules/publishing/components/ShareButton';
 import {
-  Sparkles,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  RefreshCw,
-  AlertCircle,
-  Target,
-  ShieldAlert,
-  Lightbulb,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle,
-  Zap,
+ Sparkles,
+ TrendingUp,
+ TrendingDown,
+ Minus,
+ RefreshCw,
+ AlertCircle,
+ Target,
+ ShieldAlert,
+ Lightbulb,
+ ChevronDown,
+ ChevronUp,
+ CheckCircle,
+ Zap,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
-/*  Types - Python MasterAnalyzer Output                               */
+/* Types - Python MasterAnalyzer Output */
 /* ------------------------------------------------------------------ */
 
 interface PythonAnalysis {
-  ticker: string;
-  signal: 'STRONG_BUY' | 'BUY' | 'ACCUMULATE' | 'HOLD' | 'SELL' | 'STRONG_SELL';
-  signal_ar: string;
-  master_score: number;
-  confidence: number;
-  is_tradeable: boolean;
-  risk_profile?: {
-    entry_price?: number;
-    entry_low?: number;
-    entry_high?: number;
-    target_price?: number;
-    stop_loss_price?: number;
-    risk_reward_ratio?: number;
-    position_size_pct?: number;
-  };
-  technical_score?: number;
-  fundamental_score?: number;
-  momentum_score?: number;
-  risk_score?: number;
-  indicators?: {
-    rsi?: number;
-    macd_signal?: string;
-    bb_position?: string;
-    trend?: string;
-  };
-  reasons?: string[];
-  warnings?: string[];
-  analyzed_at?: string;
+ ticker: string;
+ signal: 'STRONG_BUY' | 'BUY' | 'ACCUMULATE' | 'HOLD' | 'SELL' | 'STRONG_SELL';
+ signal_ar: string;
+ master_score: number;
+ confidence: number;
+ is_tradeable: boolean;
+ risk_profile?: {
+ entry_price?: number;
+ entry_low?: number;
+ entry_high?: number;
+ target_price?: number;
+ stop_loss_price?: number;
+ risk_reward_ratio?: number;
+ position_size_pct?: number;
+ };
+ technical_score?: number;
+ fundamental_score?: number;
+ momentum_score?: number;
+ risk_score?: number;
+ indicators?: {
+ rsi?: number;
+ macd_signal?: string;
+ bb_position?: string;
+ trend?: string;
+ };
+ reasons?: string[];
+ warnings?: string[];
+ analyzed_at?: string;
 }
 
 interface AIAnalysisWidgetProps {
-  ticker: string;
-  stockName?: string;
-  currentPrice?: number;
+ ticker: string;
+ stockName?: string;
+ currentPrice?: number;
 }
 
 // Cache for analysis (5 minutes TTL)
@@ -77,345 +77,345 @@ const analysisCache = new Map<string, { data: PythonAnalysis; timestamp: number 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const SIGNAL_CONFIG = {
-  'STRONG_BUY': { label: 'شراء قوي', color: 'bg-profit', textColor: 'text-profit', trend: 'bullish' },
-  'BUY': { label: 'شراء', color: 'bg-profit', textColor: 'text-profit', trend: 'bullish' },
-  'ACCUMULATE': { label: 'تجميع', color: 'bg-warning', textColor: 'text-warning', trend: 'bullish' },
-  'HOLD': { label: 'احتفاظ', color: 'bg-warning', textColor: 'text-warning', trend: 'neutral' },
-  'SELL': { label: 'بيع', color: 'bg-loss', textColor: 'text-loss', trend: 'bearish' },
-  'STRONG_SELL': { label: 'بيع قوي', color: 'bg-loss', textColor: 'text-loss', trend: 'bearish' },
+ 'STRONG_BUY': { label: 'شراء قوي', color: 'bg-profit', textColor: 'text-profit', trend: 'bullish' },
+ 'BUY': { label: 'شراء', color: 'bg-profit', textColor: 'text-profit', trend: 'bullish' },
+ 'ACCUMULATE': { label: 'تجميع', color: 'bg-warning', textColor: 'text-warning', trend: 'bullish' },
+ 'HOLD': { label: 'احتفاظ', color: 'bg-warning', textColor: 'text-warning', trend: 'neutral' },
+ 'SELL': { label: 'بيع', color: 'bg-loss', textColor: 'text-loss', trend: 'bearish' },
+ 'STRONG_SELL': { label: 'بيع قوي', color: 'bg-loss', textColor: 'text-loss', trend: 'bearish' },
 };
 
 export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysisWidgetProps) {
-  const [analysis, setAnalysis] = useState<PythonAnalysis | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
-  const shareCardRef = useRef<HTMLDivElement>(null);
+ const [analysis, setAnalysis] = useState<PythonAnalysis | null>(null);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState<string | null>(null);
+ const [expanded, setExpanded] = useState(false);
+ const shareCardRef = useRef<HTMLDivElement>(null);
 
-  const fetchAnalysis = useCallback(async (forceRefresh = false) => {
-    if (!ticker) return;
+ const fetchAnalysis = useCallback(async (forceRefresh = false) => {
+ if (!ticker) return;
 
-    // Check cache first
-    const cached = analysisCache.get(ticker);
-    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      setAnalysis(cached.data);
-      setLoading(false);
-      return;
-    }
+ // Check cache first
+ const cached = analysisCache.get(ticker);
+ if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
+ setAnalysis(cached.data);
+ setLoading(false);
+ return;
+ }
 
-    setLoading(true);
-    setError(null);
+ setLoading(true);
+ setError(null);
 
-    try {
-      // Call Python MasterAnalyzer - THE ONLY SOURCE OF TRUTH
-      const response = await fetch(`/api/python/v2/cached-analysis/${ticker}?XTransformPort=8010`);
+ try {
+ // Call Python MasterAnalyzer - THE ONLY SOURCE OF TRUTH
+ const response = await fetch(`/api/python/v2/cached-analysis/${ticker}?XTransformPort=8010`);
 
-      if (!response.ok) {
-        throw new Error('فشل تحميل التحليل');
-      }
+ if (!response.ok) {
+ throw new Error('فشل تحميل التحليل');
+ }
 
-      const data = await response.json();
+ const data = await response.json();
 
-      if (data.success && data.data) {
-        setAnalysis(data.data);
-        analysisCache.set(ticker, { data: data.data, timestamp: Date.now() });
-      } else {
-        // If no cached analysis, try to trigger a fresh one
-        try {
-          const analyzeResponse = await fetch(`/api/python/v2/analyze/${ticker}?XTransformPort=8010`);
-          const analyzeData = await analyzeResponse.json();
-          
-          if (analyzeData.success && analyzeData.data) {
-            setAnalysis(analyzeData.data);
-            analysisCache.set(ticker, { data: analyzeData.data, timestamp: Date.now() });
-          } else {
-            setError('لا يوجد تحليل متاح لهذا السهم حالياً.');
-            setAnalysis(null);
-          }
-        } catch (analyzeErr) {
-          console.error('Failed to trigger analysis:', analyzeErr);
-          setError('فشل في تشغيل التحليل.');
-          setAnalysis(null);
-        }
-      }
-    } catch (err) {
-      console.error('Analysis error:', err);
-      setError('تعذر تحميل التحليل. حاول مرة أخرى.');
-      setAnalysis(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [ticker]);
+ if (data.success && data.data) {
+ setAnalysis(data.data);
+ analysisCache.set(ticker, { data: data.data, timestamp: Date.now() });
+ } else {
+ // If no cached analysis, try to trigger a fresh one
+ try {
+ const analyzeResponse = await fetch(`/api/python/v2/analyze/${ticker}?XTransformPort=8010`);
+ const analyzeData = await analyzeResponse.json();
+ 
+ if (analyzeData.success && analyzeData.data) {
+ setAnalysis(analyzeData.data);
+ analysisCache.set(ticker, { data: analyzeData.data, timestamp: Date.now() });
+ } else {
+ setError('لا يوجد تحليل متاح لهذا السهم حالياً.');
+ setAnalysis(null);
+ }
+ } catch (analyzeErr) {
+ console.error('Failed to trigger analysis:', analyzeErr);
+ setError('فشل في تشغيل التحليل.');
+ setAnalysis(null);
+ }
+ }
+ } catch (err) {
+ console.error('Analysis error:', err);
+ setError('تعذر تحميل التحليل. حاول مرة أخرى.');
+ setAnalysis(null);
+ } finally {
+ setLoading(false);
+ }
+ }, [ticker]);
 
-  useEffect(() => {
-    fetchAnalysis();
-  }, [fetchAnalysis]);
+ useEffect(() => {
+ fetchAnalysis();
+ }, [fetchAnalysis]);
 
-  const getSignalConfig = () => {
-    if (!analysis) return null;
-    return SIGNAL_CONFIG[analysis.signal] || SIGNAL_CONFIG['HOLD'];
-  };
+ const getSignalConfig = () => {
+ if (!analysis) return null;
+ return SIGNAL_CONFIG[analysis.signal] || SIGNAL_CONFIG['HOLD'];
+ };
 
-  const getTrendIcon = () => {
-    const config = getSignalConfig();
-    if (!config) return <Minus className="w-5 h-5" />;
-    
-    switch (config.trend) {
-      case 'bullish':
-        return <TrendingUp className="w-5 h-5 text-profit" />;
-      case 'bearish':
-        return <TrendingDown className="w-5 h-5 text-loss" />;
-      default:
-        return <Minus className="w-5 h-5 text-warning" />;
-    }
-  };
+ const getTrendIcon = () => {
+ const config = getSignalConfig();
+ if (!config) return <Minus className="w-5 h-5" />;
+ 
+ switch (config.trend) {
+ case 'bullish':
+ return <TrendingUp className="w-5 h-5 text-profit" />;
+ case 'bearish':
+ return <TrendingDown className="w-5 h-5 text-loss" />;
+ default:
+ return <Minus className="w-5 h-5 text-warning" />;
+ }
+ };
 
-  if (loading) {
-    return (
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary animate-pulse" />
-            التحليل الذكي للسهم
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 space-y-3">
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
-          <div className="flex gap-2">
-            <Skeleton className="h-6 w-20" />
-            <Skeleton className="h-6 w-16" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+ if (loading) {
+ return (
+ <Card className="overflow-hidden">
+ <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
+ <CardTitle className="text-base flex items-center gap-2">
+ <Zap className="w-5 h-5 text-primary animate-pulse" />
+ التحليل الذكي للسهم
+ </CardTitle>
+ </CardHeader>
+ <CardContent className="pt-4 space-y-3">
+ <Skeleton className="h-4 w-3/4" />
+ <Skeleton className="h-4 w-1/2" />
+ <div className="flex gap-2">
+ <Skeleton className="h-6 w-20" />
+ <Skeleton className="h-6 w-16" />
+ </div>
+ </CardContent>
+ </Card>
+ );
+ }
 
-  // Show error if no analysis
-  if (error || !analysis) {
-    return (
-      <Card className="overflow-hidden border-warning bg-warning dark:bg-warning/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2 text-warning">
-            <AlertCircle className="w-5 h-5" />
-            التحليل الذكي للسهم
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <p className="text-sm text-muted-foreground mb-3">
-            {error || 'لا يوجد تحليل متاح لهذا السهم حالياً.'}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchAnalysis(true)}
-            className="gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            طلب التحليل
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+ // Show error if no analysis
+ if (error || !analysis) {
+ return (
+ <Card className="overflow-hidden border-warning bg-warning /10">
+ <CardHeader className="pb-2">
+ <CardTitle className="text-base flex items-center gap-2 text-warning">
+ <AlertCircle className="w-5 h-5" />
+ التحليل الذكي للسهم
+ </CardTitle>
+ </CardHeader>
+ <CardContent className="pt-4">
+ <p className="text-sm text-muted-foreground mb-3">
+ {error || 'لا يوجد تحليل متاح لهذا السهم حالياً.'}
+ </p>
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={() => fetchAnalysis(true)}
+ className="gap-2"
+ >
+ <RefreshCw className="w-4 h-4" />
+ طلب التحليل
+ </Button>
+ </CardContent>
+ </Card>
+ );
+ }
 
-  const signalConfig = getSignalConfig();
+ const signalConfig = getSignalConfig();
 
-  return (
-    <Card className="overflow-hidden border-primary/20" ref={shareCardRef}>
-      <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" />
-            التحليل الذكي للسهم
-            <Badge variant="outline" className="text-[10px] font-normal">
-              {analysis.confidence?.toFixed(0) || '--'}% ثقة
-            </Badge>
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <ShareButton
-              targetRef={shareCardRef}
-              title={`تحليل ${stockName || ticker}`}
-              description={`إشارة: ${analysis?.signal_ar || 'غير محدد'} - الدرجة: ${analysis?.master_score?.toFixed(0) || '--'}`}
-              variant="ghost"
-              size="icon"
-              customTrigger={
-                <Button variant="ghost" size="icon" className="h-8 w-8" title="مشاركة">
-                  <Sparkles className="w-4 h-4" />
-                </Button>
-              }
-            />
-            {analysis.is_tradeable && (
-              <Badge variant="outline" className="text-xs text-profit border-profit/50">
-                <CheckCircle className="w-3 h-3 ml-1" />
-                قابل للتداول
-              </Badge>
-            )}
-            {/* تم إزالة زرار "تحديث التحليل" — كان بـ يولّد تحليل عشوائي في كل مرة */}
-            {/* التحليل بـ يتحدّث تلقائياً من V40.2 — مش محتاج تدخل يدوي */}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-4">
-        {/* Score & Signal */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className={cn("w-14 h-14 rounded-full flex items-center justify-center", signalConfig?.color)}>
-            <span className="text-foreground text-xl font-bold">{(analysis.master_score ?? 0).toFixed(0)}</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              {getTrendIcon()}
-              <span className="text-sm font-medium">{signalConfig?.trend === 'bullish' ? 'صعودي' : signalConfig?.trend === 'bearish' ? 'هبوطي' : 'محايد'}</span>
-            </div>
-            <Badge className={cn('text-sm px-3 py-1 mt-1', signalConfig?.color)}>
-              {analysis.signal_ar || signalConfig?.label}
-            </Badge>
-          </div>
-        </div>
+ return (
+ <Card className="overflow-hidden border-primary/20" ref={shareCardRef}>
+ <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
+ <div className="flex items-center justify-between">
+ <CardTitle className="text-base flex items-center gap-2">
+ <Zap className="w-5 h-5 text-primary" />
+ التحليل الذكي للسهم
+ <Badge variant="outline" className="text-xs font-normal">
+ {analysis.confidence?.toFixed(0) || '--'}% ثقة
+ </Badge>
+ </CardTitle>
+ <div className="flex items-center gap-2">
+ <ShareButton
+ targetRef={shareCardRef}
+ title={`تحليل ${stockName || ticker}`}
+ description={`إشارة: ${analysis?.signal_ar || 'غير محدد'} - الدرجة: ${analysis?.master_score?.toFixed(0) || '--'}`}
+ variant="ghost"
+ size="icon"
+ customTrigger={
+ <Button variant="ghost" size="icon" className="h-8 w-8" title="مشاركة">
+ <Sparkles className="w-4 h-4" />
+ </Button>
+ }
+ />
+ {analysis.is_tradeable && (
+ <Badge variant="outline" className="text-xs text-profit border-profit/50">
+ <CheckCircle className="w-3 h-3 ml-1" />
+ قابل للتداول
+ </Badge>
+ )}
+ {/* تم إزالة زرار "تحديث التحليل" — كان بـ يولّد تحليل عشوائي في كل مرة */}
+ {/* التحليل بـ يتحدّث تلقائياً من V40.2 — مش محتاج تدخل يدوي */}
+ </div>
+ </div>
+ </CardHeader>
+ 
+ <CardContent className="pt-4">
+ {/* Score & Signal */}
+ <div className="flex items-center gap-4 mb-4">
+ <div className={cn("w-14 h-14 rounded-full flex items-center justify-center", signalConfig?.color)}>
+ <span className="text-foreground text-xl font-bold">{(analysis.master_score ?? 0).toFixed(0)}</span>
+ </div>
+ <div>
+ <div className="flex items-center gap-2">
+ {getTrendIcon()}
+ <span className="text-sm font-medium">{signalConfig?.trend === 'bullish' ? 'صعودي' : signalConfig?.trend === 'bearish' ? 'هبوطي' : 'محايد'}</span>
+ </div>
+ <Badge className={cn('text-sm px-3 py-1 mt-1', signalConfig?.color)}>
+ {analysis.signal_ar || signalConfig?.label}
+ </Badge>
+ </div>
+ </div>
 
-        {/* Risk Profile - Entry, Target, Stop Loss */}
-        {analysis.risk_profile && (
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="bg-muted/50 rounded-lg p-2 text-center">
-              <p className="text-[10px] text-muted-foreground mb-1">منطقة الدخول</p>
-              <p className="text-sm font-bold text-primary">
-                {analysis.risk_profile?.entry_low && analysis.risk_profile?.entry_high
-                  ? `${(analysis.risk_profile?.entry_low ?? 0).toFixed(2)}-${(analysis.risk_profile?.entry_high ?? 0).toFixed(2)}`
-                  : analysis.risk_profile?.entry_price?.toFixed(2) || '--'}
-              </p>
-            </div>
-            <div className="bg-profit dark:bg-profit/20 rounded-lg p-2 text-center">
-              <p className="text-[10px] text-muted-foreground mb-1">الهدف</p>
-              <p className="text-sm font-bold text-profit">
-                {analysis.risk_profile.target_price?.toFixed(2) || '--'}
-              </p>
-            </div>
-            <div className="bg-loss dark:bg-loss/20 rounded-lg p-2 text-center">
-              <p className="text-[10px] text-muted-foreground mb-1">وقف الخسارة</p>
-              <p className="text-sm font-bold text-loss">
-                {analysis.risk_profile.stop_loss_price?.toFixed(2) || '--'}
-              </p>
-            </div>
-          </div>
-        )}
+ {/* Risk Profile - Entry, Target, Stop Loss */}
+ {analysis.risk_profile && (
+ <div className="grid grid-cols-3 gap-2 mb-4">
+ <div className="bg-muted/50 rounded-lg p-2 text-center">
+ <p className="text-xs text-muted-foreground mb-1">منطقة الدخول</p>
+ <p className="text-sm font-bold text-primary">
+ {analysis.risk_profile?.entry_low && analysis.risk_profile?.entry_high
+ ? `${(analysis.risk_profile?.entry_low ?? 0).toFixed(2)}-${(analysis.risk_profile?.entry_high ?? 0).toFixed(2)}`
+ : analysis.risk_profile?.entry_price?.toFixed(2) || '--'}
+ </p>
+ </div>
+ <div className="bg-profit /20 rounded-lg p-2 text-center">
+ <p className="text-xs text-muted-foreground mb-1">الهدف</p>
+ <p className="text-sm font-bold text-profit">
+ {analysis.risk_profile.target_price?.toFixed(2) || '--'}
+ </p>
+ </div>
+ <div className="bg-loss /20 rounded-lg p-2 text-center">
+ <p className="text-xs text-muted-foreground mb-1">وقف الخسارة</p>
+ <p className="text-sm font-bold text-loss">
+ {analysis.risk_profile.stop_loss_price?.toFixed(2) || '--'}
+ </p>
+ </div>
+ </div>
+ )}
 
-        {/* R:R Ratio */}
-        {analysis.risk_profile?.risk_reward_ratio && (
-          <div className="flex items-center justify-center gap-2 mb-4 text-sm">
-            <span className="text-muted-foreground">نسبة المخاطرة/العائد:</span>
-            <Badge variant="outline" className={cn(
-              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-profit border-profit/50' :
-              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-warning border-warning/50' :
-              'text-loss border-loss/50'
-            )}>
-              {(analysis.risk_profile?.risk_reward_ratio ?? 0).toFixed(2)}:1
-            </Badge>
-          </div>
-        )}
+ {/* R:R Ratio */}
+ {analysis.risk_profile?.risk_reward_ratio && (
+ <div className="flex items-center justify-center gap-2 mb-4 text-sm">
+ <span className="text-muted-foreground">نسبة المخاطرة/العائد:</span>
+ <Badge variant="outline" className={cn(
+ (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-profit border-profit/50' :
+ (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-warning border-warning/50' :
+ 'text-loss border-loss/50'
+ )}>
+ {(analysis.risk_profile?.risk_reward_ratio ?? 0).toFixed(2)}:1
+ </Badge>
+ </div>
+ )}
 
-        {/* Expandable Details */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full text-xs text-muted-foreground"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? (
-            <>
-              <ChevronUp className="w-4 h-4 ml-1" />
-              إخفاء التفاصيل
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-4 h-4 ml-1" />
-              عرض التفاصيل
-            </>
-          )}
-        </Button>
+ {/* Expandable Details */}
+ <Button
+ variant="ghost"
+ size="sm"
+ className="w-full text-xs text-muted-foreground"
+ onClick={() => setExpanded(!expanded)}
+ >
+ {expanded ? (
+ <>
+ <ChevronUp className="w-4 h-4 ml-1" />
+ إخفاء التفاصيل
+ </>
+ ) : (
+ <>
+ <ChevronDown className="w-4 h-4 ml-1" />
+ عرض التفاصيل
+ </>
+ )}
+ </Button>
 
-        {expanded && (
-          <div className="mt-4 space-y-4 border-t pt-4">
-            {/* Score Breakdown */}
-            <div>
-              <h4 className="text-xs font-semibold mb-2 flex items-center gap-1">
-                <Target className="w-3.5 h-3.5" />
-                تفصيل الدرجات
-              </h4>
-              <div className="grid grid-cols-4 gap-2">
-                <div className="bg-muted/30 rounded p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground">الفني</p>
-                  <p className={cn("text-xs font-bold", (analysis.technical_score || 50) >= 60 ? "text-profit" : (analysis.technical_score || 50) < 40 ? "text-loss" : "text-warning")}>
-                    {analysis.technical_score?.toFixed(0) || '--'}
-                  </p>
-                </div>
-                <div className="bg-muted/30 rounded p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground">الأساسي</p>
-                  <p className={cn("text-xs font-bold", (analysis.fundamental_score || 50) >= 60 ? "text-profit" : (analysis.fundamental_score || 50) < 40 ? "text-loss" : "text-warning")}>
-                    {analysis.fundamental_score?.toFixed(0) || '--'}
-                  </p>
-                </div>
-                <div className="bg-muted/30 rounded p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground">الزخم</p>
-                  <p className={cn("text-xs font-bold", (analysis.momentum_score || 50) >= 60 ? "text-profit" : (analysis.momentum_score || 50) < 40 ? "text-loss" : "text-warning")}>
-                    {analysis.momentum_score?.toFixed(0) || '--'}
-                  </p>
-                </div>
-                <div className="bg-muted/30 rounded p-2 text-center">
-                  <p className="text-[10px] text-muted-foreground">المخاطر</p>
-                  <p className={cn("text-xs font-bold", (analysis.risk_score || 50) >= 60 ? "text-profit" : (analysis.risk_score || 50) < 40 ? "text-loss" : "text-warning")}>
-                    {analysis.risk_score?.toFixed(0) || '--'}
-                  </p>
-                </div>
-              </div>
-            </div>
+ {expanded && (
+ <div className="mt-4 space-y-4 border-t pt-4">
+ {/* Score Breakdown */}
+ <div>
+ <h4 className="text-xs font-semibold mb-2 flex items-center gap-1">
+ <Target className="w-3.5 h-3.5" />
+ تفصيل الدرجات
+ </h4>
+ <div className="grid grid-cols-4 gap-2">
+ <div className="bg-muted/30 rounded p-2 text-center">
+ <p className="text-xs text-muted-foreground">الفني</p>
+ <p className={cn("text-xs font-bold", (analysis.technical_score || 50) >= 60 ? "text-profit" : (analysis.technical_score || 50) < 40 ? "text-loss" : "text-warning")}>
+ {analysis.technical_score?.toFixed(0) || '--'}
+ </p>
+ </div>
+ <div className="bg-muted/30 rounded p-2 text-center">
+ <p className="text-xs text-muted-foreground">الأساسي</p>
+ <p className={cn("text-xs font-bold", (analysis.fundamental_score || 50) >= 60 ? "text-profit" : (analysis.fundamental_score || 50) < 40 ? "text-loss" : "text-warning")}>
+ {analysis.fundamental_score?.toFixed(0) || '--'}
+ </p>
+ </div>
+ <div className="bg-muted/30 rounded p-2 text-center">
+ <p className="text-xs text-muted-foreground">الزخم</p>
+ <p className={cn("text-xs font-bold", (analysis.momentum_score || 50) >= 60 ? "text-profit" : (analysis.momentum_score || 50) < 40 ? "text-loss" : "text-warning")}>
+ {analysis.momentum_score?.toFixed(0) || '--'}
+ </p>
+ </div>
+ <div className="bg-muted/30 rounded p-2 text-center">
+ <p className="text-xs text-muted-foreground">المخاطر</p>
+ <p className={cn("text-xs font-bold", (analysis.risk_score || 50) >= 60 ? "text-profit" : (analysis.risk_score || 50) < 40 ? "text-loss" : "text-warning")}>
+ {analysis.risk_score?.toFixed(0) || '--'}
+ </p>
+ </div>
+ </div>
+ </div>
 
-            {/* Reasons */}
-            {analysis.reasons && analysis.reasons.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-profit dark:text-profit">
-                  <Lightbulb className="w-3.5 h-3.5" />
-                  أسباب الإشارة
-                </h4>
-                <ul className="space-y-1">
-                  {analysis.reasons.map((reason, i) => (
-                    <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
-                      <CheckCircle className="w-3 h-3 text-profit mt-0.5 shrink-0" />
-                      {reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+ {/* Reasons */}
+ {analysis.reasons && analysis.reasons.length > 0 && (
+ <div>
+ <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-profit ">
+ <Lightbulb className="w-3.5 h-3.5" />
+ أسباب الإشارة
+ </h4>
+ <ul className="space-y-1">
+ {analysis.reasons.map((reason, i) => (
+ <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+ <CheckCircle className="w-3 h-3 text-profit mt-0.5 shrink-0" />
+ {reason}
+ </li>
+ ))}
+ </ul>
+ </div>
+ )}
 
-            {/* Warnings */}
-            {analysis.warnings && analysis.warnings.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-loss dark:text-loss">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  تحذيرات
-                </h4>
-                <ul className="space-y-1">
-                  {analysis.warnings.map((warning, i) => (
-                    <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
-                      <AlertCircle className="w-3 h-3 text-warning mt-0.5 shrink-0" />
-                      {warning}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
+ {/* Warnings */}
+ {analysis.warnings && analysis.warnings.length > 0 && (
+ <div>
+ <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-loss ">
+ <ShieldAlert className="w-3.5 h-3.5" />
+ تحذيرات
+ </h4>
+ <ul className="space-y-1">
+ {analysis.warnings.map((warning, i) => (
+ <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+ <AlertCircle className="w-3 h-3 text-warning mt-0.5 shrink-0" />
+ {warning}
+ </li>
+ ))}
+ </ul>
+ </div>
+ )}
+ </div>
+ )}
 
-        {/* Source Badge */}
-        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Sparkles className="w-3 h-3 text-primary" />
-          <span>التحليل الآلي للسهم</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
+ {/* Source Badge */}
+ <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+ <Sparkles className="w-3 h-3 text-primary" />
+ <span>التحليل الآلي للسهم</span>
+ </div>
+ </CardContent>
+ </Card>
+ );
 }
 
 export default AIAnalysisWidget;

@@ -14,30 +14,30 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import {
-  Search,
-  AlertTriangle,
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Target,
-  Activity,
-  Share2,
-  ShoppingCart,
-  Wallet,
-  Bell,
-  BellRing,
-  Star,
-  Plus,
-  Trash2,
-  Maximize2,
-  Minimize2,
-  ChevronDown,
-  SlidersHorizontal,
-  Image,
-  Download,
-  Loader2,
-  Check,
+ Search,
+ AlertTriangle,
+ RefreshCw,
+ TrendingUp,
+ TrendingDown,
+ BarChart3,
+ Target,
+ Activity,
+ Share2,
+ ShoppingCart,
+ Wallet,
+ Bell,
+ BellRing,
+ Star,
+ Plus,
+ Trash2,
+ Maximize2,
+ Minimize2,
+ ChevronDown,
+ SlidersHorizontal,
+ Image,
+ Download,
+ Loader2,
+ Check,
 } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -51,244 +51,244 @@ import { StockSearchSelector } from '@/components/shared/StockSearchSelector';
 import type { PredictionContext } from './types';
 
 interface OHLCVCandle {
-  time: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
+ time: string;
+ open: number;
+ high: number;
+ low: number;
+ close: number;
+ volume: number;
 }
 
 interface IndicatorPoint {
-  time: string;
-  value: number | null;
+ time: string;
+ value: number | null;
 }
 
 // ── P42-FRONTEND-1: Candle Probability & Stock DNA shapes ────────────────
 interface CandleProbabilities {
-  up_prob: number;
-  dn_prob: number;
-  bias: string;
-  bias_en: string;
-  bias_color: string;
-  bias_emoji: string;
-  prev_candle: string;
-  break_high_0pct: number;
-  break_high_1pct: number;
-  break_high_2pct: number;
-  break_low_0pct: number;
-  break_low_1pct: number;
-  break_low_2pct: number;
-  total_green: number;
-  total_red: number;
-  sample_size: number;
-  confidence: string;
-  prev_high: number;
-  prev_low: number;
-  target_up_1pct: number;
-  target_up_2pct: number;
-  target_dn_1pct: number;
-  target_dn_2pct: number;
+ up_prob: number;
+ dn_prob: number;
+ bias: string;
+ bias_en: string;
+ bias_color: string;
+ bias_emoji: string;
+ prev_candle: string;
+ break_high_0pct: number;
+ break_high_1pct: number;
+ break_high_2pct: number;
+ break_low_0pct: number;
+ break_low_1pct: number;
+ break_low_2pct: number;
+ total_green: number;
+ total_red: number;
+ sample_size: number;
+ confidence: string;
+ prev_high: number;
+ prev_low: number;
+ target_up_1pct: number;
+ target_up_2pct: number;
+ target_dn_1pct: number;
+ target_dn_2pct: number;
 }
 
 interface MonthStat {
-  month: string;
-  month_num: number;
-  avg_change: number;
+ month: string;
+ month_num: number;
+ avg_change: number;
 }
 
 interface StockDNA {
-  ticker: string;
-  name: string;
-  sector: string;
-  summary: string;
-  narrative: string;
-  personality_type: string;
-  personality_type_en: string;
-  best_months: MonthStat[];
-  worst_months: MonthStat[];
-  best_weekday: string;
-  worst_weekday: string;
-  typical_range: {
-    min: number;
-    max: number;
-    current: number;
-    current_position: string;
-    position_pct: number;
-  };
-  volatility: string;
-  volatility_en: string;
-  annual_return: number | null;
-  dividend_timing: string | null;
-  behavioral_tags: string[];
-  sample_months: number;
-  confidence: string;
+ ticker: string;
+ name: string;
+ sector: string;
+ summary: string;
+ narrative: string;
+ personality_type: string;
+ personality_type_en: string;
+ best_months: MonthStat[];
+ worst_months: MonthStat[];
+ best_weekday: string;
+ worst_weekday: string;
+ typical_range: {
+ min: number;
+ max: number;
+ current: number;
+ current_position: string;
+ position_pct: number;
+ };
+ volatility: string;
+ volatility_en: string;
+ annual_return: number | null;
+ dividend_timing: string | null;
+ behavioral_tags: string[];
+ sample_months: number;
+ confidence: string;
 }
 
 interface FullAnalysisResponse {
-  success?: boolean;
-  error?: string;
-  ticker: string;
-  name?: string;
-  name_ar?: string;
-  timeframe: string;
-  data_points?: number;
-  ohlcv: OHLCVCandle[];
-  indicators: {
-    sma20?: IndicatorPoint[];
-    sma50?: IndicatorPoint[];
-    sma200?: IndicatorPoint[];
-    rsi?: IndicatorPoint[];
-    atr?: IndicatorPoint[];
-    cmf?: IndicatorPoint[];
-    bb_upper?: IndicatorPoint[];
-    bb_middle?: IndicatorPoint[];
-    bb_lower?: IndicatorPoint[];
-  };
-  levels: {
-    support: number | null;
-    resistance: number | null;
-    pivot: number | null;
-    far_support?: number | null;
-    far_resistance?: number | null;
-    support_levels?: { price: number; strength: string }[];
-    resistance_levels?: { price: number; strength: string }[];
-    zone_type?: string;
-    accumulation_zone?: boolean;
-    distribution_zone?: boolean;
-  };
-  confluence: {
-    score: number;
-    breakdown: Record<string, { passed: boolean; points: number; max: number; detail: string }>;
-    signal: string;
-    signal_color: string;
-  };
-  risk: {
-    entry: number;
-    target: number;
-    target_2?: number;
-    stop_loss: number;
-    rr_ratio: number;
-    atr: number;
-    atr_pct?: number;
-  };
-  market_regime?: {
-    regime: string;
-    regime_ar?: string;
-    confidence: number;
-    color: string;
-  };
-  bos_events?: Array<{ index: number; type: string; price: number; level: number }>;
-  bb_squeeze?: { state: string; color: string; text: string };
-  current_indicators?: {
-    rsi?: number;
-    rsi_trend_ar?: string;
-    rsi_color?: string;
-    macd?: number;
-    macd_signal?: number;
-    macd_hist?: number;
-    macd_trend_ar?: string;
-    macd_color?: string;
-    cmf?: number;
-    obv_trend_ar?: string;
-    atr?: number;
-    // FRONTCLEANUP-A-2: SMA values accessed via type-safe accessor in render
-    sma20?: number;
-    sma50?: number;
-  };
-  volume_analysis?: {
-    ratio?: number;
-    trend_ar?: string;
-    color?: string;
-  };
-  candlestick_patterns?: Array<{ name: string; signal: string; name_ar: string }>;
-  smc_analysis?: {
-    score?: number;
-    score_pct?: number;
-    bias_ar?: string;
-    summary_ar?: string;
-    nearest_ob?: { type: string; price: number; quality: string } | null;
-    nearest_fvg?: { type: string; top: number; bottom: number } | null;
-    liquidity_sweeps?: Array<{ type: string; price: number }>;
-  };
-  fusion_metrics?: {
-    fusion_score?: number;
-    tier_ar?: string;
-    summary_ar?: string;
-    breakdown?: {
-      technical?: number;
-      smc?: number;
-      pattern?: number;
-      candlestick?: number;
-      ml?: number;
-    };
-    risk?: {
-      entry: number;
-      sl: number;
-      tp1: number;
-      tp2: number;
-    };
-    // FRONTCLEANUP-A-2: extended fusion_metrics shape (mirrors InteractiveChart prop)
-    score?: number;
-    signal?: string;
-    signal_ar?: string;
-    fair_value?: number;
-    fair_premium?: number;
-    bigbeluga?: {
-      trend: number;
-      in_pocket: boolean;
-      fib_618: number;
-      fib_786: number;
-      basis: number;
-      upper_band: number;
-      lower_band: number;
-    };
-    ready?: boolean;
-  };
-  signal_adjusted?: boolean;
-  adjustment_reason?: string;
-  aggregated_period?: string;
-  analysis_text?: string;
-  suggested_position_size_pct?: number;
-  position_warning?: string;
-  available_cash?: number;
-  // ── P42-FRONTEND-1: new AI insight fields from /api/chart/full-analysis ──
-  candle_probabilities?: CandleProbabilities | null;
-  stock_dna?: StockDNA | null;
+ success?: boolean;
+ error?: string;
+ ticker: string;
+ name?: string;
+ name_ar?: string;
+ timeframe: string;
+ data_points?: number;
+ ohlcv: OHLCVCandle[];
+ indicators: {
+ sma20?: IndicatorPoint[];
+ sma50?: IndicatorPoint[];
+ sma200?: IndicatorPoint[];
+ rsi?: IndicatorPoint[];
+ atr?: IndicatorPoint[];
+ cmf?: IndicatorPoint[];
+ bb_upper?: IndicatorPoint[];
+ bb_middle?: IndicatorPoint[];
+ bb_lower?: IndicatorPoint[];
+ };
+ levels: {
+ support: number | null;
+ resistance: number | null;
+ pivot: number | null;
+ far_support?: number | null;
+ far_resistance?: number | null;
+ support_levels?: { price: number; strength: string }[];
+ resistance_levels?: { price: number; strength: string }[];
+ zone_type?: string;
+ accumulation_zone?: boolean;
+ distribution_zone?: boolean;
+ };
+ confluence: {
+ score: number;
+ breakdown: Record<string, { passed: boolean; points: number; max: number; detail: string }>;
+ signal: string;
+ signal_color: string;
+ };
+ risk: {
+ entry: number;
+ target: number;
+ target_2?: number;
+ stop_loss: number;
+ rr_ratio: number;
+ atr: number;
+ atr_pct?: number;
+ };
+ market_regime?: {
+ regime: string;
+ regime_ar?: string;
+ confidence: number;
+ color: string;
+ };
+ bos_events?: Array<{ index: number; type: string; price: number; level: number }>;
+ bb_squeeze?: { state: string; color: string; text: string };
+ current_indicators?: {
+ rsi?: number;
+ rsi_trend_ar?: string;
+ rsi_color?: string;
+ macd?: number;
+ macd_signal?: number;
+ macd_hist?: number;
+ macd_trend_ar?: string;
+ macd_color?: string;
+ cmf?: number;
+ obv_trend_ar?: string;
+ atr?: number;
+ // FRONTCLEANUP-A-2: SMA values accessed via type-safe accessor in render
+ sma20?: number;
+ sma50?: number;
+ };
+ volume_analysis?: {
+ ratio?: number;
+ trend_ar?: string;
+ color?: string;
+ };
+ candlestick_patterns?: Array<{ name: string; signal: string; name_ar: string }>;
+ smc_analysis?: {
+ score?: number;
+ score_pct?: number;
+ bias_ar?: string;
+ summary_ar?: string;
+ nearest_ob?: { type: string; price: number; quality: string } | null;
+ nearest_fvg?: { type: string; top: number; bottom: number } | null;
+ liquidity_sweeps?: Array<{ type: string; price: number }>;
+ };
+ fusion_metrics?: {
+ fusion_score?: number;
+ tier_ar?: string;
+ summary_ar?: string;
+ breakdown?: {
+ technical?: number;
+ smc?: number;
+ pattern?: number;
+ candlestick?: number;
+ ml?: number;
+ };
+ risk?: {
+ entry: number;
+ sl: number;
+ tp1: number;
+ tp2: number;
+ };
+ // FRONTCLEANUP-A-2: extended fusion_metrics shape (mirrors InteractiveChart prop)
+ score?: number;
+ signal?: string;
+ signal_ar?: string;
+ fair_value?: number;
+ fair_premium?: number;
+ bigbeluga?: {
+ trend: number;
+ in_pocket: boolean;
+ fib_618: number;
+ fib_786: number;
+ basis: number;
+ upper_band: number;
+ lower_band: number;
+ };
+ ready?: boolean;
+ };
+ signal_adjusted?: boolean;
+ adjustment_reason?: string;
+ aggregated_period?: string;
+ analysis_text?: string;
+ suggested_position_size_pct?: number;
+ position_warning?: string;
+ available_cash?: number;
+ // ── P42-FRONTEND-1: new AI insight fields from /api/chart/full-analysis ──
+ candle_probabilities?: CandleProbabilities | null;
+ stock_dna?: StockDNA | null;
 // V34-INSTITUTIONAL-DECISION: محرك القرار المؤسسي الموحّد
-  institutional_decision?: import('./InstitutionalDecisionPanel').InstitutionalDecision | null;
-  // FRONTCLEANUP-A-2: extra backend fields surfaced to chart + fundamentals panel.
-  //   - confidence: legacy AI confidence percent (mirrors confluence.score but as percent)
-  //   - cmf_data / macd_projection / smart_markers / smc_data: chart-only overlays
-  //   - fundamentals.valuation / profitability: fundamentals panel block
-  confidence?: number | null;
-  cmf_data?: Array<{ time: string; value: number | null }>;
-  macd_projection?: Array<number | null>;
-  smart_markers?: Array<{ time: string; type: string; position: string; color: string; shape: string; text: string }>;
-  smc_data?: {
-    order_blocks?: Array<{ type: string; top: number; bottom: number; time?: number }>;
-    fvgs?: Array<{ type: string; top: number; bottom: number; time?: number }>;
-    liquidity_sweeps?: Array<{ type: string; price: number; time?: number }>;
-    smc_zones?: Array<{ type: string; top: number; bottom: number; time?: number }>;
-  };
-  fundamentals?: {
-    valuation?: { pe_ratio?: number | null };
-    profitability?: { eps?: number | null; roe?: number | null };
-  };
+ institutional_decision?: import('./InstitutionalDecisionPanel').InstitutionalDecision | null;
+ // FRONTCLEANUP-A-2: extra backend fields surfaced to chart + fundamentals panel.
+ // - confidence: legacy AI confidence percent (mirrors confluence.score but as percent)
+ // - cmf_data / macd_projection / smart_markers / smc_data: chart-only overlays
+ // - fundamentals.valuation / profitability: fundamentals panel block
+ confidence?: number | null;
+ cmf_data?: Array<{ time: string; value: number | null }>;
+ macd_projection?: Array<number | null>;
+ smart_markers?: Array<{ time: string; type: string; position: string; color: string; shape: string; text: string }>;
+ smc_data?: {
+ order_blocks?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+ fvgs?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+ liquidity_sweeps?: Array<{ type: string; price: number; time?: number }>;
+ smc_zones?: Array<{ type: string; top: number; bottom: number; time?: number }>;
+ };
+ fundamentals?: {
+ valuation?: { pe_ratio?: number | null };
+ profitability?: { eps?: number | null; roe?: number | null };
+ };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CANONICAL UNIFIED DATA (Task TRADING-CHART-V60.2 — 2026-10-07)
 // ─────────────────────────────────────────────────────────────────────────────
 // مصدر البيانات الكنسي الموحّد — مطابق لمنطق Pine Script V60.2:
-//   - canonical.signal / signal_ar → الإشارة النهائية (78/65/55/40/25 thresholds)
-//   - canonical.master_score → score 0-100
-//   - canonical.money_flow / accumulation / phase → تحليل السيولة والمرحلة
-//   - prediction.who_is_buying → "🏦 شراء مؤسساتي" / "👤 شراء أفراد" (mirror Pine L669-763)
-//   - prediction.analysis_reason → التعليق التحليلي العربي
-//   - prediction.entry_price / target_price / target_price_2 / target_price_3 / stop_loss
-//   - prediction.risk_reward / confidence
-//   - technical.rsi (Wilder) / atr / support / resistance
+// - canonical.signal / signal_ar → الإشارة النهائية (78/65/55/40/25 thresholds)
+// - canonical.master_score → score 0-100
+// - canonical.money_flow / accumulation / phase → تحليل السيولة والمرحلة
+// - prediction.who_is_buying → "🏦 شراء مؤسساتي" / "👤 شراء أفراد" (mirror Pine L669-763)
+// - prediction.analysis_reason → التعليق التحليلي العربي
+// - prediction.entry_price / target_price / target_price_2 / target_price_3 / stop_loss
+// - prediction.risk_reward / confidence
+// - technical.rsi (Wilder) / atr / support / resistance
 // كل الحقول من getUnifiedStockData() — لا حساب مالي في الواجهة، لا تضارب.
 // ─────────────────────────────────────────────────────────────────────────────
 import type { UnifiedStockData } from '@/lib/unified-stock-data';
@@ -296,1208 +296,1208 @@ import type { UnifiedStockData } from '@/lib/unified-stock-data';
 type CanonicalData = UnifiedStockData | null;
 
 export interface SingleStockAnalysisViewProps {
-  initialTicker: string;
-  /** COHERENCE-FIX: السياق الكامل للتوقّع اللي العميل ضغط عليها من جدول التوقعات.
-   *  لما يكون موجود، بنعرض بانر "توقّع نشط" فوق الشارت + ملاحظة اتساق تحت الـ confluence score. */
-  predictionContext?: PredictionContext;
-  canRemove?: boolean;
-  onRemove?: () => void;
-  onTickerChange?: (newTicker: string) => void;
+ initialTicker: string;
+ /** COHERENCE-FIX: السياق الكامل للتوقّع اللي العميل ضغط عليها من جدول التوقعات.
+ * لما يكون موجود، بنعرض بانر "توقّع نشط" فوق الشارت + ملاحظة اتساق تحت الـ confluence score. */
+ predictionContext?: PredictionContext;
+ canRemove?: boolean;
+ onRemove?: () => void;
+ onTickerChange?: (newTicker: string) => void;
 }
 
 export function SingleStockAnalysisView({
-  initialTicker,
-  predictionContext,
-  canRemove = false,
-  onRemove,
-  onTickerChange,
+ initialTicker,
+ predictionContext,
+ canRemove = false,
+ onRemove,
+ onTickerChange,
 }: SingleStockAnalysisViewProps) {
-  const { stocks, user, currentMarket, dealAdvisorPrefill } = useAppStore();
-  // FIX (Aug 2026): استخدم MARKET_CURRENCY_LABEL من store بدل hardcoded
-  // عشان يدعم TADAWUL (ريال), KSE (د.ك), QSE (ر.ق) صح
-  const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket] || 'ج.م';
-  const isCrypto = currentMarket === 'CRYPTO';
-  const [ticker, setTicker] = useState(initialTicker);
-  const [timeframe, setTimeframe] = useState('DAY');
-  const [userState, setUserState] = useState<'buyer' | 'owner'>('buyer');
-  const [data, setData] = useState<FullAnalysisResponse | null>(null);
-  // CANONICAL: بيانات المحرك الموحّد — نفس المصدر اللي بترجعه كل الشاشات (Rule 73)
-  const [canonical, setCanonical] = useState<CanonicalData>(null);
-  const [canonicalLoading, setCanonicalLoading] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [advancedMode, setAdvancedMode] = useState(false);
-  const [alertPanelOpen, setAlertPanelOpen] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
-  // P41-DELAYED-DATA-MODE: Quick-Add Price Alert (نجمة بتحفظ تنبيه سعر في stocks.db)
-  const [quickAdding, setQuickAdding] = useState(false);
-  const [quickAdded, setQuickAdded] = useState(false);
-  // V34-PORTFOLIO-TRACKER: بيانات مركز المستخدم عشان نعرضها في InstitutionalDecisionPanel
-  const [userEntryPrice, setUserEntryPrice] = useState(0);
-  const [userEntryQty, setUserEntryQty] = useState(0);
+ const { stocks, user, currentMarket, dealAdvisorPrefill } = useAppStore();
+ // FIX (Aug 2026): استخدم MARKET_CURRENCY_LABEL من store بدل hardcoded
+ // عشان يدعم TADAWUL (ريال), KSE (د.ك), QSE (ر.ق) صح
+ const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket] || 'ج.م';
+ const isCrypto = currentMarket === 'CRYPTO';
+ const [ticker, setTicker] = useState(initialTicker);
+ const [timeframe, setTimeframe] = useState('DAY');
+ const [userState, setUserState] = useState<'buyer' | 'owner'>('buyer');
+ const [data, setData] = useState<FullAnalysisResponse | null>(null);
+ // CANONICAL: بيانات المحرك الموحّد — نفس المصدر اللي بترجعه كل الشاشات (Rule 73)
+ const [canonical, setCanonical] = useState<CanonicalData>(null);
+ const [canonicalLoading, setCanonicalLoading] = useState(false);
+ const [loading, setLoading] = useState(false);
+ const [error, setError] = useState<string | null>(null);
+ const [advancedMode, setAdvancedMode] = useState(false);
+ const [alertPanelOpen, setAlertPanelOpen] = useState(false);
+ const [isMaximized, setIsMaximized] = useState(false);
+ // P41-DELAYED-DATA-MODE: Quick-Add Price Alert (نجمة بتحفظ تنبيه سعر في stocks.db)
+ const [quickAdding, setQuickAdding] = useState(false);
+ const [quickAdded, setQuickAdded] = useState(false);
+ // V34-PORTFOLIO-TRACKER: بيانات مركز المستخدم عشان نعرضها في InstitutionalDecisionPanel
+ const [userEntryPrice, setUserEntryPrice] = useState(0);
+ const [userEntryQty, setUserEntryQty] = useState(0);
 
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [screenshotting, setScreenshotting] = useState(false);
+ const cardRef = useRef<HTMLDivElement>(null);
+ const [screenshotting, setScreenshotting] = useState(false);
 
-  const [visibleIndicators, setVisibleIndicators] = useState<Record<string, boolean>>({
-    sma20: true,
-    sma50: true,
-    sma200: true,
-    ema: true,
-    rsi: true,
-    cmf: false,
-    bb: true,
-    macd: true,
-    volume: true,
-    obv: false,
-    fibonacci: false,  // P0-REDESIGN: افتراضيًا معطل (المواصفات: عرض نظيف)
-    levels: true,
-    bos: true,
-  });
+ const [visibleIndicators, setVisibleIndicators] = useState<Record<string, boolean>>({
+ sma20: true,
+ sma50: true,
+ sma200: true,
+ ema: true,
+ rsi: true,
+ cmf: false,
+ bb: true,
+ macd: true,
+ volume: true,
+ obv: false,
+ fibonacci: false, // P0-REDESIGN: افتراضيًا معطل (المواصفات: عرض نظيف)
+ levels: true,
+ bos: true,
+ });
 
-  const { liveData, isLive } = useLiveTicker(ticker);
+ const { liveData, isLive } = useLiveTicker(ticker);
 
-  const activeAlertsCount = useAlertsStore(
-    (s) => s.alerts.filter((a) => a.ticker === ticker.toUpperCase() && a.enabled).length
-  );
-  // P41-DELAYED-DATA-MODE: addAlert for the Quick-Add Star button
-  const addAlert = useAlertsStore((s) => s.addAlert);
+ const activeAlertsCount = useAlertsStore(
+ (s) => s.alerts.filter((a) => a.ticker === ticker.toUpperCase() && a.enabled).length
+ );
+ // P41-DELAYED-DATA-MODE: addAlert for the Quick-Add Star button
+ const addAlert = useAlertsStore((s) => s.addAlert);
 
-  const fetchData = useCallback(
-    async (
-      tk: string,
-      tf: string,
-      state: 'buyer' | 'owner' = 'buyer',
-      entryPrice?: number,
-      entryQty?: number,
-    ) => {
-      setLoading(true);
-      setError(null);
-      // CANONICAL: جلب موازٍ من المحرك الموحّد — نفس المصدر اللي بترجعه كل الشاشات
-      // (Rule 73 SINGLE-DISPLAY-SOURCE). لا حساب مالي في الواجهة.
-      // مطابق لمنطق Pine V60.2: who_is_buying / signal / money_flow / accumulation / phase.
-      if (!isCrypto) {
-        setCanonicalLoading(true);
-        fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((json: CanonicalData) => setCanonical(json))
-          .catch((e) => {
-            console.warn('[canonical] unified fetch failed:', e);
-            setCanonical(null);
-          })
-          .finally(() => setCanonicalLoading(false));
-      } else {
-        setCanonical(null);
-      }
-      try {
-        const LIMIT_MAP: Record<string, number> = {
-          '5M': 500,
-          '15M': 500,
-          '1H': 500,
-          TODAY: 200,
-          DAY: 365,
-          WEEK: 730,
-          MONTH: 1825,
-        };
-        const limit = LIMIT_MAP[tf] || 365;
-        const userIdParam = user?.id ? `&user_id=${encodeURIComponent(user.id)}` : '';
-        // V34-PORTFOLIO: تمرير entry_price + entry_qty للـ backend عشان يحسب portfolio_advice
-        const positionParams =
-          entryPrice && entryPrice > 0
-            ? `&entry_price=${entryPrice}&entry_qty=${entryQty || 0}`
-            : '';
-        // ── Market-aware fetch: CRYPTO uses /api/crypto/full-analysis (no user_id / no state) ──
-        const url = isCrypto
-          ? `/api/crypto/full-analysis?ticker=${encodeURIComponent(
-              tk
-            )}&timeframe=${tf}&limit=${limit}&_t=${Date.now()}`
-          : `/api/v2/chart/full-analysis?ticker=${encodeURIComponent(
-              tk
-            )}&timeframe=${tf}&limit=${limit}${userIdParam}&state=${state}${positionParams}&_t=${Date.now()}`;
-        const res = await fetch(url);
-        const json = await res.json();
-        if (!json.success && !json.ohlcv) {
-          setError(json.error || `خطأ في تحميل بيانات ${tk}`);
-          return;
-        }
-        setData(json);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'فشل تحميل البيانات');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [user?.id, isCrypto]
-  );
+ const fetchData = useCallback(
+ async (
+ tk: string,
+ tf: string,
+ state: 'buyer' | 'owner' = 'buyer',
+ entryPrice?: number,
+ entryQty?: number,
+ ) => {
+ setLoading(true);
+ setError(null);
+ // CANONICAL: جلب موازٍ من المحرك الموحّد — نفس المصدر اللي بترجعه كل الشاشات
+ // (Rule 73 SINGLE-DISPLAY-SOURCE). لا حساب مالي في الواجهة.
+ // مطابق لمنطق Pine V60.2: who_is_buying / signal / money_flow / accumulation / phase.
+ if (!isCrypto) {
+ setCanonicalLoading(true);
+ fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
+ .then((r) => (r.ok ? r.json() : null))
+ .then((json: CanonicalData) => setCanonical(json))
+ .catch((e) => {
+ console.warn('[canonical] unified fetch failed:', e);
+ setCanonical(null);
+ })
+ .finally(() => setCanonicalLoading(false));
+ } else {
+ setCanonical(null);
+ }
+ try {
+ const LIMIT_MAP: Record<string, number> = {
+ '5M': 500,
+ '15M': 500,
+ '1H': 500,
+ TODAY: 200,
+ DAY: 365,
+ WEEK: 730,
+ MONTH: 1825,
+ };
+ const limit = LIMIT_MAP[tf] || 365;
+ const userIdParam = user?.id ? `&user_id=${encodeURIComponent(user.id)}` : '';
+ // V34-PORTFOLIO: تمرير entry_price + entry_qty للـ backend عشان يحسب portfolio_advice
+ const positionParams =
+ entryPrice && entryPrice > 0
+ ? `&entry_price=${entryPrice}&entry_qty=${entryQty || 0}`
+ : '';
+ // ── Market-aware fetch: CRYPTO uses /api/crypto/full-analysis (no user_id / no state) ──
+ const url = isCrypto
+ ? `/api/crypto/full-analysis?ticker=${encodeURIComponent(
+ tk
+ )}&timeframe=${tf}&limit=${limit}&_t=${Date.now()}`
+ : `/api/v2/chart/full-analysis?ticker=${encodeURIComponent(
+ tk
+ )}&timeframe=${tf}&limit=${limit}${userIdParam}&state=${state}${positionParams}&_t=${Date.now()}`;
+ const res = await fetch(url);
+ const json = await res.json();
+ if (!json.success && !json.ohlcv) {
+ setError(json.error || `خطأ في تحميل بيانات ${tk}`);
+ return;
+ }
+ setData(json);
+ } catch (err) {
+ setError(err instanceof Error ? err.message : 'فشل تحميل البيانات');
+ } finally {
+ setLoading(false);
+ }
+ },
+ [user?.id, isCrypto]
+ );
 
-  useEffect(() => {
-    fetchData(ticker, timeframe, userState);
-  }, [ticker, timeframe, userState, fetchData]);
+ useEffect(() => {
+ fetchData(ticker, timeframe, userState);
+ }, [ticker, timeframe, userState, fetchData]);
 
-  const handleSelectTicker = (newTk: string) => {
-    setTicker(newTk);
-    if (onTickerChange) onTickerChange(newTk);
-  };
+ const handleSelectTicker = (newTk: string) => {
+ setTicker(newTk);
+ if (onTickerChange) onTickerChange(newTk);
+ };
 
-  const toggleIndicator = (key: string) => {
-    setVisibleIndicators((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+ const toggleIndicator = (key: string) => {
+ setVisibleIndicators((prev) => ({ ...prev, [key]: !prev[key] }));
+ };
 
-  const handleScreenshot = useCallback(async () => {
-    if (!cardRef.current) return;
-    setScreenshotting(true);
-    try {
-      const dataUrl = await toPng(cardRef.current, {
-        quality: 0.95,
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        cacheBust: true,
-        skipFonts: true,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top right',
-        },
-      });
-      const link = document.createElement('a');
-      link.download = `${ticker.toUpperCase()}_analysis_${new Date().toISOString().split('T')[0]}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('تم تحميل صورة التحليل');
-    } catch (err) {
-      console.error('Screenshot failed:', err);
-      toast.error('فشل في التقاط الصورة');
-    } finally {
-      setScreenshotting(false);
-    }
-  }, [ticker]);
+ const handleScreenshot = useCallback(async () => {
+ if (!cardRef.current) return;
+ setScreenshotting(true);
+ try {
+ const dataUrl = await toPng(cardRef.current, {
+ quality: 0.95,
+ pixelRatio: 2,
+ backgroundColor: '#ffffff',
+ cacheBust: true,
+ skipFonts: true,
+ style: {
+ transform: 'scale(1)',
+ transformOrigin: 'top right',
+ },
+ });
+ const link = document.createElement('a');
+ link.download = `${ticker.toUpperCase()}_analysis_${new Date().toISOString().split('T')[0]}.png`;
+ link.href = dataUrl;
+ document.body.appendChild(link);
+ link.click();
+ document.body.removeChild(link);
+ toast.success('تم تحميل صورة التحليل');
+ } catch (err) {
+ console.error('Screenshot failed:', err);
+ toast.error('فشل في التقاط الصورة');
+ } finally {
+ setScreenshotting(false);
+ }
+ }, [ticker]);
 
-  const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
-  const tc = liveData?.today_candle || data?.ohlcv?.[data.ohlcv.length - 1];
-  const livePrice = liveData?.today_candle?.close ?? tc?.close ?? stockInfo?.current_price ?? 0;
-  const prevClose = data?.ohlcv?.[data.ohlcv.length - 2]?.close ?? livePrice;
-  const chgPct = prevClose > 0 ? ((livePrice - prevClose) / prevClose) * 100 : 0;
-  const isUp = chgPct >= 0;
+ const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
+ const tc = liveData?.today_candle || data?.ohlcv?.[data.ohlcv.length - 1];
+ const livePrice = liveData?.today_candle?.close ?? tc?.close ?? stockInfo?.current_price ?? 0;
+ const prevClose = data?.ohlcv?.[data.ohlcv.length - 2]?.close ?? livePrice;
+ const chgPct = prevClose > 0 ? ((livePrice - prevClose) / prevClose) * 100 : 0;
+ const isUp = chgPct >= 0;
 
-  // ── P41-DELAYED-DATA-MODE: Quick-Add Price Alert ──────────────────────────
-  // زر النجمة بيسجّل تنبيه "price_below" في جدول price_alerts بـ stocks.db +
-  // كمان في الـ alerts-store اللي بترصدها use-alerts.ts hook محلياً.
-  // الفايدة: لما الـ data متأخرة 5 دقايق، المستخدم يقدر يضغط نجمة وينسَى —
-  // النظام هيـ notifyه لو السهم نزل 3% تحت السعر الحالي.
-  const handleQuickAddAlert = useCallback(async () => {
-    if (quickAdding) return;
-    const refPrice = livePrice > 0 ? livePrice : (stockInfo?.current_price ?? 0);
-    if (refPrice <= 0) {
-      toast.error('لا يوجد سعر متاح لتسجيل التنبيه');
-      return;
-    }
-    setQuickAdding(true);
-    setQuickAdded(false);
-    try {
-      // 1) سجّل في الـ backend (price_alerts table in stocks.db)
-      const DROP_PCT = -3;
-      const res = await fetch('/api/alerts/quick-add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ticker: ticker.toUpperCase(),
-          current_price: refPrice,
-          drop_pct: DROP_PCT,
-          label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)}`,
-        }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'فشل حفظ التنبيه في قاعدة البيانات');
-      }
+ // ── P41-DELAYED-DATA-MODE: Quick-Add Price Alert ──────────────────────────
+ // زر النجمة بيسجّل تنبيه "price_below" في جدول price_alerts بـ stocks.db +
+ // كمان في الـ alerts-store اللي بترصدها use-alerts.ts hook محلياً.
+ // الفايدة: لما الـ data متأخرة 5 دقايق، المستخدم يقدر يضغط نجمة وينسَى —
+ // النظام هيـ notifyه لو السهم نزل 3% تحت السعر الحالي.
+ const handleQuickAddAlert = useCallback(async () => {
+ if (quickAdding) return;
+ const refPrice = livePrice > 0 ? livePrice : (stockInfo?.current_price ?? 0);
+ if (refPrice <= 0) {
+ toast.error('لا يوجد سعر متاح لتسجيل التنبيه');
+ return;
+ }
+ setQuickAdding(true);
+ setQuickAdded(false);
+ try {
+ // 1) سجّل في الـ backend (price_alerts table in stocks.db)
+ const DROP_PCT = -3;
+ const res = await fetch('/api/alerts/quick-add', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ ticker: ticker.toUpperCase(),
+ current_price: refPrice,
+ drop_pct: DROP_PCT,
+ label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)}`,
+ }),
+ });
+ const json = await res.json().catch(() => ({}));
+ if (!res.ok || !json.success) {
+ throw new Error(json.error || 'فشل حفظ التنبيه في قاعدة البيانات');
+ }
 
-      // 2) سجّل في الـ client-side alerts-store (عشان use-alerts.ts يرصدها فوراً)
-      const thresholdPrice = Number((refPrice * (1 + DROP_PCT / 100)).toFixed(4));
-      addAlert({
-        ticker: ticker.toUpperCase(),
-        type: 'price_below',
-        threshold: thresholdPrice,
-        label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)} (عتبة: ${(thresholdPrice ?? 0).toFixed(2)})`,
-      });
+ // 2) سجّل في الـ client-side alerts-store (عشان use-alerts.ts يرصدها فوراً)
+ const thresholdPrice = Number((refPrice * (1 + DROP_PCT / 100)).toFixed(4));
+ addAlert({
+ ticker: ticker.toUpperCase(),
+ type: 'price_below',
+ threshold: thresholdPrice,
+ label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)} (عتبة: ${(thresholdPrice ?? 0).toFixed(2)})`,
+ });
 
-      setQuickAdded(true);
-      toast.success(
-        `🔔 تنبيه مسجّل: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)} (عتبة: ${(thresholdPrice ?? 0).toFixed(2)})`
-      );
-      // Reset the "added" checkmark after 2s
-      setTimeout(() => setQuickAdded(false), 2000);
-    } catch (err) {
-      console.error('[QuickAddAlert] failed:', err);
-      toast.error(err instanceof Error ? err.message : 'فشل تسجيل التنبيه');
-    } finally {
-      setQuickAdding(false);
-    }
-  }, [ticker, livePrice, stockInfo?.current_price, quickAdding, addAlert]);
+ setQuickAdded(true);
+ toast.success(
+ `🔔 تنبيه مسجّل: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)} (عتبة: ${(thresholdPrice ?? 0).toFixed(2)})`
+ );
+ // Reset the "added" checkmark after 2s
+ setTimeout(() => setQuickAdded(false), 2000);
+ } catch (err) {
+ console.error('[QuickAddAlert] failed:', err);
+ toast.error(err instanceof Error ? err.message : 'فشل تسجيل التنبيه');
+ } finally {
+ setQuickAdding(false);
+ }
+ }, [ticker, livePrice, stockInfo?.current_price, quickAdding, addAlert]);
 
-  return (
-    <div
-      id={`chart-card-${ticker.toUpperCase()}`}
-      ref={cardRef}
-      className={cn(
-        'border border-border shadow-[0_8px_30px_rgba(15,23,42,0.06)] bg-card transition-all duration-200 flex flex-col overflow-hidden rounded-2xl',
-        isMaximized ? 'fixed inset-2 z-50 overflow-y-auto bg-card p-4' : 'w-full'
-      )}
-    >
-      <WhaleAlertListener />
+ return (
+ <div
+ id={`chart-card-${ticker.toUpperCase()}`}
+ ref={cardRef}
+ className={cn(
+ 'border border-border shadow-[0_8px_30px_rgba(15,23,42,0.06)] bg-card transition-all duration-200 flex flex-col overflow-hidden rounded-2xl',
+ isMaximized ? 'fixed inset-2 z-50 overflow-y-auto bg-card p-4' : 'w-full'
+ )}
+ >
+ <WhaleAlertListener />
 
-      {/* ════ CANONICAL BANNER: محرك القرار المؤسسي V60.2 — WHO IS BUYING? ════
-          مطابق لـ Pine Script EGX_Pro_Institutional_Engine_V60_2_Who_Is_Buying.pine
-          المصدر: /api/stocks/[ticker]/unified ← getUnifiedStockData() (Rule 73)
-          لا حساب مالي في الواجهة — كل القيم من المحرك الموحّد. */}
-      {canonical && canonical.success && (
-        <CanonicalWhoIsBuyingBanner data={canonical} currencyLabel={currencyLabel} />
-      )}
-      {canonicalLoading && (
-        <div className="mb-3 p-3 rounded-lg border border-profit/30 bg-profit/50 dark:bg-profit/10 flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-profit" />
-          <span>جارٍ تحميل قرار المحرك المؤسسي الموحّد…</span>
-        </div>
-      )}
+ {/* ════ CANONICAL BANNER: محرك القرار المؤسسي V60.2 — WHO IS BUYING? ════
+ مطابق لـ Pine Script EGX_Pro_Institutional_Engine_V60_2_Who_Is_Buying.pine
+ المصدر: /api/stocks/[ticker]/unified ← getUnifiedStockData() (Rule 73)
+ لا حساب مالي في الواجهة — كل القيم من المحرك الموحّد. */}
+ {canonical && canonical.success && (
+ <CanonicalWhoIsBuyingBanner data={canonical} currencyLabel={currencyLabel} />
+ )}
+ {canonicalLoading && (
+ <div className="mb-3 p-3 rounded-lg border border-profit/30 bg-profit/50 /10 flex items-center gap-2 text-xs text-muted-foreground">
+ <Loader2 className="w-3.5 h-3.5 animate-spin text-profit" />
+ <span>جارٍ تحميل قرار المحرك المؤسسي الموحّد…</span>
+ </div>
+ )}
 
-      {/* ════ COHERENCE-FIX: بانر التوقّع النشط (من جدول التوقعات) ════
-          لما العميل يفتح النافذة الشاملة من جدول التوقعات، بنعرض التوقّع الأصلي
-          فوق الشارت عشان مايحصلش تناقض بين جدول التوقعات والتحليل الفني. */}
-      {predictionContext && (
-        <div className="mb-3 p-3 rounded-lg border-2 border-profit/40 bg-profit/20 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-2 py-1 rounded-full bg-profit text-white">
-              📊 توقّع نشط
-            </span>
-            <span className="font-bold text-sm" style={{ color: predictionContext.ratingColor || '#10b981' }}>
-              {predictionContext.rating}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              (ثقة {(predictionContext.score ?? 0).toFixed(0)}%)
-            </span>
-          </div>
-          <div className="flex items-center gap-3 text-xs">
-            {predictionContext.entryPrice && <span>الدخول: <b className="font-mono">{(predictionContext.entryPrice ?? 0).toFixed(2)}</b></span>}
-            {predictionContext.targetPrice && <span className="text-profit">الهدف: <b className="font-mono">{(predictionContext.targetPrice ?? 0).toFixed(2)}</b></span>}
-            {predictionContext.stopLoss && <span className="text-loss">الوقف: <b className="font-mono">{(predictionContext.stopLoss ?? 0).toFixed(2)}</b></span>}
-            {predictionContext.riskReward && <span>R/R: <b>{(predictionContext.riskReward ?? 0).toFixed(2)}</b></span>}
-          </div>
-        </div>
-      )}
+ {/* ════ COHERENCE-FIX: بانر التوقّع النشط (من جدول التوقعات) ════
+ لما العميل يفتح النافذة الشاملة من جدول التوقعات، بنعرض التوقّع الأصلي
+ فوق الشارت عشان مايحصلش تناقض بين جدول التوقعات والتحليل الفني. */}
+ {predictionContext && (
+ <div className="mb-3 p-3 rounded-lg border-2 border-profit/40 bg-profit/20 flex items-center justify-between gap-3 flex-wrap">
+ <div className="flex items-center gap-2">
+ <span className="text-xs font-bold px-2 py-1 rounded-full bg-profit text-white">
+ 📊 توقّع نشط
+ </span>
+ <span className="font-bold text-sm" style={{ color: predictionContext.ratingColor || '#10b981' }}>
+ {predictionContext.rating}
+ </span>
+ <span className="text-xs text-muted-foreground">
+ (ثقة {(predictionContext.score ?? 0).toFixed(0)}%)
+ </span>
+ </div>
+ <div className="flex items-center gap-3 text-xs">
+ {predictionContext.entryPrice && <span>الدخول: <b className="font-mono">{(predictionContext.entryPrice ?? 0).toFixed(2)}</b></span>}
+ {predictionContext.targetPrice && <span className="text-profit">الهدف: <b className="font-mono">{(predictionContext.targetPrice ?? 0).toFixed(2)}</b></span>}
+ {predictionContext.stopLoss && <span className="text-loss">الوقف: <b className="font-mono">{(predictionContext.stopLoss ?? 0).toFixed(2)}</b></span>}
+ {predictionContext.riskReward && <span>R/R: <b>{(predictionContext.riskReward ?? 0).toFixed(2)}</b></span>}
+ </div>
+ </div>
+ )}
 
-      <CardHeader className="px-4 py-3 border-b border-border bg-gradient-to-r from-slate-50 via-white to-profit/50 space-y-3">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex items-center gap-2 flex-wrap">
-            <StockSearchSelector
-              value={ticker}
-              onSelectStock={handleSelectTicker}
-              placeholder="اختر السهم"
-              compact
-              buttonClassName="w-[140px] md:w-[170px] bg-card border-border shadow-sm rounded-xl"
-            />
+ <CardHeader className="px-4 py-3 border-b border-border bg-gradient-to-r from-slate-50 via-white to-profit/50 space-y-3">
+ <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+ <div className="flex items-center gap-2 flex-wrap">
+ <StockSearchSelector
+ value={ticker}
+ onSelectStock={handleSelectTicker}
+ placeholder="اختر السهم"
+ compact
+ buttonClassName="w-[140px] md:w-[170px] bg-card border-border shadow-sm rounded-xl"
+ />
 
-            <div className="min-w-0">
-              <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px]">
-                {data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker}
-              </div>
-            </div>
+ <div className="min-w-0">
+ <div className="text-sm md:text-base font-black text-foreground truncate max-w-[220px]">
+ {data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker}
+ </div>
+ </div>
 
-            <Badge
-              variant="outline"
-              className={cn(
-                'font-mono text-xs font-black px-2.5 py-1 border rounded-full',
-                isUp
-                  ? 'bg-profit text-profit border-profit'
-                  : 'bg-loss text-loss border-loss'
-              )}
-            >
-              {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
-              <span className="text-[10px] mr-1">
-                ({isUp ? '+' : ''}{(chgPct ?? 0).toFixed(1)}%)
-              </span>
-            </Badge>
+ <Badge
+ variant="outline"
+ className={cn(
+ 'font-mono text-xs font-black px-2.5 py-1 border rounded-full',
+ isUp
+ ? 'bg-profit text-profit border-profit'
+ : 'bg-loss text-loss border-loss'
+ )}
+ >
+ {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
+ <span className="text-xs mr-1">
+ ({isUp ? '+' : ''}{(chgPct ?? 0).toFixed(1)}%)
+ </span>
+ </Badge>
 
-            {data?.confluence?.signal && (
-              <Badge
-                style={{ backgroundColor: data.confluence.signal_color || '#10b981' }}
-                className="text-foreground text-[10px] font-bold px-2.5 py-1 shadow-sm rounded-full"
-              >
-                {data.confluence.signal} ({data.confluence.score?.toFixed(1)}/10)
-              </Badge>
-            )}
+ {data?.confluence?.signal && (
+ <Badge
+ style={{ backgroundColor: data.confluence.signal_color || '#10b981' }}
+ className="text-foreground text-xs font-bold px-2.5 py-1 shadow-sm rounded-full"
+ >
+ {data.confluence.signal} ({data.confluence.score?.toFixed(1)}/10)
+ </Badge>
+ )}
 
-            {isLive && (
-              <Badge
-                className={cn(
-                  'text-[9px] font-bold rounded-full',
-                  liveData?.delayed_mode
-                    ? 'bg-warning text-white border border-warning'
-                    : 'bg-loss text-white animate-pulse'
-                )}
-              >
-                {liveData?.delayed_mode ? `DELAYED ${liveData.delayed_minutes || 5}M` : 'LIVE'}
-              </Badge>
-            )}
-          </div>
+ {isLive && (
+ <Badge
+ className={cn(
+ 'text-xs font-bold rounded-full',
+ liveData?.delayed_mode
+ ? 'bg-warning text-white border border-warning'
+ : 'bg-loss text-white animate-pulse'
+ )}
+ >
+ {liveData?.delayed_mode ? `DELAYED ${liveData.delayed_minutes || 5}M` : 'LIVE'}
+ </Badge>
+ )}
+ </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <div className="flex bg-muted border border-border rounded-xl p-0.5 text-[10px] font-semibold gap-1">
-              {[
-                { label: '5M', key: '5M' },
-                { label: '15M', key: '15M' },
-                { label: '1H', key: '1H' },
-                { label: 'يومي', key: 'DAY' },
-                { label: 'أسبوعي', key: 'WEEK' },
-                { label: 'شهري', key: 'MONTH' },
-              ].map((tf) => (
-                <button
-                  key={tf.key}
-                  type="button"
-                  onClick={() => setTimeframe(tf.key)}
-                  className={cn(
-                    'px-2 py-1 rounded-lg transition-colors',
-                    timeframe === tf.key
-                      ? 'bg-profit text-white font-bold shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {tf.label}
-                </button>
-              ))}
-            </div>
+ <div className="flex items-center gap-1.5 flex-wrap">
+ <div className="flex bg-muted border border-border rounded-xl p-0.5 text-xs font-semibold gap-1">
+ {[
+ { label: '5M', key: '5M' },
+ { label: '15M', key: '15M' },
+ { label: '1H', key: '1H' },
+ { label: 'يومي', key: 'DAY' },
+ { label: 'أسبوعي', key: 'WEEK' },
+ { label: 'شهري', key: 'MONTH' },
+ ].map((tf) => (
+ <button
+ key={tf.key}
+ type="button"
+ onClick={() => setTimeframe(tf.key)}
+ className={cn(
+ 'px-2 py-1 rounded-lg transition-colors',
+ timeframe === tf.key
+ ? 'bg-profit text-white font-bold shadow-sm'
+ : 'text-muted-foreground hover:text-foreground'
+ )}
+ >
+ {tf.label}
+ </button>
+ ))}
+ </div>
 
-            <div className="flex items-center gap-1 bg-muted border border-border rounded-xl p-0.5 text-[10px]">
-              <button
-                type="button"
-                onClick={() => setAdvancedMode(false)}
-                className={cn(
-                  'px-2 py-1 rounded-lg transition-all font-semibold',
-                  !advancedMode ? 'bg-card text-profit shadow-sm' : 'text-muted-foreground'
-                )}
-              >
-                مبسط
-              </button>
-              <button
-                type="button"
-                onClick={() => setAdvancedMode(true)}
-                className={cn(
-                  'px-2 py-1 rounded-lg transition-all font-semibold',
-                  advancedMode ? 'bg-card text-whale shadow-sm' : 'text-muted-foreground'
-                )}
-              >
-                محترفين
-              </button>
-            </div>
+ <div className="flex items-center gap-1 bg-muted border border-border rounded-xl p-0.5 text-xs">
+ <button
+ type="button"
+ onClick={() => setAdvancedMode(false)}
+ className={cn(
+ 'px-2 py-1 rounded-lg transition-all font-semibold',
+ !advancedMode ? 'bg-card text-profit shadow-sm' : 'text-muted-foreground'
+ )}
+ >
+ مبسط
+ </button>
+ <button
+ type="button"
+ onClick={() => setAdvancedMode(true)}
+ className={cn(
+ 'px-2 py-1 rounded-lg transition-all font-semibold',
+ advancedMode ? 'bg-card text-whale shadow-sm' : 'text-muted-foreground'
+ )}
+ >
+ محترفين
+ </button>
+ </div>
 
-            <Button variant="ghost" size="sm" onClick={() => fetchData(ticker, timeframe, userState)} disabled={loading} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
-              <RefreshCw className={cn('h-3.5 w-3.5', loading ? 'animate-spin' : '')} />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setAlertPanelOpen(true)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-warning hover:text-warning relative">
-              {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-warning" /> : <Bell className="h-3.5 w-3.5" />}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className={cn('h-8 w-8 p-0 rounded-lg', quickAdded ? 'text-profit hover:bg-profit' : 'text-muted-foreground hover:bg-warning')}>
-              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5" /> : <Star className="h-3.5 w-3.5" />}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setIsMaximized((v) => !v)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
-              {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleScreenshot} disabled={screenshotting} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
-              {screenshotting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Image className="w-3.5 h-3.5" />}
-            </Button>
-            {canRemove && (
-              <Button variant="ghost" size="sm" onClick={onRemove} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-loss hover:text-loss">
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
-            )}
-          </div>
-        </div>
+ <Button variant="ghost" size="sm" onClick={() => fetchData(ticker, timeframe, userState)} disabled={loading} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
+ <RefreshCw className={cn('h-3.5 w-3.5', loading ? 'animate-spin' : '')} />
+ </Button>
+ <Button variant="ghost" size="sm" onClick={() => setAlertPanelOpen(true)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-warning hover:text-warning relative">
+ {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-warning" /> : <Bell className="h-3.5 w-3.5" />}
+ </Button>
+ <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className={cn('h-8 w-8 p-0 rounded-lg', quickAdded ? 'text-profit hover:bg-profit' : 'text-muted-foreground hover:bg-warning')}>
+ {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5" /> : <Star className="h-3.5 w-3.5" />}
+ </Button>
+ <Button variant="ghost" size="sm" onClick={() => setIsMaximized((v) => !v)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
+ {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+ </Button>
+ <Button variant="ghost" size="sm" onClick={handleScreenshot} disabled={screenshotting} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-muted">
+ {screenshotting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Image className="w-3.5 h-3.5" />}
+ </Button>
+ {canRemove && (
+ <Button variant="ghost" size="sm" onClick={onRemove} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:bg-loss hover:text-loss">
+ <Trash2 className="w-3.5 h-3.5" />
+ </Button>
+ )}
+ </div>
+ </div>
 
-        <div className="flex items-center gap-2 pt-1 text-[10px] flex-wrap">
-          <span className="text-muted-foreground font-bold">وضعي:</span>
-          <div className="flex bg-card border border-border rounded-xl p-0.5">
-            <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-profit text-profit' : 'text-muted-foreground')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
-            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-warning text-warning' : 'text-muted-foreground')}> <Wallet className="w-3 h-3 inline ml-1" /> {isCrypto ? 'أملك العملة' : 'أملك السهم'} </button>
-          </div>
-          {data?.adjustment_reason && (
-            <span className="text-muted-foreground truncate max-w-md">💡 {data.adjustment_reason}</span>
-          )}
-        </div>
+ <div className="flex items-center gap-2 pt-1 text-xs flex-wrap">
+ <span className="text-muted-foreground font-bold">وضعي:</span>
+ <div className="flex bg-card border border-border rounded-xl p-0.5">
+ <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-profit text-profit' : 'text-muted-foreground')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
+ <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-warning text-warning' : 'text-muted-foreground')}> <Wallet className="w-3 h-3 inline ml-1" /> {isCrypto ? 'أملك العملة' : 'أملك السهم'} </button>
+ </div>
+ {data?.adjustment_reason && (
+ <span className="text-muted-foreground truncate max-w-md">💡 {data.adjustment_reason}</span>
+ )}
+ </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-border text-[10px]">
-          <span className="text-muted-foreground font-bold">المؤشرات:</span>
-          {[
-            { label: 'MA20', key: 'sma20' },
-            { label: 'MA50', key: 'sma50' },
-            { label: 'MA200', key: 'sma200' },
-            { label: 'EMA', key: 'ema' },
-            { label: 'RSI', key: 'rsi' },
-            { label: 'Bollinger', key: 'bb' },
-            { label: 'MACD', key: 'macd' },
-            { label: 'Volume', key: 'volume' },
-            { label: 'Levels', key: 'levels' },
-            { label: 'SMC/BOS', key: 'bos' },
-          ].map((ind) => (
-            <button
-              key={ind.key}
-              type="button"
-              onClick={() => toggleIndicator(ind.key)}
-              className={cn(
-                'px-1.5 py-1 rounded-lg border transition-all font-mono',
-                visibleIndicators[ind.key]
-                  ? 'bg-profit text-profit border-profit font-bold'
-                  : 'bg-muted text-muted-foreground border-border hover:bg-muted'
-              )}
-            >
-              {visibleIndicators[ind.key] ? '✓ ' : ''}{ind.label}
-            </button>
-          ))}
-        </div>
-      </CardHeader>
+ <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-border text-xs">
+ <span className="text-muted-foreground font-bold">المؤشرات:</span>
+ {[
+ { label: 'MA20', key: 'sma20' },
+ { label: 'MA50', key: 'sma50' },
+ { label: 'MA200', key: 'sma200' },
+ { label: 'EMA', key: 'ema' },
+ { label: 'RSI', key: 'rsi' },
+ { label: 'Bollinger', key: 'bb' },
+ { label: 'MACD', key: 'macd' },
+ { label: 'Volume', key: 'volume' },
+ { label: 'Levels', key: 'levels' },
+ { label: 'SMC/BOS', key: 'bos' },
+ ].map((ind) => (
+ <button
+ key={ind.key}
+ type="button"
+ onClick={() => toggleIndicator(ind.key)}
+ className={cn(
+ 'px-1.5 py-1 rounded-lg border transition-all font-mono',
+ visibleIndicators[ind.key]
+ ? 'bg-profit text-profit border-profit font-bold'
+ : 'bg-muted text-muted-foreground border-border hover:bg-muted'
+ )}
+ >
+ {visibleIndicators[ind.key] ? '✓ ' : ''}{ind.label}
+ </button>
+ ))}
+ </div>
+ </CardHeader>
 
-      <CardContent className="p-3 space-y-3">
-        <div className="flex flex-col lg:flex-row gap-3 min-h-[440px]">
-          <div className="hidden lg:flex flex-col w-40 shrink-0 rounded-xl bg-muted border border-border p-3 gap-2 text-[10px]">
-            <div className="text-muted-foreground font-bold border-b border-border pb-1 text-center">السعر اللحظي</div>
-            <div className="text-center">
-              <div className="text-[10px] text-muted-foreground">إغلاق</div>
-              <div className={cn('text-lg font-black font-mono', isUp ? 'text-profit' : 'text-loss')}>{(livePrice ?? 0).toFixed(2)}</div>
-              <div className={cn('font-bold', isUp ? 'text-profit' : 'text-loss')}>{isUp ? '+' : ''}{(chgPct ?? 0).toFixed(2)}%</div>
-            </div>
-            <div className="space-y-1 pt-2 border-t border-border">
-              <div className="flex justify-between"><span className="text-muted-foreground">افتتاح:</span><span className="font-mono">{(tc?.open ?? 0).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">أعلى:</span><span className="font-mono text-profit">{(tc?.high ?? 0).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">أدنى:</span><span className="font-mono text-loss">{(tc?.low ?? 0).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">حجم:</span><span className="font-mono">{(tc?.volume ?? 0).toLocaleString()}</span></div>
-            </div>
-          </div>
+ <CardContent className="p-3 space-y-3">
+ <div className="flex flex-col lg:flex-row gap-3 min-h-[440px]">
+ <div className="hidden lg:flex flex-col w-40 shrink-0 rounded-xl bg-muted border border-border p-3 gap-2 text-xs">
+ <div className="text-muted-foreground font-bold border-b border-border pb-1 text-center">السعر اللحظي</div>
+ <div className="text-center">
+ <div className="text-xs text-muted-foreground">إغلاق</div>
+ <div className={cn('text-lg font-black font-mono', isUp ? 'text-profit' : 'text-loss')}>{(livePrice ?? 0).toFixed(2)}</div>
+ <div className={cn('font-bold', isUp ? 'text-profit' : 'text-loss')}>{isUp ? '+' : ''}{(chgPct ?? 0).toFixed(2)}%</div>
+ </div>
+ <div className="space-y-1 pt-2 border-t border-border">
+ <div className="flex justify-between"><span className="text-muted-foreground">افتتاح:</span><span className="font-mono">{(tc?.open ?? 0).toFixed(2)}</span></div>
+ <div className="flex justify-between"><span className="text-muted-foreground">أعلى:</span><span className="font-mono text-profit">{(tc?.high ?? 0).toFixed(2)}</span></div>
+ <div className="flex justify-between"><span className="text-muted-foreground">أدنى:</span><span className="font-mono text-loss">{(tc?.low ?? 0).toFixed(2)}</span></div>
+ <div className="flex justify-between"><span className="text-muted-foreground">حجم:</span><span className="font-mono">{(tc?.volume ?? 0).toLocaleString()}</span></div>
+ </div>
+ </div>
 
-          <div className="flex-1 min-h-[440px] rounded-xl overflow-hidden border border-border bg-card relative">
-            {loading ? (
-              <div className="flex flex-col justify-center items-center h-full min-h-[440px] gap-2">
-                <RefreshCw className="w-6 h-6 text-profit animate-spin" />
-                <span className="text-xs text-muted-foreground">جاري تحميل بيانات {ticker}...</span>
-              </div>
-            ) : error ? (
-              <div className="flex flex-col justify-center items-center h-full min-h-[440px] gap-2 p-4 text-center">
-                <AlertTriangle className="w-8 h-8 text-loss" />
-                <span className="text-xs font-bold text-loss">{error}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchData(ticker, timeframe, userState)}
-                  className="mt-2 text-xs"
-                >
-                  إعادة المحاولة
-                </Button>
-              </div>
-            ) : data && data.ohlcv && data.ohlcv.length > 0 ? (
-              <InteractiveChart
-                ohlcv={data.ohlcv}
-                indicators={data.indicators}
-                visibleIndicators={visibleIndicators}
-                levels={data.levels}
-                regimeColor={data.market_regime?.color}
-                targetPrice={data.risk?.target}
-                stopLossPrice={data.risk?.stop_loss}
-                entryPrice={data.risk?.entry}
-                target2Price={data.risk?.target_2}
-                target3Price={data.risk?.target_2 ? data.risk.target_2 * 1.05 : null}
-                bbSqueezeLevel={data.bb_squeeze?.state}
-                bosEvents={data.bos_events}
-                livePrice={liveData?.today_candle?.close ?? null}
-                cmfData={data.cmf_data}
-                macdProjection={data.macd_projection}
-                smartMarkers={data.smart_markers}
-                smcData={data.smc_data as unknown as React.ComponentProps<typeof InteractiveChart>['smcData']}
-                fusionMetrics={data.fusion_metrics as unknown as NonNullable<React.ComponentProps<typeof InteractiveChart>['fusionMetrics']>}
-              />
-            ) : (
-              <div className="flex flex-col justify-center items-center h-full min-h-[440px] text-muted-foreground text-xs">
-                لا توجد بيانات كافية لهذا السهم
-              </div>
-            )}
-          </div>
-        </div>
+ <div className="flex-1 min-h-[440px] rounded-xl overflow-hidden border border-border bg-card relative">
+ {loading ? (
+ <div className="flex flex-col justify-center items-center h-full min-h-[440px] gap-2">
+ <RefreshCw className="w-6 h-6 text-profit animate-spin" />
+ <span className="text-xs text-muted-foreground">جاري تحميل بيانات {ticker}...</span>
+ </div>
+ ) : error ? (
+ <div className="flex flex-col justify-center items-center h-full min-h-[440px] gap-2 p-4 text-center">
+ <AlertTriangle className="w-8 h-8 text-loss" />
+ <span className="text-xs font-bold text-loss">{error}</span>
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={() => fetchData(ticker, timeframe, userState)}
+ className="mt-2 text-xs"
+ >
+ إعادة المحاولة
+ </Button>
+ </div>
+ ) : data && data.ohlcv && data.ohlcv.length > 0 ? (
+ <InteractiveChart
+ ohlcv={data.ohlcv}
+ indicators={data.indicators}
+ visibleIndicators={visibleIndicators}
+ levels={data.levels}
+ regimeColor={data.market_regime?.color}
+ targetPrice={data.risk?.target}
+ stopLossPrice={data.risk?.stop_loss}
+ entryPrice={data.risk?.entry}
+ target2Price={data.risk?.target_2}
+ target3Price={data.risk?.target_2 ? data.risk.target_2 * 1.05 : null}
+ bbSqueezeLevel={data.bb_squeeze?.state}
+ bosEvents={data.bos_events}
+ livePrice={liveData?.today_candle?.close ?? null}
+ cmfData={data.cmf_data}
+ macdProjection={data.macd_projection}
+ smartMarkers={data.smart_markers}
+ smcData={data.smc_data as unknown as React.ComponentProps<typeof InteractiveChart>['smcData']}
+ fusionMetrics={data.fusion_metrics as unknown as NonNullable<React.ComponentProps<typeof InteractiveChart>['fusionMetrics']>}
+ />
+ ) : (
+ <div className="flex flex-col justify-center items-center h-full min-h-[440px] text-muted-foreground text-xs">
+ لا توجد بيانات كافية لهذا السهم
+ </div>
+ )}
+ </div>
+ </div>
 
-        {/* ─── 3. Detailed Accordions / Cards ─── */}
-        {data && (
-          <div className="space-y-3 pt-2 text-xs">
-            {/* ════ الملخص التنفيذي (Executive Summary) — للخبراء ════
-                Owner directive: "أول حاجة تظهر" */}
-            {/* Row 1: Always Visible — Executive Summary (Score + Trade Plan) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {/* Score Card & Confluence — الملخص التنفيذي */}
-              <div className="p-3 rounded-lg bg-profit/10 border border-profit/30 space-y-1.5">
-                <div className="flex justify-between items-center font-bold text-[11px]">
-                  <span className="text-profit dark:text-profit">📋 الملخص التنفيذي:</span>
-                  <span className="font-mono text-profit dark:text-profit font-black text-base">
-                    {data.confluence?.score?.toFixed(1) || '0.0'}/10
-                  </span>
-                </div>
-                <Badge
-                  style={{ backgroundColor: data.confluence?.signal_color || '#10b981' }}
-                  className="text-foreground text-xs font-bold w-full justify-center py-1 shadow-xs"
-                >
-                  {data.confluence?.signal || 'حيادي'}
-                </Badge>
-                {/* درجة الثقة */}
-                {data.confidence != null && (
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>درجة الثقة:</span>
-                    <span className="font-bold text-foreground">{(data.confidence ?? 0).toFixed(0)}%</span>
-                  </div>
-                )}
-                {data.analysis_text && (
-                  <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
-                    💡 <span className="font-bold text-foreground">السبب:</span> {data.analysis_text}
-                  </p>
-                )}
-                {/* COHERENCE-FIX */}
-                {predictionContext && data?.confluence && (
-                  <div className="text-[10px] text-muted-foreground mt-1">
-                    النتيجة الشاملة ({data.confluence.score?.toFixed(1)}/10) من محرك التحليل الفني —
-                    التوقّع النشط ({(predictionContext.score ?? 0).toFixed(0)}/100) من نظام التحليل.
-                  </div>
-                )}
-              </div>
+ {/* ─── 3. Detailed Accordions / Cards ─── */}
+ {data && (
+ <div className="space-y-3 pt-2 text-xs">
+ {/* ════ الملخص التنفيذي (Executive Summary) — للخبراء ════
+ Owner directive: "أول حاجة تظهر" */}
+ {/* Row 1: Always Visible — Executive Summary (Score + Trade Plan) */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+ {/* Score Card & Confluence — الملخص التنفيذي */}
+ <div className="p-3 rounded-lg bg-profit/10 border border-profit/30 space-y-1.5">
+ <div className="flex justify-between items-center font-bold text-xs">
+ <span className="text-profit ">📋 الملخص التنفيذي:</span>
+ <span className="font-mono text-profit font-black text-base">
+ {data.confluence?.score?.toFixed(1) || '0.0'}/10
+ </span>
+ </div>
+ <Badge
+ style={{ backgroundColor: data.confluence?.signal_color || '#10b981' }}
+ className="text-foreground text-xs font-bold w-full justify-center py-1 shadow-xs"
+ >
+ {data.confluence?.signal || 'حيادي'}
+ </Badge>
+ {/* درجة الثقة */}
+ {data.confidence != null && (
+ <div className="flex justify-between text-xs text-muted-foreground">
+ <span>درجة الثقة:</span>
+ <span className="font-bold text-foreground">{(data.confidence ?? 0).toFixed(0)}%</span>
+ </div>
+ )}
+ {data.analysis_text && (
+ <p className="text-xs text-muted-foreground leading-relaxed pt-1">
+ 💡 <span className="font-bold text-foreground">السبب:</span> {data.analysis_text}
+ </p>
+ )}
+ {/* COHERENCE-FIX */}
+ {predictionContext && data?.confluence && (
+ <div className="text-xs text-muted-foreground mt-1">
+ النتيجة الشاملة ({data.confluence.score?.toFixed(1)}/10) من محرك التحليل الفني —
+ التوقّع النشط ({(predictionContext.score ?? 0).toFixed(0)}/100) من نظام التحليل.
+ </div>
+ )}
+ </div>
 
-              {/* Trade Plan (سعر الدخول / الهدف / الوقف / الهدف الثاني) */}
-              {data.risk && (
-                <div className="p-3 rounded-lg bg-card border border-border space-y-2">
-                  <span className="font-bold text-[11px] block border-b border-border pb-1 text-foreground">
-                    🎯 خطة التداول (Trade Plan):
-                  </span>
-                  <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
-                    <div className="p-1.5 rounded bg-muted/40">
-                      <span className="text-[9px] text-muted-foreground block font-sans">سعر الدخول</span>
-                      <span className="font-bold text-xs">{data.risk.entry?.toFixed(2)} {currencyLabel}</span>
-                    </div>
-                    <div className="p-1.5 rounded bg-profit/10 text-profit dark:text-profit">
-                      <span className="text-[9px] block font-sans">🎯 الهدف 1</span>
-                      <span className="font-bold text-xs">{data.risk.target?.toFixed(2)} {currencyLabel}</span>
-                    </div>
-                    <div className="p-1.5 rounded bg-loss/10 text-loss dark:text-loss">
-                      <span className="text-[9px] block font-sans">🛑 الوقف</span>
-                      <span className="font-bold text-xs">{data.risk.stop_loss?.toFixed(2)} {currencyLabel}</span>
-                    </div>
-                  </div>
-                  {/* الهدف الثاني (TP2) لو موجود */}
-                  {data.risk.target_2 && (
-                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>الهدف الثاني (TP2):</span>
-                      <span className="font-mono font-bold text-profit dark:text-profit">{(data.risk.target_2 ?? 0).toFixed(2)} {currencyLabel}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
-                    <span>R:R: <strong className="font-mono text-foreground">{data.risk.rr_ratio?.toFixed(2)}R</strong></span>
-                    {data.suggested_position_size_pct && (
-                      <span>حجم المحفظة: <strong className="font-mono text-profit">{data.suggested_position_size_pct}%</strong></span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+ {/* Trade Plan (سعر الدخول / الهدف / الوقف / الهدف الثاني) */}
+ {data.risk && (
+ <div className="p-3 rounded-lg bg-card border border-border space-y-2">
+ <span className="font-bold text-xs block border-b border-border pb-1 text-foreground">
+ 🎯 خطة التداول (Trade Plan):
+ </span>
+ <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
+ <div className="p-1.5 rounded bg-muted/40">
+ <span className="text-xs text-muted-foreground block font-sans">سعر الدخول</span>
+ <span className="font-bold text-xs">{data.risk.entry?.toFixed(2)} {currencyLabel}</span>
+ </div>
+ <div className="p-1.5 rounded bg-profit/10 text-profit ">
+ <span className="text-xs block font-sans">🎯 الهدف 1</span>
+ <span className="font-bold text-xs">{data.risk.target?.toFixed(2)} {currencyLabel}</span>
+ </div>
+ <div className="p-1.5 rounded bg-loss/10 text-loss ">
+ <span className="text-xs block font-sans">🛑 الوقف</span>
+ <span className="font-bold text-xs">{data.risk.stop_loss?.toFixed(2)} {currencyLabel}</span>
+ </div>
+ </div>
+ {/* الهدف الثاني (TP2) لو موجود */}
+ {data.risk.target_2 && (
+ <div className="flex justify-between text-xs text-muted-foreground">
+ <span>الهدف الثاني (TP2):</span>
+ <span className="font-mono font-bold text-profit ">{(data.risk.target_2 ?? 0).toFixed(2)} {currencyLabel}</span>
+ </div>
+ )}
+ <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border/40">
+ <span>R:R: <strong className="font-mono text-foreground">{data.risk.rr_ratio?.toFixed(2)}R</strong></span>
+ {data.suggested_position_size_pct && (
+ <span>حجم المحفظة: <strong className="font-mono text-profit">{data.suggested_position_size_pct}%</strong></span>
+ )}
+ </div>
+ </div>
+ )}
+ </div>
 
-            {/* ── V34: Institutional Decision Panel (محرك القرار المؤسسي) ──
-                لوحة موحّدة بتجمع:
-                - حالة الميكرز (تجميع/تصريف/هدوء)
-                - حالة الطيران (طائر/واقع/عرضي)
-                - 5 إثباتات + Tech Score + الإشارة النهائية
-                - مدير المحفظة (نصيحة حسب المركز المفتوح)
-                بتتوفر لما الـ backend يرجّع institutional_decision في الـ response. */}
-            {data.institutional_decision && (
-              <InstitutionalDecisionPanel
-                decision={data.institutional_decision}
-                ticker={ticker}
-                currencyLabel={currencyLabel}
-                onPositionUpdate={(price, qty) => {
-                  setUserEntryPrice(price);
-                  setUserEntryQty(qty);
-                  // إعادة جلب البيانات بـ entry_price/entry_qty عشان الـ backend يحسب الـ portfolio_advice
-                  fetchData(ticker, timeframe, userState, price, qty);
-                }}
-              />
-            )}
+ {/* ── V34: Institutional Decision Panel (محرك القرار المؤسسي) ──
+ لوحة موحّدة بتجمع:
+ - حالة الميكرز (تجميع/تصريف/هدوء)
+ - حالة الطيران (طائر/واقع/عرضي)
+ - 5 إثباتات + Tech Score + الإشارة النهائية
+ - مدير المحفظة (نصيحة حسب المركز المفتوح)
+ بتتوفر لما الـ backend يرجّع institutional_decision في الـ response. */}
+ {data.institutional_decision && (
+ <InstitutionalDecisionPanel
+ decision={data.institutional_decision}
+ ticker={ticker}
+ currencyLabel={currencyLabel}
+ onPositionUpdate={(price, qty) => {
+ setUserEntryPrice(price);
+ setUserEntryQty(qty);
+ // إعادة جلب البيانات بـ entry_price/entry_qty عشان الـ backend يحسب الـ portfolio_advice
+ fetchData(ticker, timeframe, userState, price, qty);
+ }}
+ />
+ )}
 
-            {/* ─── DISABLED (P0-REDESIGN, 2026-10-07): "تقرير القرار الشفاف" ───
-                كان مكسورًا (يقرأ حقولًا غير موجودة في InstitutionalDecision interface
-                مثل d.signal/d.pe_ratio/d.roe/d.entry_price/d.target_price/d.rr_ratio —
-                الكنسي = signal_final/risk_profile.entry/sl/tp1/tp2) + مكرر مع
-                InstitutionalDecisionPanel. حُفظ كـ comment للتوثيق (VERIFY-BEFORE-DELETE).
-            {data.institutional_decision && (() => {
-              const d = data.institutional_decision;
-              const sig = d.signal || '—';
-              const sigColor = sig.includes('BUY') || sig.includes('شراء') ? 'text-profit' : sig.includes('SELL') || sig.includes('بيع') ? 'text-loss' : 'text-warning';
-              return (
-                <Card className="border border-border bg-card shadow-sm overflow-hidden mt-2" dir="rtl">
-                  <CardHeader className="p-3 pb-2 border-b border-border bg-muted">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-800">تقرير القرار الشفاف</span>
-                      <Badge variant="outline" className="text-[10px] font-mono">{ticker}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-3 space-y-2 text-xs">
-                    <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-100">
-                      <div>
-                        <span className="text-muted-foreground">الحالة: </span>
-                        <span className="font-medium text-slate-800">{d.reason || d.path || '—'}</span>
-                      </div>
-                      <div className="text-left">
-                        <span className="text-muted-foreground">القرار: </span>
-                        <span className={`font-bold ${sigColor}`}>{sig}</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
-                      <div>
-                        <span className="text-muted-foreground">مكرر الربحية: </span>
-                        <span className="font-medium">{d.pe_ratio ? (d.pe_ratio ?? 0).toFixed(1) : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">العائد (ROE): </span>
-                        <span className="font-medium">{d.roe != null ? d.roe.toFixed(1) + '%' : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">الديون: </span>
-                        <span className="font-medium">{d.debt_to_equity != null ? d.debt_to_equity.toFixed(1) + '%' : '—'}</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
-                      <div>
-                        <span className="text-muted-foreground">نظام السوق: </span>
-                        <span className="font-medium">{d.market_regime || d.regime || '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">القوة النسبية: </span>
-                        <span className="font-medium">{d.relative_strength != null ? d.relative_strength.toFixed(2) + '%' : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">عدد الإثباتات: </span>
-                        <span className="font-medium">{d.evidence_count ?? '—'}/6</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      <div>
-                        <span className="text-muted-foreground">الدخول: </span>
-                        <span className="font-medium font-mono">{d.entry_price ? (d.entry_price ?? 0).toFixed(2) : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">الوقف: </span>
-                        <span className="font-medium font-mono text-loss">{d.stop_loss ? (d.stop_loss ?? 0).toFixed(2) : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">الهدف 1: </span>
-                        <span className="font-medium font-mono text-profit">{d.target_price ? (d.target_price ?? 0).toFixed(2) : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">R:R: </span>
-                        <span className="font-medium font-mono">{d.rr_ratio ? (d.rr_ratio ?? 0).toFixed(2) : '—'}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })()}
-            ─── END DISABLED ─── */}
+ {/* ─── DISABLED (P0-REDESIGN, 2026-10-07): "تقرير القرار الشفاف" ───
+ كان مكسورًا (يقرأ حقولًا غير موجودة في InstitutionalDecision interface
+ مثل d.signal/d.pe_ratio/d.roe/d.entry_price/d.target_price/d.rr_ratio —
+ الكنسي = signal_final/risk_profile.entry/sl/tp1/tp2) + مكرر مع
+ InstitutionalDecisionPanel. حُفظ كـ comment للتوثيق (VERIFY-BEFORE-DELETE).
+ {data.institutional_decision && (() => {
+ const d = data.institutional_decision;
+ const sig = d.signal || '—';
+ const sigColor = sig.includes('BUY') || sig.includes('شراء') ? 'text-profit' : sig.includes('SELL') || sig.includes('بيع') ? 'text-loss' : 'text-warning';
+ return (
+ <Card className="border border-border bg-card shadow-sm overflow-hidden mt-2" dir="rtl">
+ <CardHeader className="p-3 pb-2 border-b border-border bg-muted">
+ <div className="flex items-center justify-between">
+ <span className="font-bold text-sm text-slate-800">تقرير القرار الشفاف</span>
+ <Badge variant="outline" className="text-xs font-mono">{ticker}</Badge>
+ </div>
+ </CardHeader>
+ <CardContent className="p-3 space-y-2 text-xs">
+ <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-100">
+ <div>
+ <span className="text-muted-foreground">الحالة: </span>
+ <span className="font-medium text-slate-800">{d.reason || d.path || '—'}</span>
+ </div>
+ <div className="text-left">
+ <span className="text-muted-foreground">القرار: </span>
+ <span className={`font-bold ${sigColor}`}>{sig}</span>
+ </div>
+ </div>
+ <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
+ <div>
+ <span className="text-muted-foreground">مكرر الربحية: </span>
+ <span className="font-medium">{d.pe_ratio ? (d.pe_ratio ?? 0).toFixed(1) : '—'}</span>
+ </div>
+ <div>
+ <span className="text-muted-foreground">العائد (ROE): </span>
+ <span className="font-medium">{d.roe != null ? d.roe.toFixed(1) + '%' : '—'}</span>
+ </div>
+ <div>
+ <span className="text-muted-foreground">الديون: </span>
+ <span className="font-medium">{d.debt_to_equity != null ? d.debt_to_equity.toFixed(1) + '%' : '—'}</span>
+ </div>
+ </div>
+ <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
+ <div>
+ <span className="text-muted-foreground">نظام السوق: </span>
+ <span className="font-medium">{d.market_regime || d.regime || '—'}</span>
+ </div>
+ <div>
+ <span className="text-muted-foreground">القوة النسبية: </span>
+ <span className="font-medium">{d.relative_strength != null ? d.relative_strength.toFixed(2) + '%' : '—'}</span>
+ </div>
+ <div>
+ <span className="text-muted-foreground">عدد الإثباتات: </span>
+ <span className="font-medium">{d.evidence_count ?? '—'}/6</span>
+ </div>
+ </div>
+ <div className="grid grid-cols-4 gap-2">
+ <div>
+ <span className="text-muted-foreground">الدخول: </span>
+ <span className="font-medium font-mono">{d.entry_price ? (d.entry_price ?? 0).toFixed(2) : '—'}</span>
+ </div>
+ <div>
+ <span className="text-muted-foreground">الوقف: </span>
+ <span className="font-medium font-mono text-loss">{d.stop_loss ? (d.stop_loss ?? 0).toFixed(2) : '—'}</span>
+ </div>
+ <div>
+ <span className="text-muted-foreground">الهدف 1: </span>
+ <span className="font-medium font-mono text-profit">{d.target_price ? (d.target_price ?? 0).toFixed(2) : '—'}</span>
+ </div>
+ <div>
+ <span className="text-muted-foreground">R:R: </span>
+ <span className="font-medium font-mono">{d.rr_ratio ? (d.rr_ratio ?? 0).toFixed(2) : '—'}</span>
+ </div>
+ </div>
+ </CardContent>
+ </Card>
+ );
+ })()}
+ ─── END DISABLED ─── */}
 
-            {/* ── P42-FRONTEND-1: Row 1.5 — Insight Cards ──
-                Visible in both simple and advanced modes. Each card renders only when its
-                backend payload is non-null. RTL Arabic layout, fully responsive. */}
-            {(data.candle_probabilities || data.stock_dna) && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 pt-1" dir="rtl">
-                {/* ───────── Card 1: 🔮 توقع الشمعة الجاية (Candle Probability) ───────── */}
-                {data.candle_probabilities && (() => {
-                  const cp = data.candle_probabilities;
-                  const upPct = Math.max(0, Math.min(100, cp.up_prob ?? 0));
-                  const dnPct = Math.max(0, Math.min(100, cp.dn_prob ?? 0));
-                  return (
-                    <Card className="border border-border/80 bg-card shadow-xs overflow-hidden">
-                      <CardHeader className="p-3 pb-2 border-b border-border/40 bg-muted/20">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                            <span>🔮</span>
-                            <span>توقع الشمعة الجاية</span>
-                          </span>
-                          <Badge
-                            style={{
-                              backgroundColor: cp.bias_color || '#6b7280',
-                              color: '#ffffff',
-                            }}
-                            className="text-[10px] font-bold shadow-xs"
-                          >
-                            {cp.bias_emoji} {cp.bias}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-3 space-y-2.5 text-xs">
-                        {/* Big up vs down display */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="text-center p-2 rounded-lg bg-profit/10 border border-profit/30">
-                            <div className="text-[10px] text-profit dark:text-profit font-bold mb-0.5">
-                              🟢 صعود
-                            </div>
-                            <div className="text-2xl font-black text-profit dark:text-profit font-mono leading-none">
-                              {(upPct ?? 0).toFixed(1)}%
-                            </div>
-                          </div>
-                          <div className="text-center p-2 rounded-lg bg-loss/10 border border-loss/30">
-                            <div className="text-[10px] text-loss dark:text-loss font-bold mb-0.5">
-                              🔴 هبوط
-                            </div>
-                            <div className="text-2xl font-black text-loss dark:text-loss font-mono leading-none">
-                              {(dnPct ?? 0).toFixed(1)}%
-                            </div>
-                          </div>
-                        </div>
+ {/* ── P42-FRONTEND-1: Row 1.5 — Insight Cards ──
+ Visible in both simple and advanced modes. Each card renders only when its
+ backend payload is non-null. RTL Arabic layout, fully responsive. */}
+ {(data.candle_probabilities || data.stock_dna) && (
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 pt-1" dir="rtl">
+ {/* ───────── Card 1: 🔮 توقع الشمعة الجاية (Candle Probability) ───────── */}
+ {data.candle_probabilities && (() => {
+ const cp = data.candle_probabilities;
+ const upPct = Math.max(0, Math.min(100, cp.up_prob ?? 0));
+ const dnPct = Math.max(0, Math.min(100, cp.dn_prob ?? 0));
+ return (
+ <Card className="border border-border/80 bg-card shadow-xs overflow-hidden">
+ <CardHeader className="p-3 pb-2 border-b border-border/40 bg-muted/20">
+ <div className="flex items-center justify-between gap-2">
+ <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
+ <span>🔮</span>
+ <span>توقع الشمعة الجاية</span>
+ </span>
+ <Badge
+ style={{
+ backgroundColor: cp.bias_color || '#6b7280',
+ color: '#ffffff',
+ }}
+ className="text-xs font-bold shadow-xs"
+ >
+ {cp.bias_emoji} {cp.bias}
+ </Badge>
+ </div>
+ </CardHeader>
+ <CardContent className="p-3 space-y-2.5 text-xs">
+ {/* Big up vs down display */}
+ <div className="grid grid-cols-2 gap-2">
+ <div className="text-center p-2 rounded-lg bg-profit/10 border border-profit/30">
+ <div className="text-xs text-profit font-bold mb-0.5">
+ 🟢 صعود
+ </div>
+ <div className="text-2xl font-black text-profit font-mono leading-none">
+ {(upPct ?? 0).toFixed(1)}%
+ </div>
+ </div>
+ <div className="text-center p-2 rounded-lg bg-loss/10 border border-loss/30">
+ <div className="text-xs text-loss font-bold mb-0.5">
+ 🔴 هبوط
+ </div>
+ <div className="text-2xl font-black text-loss font-mono leading-none">
+ {(dnPct ?? 0).toFixed(1)}%
+ </div>
+ </div>
+ </div>
 
-                        {/* Split bar visualization (up vs down) */}
-                        <div className="flex h-3 rounded-full overflow-hidden bg-muted border border-border/40">
-                          <div
-                            className="bg-profit transition-all duration-500"
-                            style={{ width: `${upPct}%` }}
-                            title={`صعود ${(upPct ?? 0).toFixed(1)}%`}
-                          />
-                          <div
-                            className="bg-loss transition-all duration-500"
-                            style={{ width: `${dnPct}%` }}
-                            title={`هبوط ${(dnPct ?? 0).toFixed(1)}%`}
-                          />
-                        </div>
+ {/* Split bar visualization (up vs down) */}
+ <div className="flex h-3 rounded-full overflow-hidden bg-muted border border-border/40">
+ <div
+ className="bg-profit transition-all duration-500"
+ style={{ width: `${upPct}%` }}
+ title={`صعود ${(upPct ?? 0).toFixed(1)}%`}
+ />
+ <div
+ className="bg-loss transition-all duration-500"
+ style={{ width: `${dnPct}%` }}
+ title={`هبوط ${(dnPct ?? 0).toFixed(1)}%`}
+ />
+ </div>
 
-                        {/* Bias line */}
-                        <div
-                          className="text-center text-sm font-bold py-1 rounded bg-muted/30"
-                          style={{ color: cp.bias_color || '#6b7280' }}
-                        >
-                          الميل العام: {cp.bias} {cp.bias_emoji}
-                        </div>
+ {/* Bias line */}
+ <div
+ className="text-center text-sm font-bold py-1 rounded bg-muted/30"
+ style={{ color: cp.bias_color || '#6b7280' }}
+ >
+ الميل العام: {cp.bias} {cp.bias_emoji}
+ </div>
 
-                        {/* Breakout probabilities */}
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
-                            <div className="text-[10px] text-profit dark:text-profit font-bold mb-1">
-                              📈 احتمال كسر القمة السابقة ({cp.prev_high?.toFixed(2)})
-                            </div>
-                            <div className="font-mono text-[10px] text-foreground/80 space-y-0.5">
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">+0%:</span>
-                                <span className="text-profit font-bold">{cp.break_high_0pct?.toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">+1%:</span>
-                                <span className="text-profit font-bold">{cp.break_high_1pct?.toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">+2%:</span>
-                                <span className="text-profit font-bold">{cp.break_high_2pct?.toFixed(1)}%</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
-                            <div className="text-[10px] text-loss dark:text-loss font-bold mb-1">
-                              📉 احتمال كسر القاع السابق ({cp.prev_low?.toFixed(2)})
-                            </div>
-                            <div className="font-mono text-[10px] text-foreground/80 space-y-0.5">
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">-0%:</span>
-                                <span className="text-loss font-bold">{cp.break_low_0pct?.toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">-1%:</span>
-                                <span className="text-loss font-bold">{cp.break_low_1pct?.toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">-2%:</span>
-                                <span className="text-loss font-bold">{cp.break_low_2pct?.toFixed(1)}%</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+ {/* Breakout probabilities */}
+ <div className="grid grid-cols-2 gap-1.5">
+ <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
+ <div className="text-xs text-profit font-bold mb-1">
+ 📈 احتمال كسر القمة السابقة ({cp.prev_high?.toFixed(2)})
+ </div>
+ <div className="font-mono text-xs text-foreground/80 space-y-0.5">
+ <div className="flex justify-between">
+ <span className="text-muted-foreground">+0%:</span>
+ <span className="text-profit font-bold">{cp.break_high_0pct?.toFixed(1)}%</span>
+ </div>
+ <div className="flex justify-between">
+ <span className="text-muted-foreground">+1%:</span>
+ <span className="text-profit font-bold">{cp.break_high_1pct?.toFixed(1)}%</span>
+ </div>
+ <div className="flex justify-between">
+ <span className="text-muted-foreground">+2%:</span>
+ <span className="text-profit font-bold">{cp.break_high_2pct?.toFixed(1)}%</span>
+ </div>
+ </div>
+ </div>
+ <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
+ <div className="text-xs text-loss font-bold mb-1">
+ 📉 احتمال كسر القاع السابق ({cp.prev_low?.toFixed(2)})
+ </div>
+ <div className="font-mono text-xs text-foreground/80 space-y-0.5">
+ <div className="flex justify-between">
+ <span className="text-muted-foreground">-0%:</span>
+ <span className="text-loss font-bold">{cp.break_low_0pct?.toFixed(1)}%</span>
+ </div>
+ <div className="flex justify-between">
+ <span className="text-muted-foreground">-1%:</span>
+ <span className="text-loss font-bold">{cp.break_low_1pct?.toFixed(1)}%</span>
+ </div>
+ <div className="flex justify-between">
+ <span className="text-muted-foreground">-2%:</span>
+ <span className="text-loss font-bold">{cp.break_low_2pct?.toFixed(1)}%</span>
+ </div>
+ </div>
+ </div>
+ </div>
 
-                        {/* Target prices */}
-                        <div className="grid grid-cols-4 gap-1 text-center">
-                          <div className="p-1 rounded bg-profit/10 border border-profit/20">
-                            <div className="text-[9px] text-muted-foreground">هدف +1%</div>
-                            <div className="font-mono font-bold text-profit text-[11px]">
-                              {cp.target_up_1pct?.toFixed(2) ?? '—'}
-                            </div>
-                          </div>
-                          <div className="p-1 rounded bg-profit/10 border border-profit/20">
-                            <div className="text-[9px] text-muted-foreground">هدف +2%</div>
-                            <div className="font-mono font-bold text-profit text-[11px]">
-                              {cp.target_up_2pct?.toFixed(2) ?? '—'}
-                            </div>
-                          </div>
-                          <div className="p-1 rounded bg-loss/10 border border-loss/20">
-                            <div className="text-[9px] text-muted-foreground">هدف -1%</div>
-                            <div className="font-mono font-bold text-loss text-[11px]">
-                              {cp.target_dn_1pct?.toFixed(2) ?? '—'}
-                            </div>
-                          </div>
-                          <div className="p-1 rounded bg-loss/10 border border-loss/20">
-                            <div className="text-[9px] text-muted-foreground">هدف -2%</div>
-                            <div className="font-mono font-bold text-loss text-[11px]">
-                              {cp.target_dn_2pct?.toFixed(2) ?? '—'}
-                            </div>
-                          </div>
-                        </div>
+ {/* Target prices */}
+ <div className="grid grid-cols-4 gap-1 text-center">
+ <div className="p-1 rounded bg-profit/10 border border-profit/20">
+ <div className="text-xs text-muted-foreground">هدف +1%</div>
+ <div className="font-mono font-bold text-profit text-xs">
+ {cp.target_up_1pct?.toFixed(2) ?? '—'}
+ </div>
+ </div>
+ <div className="p-1 rounded bg-profit/10 border border-profit/20">
+ <div className="text-xs text-muted-foreground">هدف +2%</div>
+ <div className="font-mono font-bold text-profit text-xs">
+ {cp.target_up_2pct?.toFixed(2) ?? '—'}
+ </div>
+ </div>
+ <div className="p-1 rounded bg-loss/10 border border-loss/20">
+ <div className="text-xs text-muted-foreground">هدف -1%</div>
+ <div className="font-mono font-bold text-loss text-xs">
+ {cp.target_dn_1pct?.toFixed(2) ?? '—'}
+ </div>
+ </div>
+ <div className="p-1 rounded bg-loss/10 border border-loss/20">
+ <div className="text-xs text-muted-foreground">هدف -2%</div>
+ <div className="font-mono font-bold text-loss text-xs">
+ {cp.target_dn_2pct?.toFixed(2) ?? '—'}
+ </div>
+ </div>
+ </div>
 
-                        {/* Footer: prev candle + confidence + sample */}
-                        <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/40">
-                          الشمعة السابقة:{' '}
-                          <strong className={cp.prev_candle === 'خضراء' ? 'text-profit' : 'text-loss'}>
-                            {cp.prev_candle}
-                          </strong>{' '}
-                          | الثقة:{' '}
-                          <strong className="text-foreground">{cp.confidence}</strong>{' '}
-                          | عينة:{' '}
-                          <strong className="text-foreground">{cp.sample_size}</strong> شمعة
-                          <span className="text-muted-foreground/70">
-                            {' '}
-                            (🟢 {cp.total_green} / 🔴 {cp.total_red})
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
+ {/* Footer: prev candle + confidence + sample */}
+ <div className="text-xs text-muted-foreground text-center pt-1 border-t border-border/40">
+ الشمعة السابقة:{' '}
+ <strong className={cp.prev_candle === 'خضراء' ? 'text-profit' : 'text-loss'}>
+ {cp.prev_candle}
+ </strong>{' '}
+ | الثقة:{' '}
+ <strong className="text-foreground">{cp.confidence}</strong>{' '}
+ | عينة:{' '}
+ <strong className="text-foreground">{cp.sample_size}</strong> شمعة
+ <span className="text-muted-foreground/70">
+ {' '}
+ (🟢 {cp.total_green} / 🔴 {cp.total_red})
+ </span>
+ </div>
+ </CardContent>
+ </Card>
+ );
+ })()}
 
-                {/* ───────── Card 2: 🧬 بصمة السهم (Stock DNA) ───────── */}
-                {data.stock_dna && (() => {
-                  const dna = data.stock_dna;
-                  const tr = dna.typical_range;
-                  const positionPct = Math.max(0, Math.min(100, tr?.position_pct ?? 0));
-                  return (
-                    <Card className="border border-border/80 bg-card shadow-xs overflow-hidden">
-                      <CardHeader className="p-3 pb-2 border-b border-border/40 bg-muted/20 space-y-1">
-                        <div className="flex items-start justify-between gap-2 flex-wrap">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                              <span>🧬</span>
-                              <span>بصمة السهم: {dna.name || dna.ticker || ticker}</span>
-                            </div>
-                            {dna.summary && (
-                              <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                                {dna.summary}
-                              </div>
-                            )}
-                          </div>
-                          {dna.personality_type && (
-                            <Badge
-                              className="bg-warning/15 text-warning dark:text-warning border border-warning/30 text-[10px] font-bold shrink-0"
-                              title={dna.personality_type_en || dna.personality_type}
-                            >
-                              {dna.personality_type}
-                            </Badge>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-3 space-y-2.5 text-xs">
-                        {/* Stats grid: volatility, annual return, best/worst weekday */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                          <div className="p-1.5 rounded bg-muted/40 border border-border/40">
-                            <span className="text-[10px] text-muted-foreground block">التذبذب</span>
-                            <span className="font-bold text-foreground text-[11px]">{dna.volatility || '—'}</span>
-                          </div>
-                          <div className="p-1.5 rounded bg-muted/40 border border-border/40">
-                            <span className="text-[10px] text-muted-foreground block">العائد السنوي</span>
-                            <span
-                              className={cn(
-                                'font-bold font-mono text-[11px]',
-                                dna.annual_return === null
-                                  ? 'text-muted-foreground'
-                                  : dna.annual_return >= 0
-                                    ? 'text-profit'
-                                    : 'text-loss'
-                              )}
-                            >
-                              {dna.annual_return !== null
-                                ? `${dna.annual_return >= 0 ? '+' : ''}${(dna.annual_return ?? 0).toFixed(1)}%`
-                                : '—'}
-                            </span>
-                          </div>
-                          <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
-                            <span className="text-[10px] text-muted-foreground block">أفضل يوم</span>
-                            <span className="font-bold text-profit dark:text-profit text-[11px]">
-                              {dna.best_weekday || '—'}
-                            </span>
-                          </div>
-                          <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
-                            <span className="text-[10px] text-muted-foreground block">أضعف يوم</span>
-                            <span className="font-bold text-loss dark:text-loss text-[11px]">
-                              {dna.worst_weekday || '—'}
-                            </span>
-                          </div>
-                        </div>
+ {/* ───────── Card 2: 🧬 بصمة السهم (Stock DNA) ───────── */}
+ {data.stock_dna && (() => {
+ const dna = data.stock_dna;
+ const tr = dna.typical_range;
+ const positionPct = Math.max(0, Math.min(100, tr?.position_pct ?? 0));
+ return (
+ <Card className="border border-border/80 bg-card shadow-xs overflow-hidden">
+ <CardHeader className="p-3 pb-2 border-b border-border/40 bg-muted/20 space-y-1">
+ <div className="flex items-start justify-between gap-2 flex-wrap">
+ <div className="flex-1 min-w-0">
+ <div className="font-bold text-sm text-foreground flex items-center gap-1.5">
+ <span>🧬</span>
+ <span>بصمة السهم: {dna.name || dna.ticker || ticker}</span>
+ </div>
+ {dna.summary && (
+ <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
+ {dna.summary}
+ </div>
+ )}
+ </div>
+ {dna.personality_type && (
+ <Badge
+ className="bg-warning/15 text-warning border border-warning/30 text-xs font-bold shrink-0"
+ title={dna.personality_type_en || dna.personality_type}
+ >
+ {dna.personality_type}
+ </Badge>
+ )}
+ </div>
+ </CardHeader>
+ <CardContent className="p-3 space-y-2.5 text-xs">
+ {/* Stats grid: volatility, annual return, best/worst weekday */}
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+ <div className="p-1.5 rounded bg-muted/40 border border-border/40">
+ <span className="text-xs text-muted-foreground block">التذبذب</span>
+ <span className="font-bold text-foreground text-xs">{dna.volatility || '—'}</span>
+ </div>
+ <div className="p-1.5 rounded bg-muted/40 border border-border/40">
+ <span className="text-xs text-muted-foreground block">العائد السنوي</span>
+ <span
+ className={cn(
+ 'font-bold font-mono text-xs',
+ dna.annual_return === null
+ ? 'text-muted-foreground'
+ : dna.annual_return >= 0
+ ? 'text-profit'
+ : 'text-loss'
+ )}
+ >
+ {dna.annual_return !== null
+ ? `${dna.annual_return >= 0 ? '+' : ''}${(dna.annual_return ?? 0).toFixed(1)}%`
+ : '—'}
+ </span>
+ </div>
+ <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
+ <span className="text-xs text-muted-foreground block">أفضل يوم</span>
+ <span className="font-bold text-profit text-xs">
+ {dna.best_weekday || '—'}
+ </span>
+ </div>
+ <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
+ <span className="text-xs text-muted-foreground block">أضعف يوم</span>
+ <span className="font-bold text-loss text-xs">
+ {dna.worst_weekday || '—'}
+ </span>
+ </div>
+ </div>
 
-                        {/* Typical range with position bar */}
-                        {tr && (
-                          <div className="p-2 rounded bg-muted/30 border border-border/40 text-[10px]">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-muted-foreground">النطاق المعتاد:</span>
-                              <span className="font-mono text-foreground">
-                                {tr.min?.toFixed(2)} — {tr.max?.toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="relative h-2.5 bg-gradient-to-l from-loss/30 via-warning/30 to-profit/30 rounded-full border border-border/40">
-                              <div
-                                className="absolute top-1/2 -translate-y-1/2 h-3.5 w-1 bg-foreground rounded-sm shadow-sm transition-all"
-                                style={{
-                                  right: `${positionPct}%`,
-                                  transform: 'translateX(50%) translateY(-50%)',
-                                }}
-                                title={`السعر الحالي: ${tr.current?.toFixed(2)}`}
-                              />
-                            </div>
-                            <div className="flex justify-between mt-1 text-[9px]">
-                              <span className="text-muted-foreground">
-                                السعر الحالي:{' '}
-                                <strong className="font-mono text-foreground">{tr.current?.toFixed(2)}</strong>
-                              </span>
-                              <span className="text-muted-foreground">
-                                {tr.current_position || '—'} ({(positionPct ?? 0).toFixed(0)}%)
-                              </span>
-                            </div>
-                          </div>
-                        )}
+ {/* Typical range with position bar */}
+ {tr && (
+ <div className="p-2 rounded bg-muted/30 border border-border/40 text-xs">
+ <div className="flex justify-between mb-1">
+ <span className="text-muted-foreground">النطاق المعتاد:</span>
+ <span className="font-mono text-foreground">
+ {tr.min?.toFixed(2)} — {tr.max?.toFixed(2)}
+ </span>
+ </div>
+ <div className="relative h-2.5 bg-gradient-to-l from-loss/30 via-warning/30 to-profit/30 rounded-full border border-border/40">
+ <div
+ className="absolute top-1/2 -translate-y-1/2 h-3.5 w-1 bg-foreground rounded-sm shadow-sm transition-all"
+ style={{
+ right: `${positionPct}%`,
+ transform: 'translateX(50%) translateY(-50%)',
+ }}
+ title={`السعر الحالي: ${tr.current?.toFixed(2)}`}
+ />
+ </div>
+ <div className="flex justify-between mt-1 text-xs">
+ <span className="text-muted-foreground">
+ السعر الحالي:{' '}
+ <strong className="font-mono text-foreground">{tr.current?.toFixed(2)}</strong>
+ </span>
+ <span className="text-muted-foreground">
+ {tr.current_position || '—'} ({(positionPct ?? 0).toFixed(0)}%)
+ </span>
+ </div>
+ </div>
+ )}
 
-                        {/* Best & worst months */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {dna.best_months && dna.best_months.length > 0 && (
-                            <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
-                              <div className="text-[10px] text-profit dark:text-profit font-bold mb-1">
-                                🏆 أفضل الشهور:
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {dna.best_months.map((m) => (
-                                  <Badge
-                                    key={`bm-${m.month_num}`}
-                                    className="bg-profit/15 text-profit dark:text-profit border border-profit/30 text-[9px] font-bold"
-                                  >
-                                    {m.month}{' '}
-                                    <span className="font-mono">+{(m.avg_change ?? 0).toFixed(1)}%</span>
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {dna.worst_months && dna.worst_months.length > 0 && (
-                            <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
-                              <div className="text-[10px] text-loss dark:text-loss font-bold mb-1">
-                                ⚠️ أضعف الشهور:
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {dna.worst_months.map((m) => (
-                                  <Badge
-                                    key={`wm-${m.month_num}`}
-                                    className="bg-loss/15 text-loss dark:text-loss border border-loss/30 text-[9px] font-bold"
-                                  >
-                                    {m.month}{' '}
-                                    <span className="font-mono">{(m.avg_change ?? 0).toFixed(1)}%</span>
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+ {/* Best & worst months */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+ {dna.best_months && dna.best_months.length > 0 && (
+ <div className="p-1.5 rounded bg-profit/5 border border-profit/20">
+ <div className="text-xs text-profit font-bold mb-1">
+ 🏆 أفضل الشهور:
+ </div>
+ <div className="flex flex-wrap gap-1">
+ {dna.best_months.map((m) => (
+ <Badge
+ key={`bm-${m.month_num}`}
+ className="bg-profit/15 text-profit border border-profit/30 text-xs font-bold"
+ >
+ {m.month}{' '}
+ <span className="font-mono">+{(m.avg_change ?? 0).toFixed(1)}%</span>
+ </Badge>
+ ))}
+ </div>
+ </div>
+ )}
+ {dna.worst_months && dna.worst_months.length > 0 && (
+ <div className="p-1.5 rounded bg-loss/5 border border-loss/20">
+ <div className="text-xs text-loss font-bold mb-1">
+ ⚠️ أضعف الشهور:
+ </div>
+ <div className="flex flex-wrap gap-1">
+ {dna.worst_months.map((m) => (
+ <Badge
+ key={`wm-${m.month_num}`}
+ className="bg-loss/15 text-loss border border-loss/30 text-xs font-bold"
+ >
+ {m.month}{' '}
+ <span className="font-mono">{(m.avg_change ?? 0).toFixed(1)}%</span>
+ </Badge>
+ ))}
+ </div>
+ </div>
+ )}
+ </div>
 
-                        {/* Behavioral tags */}
-                        {dna.behavioral_tags && dna.behavioral_tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {dna.behavioral_tags.map((tag, i) => (
-                              <Badge
-                                key={`tag-${i}`}
-                                variant="outline"
-                                className="text-[9px] font-semibold border-border bg-muted/40 text-foreground/80"
-                              >
-                                #{tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+ {/* Behavioral tags */}
+ {dna.behavioral_tags && dna.behavioral_tags.length > 0 && (
+ <div className="flex flex-wrap gap-1">
+ {dna.behavioral_tags.map((tag, i) => (
+ <Badge
+ key={`tag-${i}`}
+ variant="outline"
+ className="text-xs font-semibold border-border bg-muted/40 text-foreground/80"
+ >
+ #{tag}
+ </Badge>
+ ))}
+ </div>
+ )}
 
-                        {/* Dividend timing (optional) */}
-                        {dna.dividend_timing && (
-                          <div className="text-[10px] text-muted-foreground p-1.5 rounded bg-muted/30 border border-border/30">
-                            💰 <strong className="text-foreground">توقيت التوزيعات:</strong> {dna.dividend_timing}
-                          </div>
-                        )}
+ {/* Dividend timing (optional) */}
+ {dna.dividend_timing && (
+ <div className="text-xs text-muted-foreground p-1.5 rounded bg-muted/30 border border-border/30">
+ 💰 <strong className="text-foreground">توقيت التوزيعات:</strong> {dna.dividend_timing}
+ </div>
+ )}
 
-                        {/* Narrative */}
-                        {dna.narrative && (
-                          <div className="p-2 rounded bg-muted/30 border border-border/40 text-[10px] text-foreground/80 whitespace-pre-line leading-relaxed max-h-60 overflow-y-auto">
-                            {dna.narrative}
-                          </div>
-                        )}
+ {/* Narrative */}
+ {dna.narrative && (
+ <div className="p-2 rounded bg-muted/30 border border-border/40 text-xs text-foreground/80 whitespace-pre-line leading-relaxed max-h-60 overflow-y-auto">
+ {dna.narrative}
+ </div>
+ )}
 
-                        {/* Footer */}
-                        <div className="text-[9px] text-muted-foreground text-center pt-1 border-t border-border/40">
-                          القطاع: <strong className="text-foreground">{dna.sector || '—'}</strong> | عينة:{' '}
-                          <strong className="text-foreground">{dna.sample_months ?? 0}</strong> شهر | الثقة:{' '}
-                          <strong className="text-foreground">{dna.confidence || '—'}</strong>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
-              </div>
-            )}
+ {/* Footer */}
+ <div className="text-xs text-muted-foreground text-center pt-1 border-t border-border/40">
+ القطاع: <strong className="text-foreground">{dna.sector || '—'}</strong> | عينة:{' '}
+ <strong className="text-foreground">{dna.sample_months ?? 0}</strong> شهر | الثقة:{' '}
+ <strong className="text-foreground">{dna.confidence || '—'}</strong>
+ </div>
+ </CardContent>
+ </Card>
+ );
+ })()}
+ </div>
+ )}
 
-            {/* Row 2: Advanced Mode Technical Breakdown (يتفعل ويظهر فقط عند اختيار "وضع المحترفين") */}
-            {advancedMode && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 pt-1">
-                {/* SMC & Order Blocks */}
-                {data.smc_analysis && (
-                  <div className="p-3 rounded-lg bg-whale/10 border border-whale/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-whale/30 text-whale dark:text-whale">
-                      🏛️ تحليل سلوك السيولة (SMC):
-                    </span>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-muted-foreground">الاتجاه الهيكلي:</span>
-                      <span className="font-bold text-whale dark:text-whale">{data.smc_analysis.bias_ar || 'متوازن'}</span>
-                    </div>
-                    {data.smc_analysis.nearest_ob && (
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-muted-foreground">Order Block:</span>
-                        <span className="font-mono font-bold text-foreground">{data.smc_analysis.nearest_ob.price} {currencyLabel} ({data.smc_analysis.nearest_ob.type})</span>
-                      </div>
-                    )}
-                    {data.smc_analysis.nearest_fvg && (
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-muted-foreground">فجوة FVG:</span>
-                        <span className="font-mono font-bold text-foreground">
-                          {data.smc_analysis.nearest_fvg.bottom} - {data.smc_analysis.nearest_fvg.top}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
+ {/* Row 2: Advanced Mode Technical Breakdown (يتفعل ويظهر فقط عند اختيار "وضع المحترفين") */}
+ {advancedMode && (
+ <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 pt-1">
+ {/* SMC & Order Blocks */}
+ {data.smc_analysis && (
+ <div className="p-3 rounded-lg bg-whale/10 border border-whale/30 space-y-1">
+ <span className="font-bold text-xs block border-b border-whale/30 text-whale ">
+ 🏛️ تحليل سلوك السيولة (SMC):
+ </span>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">الاتجاه الهيكلي:</span>
+ <span className="font-bold text-whale ">{data.smc_analysis.bias_ar || 'متوازن'}</span>
+ </div>
+ {data.smc_analysis.nearest_ob && (
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">Order Block:</span>
+ <span className="font-mono font-bold text-foreground">{data.smc_analysis.nearest_ob.price} {currencyLabel} ({data.smc_analysis.nearest_ob.type})</span>
+ </div>
+ )}
+ {data.smc_analysis.nearest_fvg && (
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">فجوة FVG:</span>
+ <span className="font-mono font-bold text-foreground">
+ {data.smc_analysis.nearest_fvg.bottom} - {data.smc_analysis.nearest_fvg.top}
+ </span>
+ </div>
+ )}
+ </div>
+ )}
 
-                {/* Candlestick Patterns — للخبراء */}
-                {data.candlestick_patterns && data.candlestick_patterns.length > 0 && (
-                  <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-warning/30 text-warning dark:text-warning">
-                      🕯️ الأنماط اليابانية المكتشفة:
-                    </span>
-                    {data.candlestick_patterns.slice(0, 5).map((p, i) => (
-                      <div key={i} className="flex justify-between text-[10px]">
-                        <span className="text-muted-foreground">{p.name_ar || p.name}</span>
-                        <span className={`font-bold ${p.signal === 'bullish' ? 'text-profit dark:text-profit' : p.signal === 'bearish' ? 'text-loss dark:text-loss' : 'text-muted-foreground'}`}>
-                          {p.signal === 'bullish' ? 'صعودي' : p.signal === 'bearish' ? 'هبوطي' : 'محايد'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+ {/* Candlestick Patterns — للخبراء */}
+ {data.candlestick_patterns && data.candlestick_patterns.length > 0 && (
+ <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
+ <span className="font-bold text-xs block border-b border-warning/30 text-warning ">
+ 🕯️ الأنماط اليابانية المكتشفة:
+ </span>
+ {data.candlestick_patterns.slice(0, 5).map((p, i) => (
+ <div key={i} className="flex justify-between text-xs">
+ <span className="text-muted-foreground">{p.name_ar || p.name}</span>
+ <span className={`font-bold ${p.signal === 'bullish' ? 'text-profit ' : p.signal === 'bearish' ? 'text-loss ' : 'text-muted-foreground'}`}>
+ {p.signal === 'bullish' ? 'صعودي' : p.signal === 'bearish' ? 'هبوطي' : 'محايد'}
+ </span>
+ </div>
+ ))}
+ </div>
+ )}
 
-                {/* Liquidity Sweeps — للخبراء */}
-                {data.smc_analysis?.liquidity_sweeps && data.smc_analysis.liquidity_sweeps.length > 0 && (
-                  <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-primary dark:text-primary">
-                      💧 سحب السيولة (Liquidity Sweeps):
-                    </span>
-                    {data.smc_analysis.liquidity_sweeps.slice(0, 3).map((s, i) => (
-                      <div key={i} className="flex justify-between text-[10px]">
-                        <span className="text-muted-foreground">{s.type === 'bullish_sweep' ? 'سحب بيعي (صعودي)' : 'سحب شرائي (هبوطي)'}</span>
-                        <span className="font-mono font-bold text-foreground">{s.price} {currencyLabel}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+ {/* Liquidity Sweeps — للخبراء */}
+ {data.smc_analysis?.liquidity_sweeps && data.smc_analysis.liquidity_sweeps.length > 0 && (
+ <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
+ <span className="font-bold text-xs block border-b border-purple-500/30 text-primary ">
+ 💧 سحب السيولة (Liquidity Sweeps):
+ </span>
+ {data.smc_analysis.liquidity_sweeps.slice(0, 3).map((s, i) => (
+ <div key={i} className="flex justify-between text-xs">
+ <span className="text-muted-foreground">{s.type === 'bullish_sweep' ? 'سحب بيعي (صعودي)' : 'سحب شرائي (هبوطي)'}</span>
+ <span className="font-mono font-bold text-foreground">{s.price} {currencyLabel}</span>
+ </div>
+ ))}
+ </div>
+ )}
 
-                {/* Technical Indicators Deep Breakdown */}
-                {data.current_indicators && (
-                  <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-cyan-500/30 text-cyan-700 dark:text-cyan-300">
-                      📊 المؤشرات الفنية التفصيلية:
-                    </span>
-                    <div className="flex justify-between text-[10px]">
-                      <span className="text-muted-foreground">RSI (14):</span>
-                      <span className="font-mono font-bold text-foreground">{data.current_indicators.rsi?.toFixed(1) || '50.0'}</span>
-                    </div>
-                    <div className="flex justify-between text-[10px]">
-                      <span className="text-muted-foreground">MACD Trend:</span>
-                      <span className="font-bold text-foreground truncate max-w-[100px]">{data.current_indicators.macd_trend_ar || 'حيادي'}</span>
-                    </div>
-                    <div className="flex justify-between text-[10px]">
-                      <span className="text-muted-foreground">SMA 20 / 50:</span>
-                      <span className="font-mono text-foreground">{data.current_indicators?.sma20 != null ? Number(data.current_indicators.sma20).toFixed(2) : '—'} / {data.current_indicators?.sma50 != null ? Number(data.current_indicators.sma50).toFixed(2) : '—'}</span>
-                    </div>
-                    <div className="flex justify-between text-[10px]">
-                      <span className="text-muted-foreground">التقلب (ATR):</span>
-                      <span className="font-mono text-foreground">{data.current_indicators.atr?.toFixed(2) || '—'}</span>
-                    </div>
-                  </div>
-                )}
+ {/* Technical Indicators Deep Breakdown */}
+ {data.current_indicators && (
+ <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 space-y-1">
+ <span className="font-bold text-xs block border-b border-cyan-500/30 text-cyan-700 dark:text-cyan-300">
+ 📊 المؤشرات الفنية التفصيلية:
+ </span>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">RSI (14):</span>
+ <span className="font-mono font-bold text-foreground">{data.current_indicators.rsi?.toFixed(1) || '50.0'}</span>
+ </div>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">MACD Trend:</span>
+ <span className="font-bold text-foreground truncate max-w-[100px]">{data.current_indicators.macd_trend_ar || 'حيادي'}</span>
+ </div>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">SMA 20 / 50:</span>
+ <span className="font-mono text-foreground">{data.current_indicators?.sma20 != null ? Number(data.current_indicators.sma20).toFixed(2) : '—'} / {data.current_indicators?.sma50 != null ? Number(data.current_indicators.sma50).toFixed(2) : '—'}</span>
+ </div>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">التقلب (ATR):</span>
+ <span className="font-mono text-foreground">{data.current_indicators.atr?.toFixed(2) || '—'}</span>
+ </div>
+ </div>
+ )}
 
-                {/* V20 Fusion Metrics */}
-                {data.fusion_metrics && (
-                  <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-primary dark:text-primary">
-                      التحليل الفني الموحد:
-                    </span>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-muted-foreground">درجة النموذج:</span>
-                      <span className="font-mono font-bold text-primary dark:text-primary">{data.fusion_metrics.fusion_score?.toFixed(1) || '0.0'}/10</span>
-                    </div>
-                    <div className="text-[10px] text-muted-foreground leading-tight pt-0.5">
-                      {data.fusion_metrics.summary_ar || 'تحليل فني شامل'}
-                    </div>
-                  </div>
-                )}
+ {/* V20 Fusion Metrics */}
+ {data.fusion_metrics && (
+ <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
+ <span className="font-bold text-xs block border-b border-purple-500/30 text-primary ">
+ التحليل الفني الموحد:
+ </span>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">درجة النموذج:</span>
+ <span className="font-mono font-bold text-primary ">{data.fusion_metrics.fusion_score?.toFixed(1) || '0.0'}/10</span>
+ </div>
+ <div className="text-xs text-muted-foreground leading-tight pt-0.5">
+ {data.fusion_metrics.summary_ar || 'تحليل فني شامل'}
+ </div>
+ </div>
+ )}
 
-                {/* Fundamental Valuation */}
-                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
-                  <span className="font-bold text-[11px] block border-b border-warning/30 text-warning dark:text-warning">
-                    🏛️ التقييم والتحليل الأساسي:
-                  </span>
-                  {/* P0-REDESIGN FIX (Rule 27 NO-FAKE-DATA): أزلت القيم الوهمية
-                      (12.4x / 1.85 / 14.2%) — كانت hardcoded fallback.
-                      الآن: "— بيانات غير متاحة" لو لا بيانات حقيقية. */}
-                  <div className="flex justify-between text-[10px]">
-                    <span className="text-muted-foreground">مكرر الربحية (P/E):</span>
-                    <span className="font-mono font-bold text-foreground">
-                      {(data.fundamentals?.valuation?.pe_ratio != null)
-                        ? `${Number(data.fundamentals?.valuation?.pe_ratio).toFixed(2)}x`
-                        : '— بيانات غير متاحة'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-[10px]">
-                    <span className="text-muted-foreground">ربحية السهم (EPS):</span>
-                    <span className="font-mono text-foreground">
-                      {(data.fundamentals?.profitability?.eps != null)
-                        ? `${Number(data.fundamentals?.profitability?.eps).toFixed(2)} ${currencyLabel}`
-                        : '— بيانات غير متاحة'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-[10px]">
-                    <span className="text-muted-foreground">العائد على الاستثمار:</span>
-                    <span className="font-mono text-foreground">
-                      {(data.fundamentals?.profitability?.roe != null)
-                        ? `${Number(data.fundamentals?.profitability?.roe).toFixed(1)}%`
-                        : '— بيانات غير متاحة'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
+ {/* Fundamental Valuation */}
+ <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
+ <span className="font-bold text-xs block border-b border-warning/30 text-warning ">
+ 🏛️ التقييم والتحليل الأساسي:
+ </span>
+ {/* P0-REDESIGN FIX (Rule 27 NO-FAKE-DATA): أزلت القيم الوهمية
+ (12.4x / 1.85 / 14.2%) — كانت hardcoded fallback.
+ الآن: "— بيانات غير متاحة" لو لا بيانات حقيقية. */}
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">مكرر الربحية (P/E):</span>
+ <span className="font-mono font-bold text-foreground">
+ {(data.fundamentals?.valuation?.pe_ratio != null)
+ ? `${Number(data.fundamentals?.valuation?.pe_ratio).toFixed(2)}x`
+ : '— بيانات غير متاحة'}
+ </span>
+ </div>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">ربحية السهم (EPS):</span>
+ <span className="font-mono text-foreground">
+ {(data.fundamentals?.profitability?.eps != null)
+ ? `${Number(data.fundamentals?.profitability?.eps).toFixed(2)} ${currencyLabel}`
+ : '— بيانات غير متاحة'}
+ </span>
+ </div>
+ <div className="flex justify-between text-xs">
+ <span className="text-muted-foreground">العائد على الاستثمار:</span>
+ <span className="font-mono text-foreground">
+ {(data.fundamentals?.profitability?.roe != null)
+ ? `${Number(data.fundamentals?.profitability?.roe).toFixed(1)}%`
+ : '— بيانات غير متاحة'}
+ </span>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ )}
+ </CardContent>
 
-      {/* ── Deal Advisor Panel (مستشار الصفقة) ──
-          Node-side تقرير قرار بهيكل ثابت (هوية/سوق/فني/تقييم الدخول/أحداث/سيناريوهات/مستويات).
-          يعمل بدون Python backend — يقرأ من stocks.db + price_history.db مباشرة.
-          يدعم prefill من المحفظة/قائمة المتابعة عبر useAppStore.dealAdvisorPrefill.
-          موضوع خارج {data && ...} block ليظهر دائماً (حتى لو الـ Python backend غير متاح). */}
-      <CardContent className="pt-0">
-        <DealAdvisorPanel
-          ticker={ticker}
-          initialEntryPrice={dealAdvisorPrefill?.entryPrice ?? userEntryPrice}
-          initialEntryQty={dealAdvisorPrefill?.entryQty ?? userEntryQty}
-        />
-      </CardContent>
+ {/* ── Deal Advisor Panel (مستشار الصفقة) ──
+ Node-side تقرير قرار بهيكل ثابت (هوية/سوق/فني/تقييم الدخول/أحداث/سيناريوهات/مستويات).
+ يعمل بدون Python backend — يقرأ من stocks.db + price_history.db مباشرة.
+ يدعم prefill من المحفظة/قائمة المتابعة عبر useAppStore.dealAdvisorPrefill.
+ موضوع خارج {data && ...} block ليظهر دائماً (حتى لو الـ Python backend غير متاح). */}
+ <CardContent className="pt-0">
+ <DealAdvisorPanel
+ ticker={ticker}
+ initialEntryPrice={dealAdvisorPrefill?.entryPrice ?? userEntryPrice}
+ initialEntryQty={dealAdvisorPrefill?.entryQty ?? userEntryQty}
+ />
+ </CardContent>
 
-      <AlertPanel ticker={ticker} open={alertPanelOpen} onClose={() => setAlertPanelOpen(false)} />
-    </div>
-  );
+ <AlertPanel ticker={ticker} open={alertPanelOpen} onClose={() => setAlertPanelOpen(false)} />
+ </div>
+ );
 }

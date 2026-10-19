@@ -22,55 +22,55 @@ const STORAGE_KEY = 'egx_disclaimer_dismissed_v2';
  * والقواعد العامة للإفصاح عن المخاطر في الأسواق المالية.
  */
 export function DisclaimerBanner() {
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return sessionStorage.getItem(STORAGE_KEY) !== 'true';
-  });
+ const [visible, setVisible] = useState(() => {
+ if (typeof window === 'undefined') return true;
+ return sessionStorage.getItem(STORAGE_KEY) !== 'true';
+ });
 
-  const handleDismiss = useCallback(() => {
-    sessionStorage.setItem(STORAGE_KEY, 'true');
-    setVisible(false);
-  }, []);
+ const handleDismiss = useCallback(() => {
+ sessionStorage.setItem(STORAGE_KEY, 'true');
+ setVisible(false);
+ }, []);
 
-  return (
-    <>
-      {visible && (
-        <div className="bg-warning dark:bg-warning/40 border-b border-warning dark:border-warning relative z-50">
-          <div className="max-w-7xl mx-auto px-4 py-2 flex items-start gap-3">
-            <ShieldCheck className="w-4 h-4 text-warning dark:text-warning flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0 text-center">
-              <p
-                className="text-xs sm:text-sm text-warning dark:text-warning leading-relaxed font-semibold"
-                dir="rtl"
-              >
-                ⚠️ إخلاء مسؤولية قانوني: هذه المنصة تقدم{' '}
-                <strong>رأيًا شخصيًا آليًا</strong> لأغراض تعليمية وتحليلية فقط،
-                وليست{' '}
-                <strong>نصيحة استثمارية مرخصة</strong> أو نصيحة مالية.
-                القرار النهائي مسؤولية العميل وحده.
-              </p>
-              <p
-                className="text-[11px] sm:text-xs text-warning dark:text-warning mt-0.5"
-                dir="rtl"
-              >
-                لا يوجد أي ضمان للنتائج. السوق يحتوي على مخاطر، والخسارة ممكنة.
-                استشر مستشارًا ماليًا مرخصًا قبل أي قرار استثماري.
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 flex-shrink-0 text-warning hover:text-warning dark:text-warning dark:hover:text-warning hover:bg-warning dark:hover:bg-warning/50"
-              onClick={handleDismiss}
-              aria-label="إغلاق التنبيه"
-            >
-              <X className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+ return (
+ <>
+ {visible && (
+ <div className="bg-warning /40 border-b border-warning relative z-50">
+ <div className="max-w-7xl mx-auto px-4 py-2 flex items-start gap-3">
+ <ShieldCheck className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+ <div className="flex-1 min-w-0 text-center">
+ <p
+ className="text-xs sm:text-sm text-warning leading-relaxed font-semibold"
+ dir="rtl"
+ >
+ ⚠️ إخلاء مسؤولية قانوني: هذه المنصة تقدم{' '}
+ <strong>رأيًا شخصيًا آليًا</strong> لأغراض تعليمية وتحليلية فقط،
+ وليست{' '}
+ <strong>نصيحة استثمارية مرخصة</strong> أو نصيحة مالية.
+ القرار النهائي مسؤولية العميل وحده.
+ </p>
+ <p
+ className="text-xs sm:text-xs text-warning mt-0.5"
+ dir="rtl"
+ >
+ لا يوجد أي ضمان للنتائج. السوق يحتوي على مخاطر، والخسارة ممكنة.
+ استشر مستشارًا ماليًا مرخصًا قبل أي قرار استثماري.
+ </p>
+ </div>
+ <Button
+ variant="ghost"
+ size="icon"
+ className="h-6 w-6 flex-shrink-0 text-warning hover:text-warning dark:hover:text-warning hover:bg-warning dark:hover:bg-warning/50"
+ onClick={handleDismiss}
+ aria-label="إغلاق التنبيه"
+ >
+ <X className="w-3.5 h-3.5" />
+ </Button>
+ </div>
+ </div>
+ )}
+ </>
+ );
 }
 
 /**
@@ -78,23 +78,23 @@ export function DisclaimerBanner() {
  * (مش قابل للـ dismiss — لازم يفضل ظاهر دايماً)
  */
 export function LegalDisclaimerFooter() {
-  return (
-    <div
-      className="border-t border-warning dark:border-warning bg-warning/50 dark:bg-warning/20 px-4 py-2 mt-4"
-      dir="rtl"
-    >
-      <p className="text-[10px] sm:text-[11px] text-warning dark:text-warning text-center leading-relaxed">
-        <strong>إخلاء مسؤولية:</strong> هذه المنصة تقدم رأيًا شخصيًا آليًا لأغراض
-        تعليمية وتحليلية فقط، وليست نصيحة استثمارية مرخصة أو نصيحة مالية. القرار
-        النهائي مسؤولية العميل وحده. لا يوجد ضمان للنتائج، والخسارة ممكنة.
-        استشر مستشارًا ماليًا مرخصًا قبل أي قرار.{' '}
-        <span className="text-warning dark:text-warning">
-          This platform provides automated personal opinion for educational
-          purposes only — not investment advice.
-        </span>
-      </p>
-    </div>
-  );
+ return (
+ <div
+ className="border-t border-warning bg-warning/50 /20 px-4 py-2 mt-4"
+ dir="rtl"
+ >
+ <p className="text-xs sm:text-xs text-warning text-center leading-relaxed">
+ <strong>إخلاء مسؤولية:</strong> هذه المنصة تقدم رأيًا شخصيًا آليًا لأغراض
+ تعليمية وتحليلية فقط، وليست نصيحة استثمارية مرخصة أو نصيحة مالية. القرار
+ النهائي مسؤولية العميل وحده. لا يوجد ضمان للنتائج، والخسارة ممكنة.
+ استشر مستشارًا ماليًا مرخصًا قبل أي قرار.{' '}
+ <span className="text-warning ">
+ This platform provides automated personal opinion for educational
+ purposes only — not investment advice.
+ </span>
+ </p>
+ </div>
+ );
 }
 
 /**
@@ -102,23 +102,23 @@ export function LegalDisclaimerFooter() {
  * مثلاً: جوه بطاقة توقع، جوه DealAdvisor، إلخ
  */
 export function InlineDisclaimer({ compact = false }: { compact?: boolean }) {
-  if (compact) {
-    return (
-      <p
-        className="text-[9px] text-muted-foreground italic mt-1 text-center"
-        dir="rtl"
-      >
-        رأي آلي تعليمي — ليس نصيحة استثمارية مرخصة. القرار مسؤوليتك.
-      </p>
-    );
-  }
-  return (
-    <p
-      className="text-[10px] text-muted-foreground leading-relaxed mt-2 text-center"
-      dir="rtl"
-    >
-      ⚠️ هذا التحليل رأي آلي لأغراض تعليمية فقط، وليس نصيحة استثمارية مرخصة. القرار
-      مسؤولية العميل. لا ضمان للنتائج.
-    </p>
-  );
+ if (compact) {
+ return (
+ <p
+ className="text-xs text-muted-foreground italic mt-1 text-center"
+ dir="rtl"
+ >
+ رأي آلي تعليمي — ليس نصيحة استثمارية مرخصة. القرار مسؤوليتك.
+ </p>
+ );
+ }
+ return (
+ <p
+ className="text-xs text-muted-foreground leading-relaxed mt-2 text-center"
+ dir="rtl"
+ >
+ ⚠️ هذا التحليل رأي آلي لأغراض تعليمية فقط، وليس نصيحة استثمارية مرخصة. القرار
+ مسؤولية العميل. لا ضمان للنتائج.
+ </p>
+ );
 }

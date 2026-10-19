@@ -74,6 +74,11 @@ const config: Config = {
                                 DEFAULT: 'hsl(var(--whale))',
                                 foreground: 'hsl(var(--whale-foreground))'
                         },
+                        /* Amendment A1: info token */
+                        info: {
+                                DEFAULT: 'hsl(var(--info))',
+                                foreground: 'hsl(var(--info-foreground))'
+                        },
                         border: 'hsl(var(--border))',
                         input: 'hsl(var(--input))',
                         ring: 'hsl(var(--ring))',
