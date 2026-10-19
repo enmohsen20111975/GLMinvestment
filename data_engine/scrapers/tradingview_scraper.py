@@ -51,22 +51,29 @@ def _is_polluted_scrape_record(symbol, name):
     Return True if the (symbol, name) pair matches the legacy TradingView
     merge-pollution signature.
 
-    Detection criteria (must match ALL):
+    DATA-ENGINE-UNIFY-1 Stage 2c: expanded to catch Arabic pollution too.
+    Previously only caught Latin pollution (name ends with 'D' status badge).
+    Now catches two patterns:
+      Pattern A (Latin): symbol='LUTSL', name='LUTSLotus For Agricultural...D'
+      Pattern B (Arabic): symbol='COMI', name='COMIالبنك' (ticker + Arabic name)
+
+    Detection criteria:
       1. symbol and name are both non-empty.
-      2. name starts with the symbol (case-sensitive — the symbol is uppercase
-         and the name's first portion is the symbol verbatim).
-      3. name ends with 'D' — the legacy DOM included a trailing status badge
-         (likely "Daily" recommend) that got concatenated to the name.
-      4. name is meaningfully longer than the symbol (len > len(symbol) + 2).
+      2. name is meaningfully longer than the symbol (len > len(symbol) + 2).
+      3. name starts with the symbol (case-sensitive).
+      4. AND one of:
+         (a) name ends with 'D' (Latin pollution — legacy DOM status badge), OR
+         (b) the remainder (name after symbol) contains Arabic chars
+             (\u0600-\u06FF) — Arabic company name bleed-through.
 
     Examples that trigger:
-      symbol='LUTSL', name='LUTSLotus For Agricultural...D'  -> True
-      symbol='GTHEG', name='GTHEGGlobal Telecom Holding...D' -> True
-      symbol='RRMTV', name='RRMTVRowad Misr Tourism...D'     -> True
+      symbol='LUTSL', name='LUTSLotus For Agricultural...D'  -> True (Pattern A)
+      symbol='COMI',  name='COMIالبنك'                        -> True (Pattern B)
+      symbol='AALR',  name='AALRالعامة'                       -> True (Pattern B)
     Examples that do NOT trigger:
-      symbol='COMI',  name='البنك التجاري الدولي'             -> False (name doesn't start with symbol)
-      symbol='LUTS',  name='Lotus For Agricultural...'         -> False (no trailing D)
-      symbol='EFG',   name='EFG Holding'                       -> False (no trailing D)
+      symbol='COMI',  name='البنك التجاري الدولي'             -> False (doesn't start with symbol)
+      symbol='LUTS',  name='Lotus For Agricultural...'         -> False (no trailing D, no Arabic)
+      symbol='EFG',   name='EFG Holding'                       -> False (no trailing D, no Arabic)
     """
     if not symbol or not name:
         return False
@@ -74,11 +81,19 @@ def _is_polluted_scrape_record(symbol, name):
         return False
     if not name.startswith(symbol):
         return False
-    # Trailing 'D' status badge from the legacy DOM (the strongest signal —
-    # legitimate company names very rarely end with a bare capital 'D').
-    if not name.endswith('D'):
-        return False
-    return True
+
+    # Pattern A: Latin pollution — trailing 'D' status badge (legacy DOM).
+    # Legitimate company names very rarely end with a bare capital 'D'.
+    if name.endswith('D'):
+        return True
+
+    # Pattern B: Arabic pollution — remainder contains Arabic chars.
+    # This catches "COMIالبنك" where symbol="COMI" and remainder="البنك".
+    remainder = name[len(symbol):]
+    if any('\u0600' <= ch <= '\u06FF' for ch in remainder):
+        return True
+
+    return False
 
 
 def log(msg):
@@ -178,19 +193,30 @@ async def scrape_market(page, market, url):
                         }
                         const nameElem = cells[0].querySelector('[class*="tickerDescription"], [class*="description"]');
                         name = nameElem ? nameElem.textContent.trim() : (cells[0].querySelectorAll('a')[1]?.textContent?.trim() || sym);
-                        // STOCKS-DEDUP-A-1 guard: if the extracted name still
-                        // contains the symbol as a prefix (merge bleed-through),
-                        // strip the symbol prefix. This catches the case where
-                        // the ticker-link and description-link DOM nodes were
-                        // concatenated by a layout change.
+                        // STOCKS-DEDUP-A-1 + DATA-ENGINE-UNIFY-1 Stage 2c guard:
+                        // if the extracted name still contains the symbol as a prefix
+                        // (merge bleed-through from TradingView DOM layout), strip the
+                        // symbol prefix. This catches two pollution patterns:
+                        //   1. Latin remainder: "LUTSLotus For Agricultural..." → "Lotus For Agricultural..."
+                        //   2. Arabic remainder: "COMIالبنك" → "البنك" (Arabic company name)
+                        // Previously the guard only stripped Latin-uppercase remainders
+                        // (regex /^[A-Z]/), which let Arabic-prefixed pollution like
+                        // "COMIالبنك" through unchanged. The Arabic range \u0600-\u06FF
+                        // is now also accepted as a valid name start.
                         if (name && sym && name.startsWith(sym) && name.length > sym.length + 2) {
                             const stripped = name.slice(sym.length);
-                            // Only strip if the remainder looks like a real name
-                            // (starts with an uppercase letter — the actual
-                            // company name). Avoid stripping when the symbol is
-                            // legitimately a prefix of the name.
-                            if (/^[A-Z]/.test(stripped)) {
+                            // Strip if remainder starts with uppercase Latin (company name)
+                            // OR Arabic letter (Arabic company name). Avoid stripping when
+                            // the symbol is legitimately a prefix of the name (rare).
+                            if (/^[A-Z\u0600-\u06FF]/.test(stripped)) {
                                 name = stripped;
+                                // Also fix the symbol itself if it got polluted:
+                                // if the raw textContent was "COMIالبنك" and we extracted
+                                // sym via the href regex, sym is already clean. But if sym
+                                // came from the fallback regex on the polluted raw, sym
+                                // might be "COMI" (correct) — no action needed. The
+                                // _is_polluted_scrape_record() Python guard (line ~49)
+                                // catches any remaining pollution at save time.
                             }
                         }
                         const priceText = cells[1]?.textContent || '0';
