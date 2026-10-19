@@ -73027,3 +73027,60 @@ Stage Summary:
 - ✅ Liquidity filter: Point-in-Time verified
 - ❌ Block Bootstrap: p-value = 57% (مش significant)
 - 🔁 الـ edge موجود بس مش مـتـأكد إحصائياً
+=======
+
+## SCREENS-INVENTORY-FULL (audit pass)
+
+**Task:** DETAILED inventory of EVERY screen/view — live + archived.
+**Output:** `/home/z/my-project/SCREENS-INVENTORY-FULL.md` (full report, ~14 KB).
+
+### Key findings
+
+- **55 `case` branches** in `renderView()` (page.tsx lines 548-804) → **40 distinct rendered components** → **28 unique canonical user-facing screens** (after dedup of aliases + UI-Mirror Protocol redirects).
+- **5-portal structure** verified in `TopBar.tsx` (`home` / `market` / `predictions` / `finance` / `more`) + mobile bottom nav (`MobileNav.tsx` 5 items: dashboard / stocks / recommendations / portfolio / liquidity-radar).
+- **UI-Mirror Protocol**: 11 `#crypto-*` routes reuse non-crypto components with `setCurrentMarket('CRYPTO')` — only 2 unique crypto screens remain (`CryptoPortfolioView` 641 LOC, `CryptoPredictionTrackingView` 478 LOC).
+- **Rule 67 backward-compat redirects**: 4 legacy hash routes (`#top-performers`, `#advanced-analysis`, `#v2-analysis`, `#picks-management`) still in `VALID_VIEWS` but render canonical component.
+- **Rule 4 (NO-NEW-SCREENS)**: `#market-depth` view is composed inline in `page.tsx` (lines 656-698) — wraps `MultiMarketWidget` + `InvestorsFlowPanel` inside `SafeWidget` instead of creating a new file.
+
+### Archived inventory (12 top-level screens + ~25 sub-views)
+
+| Bucket | Files | LOC removed |
+|---|---|---|
+| `archive/dead-components-2026-10-08/` | 10 (5 crypto + 2 admin + 3 widgets) | 3,393 |
+| `archive/wave-2-cleanup-2026-10-01/src/` | 25+ components | ~5,000+ |
+| `archive/education-duplicate-2026-10-01/` | LearningView + content/store | 1,063+ |
+| `archive/simulation-crypto-duplicate-2026-10-01/` | CryptoSimulationView | 1,955 |
+| `archive/chatbot-popup-2026-10-01/` | FloatingAssistant + AIAssistantChat | 636 |
+| `archive/devil-feature-2026-10-01/` | 4 view components + engines + routes | 875 |
+| `archive/garage/` | 19 library/hook/data files (per `INDEX.md`) | ~3,500 |
+| `archive/engines/` | 5 Python engines (2 archived + 2 legacy + 1 cache) | 1,447 |
+| **TOTAL** | **~70 files** | **~13,000+ LOC** |
+
+Notable: `v73_sniper.py`, `v76_golden_hunter.py`, `fusion_engine.py` were NOT archived despite audit recommendation (per `archive/engines/SKIPPED_NOT_ARCHIVED.md` — V40.2 canonical actively imports them).
+
+### Unified component library adoption (BLUEPRINT Phase 1)
+
+`@/components/shared/ui/index.ts` exports **10 unified components** (PriceDisplay, SignalBadge, RiskRewardBadge, FlowPhaseTag, UnifiedEmptyState, FilterDrawer, StockDetailDrawer, ActionMenu, DeltaBadge, LiquidityFlashCell).
+
+- **2 of 40 views** import from `@/components/shared/ui/*` (LiquidityRadarView + MarketAnalysisView only).
+- **~17 of 40 views** import from `@/components/shared/*` (broader: UnifiedTable, FlashingPriceCell, etc.).
+- **~21 of 40 views** still use ad-hoc patterns (DashboardView, SpecialistAnalysisView, AdminView, AcademyView, all calculator screens, AuthView, AboutView, etc.).
+
+→ Unified library migration is in early stage.
+
+### Heavy views (top 5 LOC)
+
+1. `EnhancedPortfolioView` — 3,369 LOC (#portfolio)
+2. `SpecialistAnalysisView` — 2,916 LOC (#specialist-analysis)
+3. `StockScreenerAdvanced` — 2,723 LOC (#stock-filters)
+4. `AcademyView` — 2,483 LOC (#academy)
+5. `StocksView` — 2,319 LOC (#stocks)
+
+### Next actions suggested
+
+1. Migrate next wave of views to `@/components/shared/ui/*` — top candidates: `StocksView`, `EnhancedWatchlistView` (already use `UnifiedTable` but not the unified primitives).
+2. Consider consolidating `prediction-performance` + `prediction-credibility` placeholder cases — they currently render a hardcoded "admin-only" inline view; could be removed entirely from `VALID_VIEWS` if not needed for backward-compat.
+3. The `archive/devil-feature-2026-10-01/` contains 4 view components (~875 LOC) + 8 TS engines + 4 API routes — full feature archive. Verify no live code imports from this archive folder before considering `git mv` cleanup.
+4. `archive/wave-2-cleanup-2026-10-01/src/modules/admin/components/` contains 14 archived admin tabs — worth re-auditing whether any feature was lost during admin consolidation.
+
+>>>>>>> 75cf10f (SCREENS-INVENTORY-FULL: detailed inventory of every screen (live + archived))
