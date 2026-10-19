@@ -73866,3 +73866,43 @@ Stage Summary:
 - ✅ purification_calculator.py اتصلح.
 - 🔴 60 route محتاجة Python backend (8010) — هتشتغل تلقائياً على الإنتاج.
 - 🔴 14 bug حقيقي محتاج fix (تضارب + tables فاضية + schema split).
+
+---
+Task ID: CHART-DEEP-AUDIT-1 + SCREENS-DEEP-AUDIT-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — audit + brief
+Task: محسن — فهم عميق لكل chart component + كل شاشة + كل مكون. المالك طلب دمج ProfessionalTradingChart + InteractiveChart في واحد.
+
+Work Log:
+- المرحلة 1 (chart deep audit):
+  * TradingViewChart (1895 سطر): self-contained + lightweight-charts + TradingView iframe + candle/bar/area + focus mode + screenshot + fullscreen + Stochastic + ATR. بيستخدمه StockDetail بس.
+  * InteractiveChart (1701 سطر): props-only + multi-pane + SMC + Fusion + BOS + smart markers + MACD projection + CMF + live price + BB squeeze + Fibonacci 7 levels + EMA9/21. بيستخدمه SingleStockAnalysisView + ProfessionalTradingChart.
+  * ProfessionalTradingChart (825 سطر): wrapper بـ 7 أقسام (decision + regime + chart + trade plan + reasons + technical details + rescue CTA). بيستخدمه TradingChartView.
+  * TradingChartView (309 سطر): multi-chart workspace (1-6 tickers) + publish to Telegram.
+- المرحلة 2 (bugs المكتشفة):
+  * BUG #1: ProfessionalTradingChart بـ pass marketRegime (غلط) بدل regimeColor.
+  * BUG #2: ProfessionalTradingChart بـ pass bbSqueeze (غلط) بدل bbSqueezeLevel.
+  * BUG #3: 8 props ناقصة (target3Price + livePrice + cmfData + macdProjection + smartMarkers + smcData + fusionMetrics + regimeColor).
+  * النتيجة: #trading-chart بيرندر InteractiveChart downgraded (نص المميزات مش شغالة).
+- المرحلة 3 (screens deep audit):
+  * 40+ شاشة (أغلبها aliases/redirects). ~25 شاشة حقيقية.
+  * 18 شاشة فيها charts (recharts + lightweight-charts).
+  * MakerRadarTab (3908 سطر) ميت بالكامل + radar module كله (10 components + 3 libs) + personalized/.
+  * MobileMoreSheet ميت (زر "أقسام أخرى" بيعمل nothing).
+  * 5 عائلات تكرار وظيفي: stock selectors (3) + stock detail (2) + publish/share (4) + watchlist (2) + prediction tracking (2).
+  * 6 components dead في shared/ui (Phase 1).
+- المرحلة 4 (قرار المالك):
+  * TradingViewChart يفضل زي ما هو (العميل بدل بينه وبين InteractiveChart).
+  * دمج ProfessionalTradingChart + InteractiveChart في واحد (باسم InteractiveChart).
+  * الـ flow الجديد: أي شاشة → toggle بين TradingViewChart + InteractiveChart (المدمج).
+- المرحلة 5 (brief لألفا):
+  * كتبت agent-ctx/ALPHA-CHART-MERGE-1.md — تكليف مقفول بالـ rich box.
+
+Stage Summary:
+- ✅ فهم عميق لكل chart component (4 charts × بطاقة كاملة + مقارنة شاملة).
+- ✅ فهم عميق لكل شاشة (40+ view + module + APIs + chart).
+- ✅ فهم عميق لكل مكون متكرر (5 عائلات).
+- ✅ 3 bugs حرجة مكتشفة (regimeColor + bbSqueezeLevel + 8 props ناقصة).
+- ✅ brief لألفا جاهز: ALPHA-CHART-MERGE-1 (دمج Professional + Interactive).
+- 🔴 MakerRadarTab (3908 سطر) ميت — محتاج قرار المالك (archive ولا revive).
+- 🔴 MobileMoreSheet ميت — محتاج fix.
+- 🔴 5 عائلات تكرار وظيفي — محتاجة توحيد.
