@@ -136,13 +136,13 @@ function BiblicalBasis() {
           <div className="space-y-3">
             <div className="p-4 bg-gradient-to-r from-purple-50 to-whale dark:from-purple-950/30 dark:to-whale/30 rounded-xl border border-purple-200 dark:border-purple-800/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">ع.ق</div>
-                <span className="font-bold text-purple-700 dark:text-purple-400">من العهد القديم</span>
+                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">ع.ق</div>
+                <span className="font-bold text-primary dark:text-primary">من العهد القديم</span>
               </div>
-              <p className="text-base leading-relaxed text-purple-800 dark:text-purple-200">
+              <p className="text-base leading-relaxed text-primary dark:text-primary">
                 "أَقَدِّمُ كُلَّ عُشْرِ الأَرْضِ لِلرَّبِّ" (تكوين 28: 22)
               </p>
-              <p className="text-base leading-relaxed text-purple-800 dark:text-purple-200 mt-2">
+              <p className="text-base leading-relaxed text-primary dark:text-primary mt-2">
                 "اِئْتُوا بِكُلِّ الْعُشْرِ إِلَى الْخِزَانَةِ" (ملاخي 3: 10)
               </p>
             </div>
@@ -199,7 +199,7 @@ function TitheInfo() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary to-whale rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
               <div className="relative p-6 bg-gradient-to-br from-primary to-whale dark:from-primary/40 dark:to-whale/40 rounded-2xl border-2 border-whale dark:border-whale/50 shadow-lg text-center">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-whale flex items-center justify-center shadow-lg mx-auto mb-4">
-                  <Coins className="w-8 h-8 text-white"/>
+                  <Coins className="w-8 h-8 text-foreground"/>
                 </div>
                 <h3 className="text-lg font-bold text-whale dark:text-whale mb-2">العُشر</h3>
                 <p className="text-4xl font-bold text-whale dark:text-whale mb-2">10%</p>
@@ -211,10 +211,10 @@ function TitheInfo() {
               <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
               <div className="relative p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/40 rounded-2xl border-2 border-purple-300 dark:border-purple-700/50 shadow-lg text-center">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-lg mx-auto mb-4">
-                  <Heart className="w-8 h-8 text-white"/>
+                  <Heart className="w-8 h-8 text-foreground"/>
                 </div>
-                <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-2">الهدف</h3>
-                <p className="text-base font-medium text-purple-600 dark:text-purple-400 mb-3">دعم الكنيسة والخدمة</p>
+                <h3 className="text-lg font-bold text-primary dark:text-primary mb-2">الهدف</h3>
+                <p className="text-base font-medium text-primary dark:text-primary mb-3">دعم الكنيسة والخدمة</p>
                 <p className="text-sm text-muted-foreground">مساعدة المحتاجين</p>
               </div>
             </div>
@@ -269,7 +269,7 @@ function TitheCalculator() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-whale flex items-center justify-center">
-                <CircleDollarSign className="w-5 h-5 text-white"/>
+                <CircleDollarSign className="w-5 h-5 text-foreground"/>
               </div>
               <div>
                 <span className="text-whale dark:text-whale">الراتب الشهري</span>
@@ -289,10 +289,10 @@ function TitheCalculator() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white"/>
+                <TrendingUp className="w-5 h-5 text-foreground"/>
               </div>
               <div>
-                <span className="text-purple-700 dark:text-purple-300">دخل إضافي</span>
+                <span className="text-primary dark:text-primary">دخل إضافي</span>
                 <p className="text-xs text-muted-foreground font-normal">مكافآت، هبات، استثمارات</p>
               </div>
             </CardTitle>
@@ -300,19 +300,19 @@ function TitheCalculator() {
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-purple-700 dark:text-purple-300">دخل آخر</label>
+                <label className="text-xs font-medium text-primary dark:text-primary">دخل آخر</label>
                 <Input type="number" placeholder="0" value={inputs.otherIncome || ''} onChange={(e) => updateInput('otherIncome', parseFloat(e.target.value) || 0)} className="border-purple-200 focus:border-purple-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-purple-700 dark:text-purple-300">مكافآت</label>
+                <label className="text-xs font-medium text-primary dark:text-primary">مكافآت</label>
                 <Input type="number" placeholder="0" value={inputs.bonuses || ''} onChange={(e) => updateInput('bonuses', parseFloat(e.target.value) || 0)} className="border-purple-200 focus:border-purple-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-purple-700 dark:text-purple-300">استثمارات</label>
+                <label className="text-xs font-medium text-primary dark:text-primary">استثمارات</label>
                 <Input type="number" placeholder="0" value={inputs.investments || ''} onChange={(e) => updateInput('investments', parseFloat(e.target.value) || 0)} className="border-purple-200 focus:border-purple-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-purple-700 dark:text-purple-300">هبات</label>
+                <label className="text-xs font-medium text-primary dark:text-primary">هبات</label>
                 <Input type="number" placeholder="0" value={inputs.gifts || ''} onChange={(e) => updateInput('gifts', parseFloat(e.target.value) || 0)} className="border-purple-200 focus:border-purple-400"/>
               </div>
             </div>
@@ -338,7 +338,7 @@ function TitheCalculator() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-whale flex items-center justify-center">
-                          <CheckCircle2 className="w-5 h-5 text-white"/>
+                          <CheckCircle2 className="w-5 h-5 text-foreground"/>
                         </div>
                         <div>
                           <p className="font-bold text-lg">{result.categoryAr}</p>
@@ -356,7 +356,7 @@ function TitheCalculator() {
               
               <Separator className="my-6"/>
               
-              <div className="relative p-8 bg-gradient-to-br from-primary via-whale to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
+              <div className="relative p-8 bg-gradient-to-br from-primary via-whale to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-foreground">
                 <Dove className="w-10 h-10 mx-auto mb-2 opacity-80"/>
                 <p className="text-sm opacity-90 mb-1">العُشر الشهري</p>
                 <p className="text-4xl font-bold mb-2">{formatCurrency(totalTithe)}</p>
@@ -375,9 +375,9 @@ function TitheCalculator() {
                   <p className="text-xs text-muted-foreground mb-1">العُشر الشهري</p>
                   <p className="text-lg font-bold text-whale">{formatCurrency(totalTithe)}</p>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30">
+                <div className="text-center p-4 rounded-xl bg-primary dark:bg-primary/30">
                   <p className="text-xs text-muted-foreground mb-1">العُشر السنوي</p>
-                  <p className="text-lg font-bold text-purple-600">{formatCurrency(annualTithe)}</p>
+                  <p className="text-lg font-bold text-primary">{formatCurrency(annualTithe)}</p>
                 </div>
               </div>
             </CardContent>
@@ -431,9 +431,9 @@ function GivingGuide() {
                   guide.color === 'blue' && 'bg-whale',
                   guide.color === 'red' && 'bg-loss',
                   guide.color === 'amber' && 'bg-warning',
-                  guide.color === 'purple' && 'bg-purple-500',
+                  guide.color === 'purple' && 'bg-primary',
                 )}>
-                  <Icon className="w-5 h-5 text-white"/>
+                  <Icon className="w-5 h-5 text-foreground"/>
                 </div>
                 <div>
                   <h4 className="font-bold">{guide.title}</h4>
@@ -555,7 +555,7 @@ function AutoTithesCard() {
           <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-whale flex items-center justify-center shadow">
-                <Sparkles className="w-5 h-5 text-white"/>
+                <Sparkles className="w-5 h-5 text-foreground"/>
               </div>
               <div>
                 <span className="text-whale dark:text-whale text-lg">العُشر التلقائي من محفظتك</span>
@@ -628,7 +628,7 @@ function AutoTithesCard() {
 
               {/* Result block — green gradient if tithe due, blue info if no income */}
               {tithable > 0 ? (
-                <div className="relative p-6 bg-gradient-to-br from-primary via-whale to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
+                <div className="relative p-6 bg-gradient-to-br from-primary via-whale to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-foreground">
                   <div className="absolute inset-0 opacity-20">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <pattern id="autoTithesStars" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -664,7 +664,7 @@ function BreakdownRow({ icon, label, value, color }: { icon: React.ReactNode; la
   const colorMap: Record<string, string> = {
     blue: 'text-whale dark:text-whale',
     green: 'text-success dark:text-success',
-    purple: 'text-purple-600 dark:text-purple-400',
+    purple: 'text-primary dark:text-primary',
     red: 'text-loss dark:text-loss',
   };
   return (
@@ -696,7 +696,7 @@ export function TithesView() {
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-whale to-purple-500 flex items-center justify-center shadow-lg">
-                <Cross className="w-7 h-7 text-white"/>
+                <Cross className="w-7 h-7 text-foreground"/>
               </div>
               <Dove className="absolute -top-1 -left-1 w-5 h-5 text-whale"/>
             </div>

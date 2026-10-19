@@ -530,7 +530,7 @@ function StockIcon({
 
   return (
     <div
-      className={`${cls} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-bold border-2 border-white/20 dark:border-slate-700 shadow-sm`}
+      className={`${cls} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-foreground font-bold border-2 border-white/20 dark:border-slate-700 shadow-sm`}
       aria-label={`${symbol} icon`}
     >
       {initials}
@@ -699,7 +699,7 @@ function CandlestickChart({
                 y1={scaleY(support)}
                 x2={W - padR}
                 y2={scaleY(support)}
-                stroke="#10b981"
+                stroke="hsl(var(--profit))"
                 strokeWidth={1}
                 strokeDasharray="4 3"
                 opacity={0.7}
@@ -718,7 +718,7 @@ function CandlestickChart({
                 y1={scaleY(resistance)}
                 x2={W - padR}
                 y2={scaleY(resistance)}
-                stroke="#ef4444"
+                stroke="hsl(var(--loss))"
                 strokeWidth={1}
                 strokeDasharray="4 3"
                 opacity={0.7}
@@ -733,7 +733,7 @@ function CandlestickChart({
           {slice.map((candle, i) => {
             const x = padL + i * candleSlot + candleSlot / 2;
             const isGreen = candle.close >= candle.open;
-            const color = isGreen ? '#10b981' : '#ef4444';
+            const color = isGreen ? 'hsl(var(--profit))' : 'hsl(var(--loss))';
             const bodyTop = scaleY(Math.max(candle.open, candle.close));
             const bodyBottom = scaleY(Math.min(candle.open, candle.close));
             const bodyH = Math.max(bodyBottom - bodyTop, 1);
@@ -813,7 +813,7 @@ function CandlestickChart({
             const vol = candle.volume ?? 0;
             const h = scaleVol(vol);
             const isGreen = candle.close >= candle.open;
-            const color = isGreen ? '#10b981' : '#ef4444';
+            const color = isGreen ? 'hsl(var(--profit))' : 'hsl(var(--loss))';
             return (
               <rect
                 key={`v-${i}`}
@@ -922,13 +922,13 @@ function LiquidityFootprintSection({
           </p>
           <div className="flex h-6 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
             <div
-              className="bg-profit flex items-center justify-center text-[10px] text-white font-bold"
+              className="bg-profit flex items-center justify-center text-[10px] text-foreground font-bold"
               style={{ width: `${buyPct}%` }}
             >
               {buyPct > 12 ? `${(buyPct ?? 0).toFixed(0)}%` : ''}
             </div>
             <div
-              className="bg-loss flex items-center justify-center text-[10px] text-white font-bold"
+              className="bg-loss flex items-center justify-center text-[10px] text-foreground font-bold"
               style={{ width: `${sellPct}%` }}
             >
               {sellPct > 12 ? `${(sellPct ?? 0).toFixed(0)}%` : ''}
@@ -1106,7 +1106,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
     : sigNum >= 65 ? { txt: 'شراء', cls: 'text-profit' }
     : sigNum >= 55 ? { txt: 'تجميع', cls: 'text-whale' }
     : sigNum >= 40 ? { txt: 'انتظار', cls: 'text-warning' }
-    : sigNum >= 25 ? { txt: 'تقليل', cls: 'text-orange-600' }
+    : sigNum >= 25 ? { txt: 'تقليل', cls: 'text-warning' }
     : { txt: 'بيع', cls: 'text-loss' };
 
   return (
@@ -1595,7 +1595,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
     : signal >= 65 ? { txt: 'شراء', cls: 'text-profit', bg: 'bg-profit dark:bg-profit/30' }
     : signal >= 55 ? { txt: 'تجميع', cls: 'text-whale', bg: 'bg-whale dark:bg-whale/30' }
     : signal >= 40 ? { txt: 'انتظار', cls: 'text-warning', bg: 'bg-warning dark:bg-warning/30' }
-    : signal >= 25 ? { txt: 'تقليل', cls: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' }
+    : signal >= 25 ? { txt: 'تقليل', cls: 'text-warning', bg: 'bg-warning dark:bg-warning/30' }
     : { txt: 'بيع', cls: 'text-loss', bg: 'bg-loss dark:bg-loss/30' };
 
   const trendAr = trend == null ? null
@@ -1804,7 +1804,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
 
   function resolveColor(color: string | null, score: number | null): string {
     if (color === 'red') return 'text-loss';
-    if (color === 'orange') return 'text-orange-600';
+    if (color === 'orange') return 'text-warning';
     if (color === 'amber') return 'text-warning';
     if (color === 'green') return 'text-profit';
     if (score != null) {
@@ -2352,7 +2352,7 @@ ${OFFICIAL_LINKS_BLOCK}
         <Button onClick={() => handleShare('facebook')} size="sm" className="bg-profit hover:bg-profit text-white gap-1.5">
           <Facebook className="w-4 h-4" /> Facebook
         </Button>
-        <Button onClick={() => handleShare('telegram')} size="sm" className="bg-slate-600 hover:bg-slate-700 text-white gap-1.5">
+        <Button onClick={() => handleShare('telegram')} size="sm" className="bg-slate-600 hover:bg-slate-700 text-foreground gap-1.5">
           <Send className="w-4 h-4" /> Telegram
         </Button>
         <Button onClick={() => handleShare('copy')} size="sm" variant="outline" className="gap-1.5">
@@ -2672,7 +2672,7 @@ export function SpecialistAnalysisView() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-profit to-warning flex items-center justify-center flex-shrink-0 shadow-md">
-              <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+              <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-foreground" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">

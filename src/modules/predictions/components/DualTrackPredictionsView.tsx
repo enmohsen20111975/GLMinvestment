@@ -510,7 +510,7 @@ function TrackCard({
 
   const colorClasses = {
     cyan: 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 border-cyan-500/20',
-    purple: 'text-purple-600 dark:text-purple-400 bg-purple-500/5 border-purple-500/20',
+    purple: 'text-primary dark:text-primary bg-primary/5 border-purple-500/20',
   };
 
   return (
@@ -561,7 +561,7 @@ function PredictionRow({ pred }: { pred: Prediction }) {
       className={cn(
         'flex items-center justify-between p-2.5 rounded-lg border text-xs',
         isLiquidity
-          ? 'bg-purple-500/5 border-purple-500/20'
+          ? 'bg-primary/5 border-purple-500/20'
           : 'bg-cyan-500/5 border-cyan-500/20',
         isWin && 'ring-1 ring-profit/30',
         isLoss && 'ring-1 ring-loss/30',
@@ -570,7 +570,7 @@ function PredictionRow({ pred }: { pred: Prediction }) {
       <div className="flex items-center gap-2 min-w-0">
         <span className={cn(
           'text-[10px] font-medium px-1.5 py-0.5 rounded',
-          isLiquidity ? 'bg-purple-500/20 text-purple-700' : 'bg-cyan-500/20 text-cyan-700'
+          isLiquidity ? 'bg-primary/20 text-primary' : 'bg-cyan-500/20 text-cyan-700'
         )}>
           {pred.track_label}
         </span>

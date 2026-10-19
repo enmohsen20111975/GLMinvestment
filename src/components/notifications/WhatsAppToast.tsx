@@ -58,7 +58,7 @@ export function WhatsAppToast({
           <div className="relative">
             <div
               className={cn(
-                'w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm',
+                'w-7 h-7 rounded-full flex items-center justify-center text-foreground shadow-sm',
                 isExit
                   ? 'bg-gradient-to-tr from-loss to-loss'
                   : isExplosive
@@ -137,7 +137,7 @@ export function WhatsAppToast({
         <button
           onClick={handleOpenStock}
           className={cn(
-            'inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-lg text-white shadow-sm transition-all',
+            'inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-lg text-foreground shadow-sm transition-all',
             isExit
               ? 'bg-loss hover:bg-loss'
               : 'bg-profit hover:bg-profit'

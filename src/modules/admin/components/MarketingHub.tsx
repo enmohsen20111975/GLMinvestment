@@ -139,7 +139,7 @@ function CampaignBuilder({ feature, market, ctaGoal }: { feature: FeatureKey; ma
           onClick={generate}
           disabled={generating}
           size="lg"
-          className="gap-2 bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-white"
+          className="gap-2 bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-foreground"
         >
           {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {generating ? 'بيبني الحملة...' : 'ابنِ الحملة كاملة'}
@@ -367,7 +367,7 @@ export function MarketingHub() {
         <CardHeader>
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-whale to-cyan-500 flex items-center justify-center shrink-0">
-              <Megaphone className="w-6 h-6 text-white" />
+              <Megaphone className="w-6 h-6 text-foreground" />
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-lg flex items-center gap-2 flex-wrap">

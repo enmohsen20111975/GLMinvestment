@@ -208,7 +208,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className={`font-mono font-bold text-base ${
-                        entry.rank <= 3 ? 'text-white' : 'text-slate-200'
+                        entry.rank <= 3 ? 'text-foreground' : 'text-slate-200'
                       }`}>
                         {entry.ticker}
                       </span>
@@ -344,7 +344,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
                   {/* Ticker + Name */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-white text-base">
+                      <span className="font-mono font-bold text-foreground text-base">
                         {trade.ticker}
                       </span>
                       {trade.signal === 'BUY' && (

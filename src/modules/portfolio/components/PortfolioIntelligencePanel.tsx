@@ -100,7 +100,7 @@ export function PortfolioIntelligencePanel() {
     switch (action) {
       case 'BUY': return 'bg-success text-white';
       case 'SELL': return 'bg-loss text-white';
-      default: return 'bg-yellow-500 text-white';
+      default: return 'bg-warning text-white';
     }
   };
 
@@ -116,7 +116,7 @@ export function PortfolioIntelligencePanel() {
     switch (trend) {
       case 'BULLISH': return 'text-profit';
       case 'BEARISH': return 'text-loss';
-      default: return 'text-yellow-600';
+      default: return 'text-warning';
     }
   };
 
@@ -124,7 +124,7 @@ export function PortfolioIntelligencePanel() {
     switch (risk) {
       case 'LOW': return 'bg-success text-profit';
       case 'HIGH': return 'bg-loss text-loss';
-      default: return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-warning text-warning';
     }
   };
 
@@ -307,9 +307,9 @@ export function PortfolioIntelligencePanel() {
                       <div className="text-sm text-muted-foreground">{stock?.name}</div>
                     </div>
                     <Badge className={cn(
-                      "text-white",
+                      "text-foreground",
                       analysis.trend === 'BULLISH' ? "bg-success" : 
-                      analysis.trend === 'BEARISH' ? "bg-loss" : "bg-yellow-500"
+                      analysis.trend === 'BEARISH' ? "bg-loss" : "bg-warning"
                     )}>
                       {analysis.trend === 'BULLISH' ? 'صاعد' : analysis.trend === 'BEARISH' ? 'هابط' : 'محايد'}
                     </Badge>

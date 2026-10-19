@@ -398,14 +398,14 @@ function CoverPageHeader({
   const rec = analysis?.recommendation;
   const isUp = change >= 0;
   const actionColors: Record<string, string> = {
-    strong_buy: 'from-profit to-profit text-white',
-    buy: 'from-profit to-whale text-white',
-    accumulate: 'from-whale to-profit text-white',
+    strong_buy: 'from-profit to-profit text-foreground',
+    buy: 'from-profit to-whale text-foreground',
+    accumulate: 'from-whale to-profit text-foreground',
     hold: 'from-warning to-warning text-[#0a0e1a]',
-    sell: 'from-loss to-loss text-white',
-    strong_sell: 'from-loss to-loss text-white',
+    sell: 'from-loss to-loss text-foreground',
+    strong_sell: 'from-loss to-loss text-foreground',
   };
-  const actionBg = actionColors[rec?.action ?? 'hold'] ?? 'from-slate-600 to-slate-500 text-white';
+  const actionBg = actionColors[rec?.action ?? 'hold'] ?? 'from-slate-600 to-slate-500 text-foreground';
   return (
     <div
       className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
@@ -416,7 +416,7 @@ function CoverPageHeader({
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight tabular-nums">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight tabular-nums">
               {stock.ticker}
             </h1>
             <Badge

@@ -19,7 +19,7 @@ interface GateAnalysisViewProps {
 const signalColors: Record<string, string> = {
   BUY_STRONG: 'bg-lime-600', BUY: 'bg-success', BUY_CONTRARIAN: 'bg-whale',
   ACCUMULATE: 'bg-whale', SELL: 'bg-loss', SELL_STRONG: 'bg-loss',
-  WAIT: 'bg-warning', AVOID: 'bg-gray-600',
+  WAIT: 'bg-warning', AVOID: 'bg-muted',
 };
 const signalBanners: Record<string, string> = {
   BUY_STRONG: 'شراء قوي ▲', BUY: 'شراء ▲', BUY_CONTRARIAN: 'شراء عكسي ▲',
@@ -196,9 +196,9 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
       </CardHeader>
 
       {/* Signal Banner */}
-      <div className={`${signalColors[r.signal] || 'bg-gray-600'} px-4 py-3 sm:px-6 sm:py-4 flex items-center gap-2`}>
-        <BannerIcon className="size-5 text-white shrink-0" />
-        <span className="text-lg sm:text-xl font-bold text-white">{signalBanners[r.signal] || r.signalAr}</span>
+      <div className={`${signalColors[r.signal] || 'bg-muted'} px-4 py-3 sm:px-6 sm:py-4 flex items-center gap-2`}>
+        <BannerIcon className="size-5 text-foreground shrink-0" />
+        <span className="text-lg sm:text-xl font-bold text-foreground">{signalBanners[r.signal] || r.signalAr}</span>
       </div>
 
       <CardContent className="px-4 py-4 sm:px-6 sm:py-6 space-y-4">

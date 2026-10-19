@@ -940,7 +940,7 @@ export function SuperLearningSystem() {
   // Get win rate color
   const getWinRateColor = (rate: number) => {
     if (rate >= 70) return 'text-profit dark:text-profit';
-    if (rate >= 50) return 'text-yellow-600 dark:text-yellow-400';
+    if (rate >= 50) return 'text-warning dark:text-warning';
     return 'text-loss dark:text-loss';
   };
 
@@ -1040,7 +1040,7 @@ export function SuperLearningSystem() {
       filterable: true,
       width: 'w-28',
       render: (r) => (
-        <Badge variant="outline" className="bg-purple-500/10 text-purple-600 font-mono text-[11px]">
+        <Badge variant="outline" className="bg-primary/10 text-primary font-mono text-[11px]">
           {r.winRate}%
         </Badge>
       ),
@@ -1117,7 +1117,7 @@ export function SuperLearningSystem() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-gradient-to-br from-violet-500 via-purple-600 to-whale rounded-xl shadow-lg">
-            <Brain className="h-6 w-6 text-white" />
+            <Brain className="h-6 w-6 text-foreground" />
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight">نظام التعلم الذكي الموحد</h2>
@@ -1261,7 +1261,7 @@ export function SuperLearningSystem() {
             <span className="hidden sm:inline">النتائج</span>
           </TabsTrigger>
           <TabsTrigger value="persona-benchmark" className="gap-1">
-            <Users className="w-4 h-4 text-purple-500" />
+            <Users className="w-4 h-4 text-primary" />
             <span className="hidden sm:inline">مقارنة الشخصيات</span>
           </TabsTrigger>
         </TabsList>
@@ -1353,7 +1353,7 @@ export function SuperLearningSystem() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-purple-500" />
+                  <Sliders className="w-5 h-5 text-primary" />
                   التحكم في نسب وأوزان محركات التحليل (Weights Tuner & Presets)
                 </CardTitle>
                 <div className="flex items-center gap-3">
@@ -1386,7 +1386,7 @@ export function SuperLearningSystem() {
                 <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-semibold flex items-center gap-1.5">
-                      <Flame className="w-3.5 h-3.5 text-orange-500" />
+                      <Flame className="w-3.5 h-3.5 text-warning" />
                       SMC Engine
                     </span>
                     <Badge variant="secondary" className="font-mono text-xs">{engineWeights.smc}%</Badge>
@@ -1443,7 +1443,7 @@ export function SuperLearningSystem() {
                 <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-semibold flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
                       EGX Tuned
                     </span>
                     <Badge variant="secondary" className="font-mono text-xs">{engineWeights.egx}%</Badge>
@@ -1463,7 +1463,7 @@ export function SuperLearningSystem() {
               <div className="space-y-3 pt-2 border-t">
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-xs font-semibold flex items-center gap-1.5">
-                    <Save className="w-4 h-4 text-purple-500" />
+                    <Save className="w-4 h-4 text-primary" />
                     القوائم المسبقة المتاحة (Weight Presets):
                   </span>
 
@@ -1491,7 +1491,7 @@ export function SuperLearningSystem() {
                     >
                       <button
                         onClick={() => handleLoadPreset(preset)}
-                        className="font-medium hover:text-purple-600 transition-colors text-right"
+                        className="font-medium hover:text-primary transition-colors text-right"
                       >
                         {preset.name}
                       </button>
@@ -1530,7 +1530,7 @@ export function SuperLearningSystem() {
 
             <Card className="p-3 bg-gradient-to-br from-purple-500/10 to-card">
               <span className="text-xs text-muted-foreground font-medium">إجمالي العائد (Total Return)</span>
-              <p className="text-2xl font-bold text-purple-600 mt-1">+{predictionMetrics.totalReturn}%</p>
+              <p className="text-2xl font-bold text-primary mt-1">+{predictionMetrics.totalReturn}%</p>
               <span className="text-[10px] text-muted-foreground">منذ {fromDate}</span>
             </Card>
 
@@ -1575,7 +1575,7 @@ export function SuperLearningSystem() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-purple-500" />
+                  <BarChart3 className="w-4 h-4 text-primary" />
                   تقرير الأداء حسب نموذج المحرك (Engine Model Breakdown)
                 </CardTitle>
               </CardHeader>
@@ -1602,7 +1602,7 @@ export function SuperLearningSystem() {
                 <CardTitle className="text-sm flex items-center gap-2">
                   {group === 'technical' && <TrendingUp className="w-4 h-4 text-primary" />}
                   {group === 'risk' && <Shield className="w-4 h-4 text-warning" />}
-                  {group === 'decision' && <Target className="w-4 h-4 text-purple-500" />}
+                  {group === 'decision' && <Target className="w-4 h-4 text-primary" />}
                   {group === 'technical' && 'المؤشرات الفنية'}
                   {group === 'risk' && 'إدارة المخاطر'}
                   {group === 'decision' && 'منطق القرار'}
@@ -1957,7 +1957,7 @@ export function SuperLearningSystem() {
                               className={cn(
                                 "cursor-pointer",
                                 safeNumber(iter?.result?.win_rate) >= 70 && "bg-success hover:bg-success",
-                                safeNumber(iter?.result?.win_rate) >= 50 && safeNumber(iter?.result?.win_rate) < 70 && "bg-yellow-500 hover:bg-yellow-600",
+                                safeNumber(iter?.result?.win_rate) >= 50 && safeNumber(iter?.result?.win_rate) < 70 && "bg-warning hover:bg-warning",
                                 safeNumber(iter?.result?.win_rate) < 50 && "bg-loss hover:bg-loss"
                               )}
                             >
@@ -2010,7 +2010,7 @@ export function SuperLearningSystem() {
           <Card className="border-purple-200 dark:border-purple-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-500" />
+                <Users className="w-5 h-5 text-primary" />
                 مقارنة الشخصيات الاستثمارية (Persona Benchmarking)
               </CardTitle>
               <CardDescription>
@@ -2209,7 +2209,7 @@ export function SuperLearningSystem() {
                           <TableCell
                             key={p}
                             className={cn(
-                              "text-xs text-center font-mono text-purple-600 dark:text-purple-400 font-bold",
+                              "text-xs text-center font-mono text-primary dark:text-primary font-bold",
                               isBest && "bg-profit/40 dark:bg-profit/10 border-x-2 border-profit"
                             )}
                           >
@@ -2365,7 +2365,7 @@ export function SuperLearningSystem() {
                               {loading ? (
                                 <Loader2 className="w-4 h-4 animate-spin mx-auto text-profit" />
                               ) : r?.totalReturn !== null && r?.totalReturn !== undefined ? (
-                                <span className="text-purple-600 dark:text-purple-400">+{(r.totalReturn ?? 0).toFixed(2)}%</span>
+                                <span className="text-primary dark:text-primary">+{(r.totalReturn ?? 0).toFixed(2)}%</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
@@ -2398,7 +2398,7 @@ export function SuperLearningSystem() {
                 <Button
                   onClick={runSideBySideBacktest}
                   disabled={anyPersonaBenchmarkLoading}
-                  className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                  className="gap-2 bg-primary hover:bg-primary text-white"
                 >
                   {anyPersonaBenchmarkLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

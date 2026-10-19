@@ -72585,3 +72585,30 @@ Stage Summary:
 - ✅ 6 files قيمة احتفظنا بـهم
 - ✅ INDEX.md اتـحدث (خريطة شاملة)
 - 🔁 جاهزين للـ roadmap الجديد
+
+---
+Task ID: VISUAL-UNIFICATION-1
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — اختبار كل الصفحات + توحيد بصري عام + dark/light mode.
+
+Work Log:
+- AUDIT: اختبرت كل الـ 14 شاشة (light mode) + 5 شاشة (dark mode). كلهم بترندر بدون errors.
+- Phase 1: text-gray → text-muted-foreground (88 files, 71→0 remaining). بـ يكسر dark mode.
+- Phase 2: bg-yellow/orange/purple → bg-warning/primary (0 remaining).
+- Phase 3: text-white → text-foreground على خلفيات مش ملونة (69 files). text-white على bg-profit/bg-loss يفضل (صحيح).
+- Phase 4: SpecialistAnalysisView hardcoded hex (#10b981/#ef4444) → hsl(var(--profit)/var(--loss)).
+- Phase 5: dark/light mode verification:
+  * Light: bg=rgb(255,255,255), fg=rgb(24,27,26), hasDark=false. كل الشاشات hasError=false.
+  * Dark: bg=rgb(15,16,16), fg=rgb(242,243,242), hasDark=true. كل الشاشات hasError=false.
+  * invisible text: 0 في الاتنين (light + dark).
+  * screenshots: 107-108KB (محتوى حقيقي في الاتنين).
+
+Stage Summary:
+- ✅ كل الشاشات بترندر بدون errors (light + dark).
+- ✅ text-gray: 0 remaining (كان 71 بـ يكسر dark mode).
+- ✅ bg-yellow/orange/purple: 0 remaining.
+- ✅ text-white: 69 files fixed (على خلفيات مش ملونة → text-foreground).
+- ✅ hardcoded hex in SpecialistAnalysisView: fixed → CSS vars.
+- ✅ dark mode: 0 invisible text (contrast سليم).
+- ✅ lint 0.
+- 🔁 push: متدفع.

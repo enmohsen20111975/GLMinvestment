@@ -140,7 +140,7 @@ const PRICE_RANGE_AR: Record<string, string> = {
 };
 
 const PATH_META: Record<string, { ar: string; icon: React.ReactNode; color: string }> = {
-  A_pre_surge: { ar: 'Pre-Surge', icon: <Rocket className="h-3.5 w-3.5" />, color: 'text-purple-600 dark:text-purple-400' },
+  A_pre_surge: { ar: 'Pre-Surge', icon: <Rocket className="h-3.5 w-3.5" />, color: 'text-primary dark:text-primary' },
   B_quiet_accumulation_strong: { ar: 'تجميع قوي', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
   C_quiet_accumulation_weak: { ar: 'تجميع ضعيف', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
   D_explosive_surge: { ar: 'انفجار حجمي', icon: <Flame className="h-3.5 w-3.5" />, color: 'text-loss dark:text-loss' },

@@ -632,7 +632,7 @@ const watchlistColumns: Column<WatchlistRow>[] = [
         'text-xs',
         w.priority === 'HIGH' ? 'text-loss bg-loss border-loss'
         : w.priority === 'MEDIUM' ? 'text-warning bg-warning border-warning'
-        : 'text-gray-700 bg-gray-50 border-gray-200'
+        : 'text-muted-foreground bg-muted border-border'
       )}>
         {w.priority === 'HIGH' ? 'عالية' : w.priority === 'MEDIUM' ? 'متوسطة' : 'منخفضة'}
       </Badge>

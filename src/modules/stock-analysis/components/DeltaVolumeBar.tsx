@@ -141,7 +141,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
             }}
           >
             {buyPct > 15 && (
-              <span className="text-[10px] text-white font-bold">{Math.round(buyPct)}%</span>
+              <span className="text-[10px] text-foreground font-bold">{Math.round(buyPct)}%</span>
             )}
           </div>
           <div
@@ -151,7 +151,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
             }}
           >
             {sellPct > 15 && (
-              <span className="text-[10px] text-white font-bold">{Math.round(sellPct)}%</span>
+              <span className="text-[10px] text-foreground font-bold">{Math.round(sellPct)}%</span>
             )}
           </div>
         </div>

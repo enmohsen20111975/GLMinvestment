@@ -141,14 +141,14 @@ function changeColor(v: number | null | undefined): string {
 function scoreColor(score: number): string {
   if (score >= 70) return 'text-profit dark:text-profit';
   if (score >= 50) return 'text-warning dark:text-warning';
-  if (score >= 30) return 'text-orange-600 dark:text-orange-400';
+  if (score >= 30) return 'text-warning dark:text-warning';
   return 'text-loss dark:text-loss';
 }
 
 function scoreBg(score: number): string {
   if (score >= 70) return 'bg-profit';
   if (score >= 50) return 'bg-warning';
-  if (score >= 30) return 'bg-orange-500';
+  if (score >= 30) return 'bg-warning';
   return 'bg-loss';
 }
 
@@ -163,8 +163,8 @@ function signalBadge(signal: string): { label: string; className: string } {
   if (s.includes('accumulate')) return { label: 'تجميع', className: 'bg-primary text-primary dark:bg-primary dark:text-primary' };
   if (s.includes('strong_sell')) return { label: 'بيع قوي', className: 'bg-loss text-white' };
   if (s.includes('sell')) return { label: 'بيع', className: 'bg-loss text-loss dark:bg-loss dark:text-loss' };
-  if (s.includes('reduce')) return { label: 'تخفيض', className: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' };
-  return { label: 'انتظار', className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' };
+  if (s.includes('reduce')) return { label: 'تخفيض', className: 'bg-warning text-warning dark:bg-warning dark:text-warning' };
+  return { label: 'انتظار', className: 'bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground' };
 }
 
 // ============================================================================
@@ -430,7 +430,7 @@ function StockHeaderBar({
           {/* Left: Identity */}
           <div className="flex items-center gap-4">
             <div className={cn(
-              'w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl',
+              'w-14 h-14 rounded-xl flex items-center justify-center text-foreground font-bold text-xl',
               isPositive ? 'bg-gradient-to-br from-profit to-whale' : 'bg-gradient-to-br from-loss to-loss'
             )}>
               {ticker.slice(0, 2)}

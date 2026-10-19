@@ -182,15 +182,15 @@ const SECTIONS = [
     icon: Wallet,
     title: 'المحافظ المتعددة',
     titleEn: 'Multi-Portfolio',
-    color: 'text-purple-400',
-    bg: 'bg-purple-950/40',
+    color: 'text-primary',
+    bg: 'bg-primary/40',
     border: 'border-purple-800',
     content: (
       <div className="space-y-3 text-sm leading-relaxed">
         <p>
-          يمكن تسجيل <strong className="text-purple-400">محفظة ثاندر منفصلة</strong>،
-          و<strong className="text-purple-400">محفظة مباشر منفصلة</strong>، وحتى
-          <strong className="text-purple-400"> محفظة بينانس</strong> — لكل وسيط
+          يمكن تسجيل <strong className="text-primary">محفظة ثاندر منفصلة</strong>،
+          و<strong className="text-primary">محفظة مباشر منفصلة</strong>، وحتى
+          <strong className="text-primary"> محفظة بينانس</strong> — لكل وسيط
           حساب منفصل.
         </p>
         <div className="p-3 rounded-lg bg-muted/40 border border-border/50 space-y-2">
@@ -203,7 +203,7 @@ const SECTIONS = [
               ربحك.</li>
           </ol>
         </div>
-        <div className="p-3 rounded-lg bg-purple-950/30 border border-purple-800/50">
+        <div className="p-3 rounded-lg bg-primary/30 border border-purple-800/50">
           <p className="text-xs">
             <strong>الفائدة:</strong> ستتمكن من معرفة مصدر الربح بدقة — مثلاً
             «ربح 5% على ثاندر، خسارة 2% على مباشر» — لتركّز على ما يحقق ربحاً.

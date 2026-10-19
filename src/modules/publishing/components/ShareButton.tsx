@@ -439,7 +439,7 @@ export function ShareableCard({
           />
         </div>
       )}
-      <div ref={cardRef} className="bg-white dark:bg-gray-900 rounded-lg">
+      <div ref={cardRef} className="bg-white dark:bg-muted rounded-lg">
         {children}
       </div>
     </div>

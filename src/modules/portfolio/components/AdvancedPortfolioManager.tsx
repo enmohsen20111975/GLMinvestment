@@ -49,8 +49,8 @@ interface HeatLevel {
 
 const HEAT_STYLES: Record<string, HeatLevel> = {
   safe: { level: 'آمن', color: 'text-profit', bgColor: 'bg-profit', borderColor: 'border-profit' },
-  caution: { level: 'حذر', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-  danger: { level: 'خطر', color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
+  caution: { level: 'حذر', color: 'text-warning', bgColor: 'bg-warning', borderColor: 'border-yellow-200' },
+  danger: { level: 'خطر', color: 'text-warning', bgColor: 'bg-warning', borderColor: 'border-orange-200' },
   critical: { level: 'حرج', color: 'text-loss', bgColor: 'bg-loss', borderColor: 'border-loss' },
 };
 
@@ -216,7 +216,7 @@ export function AdvancedPortfolioManager() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-orange-500" />
+              <Flame className="w-5 h-5 text-warning" />
               <CardTitle>حرارة المحفظة</CardTitle>
             </div>
             <Button variant="outline" size="sm" onClick={calculateHeat} disabled={loading}>
@@ -282,11 +282,11 @@ export function AdvancedPortfolioManager() {
               {portfolioState.warnings.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                    <AlertTriangle className="w-4 h-4 text-warning" />
                     تحذيرات
                   </h4>
                   {portfolioState.warnings.map((warning: string, i: number) => (
-                    <div key={i} className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-sm">
+                    <div key={i} className="p-2 bg-warning dark:bg-warning/20 rounded text-sm">
                       {warning}
                     </div>
                   ))}

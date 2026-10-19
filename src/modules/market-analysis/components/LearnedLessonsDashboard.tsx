@@ -56,7 +56,7 @@ interface ApiResponse {
 
 const RECOMMENDATION_AR: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   reduce_exposure: { label: 'تقليل الانكشاف', color: 'text-loss bg-loss/10 border-loss/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
-  reduce_weight: { label: 'تقليل الوزن', color: 'text-orange-600 bg-orange-500/10 border-orange-500/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
+  reduce_weight: { label: 'تقليل الوزن', color: 'text-warning bg-warning/10 border-orange-500/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
   increase_weight: { label: 'زيادة الوزن', color: 'text-profit bg-profit/10 border-profit/30', icon: <TrendingUp className="h-3.5 w-3.5" /> },
   add_filter: { label: 'إضافة فلتر', color: 'text-warning bg-warning/10 border-warning/30', icon: <Filter className="h-3.5 w-3.5" /> },
 };
@@ -171,7 +171,7 @@ export function LearnedLessonsDashboard({ initialLimit = 50 }: LearnedLessonsDas
               <StatPill
                 label="متوسط معدل الفشل"
                 value={`${stats.avgFailureRate}%`}
-                icon={<AlertTriangle className="h-3.5 w-3.5 text-orange-500" />}
+                icon={<AlertTriangle className="h-3.5 w-3.5 text-warning" />}
               />
             </div>
           </CardContent>

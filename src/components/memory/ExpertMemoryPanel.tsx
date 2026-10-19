@@ -157,7 +157,7 @@ export function ExpertMemoryPanel({
 
   const getWinRateColor = (wr: number) => {
     if (wr >= 60) return 'text-success';
-    if (wr >= 40) return 'text-yellow-600';
+    if (wr >= 40) return 'text-warning';
     return 'text-loss';
   };
 
@@ -168,7 +168,7 @@ export function ExpertMemoryPanel({
       case 'loss':
         return <XCircle className="h-4 w-4 text-loss" />;
       default:
-        return <MinusCircle className="h-4 w-4 text-gray-400" />;
+        return <MinusCircle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 

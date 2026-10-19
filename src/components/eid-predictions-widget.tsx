@@ -43,7 +43,7 @@ const iconMap: Record<string, any> = {
 const signalColors: Record<string, string> = {
   'BUY': 'bg-success/20 text-success border-success/50',
   'SELL': 'bg-loss/20 text-loss border-loss/50',
-  'HOLD': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
+  'HOLD': 'bg-warning/20 text-warning border-yellow-500/50'
 };
 
 const signalIcons: Record<string, any> = {
@@ -141,7 +141,7 @@ export function EidPredictionsWidget() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-loss" />
-            <CardTitle className="text-white">خطأ في التحميل</CardTitle>
+            <CardTitle className="text-foreground">خطأ في التحميل</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -161,7 +161,7 @@ export function EidPredictionsWidget() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-warning" />
-            <CardTitle className="text-white text-lg">
+            <CardTitle className="text-foreground text-lg">
               توقعات اليوم
             </CardTitle>
           </div>
@@ -170,7 +170,7 @@ export function EidPredictionsWidget() {
             variant="ghost"
             onClick={() => fetchPredictions(true)}
             disabled={refreshing}
-            className="text-slate-400 hover:text-white"
+            className="text-slate-400 hover:text-foreground"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
@@ -206,7 +206,7 @@ export function EidPredictionsWidget() {
                   <div className="p-1.5 rounded-lg bg-slate-700/50">
                     <Icon className="h-4 w-4 text-slate-300" />
                   </div>
-                  <span className="font-bold text-white">{pred.symbol}</span>
+                  <span className="font-bold text-foreground">{pred.symbol}</span>
                 </div>
                 <Badge className={signalColors[pred.signal]}>
                   <SignalIcon className="h-3 w-3 mr-1" />
@@ -234,7 +234,7 @@ export function EidPredictionsWidget() {
                   <span className="text-slate-500">الثقة:</span>
                   <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-yellow-500' : 'bg-loss'}`}
+                      className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-warning' : 'bg-loss'}`}
                       style={{ width: `${pred.confidence * 100}%` }}
                     />
                   </div>

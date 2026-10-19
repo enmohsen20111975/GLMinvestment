@@ -219,7 +219,7 @@ export function WealthCharts() {
               'px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[36px]',
               period === p
                 ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
-                : 'text-gray-400 hover:text-white border border-white/10'
+                : 'text-muted-foreground hover:text-foreground border border-white/10'
             )}
           >
             {p === 30 ? 'شهر' : p === 90 ? '3 شهور' : p === 180 ? '6 شهور' : 'سنة'}
@@ -375,8 +375,8 @@ export function WealthCharts() {
                 )}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xs font-bold text-white shrink-0">{s.ticker}</span>
-                  <span className="text-[10px] text-gray-400 truncate">{s.name}</span>
+                  <span className="text-xs font-bold text-foreground shrink-0">{s.ticker}</span>
+                  <span className="text-[10px] text-muted-foreground truncate">{s.name}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={cn(
@@ -385,7 +385,7 @@ export function WealthCharts() {
                   )}>
                     {s.pnl_pct >= 0 ? '+' : ''}{s.pnl_pct}%
                   </span>
-                  <span className="text-[10px] text-gray-400">{s.current_price} ج</span>
+                  <span className="text-[10px] text-muted-foreground">{s.current_price} ج</span>
                   <span className="text-[10px] font-medium" style={{
                     color: s.action === 'STOP_LOSS' ? COLORS.red :
                            s.action === 'TAKE_PROFIT' ? COLORS.emerald :
@@ -407,7 +407,7 @@ export function WealthCharts() {
           <div className="space-y-2">
             {wealthPlan.recommendations?.map((r: string, i: number) => (
               <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
-                <span className="text-xs text-gray-300">{r}</span>
+                <span className="text-xs text-muted-foreground">{r}</span>
               </div>
             ))}
           </div>
@@ -437,7 +437,7 @@ function ChartCard({ title, icon: Icon, children }: any) {
     <Card className="bg-white/5 border-white/10 p-3">
       <div className="flex items-center gap-2 mb-3">
         <Icon className="w-4 h-4 text-cyan-400" />
-        <span className="text-xs font-semibold text-white">{title}</span>
+        <span className="text-xs font-semibold text-foreground">{title}</span>
       </div>
       {children}
     </Card>
@@ -450,16 +450,16 @@ function SummaryCard({ icon: Icon, label, value, subValue, color }: any) {
     emerald: 'text-profit bg-profit/5 border-profit/20',
     red: 'text-loss bg-loss/5 border-loss/20',
     amber: 'text-warning bg-warning/5 border-warning/20',
-    purple: 'text-purple-400 bg-purple-500/5 border-purple-500/20',
+    purple: 'text-primary bg-primary/5 border-purple-500/20',
   };
   return (
     <Card className={cn('border p-3', colors[color])}>
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className="w-3.5 h-3.5" />
-        <span className="text-[10px] text-gray-400">{label}</span>
+        <span className="text-[10px] text-muted-foreground">{label}</span>
       </div>
-      <div className="text-sm font-bold text-white truncate">{value}</div>
-      {subValue && <div className="text-[10px] text-gray-500 mt-0.5">{subValue}</div>}
+      <div className="text-sm font-bold text-foreground truncate">{value}</div>
+      {subValue && <div className="text-[10px] text-muted-foreground mt-0.5">{subValue}</div>}
     </Card>
   );
 }

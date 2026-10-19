@@ -1404,7 +1404,7 @@ export function PaperTradingWorkstation() {
                           };
                           const reasonClass: Record<CloseReason, string> = {
                             MANUAL:
-                              'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+                              'bg-muted text-muted-foreground border-border dark:bg-muted dark:border-border',
                             STOP_LOSS:
                               'bg-loss text-loss border-loss dark:bg-loss dark:text-loss dark:border-loss',
                             TAKE_PROFIT:

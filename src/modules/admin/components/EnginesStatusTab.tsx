@@ -91,15 +91,15 @@ const STALENESS_CONFIG = {
     fresh: { label: 'حديث', color: 'text-profit', bg: 'bg-profit', border: 'border-profit' },
     stale: { label: 'متأخر', color: 'text-warning', bg: 'bg-warning', border: 'border-warning' },
     old: { label: 'قديم', color: 'text-loss', bg: 'bg-loss', border: 'border-loss' },
-    unknown: { label: 'غير معروف', color: 'text-gray-600', bg: 'bg-gray-400', border: 'border-gray-300' },
+    unknown: { label: 'غير معروف', color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
 };
 
 const SIGNAL_COLORS: Record<string, string> = {
     STRONG_BUY: 'text-profit',
     BUY: 'text-success',
     ACCUMULATE: 'text-whale',
-    HOLD: 'text-yellow-600',
-    REDUCE: 'text-orange-600',
+    HOLD: 'text-warning',
+    REDUCE: 'text-warning',
     SELL: 'text-loss',
     STRONG_SELL: 'text-loss',
 };
@@ -239,7 +239,7 @@ function EngineCard({
                     className={cn(
                         'w-full gap-1.5 font-semibold',
                         engine.name === 'Data Engine' ? 'bg-primary hover:bg-primary' :
-                        engine.name === 'Analysis Engine' ? 'bg-purple-600 hover:bg-purple-700' :
+                        engine.name === 'Analysis Engine' ? 'bg-primary hover:bg-primary' :
                         'bg-profit hover:bg-profit'
                     )}
                     onClick={() => onForceUpdate(engine.name)}
@@ -277,7 +277,7 @@ function EngineCard({
 
                     {/* Update Interval */}
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                        <RefreshCw className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                        <RefreshCw className="w-4 h-4 text-primary flex-shrink-0" />
                         <div className="min-w-0">
                             <div className="text-xs text-muted-foreground">معدل التحديث</div>
                             <div className="text-sm font-medium truncate">{engine.update_interval}</div>
@@ -304,7 +304,7 @@ function EngineCard({
                 {engine.name === 'Data Engine' && engine.scrapers && (
                     <div className="grid grid-cols-3 gap-2">
                         {Object.entries(engine.scrapers).map(([key, val]) => (
-                            <div key={key} className={cn('p-2 rounded-lg border text-center', val.running ? 'border-profit bg-profit dark:bg-profit/20' : 'border-gray-200')}>
+                            <div key={key} className={cn('p-2 rounded-lg border text-center', val.running ? 'border-profit bg-profit dark:bg-profit/20' : 'border-border')}>
                                 <div className="text-xs text-muted-foreground capitalize">{key}</div>
                                 <div className="flex items-center justify-center gap-1 mt-0.5">
                                     <div className={cn('w-2 h-2 rounded-full', val.running ? 'bg-profit' : 'bg-loss')} />
@@ -319,7 +319,7 @@ function EngineCard({
                     <div className="grid grid-cols-2 gap-2">
                         <div className="p-2 rounded-lg bg-muted/50 text-center">
                             <div className="text-xs text-muted-foreground">عدد التحليلات</div>
-                            <div className="text-lg font-bold text-purple-600">{(engine.analysis_count || 0).toLocaleString()}</div>
+                            <div className="text-lg font-bold text-primary">{(engine.analysis_count || 0).toLocaleString()}</div>
                         </div>
                         <div className="p-2 rounded-lg bg-muted/50 text-center">
                             <div className="text-xs text-muted-foreground">Background Analyzer</div>
@@ -339,7 +339,7 @@ function EngineCard({
                             </div>
                             <div className="p-2 rounded-lg bg-muted/50 text-center">
                                 <div className="text-xs text-muted-foreground">إجمالي التوقعات</div>
-                                <div className="text-lg font-bold text-purple-600">{(engine.total_predictions || 0).toLocaleString()}</div>
+                                <div className="text-lg font-bold text-primary">{(engine.total_predictions || 0).toLocaleString()}</div>
                             </div>
                         </div>
                         {engine.signal_distribution && engine.signal_distribution.length > 0 && (
@@ -383,7 +383,7 @@ function EngineCard({
                                             'py-0.5',
                                             log.includes('✅') || log.includes('success') ? 'text-profit' :
                                                 log.includes('❌') || log.includes('error') || log.includes('ERROR') ? 'text-loss' :
-                                                    log.includes('⚠️') || log.includes('WARNING') ? 'text-yellow-400' :
+                                                    log.includes('⚠️') || log.includes('WARNING') ? 'text-warning' :
                                                         'text-slate-300'
                                         )}
                                     >
@@ -668,8 +668,8 @@ export function EnginesStatusTab() {
                 />
                 <EngineCard
                     engine={{ ...engines.analysis, pm2_name: engines.analysis.pm2_name || 'python-backend' }}
-                    icon={<Brain className="w-6 h-6 text-purple-600" />}
-                    color="bg-purple-100 dark:bg-purple-950/30"
+                    icon={<Brain className="w-6 h-6 text-primary" />}
+                    color="bg-primary dark:bg-primary/30"
                     expanded={expandedEngine === 'analysis'}
                     onToggle={() => setExpandedEngine(expandedEngine === 'analysis' ? null : 'analysis')}
                     onPm2Action={handlePm2Action}
@@ -709,9 +709,9 @@ export function EnginesStatusTab() {
                                 يجلب الأسعار من المصادر (TradingView, Yahoo, Binance) ويخزنها في قاعدة البيانات
                             </p>
                         </div>
-                        <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200">
+                        <div className="p-3 rounded-lg bg-primary dark:bg-primary/20 border border-purple-200">
                             <div className="flex items-center gap-2 mb-1">
-                                <Brain className="w-4 h-4 text-purple-600" />
+                                <Brain className="w-4 h-4 text-primary" />
                                 <span className="font-medium text-sm">محرك التحليلات</span>
                             </div>
                             <p className="text-xs text-muted-foreground">

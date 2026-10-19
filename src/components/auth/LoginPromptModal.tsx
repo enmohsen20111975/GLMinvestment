@@ -77,7 +77,7 @@ export function LoginPromptModal() {
           </DialogDescription>
 
           {/* Compact Gradient Header */}
-          <div className="relative bg-gradient-to-r from-warning via-warning to-profit px-4 py-3 text-white flex items-center justify-between">
+          <div className="relative bg-gradient-to-r from-warning via-warning to-profit px-4 py-3 text-foreground flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="size-9 rounded-xl bg-white/20 ring-1 ring-white/30 backdrop-blur flex items-center justify-center shrink-0 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -91,7 +91,7 @@ export function LoginPromptModal() {
                 <p className="text-sm font-bold tracking-tight leading-tight truncate">
                   سجّل مجاناً للوصول الكامل
                 </p>
-                <p className="text-[11px] text-white/90 truncate flex items-center gap-1 mt-0.5">
+                <p className="text-[11px] text-foreground/90 truncate flex items-center gap-1 mt-0.5">
                   <Sparkles className="size-3 shrink-0" />
                   بدون بطاقة ائتمان — مجاني للأبد
                 </p>
@@ -103,7 +103,7 @@ export function LoginPromptModal() {
               type="button"
               onClick={handleClose}
               aria-label="إغلاق"
-              className="size-7 rounded-full bg-black/20 hover:bg-black/35 text-white/90 hover:text-white transition-colors flex items-center justify-center shrink-0 mr-1"
+              className="size-7 rounded-full bg-black/20 hover:bg-black/35 text-foreground/90 hover:text-foreground transition-colors flex items-center justify-center shrink-0 mr-1"
             >
               <X className="size-3.5" />
             </button>
@@ -136,7 +136,7 @@ export function LoginPromptModal() {
             <Button
               onClick={goRegister}
               size="sm"
-              className="flex-1 h-8 text-xs font-bold bg-gradient-to-r from-warning to-profit hover:from-warning hover:to-profit text-white shadow-sm"
+              className="flex-1 h-8 text-xs font-bold bg-gradient-to-r from-warning to-profit hover:from-warning hover:to-profit text-foreground shadow-sm"
             >
               <UserPlus className="size-3.5 ml-1" />
               سجّل مجاناً

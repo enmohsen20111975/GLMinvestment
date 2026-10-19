@@ -66,8 +66,8 @@ const typeIcons: Record<string, React.ReactNode> = {
   profit_target: <Target className="h-4 w-4 text-success" />,
   stop_loss: <ShieldAlert className="h-4 w-4 text-loss" />,
   support_near: <ArrowDownRight className="h-4 w-4 text-whale" />,
-  resistance_near: <ArrowUpRight className="h-4 w-4 text-orange-600" />,
-  dividend_soon: <DollarSign className="h-4 w-4 text-purple-600" />,
+  resistance_near: <ArrowUpRight className="h-4 w-4 text-warning" />,
+  dividend_soon: <DollarSign className="h-4 w-4 text-primary" />,
   breakout: <Zap className="h-4 w-4 text-success" />,
   breakdown: <AlertCircle className="h-4 w-4 text-loss" />,
   price_surge: <TrendingUp className="h-4 w-4 text-success" />,
@@ -88,14 +88,14 @@ const typeLabels: Record<string, string> = {
 
 const severityColors: Record<string, string> = {
   danger: 'border-loss bg-loss dark:bg-loss/20',
-  warning: 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20',
+  warning: 'border-yellow-300 bg-warning dark:bg-warning/20',
   success: 'border-success bg-success dark:bg-success/20',
   info: 'border-whale bg-primary dark:bg-primary/20'
 };
 
 const severityBadgeColors: Record<string, string> = {
   danger: 'bg-loss text-white',
-  warning: 'bg-yellow-500 text-white',
+  warning: 'bg-warning text-white',
   success: 'bg-success text-white',
   info: 'bg-whale text-white'
 };
@@ -183,11 +183,11 @@ export function SmartAlertsPanel() {
         </Card>
         <Card className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter(filter === 'warning' ? 'all' : 'warning')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
-              <Info className="h-4 w-4 text-yellow-600" />
+            <div className="w-8 h-8 rounded-full bg-warning flex items-center justify-center">
+              <Info className="h-4 w-4 text-warning" />
             </div>
             <div>
-              <div className="text-lg font-bold text-yellow-600">{summary.by_severity.warning}</div>
+              <div className="text-lg font-bold text-warning">{summary.by_severity.warning}</div>
               <div className="text-xs text-muted-foreground">تحذير</div>
             </div>
           </div>
@@ -292,12 +292,12 @@ export function SmartAlertsPanel() {
               </Badge>
             )}
             {summary.by_type.resistance_near > 0 && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700">
+              <Badge variant="outline" className="bg-warning text-warning">
                 📤 {summary.by_type.resistance_near} قريب من مقاومة
               </Badge>
             )}
             {summary.by_type.dividend_soon > 0 && (
-              <Badge variant="outline" className="bg-purple-50 text-purple-700">
+              <Badge variant="outline" className="bg-primary text-primary">
                 💰 {summary.by_type.dividend_soon} أرباح
               </Badge>
             )}

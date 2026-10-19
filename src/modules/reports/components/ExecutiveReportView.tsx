@@ -1170,7 +1170,7 @@ export function ExecutiveReportView({
       {/* ════════════════ MAIN REPORT (PNG snapshot target) ════════════════ */}
       <div
         ref={reportContainerRef}
-        className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-[#0c1220] via-[#0a0f1c] to-[#0c1220] border-2 border-warning/25 text-white shadow-2xl overflow-hidden"
+        className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-[#0c1220] via-[#0a0f1c] to-[#0c1220] border-2 border-warning/25 text-foreground shadow-2xl overflow-hidden"
       >
         {/* Decorative background glows — subtle, not overwhelming */}
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-warning/8 blur-[140px] pointer-events-none rounded-full" />
@@ -1215,7 +1215,7 @@ export function ExecutiveReportView({
                     : 'كل التوقعات'}
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white flex items-center gap-3 tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground flex items-center gap-3 tracking-tight leading-tight">
                 <Gauge className="w-8 h-8 sm:w-9 sm:h-9 text-warning flex-shrink-0" />
                 <span>ملخص أداء التوقعات</span>
               </h1>
@@ -1351,7 +1351,7 @@ export function ExecutiveReportView({
                 <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
                     <PieIcon className="w-5 h-5 text-warning" />
-                    <h3 className="text-base font-bold text-white">توزيع النتائج</h3>
+                    <h3 className="text-base font-bold text-foreground">توزيع النتائج</h3>
                   </div>
                   {outcomeDistribution.length > 0 ? (
                     <>
@@ -1390,7 +1390,7 @@ export function ExecutiveReportView({
                           <div key={d.name} className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
                             <span className="text-slate-300">{d.name}</span>
-                            <span className="text-white font-bold mr-auto">{d.value}</span>
+                            <span className="text-foreground font-bold mr-auto">{d.value}</span>
                           </div>
                         ))}
                       </div>
@@ -1407,7 +1407,7 @@ export function ExecutiveReportView({
                   <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-5 h-5 text-profit" />
-                      <h3 className="text-base font-bold text-white">حركة الأرباح التراكمية</h3>
+                      <h3 className="text-base font-bold text-foreground">حركة الأرباح التراكمية</h3>
                     </div>
                     {cumulativeProfitData.length > 0 && (
                       <Badge variant="outline" className="text-[11px] text-profit border-profit/30 bg-profit/10">
@@ -1466,7 +1466,7 @@ export function ExecutiveReportView({
                 <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
                     <BarChart3 className="w-5 h-5 text-warning" />
-                    <h3 className="text-base font-bold text-white">العائد الشهري</h3>
+                    <h3 className="text-base font-bold text-foreground">العائد الشهري</h3>
                   </div>
                   {monthlyReturns.length > 0 ? (
                     <div className="h-48">
@@ -1504,7 +1504,7 @@ export function ExecutiveReportView({
                 <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
                     <Gauge className="w-5 h-5 text-profit" />
-                    <h3 className="text-base font-bold text-white">مقارنة الشخصيات</h3>
+                    <h3 className="text-base font-bold text-foreground">مقارنة الشخصيات</h3>
                   </div>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1616,17 +1616,17 @@ export function ExecutiveReportView({
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Layers className="w-5 h-5 text-warning" />
-                  <h3 className="text-lg font-bold text-white">الأداء حسب استراتيجية المستثمر</h3>
+                  <h3 className="text-lg font-bold text-foreground">الأداء حسب استراتيجية المستثمر</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <PersonaCard
-                    icon={<Flame className="w-5 h-5 text-orange-400" />}
+                    icon={<Flame className="w-5 h-5 text-warning" />}
                     title="المضارب"
                     subtitle="خاطف (1-5 أيام)"
                     description="الزخم السريع واقتناص الفتحات"
                     accentRing="border-orange-500/30"
-                    accentBar="bg-orange-500"
+                    accentBar="bg-warning"
                     stats={{
                       winRate: statsByPersona?.gambler?.winRate ?? 0,
                       profitFactor: statsByPersona?.gambler?.profitFactor ?? 0,
@@ -1634,7 +1634,7 @@ export function ExecutiveReportView({
                       wins: statsByPersona?.gambler?.wins ?? 0,
                       losses: statsByPersona?.gambler?.losses ?? 0,
                     }}
-                    winRateColor="text-orange-400"
+                    winRateColor="text-warning"
                   />
 
                   <PersonaCard
@@ -1677,7 +1677,7 @@ export function ExecutiveReportView({
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-warning" />
-                  <h3 className="text-lg font-bold text-white">الفرص الضائعة والتحليل البعدي</h3>
+                  <h3 className="text-lg font-bold text-foreground">الفرص الضائعة والتحليل البعدي</h3>
                   <Badge variant="outline" className="text-[10px] text-warning border-warning/30 bg-warning/10 whitespace-nowrap">
                     حد التحرك ≥ 10%
                   </Badge>
@@ -1749,7 +1749,7 @@ export function ExecutiveReportView({
                     style={{ width: `${100 - winRate}%` }}
                   >
                     {100 - winRate > 15 && (
-                      <span className="text-xs font-black text-white px-2">
+                      <span className="text-xs font-black text-foreground px-2">
                         {(100 - winRate).toFixed(0)}% خاسرة
                       </span>
                     )}
@@ -1856,7 +1856,7 @@ function HighlightCard({
       <div className="flex items-center justify-between pb-3 border-b border-white/10">
         <div className="flex items-center gap-2">
           {icon}
-          <h3 className="text-base sm:text-lg font-bold text-white">{title}</h3>
+          <h3 className="text-base sm:text-lg font-bold text-foreground">{title}</h3>
         </div>
         <Badge variant="outline" className="text-[11px] text-slate-300 border-white/20 bg-white/5">
           {subtitle}
@@ -1871,7 +1871,7 @@ function HighlightCard({
               className="bg-slate-950/70 p-4 rounded-xl border border-white/10 hover:border-white/25 transition-colors flex flex-col gap-2"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-black text-white text-base font-mono">{item.ticker}</span>
+                <span className="font-black text-foreground text-base font-mono">{item.ticker}</span>
                 <span className={cn('font-black text-lg', item.accentText)}>
                   {item.returnPct >= 0 ? '+' : ''}{(item.returnPct ?? 0).toFixed(1)}%
                 </span>
@@ -1929,7 +1929,7 @@ function PersonaCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {icon}
-            <span className="font-black text-lg text-white">{title}</span>
+            <span className="font-black text-lg text-foreground">{title}</span>
           </div>
           <Badge variant="outline" className="text-[10px] text-slate-300 border-white/20 bg-white/5 whitespace-nowrap">
             {subtitle}
@@ -2024,7 +2024,7 @@ function MissedOppCard({
         <div className="flex items-center gap-2 min-w-0">
           {icon}
           <div className="min-w-0">
-            <h4 className="text-sm sm:text-base font-bold text-white truncate">{title}</h4>
+            <h4 className="text-sm sm:text-base font-bold text-foreground truncate">{title}</h4>
             <p className="text-[11px] sm:text-xs text-slate-400 truncate">{subtitle}</p>
           </div>
         </div>
@@ -2056,7 +2056,7 @@ function MissedOppCard({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-black text-white text-sm font-mono flex-shrink-0">{item.ticker}</span>
+                    <span className="font-black text-foreground text-sm font-mono flex-shrink-0">{item.ticker}</span>
                     <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', signalBadgeClass(item.signal))}>
                       {item.signal}
                     </Badge>

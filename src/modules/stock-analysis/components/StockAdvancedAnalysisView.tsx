@@ -438,7 +438,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className={cn("w-16 h-16 rounded-full flex items-center justify-center", signalConfig?.color)}>
-                  <span className="text-white text-2xl font-bold">{(updatedAnalysis.master_score ?? 0).toFixed(0)}</span>
+                  <span className="text-foreground text-2xl font-bold">{(updatedAnalysis.master_score ?? 0).toFixed(0)}</span>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

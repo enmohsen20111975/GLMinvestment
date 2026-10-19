@@ -164,14 +164,14 @@ export function SmartAssistantPanel() {
       case 'AVERAGE_DOWN':
         return { color: 'bg-whale text-white', icon: <Target className="h-3 w-3" />, text: 'متوسط' };
       default:
-        return { color: 'bg-yellow-500 text-white', icon: <Minus className="h-3 w-3" />, text: 'احتفاظ' };
+        return { color: 'bg-warning text-white', icon: <Minus className="h-3 w-3" />, text: 'احتفاظ' };
     }
   };
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'high': return 'text-loss';
-      case 'medium': return 'text-yellow-600';
+      case 'medium': return 'text-warning';
       default: return 'text-profit';
     }
   };
@@ -230,10 +230,10 @@ export function SmartAssistantPanel() {
         </Card>
         <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
           <div className="flex items-center gap-2 mb-1">
-            <DollarSign className="h-4 w-4 text-purple-600" />
+            <DollarSign className="h-4 w-4 text-primary" />
             <span className="text-sm text-muted-foreground">القيمة الحالية</span>
           </div>
-          <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
+          <div className="text-xl font-bold text-primary dark:text-primary">
             {data.summary.totalValue.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
         </Card>
@@ -268,10 +268,10 @@ export function SmartAssistantPanel() {
         </Card>
         <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
           <div className="flex items-center gap-2 mb-1">
-            <Activity className="h-4 w-4 text-orange-600" />
+            <Activity className="h-4 w-4 text-warning" />
             <span className="text-sm text-muted-foreground">عدد الأصول</span>
           </div>
-          <div className="text-xl font-bold text-orange-700 dark:text-orange-300">
+          <div className="text-xl font-bold text-warning dark:text-warning">
             {data.stocks.length + data.banks.length + data.gold.length}
           </div>
           <div className="text-xs text-muted-foreground">
@@ -282,17 +282,17 @@ export function SmartAssistantPanel() {
 
       {/* Alerts Section */}
       {allAlerts.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+        <Card className="border-orange-200 bg-warning dark:bg-warning/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-orange-600" />
+              <AlertCircle className="h-4 w-4 text-warning" />
               تنبيهات هامة
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {allAlerts.slice(0, 5).map((item, i) => (
-                <div key={i} className="text-sm p-2 bg-white dark:bg-gray-900 rounded border">
+                <div key={i} className="text-sm p-2 bg-white dark:bg-muted rounded border">
                   <span className="font-medium">{item.ticker || item.name}:</span>{' '}
                   <span className="text-muted-foreground">{item.alert}</span>
                 </div>
@@ -364,7 +364,7 @@ export function SmartAssistantPanel() {
                         <div className="bg-muted/50 p-3 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Lightbulb className="h-4 w-4 text-yellow-600" />
+                              <Lightbulb className="h-4 w-4 text-warning" />
                               <span className="font-medium">التوقّع</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -498,13 +498,13 @@ export function SmartAssistantPanel() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Gem className="h-4 w-4 text-yellow-600" />
+              <Gem className="h-4 w-4 text-warning" />
               الذهب ({data.gold.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {data.gold.map((gold, i) => (
-              <Card key={i} className="bg-yellow-50 dark:bg-yellow-950/20">
+              <Card key={i} className="bg-warning dark:bg-warning/20">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>

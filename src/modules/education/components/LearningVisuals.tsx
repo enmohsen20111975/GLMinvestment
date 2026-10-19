@@ -121,7 +121,7 @@ export function MarketHoursTimeline() {
     { time: '9:00', label: 'الجلسة الاستباقية', desc: 'إدخال الأوامر', color: 'bg-whale', active: false },
     { time: '9:45', label: 'فتح التداول', desc: 'بداية التنفيذ', color: 'bg-profit', active: true },
     { time: '10:00', label: 'الجلسة الرئيسية', desc: 'أعلى سيولة', color: 'bg-profit', active: true },
-    { time: '14:30', label: 'إغلاق التداول', desc: 'نهاية الجلسة', color: 'bg-orange-500', active: false },
+    { time: '14:30', label: 'إغلاق التداول', desc: 'نهاية الجلسة', color: 'bg-warning', active: false },
   ];
 
   return (
@@ -164,9 +164,9 @@ export function PortfolioDiversification() {
   const allocations = [
     { sector: 'البنوك', percent: 30, color: 'bg-profit' },
     { sector: 'العقارات', percent: 25, color: 'bg-whale' },
-    { sector: 'الاتصالات', percent: 20, color: 'bg-purple-500' },
+    { sector: 'الاتصالات', percent: 20, color: 'bg-primary' },
     { sector: 'الصناعة', percent: 15, color: 'bg-warning' },
-    { sector: 'نقدية', percent: 10, color: 'bg-gray-400' },
+    { sector: 'نقدية', percent: 10, color: 'bg-muted' },
   ];
 
   return (
@@ -236,7 +236,7 @@ export function CalloutBox({ type, title, children }: { type: 'tip' | 'warning' 
     tip: { icon: Lightbulb, color: 'border-whale/30 bg-whale/5', iconColor: 'text-whale', titleColor: 'text-whale dark:text-whale' },
     warning: { icon: AlertTriangle, color: 'border-warning/30 bg-warning/5', iconColor: 'text-warning', titleColor: 'text-warning dark:text-warning' },
     key: { icon: Key, color: 'border-profit/30 bg-profit/5', iconColor: 'text-profit', titleColor: 'text-profit dark:text-profit' },
-    example: { icon: BookOpen, color: 'border-purple-500/30 bg-purple-500/5', iconColor: 'text-purple-500', titleColor: 'text-purple-700 dark:text-purple-400' },
+    example: { icon: BookOpen, color: 'border-purple-500/30 bg-primary/5', iconColor: 'text-primary', titleColor: 'text-primary dark:text-primary' },
   };
   const { icon: Icon, color, iconColor, titleColor } = config[type];
 
@@ -267,12 +267,12 @@ export function ExampleCard({ title, scenario, calculation, result, takeaway }: 
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="my-4 rounded-xl border border-purple-500/30 bg-purple-500/5 overflow-hidden"
+      className="my-4 rounded-xl border border-purple-500/30 bg-primary/5 overflow-hidden"
     >
-      <div className="bg-purple-500/10 px-4 py-2 border-b border-purple-500/20">
+      <div className="bg-primary/10 px-4 py-2 border-b border-purple-500/20">
         <div className="flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-purple-500" />
-          <h4 className="font-bold text-sm text-purple-700 dark:text-purple-400">مثال عملي: {title}</h4>
+          <BookOpen className="w-4 h-4 text-primary" />
+          <h4 className="font-bold text-sm text-primary dark:text-primary">مثال عملي: {title}</h4>
         </div>
       </div>
       <div className="p-4 space-y-3">
@@ -564,7 +564,7 @@ export function BollingerBandsVisual() {
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs flex-wrap">
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-whale" /> السعر</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-500" /> المتوسط (SMA20)</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-muted" /> المتوسط (SMA20)</span>
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-loss" /> النطاق العلوي</span>
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-profit" /> النطاق السفلي</span>
       </div>
@@ -608,9 +608,9 @@ export function DCFFlowVisual() {
         {/* Step 4 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-          className="flex-1 p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center"
+          className="flex-1 p-3 rounded-lg bg-primary/10 border border-purple-500/30 text-center"
         >
-          <p className="text-xs font-bold text-purple-600 mb-1">4. القيمة العادلة</p>
+          <p className="text-xs font-bold text-primary mb-1">4. القيمة العادلة</p>
           <p className="text-[10px]">مجموع القيم الحالية</p>
         </motion.div>
       </div>
@@ -652,8 +652,8 @@ export function ROEDuPontVisual() {
           <p className="text-lg font-bold">2.0x</p>
         </motion.div>
       </div>
-      <div className="mt-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 text-center">
-        <p className="text-xs font-bold text-purple-600 mb-1">ROE = هامش الربح × دوران الأصول × الرافعة</p>
+      <div className="mt-3 p-3 rounded-lg bg-primary/10 border border-purple-500/30 text-center">
+        <p className="text-xs font-bold text-primary mb-1">ROE = هامش الربح × دوران الأصول × الرافعة</p>
         <p className="text-lg font-bold">15% × 1.2 × 2.0 = 36%</p>
       </div>
       <p className="text-xs text-muted-foreground mt-2 text-center">
@@ -670,10 +670,10 @@ export function EmotionalCycleVisual() {
     { phase: 'الحماس', color: 'bg-whale', icon: '🤩' },
     { phase: 'النشوة', color: 'bg-whale', icon: '🤑' },
     { phase: 'القلق', color: 'bg-warning', icon: '😰' },
-    { phase: 'الإنكار', color: 'bg-orange-500', icon: '😨' },
+    { phase: 'الإنكار', color: 'bg-warning', icon: '😨' },
     { phase: 'الذعر', color: 'bg-loss', icon: '😱' },
-    { phase: 'الاستسلام', color: 'bg-gray-500', icon: '😞' },
-    { phase: 'الاكتئاب', color: 'bg-gray-700', icon: '😔' },
+    { phase: 'الاستسلام', color: 'bg-muted', icon: '😞' },
+    { phase: 'الاكتئاب', color: 'bg-muted', icon: '😔' },
   ];
 
   return (
@@ -1403,9 +1403,9 @@ const ACCENT_STYLES: Record<PipelineStage['accent'], { ring: string; badge: stri
   },
   purple: {
     ring: 'ring-purple-500/30',
-    badge: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+    badge: 'bg-primary/15 text-primary border-purple-500/30',
     glow: 'shadow-[0_0_18px_-4px_rgba(168,85,247,0.55)]',
-    text: 'text-purple-300',
+    text: 'text-primary',
     border: 'border-purple-700/50',
   },
 };
@@ -1501,7 +1501,7 @@ export function TradingSystemPipeline() {
 
                 {/* Feedback source marker */}
                 {isFeedbackSource && (
-                  <div className="mt-2 rounded-md border border-purple-500/30 bg-purple-500/10 px-1.5 py-1 text-center text-[9px] font-semibold text-purple-300" dir="rtl">
+                  <div className="mt-2 rounded-md border border-purple-500/30 bg-primary/10 px-1.5 py-1 text-center text-[9px] font-semibold text-primary" dir="rtl">
                     ↻ feedback → المرحلة 5
                   </div>
                 )}
@@ -1530,13 +1530,13 @@ export function TradingSystemPipeline() {
       <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-3" dir="rtl">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-[11px] text-slate-300">
-            <RefreshCw className="h-3.5 w-3.5 text-purple-400" />
+            <RefreshCw className="h-3.5 w-3.5 text-primary" />
             <span>
-              <span className="font-semibold text-purple-300">حلقة المراجعة:</span>{' '}
+              <span className="font-semibold text-primary">حلقة المراجعة:</span>{' '}
               ناتج المرحلة 8 (win rate + avg R) بيعدّل حدود المرحلة 5 (Risk Gate) أسبوعياً.
             </span>
           </div>
-          <span className="rounded-full bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-purple-300" dir="ltr">
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold text-primary" dir="ltr">
             stage 8 → stage 5 (weekly)
           </span>
         </div>
@@ -1556,8 +1556,8 @@ export function TradingSystemPipeline() {
         <span className="flex items-center gap-1 text-cyan-300">
           <span className="h-2 w-2 rounded-full bg-cyan-500" /> تنفيذ
         </span>
-        <span className="flex items-center gap-1 text-purple-300">
-          <span className="h-2 w-2 rounded-full bg-purple-500" /> مراجعة
+        <span className="flex items-center gap-1 text-primary">
+          <span className="h-2 w-2 rounded-full bg-primary" /> مراجعة
         </span>
       </div>
     </motion.div>

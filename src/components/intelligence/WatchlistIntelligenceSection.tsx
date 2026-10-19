@@ -97,7 +97,7 @@ function getSignalIcon(signal: string) {
   if (s.includes('sell') || s.includes('bearish')) {
     return <ChevronDown className="w-4 h-4 text-loss" />;
   }
-  return <Minus className="w-4 h-4 text-yellow-500" />;
+  return <Minus className="w-4 h-4 text-warning" />;
 }
 
 function getActionColor(action: string): { bg: string; text: string; border: string } {
@@ -108,7 +108,7 @@ function getActionColor(action: string): { bg: string; text: string; border: str
   if (a.includes('sell') || a.includes('avoid')) {
     return { bg: 'bg-loss dark:bg-loss/30', text: 'text-loss dark:text-loss', border: 'border-loss dark:border-loss' };
   }
-  return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-800' };
+  return { bg: 'bg-warning dark:bg-warning/30', text: 'text-warning dark:text-warning', border: 'border-yellow-200 dark:border-yellow-800' };
 }
 
 export function WatchlistIntelligenceSection() {
@@ -288,9 +288,9 @@ export function WatchlistIntelligenceSection() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">محايد</span>
-                <span className="text-sm font-medium text-yellow-500">{neutralPercent}%</span>
+                <span className="text-sm font-medium text-warning">{neutralPercent}%</span>
               </div>
-              <Progress value={neutralPercent} className="h-3 bg-muted [&>div]:bg-yellow-500" />
+              <Progress value={neutralPercent} className="h-3 bg-muted [&>div]:bg-warning" />
             </div>
           </div>
         </CardContent>
@@ -365,7 +365,7 @@ export function WatchlistIntelligenceSection() {
               <div className={cn(
                 "h-1",
                 action.includes('buy') ? "bg-profit" :
-                action.includes('avoid') || action.includes('sell') ? "bg-loss" : "bg-yellow-500"
+                action.includes('avoid') || action.includes('sell') ? "bg-loss" : "bg-warning"
               )} />
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-4">
@@ -471,7 +471,7 @@ export function WatchlistIntelligenceSection() {
                 {analysis?.recommendation && (
                   <div className="pt-3 border-t">
                     <p className="text-sm text-muted-foreground">
-                      <Lightbulb className="w-4 h-4 inline ml-1 text-yellow-500" />
+                      <Lightbulb className="w-4 h-4 inline ml-1 text-warning" />
                       {analysis.recommendation.reason}
                     </p>
                     {analysis.recommendation.target && (

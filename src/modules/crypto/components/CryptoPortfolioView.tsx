@@ -351,7 +351,7 @@ export function CryptoPortfolioView() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-white" />
+                <Wallet className="w-6 h-6 text-foreground" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">محفظة العملات الرقمية</h1>
@@ -425,7 +425,7 @@ export function CryptoPortfolioView() {
           </Card>
           <Card className="border-border/60">
             <CardContent className="p-4 flex flex-col items-center gap-1">
-              <Percent className="w-5 h-5 text-orange-500" />
+              <Percent className="w-5 h-5 text-warning" />
               <span className={cn(
                 'text-lg font-bold',
                 summary.totalProfitLossPercent >= 0 ? 'text-profit' : 'text-loss'
@@ -456,7 +456,7 @@ export function CryptoPortfolioView() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Bitcoin className="w-5 h-5 text-orange-500" />
+              <Bitcoin className="w-5 h-5 text-warning" />
               العملات في المحفظة ({positions.length})
             </CardTitle>
           </CardHeader>
@@ -486,8 +486,8 @@ export function CryptoPortfolioView() {
                       className="flex items-center justify-between p-4 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                          <Bitcoin className="w-5 h-5 text-orange-500" />
+                        <div className="w-10 h-10 rounded-full bg-warning dark:bg-warning/30 flex items-center justify-center">
+                          <Bitcoin className="w-5 h-5 text-warning" />
                         </div>
                         <div>
                           <p className="font-bold">{position.symbol}</p>

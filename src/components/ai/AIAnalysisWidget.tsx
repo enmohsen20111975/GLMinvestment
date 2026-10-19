@@ -261,7 +261,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
         {/* Score & Signal */}
         <div className="flex items-center gap-4 mb-4">
           <div className={cn("w-14 h-14 rounded-full flex items-center justify-center", signalConfig?.color)}>
-            <span className="text-white text-xl font-bold">{(analysis.master_score ?? 0).toFixed(0)}</span>
+            <span className="text-foreground text-xl font-bold">{(analysis.master_score ?? 0).toFixed(0)}</span>
           </div>
           <div>
             <div className="flex items-center gap-2">

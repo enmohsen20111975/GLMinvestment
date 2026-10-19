@@ -29,8 +29,8 @@ interface ConfluencePick {
 function getScoreColor(score: number): string {
   if (score >= 75) return 'text-success';
   if (score >= 60) return 'text-profit';
-  if (score >= 45) return 'text-yellow-500';
-  if (score >= 30) return 'text-orange-400';
+  if (score >= 45) return 'text-warning';
+  if (score >= 30) return 'text-warning';
   return 'text-loss';
 }
 
@@ -47,7 +47,7 @@ function getRecBadge(rec?: string | null) {
     return <Badge className="bg-cyan-500 hover:bg-cyan-600">شراء متأرجح</Badge>;
   }
   if (lower.includes('hold') || lower.includes('حيادية')) {
-    return <Badge className="bg-yellow-500 hover:bg-yellow-600">حيادية</Badge>;
+    return <Badge className="bg-warning hover:bg-warning">حيادية</Badge>;
   }
   if (lower.includes('sell') || lower.includes('بيع')) {
     return <Badge className="bg-loss hover:bg-loss">بيع</Badge>;
@@ -141,7 +141,7 @@ export function SmartConfluenceView() {
         </Card>
         <Card className="bg-gradient-to-br from-yellow-500/10 to-warning/10">
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">حيادية</CardTitle></CardHeader>
-          <CardContent><div className="text-xl font-bold text-yellow-500">{holdPicks.length}</div></CardContent>
+          <CardContent><div className="text-xl font-bold text-warning">{holdPicks.length}</div></CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-loss/10 to-orange-500/10">
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">بيع</CardTitle></CardHeader>
@@ -164,7 +164,7 @@ export function SmartConfluenceView() {
           {predictions.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <CheckCircle className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
+                <CheckCircle className="h-12 w-12 mx-auto text-warning mb-4" />
                 <h3 className="text-lg font-bold mb-2">لا توجد توقعات متاحة حالياً</h3>
                 <p className="text-muted-foreground">جاري تحديث قاعدة البيانات بالتوقعات الجديدة</p>
               </CardContent>

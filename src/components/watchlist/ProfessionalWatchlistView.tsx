@@ -102,7 +102,7 @@ function getActionColor(type: string): string {
     case 'TAKE_PROFIT': return 'bg-loss text-white';
     case 'BUY_MORE': return 'bg-success text-white';
     case 'AVERAGE_DOWN': return 'bg-whale text-white';
-    default: return 'bg-yellow-500 text-white';
+    default: return 'bg-warning text-white';
   }
 }
 
@@ -132,14 +132,14 @@ function getRecommendationColor(rec: string): string {
     case 'BUY': return 'text-success bg-success';
     case 'STRONG_SELL': return 'text-loss bg-loss';
     case 'SELL': return 'text-loss bg-loss';
-    default: return 'text-yellow-600 bg-yellow-100';
+    default: return 'text-warning bg-warning';
   }
 }
 
 function getSeverityColor(severity: string): string {
   switch (severity) {
     case 'danger': return 'border-loss bg-loss dark:bg-loss/20';
-    case 'warning': return 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20';
+    case 'warning': return 'border-yellow-300 bg-warning dark:bg-warning/20';
     case 'success': return 'border-success bg-success dark:bg-success/20';
     default: return 'border-whale bg-primary dark:bg-primary/20';
   }
@@ -153,7 +153,7 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
 }) {
   const typeIcon = item.type === 'stock' ? <BarChart3 className="h-4 w-4" /> :
                    item.type === 'bank' ? <Landmark className="h-4 w-4" /> :
-                   <Gem className="h-4 w-4 text-yellow-600" />;
+                   <Gem className="h-4 w-4 text-warning" />;
   
   return (
     <Card className={cn(
@@ -435,10 +435,10 @@ export function ProfessionalWatchlistView() {
       
       {/* Alerts Summary */}
       {alerts.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+        <Card className="border-orange-200 bg-warning dark:bg-warning/20">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Bell className="h-4 w-4 text-orange-600" />
+              <Bell className="h-4 w-4 text-warning" />
               <span className="font-medium">أهم التنبيهات</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

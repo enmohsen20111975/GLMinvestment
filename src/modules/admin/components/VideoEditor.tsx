@@ -381,7 +381,7 @@ export function VideoEditor() {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
-              <Film className="w-5 h-5 text-white" />
+              <Film className="w-5 h-5 text-foreground" />
             </div>
             <div>
               <CardTitle className="text-base">محرر الفيديو الكامل</CardTitle>
@@ -493,7 +493,7 @@ export function VideoEditor() {
               <Button
                 onClick={renderVideo}
                 disabled={renderState === 'rendering' || frames.length === 0}
-                className="w-full gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white"
+                className="w-full gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-foreground"
               >
                 {renderState === 'rendering' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 {renderState === 'rendering' ? `بيسجّل ${Math.round(renderProgress * 100)}%` : 'أنتج الفيديو'}

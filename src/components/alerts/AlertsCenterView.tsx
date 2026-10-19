@@ -128,11 +128,11 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
             <div className={cn(
               'w-10 h-10 rounded-lg flex items-center justify-center',
               alert.type === 'crypto' 
-                ? 'bg-orange-100 dark:bg-orange-900/30' 
+                ? 'bg-warning dark:bg-warning/30' 
                 : 'bg-profit dark:bg-profit/30'
             )}>
               {alert.type === 'crypto' 
-                ? <Bitcoin className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                ? <Bitcoin className="w-5 h-5 text-warning dark:text-warning" />
                 : <TrendingUp className="w-5 h-5 text-profit dark:text-profit" />
               }
             </div>
@@ -188,13 +188,13 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
 function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
   const severityColors = {
     info: 'border-whale dark:border-whale bg-primary/50 dark:bg-primary/20',
-    warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
+    warning: 'border-yellow-200 dark:border-yellow-800 bg-warning/50 dark:bg-warning/20',
     danger: 'border-loss dark:border-loss bg-loss/50 dark:bg-loss/20',
   };
 
   const severityIconColors = {
     info: 'text-whale dark:text-whale bg-whale dark:bg-whale/30',
-    warning: 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30',
+    warning: 'text-warning dark:text-warning bg-warning dark:bg-warning/30',
     danger: 'text-loss dark:text-loss bg-loss dark:bg-loss/30',
   };
 
@@ -250,7 +250,7 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
 function MarketAlertCard({ alert }: { alert: MarketAlert }) {
   const severityColors = {
     info: 'border-whale dark:border-whale bg-primary/50 dark:bg-primary/20',
-    warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
+    warning: 'border-yellow-200 dark:border-yellow-800 bg-warning/50 dark:bg-warning/20',
     danger: 'border-loss dark:border-loss bg-loss/50 dark:bg-loss/20',
   };
 
@@ -545,10 +545,10 @@ export function AlertsCenterView() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Bitcoin className="w-4 h-4 text-orange-500" />
+            <Bitcoin className="w-4 h-4 text-warning" />
             <span className="text-xs font-medium">{t('alertsCenter.stats.crypto')}</span>
           </div>
-          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.crypto}</p>
+          <p className="text-2xl font-bold text-warning dark:text-warning">{stats.crypto}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">

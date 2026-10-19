@@ -236,7 +236,7 @@ export function TradingMemoryView() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-yellow-500" />
+                <Trophy className="h-4 w-4 text-warning" />
                 أفضل الأسهم
               </CardTitle>
             </CardHeader>

@@ -434,11 +434,11 @@ const accentClasses: Record<AccentKey, {
   },
   purple: {
     card: 'border-purple-200 dark:border-purple-900/40',
-    headerBg: 'bg-purple-50/60 dark:bg-purple-950/20',
-    iconColor: 'text-purple-600 dark:text-purple-400',
-    badge: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
+    headerBg: 'bg-primary/60 dark:bg-primary/20',
+    iconColor: 'text-primary dark:text-primary',
+    badge: 'bg-primary text-primary border-purple-200 dark:bg-primary/60 dark:text-primary dark:border-purple-800',
     border: 'border-purple-300 dark:border-purple-800/50',
-    softBg: 'bg-purple-50/50 dark:bg-purple-950/10',
+    softBg: 'bg-primary/50 dark:bg-primary/10',
   },
 };
 
@@ -1579,7 +1579,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           key="radar-pre-surge"
           title="Pre-Surge — متوقعة الانفجار"
           subtitle="أعلى أولوية — السهم بيتجمع قبل الانفجار"
-          icon={<Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+          icon={<Rocket className="h-4 w-4 text-primary dark:text-primary" />}
           accent="purple"
           stocks={filteredPreSurge}
           market={market}
@@ -1800,7 +1800,7 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
     <Card className="p-4">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Flame className="h-4 w-4 text-orange-500" />
+          <Flame className="h-4 w-4 text-warning" />
           <span className="text-sm font-bold">مدى شعل الرادار</span>
           <Badge className={`text-[10px] ${activity.levelColor}`}>
             {activity.level}
@@ -1882,7 +1882,7 @@ function KpiCard({ icon, label, value, sub, accent }: KpiCardProps) {
     amber:  { bg: 'bg-warning dark:bg-warning/40',  text: 'text-warning dark:text-warning',   ring: 'ring-warning dark:ring-warning/40' },
     rose:   { bg: 'bg-loss dark:bg-loss/40',    text: 'text-loss dark:text-loss',     ring: 'ring-loss dark:ring-loss/40' },
     emerald:{ bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', ring: 'ring-profit dark:ring-profit/40' },
-    gold:   { bg: 'bg-yellow-50 dark:bg-yellow-950/40', text: 'text-yellow-600 dark:text-yellow-400', ring: 'ring-yellow-100 dark:ring-yellow-900/40' },
+    gold:   { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', ring: 'ring-yellow-100 dark:ring-yellow-900/40' },
   };
   const c = colors[accent];
   // FIX-UI-AUDIT: support both numeric (toLocaleString) and string (ticker
@@ -1982,14 +1982,14 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
               {/* Sector label (only if wide enough) */}
               {widthPct > 8 && (
                 <div className="absolute inset-0 flex items-center justify-center px-1">
-                  <span className="text-[9px] font-bold text-white truncate" style={{ maxWidth: `${widthPct * 4}px` }}>
+                  <span className="text-[9px] font-bold text-foreground truncate" style={{ maxWidth: `${widthPct * 4}px` }}>
                     {s.sector.length > 8 ? s.sector.slice(0, 8) + '…' : s.sector}
                   </span>
                 </div>
               )}
               {/* Flow arrow for inflow/outflow */}
               {widthPct > 5 && (
-                <div className="absolute top-0.5 left-1 text-[8px] text-white/70">
+                <div className="absolute top-0.5 left-1 text-[8px] text-foreground/70">
                   {isInflow ? '▲' : isOutflow ? '▼' : '●'}
                 </div>
               )}

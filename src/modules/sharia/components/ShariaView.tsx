@@ -438,7 +438,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-profit hover:bg-profit/40 hover:text-white"
+              className="text-profit hover:bg-profit/40 hover:text-foreground"
               aria-label="إغلاق"
             >
               ✕

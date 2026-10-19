@@ -415,7 +415,7 @@ export function LiquidityFlowPanel() {
             {investor_type_estimate && (
               <div>
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-purple-500" />
+                  <Building2 className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs font-semibold">تقدير نوع المستثمر</span>
                   <Badge variant="outline" className="text-[9px]">
                     {investor_type_estimate.block_trades_count} صفقة كتلة
@@ -425,14 +425,14 @@ export function LiquidityFlowPanel() {
                   {/* Bar */}
                   <div className="flex h-6 w-full overflow-hidden rounded-md border border-border/40">
                     <div
-                      className="bg-purple-500/70 flex items-center justify-center text-[10px] text-white font-semibold"
+                      className="bg-primary/70 flex items-center justify-center text-[10px] text-foreground font-semibold"
                       style={{ width: `${Math.max(investor_type_estimate.institutional_pct, 5)}%` }}
                       title={`مؤسسي ${investor_type_estimate.institutional_pct}%`}
                     >
                       {investor_type_estimate.institutional_pct > 12 ? `مؤسسي ${investor_type_estimate.institutional_pct}%` : ''}
                     </div>
                     <div
-                      className="bg-cyan-500/60 flex items-center justify-center text-[10px] text-white font-semibold"
+                      className="bg-cyan-500/60 flex items-center justify-center text-[10px] text-foreground font-semibold"
                       style={{ width: `${Math.max(investor_type_estimate.retail_pct, 5)}%` }}
                       title={`أفراد ${investor_type_estimate.retail_pct}%`}
                     >

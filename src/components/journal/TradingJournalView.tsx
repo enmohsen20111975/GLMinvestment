@@ -171,7 +171,7 @@ export function TradingJournalView() {
       case 'LOSS':
         return <Badge className="bg-loss/20 text-loss">خسارة</Badge>;
       default:
-        return <Badge className="bg-yellow-500/20 text-yellow-500">مفتوحة</Badge>;
+        return <Badge className="bg-warning/20 text-warning">مفتوحة</Badge>;
     }
   };
 

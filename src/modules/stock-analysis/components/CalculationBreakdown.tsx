@@ -63,7 +63,7 @@ function VerdictBadge({ verdict, verdictAr }: { verdict: string; verdictAr: stri
       verdict === 'undervalued' && 'bg-profit text-profit dark:bg-profit/50 dark:text-profit',
       verdict === 'fair' && 'bg-warning text-warning dark:bg-warning/50 dark:text-warning',
       verdict === 'overvalued' && 'bg-loss text-loss dark:bg-loss/50 dark:text-loss',
-      verdict === 'unknown' && 'bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-400',
+      verdict === 'unknown' && 'bg-muted text-muted-foreground dark:bg-muted/50 dark:text-muted-foreground',
     )}>
       {verdictAr}
     </Badge>
@@ -182,7 +182,7 @@ function FairValueSection() {
           ) : avgFairValue > 0 ? (
             <p className="text-lg font-bold font-mono text-profit dark:text-profit">{(avgFairValue ?? 0).toFixed(2)}</p>
           ) : (
-            <p className="text-sm font-bold font-mono text-gray-500">غير متاح</p>
+            <p className="text-sm font-bold font-mono text-muted-foreground">غير متاح</p>
           )}
         </div>
         {!fairValueLocked && avgFairValue > 0 && currentPrice > 0 && (
@@ -286,13 +286,13 @@ function FairValueSection() {
             "p-3 rounded-lg border",
             avgFairValue > 0
               ? "bg-profit dark:bg-profit/30 border-profit dark:border-profit/40"
-              : "bg-gray-50 dark:bg-gray-950/30 border-gray-200 dark:border-gray-900/40"
+              : "bg-muted dark:bg-muted/30 border-border dark:border-border/40"
           )}>
             <p className={cn(
               "text-sm font-bold mb-1",
               avgFairValue > 0
                 ? "text-profit dark:text-profit"
-                : "text-gray-700 dark:text-gray-400"
+                : "text-muted-foreground dark:text-muted-foreground"
             )}>متوسط القيمة العادلة</p>
             {avgFairValue > 0 ? (
               <>
@@ -306,7 +306,7 @@ function FairValueSection() {
                 </p>
               </>
             ) : (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                 ⚠️ لا يمكن حساب القيمة العادلة - البيانات الأساسية (EPS، P/E) غير متوفرة أو غير صالحة
               </p>
             )}
@@ -350,7 +350,7 @@ function TechnicalCalculationsSection() {
   if (rsi >= 70) { rsiZone = 'تشبع شرائي'; rsiSignal = 'بيع'; rsiColor = 'text-loss'; }
   else if (rsi >= 55) { rsiZone = 'قوي'; rsiSignal = 'صعودي'; rsiColor = 'text-profit'; }
   else if (rsi >= 45) { rsiZone = 'محايد'; rsiSignal = 'محايد'; rsiColor = 'text-warning'; }
-  else if (rsi >= 30) { rsiZone = 'ضعيف'; rsiSignal = 'هبوطي'; rsiColor = 'text-orange-600'; }
+  else if (rsi >= 30) { rsiZone = 'ضعيف'; rsiSignal = 'هبوطي'; rsiColor = 'text-warning'; }
   else { rsiZone = 'تشبع بيعي'; rsiSignal = 'شراء'; rsiColor = 'text-profit'; }
 
   // MA Cross
@@ -548,7 +548,7 @@ function ScoreCalculationsSection() {
         {[
           { label: 'الفني', score: technical, color: 'bg-whale' },
           { label: 'القيمة', score: value, color: 'bg-profit' },
-          { label: 'الجودة', score: quality, color: 'bg-purple-500' },
+          { label: 'الجودة', score: quality, color: 'bg-primary' },
           { label: 'الزخم', score: momentum, color: 'bg-warning' },
           { label: 'المخاطر', score: risk, color: 'bg-loss' },
           { label: 'الشامل', score: composite, color: 'bg-primary' },

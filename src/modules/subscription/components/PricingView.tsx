@@ -55,7 +55,7 @@ const MARKET_OPTIONS = [
 
 const TIER_ICONS: Record<string, React.ReactNode> = {
   premium: <Crown className="w-5 h-5 text-warning" />,
-  pro: <Zap className="w-5 h-5 text-purple-500" />,
+  pro: <Zap className="w-5 h-5 text-primary" />,
   vip_pass: <Crown className="w-5 h-5 text-warning animate-bounce" />,
   b2b_starter: <Building2 className="w-5 h-5 text-sky-500" />,
   b2b_pro: <Building2 className="w-5 h-5 text-sky-600" />,
@@ -240,7 +240,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                 {popular && !plan.is_vip && (
                   <Badge
                     variant="default"
-                    className="absolute -top-2.5 right-4 bg-gradient-to-r from-warning to-orange-500 text-white shadow-md text-xs py-0.5"
+                    className="absolute -top-2.5 right-4 bg-gradient-to-r from-warning to-orange-500 text-foreground shadow-md text-xs py-0.5"
                   >
                     الأكثر شعبية ⭐
                   </Badge>
@@ -299,7 +299,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                     disabled={checkoutLoading === plan.tier}
                     className={cn(
                       'w-full gap-2',
-                      popular && 'bg-gradient-to-r from-warning to-orange-500 hover:from-warning hover:to-orange-600 text-white',
+                      popular && 'bg-gradient-to-r from-warning to-orange-500 hover:from-warning hover:to-orange-600 text-foreground',
                     )}
                     variant={popular ? 'default' : 'outline'}
                   >

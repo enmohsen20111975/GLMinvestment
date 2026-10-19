@@ -107,7 +107,7 @@ export function LiveDashboardWidget() {
       {/* Whale Alerts */}
       <div className="flex items-center justify-between text-[10px]">
         <span className="text-muted-foreground">تنبيهات الحيتان:</span>
-        <span className="font-bold text-purple-500">
+        <span className="font-bold text-primary">
           {alerts.length > 0 ? `${alerts.length} حوت نشط 🐋` : 'لا يوجد'}
         </span>
       </div>

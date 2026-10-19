@@ -364,7 +364,7 @@ const RELIABILITY_META: Record<
   },
   low: {
     label: 'موثوقية منخفضة',
-    className: 'bg-orange-700/15 text-orange-800 dark:text-orange-300 border-orange-700/40',
+    className: 'bg-warning/15 text-warning dark:text-warning border-orange-700/40',
   },
 };
 
@@ -599,7 +599,7 @@ function SliderRow({ label, value, onChange, color }: SliderRowProps) {
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{label}</span>
         <span
-          className="rounded-md px-2 py-0.5 text-xs font-bold tabular-nums text-white"
+          className="rounded-md px-2 py-0.5 text-xs font-bold tabular-nums text-foreground"
           style={{ backgroundColor: color }}
         >
           {(value ?? 0).toFixed(1)}

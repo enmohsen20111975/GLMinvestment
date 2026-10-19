@@ -276,7 +276,7 @@ function ProofPredictionsTableView({
                 </td>
                 <td className="p-3 text-center whitespace-nowrap">
                   {isTrader ? (
-                    <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-300 gap-1 py-0.5 px-2 text-[11px] font-bold">
+                    <Badge className="bg-primary text-primary dark:bg-primary dark:text-primary border border-purple-300 gap-1 py-0.5 px-2 text-[11px] font-bold">
                       ⚡ مضارب
                     </Badge>
                   ) : (
@@ -309,7 +309,7 @@ function ProofPredictionsTableView({
                     "inline-block px-2.5 py-1 rounded-md font-bold text-xs",
                     pnl > 0 ? "bg-profit dark:bg-profit text-profit dark:text-profit border border-profit" :
                     pnl < 0 ? "bg-loss dark:bg-loss text-loss dark:text-loss border border-loss" :
-                    "bg-gray-100 text-gray-700"
+                    "bg-muted text-muted-foreground"
                   )}>
                     {pnl > 0 ? `+${(pnl ?? 0).toFixed(2)}%` : `${(pnl ?? 0).toFixed(2)}%`}
                   </span>
@@ -416,7 +416,7 @@ export function PreviousPredictionsArchive({
                   : '';
                 const sigColor: Record<string, string> = {
                   'STRONG_BUY': 'bg-profit', 'BUY': 'bg-success', 'ACCUMULATE': 'bg-whale',
-                  'HOLD': 'bg-gray-500', 'REDUCE': 'bg-orange-500', 'SELL': 'bg-loss', 'STRONG_SELL': 'bg-loss',
+                  'HOLD': 'bg-muted', 'REDUCE': 'bg-warning', 'SELL': 'bg-loss', 'STRONG_SELL': 'bg-loss',
                 };
                 // P6-PREDICTIONS: قراءة القيم التاريخية بأمان (alias fallback)
                 const entryVal = Number(p.entry_price || p.current_price || 0);
@@ -426,7 +426,7 @@ export function PreviousPredictionsArchive({
                   <tr key={(p.ticker || '') + '-' + i} className="border-t border-border hover:bg-muted/40">
                     <td className="p-2 font-bold">{p.ticker}</td>
                     <td className="p-2">
-                      <span className={cn('inline-block px-1.5 py-0.5 rounded text-xs text-white', sigColor[p.signal || ''] || 'bg-gray-500')}>
+                      <span className={cn('inline-block px-1.5 py-0.5 rounded text-xs text-white', sigColor[p.signal || ''] || 'bg-muted')}>
                         {p.signal_ar || p.signal}
                       </span>
                     </td>

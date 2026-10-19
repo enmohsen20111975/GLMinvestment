@@ -179,7 +179,7 @@ export function ImageCardExport({
                 size="sm"
                 onClick={handleDownload}
                 disabled={busy}
-                className="text-white"
+                className="text-foreground"
                 style={{ background: accentColor }}
               >
                 {downloading ? (

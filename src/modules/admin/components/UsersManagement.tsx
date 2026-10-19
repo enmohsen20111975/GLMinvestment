@@ -510,7 +510,7 @@ export function UsersManagement() {
         className={cn(
           "gap-1.5 py-0.5 px-2.5 font-medium text-xs border shadow-sm transition-all",
           isVip
-            ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40 hover:bg-purple-500/25"
+            ? "bg-primary/15 text-primary dark:text-primary border-purple-500/40 hover:bg-primary/25"
             : isPremium
             ? "bg-profit/15 text-profit dark:text-profit border-profit/40 hover:bg-profit/25"
             : "bg-primary/15 text-primary dark:text-primary border-primary/40 hover:bg-primary/25"
@@ -825,8 +825,8 @@ export function UsersManagement() {
             </CardTitle>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="gap-1.5 border-purple-500/40 bg-purple-500/10 text-purple-400 py-1 px-2.5">
-                <Ticket className="w-3.5 h-3.5 text-purple-400" />
+              <Badge variant="outline" className="gap-1.5 border-purple-500/40 bg-primary/10 text-primary py-1 px-2.5">
+                <Ticket className="w-3.5 h-3.5 text-primary" />
                 <span>مستخدمو البرومو كود:</span>
                 <strong className="font-mono text-foreground font-bold">
                   {promoStats?.totalWithPromo ?? users.filter(u => !!u.promoCode).length}
@@ -895,7 +895,7 @@ export function UsersManagement() {
                           </span>
                         )}
                         {user.promoCode && (
-                          <span className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 font-mono">
+                          <span className="flex items-center gap-1 text-xs text-primary dark:text-primary font-mono">
                             <Ticket className="w-3 h-3" />
                             تفعيل: {formatDate(user.promoCode.redeemed_at)}
                             {user.promoCode.expires_at && ` | انتهاء: ${formatDate(user.promoCode.expires_at)}`}
@@ -981,7 +981,7 @@ export function UsersManagement() {
                         <DropdownMenuLabel>كود الخصم والاشتراك</DropdownMenuLabel>
 
                         <DropdownMenuItem onClick={() => handleOpenPromoModal(user)}>
-                          <Ticket className="w-4 h-4 ml-2 text-purple-500" />
+                          <Ticket className="w-4 h-4 ml-2 text-primary" />
                           {user.promoCode ? 'تعديل / تجديد البرومو كود' : 'تفعيل برومو كود للمستخدم'}
                         </DropdownMenuItem>
 
@@ -1107,10 +1107,10 @@ export function UsersManagement() {
                 </div>
 
                 {/* Promo Code Section */}
-                <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4 space-y-3">
+                <div className="rounded-xl border border-purple-500/30 bg-primary/5 p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-sm flex items-center gap-2 text-purple-400">
-                      <Ticket className="w-4 h-4 text-purple-400" />
+                    <h4 className="font-bold text-sm flex items-center gap-2 text-primary">
+                      <Ticket className="w-4 h-4 text-primary" />
                       بيانات كود الخصم والترقية (Promo Code)
                     </h4>
                     {selectedUser.promoCode ? (
@@ -1165,7 +1165,7 @@ export function UsersManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-xs h-7 text-purple-400 border-purple-500/40 hover:bg-purple-500/10"
+                          className="text-xs h-7 text-primary border-purple-500/40 hover:bg-primary/10"
                           onClick={() => handleOpenPromoModal(selectedUser)}
                         >
                           <Sparkles className="w-3 h-3 ml-1" />
@@ -1186,7 +1186,7 @@ export function UsersManagement() {
                       <span className="text-xs text-muted-foreground">هذا المستخدم يعمل بالباقة العادية بدون برومو كود.</span>
                       <Button
                         size="sm"
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8 gap-1.5"
+                        className="bg-primary hover:bg-primary text-white text-xs h-8 gap-1.5"
                         onClick={() => handleOpenPromoModal(selectedUser)}
                       >
                         <Ticket className="w-3.5 h-3.5" />
@@ -1224,7 +1224,7 @@ export function UsersManagement() {
                       <div className="text-xs text-muted-foreground">تنبيهات</div>
                     </div>
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-500">
+                      <div className="text-2xl font-bold text-primary">
                         {selectedUser.loginCount ?? 0}
                       </div>
                       <div className="text-xs text-muted-foreground">مرات الدخول</div>
@@ -1262,7 +1262,7 @@ export function UsersManagement() {
                           <div className="text-xs text-muted-foreground">أخطاء</div>
                         </div>
                         <div className="text-center p-3 bg-muted/50 rounded-lg">
-                          <div className="text-2xl font-bold text-purple-500">
+                          <div className="text-2xl font-bold text-primary">
                             {selectedUser.usage.totalEvents}
                           </div>
                           <div className="text-xs text-muted-foreground">إجمالي الأحداث</div>
@@ -1422,7 +1422,7 @@ export function UsersManagement() {
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
-              <Ticket className="w-5 h-5 text-purple-500" />
+              <Ticket className="w-5 h-5 text-primary" />
               تفعيل / تعديل برومو كود للمستخدم
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -1519,7 +1519,7 @@ export function UsersManagement() {
               size="sm"
               onClick={handleAssignPromo}
               disabled={isAssigningPromo}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold gap-1.5"
+              className="bg-primary hover:bg-primary text-white font-bold gap-1.5"
             >
               {isAssigningPromo ? (
                 <>

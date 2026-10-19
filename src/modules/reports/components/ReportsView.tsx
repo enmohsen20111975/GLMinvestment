@@ -171,7 +171,7 @@ function ProfessionalHeader({
             <FileBarChart className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
               دليل الاستثمار
             </h1>
             <p className="text-[11px] text-warning/80 tracking-wide uppercase">
@@ -364,7 +364,7 @@ function SectorReport() {
                 <ArrowUpRight className="w-3.5 h-3.5 text-profit" />
                 أفضل قطاع
               </p>
-              <p className="text-base font-bold text-white">{bestSector.name || '—'}</p>
+              <p className="text-base font-bold text-foreground">{bestSector.name || '—'}</p>
               <p className="text-2xl font-extrabold text-profit tabular-nums">
                 {safeFmtPct(bestSector.avg_change_percent, 2)}
               </p>
@@ -377,7 +377,7 @@ function SectorReport() {
                 <ArrowDownRight className="w-3.5 h-3.5 text-loss" />
                 أسوأ قطاع
               </p>
-              <p className="text-base font-bold text-white">{worstSector.name || '—'}</p>
+              <p className="text-base font-bold text-foreground">{worstSector.name || '—'}</p>
               <p className="text-2xl font-extrabold text-loss tabular-nums">
                 {safeFmtPct(worstSector.avg_change_percent, 2)}
               </p>
@@ -418,7 +418,7 @@ function SectorReport() {
                     className={cn('rounded-lg border p-2.5', border)}
                     style={{ backgroundColor: bg }}
                   >
-                    <p className="text-xs font-semibold text-white truncate">
+                    <p className="text-xs font-semibold text-foreground truncate">
                       {sector.name || '—'}
                     </p>
                     <p className="text-[10px] text-slate-200 mb-1">
@@ -644,7 +644,7 @@ function PredictionsReport() {
                 <Trophy className="w-3.5 h-3.5 text-warning" />
                 أفضل سهم متوقع
               </p>
-              <p className="text-base font-bold text-white">
+              <p className="text-base font-bold text-foreground">
                 {bestStock.symbol || '—'} ({bestStock.name || '—'})
               </p>
               <p className="text-2xl font-extrabold text-profit tabular-nums">
@@ -660,7 +660,7 @@ function PredictionsReport() {
                 <AlertTriangle className="w-3.5 h-3.5 text-loss" />
                 أسوأ سهم متوقع (خسارة صريحة)
               </p>
-              <p className="text-base font-bold text-white">
+              <p className="text-base font-bold text-foreground">
                 {worstStock.symbol || '—'} ({worstStock.name || '—'})
               </p>
               <p className="text-2xl font-extrabold text-loss tabular-nums">
@@ -695,7 +695,7 @@ function PredictionsReport() {
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white">{p.symbol || '—'}</p>
+                    <p className="text-sm font-bold text-foreground">{p.symbol || '—'}</p>
                     <p className="text-[10px] text-slate-400 truncate">{p.name || ''}</p>
                   </div>
                   <span className="text-sm font-bold text-profit tabular-nums">
@@ -727,7 +727,7 @@ function PredictionsReport() {
                 1
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white">{worstStock.symbol || '—'}</p>
+                <p className="text-sm font-bold text-foreground">{worstStock.symbol || '—'}</p>
                 <p className="text-[10px] text-slate-400 truncate">{worstStock.name || ''}</p>
               </div>
               <span className="text-sm font-bold text-loss tabular-nums">

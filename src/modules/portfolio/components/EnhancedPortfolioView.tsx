@@ -223,13 +223,13 @@ const ASSET_TYPE_LABELS: Record<AssetType, string> = {
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
   stock: 'bg-profit text-profit dark:bg-profit/30 dark:text-profit',
-  gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  gold: 'bg-warning text-warning dark:bg-warning/30 dark:text-warning',
   bank: 'bg-whale text-whale dark:bg-whale/30 dark:text-whale',
-  certificate: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  fund: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  certificate: 'bg-primary text-primary dark:bg-primary/30 dark:text-primary',
+  fund: 'bg-warning text-warning dark:bg-warning/30 dark:text-warning',
   crypto: 'bg-warning text-warning dark:bg-warning/30 dark:text-warning',
   real_estate: 'bg-whale text-whale dark:bg-whale/30 dark:text-whale',
-  other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+  other: 'bg-muted text-muted-foreground dark:bg-muted/30 dark:text-muted-foreground',
 };
 
 // Fund types with Arabic labels
@@ -1620,12 +1620,12 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
               <>
                 <div className="space-y-2"><Label>اسم الأصل</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: سوار ذهب، خاتم" /></div>
                 {goldPrices && (
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 text-sm">
-                    <div className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">أسعار الذهب الحالية (للجرام):</div>
+                  <div className="bg-warning dark:bg-warning/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 text-sm">
+                    <div className="font-semibold text-warning dark:text-warning mb-2">أسعار الذهب الحالية (للجرام):</div>
                     <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div>عيار ٢٤: <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['24k']?.toFixed(2) || '—'} ج.م</span></div>
-                      <div>عيار ٢١: <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['21k']?.toFixed(2) || '—'} ج.م</span></div>
-                      <div>عيار ١٨: <span className="font-bold text-yellow-700 dark:text-yellow-400">{goldPrices['18k']?.toFixed(2) || '—'} ج.م</span></div>
+                      <div>عيار ٢٤: <span className="font-bold text-warning dark:text-warning">{goldPrices['24k']?.toFixed(2) || '—'} ج.م</span></div>
+                      <div>عيار ٢١: <span className="font-bold text-warning dark:text-warning">{goldPrices['21k']?.toFixed(2) || '—'} ج.م</span></div>
+                      <div>عيار ١٨: <span className="font-bold text-warning dark:text-warning">{goldPrices['18k']?.toFixed(2) || '—'} ج.م</span></div>
                     </div>
                   </div>
                 )}
@@ -1784,9 +1784,9 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   />
                 </div>
                 {formSelectedPrice && formSelectedPrice > 0 && (
-                  <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md px-3 py-2 text-xs flex justify-between">
+                  <div className="bg-warning dark:bg-warning/20 border border-orange-200 dark:border-orange-800 rounded-md px-3 py-2 text-xs flex justify-between">
                     <span className="text-muted-foreground">السعر الحالي (USD)</span>
-                    <span className="font-semibold text-orange-700 dark:text-orange-400" dir="ltr">${(formSelectedPrice ?? 0).toFixed(2)}</span>
+                    <span className="font-semibold text-warning dark:text-warning" dir="ltr">${(formSelectedPrice ?? 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
@@ -2908,15 +2908,15 @@ const ReportsTab = memo(function ReportsTab() {
                 </div>
               )}
               {investmentReturns.certificate_monthly > 0 && (
-                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-center">
+                <div className="p-3 rounded-lg bg-primary dark:bg-primary/20 text-center">
                   <p className="text-xs text-muted-foreground mb-1">عائد الشهادات الشهري</p>
-                  <p className="text-base font-bold text-purple-600 dark:text-purple-400">{formatCurrency(investmentReturns.certificate_monthly)}</p>
+                  <p className="text-base font-bold text-primary dark:text-primary">{formatCurrency(investmentReturns.certificate_monthly)}</p>
                 </div>
               )}
               {investmentReturns.fund_monthly > 0 && (
-                <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-center">
+                <div className="p-3 rounded-lg bg-warning dark:bg-warning/20 text-center">
                   <p className="text-xs text-muted-foreground mb-1">عائد الصناديق الشهري</p>
-                  <p className="text-base font-bold text-orange-600 dark:text-orange-400">{formatCurrency(investmentReturns.fund_monthly)}</p>
+                  <p className="text-base font-bold text-warning dark:text-warning">{formatCurrency(investmentReturns.fund_monthly)}</p>
                 </div>
               )}
               <div className="p-3 rounded-lg bg-profit dark:bg-profit/20 text-center">
@@ -3000,12 +3000,12 @@ const ReportsTab = memo(function ReportsTab() {
                 className={cn(
                   'flex items-start gap-3 p-3 rounded-lg border',
                   alert.type === 'danger' && 'bg-loss border-loss dark:bg-loss/20 dark:border-loss/50',
-                  alert.type === 'warning' && 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900/50',
+                  alert.type === 'warning' && 'bg-warning border-yellow-200 dark:bg-warning/20 dark:border-yellow-900/50',
                   alert.type === 'info' && 'bg-primary border-whale dark:bg-primary/20 dark:border-whale/50'
                 )}
               >
                 {alert.type === 'danger' && <XCircle className="w-5 h-5 text-loss mt-0.5 flex-shrink-0" />}
-                {alert.type === 'warning' && <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />}
+                {alert.type === 'warning' && <AlertCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />}
                 {alert.type === 'info' && <CheckCircle2 className="w-5 h-5 text-whale mt-0.5 flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium" dir="rtl">{alert.message}</p>
@@ -3031,8 +3031,8 @@ const ReportsTab = memo(function ReportsTab() {
               .map(([type, value]) => {
                 const pct = totalAssets > 0 ? (value / totalAssets) * 100 : 0;
                 const label = ASSET_TYPE_LABELS[type as AssetType] || type;
-                const colorClass = ASSET_TYPE_COLORS[type as AssetType] || 'bg-gray-400';
-                const barColor = type === 'stock' ? 'bg-profit' : type === 'gold' ? 'bg-yellow-400' : type === 'bank' ? 'bg-whale' : type === 'certificate' ? 'bg-purple-400' : type === 'fund' ? 'bg-orange-400' : 'bg-whale';
+                const colorClass = ASSET_TYPE_COLORS[type as AssetType] || 'bg-muted';
+                const barColor = type === 'stock' ? 'bg-profit' : type === 'gold' ? 'bg-warning' : type === 'bank' ? 'bg-whale' : type === 'certificate' ? 'bg-primary' : type === 'fund' ? 'bg-warning' : 'bg-whale';
                 return (
                   <div key={type} className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -3095,10 +3095,10 @@ const ReportsTab = memo(function ReportsTab() {
                   <>
                     {/* Warning: High Stock Concentration */}
                     {stockPercent > 50 && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-                        <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-warning dark:bg-warning/20 border border-yellow-200 dark:border-yellow-800">
+                        <AlertCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">تنويع المحفظة</p>
+                          <p className="text-sm font-medium text-warning dark:text-warning">تنويع المحفظة</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             الأسهم تمثل {(stockPercent ?? 0).toFixed(1)}% من محفظتك. يُنصح بتقليل النسبة إلى 30-40% وتوزيع الباقي على شهادات وصناديق استثمار.
                           </p>
@@ -3167,7 +3167,7 @@ const ReportsTab = memo(function ReportsTab() {
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.2)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
-                  <p className="font-bold text-purple-600">20%</p>
+                  <p className="font-bold text-primary">20%</p>
                   <p className="text-muted-foreground">تطوير وترفيه</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.2)}</p>
                 </div>

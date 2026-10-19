@@ -257,16 +257,16 @@ function NisabInfo({ goldPrice, silverPrice }: { goldPrice: number; silverPrice:
               <div className="relative p-6 bg-gradient-to-br from-yellow-50 to-warning dark:from-yellow-950/40 dark:to-warning/40 rounded-2xl border-2 border-yellow-300 dark:border-yellow-700/50 shadow-lg">
                 <div className="flex items-center justify-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-warning flex items-center justify-center shadow-lg">
-                    <Sparkles className="w-8 h-8 text-white"/>
+                    <Sparkles className="w-8 h-8 text-foreground"/>
                   </div>
                 </div>
-                <h3 className="text-center text-lg font-bold text-yellow-700 dark:text-yellow-300 mb-2">نصاب الذهب</h3>
-                <p className="text-center text-4xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">
+                <h3 className="text-center text-lg font-bold text-warning dark:text-warning mb-2">نصاب الذهب</h3>
+                <p className="text-center text-4xl font-bold text-warning dark:text-warning mb-2">
                   {NISAB.gold.grams} <span className="text-lg">جرام</span>
                 </p>
-                <div className="text-center p-2 bg-yellow-100/50 dark:bg-yellow-900/30 rounded-lg mb-3">
-                  <span className="text-sm text-yellow-700 dark:text-yellow-300">القيمة الحالية:</span>
-                  <span className="block text-lg font-bold text-yellow-600">{formatCurrency(goldNisabValue)}</span>
+                <div className="text-center p-2 bg-warning/50 dark:bg-warning/30 rounded-lg mb-3">
+                  <span className="text-sm text-warning dark:text-warning">القيمة الحالية:</span>
+                  <span className="block text-lg font-bold text-warning">{formatCurrency(goldNisabValue)}</span>
                 </div>
                 <p className="text-xs text-center text-muted-foreground">
                   عيار 24 (عيار 21 ≈ 98.8 جرام)
@@ -277,19 +277,19 @@ function NisabInfo({ goldPrice, silverPrice }: { goldPrice: number; silverPrice:
             {/* Silver Nisab */}
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-500 rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
-              <div className="relative p-6 bg-gradient-to-br from-gray-50 to-slate-100 dark:from-gray-950/40 dark:to-slate-950/40 rounded-2xl border-2 border-gray-300 dark:border-gray-700/50 shadow-lg">
+              <div className="relative p-6 bg-gradient-to-br from-gray-50 to-slate-100 dark:from-gray-950/40 dark:to-slate-950/40 rounded-2xl border-2 border-border dark:border-border/50 shadow-lg">
                 <div className="flex items-center justify-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center shadow-lg">
-                    <Coins className="w-8 h-8 text-white"/>
+                    <Coins className="w-8 h-8 text-foreground"/>
                   </div>
                 </div>
-                <h3 className="text-center text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">نصاب الفضة</h3>
-                <p className="text-center text-4xl font-bold text-gray-600 dark:text-gray-400 mb-2">
+                <h3 className="text-center text-lg font-bold text-muted-foreground mb-2">نصاب الفضة</h3>
+                <p className="text-center text-4xl font-bold text-muted-foreground mb-2">
                   {NISAB.silver.grams} <span className="text-lg">جرام</span>
                 </p>
-                <div className="text-center p-2 bg-gray-100/50 dark:bg-gray-900/30 rounded-lg mb-3">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">القيمة الحالية:</span>
-                  <span className="block text-lg font-bold text-gray-600">{formatCurrency(silverNisabValue)}</span>
+                <div className="text-center p-2 bg-muted/50 dark:bg-muted/30 rounded-lg mb-3">
+                  <span className="text-sm text-muted-foreground dark:text-muted-foreground">القيمة الحالية:</span>
+                  <span className="block text-lg font-bold text-muted-foreground">{formatCurrency(silverNisabValue)}</span>
                 </div>
                 <p className="text-xs text-center text-muted-foreground">
                   يُستخدم للنقود (أرفق بالفقراء)
@@ -413,7 +413,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-3 text-lg">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-yellow-500 flex items-center justify-center">
-              <Scale className="w-5 h-5 text-white"/>
+              <Scale className="w-5 h-5 text-foreground"/>
             </div>
             <div>
               <span className="text-warning dark:text-warning">معيار النصاب</span>
@@ -431,11 +431,11 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
             aria-label="معيار النصاب"
           >
             <ToggleGroupItem value="gold" aria-label="نصاب الذهب">
-              <Sparkles className="w-4 h-4 ml-1.5 text-yellow-600"/>
+              <Sparkles className="w-4 h-4 ml-1.5 text-warning"/>
               <span className="text-sm font-medium">نصاب الذهب (85 جرام عيار 24)</span>
             </ToggleGroupItem>
             <ToggleGroupItem value="silver" aria-label="نصاب الفضة">
-              <Coins className="w-4 h-4 ml-1.5 text-gray-500"/>
+              <Coins className="w-4 h-4 ml-1.5 text-muted-foreground"/>
               <span className="text-sm font-medium">نصاب الفضة (595 جرام)</span>
             </ToggleGroupItem>
           </ToggleGroup>
@@ -482,14 +482,14 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gold Section */}
         <Card className="relative overflow-hidden border-2 border-yellow-300 dark:border-yellow-700/50 bg-gradient-to-br from-yellow-50/50 to-warning/50 dark:from-yellow-950/20 dark:to-warning/20">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-warning/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-warning flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white"/>
+                <Sparkles className="w-5 h-5 text-foreground"/>
               </div>
               <div>
-                <span className="text-yellow-700 dark:text-yellow-300">الزكاة على الذهب</span>
+                <span className="text-warning dark:text-warning">الزكاة على الذهب</span>
                 <p className="text-xs text-muted-foreground font-normal">عيار24 = {formatCurrency(goldPrice)} | عيار21 = {formatCurrency(gold21Price)}</p>
               </div>
             </CardTitle>
@@ -497,19 +497,19 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-yellow-700 dark:text-yellow-300">ذهب عيار 24 (جرام)</label>
+                <label className="text-xs font-medium text-warning dark:text-warning">ذهب عيار 24 (جرام)</label>
                 <Input type="number" placeholder="0" value={inputs.gold24Grams || ''} onChange={(e) => updateInput('gold24Grams', parseFloat(e.target.value) || 0)} className="border-yellow-200 focus:border-yellow-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-yellow-700 dark:text-yellow-300">ذهب عيار 21 (جرام)</label>
+                <label className="text-xs font-medium text-warning dark:text-warning">ذهب عيار 21 (جرام)</label>
                 <Input type="number" placeholder="0" value={inputs.gold21Grams || ''} onChange={(e) => updateInput('gold21Grams', parseFloat(e.target.value) || 0)} className="border-yellow-200 focus:border-yellow-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-yellow-700 dark:text-yellow-300">ذهب عيار 18 (جرام)</label>
+                <label className="text-xs font-medium text-warning dark:text-warning">ذهب عيار 18 (جرام)</label>
                 <Input type="number" placeholder="0" value={inputs.gold18Grams || ''} onChange={(e) => updateInput('gold18Grams', parseFloat(e.target.value) || 0)} className="border-yellow-200 focus:border-yellow-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-yellow-700 dark:text-yellow-300">قيمة أخرى (ج.م)</label>
+                <label className="text-xs font-medium text-warning dark:text-warning">قيمة أخرى (ج.م)</label>
                 <Input type="number" placeholder="0" value={inputs.goldValue || ''} onChange={(e) => updateInput('goldValue', parseFloat(e.target.value) || 0)} className="border-yellow-200 focus:border-yellow-400"/>
               </div>
             </div>
@@ -517,15 +517,15 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
         </Card>
         
         {/* Silver Section */}
-        <Card className="relative overflow-hidden border-2 border-gray-300 dark:border-gray-700/50 bg-gradient-to-br from-gray-50/50 to-slate-50/50 dark:from-gray-950/20 dark:to-slate-950/20">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gray-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
+        <Card className="relative overflow-hidden border-2 border-border dark:border-border/50 bg-gradient-to-br from-gray-50/50 to-slate-50/50 dark:from-gray-950/20 dark:to-slate-950/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-muted/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center">
-                <Coins className="w-5 h-5 text-white"/>
+                <Coins className="w-5 h-5 text-foreground"/>
               </div>
               <div>
-                <span className="text-gray-700 dark:text-gray-300">الزكاة على الفضة</span>
+                <span className="text-muted-foreground dark:text-muted-foreground">الزكاة على الفضة</span>
                 <p className="text-xs text-muted-foreground font-normal">سعر الجرام: {formatCurrency(silverPricePerGram)}</p>
               </div>
             </CardTitle>
@@ -533,12 +533,12 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">فضة (جرام)</label>
-                <Input type="number" placeholder="0" value={inputs.silverGrams || ''} onChange={(e) => updateInput('silverGrams', parseFloat(e.target.value) || 0)} className="border-gray-200 focus:border-gray-400"/>
+                <label className="text-xs font-medium text-muted-foreground dark:text-muted-foreground">فضة (جرام)</label>
+                <Input type="number" placeholder="0" value={inputs.silverGrams || ''} onChange={(e) => updateInput('silverGrams', parseFloat(e.target.value) || 0)} className="border-border focus:border-border"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">قيمة فضة (ج.م)</label>
-                <Input type="number" placeholder="0" value={inputs.silverValue || ''} onChange={(e) => updateInput('silverValue', parseFloat(e.target.value) || 0)} className="border-gray-200 focus:border-gray-400"/>
+                <label className="text-xs font-medium text-muted-foreground dark:text-muted-foreground">قيمة فضة (ج.م)</label>
+                <Input type="number" placeholder="0" value={inputs.silverValue || ''} onChange={(e) => updateInput('silverValue', parseFloat(e.target.value) || 0)} className="border-border focus:border-border"/>
               </div>
             </div>
           </CardContent>
@@ -550,7 +550,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-success to-profit flex items-center justify-center">
-                <CircleDollarSign className="w-5 h-5 text-white"/>
+                <CircleDollarSign className="w-5 h-5 text-foreground"/>
               </div>
               <div>
                 <span className="text-success dark:text-success">الزكاة على النقود</span>
@@ -582,7 +582,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-whale flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white"/>
+                <TrendingUp className="w-5 h-5 text-foreground"/>
               </div>
               <div>
                 <span className="text-whale dark:text-whale">الأسهم والتجارة</span>
@@ -645,9 +645,9 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
                           result.nisabMet ? 'bg-profit' : 'bg-warning'
                         )}>
                           {result.nisabMet ? (
-                            <CheckCircle2 className="w-5 h-5 text-white"/>
+                            <CheckCircle2 className="w-5 h-5 text-foreground"/>
                           ) : (
-                            <AlertTriangle className="w-5 h-5 text-white"/>
+                            <AlertTriangle className="w-5 h-5 text-foreground"/>
                           )}
                         </div>
                         <div>
@@ -686,7 +686,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
                     <rect width="100%" height="100%" fill="url(#stars)"/>
                   </svg>
                 </div>
-                <div className="relative text-center text-white">
+                <div className="relative text-center text-foreground">
                   <p className="text-sm opacity-90 mb-1">إجمالي الزكاة الواجبة</p>
                   <p className="text-4xl font-bold mb-2">{formatCurrency(totalZakat)}</p>
                   <div className="flex items-center justify-center gap-2 text-sm opacity-80">
@@ -763,13 +763,13 @@ function CalculationMethods() {
               <CardTitle className="flex items-center gap-3 text-lg">
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center',
-                  method.color === 'yellow' && 'bg-yellow-500',
+                  method.color === 'yellow' && 'bg-warning',
                   method.color === 'green' && 'bg-success',
                   method.color === 'blue' && 'bg-whale',
-                  method.color === 'purple' && 'bg-purple-500',
+                  method.color === 'purple' && 'bg-primary',
                   method.color === 'emerald' && 'bg-profit',
                 )}>
-                  <Icon className="w-5 h-5 text-white"/>
+                  <Icon className="w-5 h-5 text-foreground"/>
                 </div>
                 {method.title}
               </CardTitle>
@@ -875,7 +875,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
           <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-profit to-success flex items-center justify-center shadow">
-                <Sparkles className="w-5 h-5 text-white"/>
+                <Sparkles className="w-5 h-5 text-foreground"/>
               </div>
               <div>
                 <span className="text-profit dark:text-profit text-lg">الزكاة التلقائية من محفظتك</span>
@@ -950,7 +950,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
                       <rect width="100%" height="100%" fill="url(#autoStars)"/>
                     </svg>
                   </div>
-                  <div className="relative text-white">
+                  <div className="relative text-foreground">
                     <CheckCircle2 className="w-10 h-10 mx-auto mb-2"/>
                     <p className="text-sm opacity-90 mb-1">بلغت ثروتك النصاب — تجب عليك الزكاة</p>
                     <p className="text-4xl font-bold mb-2">{formatCurrency(zakatDue)}</p>
@@ -987,8 +987,8 @@ function BreakdownRow({ icon, label, value, color }: { icon: React.ReactNode; la
     green: 'text-success dark:text-success',
     emerald: 'text-profit dark:text-profit',
     blue: 'text-whale dark:text-whale',
-    yellow: 'text-yellow-600 dark:text-yellow-400',
-    orange: 'text-orange-600 dark:text-orange-400',
+    yellow: 'text-warning dark:text-warning',
+    orange: 'text-warning dark:text-warning',
     red: 'text-loss dark:text-loss',
   };
   return (
@@ -1067,7 +1067,7 @@ export function ZakatView() {
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-warning via-yellow-500 to-warning flex items-center justify-center shadow-lg">
-                <HandCoins className="w-7 h-7 text-white"/>
+                <HandCoins className="w-7 h-7 text-foreground"/>
               </div>
               <CrescentMoon className="absolute -top-1 -left-1 w-5 h-5 text-warning"/>
             </div>

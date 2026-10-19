@@ -76,7 +76,7 @@ const REGIME_LABEL: Record<string, { color: string }> = {
 };
 
 const PATH_META: Record<string, { tKey: string; icon: React.ReactNode; color: string }> = {
-  A_pre_surge: { tKey: 'preSurge', icon: <Rocket className="h-3.5 w-3.5" />, color: 'text-purple-600 dark:text-purple-400' },
+  A_pre_surge: { tKey: 'preSurge', icon: <Rocket className="h-3.5 w-3.5" />, color: 'text-primary dark:text-primary' },
   B_quiet_accumulation_strong: { tKey: 'strongAccumulation', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
   C_quiet_accumulation_weak: { tKey: 'weakAccumulation', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
   D_explosive_surge: { tKey: 'explosiveSurge', icon: <Flame className="h-3.5 w-3.5" />, color: 'text-loss dark:text-loss' },

@@ -765,7 +765,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                         title={`${gainers} رابح`}
                       />
                       <div
-                        className="bg-gray-400"
+                        className="bg-muted"
                         style={{ width: `${(unchanged / total) * 100}%` }}
                         title={`${unchanged} unchanged`}
                       />
@@ -926,10 +926,10 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
               <p className="text-muted-foreground text-xs mb-1">إجمالي الأسهم</p>
               <p className="text-xl font-bold text-whale">{weekStats.totalStocks}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950">
+            <div className="text-center p-3 rounded-lg bg-primary dark:bg-primary">
               <p className="text-muted-foreground text-xs mb-1">متوسط السعر</p>
               {/* currencyLabel fix */}
-              <p className="text-xl font-bold text-purple-600">{(weekStats.avgPrice ?? 0).toFixed(2)} {currencyLabel}</p>
+              <p className="text-xl font-bold text-primary">{(weekStats.avgPrice ?? 0).toFixed(2)} {currencyLabel}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-warning dark:bg-warning">
               <p className="text-muted-foreground text-xs mb-1">عدد القطاعات</p>

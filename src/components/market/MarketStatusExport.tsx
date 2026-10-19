@@ -228,11 +228,11 @@ export function MarketStatusExport() {
         {/* العنوان + الأزرار */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h3 className="text-base font-bold text-orange-900 flex items-center gap-2">
+            <h3 className="text-base font-bold text-warning flex items-center gap-2">
               <span className="text-xl">🖼️</span>
               بطاقة حالة السوق (قابلة للمشاركة)
             </h3>
-            <p className="text-xs text-orange-700/80 mt-1">
+            <p className="text-xs text-warning/80 mt-1">
               حمّل صورة جاهزة للنشر أو انشرها مباشرة على قناة تيليجرام
             </p>
           </div>
@@ -242,7 +242,7 @@ export function MarketStatusExport() {
               size="sm"
               onClick={fetchData}
               disabled={busy}
-              className="border-orange-300 text-orange-700 hover:bg-orange-100"
+              className="border-orange-300 text-warning hover:bg-warning"
             >
               <RefreshCw className="h-4 w-4 ml-1" />
               تحديث
@@ -251,7 +251,7 @@ export function MarketStatusExport() {
               size="sm"
               onClick={handleDownload}
               disabled={busy}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
+              className="bg-warning hover:bg-warning text-white"
             >
               {downloading ? (
                 <Loader2 className="h-4 w-4 ml-1 animate-spin" />

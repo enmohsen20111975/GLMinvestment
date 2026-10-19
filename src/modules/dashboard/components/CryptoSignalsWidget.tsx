@@ -42,8 +42,8 @@ function formatPrice(price: number): string {
 
 function fearGreedColor(value: number): string {
   if (value <= 20) return 'bg-loss';
-  if (value <= 40) return 'bg-orange-500';
-  if (value <= 60) return 'bg-yellow-500';
+  if (value <= 40) return 'bg-warning';
+  if (value <= 60) return 'bg-warning';
   if (value <= 80) return 'bg-lime-500';
   return 'bg-profit';
 }
@@ -126,7 +126,7 @@ export function CryptoSignalsWidget() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center">
-              <Bitcoin className="w-4 h-4 text-white" />
+              <Bitcoin className="w-4 h-4 text-foreground" />
             </div>
             إشارات العملات الرقمية
           </CardTitle>
@@ -155,11 +155,11 @@ export function CryptoSignalsWidget() {
               <div className="p-2 rounded-lg bg-muted/50 border border-border/50">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-medium text-muted-foreground">مؤشر الخوف والطمع</span>
-                  <Badge className={cn('text-[9px] text-white', fearGreedColor(fearGreed.value))}>
+                  <Badge className={cn('text-[9px] text-foreground', fearGreedColor(fearGreed.value))}>
                     {fearGreed.value} - {fearGreedLabel(fearGreed.value)}
                   </Badge>
                 </div>
-                <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-muted dark:bg-muted overflow-hidden">
                   <div 
                     className={cn('h-full transition-all', fearGreedColor(fearGreed.value))}
                     style={{ width: `${fearGreed.value}%` }}

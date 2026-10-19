@@ -1397,7 +1397,7 @@ export function AdminView() {
                     <div className="text-xs text-muted-foreground">سهم نشط</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <Target className="w-6 h-6 mx-auto mb-2 text-purple-500" />
+                    <Target className="w-6 h-6 mx-auto mb-2 text-primary" />
                     <div className="text-lg md:text-xl lg:text-2xl font-bold">{predictionStats?.total_predictions ?? 0}</div>
                     <div className="text-xs text-muted-foreground">توقع</div>
                   </div>
@@ -1447,7 +1447,7 @@ export function AdminView() {
                       cat.status === 'fresh' ? "border-profit bg-profit dark:bg-profit/20" :
                         cat.status === 'stale' ? "border-warning bg-warning dark:bg-warning/20" :
                           cat.status === 'old' ? "border-loss bg-loss dark:bg-loss/20" :
-                            "border-gray-300 bg-gray-50 dark:bg-gray-950/20"
+                            "border-border bg-muted dark:bg-muted/20"
                     )}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-sm">{cat.name_ar}</span>
@@ -1456,7 +1456,7 @@ export function AdminView() {
                           cat.status === 'fresh' ? "bg-profit" :
                             cat.status === 'stale' ? "bg-warning" :
                               cat.status === 'old' ? "bg-loss" :
-                                "bg-gray-400"
+                                "bg-muted"
                         )} />
                       </div>
                       <div className="text-lg font-bold">{cat.count.toLocaleString()}</div>
@@ -1515,7 +1515,7 @@ export function AdminView() {
                     );
                   }}
                   title="التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py)"
-                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-profit to-whale hover:from-profit hover:to-whale text-white"
+                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-profit to-whale hover:from-profit hover:to-whale text-foreground"
                 >
                   <Sparkles className="w-6 h-6" />
                   <span>توليد التوقعات</span>

@@ -114,7 +114,7 @@ function ReportHeader({
             <BarChart3 className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
               دليل الاستثمار
             </h1>
             <p className="text-[11px] text-warning/80 tracking-wide uppercase">
@@ -217,7 +217,7 @@ function StockMiniCard({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <p className="text-sm font-bold text-white truncate">{symbol}</p>
+          <p className="text-sm font-bold text-foreground truncate">{symbol}</p>
           <span className="text-[10px] text-slate-400 truncate">{name}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -293,7 +293,7 @@ function SectorHeatmap({ sectors }: { sectors: SectorRow[] }) {
             )}
             style={{ backgroundColor: bg }}
           >
-            <p className="text-xs font-semibold text-white truncate">
+            <p className="text-xs font-semibold text-foreground truncate">
               {s.name || '—'}
             </p>
             <p className="text-[10px] text-slate-200 mb-1">

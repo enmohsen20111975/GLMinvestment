@@ -56,13 +56,13 @@ interface Props {
 
 // ─── خريطة ألوان الإشارة الكنسية (مطابقة Pine L895) ─────────────────────────
 const SIGNAL_STYLES: Record<string, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
-  STRONG_BUY: { bg: 'bg-profit', text: 'text-white', border: 'border-profit', icon: <TrendingUp className="w-4 h-4" /> },
+  STRONG_BUY: { bg: 'bg-profit', text: 'text-foreground', border: 'border-profit', icon: <TrendingUp className="w-4 h-4" /> },
   BUY:        { bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', border: 'border-profit dark:border-profit', icon: <TrendingUp className="w-4 h-4" /> },
   ACCUMULATE: { bg: 'bg-whale dark:bg-whale/40', text: 'text-whale dark:text-whale', border: 'border-whale dark:border-whale', icon: <Layers className="w-4 h-4" /> },
   HOLD:       { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-warning dark:border-warning', icon: <Minus className="w-4 h-4" /> },
-  REDUCE:     { bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700', icon: <TrendingDown className="w-4 h-4" /> },
+  REDUCE:     { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-orange-300 dark:border-orange-700', icon: <TrendingDown className="w-4 h-4" /> },
   SELL:       { bg: 'bg-loss dark:bg-loss/40', text: 'text-loss dark:text-loss', border: 'border-loss dark:border-loss', icon: <TrendingDown className="w-4 h-4" /> },
-  STRONG_SELL:{ bg: 'bg-loss', text: 'text-white', border: 'border-loss', icon: <TrendingDown className="w-4 h-4" /> },
+  STRONG_SELL:{ bg: 'bg-loss', text: 'text-foreground', border: 'border-loss', icon: <TrendingDown className="w-4 h-4" /> },
 };
 
 // ─── خريطة WHO IS BUYING (مطابقة Pine L742-761) ─────────────────────────────
@@ -82,7 +82,7 @@ function getWhoIsBuyingStyle(state: string | null): { bg: string; text: string; 
     return { bg: 'bg-sky-100 dark:bg-sky-900/40', text: 'text-sky-700 dark:text-sky-300', icon: <User className="w-4 h-4" />, label: state };
   }
   if (s.includes('أفراد') && (s.includes('بيع'))) {
-    return { bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300', icon: <User className="w-4 h-4" />, label: state };
+    return { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', icon: <User className="w-4 h-4" />, label: state };
   }
   if (s.includes('مختلط') && (s.includes('شراء') || s.includes('ميل شرائي'))) {
     return { bg: 'bg-whale dark:bg-whale/40', text: 'text-whale dark:text-whale', icon: <Users2 className="w-4 h-4" />, label: state };

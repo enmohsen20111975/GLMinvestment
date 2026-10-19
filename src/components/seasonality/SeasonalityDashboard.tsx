@@ -50,10 +50,10 @@ const getSignalColor = (signal: string): string => {
     case 'STRONG_BUY': return 'bg-success text-white';
     case 'BUY': return 'bg-success text-white';
     case 'ACCUMULATE': return 'bg-success text-white';
-    case 'HOLD': return 'bg-gray-500 text-white';
-    case 'REDUCE': return 'bg-orange-500 text-white';
+    case 'HOLD': return 'bg-muted text-foreground';
+    case 'REDUCE': return 'bg-warning text-white';
     case 'SELL': return 'bg-loss text-white';
-    default: return 'bg-gray-400 text-white';
+    default: return 'bg-muted text-foreground';
   }
 };
 
@@ -148,7 +148,7 @@ export function SeasonalityDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="h-6 w-6 text-yellow-500" />
+            <Zap className="h-6 w-6 text-warning" />
             محرك الموسمية
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -203,7 +203,7 @@ export function SeasonalityDashboard() {
           <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">متوسط الثقة</div>
-              <div className="text-3xl font-bold text-purple-600">{safeNum(summary.avg_confidence, 0)}%</div>
+              <div className="text-3xl font-bold text-primary">{safeNum(summary.avg_confidence, 0)}%</div>
             </CardContent>
           </Card>
         </div>

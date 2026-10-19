@@ -98,8 +98,8 @@ interface SearchResult {
 // ====== Helpers ======
 const AVATAR_COLORS = [
   'bg-profit', 'bg-whale', 'bg-cyan-500', 'bg-success',
-  'bg-lime-600', 'bg-warning', 'bg-orange-600', 'bg-loss',
-  'bg-pink-600', 'bg-fuchsia-600', 'bg-stone-600', 'bg-yellow-700',
+  'bg-lime-600', 'bg-warning', 'bg-warning', 'bg-loss',
+  'bg-pink-600', 'bg-fuchsia-600', 'bg-stone-600', 'bg-warning',
 ];
 
 function colorForId(id: number | string | undefined): string {
@@ -524,7 +524,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-16 w-16">
-              <AvatarFallback className={cn('text-white text-lg', colorForId(u?.id ?? name))}>
+              <AvatarFallback className={cn('text-foreground text-lg', colorForId(u?.id ?? name))}>
                 {initialsOf(name)}
               </AvatarFallback>
             </Avatar>
@@ -751,7 +751,7 @@ function DialogsTab({ authenticated, openDialog, onRequireAuth }: {
                 className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent transition-colors text-right border border-transparent hover:border-border"
               >
                 <Avatar className="h-11 w-11 shrink-0">
-                  <AvatarFallback className={cn('text-white', colorForId(d.id))}>
+                  <AvatarFallback className={cn('text-foreground', colorForId(d.id))}>
                     {initialsOf(d.title)}
                   </AvatarFallback>
                 </Avatar>
@@ -1082,7 +1082,7 @@ function ChatTab({ dialog, socket, onBack, onRequireAuth }: {
             <ArrowRight className="h-4 w-4" />
           </Button>
           <Avatar className="h-9 w-9">
-            <AvatarFallback className={cn('text-white text-sm', colorForId(dialog.id))}>
+            <AvatarFallback className={cn('text-foreground text-sm', colorForId(dialog.id))}>
               {initialsOf(dialog.title)}
             </AvatarFallback>
           </Avatar>
@@ -1250,7 +1250,7 @@ function MessageBubble({ msg, editing, editText, onEditText, onSaveEdit, onCance
             <textarea
               value={editText}
               onChange={(e) => onEditText(e.target.value)}
-              className="w-full bg-white/10 border border-white/30 rounded p-1.5 text-white text-sm resize-none"
+              className="w-full bg-white/10 border border-white/30 rounded p-1.5 text-foreground text-sm resize-none"
               rows={3}
               autoFocus
             />
@@ -1259,7 +1259,7 @@ function MessageBubble({ msg, editing, editText, onEditText, onSaveEdit, onCance
                 <CheckCircle className="h-3.5 w-3.5 ml-1" />
                 حفظ
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-white hover:bg-white/10" onClick={onCancelEdit}>
+              <Button size="sm" variant="ghost" className="h-7 text-foreground hover:bg-white/10" onClick={onCancelEdit}>
                 إلغاء
               </Button>
             </div>
@@ -1275,7 +1275,7 @@ function MessageBubble({ msg, editing, editText, onEditText, onSaveEdit, onCance
             <p className="whitespace-pre-wrap">{msg.text || '—'}</p>
             <div className={cn(
               'flex items-center gap-1 mt-1 text-[10px]',
-              msg.is_outgoing ? 'text-white/70' : 'text-muted-foreground'
+              msg.is_outgoing ? 'text-foreground/70' : 'text-muted-foreground'
             )}>
               <span>{formatTime(msg.date)}</span>
               {msg.pending && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
@@ -1508,7 +1508,7 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
                   className="flex items-center gap-3 p-2.5 rounded-lg border border-transparent hover:border-border hover:bg-accent transition-colors"
                 >
                   <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarFallback className={cn('text-white text-sm', colorForId(m.id))}>
+                    <AvatarFallback className={cn('text-foreground text-sm', colorForId(m.id))}>
                       {initialsOf(name)}
                     </AvatarFallback>
                   </Avatar>
@@ -1918,7 +1918,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
     const colors: Record<string, string> = {
       buy: 'bg-profit', sell: 'bg-loss', hold: 'bg-warning',
     };
-    return colors[action] || 'bg-gray-500';
+    return colors[action] || 'bg-muted';
   };
 
   return (
@@ -2144,7 +2144,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
                           <tr key={r.id} className="border-b">
                             <td className="p-2 font-bold">{r.symbol}</td>
                             <td className="p-2">{getMarketLabel(r.market)}</td>
-                            <td className="p-2"><Badge className={cn('text-white', getActionBadge(r.action))}>{r.action}</Badge></td>
+                            <td className="p-2"><Badge className={cn('text-foreground', getActionBadge(r.action))}>{r.action}</Badge></td>
                             <td className="p-2">{r.entry_price || '-'}</td>
                             <td className="p-2 text-profit">{r.target_price || '-'}</td>
                             <td className="p-2 text-loss">{r.stop_loss || '-'}</td>

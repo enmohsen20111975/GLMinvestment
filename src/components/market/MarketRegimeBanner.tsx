@@ -114,7 +114,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
           isDefensive
             ? 'bg-loss/10 border-loss/30 text-loss dark:text-loss'
             : isAggressive
-            ? 'bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-400'
+            ? 'bg-primary/10 border-purple-500/30 text-primary dark:text-primary'
             : 'bg-profit/10 border-profit/30 text-profit dark:text-profit'
         } ${className}`}
         dir="rtl"
@@ -122,7 +122,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
         {isDefensive ? (
           <ShieldAlert className="h-3.5 w-3.5 text-loss dark:text-loss animate-pulse" />
         ) : isAggressive ? (
-          <TrendingUp className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+          <TrendingUp className="h-3.5 w-3.5 text-primary dark:text-primary" />
         ) : (
           <ShieldCheck className="h-3.5 w-3.5 text-profit dark:text-profit" />
         )}
@@ -153,7 +153,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
               isDefensive
                 ? 'bg-loss/20 text-loss dark:text-loss ring-1 ring-loss/30 animate-pulse'
                 : isAggressive
-                ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 ring-1 ring-purple-500/30'
+                ? 'bg-primary/20 text-primary dark:text-primary ring-1 ring-purple-500/30'
                 : 'bg-profit/20 text-profit dark:text-profit ring-1 ring-profit/30'
             }`}
           >
@@ -181,7 +181,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
                   isDefensive
                     ? 'bg-loss/20 text-loss dark:text-loss border-loss/40'
                     : isAggressive
-                    ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40'
+                    ? 'bg-primary/20 text-primary dark:text-primary border-purple-500/40'
                     : 'bg-profit/20 text-profit dark:text-profit border-profit/40'
                 }`}
               >

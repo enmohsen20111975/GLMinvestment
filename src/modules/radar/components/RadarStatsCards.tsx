@@ -70,8 +70,8 @@ const SIGNAL_TYPE_AR: Record<string, string> = {
 const SIGNAL_TYPE_COLOR: Record<string, string> = {
   explosive_surge: 'text-loss dark:text-loss',
   quiet_accumulation_strong: 'text-warning dark:text-warning',
-  quiet_accumulation_weak: 'text-yellow-600 dark:text-yellow-400',
-  pre_surge: 'text-purple-600 dark:text-purple-400',
+  quiet_accumulation_weak: 'text-warning dark:text-warning',
+  pre_surge: 'text-primary dark:text-primary',
   early_break: 'text-profit dark:text-profit',
 };
 
@@ -327,9 +327,9 @@ interface SectorTreemapData {
 }
 
 const DIRECTION_STYLE: Record<string, { bg: string; text: string; label: string }> = {
-  inflow: { bg: 'bg-profit/80', text: 'text-white', label: 'دخول' },
-  outflow: { bg: 'bg-loss/80', text: 'text-white', label: 'خروج' },
-  neutral: { bg: 'bg-warning/70', text: 'text-white', label: 'محايد' },
+  inflow: { bg: 'bg-profit/80', text: 'text-foreground', label: 'دخول' },
+  outflow: { bg: 'bg-loss/80', text: 'text-foreground', label: 'خروج' },
+  neutral: { bg: 'bg-warning/70', text: 'text-foreground', label: 'محايد' },
 };
 
 export function SectorTreemapCard() {
@@ -475,7 +475,7 @@ interface EntryTimingData {
 const LABEL_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
   emerald: { bg: 'bg-profit', text: 'text-profit dark:text-profit', ring: 'ring-profit/40' },
   amber: { bg: 'bg-warning', text: 'text-warning dark:text-warning', ring: 'ring-warning/40' },
-  yellow: { bg: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400', ring: 'ring-yellow-500/40' },
+  yellow: { bg: 'bg-warning', text: 'text-warning dark:text-warning', ring: 'ring-yellow-500/40' },
   rose: { bg: 'bg-loss', text: 'text-loss dark:text-loss', ring: 'ring-loss/40' },
 };
 
@@ -542,7 +542,7 @@ export function EntryTimingCard({ ticker }: { ticker: string }) {
           <div className={`text-2xl font-bold ${colors.text}`}>
             {data.score}
           </div>
-          <Badge className={`${colors.bg} text-white text-[10px]`}>{data.label}</Badge>
+          <Badge className={`${colors.bg} text-foreground text-[10px]`}>{data.label}</Badge>
         </div>
       </div>
 
@@ -714,7 +714,7 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
     <Card className="p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          <Activity className="h-4 w-4 text-primary dark:text-primary" />
           <div>
             <div className="text-xs font-semibold">بصمة السيولة</div>
             <div className="text-[10px] text-muted-foreground">توزيع الحجم على مستويات السعر · آخر {data.days} يوم</div>
@@ -737,9 +737,9 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
           concepts from money-flow data). */}
       {Array.isArray(data.levels) && data.levels.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
-          <div className="p-1.5 rounded bg-purple-50 dark:bg-purple-950/20 text-center">
+          <div className="p-1.5 rounded bg-primary dark:bg-primary/20 text-center">
             <div className="text-[9px] text-muted-foreground">POC</div>
-            <div className="font-bold text-purple-700 dark:text-purple-300">{(data.poc_price ?? 0).toFixed(2)}</div>
+            <div className="font-bold text-primary dark:text-primary">{(data.poc_price ?? 0).toFixed(2)}</div>
             <div className="text-[9px] text-muted-foreground">نقطة التحكم</div>
           </div>
           <div className="p-1.5 rounded bg-profit dark:bg-profit/20 text-center">
@@ -814,7 +814,7 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
                     {/* POC marker */}
                     {isPoc && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[8px] font-bold text-white drop-shadow">★ POC</span>
+                        <span className="text-[8px] font-bold text-foreground drop-shadow">★ POC</span>
                       </div>
                     )}
                     {/* Value area border */}

@@ -186,10 +186,10 @@ export function PersonaSelector({
                 className={`
                   p-4 text-center transition-all duration-200
                   ${persona === p.id 
-                    ? `${p.color} text-white` 
-                    : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? `${p.color} text-foreground` 
+                    : 'bg-white dark:bg-muted hover:bg-muted dark:hover:bg-muted'
                   }
-                  border-r last:border-r-0 border-gray-200 dark:border-gray-700
+                  border-r last:border-r-0 border-border dark:border-border
                 `}
               >
                 <div className="text-2xl mb-1">{p.emoji}</div>

@@ -194,7 +194,7 @@ function actionColor(action: string): string {
     case 'exit':
       return 'text-loss font-bold';
     case 'reduce':
-      return 'text-orange-600 font-semibold';
+      return 'text-warning font-semibold';
     case 'take_profit':
       return 'text-profit font-semibold';
     case 'hold_conditional':
@@ -446,7 +446,7 @@ export function DealAdvisorPanel({
                   : data.action_scenarios.current_recommendation.action === 'take_profit'
                     ? 'border-profit bg-profit'
                     : data.action_scenarios.current_recommendation.action === 'reduce'
-                      ? 'border-orange-300 bg-orange-50'
+                      ? 'border-orange-300 bg-warning'
                       : 'border-whale bg-primary'
               }
             >

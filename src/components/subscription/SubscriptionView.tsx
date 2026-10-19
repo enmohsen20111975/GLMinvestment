@@ -607,7 +607,7 @@ export function SubscriptionView() {
               variant="outline"
               size="sm"
               onClick={handleDismiss}
-              className="gap-2 border-profit/30 hover:bg-profit/10 text-foreground font-bold transition-all shadow-sm"
+              className="gap-2 border-profit/30 hover:bg-profit/10 text-white font-bold transition-all shadow-sm"
               title="إغلاق والعودة للشاشة السابقة"
             >
               <X className="w-4 h-4 text-profit" />
@@ -646,7 +646,7 @@ export function SubscriptionView() {
       </div>
 
       {/* Special Offer Banner */}
-      <div className="bg-gradient-to-l from-profit via-whale to-profit text-white shadow-md">
+      <div className="bg-gradient-to-l from-profit via-whale to-profit text-foreground shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-center md:text-right">
             <div className="flex items-center gap-2">
@@ -673,7 +673,7 @@ export function SubscriptionView() {
         <div className="relative max-w-6xl mx-auto px-4 pt-12 pb-6">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-profit to-whale mb-6 shadow-2xl shadow-emerald-500/30">
-              <Crown className="w-10 h-10 text-white" />
+              <Crown className="w-10 h-10 text-foreground" />
             </div>
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
@@ -715,8 +715,8 @@ export function SubscriptionView() {
                       className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 ${
                         isSelected
                           ? isVipTab
-                            ? 'bg-gradient-to-l from-warning to-yellow-600 text-white shadow-lg shadow-amber-500/30 ring-2 ring-warning'
-                            : 'bg-gradient-to-l from-profit to-whale text-white shadow-md shadow-emerald-600/30'
+                            ? 'bg-gradient-to-l from-warning to-yellow-600 text-foreground shadow-lg shadow-amber-500/30 ring-2 ring-warning'
+                            : 'bg-gradient-to-l from-profit to-whale text-foreground shadow-md shadow-emerald-600/30'
                           : 'text-muted-foreground hover:text-foreground hover:bg-background/70'
                       }`}
                     >
@@ -769,7 +769,7 @@ export function SubscriptionView() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-profit to-whale shadow-md shadow-emerald-500/30">
-                <Tag className="w-5 h-5 text-white" />
+                <Tag className="w-5 h-5 text-foreground" />
               </div>
               <div className="flex-1">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -807,7 +807,7 @@ export function SubscriptionView() {
               <Button
                 onClick={handleRedeemPromo}
                 disabled={promoLoading || !promoCode.trim()}
-                className="h-11 sm:min-w-[140px] bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-white font-bold"
+                className="h-11 sm:min-w-[140px] bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-foreground font-bold"
                 type="button"
               >
                 {promoLoading ? (
@@ -854,7 +854,7 @@ export function SubscriptionView() {
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4 text-center md:text-right">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/30">
-                    <Key className="w-7 h-7 text-white" />
+                    <Key className="w-7 h-7 text-foreground" />
                   </div>
                   <div>
                     <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
@@ -903,7 +903,7 @@ export function SubscriptionView() {
                       });
                       setShowContactModal(true);
                     }}
-                    className="bg-gradient-to-l from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold px-6 py-5 shadow-lg shadow-violet-500/20"
+                    className="bg-gradient-to-l from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-foreground font-bold px-6 py-5 shadow-lg shadow-violet-500/20"
                   >
                     <Mail className="w-4 h-4 ml-2" />
                     طلب حساب مطور B2B
@@ -964,7 +964,7 @@ export function SubscriptionView() {
           <Card className="w-full max-w-md shadow-2xl border-2 border-profit/40">
             <CardHeader className="text-center pb-3">
               <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-profit to-whale flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/30">
-                <CreditCard className="w-8 h-8 text-white" />
+                <CreditCard className="w-8 h-8 text-foreground" />
               </div>
               <CardTitle className="text-xl font-bold">إتمام الاشتراك في {selectedPlan.nameAr}</CardTitle>
               <CardDescription className="text-sm">
@@ -1002,13 +1002,13 @@ export function SubscriptionView() {
 
               {/* InstaPay Option for Egypt */}
               {selectedMarketId === 'egx' && (
-                <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/5">
+                <div className="p-4 rounded-xl border border-purple-500/40 bg-primary/5">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <Zap className="w-5 h-5 text-primary dark:text-primary" />
                       <span className="font-bold text-sm">الدفع السريع عبر InstaPay</span>
                     </div>
-                    <Badge className="bg-purple-600 text-white text-[10px] px-2 py-0">فوري</Badge>
+                    <Badge className="bg-primary text-white text-[10px] px-2 py-0">فوري</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
                     حول المبلغ مباشرة لحساب إنستاباي ويتم التفعيل الفوري
@@ -1020,7 +1020,7 @@ export function SubscriptionView() {
                     className="block"
                   >
                     <Button
-                      className="w-full bg-gradient-to-l from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-bold text-xs h-9"
+                      className="w-full bg-gradient-to-l from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-foreground font-bold text-xs h-9"
                       type="button"
                     >
                       ادفع عبر InstaPay
@@ -1043,7 +1043,7 @@ export function SubscriptionView() {
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
-                    className="bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-white font-bold text-xs h-10"
+                    className="bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-foreground font-bold text-xs h-10"
                     onClick={() => handlePaidSubscription(selectedPlan, 'card')}
                     disabled={loading === selectedPlan.id}
                   >
@@ -1055,7 +1055,7 @@ export function SubscriptionView() {
                     بطاقة بنكية
                   </Button>
                   <Button
-                    className="bg-gradient-to-l from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-bold text-xs h-10"
+                    className="bg-gradient-to-l from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-foreground font-bold text-xs h-10"
                     onClick={() => handlePaidSubscription(selectedPlan, 'wallet')}
                     disabled={loading === selectedPlan.id}
                   >
@@ -1138,7 +1138,7 @@ function PlanCard({
       {/* Top Badges */}
       {plan.popular && !plan.vip && (
         <div className="absolute -top-px left-0 right-0">
-          <div className="bg-gradient-to-l from-profit to-whale text-white text-center py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+          <div className="bg-gradient-to-l from-profit to-whale text-foreground text-center py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
             الأكثر طلباً 🔥
           </div>
@@ -1156,7 +1156,7 @@ function PlanCard({
 
       {plan.pro && (
         <div className="absolute -top-px left-0 right-0">
-          <div className="bg-gradient-to-l from-purple-600 to-fuchsia-600 text-white text-center py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+          <div className="bg-gradient-to-l from-purple-600 to-fuchsia-600 text-foreground text-center py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
             <Rocket className="w-3.5 h-3.5" />
             للمضارب المحترف ⚡
           </div>
@@ -1170,9 +1170,9 @@ function PlanCard({
               plan.vip
                 ? 'bg-gradient-to-br from-warning to-yellow-500 text-warning shadow-lg shadow-amber-500/30'
                 : plan.pro
-                ? 'bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white shadow-md shadow-purple-500/20'
+                ? 'bg-gradient-to-br from-purple-500 to-fuchsia-600 text-foreground shadow-md shadow-purple-500/20'
                 : plan.popular
-                ? 'bg-gradient-to-br from-profit to-whale text-white shadow-md shadow-emerald-500/20'
+                ? 'bg-gradient-to-br from-profit to-whale text-foreground shadow-md shadow-emerald-500/20'
                 : 'bg-muted text-muted-foreground'
             }`}
           >
@@ -1264,9 +1264,9 @@ function PlanCard({
             plan.vip
               ? 'bg-gradient-to-l from-warning via-yellow-500 to-warning hover:from-warning hover:to-yellow-700 text-warning font-black shadow-amber-500/25 ring-2 ring-warning'
               : plan.popular
-              ? 'bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-white shadow-emerald-500/25'
+              ? 'bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-foreground shadow-emerald-500/25'
               : plan.pro
-              ? 'bg-gradient-to-l from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white shadow-purple-500/25'
+              ? 'bg-gradient-to-l from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-foreground shadow-purple-500/25'
               : 'bg-muted-foreground/20 text-foreground hover:bg-muted-foreground/30'
           }`}
           onClick={onSelect}
@@ -1566,7 +1566,7 @@ function DeveloperContactModal({
       <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto border-2 border-violet-500/40">
         <CardHeader className="text-center">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-3 shadow-lg shadow-violet-500/30">
-            <Key className="w-7 h-7 text-white" />
+            <Key className="w-7 h-7 text-foreground" />
           </div>
           <CardTitle className="text-xl font-bold">باقة الشركات والمطورين (Enterprise & API)</CardTitle>
           <CardDescription className="text-xs">
@@ -1633,7 +1633,7 @@ function DeveloperContactModal({
               إلغاء
             </Button>
             <Button
-              className="flex-1 bg-gradient-to-l from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold text-xs"
+              className="flex-1 bg-gradient-to-l from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-foreground font-bold text-xs"
               onClick={handleSubmit}
               disabled={submitting || !email}
             >
@@ -1714,7 +1714,7 @@ function WalletPaymentModal({
       <Card className="w-full max-w-md border-2 border-purple-500/40">
         <CardHeader className="text-center">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center mb-3 shadow-lg shadow-purple-500/30">
-            <Wallet className="w-7 h-7 text-white" />
+            <Wallet className="w-7 h-7 text-foreground" />
           </div>
           <CardTitle className="text-lg font-bold">الدفع بالمحفظة الإلكترونية</CardTitle>
           <CardDescription className="text-xs">
@@ -1774,7 +1774,7 @@ function WalletPaymentModal({
                   إلغاء
                 </Button>
                 <Button
-                  className="flex-1 bg-gradient-to-l from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-bold text-xs"
+                  className="flex-1 bg-gradient-to-l from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-foreground font-bold text-xs"
                   onClick={handleSubmit}
                   disabled={processing}
                 >

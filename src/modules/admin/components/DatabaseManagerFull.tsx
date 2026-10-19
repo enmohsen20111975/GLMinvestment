@@ -1703,7 +1703,7 @@ export function DatabaseManagerFull() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <DatabaseIcon className="w-4 h-4 text-purple-600" />
+                    <DatabaseIcon className="w-4 h-4 text-primary" />
                     أدوات تنظيف وإصلاح البيانات المتقدمة (Advanced Data Tools)
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -1715,7 +1715,7 @@ export function DatabaseManagerFull() {
                     {/* Repair data_engine.db */}
                     <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-slate-50/50">
                       <div>
-                        <div className="text-sm font-semibold text-purple-700 flex items-center gap-1.5">
+                        <div className="text-sm font-semibold text-primary flex items-center gap-1.5">
                           <Activity className="w-4 h-4" />
                           إصلاح تلف قاعدة البيانات
                         </div>
@@ -1727,7 +1727,7 @@ export function DatabaseManagerFull() {
                         onClick={() => handleAdvancedOperation('repair-engine', 'إصلاح قاعدة بيانات المحرك')}
                         disabled={advancedLoading !== null}
                         size="sm"
-                        className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+                        className="bg-primary hover:bg-primary text-white w-full"
                       >
                         {advancedLoading === 'repair-engine' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -1860,7 +1860,7 @@ export function DatabaseManagerFull() {
             handleConfirmAction();
           }}
           disabled={confirmBusy}
-          className={cn(confirm?.destructive && 'bg-destructive text-white hover:bg-destructive/90')}
+          className={cn(confirm?.destructive && 'bg-destructive text-foreground hover:bg-destructive/90')}
         >
           {confirmBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {confirm?.confirmLabel}

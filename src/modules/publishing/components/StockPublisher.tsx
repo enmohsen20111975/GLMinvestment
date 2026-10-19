@@ -563,7 +563,7 @@ export function StockPublisher({
               variant="default"
               size="sm"
               disabled={sendingToTelegramBot}
-              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-foreground"
               title="ينشر التحليل مباشرة على قناة تيليجرام عبر البوت"
             >
               {sendingToTelegramBot ? (
@@ -645,7 +645,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
       <div className="bg-profit dark:bg-profit/40 px-4 py-3 border-b border-profit dark:border-profit/30">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-profit dark:bg-profit flex items-center justify-center text-white font-bold text-sm font-mono shadow-sm">
+            <div className="h-9 w-9 rounded-lg bg-profit dark:bg-profit flex items-center justify-center text-foreground font-bold text-sm font-mono shadow-sm">
               {data.ticker.slice(0, 2)}
             </div>
             <div>
@@ -904,7 +904,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           data.atr != null) && (
           <div className="bg-muted/30 rounded-md p-2.5 space-y-1.5 border border-border/50">
             <div className="text-xs font-semibold flex items-center gap-1 mb-1">
-              <Gauge className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <Gauge className="h-3.5 w-3.5 text-primary dark:text-primary" />
               المؤشرات الفنية
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
@@ -988,8 +988,8 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
 
         {/* Analysis summary */}
         {data.analysisSummary && (
-          <div className="bg-purple-50/40 dark:bg-purple-950/15 rounded-md p-2.5 text-[11px] leading-relaxed border border-purple-100/50 dark:border-purple-900/30">
-            <div className="font-semibold text-purple-700 dark:text-purple-300 mb-1 flex items-center gap-1 text-xs">
+          <div className="bg-primary/40 dark:bg-primary/15 rounded-md p-2.5 text-[11px] leading-relaxed border border-purple-100/50 dark:border-purple-900/30">
+            <div className="font-semibold text-primary dark:text-primary mb-1 flex items-center gap-1 text-xs">
               <Brain className="h-3.5 w-3.5" />
               ملخص التحليل
             </div>

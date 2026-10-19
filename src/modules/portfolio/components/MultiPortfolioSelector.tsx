@@ -44,7 +44,7 @@ export interface PortfolioAccount {
 export const COLOR_OPTIONS = [
   { value: 'emerald', label: '🟢 أخضر (Emerald)', class: 'bg-profit/20 text-profit border-profit' },
   { value: 'blue', label: '🔵 أزرق (Blue)', class: 'bg-whale/20 text-whale border-whale' },
-  { value: 'purple', label: '🟣 بنفسجي (Purple)', class: 'bg-purple-500/20 text-purple-400 border-purple-700' },
+  { value: 'purple', label: '🟣 بنفسجي (Purple)', class: 'bg-primary/20 text-primary border-purple-700' },
   { value: 'amber', label: '🟡 أصفر / ذهبي (Amber)', class: 'bg-warning/20 text-warning border-warning' },
   { value: 'rose', label: '🔴 أحمر / وردي (Rose)', class: 'bg-loss/20 text-loss border-loss' },
   { value: 'teal', label: '🔷 فيروزي (Teal)', class: 'bg-whale/20 text-whale border-whale' },
@@ -103,7 +103,7 @@ function getBrokerColor(broker: string): string {
   if (broker === 'Binance') return 'text-warning bg-warning/40 border-warning';
   if (broker === 'master') return 'text-profit bg-profit/40 border-profit';
   if (broker === 'Thndr') return 'text-whale bg-primary/40 border-whale';
-  if (broker === 'Direct') return 'text-purple-400 bg-purple-950/40 border-purple-800';
+  if (broker === 'Direct') return 'text-primary bg-primary/40 border-purple-800';
   return 'text-zinc-400 bg-zinc-900/40 border-zinc-700';
 }
 

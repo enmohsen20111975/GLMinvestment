@@ -145,14 +145,14 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
         <div className="flex items-center justify-between p-4 border-b border-zinc-800 shrink-0">
           <div className="flex items-center gap-2">
             <BellRing className="h-5 w-5 text-warning" />
-            <h2 className="text-base font-bold text-white">التنبيهات</h2>
+            <h2 className="text-base font-bold text-foreground">التنبيهات</h2>
             <Badge className="bg-zinc-800 text-zinc-400 font-mono">{ticker}</Badge>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-zinc-800"
+            className="h-8 w-8 p-0 text-zinc-400 hover:text-foreground hover:bg-zinc-800"
           >
             <X className="h-4 w-4" />
           </Button>

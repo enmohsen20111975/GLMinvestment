@@ -1094,7 +1094,7 @@ export function SimulationView() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-gradient-to-br from-profit to-whale rounded-xl shadow-lg">
-            <Gamepad2 className="h-6 w-6 text-white" />
+            <Gamepad2 className="h-6 w-6 text-foreground" />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">محاكاة التداول الافتراضي</h1>

@@ -258,7 +258,7 @@ function PersonaCard({
                   <span className={cn(
                     'text-xs px-1.5 py-0 rounded-full border flex items-center gap-0.5',
                     fundamentals?.sector_heat === 'hot'
-                      ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800'
+                      ? 'bg-warning text-warning border-orange-200 dark:bg-warning/40 dark:text-warning dark:border-orange-800'
                       : fundamentals?.sector_heat === 'dead'
                       ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800'
                       : 'bg-muted text-muted-foreground border-border'
@@ -1943,25 +1943,25 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
           سخن (avg_chg≥1% AND ≥60% صاعد). ده الـ "sector rotation" اللي المفروض
           المضارب يركز عليه. المستثمر مش بيشوف الـ banner ده. */}
       {persona === 'gambler' && sectorHeat && sectorHeat.hot && sectorHeat.hot.length > 0 && (
-        <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800">
+        <Card className="border-orange-300 bg-warning dark:bg-warning/30 dark:border-orange-800">
           <CardContent className="p-2.5 flex items-start gap-2 text-xs">
             <span className="text-base flex-shrink-0">🔥</span>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-orange-800 dark:text-orange-300 mb-1">
+              <p className="font-semibold text-warning dark:text-warning mb-1">
                 قطاعات ساخنة — دوران قطاعي إيجابي
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {sectorHeat.hot.slice(0, 4).map((s) => (
                   <span
                     key={s.sector}
-                    className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/40 dark:text-orange-400 dark:border-orange-700 whitespace-nowrap"
+                    className="px-1.5 py-0.5 rounded-full bg-warning text-warning border border-orange-200 dark:bg-warning/40 dark:text-warning dark:border-orange-700 whitespace-nowrap"
                     title={`avg change ${(s.avg_chg ?? 0).toFixed(2)}% — ${Math.round(s.rising_ratio * 100)}% صاعد — ${s.n} سهم — boost +${Math.round(s.boost * 100)}%`}
                   >
                     {s.sector} <span className="opacity-70">+{(s.avg_chg ?? 0).toFixed(1)}%</span>
                   </span>
                 ))}
               </div>
-              <p className="text-[10px] text-orange-600 dark:text-orange-400 mt-1 opacity-80">
+              <p className="text-[10px] text-warning dark:text-warning mt-1 opacity-80">
                 أسهم هذه القطاعات حصلت على +{Math.round((sectorHeat.hot[0]?.boost || 0.15) * 100)}% boost في ترتيب المضارب
               </p>
             </div>

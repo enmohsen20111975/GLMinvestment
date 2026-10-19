@@ -95,7 +95,7 @@ export function SettingsView() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-profit to-whale flex items-center justify-center flex-shrink-0">
-                <span className="text-xl font-bold text-white">
+                <span className="text-xl font-bold text-foreground">
                   {user?.username?.charAt(0).toUpperCase() || 'م'}
                 </span>
               </div>

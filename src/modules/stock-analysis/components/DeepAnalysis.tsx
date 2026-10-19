@@ -342,7 +342,7 @@ function ActionBadge({ action, actionAr }: { action: string; actionAr: string })
   const c = config[action] || { bg: 'bg-muted', icon: <MinusCircle className="w-5 h-5" /> };
 
   return (
-    <div className={cn('flex items-center gap-2 px-4 py-2.5 rounded-xl text-white', c.bg)}>
+    <div className={cn('flex items-center gap-2 px-4 py-2.5 rounded-xl text-foreground', c.bg)}>
       {c.icon}
       <span className="font-bold text-lg">{actionAr}</span>
     </div>

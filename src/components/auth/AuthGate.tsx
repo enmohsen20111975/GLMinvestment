@@ -143,7 +143,7 @@ function AuthGateBanner() {
       transition={{ type: 'spring', stiffness: 220, damping: 24 }}
       className="sticky top-0 z-40 w-full"
     >
-      <div className="relative bg-gradient-to-l from-slate-700 via-slate-800 to-slate-900 text-white shadow-md">
+      <div className="relative bg-gradient-to-l from-slate-700 via-slate-800 to-slate-900 text-foreground shadow-md">
         <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3">
           <span className="hidden sm:inline-flex size-7 items-center justify-center rounded-full bg-white/15">
             <Lock className="size-4" />
@@ -153,7 +153,7 @@ function AuthGateBanner() {
               <KeyRound className="size-3.5 inline sm:hidden" />
               سجّل الدخول للوصول إلى حسابك ومحفظتك
             </span>
-            <span className="hidden sm:inline mr-2 text-white/70 font-normal">
+            <span className="hidden sm:inline mr-2 text-foreground/70 font-normal">
               — توقعات، تحليلات، ومتابعة المحفظة
             </span>
           </p>
@@ -168,7 +168,7 @@ function AuthGateBanner() {
             type="button"
             onClick={() => setDismissed(true)}
             aria-label="إغلاق"
-            className="size-7 inline-flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+            className="size-7 inline-flex items-center justify-center rounded-full text-foreground/70 hover:text-foreground hover:bg-white/15 transition-colors"
           >
             <X className="size-4" />
           </button>
@@ -192,7 +192,7 @@ function TrialWarningBanner({ daysLeft }: { daysLeft: number }) {
       transition={{ type: 'spring', stiffness: 220, damping: 24 }}
       className="sticky top-0 z-40 w-full"
     >
-      <div className="relative bg-gradient-to-l from-warning via-warning to-profit text-white shadow-md">
+      <div className="relative bg-gradient-to-l from-warning via-warning to-profit text-foreground shadow-md">
         <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3">
           <span className="hidden sm:inline-flex size-7 items-center justify-center rounded-full bg-white/20">
             <Clock className="size-4 animate-pulse" />
@@ -202,7 +202,7 @@ function TrialWarningBanner({ daysLeft }: { daysLeft: number }) {
               <AlertTriangle className="size-4 text-warning" />
               ⏳ متبقي لديك {daysLeft} يوماً في فترتك التجريبية المجانية (من أصل {TRIAL_DAYS} يوماً)
             </span>
-            <span className="hidden sm:inline mr-2 text-white/85 font-normal">
+            <span className="hidden sm:inline mr-2 text-foreground/85 font-normal">
               — اشترك الآن للاستمرار في استخدام المنصة دون انقطاع
             </span>
           </p>
@@ -218,7 +218,7 @@ function TrialWarningBanner({ daysLeft }: { daysLeft: number }) {
             type="button"
             onClick={() => setDismissed(true)}
             aria-label="إغلاق"
-            className="size-7 inline-flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            className="size-7 inline-flex items-center justify-center rounded-full text-foreground/80 hover:text-foreground hover:bg-white/15 transition-colors"
           >
             <X className="size-4" />
           </button>
@@ -244,14 +244,14 @@ function TrialExpiredBanner({ daysLeft = 0 }: { daysLeft?: number }) {
       transition={{ type: 'spring', stiffness: 220, damping: 24 }}
       className="sticky top-0 z-40 w-full"
     >
-      <div className="relative bg-gradient-to-l from-loss via-loss to-loss text-white shadow-lg border-b border-loss">
+      <div className="relative bg-gradient-to-l from-loss via-loss to-loss text-foreground shadow-lg border-b border-loss">
         <div className="mx-auto max-w-7xl px-4 py-2.5 flex items-center gap-3">
           <span className="inline-flex size-7 items-center justify-center rounded-full bg-white/20">
             <AlertTriangle className="size-4 text-loss animate-bounce" />
           </span>
           <p className="flex-1 text-sm sm:text-base font-bold leading-tight">
             <span>{message}</span>
-            <span className="hidden sm:inline mr-2 text-white/90 font-normal">
+            <span className="hidden sm:inline mr-2 text-foreground/90 font-normal">
               — يرجى الاشتراك في إحدى الخطط لمتابعة الاستفادة من الخدمات
             </span>
           </p>

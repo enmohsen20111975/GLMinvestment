@@ -211,7 +211,7 @@ export function UserPublishingView() {
     switch (dir) {
       case 'buy': return <TrendingUp className="w-5 h-5 text-success" />;
       case 'sell': return <TrendingDown className="w-5 h-5 text-loss" />;
-      default: return <Minus className="w-5 h-5 text-yellow-500" />;
+      default: return <Minus className="w-5 h-5 text-warning" />;
     }
   };
 
@@ -219,7 +219,7 @@ export function UserPublishingView() {
     switch (dir) {
       case 'buy': return 'text-success';
       case 'sell': return 'text-loss';
-      default: return 'text-yellow-500';
+      default: return 'text-warning';
     }
   };
 
@@ -229,11 +229,11 @@ export function UserPublishingView() {
   };
 
   const getLevelIcon = (level: number) => {
-    if (level >= 5) return <Crown className="w-5 h-5 text-yellow-400" />;
-    if (level >= 4) return <Trophy className="w-5 h-5 text-purple-400" />;
+    if (level >= 5) return <Crown className="w-5 h-5 text-warning" />;
+    if (level >= 4) return <Trophy className="w-5 h-5 text-primary" />;
     if (level >= 3) return <Award className="w-5 h-5 text-whale" />;
     if (level >= 2) return <Medal className="w-5 h-5 text-success" />;
-    return <Star className="w-5 h-5 text-gray-400" />;
+    return <Star className="w-5 h-5 text-muted-foreground" />;
   };
 
   if (loading) {
@@ -661,15 +661,15 @@ function LeaderboardTab() {
 
   const getRankStyle = (rank: number) => {
     if (rank === 1) return 'bg-gradient-to-l from-yellow-500/20 to-warning/20 border-yellow-400';
-    if (rank === 2) return 'bg-gradient-to-l from-gray-400/20 to-slate-500/20 border-gray-400';
+    if (rank === 2) return 'bg-gradient-to-l from-gray-400/20 to-slate-500/20 border-border';
     if (rank === 3) return 'bg-gradient-to-l from-orange-600/20 to-warning/20 border-orange-500';
     return '';
   };
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="w-6 h-6 text-yellow-400" />;
-    if (rank === 2) return <Medal className="w-6 h-6 text-gray-400" />;
-    if (rank === 3) return <Award className="w-6 h-6 text-orange-500" />;
+    if (rank === 1) return <Crown className="w-6 h-6 text-warning" />;
+    if (rank === 2) return <Medal className="w-6 h-6 text-muted-foreground" />;
+    if (rank === 3) return <Award className="w-6 h-6 text-warning" />;
     return <span className="w-6 h-6 flex items-center justify-center font-bold text-muted-foreground">{rank}</span>;
   };
 
@@ -678,7 +678,7 @@ function LeaderboardTab() {
       <CardHeader>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
+            <Trophy className="w-5 h-5 text-warning" />
             لوحة المتصدرين
           </CardTitle>
           <div className="flex gap-2">

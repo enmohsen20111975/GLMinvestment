@@ -92,10 +92,10 @@ const CATEGORY_CONFIG: Record<string, {
     icon: Brain,
     gradient: 'from-purple-50 to-pink-50',
     border: 'border-purple-200',
-    bg: 'bg-purple-50/80',
-    text: 'text-purple-900',
-    iconBg: 'bg-purple-100',
-    badge: 'bg-purple-100 text-purple-700',
+    bg: 'bg-primary/80',
+    text: 'text-primary',
+    iconBg: 'bg-primary',
+    badge: 'bg-primary text-primary',
   },
   general: {
     label: 'نصيحة عامة',
@@ -295,7 +295,7 @@ export function SmartTip({
                 className={cn(
                   'p-1.5 rounded-lg transition-colors',
                   'hover:bg-white/60',
-                  'text-gray-400 hover:text-gray-600'
+                  'text-muted-foreground hover:text-muted-foreground'
                 )}
                 title="إغلاق"
               >
@@ -367,7 +367,7 @@ export function TipOfTheDay({ className }: { className?: string }) {
             </div>
             <button
               onClick={() => setVisible(false)}
-              className="p-1.5 rounded-lg hover:bg-white/60 transition-colors text-gray-400 hover:text-gray-600"
+              className="p-1.5 rounded-lg hover:bg-white/60 transition-colors text-muted-foreground hover:text-muted-foreground"
             >
               <X size={16} />
             </button>

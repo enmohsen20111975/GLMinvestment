@@ -148,7 +148,7 @@ export function HorizontalSectorsBar({ marketCode }: { marketCode: string }) {
             className={cn(
               'px-2.5 py-1 rounded-lg border text-xs font-medium flex items-center gap-1.5 flex-shrink-0 transition-all hover:scale-105',
               s.status === 'hot'
-                ? 'border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-300'
+                ? 'border-orange-500/30 bg-warning/10 text-warning dark:text-warning'
                 : s.status === 'dead'
                 ? 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300'
                 : 'border-border bg-muted/40 text-foreground'

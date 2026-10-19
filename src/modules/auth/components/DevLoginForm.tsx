@@ -72,7 +72,7 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-3">
           <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-warning to-loss flex items-center justify-center">
-            <Shield className="w-7 h-7 text-white" />
+            <Shield className="w-7 h-7 text-foreground" />
           </div>
           <div>
             <CardTitle className="text-xl">تسجيل دخول الأدمن</CardTitle>
@@ -130,7 +130,7 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
             <Button
               type="submit"
               disabled={loading || !username.trim() || !password.trim()}
-              className="w-full gap-2 bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-white"
+              className="w-full gap-2 bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-foreground"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
               {loading ? 'جارٍ الدخول...' : 'دخول كأدمن'}

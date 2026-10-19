@@ -137,11 +137,11 @@ const COLOR_CLASSES: Record<
     dot: 'bg-warning',
   },
   orange: {
-    bg: 'bg-orange-50 dark:bg-orange-950/30',
-    text: 'text-orange-600 dark:text-orange-400',
+    bg: 'bg-warning dark:bg-warning/30',
+    text: 'text-warning dark:text-warning',
     border: 'border-orange-200 dark:border-orange-800',
     gradient: 'from-orange-500 to-loss',
-    dot: 'bg-orange-500',
+    dot: 'bg-warning',
   },
   rose: {
     bg: 'bg-loss dark:bg-loss/30',
@@ -164,7 +164,7 @@ export function AboutView() {
         {/* ─── مقدمة ─── */}
         <div className="text-center mb-10 md:mb-14">
           <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-profit to-whale shadow-lg shadow-emerald-500/30 mb-5">
-            <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-white" />
+            <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-foreground" />
           </div>
           <Badge
             variant="outline"
@@ -187,7 +187,7 @@ export function AboutView() {
           <CardContent className="p-5 md:p-7">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-profit to-whale flex items-center justify-center">
-                <Globe className="w-5 h-5 text-white" />
+                <Globe className="w-5 h-5 text-foreground" />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-bold text-foreground">
@@ -224,7 +224,7 @@ export function AboutView() {
           <CardContent className="p-5 md:p-7">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-whale to-profit flex items-center justify-center">
-                <Target className="w-5 h-5 text-white" />
+                <Target className="w-5 h-5 text-foreground" />
               </div>
               <div>
                 <h2 className="text-lg md:text-xl font-bold text-foreground">
@@ -259,7 +259,7 @@ export function AboutView() {
         <div className="mb-8 md:mb-10">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-warning to-orange-600 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
+              <BarChart3 className="w-5 h-5 text-foreground" />
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-foreground">
@@ -285,7 +285,7 @@ export function AboutView() {
                       <div
                         className={`shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${c.gradient} flex items-center justify-center`}
                       >
-                        <Icon className="w-5 h-5 text-white" />
+                        <Icon className="w-5 h-5 text-foreground" />
                       </div>
                       <h3 className="text-base font-bold text-foreground pt-1">
                         {f.title}
@@ -330,7 +330,7 @@ export function AboutView() {
           <CardContent className="p-5 md:p-7">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
+                <BookOpen className="w-5 h-5 text-foreground" />
               </div>
               <h2 className="text-lg md:text-xl font-bold text-foreground">
                 مصادر البيانات
@@ -369,7 +369,7 @@ export function AboutView() {
         <div className="text-center mt-10 md:mt-12 mb-8">
           <button
             onClick={() => setCurrentView('dashboard')}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-l from-profit to-whale text-white text-sm font-semibold hover:from-profit hover:to-whale transition-colors shadow-md"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-l from-profit to-whale text-foreground text-sm font-semibold hover:from-profit hover:to-whale transition-colors shadow-md"
           >
             <TrendingUp className="w-4 h-4" />
             الانتقال إلى لوحة التحكم

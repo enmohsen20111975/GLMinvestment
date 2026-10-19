@@ -89,7 +89,7 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
         )}
         dir="ltr"
       >
-        <span className="font-bold text-slate-900 dark:text-white">
+        <span className="font-bold text-slate-900 dark:text-foreground">
           {stock.ticker}
         </span>
         <span

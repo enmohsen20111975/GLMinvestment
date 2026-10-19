@@ -642,7 +642,7 @@ export function ContentStudioHub() {
         <CardHeader>
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shrink-0">
-              <Film className="w-6 h-6 text-white" />
+              <Film className="w-6 h-6 text-foreground" />
             </div>
             <div className="flex-1 min-w-0">
               <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
@@ -669,7 +669,7 @@ export function ContentStudioHub() {
             studio === 'educational' ? 'border-violet-500 bg-violet-500/5 shadow-md' : 'border-border bg-card hover:bg-accent/30',
           )}
         >
-          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', studio === 'educational' ? 'bg-violet-500 text-white' : 'bg-muted')}>
+          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', studio === 'educational' ? 'bg-violet-500 text-foreground' : 'bg-muted')}>
             <GraduationCap className="w-5 h-5" />
           </div>
           <div className="text-right">
@@ -816,7 +816,7 @@ export function ContentStudioHub() {
               onClick={handleRender}
               disabled={renderer.renderState === 'rendering'}
               size="lg"
-              className="gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white"
+              className="gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-foreground"
             >
               {renderer.renderState === 'rendering' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               {renderer.renderState === 'rendering' ? 'بيشتغل...' : 'أنتج الفيديو'}
@@ -851,7 +851,7 @@ export function ContentStudioHub() {
             {renderer.renderState === 'rendering' && (
               <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
                 <div className="w-10 h-10 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                <div className="text-white text-xs font-medium">بيسجّل {Math.round(renderer.renderProgress * 100)}%</div>
+                <div className="text-foreground text-xs font-medium">بيسجّل {Math.round(renderer.renderProgress * 100)}%</div>
               </div>
             )}
             {renderer.renderState === 'done' && renderer.videoUrl && (

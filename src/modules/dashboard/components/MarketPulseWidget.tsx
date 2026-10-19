@@ -316,7 +316,7 @@ function PulseGauge({ score }: { score: number }) {
           stroke="currentColor"
           strokeWidth={3}
           strokeLinecap="round"
-          className="text-slate-900 dark:text-white"
+          className="text-slate-900 dark:text-foreground"
         />
         {/* رأس الإبرة (دائرة صغيرة) */}
         <circle
@@ -370,8 +370,8 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
       };
     case 'SPECULATION':
       return {
-        bg: 'bg-orange-50 dark:bg-orange-950/50',
-        text: 'text-orange-700 dark:text-orange-300',
+        bg: 'bg-warning dark:bg-warning/50',
+        text: 'text-warning dark:text-warning',
         border: 'border-orange-200 dark:border-orange-800',
         icon: Flame,
       };
@@ -401,7 +401,7 @@ function pulseColorClasses(color: PulseInfo['color']): string {
     case 'amber':
       return 'text-warning dark:text-warning';
     case 'orange':
-      return 'text-orange-600 dark:text-orange-400';
+      return 'text-warning dark:text-warning';
     case 'rose':
       return 'text-loss dark:text-loss';
     default:
@@ -448,7 +448,7 @@ function IndexMiniCard({
         )}
       </div>
       <div
-        className="font-mono text-lg font-bold tabular-nums text-slate-900 dark:text-white"
+        className="font-mono text-lg font-bold tabular-nums text-slate-900 dark:text-foreground"
         dir="ltr"
       >
         {hasData ? fmtNum(idx?.value) : '—'}

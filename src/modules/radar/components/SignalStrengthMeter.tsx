@@ -99,9 +99,9 @@ export function signalAccent(stars: number): {
   }
   if (stars === 2) {
     return {
-      bar: 'bg-orange-500',
-      star: 'fill-orange-400 text-orange-400',
-      label: 'text-orange-600 dark:text-orange-400',
+      bar: 'bg-warning',
+      star: 'fill-orange-400 text-warning',
+      label: 'text-warning dark:text-warning',
     };
   }
   return {

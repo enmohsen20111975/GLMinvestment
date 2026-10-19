@@ -1111,7 +1111,7 @@ export function cryptoSymbolMeta(symbol: string): { icon: string; name: string }
 // ============================================================================
 export const HEAT_LEVEL_STYLE: Record<string, { bg: string; text: string; icon: string; label: string }> = {
   HOT:     { bg: 'bg-loss/10 border-loss/30',      text: 'text-loss dark:text-loss',       icon: '🔥', label: 'نار' },
-  WARM:    { bg: 'bg-orange-500/10 border-orange-500/30', text: 'text-orange-700 dark:text-orange-300', icon: '☀️', label: 'دافئ' },
+  WARM:    { bg: 'bg-warning/10 border-orange-500/30', text: 'text-warning dark:text-warning', icon: '☀️', label: 'دافئ' },
   NEUTRAL: { bg: 'bg-slate-500/10 border-slate-500/30',  text: 'text-slate-700 dark:text-slate-300',   icon: '➖', label: 'محايد' },
   COOL:    { bg: 'bg-sky-500/10 border-sky-500/30',      text: 'text-sky-700 dark:text-sky-300',       icon: '💧', label: 'بارد' },
   COLD:    { bg: 'bg-whale/10 border-whale/30',    text: 'text-whale dark:text-whale',     icon: '❄️', label: 'بارد جداً' },

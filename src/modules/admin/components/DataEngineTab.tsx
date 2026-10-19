@@ -216,10 +216,10 @@ export function DataEngineTab() {
         
         {/* Historical Progress */}
         {histProgress && histProgress.total > 0 && (
-          <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-200">
+          <div className="mt-4 p-4 bg-primary rounded-xl border border-purple-200">
             <div className="flex items-center gap-3 mb-3">
-              <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
-              <span className="text-purple-700 font-bold text-lg">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="text-primary font-bold text-lg">
                 HISTORICAL FETCH IN PROGRESS
               </span>
             </div>
@@ -229,11 +229,11 @@ export function DataEngineTab() {
               </span>
               <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-purple-500 transition-all rounded-full"
+                  className="h-full bg-primary transition-all rounded-full"
                   style={{ width: `${(histProgress.current / histProgress.total) * 100}%` }}
                 />
               </div>
-              <span className="text-purple-700 font-mono font-bold">
+              <span className="text-primary font-mono font-bold">
                 {histProgress.symbol}
               </span>
             </div>
@@ -257,8 +257,8 @@ export function DataEngineTab() {
           <div className="text-sm text-slate-500 font-medium mt-1">CRYPTO</div>
         </div>
         <div className="bg-white rounded-xl p-4 text-center border border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
-          <BarChart3 className="w-6 h-6 mx-auto text-yellow-600 mb-2" />
-          <div className="text-2xl font-bold text-yellow-600">{formatNum(counts?.gold || 0)}</div>
+          <BarChart3 className="w-6 h-6 mx-auto text-warning mb-2" />
+          <div className="text-2xl font-bold text-warning">{formatNum(counts?.gold || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">GOLD</div>
         </div>
         <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
@@ -276,8 +276,8 @@ export function DataEngineTab() {
           <div className="text-sm text-slate-500 font-medium mt-1">NEWS</div>
         </div>
         <div className="bg-white rounded-xl p-4 text-center border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-          <History className="w-6 h-6 mx-auto text-purple-600 mb-2" />
-          <div className="text-2xl font-bold text-purple-600">{formatNum(counts?.historical_records || 0)}</div>
+          <History className="w-6 h-6 mx-auto text-primary mb-2" />
+          <div className="text-2xl font-bold text-primary">{formatNum(counts?.historical_records || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">HIST. DATA</div>
         </div>
         <div className="bg-white rounded-xl p-4 text-center border border-whale shadow-sm hover:shadow-md transition-shadow">
@@ -315,7 +315,7 @@ export function DataEngineTab() {
               onClick={() => setShowHistorical(!showHistorical)}
             >
               <span className="flex items-center gap-2">
-                <History className="w-5 h-5 text-purple-600" />
+                <History className="w-5 h-5 text-primary" />
                 HISTORICAL DATA: {counts.historical_symbols} symbols
               </span>
               {showHistorical ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -327,7 +327,7 @@ export function DataEngineTab() {
                   <div key={i} className="bg-slate-50 p-3 rounded-lg">
                     <div className="text-slate-700 font-medium truncate">{cat.category}</div>
                     <div className="flex gap-3 mt-1">
-                      <span className="text-purple-600 font-bold">{cat.symbols} symbols</span>
+                      <span className="text-primary font-bold">{cat.symbols} symbols</span>
                       <span className="text-slate-500">{formatNum(cat.records)} records</span>
                     </div>
                   </div>
@@ -406,7 +406,7 @@ export function DataEngineTab() {
           engine?.metals_running ? "border-yellow-500" : "border-slate-200"
         )}>
           <div className="flex items-center justify-between mb-3">
-            <BarChart3 className="w-6 h-6 text-yellow-600" />
+            <BarChart3 className="w-6 h-6 text-warning" />
             <button
               className={cn(
                 "text-sm px-3 py-1 rounded-lg font-bold",
@@ -422,7 +422,7 @@ export function DataEngineTab() {
           <Button
             variant="outline"
             size="lg"
-            className="w-full h-10 text-sm border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+            className="w-full h-10 text-sm border-yellow-500 text-warning hover:bg-warning"
             onClick={() => triggerAction('trigger_metals')}
             disabled={triggeringAction !== null}
           >
@@ -463,7 +463,7 @@ export function DataEngineTab() {
         {/* Historical */}
         <div className="bg-white rounded-xl p-4 border-2 border-purple-300 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <History className="w-6 h-6 text-purple-600" />
+            <History className="w-6 h-6 text-primary" />
             <div className={cn(
               "w-3 h-3 rounded-full",
               histProgress ? "bg-warning animate-pulse" : "bg-slate-300"
@@ -474,7 +474,7 @@ export function DataEngineTab() {
           <Button
             variant="outline"
             size="lg"
-            className="w-full h-10 text-sm border-purple-500 text-purple-600 hover:bg-purple-50"
+            className="w-full h-10 text-sm border-purple-500 text-primary hover:bg-primary"
             onClick={() => triggerAction('trigger_historical')}
             disabled={triggeringAction !== null || histProgress !== null}
           >
@@ -581,7 +581,7 @@ export function DataEngineTab() {
                     "py-1 border-b border-slate-700",
                     log.includes('✅') || log.includes('completed') || log.includes('SUCCESS') ? "text-profit" :
                     log.includes('❌') || log.includes('ERROR') ? "text-loss" :
-                    log.includes('⚠️') || log.includes('WARNING') ? "text-yellow-400" :
+                    log.includes('⚠️') || log.includes('WARNING') ? "text-warning" :
                     log.includes('📥') || log.includes('Fetching') ? "text-primary" :
                     log.includes('📊') ? "text-cyan-400" :
                     "text-slate-300"

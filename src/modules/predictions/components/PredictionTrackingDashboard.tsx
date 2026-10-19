@@ -176,8 +176,8 @@ const PERSONA_CONFIG: Record<'gambler' | 'balanced' | 'conservative', {
     emoji: '🔥',
     nameAr: 'المضارب',  // UNIFIED-BALANCED-ONLY: معطل
     horizonAr: 'صفقات خاطفة (1-5 أيام)',
-    color: 'text-orange-500 dark:text-orange-400',
-    badgeBg: 'bg-orange-500/10 text-orange-600 dark:text-orange-300 border-orange-500/20',
+    color: 'text-warning dark:text-warning',
+    badgeBg: 'bg-warning/10 text-warning dark:text-warning border-orange-500/20',
     border: 'border-orange-500/30 hover:border-orange-500/60',
     glow: 'shadow-orange-500/10',
     icon: Flame,
@@ -1751,7 +1751,7 @@ export function PredictionTrackingDashboard({
                           )}
                           {/* NEW: HMM regime badge */}
                           {pred.hmm_regime_ar && (
-                            <Badge className="bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title={`HMM: ${pred.hmm_regime_ar}`}>
+                            <Badge className="bg-primary/15 text-primary dark:text-primary border border-purple-500/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title={`HMM: ${pred.hmm_regime_ar}`}>
                               🧠
                             </Badge>
                           )}
@@ -2026,7 +2026,7 @@ export function PredictionTrackingDashboard({
                   {(selectedProofTrade as any).target_price_3 && (
                     <div>
                       <span className="text-muted-foreground text-[10px] block">الهدف الثالث (DNA):</span>
-                      <strong className="text-purple-600 dark:text-purple-400 text-sm font-bold">🧬 {fmtPrice((selectedProofTrade as any).target_price_3)} ج.م</strong>
+                      <strong className="text-primary dark:text-primary text-sm font-bold">🧬 {fmtPrice((selectedProofTrade as any).target_price_3)} ج.م</strong>
                     </div>
                   )}
 
@@ -2056,7 +2056,7 @@ export function PredictionTrackingDashboard({
                   {(selectedProofTrade as any).hmm_regime && (
                     <div>
                       <span className="text-muted-foreground text-[10px] block">حالة السوق (HMM):</span>
-                      <strong className="text-purple-600 dark:text-purple-400 text-sm font-bold">🧠 {String((selectedProofTrade as any).hmm_regime)}</strong>
+                      <strong className="text-primary dark:text-primary text-sm font-bold">🧠 {String((selectedProofTrade as any).hmm_regime)}</strong>
                     </div>
                   )}
                 </div>

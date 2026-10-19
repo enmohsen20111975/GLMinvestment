@@ -62,16 +62,16 @@ interface Props {
 
 // ─── خريطة ألوان الإشارة (كنسي — مطابق V40.2) ─────────────────────────────────
 const SIGNAL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  STRONG_BUY:        { bg: 'bg-profit', text: 'text-white', border: 'border-profit' },
-  INSTITUTIONAL_BUY: { bg: 'bg-profit', text: 'text-white', border: 'border-profit' },
+  STRONG_BUY:        { bg: 'bg-profit', text: 'text-foreground', border: 'border-profit' },
+  INSTITUTIONAL_BUY: { bg: 'bg-profit', text: 'text-foreground', border: 'border-profit' },
   BUY:               { bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', border: 'border-profit dark:border-profit' },
   ACCUMULATE:        { bg: 'bg-whale dark:bg-whale/40', text: 'text-whale dark:text-whale', border: 'border-whale dark:border-whale' },
   HOLD:              { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-warning dark:border-warning' },
   WAIT:              { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-warning dark:border-warning' },
-  REDUCE:            { bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700' },
+  REDUCE:            { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-orange-300 dark:border-orange-700' },
   SELL:              { bg: 'bg-loss dark:bg-loss/40', text: 'text-loss dark:text-loss', border: 'border-loss dark:border-loss' },
-  STRONG_SELL:       { bg: 'bg-loss', text: 'text-white', border: 'border-loss' },
-  AVOID:             { bg: 'bg-loss', text: 'text-white', border: 'border-loss' },
+  STRONG_SELL:       { bg: 'bg-loss', text: 'text-foreground', border: 'border-loss' },
+  AVOID:             { bg: 'bg-loss', text: 'text-foreground', border: 'border-loss' },
 };
 
 // ─── ترجمة الإشارة للعربية (لغة المستثمر) ───────────────────────────────────────
@@ -266,7 +266,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       return { label: '🟡 تصحيح في مسار صاعد', color: 'text-warning dark:text-warning', bg: 'bg-warning dark:bg-warning/30', border: 'border-warning dark:border-warning' };
     }
     if (makerState?.state === 'accumulation' || (chgPct >= -2 && chgPct <= 2)) {
-      return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-300 dark:border-orange-800' };
+      return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-warning dark:text-warning', bg: 'bg-warning dark:bg-warning/30', border: 'border-orange-300 dark:border-orange-800' };
     }
     if (flightState?.state === 'taking_off') {
       return { label: '🟢 مسار صاعد صحي', color: 'text-profit dark:text-profit', bg: 'bg-profit dark:bg-profit/30', border: 'border-profit dark:border-profit' };
@@ -573,7 +573,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               variant={extraIndicators ? 'default' : 'outline'}
               size="sm"
               onClick={toggleExtraIndicators}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', extraIndicators && 'bg-sky-600 text-white')}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', extraIndicators && 'bg-sky-600 text-foreground')}
             >
               <Gauge className="w-3 h-3 ml-1" />
               مؤشرات

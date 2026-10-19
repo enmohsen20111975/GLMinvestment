@@ -101,7 +101,7 @@ export function SessionExpiredModal() {
         </DialogHeader>
 
         {/* Visual header (amber gradient + warning icon) */}
-        <div className="relative bg-gradient-to-br from-warning via-warning to-loss px-6 pt-7 pb-6 text-center text-white">
+        <div className="relative bg-gradient-to-br from-warning via-warning to-loss px-6 pt-7 pb-6 text-center text-foreground">
           <div className="absolute inset-0 opacity-20 pointer-events-none">
             <div className="absolute -top-10 -right-10 size-40 rounded-full bg-white blur-3xl" />
             <div className="absolute -bottom-10 -left-10 size-40 rounded-full bg-warning blur-3xl" />
@@ -116,7 +116,7 @@ export function SessionExpiredModal() {
           <h2 className="relative text-xl font-extrabold tracking-tight">
             انتهت الجلسة
           </h2>
-          <p className="relative text-sm text-white/90 mt-1.5 leading-relaxed">
+          <p className="relative text-sm text-foreground/90 mt-1.5 leading-relaxed">
             انتهت صلاحية جلسة الدخول. يرجى تسجيل الدخول مرة أخرى للمتابعة.
           </p>
         </div>
@@ -128,7 +128,7 @@ export function SessionExpiredModal() {
               onClick={handleSignIn}
               size="lg"
               disabled={redirecting}
-              className="w-full h-11 text-base font-bold bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-white shadow-md gap-2"
+              className="w-full h-11 text-base font-bold bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-foreground shadow-md gap-2"
             >
               {redirecting ? (
                 <Loader2 className="size-5 animate-spin" />

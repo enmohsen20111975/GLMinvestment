@@ -161,13 +161,13 @@ interface InstitutionalDecisionPanelProps {
 
 // ───────── Helper: color maps ─────────
 const signalColorMap: Record<string, string> = {
-  purple: 'bg-purple-500 text-white border-purple-600',
+  purple: 'bg-primary text-white border-purple-600',
   lime: 'bg-lime-500 text-black border-lime-600',
   green: 'bg-profit text-white border-profit',
   yellow: 'bg-warning text-black border-warning',
-  orange: 'bg-orange-500 text-white border-orange-600',
+  orange: 'bg-warning text-white border-orange-600',
   red: 'bg-loss text-white border-loss',
-  gray: 'bg-slate-400 text-white border-slate-500',
+  gray: 'bg-slate-400 text-foreground border-slate-500',
 };
 
 const flightIconMap: Record<string, React.ElementType> = {
@@ -192,14 +192,14 @@ const makerColorMap: Record<string, string> = {
 
 const adviceColorMap: Record<string, string> = {
   red: 'border-loss/40 bg-loss/10 text-loss dark:text-loss',
-  orange: 'border-orange-500/40 bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  orange: 'border-orange-500/40 bg-warning/10 text-warning dark:text-warning',
   yellow: 'border-warning/40 bg-warning/10 text-warning dark:text-warning',
   green: 'border-profit/40 bg-profit/10 text-profit dark:text-profit',
 };
 
 const qualityColorMap: Record<string, string> = {
   lime: 'text-lime-500',
-  orange: 'text-orange-400',
+  orange: 'text-warning',
   gray: 'text-slate-400',
   red: 'text-loss',
 };
@@ -265,7 +265,7 @@ export function InstitutionalDecisionPanel({
     tech_score >= 75 ? 'text-profit' :
     tech_score >= 60 ? 'text-lime-500' :
     tech_score >= 40 ? 'text-warning' :
-    tech_score >= 25 ? 'text-orange-500' :
+    tech_score >= 25 ? 'text-warning' :
     'text-loss';
 
   const scoreBg =
@@ -494,7 +494,7 @@ export function InstitutionalDecisionPanel({
               <div className={cn(
                 'text-[10px] font-bold font-mono',
                 (backtest?.win_rate || 0) >= 60 ? 'text-profit' :
-                (backtest?.win_rate || 0) > 0 ? 'text-orange-400' : 'text-slate-400'
+                (backtest?.win_rate || 0) > 0 ? 'text-warning' : 'text-slate-400'
               )}>
                 {backtest?.win_rate_text || 'لا يوجد صفقات سابقة'}
               </div>
@@ -505,7 +505,7 @@ export function InstitutionalDecisionPanel({
               <div className={cn(
                 'text-[10px] font-bold font-mono',
                 (backtest?.profit_factor || 0) > 1.5 ? 'text-profit' :
-                (backtest?.profit_factor || 0) > 0 ? 'text-orange-400' : 'text-slate-400'
+                (backtest?.profit_factor || 0) > 0 ? 'text-warning' : 'text-slate-400'
               )}>
                 {backtest?.pf_text || '0.00'}
               </div>
@@ -569,7 +569,7 @@ export function InstitutionalDecisionPanel({
             </div>
             {/* V39: DNA target note */}
             {dna_target_price && dna_target_price > 0 && (
-              <div className="text-[8px] text-purple-300 mt-1 leading-tight">
+              <div className="text-[8px] text-primary mt-1 leading-tight">
                 🔮 TP1 من البصمة المستقبلية: {(dna_target_price ?? 0).toFixed(2)}
               </div>
             )}
@@ -651,7 +651,7 @@ export function InstitutionalDecisionPanel({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowPositionForm(!showPositionForm)}
-                className="h-6 px-2 text-[9px] text-slate-300 hover:text-white hover:bg-slate-700/40"
+                className="h-6 px-2 text-[9px] text-slate-300 hover:text-foreground hover:bg-slate-700/40"
               >
                 {showPositionForm ? 'إلغاء' : '+ أضف مركزك'}
                 {!showPositionForm && <ChevronDown className="w-3 h-3 mr-1" />}

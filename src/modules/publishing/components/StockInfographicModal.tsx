@@ -287,7 +287,7 @@ export function StockInfographicModal({
             onClick={handleTelegramPublish}
             disabled={busy !== null}
             variant="default"
-            className="bg-sky-600 hover:bg-sky-700 text-white gap-1.5"
+            className="bg-sky-600 hover:bg-sky-700 text-foreground gap-1.5"
           >
             {busy === 'telegram' ? (
               <Loader2 className="w-4 h-4 animate-spin" />

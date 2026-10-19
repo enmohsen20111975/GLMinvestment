@@ -339,8 +339,8 @@ export function PricingEditorTab() {
                   gate.enabled ? 'bg-warning' : 'bg-profit',
                 )}>
                   {gate.enabled
-                    ? <Lock className="w-4 h-4 text-white" />
-                    : <Unlock className="w-4 h-4 text-white" />}
+                    ? <Lock className="w-4 h-4 text-foreground" />
+                    : <Unlock className="w-4 h-4 text-foreground" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 flex-wrap mb-1">

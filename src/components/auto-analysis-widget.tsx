@@ -90,7 +90,7 @@ export function AutoAnalysisWidget() {
       <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-purple-400" />
+            <Brain className="h-5 w-5 text-primary" />
             <Skeleton className="h-6 w-40" />
           </div>
         </CardHeader>
@@ -108,7 +108,7 @@ export function AutoAnalysisWidget() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-loss" />
-            <CardTitle className="text-white">خطأ في التحميل</CardTitle>
+            <CardTitle className="text-foreground">خطأ في التحميل</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -129,8 +129,8 @@ export function AutoAnalysisWidget() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-purple-400" />
-            <CardTitle className="text-white text-lg">
+            <Brain className="h-5 w-5 text-primary" />
+            <CardTitle className="text-foreground text-lg">
               Walk-Forward Test
             </CardTitle>
           </div>
@@ -141,7 +141,7 @@ export function AutoAnalysisWidget() {
                 جاهز للتشغيل
               </Badge>
             ) : (
-              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50">
+              <Badge className="bg-warning/20 text-warning border-yellow-500/50">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 يحتاج بيانات أكثر
               </Badge>
@@ -151,7 +151,7 @@ export function AutoAnalysisWidget() {
               variant="ghost"
               onClick={handleRefresh}
               disabled={refreshing}
-              className="text-slate-400 hover:text-white"
+              className="text-slate-400 hover:text-foreground"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
@@ -162,7 +162,7 @@ export function AutoAnalysisWidget() {
         {/* Overall Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-foreground">
               {safeNum(testResult.overallAccuracy).toFixed(1)}%
             </div>
             <div className="text-xs text-slate-400">الدقة الإجمالية</div>
@@ -174,7 +174,7 @@ export function AutoAnalysisWidget() {
             <div className="text-xs text-slate-400">التحسن</div>
           </div>
           <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-foreground">
               {testResult.results?.length ?? 0}
             </div>
             <div className="text-xs text-slate-400">شهور مختبرة</div>
@@ -193,7 +193,7 @@ export function AutoAnalysisWidget() {
           />
           <div className="flex justify-between text-xs text-slate-500">
             <span>0%</span>
-            <span className="text-yellow-400">55% (الهدف)</span>
+            <span className="text-warning">55% (الهدف)</span>
             <span>100%</span>
           </div>
         </div>
@@ -236,11 +236,11 @@ export function AutoAnalysisWidget() {
         <div className={`p-3 rounded-lg border ${
           testResult.auto_analysis_eligible
             ? 'bg-success/10 border-success/30'
-            : 'bg-yellow-500/10 border-yellow-500/30'
+            : 'bg-warning/10 border-yellow-500/30'
         }`}>
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles className={`h-4 w-4 ${testResult.auto_analysis_eligible ? 'text-success' : 'text-yellow-400'}`} />
-            <span className={`font-semibold text-sm ${testResult.auto_analysis_eligible ? 'text-success' : 'text-yellow-400'}`}>
+            <Sparkles className={`h-4 w-4 ${testResult.auto_analysis_eligible ? 'text-success' : 'text-warning'}`} />
+            <span className={`font-semibold text-sm ${testResult.auto_analysis_eligible ? 'text-success' : 'text-warning'}`}>
               التحليل
             </span>
           </div>

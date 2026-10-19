@@ -57,7 +57,7 @@ interface NewsHealthResponse {
 const SOURCE_TYPE_LABELS: Record<string, { ar: string; color: string }> = {
   rss: { ar: 'RSS', color: 'border-sky-500 text-sky-700' },
   telegram: { ar: 'تيليجرام', color: 'border-whale text-whale' },
-  web: { ar: 'ويب', color: 'border-purple-500 text-purple-700' },
+  web: { ar: 'ويب', color: 'border-purple-500 text-primary' },
   broken: { ar: 'معطّل', color: 'border-loss text-loss' },
 };
 

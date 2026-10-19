@@ -22,8 +22,8 @@ interface RegimeData {
 const REGIME_CONFIG = {
   bull_trend: { color: 'text-success', bg: 'bg-success dark:bg-success/30', icon: TrendingUp, label: 'صاعد واضح' },
   bear_trend: { color: 'text-loss', bg: 'bg-loss dark:bg-loss/30', icon: TrendingDown, label: 'هابط واضح' },
-  ranging: { color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-900/30', icon: Minus, label: 'متراوح' },
-  unknown: { color: 'text-gray-600', bg: 'bg-gray-100 dark:bg-gray-900/30', icon: Activity, label: 'غير معروف' }
+  ranging: { color: 'text-warning', bg: 'bg-warning dark:bg-warning/30', icon: Minus, label: 'متراوح' },
+  unknown: { color: 'text-muted-foreground', bg: 'bg-muted dark:bg-muted/30', icon: Activity, label: 'غير معروف' }
 };
 
 export function RegimeDetectionWidget() {

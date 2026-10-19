@@ -148,7 +148,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Gauge className="w-4 h-4 text-purple-500" />
+            <Gauge className="w-4 h-4 text-primary" />
             ضغط الشراء/البيع داخل الجلسة
           </CardTitle>
           <div className="flex items-center gap-1.5">
@@ -254,7 +254,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-purple-500" />
+                  <Activity className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs font-semibold">الضغط عبر الوقت</span>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">

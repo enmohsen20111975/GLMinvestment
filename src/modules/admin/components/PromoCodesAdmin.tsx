@@ -197,7 +197,7 @@ export function PromoCodesAdmin() {
     switch (tier) {
       case 'all':
       case 'developer':
-        return { label: 'جميع المميزات (كامل)', color: 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/40' };
+        return { label: 'جميع المميزات (كامل)', color: 'bg-primary/20 text-primary dark:text-primary border-purple-500/40' };
       case 'premium':
         return { label: 'باقة المحترفين', color: 'bg-profit/20 text-profit dark:text-profit border-profit/40' };
       case 'normal':
@@ -272,12 +272,12 @@ export function PromoCodesAdmin() {
 
         <Card className="bg-card border-border/60">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-500">
+            <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
               <Users className="w-6 h-6" />
             </div>
             <div>
               <div className="text-xs text-muted-foreground">إجمالي مرات التفعيل</div>
-              <div className="text-2xl font-bold font-mono text-purple-500">
+              <div className="text-2xl font-bold font-mono text-primary">
                 {stats?.total_redemptions ?? codes.reduce((acc, c) => acc + c.current_uses, 0)}
               </div>
             </div>

@@ -105,7 +105,7 @@ function promoBadge(promo: AdminUser['promoCode']) {
       className={cn(
         "gap-1 py-0.5 px-2 text-[11px] font-medium border shadow-xs transition-all",
         isVip
-          ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40"
+          ? "bg-primary/15 text-primary dark:text-primary border-purple-500/40"
           : isPremium
           ? "bg-profit/15 text-profit dark:text-profit border-profit/40"
           : "bg-primary/15 text-primary dark:text-primary border-primary/40"
@@ -508,7 +508,7 @@ export function UserManagementPanel() {
             <StatBox label="إجمالي المستخدمين" value={stats.total} icon={<Users className="w-4 h-4 text-sky-500" />} />
             <StatBox label="نشط" value={stats.active} icon={<CheckCircle2 className="w-4 h-4 text-profit" />} />
             <StatBox label="مميزين + أدمن" value={stats.premium} icon={<Crown className="w-4 h-4 text-warning" />} />
-            <StatBox label="مشتركو البرومو كود" value={`${stats.withPromo} (${stats.activePromo} نشط)`} icon={<Ticket className="w-4 h-4 text-purple-500" />} />
+            <StatBox label="مشتركو البرومو كود" value={`${stats.withPromo} (${stats.activePromo} نشط)`} icon={<Ticket className="w-4 h-4 text-primary" />} />
             <StatBox label="أدمن" value={stats.admins} icon={<ShieldCheck className="w-4 h-4 text-loss" />} />
           </div>
 
@@ -526,7 +526,7 @@ export function UserManagementPanel() {
                 <TierStat label="مجاني" value={stats.activeByTier.free} color="text-slate-600 dark:text-slate-300" />
                 <TierStat label="مميز" value={stats.activeByTier.premium} color="text-warning" />
                 <TierStat label="أدمن" value={stats.activeByTier.admin} color="text-loss" />
-                <TierStat label="VIP" value={stats.activeByTier.vip} color="text-purple-600" />
+                <TierStat label="VIP" value={stats.activeByTier.vip} color="text-primary" />
               </div>
             </div>
 

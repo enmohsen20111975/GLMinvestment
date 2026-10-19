@@ -289,14 +289,14 @@ function PriceBox({ label, value, pct, rationale, color }: {
   const colorClasses = {
     emerald: 'border-profit dark:border-profit bg-profit dark:bg-profit/20',
     blue: 'border-primary dark:border-primary bg-primary dark:bg-primary/20',
-    purple: 'border-purple-200 dark:border-purple-900 bg-purple-50 dark:bg-purple-950/20',
+    purple: 'border-purple-200 dark:border-purple-900 bg-primary dark:bg-primary/20',
     rose: 'border-loss dark:border-loss bg-loss dark:bg-loss/20',
   };
 
   const valueColor = {
     emerald: 'text-profit dark:text-profit',
     blue: 'text-primary dark:text-primary',
-    purple: 'text-purple-700 dark:text-purple-400',
+    purple: 'text-primary dark:text-primary',
     rose: 'text-loss dark:text-loss',
   };
 

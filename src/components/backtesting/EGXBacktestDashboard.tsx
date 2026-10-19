@@ -176,7 +176,7 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
                 const pct = (count / strategy.total_trades) * 100;
                 const bgColor = reason === 'target' ? 'bg-profit' :
                   reason === 'trailing_stop' ? 'bg-whale' :
-                  reason === 'stop' ? 'bg-loss' : 'bg-gray-400';
+                  reason === 'stop' ? 'bg-loss' : 'bg-muted';
                 return (
                   <div
                     key={reason}
@@ -191,7 +191,7 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
               {Object.entries(strategy.exit_breakdown).map(([reason, count]) => {
                 const dotColor = reason === 'target' ? 'bg-profit' :
                   reason === 'trailing_stop' ? 'bg-whale' :
-                  reason === 'stop' ? 'bg-loss' : 'bg-gray-400';
+                  reason === 'stop' ? 'bg-loss' : 'bg-muted';
                 return (
                   <div key={reason} className="flex items-center gap-1">
                     <div className={`w-2 h-2 rounded-full ${dotColor}`} />

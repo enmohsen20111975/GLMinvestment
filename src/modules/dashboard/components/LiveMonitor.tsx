@@ -378,7 +378,7 @@ function MarketStatusBanner({
 
           <div className="flex items-baseline gap-2">
             <div
-              className="font-mono text-3xl font-bold tabular-nums text-slate-900 dark:text-white sm:text-4xl"
+              className="font-mono text-3xl font-bold tabular-nums text-slate-900 dark:text-foreground sm:text-4xl"
               dir="ltr"
             >
               {clockStr}
@@ -405,7 +405,7 @@ function MarketStatusBanner({
               <BarChart3 className="h-3.5 w-3.5" />
               {egx.name || 'EGX 30'}
             </div>
-            <div className="font-mono text-3xl font-bold tabular-nums text-slate-900 dark:text-white sm:text-4xl">
+            <div className="font-mono text-3xl font-bold tabular-nums text-slate-900 dark:text-foreground sm:text-4xl">
               {formatNumber(egx.price)}
             </div>
             <div
@@ -478,7 +478,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
       accentClass: 'text-profit dark:text-profit',
       main: (
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
+          <span className="text-2xl font-bold tabular-nums text-slate-900 dark:text-foreground">
             {stocks.updated_last_10min}
           </span>
           <span className="text-sm text-slate-400">/ {stocks.total}</span>
@@ -514,7 +514,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
       icon: Clock,
       accentClass: 'text-warning dark:text-warning',
       main: (
-        <span className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
+        <span className="text-2xl font-bold tabular-nums text-slate-900 dark:text-foreground">
           {relativeTime(intradayLast)}
         </span>
       ),
@@ -535,7 +535,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
         : 'text-loss dark:text-loss',
       main: (
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold text-slate-900 dark:text-white">
+          <span className="text-2xl font-bold text-slate-900 dark:text-foreground">
             {regime?.stage_name ?? '—'}
           </span>
           {regime && (
@@ -647,7 +647,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
       sortable: true,
       render: (item) => (
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-slate-900 dark:text-white">
+          <span className="text-sm font-medium text-slate-900 dark:text-foreground">
             {item.name}
           </span>
           {item.stock_ticker && (
@@ -799,7 +799,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
             <p className="mb-1 text-[11px] text-slate-500 dark:text-slate-400">
               إجمالي المستثمر
             </p>
-            <p className="text-lg font-bold tabular-nums text-slate-900 dark:text-white">
+            <p className="text-lg font-bold tabular-nums text-slate-900 dark:text-foreground">
               {formatCurrency(portfolio.total_invested)}
             </p>
           </div>
@@ -892,7 +892,7 @@ function MoverRow({
           {index + 1}
         </span>
         <div className="min-w-0">
-          <div className="font-mono text-xs font-bold text-slate-900 dark:text-white">
+          <div className="font-mono text-xs font-bold text-slate-900 dark:text-foreground">
             {stock.ticker}
           </div>
           <div className="max-w-[140px] truncate text-[10px] text-slate-500">
@@ -901,7 +901,7 @@ function MoverRow({
         </div>
       </div>
       <div className="flex items-center gap-3" dir="ltr">
-        <span className="text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
+        <span className="text-xs font-semibold tabular-nums text-slate-900 dark:text-foreground">
           {formatNumber(stock.current_price)}
         </span>
         <span
@@ -1214,7 +1214,7 @@ export function LiveMonitor() {
             </span>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-foreground">
               لوحة المراقبة الحية
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1314,7 +1314,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-foreground">
               مصادر البيانات
             </h3>
           </div>
@@ -1336,7 +1336,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
                     {item.badge}
                   </span>
                 </div>
-                <div className="mb-1 text-sm font-bold text-slate-900 dark:text-white">
+                <div className="mb-1 text-sm font-bold text-slate-900 dark:text-foreground">
                   {item.value}
                 </div>
                 <div className="text-[10px] leading-snug text-slate-500 dark:text-slate-400">

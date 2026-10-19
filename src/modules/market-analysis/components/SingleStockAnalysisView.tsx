@@ -620,7 +620,7 @@ export function SingleStockAnalysisView({
             {data?.confluence?.signal && (
               <Badge
                 style={{ backgroundColor: data.confluence.signal_color || '#10b981' }}
-                className="text-white text-[10px] font-bold px-2.5 py-1 shadow-sm rounded-full"
+                className="text-foreground text-[10px] font-bold px-2.5 py-1 shadow-sm rounded-full"
               >
                 {data.confluence.signal} ({data.confluence.score?.toFixed(1)}/10)
               </Badge>
@@ -836,7 +836,7 @@ export function SingleStockAnalysisView({
                 </div>
                 <Badge
                   style={{ backgroundColor: data.confluence?.signal_color || '#10b981' }}
-                  className="text-white text-xs font-bold w-full justify-center py-1 shadow-xs"
+                  className="text-foreground text-xs font-bold w-full justify-center py-1 shadow-xs"
                 >
                   {data.confluence?.signal || 'حيادي'}
                 </Badge>
@@ -1391,8 +1391,8 @@ export function SingleStockAnalysisView({
 
                 {/* Liquidity Sweeps — للخبراء */}
                 {data.smc_analysis?.liquidity_sweeps && data.smc_analysis.liquidity_sweeps.length > 0 && (
-                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-purple-700 dark:text-purple-300">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-primary dark:text-primary">
                       💧 سحب السيولة (Liquidity Sweeps):
                     </span>
                     {data.smc_analysis.liquidity_sweeps.slice(0, 3).map((s, i) => (
@@ -1431,13 +1431,13 @@ export function SingleStockAnalysisView({
 
                 {/* V20 Fusion Metrics */}
                 {data.fusion_metrics && (
-                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-purple-700 dark:text-purple-300">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-purple-500/30 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-purple-500/30 text-primary dark:text-primary">
                       التحليل الفني الموحد:
                     </span>
                     <div className="flex justify-between text-[11px]">
                       <span className="text-muted-foreground">درجة النموذج:</span>
-                      <span className="font-mono font-bold text-purple-600 dark:text-purple-400">{data.fusion_metrics.fusion_score?.toFixed(1) || '0.0'}/10</span>
+                      <span className="font-mono font-bold text-primary dark:text-primary">{data.fusion_metrics.fusion_score?.toFixed(1) || '0.0'}/10</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground leading-tight pt-0.5">
                       {data.fusion_metrics.summary_ar || 'تحليل فني شامل'}

@@ -130,7 +130,7 @@ function verdictColor(v: string): string {
   if (v === 'BUY') return 'bg-success';
   if (v === 'SELL') return 'bg-loss';
   if (v === 'STRONG_SELL') return 'bg-loss';
-  return 'bg-yellow-500';
+  return 'bg-warning';
 }
 
 function verdictLabel(v: string): string {
@@ -292,8 +292,8 @@ export function ExpertIntelligencePanel({
                   <div className="text-xl sm:text-2xl font-bold text-loss">{missedOpp.summary.missed_bulls}</div>
                   <div className="text-[10px] sm:text-xs text-muted-foreground">فرصة ضاعت</div>
                 </div>
-                <div className="bg-orange-50 dark:bg-orange-950/20 p-2 sm:p-3 rounded-lg text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-orange-600">{missedOpp.summary.false_positives}</div>
+                <div className="bg-warning dark:bg-warning/20 p-2 sm:p-3 rounded-lg text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-warning">{missedOpp.summary.false_positives}</div>
                   <div className="text-[10px] sm:text-xs text-muted-foreground">توقع خاطئ</div>
                 </div>
                 <div className="bg-success dark:bg-success/20 p-2 sm:p-3 rounded-lg text-center">
@@ -314,7 +314,7 @@ export function ExpertIntelligencePanel({
                   <Clock3 className="h-3 w-3 flex-shrink-0" />
                   <span className="text-muted-foreground">
                     أسعار طازة: <b className="text-success">{missedOpp.summary.prices_fresh}</b> ·
-                    غير محدّثة (15+ دقيقة): <b className="text-orange-600">{missedOpp.summary.prices_stale}</b>
+                    غير محدّثة (15+ دقيقة): <b className="text-warning">{missedOpp.summary.prices_stale}</b>
                   </span>
                 </div>
               ) : null}
@@ -338,7 +338,7 @@ export function ExpertIntelligencePanel({
                             </div>
                             <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                               <span className="text-loss">{op.signal}</span> · {op.days_since_prediction} يوم
-                              {op.price_is_stale && <span className="text-orange-600"> · ⏱️ سعر غير محدّث</span>}
+                              {op.price_is_stale && <span className="text-warning"> · ⏱️ سعر غير محدّث</span>}
                             </div>
                           </div>
                           <div className="text-left flex-shrink-0">
@@ -356,9 +356,9 @@ export function ExpertIntelligencePanel({
               {missedOpp.false_positives && missedOpp.false_positives.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                    <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
                     <span className="font-medium text-xs sm:text-sm">توقعات شراء غلط</span>
-                    <Badge className="text-[10px] bg-orange-100 text-orange-700">متوسط: {missedOpp.summary.avg_false_loss_pct}%</Badge>
+                    <Badge className="text-[10px] bg-warning text-warning">متوسط: {missedOpp.summary.avg_false_loss_pct}%</Badge>
                   </div>
                   <div className="max-h-72 overflow-y-auto border rounded-lg divide-y">
                     {missedOpp.false_positives.map((op: any, idx: number) => (
@@ -371,11 +371,11 @@ export function ExpertIntelligencePanel({
                             </div>
                             <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                               <span className="text-success">{op.signal}</span> · {op.days_since_prediction} يوم
-                              {op.price_is_stale && <span className="text-orange-600"> · ⏱️ سعر غير محدّث</span>}
+                              {op.price_is_stale && <span className="text-warning"> · ⏱️ سعر غير محدّث</span>}
                             </div>
                           </div>
                           <div className="text-left flex-shrink-0">
-                            <div className="font-bold text-orange-600 text-sm sm:text-base">{op.pct_change}%</div>
+                            <div className="font-bold text-warning text-sm sm:text-base">{op.pct_change}%</div>
                             <div className="text-[10px] text-muted-foreground">{op.entry_price} → {op.current_price}</div>
                           </div>
                         </div>
@@ -461,7 +461,7 @@ export function ExpertIntelligencePanel({
                 'rounded-lg p-3 sm:p-4 text-center',
                 sectorIntel.summary.market_breadth?.market_mood?.includes('صاعد') ? 'bg-success dark:bg-success/20' :
                 sectorIntel.summary.market_breadth?.market_mood?.includes('هابط') ? 'bg-loss dark:bg-loss/20' :
-                'bg-yellow-50 dark:bg-yellow-950/20'
+                'bg-warning dark:bg-warning/20'
               )}>
                 <div className="text-[11px] sm:text-xs text-muted-foreground">مزاج السوق</div>
                 <div className="text-base sm:text-2xl font-bold">{sectorIntel.summary.market_breadth?.market_mood || '—'}</div>
@@ -528,7 +528,7 @@ export function ExpertIntelligencePanel({
                             <Clock3 className="h-2.5 w-2.5" />
                             <span className="text-success">{s.prices_fresh_count} طازة</span>
                             <span>·</span>
-                            <span className="text-orange-600">{s.prices_stale_count} غير محدّثة</span>
+                            <span className="text-warning">{s.prices_stale_count} غير محدّثة</span>
                           </div>
                         ) : null}
                       </div>
@@ -608,13 +608,13 @@ export function ExpertIntelligencePanel({
               {[
                 { k: 'STRONG_BUY', label: 'قوي', color: 'bg-success' },
                 { k: 'BUY', label: 'شراء', color: 'bg-success' },
-                { k: 'HOLD', label: 'احتفاظ', color: 'bg-yellow-500' },
+                { k: 'HOLD', label: 'احتفاظ', color: 'bg-warning' },
                 { k: 'SELL', label: 'بيع', color: 'bg-loss' },
                 { k: 'STRONG_SELL', label: 'بيع قوي', color: 'bg-loss' },
               ].map((v) => (
                 <div key={v.k} className="border rounded-lg p-1.5 sm:p-2 text-center">
                   <div className={cn(
-                    'text-base sm:text-xl font-bold text-white rounded mx-auto w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center',
+                    'text-base sm:text-xl font-bold text-foreground rounded mx-auto w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center',
                     v.color
                   )}>
                     {consensusSummary.by_verdict?.[v.k] || 0}
@@ -649,7 +649,7 @@ export function ExpertIntelligencePanel({
                         {c.is_egx30 && <Badge variant="outline" className="text-[9px] px-1 py-0">EGX30</Badge>}
                         {c.is_egx100 && !c.is_egx30 && <Badge variant="outline" className="text-[9px] px-1 py-0">EGX100</Badge>}
                         {c.current_state?.price_is_stale && (
-                          <Badge className="text-[9px] px-1 py-0 bg-orange-100 text-orange-700">⏱️</Badge>
+                          <Badge className="text-[9px] px-1 py-0 bg-warning text-warning">⏱️</Badge>
                         )}
                       </div>
                       <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">
@@ -684,7 +684,7 @@ export function ExpertIntelligencePanel({
                       )}
                     </div>
                     <div className="text-left flex-shrink-0">
-                      <Badge className={cn('text-white text-[10px] sm:text-xs', verdictColor(c.verdict))}>
+                      <Badge className={cn('text-foreground text-[10px] sm:text-xs', verdictColor(c.verdict))}>
                         {verdictLabel(c.verdict)}
                       </Badge>
                       <div className="text-[10px] sm:text-xs text-muted-foreground mt-1">ثقة {c.confidence_pct}%</div>
@@ -702,7 +702,7 @@ export function ExpertIntelligencePanel({
                   {c.dissent && c.dissent.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
                       {c.dissent.map((d, i) => (
-                        <Badge key={i} variant="outline" className="text-[9px] sm:text-[10px] font-normal text-orange-600 border-orange-300">
+                        <Badge key={i} variant="outline" className="text-[9px] sm:text-[10px] font-normal text-warning border-orange-300">
                           ⚠ {d}
                         </Badge>
                       ))}
@@ -739,7 +739,7 @@ export function ExpertIntelligencePanel({
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm">{singleConsensus.ticker}</span>
                       <span className="text-xs text-muted-foreground truncate flex-1 min-w-0">{singleConsensus.name || '—'}</span>
-                      <Badge className={cn('text-white text-xs', verdictColor(singleConsensus.verdict || 'HOLD'))}>
+                      <Badge className={cn('text-foreground text-xs', verdictColor(singleConsensus.verdict || 'HOLD'))}>
                         {verdictLabel(singleConsensus.verdict || 'HOLD')}
                       </Badge>
                       <span className="text-xs">ثقة: <b>{singleConsensus.confidence_pct ?? 0}%</b></span>
@@ -760,7 +760,7 @@ export function ExpertIntelligencePanel({
                     )}
                     {singleConsensus.dissent && singleConsensus.dissent.length > 0 && (
                       <div className="text-xs sm:text-sm">
-                        <span className="font-medium text-orange-600">تحذيرات: </span>
+                        <span className="font-medium text-warning">تحذيرات: </span>
                         <ul className="list-disc mr-5 mt-1 space-y-0.5">
                           {singleConsensus.dissent.map((d, i) => <li key={i}>{d}</li>)}
                         </ul>

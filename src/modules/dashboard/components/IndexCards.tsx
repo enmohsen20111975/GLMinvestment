@@ -30,8 +30,8 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
   '^IXIC':  { accent: 'bg-violet-500',  ring: 'ring-violet-500/20',  text: 'text-violet-600 dark:text-violet-400' },
   '^DJI':   { accent: 'bg-indigo-500',  ring: 'ring-indigo-500/20',  text: 'text-indigo-600 dark:text-indigo-400' },
   // CRYPTO
-  'BTC.D':        { accent: 'bg-orange-500', ring: 'ring-orange-500/20', text: 'text-orange-600 dark:text-orange-400' },
-  TOTAL_MCAP:     { accent: 'bg-purple-500', ring: 'ring-purple-500/20', text: 'text-purple-600 dark:text-purple-400' },
+  'BTC.D':        { accent: 'bg-warning', ring: 'ring-orange-500/20', text: 'text-warning dark:text-warning' },
+  TOTAL_MCAP:     { accent: 'bg-primary', ring: 'ring-purple-500/20', text: 'text-primary dark:text-primary' },
   FNG:            { accent: 'bg-pink-500',   ring: 'ring-pink-500/20',   text: 'text-pink-600 dark:text-pink-400' },
   // TADAWUL
   '^TASI.SR':       { accent: 'bg-success',   ring: 'ring-success/20',   text: 'text-success dark:text-success' },
@@ -55,8 +55,8 @@ const MARKET_PALETTE: Record<MarketType, Array<{ accent: string; ring: string; t
     { accent: 'bg-indigo-500',  ring: 'ring-indigo-500/20',  text: 'text-indigo-600 dark:text-indigo-400' },
   ],
   CRYPTO: [
-    { accent: 'bg-orange-500', ring: 'ring-orange-500/20', text: 'text-orange-600 dark:text-orange-400' },
-    { accent: 'bg-purple-500', ring: 'ring-purple-500/20', text: 'text-purple-600 dark:text-purple-400' },
+    { accent: 'bg-warning', ring: 'ring-orange-500/20', text: 'text-warning dark:text-warning' },
+    { accent: 'bg-primary', ring: 'ring-purple-500/20', text: 'text-primary dark:text-primary' },
     { accent: 'bg-pink-500',   ring: 'ring-pink-500/20',   text: 'text-pink-600 dark:text-pink-400' },
   ],
   TADAWUL: [
