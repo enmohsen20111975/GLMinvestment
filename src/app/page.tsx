@@ -72,6 +72,15 @@ const ReportsView = withErrorBoundary(
   dynamicImport(() => import('@/modules/reports/components/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
   'التقارير',
 );
+// ALPHA-UX-FIX-7: standalone routes (moved from #recommendations tabs to السوق nav)
+const MarketStatusView = withErrorBoundary(
+  dynamicImport(() => import('@/modules/market-analysis/components/MarketStatusTab').then(m => ({ default: m.MarketStatusTab })), { ssr: false, loading: () => <LazyTabLoader label="حالة السوق" /> }),
+  'حالة السوق',
+);
+const HistoricalTradesView = withErrorBoundary(
+  dynamicImport(() => import('@/modules/market-analysis/components/HistoricalTradesTable').then(m => ({ default: m.HistoricalTradesTable })), { ssr: false, loading: () => <LazyTabLoader label="الصفقات التاريخية" /> }),
+  'الصفقات التاريخية',
+);
 const NewsFeedView = withErrorBoundary(
   dynamicImport(() => import('@/modules/news/components/NewsFeedView').then(m => ({ default: m.NewsFeedView })), { ssr: false, loading: () => <LazyTabLoader label="الأخبار" /> }),
   'الأخبار',
@@ -577,6 +586,26 @@ function AppShell() {
       case 'recommendations':
       case 'analysis':
         return <MarketAnalysisView />;
+      case 'market-status':
+        // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header title="حالة السوق" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
+            <main className="flex-1 p-3 md:p-4">
+              <MarketStatusView market={currentMarket} />
+            </main>
+          </div>
+        );
+      case 'historical-trades':
+        // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header title="الصفقات التاريخية" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
+            <main className="flex-1 p-3 md:p-4">
+              <HistoricalTradesView />
+            </main>
+          </div>
+        );
       case 'advanced-analysis':
       case 'v2-analysis':
         // advanced-analysis REMOVED — features distributed to:

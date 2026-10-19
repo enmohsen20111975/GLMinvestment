@@ -211,22 +211,15 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  #liquidity-radar (MakerRadarTab) as internal sub-tabs. #recommendations
  now has 5 tabs only: predictions / status / sectors-tracking /
  historical-trades / net-picks. */}
- <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-2 lg:grid-cols-4 h-auto gap-1">
+ <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-2 lg:grid-cols-2 h-auto gap-1">
  {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل الـ 3 المنفصلة */}
  <TabsTrigger value="predictions" className="flex items-center gap-1">
  <Target className="h-4 w-4 text-profit" />
  <span className="hidden sm:inline">{t('marketAnalysis.tabs.predictions')}</span>
  </TabsTrigger>
- <TabsTrigger value="status" className="flex items-center gap-1">
- <Activity className="h-4 w-4" />
- <span className="hidden sm:inline">{t('marketAnalysis.tabs.marketStatus')}</span>
- </TabsTrigger>
- {/* Phase P5: تتبع حركة القطاعات — ALPHA-UX-FIX-6: اتنقل لرادار السيولة (#liquidity-radar) */}
- {/* TabsTrigger value="sectors-tracking" removed — see LiquidityRadarView */}
- <TabsTrigger value="historical-trades" className="flex items-center gap-1">
- <History className="h-4 w-4 text-warning" />
- <span className="hidden sm:inline">{t('marketAnalysis.tabs.historicalTrades')}</span>
- </TabsTrigger>
+ {/* ALPHA-UX-FIX-7: status + historical-trades اتنقلوا لروابط مستقلة تحت السوق (#market-status, #historical-trades) */}
+ {/* TabsTrigger value="status" removed — see #market-status route */}
+ {/* TabsTrigger value="historical-trades" removed — see #historical-trades route */}
  {/* ALPHA-UX-FIX-6: الغِ تبويب «صافى التوقعات» (net-picks) — حسب طلب المالك */}
  {/* TabsTrigger value="net-picks" removed */}
  {/* RESTRUCT-A-P2: reports tab merged from top-level menu */}
@@ -243,16 +236,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  <UnifiedPredictionsTab market={currentMarket} />
  </TabsContent>
 
- <TabsContent value="status" className="mt-4">
- <MarketStatusTab market={currentMarket} />
- </TabsContent>
-
- {/* ALPHA-UX-FIX-6: sectors-tracking اتنقل لرادار السيولة — شوف LiquidityRadarView */}
-
- {/* P1-GEMS-WIRING: الصفقات التاريخية (13,117 صف) */}
- <TabsContent value="historical-trades" className="mt-4">
- <HistoricalTradesTable market={currentMarket} />
- </TabsContent>
+ {/* ALPHA-UX-FIX-7: status + historical-trades TabsContent اتشالت — دلوقتي routes مستقلة (#market-status, #historical-trades) تحت السوق */}
 
  {/* ALPHA-UX-FIX-6: net-picks tab اتشال — حسب طلب المالك */}
 

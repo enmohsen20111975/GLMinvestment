@@ -383,6 +383,8 @@ export type AppView =
   | 'trading-chart'      // الشارت التفاعلي (Task 40-B: added to AppView union)
   | 'liquidity-radar'    // رادار السيولة (Task 40-B: added to AppView union)
   | 'market-depth'       // عمق السوق — عملات/ذهب + سيولة + مستثمرون + ضغط جلسة (MARKET-DEPTH-VIEW)
+  | 'market-status'      // حالة السوق (ALPHA-UX-FIX-7: standalone — moved from #recommendations tab)
+  | 'historical-trades'  // الصفقات التاريخية (ALPHA-UX-FIX-7: standalone — moved from #recommendations tab)
   | 'portfolio'          // المحفظة الموحدة
   | 'advanced-portfolio' // إدارة المحافظ المتقدمة
   | 'watchlist'          // قوائم المراقبة الموحدة

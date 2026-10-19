@@ -36,6 +36,7 @@ import {
   Info,
   ShieldCheck,
   BarChart3,
+  History,
   TrendingUp,
   Landmark,
   type LucideIcon,
@@ -76,6 +77,9 @@ export const navSections: NavSection[] = [
       { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
       { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity },
       { id: 'trading-chart', label: 'الشارت التفاعلي', icon: BarChart3 },
+      // ALPHA-UX-FIX-7: اتنقلوا من #recommendations tabs لروابط مستقلة تحت السوق
+      { id: 'market-status', label: 'حالة السوق', icon: Activity },
+      { id: 'historical-trades', label: 'الصفقات التاريخية', icon: History },
     ],
   },
   {

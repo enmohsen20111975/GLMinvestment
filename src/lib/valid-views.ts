@@ -26,6 +26,8 @@ export const VALID_VIEWS: readonly string[] = [
   'smart-confluence',
   'liquidity-radar',
   'market-depth',  // MARKET-DEPTH-VIEW — شاشة عمق السوق المنفصلة
+  'market-status',  // ALPHA-UX-FIX-7: standalone (moved from #recommendations tab → السوق)
+  'historical-trades',  // ALPHA-UX-FIX-7: standalone (moved from #recommendations tab → السوق)
   'dual-track',
   'v82',  // محرك القرار المؤسسي V82
   'alerts-center', 'trading-memory', 'live-monitor', 'wealth',
