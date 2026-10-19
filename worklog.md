@@ -71386,3 +71386,87 @@ Stage Summary:
 - ✅ CoreScoringEngine شغال 100% (0 fails بعد فلتر None).
 - ⚠️ النتائج: hybrid بـ يـخفض الـ scores dramatic، threshold = 65 مش مناسب.
 - 🔁 محتاجين قرار محسن قبل المرحلة اللي بعدها.
+
+---
+Task ID: BRAVO-RADAR-AWARE-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — مرحلة 2 + 3 مدموجة: SMC/VP أعلى + ربط الرادار عكسيًا
+
+Work Log:
+
+- ✅ بناء backtest script مدمج (scripts/backtest_radar_aware.py):
+  * يحسب 5 inputs لكل توقع: v38 + core + smc + vp + radar_flow
+  * يـجرب 6 scenarios:
+    - S0_baseline: الحالي (v38×75% + smc×15% + vp×10%, thr=65, hard_gate)
+    - S1_hybrid_low_thr: hybrid + threshold=50
+    - S2_hybrid_high_smc_vp: SMC+VP أعلى (مرحلة 2)
+    - S3_radar_aware: radar boost input (مرحلة 3, +8/-10)
+    - S4_radar_dominant: radar boost أقوى (+12/-15)
+    - S5_radar_pre_filter: radar يـreject outflow قبل أي حساب
+  * py_compile PASS + 0 fails في كل الـ inputs
+
+- 📊 النتائج (شهر كامل، 192 توقع، 73 closed):
+
+  | Scenario              | thr | total | kill | ≥thr | closed | wins | WR    | filter_rate |
+  |-----------------------|-----|-------|------|------|--------|------|-------|-------------|
+  | S0_baseline           |  65 |   192 |   39 |   68 |      8 |    2 | 25.0% | 64.6%       |
+  | S1_hybrid_low_thr     |  50 |   192 |   39 |  110 |     33 |    7 | 21.2% | 42.7%       |
+  | S2_hybrid_high_smc_vp |  55 |   192 |   39 |   32 |      4 |    1 | 25.0% | 83.3%       |
+  | S3_radar_aware        |  55 |   192 |   39 |   66 |     16 |    4 | 25.0% | 65.6%       |
+  | S4_radar_dominant     |  55 |   192 |   39 |   50 |     13 |    4 | 30.8% | 74.0%       |
+  | S5_radar_pre_filter   |  55 |    93 |    0 |   63 |     16 |    4 | 25.0% | 32.3%       |
+
+- 🔥 الـ findings الحاسمة:
+
+  1. **S4 (radar_dominant) = أحسن WR (30.8%)** — +5.8% فوق baseline
+     * boost: strong_inflow=+12, strong_outflow=-15
+     * النتيجة: outflow = 0, strong_outflow = 0 (تم تصفيتهم)
+     * strong_inflow = 40 توقع (أعلى filter للـ inflow)
+
+  2. **S5 (radar_pre_filter) بـ يـمسح 51% من التوقعات** 
+     * total: 192 → 93 (-51%)
+     * outflow + strong_outflow = 0
+     * بس WR = 25% (نفس S3) — يعني الـ outflow مش بـ يـخسر أكتر من غيره في الـ sample ده
+
+  3. **S2 (high SMC+VP) بـ يـنتج strong_inflow WR = 50%** (أحسن band)
+     * لكن accepted = 32 بس (قلة شديدة)
+     * threshold = 55 عالي للـ hybrid scoring
+
+  4. **S0 (baseline) بـ يقبل outflow + strong_outflow** (مشكلة)
+     * outflow مقبول = 14 توقع
+     * strong_outflow مقبول = 6 توقع
+     * ده مشكلة — الرادار بـ يقول "سيولة خارجة" و V40.2 بـ يقبل
+
+  5. **الحساسية واضحة**: كل ما الـ radar boost يزيد، الـ outflow بـ يقل
+     * S3 (+8/-10): outflow = 3
+     * S4 (+12/-15): outflow = 0
+
+- 🎯 الاستنتاج:
+
+  الـ radar input بـ يـدي قيمة واضحة:
+  - S4 (radar_dominant) = أحسن WR (30.8%)
+  - S5 (pre_filter) = أنظف توقعات (0 outflow)
+  
+  الـ hybrid scoring بـ يـخفض الـ scores + بـ يـدخل CoreScoring بـ وزن معقول.
+  
+  المشكلة: الـ sample صغير (73 closed), الشهر ده low WR (25-30%).
+  لازم نـجرب على فترة أطول للتأكد.
+
+- 📋 التوصية لـ محسن:
+
+  1. **S4 (radar_dominant)** = الأفضل للتنفيذ:
+     - weights: v38×25% + core×35% + smc×20% + vp×15% (مرحلة 2)
+     - threshold = 55
+     - radar boost: +12/-15 (مرحلة 3)
+     - WR = 30.8% (أحسن baseline بـ +5.8%)
+     - outflow = 0 (تصفية كاملة)
+
+  2. **نـنفذ S4 في daily_predictor.py** + نـجرب على فترة أطول (3 شهور)
+
+  3. **نـضيف S5 كـ optional pre_filter** (env var) للـ production
+
+Stage Summary:
+- ✅ مرحلة 2 + 3 مدموجة: باك تست خلص بـ 6 scenarios.
+- ✅ S4 (radar_dominant) = الأفضل (WR 30.8% vs baseline 25%).
+- ✅ radar input بـ يـدي قيمة واضحة (outflow = 0).
+- 🔁 القرار لمحسن: نـنفذ S4؟
