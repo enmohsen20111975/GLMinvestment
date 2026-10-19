@@ -68172,3 +68172,57 @@ Stage Summary:
 - 🚀 الأسهم في EARLY_MARKUP (بداية طلوع): 2180, AAPL, ABBV, AMGN, BNB, COST, CVX, DIS, إلخ
 - 🔥 الأسهم في MARKUP (طلوع قوي): 1320, 2030, 2282, 2370, 2381, ADA, ADRI, AIH, AMEC, ARGAN
 - 🎯 الإجابة على سؤال محسن: ممكن نـمسح أي سهم ونعرف موقفه بدقة (8 stages + confidence + reasons)
+
+---
+Task ID: BRAVO-HYBRID-STAGE-ANALYZER-1
+Agent: Bravo (Z.ai Code — quant research)
+Task: محسن — تطبيق research الـ 4 طبقات (HMM + Wyckoff + Weinstein + Volume Profile) بدل if/else.
+
+Work Log:
+- ✅ تثبيت hmmlearn (GaussianHMM)
+- ✅ بناء scripts/hybrid_stage_analyzer.py (650 سطر) — نظام هجين متعدد الطبقات
+- ✅ Layer 1: HMM (Hidden Markov Model) — تصنيف نظام السوق العام
+  * نافذة: 504 يوم (سنتين) — Point-in-Time (لا lookahead)
+  * 3 حالات: BULL / BEAR / RANGE (احتمالي)
+  * بـ يستخدم log returns + GaussianHMM بـ 3 components
+  * Fallback لـ RSI heuristic لو HMM فشل
+- ✅ Layer 2: Wyckoff State Machine — مرحلة السهم الفردي
+  * كشف 6 أحداث هيكلية: SC (Selling Climax), AR (Automatic Rally), ST (Secondary Test), Spring, SOS (Sign of Strength), LPS (Last Point of Support)
+  * كشف أحداث التوزيع: BC (Buying Climax)
+  * نافذة متغيرة (60 شمعة)
+  * آلة حالة: Phase A (بداية تجميع) → Phase B (منتصف) → Phase C (نهاية) → Markup
+- ✅ Layer 3: Weinstein Stage Analysis — آلة حالة 4 مراحل
+  * نافذة: 150 يوم (ترجمة يومية لـ 30 أسبوع)
+  * 4 stages: Stage 1 (قاعدة), Stage 2 (صعود), Stage 3 (قمة), Stage 4 (هبوط)
+  * + حالات انتقالية: Stage 2 Pullback, Stage 4 Rally
+  * بـ يستخدم MA slope + Dead Band (±2%) لمنع التذبذب
+  * آلة حالة حقيقية (State Machine) — مش تلوين كل شمعة
+- ✅ Layer 4: Volume Profile + Breakout Confirmation
+  * نافذة: 30 يوم
+  * حساب POC (Point of Control), VAH (Value Area High), VAL (Value Area Low)
+  * Value Area = 70% من الـ volume حول POC
+  * تأكيد الاختراق: لو السعر فوق VAH بـ volume > 1.5x المتوسط = تأكيد
+  * تأكيد الكسر: لو السعر تحت VAL بـ volume عالي = تأكيد
+- ✅ Hybrid Engine — دمج الـ 4 طبقات
+  * Score من -100 لـ +100
+  * Layer 1 (HMM): ±25
+  * Layer 2 (Wyckoff): +30 لـ Phase C, +15 لـ Phase B, +5 لـ Phase A, -20 لـ Distribution
+  * Layer 3 (Weinstein): +30 لـ Stage 2, +20 لـ Pullback, +10 لـ Base, -30 لـ Markdown
+  * Layer 4 (Volume): ±15 لـ تأكيد الاختراق/الكسر
+  * Recommendation: STRONG_BUY (>=50), BUY (>=25), HOLD (>=-10), REDUCE (>=-30), SELL (<-30)
+- ✅ test على COMI: HOLD (score=-10) — HMM RANGE 99.8% + Weinstein Stage 3 (Top) + Volume BELOW_VA
+- ✅ test على عينة 50 سهم:
+  * STRONG_BUY: 1 (2%) — 1214 (HMM BULL + Wyckoff Phase A + Weinstein Stage 2)
+  * BUY: 15 (30%) — أغلبهم Weinstein Stage 2 + Wyckoff Phase A
+  * HOLD: 28 (56%)
+  * REDUCE: 6 (12%)
+- ✅ JSON output محفوظ لكل تحليل
+
+Stage Summary:
+- ✅ النظام الهجين متعدد الطبقات جاهز (4 layers)
+- ✅ HMM بـ يـصنف نظام السوق احتمالياً (مش if/else)
+- ✅ Wyckoff بـ يكشف أحداث هيكلية (SC, AR, ST, Spring, SOS, LPS)
+- ✅ Weinstein بـ آلة حالة حقيقية (4 stages + حالات انتقالية)
+- ✅ Volume Profile بـ يؤكد الاختراقات (POC/VAH/VAL)
+- ✅ Hybrid Engine بـ يدمج الـ 4 طبقات في score + recommendation
+- 🎯 النظام جاهز للاستخدام على كل الأسهم
