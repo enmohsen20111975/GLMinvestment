@@ -72793,3 +72793,82 @@ Stage Summary:
 - ✅ trailing3_sl3_RANGE_only = best config
 - ⚠️ Compounding bug (أرقام خيالية)
 - 🔁 محتاجين: إصلاح compounding + percentage-based PF
+
+---
+Task ID: BRAVO-MEAN-REVERSION-HONEST-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — Mean Reversion Honest (Fixed Dollar + Percentage PF)
+
+Work Log:
+
+- ✅ Fixed Dollar Position Sizing: $10,000 per trade (NOT % of equity)
+- ✅ Percentage-based PF (NOT dollar-based)
+- ✅ Config: target10_sl3 ONLY (Target=10%, SL=3%, RANGE+BULL filter)
+- ✅ Train/Test: Train=2024-2025, Test=2026
+- ✅ Stress Test: 0.70%, 1.0%, 1.5% round trip costs
+- ✅ Top 5/10 trades contribution
+- ✅ Return distribution analysis
+
+- 📊 الـ Results الحقيقية (Fixed Dollar + percentage PF):
+
+  | Metric      | Train (2024-2025) | Test (2026) |
+  |-------------|-------------------|-------------|
+  | closed      | 348               | 172         |
+  | WR          | 42.5%             | 52.3%       |
+  | PF          | **1.65**          | **2.66**    |
+  | MaxDD       | 6.5%              | 2.2%        |
+  | Return      | +39.61%           | +38.71%     |
+  | avg Win     | +6.80%            | +6.89%      |
+  | avg Loss    | -3.05%            | -2.85%      |
+  | R/R         | 2.2:1             | 2.4:1       |
+  | Killed      | False             | False       |
+
+- 📊 Stress Test (Test 2026):
+  | Cost (round trip) | PF    | MaxDD | Killed |
+  |-------------------|-------|-------|--------|
+  | 0.70%             | 2.66  | 2.2%  | False  |
+  | 1.00%             | 2.30  | 2.5%  | False  |
+  | 1.50%             | 1.83  | 3.4%  | False  |
+
+  → الـ edge بـ يتحمل تكاليف لـ 1.5% (PF = 1.83 > 1.0)!
+
+- 📊 Top 5 contribution = 0.4% (مش هش)
+- 📊 Return distribution: bimodal (SL at -3.7% + Target at +9.3%)
+
+- 🔥🔥🔥 الـ findings:
+
+  1. ✅ الأرقام منطقية دلوقتي!
+     * قبل: PF = 63 (خيالي — compounding bug)
+     * بعد: PF = 1.65 (Train) + 2.66 (Test) ← منطقي!
+
+  2. ✅ R/R = 2.2:1 (avg Win = +6.8% vs avg Loss = -3.0%)
+     * ده اللي بيـخلي PF > 2 رغم WR = 42-52%
+
+  3. ✅ Test أحسن من Train!
+     * Train PF = 1.65 → Test PF = 2.66
+     * عكس overfitting (الـ edge بـ يـعمم أحسن)
+
+  4. ✅ Stress Test: بـ يتحمل لـ 1.5% cost (PF = 1.83)
+
+  5. ✅ MaxDD = 6.5% (Train) + 2.2% (Test) — آمن
+
+  6. ✅ Top 5 contribution = 0.4% — توزيع صحي
+
+  7. ✅ Return distribution: bimodal + realistic
+
+- 🎯 الاستنتاج النهائي:
+
+  🎉 ALL CRITERIA PASSED:
+    ✅ Test PF = 2.66 > 1.3
+    ✅ MaxDD = 2.2% < 15%
+    ✅ Not killed
+    ✅ Stress Test (1.5% cost): PF = 1.83 > 1.0
+  
+  → جاهز للـ Paper Trading!
+
+Stage Summary:
+- ✅ Fixed Dollar sizing: نجح (أرقام منطقية)
+- ✅ percentage PF: نجح (PF = 1.65 Train + 2.66 Test)
+- ✅ Stress Test: بـ يتحمل لـ 1.5% cost
+- ✅ Top 5 contribution = 0.4% (مش هش)
+- 🎉 ALL CRITERIA PASSED → جاهز للـ Paper Trading
