@@ -70958,3 +70958,89 @@ Stage Summary:
      في الـ fallback INSERT (عشان لو فشل الـ INSERT الأول، نـكتب الـ fields المهمة).
   3. ROOT FIX: ابحث في daily_predictor.py ليه بـ يـ pass NaN/None prices.
   4. CLEANUP: 145 توقع بـ R/R=None لازم يـتـ backfilled بـ R/R الصحيح (entry/target/stop موجودة).
+
+---
+Task ID: BRAVO-PATH-VERIFICATION-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — إثبات المسار الوحيد لكتابة أكتوبر 2026 (السؤال الحاسم)
+
+Work Log:
+
+- 🔍 سؤال محسن الحاسم: "هل الـ 130 توقع في أكتوبر كلهم عدوا على record_prediction في prediction_tracker.py؟ ولا فيه مسار تاني؟"
+
+- 🔬 الفحص: جرد كل INSERT paths لـ predictions table:
+  | # | الـ path | format |
+  |---|---------|--------|
+  | 1 | analyzers/prediction_tracker.py (record_prediction) | 3 INSERTs (24/16/15 col) |
+  | 2 | api/historical_predictions_v2_routes.py | 2 INSERTs |
+  | 3 | api/ai_predictions_routes.py | 1 INSERT |
+  | 4 | scripts/backfill_to_predictions.py | 1 INSERT (DISABLED) |
+  | 5 | scripts/backfill_with_personas.py | 1 INSERT |
+  | 6 | scripts/dual_track_generator.py | 1 INSERT |
+  | 7 | scripts/populate_history_fast.py | 1 INSERT |
+  | 8 | scripts/maestro_backfill_v2.py | 1 INSERT |
+  | 9 | scripts/generate_persona_predictions.py | 2 INSERTs |
+  | 10 | core/db_manager.py | 1 INSERT |
+  | 11 | src/app/api/sniper/track/route.ts | 1 INSERT (TypeScript!) |
+
+  → فيه 11 path مختلف بـ يكتب في predictions! مش path واحد.
+
+- 🔬 تحليل أكتوبر 2026 بـ created_at format — كشف 3 paths شغّالة:
+
+  | Path | created_at format | count | signal | score | R/R | source |
+  |------|-------------------|-------|--------|-------|-----|--------|
+  | Path 1 | ISO + timezone (`.049105+00:00`) | 60 | STRONG_BUY | 78-83 | **None** | v40_2_historical_backfill.py (سعودية) |
+  | Path 2 | ISO بدون timezone (`.95181`) | 24 HOLD + mix | HOLD/BUY/STRONG_BUY | 50-100 | SET غريبة (196, 21) | src/app/api/sniper/track/route.ts |
+  | Path 3 | date only (`2026-10-04`) | 50 | BUY | None | SET | fabrication قديم (telegram_target_hit_tracker) |
+
+- 🔬 تفاصيل كل path:
+
+  **Path 1 — v40_2_historical_backfill.py (الـ 60 توقع السعودية)**:
+  * created_at: `2026-10-14T17:32:24.049105+00:00` (دفعة واحدة)
+  * prediction_date: سابقة (2026-09-30, 2026-10-04, 2026-10-05, إلخ)
+  * tickers: 1182, 2250, 2287, 2330, 3050, 9558, 9608 (TADAWUL سعودية)
+  * signal: STRONG_BUY | score: 78-83 | R/R=None | ev=0
+  * المصدر: v40_2_historical_backfill.py بـ يستدعي daily_predictor.run_generator
+  * Path الفشل: prediction_tracker.record_prediction INSERT الأول (24-col) فشل → fallback (16-col) → R/R=None
+
+  **Path 2 — src/app/api/sniper/track/route.ts (الـ 24 HOLD)**:
+  * created_at: ISO بدون timezone (مثل `2026-10-02T03:18:56.95181`)
+  * signal: HOLD (initial) | score: 50 (initial) | R/R: 0 (initial)
+  * entry_price=0, target_price=0, stop_loss=0 (initial!)
+  * بعدين Python backend بـ يـ UPDATE للـ prices الحقيقية
+  * النتيجة: توقعات HOLD بـ prices صحيحة + R/R مـتـحسب
+  * tickers: EGBE, EGCH, EXPA, AJWA (سعودية + مصرية)
+
+  **Path 3 — fabrication قديم (الـ 50 توقع "صفقة رابحة مرصودة")**:
+  * created_at: date only (`2026-10-04`)
+  * notes: "صفقة رابحة مرصودة من رادار السيولة والتجميع | تم طرح التوقع في 2026-10-04 وحقق TP1 في 2026-10-04 بمكسب +5.6% (خلال نفس جلسة التداول ⚡)"
+  * signal: BUY | score: None | R/R: SET (1.12, 1.91, 1.73, إلخ)
+  * tickers: CEFM, CPCI, ETEL, FNAR, GBCO, ISMQ, VALU, ALCN, OCPH, AMOC (مصرية)
+  * المصدر: telegram_target_hit_tracker.py version قديم (قبل PHASE3-ENGINES fix)
+  * الكود الحالي (L960-975) بـ يقول: "do not fabricate prediction fields. The previous code INSERTed a fully-fabricated row"
+  * يعني الـ 50 توقع دول fabrication قديم — لكنهم لسه في الـ DB!
+
+- 🎯 الإجابة على سؤال محسن: **NO — مش كلهم من prediction_tracker**.
+  * Path 1 (60 توقع): prediction_tracker.py (record_prediction fallback) — من v40_2_historical_backfill
+  * Path 2 (24+ توقع): src/app/api/sniper/track/route.ts — TypeScript route
+  * Path 3 (50 توقع): fabrication قديم من telegram_target_hit_tracker (قبل التعديل)
+  * إجمالي: 134 توقع من 3 paths مختلفة
+
+- 🔥 الـ findings الجديدة:
+  1. **Path 2 (sniper/track route)** بـ يـ INSERT بـ prices=0، بعدين Python بـ يـ UPDATE.
+     ده مشكلة: لو الـ Python فشل، التوقعات بتفضل بـ prices=0 + R/R=0.
+  2. **Path 3 (fabrication قديم)**: 50 توقع fabricated لسه في الـ DB! دول بـ يفسدوا الـ baseline.
+     لازم يـتـ DELETE أو يـتـ flag كـ fabricated.
+  3. **الـ 60 توقع السعودية**: بـ يستخدموا prediction_tracker (Path 1) — نفس المشكلة الأصلية.
+
+Stage Summary:
+- ✅ الإجابة: مـفيش مسار واحد — فيه 3 paths شغّالة في أكتوبر 2026.
+- ✅ Path 1 (60 سعودية): من v40_2_historical_backfill → prediction_tracker fallback.
+- ✅ Path 2 (24+): من src/app/api/sniper/track/route.ts — TypeScript route بـ INSERT بـ 0.
+- ✅ Path 3 (50): fabrication قديم من telegram_target_hit_tracker (قبل PHASE3-ENGINES fix).
+- 🔁 التوصية المحدثة:
+  1. URGENT: DELETE الـ 50 توقع fabricated (Path 3) — هم بـ يفسدوا الـ baseline.
+  2. URGENT: Fix sniper/track route (Path 2) — يـ INSERT بـ prices=0 خطر.
+  3. URGENT: Fix prediction_tracker fallback (Path 1) — ضيف risk_reward + logging.
+  4. KILL: INSTITUTIONAL_BUY signal.
+  5. BACKFILL: R/R للـ 145 توقع بـ prices صحيحة.
