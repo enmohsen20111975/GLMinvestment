@@ -71920,3 +71920,103 @@ Stage Summary:
 - ⚠️ Edge: partial (Total Return p-value = 3.6%)
 - ❌ WR + PF: لسه مش أحسن من random
 - 🔁 محتاجين: Feature Importance Analysis
+
+---
+Task ID: BRAVO-FEATURE-IMPORTANCE-AUDIT-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — Feature Importance + Wyckoff Audit + Drawdown Audit
+
+Work Log:
+
+- ✅ كشف fabrication جديد: 92 توقع بـ actual_return = 50.0 (capped/placeholder)
+  * كلهم exit_type = maker_fuel_exhausted
+  * كلهم holding_days = 50
+  * كلهم exit_price = NULL
+  * ده fabrication إضافي زي INVALID_FABRICATED
+  * بعد الفلتر: 149 توقع نظيف (من 243)
+
+- ✅ Feature Importance (quartiles على clean returns):
+
+  | Feature | Q1 (low) WR | Q4 (high) WR | العلاقة | الحكم |
+  |---------|-------------|--------------|---------|-------|
+  | v38     | 21.6%       | 18.4%        | عكسية!  | ❌ مش useful |
+  | core    | 32.4%       | 31.6%        | ثابتة   | ❌ مش useful |
+  | smc     | 32.4%       | 21.1%        | عكسية!  | ❌ مش useful |
+  | vp      | 35.1%       | 26.3%        | عكسية!  | ❌ مش useful |
+
+  🔥🔥🔥 الـ finding الكارثي: 
+  كل الـ features الـ 4 (v38, core, smc, vp) عندها علاقة عكسية!
+  - Q1 (low values) أحسن من Q4 (high values)
+  - ده معناه: كل ما الـ score يزيد، الـ WR بـ ينزل!
+  - كل الـ features بـ تـدي إشارات غلط!
+
+- ✅ Wyckoff Audit:
+
+  | Phase            | count | WR    | avg_ret |
+  |------------------|-------|-------|---------|
+  | RANGE            |    78 | 30.8% | -2.03%  |
+  | MARKDOWN         |    24 | 33.3% | -0.71%  |
+  | SPRING           |    17 | 17.6% | -2.28%  |
+  | MARKUP_MID       |    16 | 25.0% | -4.45%  |
+  | MARKUP_START     |     7 | 14.3% | -1.55%  |
+  | STOPPING_ACTION  |     7 | 42.9% | +1.05%  |
+
+  🔥 الـ findings:
+  - STOPPING_ACTION = أحسن phase (42.9% WR, +1.05% avg)
+  - MARKUP_START = أسوأ phase (14.3% WR)
+  - SPRING = ضعيف (17.6% WR)
+  - Wyckoff مش بـ يـدي قيمة واضحة
+
+- ✅ Drawdown Audit (الـ أرقام الحقيقية):
+
+  | Position Size | Max DD | Total Return | Max Consecutive Losses |
+  |---------------|--------|--------------|------------------------|
+  | 2.5%          | 1.06%  | -0.71%       | 24                     |
+  | 5.0%          | 2.11%  | -1.42%       | 24                     |
+  | 10.0%         | 4.23%  | -2.84%       | 24                     |
+
+  🔥 الـ findings:
+  - Profit Factor = 0.51 (خسارة — المفروض > 1.5)
+  - Gross profit = 29.47% | Gross loss = 57.82%
+  - Max consecutive losses = 24 (!!)
+  - الـ Return اللي شفناه قبل كده (+18.04%) كان وهمي
+  - الحقيقة: النظام بـ يـخسر 0.71% (بـ position size 2.5%)
+
+- 🎯 الاستنتاج النهائي:
+
+  1. كل الـ features (v38, core, smc, vp) مش بـ تـدي قيمة:
+     - علاقة عكسية (Q1 أحسن من Q4)
+     - ده معناه: الـ scoring system كله غلط
+  
+  2. الـ Return الإيجابي اللي شفناه قبل كده كان بسبب:
+     - 92 توقع fabricated بـ 50% return
+     - لما شلناهم → النظام بـ يـخسر
+  
+  3. النظام مش عنده edge حقيقي:
+     - PF = 0.51 (خسارة)
+     - Max consecutive losses = 24 (كارثة نفسية)
+     - كل الـ features بـ تـدي إشارات غلط
+
+  4. الـ Max Drawdown = 0.5% كان حقيقي بس لأن:
+     - position size = 2.5% (صغير)
+     - بس النظام بـ يـخسر بـ استمرار (24 consecutive losses)
+
+- 📋 التوصية:
+
+  المشكلة مش في الـ weights أو الـ patterns.
+  المشكلة في الـ FEATURES نفسها (v38, core, smc, vp).
+  كلها بـ تـدي إشارات عكسية = بتشتري في القمة وتبيع في القاع.
+
+  لازم نـرجع للـ drawing board:
+  1. نـراجع الـ SMC engine — هل Order Blocks بتـتـحسب صح؟
+  2. نـراجع الـ VP — هل VWAP/OBV بـ تـدي إشارات صح؟
+  3. نـراجع الـ CoreScoringEngine — هل الـ scorers بـ تـعمل صح؟
+  4. نـشوف هل فيه features تانية بـ تـدي قيمة فعلية
+
+Stage Summary:
+- ✅ كشف fabrication جديد (92 توقع بـ 50% return)
+- ✅ Feature Importance: كل الـ features عكسية (مش useful)
+- ✅ Wyckoff Audit: STOPPING_ACTION أحسن phase
+- ✅ Drawdown Audit: PF = 0.51 (خسارة حقيقية)
+- ❌ النظام مش عنده edge — الـ features نفسها غلط
+- 🔁 محتاجين: مراجعة جذرية لـ SMC + VP + Core engines
