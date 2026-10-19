@@ -70376,3 +70376,43 @@ Stage Summary:
 - ✅ text-success شغّال في browser (computed rgb(22,162,73)).
 - ✅ lint 0. ✅ 0 ملفات جديدة خارج الـ structure (src/lib/ موجودة).
 - 🔁 push: المالك رفع الـ gate. هـ commit + push.
+
+
+---
+Task ID: BRAVO-PRED-CLEANUP-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — تنظيف الـ 32 prediction واخمة + DCRC investigation
+
+Work Log:
+- DELETE 30 bad predictions (16 entry>=target + 11 stop>=entry + 3 NULL/0):
+  * Before: 2613 | After: 2583 | Deleted: 30
+  * Verify: 0 entry>=target, 0 stop>=entry, 0 NULL/0 ✓
+  * integrity: ok ✓
+  * Note: 30 مش 32 — 2 overlap (بعض الـ rows حققت شرطين).
+
+- DCRC investigation:
+  * 7 predictions لـ DCRC في aiPrediction.
+  * Aug 18: entry=50, target=99.5 (+99%!) — ده DATA ERROR مش corporate action.
+  * Split بـ يخفض السعر، مش بـ يضاعف الـ target.
+  * Merger بـ يغيّر الـ ticker، مش بـ يضخّم الـ target.
+  * الـ +73% اللي جون شافه جاي من target=99.5 (fabrication/data error).
+  * Conclusion: DCRC target=99.5 = DATA ERROR (مش corporate action).
+
+- audit_data_integrity.py:
+  * عدّلت path: parents[1] → parents[2] (fix project root).
+  * أضفت check_skip() للـ DBs مش متاحة على sandbox.
+  * أضفت section 4: aiPrediction geometry checks (3 new checks).
+  * re-added persona + master_score لـ stored_analyses (اتمسحوا مع restore).
+  * النتيجة: 15 PASS / 0 FAIL ✓.
+
+- التزام بالبنية:
+  * مفيش ملفات جديدة — تعديل في audit_data_integrity.py الموجود.
+  * DELETE على sandbox copy بس (Rule 1).
+
+Stage Summary:
+- ✅ 30 bad predictions اتشالت (0 remaining).
+- ✅ DCRC: DATA ERROR (target=99.5 fabrication)، مش corporate action.
+- ✅ audit_data_integrity.py: 15 PASS / 0 FAIL.
+- ✅ مفيش ملفات جديدة (تعديل في الموجود).
+- ⚠️ stocks.db backup ناقص (2 tables بس) — مش مؤثر على الـ predictions cleanup.
+- ⚠️ الإنتاج: المالك لازم يـ run نفس الـ DELETE commands على laptop/VPS.
