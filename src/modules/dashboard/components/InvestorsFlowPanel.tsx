@@ -198,7 +198,7 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
  'text-xs px-1 py-0',
  isInflow && 'bg-profit/10 text-profit border-profit/30 ',
  isOutflow && 'bg-loss/10 text-loss border-loss/30 ',
- !isInflow && !isOutflow && 'bg-slate-500/10 text-slate-600 border-slate-500/30 dark:text-slate-300'
+ !isInflow && !isOutflow && 'bg-muted text-muted-foreground border-border'
  )}
  >
  {isInflow ? 'داخل' : isOutflow ? 'هارب' : 'محايد'}
@@ -339,9 +339,9 @@ export function InvestorsFlowPanel() {
  <div className="space-y-1.5">
  <div className="flex items-center justify-between text-xs">
  <span className="flex items-center gap-1 font-medium">
- <Building2 className="w-3 h-3 text-cyan-600" />
+ <Building2 className="w-3 h-3 text-whale" />
  مؤسسات
- <span className="text-cyan-600 dark:text-cyan-400 font-bold">{instPct}%</span>
+ <span className="text-whale font-bold">{instPct}%</span>
  </span>
  <span className="flex items-center gap-1 font-medium">
  <span className="text-warning font-bold">{retailPct}%</span>
@@ -351,7 +351,7 @@ export function InvestorsFlowPanel() {
  </div>
  <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
  <div
- className="bg-cyan-500 dark:bg-cyan-500"
+ className="bg-whale"
  style={{ width: `${instPct}%` }}
  />
  <div
@@ -535,12 +535,12 @@ function InvestorsTable({
  <div className="text-center tabular-nums">{fmtM(r.individuals_sells_value)}</div>
  <div className={cn('text-center tabular-nums font-bold', egy.cls)}>{egy.text}</div>
 
- <div className="text-cyan-600 dark:text-cyan-400 font-medium">عرب</div>
+ <div className="text-whale font-medium">عرب</div>
  <div className="text-center tabular-nums">{fmtM(r.arab_institutions_buys_value)}</div>
  <div className="text-center tabular-nums">{fmtM(r.arab_institutions_sells_value)}</div>
  <div className={cn('text-center tabular-nums font-bold', arab.cls)}>{arab.text}</div>
 
- <div className="text-violet-600 dark:text-violet-400 font-medium">أجانب</div>
+ <div className="text-info font-medium">أجانب</div>
  <div className="text-center tabular-nums">{fmtM(r.foreign_buys_value)}</div>
  <div className="text-center tabular-nums">{fmtM(r.foreign_sells_value)}</div>
  <div className={cn('text-center tabular-nums font-bold', forNet.cls)}>{forNet.text}</div>

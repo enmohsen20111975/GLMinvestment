@@ -73673,3 +73673,50 @@ Stage Summary:
 - ✅ database.py::save_news بـ INSERT في columns موجودة.
 - ✅ chart_routes.py news confirmation بـ query columns موجودة.
 - ⏳ الحطة 2 (أعلى خطورة): unify schema + drop dead tables + fix TelegramSignalImporter — مع جيمي على الابتوب.
+Task ID: ALPHA-REORG-ANALYSIS
+Agent: Explore
+Task: Deep analysis of current navigation/screen structure to produce an implementation spec for SCREENS-REORG-VISION execution.
+
+Work Log:
+- Read end of worklog (last 200 lines) for context — found prior SCREENS-INVENTORY + RESTRUCTURE-MIGRATION-PLAN + Task 40-B/C nav-reorg history (MobileNav items changed multiple times; most recent = dashboard/stocks/recommendations/portfolio/liquidity-radar).
+- Read SCREENS-REORG-VISION.md (496 lines) in full — confirmed owner P0 directives: restore InvestorsFlowPanel to Dashboard, add Sharia to TopBar (desktop), create new "تعلّم" gateway, expose 5 consultation screens via TopBar/desktop.
+- Read src/components/layout/TopBar.tsx (537 LOC) — config-driven navSections array (line 107) with 5 sections (home/market/predictions/finance/more). Desktop dropdown menu pattern.
+- Read src/components/layout/MobileNav.tsx (86 LOC) — bottomNavItems array (line 42) with 5 items: dashboard/stocks/recommendations/portfolio/liquidity-radar.
+- Read src/components/layout/MobileMoreSheet.tsx (242 LOC) — moreNavItems array (line 40) with 6 items: bagholder-rescue/watchlist/sharia/simulation/academy/about. Plus search + notifications + settings + account buttons.
+- Read src/app/page.tsx (1081 LOC):
+  * Lines 1-260: dynamic imports for all 40 view components (each wrapped in withErrorBoundary + LazyTabLoader).
+  * Lines 270-371: UrlHashSync component — syncs URL hash ↔ zustand store via setCurrentViewFromHash + popstate/hashchange listeners.
+  * Lines 458-546: AppShell component — reads currentView/currentMarket/selectedTicker from store; has hash→view sync effect (lines 522-546).
+  * Lines 548-804: renderView() switch with ~59 distinct case keywords grouped into ~53 rendered branches mapping to 40 unique components.
+  * Lines 865-920: Layout structure = AuthGate → div → (DbSchemaInit, SessionSync, UrlHashSync, RealtimeTicker, PaywallListener, BotLinkHandler, CentralAlertMonitor, DesktopNotificationPrompt, TrialExpiredModal, TrialCountdownBanner, AppGuideAutoOpen) → TopBar (line 894) → main (with motion.div + renderView()) → Footer (line 911) → MobileNav (line 913) → fixed-bottom-left RoboNotifierToggle.
+- Read src/lib/store.ts (1559 LOC) — confirmed zustand store has currentView/previousView/selectedTicker/currentMarket. setCurrentView(view) at line 825 updates store AND pushes window.history.pushState (line 831). setCurrentViewFromHash(view) at line 836 only updates store (used by hashchange listener). MarketType union = EGX|TADAWUL|KSE|QSE|US|CRYPTO.
+- Read src/lib/valid-views.ts (96 LOC) — VALID_VIEWS array (47 entries) is the canonical route registry. CRYPTO_VIEW_REDIRECTS map (8 entries) maps crypto-* views to unified views.
+- Read src/types/index.ts (lines 376-433) — AppView union (33 entries) is STALE relative to VALID_VIEWS — missing: dual-track, v82, unified-analysis, smart-confluence, prediction-tracking, picks-management, top-performers, trading-journal, publishing, alerts-center, rescue, crypto-trading-chart, crypto-screener, crypto-prediction-tracking. TopBar already casts with `as AppView` (line 431, 449).
+- Read src/modules/dashboard/components/DashboardView.tsx (590 LOC) — confirmed line 295 comment "InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel اتشالوا". Widget registry at lines 195-257 (10 widgets with id/title/visible()/render()). Layout uses `renderWrapped(w)` pattern (line 286) inside PinnableWidget + SafeWidget. Insertion point for InvestorsFlowPanel: add new WidgetDescriptor entry + new section block (mirror lines 537-557 pattern) + import at top (lines 12-52).
+- Read src/modules/dashboard/components/InvestorsFlowPanel.tsx (557 LOC) — takes NO props; reads currentMarket from useAppStore itself (line 219). Self-contained — fetches /api/market/liquidity-flow + /api/egx/investors. EGX-only check is via the wrapper in page.tsx line 657 (isEGX = currentMarket === 'EGX'); the component itself handles missing data gracefully.
+- Verified 5 consultation screens exist:
+  * SpecialistAnalysisView (2916 LOC) at src/components/advanced-analysis/SpecialistAnalysisView.tsx — route #specialist-analysis (page.tsx line 589) — URL-only, NOT in TopBar/MobileNav/MobileMoreSheet.
+  * UnifiedAnalysisView (562 LOC) at src/modules/market-analysis/components/UnifiedAnalysisView.tsx — route #unified-analysis (line 587) — URL-only.
+  * V82DecisionPanel (294 LOC) at src/components/v82/V82DecisionPanel.tsx — route #v82 (line 617) — URL-only.
+  * SmartConfluenceView (276 LOC) at src/components/smart-assistant/SmartConfluenceView.tsx — route #smart-confluence (line 639) — URL-only.
+  * DualTrackPredictionsView (633 LOC) at src/modules/predictions/components/DualTrackPredictionsView.tsx — route #dual-track (line 615) — URL-only.
+- Verified Sharia/Academy/Simulation placements:
+  * ShariaView (1490 LOC) at src/modules/sharia/components/ShariaView.tsx — route #sharia (line 777) — URL-only on desktop, MobileMoreSheet (line 46) on mobile. View itself doesn't check currentMarket — pure Egyptian-stocks focus.
+  * AcademyView (2483 LOC) at src/modules/education/components/AcademyView.tsx — route #academy (line 625) — in TopBar 'more' section (line 147) + MobileMoreSheet (line 48). 8 tabs: encyclopedia/paper-trading/candle-sim/strategy-lab/advanced-lessons/trading-floor/practical-tools/advanced-lab.
+  * SimulationView (2130 LOC) at src/modules/simulation/components/SimulationView.tsx — route #simulation (line 623) — URL-only on desktop, MobileMoreSheet (line 47) on mobile.
+  * PaperTrading: NOT a separate route — it's a TAB inside AcademyView (line 116: <TabsTrigger value="paper-trading">💻 التداول الورقي</TabsTrigger>, content at line 134 renders <PaperTradingWorkstation/> from src/modules/education/components/PaperTradingWorkstation.tsx). No #paper-trading entry in VALID_VIEWS.
+- Read tailwind.config.ts (107 LOC) — semantic tokens: primary/secondary/muted/accent/destructive/success/warning/danger/profit/loss/whale/info + chart-1..5. All backed by CSS vars (--primary, --profit, etc.).
+- Read src/app/globals.css (487 LOC) — light values defined in :root (lines 13-67), dark values in .dark (lines 72-121). VERIFIED tokens auto-handle dark mode: --profit light = `160 84% 39%`, dark = `160 84% 50%`. Using `text-profit` produces different colors in light/dark automatically — STYLE-IMPLEMENTATION-1's removal of 1790 redundant `dark:` overrides was correct.
+- Listed src/components/ui/ — 51 shadcn/ui shared components available (button/card/badge/dialog/dropdown-menu/sheet/tabs/table/tooltip/accordion/...).
+- Read messages/ar.json — nav i18n keys exist (nav.dashboard/radar/predictions/portfolio/watchlist/news/education/crypto/gold/multiMarket/admin/settings/stocks/reports/academy/tools/ai). The new "تعلّم" gateway may need a new i18n key like `nav.education` (already exists as "التعليم") or `nav.academy`.
+
+Stage Summary:
+- Navigation mechanism = zustand store (currentView) + URL hash sync (window.location.hash) + browser history pushState. No Next.js router. Hash is the canonical deep-link.
+- TopBar navSections (5 sections, 12 leaf items) + MobileNav bottomNavItems (5 items) + MobileMoreSheet moreNavItems (6 items). All three are independent arrays — no shared config file.
+- renderView switch has 59 case keywords grouped into ~53 branches → 40 unique components. 11 crypto-* cases (8 mirrors + 3 crypto-specific). 4 official backward-compat redirects per SCREENS-INVENTORY: #top-performers (→ StockScreenerAdvancedView initialTab), #advanced-analysis & #v2-analysis (→ MarketAnalysisView), #picks-management (→ PredictionTrackingView). Additional aliases: #stock-detail→#stocks, #finance→#portfolio, #analysis→#recommendations, #screener→#trading-chart. 2 admin placeholders: #prediction-performance + #prediction-credibility (both render the same admin-only stub at lines 591-609).
+- Dashboard line 295 = the exact removal point for InvestorsFlowPanel. Re-insertion pattern: add WidgetDescriptor entry in widgets[] array (line 195-257) + add IIFE section block mirroring lines 537-557 + add `import { InvestorsFlowPanel } from '@/modules/dashboard/components/InvestorsFlowPanel'` near line 28. Component takes no props.
+- Discrepancy flagged: Task description says MobileNav #5 = "التعلّم" (academy), but SCREENS-REORG-VISION.md clearly states MobileNav #5 = "سيولة" (market-depth) — both Sara (section 1.4) and Uncle Rashad (section 2.4) agreed on سيولة. Alpha must clarify which vision to implement.
+- PaperTrading is NOT a route — it's a tab inside AcademyView. If Alpha wants it as a separate nav item, must either (a) extract to standalone route, or (b) link to #academy with `?tab=paper-trading` query param + AcademyView reads it.
+- AppView union (src/types/index.ts line 376) is stale — 14 routes in VALID_VIEWS missing from AppView. TopBar already uses `as AppView` casts to work around this. New nav items may need same cast or AppView extension.
+- Color tokens DO auto-handle dark mode (verified). No need for `dark:` overrides on token-based colors.
+- No new files strictly required — reorg is mostly: (1) TopBar navSections array rewrite, (2) MobileNav bottomNavItems array rewrite, (3) MobileMoreSheet moreNavItems array rewrite, (4) DashboardView widgets array + section block insertion. Optional: extract nav config to src/lib/nav-config.ts for single-source-of-truth (recommended to keep 3 nav files in sync).

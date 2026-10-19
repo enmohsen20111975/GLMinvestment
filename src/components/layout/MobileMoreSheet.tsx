@@ -16,17 +16,10 @@ import React, { useState } from 'react';
 import {
  Search,
  X,
- Settings,
- GraduationCap,
- Gamepad2,
  User,
- Eye,
- Sparkles,
  LogIn,
  Bell,
  LayoutGrid,
- ShieldCheck,
- LifeBuoy,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useNotificationStore } from '@/lib/notification-store';
@@ -34,20 +27,9 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StockSelector } from '@/modules/stock-analysis/components/StockSelector';
-import type { AppView } from '@/types';
-
-/* Extra items shown inside the "More" menu */
-const moreNavItems: Array<{ id: AppView; label: string; icon: React.ComponentType<{ className?: string }> }> = [
- // TASK 31-C — Disaster Stock Rescue: prominent entry at the top of the
- // mobile More sheet so users can find the screen the owner flagged as
- // hidden + weak.
- { id: 'bagholder-rescue', label: '🆘 إنقاذ سهم خسران', icon: LifeBuoy },
- { id: 'watchlist', label: 'قوائم المراقبة', icon: Eye },
- { id: 'sharia', label: 'التوافق الشرعي', icon: ShieldCheck },
- { id: 'simulation', label: 'المحاكاة', icon: Gamepad2 },
- { id: 'academy', label: 'الأكاديمية', icon: GraduationCap },
- { id: 'about', label: 'من نحن', icon: Sparkles },
-];
+// SCREENS-REORG: moreNavItems مصدر واحد من nav-config.
+// (قايمة مبسّطة: إنقاذ/مراقبة/محاكاة/أكاديمية/أخبار/اشتراك/زكاة/عشور/إعدادات/من نحن)
+import { moreNavItems } from '@/lib/nav-config';
 
 /**
  * Hook that exposes a stable open() function. Components can use this on
@@ -207,19 +189,8 @@ export function MobileMoreSheet() {
  );
  })}
 
- {/* Settings shortcut */}
- <button
- onClick={() => { setCurrentView('settings'); closeAll(); }}
- className={cn(
- 'w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted transition-colors text-right min-h-[44px]',
- currentView === 'settings' && 'bg-muted text-primary'
- )}
- >
- <Settings className="w-5 h-5" />
- <span className="text-sm font-medium">الإعدادات</span>
- </button>
-
- {/* Account / Login */}
+ {/* Account / Login — زر ذكي: logged in → settings، logged out → auth.
+ 'auth' مش في moreNavItems عشان ده يـ handle الـ user state (منع التكرار). */}
  <div className="my-2 border-t border-border" />
  <button
  onClick={() => { setCurrentView(user ? 'settings' : 'auth'); closeAll(); }}

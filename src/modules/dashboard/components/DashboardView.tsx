@@ -26,9 +26,10 @@ import { LiveStockTicker } from '@/modules/dashboard/components/LiveStockTicker'
 import { MarketPulseWidget } from '@/modules/dashboard/components/MarketPulseWidget';
 // PORTFOLIO-INTEGRATION: ربط المحفظة بالدashboard — عمود من أعمدة المنصة
 import { LiveMonitor } from '@/modules/dashboard/components/LiveMonitor';
-// MARKET-DEPTH-VIEW: InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel
-// اتشالوا من هنا واتنقلوا لشاشة #market-depth المنفصلة (Owner directive: شاشة
-// منفصلة من قائمة الأعلى). الـ Dashboard دلوقتي نضيف بدونها.
+// SCREENS-REORG-VISION (P0-1): رجّعنا InvestorsFlowPanel للـ Dashboard (EGX بس).
+// السيولة (أجانب/عرب/مصريين) اختفت من أي قائمة — رجعت للـ home widget +
+// لـ TopBar/MobileNav. شاشة #market-depth لسه شغّالة (للعرض الأعمق).
+import { InvestorsFlowPanel } from '@/modules/dashboard/components/InvestorsFlowPanel';
 // FOCUS-5-TASKS (2026-10-01): MyStocksBriefing — الـ widget الشخصي للعميل.
 // بيجيب /api/portfolio/unified-watch (محفظة + توقعات + advice + exit_radar)
 // + /api/news?tickers=... (أخبار مفلترة). بيتعرض في أول الـ dashboard للعميل
@@ -221,6 +222,14 @@ export function DashboardView() {
  </div>
  ),
  },
+ // 1.5. تدفّق المستثمرين (EGX بس — SCREENS-REORG P0-1: رجّعنا الـ widget)
+ // كان اتعزل في #market-depth بس — دلوقتي كمان widget على الـ Dashboard.
+ {
+ id: 'investors-flow',
+ title: 'تدفّق المستثمرين (أجانب/عرب/مصريين)',
+ visible: () => currentMarket === 'EGX',
+ render: () => <InvestorsFlowPanel />,
+ },
  // 2. توقعات اليوم (تتبع السوق المختار — Owner directive)
  {
  id: 'eid-predictions',
@@ -292,9 +301,10 @@ export function DashboardView() {
  const showPinnedSection = mounted && pinnedList.length > 0;
 
  // ─── UNIFIED-MARKET-VIEW (Task 1): market-driven panels ─────────────────
- // InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel اتشالوا
- // من الـ Dashboard واتنقلوا لشاشة #market-depth المنفصلة (MARKET-DEPTH-VIEW).
- // ما عدناش محتاجين showMarketFlowPanels flag في الـ dashboard نفسه.
+ // SCREENS-REORG-VISION (P0-1): InvestorsFlowPanel رجعت للـ Dashboard (EGX
+ // بس) كـ widget — السيولة (أجانب/عرب/مصريين) اختفت من أي قائمة فِرَجًا.
+ // شاشة #market-depth لسه شغّالة للعرض الأعمق. LiquidityFlowPanel +
+ // IntradayPressurePanel لسه في #market-depth بس.
 
  return (
  <div className="min-h-screen flex flex-col bg-background">
@@ -530,6 +540,17 @@ export function DashboardView() {
  if (!w || w.pinned) return null;
  return (
  <section aria-label="نبض السوق والمشاعر">
+ {renderWrapped(w)}
+ </section>
+ );
+ })()}
+
+ {/* 2.5. تدفّق المستثمرين (EGX بس — restored per SCREENS-REORG-VISION) */}
+ {(() => {
+ const w = layout.find((x) => x.id === 'investors-flow');
+ if (!w || w.pinned) return null;
+ return (
+ <section aria-label="تدفّق المستثمرين (أجانب/عرب/مصريين)">
  {renderWrapped(w)}
  </section>
  );

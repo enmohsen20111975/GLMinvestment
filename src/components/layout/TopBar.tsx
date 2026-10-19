@@ -36,12 +36,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
- LayoutDashboard, CandlestickChart, Target,
- Crown, Newspaper, GraduationCap,
- Wallet, Eye,
- Activity, Settings, Menu, X, ChevronDown,
- Bell, Sun, Moon, DollarSign, Search, Globe, LogIn, LogOut, UserCircle,
- type LucideIcon,
+ Menu, X, ChevronDown,
+ Sun, Moon, Globe,
+ Settings, LogIn, LogOut,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
@@ -58,6 +55,9 @@ import {
 } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import type { AppView } from '@/types';
+// SCREENS-REORG: nav config — المصدر الوحيد للـ TopBar/MobileNav/MobileMoreSheet.
+// التوحيد + عدم التكرار: أي تعديل في القوائم يبقى في مكان واحد (src/lib/nav-config.ts).
+import { navSections } from '@/lib/nav-config';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
 import { toast } from 'sonner';
@@ -79,78 +79,9 @@ const MARKET_OPTIONS: MarketOption[] = [
  { value: 'CRYPTO', label: 'كريبتو', flag: '🪙', currency: 'USD' },
 ];
 
-interface NavItem {
- id: AppView;
- label: string;
- icon: LucideIcon;
- highlight?: boolean;
-}
-
-interface NavSection {
- id: string;
- label: string;
- icon: LucideIcon;
- items: NavItem[];
-}
-
-// ── الأقسام الخمسة الرئيسية — RESTRUCT-A-P1: ≤10 top-level (CEO John directive) ─
-// Items removed from MENU (not from routing — hash links still work per Rule 67):
-// - stock-filters → tab inside StocksView (A-P2)
-// - trading-chart → sub-view inside StockDetail (mandate)
-// - market-depth → deep-link #market-depth
-// - specialist-analysis → tab/drawer inside StockDetail (mandate)
-// - reports → tab inside MarketAnalysisView (A-P2)
-// - live-monitor → deep-link #live-monitor
-// - trading-memory → deep-link #trading-memory
-// - simulation → deep-link #simulation
-// - sharia/rescue/zakat/tithes/about → Settings section or deep-link
-const navSections: NavSection[] = [
- {
- id: 'home',
- label: 'الرئيسية',
- icon: LayoutDashboard,
- items: [
- { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
- ],
- },
- {
- id: 'market',
- label: 'السوق',
- icon: CandlestickChart,
- items: [
- { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
- { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity, highlight: true },
- ],
- },
- {
- id: 'predictions',
- label: 'التحليل',
- icon: Target,
- items: [
- { id: 'recommendations', label: 'التوصيات', icon: Target },
- ],
- },
- {
- id: 'finance',
- label: 'محفظتي',
- icon: Wallet,
- items: [
- { id: 'portfolio', label: 'المحفظة', icon: Wallet },
- { id: 'watchlist', label: 'قائمة المتابعة', icon: Eye },
- ],
- },
- {
- id: 'more',
- label: 'المزيد',
- icon: Menu,
- items: [
- { id: 'academy', label: 'الأكاديمية', icon: GraduationCap },
- { id: 'news', label: 'الأخبار', icon: Newspaper },
- { id: 'subscription', label: 'الاشتراك', icon: Crown, highlight: true },
- { id: 'settings', label: 'الإعدادات', icon: Settings },
- ],
- },
-];
+// SCREENS-REORG-VISION: الـ navSections دلوقتي بتتيجي من src/lib/nav-config.ts
+// (6 بوابات: الرئيسية/السوق/التحليل/محفظتي/التعلّم/المزيد). شوف nav-config.ts
+// للتعليقات الكاملة على كل بوابة وعنصر.
 
 export function TopBar() {
  const { currentView, setCurrentView, currentMarket, setCurrentMarket } = useAppStore();
@@ -428,7 +359,7 @@ export function TopBar() {
  <p className="text-xs text-muted-foreground">مسجّل الدخول</p>
  </div>
  <button
- onClick={() => { setCurrentView('settings' as AppView); setUserMenuOpen(false); window.location.hash = 'settings'; }}
+ onClick={() => { setCurrentView('settings'); setUserMenuOpen(false); window.location.hash = 'settings'; }}
  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-foreground hover:bg-accent transition-colors"
  >
  <Settings className="h-3.5 w-3.5" />
@@ -446,7 +377,7 @@ export function TopBar() {
  </div>
  ) : (
  <button
- onClick={() => { setCurrentView('auth' as AppView); window.location.hash = 'auth'; }}
+ onClick={() => { setCurrentView('auth'); window.location.hash = 'auth'; }}
  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background active:scale-[0.98]"
  >
  <LogIn className="h-3.5 w-3.5" />

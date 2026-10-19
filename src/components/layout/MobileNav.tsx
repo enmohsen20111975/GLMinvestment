@@ -2,17 +2,19 @@
 
 /**
  * MobileNav — Bottom navigation bar with EXACTLY 5 icons.
- * (Phase 5.2 — Mobile-First UX, Task 40-B refresh 2026-10-04)
+ * (SCREENS-REORG-VISION — رؤية سارة: الأكثر استخداماً يومياً)
  *
- * 1. الرئيسية → dashboard (LayoutDashboard)
- * 2. التوقعات → recommendations (TrendingUp)
- * 3. المحفظة → portfolio (Wallet)
- * 4. الرادار → liquidity-radar (Activity) ← NEW (Task 40-B: owner directive "put liquidity radar in the bottom bar")
- * 5. الشارت → trading-chart (BarChart3)
+ * 1. الرئيسية  → dashboard
+ * 2. الأسهم    → stocks
+ * 3. التوصيات  → recommendations
+ * 4. المحفظة   → portfolio
+ * 5. السيولة   → market-depth (استبدل liquidity-radar — الأخير أعمق:
+ *                 يشمل المؤسسات + الأجانب/عرب/مصريين — ده اللي العميل
+ *                 محتاجه يومياً للـ EGX. الـ widget كمان رجع للـ Dashboard.)
  *
- * settings was moved OUT of the bottom bar (still reachable from the
- * MobileMoreSheet that hangs off the mobile Header — verified by grep
- * `settings` in MobileMoreSheet.tsx returns 3 hits).
+ * التعلّم (academy + simulation) بقى في TopBar (بوابة جديدة) +
+ * MobileMoreSheet — reachable من زر «أقسام أخرى» في الـ Header.
+ * settings لسه في MobileMoreSheet.
  *
  * Accessibility & layout:
  * - min-h-[48px] / min-w-[48px] touch targets
@@ -24,28 +26,11 @@
  */
 
 import React from 'react';
-import {
- LayoutDashboard,
- TrendingUp,
- Wallet,
- Activity,
- CandlestickChart,
-} from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import type { AppView } from '@/types';
-
-/* Bottom bar: EXACTLY 5 items (per user request: "5 أيقونات بس").
- * Task 40-B (2026-10-04): settings dropped from bottom bar; liquidity-radar
- * added in its place so the most-used screen for active traders (رادار
- * السيولة) is one tap away. settings remains accessible via MobileMoreSheet. */
-const bottomNavItems: Array<{ id: AppView; label: string; icon: React.ComponentType<{ className?: string }> }> = [
- { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
- { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
- { id: 'recommendations', label: 'التوصيات', icon: TrendingUp },
- { id: 'portfolio', label: 'المحفظة', icon: Wallet },
- { id: 'liquidity-radar', label: 'الرادار', icon: Activity },
-];
+// SCREENS-REORG: bottomNavItems مصدر واحد من nav-config.
+// (5 أزرار: الرئيسية/الأسهم/التوصيات/المحفظة/السيولة)
+import { bottomNavItems } from '@/lib/nav-config';
 
 export function MobileNav() {
  const { currentView, setCurrentView } = useAppStore();
