@@ -71803,3 +71803,31 @@ Stage Summary:
 - ✅ برمبت ألفا FRONTEND-CLEANUP-A-2 اتحدّث: Problem 4 (الشاشات الحية) + احترام جيمي + 6 مراحل.
 - ✅ JOHN-PROFILE.md اتحدّث: 6 دروس learned + محظورين جداد.
 - ⏳ محتاج قرار المالك: (أ) المرحلة 4 migration — أوافق؟ (ب) أرفع البرمبت المحدّث لألفا على GitHub؟
+
+---
+Task ID: JOHN-CORRECTION-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — منفّذ مباشر
+Task: محسن — تصحيح: canonical = source A (EGX official English)، مش source B. + تأكيد إن البرمبت المحدّث على GitHub لألفا.
+
+Work Log:
+- استلمت تصحيح المالك: الـ canonical = source A (EGX official English — MNHD/KAHA/CALT/PACL). source B (MASR/POUL/COSG/EGCH — Arabic) مش موجودة أصلاً في الأسهم المصرية. ده عكس ما فرضت في الـ 4 ambiguous pairs.
+- المرحلة 1 (verification):
+  * فحصت db/stocks.db: source A (MNHD/KAHA/CALT/PACL) كلهم is_egx=1 + is_active=1 + English names.
+  * source B (MASR/POUL/COSG/EGCH) كلهم is_egx=1 + is_active=1 + Arabic names. الـ is_egx flag غلط في الكود (scraper ضايف الكل)، بس كلام المالك هو المرجع: source B مش EGX رسمي.
+- المرحلة 2 (canonical direction audit على الـ 122 clear pair):
+  * 46 alias عربي (source B) — قرار صح (alias = source B الزايد).
+  * 1 canonical عربي (wrong direction) — ARAB vs ARAB_R2 (بورتو جروب)، محتاج مراجعة.
+  * 75 من الـ 122 قرارها صح بناءً على truncation/ticker-prefix pollution (مش source direction).
+  * الخلاصة: أغلب القرارات صح. الـ 4 ambiguous + الـ 1 wrong direction محتاجة قرار يدوي.
+- المرحلة 3 (تأكيد البرمبت على GitHub لألفا):
+  * fetch + verify: origin/main = local = 7810199. متزامن.
+  * git show origin/main:agent-ctx/FRONTEND-CLEANUP-A-2-alpha.md → موجود + فيه Problem 4 (الشاشات الحية) + احترام جيمي.
+  * الخلاصة: البرمبت المحدّث على GitHub. ألفا لو هتعمل git pull هتلاقيه.
+
+Stage Summary:
+- ✅ canonical = source A (EGX official English) — تصحيح المالك وصل. source B (Arabic) = alias الزايد.
+- ✅ البرمبت FRONTEND-CLEANUP-A-2 (Problem 4 + احترام جيمي) على GitHub (origin/main = 7810199).
+- ✅ أغلب الـ 122 قرار canonical صح (46 Arabic alias + 75 truncation-based).
+- 🟡 1 wrong direction (ARAB/ARAB_R2) + 4 ambiguous محتاجة قرار يدوي يدوي (source A = canonical).
+- ⏳ المرحلة 4 migration معلّقة (استنى شوية — أمر المالك).
+- ⏳ ألفا تبدأ FRONTEND-CLEANUP-A-2 — المالك بعتلهم (التواصل عبر GitHub).
