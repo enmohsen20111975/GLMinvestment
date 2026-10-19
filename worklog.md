@@ -70353,3 +70353,26 @@ Stage Summary:
 - ✅ check_falling_knife: FK threshold per market (12% EGX / 25% CRYPTO).
 - ✅ canonical_flow buckets: strong_whale_inflow + moderate_inflow (was whale_inflow).
 - ✅ مفيش ملفات جديدة (تعديل في liquidity_radar_v2.py + canonical_flow.py بس).
+Task ID: DESIGN-SYSTEM-PHASE-1
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — Design System Phase 1: tokens wire (tailwind success/warning/danger + design-tokens.ts).
+
+Work Log:
+- فحصت الـ state الحالي: لقيت إن BLUEPRINT Phase 1 (commit 0ca45c5) عمل tailwind tokens (success/warning/danger + profit/loss/whale مع foreground) + globals.css vars (light + dark). كل ده موجود + شغّال.
+- الـ gap الوحيد: src/lib/design-tokens.ts مش موجود. أنشأته:
+  * SEMANTIC_TONES: خريطة semantic concepts → Tailwind token names (positive→success, negative→danger, whale→whale, إلخ).
+  * RADIUS: sm/md/lg/xl/pill (Tailwind class fragments).
+  * SPACING: xs/sm/md/lg/xl.
+  * TYPOGRAPHY: label + value scales (sm/md/lg/xl).
+  * TONE_SOFT/TONE_SOLID/TONE_TEXT: class maps للاستخدام المباشر في components.
+  * PALETTE_MIGRATION: خريطة الـ direct palette → semantic token (للـ codemod Phase 5).
+- lint: exit 0 ✅.
+- browser verification: text-success شغّال (computed color = rgb(22, 162, 73)، CSS var --success = 142 76% 36%).
+
+Stage Summary:
+- ✅ tailwind.config.ts: success/warning/danger + profit/loss/whale (مع foreground) — موجود من BLUEPRINT Phase 1.
+- ✅ globals.css: كل الـ CSS vars (--success, --warning, --danger, --profit, --loss, --whale + foreground) في light + dark.
+- ✅ src/lib/design-tokens.ts: جديد — SEMANTIC_TONES + RADIUS + SPACING + TYPOGRAPHY + TONE_SOFT/SOLID/TEXT + PALETTE_MIGRATION.
+- ✅ text-success شغّال في browser (computed rgb(22,162,73)).
+- ✅ lint 0. ✅ 0 ملفات جديدة خارج الـ structure (src/lib/ موجودة).
+- 🔁 push: المالك رفع الـ gate. هـ commit + push.
