@@ -1001,11 +1001,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     apiClient.getStocks(params as Parameters<typeof apiClient.getStocks>[0])
       .then((response: StockListResponse) => {
         // Filter out null/undefined items and items without ticker
-        const validStocks = (response.stocks || []).filter((s): s is Record<string, unknown> => s != null && (s as Record<string, unknown>).ticker);
+        const list = Array.isArray(response.stocks)
+          ? response.stocks
+          : Array.isArray((response as unknown as { data?: unknown[] })?.data)
+          ? ((response as unknown as { data: unknown[] }).data)
+          : Array.isArray((response as unknown as { data?: { stocks?: unknown[] } })?.data?.stocks)
+          ? ((response as unknown as { data: { stocks: unknown[] } }).data.stocks)
+          : [];
+        const validStocks = list.filter((s): s is Record<string, unknown> => s != null && typeof s === 'object' && Boolean((s as Record<string, unknown>).ticker));
         const stocks = validStocks.map((s) => adaptStock(s as unknown as Record<string, unknown>)).filter(s => s.ticker);
         set({
           stocks,
-          stocksTotal: response.total,
+          stocksTotal: response.total ?? stocks.length,
           stocksPage: page,
           isLoading: false,
         });

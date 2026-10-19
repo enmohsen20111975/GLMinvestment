@@ -387,8 +387,8 @@ function SessionSync() {
       if (!user || user.id !== session?.user?.id) {
         syncFromSession(session ?? null);
       }
-    } else if (status === 'unauthenticated' && user) {
-      // Session was cleared — reset store
+    } else if (status === 'unauthenticated' && user && !user.is_admin && user.subscription_tier !== 'admin') {
+      // Session was cleared — reset store (preserve admin if authenticated via admin_session cookie)
       syncFromSession(null);
     }
   }, [status, session, syncFromSession, user]);

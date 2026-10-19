@@ -53,14 +53,20 @@ def _whale_distribution_guard(opens, highs, lows, closes, volumes):
     """Phase 2 #1: فحص تصريف الحيتان — لو صافي التدفق سالب (تصريف) → أمنع BUY.
     يحمي المتداول من مصايد الثيران (bull traps) على أسهم بنزف مؤسسي."""
     try:
-        _scripts = Path(__file__).resolve().parents[2] / "scripts"
+        _root = Path(__file__).resolve().parents[2]
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        _scripts = _root / "scripts"
         if str(_scripts) not in sys.path:
             sys.path.insert(0, str(_scripts))
         n = min(len(opens), len(highs), len(lows), len(closes), len(volumes))
         if n < 5:
             return False  # بيانات غير كافية للفحص — لا تمنع
         candles = [{'open': opens[i], 'high': highs[i], 'low': lows[i], 'close': closes[i], 'volume': volumes[i]} for i in range(n)]
-        from scripts.liquidity_radar_v2 import compute_whale_flow
+        try:
+            from scripts.liquidity_radar_v2 import compute_whale_flow
+        except ImportError:
+            from liquidity_radar_v2 import compute_whale_flow
         whale = compute_whale_flow(candles)
         return (whale.get('net_flow_egp', 0) or 0) < 0  # distributing → block BUY
     except Exception as e:

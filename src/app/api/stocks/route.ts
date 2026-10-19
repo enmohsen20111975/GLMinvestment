@@ -36,11 +36,15 @@ export async function GET(req: NextRequest) {
           return NextResponse.json({
             success: true,
             stocks: data.data,
+            data: data.data,
             total: data.count || data.data.length,
           });
         }
         if (data && Array.isArray(data.stocks) && data.stocks.length > 0) {
-          return NextResponse.json(data);
+          return NextResponse.json({
+            ...data,
+            data: data.stocks,
+          });
         }
         // لو وصلنا هنا → Python رجّع array فاضي → نـ fall through للـ fallback
       }
@@ -54,7 +58,10 @@ export async function GET(req: NextRequest) {
     await ensureInitialized();
     const fallback = readStocksFromLightDb(req);
     if (fallback.stocks.length > 0) {
-      return NextResponse.json(fallback);
+      return NextResponse.json({
+        ...fallback,
+        data: fallback.stocks,
+      });
     }
   } catch (err) {
     console.error('[GET /api/stocks] stocks.db fallback failed:', err);

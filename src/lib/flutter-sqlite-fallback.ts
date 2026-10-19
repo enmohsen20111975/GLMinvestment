@@ -197,7 +197,7 @@ export function getTopMoversFallback(
       )
       .all(...stmtArgs) as Record<string, unknown>[];
 
-    const withDerived = rows.map((r) => {
+    const withDerived: Record<string, any>[] = rows.map((r) => {
       const prev = safeNum(r.previous_close);
       const curr = safeNum(r.current_price);
       const changePct = safeNum(r.change_percent);
@@ -366,27 +366,35 @@ export function getStockRecommendationFallback(
 
 export function getPredictionsFallback(
   limit = 50,
-  status?: string
+  status?: string,
+  market?: string
 ): Record<string, unknown>[] {
   const db = openReadonly(PREDICTIONS_DB_PATH);
   if (!db) return [];
   try {
+    const conditions: string[] = [];
+    const params: (string | number)[] = [];
+
     if (status) {
-      return db
-        .prepare(
-          `SELECT ticker, signal, signal_ar, signal_type, prediction_date,
-                  entry_price, target_price, stop_loss, master_score,
-                  technical_score, fundamental_score, ai_pattern_score,
-                  sentiment_score, risk_reward, persona, status, market,
-                  horizon, direction, confidence, score, pnl_percent,
-                  closed_at, actual_exit_price
-           FROM predictions
-           WHERE status = ?
-           ORDER BY prediction_date DESC
-           LIMIT ?`
-        )
-        .all(status, limit) as Record<string, unknown>[];
+      const s = status.toLowerCase();
+      if (s === 'active' || s === 'open') {
+        conditions.push(`(LOWER(status) IN ('active', 'open', 'pending') OR status IS NULL)`);
+      } else if (s === 'closed') {
+        conditions.push(`(LOWER(status) IN ('closed', 'expired', 'stopped', 'target_hit', 'closed_win'))`);
+      } else {
+        conditions.push(`LOWER(status) = ?`);
+        params.push(s);
+      }
     }
+
+    if (market && market !== 'ALL') {
+      conditions.push(`UPPER(market) = ?`);
+      params.push(market.toUpperCase());
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    params.push(limit);
+
     return db
       .prepare(
         `SELECT ticker, signal, signal_ar, signal_type, prediction_date,
@@ -394,12 +402,13 @@ export function getPredictionsFallback(
                 technical_score, fundamental_score, ai_pattern_score,
                 sentiment_score, risk_reward, persona, status, market,
                 horizon, direction, confidence, score, pnl_percent,
-                closed_at, actual_exit_price
+                closed_at, actual_exit_price, highest_price, lowest_price
          FROM predictions
-         ORDER BY prediction_date DESC
+         ${whereClause}
+         ORDER BY prediction_date DESC, id DESC
          LIMIT ?`
       )
-      .all(limit) as Record<string, unknown>[];
+      .all(...params) as Record<string, unknown>[];
   } catch {
     return [];
   } finally {
@@ -407,21 +416,23 @@ export function getPredictionsFallback(
   }
 }
 
-export function getPerformanceFallback(): Record<string, unknown> {
+export function getPerformanceFallback(market?: string): Record<string, unknown> {
   const db = openReadonly(PREDICTIONS_DB_PATH);
   if (!db) return { success: true, source: 'sqlite_fallback', total: 0, hit_rate: 0 };
   try {
+    const marketCondition = market && market !== 'ALL' ? `WHERE UPPER(market) = '${market.toUpperCase().replace(/'/g, '')}'` : '';
     const totals = db
       .prepare(
         `SELECT
            COUNT(*) as total,
-           SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as hits,
+           SUM(CASE WHEN is_correct = 1 OR hit_target = 1 OR (pnl_percent IS NOT NULL AND CAST(pnl_percent AS REAL) > 0) THEN 1 ELSE 0 END) as hits,
            SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) as target_hits,
            SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) as stop_hits,
            AVG(CASE WHEN pnl_percent IS NOT NULL THEN CAST(pnl_percent AS REAL) END) as avg_pnl,
-           SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed_count,
-           SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count
-         FROM predictions`
+           SUM(CASE WHEN LOWER(status) IN ('closed', 'expired', 'stopped', 'target_hit', 'closed_win') THEN 1 ELSE 0 END) as closed_count,
+           SUM(CASE WHEN LOWER(status) IN ('active', 'open', 'pending') OR status IS NULL THEN 1 ELSE 0 END) as active_count
+         FROM predictions
+         ${marketCondition}`
       )
       .get() as Record<string, unknown> | undefined;
 

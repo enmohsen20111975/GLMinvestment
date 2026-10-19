@@ -151,6 +151,10 @@ export async function apiFetch<T = unknown>(
 
       // Canonical response shape: { success, source, data, meta }
       if (body && typeof body.success === 'boolean') {
+        const payload = body as Record<string, unknown>;
+        if (payload.data === undefined) {
+          payload.data = body;
+        }
         return body as ApiResponse<T>;
       }
 
@@ -212,10 +216,14 @@ function sleep(ms: number): Promise<void> {
  */
 async function unwrap<T>(p: Promise<ApiResponse<T>>): Promise<T> {
   const res = await p;
-  if (!res.success || res.data === undefined || res.data === null) {
-    throw new Error(res.error || 'API call failed (no data)');
+  if (!res.success) {
+    throw new Error(res.error || 'API call failed');
   }
-  return res.data as T;
+  if (res.data !== undefined && res.data !== null) {
+    return res.data as T;
+  }
+  const { success: _s, error: _e, status: _st, ...rest } = (res as unknown) as Record<string, unknown>;
+  return rest as unknown as T;
 }
 
 /**

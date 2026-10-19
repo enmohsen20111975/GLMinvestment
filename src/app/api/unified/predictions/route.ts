@@ -40,9 +40,12 @@ export async function GET(req: NextRequest) {
   }
 
   // 2. SQLite fallback — predictions.db
-  const active = getPredictionsFallback(100, 'active');
-  const closed = getPredictionsFallback(100, 'closed');
-  const perf = getPerformanceFallback();
+  const market = req.nextUrl.searchParams.get('market') || undefined;
+  const limit = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 100, 200);
+
+  const active = getPredictionsFallback(limit, 'active', market);
+  const closed = getPredictionsFallback(limit, 'closed', market);
+  const perf = getPerformanceFallback(market);
   return NextResponse.json(
     {
       success: true,
@@ -50,6 +53,7 @@ export async function GET(req: NextRequest) {
       predictions: active,
       closed_predictions: closed,
       active_predictions: active,
+      previous_predictions: closed,
       total: active.length + closed.length,
       performance: perf,
       timestamp: new Date().toISOString(),
