@@ -72224,3 +72224,92 @@ Stage Summary:
 - ✅ Threshold pattern واضح (كل ما أعلى، أداء أحسن)
 - ⚠️ Sample size = 11 (محتاجين أكتر)
 - 🔁 محتاجين: sample أكبر + تحسين SMC engine
+
+---
+Task ID: BRAVO-SMC-DEEP-VALIDATION-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — Data Depth Audit + SMC Engine Audit + Backtest طويل
+
+Work Log:
+
+- ✅ Data Depth Audit:
+  * price_history.db: median = 252 صف/ticker (كافية جداً)
+  * في الـ backtest: median = 5,591 شمعة لكل pair
+  * المشكلة مش في الـ data depth!
+
+- ✅ SMC Engine Audit — كشف المشكلة:
+  * الـ backtest السابق كان بـ يـمرر default values:
+    - sma200 = 0 → 15 points مـفقودة
+    - volume_ratio = 1.0 → 10 points مـفقودة
+    - rsi = 50.0 → 10 points مجانية دايماً
+  * الـ "edge" السابق (PF=1.12) كان artifact من الـ default inputs!
+
+- ✅ إصلاح SMC inputs (sma200 + vol_ratio + rsi صحيحة):
+  * SMC score distribution:
+    - قبل (default): median = 15
+    - بعد (correct): median = 30 (ارتفعت!)
+  * الـ scores ارتفعت بس الـ performance أسوأ
+
+- 📊 SMC Deep Backtest (2024-2026, 100 توقع نظيف):
+
+  | Threshold | accept | closed | WR    | PF    | MaxDD | MaxConsec | Return  |
+  |-----------|--------|--------|-------|-------|-------|-----------|---------|
+  | 40        |     28 |     28 | 28.6% | 0.23  | 2.5%  | 28        | -2.55%  |
+  | 50        |     18 |     18 | 33.3% | 0.32  | 1.7%  | 18        | -1.70%  |
+
+- 📊 Monte Carlo (1000 simulations) على threshold = 40:
+
+  | Metric        | baseline | MC median | p-value | الحكم        |
+  |---------------|----------|-----------|---------|--------------|
+  | WR            | 28.6%    | 32.1%     | 51.8%   | ❌ random أحسن |
+  | Profit Factor | 0.23     | 0.22      | 47.7%   | ❌ مش edge    |
+  | Max Drawdown  | 2.5%     | 2.1%      | 80.4%   | ❌ random أحسن |
+  | Total Return  | -2.55%   | -1.99%    | 84.6%   | ❌ مش return  |
+
+- 🔥🔥🔥 الـ findings الكارثية:
+
+  1. ❌ الـ SMC "edge" اختفى بعد إصلاح الـ inputs!
+     * قبل (default inputs): PF=1.12, p-value=3.9% (edge!)
+     * بعد (correct inputs): PF=0.23, p-value=47.7% (مش edge!)
+     * الـ "edge" كان artifact من default inputs
+
+  2. ❌ كل الـ features (V38 + VP + Core + SMC) = ضوضاء
+     * مفيش أي feature عنده edge حقيقي
+     * كلهم بـ يـدي إشارات عكسية أو ضوضاء
+
+  3. ⚠️ Max Consecutive Losses = 28
+     * كارثة نفسية
+     * مفيش متداول يتحمل 28 خسارة ورا بعض
+
+  4. 🔥 المشكلة الحقيقية:
+     * الـ scoring logic فيه علاقة عكسية
+     * الأسهم الصاعدة (score عالي) بـ تصحح بعد كده → خسارة
+     * ده pattern الـ EGX market (الزخم بـ يـصحح بسرعة)
+
+- 🎯 الاستنتاج النهائي:
+
+  ❌ SMC مش عنده edge حقيقي
+  ❌ الـ "edge" السابق كان artifact من default inputs
+  ❌ كل الـ features = ضوضاء
+  
+  المشكلة مش في الـ features، المشكلة في:
+  1. الـ scoring logic نفسه (علاقة عكسية)
+  2. الـ exit strategy (holding period طويل)
+  3. الـ EGX market structure (الزخم بـ يـصحح بسرعة)
+
+  لازم نـرجع للـ drawing board من الصفر.
+
+- 📋 التوصية:
+
+  1. نـوقف محاولة إصلاح الـ features الحالية
+  2. نـراجع الـ EGX market structure — ليه الزخم بـ يـصحح بسرعة؟
+  3. نـجرب approach مختلف: mean reversion بدل momentum
+  4. نـجرب exit strategy أقصر (1-5 أيام)
+  5. نـشوف هل فيه features تانية ممكن تـدي قيمة
+
+Stage Summary:
+- ✅ Data Depth Audit: المشكلة مش في البيانات (median = 5,591 شمعة)
+- ✅ SMC Engine Audit: المشكلة كانت في default inputs
+- ❌ SMC Deep Validation: الـ edge اختفى بعد إصلاح الـ inputs
+- ❌ كل الـ features = ضوضاء
+- 🔁 محتاجين: approach مختلف من الصفر
