@@ -73551,3 +73551,29 @@ VERDICT: ✅ ALL CHECKS PASSED
 - 2025 PF=1.17 > 1.0 (works in 2025 too)
 - 2025 Null PF=1.03 (Breakout beats Null)
 
+
+---
+Task ID: BRAVO-PAPER-TRADING-LIVE-1
+Agent: Bravo
+Task: Paper Trading Live System (Breakout Strategy)
+
+Result: ❌ KILLED after 35 trades
+- PF = 0.99 < 1.0 (Kill Criteria triggered)
+- WR = 51.4% (above 35% threshold)
+- Return = -0.05% (breakeven)
+- MaxDD = 1.3% (safe)
+- All 35 trades were in May 2026 only (system stopped early)
+
+Issue: The paper trading system processes trades sequentially (one at a time),
+not in parallel (max 5 concurrent). This means:
+- Only 35 trades closed in ~20 days (May 3-31)
+- The system killed itself before reaching June
+- The PF = 0.99 is from May only (marginal month)
+
+The previous backtest (trend_following_test.py) showed May PF = 1.57
+but that used a different simulation engine (parallel positions).
+
+The paper trading system needs fixing:
+1. The sequential processing is too slow
+2. OR the kill criteria is too strict (PF < 1.0 after 30 trades)
+
