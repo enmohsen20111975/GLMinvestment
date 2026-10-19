@@ -71256,3 +71256,43 @@ Stage Summary:
 - 🔥 الفرضية اتـحطمت: الـ boosts مش السبب في الـ score inflation.
 - 🔥 السبب الحقيقي: V38 calculate_score_and_proofs بـ يـ produce score=100 بسهولة (6 boolean conditions).
 - 🔁 القرار لمحسن: إعادة تصميم V38 scoring (weights أقل + continuous بدل boolean).
+
+---
+Task ID: BRAVO-ENGINES-TOOLS-MAP-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — جرد كامل لكل المحركات/الأدوات المتقدمة + ترتيب تجربة
+
+Work Log:
+
+- 🔍 جرد كامل لكل ملفات analyzers/ (70+) + engines/ (2) + jobs/ (16).
+
+- 📋 الـ 46 أداة اتجردت بـ التفصيل:
+  * 21 أداة مربوطة بـ V40.2 فعلاً (✅ WIRED)
+  * 14 أداة معطّلة (❌ DEAD CODE) = ~21,000 سطر كنوز مهجورة
+  * 4 أدوات partial (⚠️)
+  * باقي utilities
+
+- 🔥 الاكتشافات الحاسمة:
+  1. V38 (backtest_engine.calculate_score_and_proofs) هو الـ brain الحقيقي — master_analyzer (5,763 سطر) مش مربوط.
+  2. SMC + VP مربوطين بـ وزن ضعيف (15% + 10%).
+  3. الـ boosts مش شغّالة في الـ backfill (97.9% boost_added=0).
+  4. الـ HARD GATE الوحيد = radar_integration.
+  5. 14 كنز مهجور (أهمهم: seasonality_engine_v2 + conviction_engine + expert_quality_gate + fundamental_scorer).
+
+- 📊 ترتيب التجربة المقترح:
+  1. 🥇 seasonality_engine_v2 (EGX seasonality قوية)
+  2. 🥈 conviction_engine (6 scores → conviction level)
+  3. 🥉 expert_quality_gate (HARD GATE تاني)
+  4. 🏅 fundamental_scorer (Piotroski F-Score)
+  5. 🎖️ confidence_engine (7 factors)
+
+- 📝 التقرير الشامل اـتكتب في:
+  Documentation/ENGINES-AND-TOOLS-MAP.md (450 سطر)
+  فيه كل تفاصيل كل أداة (الحجم + بيحسب إيه + بيانات قديمة/حديثة + مربوط بـ V40.2 + آخر تشغيل + الحكم).
+
+Stage Summary:
+- ✅ جرد 46 أداة كاملة.
+- ✅ تحديد 14 كنز مهجور (~21,000 سطر).
+- ✅ ترتيب 5 تجارب مقترحة.
+- ✅ التقرير اـتكتب في Documentation/ENGINES-AND-TOOLS-MAP.md.
+- 🔁 القرار لمحسن: أنهي تجربة نبدأ الأول؟
