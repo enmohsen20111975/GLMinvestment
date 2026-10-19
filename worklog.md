@@ -70230,3 +70230,46 @@ Stage Summary:
 - ✅ Finding #7: HARD_CRASH 12% → AVOID فوري (OR مش AND).
 - ✅ Finding #8: data_stale flag في API.
 - 🔁 كل الـ 10 findings من DeepSeek + Grock خلصت.
+
+---
+Task ID: BRAVO-ARCHITECTURE-CLEANUP-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — مراجعة الالتزام بالبنية (ممنوع طوب في أي حتة)
+
+Work Log:
+- 🔴 مشكلة #1: canonical_sources.py كان ملف جديد duplicate لـ db_paths.py.
+  * الإصلاح: أدمجت الـ table names في DBPaths class (db_paths.py).
+  * أضفت: PRICE_HISTORY_TABLE, STOCKS_TABLE, STOCK_DAILY_PRICES_TABLE, إلخ.
+  * أضفت: is_deprecated_table() method.
+  * مسحت: vps-service/core/canonical_sources.py (git rm).
+  * النتيجة: ملف واحد SSOT (db_paths.py) بدلاً من ملفين.
+
+- 🟡 مشكلة #2: 5 ملفات .md في الـ root بدلاً من Documentation/.
+  * نقلت: DATA-ENGINE-MAP.md → Documentation/
+  * نقلت: MAESTRO-MAP.md → Documentation/
+  * نقلت: API-CONTRACT-PAYWALL.md → Documentation/
+  * نقلت: RESTRUCTURE-BACKEND-AUDIT.md → Documentation/
+  * نقلت: أعمال-فريق-برافو.md → Documentation/
+  * root .md: 14 → 9 (الـ 9 الباقية تتبع ألفا/جون — مش برافو).
+
+- التحقق:
+  * py_compile: db_paths.py + prices.py + canonical_flow.py + liquidity_radar_v2.py = PASS.
+  * DBPaths.is_deprecated_table('egksco_price_history') = True ✓.
+  * DBPaths.PRICE_HISTORY_TABLE = 'price_history' ✓.
+  * canonical_sources.py = GONE ✓.
+
+Stage Summary:
+- ✅ canonical_sources.py اتشال (اتدمج في db_paths.py — SSOT واحد).
+- ✅ 5 .md files اتنقلوا لـ Documentation/ (مش طوب في الـ root).
+- ✅ كل py_compile PASS.
+- ⚠️ ملفات برافو الجديدة اللي لسه موجودة (ضرورية):
+  * vps-service/utils/expert_memory_v402.py — بديل maestro (تمسح).
+  * vps-service/utils/daily_opportunities_v402.py — بديل maestro (تمسح).
+  * vps-service/scripts/trial_migration.py — migration script (idempotent).
+  * vps-service/scripts/db_cleanup.py — cleanup script (idempotent).
+  * vps-service/scripts/price_unification.py — migration script (idempotent).
+  * vps-service/scripts/verify_db_restore_final.py — verification script.
+  * scripts/drop_empty_tables.py — cleanup script (idempotent).
+  * scripts/sanitize_stocks_table.py — sanitize script (idempotent).
+  * scratch/audit_data_integrity.py — acceptance test.
+  كل واحد ليه هدف واضح + idempotent + Rule 17. مش طوب.

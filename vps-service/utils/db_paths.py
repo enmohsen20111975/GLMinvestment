@@ -120,6 +120,28 @@ class DBPaths:
     ANALYTICS_DB: str = STOCKS_DB          # cached_analysis — canonical: stocks.db (143 rows). Dropped: predictions.db (0 rows, fallback-cache recreated by migrator).
     CRYPTO_LEARNING_DB: str = PREDICTIONS_DB  # crypto_learning tables in predictions.db
 
+    # ─── BRAVO DATA-LAYER-1: canonical table names per domain (SSOT) ──────────
+    # Added 2026-10-18 per owner directive. These replace the separate
+    # canonical_sources.py file (merged here to respect existing architecture).
+    PRICE_HISTORY_TABLE: str = "price_history"          # canonical historical
+    STOCKS_TABLE: str = "stocks"                          # live/current
+    STOCK_DAILY_PRICES_TABLE: str = "stock_daily_prices"  # daily candles
+    STOCK_INTRADAY_TABLE: str = "stock_intraday"          # minute ticks
+    CRYPTO_PRICES_TABLE: str = "crypto_prices"            # CoinGecko
+    BTC_LOCAL_PRICES_TABLE: str = "btc_local_prices"      # BTC in Arab currencies
+    CRYPTO_INTRADAY_TABLE: str = "crypto_intraday"        # crypto ticks
+    GOLD_PRICES_TABLE: str = "gold_prices"                # all karats
+    GOLD_PRICES_CLEAN_TABLE: str = "gold_prices_clean"
+    SILVER_PRICES_TABLE: str = "silver_prices"
+    EXCHANGE_RATES_TABLE: str = "exchange_rates"
+    COMMODITY_INTRADAY_TABLE: str = "commodity_intraday"
+    DEPRECATED_EGKSCO_TABLE: str = "egksco_price_history"  # DEPRECATED (Rule 46 amended)
+
+    @classmethod
+    def is_deprecated_table(cls, table_name: str) -> bool:
+        """Check if a table name is deprecated (per Rule 46 amendment)."""
+        return table_name.lower() == cls.DEPRECATED_EGKSCO_TABLE.lower()
+
     @classmethod
     def all_dbs(cls) -> dict[str, str]:
         """خريطة اسم → مسار لكل القواعد المعتمدة (4 فقط)."""
