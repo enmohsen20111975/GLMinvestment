@@ -19,6 +19,9 @@ import {
  AlertTriangle
 } from 'lucide-react';
 import { toArabicError } from '@/lib/safe-error';
+import { useAppStore } from '@/lib/store';
+// ALPHA-UX-FIX-5: guest freemium preview CTA (3 predictions + register for more)
+import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
 
 interface Prediction {
  id: string;
@@ -58,6 +61,10 @@ export function EidPredictionsWidget() {
  const [refreshing, setRefreshing] = useState(false);
  const [error, setError] = useState<string | null>(null);
  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+ // ALPHA-UX-FIX-5: guest freemium — guest يشوف 3 توقعات، الباقي خلف CTA
+ const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+ const GUEST_PREDICTION_LIMIT = 3;
+ const displayPredictions = !isAuthenticated ? predictions.slice(0, GUEST_PREDICTION_LIMIT) : predictions;
 
  const fetchPredictions = useCallback(async (forceRefresh = false) => {
  try {
@@ -191,7 +198,7 @@ export function EidPredictionsWidget() {
  </div>
 
  {/* Predictions List */}
- {predictions.map((pred) => {
+ {displayPredictions.map((pred) => {
  const Icon = iconMap[pred.symbol] || TrendingUp;
  const SignalIcon = signalIcons[pred.signal];
  const potentialGain = parseFloat(getPotentialGain(pred));
@@ -252,6 +259,9 @@ export function EidPredictionsWidget() {
  </div>
  );
  })}
+
+ {/* ALPHA-UX-FIX-5: guest freemium CTA — بتشوف 3 من الكل، سجل للمزيد */}
+ <GuestLimitCta shown={displayPredictions.length} total={predictions.length} itemLabel="توقعًا" itemLabelPlural="توقعات" />
 
  {/* Memory Stats */}
  <div className="mt-4 pt-3 border-t border-slate-700/50 text-xs text-slate-500">

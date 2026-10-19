@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import type { Stock } from '@/types';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
+// ALPHA-UX-FIX-5: guest freemium preview CTA (50 stocks + register for more)
+import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
 import { Header } from '@/components/layout/Header';
 import { StockDetail } from './StockDetail';
 import { ShareButton } from '@/components/share/ShareButton';
@@ -879,7 +881,11 @@ export function StocksView() {
  refreshLivePrices,
  loadStockDetail,
  currentMarket,
+ isAuthenticated,
  } = useAppStore();
+
+ // ALPHA-UX-FIX-5: guest freemium — guest يشوف أول 50 سهم بس، الباقي خلف CTA
+ const GUEST_STOCK_LIMIT = 50;
 
  const t = useTranslation();
 
@@ -1184,9 +1190,11 @@ export function StocksView() {
 
  // ── Pagination ──
  const baseData = isPresetMode ? filteredPresetData : sortedStocks;
- const totalPages = Math.max(1, Math.ceil(baseData.length / PAGE_SIZE));
+ // ALPHA-UX-FIX-5: guest يشوف أول 50 بس (displayData)، بس baseData بتفضل كامل عشان الـ CTA count
+ const displayData = !isAuthenticated ? baseData.slice(0, GUEST_STOCK_LIMIT) : baseData;
+ const totalPages = Math.max(1, Math.ceil(displayData.length / PAGE_SIZE));
  const safePage = Math.min(page, totalPages);
- const paginatedStocks = baseData.slice(
+ const paginatedStocks = displayData.slice(
  (safePage - 1) * PAGE_SIZE,
  safePage * PAGE_SIZE
  );
@@ -2125,7 +2133,7 @@ export function StocksView() {
  /* (Task STOCKS-TABLE-FIX) نمرّر الـ dataset كامل بدل صفحة واحدة،
  عشان الترتيب عبر ضغط الأعمدة يطبّق على كل الأسهم مش بس الصفحة الحالية.
  الـ scroll بيتحكم فيه maxHeight. */
- data={baseData as unknown as Record<string, unknown>[]}
+ data={displayData as unknown as Record<string, unknown>[]}
  keyField="ticker"
  onRowClick={(row) => handleRowClick(String(row.ticker))}
  stickyHeader
@@ -2308,6 +2316,8 @@ export function StocksView() {
  </div>
  </div>
  )}
+ {/* ALPHA-UX-FIX-5: guest freemium CTA — بتشوف 50 من 412، سجل للمزيد */}
+ <GuestLimitCta shown={displayData.length} total={baseData.length} itemLabel="سهًماً" itemLabelPlural="أسهم" />
  </>
  </Card>
  )}
