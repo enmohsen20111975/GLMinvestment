@@ -27,6 +27,15 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from pathlib import Path
 
+# BRAVO INDICATOR-UNIFY (2026-10-19): توحيد كل المؤشرات على canonical library
+# Rule 54 (CALCULATION-CANONICAL): analyzers/indicators/ = المصدر الوحيد
+_VPS_ROOT = Path(__file__).resolve().parent.parent
+if str(_VPS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_VPS_ROOT))
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+from analyzers.indicators.ma import sma as _canonical_sma, ema as _canonical_ema, macd as _canonical_macd
+
 logger = logging.getLogger(__name__)
 
 # Add data_engine to path
@@ -92,94 +101,57 @@ except Exception as _cprob_import_err:
 # ============================================================================
 
 def _rolling_sma(data, period):
-    """SMA as array - every point calculated"""
+    """SMA as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma per point."""
     result = []
     for i in range(len(data)):
         if i < period - 1:
             result.append(None)
         else:
-            result.append(sum(data[i - period + 1:i + 1]) / period)
+            val = _canonical_sma(data[:i+1], period)
+            result.append(val)
     return result
 
 
 def _rolling_ema(data, period):
-    """EMA as array"""
+    """EMA as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.ema per point."""
     result = []
     if not data:
         return result
-    k = 2.0 / (period + 1)
-    ema_val = None
     for i, val in enumerate(data):
         if val is None or val <= 0:
             result.append(None)
             continue
-        if ema_val is None:
-            ema_val = val
-        else:
-            ema_val = val * k + ema_val * (1 - k)
         if i < period - 1:
             result.append(None)
-        else:
-            result.append(round(ema_val, 4))
+            continue
+        ema_val = _canonical_ema(data[:i+1], period)
+        result.append(ema_val)
     return result
 
 
 def _rolling_rsi(closes, period=14):
-    """RSI as array - Wilder's smoothing"""
+    """RSI as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.rsi.calc_rsi per point."""
     result = []
     if len(closes) < period + 1:
         return [50.0] * len(closes)
-
-    gains = []
-    losses = []
-    for i in range(1, len(closes)):
-        change = closes[i] - closes[i - 1]
-        gains.append(max(0, change))
-        losses.append(max(0, -change))
-
-    # Initial averages
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
-
-    # Fill initial values (including first index with no change)
-    for _ in range(period + 1):
-        result.append(50.0)
-
-    for i in range(period, len(gains)):
-        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
-        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
-        if avg_loss == 0:
-            result.append(100.0)
+    for i in range(len(closes)):
+        if i < period:
+            result.append(50.0)
         else:
-            rs = avg_gain / avg_loss
-            result.append(round(100.0 - (100.0 / (1.0 + rs)), 2))
-
+            val = _canonical_calc_rsi(closes[:i+1], period)
+            result.append(val if val is not None else 50.0)
     return result
 
 
 def _rolling_atr(highs, lows, closes, period=14):
-    """ATR as array"""
+    """ATR as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr per point."""
     result = []
-    tr_list = []
     for i in range(len(closes)):
-        if i == 0:
-            tr = highs[i] - lows[i]
-        else:
-            tr = max(
-                highs[i] - lows[i],
-                abs(highs[i] - closes[i - 1]),
-                abs(lows[i] - closes[i - 1])
-            )
-        tr_list.append(tr)
-
-    for i in range(len(tr_list)):
-        if i < period - 1:
+        if i < 1:
             result.append(None)
-        elif i == period - 1:
-            result.append(round(sum(tr_list[:period]) / period, 4))
         else:
-            prev_atr = result[-1] or (sum(tr_list[:period]) / period)
-            result.append(round((prev_atr * (period - 1) + tr_list[i]) / period, 4))
+            val = _canonical_calc_atr(highs[:i+1], lows[:i+1], closes[:i+1], period)
+            result.append(val)
     return result
 
 
@@ -307,61 +279,49 @@ def _detect_bb_squeeze(bb_upper, bb_lower, closes, highs=None, lows=None, period
 # ============================================================================
 
 def _ema_seeded(values, period):
-    """Exponential Moving Average (SMA-seeded) — standard for MACD.
-
-    Returns array same length as `values`, with None for indices < period-1
-    (before enough data to seed the SMA), then SMA at index period-1, then EMA
-    onward.
-    """
+    """EMA as array — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.ema per point."""
     n = len(values)
     if n < period:
         return [None] * n
-    multiplier = 2.0 / (period + 1)
-    ema = [None] * (period - 1)
-    sma = sum(values[:period]) / period
-    ema.append(sma)
-    for i in range(period, n):
-        ema_val = (values[i] - ema[-1]) * multiplier + ema[-1]
-        ema.append(ema_val)
-    return ema
+    result = []
+    for i in range(n):
+        if i < period - 1:
+            result.append(None)
+        else:
+            val = _canonical_ema(values[:i+1], period)
+            result.append(val)
+    return result
 
 
 def _calc_macd(closes, fast=12, slow=26, signal=9):
-    """حساب MACD line + signal line + histogram as arrays.
+    """MACD as arrays — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.macd per point.
 
-    Mirrors maestro core_scoring_engine.calc_macd semantics but returns full
-    arrays for chart display (lightweight-charts series).
     Returns: (macd_line, signal_line, histogram) — each same length as closes.
     """
     n = len(closes)
     if n < slow + signal:
         return [None] * n, [None] * n, [None] * n
-    ema_fast = _ema_seeded(closes, fast)
-    ema_slow = _ema_seeded(closes, slow)
     macd_line = []
-    for f, s in zip(ema_fast, ema_slow):
-        if f is None or s is None:
-            macd_line.append(None)
-        else:
-            macd_line.append(f - s)
-    # Seed signal EMA with macd_line values (replace None with 0 for EMA calc)
-    macd_for_signal = [v if v is not None else 0 for v in macd_line]
-    signal_line_raw = _ema_seeded(macd_for_signal, signal)
-    # Align: signal_line starts producing values only after `signal` valid macd
-    # points. We mask out the leading None region of macd_line so signal_line
-    # is None wherever macd_line is None.
     signal_line = []
-    for m, s in zip(macd_line, signal_line_raw):
-        if m is None or s is None:
-            signal_line.append(None)
-        else:
-            signal_line.append(s)
     histogram = []
-    for m, s in zip(macd_line, signal_line):
-        if m is None or s is None:
+    for i in range(n):
+        if i < slow + signal - 1:
+            macd_line.append(None)
+            signal_line.append(None)
             histogram.append(None)
         else:
-            histogram.append(m - s)
+            result = _canonical_macd(closes[:i+1], fast, slow, signal)
+            if result is not None:
+                ml = result.get('line')
+                sl = result.get('signal')
+                hg = result.get('histogram')
+                macd_line.append(ml)
+                signal_line.append(sl)
+                histogram.append(hg)
+            else:
+                macd_line.append(None)
+                signal_line.append(None)
+                histogram.append(None)
     return macd_line, signal_line, histogram
 
 

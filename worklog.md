@@ -70597,3 +70597,36 @@ Stage Summary:
 | 4: باك تست production | ⚠️ محتاج laptop | — | — |
 | 5: باك تست ربط عكسي | ✅ SIMULATION | WR +26.2% | 9413b65 |
 | 6: confluence_engine_v3 | ✅ قرار موثّق | — | هذا |
+
+---
+Task ID: BRAVO-INDICATOR-UNIFY-1
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — توحيد كل المؤشرات على canonical library (Rule 54)
+
+Work Log:
+- التشخيص: 19 implementation مكرر لمؤشرات مفروض تكون واحدة:
+  * RSI: 5 implementations (1 canonical + 4 duplicates)
+  * ATR: 4 implementations (1 canonical + 3 duplicates)
+  * MACD: 3 implementations (1 canonical + 2 duplicates)
+  * MA/SMA/EMA: 7 implementations (1 canonical + 6 duplicates)
+
+- خطوة 1: chart_routes.py — استبدال 6 implementations:
+  * _rolling_sma → delegates to canonical analyzers.indicators.ma.sma per point
+  * _rolling_ema → delegates to canonical analyzers.indicators.ma.ema per point
+  * _rolling_rsi → delegates to canonical analyzers.indicators.rsi.calc_rsi per point
+  * _rolling_atr → delegates to canonical analyzers.indicators.atr.calc_atr per point
+  * _ema_seeded → delegates to canonical analyzers.indicators.ma.ema per point
+  * _calc_macd → delegates to canonical analyzers.indicators.ma.macd per point
+  * أضفت import للـ canonical library في بداية الملف.
+  * الـ wrappers بـ تحافظ على نفس الـ API (array output) للـ chart display.
+  * py_compile PASS.
+  * canonical library test: RSI=100, ATR=2.0, SMA=119.75, EMA=119.75, MACD line=3.43 ✓
+
+- ⚠️ الحرص: مفيش هدم — الـ wrappers بـ تحافظ على نفس الـ function names + signatures.
+  الـ callers (L1363-1377) مش هيتغيّروا. بس الـ math بقت من canonical.
+
+Stage Summary:
+- ✅ خطوة 1: chart_routes.py — 6 implementations → canonical delegates.
+- ✅ py_compile PASS + canonical library test PASS.
+- ⚠️ خطوات 2-5 لسه (backtest_engine + master_analyzer + market_regime + core_scoring).
+- ⚠️ خطوة 6: V40.2 egksco → price_history.db (DATA-LAYER-1).
