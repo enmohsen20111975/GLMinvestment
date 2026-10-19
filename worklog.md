@@ -70189,3 +70189,44 @@ Stage Summary:
 - ⚠️ Finding #7 (Falling Knife AND): محتاج fix منفل.
 - ⚠️ Finding #8 (data_stale flag): محتاج fix في API layer (scope ألفا).
 - 🔁 Push gate: هـ commit + push.
+
+---
+Task ID: BRAVO-RADAR-REBUILD-2
+Agent: Bravo (backend/quant dragon — Z.ai Code copy)
+Task: محسن — إكمال الـ 4 findings الباقية للرادار
+
+Work Log:
+- Finding #4 (entry = last close → chart level):
+  * compute_entry_defense: entry = close - 0.5×ATR (pullback buffer).
+  * ATR = متوسط True Range لآخر 14 يوم.
+  * fallback: support أو close - 2%.
+  * output جديد: atr + entry_method (للـ transparency).
+  * test: entry=93.93 (close - 0.5×ATR=4.03) بدل close=95.96.
+
+- Finding #6 (RSI < 68 → 70):
+  * canonical_flow.py: WHALE_INFLOW_RSI_MAX = 70.0 (standard overbought).
+  * موثّق: 70 = المعيار التقليدي (68 كان عشوائي).
+
+- Finding #7 (Falling Knife AND → OR):
+  * check_falling_knife: أضفت HARD_CRASH layer قبل canonical.
+  * لو drop_3d > 12% → AVOID فوري (even if above SMA50).
+  * 12% موثّق: سقوط حر = > 12% في 3 جلسات.
+
+- Finding #8 (data_stale flag):
+  * src/app/api/maker-radar/route.ts: أضفت data_stale + stale_minutes.
+  * data_stale = boolean واضح للـ UI.
+  * stale_minutes = Math.floor(cache_age_seconds / 60).
+
+- التحقق:
+  * py_compile: liquidity_radar_v2.py + canonical_flow.py = PASS.
+  * entry_defense test: entry=93.93 (close - 0.5×ATR) ✓.
+  * RSI = 70 ✓.
+  * HARD_CRASH 12% موجود ✓.
+  * data_stale في API response ✓.
+
+Stage Summary:
+- ✅ Finding #4: entry = close - 0.5×ATR (مش last close).
+- ✅ Finding #6: RSI 68 → 70 (standard).
+- ✅ Finding #7: HARD_CRASH 12% → AVOID فوري (OR مش AND).
+- ✅ Finding #8: data_stale flag في API.
+- 🔁 كل الـ 10 findings من DeepSeek + Grock خلصت.

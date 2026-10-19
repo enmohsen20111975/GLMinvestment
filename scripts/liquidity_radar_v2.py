@@ -747,13 +747,36 @@ def compute_entry_defense(
 ) -> Dict[str, Any]:
     """حساب مستوى الدخول + مستوى الدفاع (الكسر = خروج).
 
+    BRAVO RADAR-REBUILD Finding #4: entry_level مش آخر close (ده chase).
+    الجديد: entry = close - 0.5×ATR (pullback buffer تحت السعر الحالي).
+    لو مفيش ATR → fallback لـ support أو close - 2%.
+
     المنطق:
-      - entry_level = آخر close (سعر مرجعي)
-      - defense_level = أدنى قاع في آخر 10 أيام (لو مفيش → support من stocks table)
-      - لو السعر كسر defense_level → خروج
+      - ATR = متوسط True Range لآخر 14 يوم
+      - entry_level = last_close - 0.5×ATR (buffer للـ pullback)
+      - defense_level = min(recent_low_10d, table_support)
+      - resistance_level = max(recent_high_10d, table_resistance)
+      - rr_at_current = R/R محسوب على entry_level الجديد (مش التوقع القديم)
     """
+    # Helper: compute ATR
+    def _compute_atr(cands, period=14):
+        if len(cands) < 2:
+            return 0.0
+        trs = []
+        for i in range(1, len(cands)):
+            h = _to_float(cands[i].get('high'))
+            l = _to_float(cands[i].get('low'))
+            pc = _to_float(cands[i-1].get('close'))
+            if h <= 0 or l <= 0 or pc <= 0:
+                continue
+            tr = max(h - l, abs(h - pc), abs(l - pc))
+            trs.append(tr)
+        if not trs:
+            return 0.0
+        recent_trs = trs[-period:] if len(trs) >= period else trs
+        return sum(recent_trs) / len(recent_trs)
+
     if len(candles) < 10:
-        # fallback لـ support من stocks table
         support = _to_float(stock_info.get('support'))
         resistance = _to_float(stock_info.get('resistance'))
         last_close = _to_float(stock_info.get('current_price'))
@@ -763,11 +786,14 @@ def compute_entry_defense(
                 'defense_level': None,
                 'reason': 'بيانات غير كافية لحساب المستويات',
             }
+        # Fallback: entry = support (لو موجود) أو close - 2%
+        entry = support if support > 0 and support < last_close else round(last_close * 0.98, 4)
+        defense = round(support, 4) if support > 0 else round(last_close * 0.95, 4)
         return {
-            'entry_level': round(last_close, 4),
-            'defense_level': round(support, 4) if support > 0 else round(last_close * 0.95, 4),
+            'entry_level': round(entry, 4) if entry > 0 else None,
+            'defense_level': defense,
             'resistance_level': round(resistance, 4) if resistance > 0 else None,
-            'reason': f'مستويات من جدول stocks (support={support:.2f}, resistance={resistance:.2f})',
+            'reason': f'مستويات من جدول stocks (entry={entry:.2f}, support={support:.2f})',
         }
 
     recent = candles[-10:]
@@ -786,24 +812,37 @@ def compute_entry_defense(
     recent_low = min(lows)
     recent_high = max(highs) if highs else last_close
 
-    # support من stocks table كـ fallback أعمق
     table_support = _to_float(stock_info.get('support'))
     table_resistance = _to_float(stock_info.get('resistance'))
 
-    # defense = أدنى قاع في آخر 10 أيام (لو أعمق من table support، خلي table support)
+    # ATR-based entry (Finding #4 fix)
+    atr = _compute_atr(candles, period=14)
+    if atr > 0:
+        entry_level = round(last_close - 0.5 * atr, 4)
+        entry_method = f'close - 0.5×ATR (ATR={atr:.2f})'
+    else:
+        # Fallback: support or close - 2%
+        if table_support > 0 and table_support < last_close:
+            entry_level = round(table_support, 4)
+            entry_method = f'table support ({table_support:.2f})'
+        else:
+            entry_level = round(last_close * 0.98, 4)
+            entry_method = 'close - 2% (no ATR)'
+
     defense = min(recent_low, table_support) if table_support > 0 else recent_low
-    # resistance = أعلى قمة في آخر 10 أيام (لو table resistance أعلى، خليه)
     resistance = max(recent_high, table_resistance) if table_resistance > 0 else recent_high
 
     reason = (
-        f"دخول مرجعي {last_close:.2f} | دفاع {defense:.2f} "
+        f"دخول {entry_level:.2f} ({entry_method}) | دفاع {defense:.2f} "
         f"(أدنى قاع 10 أيام) | مقاومة {resistance:.2f}"
     )
 
     return {
-        'entry_level': round(last_close, 4),
+        'entry_level': entry_level,
         'defense_level': round(defense, 4),
         'resistance_level': round(resistance, 4),
+        'atr': round(atr, 4) if atr > 0 else None,
+        'entry_method': entry_method,
         'reason': reason,
     }
 
@@ -838,6 +877,24 @@ def check_falling_knife(
         }
     """
     current_price = _to_float(stock_info.get('current_price'))
+
+    # ─── BRAVO RADAR-REBUILD Finding #7: Hard crash = AVOID regardless of MA50 ──
+    # لو السهم نزل > 12% في 3 جلسات → سقوط حر → AVOID فوري.
+    # ده OR مش AND — السهم ممكن يكون لسه فوق SMA50 بس النزول > 12% = خطر.
+    if candles and len(candles) >= 3:
+        recent_3 = candles[-3:]
+        highs_3 = [_to_float(c.get('high')) for c in recent_3 if _to_float(c.get('high')) > 0]
+        last_close_3 = _to_float(recent_3[-1].get('close'))
+        if highs_3 and last_close_3 > 0:
+            peak_3d = max(highs_3)
+            drop_3d_pct = ((peak_3d - last_close_3) / peak_3d) * 100.0
+            HARD_CRASH_THRESHOLD = 12.0  # موثّق: 12% في 3 جلسات = سقوط حر
+            if drop_3d_pct > HARD_CRASH_THRESHOLD:
+                return {
+                    'is_falling_knife': True,
+                    'targets_available': False,
+                    'reason': f'[HARD-CRASH] هبوط {drop_3d_pct:.1f}% في 3 جلسات (>{HARD_CRASH_THRESHOLD}%) — سقوط حر — لا أهداف (Finding #7)',
+                }
 
     # ─── Layer 1: CANONICAL short-term crash detector (drop_3d > 10% + below SMA50) ──
     # BRAVO-AUDIT Fix 4: ده الكنسي. لو متاح، نطبقه الأول عشان نتطابق مع

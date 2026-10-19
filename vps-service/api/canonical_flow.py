@@ -64,7 +64,7 @@ canonical_flow_bp = Blueprint('canonical_flow_bp', __name__)
 
 WHALE_INFLOW_MIN_EGP: float = 2_000_000.0
 WHALE_OUTFLOW_MIN_EGP: float = -2_000_000.0
-WHALE_INFLOW_RSI_MAX: float = 68.0
+WHALE_INFLOW_RSI_MAX: float = 70.0  # BRAVO RADAR-REBUILD Finding #6: 70 (standard overbought, was 68 arbitrary)
 BOTTOM_ABSORPTION_52W_PROXIMITY_PCT: float = 8.0
 CORRECTION_DROP_PCT: float = 8.0
 
