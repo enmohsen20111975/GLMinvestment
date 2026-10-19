@@ -68387,3 +68387,48 @@ Work Log:
 1. ✅ استخدام Screener API في المنصة (أداة تحليل)
 2. ❌ Mean Reversion مش suitable لـ EGX (في الـ bearish periods)
 3. 🔁 محاولة استراتيجيات تانية: Event-driven, Trend على EGX30
+
+---
+Task ID: BRAVO-SCREENER-FRONTEND-INTEGRATION-1
+Agent: Bravo (Z.ai Code — frontend integration)
+Task: محسن — ربط الـ Screener بـ شاشة رادار السيولة (NetPicksTab) تحت التجربة.
+
+Work Log:
+- ✅ المسار 1: بناء Next.js API proxy
+  * src/app/api/maker-radar/stock-analysis/route.ts (170 سطر)
+  * Sequential fetch من Python Screener (port 8012) — parallel كان بـ يـقتل الـ Python
+  * Endpoint: GET /api/maker-radar/stock-analysis?tickers=COMI,HRHO,ADRI
+  * بيرجع: recommendation + hybrid_score + layers (HMM + Wyckoff + Weinstein + Volume) + market_context
+
+- ✅ المسار 2: تعديل NetPicksTab.tsx
+  * إضافة state لـ stockAnalysis (Map<ticker, analysis>)
+  * إضافة state لـ marketContext (EGX30 regime)
+  * fetchStockAnalysis: بـ يجيب تحليل أول 20 سهم من الـ picks
+  * إضافة عمود "تحليل هجين" (recommendation + score + veto indicator)
+  * إضافة عمود "الطبقات" (HMM + Wyckoff + Weinstein + Volume)
+  * إضافة Market Context Banner (EGX30 regime + veto)
+  * إضافة status badge في الـ header (Brain icon)
+  * helpers: recColor, recLabel, regimeColor, regimeLabel
+
+- ✅ Python Screener API (port 8012)
+  * scripts/stock_screener_api.py بـ Waitress WSGI (4 threads)
+  * Endpoints: health, market-context, analyze, scan, recommendations
+  * Cache 5 دقايق لكل request
+
+- ✅ Watchdog
+  * scripts/screener_watchdog.sh — بـ يـcheck كل 30 ثانية + restart لو down
+
+- ✅ Final Integration Test (4 tickers):
+  * COMI: REDUCE (-15) | Weinstein: Stage 3 (القمة)
+  * HRHO: SELL (-52) | Weinstein: Stage 4 (الهبوط)
+  * ADRI: REDUCE (-22) | Weinstein: Stage 2 (الصعود)
+  * EAST: REDUCE (-20) | Weinstein: Stage 4 (الهبوط)
+  * Market Context: EGX30 = RANGE
+  * Process لسة حي بعد الـ test
+
+Stage Summary:
+- ✅ الـ integration شغّال بالكامل (Next.js → Python API → Hybrid v2)
+- ✅ NetPicksTab دلوقتي بـ يعرض تحليل هجين لكل سهم في الرادار
+- ✅ Market Context Banner بـ يـدي سياق السوق العام (EGX30 regime)
+- ⚠️ الـ Python API بـ يـموت تحت load عالي (HMM memory) — Watchdog بـ يعالج
+- 🎯 جاهز للتجربة في المتصفح (بعد login)

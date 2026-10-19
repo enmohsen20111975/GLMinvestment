@@ -5,10 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { Target, Layers, Trophy, RefreshCw } from 'lucide-react';
+import { Target, Layers, Trophy, RefreshCw, Brain, Sparkles } from 'lucide-react';
 
 // ============================================================================
 // NetPicksTab — صافى التوقعات (مجمع من كل مسارات الرادار)
+// + تحليل Hybrid Stage Analyzer v2 (تحت التجربة)
 // ============================================================================
 
 interface NetPick {
@@ -39,6 +40,34 @@ interface NetPick {
   } | null;
 }
 
+// === Hybrid Stage Analyzer v2 (تحت التجربة) ===
+interface StockAnalysis {
+  ticker: string;
+  current_price: number | null;
+  recommendation: string;  // STRONG_BUY / BUY / HOLD / REDUCE / SELL
+  hybrid_score: number;    // -100 to +100
+  rsi: number | null;
+  veto_applied: boolean;
+  layers: {
+    l1_hmm_stock: { regime: string; confidence: number; method: string };
+    l2_wyckoff: { phase: string; phase_ar: string; has_accumulation: boolean; has_spring: boolean; has_sos: boolean };
+    l3_weinstein: { stage: string; stage_ar: string; ma_slope: number; distance_from_ma: number };
+    l4_volume: { poc: number | null; vah: number | null; val: number | null; position: string; breakout_confirmed: boolean };
+  };
+  reasons: string[];
+  error?: string;
+}
+
+interface StockAnalysisResponse {
+  success: boolean;
+  market_context: {
+    regime: string;
+    confidence: number;
+    veto_buy: boolean;
+  } | null;
+  results: StockAnalysis[];
+}
+
 interface NetPicksData {
   success: boolean;
   market: string;
@@ -66,6 +95,9 @@ function fmtPct(n: number | null | undefined): string {
 export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
   const [data, setData] = useState<NetPicksData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stockAnalysis, setStockAnalysis] = useState<Map<string, StockAnalysis>>(new Map());
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [marketContext, setMarketContext] = useState<{ regime: string; confidence: number; veto_buy: boolean } | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -80,7 +112,85 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
     }
   }, [market]);
 
+  // === Fetch Hybrid Stage Analysis لأسهم الرادار (تحت التجربة) ===
+  const fetchStockAnalysis = useCallback(async (tickers: string[]) => {
+    if (tickers.length === 0) return;
+    setAnalysisLoading(true);
+    try {
+      const res = await fetch(
+        `/api/maker-radar/stock-analysis?tickers=${encodeURIComponent(tickers.join(','))}`,
+        { cache: 'no-store' }
+      );
+      if (!res.ok) {
+        console.error('stock-analysis API error:', res.status);
+        return;
+      }
+      const json: StockAnalysisResponse = await res.json();
+      const map = new Map<string, StockAnalysis>();
+      for (const r of json.results || []) {
+        map.set(r.ticker, r);
+      }
+      setStockAnalysis(map);
+      if (json.market_context) {
+        setMarketContext(json.market_context);
+      }
+    } catch (e) {
+      console.error('stock-analysis fetch error:', e);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, []);
+
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // لما الـ picks تـجي، حضّر تحليل الـ Hybrid
+  useEffect(() => {
+    if (data?.picks && data.picks.length > 0) {
+      const tickers = data.picks.slice(0, 20).map(p => p.ticker); // أول 20 سهم (limit)
+      fetchStockAnalysis(tickers);
+    }
+  }, [data, fetchStockAnalysis]);
+
+  // === Helpers لعرض التحليل ===
+  const recColor = (rec: string): string => {
+    switch (rec) {
+      case 'STRONG_BUY': return 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
+      case 'BUY': return 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30';
+      case 'HOLD': return 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30';
+      case 'REDUCE': return 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30';
+      case 'SELL': return 'bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-500/30';
+      default: return 'bg-muted text-muted-foreground border-muted';
+    }
+  };
+
+  const recLabel = (rec: string): string => {
+    switch (rec) {
+      case 'STRONG_BUY': return '🔥 شراء قوي';
+      case 'BUY': return '🟢 شراء';
+      case 'HOLD': return '🟡 تجمّل';
+      case 'REDUCE': return '🟠 تقليل';
+      case 'SELL': return '🔴 بيع';
+      default: return '—';
+    }
+  };
+
+  const regimeColor = (regime: string): string => {
+    switch (regime) {
+      case 'BULL': return 'text-emerald-600 dark:text-emerald-400';
+      case 'BEAR': return 'text-rose-600 dark:text-rose-400';
+      case 'RANGE': return 'text-amber-600 dark:text-amber-400';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  const regimeLabel = (regime: string): string => {
+    switch (regime) {
+      case 'BULL': return 'صاعد';
+      case 'BEAR': return 'هابط';
+      case 'RANGE': return 'عرضي';
+      default: return '—';
+    }
+  };
 
   if (loading) {
     return (
@@ -208,6 +318,106 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
         );
       },
     },
+    // === تحليل هجين v2 (تحت التجربة) ===
+    {
+      key: 'hybrid_analysis',
+      header: 'تحليل هجين',
+      sortable: true,
+      filterable: true,
+      render: (row) => {
+        const analysis = stockAnalysis.get(row.ticker);
+        if (analysisLoading && !analysis) {
+          return <Skeleton className="h-4 w-16" />;
+        }
+        if (!analysis) {
+          return <span className="text-[10px] text-muted-foreground">—</span>;
+        }
+        if (analysis.error) {
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] text-muted-foreground">خطأ</span>
+              <span className="text-[8px] text-muted-foreground/70">{analysis.error}</span>
+            </div>
+          );
+        }
+        return (
+          <div className="flex flex-col gap-1">
+            {/* Recommendation badge */}
+            <Badge className={`text-[9px] h-4 px-1 ${recColor(analysis.recommendation)}`}>
+              {recLabel(analysis.recommendation)}
+            </Badge>
+            {/* Score */}
+            <span className={`text-[9px] font-mono ${
+              analysis.hybrid_score >= 25 ? 'text-emerald-600 dark:text-emerald-400' :
+              analysis.hybrid_score <= -25 ? 'text-rose-600 dark:text-rose-400' :
+              'text-muted-foreground'
+            }`}>
+              score: {analysis.hybrid_score > 0 ? '+' : ''}{analysis.hybrid_score.toFixed(0)}
+            </span>
+            {/* Veto indicator */}
+            {analysis.veto_applied && (
+              <span className="text-[8px] text-rose-600 dark:text-rose-400" title="EGX30 BEAR → تم تقييد التوصية">
+                ⚠️ تقييد
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    // === تفاصيل الـ Layers (HMM + Wyckoff + Weinstein + Volume) ===
+    {
+      key: 'hybrid_layers',
+      header: 'الطبقات',
+      sortable: false,
+      render: (row) => {
+        const analysis = stockAnalysis.get(row.ticker);
+        if (!analysis || analysis.error) {
+          return <span className="text-[10px] text-muted-foreground">—</span>;
+        }
+        const l1 = analysis.layers.l1_hmm_stock;
+        const l2 = analysis.layers.l2_wyckoff;
+        const l3 = analysis.layers.l3_weinstein;
+        const l4 = analysis.layers.l4_volume;
+        return (
+          <div className="flex flex-col gap-0.5 text-[9px]">
+            <div className="flex gap-1">
+              <span className="text-muted-foreground">HMM:</span>
+              <span className={`font-medium ${regimeColor(l1.regime)}`}>
+                {regimeLabel(l1.regime)} ({l1.confidence?.toFixed(0)}%)
+              </span>
+            </div>
+            <div className="flex gap-1">
+              <span className="text-muted-foreground">Wyckoff:</span>
+              <span className="text-foreground">{l2.phase_ar || '—'}</span>
+            </div>
+            <div className="flex gap-1">
+              <span className="text-muted-foreground">Weinstein:</span>
+              <span className={`font-medium ${
+                l3.stage.includes('MARKUP') ? 'text-emerald-600 dark:text-emerald-400' :
+                l3.stage.includes('MARKDOWN') ? 'text-rose-600 dark:text-rose-400' :
+                l3.stage.includes('TOP') ? 'text-amber-600 dark:text-amber-400' :
+                'text-foreground'
+              }`}>
+                {l3.stage_ar || '—'}
+              </span>
+            </div>
+            <div className="flex gap-1">
+              <span className="text-muted-foreground">Volume:</span>
+              <span className={`${
+                l4.breakout_confirmed ? 'text-emerald-600 dark:text-emerald-400 font-bold' :
+                l4.position === 'BELOW_VA' ? 'text-rose-600 dark:text-rose-400' :
+                'text-foreground'
+              }`}>
+                {l4.breakout_confirmed ? '✅ اختراق مؤكد' :
+                 l4.position === 'ABOVE_VA' ? 'فوق VAH' :
+                 l4.position === 'BELOW_VA' ? 'تحت VAL' :
+                 l4.position === 'IN_VA' ? 'في VA' : '—'}
+              </span>
+            </div>
+          </div>
+        );
+      },
+    },
     {
       key: 'accumulation',
       header: 'التجميع',
@@ -241,11 +451,37 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
               {data.stats.with_predictions} بتوقع
             </Badge>
           )}
+          {/* Hybrid analysis status */}
+          <Badge variant="outline" className="text-[9px] gap-1" title="تحليل هجين v2 (تحت التجربة)">
+            <Brain className="h-2.5 w-2.5" />
+            {analysisLoading ? 'جاري التحليل...' : `${stockAnalysis.size} محلل`}
+          </Badge>
           <button onClick={fetchData} className="text-muted-foreground hover:text-foreground" title="تحديث">
             <RefreshCw className="h-3 w-3" />
           </button>
         </div>
       </div>
+
+      {/* Market Context Banner (EGX30 regime من الـ Hybrid) */}
+      {marketContext && (
+        <div className="mb-3 p-2 rounded-md bg-muted/50 border border-border/50 flex items-center gap-2 text-[10px]">
+          <Sparkles className="h-3 w-3 text-amber-500" />
+          <span className="text-muted-foreground">سياق السوق (EGX30):</span>
+          <Badge className={`text-[9px] h-4 px-1.5 ${
+            marketContext.regime === 'BULL' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' :
+            marketContext.regime === 'BEAR' ? 'bg-rose-500/20 text-rose-700 dark:text-rose-400' :
+            'bg-amber-500/20 text-amber-700 dark:text-amber-400'
+          }`}>
+            {regimeLabel(marketContext.regime)} ({marketContext.confidence?.toFixed(0)}%)
+          </Badge>
+          {marketContext.veto_buy && (
+            <Badge className="text-[9px] h-4 px-1.5 bg-rose-500/20 text-rose-700 dark:text-rose-400">
+              ⚠️ تقييد الشراء
+            </Badge>
+          )}
+          <span className="text-muted-foreground/70 mr-auto">تحت التجربة</span>
+        </div>
+      )}
 
       {/* Source breakdown */}
       <div className="flex flex-wrap gap-1.5 mb-3">
