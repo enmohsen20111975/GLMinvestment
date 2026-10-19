@@ -379,12 +379,12 @@ export function CryptoPortfolioView() {
       {/* Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-5">
         {error && (
-          <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" />
+          <div className="p-4 rounded-lg bg-loss dark:bg-loss/20 border border-loss dark:border-loss flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-loss mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-rose-800 dark:text-rose-200">خطأ في تحميل الأسعار</p>
-              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">{error}</p>
-              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">
+              <p className="text-sm font-medium text-loss dark:text-loss">خطأ في تحميل الأسعار</p>
+              <p className="text-xs text-loss dark:text-loss mt-1">{error}</p>
+              <p className="text-xs text-loss dark:text-loss mt-1">
                 يتم استخدام آخر سعر محفوظ مؤقتاً. اضغط زر التحديث لإعادة المحاولة.
               </p>
             </div>
@@ -395,14 +395,14 @@ export function CryptoPortfolioView() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="border-border/60">
             <CardContent className="p-4 flex flex-col items-center gap-1">
-              <DollarSign className="w-5 h-5 text-emerald-500" />
+              <DollarSign className="w-5 h-5 text-profit" />
               <span className="text-lg font-bold" dir="ltr">{formatPrice(summary.totalValue)}</span>
               <span className="text-xs text-muted-foreground">إجمالي القيمة</span>
             </CardContent>
           </Card>
           <Card className="border-border/60">
             <CardContent className="p-4 flex flex-col items-center gap-1">
-              <BarChart3 className="w-5 h-5 text-amber-500" />
+              <BarChart3 className="w-5 h-5 text-warning" />
               <span className="text-lg font-bold" dir="ltr">{formatPrice(summary.totalCost)}</span>
               <span className="text-xs text-muted-foreground">إجمالي التكلفة</span>
             </CardContent>
@@ -410,13 +410,13 @@ export function CryptoPortfolioView() {
           <Card className="border-border/60">
             <CardContent className="p-4 flex flex-col items-center gap-1">
               {summary.totalProfitLoss >= 0 ? (
-                <TrendingUp className="w-5 h-5 text-emerald-500" />
+                <TrendingUp className="w-5 h-5 text-profit" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-rose-500" />
+                <TrendingDown className="w-5 h-5 text-loss" />
               )}
               <span className={cn(
                 'text-lg font-bold',
-                summary.totalProfitLoss >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                summary.totalProfitLoss >= 0 ? 'text-profit' : 'text-loss'
               )} dir="ltr">
                 {summary.totalProfitLoss >= 0 ? '+' : '-'}{formatPrice(Math.abs(summary.totalProfitLoss))}
               </span>
@@ -428,7 +428,7 @@ export function CryptoPortfolioView() {
               <Percent className="w-5 h-5 text-orange-500" />
               <span className={cn(
                 'text-lg font-bold',
-                summary.totalProfitLossPercent >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                summary.totalProfitLossPercent >= 0 ? 'text-profit' : 'text-loss'
               )}>
                 {summary.totalProfitLossPercent >= 0 ? '+' : ''}{(summary.totalProfitLossPercent ?? 0).toFixed(2)}%
               </span>
@@ -501,7 +501,7 @@ export function CryptoPortfolioView() {
                         <p className="font-semibold" dir="ltr">{formatPrice(position.currentValue)}</p>
                         <p className={cn(
                           'text-xs flex items-center gap-1 justify-end',
-                          isProfit ? 'text-emerald-600' : 'text-rose-600'
+                          isProfit ? 'text-profit' : 'text-loss'
                         )} dir="ltr">
                           {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                           {isProfit ? '+' : '-'}{formatPrice(Math.abs(position.profitLoss))} ({isProfit ? '+' : ''}{(position.profitLossPercent ?? 0).toFixed(2)}%)
@@ -515,7 +515,7 @@ export function CryptoPortfolioView() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemovePosition(position.id)}
-                        className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                        className="text-loss hover:text-loss hover:bg-loss"
                         title="حذف المركز"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -529,14 +529,14 @@ export function CryptoPortfolioView() {
         </Card>
 
         {/* Disclaimer */}
-        <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+        <div className="p-4 rounded-lg bg-warning dark:bg-warning/20 border border-warning dark:border-warning">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              <p className="text-sm font-medium text-warning dark:text-warning">
                 تنبيه هام
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              <p className="text-xs text-warning dark:text-warning mt-1">
                 هذه المحفظة للأغراض التعليمية فقط ولا تمثل نصيحة استثمارية. استشر مستشار مالي قبل اتخاذ أي قرارات استثمارية.
               </p>
             </div>
@@ -612,14 +612,14 @@ export function CryptoPortfolioView() {
             {newCoin.symbol && livePriceMap[newCoin.symbol] && (
               <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/30">
                 السعر الحالي لـ {newCoin.symbol}: <span className="font-semibold" dir="ltr">{formatPrice(livePriceMap[newCoin.symbol].price)}</span>
-                <span className={cn('mr-2', livePriceMap[newCoin.symbol].change >= 0 ? 'text-emerald-600' : 'text-rose-600')} dir="ltr">
+                <span className={cn('mr-2', livePriceMap[newCoin.symbol].change >= 0 ? 'text-profit' : 'text-loss')} dir="ltr">
                   ({livePriceMap[newCoin.symbol].change >= 0 ? '+' : ''}{(livePriceMap[newCoin.symbol].change ?? 0).toFixed(2)}%)
                 </span>
               </div>
             )}
 
             {allCoins.length === 0 && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <p className="text-xs text-warning dark:text-warning flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
                 جارٍ تحميل قائمة العملات من الخادم...
               </p>

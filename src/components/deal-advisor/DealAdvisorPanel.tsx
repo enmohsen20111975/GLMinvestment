@@ -179,11 +179,11 @@ function formatPct(n: number | null): string {
 function classificationBadge(c: string) {
   switch (c) {
     case 'clean':
-      return { variant: 'default' as const, label: 'أنظف نسبياً', className: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100' };
+      return { variant: 'default' as const, label: 'أنظف نسبياً', className: 'bg-profit text-profit hover:bg-profit' };
     case 'momentum':
-      return { variant: 'default' as const, label: 'زخم', className: 'bg-amber-100 text-amber-800 hover:bg-amber-100' };
+      return { variant: 'default' as const, label: 'زخم', className: 'bg-warning text-warning hover:bg-warning' };
     case 'high_risk':
-      return { variant: 'default' as const, label: 'عالي المخاطر', className: 'bg-red-100 text-red-800 hover:bg-red-100' };
+      return { variant: 'default' as const, label: 'عالي المخاطر', className: 'bg-loss text-loss hover:bg-loss' };
     default:
       return { variant: 'secondary' as const, label: 'غير محدد', className: '' };
   }
@@ -192,15 +192,15 @@ function classificationBadge(c: string) {
 function actionColor(action: string): string {
   switch (action) {
     case 'exit':
-      return 'text-red-600 font-bold';
+      return 'text-loss font-bold';
     case 'reduce':
       return 'text-orange-600 font-semibold';
     case 'take_profit':
-      return 'text-emerald-600 font-semibold';
+      return 'text-profit font-semibold';
     case 'hold_conditional':
-      return 'text-teal-600 font-semibold';
+      return 'text-whale font-semibold';
     case 'add':
-      return 'text-emerald-600 font-medium';
+      return 'text-profit font-medium';
     case 'wait':
       return 'text-zinc-600 font-medium';
     default:
@@ -211,9 +211,9 @@ function actionColor(action: string): string {
 function priorityBadge(p: string) {
   switch (p) {
     case 'high':
-      return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">عالية</Badge>;
+      return <Badge variant="outline" className="bg-loss text-loss border-loss text-xs">عالية</Badge>;
     case 'medium':
-      return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">متوسطة</Badge>;
+      return <Badge variant="outline" className="bg-warning text-warning border-warning text-xs">متوسطة</Badge>;
     case 'low':
       return <Badge variant="outline" className="bg-zinc-50 text-zinc-700 border-zinc-200 text-xs">منخفضة</Badge>;
     default:
@@ -442,12 +442,12 @@ export function DealAdvisorPanel({
             <Alert
               className={
                 data.action_scenarios.current_recommendation.action === 'exit'
-                  ? 'border-red-300 bg-red-50'
+                  ? 'border-loss bg-loss'
                   : data.action_scenarios.current_recommendation.action === 'take_profit'
-                    ? 'border-emerald-300 bg-emerald-50'
+                    ? 'border-profit bg-profit'
                     : data.action_scenarios.current_recommendation.action === 'reduce'
                       ? 'border-orange-300 bg-orange-50'
-                      : 'border-teal-300 bg-blue-50'
+                      : 'border-whale bg-primary'
               }
             >
               <Target className="h-4 w-4" />
@@ -629,8 +629,8 @@ export function DealAdvisorPanel({
                     <span
                       className={
                         (data.entry_assessment.pnl_pct ?? 0) >= 0
-                          ? 'font-bold text-emerald-600'
-                          : 'font-bold text-red-600'
+                          ? 'font-bold text-profit'
+                          : 'font-bold text-loss'
                       }
                     >
                       {formatPct(data.entry_assessment.pnl_pct)}
@@ -731,19 +731,19 @@ export function DealAdvisorPanel({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="text-xs text-muted-foreground">الدعم</div>
-                    <div className="font-medium text-emerald-700">
+                    <div className="font-medium text-profit">
                       {formatPrice(data.suggested_levels.support)} ج.م
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">المقاومة</div>
-                    <div className="font-medium text-red-700">
+                    <div className="font-medium text-loss">
                       {formatPrice(data.suggested_levels.resistance)} ج.م
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">وقف مقترح</div>
-                    <div className="font-medium text-red-700">
+                    <div className="font-medium text-loss">
                       {formatPrice(data.suggested_levels.suggested_stop)} ج.م
                     </div>
                     {data.suggested_levels.stop_reason_ar && (
@@ -754,7 +754,7 @@ export function DealAdvisorPanel({
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">هدف قريب</div>
-                    <div className="font-medium text-emerald-700">
+                    <div className="font-medium text-profit">
                       {formatPrice(data.suggested_levels.near_target)} ج.م
                     </div>
                   </div>
@@ -801,7 +801,7 @@ export function DealAdvisorPanel({
                   </div>
                   {data.data_missing.length > 0 && (
                     <div className="mt-2">
-                      <span className="text-amber-600">بيانات ناقصة:</span>{' '}
+                      <span className="text-warning">بيانات ناقصة:</span>{' '}
                       {data.data_missing.join('، ')}
                     </div>
                   )}

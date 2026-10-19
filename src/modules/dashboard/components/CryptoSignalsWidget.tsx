@@ -41,11 +41,11 @@ function formatPrice(price: number): string {
 }
 
 function fearGreedColor(value: number): string {
-  if (value <= 20) return 'bg-red-500';
+  if (value <= 20) return 'bg-loss';
   if (value <= 40) return 'bg-orange-500';
   if (value <= 60) return 'bg-yellow-500';
   if (value <= 80) return 'bg-lime-500';
-  return 'bg-emerald-500';
+  return 'bg-profit';
 }
 
 function fearGreedLabel(value: number): string {
@@ -177,18 +177,18 @@ export function CryptoSignalsWidget() {
                     key={crypto.id}
                     className={cn(
                       'p-2.5 rounded-lg border transition-all',
-                      signal === 'BUY' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' :
-                      signal === 'SELL' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                      'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                      signal === 'BUY' ? 'bg-profit dark:bg-profit/20 border-profit dark:border-profit' :
+                      signal === 'SELL' ? 'bg-loss dark:bg-loss/20 border-loss dark:border-loss' :
+                      'bg-warning dark:bg-warning/20 border-warning dark:border-warning'
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-sm">{crypto.symbol?.toUpperCase()}</span>
                       <Badge className={cn(
                         'text-[9px]',
-                        signal === 'BUY' ? 'bg-emerald-600 text-white' :
-                        signal === 'SELL' ? 'bg-red-600 text-white' :
-                        'bg-amber-600 text-white'
+                        signal === 'BUY' ? 'bg-profit text-white' :
+                        signal === 'SELL' ? 'bg-loss text-white' :
+                        'bg-warning text-white'
                       )}>
                         {signal === 'BUY' ? 'شراء' : signal === 'SELL' ? 'بيع' : 'انتظار'}
                       </Badge>
@@ -196,11 +196,11 @@ export function CryptoSignalsWidget() {
                     <div className="text-base font-bold" dir="ltr">{formatPrice(crypto.current_price)}</div>
                     <div className="flex items-center gap-1 text-[10px] mt-1">
                       {crypto.price_change_percentage_24h >= 0 ? (
-                        <TrendingUp className="w-3 h-3 text-emerald-500" />
+                        <TrendingUp className="w-3 h-3 text-profit" />
                       ) : (
-                        <TrendingDown className="w-3 h-3 text-red-500" />
+                        <TrendingDown className="w-3 h-3 text-loss" />
                       )}
-                      <span className={crypto.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-red-600'}>
+                      <span className={crypto.price_change_percentage_24h >= 0 ? 'text-profit' : 'text-loss'}>
                         {crypto.price_change_percentage_24h >= 0 ? '+' : ''}{crypto.price_change_percentage_24h?.toFixed(2)}%
                       </span>
                     </div>
@@ -216,9 +216,9 @@ export function CryptoSignalsWidget() {
                 <span className="text-[10px] font-medium">أداء المؤشرات المُختبرة</span>
               </div>
               <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
-                <div><span className="block font-bold text-emerald-500">63.6%</span><span className="text-muted-foreground">VWAP</span></div>
-                <div><span className="block font-bold text-emerald-500">55.2%</span><span className="text-muted-foreground">Stoch</span></div>
-                <div><span className="block font-bold text-amber-600">53%</span><span className="text-muted-foreground">EMA</span></div>
+                <div><span className="block font-bold text-profit">63.6%</span><span className="text-muted-foreground">VWAP</span></div>
+                <div><span className="block font-bold text-profit">55.2%</span><span className="text-muted-foreground">Stoch</span></div>
+                <div><span className="block font-bold text-warning">53%</span><span className="text-muted-foreground">EMA</span></div>
               </div>
             </div>
 

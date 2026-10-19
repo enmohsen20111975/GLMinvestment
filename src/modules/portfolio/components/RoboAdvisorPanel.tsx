@@ -227,31 +227,31 @@ function getSeverityStyle(sev: RebalanceAlert['severity']): SeverityStyle {
   switch (sev) {
     case 'danger':
       return {
-        container: 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800',
-        title: 'text-red-800 dark:text-red-200',
-        message: 'text-red-700 dark:text-red-300',
-        action: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800',
-        badge: 'bg-red-600 text-white',
-        icon: <AlertOctagon className="h-5 w-5 text-red-500" />,
+        container: 'bg-loss dark:bg-loss/30 border-loss dark:border-loss',
+        title: 'text-loss dark:text-loss',
+        message: 'text-loss dark:text-loss',
+        action: 'bg-loss dark:bg-loss/40 text-loss dark:text-loss border border-loss dark:border-loss',
+        badge: 'bg-loss text-white',
+        icon: <AlertOctagon className="h-5 w-5 text-loss" />,
       };
     case 'warning':
       return {
-        container: 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800',
-        title: 'text-amber-800 dark:text-amber-200',
-        message: 'text-amber-700 dark:text-amber-300',
-        action: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800',
-        badge: 'bg-amber-500 text-white',
-        icon: <AlertTriangle className="h-5 w-5 text-amber-500" />,
+        container: 'bg-warning dark:bg-warning/30 border-warning dark:border-warning',
+        title: 'text-warning dark:text-warning',
+        message: 'text-warning dark:text-warning',
+        action: 'bg-warning dark:bg-warning/40 text-warning dark:text-warning border border-warning dark:border-warning',
+        badge: 'bg-warning text-white',
+        icon: <AlertTriangle className="h-5 w-5 text-warning" />,
       };
     case 'info':
     default:
       return {
-        container: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800',
-        title: 'text-emerald-500 dark:text-emerald-200',
-        message: 'text-emerald-500 dark:text-emerald-300',
-        action: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-500 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800',
-        badge: 'bg-emerald-600 text-white',
-        icon: <Info className="h-5 w-5 text-emerald-500" />,
+        container: 'bg-profit dark:bg-profit/30 border-profit dark:border-profit',
+        title: 'text-profit dark:text-profit',
+        message: 'text-profit dark:text-profit',
+        action: 'bg-profit dark:bg-profit/40 text-profit dark:text-profit border border-profit dark:border-profit',
+        badge: 'bg-profit text-white',
+        icon: <Info className="h-5 w-5 text-profit" />,
       };
   }
 }
@@ -478,7 +478,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
         <div className="flex items-center gap-2">
           <FeatureIcon
             icon={<Sparkles className="h-5 w-5" />}
-            tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
+            tone="bg-profit text-profit dark:bg-profit/40 dark:text-profit"
           />
           <div>
             <h2 className="text-base md:text-lg font-bold">المستشار الآلي (Robo-Advisor)</h2>
@@ -491,7 +491,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
           size="sm"
           variant="outline"
           onClick={() => setRefreshTick((t) => t + 1)}
-          className="text-emerald-500 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-950/40"
+          className="text-profit border-profit hover:bg-profit dark:text-profit dark:border-profit dark:hover:bg-profit/40"
         >
           <RefreshCw className="h-3.5 w-3.5 ml-1.5" />
           تحديث
@@ -558,13 +558,13 @@ function ProjectionCard({
 }: ProjectionCardProps) {
   const isPositive = (data?.growth_pct ?? 0) >= 0;
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900/50">
+    <Card className="border-profit dark:border-profit/50">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <FeatureIcon
               icon={<CalendarClock className="h-5 w-5" />}
-              tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
+              tone="bg-profit text-profit dark:bg-profit/40 dark:text-profit"
             />
             <div>
               <CardTitle className="text-base">التوقع المستقبلي للثروة</CardTitle>
@@ -581,7 +581,7 @@ function ProjectionCard({
                 onClick={() => onYearsChange(y)}
                 className={
                   years === y
-                    ? 'h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white'
+                    ? 'h-7 px-2.5 text-xs bg-profit hover:bg-profit text-white'
                     : 'h-7 px-2.5 text-xs'
                 }
               >
@@ -603,7 +603,7 @@ function ProjectionCard({
             id="compound-switch"
             checked={compound}
             onCheckedChange={onCompoundChange}
-            className="data-[state=checked]:bg-emerald-600"
+            className="data-[state=checked]:bg-profit"
           />
         </div>
 
@@ -613,7 +613,7 @@ function ProjectionCard({
             <Skeleton className="h-44 w-full" />
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+          <div className="rounded-lg border border-warning bg-warning dark:bg-warning/30 dark:border-warning px-3 py-2 text-sm text-warning dark:text-warning">
             {error}
           </div>
         ) : !data ? (
@@ -623,19 +623,19 @@ function ProjectionCard({
         ) : (
           <>
             {/* Big result */}
-            <div className="rounded-xl bg-gradient-to-l from-emerald-50 to-emerald-100/40 dark:from-emerald-950/40 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-900/50 p-4">
+            <div className="rounded-xl bg-gradient-to-l from-profit to-profit/40 dark:from-profit/40 dark:to-profit/20 border border-profit dark:border-profit/50 p-4">
               <p className="text-xs text-muted-foreground mb-1">
                 ثروتك المتوقعة بعد {data.years} سنين هي
               </p>
-              <p className="text-2xl md:text-3xl font-extrabold text-emerald-500 dark:text-emerald-300 tracking-tight">
+              <p className="text-2xl md:text-3xl font-extrabold text-profit dark:text-profit tracking-tight">
                 {fmtEGP(data.final_value)}
               </p>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <Badge
                   className={
                     isPositive
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
-                      : 'bg-red-600 hover:bg-red-700 text-white border-transparent'
+                      ? 'bg-profit hover:bg-profit text-white border-transparent'
+                      : 'bg-loss hover:bg-loss text-white border-transparent'
                   }
                 >
                   {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -710,7 +710,7 @@ function ProjectionCard({
             <div className="grid grid-cols-3 gap-2 text-xs">
               <div className="rounded-md bg-muted/40 px-2 py-1.5">
                 <div className="text-muted-foreground">العائد السنوي</div>
-                <div className="font-bold text-emerald-500 dark:text-emerald-300">
+                <div className="font-bold text-profit dark:text-profit">
                   {fmtEGP(data.annual_yield_egp)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -719,7 +719,7 @@ function ProjectionCard({
               </div>
               <div className="rounded-md bg-muted/40 px-2 py-1.5">
                 <div className="text-muted-foreground">المصاريف الشهرية</div>
-                <div className="font-bold text-rose-700 dark:text-rose-300">
+                <div className="font-bold text-loss dark:text-loss">
                   {fmtEGP(data.monthly_expenses_egp)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -728,7 +728,7 @@ function ProjectionCard({
               </div>
               <div className="rounded-md bg-muted/40 px-2 py-1.5">
                 <div className="text-muted-foreground">إجمالي العائد</div>
-                <div className="font-bold text-emerald-500 dark:text-emerald-300">
+                <div className="font-bold text-profit dark:text-profit">
                   {fmtEGP(data.total_yield_egp)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -754,12 +754,12 @@ interface RebalanceAlertsCardProps {
 
 function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
   return (
-    <Card className="border-amber-200 dark:border-amber-900/50">
+    <Card className="border-warning dark:border-warning/50">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <FeatureIcon
             icon={<ShieldCheck className="h-5 w-5" />}
-            tone="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+            tone="bg-warning text-warning dark:bg-warning/40 dark:text-warning"
           />
           <div>
             <CardTitle className="text-base">تنبيهات إعادة التوازن</CardTitle>
@@ -776,15 +776,15 @@ function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
             <Skeleton className="h-20 w-full" />
           </div>
         ) : !alerts || alerts.length === 0 ? (
-          <div className="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 p-4 flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-500 dark:text-emerald-300">
+          <div className="rounded-xl border border-profit bg-profit dark:bg-profit/30 dark:border-profit p-4 flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-profit dark:bg-profit/60 text-profit dark:text-profit">
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-bold text-emerald-500 dark:text-emerald-200">
+              <p className="font-bold text-profit dark:text-profit">
                 محفظتك متزنة
               </p>
-              <p className="text-sm text-emerald-500 dark:text-emerald-300">
+              <p className="text-sm text-profit dark:text-profit">
                 لا توجد تنبيهات إعادة توازن في الوقت الحالي. استمر في المراقبة!
               </p>
             </div>
@@ -885,13 +885,13 @@ function EquityCurveCard({
   }, [data]);
 
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900/50">
+    <Card className="border-profit dark:border-profit/50">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <FeatureIcon
               icon={<TrendingUp className="h-5 w-5" />}
-              tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
+              tone="bg-profit text-profit dark:bg-profit/40 dark:text-profit"
             />
             <div>
               <CardTitle className="text-base">حركة صافي الثروة</CardTitle>
@@ -908,7 +908,7 @@ function EquityCurveCard({
                 onClick={() => onDaysChange(d)}
                 className={
                   days === d
-                    ? 'h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white'
+                    ? 'h-7 px-2.5 text-xs bg-profit hover:bg-profit text-white'
                     : 'h-7 px-2.5 text-xs'
                 }
               >
@@ -925,14 +925,14 @@ function EquityCurveCard({
             <Skeleton className="h-48 w-full" />
           </div>
         ) : authRequired ? (
-          <div className="rounded-xl border border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-6 text-center">
-            <p className="text-sm text-amber-700 dark:text-amber-300 flex items-center justify-center gap-2">
+          <div className="rounded-xl border border-dashed border-warning dark:border-warning bg-warning/50 dark:bg-warning/20 p-6 text-center">
+            <p className="text-sm text-warning dark:text-warning flex items-center justify-center gap-2">
               <Info className="h-4 w-4" />
               سجّل الدخول لعرض حركة ثروتك
             </p>
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+          <div className="rounded-lg border border-warning bg-warning dark:bg-warning/30 dark:border-warning px-3 py-2 text-sm text-warning dark:text-warning">
             {error}
           </div>
         ) : !data || chartData.length === 0 ? (
@@ -946,15 +946,15 @@ function EquityCurveCard({
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs text-muted-foreground">آخر قيمة:</span>
-                <span className="text-lg font-bold text-emerald-500 dark:text-emerald-300">
+                <span className="text-lg font-bold text-profit dark:text-profit">
                   {fmtEGP(data.last_val)}
                 </span>
               </div>
               <Badge
                 className={
                   isPositive
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
-                    : 'bg-red-600 hover:bg-red-700 text-white border-transparent'
+                    ? 'bg-profit hover:bg-profit text-white border-transparent'
+                    : 'bg-loss hover:bg-loss text-white border-transparent'
                 }
               >
                 {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -1047,12 +1047,12 @@ interface AllocationCardProps {
 
 function AllocationCard({ allocation, total }: AllocationCardProps) {
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900/50">
+    <Card className="border-profit dark:border-profit/50">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <FeatureIcon
             icon={<PieIcon className="h-5 w-5" />}
-            tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
+            tone="bg-profit text-profit dark:bg-profit/40 dark:text-profit"
           />
           <div>
             <CardTitle className="text-base">توزيع الأصول</CardTitle>
@@ -1128,7 +1128,7 @@ function AllocationCard({ allocation, total }: AllocationCardProps) {
               ))}
               <div className="flex items-center justify-between gap-2 text-sm pt-2 mt-1 border-t border-border">
                 <span className="font-bold">الإجمالي</span>
-                <span className="font-bold text-emerald-500 dark:text-emerald-300">
+                <span className="font-bold text-profit dark:text-profit">
                   {fmtEGP(total)}
                 </span>
               </div>
@@ -1218,7 +1218,7 @@ const transactionColumns: Column<TransactionRow>[] = [
       return (
         <span className={cn(
           'whitespace-nowrap font-bold',
-          isProfit ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+          isProfit ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
         )}>
           {isProfit ? '+' : ''}{fmtEGP(t.pnl)}
         </span>
@@ -1235,7 +1235,7 @@ const transactionColumns: Column<TransactionRow>[] = [
       return (
         <span className={cn(
           'whitespace-nowrap font-bold',
-          isProfit ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+          isProfit ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
         )}>
           {fmtPct(t.pnlPct)}
         </span>
@@ -1246,12 +1246,12 @@ const transactionColumns: Column<TransactionRow>[] = [
 
 function TransactionsCard({ transactions }: { transactions: TransactionRow[] }) {
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900/50">
+    <Card className="border-profit dark:border-profit/50">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <FeatureIcon
             icon={<History className="h-5 w-5" />}
-            tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
+            tone="bg-profit text-profit dark:bg-profit/40 dark:text-profit"
           />
           <div>
             <CardTitle className="text-base">سجل المعاملات</CardTitle>

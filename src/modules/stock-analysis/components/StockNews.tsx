@@ -72,11 +72,11 @@ function getRelativeTime(dateStr: string): string {
 function getSentimentColor(sentiment: string): string {
   switch (sentiment) {
     case 'positive':
-      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400';
+      return 'bg-profit text-profit dark:bg-profit/40 dark:text-profit';
     case 'negative':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400';
+      return 'bg-loss text-loss dark:bg-loss/40 dark:text-loss';
     default:
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400';
+      return 'bg-warning text-warning dark:bg-warning/40 dark:text-warning';
   }
 }
 
@@ -188,10 +188,10 @@ function SentimentBar({ score }: { score: number }) {
   const clampedPercentage = Math.max(0, Math.min(100, percentage));
 
   const barColor = score > 0.2
-    ? 'bg-emerald-500'
+    ? 'bg-profit'
     : score < -0.2
-      ? 'bg-red-500'
-      : 'bg-amber-500';
+      ? 'bg-loss'
+      : 'bg-warning';
 
   return (
     <div className="flex-1">
@@ -202,9 +202,9 @@ function SentimentBar({ score }: { score: number }) {
         />
       </div>
       <div className="flex justify-between mt-1" dir="ltr">
-        <span className="text-[10px] text-red-500 font-medium">-1</span>
+        <span className="text-[10px] text-loss font-medium">-1</span>
         <span className="text-[10px] text-muted-foreground">0</span>
-        <span className="text-[10px] text-emerald-500 font-medium">+1</span>
+        <span className="text-[10px] text-profit font-medium">+1</span>
       </div>
     </div>
   );
@@ -234,36 +234,36 @@ function SentimentDistribution({ news }: { news: NewsArticle[] }) {
       <div className="flex gap-1 h-2.5 rounded-full overflow-hidden" dir="ltr">
         {counts.positive > 0 && (
           <div
-            className="bg-emerald-500 transition-all duration-500"
+            className="bg-profit transition-all duration-500"
             style={{ width: `${posPct}%` }}
           />
         )}
         {counts.neutral > 0 && (
           <div
-            className="bg-amber-500 transition-all duration-500"
+            className="bg-warning transition-all duration-500"
             style={{ width: `${neuPct}%` }}
           />
         )}
         {counts.negative > 0 && (
           <div
-            className="bg-red-500 transition-all duration-500"
+            className="bg-loss transition-all duration-500"
             style={{ width: `${negPct}%` }}
           />
         )}
       </div>
       <div className="flex justify-between text-[11px] gap-4" dir="rtl">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <div className="w-2 h-2 rounded-full bg-profit" />
           <span className="text-muted-foreground">إيجابي</span>
           <span className="font-semibold">{counts.positive}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-amber-500" />
+          <div className="w-2 h-2 rounded-full bg-warning" />
           <span className="text-muted-foreground">محايد</span>
           <span className="font-semibold">{counts.neutral}</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-red-500" />
+          <div className="w-2 h-2 rounded-full bg-loss" />
           <span className="text-muted-foreground">سلبي</span>
           <span className="font-semibold">{counts.negative}</span>
         </div>
@@ -287,7 +287,7 @@ function NewsCard({ article }: { article: NewsArticle }) {
           rel="noopener noreferrer"
           className="block"
         >
-          <h3 className="text-sm font-bold leading-relaxed group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2">
+          <h3 className="text-sm font-bold leading-relaxed group-hover:text-profit dark:group-hover:text-profit transition-colors line-clamp-2">
             {article.title_ar || article.title}
           </h3>
         </a>
@@ -303,7 +303,7 @@ function NewsCard({ article }: { article: NewsArticle }) {
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              className="text-xs text-muted-foreground hover:text-profit dark:hover:text-profit transition-colors"
             >
               <ExternalLink className="w-3 h-3 inline" />
             </a>
@@ -316,8 +316,8 @@ function NewsCard({ article }: { article: NewsArticle }) {
 
         {/* Executive AI / Financial Takeaway */}
         {article.summary_ar && article.summary_ar !== article.title && (
-          <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-xs space-y-1.5">
-            <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+          <div className="bg-profit/5 dark:bg-profit/10 border border-profit/20 rounded-lg p-3 text-xs space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold text-profit dark:text-profit text-xs">
               <Sparkles className="w-3.5 h-3.5" />
               <span>خلاصة المحلل المالي للمستثمر:</span>
             </div>
@@ -338,8 +338,8 @@ function NewsCard({ article }: { article: NewsArticle }) {
         <div className="flex items-center gap-2 flex-wrap pt-1">
           {/* Catalyst Badge */}
           {Boolean(article.is_catalyst) && (
-            <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[11px] gap-1 px-2.5 py-0.5 font-semibold">
-              <Sparkles className="w-3 h-3 text-amber-500" />
+            <Badge className="bg-warning/15 text-warning dark:text-warning border border-warning/30 text-[11px] gap-1 px-2.5 py-0.5 font-semibold">
+              <Sparkles className="w-3 h-3 text-warning" />
               محفز صعودي قوي 🚀
             </Badge>
           )}
@@ -374,9 +374,9 @@ function NewsCard({ article }: { article: NewsArticle }) {
             className={cn(
               'text-[11px] gap-1 px-2 py-0',
               relevancePercent >= 70
-                ? 'border-emerald-300 text-emerald-600 dark:border-emerald-700 dark:text-emerald-400'
+                ? 'border-profit text-profit dark:border-profit dark:text-profit'
                 : relevancePercent >= 40
-                  ? 'border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400'
+                  ? 'border-warning text-warning dark:border-warning dark:text-warning'
                   : 'border-muted-foreground/30 text-muted-foreground'
             )}
           >
@@ -473,7 +473,7 @@ export function StockNews() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Newspaper className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Newspaper className="w-5 h-5 text-profit dark:text-profit" />
               <h2 className="text-lg font-bold">أخبار السهم</h2>
             </div>
             <Button
@@ -531,19 +531,19 @@ export function StockNews() {
                     الكل
                     <span className="text-[10px] opacity-60">({news.length})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="positive" className="text-xs gap-1 text-emerald-600 dark:text-emerald-400">
+                  <TabsTrigger value="positive" className="text-xs gap-1 text-profit dark:text-profit">
                     إيجابي
                     <span className="text-[10px] opacity-60">
                       ({news.filter((n) => n.sentiment === 'positive').length})
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="negative" className="text-xs gap-1 text-red-600 dark:text-red-400">
+                  <TabsTrigger value="negative" className="text-xs gap-1 text-loss dark:text-loss">
                     سلبي
                     <span className="text-[10px] opacity-60">
                       ({news.filter((n) => n.sentiment === 'negative').length})
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="neutral" className="text-xs gap-1 text-amber-600 dark:text-amber-400">
+                  <TabsTrigger value="neutral" className="text-xs gap-1 text-warning dark:text-warning">
                     محايد
                     <span className="text-[10px] opacity-60">
                       ({news.filter((n) => n.sentiment === 'neutral').length})

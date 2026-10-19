@@ -437,9 +437,9 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   const accentMap = {
-    emerald: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/60',
-    amber: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60',
-    red: 'text-red-600 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/60',
+    emerald: 'text-profit bg-profit dark:bg-profit/30 border-profit dark:border-profit/60',
+    amber: 'text-warning bg-warning dark:bg-warning/30 border-warning dark:border-warning/60',
+    red: 'text-loss bg-loss dark:bg-loss/30 border-loss dark:border-loss/60',
     slate: 'text-slate-600 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700',
   } as const;
   return (
@@ -501,10 +501,10 @@ function StockIcon({
 
   // Stable color derived from the ticker — same ticker → same color.
   const palette = [
-    'from-emerald-500 to-emerald-700',
-    'from-amber-500 to-amber-700',
-    'from-rose-500 to-rose-700',
-    'from-teal-500 to-teal-700',
+    'from-profit to-profit',
+    'from-warning to-warning',
+    'from-loss to-loss',
+    'from-whale to-whale',
     'from-orange-500 to-orange-700',
     'from-lime-500 to-lime-700',
   ];
@@ -630,29 +630,29 @@ function CandlestickChart({
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs">
-            <span className="text-emerald-600">▲ أعلى: {(maxPrice ?? 0).toFixed(2)}</span>
+            <span className="text-profit">▲ أعلى: {(maxPrice ?? 0).toFixed(2)}</span>
           </Badge>
           <Badge variant="outline" className="text-xs">
-            <span className="text-red-600">▼ أدنى: {(minPrice ?? 0).toFixed(2)}</span>
+            <span className="text-loss">▼ أدنى: {(minPrice ?? 0).toFixed(2)}</span>
           </Badge>
           {support != null && (
             <Badge variant="outline" className="text-xs">
-              <span className="text-emerald-700">دعم: {(support ?? 0).toFixed(2)}</span>
+              <span className="text-profit">دعم: {(support ?? 0).toFixed(2)}</span>
             </Badge>
           )}
           {resistance != null && (
             <Badge variant="outline" className="text-xs">
-              <span className="text-red-700">مقاومة: {(resistance ?? 0).toFixed(2)}</span>
+              <span className="text-loss">مقاومة: {(resistance ?? 0).toFixed(2)}</span>
             </Badge>
           )}
         </div>
         <div className="flex gap-4 text-xs">
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 bg-emerald-500 rounded-sm" />
+            <span className="w-3 h-3 bg-profit rounded-sm" />
             <span className="text-muted-foreground">صاعد</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 bg-red-500 rounded-sm" />
+            <span className="w-3 h-3 bg-loss rounded-sm" />
             <span className="text-muted-foreground">هابط</span>
           </span>
         </div>
@@ -704,7 +704,7 @@ function CandlestickChart({
                 strokeDasharray="4 3"
                 opacity={0.7}
               />
-              <text x={padL + 4} y={scaleY(support) - 4} className="fill-emerald-600 text-[10px] font-bold">
+              <text x={padL + 4} y={scaleY(support) - 4} className="fill-profit text-[10px] font-bold">
                 دعم {(support ?? 0).toFixed(2)}
               </text>
             </g>
@@ -723,7 +723,7 @@ function CandlestickChart({
                 strokeDasharray="4 3"
                 opacity={0.7}
               />
-              <text x={padL + 4} y={scaleY(resistance) - 4} className="fill-red-600 text-[10px] font-bold">
+              <text x={padL + 4} y={scaleY(resistance) - 4} className="fill-loss text-[10px] font-bold">
                 مقاومة {(resistance ?? 0).toFixed(2)}
               </text>
             </g>
@@ -771,7 +771,7 @@ function CandlestickChart({
                 strokeDasharray="6 3"
                 opacity={0.85}
               />
-              <text x={W - padR - 4} y={scaleY(ma50) - 4} textAnchor="end" className="fill-amber-600 text-[10px] font-bold">
+              <text x={W - padR - 4} y={scaleY(ma50) - 4} textAnchor="end" className="fill-warning text-[10px] font-bold">
                 MA50 {(ma50 ?? 0).toFixed(2)}
               </text>
             </g>
@@ -887,9 +887,9 @@ function LiquidityFootprintSection({
 
   // Color: emerald if >1.2 (strong buy), red if <0.8 (strong sell), amber otherwise.
   const ratioColor = ratio == null ? 'text-slate-600 dark:text-slate-300'
-    : ratio >= 1.2 ? 'text-emerald-600'
-    : ratio <= 0.8 ? 'text-red-600'
-    : 'text-amber-600';
+    : ratio >= 1.2 ? 'text-profit'
+    : ratio <= 0.8 ? 'text-loss'
+    : 'text-warning';
 
   const totalBS = (buyVol ?? 0) + (sellVol ?? 0);
   const buyPct = totalBS > 0 && buyVol != null ? (buyVol / totalBS) * 100 : 50;
@@ -907,9 +907,9 @@ function LiquidityFootprintSection({
     >
       {/* Top: POC + VAH + VAL + value area % */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <PriceTile label="POC (نقطة التحكم)" value={fmtNum(poc)} color="text-amber-600" sub="أعلى سيولة" />
-        <PriceTile label="VAH (قمة منطقة القيمة)" value={fmtNum(vah)} color="text-emerald-600" />
-        <PriceTile label="VAL (قاع منطقة القيمة)" value={fmtNum(val)} color="text-red-600" />
+        <PriceTile label="POC (نقطة التحكم)" value={fmtNum(poc)} color="text-warning" sub="أعلى سيولة" />
+        <PriceTile label="VAH (قمة منطقة القيمة)" value={fmtNum(vah)} color="text-profit" />
+        <PriceTile label="VAL (قاع منطقة القيمة)" value={fmtNum(val)} color="text-loss" />
         <PriceTile label="نسبة منطقة القيمة" value={fmtPct(vaPct)} color="text-slate-600 dark:text-slate-300" sub="70% من السيولة" />
       </div>
 
@@ -917,30 +917,30 @@ function LiquidityFootprintSection({
         {/* Buy vs Sell visual bar */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <p className="text-xs font-semibold mb-2 text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+            <TrendingUp className="w-3.5 h-3.5 text-profit" />
             توزيع التدفق: شراء vs بيع
           </p>
           <div className="flex h-6 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
             <div
-              className="bg-emerald-500 flex items-center justify-center text-[10px] text-white font-bold"
+              className="bg-profit flex items-center justify-center text-[10px] text-white font-bold"
               style={{ width: `${buyPct}%` }}
             >
               {buyPct > 12 ? `${(buyPct ?? 0).toFixed(0)}%` : ''}
             </div>
             <div
-              className="bg-red-500 flex items-center justify-center text-[10px] text-white font-bold"
+              className="bg-loss flex items-center justify-center text-[10px] text-white font-bold"
               style={{ width: `${sellPct}%` }}
             >
               {sellPct > 12 ? `${(sellPct ?? 0).toFixed(0)}%` : ''}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-            <MetricRow label="حجم الشراء" value={fmtCompact(buyVol)} valueClass="text-emerald-600" />
-            <MetricRow label="حجم البيع" value={fmtCompact(sellVol)} valueClass="text-red-600" />
+            <MetricRow label="حجم الشراء" value={fmtCompact(buyVol)} valueClass="text-profit" />
+            <MetricRow label="حجم البيع" value={fmtCompact(sellVol)} valueClass="text-loss" />
             <MetricRow
               label="الفرق (Delta)"
               value={fmtCompact(delta)}
-              valueClass={delta != null && delta >= 0 ? 'text-emerald-600' : 'text-red-600'}
+              valueClass={delta != null && delta >= 0 ? 'text-profit' : 'text-loss'}
             />
           </div>
         </div>
@@ -948,7 +948,7 @@ function LiquidityFootprintSection({
         {/* Ratio gauge */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <p className="text-xs font-semibold mb-2 text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-            <Gauge className="w-3.5 h-3.5 text-amber-600" />
+            <Gauge className="w-3.5 h-3.5 text-warning" />
             نسبة الشراء/البيع
           </p>
           <div className="text-center">
@@ -985,7 +985,7 @@ function LiquidityFootprintSection({
             )}
           </div>
           <div className="mt-2">
-            <MetricRow label="إجمالي السيولة" value={fmtCompact(totalVol)} valueClass="text-amber-600" />
+            <MetricRow label="إجمالي السيولة" value={fmtCompact(totalVol)} valueClass="text-warning" />
           </div>
         </div>
       </div>
@@ -1011,33 +1011,33 @@ function LiquidityFootprintSection({
                   key={`lvl-${i}`}
                   className={`flex items-center gap-2 px-2 py-1 rounded text-[10px] ${
                     isPoc
-                      ? 'bg-amber-100 dark:bg-amber-950/40 border border-amber-400 dark:border-amber-700'
+                      ? 'bg-warning dark:bg-warning/40 border border-warning dark:border-warning'
                       : isInVA
                       ? 'bg-slate-50 dark:bg-slate-800/40'
                       : 'bg-transparent'
                   }`}
                 >
-                  <span className={`w-16 text-left font-mono ${isPoc ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+                  <span className={`w-16 text-left font-mono ${isPoc ? 'text-warning dark:text-warning font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
                     {(lvl.price_mid ?? 0).toFixed(2)}
                   </span>
                   <div className="flex-1 relative h-3 rounded-sm overflow-hidden bg-slate-100 dark:bg-slate-800">
                     {/* Buy portion (left, emerald) */}
                     <div
-                      className="absolute inset-y-0 right-0 bg-emerald-400/70"
+                      className="absolute inset-y-0 right-0 bg-profit/70"
                       style={{ width: `${(widthPct * buyPctLvl) / 100}%` }}
                     />
                     {/* Sell portion (right, red) */}
                     <div
-                      className="absolute inset-y-0 left-0 bg-red-400/70"
+                      className="absolute inset-y-0 left-0 bg-loss/70"
                       style={{ width: `${(widthPct * sellPctLvl) / 100}%` }}
                     />
                     {isPoc && (
-                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-amber-700 dark:text-amber-300">
+                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-warning dark:text-warning">
                         POC
                       </span>
                     )}
                   </div>
-                  <span className={`w-12 text-left ${isBuyDom ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <span className={`w-12 text-left ${isBuyDom ? 'text-profit' : 'text-loss'}`}>
                     {isBuyDom ? '+' : ''}{fmtCompact(lvl.delta)}
                   </span>
                   <span className="w-12 text-left text-slate-500 dark:text-slate-400">
@@ -1073,23 +1073,23 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
 
   // RSI interpretation: <30 oversold (emerald), >70 overbought (red), 30-70 neutral.
   const rsiInterp = rsi == null ? { txt: '—', cls: 'text-muted-foreground' }
-    : rsi < 30 ? { txt: 'تشبع بيعي — فرصة شراء محتملة', cls: 'text-emerald-600' }
-    : rsi > 70 ? { txt: 'تشبع شرائي — فرصة بيع محتملة', cls: 'text-red-600' }
+    : rsi < 30 ? { txt: 'تشبع بيعي — فرصة شراء محتملة', cls: 'text-profit' }
+    : rsi > 70 ? { txt: 'تشبع شرائي — فرصة بيع محتملة', cls: 'text-loss' }
     : rsi >= 45 && rsi <= 55 ? { txt: 'محايد', cls: 'text-slate-500 dark:text-slate-400' }
-    : rsi < 45 ? { txt: 'ضعيف نسبياً', cls: 'text-amber-600' }
-    : { txt: 'قوي نسبياً', cls: 'text-amber-600' };
+    : rsi < 45 ? { txt: 'ضعيف نسبياً', cls: 'text-warning' }
+    : { txt: 'قوي نسبياً', cls: 'text-warning' };
 
   // MA position interpretation
   const ma50Interp = current != null && ma50 != null
     ? current > ma50
-      ? { txt: 'السعر فوق MA50 — زخم صاعد', cls: 'text-emerald-600' }
-      : { txt: 'السعر تحت MA50 — زخم هابط', cls: 'text-red-600' }
+      ? { txt: 'السعر فوق MA50 — زخم صاعد', cls: 'text-profit' }
+      : { txt: 'السعر تحت MA50 — زخم هابط', cls: 'text-loss' }
     : { txt: '—', cls: 'text-muted-foreground' };
 
   const ma200Interp = current != null && ma200 != null
     ? current > ma200
-      ? { txt: 'السعر فوق MA200 — اتجاه صاعد طويل الأمد', cls: 'text-emerald-600' }
-      : { txt: 'السعر تحت MA200 — اتجاه هابط طويل الأمد', cls: 'text-red-600' }
+      ? { txt: 'السعر فوق MA200 — اتجاه صاعد طويل الأمد', cls: 'text-profit' }
+      : { txt: 'السعر تحت MA200 — اتجاه هابط طويل الأمد', cls: 'text-loss' }
     : { txt: '—', cls: 'text-muted-foreground' };
 
   // Distance from support / resistance
@@ -1102,12 +1102,12 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
   // بدل thresholds 70/50/30 المحلية المتضاربة.
   const sigNum = safeNum(info.signal);
   const sigInterp = sigNum == null ? { txt: '—', cls: 'text-muted-foreground' }
-    : sigNum >= 78 ? { txt: 'شراء قوي', cls: 'text-emerald-600' }
-    : sigNum >= 65 ? { txt: 'شراء', cls: 'text-emerald-600' }
-    : sigNum >= 55 ? { txt: 'تجميع', cls: 'text-teal-600' }
-    : sigNum >= 40 ? { txt: 'انتظار', cls: 'text-amber-600' }
+    : sigNum >= 78 ? { txt: 'شراء قوي', cls: 'text-profit' }
+    : sigNum >= 65 ? { txt: 'شراء', cls: 'text-profit' }
+    : sigNum >= 55 ? { txt: 'تجميع', cls: 'text-whale' }
+    : sigNum >= 40 ? { txt: 'انتظار', cls: 'text-warning' }
     : sigNum >= 25 ? { txt: 'تقليل', cls: 'text-orange-600' }
-    : { txt: 'بيع', cls: 'text-red-600' };
+    : { txt: 'بيع', cls: 'text-loss' };
 
   return (
     <SectionCard
@@ -1120,11 +1120,11 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
         {/* RSI gauge */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-            <Gauge className="w-4 h-4 text-emerald-600" /> RSI
+            <Gauge className="w-4 h-4 text-profit" /> RSI
           </h4>
           <p className="text-3xl font-bold">{fmtNum(rsi, 1)}</p>
           {/* RSI bar 0-100 with marker */}
-          <div className="h-2 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full relative mt-3">
+          <div className="h-2 bg-gradient-to-r from-profit via-warning to-loss rounded-full relative mt-3">
             {rsi != null && (
               <div
                 className="absolute w-3 h-4 bg-slate-900 dark:bg-white rounded-sm -top-1 border border-white shadow"
@@ -1146,7 +1146,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
         {/* MA50 */}
         <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <h4 className="font-semibold text-sm mb-2">MA50 (متوسط 50 يوم)</h4>
-          <p className="text-3xl font-bold text-amber-600">{fmtNum(ma50)}</p>
+          <p className="text-3xl font-bold text-warning">{fmtNum(ma50)}</p>
           <p className={`text-xs mt-2 ${ma50Interp.cls}`}>{ma50Interp.txt}</p>
           {current != null && ma50 != null && (
             <p className="text-xs text-muted-foreground mt-1">
@@ -1168,33 +1168,33 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
         </div>
 
         {/* Support */}
-        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-900/60">
+        <div className="p-3 bg-profit dark:bg-profit/30 rounded-lg border border-profit dark:border-profit/60">
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-emerald-600" /> الدعم
+            <Shield className="w-4 h-4 text-profit" /> الدعم
           </h4>
-          <p className="text-3xl font-bold text-emerald-600">{fmtNum(support)}</p>
+          <p className="text-3xl font-bold text-profit">{fmtNum(support)}</p>
           <p className="text-xs text-muted-foreground mt-2">
             المسافة من السعر الحالي: {distFromSupport != null ? `${distFromSupport.toFixed(2)}%` : '—'}
           </p>
         </div>
 
         {/* Resistance */}
-        <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/60">
+        <div className="p-3 bg-loss dark:bg-loss/30 rounded-lg border border-loss dark:border-loss/60">
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-            <Target className="w-4 h-4 text-red-600" /> المقاومة
+            <Target className="w-4 h-4 text-loss" /> المقاومة
           </h4>
-          <p className="text-3xl font-bold text-red-600">{fmtNum(resistance)}</p>
+          <p className="text-3xl font-bold text-loss">{fmtNum(resistance)}</p>
           <p className="text-xs text-muted-foreground mt-2">
             المسافة من السعر الحالي: {distFromResistance != null ? `${distFromResistance.toFixed(2)}%` : '—'}
           </p>
         </div>
 
         {/* Signal */}
-        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900/60">
+        <div className="p-3 bg-warning dark:bg-warning/30 rounded-lg border border-warning dark:border-warning/60">
           <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-amber-600" /> الإشارة
+            <Activity className="w-4 h-4 text-warning" /> الإشارة
           </h4>
-          <p className="text-3xl font-bold text-amber-600">
+          <p className="text-3xl font-bold text-warning">
             {signal != null ? (typeof signal === 'number' ? signal.toFixed(0) : signal) : '—'}
           </p>
           <p className={`text-xs mt-2 ${sigInterp.cls}`}>{sigInterp.txt}</p>
@@ -1232,41 +1232,41 @@ function FundamentalsSection({ info }: { info: StockInfo }) {
 
   // Interpretation helpers — high/low/normal based on standard thresholds.
   const peInterp = pe == null ? null
-    : pe < 0 ? { txt: 'خسارة (تعادل سالب)', cls: 'text-red-600' }
-    : pe < 8 ? { txt: 'رخيص جداً', cls: 'text-emerald-600' }
-    : pe < 15 ? { txt: 'تقييم عادل', cls: 'text-emerald-600' }
-    : pe < 25 ? { txt: 'مرتفع نسبياً', cls: 'text-amber-600' }
-    : { txt: 'مرتفع جداً', cls: 'text-red-600' };
+    : pe < 0 ? { txt: 'خسارة (تعادل سالب)', cls: 'text-loss' }
+    : pe < 8 ? { txt: 'رخيص جداً', cls: 'text-profit' }
+    : pe < 15 ? { txt: 'تقييم عادل', cls: 'text-profit' }
+    : pe < 25 ? { txt: 'مرتفع نسبياً', cls: 'text-warning' }
+    : { txt: 'مرتفع جداً', cls: 'text-loss' };
 
   const pbInterp = pb == null ? null
-    : pb < 0 ? { txt: 'قيمة دفترية سالبة', cls: 'text-red-600' }
-    : pb < 1 ? { txt: 'أقل من القيمة الدفترية', cls: 'text-emerald-600' }
-    : pb < 3 ? { txt: 'تقييم عادل', cls: 'text-emerald-600' }
-    : pb < 6 ? { txt: 'مرتفع نسبياً', cls: 'text-amber-600' }
-    : { txt: 'مرتفع جداً', cls: 'text-red-600' };
+    : pb < 0 ? { txt: 'قيمة دفترية سالبة', cls: 'text-loss' }
+    : pb < 1 ? { txt: 'أقل من القيمة الدفترية', cls: 'text-profit' }
+    : pb < 3 ? { txt: 'تقييم عادل', cls: 'text-profit' }
+    : pb < 6 ? { txt: 'مرتفع نسبياً', cls: 'text-warning' }
+    : { txt: 'مرتفع جداً', cls: 'text-loss' };
 
   const roeInterp = roe == null ? null
-    : roe < 0 ? { txt: 'خسارة', cls: 'text-red-600' }
-    : roe >= 20 ? { txt: 'ممتاز', cls: 'text-emerald-600' }
-    : roe >= 12 ? { txt: 'جيد', cls: 'text-emerald-600' }
-    : roe >= 5 ? { txt: 'متوسط', cls: 'text-amber-600' }
-    : { txt: 'ضعيف', cls: 'text-red-600' };
+    : roe < 0 ? { txt: 'خسارة', cls: 'text-loss' }
+    : roe >= 20 ? { txt: 'ممتاز', cls: 'text-profit' }
+    : roe >= 12 ? { txt: 'جيد', cls: 'text-profit' }
+    : roe >= 5 ? { txt: 'متوسط', cls: 'text-warning' }
+    : { txt: 'ضعيف', cls: 'text-loss' };
 
   const debtInterp = debtToEquity == null ? null
-    : debtToEquity < 0.3 ? { txt: 'ديون منخفضة', cls: 'text-emerald-600' }
-    : debtToEquity < 1 ? { txt: 'ديون معتدلة', cls: 'text-emerald-600' }
-    : debtToEquity < 2 ? { txt: 'ديون مرتفعة', cls: 'text-amber-600' }
-    : { txt: 'ديون عالية جداً', cls: 'text-red-600' };
+    : debtToEquity < 0.3 ? { txt: 'ديون منخفضة', cls: 'text-profit' }
+    : debtToEquity < 1 ? { txt: 'ديون معتدلة', cls: 'text-profit' }
+    : debtToEquity < 2 ? { txt: 'ديون مرتفعة', cls: 'text-warning' }
+    : { txt: 'ديون عالية جداً', cls: 'text-loss' };
 
   const marginInterp = profitMargin == null ? null
-    : profitMargin >= 15 ? { txt: 'ممتاز', cls: 'text-emerald-600' }
-    : profitMargin >= 5 ? { txt: 'جيد', cls: 'text-emerald-600' }
-    : profitMargin >= 0 ? { txt: 'منخفض', cls: 'text-amber-600' }
-    : { txt: 'خسارة', cls: 'text-red-600' };
+    : profitMargin >= 15 ? { txt: 'ممتاز', cls: 'text-profit' }
+    : profitMargin >= 5 ? { txt: 'جيد', cls: 'text-profit' }
+    : profitMargin >= 0 ? { txt: 'منخفض', cls: 'text-warning' }
+    : { txt: 'خسارة', cls: 'text-loss' };
 
   const divInterp = divYield == null ? null
-    : divYield >= 5 ? { txt: 'عائد مرتفع', cls: 'text-emerald-600' }
-    : divYield > 0 ? { txt: 'عائد معتدل', cls: 'text-amber-600' }
+    : divYield >= 5 ? { txt: 'عائد مرتفع', cls: 'text-profit' }
+    : divYield > 0 ? { txt: 'عائد معتدل', cls: 'text-warning' }
     : { txt: 'لا يوزع', cls: 'text-slate-600' };
 
   return (
@@ -1291,7 +1291,7 @@ function FundamentalsSection({ info }: { info: StockInfo }) {
         <FundamentalCard
           label="EPS (ربحية السهم) ج.م"
           value={eps != null ? eps.toFixed(3) : '—'}
-          interp={eps == null ? null : { txt: eps > 0 ? 'موجب' : 'سالب', cls: eps > 0 ? 'text-emerald-600' : 'text-red-600' }}
+          interp={eps == null ? null : { txt: eps > 0 ? 'موجب' : 'سالب', cls: eps > 0 ? 'text-profit' : 'text-loss' }}
         />
         {/* ROE */}
         <FundamentalCard label="ROE (العائد على حقوق الملكية)" value={roe != null ? `${roe.toFixed(2)}%` : '—'} interp={roeInterp} />
@@ -1299,7 +1299,7 @@ function FundamentalsSection({ info }: { info: StockInfo }) {
         <FundamentalCard
           label="ROA (العائد على الأصول)"
           value={roa != null ? `${roa.toFixed(2)}%` : '—'}
-          interp={roa == null ? null : { txt: roa >= 5 ? 'جيد' : 'ضعيف', cls: roa >= 5 ? 'text-emerald-600' : 'text-amber-600' }}
+          interp={roa == null ? null : { txt: roa >= 5 ? 'جيد' : 'ضعيف', cls: roa >= 5 ? 'text-profit' : 'text-warning' }}
         />
         {/* Debt/Equity */}
         <FundamentalCard label="ديون / حقوق ملكية" value={debtToEquity != null ? debtToEquity.toFixed(2) : '—'} interp={debtInterp} />
@@ -1311,7 +1311,7 @@ function FundamentalsSection({ info }: { info: StockInfo }) {
         <FundamentalCard
           label="Free Float (تداول حر)"
           value={freeFloat != null ? `${freeFloat.toFixed(1)}%` : '—'}
-          interp={freeFloat == null ? null : { txt: freeFloat >= 25 ? 'سيولة جيدة' : 'سيولة محدودة', cls: freeFloat >= 25 ? 'text-emerald-600' : 'text-amber-600' }}
+          interp={freeFloat == null ? null : { txt: freeFloat >= 25 ? 'سيولة جيدة' : 'سيولة محدودة', cls: freeFloat >= 25 ? 'text-profit' : 'text-warning' }}
         />
         {/* Market Cap */}
         <FundamentalCard
@@ -1329,7 +1329,7 @@ function FundamentalsSection({ info }: { info: StockInfo }) {
         <FundamentalCard
           label="نسبة السيولة (Current Ratio)"
           value={currentRatio != null ? currentRatio.toFixed(2) : '—'}
-          interp={currentRatio == null ? null : { txt: currentRatio >= 1.5 ? 'سائلة' : currentRatio >= 1 ? 'مقبولة' : 'ضعيفة', cls: currentRatio >= 1 ? 'text-emerald-600' : 'text-red-600' }}
+          interp={currentRatio == null ? null : { txt: currentRatio >= 1.5 ? 'سائلة' : currentRatio >= 1 ? 'مقبولة' : 'ضعيفة', cls: currentRatio >= 1 ? 'text-profit' : 'text-loss' }}
         />
         {/* Book Value */}
         <FundamentalCard
@@ -1398,27 +1398,27 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
         <PriceTile
           label="ROC 10 أيام (معدل التغير)"
           value={roc10d != null ? `${roc10d >= 0 ? '+' : ''}${roc10d.toFixed(2)}%` : '—'}
-          color={roc10d == null ? 'text-slate-600 dark:text-slate-300' : roc10d >= 0 ? 'text-emerald-600' : 'text-red-600'}
+          color={roc10d == null ? 'text-slate-600 dark:text-slate-300' : roc10d >= 0 ? 'text-profit' : 'text-loss'}
           sub="زخم 10 جلسات"
         />
-        <PriceTile label="متوسط حجم 20 يوم" value={fmtInt(avgVol20)} color="text-amber-600" />
+        <PriceTile label="متوسط حجم 20 يوم" value={fmtInt(avgVol20)} color="text-warning" />
         <PriceTile
           label="متوسط تداول 20 يوم"
           value={avgTurnover20 != null ? fmtCompact(avgTurnover20, ' ج.م') : '—'}
-          color="text-amber-700"
+          color="text-warning"
         />
         <PriceTile
           label="نسبة الحجم (يومي/20ي)"
           value={volRatio != null ? `${volRatio.toFixed(2)}x` : '—'}
-          color={volRatio == null ? 'text-slate-600 dark:text-slate-300' : volRatio >= 1.5 ? 'text-emerald-600' : volRatio < 0.7 ? 'text-red-600' : 'text-amber-600'}
+          color={volRatio == null ? 'text-slate-600 dark:text-slate-300' : volRatio >= 1.5 ? 'text-profit' : volRatio < 0.7 ? 'text-loss' : 'text-warning'}
           sub={currentVol != null ? `اليوم: ${fmtCompact(currentVol)}` : undefined}
         />
-        <PriceTile label="أعلى 20 يوم" value={fmtNum(max20)} color="text-emerald-600" />
-        <PriceTile label="أدنى 20 يوم" value={fmtNum(min20)} color="text-red-600" />
+        <PriceTile label="أعلى 20 يوم" value={fmtNum(max20)} color="text-profit" />
+        <PriceTile label="أدنى 20 يوم" value={fmtNum(min20)} color="text-loss" />
         <PriceTile
           label="مدى 20 يوم %"
           value={range20Pct != null ? `${range20Pct.toFixed(2)}%` : '—'}
-          color="text-amber-600"
+          color="text-warning"
           sub={max20 != null && min20 != null ? `(${min20.toFixed(2)} — ${max20.toFixed(2)})` : undefined}
         />
         <PriceTile label="آخر إغلاق" value={fmtNum(lastClose)} color="text-slate-700 dark:text-slate-200" />
@@ -1426,7 +1426,7 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
       {changePct != null && (
         <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg flex items-center justify-between">
           <span className="text-xs text-muted-foreground">تغير آخر جلسة:</span>
-          <span className={`text-sm font-bold ${changePct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+          <span className={`text-sm font-bold ${changePct >= 0 ? 'text-profit' : 'text-loss'}`}>
             {changePct >= 0 ? '+' : ''}{(changePct ?? 0).toFixed(2)}%
           </span>
         </div>
@@ -1482,12 +1482,12 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
       accent="amber"
     >
       {showAccuracy && (
-        <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-lg">
+        <div className="mb-3 p-3 bg-warning dark:bg-warning/30 border border-warning dark:border-warning/60 rounded-lg">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+            <p className="text-sm font-semibold text-warning dark:text-warning">
               دقة التوقعات المغلقة
             </p>
-            <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{accuracy}%</p>
+            <p className="text-2xl font-bold text-warning dark:text-warning">{accuracy}%</p>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {hits} ناجحة من {closedCount} توقعات مغلقة — Rule 67: لا تُعرض الإحصائية إلا بعد ≥5 توقعات مغلقة
@@ -1529,23 +1529,23 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
                     </Badge>
                   </td>
                   <td className="p-2">{fmtNum(p.entry_price)}</td>
-                  <td className="p-2 text-emerald-600">{fmtNum(p.target_price)}</td>
-                  <td className="p-2 text-red-600">{fmtNum(p.stop_loss)}</td>
+                  <td className="p-2 text-profit">{fmtNum(p.target_price)}</td>
+                  <td className="p-2 text-loss">{fmtNum(p.stop_loss)}</td>
                   <td className="p-2">
                     <Badge variant="outline" className="text-[10px]">
                       {status}
                     </Badge>
                   </td>
-                  <td className={`p-2 font-semibold ${returnPct == null ? '' : returnPct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <td className={`p-2 font-semibold ${returnPct == null ? '' : returnPct >= 0 ? 'text-profit' : 'text-loss'}`}>
                     {returnPct != null ? `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%` : '—'}
                   </td>
                   <td className="p-2">
                     {returnPct == null ? (
                       <span className="text-muted-foreground">—</span>
                     ) : hitTarget ? (
-                      <CheckCircle className="w-4 h-4 text-emerald-600 inline" />
+                      <CheckCircle className="w-4 h-4 text-profit inline" />
                     ) : (
-                      <AlertTriangle className="w-4 h-4 text-red-600 inline" />
+                      <AlertTriangle className="w-4 h-4 text-loss inline" />
                     )}
                   </td>
                 </tr>
@@ -1591,18 +1591,18 @@ function RecommendationSection({ info }: { info: StockInfo }) {
 
   // UNIFY-FIX (Rule 73): توحيد thresholds مع canonical 78/65/55/40/25
   const sigInt = signal == null ? null
-    : signal >= 78 ? { txt: 'شراء قوي', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
-    : signal >= 65 ? { txt: 'شراء', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
-    : signal >= 55 ? { txt: 'تجميع', cls: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' }
-    : signal >= 40 ? { txt: 'انتظار', cls: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' }
+    : signal >= 78 ? { txt: 'شراء قوي', cls: 'text-profit', bg: 'bg-profit dark:bg-profit/30' }
+    : signal >= 65 ? { txt: 'شراء', cls: 'text-profit', bg: 'bg-profit dark:bg-profit/30' }
+    : signal >= 55 ? { txt: 'تجميع', cls: 'text-whale', bg: 'bg-whale dark:bg-whale/30' }
+    : signal >= 40 ? { txt: 'انتظار', cls: 'text-warning', bg: 'bg-warning dark:bg-warning/30' }
     : signal >= 25 ? { txt: 'تقليل', cls: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' }
-    : { txt: 'بيع', cls: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30' };
+    : { txt: 'بيع', cls: 'text-loss', bg: 'bg-loss dark:bg-loss/30' };
 
   const trendAr = trend == null ? null
     : trend === 'صاعد' || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
-    ? { txt: 'صاعد', cls: 'text-emerald-600' }
+    ? { txt: 'صاعد', cls: 'text-profit' }
     : trend === 'هابط' || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
-    ? { txt: 'هابط', cls: 'text-red-600' }
+    ? { txt: 'هابط', cls: 'text-loss' }
     : { txt: trend, cls: 'text-slate-600 dark:text-slate-300' };
 
   return (
@@ -1614,28 +1614,28 @@ function RecommendationSection({ info }: { info: StockInfo }) {
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         {/* Entry zone */}
-        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg text-center">
+        <div className="p-3 bg-profit dark:bg-profit/30 rounded-lg text-center">
           <p className="text-xs text-muted-foreground">منطقة الدخول</p>
-          <p className="text-lg font-bold text-emerald-600 mt-1">
+          <p className="text-lg font-bold text-profit mt-1">
             {entryLow != null && entryHigh != null
               ? `${(entryLow ?? 0).toFixed(2)} — ${(entryHigh ?? 0).toFixed(2)}`
               : '—'}
           </p>
         </div>
         {/* Target = resistance */}
-        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg text-center">
+        <div className="p-3 bg-profit dark:bg-profit/40 rounded-lg text-center">
           <p className="text-xs text-muted-foreground">الهدف (مقاومة)</p>
-          <p className="text-lg font-bold text-emerald-700 mt-1">{fmtNum(resistance)}</p>
+          <p className="text-lg font-bold text-profit mt-1">{fmtNum(resistance)}</p>
         </div>
         {/* Stop = support */}
-        <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg text-center">
+        <div className="p-3 bg-loss dark:bg-loss/30 rounded-lg text-center">
           <p className="text-xs text-muted-foreground">وقف الخسارة (دعم)</p>
-          <p className="text-lg font-bold text-red-600 mt-1">{fmtNum(support)}</p>
+          <p className="text-lg font-bold text-loss mt-1">{fmtNum(support)}</p>
         </div>
         {/* R:R */}
-        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center">
+        <div className="p-3 bg-warning dark:bg-warning/30 rounded-lg text-center">
           <p className="text-xs text-muted-foreground">مخاطرة/عائد</p>
-          <p className={`text-lg font-bold mt-1 ${rr == null ? 'text-slate-600 dark:text-slate-300' : rr >= 2 ? 'text-emerald-600' : rr >= 1 ? 'text-amber-600' : 'text-red-600'}`}>
+          <p className={`text-lg font-bold mt-1 ${rr == null ? 'text-slate-600 dark:text-slate-300' : rr >= 2 ? 'text-profit' : rr >= 1 ? 'text-warning' : 'text-loss'}`}>
             {rr != null ? `${rr.toFixed(2)}:1` : '—'}
           </p>
         </div>
@@ -1699,11 +1699,11 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
 
   // Interpretation
   const interp = positionPct == null ? null
-    : positionPct >= 80 ? { txt: 'قريب من القمة', cls: 'text-red-600' }
-    : positionPct >= 60 ? { txt: 'في الثلث العلوي', cls: 'text-amber-600' }
+    : positionPct >= 80 ? { txt: 'قريب من القمة', cls: 'text-loss' }
+    : positionPct >= 60 ? { txt: 'في الثلث العلوي', cls: 'text-warning' }
     : positionPct >= 40 ? { txt: 'في المنتصف', cls: 'text-slate-600 dark:text-slate-300' }
-    : positionPct >= 20 ? { txt: 'في الثلث السفلي', cls: 'text-amber-600' }
-    : { txt: 'قريب من القاع', cls: 'text-emerald-600' };
+    : positionPct >= 20 ? { txt: 'في الثلث السفلي', cls: 'text-warning' }
+    : { txt: 'قريب من القاع', cls: 'text-profit' };
 
   return (
     <SectionCard
@@ -1713,17 +1713,17 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
       accent="slate"
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-        <PriceTile label="أعلى 52 أسبوع" value={fmtNum(high52w)} color="text-emerald-600" />
-        <PriceTile label="أدنى 52 أسبوع" value={fmtNum(low52w)} color="text-red-600" />
+        <PriceTile label="أعلى 52 أسبوع" value={fmtNum(high52w)} color="text-profit" />
+        <PriceTile label="أدنى 52 أسبوع" value={fmtNum(low52w)} color="text-loss" />
         <PriceTile
           label="المسافة من القمة"
           value={distFromHigh != null ? `${distFromHigh >= 0 ? '+' : ''}${distFromHigh.toFixed(1)}%` : '—'}
-          color={distFromHigh == null ? 'text-slate-600 dark:text-slate-300' : distFromHigh < 0 ? 'text-red-600' : 'text-emerald-600'}
+          color={distFromHigh == null ? 'text-slate-600 dark:text-slate-300' : distFromHigh < 0 ? 'text-loss' : 'text-profit'}
         />
         <PriceTile
           label="المسافة من القاع"
           value={distFromLow != null ? `${distFromLow >= 0 ? '+' : ''}${distFromLow.toFixed(1)}%` : '—'}
-          color={distFromLow == null ? 'text-slate-600 dark:text-slate-300' : distFromLow > 0 ? 'text-emerald-600' : 'text-red-600'}
+          color={distFromLow == null ? 'text-slate-600 dark:text-slate-300' : distFromLow > 0 ? 'text-profit' : 'text-loss'}
         />
       </div>
 
@@ -1731,10 +1731,10 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
       {current != null && high52w != null && low52w != null && range != null && range > 0 && (
         <div className="mt-4">
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-red-600">قاع: {(low52w ?? 0).toFixed(2)}</span>
-            <span className="text-emerald-600">قمة: {(high52w ?? 0).toFixed(2)}</span>
+            <span className="text-loss">قاع: {(low52w ?? 0).toFixed(2)}</span>
+            <span className="text-profit">قمة: {(high52w ?? 0).toFixed(2)}</span>
           </div>
-          <div className="relative h-4 rounded-full bg-gradient-to-l from-red-500 via-amber-400 to-emerald-500">
+          <div className="relative h-4 rounded-full bg-gradient-to-l from-loss via-warning to-profit">
             <div
               className="absolute w-1 h-6 -top-1 bg-slate-900 dark:bg-white rounded-sm shadow-md border border-white"
               style={{
@@ -1803,14 +1803,14 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
   const explExcluded = explObj?.excluded === true || explObj?.excluded === 'true';
 
   function resolveColor(color: string | null, score: number | null): string {
-    if (color === 'red') return 'text-red-600';
+    if (color === 'red') return 'text-loss';
     if (color === 'orange') return 'text-orange-600';
-    if (color === 'amber') return 'text-amber-600';
-    if (color === 'green') return 'text-emerald-600';
+    if (color === 'amber') return 'text-warning';
+    if (color === 'green') return 'text-profit';
     if (score != null) {
-      if (score >= 70) return 'text-emerald-600';
-      if (score >= 40) return 'text-amber-600';
-      return 'text-red-600';
+      if (score >= 70) return 'text-profit';
+      if (score >= 40) return 'text-warning';
+      return 'text-loss';
     }
     return 'text-slate-600 dark:text-slate-300';
   }
@@ -1827,7 +1827,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
         {flowObj && (
           <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-              <Droplets className="w-4 h-4 text-emerald-600" /> نقاط التدفق (Flow Score)
+              <Droplets className="w-4 h-4 text-profit" /> نقاط التدفق (Flow Score)
             </h4>
             <div className="flex items-center gap-3">
               <span className={`text-4xl font-bold ${resolveColor(flowColor, flowScore)}`}>
@@ -1849,7 +1849,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
         {explObj && !explExcluded && (
           <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
-              <Flame className="w-4 h-4 text-amber-600" /> ماسح القنابل (Explosive)
+              <Flame className="w-4 h-4 text-warning" /> ماسح القنابل (Explosive)
             </h4>
             <div className="flex items-center gap-3">
               <span className={`text-4xl font-bold ${resolveColor(explColor, explScore)}`}>
@@ -1866,8 +1866,8 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
                 <div className="text-xs mt-1">
                   <span className="text-muted-foreground">الإجراء: </span>
                   <span className="font-medium text-slate-700 dark:text-slate-200">{explAction ?? '—'}</span>
-                  {explStop != null && <span className="text-red-600"> · وقف: {explStop.toFixed(1)}%</span>}
-                  {explTarget != null && <span className="text-emerald-600"> · هدف: +{explTarget.toFixed(1)}%</span>}
+                  {explStop != null && <span className="text-loss"> · وقف: {explStop.toFixed(1)}%</span>}
+                  {explTarget != null && <span className="text-profit"> · هدف: +{explTarget.toFixed(1)}%</span>}
                 </div>
               </div>
             </div>
@@ -1919,10 +1919,10 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
 
   const phase = safeStr(maestro?.phase) ?? safeStr(maestro?.regime_phase);
   const phaseMeta: Record<string, { ar: string; cls: string }> = {
-    accumulation: { ar: 'تراكم', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
-    markup: { ar: 'تصعيد', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
-    distribution: { ar: 'توزيع', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
-    decline: { ar: 'انخفاض', cls: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
+    accumulation: { ar: 'تراكم', cls: 'bg-profit text-profit dark:bg-profit/40 dark:text-profit' },
+    markup: { ar: 'تصعيد', cls: 'bg-profit text-profit dark:bg-profit/40 dark:text-profit' },
+    distribution: { ar: 'توزيع', cls: 'bg-warning text-warning dark:bg-warning/40 dark:text-warning' },
+    decline: { ar: 'انخفاض', cls: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss' },
   };
   const meta = phase ? phaseMeta[phase.toLowerCase()] ?? { ar: phase, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' } : null;
 
@@ -1945,7 +1945,7 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         {meta && (
           <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-emerald-600" /> مرحلة المايسترو
+              <Activity className="w-3.5 h-3.5 text-profit" /> مرحلة المايسترو
             </p>
             <Badge className={`text-sm ${meta.cls}`}>{meta.ar}</Badge>
           </div>
@@ -1955,9 +1955,9 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         {hunterScore != null && (
           <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-              <Crosshair className="w-3.5 h-3.5 text-amber-600" /> تقييم الـ Hunter
+              <Crosshair className="w-3.5 h-3.5 text-warning" /> تقييم الـ Hunter
             </p>
-            <p className="text-2xl font-bold text-amber-600">{(hunterScore ?? 0).toFixed(0)}</p>
+            <p className="text-2xl font-bold text-warning">{(hunterScore ?? 0).toFixed(0)}</p>
             {hunterAssessment && <p className="text-xs mt-1 text-slate-700 dark:text-slate-200">{hunterAssessment}</p>}
           </div>
         )}
@@ -1966,20 +1966,20 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
         {(institutionalBuy != null || institutionalSell != null) && (
           <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-emerald-600" /> نشاط المؤسسات
+              <Building2 className="w-3.5 h-3.5 text-profit" /> نشاط المؤسسات
             </p>
             <div className="grid grid-cols-3 gap-2 text-xs mt-1">
               <div>
                 <p className="text-muted-foreground text-[10px]">شراء</p>
-                <p className="font-bold text-emerald-600">{fmtCompact(institutionalBuy)}</p>
+                <p className="font-bold text-profit">{fmtCompact(institutionalBuy)}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-[10px]">بيع</p>
-                <p className="font-bold text-red-600">{fmtCompact(institutionalSell)}</p>
+                <p className="font-bold text-loss">{fmtCompact(institutionalSell)}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-[10px]">صافي</p>
-                <p className={`font-bold ${netInstitutional == null ? 'text-slate-600 dark:text-slate-300' : netInstitutional >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                <p className={`font-bold ${netInstitutional == null ? 'text-slate-600 dark:text-slate-300' : netInstitutional >= 0 ? 'text-profit' : 'text-loss'}`}>
                   {fmtCompact(netInstitutional)}
                 </p>
               </div>
@@ -2001,7 +2001,7 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
                   <div key={i} className="text-xs">
                     <p className="line-clamp-1">{title}</p>
                     {sentiment && (
-                      <span className={`text-[10px] ${sentiment === 'positive' || sentiment === 'POSITIVE' ? 'text-emerald-600' : sentiment === 'negative' || sentiment === 'NEGATIVE' ? 'text-red-600' : 'text-slate-500'}`}>
+                      <span className={`text-[10px] ${sentiment === 'positive' || sentiment === 'POSITIVE' ? 'text-profit' : sentiment === 'negative' || sentiment === 'NEGATIVE' ? 'text-loss' : 'text-slate-500'}`}>
                         {sentiment}
                       </span>
                     )}
@@ -2097,15 +2097,15 @@ function PositionSizingCalculator({
         </div>
 
         <div className="space-y-2">
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+          <div className="p-3 bg-profit dark:bg-profit/30 rounded-lg">
             <p className="text-xs text-muted-foreground">المبلغ المخاطر به</p>
-            <p className="text-xl font-bold text-emerald-600 mt-1">
+            <p className="text-xl font-bold text-profit mt-1">
               {riskAmount != null ? `${riskAmount.toFixed(2)} جنيه` : '—'}
             </p>
           </div>
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+          <div className="p-3 bg-warning dark:bg-warning/30 rounded-lg">
             <p className="text-xs text-muted-foreground">المخاطرة لكل سهم (دخول − وقف)</p>
-            <p className="text-xl font-bold text-amber-600 mt-1">
+            <p className="text-xl font-bold text-warning mt-1">
               {perShareRisk != null ? `${perShareRisk.toFixed(2)} جنيه` : '—'}
             </p>
           </div>
@@ -2120,9 +2120,9 @@ function PositionSizingCalculator({
               </p>
             )}
           </div>
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg">
+          <div className="p-3 bg-profit dark:bg-profit/40 rounded-lg">
             <p className="text-xs text-muted-foreground">نسبة المخاطرة/العائد الفعلية</p>
-            <p className="text-lg font-bold text-emerald-700 mt-1">
+            <p className="text-lg font-bold text-profit mt-1">
               {rrRatio != null ? `${rrRatio.toFixed(2)}:1` : '—'}
             </p>
             {rrRatio != null && (
@@ -2157,11 +2157,11 @@ function PriceLevelsLadderSection({ info }: { info: StockInfo }) {
   }
 
   const rows: Array<{ label: string; value: number | null; color: string; bg: string }> = [
-    { label: 'أعلى 52 أسبوع', value: high52w, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/60' },
-    { label: 'المقاومة', value: resistance, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60' },
-    { label: 'السعر الحالي', value: current, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700' },
-    { label: 'الدعم', value: support, color: 'text-emerald-700', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/60' },
-    { label: 'أدنى 52 أسبوع', value: low52w, color: 'text-red-700', bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/60' },
+    { label: 'أعلى 52 أسبوع', value: high52w, color: 'text-loss', bg: 'bg-loss dark:bg-loss/30 border-loss dark:border-loss/60' },
+    { label: 'المقاومة', value: resistance, color: 'text-warning', bg: 'bg-warning dark:bg-warning/30 border-warning dark:border-warning/60' },
+    { label: 'السعر الحالي', value: current, color: 'text-profit', bg: 'bg-profit dark:bg-profit/40 border-profit dark:border-profit' },
+    { label: 'الدعم', value: support, color: 'text-profit', bg: 'bg-profit dark:bg-profit/30 border-profit dark:border-profit/60' },
+    { label: 'أدنى 52 أسبوع', value: low52w, color: 'text-loss', bg: 'bg-loss dark:bg-loss/30 border-loss dark:border-loss/60' },
   ].filter((r) => r.value != null) as Array<{ label: string; value: number | null; color: string; bg: string }>;
 
   return (
@@ -2177,10 +2177,10 @@ function PriceLevelsLadderSection({ info }: { info: StockInfo }) {
           return (
             <div
               key={i}
-              className={`flex items-center justify-between p-3 rounded-lg border ${r.bg} ${isCurrent ? 'shadow-md ring-2 ring-emerald-300 dark:ring-emerald-700' : ''}`}
+              className={`flex items-center justify-between p-3 rounded-lg border ${r.bg} ${isCurrent ? 'shadow-md ring-2 ring-profit dark:ring-profit' : ''}`}
             >
               <div className="flex items-center gap-2">
-                {isCurrent && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                {isCurrent && <span className="w-2 h-2 rounded-full bg-profit animate-pulse" />}
                 <span className="text-sm font-medium">{r.label}</span>
               </div>
               <span className={`text-lg font-bold ${r.color}`}>
@@ -2208,9 +2208,9 @@ function ScoreDashboardSection({ info }: { info: StockInfo }) {
   }
 
   const scoreColor = (s: number | null) => s == null ? 'text-slate-600 dark:text-slate-300'
-    : s >= 70 ? 'text-emerald-600'
-    : s >= 40 ? 'text-amber-600'
-    : 'text-red-600';
+    : s >= 70 ? 'text-profit'
+    : s >= 40 ? 'text-warning'
+    : 'text-loss';
 
   return (
     <SectionCard
@@ -2267,9 +2267,9 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {
       accent={isHalal ? 'emerald' : 'red'}
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className={`p-3 rounded-lg text-center ${isHalal ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+        <div className={`p-3 rounded-lg text-center ${isHalal ? 'bg-profit dark:bg-profit/30' : 'bg-loss dark:bg-loss/30'}`}>
           <p className="text-xs text-muted-foreground">الحكم</p>
-          <p className={`text-lg font-bold mt-1 ${isHalal ? 'text-emerald-600' : 'text-red-600'}`}>
+          <p className={`text-lg font-bold mt-1 ${isHalal ? 'text-profit' : 'text-loss'}`}>
             {isHalal ? '✓ متوافق' : '✗ غير متوافق'}
           </p>
         </div>
@@ -2279,9 +2279,9 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {
             {compliantCount != null && activeCount != null ? `${compliantCount}/${activeCount}` : '—'}
           </p>
         </div>
-        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center">
+        <div className="p-3 bg-warning dark:bg-warning/30 rounded-lg text-center">
           <p className="text-xs text-muted-foreground">نسبة التطهير (S&P)</p>
-          <p className="text-lg font-bold text-amber-600 mt-1">
+          <p className="text-lg font-bold text-warning mt-1">
             {purRatePct != null ? `${purRatePct.toFixed(2)}%` : '—'}
           </p>
         </div>
@@ -2300,7 +2300,7 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {
         </p>
       )}
       {needsReview && (
-        <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 rounded text-xs text-amber-700 dark:text-amber-400">
+        <div className="mt-3 p-2 bg-warning dark:bg-warning/20 border border-warning dark:border-warning/60 rounded text-xs text-warning dark:text-warning">
           ⚠️ يحتاج مراجعة يدوية — رمز مختلف أو تعارض بين المصادر
         </div>
       )}
@@ -2346,10 +2346,10 @@ ${OFFICIAL_LINKS_BLOCK}
   return (
     <SectionCard icon={<Share2 className="w-4 h-4" />} title="مشاركة التحليل" accent="slate">
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => handleShare('whatsapp')} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white gap-1.5">
+        <Button onClick={() => handleShare('whatsapp')} size="sm" className="bg-profit hover:bg-profit text-white gap-1.5">
           <MessageCircle className="w-4 h-4" /> WhatsApp
         </Button>
-        <Button onClick={() => handleShare('facebook')} size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white gap-1.5">
+        <Button onClick={() => handleShare('facebook')} size="sm" className="bg-profit hover:bg-profit text-white gap-1.5">
           <Facebook className="w-4 h-4" /> Facebook
         </Button>
         <Button onClick={() => handleShare('telegram')} size="sm" className="bg-slate-600 hover:bg-slate-700 text-white gap-1.5">
@@ -2394,9 +2394,9 @@ function HeaderCard({
 
   const trendAr = trend == null ? null
     : trend === 'صاعد' || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
-    ? { txt: 'صاعد', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' }
+    ? { txt: 'صاعد', cls: 'bg-profit text-profit dark:bg-profit/40 dark:text-profit' }
     : trend === 'هابط' || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
-    ? { txt: 'هابط', cls: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' }
+    ? { txt: 'هابط', cls: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss' }
     : { txt: trend, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
 
   const shariaHalal = sharia?.success
@@ -2413,16 +2413,16 @@ function HeaderCard({
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h2 className="text-2xl sm:text-3xl font-bold">{symbol}</h2>
                 {trendAr && <Badge className={`text-xs ${trendAr.cls}`}>{trendAr.txt}</Badge>}
-                {isEgx30 && <Badge variant="outline" className="text-xs border-emerald-400 text-emerald-700 dark:text-emerald-300">EGX30</Badge>}
-                {isEgx70 && <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 dark:text-amber-300">EGX70</Badge>}
+                {isEgx30 && <Badge variant="outline" className="text-xs border-profit text-profit dark:text-profit">EGX30</Badge>}
+                {isEgx70 && <Badge variant="outline" className="text-xs border-warning text-warning dark:text-warning">EGX70</Badge>}
                 {isEgx100 && <Badge variant="outline" className="text-xs">EGX100</Badge>}
                 {shariaHalal != null && (
                   <Badge
                     variant="outline"
                     className={`text-xs ${
                       shariaHalal
-                        ? 'border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/30'
-                        : 'border-red-300 text-red-700 dark:border-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/30'
+                        ? 'border-profit text-profit dark:border-profit dark:text-profit bg-profit dark:bg-profit/30'
+                        : 'border-loss text-loss dark:border-loss dark:text-loss bg-loss dark:bg-loss/30'
                     }`}
                   >
                     {shariaHalal ? '✓ متوافق شرعياً' : '✗ غير متوافق'}
@@ -2458,7 +2458,7 @@ function HeaderCard({
             {changePct != null && (
               <p
                 className={`text-sm font-semibold mt-1 flex items-center justify-center md:justify-start gap-1 ${
-                  changePct >= 0 ? 'text-emerald-600' : 'text-red-600'
+                  changePct >= 0 ? 'text-profit' : 'text-loss'
                 }`}
               >
                 {changePct >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
@@ -2668,10 +2668,10 @@ export function SpecialistAnalysisView() {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 bg-white dark:bg-slate-950 min-h-screen" dir="rtl">
       {/* ════ Header ════ */}
-      <div className="rounded-xl border border-emerald-200/60 dark:border-emerald-900/40 bg-gradient-to-l from-emerald-50 via-amber-50/40 to-slate-50 dark:from-emerald-950/30 dark:via-amber-950/20 dark:to-slate-900/40 p-4 sm:p-5">
+      <div className="rounded-xl border border-profit/60 dark:border-profit/40 bg-gradient-to-l from-profit via-warning/40 to-slate-50 dark:from-profit/30 dark:via-warning/20 dark:to-slate-900/40 p-4 sm:p-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-md">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-profit to-warning flex items-center justify-center flex-shrink-0 shadow-md">
               <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
             <div>
@@ -2685,9 +2685,9 @@ export function SpecialistAnalysisView() {
           </div>
           <Badge
             variant="secondary"
-            className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+            className="bg-profit text-profit dark:bg-profit/30 dark:text-profit border border-profit dark:border-profit"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1" />
+            <span className="w-2 h-2 rounded-full bg-profit animate-pulse ml-1" />
             السوق: {MARKET_NAMES_AR[currentMarket] || currentMarket}
           </Badge>
         </div>
@@ -2724,12 +2724,12 @@ export function SpecialistAnalysisView() {
 
       {/* ════ Error ════ */}
       {error && !loading && (
-        <Card className="p-4 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900">
+        <Card className="p-4 bg-loss dark:bg-loss/30 border-loss dark:border-loss">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-loss flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-red-700 dark:text-red-400 text-sm">تعذّر تحميل بيانات السهم</p>
-              <p className="text-xs text-red-600 dark:text-red-500 mt-1">{error}</p>
+              <p className="font-semibold text-loss dark:text-loss text-sm">تعذّر تحميل بيانات السهم</p>
+              <p className="text-xs text-loss dark:text-loss mt-1">{error}</p>
             </div>
           </div>
         </Card>
@@ -2781,13 +2781,13 @@ export function SpecialistAnalysisView() {
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <PriceTile label="الافتتاح" value={fmtNum(info.open_price)} color="text-slate-700 dark:text-slate-200" />
-              <PriceTile label="الأعلى" value={fmtNum(info.high_price)} color="text-emerald-600" />
-              <PriceTile label="الأدنى" value={fmtNum(info.low_price)} color="text-red-600" />
+              <PriceTile label="الأعلى" value={fmtNum(info.high_price)} color="text-profit" />
+              <PriceTile label="الأدنى" value={fmtNum(info.low_price)} color="text-loss" />
               <PriceTile label="الإغلاق السابق" value={fmtNum(info.previous_close)} color="text-slate-600 dark:text-slate-300" />
-              <PriceTile label="حجم التداول" value={fmtCompact(info.volume)} color="text-amber-600" />
-              <PriceTile label="قيمة التداول" value={fmtCompact(info.turnover_egp ?? info.value_traded, ' ج.م')} color="text-amber-700" />
-              <PriceTile label="أعلى 52 أسبوع" value={fmtNum(info.high_52w)} color="text-emerald-600" />
-              <PriceTile label="أدنى 52 أسبوع" value={fmtNum(info.low_52w)} color="text-red-600" />
+              <PriceTile label="حجم التداول" value={fmtCompact(info.volume)} color="text-warning" />
+              <PriceTile label="قيمة التداول" value={fmtCompact(info.turnover_egp ?? info.value_traded, ' ج.م')} color="text-warning" />
+              <PriceTile label="أعلى 52 أسبوع" value={fmtNum(info.high_52w)} color="text-profit" />
+              <PriceTile label="أدنى 52 أسبوع" value={fmtNum(info.low_52w)} color="text-loss" />
             </div>
             {/* Distance tiles */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
@@ -2798,7 +2798,7 @@ export function SpecialistAnalysisView() {
                     ? `${(((currentPrice - info.high_52w) / info.high_52w) * 100).toFixed(1)}%`
                     : '—'
                 }
-                color={currentPrice != null && info.high_52w != null && currentPrice < info.high_52w ? 'text-red-600' : 'text-emerald-600'}
+                color={currentPrice != null && info.high_52w != null && currentPrice < info.high_52w ? 'text-loss' : 'text-profit'}
               />
               <PriceTile
                 label="المسافة من قاع 52 أسبوع"
@@ -2807,7 +2807,7 @@ export function SpecialistAnalysisView() {
                     ? `${(((currentPrice - info.low_52w) / info.low_52w) * 100).toFixed(1)}%`
                     : '—'
                 }
-                color={currentPrice != null && info.low_52w != null && currentPrice > info.low_52w ? 'text-emerald-600' : 'text-red-600'}
+                color={currentPrice != null && info.low_52w != null && currentPrice > info.low_52w ? 'text-profit' : 'text-loss'}
               />
               <PriceTile
                 label="متوسط الحجم"
@@ -2885,12 +2885,12 @@ export function SpecialistAnalysisView() {
           <ShareButtons info={info} ticker={radarData.ticker ?? ticker.toUpperCase()} />
 
           {/* ── §16. Disclaimer ── */}
-          <Card className="p-4 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900">
+          <Card className="p-4 bg-warning dark:bg-warning/20 border-warning dark:border-warning">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-amber-700 dark:text-amber-400 mb-1 text-sm">إخلاء المسؤولية</h4>
-                <p className="text-xs text-amber-700 dark:text-amber-500">
+                <h4 className="font-bold text-warning dark:text-warning mb-1 text-sm">إخلاء المسؤولية</h4>
+                <p className="text-xs text-warning dark:text-warning">
                   هذا التحليل لأغراض تعليمية وإعلامية فقط وليس توصية استثمارية.
                   القرار النهائي مسؤولية العميل. قرارات الاستثمار يجب أن تبنى على تقييمك الشخصي
                   ومشورة مستشار مالي محترف. الأداء السابق لا يضمن النتائج المستقبلية.

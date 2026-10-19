@@ -70,7 +70,7 @@ export function MobileNav() {
               onClick={() => setCurrentView(item.id)}
               className={cn(
                 'flex flex-col items-center justify-center gap-0.5 px-2 sm:px-3 py-2 rounded-lg transition-colors min-w-[48px] min-h-[48px] flex-1',
-                isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                isActive ? 'text-profit dark:text-profit' : 'text-muted-foreground'
               )}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}

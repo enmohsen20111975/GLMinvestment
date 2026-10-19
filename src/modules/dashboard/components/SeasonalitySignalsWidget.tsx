@@ -104,7 +104,7 @@ export function SeasonalitySignalsWidget() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-whale to-cyan-500 flex items-center justify-center">
               <Calendar className="w-4 h-4 text-white" />
             </div>
             إشارات الموسمية (EGX)
@@ -146,11 +146,11 @@ export function SeasonalitySignalsWidget() {
             {summary && (
               <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-muted/30">
                 <div className="text-center">
-                  <span className="block text-sm font-bold text-emerald-500">{summary.buy_signals}</span>
+                  <span className="block text-sm font-bold text-profit">{summary.buy_signals}</span>
                   <span className="text-[9px] text-muted-foreground">شراء</span>
                 </div>
                 <div className="text-center">
-                  <span className="block text-sm font-bold text-red-600">{summary.sell_signals}</span>
+                  <span className="block text-sm font-bold text-loss">{summary.sell_signals}</span>
                   <span className="text-[9px] text-muted-foreground">بيع</span>
                 </div>
                 <div className="text-center">
@@ -167,9 +167,9 @@ export function SeasonalitySignalsWidget() {
                   key={s.ticker}
                   className={cn(
                     'p-2 rounded-lg border transition-all',
-                    s.signal === 'BUY' || s.signal === 'STRONG_BUY' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' :
-                    s.signal === 'SELL' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                    'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                    s.signal === 'BUY' || s.signal === 'STRONG_BUY' ? 'bg-profit dark:bg-profit/20 border-profit dark:border-profit' :
+                    s.signal === 'SELL' ? 'bg-loss dark:bg-loss/20 border-loss dark:border-loss' :
+                    'bg-warning dark:bg-warning/20 border-warning dark:border-warning'
                   )}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -179,9 +179,9 @@ export function SeasonalitySignalsWidget() {
                     </div>
                     <Badge className={cn(
                       'text-[9px]',
-                      s.signal === 'BUY' || s.signal === 'STRONG_BUY' ? 'bg-emerald-600 text-white' :
-                      s.signal === 'SELL' ? 'bg-red-600 text-white' :
-                      'bg-amber-600 text-white'
+                      s.signal === 'BUY' || s.signal === 'STRONG_BUY' ? 'bg-profit text-white' :
+                      s.signal === 'SELL' ? 'bg-loss text-white' :
+                      'bg-warning text-white'
                     )}>
                       {s.signal === 'BUY' || s.signal === 'STRONG_BUY' ? 'شراء' : s.signal === 'SELL' ? 'بيع' : 'انتظار'}
                     </Badge>

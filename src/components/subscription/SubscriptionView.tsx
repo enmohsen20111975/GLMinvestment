@@ -335,7 +335,7 @@ function buildPlans(marketConfig: MarketPricingConfig): Plan[] {
       vip: true,
       cta: 'اشترك في VIP الشاملة',
       features: [
-        { icon: <Crown className="w-4 h-4 text-amber-500" />, text: 'فتح جميع أسواق المنصة الـ 6 في اشتراك موحد', highlighted: true },
+        { icon: <Crown className="w-4 h-4 text-warning" />, text: 'فتح جميع أسواق المنصة الـ 6 في اشتراك موحد', highlighted: true },
         { icon: <Globe className="w-4 h-4" />, text: '🇪🇬 مصر + 🇸🇦 السعودية + 🇰🇼 الكويت + 🇶🇦 قطر + 🇺🇸 أمريكا + ₿ كريبتو وذهب', highlighted: true },
         { icon: <Zap className="w-4 h-4" />, text: 'رادار صانع السوق وتدفق السيولة لجميع البورصات معاً' },
         { icon: <TrendingUp className="w-4 h-4" />, text: 'أهداف التوقعات ورادار الخروج لكافة الأسواق' },
@@ -598,7 +598,7 @@ export function SubscriptionView() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-emerald-950/20 pb-20" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-profit/20 pb-20" dir="rtl">
       {/* Sticky Top Dismiss & Action Bar */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border/80 px-4 py-2.5 shadow-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
@@ -607,10 +607,10 @@ export function SubscriptionView() {
               variant="outline"
               size="sm"
               onClick={handleDismiss}
-              className="gap-2 border-emerald-600/30 hover:bg-emerald-500/10 text-foreground font-bold transition-all shadow-sm"
+              className="gap-2 border-profit/30 hover:bg-profit/10 text-foreground font-bold transition-all shadow-sm"
               title="إغلاق والعودة للشاشة السابقة"
             >
-              <X className="w-4 h-4 text-emerald-500" />
+              <X className="w-4 h-4 text-profit" />
               <span>إغلاق والعودة للمنصة</span>
             </Button>
             <Button
@@ -632,12 +632,12 @@ export function SubscriptionView() {
                 variant="default"
                 size="sm"
                 onClick={() => setCurrentView('auth')}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs font-bold shadow-md shadow-emerald-600/20"
+                className="bg-profit hover:bg-profit text-white gap-1.5 text-xs font-bold shadow-md shadow-emerald-600/20"
               >
                 <span>تسجيل الدخول / إنشاء حساب</span>
               </Button>
             ) : (
-              <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
+              <Badge variant="outline" className="text-xs border-profit/40 text-profit dark:text-profit bg-profit/5">
                 مرحباً {user?.username || user?.email?.split('@')[0]}
               </Badge>
             )}
@@ -646,18 +646,18 @@ export function SubscriptionView() {
       </div>
 
       {/* Special Offer Banner */}
-      <div className="bg-gradient-to-l from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md">
+      <div className="bg-gradient-to-l from-profit via-whale to-profit text-white shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-center md:text-right">
             <div className="flex items-center gap-2">
-              <Gift className="w-5 h-5 animate-pulse text-amber-300" />
+              <Gift className="w-5 h-5 animate-pulse text-warning" />
               <span className="font-bold text-lg">عرض إطلاق الأسواق الجديد!</span>
             </div>
-            <span className="text-emerald-50 text-sm md:text-base font-medium">
-              خصم فوري يصل إلى <span className="text-amber-300 font-bold underline">65%</span> على جميع الباقات لجميع الأسواق العربية والعالمية
+            <span className="text-profit text-sm md:text-base font-medium">
+              خصم فوري يصل إلى <span className="text-warning font-bold underline">65%</span> على جميع الباقات لجميع الأسواق العربية والعالمية
             </span>
             <div className="flex items-center gap-1 bg-white/20 rounded-full px-3 py-1">
-              <Clock className="w-4 h-4 text-amber-200" />
+              <Clock className="w-4 h-4 text-warning" />
               <span className="text-xs font-semibold">لفترة محدودة</span>
             </div>
           </div>
@@ -666,13 +666,13 @@ export function SubscriptionView() {
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/20 via-transparent to-transparent" />
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-40 right-20 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-profit/20 via-transparent to-transparent" />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-profit/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-40 right-20 w-96 h-96 bg-whale/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-6xl mx-auto px-4 pt-12 pb-6">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-6 shadow-2xl shadow-emerald-500/30">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-profit to-whale mb-6 shadow-2xl shadow-emerald-500/30">
               <Crown className="w-10 h-10 text-white" />
             </div>
 
@@ -686,15 +686,15 @@ export function SubscriptionView() {
             {/* Trust Badges */}
             <div className="flex flex-wrap items-center justify-center gap-6 mb-10 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-500" />
+                <Shield className="w-4 h-4 text-profit" />
                 <span>دفع مشفر وآمن 100%</span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-500" />
+                <Clock className="w-4 h-4 text-profit" />
                 <span>إلغاء الاشتراك في أي وقت</span>
               </div>
               <div className="flex items-center gap-2">
-                <Headphones className="w-4 h-4 text-emerald-500" />
+                <Headphones className="w-4 h-4 text-profit" />
                 <span>دعم فني متخصص ومباشر</span>
               </div>
             </div>
@@ -715,15 +715,15 @@ export function SubscriptionView() {
                       className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 ${
                         isSelected
                           ? isVipTab
-                            ? 'bg-gradient-to-l from-amber-500 to-yellow-600 text-white shadow-lg shadow-amber-500/30 ring-2 ring-amber-400'
-                            : 'bg-gradient-to-l from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/30'
+                            ? 'bg-gradient-to-l from-warning to-yellow-600 text-white shadow-lg shadow-amber-500/30 ring-2 ring-warning'
+                            : 'bg-gradient-to-l from-profit to-whale text-white shadow-md shadow-emerald-600/30'
                           : 'text-muted-foreground hover:text-foreground hover:bg-background/70'
                       }`}
                     >
                       <span className="text-base">{m.flag}</span>
                       <span>{m.shortName}</span>
                       {isVipTab && (
-                        <Badge className="bg-amber-300 text-amber-950 text-[10px] px-1.5 py-0 border-0 font-extrabold animate-pulse">
+                        <Badge className="bg-warning text-warning text-[10px] px-1.5 py-0 border-0 font-extrabold animate-pulse">
                           الأقوى
                         </Badge>
                       )}
@@ -754,7 +754,7 @@ export function SubscriptionView() {
                 }`}
               >
                 اشتراك سنوي
-                <Badge className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 font-bold">
+                <Badge className="bg-profit text-white text-[10px] px-2 py-0.5 font-bold">
                   وفر شهرين مجاناً 🎁
                 </Badge>
               </button>
@@ -765,16 +765,16 @@ export function SubscriptionView() {
 
       {/* Promo Code Card */}
       <div className="max-w-3xl mx-auto px-4 pb-10">
-        <Card className="overflow-hidden border-2 border-emerald-500/30 shadow-lg shadow-emerald-500/5 bg-background/80 backdrop-blur-sm">
+        <Card className="overflow-hidden border-2 border-profit/30 shadow-lg shadow-emerald-500/5 bg-background/80 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-profit to-whale shadow-md shadow-emerald-500/30">
                 <Tag className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   هل لديك كود خصم أو ترقية؟
-                  <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] px-2 py-0.5">
+                  <Badge className="bg-profit/15 text-profit dark:text-profit border border-profit/20 text-[10px] px-2 py-0.5">
                     Promo Code
                   </Badge>
                 </CardTitle>
@@ -807,7 +807,7 @@ export function SubscriptionView() {
               <Button
                 onClick={handleRedeemPromo}
                 disabled={promoLoading || !promoCode.trim()}
-                className="h-11 sm:min-w-[140px] bg-gradient-to-l from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold"
+                className="h-11 sm:min-w-[140px] bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-white font-bold"
                 type="button"
               >
                 {promoLoading ? (
@@ -961,9 +961,9 @@ export function SubscriptionView() {
       {/* Payment Options Modal */}
       {showPaymentOptions && selectedPlan && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md shadow-2xl border-2 border-emerald-500/40">
+          <Card className="w-full max-w-md shadow-2xl border-2 border-profit/40">
             <CardHeader className="text-center pb-3">
-              <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/30">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-profit to-whale flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/30">
                 <CreditCard className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-xl font-bold">إتمام الاشتراك في {selectedPlan.nameAr}</CardTitle>
@@ -978,16 +978,16 @@ export function SubscriptionView() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Free Trial Button */}
-              <div className="p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/5">
+              <div className="p-4 rounded-xl border border-profit/40 bg-profit/5">
                 <div className="flex items-center gap-3 mb-1">
-                  <Gift className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <Gift className="w-5 h-5 text-profit dark:text-profit" />
                   <span className="font-bold text-sm">تجربة مجانية</span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">
                   ابدأ فوراً بالتجربة المجانية لمدة شهر مع المزايا الأساسية
                 </p>
                 <Button
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9"
+                  className="w-full bg-profit hover:bg-profit text-white font-bold text-xs h-9"
                   onClick={handleStartFreeTrial}
                   disabled={loading === 'free-trial'}
                 >
@@ -1043,7 +1043,7 @@ export function SubscriptionView() {
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
-                    className="bg-gradient-to-l from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs h-10"
+                    className="bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-white font-bold text-xs h-10"
                     onClick={() => handlePaidSubscription(selectedPlan, 'card')}
                     disabled={loading === selectedPlan.id}
                   >
@@ -1127,18 +1127,18 @@ function PlanCard({
     <Card
       className={`relative flex flex-col justify-between overflow-hidden transition-all duration-300 hover:shadow-2xl ${
         plan.vip
-          ? 'border-2 border-amber-400 bg-gradient-to-b from-amber-500/10 via-background to-amber-500/5 shadow-xl shadow-amber-500/10 ring-2 ring-amber-400/50'
+          ? 'border-2 border-warning bg-gradient-to-b from-warning/10 via-background to-warning/5 shadow-xl shadow-amber-500/10 ring-2 ring-warning/50'
           : plan.popular
-          ? 'border-2 border-emerald-500 dark:border-emerald-600 shadow-xl shadow-emerald-500/10'
+          ? 'border-2 border-profit dark:border-profit shadow-xl shadow-emerald-500/10'
           : plan.pro
           ? 'border-2 border-purple-500 dark:border-purple-600 shadow-xl shadow-purple-500/10'
-          : 'border border-border/80 hover:border-emerald-500/50'
+          : 'border border-border/80 hover:border-profit/50'
       }`}
     >
       {/* Top Badges */}
       {plan.popular && !plan.vip && (
         <div className="absolute -top-px left-0 right-0">
-          <div className="bg-gradient-to-l from-emerald-500 to-teal-600 text-white text-center py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+          <div className="bg-gradient-to-l from-profit to-whale text-white text-center py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
             الأكثر طلباً 🔥
           </div>
@@ -1147,8 +1147,8 @@ function PlanCard({
 
       {plan.vip && (
         <div className="absolute -top-px left-0 right-0">
-          <div className="bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-600 text-amber-950 text-center py-1.5 text-xs font-black flex items-center justify-center gap-1.5 shadow-md">
-            <Crown className="w-4 h-4 fill-amber-950" />
+          <div className="bg-gradient-to-l from-warning via-yellow-500 to-warning text-warning text-center py-1.5 text-xs font-black flex items-center justify-center gap-1.5 shadow-md">
+            <Crown className="w-4 h-4 fill-warning" />
             الباقة الأقوى قيمة (كافة الأسواق 👑)
           </div>
         </div>
@@ -1168,11 +1168,11 @@ function PlanCard({
           <div
             className={`mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${
               plan.vip
-                ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-amber-950 shadow-lg shadow-amber-500/30'
+                ? 'bg-gradient-to-br from-warning to-yellow-500 text-warning shadow-lg shadow-amber-500/30'
                 : plan.pro
                 ? 'bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white shadow-md shadow-purple-500/20'
                 : plan.popular
-                ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
+                ? 'bg-gradient-to-br from-profit to-whale text-white shadow-md shadow-emerald-500/20'
                 : 'bg-muted text-muted-foreground'
             }`}
           >
@@ -1197,7 +1197,7 @@ function PlanCard({
             {plan.price === 0 ? (
               <div className="flex items-center justify-center gap-2">
                 <span className="text-3xl font-extrabold text-foreground">مجاني</span>
-                <Badge className="bg-emerald-500 text-white text-xs">للأبد</Badge>
+                <Badge className="bg-profit text-white text-xs">للأبد</Badge>
               </div>
             ) : (
               <>
@@ -1206,7 +1206,7 @@ function PlanCard({
                     <span className="text-sm text-muted-foreground line-through font-mono">
                       {billingPeriod === 'yearly' ? plan.originalPrice * 10 : plan.originalPrice} {market.currencyAr}
                     </span>
-                    <Badge className="bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 text-[10px] font-black px-1.5 py-0">
+                    <Badge className="bg-loss/15 text-loss dark:text-loss border border-loss/30 text-[10px] font-black px-1.5 py-0">
                       وفر {plan.discountPct}% 🔥
                     </Badge>
                   </div>
@@ -1221,7 +1221,7 @@ function PlanCard({
                   </span>
                 </div>
                 {billingPeriod === 'yearly' && (
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                  <p className="text-[11px] text-profit dark:text-profit font-semibold mt-1">
                     يعادل {monthlyPrice} {market.currencyAr} شهرياً
                   </p>
                 )}
@@ -1240,7 +1240,7 @@ function PlanCard({
                   feature.disabled
                     ? 'text-muted-foreground/60 line-through'
                     : feature.highlighted
-                    ? 'text-emerald-700 dark:text-emerald-300 font-bold'
+                    ? 'text-profit dark:text-profit font-bold'
                     : 'text-foreground'
                 }`}
               >
@@ -1248,7 +1248,7 @@ function PlanCard({
                   {feature.disabled ? (
                     <X className="w-3.5 h-3.5 text-muted-foreground/50" />
                   ) : (
-                    <Check className={`w-3.5 h-3.5 ${feature.highlighted ? 'text-emerald-500' : 'text-emerald-500'}`} />
+                    <Check className={`w-3.5 h-3.5 ${feature.highlighted ? 'text-profit' : 'text-profit'}`} />
                   )}
                 </span>
                 <span className="leading-snug">{feature.text}</span>
@@ -1262,9 +1262,9 @@ function PlanCard({
         <Button
           className={`w-full py-5 text-sm font-bold shadow-md transition-all ${
             plan.vip
-              ? 'bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-700 text-amber-950 font-black shadow-amber-500/25 ring-2 ring-amber-400'
+              ? 'bg-gradient-to-l from-warning via-yellow-500 to-warning hover:from-warning hover:to-yellow-700 text-warning font-black shadow-amber-500/25 ring-2 ring-warning'
               : plan.popular
-              ? 'bg-gradient-to-l from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-emerald-500/25'
+              ? 'bg-gradient-to-l from-profit to-whale hover:from-profit hover:to-whale text-white shadow-emerald-500/25'
               : plan.pro
               ? 'bg-gradient-to-l from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white shadow-purple-500/25'
               : 'bg-muted-foreground/20 text-foreground hover:bg-muted-foreground/30'
@@ -1279,7 +1279,7 @@ function PlanCard({
               {plan.price === 0 && <Rocket className="w-4 h-4 ml-2" />}
               {plan.popular && !plan.vip && <Zap className="w-4 h-4 ml-2" />}
               {plan.pro && <Rocket className="w-4 h-4 ml-2" />}
-              {plan.vip && <Crown className="w-4 h-4 ml-2 fill-amber-950" />}
+              {plan.vip && <Crown className="w-4 h-4 ml-2 fill-warning" />}
             </>
           )}
           {isLoading ? 'جاري التحميل...' : plan.cta}
@@ -1318,9 +1318,9 @@ function ComparisonTable({
                     key={p.id}
                     className={`text-center py-4 px-3 font-bold ${
                       p.vip
-                        ? 'text-amber-500 bg-amber-500/5'
+                        ? 'text-warning bg-warning/5'
                         : p.popular
-                        ? 'text-emerald-600 dark:text-emerald-400'
+                        ? 'text-profit dark:text-profit'
                         : ''
                     }`}
                   >
@@ -1452,13 +1452,13 @@ function ComparisonRow({
         return (
           <td
             key={p.id}
-            className={`text-center py-3 px-3 text-xs md:text-sm ${p.vip ? 'bg-amber-500/5' : ''}`}
+            className={`text-center py-3 px-3 text-xs md:text-sm ${p.vip ? 'bg-warning/5' : ''}`}
           >
             {isBoolean ? (
               typeof value === 'string' ? (
                 <span className="text-xs">{value}</span>
               ) : value ? (
-                <Check className="w-4 h-4 text-emerald-500 mx-auto" />
+                <Check className="w-4 h-4 text-profit mx-auto" />
               ) : (
                 <span className="text-muted-foreground/30 mx-auto block">—</span>
               )
@@ -1724,14 +1724,14 @@ function WalletPaymentModal({
         <CardContent className="space-y-4">
           {redirectUrl ? (
             <div className="text-center space-y-3 py-4">
-              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Loader2 className="w-7 h-7 text-emerald-600 animate-spin" />
+              <div className="w-14 h-14 mx-auto rounded-full bg-profit dark:bg-profit/30 flex items-center justify-center">
+                <Loader2 className="w-7 h-7 text-profit animate-spin" />
               </div>
-              <p className="font-bold text-sm text-emerald-600">جاري تحويلك لصفحة الدفع...</p>
+              <p className="font-bold text-sm text-profit">جاري تحويلك لصفحة الدفع...</p>
               <p className="text-xs text-muted-foreground">سيتم تحويلك تلقائياً خلال لحظات</p>
               <a
                 href={redirectUrl}
-                className="text-xs text-teal-500 underline font-semibold"
+                className="text-xs text-whale underline font-semibold"
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -215,14 +215,14 @@ interface TopPerformersResponse {
 // ─── State Colors (mirrors vps-service/utils/stock_state.py STATE_COLORS) ────
 
 const STATE_BADGE_COLORS: Record<string, string> = {
-  CORRECTION_END: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
-  BALANCED_MOMENTUM: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800',
+  CORRECTION_END: 'bg-profit text-profit dark:bg-profit/40 dark:text-profit border-profit dark:border-profit',
+  BALANCED_MOMENTUM: 'bg-success text-success dark:bg-success/40 dark:text-success border-success dark:border-success',
   NEAR_BREAKOUT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
-  AT_PEAK: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
+  AT_PEAK: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss border-loss dark:border-loss',
   NEAR_PEAK: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
   NEUTRAL: 'bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300 border-gray-200 dark:border-gray-700',
   CORRECTION: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  DECLINING: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+  DECLINING: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss border-loss dark:border-loss',
   INSUFFICIENT_DATA: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 border-slate-200 dark:border-slate-700',
 };
 
@@ -374,8 +374,8 @@ function formatEGP(v: number): string {
 }
 
 function getChangeColor(change: number): string {
-  if (change > 0) return 'text-emerald-600 dark:text-emerald-400';
-  if (change < 0) return 'text-red-600 dark:text-red-400';
+  if (change > 0) return 'text-profit dark:text-profit';
+  if (change < 0) return 'text-loss dark:text-loss';
   return 'text-muted-foreground';
 }
 
@@ -563,7 +563,7 @@ export function StockScreenerAdvanced({ initialTab = 'advanced', initialMarket }
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Activity className="w-5 h-5 text-emerald-600" />
+            <Activity className="w-5 h-5 text-profit" />
             {t('screener.advanced.title')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -1096,15 +1096,15 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
    ];
 
    const colorMap: Record<string, string> = {
-     emerald: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300',
-     teal: 'border-teal-500/40 bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 dark:text-teal-300',
-     amber: 'border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300',
+     emerald: 'border-profit/40 bg-profit/10 text-profit hover:bg-profit/20 dark:text-profit',
+     teal: 'border-whale/40 bg-whale/10 text-whale hover:bg-whale/20 dark:text-whale',
+     amber: 'border-warning/40 bg-warning/10 text-warning hover:bg-warning/20 dark:text-warning',
      orange: 'border-orange-500/40 bg-orange-500/10 text-orange-700 hover:bg-orange-500/20 dark:text-orange-300',
-     red: 'border-red-500/40 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-300',
+     red: 'border-loss/40 bg-loss/10 text-loss hover:bg-loss/20 dark:text-loss',
      gray: 'border-gray-500/40 bg-gray-500/10 text-gray-700 hover:bg-gray-500/20 dark:text-gray-300',
      purple: 'border-purple-500/40 bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 dark:text-purple-300',
-     rose: 'border-rose-500/40 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:text-rose-300',
-     green: 'border-green-500/40 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-300',
+     rose: 'border-loss/40 bg-loss/10 text-loss hover:bg-loss/20 dark:text-loss',
+     green: 'border-success/40 bg-success/10 text-success hover:bg-success/20 dark:text-success',
      yellow: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 dark:text-yellow-300',
      gold: 'border-yellow-600/40 bg-yellow-600/10 text-yellow-800 hover:bg-yellow-600/20 dark:text-yellow-400',
      cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 hover:bg-cyan-500/20 dark:text-cyan-300',
@@ -1296,7 +1296,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => computeScreenerStop(s),
         render: (s) => {
           const stop = computeScreenerStop(s);
-          return <span className="font-mono text-xs font-semibold text-red-600 dark:text-red-400">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</span>;
+          return <span className="font-mono text-xs font-semibold text-loss dark:text-loss">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1308,7 +1308,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => computeScreenerTarget(s),
         render: (s) => {
           const target = computeScreenerTarget(s);
-          return <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</span>;
+          return <span className="font-mono text-xs font-semibold text-profit dark:text-profit">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1321,7 +1321,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         render: (s) => {
           const rr = computeScreenerRR(s);
           if (rr > 0) {
-            const rrColor = rr >= 2 ? 'text-emerald-600 dark:text-emerald-400' : rr >= 1.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
+            const rrColor = rr >= 2 ? 'text-profit dark:text-profit' : rr >= 1.5 ? 'text-warning dark:text-warning' : 'text-loss dark:text-loss';
             return <span className={`font-mono text-xs font-bold ${rrColor}`}>{(rr ?? 0).toFixed(2)}</span>;
           }
           return <span className="text-muted-foreground">—</span>;
@@ -1336,7 +1336,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortValue: (s) => computeOpportunityQuality(s),
         render: (s) => {
           const quality = computeOpportunityQuality(s);
-          const color = quality >= 70 ? 'text-emerald-600 dark:text-emerald-400' : quality >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground';
+          const color = quality >= 70 ? 'text-profit dark:text-profit' : quality >= 50 ? 'text-warning dark:text-warning' : 'text-muted-foreground';
           return <span className={`font-mono text-xs font-bold ${color}`}>{quality}</span>;
         },
       },
@@ -1352,7 +1352,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         render: (s) => (
           <span className="font-mono text-xs text-muted-foreground">
             {formatVolume(s.volume)}
-            {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}
+            {s.volume_surge && <Zap className="inline w-3 h-3 text-warning mr-1" />}
           </span>
         ),
       },
@@ -1439,7 +1439,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         filterValue: (s) => s.above_ma_50 ? 'above' : 'below',
         render: (s) =>
           s.above_ma_50 ? (
-            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-xs px-2 py-0.5">
+            <Badge className="bg-profit text-profit dark:bg-profit/40 dark:text-profit border-profit dark:border-profit text-xs px-2 py-0.5">
               {t('screener.advanced.stockStateColumn.above')}
             </Badge>
           ) : (
@@ -1480,7 +1480,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: buy_pct (-1 if null)
         sortValue: (s) => (s.buy_pct !== null && s.buy_pct !== undefined) ? s.buy_pct : -1,
         render: (s) => (
-          <span className={cn('font-mono text-xs', (s.buy_pct ?? 0) >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+          <span className={cn('font-mono text-xs', (s.buy_pct ?? 0) >= 50 ? 'text-profit dark:text-profit' : 'text-muted-foreground')}>
             {s.buy_pct !== null && s.buy_pct !== undefined ? formatNumber(s.buy_pct, 1) + '%' : '—'}
           </span>
         ),
@@ -1494,7 +1494,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         // (UNIFIED-TABLE-UPGRADE) sortValue: net_flow_egp (-Infinity if null)
         sortValue: (s) => (s.net_flow_egp !== null && s.net_flow_egp !== undefined && Number.isFinite(s.net_flow_egp)) ? s.net_flow_egp : -Infinity,
         render: (s) => (
-          <span className={cn('font-mono text-xs', (s.net_flow_egp ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : (s.net_flow_egp ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground')}>
+          <span className={cn('font-mono text-xs', (s.net_flow_egp ?? 0) > 0 ? 'text-profit dark:text-profit' : (s.net_flow_egp ?? 0) < 0 ? 'text-loss dark:text-loss' : 'text-muted-foreground')}>
             {s.net_flow_egp !== null && s.net_flow_egp !== undefined ? formatEGP(s.net_flow_egp) : '—'}
           </span>
         ),
@@ -1637,7 +1637,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           a shadcn DropdownMenu «المزيد (N)». Reduces 20+ buttons → 8. */}
       <CollapsibleSection
         title={t('screener.advanced.collapsible.readyFilters')}
-        icon={<Zap className="w-4 h-4 text-amber-600" />}
+        icon={<Zap className="w-4 h-4 text-warning" />}
       >
         <div className="flex flex-wrap gap-2 items-center">
           {presets.filter(p => p.primary).map((preset) => {
@@ -1704,8 +1704,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           أزرار فلترة سريعة للمتداول المحترف (فوق الجدول مباشرة). كل زر يطبّق
           تركيبة فلاتر متخصصة على الـ clientExtraFilter + يضبط ما يقدر عليه
           من الـ server filter state. Rule 27: لا fabrication. */}
-      <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-950/10">
-        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">قوالب المتداول المحترف</span>
+      <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-profit/20 bg-profit/30 dark:bg-profit/10">
+        <span className="text-[10px] font-bold text-profit dark:text-profit uppercase tracking-wide">قوالب المتداول المحترف</span>
         {traderPresets.map((preset) => {
           const isActive = clientExtraFilter?.label === preset.label;
           return (
@@ -1731,8 +1731,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
               className={cn(
                 'h-8 text-xs gap-1.5 transition-all',
                 isActive
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  : 'border-emerald-500/40 bg-background text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30',
+                  ? 'bg-profit text-white hover:bg-profit'
+                  : 'border-profit/40 bg-background text-profit hover:bg-profit dark:text-profit dark:hover:bg-profit/30',
               )}
               title={isActive ? 'إزالة الفلتر' : 'تطبيق القالب'}
             >
@@ -1743,7 +1743,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         {clientExtraFilter && (
           <button
             onClick={() => setClientExtraFilter(null)}
-            className="text-[10px] text-rose-500 hover:text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+            className="text-[10px] text-loss hover:text-loss px-1.5 py-0.5 rounded hover:bg-loss dark:hover:bg-loss/30 transition-colors"
             title="مسح فلتر القالب"
           >
             ✕ مسح القالب
@@ -2071,11 +2071,11 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
       {derivedSummary ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
           <KPIBox label={t('screener.advanced.kpi.totalResults')} value={derivedSummary.total} />
-          <KPIBox label={t('screener.advanced.kpi.gainers')} value={derivedSummary.gainers} color="text-emerald-600 dark:text-emerald-400" />
-          <KPIBox label={t('screener.advanced.kpi.losers')} value={derivedSummary.losers} color="text-red-600 dark:text-red-400" />
-          <KPIBox label={t('screener.advanced.kpi.avgChange')} value={`${derivedSummary.avgChange > 0 ? '+' : ''}${(derivedSummary.avgChange ?? 0).toFixed(2)}%`} color={derivedSummary.avgChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} />
+          <KPIBox label={t('screener.advanced.kpi.gainers')} value={derivedSummary.gainers} color="text-profit dark:text-profit" />
+          <KPIBox label={t('screener.advanced.kpi.losers')} value={derivedSummary.losers} color="text-loss dark:text-loss" />
+          <KPIBox label={t('screener.advanced.kpi.avgChange')} value={`${derivedSummary.avgChange > 0 ? '+' : ''}${(derivedSummary.avgChange ?? 0).toFixed(2)}%`} color={derivedSummary.avgChange >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'} />
           <KPIBox label={t('screener.advanced.kpi.totalLiquidity')} value={`${formatEGP(derivedSummary.totalLiquidity)} ${t('screener.advanced.kpi.egpSuffix')}`} />
-          <KPIBox label={t('screener.advanced.kpi.volumeMomentum')} value={derivedSummary.volumeMomentum} color="text-amber-600 dark:text-amber-400" />
+          <KPIBox label={t('screener.advanced.kpi.volumeMomentum')} value={derivedSummary.volumeMomentum} color="text-warning dark:text-warning" />
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-4 py-3 text-center text-xs text-muted-foreground">
@@ -2086,7 +2086,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
       {/* Results Table — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       <CollapsibleSection
         title={t('screener.advanced.kpi.filterResults')}
-        icon={<BarChart3 className="w-4 h-4 text-emerald-600" />}
+        icon={<BarChart3 className="w-4 h-4 text-profit" />}
         contentClassName="p-0 space-y-0"
       >
         {loading ? (
@@ -2095,7 +2095,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             {t('screener.advanced.loading.loadingStocks')}
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">
+          <div className="p-8 text-center text-loss">
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
             {error}
             <div className="mt-3">
@@ -2143,9 +2143,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             />
             {/* PAYWALL Gate 5: lock CTA — free users see first 5 only */}
             {screenerLocked && hiddenResultsCount > 0 && (
-              <div className="border-t border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20 p-4 text-center">
+              <div className="border-t border-warning/30 bg-warning/40 dark:bg-warning/20 p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <div className="flex items-center gap-2 text-warning dark:text-warning">
                     <Lock className="h-4 w-4" />
                     <span className="text-sm font-semibold">
                       {hiddenResultsCount} نتائج أخرى — اشترك لعرض الكل
@@ -2303,7 +2303,7 @@ function TopPerformersTab() {
           <span
             className={cn(
               'font-mono font-bold',
-              s.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600',
+              s.change_pct >= 0 ? 'text-profit' : 'text-loss',
             )}
           >
             {s.change_pct >= 0 ? '+' : ''}{s.change_pct}%
@@ -2354,7 +2354,7 @@ function TopPerformersTab() {
       {/* Filters Card — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       <CollapsibleSection
         title={t('screener.advanced.performers.topPerformersTitle')}
-        icon={<Trophy className="w-4 h-4 text-amber-600" />}
+        icon={<Trophy className="w-4 h-4 text-warning" />}
       >
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <FilterField label={t('screener.advanced.performers.filters.period')}>
@@ -2426,12 +2426,12 @@ function TopPerformersTab() {
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <KPIBox label={t('screener.advanced.performers.kpi.totalStocks')} value={summary.total_stocks} />
-          <KPIBox label={t('screener.advanced.performers.kpi.gainers')} value={summary.gainers} color="text-emerald-600" />
-          <KPIBox label={t('screener.advanced.performers.kpi.losers')} value={summary.losers} color="text-red-600" />
+          <KPIBox label={t('screener.advanced.performers.kpi.gainers')} value={summary.gainers} color="text-profit" />
+          <KPIBox label={t('screener.advanced.performers.kpi.losers')} value={summary.losers} color="text-loss" />
           <KPIBox
             label={t('screener.advanced.performers.kpi.avgChange')}
             value={`${summary.avg_change >= 0 ? '+' : ''}${summary.avg_change}%`}
-            color={summary.avg_change >= 0 ? 'text-emerald-600' : 'text-red-600'}
+            color={summary.avg_change >= 0 ? 'text-profit' : 'text-loss'}
           />
         </div>
       )}
@@ -2440,15 +2440,15 @@ function TopPerformersTab() {
       {summary && (summary.best_performer || summary.worst_performer) && (
         <CollapsibleSection
           title={t('screener.advanced.performers.kpi.bestWorst')}
-          icon={<Trophy className="w-4 h-4 text-amber-500" />}
+          icon={<Trophy className="w-4 h-4 text-warning" />}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {summary.best_performer && (
-              <Card className="border-emerald-500/30 bg-emerald-500/5">
+              <Card className="border-profit/30 bg-profit/5">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <Trophy className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                    <Trophy className="w-4 h-4 text-warning" />
+                    <span className="text-sm font-semibold text-profit dark:text-profit">
                       {t('screener.advanced.performers.topGainer', { period: periodLabel })}
                     </span>
                   </div>
@@ -2464,7 +2464,7 @@ function TopPerformersTab() {
                       </div>
                     </div>
                     <div className="text-left">
-                      <div className="text-emerald-600 font-mono font-bold text-xl">
+                      <div className="text-profit font-mono font-bold text-xl">
                         +{summary.best_performer.change_pct}%
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -2476,11 +2476,11 @@ function TopPerformersTab() {
               </Card>
             )}
             {summary.worst_performer && (
-              <Card className="border-red-500/30 bg-red-500/5">
+              <Card className="border-loss/30 bg-loss/5">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <TrendingDown className="w-4 h-4 text-red-500" />
-                    <span className="text-sm font-semibold text-red-700 dark:text-red-300">
+                    <TrendingDown className="w-4 h-4 text-loss" />
+                    <span className="text-sm font-semibold text-loss dark:text-loss">
                       {t('screener.advanced.performers.topLoser', { period: periodLabel })}
                     </span>
                   </div>
@@ -2496,7 +2496,7 @@ function TopPerformersTab() {
                       </div>
                     </div>
                     <div className="text-left">
-                      <div className="text-red-600 font-mono font-bold text-xl">
+                      <div className="text-loss font-mono font-bold text-xl">
                         {summary.worst_performer.change_pct}%
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -2514,7 +2514,7 @@ function TopPerformersTab() {
       {/* Results Table — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       <CollapsibleSection
         title={t('screener.advanced.performers.filters.resultsTable')}
-        icon={<BarChart3 className="w-4 h-4 text-emerald-600" />}
+        icon={<BarChart3 className="w-4 h-4 text-profit" />}
         contentClassName="p-0 space-y-0"
       >
         {loading && !data ? (
@@ -2523,7 +2523,7 @@ function TopPerformersTab() {
             {t('screener.advanced.loading.loadingPerformers')}
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">
+          <div className="p-8 text-center text-loss">
             <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
             {error}
             <div className="mt-3">
@@ -2697,7 +2697,7 @@ export function ExportDropdown({
         <DropdownMenuLabel>{t('screener.advanced.share.exportResults')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleCopyText} className="gap-2 cursor-pointer">
-          {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-profit" /> : <Copy className="w-4 h-4" />}
           {t('screener.advanced.share.copyText')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleShareWhatsApp} className="gap-2 cursor-pointer">

@@ -312,7 +312,7 @@ export function ResourceHistoryChart({ className }: ResourceHistoryChartProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-sm font-bold">
-              <Activity className="w-4 h-4 text-emerald-500" />
+              <Activity className="w-4 h-4 text-profit" />
               السجل التاريخي لاستهلاك الموارد
             </CardTitle>
             <CardDescription className="mt-1 text-xs">
@@ -353,7 +353,7 @@ export function ResourceHistoryChart({ className }: ResourceHistoryChartProps) {
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[32px] border',
                 range === opt.key
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
+                  ? 'bg-profit/10 text-profit dark:text-profit border-profit/40'
                   : 'text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted/40',
               )}
             >
@@ -590,11 +590,11 @@ function ToggleChip({
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex h-[300px] flex-col items-center justify-center gap-3 text-center">
-      <AlertTriangle className="w-8 h-8 text-red-500" />
+      <AlertTriangle className="w-8 h-8 text-loss" />
       <div className="text-xs text-muted-foreground max-w-md">
         تعذّر تحميل البيانات التاريخية.
         <br />
-        <span className="font-mono text-[10px] text-red-500/80">{message}</span>
+        <span className="font-mono text-[10px] text-loss/80">{message}</span>
       </div>
       <Button size="sm" variant="outline" onClick={onRetry} className="gap-1.5 text-xs h-8">
         <RefreshCw className="w-3.5 h-3.5" />

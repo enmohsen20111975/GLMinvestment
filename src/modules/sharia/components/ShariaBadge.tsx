@@ -86,11 +86,11 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
   compliant:
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    'bg-profit text-profit dark:bg-profit/50 dark:text-profit border-profit dark:border-profit',
   non_compliant:
-    'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800',
+    'bg-loss text-loss dark:bg-loss/50 dark:text-loss border-loss dark:border-loss',
   doubtful:
-    'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    'bg-warning text-warning dark:bg-warning/50 dark:text-warning border-warning dark:border-warning',
   not_available:
     'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 };
@@ -309,7 +309,7 @@ export function ShariaBadge({
       <PopoverContent
         sideOffset={4}
         align="end"
-        className="w-72 p-0 border-emerald-200 dark:border-emerald-900"
+        className="w-72 p-0 border-profit dark:border-profit"
       >
         <ShariaBadgePopoverBody
           ticker={ticker || ''}
@@ -346,7 +346,7 @@ function ShariaBadgePopoverBody({
   return (
     <div className="text-xs">
       {/* Header */}
-      <div className="bg-gradient-to-l from-emerald-700 to-emerald-600 text-emerald-50 p-2.5 rounded-t-md">
+      <div className="bg-gradient-to-l from-profit to-profit text-profit p-2.5 rounded-t-md">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span className="font-bold">التوافق الشرعي — {ticker}</span>
@@ -363,7 +363,7 @@ function ShariaBadgePopoverBody({
         )}
 
         {state === 'error' && (
-          <div className="text-[11px] text-red-700 dark:text-red-400 flex items-center gap-1">
+          <div className="text-[11px] text-loss dark:text-loss flex items-center gap-1">
             <Info className="w-3 h-3 flex-shrink-0" />
             <span>تعذّر تحميل بيانات التوافق الشرعي: {error?.slice(0, 80)}</span>
           </div>
@@ -396,7 +396,7 @@ function ShariaBadgePopoverOkBody({
           {summary.emoji} {summary.label}
         </span>
         {summary.isConsensus && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-warning bg-warning text-warning dark:bg-warning/40 dark:text-warning dark:border-warning">
             إجماع
           </span>
         )}
@@ -404,15 +404,15 @@ function ShariaBadgePopoverOkBody({
 
       {/* Metrics grid */}
       <div className="grid grid-cols-3 gap-1.5 text-center">
-        <div className="rounded border border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20 p-1">
+        <div className="rounded border border-warning dark:border-warning bg-warning/40 dark:bg-warning/20 p-1">
           <div className="text-[9px] text-muted-foreground">نسبة S&P</div>
-          <div className="text-[11px] font-bold text-amber-700 dark:text-amber-400 tabular-nums" dir="ltr">
+          <div className="text-[11px] font-bold text-warning dark:text-warning tabular-nums" dir="ltr">
             {formatPct(spPct ?? summary.purificationRatePct)}
           </div>
         </div>
-        <div className="rounded border border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20 p-1">
+        <div className="rounded border border-profit dark:border-profit bg-profit/40 dark:bg-profit/20 p-1">
           <div className="text-[9px] text-muted-foreground">المصادر المتوافقة</div>
-          <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums" dir="ltr">
+          <div className="text-[11px] font-bold text-profit dark:text-profit tabular-nums" dir="ltr">
             {summary.compliantCount}/{summary.activeCount || 8}
           </div>
         </div>
@@ -447,7 +447,7 @@ function ShariaBadgePopoverOkBody({
       <Separator className="my-1" />
       <button
         onClick={onOpenSharia}
-        className="w-full text-[11px] flex items-center justify-center gap-1 py-1 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 transition-colors"
+        className="w-full text-[11px] flex items-center justify-center gap-1 py-1 rounded bg-profit dark:bg-profit/40 text-profit dark:text-profit hover:bg-profit dark:hover:bg-profit/40 border border-profit dark:border-profit transition-colors"
       >
         <Calculator className="w-3 h-3" />
         افتح شاشة التوافق الشرعي

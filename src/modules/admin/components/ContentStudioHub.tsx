@@ -681,10 +681,10 @@ export function ContentStudioHub() {
           onClick={() => setStudio('trades')}
           className={cn(
             'flex items-center gap-3 p-3 rounded-2xl border-2 transition-all active:scale-95',
-            studio === 'trades' ? 'border-emerald-500 bg-emerald-500/5 shadow-md' : 'border-border bg-card hover:bg-accent/30',
+            studio === 'trades' ? 'border-profit bg-profit/5 shadow-md' : 'border-border bg-card hover:bg-accent/30',
           )}
         >
-          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', studio === 'trades' ? 'bg-emerald-500 text-white' : 'bg-muted')}>
+          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', studio === 'trades' ? 'bg-profit text-white' : 'bg-muted')}>
             <TrendingUp className="w-5 h-5" />
           </div>
           <div className="text-right">
@@ -750,12 +750,12 @@ export function ContentStudioHub() {
               {currentTrades.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
                   {currentTrades.map((t, i) => (
-                    <label key={t.id || i} className={cn('flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all', selectedTradeIds.has(t.id) ? 'border-emerald-500 bg-emerald-500/5' : 'border-border hover:bg-muted/30')}>
-                      <input type="checkbox" checked={selectedTradeIds.has(t.id)} onChange={() => toggleTrade(t.id)} className="w-3.5 h-3.5 accent-emerald-500 shrink-0" />
+                    <label key={t.id || i} className={cn('flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all', selectedTradeIds.has(t.id) ? 'border-profit bg-profit/5' : 'border-border hover:bg-muted/30')}>
+                      <input type="checkbox" checked={selectedTradeIds.has(t.id)} onChange={() => toggleTrade(t.id)} className="w-3.5 h-3.5 accent-profit shrink-0" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-sm">{t.ticker}</span>
-                          <Badge className="bg-emerald-500 text-white text-[9px]">+{(t.returnPct ?? 0).toFixed(1)}%</Badge>
+                          <Badge className="bg-profit text-white text-[9px]">+{(t.returnPct ?? 0).toFixed(1)}%</Badge>
                         </div>
                         <p className="text-[10px] text-muted-foreground truncate">{t.signal || 'إشارة قوية'}</p>
                         <p className="text-[9px] text-muted-foreground">{(t.entryPrice ?? 0).toFixed(2)} → {(t.exitPrice ?? 0).toFixed(2)} • {t.holdingDays}يوم</p>
@@ -764,12 +764,12 @@ export function ContentStudioHub() {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-amber-600 dark:text-amber-400 p-2 rounded bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
+                <p className="text-xs text-warning dark:text-warning p-2 rounded bg-warning dark:bg-warning/20 border border-warning dark:border-warning">
                   ℹ️ مفيش صفقات ناجحة في الـ DB. الفيديو هياخد بيانات تجريبية.
                 </p>
               )}
               {selectedTradeIds.size > 0 && (
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                <p className="text-xs text-profit dark:text-profit">
                   ✅ اخترت {selectedTradeIds.size} صفقة للفيديو
                 </p>
               )}

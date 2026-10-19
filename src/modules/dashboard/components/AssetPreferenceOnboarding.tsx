@@ -131,15 +131,15 @@ export function AssetPreferenceOnboarding() {
                 className={cn(
                   'group relative flex flex-col items-start gap-1 p-4 rounded-xl border-2 text-right transition-all min-h-[88px]',
                   isActive
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 shadow-sm'
-                    : 'border-border bg-card hover:border-emerald-300 dark:hover:border-emerald-700'
+                    ? 'border-profit bg-profit dark:bg-profit/40 shadow-sm'
+                    : 'border-border bg-card hover:border-profit dark:hover:border-profit'
                 )}
               >
                 <span className="text-2xl" aria-hidden>{opt.emoji}</span>
                 <span
                   className={cn(
                     'text-sm font-bold',
-                    isActive ? 'text-emerald-500 dark:text-emerald-300' : 'text-foreground'
+                    isActive ? 'text-profit dark:text-profit' : 'text-foreground'
                   )}
                 >
                   {opt.title}
@@ -149,7 +149,7 @@ export function AssetPreferenceOnboarding() {
                 </span>
                 {isActive && (
                   <span
-                    className="absolute top-2 left-2 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold"
+                    className="absolute top-2 left-2 flex h-4 w-4 items-center justify-center rounded-full bg-profit text-white text-[10px] font-bold"
                     aria-hidden
                   >
                     ✓
@@ -164,7 +164,7 @@ export function AssetPreferenceOnboarding() {
           <Button
             type="button"
             onClick={handleStart}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11"
+            className="w-full bg-profit hover:bg-profit text-white font-bold h-11"
           >
             ابدأ
           </Button>

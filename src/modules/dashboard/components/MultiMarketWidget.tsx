@@ -247,9 +247,9 @@ export function MultiMarketWidget() {
                   </p>
                   <div className="flex items-center gap-1">
                     {isPositive ? (
-                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                      <TrendingUp className="w-3 h-3 text-profit" />
                     ) : isNegative ? (
-                      <TrendingDown className="w-3 h-3 text-red-500" />
+                      <TrendingDown className="w-3 h-3 text-loss" />
                     ) : (
                       <Minus className="w-3 h-3 text-muted-foreground" />
                     )}
@@ -257,9 +257,9 @@ export function MultiMarketWidget() {
                       className={cn(
                         'text-xs font-semibold tabular-nums',
                         isPositive
-                          ? 'text-emerald-500 dark:text-emerald-400'
+                          ? 'text-profit dark:text-profit'
                           : isNegative
-                          ? 'text-red-600 dark:text-red-400'
+                          ? 'text-loss dark:text-loss'
                           : 'text-muted-foreground'
                       )}
                     >
@@ -312,9 +312,9 @@ export function MultiMarketWidget() {
     return (
       <div className="space-y-3">
         {/* Header summary badge */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400 font-medium">
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning dark:text-warning font-medium">
           <span className="flex items-center gap-1.5">
-            <Coins className="w-3.5 h-3.5 text-amber-500" />
+            <Coins className="w-3.5 h-3.5 text-warning" />
             أسعار الذهب الرسمية في {marketInfo.name}
           </span>
           <span>بالـ {marketInfo.currencyName} ({marketInfo.currency})</span>
@@ -335,21 +335,21 @@ export function MultiMarketWidget() {
                 className={cn(
                   'flex items-center justify-between p-2 rounded-lg border transition-colors',
                   isKarat21
-                    ? 'bg-amber-500/10 border-amber-500/30'
+                    ? 'bg-warning/10 border-warning/30'
                     : isKarat24
-                    ? 'bg-amber-500/5 border-amber-500/20'
+                    ? 'bg-warning/5 border-warning/20'
                     : 'bg-card/60 border-border/40 hover:bg-muted/50'
                 )}
               >
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     'text-sm font-semibold',
-                    isKarat21 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
+                    isKarat21 ? 'text-warning dark:text-warning' : 'text-foreground'
                   )}>
                     {item.karat}
                   </span>
                   {isKarat21 && (
-                    <Badge variant="outline" className="text-[10px] h-4 px-1 text-amber-600 border-amber-400/50 bg-amber-50 dark:bg-amber-950/40">
+                    <Badge variant="outline" className="text-[10px] h-4 px-1 text-warning border-warning/50 bg-warning dark:bg-warning/40">
                       الأكثر تداولاً
                     </Badge>
                   )}
@@ -372,7 +372,7 @@ export function MultiMarketWidget() {
           {goldPoundEstimate && (
             <div className="p-2 rounded-lg bg-muted/50 border border-border/50 text-center">
               <p className="text-[11px] text-muted-foreground mb-0.5">جنيه ذهب (8ج عيار 21)</p>
-              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+              <p className="text-xs font-bold text-warning dark:text-warning tabular-nums">
                 {goldPoundEstimate.toLocaleString()} {marketInfo.currency}
               </p>
             </div>
@@ -439,9 +439,9 @@ export function MultiMarketWidget() {
                 </p>
                 <div className="flex items-center gap-1">
                   {isPositive ? (
-                    <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                    <ArrowUpRight className="w-3 h-3 text-profit" />
                   ) : isNegative ? (
-                    <ArrowDownRight className="w-3 h-3 text-red-500" />
+                    <ArrowDownRight className="w-3 h-3 text-loss" />
                   ) : (
                     <Minus className="w-3 h-3 text-muted-foreground" />
                   )}
@@ -449,9 +449,9 @@ export function MultiMarketWidget() {
                     className={cn(
                       'text-xs font-semibold tabular-nums',
                       isPositive
-                        ? 'text-emerald-500 dark:text-emerald-400'
+                        ? 'text-profit dark:text-profit'
                         : isNegative
-                        ? 'text-red-600 dark:text-red-400'
+                        ? 'text-loss dark:text-loss'
                         : 'text-muted-foreground'
                     )}
                   >
@@ -490,9 +490,9 @@ export function MultiMarketWidget() {
     return (
       <div className="space-y-2.5">
         {/* Header summary */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-500 dark:text-emerald-400 font-medium">
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-profit/10 border border-profit/20 text-xs text-profit dark:text-profit font-medium">
           <span className="flex items-center gap-1.5">
-            <Globe className="w-3.5 h-3.5 text-emerald-500" />
+            <Globe className="w-3.5 h-3.5 text-profit" />
             أسعار الصرف مقابل {marketInfo.currencyName}
           </span>
           <span>1 وحدة = بالـ {marketCurr}</span>
@@ -571,7 +571,7 @@ export function MultiMarketWidget() {
             </TabsTrigger>
             <TabsTrigger
               value="gold"
-              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-warning transition-all font-medium"
             >
               🥇 الذهب
             </TabsTrigger>
@@ -583,7 +583,7 @@ export function MultiMarketWidget() {
             </TabsTrigger>
             <TabsTrigger
               value="forex"
-              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 transition-all font-medium"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-profit transition-all font-medium"
             >
               💱 عملات
             </TabsTrigger>

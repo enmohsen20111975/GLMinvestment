@@ -120,7 +120,7 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
   return (
     <Card className={cn(
       'transition-all duration-200 hover:shadow-md',
-      alert.triggered && 'border-emerald-500 dark:border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20'
+      alert.triggered && 'border-profit dark:border-profit bg-profit/50 dark:bg-profit/20'
     )}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
@@ -129,11 +129,11 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
               'w-10 h-10 rounded-lg flex items-center justify-center',
               alert.type === 'crypto' 
                 ? 'bg-orange-100 dark:bg-orange-900/30' 
-                : 'bg-emerald-100 dark:bg-emerald-900/30'
+                : 'bg-profit dark:bg-profit/30'
             )}>
               {alert.type === 'crypto' 
                 ? <Bitcoin className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                : <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                : <TrendingUp className="w-5 h-5 text-profit dark:text-profit" />
               }
             </div>
             <div>
@@ -147,7 +147,7 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
             </div>
           </div>
           {alert.triggered && (
-            <Badge className="bg-emerald-500 text-white text-[10px]">
+            <Badge className="bg-profit text-white text-[10px]">
               <CheckCircle2 className="w-3 h-3 ml-1" />
               تم التفعيل
             </Badge>
@@ -174,7 +174,7 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
           </div>
           <div className={cn(
             'flex items-center gap-1 text-xs font-medium',
-            distance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+            distance > 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
           )}>
             {isAbove ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
             المسافة: {formatPercent(Math.abs(distance))}
@@ -187,15 +187,15 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
 
 function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
   const severityColors = {
-    info: 'border-teal-200 dark:border-teal-800 bg-blue-50/50 dark:bg-blue-950/20',
+    info: 'border-whale dark:border-whale bg-primary/50 dark:bg-primary/20',
     warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
-    danger: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
+    danger: 'border-loss dark:border-loss bg-loss/50 dark:bg-loss/20',
   };
 
   const severityIconColors = {
-    info: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30',
+    info: 'text-whale dark:text-whale bg-whale dark:bg-whale/30',
     warning: 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30',
-    danger: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30',
+    danger: 'text-loss dark:text-loss bg-loss dark:bg-loss/30',
   };
 
   const typeLabels: Record<string, string> = {
@@ -232,7 +232,7 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
             <div className="mt-2 flex items-center gap-3">
               <span className={cn(
                 'font-bold text-lg',
-                alert.percent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                alert.percent >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
               )}>
                 {formatPercent(alert.percent)}
               </span>
@@ -249,9 +249,9 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
 
 function MarketAlertCard({ alert }: { alert: MarketAlert }) {
   const severityColors = {
-    info: 'border-teal-200 dark:border-teal-800 bg-blue-50/50 dark:bg-blue-950/20',
+    info: 'border-whale dark:border-whale bg-primary/50 dark:bg-primary/20',
     warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
-    danger: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
+    danger: 'border-loss dark:border-loss bg-loss/50 dark:bg-loss/20',
   };
 
   return (
@@ -280,17 +280,17 @@ function MarketAlertCard({ alert }: { alert: MarketAlert }) {
 
 function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
   const severityColors: Record<ObligationAlert['severity'], string> = {
-    overdue: 'border-red-500 dark:border-red-400 bg-red-50/60 dark:bg-red-950/30',
-    critical: 'border-red-400 dark:border-red-500 bg-red-50/40 dark:bg-red-950/20',
-    warning: 'border-amber-400 dark:border-amber-500 bg-amber-50/60 dark:bg-amber-950/20',
-    info: 'border-teal-400 dark:border-teal-500 bg-blue-50/60 dark:bg-blue-950/20',
+    overdue: 'border-loss dark:border-loss bg-loss/60 dark:bg-loss/30',
+    critical: 'border-loss dark:border-loss bg-loss/40 dark:bg-loss/20',
+    warning: 'border-warning dark:border-warning bg-warning/60 dark:bg-warning/20',
+    info: 'border-whale dark:border-whale bg-primary/60 dark:bg-primary/20',
   };
 
   const severityBadge: Record<ObligationAlert['severity'], string> = {
-    overdue: 'bg-red-500 text-white',
-    critical: 'bg-red-500 text-white',
-    warning: 'bg-amber-500 text-white',
-    info: 'bg-teal-500 text-white',
+    overdue: 'bg-loss text-white',
+    critical: 'bg-loss text-white',
+    warning: 'bg-warning text-white',
+    info: 'bg-whale text-white',
   };
 
   const dueLabel = alert.daysUntilDue < 0
@@ -513,8 +513,8 @@ export function AlertsCenterView() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="w-10 h-10 rounded-full bg-warning dark:bg-warning/30 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-warning dark:text-warning" />
           </div>
           <div>
             <h1 className="text-xl font-bold">{t('alertsCenter.title')}</h1>
@@ -538,10 +538,10 @@ export function AlertsCenterView() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <TrendingUp className="w-4 h-4 text-profit" />
             <span className="text-xs font-medium">{t('alertsCenter.stats.stocks')}</span>
           </div>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.stocks}</p>
+          <p className="text-2xl font-bold text-profit dark:text-profit">{stats.stocks}</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -552,10 +552,10 @@ export function AlertsCenterView() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Target className="w-4 h-4 text-teal-500" />
+            <Target className="w-4 h-4 text-whale" />
             <span className="text-xs font-medium">{t('alertsCenter.stats.portfolio')}</span>
           </div>
-          <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">{stats.portfolio}</p>
+          <p className="text-2xl font-bold text-whale dark:text-whale">{stats.portfolio}</p>
         </Card>
       </div>
 
@@ -670,7 +670,7 @@ export function AlertsCenterView() {
           {obligationAlerts.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-3" />
+                <CheckCircle2 className="w-10 h-10 text-profit mb-3" />
                 <h3 className="text-lg font-semibold mb-1">{t('alertsCenter.empty.obligationsTitle')}</h3>
                 <p className="text-sm text-muted-foreground">{t('alertsCenter.empty.obligationsBody')}</p>
               </CardContent>

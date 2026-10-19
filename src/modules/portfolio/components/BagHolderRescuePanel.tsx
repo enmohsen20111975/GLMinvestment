@@ -75,9 +75,9 @@ interface RescueResult {
 }
 
 const REC_COLORS: Record<string, string> = {
-  CUT_LOSS: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-400',
-  AVERAGE_DOWN: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-400',
-  HOLD: 'bg-green-100 text-emerald-500 dark:bg-green-900/40 dark:text-green-300 border-green-400',
+  CUT_LOSS: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss border-loss',
+  AVERAGE_DOWN: 'bg-warning text-warning dark:bg-warning/40 dark:text-warning border-warning',
+  HOLD: 'bg-success text-profit dark:bg-success/40 dark:text-success border-success',
 };
 
 const URGENCY_LABEL: Record<string, string> = {
@@ -374,7 +374,7 @@ export function BagHolderRescuePanel({
       <Card className="border-border">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
-            <LifeBuoy className="h-5 w-5 text-teal-500" />
+            <LifeBuoy className="h-5 w-5 text-whale" />
             <h3 className="font-bold text-base">محرك إنقاذ الأسهم المزنوقة</h3>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -450,14 +450,14 @@ export function BagHolderRescuePanel({
                 </div>
                 <div className="p-2 rounded-md bg-muted/40">
                   <div className="text-xs text-muted-foreground">الخسارة/الربح</div>
-                  <div className={cn('font-bold flex items-center gap-1', result.loss_pct < 0 ? 'text-red-600' : 'text-emerald-500')}>
+                  <div className={cn('font-bold flex items-center gap-1', result.loss_pct < 0 ? 'text-loss' : 'text-profit')}>
                     {result.loss_pct < 0 ? <TrendingDown className="h-3.5 w-3.5" /> : <TrendingUp className="h-3.5 w-3.5" />}
                     {result.loss_pct >= 0 ? '+' : ''}{(result.loss_pct ?? 0).toFixed(1)}%
                   </div>
                 </div>
                 <div className="p-2 rounded-md bg-muted/40">
                   <div className="text-xs text-muted-foreground">الخسارة (ج.م)</div>
-                  <div className={cn('font-bold', result.loss_egp < 0 ? 'text-red-600' : 'text-emerald-500')}>
+                  <div className={cn('font-bold', result.loss_egp < 0 ? 'text-loss' : 'text-profit')}>
                     {result.loss_egp >= 0 ? '+' : ''}{AR_NUM.format(Math.round(result.loss_egp))}
                   </div>
                 </div>
@@ -465,7 +465,7 @@ export function BagHolderRescuePanel({
 
               {/* Buy zone + historical */}
               <div className="flex items-center gap-2 flex-wrap text-sm">
-                <Badge variant="outline" className="border-teal-300 text-teal-700 dark:text-teal-300">
+                <Badge variant="outline" className="border-whale text-whale dark:text-whale">
                   📍 {result.buy_zone_ar}
                 </Badge>
                 {result.all_time_high > 0 && (
@@ -474,7 +474,7 @@ export function BagHolderRescuePanel({
                   </span>
                 )}
                 {result.recovery_needed_pct > 0 && (
-                  <Badge variant="outline" className="border-amber-300 text-amber-700 dark:text-amber-300">
+                  <Badge variant="outline" className="border-warning text-warning dark:text-warning">
                     يلزم +{result.recovery_needed_pct}% للتعادل
                   </Badge>
                 )}
@@ -485,7 +485,7 @@ export function BagHolderRescuePanel({
                 <div className="flex items-center gap-2 text-sm">
                   <Activity className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">الشركة:</span>
-                  <Badge variant="outline" className={result.is_profitable ? 'border-green-300 text-emerald-500' : 'border-red-300 text-red-700'}>
+                  <Badge variant="outline" className={result.is_profitable ? 'border-success text-profit' : 'border-loss text-loss'}>
                     {result.is_profitable ? '✅ ربحانية' : '❌ خاسرة'}
                   </Badge>
                   {result.fundamentals_note && (
@@ -497,9 +497,9 @@ export function BagHolderRescuePanel({
               {/* Reasoning — التقرير المفصل */}
               <div className={cn(
                 'p-3 rounded-lg border text-sm leading-relaxed',
-                result.recommendation === 'CUT_LOSS' ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' :
-                result.recommendation === 'AVERAGE_DOWN' ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' :
-                'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                result.recommendation === 'CUT_LOSS' ? 'bg-loss dark:bg-loss/20 border-loss dark:border-loss' :
+                result.recommendation === 'AVERAGE_DOWN' ? 'bg-warning dark:bg-warning/20 border-warning dark:border-warning' :
+                'bg-success dark:bg-success/20 border-success dark:border-success'
               )}>
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-muted-foreground" />
@@ -510,7 +510,7 @@ export function BagHolderRescuePanel({
               {/* TASK 31-C: Loss Summary card with sparkline (live mini-chart) */}
               <div className="p-3 rounded-lg border border-border bg-muted/30 space-y-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <Activity className="h-4 w-4 text-amber-600" />
+                  <Activity className="h-4 w-4 text-warning" />
                   <span className="font-semibold">ملخص الخسارة</span>
                   {result.name && (
                     <Badge variant="outline" className="border-border/60 text-muted-foreground ml-auto">
@@ -529,13 +529,13 @@ export function BagHolderRescuePanel({
                   </div>
                   <div className="p-2 rounded-md bg-background/60">
                     <div className="text-muted-foreground">الخسارة</div>
-                    <div className={cn('font-bold text-base', result.loss_egp < 0 ? 'text-red-600' : 'text-emerald-500')}>
+                    <div className={cn('font-bold text-base', result.loss_egp < 0 ? 'text-loss' : 'text-profit')}>
                       {result.loss_egp >= 0 ? '+' : ''}{AR_NUM.format(Math.round(result.loss_egp))} ج.م
                     </div>
                   </div>
                   <div className="p-2 rounded-md bg-background/60">
                     <div className="text-muted-foreground">يلزم للتعادل</div>
-                    <div className="font-bold text-amber-600">
+                    <div className="font-bold text-warning">
                       {result.recovery_needed_pct > 0 ? `+${(result.recovery_needed_pct ?? 0).toFixed(1)}%` : '—'}
                     </div>
                   </div>
@@ -587,28 +587,28 @@ export function BagHolderRescuePanel({
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">RSI(14)</div>
-                          <div className={cn('font-bold', (result.technical.rsi < 30 || result.technical.rsi > 70) ? 'text-amber-600' : '')}>
+                          <div className={cn('font-bold', (result.technical.rsi < 30 || result.technical.rsi > 70) ? 'text-warning' : '')}>
                             {(result.technical.rsi ?? 0).toFixed(1)}
                           </div>
                           <div className="text-[10px] text-muted-foreground">{result.technical.rsi_state}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">MA50</div>
-                          <div className={cn('font-bold', result.technical.above_ma_50 ? 'text-emerald-500' : 'text-red-600')}>
+                          <div className={cn('font-bold', result.technical.above_ma_50 ? 'text-profit' : 'text-loss')}>
                             {(result.technical.ma_50 ?? 0).toFixed(2)}
                           </div>
                           <div className="text-[10px] text-muted-foreground">{result.technical.above_ma_50 ? 'فوق' : 'تحت'}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">MA200</div>
-                          <div className={cn('font-bold', result.technical.above_ma_200 ? 'text-emerald-500' : 'text-red-600')}>
+                          <div className={cn('font-bold', result.technical.above_ma_200 ? 'text-profit' : 'text-loss')}>
                             {(result.technical.ma_200 ?? 0).toFixed(2)}
                           </div>
                           <div className="text-[10px] text-muted-foreground">{result.technical.above_ma_200 ? 'فوق' : 'تحت'}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">من القمة 52 أسبوع</div>
-                          <div className={cn('font-bold', (result.dist_from_high_pct ?? 0) < -20 ? 'text-red-600' : '')}>
+                          <div className={cn('font-bold', (result.dist_from_high_pct ?? 0) < -20 ? 'text-loss' : '')}>
                             {(result.dist_from_high_pct ?? 0).toFixed(1)}%
                           </div>
                           <div className="text-[10px] text-muted-foreground">القمة: {(result.all_time_high ?? 0).toFixed(2)}</div>
@@ -623,24 +623,24 @@ export function BagHolderRescuePanel({
                       </div>
                       {(result.technical.support.length > 0 || result.technical.resistance.length > 0) && (
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+                          <div className="p-2 rounded-md bg-profit dark:bg-profit/20 border border-profit dark:border-profit">
                             <div className="text-muted-foreground mb-1">الدعوم القريبة</div>
                             <div className="flex flex-wrap gap-1">
                               {result.technical.support.length > 0
                                 ? result.technical.support.map((s, i) => (
-                                    <Badge key={i} variant="outline" className="border-emerald-300 text-emerald-700 dark:text-emerald-300 text-[10px]">
+                                    <Badge key={i} variant="outline" className="border-profit text-profit dark:text-profit text-[10px]">
                                       {(s ?? 0).toFixed(2)}
                                     </Badge>
                                   ))
                                 : <span className="text-muted-foreground">—</span>}
                             </div>
                           </div>
-                          <div className="p-2 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+                          <div className="p-2 rounded-md bg-loss dark:bg-loss/20 border border-loss dark:border-loss">
                             <div className="text-muted-foreground mb-1">المقاومات القريبة</div>
                             <div className="flex flex-wrap gap-1">
                               {result.technical.resistance.length > 0
                                 ? result.technical.resistance.map((r, i) => (
-                                    <Badge key={i} variant="outline" className="border-red-300 text-red-700 dark:text-red-300 text-[10px]">
+                                    <Badge key={i} variant="outline" className="border-loss text-loss dark:text-loss text-[10px]">
                                       {(r ?? 0).toFixed(2)}
                                     </Badge>
                                   ))
@@ -697,10 +697,10 @@ export function BagHolderRescuePanel({
                           className={cn(
                             'ml-auto',
                             result.fundamentals.strength_verdict === 'قوية'
-                              ? 'border-emerald-300 text-emerald-700 dark:text-emerald-300'
+                              ? 'border-profit text-profit dark:text-profit'
                               : result.fundamentals.strength_verdict === 'متوسطة'
-                                ? 'border-amber-300 text-amber-700 dark:text-amber-300'
-                                : 'border-red-300 text-red-700 dark:text-red-300',
+                                ? 'border-warning text-warning dark:text-warning'
+                                : 'border-loss text-loss dark:text-loss',
                           )}
                         >
                           {result.fundamentals.strength_verdict}
@@ -713,8 +713,8 @@ export function BagHolderRescuePanel({
                             variant="outline"
                             className={
                               result.fundamentals.sharia_compliant
-                                ? 'border-emerald-300 text-emerald-700 dark:text-emerald-300'
-                                : 'border-red-300 text-red-700 dark:text-red-300'
+                                ? 'border-profit text-profit dark:text-profit'
+                                : 'border-loss text-loss dark:text-loss'
                             }
                           >
                             {result.fundamentals.sharia_compliant ? '✅ متوافق' : '❌ غير متوافق'}
@@ -751,9 +751,9 @@ export function BagHolderRescuePanel({
                         const sc = result.scenarios![row.key as 'best_case' | 'base_case' | 'worst_case'];
                         const probColor =
                           sc.probability === 'high'
-                            ? 'text-red-600'
+                            ? 'text-loss'
                             : sc.probability === 'medium'
-                              ? 'text-amber-600'
+                              ? 'text-warning'
                               : 'text-muted-foreground';
                         const probAr = sc.probability === 'high' ? 'مرتفعة' : sc.probability === 'medium' ? 'متوسطة' : 'منخفضة';
                         return (
@@ -762,10 +762,10 @@ export function BagHolderRescuePanel({
                             className={cn(
                               'p-3 rounded-md border text-sm',
                               row.color === 'emerald'
-                                ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+                                ? 'bg-profit dark:bg-profit/20 border-profit dark:border-profit'
                                 : row.color === 'amber'
-                                  ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
-                                  : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800',
+                                  ? 'bg-warning dark:bg-warning/20 border-warning dark:border-warning'
+                                  : 'bg-loss dark:bg-loss/20 border-loss dark:border-loss',
                             )}
                           >
                             <div className="flex items-center justify-between gap-2 mb-1">
@@ -782,13 +782,13 @@ export function BagHolderRescuePanel({
                               </div>
                               <div>
                                 <div className="text-muted-foreground">الربح/الخسارة</div>
-                                <div className={cn('font-bold', sc.profit_egp < 0 ? 'text-red-600' : 'text-emerald-500')}>
+                                <div className={cn('font-bold', sc.profit_egp < 0 ? 'text-loss' : 'text-profit')}>
                                   {sc.profit_egp >= 0 ? '+' : ''}{AR_NUM.format(Math.round(sc.profit_egp))} ج.م
                                 </div>
                               </div>
                               <div>
                                 <div className="text-muted-foreground">النسبة</div>
-                                <div className={cn('font-bold', sc.profit_pct < 0 ? 'text-red-600' : 'text-emerald-500')}>
+                                <div className={cn('font-bold', sc.profit_pct < 0 ? 'text-loss' : 'text-profit')}>
                                   {sc.profit_pct >= 0 ? '+' : ''}{(sc.profit_pct ?? 0).toFixed(1)}%
                                 </div>
                               </div>
@@ -855,10 +855,10 @@ export function BagHolderRescuePanel({
                                 className={cn(
                                   'p-3 rounded-md border text-sm transition-all',
                                   c.tone === 'emerald'
-                                    ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+                                    ? 'bg-profit dark:bg-profit/20 border-profit dark:border-profit'
                                     : c.tone === 'amber'
-                                      ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
-                                      : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800',
+                                      ? 'bg-warning dark:bg-warning/20 border-warning dark:border-warning'
+                                      : 'bg-loss dark:bg-loss/20 border-loss dark:border-loss',
                                   isRecommended && 'ring-2 ring-primary/60 shadow-sm',
                                 )}
                               >
@@ -889,13 +889,13 @@ export function BagHolderRescuePanel({
                           })}
                         </div>
                         {action === 'AVERAGE_DOWN' && breakeven && (
-                          <div className="p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-xs space-y-1">
-                            <div className="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-300">
+                          <div className="p-3 rounded-md bg-warning dark:bg-warning/20 border border-warning dark:border-warning text-xs space-y-1">
+                            <div className="flex items-center gap-2 font-semibold text-warning dark:text-warning">
                               <Calculator className="h-4 w-4" />
                               حاسبة متوسط التكلفة
                             </div>
                             <p className="text-muted-foreground leading-relaxed">
-                              لو أضفت <span className="font-bold text-amber-700 dark:text-amber-300">{AR_NUM.format(breakeven.extra_qty_to_breakeven)} سهم</span> عند السعر الحالي ({(result.current_price ?? 0).toFixed(2)})، متوسطك الجديد هيبقى <span className="font-bold">{(breakeven.new_avg_if_added ?? 0).toFixed(2)}</span>.
+                              لو أضفت <span className="font-bold text-warning dark:text-warning">{AR_NUM.format(breakeven.extra_qty_to_breakeven)} سهم</span> عند السعر الحالي ({(result.current_price ?? 0).toFixed(2)})، متوسطك الجديد هيبقى <span className="font-bold">{(breakeven.new_avg_if_added ?? 0).toFixed(2)}</span>.
                             </p>
                             <p className="text-[10px] text-muted-foreground italic">{breakeven.formula}</p>
                           </div>
@@ -929,10 +929,10 @@ export function BagHolderRescuePanel({
                               'px-3 py-1.5 rounded-md border text-xs font-medium transition-colors',
                               journalDecision === opt
                                 ? opt === 'HOLD'
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-400 text-emerald-800 dark:text-emerald-300'
+                                  ? 'bg-profit dark:bg-profit/40 border-profit text-profit dark:text-profit'
                                   : opt === 'AVERAGE_DOWN'
-                                    ? 'bg-amber-100 dark:bg-amber-900/40 border-amber-400 text-amber-800 dark:text-amber-300'
-                                    : 'bg-red-100 dark:bg-red-900/40 border-red-400 text-red-800 dark:text-red-300'
+                                    ? 'bg-warning dark:bg-warning/40 border-warning text-warning dark:text-warning'
+                                    : 'bg-loss dark:bg-loss/40 border-loss text-loss dark:text-loss'
                                 : 'bg-background border-border text-muted-foreground hover:bg-accent',
                             )}
                           >
@@ -990,10 +990,10 @@ export function BagHolderRescuePanel({
                   <div className={cn(
                     'p-3 rounded-lg border text-sm leading-relaxed flex items-start gap-2',
                     personaAdvice.recommendation === 'CUT_LOSS'
-                      ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                      ? 'bg-loss dark:bg-loss/20 border-loss dark:border-loss text-loss dark:text-loss'
                       : personaAdvice.recommendation === 'AVERAGE_DOWN'
-                        ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
-                        : 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-emerald-500 dark:text-green-300'
+                        ? 'bg-warning dark:bg-warning/20 border-warning dark:border-warning text-warning dark:text-warning'
+                        : 'bg-success dark:bg-success/20 border-success dark:border-success text-profit dark:text-success'
                   )}>
                     <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                     <p>{personaAdvice.noteAr}</p>
@@ -1022,7 +1022,7 @@ export function BagHolderRescuePanel({
                 <div className="pt-2 border-t border-border space-y-2">
                   {/* P39-PHASE-4: persona-aware AVERAGE_DOWN ceiling warning */}
                   {overflowsCeiling && (
-                    <div className="p-2 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-300 dark:border-red-800 text-xs text-red-800 dark:text-red-300 space-y-1">
+                    <div className="p-2 rounded-md bg-loss dark:bg-loss/20 border border-loss dark:border-loss text-xs text-loss dark:text-loss space-y-1">
                       <div className="flex items-start gap-1.5">
                         <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                         <span>
@@ -1033,7 +1033,7 @@ export function BagHolderRescuePanel({
                         <button
                           type="button"
                           onClick={() => setExtraQty(String(suggestedQty))}
-                          className="text-[11px] underline hover:no-underline text-red-700 dark:text-red-300"
+                          className="text-[11px] underline hover:no-underline text-loss dark:text-loss"
                         >
                           استخدم الكمية المقترحة ({AR_NUM.format(suggestedQty)} سهم)
                         </button>
@@ -1066,12 +1066,12 @@ export function BagHolderRescuePanel({
       </Card>
 
       {/* P39-PHASE-4: Dynamic Debt Paydown card — always visible at the bottom */}
-      <Card className="border-emerald-300/50">
+      <Card className="border-profit/50">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-emerald-500" />
+            <Wallet className="h-5 w-5 text-profit" />
             <h3 className="font-bold text-base">ديناميكية سداد الديون</h3>
-            <Badge variant="outline" className="border-emerald-300 text-emerald-500 dark:text-emerald-300 ml-auto">
+            <Badge variant="outline" className="border-profit text-profit dark:text-profit ml-auto">
               {personaLabelAr(persona)}
             </Badge>
           </div>
@@ -1096,7 +1096,7 @@ export function BagHolderRescuePanel({
 
           {profitEGP && Number(profitEGP) > 0 && (
             <div className="space-y-2 animate-in fade-in duration-300">
-              <div className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-500 dark:text-emerald-300 text-sm leading-relaxed flex items-start gap-2">
+              <div className="p-3 rounded-lg border bg-profit dark:bg-profit/20 border-profit dark:border-profit text-profit dark:text-profit text-sm leading-relaxed flex items-start gap-2">
                 <Wallet className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <p>{debtAdvice.noteAr}</p>
               </div>

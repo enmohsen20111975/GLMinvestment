@@ -92,10 +92,10 @@ function formatPercent(value: number | null | undefined): string {
 function getSignalIcon(signal: string) {
   const s = signal?.toLowerCase() || '';
   if (s.includes('buy') || s.includes('bullish')) {
-    return <ChevronUp className="w-4 h-4 text-emerald-500" />;
+    return <ChevronUp className="w-4 h-4 text-profit" />;
   }
   if (s.includes('sell') || s.includes('bearish')) {
-    return <ChevronDown className="w-4 h-4 text-red-500" />;
+    return <ChevronDown className="w-4 h-4 text-loss" />;
   }
   return <Minus className="w-4 h-4 text-yellow-500" />;
 }
@@ -103,10 +103,10 @@ function getSignalIcon(signal: string) {
 function getActionColor(action: string): { bg: string; text: string; border: string } {
   const a = action?.toLowerCase() || '';
   if (a.includes('buy')) {
-    return { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800' };
+    return { bg: 'bg-profit dark:bg-profit/30', text: 'text-profit dark:text-profit', border: 'border-profit dark:border-profit' };
   }
   if (a.includes('sell') || a.includes('avoid')) {
-    return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-800' };
+    return { bg: 'bg-loss dark:bg-loss/30', text: 'text-loss dark:text-loss', border: 'border-loss dark:border-loss' };
   }
   return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-800' };
 }
@@ -220,44 +220,44 @@ export function WatchlistIntelligenceSection() {
           <p className="text-2xl font-bold">{summary.total_watching}</p>
         </Card>
 
-        <Card className="p-4 gap-2 bg-gradient-to-br from-emerald-50 to-transparent dark:from-emerald-950/20">
+        <Card className="p-4 gap-2 bg-gradient-to-br from-profit to-transparent dark:from-profit/20">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <TrendingUp className="w-4 h-4 text-profit" />
             <span className="text-xs font-medium">فرص شراء</span>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">{summary.buy_opportunities}</p>
+          <p className="text-2xl font-bold text-profit">{summary.buy_opportunities}</p>
           <Progress 
             value={summary.total_watching > 0 ? (summary.buy_opportunities / summary.total_watching) * 100 : 0} 
             className="h-2 mt-2" 
           />
         </Card>
 
-        <Card className="p-4 gap-2 bg-gradient-to-br from-red-50 to-transparent dark:from-red-950/20">
+        <Card className="p-4 gap-2 bg-gradient-to-br from-loss to-transparent dark:from-loss/20">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <TrendingDown className="w-4 h-4 text-red-500" />
+            <TrendingDown className="w-4 h-4 text-loss" />
             <span className="text-xs font-medium">تحذيرات</span>
           </div>
-          <p className="text-2xl font-bold text-red-600">{summary.warnings_count}</p>
+          <p className="text-2xl font-bold text-loss">{summary.warnings_count}</p>
           <Progress 
             value={summary.total_watching > 0 ? (summary.warnings_count / summary.total_watching) * 100 : 0} 
             className="h-2 mt-2" 
           />
         </Card>
 
-        <Card className="p-4 gap-2 bg-gradient-to-br from-blue-50 to-transparent dark:from-blue-950/20">
+        <Card className="p-4 gap-2 bg-gradient-to-br from-primary to-transparent dark:from-primary/20">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Target className="w-4 h-4 text-teal-500" />
+            <Target className="w-4 h-4 text-whale" />
             <span className="text-xs font-medium">قرب الدعم</span>
           </div>
-          <p className="text-2xl font-bold text-teal-600">{summary.near_support_count}</p>
+          <p className="text-2xl font-bold text-whale">{summary.near_support_count}</p>
         </Card>
 
-        <Card className="p-4 gap-2 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-950/20">
+        <Card className="p-4 gap-2 bg-gradient-to-br from-warning to-transparent dark:from-warning/20">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <AlertTriangle className="w-4 h-4 text-warning" />
             <span className="text-xs font-medium">قرب المقاومة</span>
           </div>
-          <p className="text-2xl font-bold text-amber-600">{summary.near_resistance_count}</p>
+          <p className="text-2xl font-bold text-warning">{summary.near_resistance_count}</p>
         </Card>
       </div>
 
@@ -274,16 +274,16 @@ export function WatchlistIntelligenceSection() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">صعودي</span>
-                <span className="text-sm font-medium text-emerald-500">{bullishPercent}%</span>
+                <span className="text-sm font-medium text-profit">{bullishPercent}%</span>
               </div>
-              <Progress value={bullishPercent} className="h-3 bg-muted [&>div]:bg-emerald-500" />
+              <Progress value={bullishPercent} className="h-3 bg-muted [&>div]:bg-profit" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">هبوطي</span>
-                <span className="text-sm font-medium text-red-500">{bearishPercent}%</span>
+                <span className="text-sm font-medium text-loss">{bearishPercent}%</span>
               </div>
-              <Progress value={bearishPercent} className="h-3 bg-muted [&>div]:bg-red-500" />
+              <Progress value={bearishPercent} className="h-3 bg-muted [&>div]:bg-loss" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
@@ -298,25 +298,25 @@ export function WatchlistIntelligenceSection() {
 
       {/* Quick Opportunities */}
       {opportunities.length > 0 && (
-        <Card className="border-emerald-200 dark:border-emerald-800/50">
+        <Card className="border-profit dark:border-profit/50">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-emerald-500" />
-              <CardTitle className="text-base text-emerald-600">أفضل فرص الشراء</CardTitle>
+              <Star className="w-5 h-5 text-profit" />
+              <CardTitle className="text-base text-profit">أفضل فرص الشراء</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {opportunities.slice(0, 3).map((opp, i) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded bg-emerald-50 dark:bg-emerald-950/30">
+                <div key={i} className="flex items-center justify-between p-2 rounded bg-profit dark:bg-profit/30">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    <Badge className="bg-profit text-profit dark:bg-profit/30 dark:text-profit">
                       {opp.ticker}
                     </Badge>
                     <span className="text-sm">{opp.reason_ar}</span>
                   </div>
                   {opp.priority === 'high' && (
-                    <Zap className="w-4 h-4 text-amber-500" />
+                    <Zap className="w-4 h-4 text-warning" />
                   )}
                 </div>
               ))}
@@ -327,18 +327,18 @@ export function WatchlistIntelligenceSection() {
 
       {/* Quick Warnings */}
       {warnings.length > 0 && (
-        <Card className="border-red-200 dark:border-red-800/50">
+        <Card className="border-loss dark:border-loss/50">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              <CardTitle className="text-base text-red-600">تحذيرات</CardTitle>
+              <AlertTriangle className="w-5 h-5 text-loss" />
+              <CardTitle className="text-base text-loss">تحذيرات</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {warnings.slice(0, 3).map((warn, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 rounded bg-red-50 dark:bg-red-950/30">
-                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                <div key={i} className="flex items-center gap-2 p-2 rounded bg-loss dark:bg-loss/30">
+                  <Badge className="bg-loss text-loss dark:bg-loss/30 dark:text-loss">
                     {warn.ticker}
                   </Badge>
                   <span className="text-sm">{warn.reason_ar}</span>
@@ -364,8 +364,8 @@ export function WatchlistIntelligenceSection() {
             )}>
               <div className={cn(
                 "h-1",
-                action.includes('buy') ? "bg-emerald-500" :
-                action.includes('avoid') || action.includes('sell') ? "bg-red-500" : "bg-yellow-500"
+                action.includes('buy') ? "bg-profit" :
+                action.includes('avoid') || action.includes('sell') ? "bg-loss" : "bg-yellow-500"
               )} />
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-4">
@@ -374,17 +374,17 @@ export function WatchlistIntelligenceSection() {
                       <span className="font-bold text-lg">{stock.ticker}</span>
                       <span className="text-sm text-muted-foreground">{stock.name_ar}</span>
                       {action.includes('buy') && (
-                        <Star className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+                        <Star className="w-4 h-4 text-profit fill-profit" />
                       )}
                       {(action.includes('avoid') || action.includes('sell')) && (
-                        <StarOff className="w-4 h-4 text-red-500" />
+                        <StarOff className="w-4 h-4 text-loss" />
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                       <span>السعر: {formatCurrency(stock.current_price)}</span>
                       <span className={cn(
                         "font-medium",
-                        stock.price_change >= 0 ? "text-emerald-500" : "text-red-500"
+                        stock.price_change >= 0 ? "text-profit" : "text-loss"
                       )}>
                         {formatPercent(stock.price_change)}
                       </span>
@@ -412,8 +412,8 @@ export function WatchlistIntelligenceSection() {
                       <div className="text-muted-foreground text-xs">RSI</div>
                       <span className={cn(
                         "font-medium",
-                        analysis.rsi !== null && analysis.rsi < 30 ? "text-emerald-500" :
-                        analysis.rsi !== null && analysis.rsi > 70 ? "text-red-500" : ""
+                        analysis.rsi !== null && analysis.rsi < 30 ? "text-profit" :
+                        analysis.rsi !== null && analysis.rsi > 70 ? "text-loss" : ""
                       )}>
                         {analysis.rsi !== null ? (analysis.rsi ?? 0).toFixed(1) : '—'}
                       </span>
@@ -427,7 +427,7 @@ export function WatchlistIntelligenceSection() {
                     </div>
                     <div className="p-2 rounded bg-muted/50">
                       <div className="text-muted-foreground text-xs">الدعم</div>
-                      <span className="font-medium text-emerald-600">
+                      <span className="font-medium text-profit">
                         {analysis.support ? (analysis.support ?? 0).toFixed(2) : '—'}
                       </span>
                     </div>
@@ -435,7 +435,7 @@ export function WatchlistIntelligenceSection() {
                       <div className="text-muted-foreground text-xs">للدعم</div>
                       <span className={cn(
                         "font-medium",
-                        analysis.distance_to_support !== null && analysis.distance_to_support < 5 ? "text-emerald-500" : ""
+                        analysis.distance_to_support !== null && analysis.distance_to_support < 5 ? "text-profit" : ""
                       )}>
                         {analysis.distance_to_support !== null ? `${(analysis.distance_to_support ?? 0).toFixed(1)}%` : '—'}
                       </span>
@@ -444,7 +444,7 @@ export function WatchlistIntelligenceSection() {
                       <div className="text-muted-foreground text-xs">للمقاومة</div>
                       <span className={cn(
                         "font-medium",
-                        analysis.distance_to_resistance !== null && analysis.distance_to_resistance < 5 ? "text-red-500" : ""
+                        analysis.distance_to_resistance !== null && analysis.distance_to_resistance < 5 ? "text-loss" : ""
                       )}>
                         {analysis.distance_to_resistance !== null ? `${(analysis.distance_to_resistance ?? 0).toFixed(1)}%` : '—'}
                       </span>
@@ -458,7 +458,7 @@ export function WatchlistIntelligenceSection() {
                     {stock.alerts.map((alert, j) => (
                       <Badge key={j} variant="outline" className={cn(
                         "text-xs",
-                        alert.priority === 'high' ? "border-red-300 text-red-600" : ""
+                        alert.priority === 'high' ? "border-loss text-loss" : ""
                       )}>
                         <Zap className="w-3 h-3 ml-1" />
                         {alert.message_ar}

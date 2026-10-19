@@ -29,7 +29,7 @@ export function Footer() {
             href={OFFICIAL_LINKS.android}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-emerald-600 transition-colors min-h-[44px] py-2"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-profit transition-colors min-h-[44px] py-2"
             title={t('footer.androidApp')}
           >
             <Smartphone className="w-4 h-4" />
@@ -39,7 +39,7 @@ export function Footer() {
             href={OFFICIAL_LINKS.facebook}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-teal-600 transition-colors min-h-[44px] py-2"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-whale transition-colors min-h-[44px] py-2"
             title={t('footer.facebook')}
           >
             <Facebook className="w-4 h-4" />
@@ -49,7 +49,7 @@ export function Footer() {
             href={OFFICIAL_LINKS.telegram}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-teal-500 transition-colors min-h-[44px] py-2"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-whale transition-colors min-h-[44px] py-2"
             title={t('footer.telegram')}
           >
             <Send className="w-4 h-4" />
@@ -59,7 +59,7 @@ export function Footer() {
             href={OFFICIAL_LINKS.bot}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-amber-600 transition-colors min-h-[44px] py-2"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-warning transition-colors min-h-[44px] py-2"
             title={t('footer.botApp')}
           >
             <Bot className="w-4 h-4" />
@@ -69,7 +69,7 @@ export function Footer() {
             href={OFFICIAL_LINKS.whatsapp}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-green-600 transition-colors min-h-[44px] py-2"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-success transition-colors min-h-[44px] py-2"
             title={t('footer.whatsapp')}
           >
             <MessageCircle className="w-4 h-4" />

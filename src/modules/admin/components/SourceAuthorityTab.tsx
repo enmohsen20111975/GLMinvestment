@@ -112,12 +112,12 @@ export function SourceAuthorityTab() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <ShieldCheck className="w-5 h-5 text-profit" />
                 سلطة المصادر — Rule 66
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -126,11 +126,11 @@ export function SourceAuthorityTab() {
             </div>
             <div className="flex items-center gap-2">
               {isLive ? (
-                <Badge className="bg-emerald-600 text-[10px] gap-1">
+                <Badge className="bg-profit text-[10px] gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Endpoint حيّ
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] gap-1 border-amber-500 text-amber-700">
+                <Badge variant="outline" className="text-[10px] gap-1 border-warning text-warning">
                   <AlertTriangle className="w-3 h-3" /> بيانات محلية (endpoint غير مفعّل)
                 </Badge>
               )}
@@ -145,11 +145,11 @@ export function SourceAuthorityTab() {
 
       {/* Conflict alert */}
       {conflicts && conflicts.total_tickers_with_multi_sources > 0 && (
-        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/40">
+        <Card className="border-warning bg-warning dark:bg-warning/20 dark:border-warning/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-bold text-amber-800 dark:text-amber-300">
+              <p className="font-bold text-warning dark:text-warning">
                 {conflicts.total_tickers_with_multi_sources} سهم لديهم أكثر من مصدر في price_history
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -180,7 +180,7 @@ export function SourceAuthorityTab() {
         <StatBox
           label="إجمالي الأسواق"
           value={Object.keys(canonical).length}
-          icon={<Database className="w-4 h-4 text-emerald-500" />}
+          icon={<Database className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="إجمالي المصادر الكنسية"
@@ -190,13 +190,13 @@ export function SourceAuthorityTab() {
         <StatBox
           label="مصادر محظورة"
           value={banned.length}
-          icon={<Ban className="w-4 h-4 text-red-500" />}
+          icon={<Ban className="w-4 h-4 text-loss" />}
         />
         <StatBox
           label="تعارضات متعددة المصادر"
           value={conflicts?.total_tickers_with_multi_sources ?? '—'}
           sub={isLive ? 'مباشر من DB' : 'يتطلب endpoint'}
-          icon={<AlertTriangle className="w-4 h-4 text-amber-500" />}
+          icon={<AlertTriangle className="w-4 h-4 text-warning" />}
         />
       </div>
 
@@ -215,7 +215,7 @@ export function SourceAuthorityTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <ShieldCheck className="w-4 h-4 text-profit" />
             المصادر الكنسية حسب السوق
           </CardTitle>
           <CardDescription className="text-xs">
@@ -229,11 +229,11 @@ export function SourceAuthorityTab() {
                 key={market}
                 className={cn(
                   'p-3 rounded-lg border',
-                  'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40',
+                  'border-profit bg-profit dark:bg-profit/20 dark:border-profit/40',
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <Badge className="bg-emerald-600 text-xs">{market}</Badge>
+                  <Badge className="bg-profit text-xs">{market}</Badge>
                   <span className="text-[10px] text-muted-foreground">
                     {sources.length} مصدر
                   </span>
@@ -245,7 +245,7 @@ export function SourceAuthorityTab() {
                         className={cn(
                           'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0',
                           idx === 0
-                            ? 'bg-emerald-600 text-white'
+                            ? 'bg-profit text-white'
                             : 'bg-muted text-muted-foreground',
                         )}
                       >
@@ -253,7 +253,7 @@ export function SourceAuthorityTab() {
                       </span>
                       <span className="font-mono" dir="ltr">{src}</span>
                       {idx === 0 && (
-                        <Badge variant="outline" className="text-[9px] border-emerald-500 text-emerald-700">
+                        <Badge variant="outline" className="text-[9px] border-profit text-profit">
                           أساسي
                         </Badge>
                       )}
@@ -275,7 +275,7 @@ export function SourceAuthorityTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Ban className="w-4 h-4 text-red-500" />
+            <Ban className="w-4 h-4 text-loss" />
             المصادر المحظورة ({banned.length})
           </CardTitle>
           <CardDescription className="text-xs">
@@ -287,9 +287,9 @@ export function SourceAuthorityTab() {
             {banned.map((b) => (
               <div
                 key={b.source}
-                className="flex items-start gap-3 p-2.5 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40"
+                className="flex items-start gap-3 p-2.5 rounded-lg border border-loss bg-loss dark:bg-loss/20 dark:border-loss/40"
               >
-                <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <XCircle className="w-4 h-4 text-loss shrink-0 mt-0.5" />
                 <div>
                   <div className="font-mono text-sm" dir="ltr">{b.source}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{b.reason}</div>
@@ -305,7 +305,7 @@ export function SourceAuthorityTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-amber-500" />
+              <TrendingUp className="w-4 h-4 text-warning" />
               توزيع التعارضات حسب السوق
             </CardTitle>
           </CardHeader>
@@ -314,11 +314,11 @@ export function SourceAuthorityTab() {
               {conflicts.by_market.map((m) => (
                 <div
                   key={m.market}
-                  className="p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40"
+                  className="p-3 rounded-lg border border-warning bg-warning dark:bg-warning/20 dark:border-warning/40"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <Badge variant="outline" className="text-xs">{m.market}</Badge>
-                    <span className="text-lg font-bold text-amber-700">{m.ticker_count}</span>
+                    <span className="text-lg font-bold text-warning">{m.ticker_count}</span>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {m.sources.slice(0, 5).map((s, i) => (

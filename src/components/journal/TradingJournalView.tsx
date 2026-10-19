@@ -167,9 +167,9 @@ export function TradingJournalView() {
   const getResultBadge = (result: string | null) => {
     switch (result) {
       case 'WIN':
-        return <Badge className="bg-green-500/20 text-green-500">ربح</Badge>;
+        return <Badge className="bg-success/20 text-success">ربح</Badge>;
       case 'LOSS':
-        return <Badge className="bg-red-500/20 text-red-500">خسارة</Badge>;
+        return <Badge className="bg-loss/20 text-loss">خسارة</Badge>;
       default:
         return <Badge className="bg-yellow-500/20 text-yellow-500">مفتوحة</Badge>;
     }
@@ -351,11 +351,11 @@ export function TradingJournalView() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">نسبة النجاح</p>
-                  <p className="text-2xl font-bold text-green-500">
+                  <p className="text-2xl font-bold text-success">
                     {(stats.winRate ?? 0).toFixed(1)}%
                   </p>
                 </div>
-                <Target className="w-8 h-8 text-green-500" />
+                <Target className="w-8 h-8 text-success" />
               </div>
             </CardContent>
           </Card>
@@ -365,11 +365,11 @@ export function TradingJournalView() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">إجمالي الربح/الخسارة</p>
-                  <p className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <p className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-success' : 'text-loss'}`}>
                     {stats.totalProfit >= 0 ? '+' : ''}{(stats.totalProfit ?? 0).toFixed(2)}%
                   </p>
                 </div>
-                <DollarSign className={`w-8 h-8 ${stats.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                <DollarSign className={`w-8 h-8 ${stats.totalProfit >= 0 ? 'text-success' : 'text-loss'}`} />
               </div>
             </CardContent>
           </Card>
@@ -380,9 +380,9 @@ export function TradingJournalView() {
                 <div>
                   <p className="text-sm text-muted-foreground">رابح / خاسر</p>
                   <p className="text-2xl font-bold">
-                    <span className="text-green-500">{stats.wins}</span>
+                    <span className="text-success">{stats.wins}</span>
                     <span className="text-muted-foreground"> / </span>
-                    <span className="text-red-500">{stats.losses}</span>
+                    <span className="text-loss">{stats.losses}</span>
                   </p>
                 </div>
                 <Award className="w-8 h-8 text-muted-foreground" />
@@ -449,7 +449,7 @@ export function TradingJournalView() {
                           <td className="p-3">{getResultBadge(trade.result)}</td>
                           <td className="p-3">
                             {trade.profit_loss_pct !== null ? (
-                              <span className={(trade.profit_loss_pct ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                              <span className={(trade.profit_loss_pct ?? 0) >= 0 ? 'text-success' : 'text-loss'}>
                                 {(trade.profit_loss_pct ?? 0) >= 0 ? '+' : ''}{(trade.profit_loss_pct ?? 0).toFixed(2)}%
                               </span>
                             ) : '-'}
@@ -475,10 +475,10 @@ export function TradingJournalView() {
                   {stats.bestStocks.length > 0 ? (
                     <div className="space-y-2">
                       {stats.bestStocks.slice(0, 5).map((s, i) => (
-                        <div key={i} className="flex justify-between items-center p-2 bg-green-500/10 rounded">
+                        <div key={i} className="flex justify-between items-center p-2 bg-success/10 rounded">
                           <span className="font-medium">{s.symbol}</span>
                           <div className="text-left">
-                            <span className="text-green-500">+{(s.profit ?? 0).toFixed(2)}%</span>
+                            <span className="text-success">+{(s.profit ?? 0).toFixed(2)}%</span>
                             <span className="text-xs text-muted-foreground mr-2">({s.trades} صفقة)</span>
                           </div>
                         </div>
@@ -498,10 +498,10 @@ export function TradingJournalView() {
                   {stats.worstStocks.length > 0 ? (
                     <div className="space-y-2">
                       {stats.worstStocks.slice(0, 5).map((s, i) => (
-                        <div key={i} className="flex justify-between items-center p-2 bg-red-500/10 rounded">
+                        <div key={i} className="flex justify-between items-center p-2 bg-loss/10 rounded">
                           <span className="font-medium">{s.symbol}</span>
                           <div className="text-left">
-                            <span className="text-red-500">{(s.profit ?? 0).toFixed(2)}%</span>
+                            <span className="text-loss">{(s.profit ?? 0).toFixed(2)}%</span>
                             <span className="text-xs text-muted-foreground mr-2">({s.trades} صفقة)</span>
                           </div>
                         </div>
@@ -519,15 +519,15 @@ export function TradingJournalView() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-green-500/10 rounded">
+                    <div className="text-center p-4 bg-success/10 rounded">
                       <p className="text-sm text-muted-foreground">متوسط الربح</p>
-                      <p className="text-2xl font-bold text-green-500">
+                      <p className="text-2xl font-bold text-success">
                         +{(stats.avgWin ?? 0).toFixed(2)}%
                       </p>
                     </div>
-                    <div className="text-center p-4 bg-red-500/10 rounded">
+                    <div className="text-center p-4 bg-loss/10 rounded">
                       <p className="text-sm text-muted-foreground">متوسط الخسارة</p>
-                      <p className="text-2xl font-bold text-red-500">
+                      <p className="text-2xl font-bold text-loss">
                         {(stats.avgLoss ?? 0).toFixed(2)}%
                       </p>
                     </div>
@@ -542,20 +542,20 @@ export function TradingJournalView() {
                 <CardContent>
                   <div className="space-y-3">
                     {stats.bestTrade && (
-                      <div className="flex justify-between items-center p-3 bg-green-500/10 rounded">
+                      <div className="flex justify-between items-center p-3 bg-success/10 rounded">
                         <span>أفضل صفقة</span>
                         <div>
                           <span className="font-medium">{stats.bestTrade.symbol}</span>
-                          <span className="text-green-500 mr-2">+{(stats.bestTrade.pct ?? 0).toFixed(2)}%</span>
+                          <span className="text-success mr-2">+{(stats.bestTrade.pct ?? 0).toFixed(2)}%</span>
                         </div>
                       </div>
                     )}
                     {stats.worstTrade && (
-                      <div className="flex justify-between items-center p-3 bg-red-500/10 rounded">
+                      <div className="flex justify-between items-center p-3 bg-loss/10 rounded">
                         <span>أسوأ صفقة</span>
                         <div>
                           <span className="font-medium">{stats.worstTrade.symbol}</span>
-                          <span className="text-red-500 mr-2">{(stats.worstTrade.pct ?? 0).toFixed(2)}%</span>
+                          <span className="text-loss mr-2">{(stats.worstTrade.pct ?? 0).toFixed(2)}%</span>
                         </div>
                       </div>
                     )}

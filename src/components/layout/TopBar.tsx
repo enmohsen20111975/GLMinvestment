@@ -352,7 +352,7 @@ export function TopBar() {
                           currentView === item.id
                             ? 'bg-primary/10 text-primary font-medium'
                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                          item.highlight && 'text-amber-600 dark:text-amber-400 font-medium'
+                          item.highlight && 'text-warning dark:text-warning font-medium'
                         )}
                       >
                         <item.icon className="h-3.5 w-3.5" />
@@ -394,7 +394,7 @@ export function TopBar() {
                 title={isDark ? t('theme.light') : t('theme.dark')}
               >
                 {isDark ? (
-                  <Sun className="h-4 w-4 text-amber-500" />
+                  <Sun className="h-4 w-4 text-warning" />
                 ) : (
                   <Moon className="h-4 w-4 text-slate-600" />
                 )}
@@ -436,7 +436,7 @@ export function TopBar() {
                     </button>
                     <button
                       onClick={() => { signOut({ callbackUrl: '/' }); toast.info('تم تسجيل الخروج بنجاح'); }}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-loss hover:bg-loss dark:hover:bg-loss/30 transition-colors"
                     >
                       <LogOut className="h-3.5 w-3.5" />
                       {t('common.logout')}

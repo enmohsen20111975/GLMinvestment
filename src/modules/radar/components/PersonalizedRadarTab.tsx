@@ -122,9 +122,9 @@ interface PersonalizedRadarResponse {
 // ─── Constants ────────────────────────────────────────────────────────────
 
 const RISK_PROFILE_META: Record<string, { ar: string; icon: React.ReactNode; color: string }> = {
-  conservative: { ar: 'تحفظي', icon: <ShieldAlert className="h-4 w-4" />, color: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800' },
-  balanced: { ar: 'متوازن', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' },
-  aggressive: { ar: 'هجومي', icon: <ShieldQuestion className="h-4 w-4" />, color: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800' },
+  conservative: { ar: 'تحفظي', icon: <ShieldAlert className="h-4 w-4" />, color: 'bg-warning text-warning border-warning dark:bg-warning/60 dark:text-warning dark:border-warning' },
+  balanced: { ar: 'متوازن', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit dark:border-profit' },
+  aggressive: { ar: 'هجومي', icon: <ShieldQuestion className="h-4 w-4" />, color: 'bg-loss text-loss border-loss dark:bg-loss/60 dark:text-loss dark:border-loss' },
 };
 
 const HOLDING_PERIOD_AR: Record<string, string> = {
@@ -141,10 +141,10 @@ const PRICE_RANGE_AR: Record<string, string> = {
 
 const PATH_META: Record<string, { ar: string; icon: React.ReactNode; color: string }> = {
   A_pre_surge: { ar: 'Pre-Surge', icon: <Rocket className="h-3.5 w-3.5" />, color: 'text-purple-600 dark:text-purple-400' },
-  B_quiet_accumulation_strong: { ar: 'تجميع قوي', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-amber-600 dark:text-amber-400' },
-  C_quiet_accumulation_weak: { ar: 'تجميع ضعيف', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-amber-600 dark:text-amber-400' },
-  D_explosive_surge: { ar: 'انفجار حجمي', icon: <Flame className="h-3.5 w-3.5" />, color: 'text-rose-600 dark:text-rose-400' },
-  E_early_break: { ar: 'اختراق مبكر', icon: <Zap className="h-3.5 w-3.5" />, color: 'text-emerald-600 dark:text-emerald-400' },
+  B_quiet_accumulation_strong: { ar: 'تجميع قوي', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
+  C_quiet_accumulation_weak: { ar: 'تجميع ضعيف', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
+  D_explosive_surge: { ar: 'انفجار حجمي', icon: <Flame className="h-3.5 w-3.5" />, color: 'text-loss dark:text-loss' },
+  E_early_break: { ar: 'اختراق مبكر', icon: <Zap className="h-3.5 w-3.5" />, color: 'text-profit dark:text-profit' },
 };
 
 const pathLabel = (path?: string): { ar: string; icon: React.ReactNode; color: string } => {
@@ -228,7 +228,7 @@ export function PersonalizedRadarTab() {
   if (error && !data) {
     return (
       <Card className="p-6 text-center" dir="rtl" data-testid="personalized-radar-error">
-        <AlertTriangle className="h-10 w-10 text-rose-500 mx-auto mb-3" />
+        <AlertTriangle className="h-10 w-10 text-loss mx-auto mb-3" />
         <p className="text-sm text-muted-foreground mb-3">{error}</p>
         <Button size="sm" onClick={() => fetchData()}>
           <RefreshCw className="h-4 w-4 ml-1" /> إعادة المحاولة
@@ -260,7 +260,7 @@ export function PersonalizedRadarTab() {
   if (data && data.profile === null) {
     return (
       <Card className="p-8 text-center" dir="rtl" data-testid="personalized-radar-empty">
-        <Sparkles className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+        <Sparkles className="h-12 w-12 text-profit mx-auto mb-4" />
         <h3 className="text-lg font-bold mb-2">الرادار المخصّص لسه بيتعلّم منك</h3>
         <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
           ابدأ التداول أو أضف أسهماً إلى قائمة المتابعة لكي نتمكن من تخصيص الرادار لك
@@ -309,10 +309,10 @@ function ProfileCard({
 
   // Win rate color
   const winRateColor = profile.winRate >= 60
-    ? 'text-emerald-600 dark:text-emerald-400'
+    ? 'text-profit dark:text-profit'
     : profile.winRate >= 40
-      ? 'text-amber-600 dark:text-amber-400'
-      : 'text-rose-600 dark:text-rose-400';
+      ? 'text-warning dark:text-warning'
+      : 'text-loss dark:text-loss';
 
   // Task 9-B Step 1: hide trade-history stats when API says hasTradeHistory=false.
   // The API currently has no per-user trade-history source (no closed-trades
@@ -321,11 +321,11 @@ function ProfileCard({
 
   return (
     <Card className="overflow-hidden" data-testid="profile-card">
-      <div className="p-4 md:p-5 bg-emerald-50 dark:bg-emerald-950/30">
+      <div className="p-4 md:p-5 bg-profit dark:bg-profit/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-background/80 dark:bg-background/40 flex items-center justify-center">
-              <Target className="h-6 w-6 text-emerald-600" />
+              <Target className="h-6 w-6 text-profit" />
             </div>
             <div>
               <h3 className="text-lg md:text-xl font-bold flex items-center gap-2">
@@ -514,7 +514,7 @@ function PersonalizedPicksCard({ data }: { data: PersonalizedRadarResponse | nul
     <Card data-testid="personalized-picks-card">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-emerald-600" />
+          <Sparkles className="h-4 w-4 text-profit" />
           توقعات مخصّصة لك
           {picks.length > 0 && (
             <Badge variant="secondary" className="text-[10px]">{picks.length}</Badge>
@@ -567,7 +567,7 @@ function PersonalizedPicksCard({ data }: { data: PersonalizedRadarResponse | nul
                           {p.personalized_score}
                         </span>
                         {p.personalized_score > p.base_score && (
-                          <Badge variant="outline" className="text-[9px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
+                          <Badge variant="outline" className="text-[9px] bg-profit dark:bg-profit/40 text-profit dark:text-profit border-profit dark:border-profit">
                             +{p.personalized_score - p.base_score}
                           </Badge>
                         )}
@@ -588,7 +588,7 @@ function PersonalizedPicksCard({ data }: { data: PersonalizedRadarResponse | nul
                             <TooltipTrigger asChild>
                               <button
                                 type="button"
-                                className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 cursor-help"
+                                className="text-profit hover:text-profit dark:text-profit cursor-help"
                                 data-testid={`pick-reason-trigger-${p.ticker}`}
                                 aria-label="لماذا هذا السهم؟"
                               >
@@ -600,7 +600,7 @@ function PersonalizedPicksCard({ data }: { data: PersonalizedRadarResponse | nul
                                 <div className="font-bold mb-1">لماذا هذا السهم؟</div>
                                 {p.personalization_reasons.map((r, i) => (
                                   <div key={i} className="flex items-start gap-1.5">
-                                    <span className="text-emerald-500">•</span>
+                                    <span className="text-profit">•</span>
                                     <span>{r}</span>
                                   </div>
                                 ))}
@@ -632,7 +632,7 @@ function ExcludedCard({ data }: { data: PersonalizedRadarResponse | null }) {
     <Card data-testid="excluded-card">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          <Ban className="h-4 w-4 text-rose-500" />
+          <Ban className="h-4 w-4 text-loss" />
           تم استبعاد
           {excluded.length > 0 && (
             <Badge variant="secondary" className="text-[10px]">{excluded.length}</Badge>

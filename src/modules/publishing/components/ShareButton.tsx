@@ -271,7 +271,7 @@ export function ShareButton({
                 >
                   {copySuccess ? (
                     <>
-                      <Check className="w-4 h-4 text-green-500" />
+                      <Check className="w-4 h-4 text-success" />
                       تم النسخ
                     </>
                   ) : (
@@ -372,7 +372,7 @@ export function ShareButton({
           {isCapturing ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : copySuccess ? (
-            <Check className="w-4 h-4 text-green-500" />
+            <Check className="w-4 h-4 text-success" />
           ) : (
             <ImageIcon className="w-4 h-4" />
           )}

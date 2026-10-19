@@ -71,9 +71,9 @@ export function CandlestickDiagram({ variant = 'bullish' }: { variant?: 'bullish
 /* ── 2. P/E Ratio Visual (نسبة السعر إلى الأرباح) ── */
 export function PERatioVisual() {
   const examples = [
-    { company: 'البنك التجاري الدولي', price: 132, eps: 15, pe: 8.8, status: 'رخيص', color: 'text-emerald-600' },
-    { company: 'أوراسكوم للتنمية', price: 734, eps: 25, pe: 29.4, status: 'مكلف', color: 'text-red-600' },
-    { company: 'اتصالات مصر', price: 94, eps: 6.5, pe: 14.5, status: 'معقول', color: 'text-amber-600' },
+    { company: 'البنك التجاري الدولي', price: 132, eps: 15, pe: 8.8, status: 'رخيص', color: 'text-profit' },
+    { company: 'أوراسكوم للتنمية', price: 734, eps: 25, pe: 29.4, status: 'مكلف', color: 'text-loss' },
+    { company: 'اتصالات مصر', price: 94, eps: 6.5, pe: 14.5, status: 'معقول', color: 'text-warning' },
   ];
 
   return (
@@ -118,9 +118,9 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
 /* ── 3. Market Hours Timeline (ساعات التداول) ── */
 export function MarketHoursTimeline() {
   const sessions = [
-    { time: '9:00', label: 'الجلسة الاستباقية', desc: 'إدخال الأوامر', color: 'bg-teal-500', active: false },
-    { time: '9:45', label: 'فتح التداول', desc: 'بداية التنفيذ', color: 'bg-emerald-500', active: true },
-    { time: '10:00', label: 'الجلسة الرئيسية', desc: 'أعلى سيولة', color: 'bg-emerald-600', active: true },
+    { time: '9:00', label: 'الجلسة الاستباقية', desc: 'إدخال الأوامر', color: 'bg-whale', active: false },
+    { time: '9:45', label: 'فتح التداول', desc: 'بداية التنفيذ', color: 'bg-profit', active: true },
+    { time: '10:00', label: 'الجلسة الرئيسية', desc: 'أعلى سيولة', color: 'bg-profit', active: true },
     { time: '14:30', label: 'إغلاق التداول', desc: 'نهاية الجلسة', color: 'bg-orange-500', active: false },
   ];
 
@@ -150,8 +150,8 @@ export function MarketHoursTimeline() {
           ))}
         </div>
       </div>
-      <div className="mt-4 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
-        <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
+      <div className="mt-4 p-2 rounded-lg bg-warning/10 border border-warning/30">
+        <p className="text-xs text-warning dark:text-warning text-center">
           ⚠️ أعلى تقلبات: أول 30 دقيقة وآخر 30 دقيقة - ينصح المبتدئون بتجنبها
         </p>
       </div>
@@ -162,10 +162,10 @@ export function MarketHoursTimeline() {
 /* ── 4. Portfolio Diversification (تنويع المحفظة) ── */
 export function PortfolioDiversification() {
   const allocations = [
-    { sector: 'البنوك', percent: 30, color: 'bg-emerald-500' },
-    { sector: 'العقارات', percent: 25, color: 'bg-teal-500' },
+    { sector: 'البنوك', percent: 30, color: 'bg-profit' },
+    { sector: 'العقارات', percent: 25, color: 'bg-whale' },
     { sector: 'الاتصالات', percent: 20, color: 'bg-purple-500' },
-    { sector: 'الصناعة', percent: 15, color: 'bg-amber-500' },
+    { sector: 'الصناعة', percent: 15, color: 'bg-warning' },
     { sector: 'نقدية', percent: 10, color: 'bg-gray-400' },
   ];
 
@@ -204,9 +204,9 @@ export function PortfolioDiversification() {
 /* ── 5. Risk Management Pyramid (هرم إدارة المخاطر) ── */
 export function RiskPyramid() {
   const levels = [
-    { level: 'عالي المخاطر', desc: '10% - مضاربات و أسهم صغيرة', color: 'bg-red-500', width: 'w-1/4' },
-    { level: 'متوسط المخاطر', desc: '30% - أسهم نمو و تحليل فني', color: 'bg-amber-500', width: 'w-1/2' },
-    { level: 'منخفض المخاطر', desc: '60% - أسهم قيمة و توزيعات أرباح', color: 'bg-emerald-500', width: 'w-3/4' },
+    { level: 'عالي المخاطر', desc: '10% - مضاربات و أسهم صغيرة', color: 'bg-loss', width: 'w-1/4' },
+    { level: 'متوسط المخاطر', desc: '30% - أسهم نمو و تحليل فني', color: 'bg-warning', width: 'w-1/2' },
+    { level: 'منخفض المخاطر', desc: '60% - أسهم قيمة و توزيعات أرباح', color: 'bg-profit', width: 'w-3/4' },
   ];
 
   return (
@@ -233,9 +233,9 @@ export function RiskPyramid() {
 /* ── 6. Callout Box (صناديق ملاحظات) ── */
 export function CalloutBox({ type, title, children }: { type: 'tip' | 'warning' | 'key' | 'example'; title: string; children: React.ReactNode }) {
   const config = {
-    tip: { icon: Lightbulb, color: 'border-teal-500/30 bg-teal-500/5', iconColor: 'text-teal-500', titleColor: 'text-teal-700 dark:text-teal-400' },
-    warning: { icon: AlertTriangle, color: 'border-amber-500/30 bg-amber-500/5', iconColor: 'text-amber-500', titleColor: 'text-amber-700 dark:text-amber-400' },
-    key: { icon: Key, color: 'border-emerald-500/30 bg-emerald-500/5', iconColor: 'text-emerald-500', titleColor: 'text-emerald-700 dark:text-emerald-400' },
+    tip: { icon: Lightbulb, color: 'border-whale/30 bg-whale/5', iconColor: 'text-whale', titleColor: 'text-whale dark:text-whale' },
+    warning: { icon: AlertTriangle, color: 'border-warning/30 bg-warning/5', iconColor: 'text-warning', titleColor: 'text-warning dark:text-warning' },
+    key: { icon: Key, color: 'border-profit/30 bg-profit/5', iconColor: 'text-profit', titleColor: 'text-profit dark:text-profit' },
     example: { icon: BookOpen, color: 'border-purple-500/30 bg-purple-500/5', iconColor: 'text-purple-500', titleColor: 'text-purple-700 dark:text-purple-400' },
   };
   const { icon: Icon, color, iconColor, titleColor } = config[type];
@@ -284,17 +284,17 @@ export function ExampleCard({ title, scenario, calculation, result, takeaway }: 
           <p className="text-xs font-semibold text-muted-foreground mb-1">الحساب:</p>
           <div className="text-sm font-mono bg-muted/30 p-2 rounded">{calculation}</div>
         </div>
-        <div className="flex items-start gap-2 p-2 rounded bg-emerald-500/10">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-2 p-2 rounded bg-profit/10">
+          <CheckCircle2 className="w-4 h-4 text-profit mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">النتيجة:</p>
+            <p className="text-xs font-semibold text-profit dark:text-profit">النتيجة:</p>
             <p className="text-sm">{result}</p>
           </div>
         </div>
-        <div className="flex items-start gap-2 p-2 rounded bg-teal-500/10">
-          <Lightbulb className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-2 p-2 rounded bg-whale/10">
+          <Lightbulb className="w-4 h-4 text-whale mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-teal-700 dark:text-teal-400">الدرس المستفاد:</p>
+            <p className="text-xs font-semibold text-whale dark:text-whale">الدرس المستفاد:</p>
             <p className="text-sm">{takeaway}</p>
           </div>
         </div>
@@ -306,9 +306,9 @@ export function ExampleCard({ title, scenario, calculation, result, takeaway }: 
 /* ── 8. RSI Gauge (مؤشر القوة النسبية) ── */
 export function RSIGauge({ value = 65 }: { value?: number }) {
   const angle = (value / 100) * 180 - 90; // -90 to 90 degrees
-  const zone = value >= 70 ? { label: 'تشبع شرائي', color: 'text-red-500' } :
-               value <= 30 ? { label: 'تشبع بيعي', color: 'text-emerald-500' } :
-               { label: 'منطقة محايدة', color: 'text-amber-500' };
+  const zone = value >= 70 ? { label: 'تشبع شرائي', color: 'text-loss' } :
+               value <= 30 ? { label: 'تشبع بيعي', color: 'text-profit' } :
+               { label: 'منطقة محايدة', color: 'text-warning' };
 
   return (
     <div className="my-6 p-4 rounded-xl bg-card border border-border">
@@ -337,9 +337,9 @@ export function RSIGauge({ value = 65 }: { value?: number }) {
         </svg>
         <p className={cn('font-bold text-lg', zone.color)}>{zone.label}</p>
         <div className="flex gap-4 mt-2 text-xs">
-          <span className="text-emerald-600">تشبع بيعي (≤30)</span>
-          <span className="text-amber-600">محايد (30-70)</span>
-          <span className="text-red-600">تشبع شرائي (≥70)</span>
+          <span className="text-profit">تشبع بيعي (≤30)</span>
+          <span className="text-warning">محايد (30-70)</span>
+          <span className="text-loss">تشبع شرائي (≥70)</span>
         </div>
       </div>
     </div>
@@ -408,9 +408,9 @@ export function MACDVisual() {
         <text x="165" y="40" fontSize="9" fill="#10b981" fontWeight="bold">تقاطع ذهبي</text>
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> MACD</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" /> خط الإشارة</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-2 bg-emerald-500/50" /> الهيستوجرام</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-whale" /> MACD</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-warning" /> خط الإشارة</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-2 bg-profit/50" /> الهيستوجرام</span>
       </div>
     </div>
   );
@@ -513,8 +513,8 @@ export function MovingAveragesVisual() {
         />
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" /> MA 5 (سريع)</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> MA 10 (بطيء)</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-warning" /> MA 5 (سريع)</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-whale" /> MA 10 (بطيء)</span>
       </div>
       <p className="text-xs text-muted-foreground mt-2 text-center">
         التقاطع الذهبي: MA السريع يقطع البطيء صعوداً = إشارة شراء
@@ -563,10 +563,10 @@ export function BollingerBandsVisual() {
         <text x="150" y="35" fontSize="9" fill="#f59e0b" fontWeight="bold">Squeeze (تضييق)</text>
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs flex-wrap">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> السعر</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-whale" /> السعر</span>
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-500" /> المتوسط (SMA20)</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500" /> النطاق العلوي</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-emerald-500" /> النطاق السفلي</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-loss" /> النطاق العلوي</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-profit" /> النطاق السفلي</span>
       </div>
     </div>
   );
@@ -581,30 +581,30 @@ export function DCFFlowVisual() {
         {/* Step 1 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="flex-1 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center"
+          className="flex-1 p-3 rounded-lg bg-profit/10 border border-profit/30 text-center"
         >
-          <p className="text-xs font-bold text-emerald-600 mb-1">1. تقدير التدفقات</p>
+          <p className="text-xs font-bold text-profit mb-1">1. تقدير التدفقات</p>
           <p className="text-[10px]">النقدية المتوقعة لـ 5 سنوات</p>
         </motion.div>
-        <span className="text-emerald-500 text-center rotate-90 sm:rotate-0">←</span>
+        <span className="text-profit text-center rotate-90 sm:rotate-0">←</span>
         {/* Step 2 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="flex-1 p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-center"
+          className="flex-1 p-3 rounded-lg bg-whale/10 border border-whale/30 text-center"
         >
-          <p className="text-xs font-bold text-teal-600 mb-1">2. معدل الخصم</p>
+          <p className="text-xs font-bold text-whale mb-1">2. معدل الخصم</p>
           <p className="text-[10px]">خصم للتضخم والمخاطر</p>
         </motion.div>
-        <span className="text-teal-500 text-center rotate-90 sm:rotate-0">←</span>
+        <span className="text-whale text-center rotate-90 sm:rotate-0">←</span>
         {/* Step 3 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-          className="flex-1 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center"
+          className="flex-1 p-3 rounded-lg bg-warning/10 border border-warning/30 text-center"
         >
-          <p className="text-xs font-bold text-amber-600 mb-1">3. القيمة الطرفية</p>
+          <p className="text-xs font-bold text-warning mb-1">3. القيمة الطرفية</p>
           <p className="text-[10px]">قيمة ما بعد 5 سنوات</p>
         </motion.div>
-        <span className="text-amber-500 text-center rotate-90 sm:rotate-0">←</span>
+        <span className="text-warning text-center rotate-90 sm:rotate-0">←</span>
         {/* Step 4 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
@@ -629,25 +629,25 @@ export function ROEDuPontVisual() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-          className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center"
+          className="p-3 rounded-lg bg-profit/10 border border-profit/30 text-center"
         >
-          <p className="text-xs font-bold text-emerald-600">هامش الربح</p>
+          <p className="text-xs font-bold text-profit">هامش الربح</p>
           <p className="text-[10px] text-muted-foreground mb-1">صافي الربح ÷ الإيرادات</p>
           <p className="text-lg font-bold">15%</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
-          className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-center"
+          className="p-3 rounded-lg bg-whale/10 border border-whale/30 text-center"
         >
-          <p className="text-xs font-bold text-teal-600">دوران الأصول</p>
+          <p className="text-xs font-bold text-whale">دوران الأصول</p>
           <p className="text-[10px] text-muted-foreground mb-1">الإيرادات ÷ الأصول</p>
           <p className="text-lg font-bold">1.2x</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
-          className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center"
+          className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-center"
         >
-          <p className="text-xs font-bold text-amber-600">الرافعة المالية</p>
+          <p className="text-xs font-bold text-warning">الرافعة المالية</p>
           <p className="text-[10px] text-muted-foreground mb-1">الأصول ÷ حقوق الملكية</p>
           <p className="text-lg font-bold">2.0x</p>
         </motion.div>
@@ -666,12 +666,12 @@ export function ROEDuPontVisual() {
 /* ── 15. Emotional Cycle (دورة المشاعر في التداول) ── */
 export function EmotionalCycleVisual() {
   const emotions = [
-    { phase: 'التفاؤل', color: 'bg-emerald-500', icon: '😊' },
-    { phase: 'الحماس', color: 'bg-teal-500', icon: '🤩' },
-    { phase: 'النشوة', color: 'bg-teal-500', icon: '🤑' },
-    { phase: 'القلق', color: 'bg-amber-500', icon: '😰' },
+    { phase: 'التفاؤل', color: 'bg-profit', icon: '😊' },
+    { phase: 'الحماس', color: 'bg-whale', icon: '🤩' },
+    { phase: 'النشوة', color: 'bg-whale', icon: '🤑' },
+    { phase: 'القلق', color: 'bg-warning', icon: '😰' },
     { phase: 'الإنكار', color: 'bg-orange-500', icon: '😨' },
-    { phase: 'الذعر', color: 'bg-red-500', icon: '😱' },
+    { phase: 'الذعر', color: 'bg-loss', icon: '😱' },
     { phase: 'الاستسلام', color: 'bg-gray-500', icon: '😞' },
     { phase: 'الاكتئاب', color: 'bg-gray-700', icon: '😔' },
   ];
@@ -728,11 +728,11 @@ export function DCAStrategyVisual() {
             <span className="font-semibold">{m.month}</span>
             <span>السعر: {m.price} ج.م</span>
             <span>استثمار: {m.invest} ج.م</span>
-            <span className="font-bold text-emerald-600">أسهم: {(m.shares ?? 0).toFixed(2)}</span>
+            <span className="font-bold text-profit">أسهم: {(m.shares ?? 0).toFixed(2)}</span>
           </motion.div>
         ))}
       </div>
-      <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+      <div className="mt-3 p-3 rounded-lg bg-profit/10 border border-profit/30">
         <div className="flex justify-between text-sm">
           <span>إجمالي الاستثمار:</span>
           <span className="font-bold">{totalInvest} ج.م</span>
@@ -741,7 +741,7 @@ export function DCAStrategyVisual() {
           <span>إجمالي الأسهم:</span>
           <span className="font-bold">{(totalShares ?? 0).toFixed(2)} سهم</span>
         </div>
-        <div className="flex justify-between text-sm font-bold text-emerald-700 dark:text-emerald-400">
+        <div className="flex justify-between text-sm font-bold text-profit dark:text-profit">
           <span>متوسط السعر:</span>
           <span>{(avgPrice ?? 0).toFixed(2)} ج.م</span>
         </div>
@@ -1066,7 +1066,7 @@ export function LossAversionCurve() {
       </svg>
 
       <p className="mt-2 text-center text-xs text-muted-foreground" dir="rtl">
-        الخسارة تؤلم <span className="font-bold text-red-600">2.25×</span> أكثر من فرحة نفس المبلغ —{' '}
+        الخسارة تؤلم <span className="font-bold text-loss">2.25×</span> أكثر من فرحة نفس المبلغ —{' '}
         <span dir="ltr" className="font-mono text-[11px]">
           Kahneman &amp; Tversky 1979
         </span>
@@ -1091,32 +1091,32 @@ type SopStage = {
 const SOP_STAGES: SopStage[] = [
   {
     icon: ClipboardCheck,
-    iconBg: 'bg-emerald-100 dark:bg-emerald-950/40',
-    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-profit dark:bg-profit/40',
+    iconColor: 'text-profit dark:text-profit',
     title: 'Pre-trade Checklist',
     subtitle: 'قبل الصفقة',
     items: ['Entry / Stop', 'Position size', 'Contra-thesis', 'Exit plan'],
   },
   {
     icon: Zap,
-    iconBg: 'bg-amber-100 dark:bg-amber-950/40',
-    iconColor: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-warning dark:bg-warning/40',
+    iconColor: 'text-warning dark:text-warning',
     title: 'Execute Trade',
     subtitle: 'تنفيذ',
     items: ['Hard rules', 'No override', 'Stop آلي'],
   },
   {
     icon: NotebookPen,
-    iconBg: 'bg-emerald-100 dark:bg-emerald-950/40',
-    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-profit dark:bg-profit/40',
+    iconColor: 'text-profit dark:text-profit',
     title: 'Journal Entry',
     subtitle: 'يوميات',
     items: ['تفسير القرار', 'المشاعر', 'النتيجة'],
   },
   {
     icon: TrendingUp,
-    iconBg: 'bg-amber-100 dark:bg-amber-950/40',
-    iconColor: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-warning dark:bg-warning/40',
+    iconColor: 'text-warning dark:text-warning',
     title: 'Review Weekly',
     subtitle: 'مراجعة',
     items: ['win rate', 'avg R', 'تعديل SOP'],
@@ -1249,7 +1249,7 @@ export function SopPipelineFlow() {
               <div
                 // @ts-expect-error xmlns is valid on div in JSX for foreignObject context
                 xmlns="http://www.w3.org/1999/xhtml"
-                className="flex h-full w-full flex-col rounded-xl border border-emerald-200/70 bg-white p-2.5 shadow-sm dark:border-emerald-800/60 dark:bg-slate-900"
+                className="flex h-full w-full flex-col rounded-xl border border-profit/70 bg-white p-2.5 shadow-sm dark:border-profit/60 dark:bg-slate-900"
               >
                 <div className="flex items-center gap-2">
                   <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${stage.iconBg}`}>
@@ -1267,13 +1267,13 @@ export function SopPipelineFlow() {
                 <div className="mt-2 space-y-1" dir="rtl">
                   {stage.items.map((item, j) => (
                     <div key={j} className="flex items-start gap-1 text-[10px] leading-tight">
-                      <span className="mt-[1px] text-emerald-500">✓</span>
+                      <span className="mt-[1px] text-profit">✓</span>
                       <span className="flex-1 text-slate-700 dark:text-slate-300">{item}</span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-auto flex items-center justify-between pt-1">
-                  <span className="rounded-full bg-emerald-100 px-1.5 py-[1px] text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                  <span className="rounded-full bg-profit px-1.5 py-[1px] text-[9px] font-bold text-profit dark:bg-profit/40 dark:text-profit">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <span className="text-[8.5px] text-slate-400" dir="ltr">
@@ -1374,25 +1374,25 @@ const PIPELINE_STAGES: PipelineStage[] = [
 
 const ACCENT_STYLES: Record<PipelineStage['accent'], { ring: string; badge: string; glow: string; text: string; border: string }> = {
   emerald: {
-    ring: 'ring-emerald-500/30',
-    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    ring: 'ring-profit/30',
+    badge: 'bg-profit/15 text-profit border-profit/30',
     glow: 'shadow-[0_0_18px_-4px_rgba(16,185,129,0.55)]',
-    text: 'text-emerald-300',
-    border: 'border-emerald-700/50',
+    text: 'text-profit',
+    border: 'border-profit/50',
   },
   amber: {
-    ring: 'ring-amber-500/30',
-    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    ring: 'ring-warning/30',
+    badge: 'bg-warning/15 text-warning border-warning/30',
     glow: 'shadow-[0_0_18px_-4px_rgba(245,158,11,0.55)]',
-    text: 'text-amber-300',
-    border: 'border-amber-700/50',
+    text: 'text-warning',
+    border: 'border-warning/50',
   },
   red: {
-    ring: 'ring-red-500/30',
-    badge: 'bg-red-500/15 text-red-300 border-red-500/30',
+    ring: 'ring-loss/30',
+    badge: 'bg-loss/15 text-loss border-loss/30',
     glow: 'shadow-[0_0_18px_-4px_rgba(239,68,68,0.55)]',
-    text: 'text-red-300',
-    border: 'border-red-700/50',
+    text: 'text-loss',
+    border: 'border-loss/50',
   },
   cyan: {
     ring: 'ring-cyan-500/30',
@@ -1467,10 +1467,10 @@ export function TradingSystemPipeline() {
                     {String(stage.num).padStart(2, '0')}
                   </span>
                   {stage.live ? (
-                    <span className="flex items-center gap-1 text-[9px] font-semibold text-emerald-400">
+                    <span className="flex items-center gap-1 text-[9px] font-semibold text-profit">
                       <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-profit opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-profit" />
                       </span>
                       LIVE
                     </span>
@@ -1544,14 +1544,14 @@ export function TradingSystemPipeline() {
 
       {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] sm:gap-x-5 sm:text-[11px]" dir="rtl">
-        <span className="flex items-center gap-1 text-emerald-300">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> بيانات حية
+        <span className="flex items-center gap-1 text-profit">
+          <span className="h-2 w-2 rounded-full bg-profit" /> بيانات حية
         </span>
-        <span className="flex items-center gap-1 text-amber-300">
-          <span className="h-2 w-2 rounded-full bg-amber-500" /> تحقق
+        <span className="flex items-center gap-1 text-warning">
+          <span className="h-2 w-2 rounded-full bg-warning" /> تحقق
         </span>
-        <span className="flex items-center gap-1 text-red-300">
-          <span className="h-2 w-2 rounded-full bg-red-500" /> بوابة
+        <span className="flex items-center gap-1 text-loss">
+          <span className="h-2 w-2 rounded-full bg-loss" /> بوابة
         </span>
         <span className="flex items-center gap-1 text-cyan-300">
           <span className="h-2 w-2 rounded-full bg-cyan-500" /> تنفيذ
@@ -1587,8 +1587,8 @@ export function MarketStagesVisual() {
       name: 'التجميع',
       nameEn: 'Accumulation',
       color: '#10b981',
-      bg: 'bg-emerald-500/10',
-      border: 'border-emerald-500/40',
+      bg: 'bg-profit/10',
+      border: 'border-profit/40',
       action: 'شراء تدريجي',
       actionEn: 'Buy',
       icon: '📥',
@@ -1600,8 +1600,8 @@ export function MarketStagesVisual() {
       name: 'الصعود',
       nameEn: 'Advance',
       color: '#059669',
-      bg: 'bg-emerald-600/10',
-      border: 'border-emerald-600/40',
+      bg: 'bg-profit/10',
+      border: 'border-profit/40',
       action: 'احتفاظ / إضافة',
       actionEn: 'Hold',
       icon: '🚀',
@@ -1613,8 +1613,8 @@ export function MarketStagesVisual() {
       name: 'التوزيع',
       nameEn: 'Distribution',
       color: '#f59e0b',
-      bg: 'bg-amber-500/10',
-      border: 'border-amber-500/40',
+      bg: 'bg-warning/10',
+      border: 'border-warning/40',
       action: 'بيع تدريجي',
       actionEn: 'Sell',
       icon: '📤',
@@ -1626,8 +1626,8 @@ export function MarketStagesVisual() {
       name: 'الهبوط',
       nameEn: 'Decline',
       color: '#ef4444',
-      bg: 'bg-red-500/10',
-      border: 'border-red-500/40',
+      bg: 'bg-loss/10',
+      border: 'border-loss/40',
       action: 'بيع / قصر',
       actionEn: 'Short',
       icon: '📉',
@@ -1650,7 +1650,7 @@ export function MarketStagesVisual() {
       className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
-        <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <Layers className="h-5 w-5 text-profit dark:text-profit" />
         <h4 className="text-base font-bold sm:text-lg">
           مراحل السوق الأربعة — نظرية Weinstein + Wyckoff
         </h4>
@@ -1746,7 +1746,7 @@ export function MarketStagesVisual() {
       </div>
 
       {/* Educational takeaway */}
-      <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200" dir="rtl">
+      <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning dark:text-warning" dir="rtl">
         <span className="font-bold">قاعدة عامة:</span> لا تشترِ في المرحلة 4، ولا تبع في
         المرحلة 2. أفضل نقطة شراء = نهاية المرحلة 1، وأفضل نقطة بيع = بداية المرحلة 3.
         التحرّك ضدّ المرحلة = خسارة شبه مؤكدة.
@@ -1789,7 +1789,7 @@ export function OrderFlowVisual() {
       className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
-        <Scale className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <Scale className="h-5 w-5 text-profit dark:text-profit" />
         <h4 className="text-base font-bold sm:text-lg">تدفّق الأوامر — لماذا يتحرك السعر؟</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
@@ -1864,22 +1864,22 @@ export function OrderFlowVisual() {
         <div className="flex flex-col gap-3" dir="rtl">
           {/* Order book totals */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center">
-              <div className="text-[10px] font-semibold text-red-700 dark:text-red-300">إجمالي Ask</div>
-              <div className="text-lg font-bold text-red-700 dark:text-red-300">{totalAsk.toLocaleString()}</div>
+            <div className="rounded-lg border border-loss/30 bg-loss/10 p-3 text-center">
+              <div className="text-[10px] font-semibold text-loss dark:text-loss">إجمالي Ask</div>
+              <div className="text-lg font-bold text-loss dark:text-loss">{totalAsk.toLocaleString()}</div>
             </div>
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center">
-              <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">إجمالي Bid</div>
-              <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{totalBid.toLocaleString()}</div>
+            <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-center">
+              <div className="text-[10px] font-semibold text-profit dark:text-profit">إجمالي Bid</div>
+              <div className="text-lg font-bold text-profit dark:text-profit">{totalBid.toLocaleString()}</div>
             </div>
           </div>
 
           {/* Imbalance bar */}
           <div className="rounded-lg border border-slate-300 bg-muted/40 p-3 dark:border-slate-700">
             <div className="mb-1 flex items-center justify-between text-[10px]">
-              <span className="text-red-600 dark:text-red-400">بيع &lt;&lt;</span>
+              <span className="text-loss dark:text-loss">بيع &lt;&lt;</span>
               <span className="font-semibold">عدم التوازن (Imbalance)</span>
-              <span className="text-emerald-600 dark:text-emerald-400">&gt;&gt; شراء</span>
+              <span className="text-profit dark:text-profit">&gt;&gt; شراء</span>
             </div>
             <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
               <div
@@ -1899,7 +1899,7 @@ export function OrderFlowVisual() {
           </div>
 
           {/* Educational key */}
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs leading-relaxed text-emerald-900 dark:text-emerald-200">
+          <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-xs leading-relaxed text-profit dark:text-profit">
             <div className="mb-2 font-bold">القاعدة الذهبية لتدفّق الأوامر:</div>
             <ul className="space-y-1">
               <li>• <span className="font-semibold">Limit Order:</span> أمر بانتظار سعر معيّن (يخلق سيولة).</li>
@@ -2000,9 +2000,9 @@ export function CandlestickPatternsVisual() {
   ];
 
   const signalBadge: Record<string, { label: string; cls: string }> = {
-    bullish: { label: 'صاعد', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' },
-    bearish: { label: 'هابط', cls: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30' },
-    neutral: { label: 'محايد', cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' },
+    bullish: { label: 'صاعد', cls: 'bg-profit/15 text-profit dark:text-profit border-profit/30' },
+    bearish: { label: 'هابط', cls: 'bg-loss/15 text-loss dark:text-loss border-loss/30' },
+    neutral: { label: 'محايد', cls: 'bg-warning/15 text-warning dark:text-warning border-warning/30' },
   };
 
   function MiniCandle({ c, idx }: { c: C; idx: number }) {
@@ -2030,7 +2030,7 @@ export function CandlestickPatternsVisual() {
       className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
-        <Crosshair className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <Crosshair className="h-5 w-5 text-profit dark:text-profit" />
         <h4 className="text-base font-bold sm:text-lg">أنماط الشموع اليابانية المتقدمة</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
@@ -2087,7 +2087,7 @@ export function CandlestickPatternsVisual() {
         })}
       </div>
 
-      <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200" dir="rtl">
+      <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning dark:text-warning" dir="rtl">
         <span className="font-bold">تحذير مهم:</span> الأنماط وحدها لا تكفي. ادمجها مع
         المستويات (دعم/مقاومة)، السياق (مرحلة السوق)، وحجم التداول. شمعة مطرقة في
         فراغ = مجرد ضجيج.
@@ -2180,7 +2180,7 @@ export function RiskRewardVisual() {
       className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
-        <Scale className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <Scale className="h-5 w-5 text-profit dark:text-profit" />
         <h4 className="text-base font-bold sm:text-lg">حاسبة المخاطرة/العائد — تفاعلية</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
@@ -2300,14 +2300,14 @@ export function RiskRewardVisual() {
         {/* Metrics + sliders */}
         <div className="flex flex-col gap-3" dir="rtl">
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center">
-              <div className="text-[10px] text-red-700 dark:text-red-300">المخاطرة</div>
-              <div className="text-lg font-bold text-red-700 dark:text-red-300">{(risk ?? 0).toFixed(1)}</div>
+            <div className="rounded-lg border border-loss/30 bg-loss/10 p-3 text-center">
+              <div className="text-[10px] text-loss dark:text-loss">المخاطرة</div>
+              <div className="text-lg font-bold text-loss dark:text-loss">{(risk ?? 0).toFixed(1)}</div>
               <div className="text-[9px] text-muted-foreground">({(risk / entry * 100).toFixed(1)}%)</div>
             </div>
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center">
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-300">العائد</div>
-              <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{(reward ?? 0).toFixed(1)}</div>
+            <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-center">
+              <div className="text-[10px] text-profit dark:text-profit">العائد</div>
+              <div className="text-lg font-bold text-profit dark:text-profit">{(reward ?? 0).toFixed(1)}</div>
               <div className="text-[9px] text-muted-foreground">({(reward / entry * 100).toFixed(1)}%)</div>
             </div>
             <div className="rounded-lg border border-slate-400/40 bg-slate-500/10 p-3 text-center">
@@ -2322,10 +2322,10 @@ export function RiskRewardVisual() {
             className={cn(
               'rounded-lg border p-3 text-center text-xs font-bold',
               rr >= 2
-                ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200'
+                ? 'border-profit/40 bg-profit/15 text-profit dark:text-profit'
                 : rr >= 1
-                  ? 'border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-200'
-                  : 'border-red-500/40 bg-red-500/15 text-red-800 dark:text-red-200',
+                  ? 'border-warning/40 bg-warning/15 text-warning dark:text-warning'
+                  : 'border-loss/40 bg-loss/15 text-loss dark:text-loss',
             )}
           >
             {rr >= 2 ? '✅ صفقة مقبولة — R:R ≥ 2:1' : rr >= 1 ? '⚠️ صفقة هامشية — R:R بين 1 و 2' : '❌ صفقة مرفوضة — R:R < 1'}
@@ -2350,7 +2350,7 @@ export function RiskRewardVisual() {
             </div>
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
-                <span className="font-semibold text-red-700 dark:text-red-400">الوقف (Stop)</span>
+                <span className="font-semibold text-loss dark:text-loss">الوقف (Stop)</span>
                 <span className="text-slate-600 dark:text-slate-400">{(stop ?? 0).toFixed(1)}</span>
               </div>
               <input
@@ -2360,12 +2360,12 @@ export function RiskRewardVisual() {
                 step={0.5}
                 value={stop}
                 onChange={(e) => setStop(Number(e.target.value))}
-                className="w-full accent-red-600"
+                className="w-full accent-loss"
               />
             </div>
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400">الهدف (Target)</span>
+                <span className="font-semibold text-profit dark:text-profit">الهدف (Target)</span>
                 <span className="text-slate-600 dark:text-slate-400">{(target ?? 0).toFixed(1)}</span>
               </div>
               <input
@@ -2375,17 +2375,17 @@ export function RiskRewardVisual() {
                 step={0.5}
                 value={target}
                 onChange={(e) => setTarget(Number(e.target.value))}
-                className="w-full accent-emerald-600"
+                className="w-full accent-profit"
               />
             </div>
           </div>
 
           {/* Position sizing lesson */}
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[11px] leading-relaxed text-emerald-900 dark:text-emerald-200" dir="rtl">
+          <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-[11px] leading-relaxed text-profit dark:text-profit" dir="rtl">
             <div className="mb-1 font-bold">حجم الصفقة (Position Size):</div>
             لو مخاطرك المسموحة = 2% من رأس المال (مثلاً 1000 ج.م من 50,000)،
             والمخاطرة لكل سهم = {(risk ?? 0).toFixed(1)} ج.م →
-            <div className="mt-1 text-center font-bold text-emerald-700 dark:text-emerald-300">
+            <div className="mt-1 text-center font-bold text-profit dark:text-profit">
               عدد الأسهم = {Math.floor(1000 / Math.max(0.1, risk))} سهم
             </div>
           </div>
@@ -2468,7 +2468,7 @@ export function PortfolioAllocationVisual() {
       className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
     >
       <div className="mb-3 flex items-center gap-2" dir="rtl">
-        <PieChart className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <PieChart className="h-5 w-5 text-profit dark:text-profit" />
         <h4 className="text-base font-bold sm:text-lg">توزيع المحفظة عبر الأسواق — عجلة تفاعلية</h4>
       </div>
       <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
@@ -2555,11 +2555,11 @@ export function PortfolioAllocationVisual() {
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-md bg-muted/40 p-2">
                 <div className="text-[10px] text-muted-foreground">العائد المتوقع</div>
-                <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400">+{active.expectedReturn}%</div>
+                <div className="text-sm font-bold text-profit dark:text-profit">+{active.expectedReturn}%</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
                 <div className="text-[10px] text-muted-foreground">التقلب السنوي</div>
-                <div className="text-sm font-bold text-amber-700 dark:text-amber-400">±{active.volatility}%</div>
+                <div className="text-sm font-bold text-warning dark:text-warning">±{active.volatility}%</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
                 <div className="text-[10px] text-muted-foreground">الدور</div>
@@ -2576,11 +2576,11 @@ export function PortfolioAllocationVisual() {
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
                 <div className="text-[10px] text-muted-foreground">عائد متوقع</div>
-                <div className="text-base font-bold text-emerald-700 dark:text-emerald-400">+{(portfolioReturn ?? 0).toFixed(1)}%</div>
+                <div className="text-base font-bold text-profit dark:text-profit">+{(portfolioReturn ?? 0).toFixed(1)}%</div>
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">تقلب إجمالي</div>
-                <div className="text-base font-bold text-amber-700 dark:text-amber-400">±{(portfolioVol ?? 0).toFixed(1)}%</div>
+                <div className="text-base font-bold text-warning dark:text-warning">±{(portfolioVol ?? 0).toFixed(1)}%</div>
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">Sharpe</div>
@@ -2589,7 +2589,7 @@ export function PortfolioAllocationVisual() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-900 dark:text-amber-200" dir="rtl">
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-[11px] leading-relaxed text-warning dark:text-warning" dir="rtl">
             <span className="font-bold">درس التنويع:</span> المحفظة دي بتدي عائد
             متوقع +{(portfolioReturn ?? 0).toFixed(0)}% لكن بتقلب ±{(portfolioVol ?? 0).toFixed(0)}% فقط —
             أقل من وضع 100% في Crypto (±70%) أو 100% في EGX (±24%). التنويع بيوازن

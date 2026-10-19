@@ -177,9 +177,9 @@ function PersonaCard({
 
   // ألوان البرسونا — emerald للمستثمر، amber للمتوازن، fuchsia للمضارب (تجنّب blue/indigo)
   const personaTheme = isInvestor
-    ? { emoji: '🛡️', label: 'المستثمر', accent: 'text-emerald-700 dark:text-emerald-400', accentBg: 'bg-emerald-50 dark:bg-emerald-950/40', accentBorder: 'border-emerald-200 dark:border-emerald-900' }
+    ? { emoji: '🛡️', label: 'المستثمر', accent: 'text-profit dark:text-profit', accentBg: 'bg-profit dark:bg-profit/40', accentBorder: 'border-profit dark:border-profit' }
     : persona === 'balanced'
-    ? { emoji: '⚖️', label: 'المتوازن', accent: 'text-amber-700 dark:text-amber-400', accentBg: 'bg-amber-50 dark:bg-amber-950/40', accentBorder: 'border-amber-200 dark:border-amber-900' }
+    ? { emoji: '⚖️', label: 'المتوازن', accent: 'text-warning dark:text-warning', accentBg: 'bg-warning dark:bg-warning/40', accentBorder: 'border-warning dark:border-warning' }
     : { emoji: '🎯', label: 'المضارب', accent: 'text-fuchsia-700 dark:text-fuchsia-400', accentBg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40', accentBorder: 'border-fuchsia-200 dark:border-fuchsia-900' };
 
   const targetPct = data.entry && data.target && data.entry > 0
@@ -211,13 +211,13 @@ function PersonaCard({
   // Performance color
   const perfColor = (v: number | undefined) => {
     if (v === undefined || v === null) return 'text-muted-foreground';
-    return v > 0 ? 'text-emerald-600 dark:text-emerald-400' : v < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground';
+    return v > 0 ? 'text-profit dark:text-profit' : v < 0 ? 'text-loss dark:text-loss' : 'text-muted-foreground';
   };
 
   return (
     <Card className={cn('border-2', colors.border, 'overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer',
-      hasGates && data.gates!.passed >= 4 && 'ring-1 ring-emerald-300 dark:ring-emerald-700',
-      hasGates && data.gates!.passed >= 5 && 'ring-2 ring-emerald-400 dark:ring-emerald-600',
+      hasGates && data.gates!.passed >= 4 && 'ring-1 ring-profit dark:ring-profit',
+      hasGates && data.gates!.passed >= 5 && 'ring-2 ring-profit dark:ring-profit',
     )} onClick={onClick || (() => loadStockDetail(ticker))}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
@@ -281,8 +281,8 @@ function PersonaCard({
                     className={cn(
                       'text-xs px-1.5 py-0 rounded-full border flex items-center gap-0.5',
                       fundamentals.sector_role === 'leader'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-                        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                        ? 'bg-profit text-profit border-profit dark:bg-profit/40 dark:text-profit dark:border-profit'
+                        : 'bg-loss text-loss border-loss dark:bg-loss/40 dark:text-loss dark:border-loss'
                     )}
                     title={
                       fundamentals.sector_role === 'leader'
@@ -294,7 +294,7 @@ function PersonaCard({
                   </span>
                 )}
                 {data.is_egx30 && (
-                  <span className="text-xs px-1.5 py-0 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning dark:bg-warning/40 dark:text-warning border border-warning dark:border-warning">
                     EGX30
                   </span>
                 )}
@@ -310,16 +310,16 @@ function PersonaCard({
                 المستخدم طلب: "لو السهم إشارته HOLD بس درجته عالية، اعرضه
                 واكتب تحته بـ Badge لونه أصفر: مراقبة - انتظر كسر المقاومة" */}
             {isInvestor && data.signal && String(data.signal).toUpperCase() === 'HOLD' && (data.score ?? 0) >= 50 && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0 border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+              <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning bg-warning text-warning dark:bg-warning/40 dark:text-warning dark:border-warning">
                 👁️ مراقبة — انتظر كسر المقاومة
               </Badge>
             )}
             {data.gates && (
               <Badge variant="outline" className={cn(
                 'text-xs px-1.5 py-0',
-                data.gates.passed >= 4 ? 'border-emerald-300 text-emerald-600 dark:text-emerald-400' :
-                data.gates.passed >= 3 ? 'border-amber-300 text-amber-600 dark:text-amber-400' :
-                'border-red-300 text-red-600 dark:text-red-400'
+                data.gates.passed >= 4 ? 'border-profit text-profit dark:text-profit' :
+                data.gates.passed >= 3 ? 'border-warning text-warning dark:text-warning' :
+                'border-loss text-loss dark:text-loss'
               )}>
                 <Crosshair className="h-2.5 w-2.5 ml-0.5" />
                 {data.gates.passed}/5
@@ -349,7 +349,7 @@ function PersonaCard({
                 {fundamentals.pe_ratio ? <span>P/E {(fundamentals.pe_ratio ?? 0).toFixed(1)}</span> : null}
                 {fundamentals.roe ? <span>• ROE {(fundamentals.roe ?? 0).toFixed(0)}%</span> : null}
                 {fundamentals.fair_value_upside ? (
-                  <span className="text-emerald-700 dark:text-emerald-400">
+                  <span className="text-profit dark:text-profit">
                     • خصم {(fundamentals.fair_value_upside ?? 0).toFixed(1)}%
                   </span>
                 ) : null}
@@ -362,7 +362,7 @@ function PersonaCard({
                   <span>حجم {(fundamentals.volume_ratio ?? 0).toFixed(1)}x</span>
                 ) : null}
                 {fundamentals.change_1d ? (
-                  <span className={fundamentals.change_1d > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}>
+                  <span className={fundamentals.change_1d > 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}>
                     • {fundamentals.change_1d > 0 ? '+' : ''}{(fundamentals.change_1d ?? 0).toFixed(1)}%
                   </span>
                 ) : null}
@@ -378,9 +378,9 @@ function PersonaCard({
           <div className={cn(
             'rounded-lg p-3 border-2',
             data.risk_reward && data.risk_reward >= 2.0
-              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800'
+              ? 'bg-profit dark:bg-profit/30 border-profit dark:border-profit'
               : data.risk_reward && data.risk_reward >= 1.5
-              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800'
+              ? 'bg-warning dark:bg-warning/30 border-warning dark:border-warning'
               : 'bg-muted/50 border-border'
           )}>
             <div className="flex items-center justify-between mb-2">
@@ -388,10 +388,10 @@ function PersonaCard({
               {data.risk_reward && data.risk_reward > 0 && (
                 <span className={cn(
                   'text-lg font-black',
-                  data.risk_reward >= 3 ? 'text-emerald-600 dark:text-emerald-400' :
-                  data.risk_reward >= 2 ? 'text-emerald-500' :
-                  data.risk_reward >= 1.5 ? 'text-amber-600 dark:text-amber-400' :
-                  'text-red-600 dark:text-red-400'
+                  data.risk_reward >= 3 ? 'text-profit dark:text-profit' :
+                  data.risk_reward >= 2 ? 'text-profit' :
+                  data.risk_reward >= 1.5 ? 'text-warning dark:text-warning' :
+                  'text-loss dark:text-loss'
                 )}>
                   1:{(data.risk_reward ?? 0).toFixed(1)}
                 </span>
@@ -402,19 +402,19 @@ function PersonaCard({
                 <p className="text-muted-foreground text-xs mb-0.5">💰 ادخل</p>
                 <p className="font-bold text-foreground text-base">{data.entry ? (data.entry ?? 0).toFixed(2) : '—'}</p>
               </div>
-              <div className="rounded-md bg-emerald-100/60 dark:bg-emerald-900/30 p-2">
-                <p className="text-emerald-700 dark:text-emerald-400 text-xs mb-0.5">
+              <div className="rounded-md bg-profit/60 dark:bg-profit/30 p-2">
+                <p className="text-profit dark:text-profit text-xs mb-0.5">
                   📈 هدف{targetPct !== null && ` +${(targetPct ?? 0).toFixed(1)}%`}
                 </p>
-                <p className="font-bold text-emerald-700 dark:text-emerald-400 text-base">
+                <p className="font-bold text-profit dark:text-profit text-base">
                   {data.target ? (data.target ?? 0).toFixed(2) : '—'}
                 </p>
               </div>
-              <div className="rounded-md bg-red-100/60 dark:bg-red-900/30 p-2">
-                <p className="text-red-700 dark:text-red-400 text-xs mb-0.5">
+              <div className="rounded-md bg-loss/60 dark:bg-loss/30 p-2">
+                <p className="text-loss dark:text-loss text-xs mb-0.5">
                   🛑 وقف{stopPct !== null && ` ${(stopPct ?? 0).toFixed(1)}%`}
                 </p>
-                <p className="font-bold text-red-700 dark:text-red-400 text-base">
+                <p className="font-bold text-loss dark:text-loss text-base">
                   {data.stop ? (data.stop ?? 0).toFixed(2) : '—'}
                 </p>
               </div>
@@ -424,7 +424,7 @@ function PersonaCard({
 
         {/* تنبيه R/R ضعيف — يوليو 2026 */}
         {data.risk_reward !== null && data.risk_reward !== undefined && data.risk_reward > 0 && data.risk_reward < 1.5 && (data.entry || data.target || data.stop) && (
-          <div className="flex items-center gap-1.5 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 p-2 text-xs text-red-700 dark:text-red-400">
+          <div className="flex items-center gap-1.5 rounded-md bg-loss dark:bg-loss/40 border border-loss dark:border-loss p-2 text-xs text-loss dark:text-loss">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
             <span>⚠️ عائد/مخاطرة {(data.risk_reward ?? 0).toFixed(2)}:1 — المخاطرة أكبر من الربح، الصفقة غير آمنة.</span>
           </div>
@@ -461,8 +461,8 @@ function PersonaCard({
                   className={cn(
                     'flex-1 flex flex-col items-center gap-0.5 rounded-md py-1.5 px-0.5 text-xs transition-colors cursor-default',
                     gate.passed
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                      : 'bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400'
+                      ? 'bg-profit text-profit dark:bg-profit/40 dark:text-profit'
+                      : 'bg-loss text-loss dark:bg-loss/40 dark:text-loss'
                   )}
                 >
                   {gate.passed ? (
@@ -484,8 +484,8 @@ function PersonaCard({
             <p className="text-muted-foreground text-xs mb-0.5">RSI</p>
             <span className={cn(
               'font-semibold text-sm',
-              data.rsi && data.rsi > 70 ? 'text-red-600 dark:text-red-400' :
-              data.rsi && data.rsi < 30 ? 'text-emerald-600 dark:text-emerald-400' :
+              data.rsi && data.rsi > 70 ? 'text-loss dark:text-loss' :
+              data.rsi && data.rsi < 30 ? 'text-profit dark:text-profit' :
               'text-foreground'
             )}>
               {data.rsi && data.rsi > 0 ? (data.rsi ?? 0).toFixed(0) : '—'}
@@ -494,17 +494,17 @@ function PersonaCard({
           {/* Risk/Reward */}
           <div className={cn(
             'rounded-md p-1.5 text-center',
-            data.risk_reward && data.risk_reward >= 3 ? 'bg-emerald-50 dark:bg-emerald-950/40' :
-            data.risk_reward && data.risk_reward >= 1.5 ? 'bg-amber-50 dark:bg-amber-950/40' :
-            data.risk_reward && data.risk_reward > 0 ? 'bg-red-50 dark:bg-red-950/40' :
+            data.risk_reward && data.risk_reward >= 3 ? 'bg-profit dark:bg-profit/40' :
+            data.risk_reward && data.risk_reward >= 1.5 ? 'bg-warning dark:bg-warning/40' :
+            data.risk_reward && data.risk_reward > 0 ? 'bg-loss dark:bg-loss/40' :
             'bg-muted/50'
           )}>
             <p className="text-muted-foreground text-xs mb-0.5">عائد/مخاطرة</p>
             <span className={cn(
               'font-bold text-sm',
-              data.risk_reward && data.risk_reward >= 3 ? 'text-emerald-600 dark:text-emerald-400' :
-              data.risk_reward && data.risk_reward >= 1.5 ? 'text-amber-600 dark:text-amber-400' :
-              data.risk_reward && data.risk_reward > 0 ? 'text-red-600 dark:text-red-400' :
+              data.risk_reward && data.risk_reward >= 3 ? 'text-profit dark:text-profit' :
+              data.risk_reward && data.risk_reward >= 1.5 ? 'text-warning dark:text-warning' :
+              data.risk_reward && data.risk_reward > 0 ? 'text-loss dark:text-loss' :
               'text-muted-foreground'
             )}>
               {data.risk_reward && data.risk_reward > 0 ? `${(data.risk_reward ?? 0).toFixed(1)}` : '—'}
@@ -516,7 +516,7 @@ function PersonaCard({
             <span className="font-semibold text-sm text-foreground">
               {formatVol(data.volume)}
               {data.volume_ratio && data.volume_ratio > 1 && (
-                <span className="text-emerald-600 dark:text-emerald-400 text-xs mr-0.5">↑{(data.volume_ratio ?? 0).toFixed(1)}x</span>
+                <span className="text-profit dark:text-profit text-xs mr-0.5">↑{(data.volume_ratio ?? 0).toFixed(1)}x</span>
               )}
             </span>
           </div>
@@ -553,17 +553,17 @@ function PersonaCard({
             )}
             {data.roe && (
               <span className="text-muted-foreground">
-                ROE: <span className={cn('font-semibold', data.roe > 10 ? 'text-emerald-600' : 'text-foreground')}>{(data.roe ?? 0).toFixed(1)}%</span>
+                ROE: <span className={cn('font-semibold', data.roe > 10 ? 'text-profit' : 'text-foreground')}>{(data.roe ?? 0).toFixed(1)}%</span>
               </span>
             )}
             {data.net_margin && (
               <span className="text-muted-foreground">
-                هامش: <span className={cn('font-semibold', data.net_margin > 0 ? 'text-emerald-600' : 'text-red-600')}>{(data.net_margin ?? 0).toFixed(1)}%</span>
+                هامش: <span className={cn('font-semibold', data.net_margin > 0 ? 'text-profit' : 'text-loss')}>{(data.net_margin ?? 0).toFixed(1)}%</span>
               </span>
             )}
             {data.debt_to_equity && (
               <span className="text-muted-foreground">
-                دين/حقوق: <span className={cn('font-semibold', data.debt_to_equity < 1 ? 'text-emerald-600' : 'text-amber-600')}>{(data.debt_to_equity ?? 0).toFixed(2)}</span>
+                دين/حقوق: <span className={cn('font-semibold', data.debt_to_equity < 1 ? 'text-profit' : 'text-warning')}>{(data.debt_to_equity ?? 0).toFixed(2)}</span>
               </span>
             )}
           </div>
@@ -576,9 +576,9 @@ function PersonaCard({
             <span className="text-muted-foreground">وضع السوق:</span>
             <span className={cn(
               'font-semibold',
-              data.market_regime === 'bullish' ? 'text-emerald-600 dark:text-emerald-400' :
-              data.market_regime === 'bearish' ? 'text-red-600 dark:text-red-400' :
-              'text-amber-600 dark:text-amber-400'
+              data.market_regime === 'bullish' ? 'text-profit dark:text-profit' :
+              data.market_regime === 'bearish' ? 'text-loss dark:text-loss' :
+              'text-warning dark:text-warning'
             )}>
               {data.market_regime === 'bullish' ? 'صاعد' : data.market_regime === 'bearish' ? 'هابط' : 'متعادل'}
             </span>
@@ -590,21 +590,21 @@ function PersonaCard({
           <div className="flex items-center gap-3 px-1 text-xs">
             {data.support_level && (
               <span className="text-muted-foreground">
-                دعم: <span className="font-semibold text-emerald-600">{(data.support_level ?? 0).toFixed(2)}</span>
+                دعم: <span className="font-semibold text-profit">{(data.support_level ?? 0).toFixed(2)}</span>
               </span>
             )}
             {data.resistance_level && (
               <span className="text-muted-foreground">
-                مقاومة: <span className="font-semibold text-red-600">{(data.resistance_level ?? 0).toFixed(2)}</span>
+                مقاومة: <span className="font-semibold text-loss">{(data.resistance_level ?? 0).toFixed(2)}</span>
               </span>
             )}
             {data.price_vs_sr === 'near_support' && (
-              <span className="text-xs px-1.5 py-0 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+              <span className="text-xs px-1.5 py-0 rounded-full bg-profit text-profit dark:bg-profit/40 dark:text-profit">
                 قرب الدعم ✓
               </span>
             )}
             {data.price_vs_sr === 'near_resistance' && (
-              <span className="text-xs px-1.5 py-0 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+              <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning dark:bg-warning/40 dark:text-warning">
                 قرب المقاومة ⚡
               </span>
             )}
@@ -644,8 +644,8 @@ function PersonaCard({
                 ? Math.round(((data.fair_value - entryPrice) / entryPrice) * 100)
                 : null;
               return (
-                <div className="flex flex-col gap-1 text-xs rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/30 p-2">
-                  <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-semibold">
+                <div className="flex flex-col gap-1 text-xs rounded-md border border-warning/40 bg-warning/60 dark:bg-warning/30 p-2">
+                  <div className="flex items-center gap-1.5 text-warning dark:text-warning font-semibold">
                     <Target className="h-3 w-3" />
                     <span>🔒 القيمة العادلة — متاحة للمشتركين</span>
                   </div>
@@ -729,7 +729,7 @@ function PersonaCard({
           <Button
             variant="outline"
             size="sm"
-            className="gap-1 h-8 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            className="gap-1 h-8 text-xs flex-1 border-whale text-whale hover:bg-primary dark:hover:bg-primary/20"
             onClick={() => {
               const text = formatSinglePersonaPickText({
                 ticker,
@@ -868,8 +868,8 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
                         className={cn(
                           "text-[10px] px-1 rounded font-bold cursor-help",
                           isMismatch
-                            ? "bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-200"
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200"
+                            ? "bg-loss text-loss dark:bg-loss dark:text-loss"
+                            : "bg-warning text-warning dark:bg-warning dark:text-warning"
                         )}
                       >
                         {isMismatch ? 'منتهية' : `قديمة ${it.stalePct ? `${it.stalePct}%` : ''}`}
@@ -878,21 +878,21 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
                   </div>
                 </td>
                 <td className="p-2 text-xs text-muted-foreground max-w-[120px] truncate" title={it.nameAr || it.name || cleanTicker}>{it.nameAr || it.name || cleanTicker}</td>
-                <td className={cn("p-2 text-center font-mono text-xs font-bold", isStale || isMismatch ? "text-amber-600 dark:text-amber-400" : "text-primary")} title={isStale || isMismatch ? staleReason : undefined}>
+                <td className={cn("p-2 text-center font-mono text-xs font-bold", isStale || isMismatch ? "text-warning dark:text-warning" : "text-primary")} title={isStale || isMismatch ? staleReason : undefined}>
                   {fmtPrice(curPrice)}
                 </td>
                 <td className="p-2 text-center font-mono text-xs whitespace-nowrap">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">▲ {fmtPrice(highPrice)}</span>
+                  <span className="text-profit dark:text-profit font-semibold">▲ {fmtPrice(highPrice)}</span>
                   <span className="text-muted-foreground mx-1">/</span>
-                  <span className="text-rose-600 dark:text-rose-400 font-semibold">▼ {fmtPrice(lowPrice)}</span>
+                  <span className="text-loss dark:text-loss font-semibold">▼ {fmtPrice(lowPrice)}</span>
                 </td>
                 <td className="p-2 text-center">
                   {isMismatch ? (
-                    <Badge className="text-xs font-bold border-0 bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-200">
+                    <Badge className="text-xs font-bold border-0 bg-loss text-loss dark:bg-loss dark:text-loss">
                       منتهية
                     </Badge>
                   ) : isStale ? (
-                    <Badge className="text-xs font-bold border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200" title={staleReason}>
+                    <Badge className="text-xs font-bold border-0 bg-warning text-warning dark:bg-warning dark:text-warning" title={staleReason}>
                       ⚠️ قديمة
                     </Badge>
                   ) : (
@@ -905,8 +905,8 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
                   {Number(score).toFixed(0)}
                 </td>
                 <td className="p-2 text-center font-mono text-xs">{fmtPrice(pd.entry)}</td>
-                <td className="p-2 text-center font-mono text-xs text-emerald-600 dark:text-emerald-400">{fmtPrice(pd.target)}</td>
-                <td className="p-2 text-center font-mono text-xs text-rose-600 dark:text-rose-400">{fmtPrice(pd.stop)}</td>
+                <td className="p-2 text-center font-mono text-xs text-profit dark:text-profit">{fmtPrice(pd.target)}</td>
+                <td className="p-2 text-center font-mono text-xs text-loss dark:text-loss">{fmtPrice(pd.stop)}</td>
                 <td className={cn('p-2 text-center font-mono text-xs', rrColor(rr))}>
                   {rr != null ? `${rr.toFixed(2)}:1` : '—'}
                 </td>
@@ -1069,7 +1069,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
           <Button
             variant="outline"
             size="sm"
-            className="gap-1 h-8 border-emerald-400 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+            className="gap-1 h-8 border-profit text-profit hover:bg-profit dark:hover:bg-profit/20"
             onClick={handleAnalysisCard}
             disabled={capturingCard}
           >
@@ -1173,11 +1173,11 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
                 </div>
                 <div className="p-3 rounded bg-muted text-center">
                   <p className="text-xs text-muted-foreground">الهدف</p>
-                  <p className="font-bold text-emerald-600">{pd.target ? (pd.target ?? 0).toFixed(2) : '—'}</p>
+                  <p className="font-bold text-profit">{pd.target ? (pd.target ?? 0).toFixed(2) : '—'}</p>
                 </div>
                 <div className="p-3 rounded bg-muted text-center">
                   <p className="text-xs text-muted-foreground">الوقف</p>
-                  <p className="font-bold text-rose-600">{pd.stop ? (pd.stop ?? 0).toFixed(2) : '—'}</p>
+                  <p className="font-bold text-loss">{pd.stop ? (pd.stop ?? 0).toFixed(2) : '—'}</p>
                 </div>
               </div>
               {pd.conditions && pd.conditions.length > 0 && (
@@ -1763,9 +1763,9 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
   const personaPageItems = items.slice(personaPage * PERSONA_PAGE_SIZE, (personaPage + 1) * PERSONA_PAGE_SIZE);
   // P26: ألوان/عناوين 3 شخصيات — 🛡️ مستثمر / ⚖️ متوازن / 🎯 مضارب
   const headerTheme = isLongTerm
-    ? { emoji: '🛡️', title: 'المستثمر', subtitle: 'فرص طويلة المدى — محرك التصطاد يختار الأسهم اللي تناسبك (6-12 شهر)', accent: 'text-emerald-700 dark:text-emerald-400' }
+    ? { emoji: '🛡️', title: 'المستثمر', subtitle: 'فرص طويلة المدى — محرك التصطاد يختار الأسهم اللي تناسبك (6-12 شهر)', accent: 'text-profit dark:text-profit' }
     : persona === 'balanced'
-    ? { emoji: '⚖️', title: 'المتوازن', subtitle: 'فرص متوسطة المدى — توازن بين الزخم والقيمة (2-6 أسابيع)', accent: 'text-amber-700 dark:text-amber-400' }
+    ? { emoji: '⚖️', title: 'المتوازن', subtitle: 'فرص متوسطة المدى — توازن بين الزخم والقيمة (2-6 أسابيع)', accent: 'text-warning dark:text-warning' }
     : { emoji: '🎯', title: 'المضارب', subtitle: 'فرص قصيرة المدى — محرك التصطاد يصطاد الزخم والسيولة والارتداد (يومي-أسبوعي)', accent: 'text-fuchsia-700 dark:text-fuchsia-400' };
 
   if (loading) {
@@ -1824,12 +1824,12 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                 : 'محرك المضارب يبحث عن فرص زخم قصيرة المدى (يومي-أسبوعي). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.');
     const emoji = loading ? headerTheme.emoji : isDefensive ? '🛡️' : hasRegimeData ? '📊' : headerTheme.emoji;
     const headlineColor = isDefensive
-      ? 'text-amber-600 dark:text-amber-400'
+      ? 'text-warning dark:text-warning'
       : hasRegimeData && !loading
         ? 'text-muted-foreground'
         : '';
     return (
-      <Card className={isDefensive ? 'border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-950/10' : 'border-dashed'}>
+      <Card className={isDefensive ? 'border-warning dark:border-warning bg-warning/30 dark:bg-warning/10' : 'border-dashed'}>
         <CardContent className="p-8 text-center">
           <span className="text-4xl mb-3 block">{emoji}</span>
           <p className={`text-lg font-semibold mb-1 ${headlineColor}`}>{headline}</p>
@@ -1838,7 +1838,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
             <ul className="text-xs text-muted-foreground mb-4 max-w-md mx-auto text-right space-y-1">
               {marketRegime.reasons.slice(0, 4).map((r, i) => (
                 <li key={i} className="flex items-start gap-1 justify-end">
-                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span className="text-warning mt-0.5">•</span>
                   <span>{r}</span>
                 </li>
               ))}
@@ -1926,10 +1926,10 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
           {viewSelector}
           {/* ملاحظة وضع الـ fallback (predictions فقط — sniper اتشال في P42) */}
           {usingFallback && (
-        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800">
+        <Card className="border-warning bg-warning dark:bg-warning/40 dark:border-warning">
           <CardContent className="p-2.5 flex items-center gap-2 text-xs">
-            <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
-            <p className="text-amber-800 dark:text-amber-300">
+            <Info className="h-4 w-4 text-warning flex-shrink-0" />
+            <p className="text-warning dark:text-warning">
               {dataSource === 'predictions'
                 ? `التحليل المخزن غير متوفر بعد، نعرض أحدث التوقعات (${items.length} سهم). سيتم تحديث التحليل المخزن تلقائياً.`
                 : `التحليل المخزن غير متوفر لهذا السوق (${items.length} سهم).`
@@ -1981,12 +1981,12 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         telegramMarket={MARKET_CODES[market]}
         // P26: 3 persona themes — emerald للمحافظ، amber للمتوازن، fuchsia للمغامر
         accentColor={isLongTerm ? '#15803d' : (persona === 'balanced' ? '#d97706' : '#a21caf')}
-        borderClass={isLongTerm ? 'border-emerald-200' : (persona === 'balanced' ? 'border-amber-200' : 'border-fuchsia-200')}
+        borderClass={isLongTerm ? 'border-profit' : (persona === 'balanced' ? 'border-warning' : 'border-fuchsia-200')}
         bgClass={
           isLongTerm
-            ? 'bg-gradient-to-br from-emerald-50 via-teal-50/40 to-emerald-100/40'
+            ? 'bg-gradient-to-br from-profit via-whale/40 to-profit/40'
             : persona === 'balanced'
-            ? 'bg-gradient-to-br from-amber-50 via-yellow-50/40 to-amber-100/40'
+            ? 'bg-gradient-to-br from-warning via-yellow-50/40 to-warning/40'
             : 'bg-gradient-to-br from-fuchsia-50 via-pink-50/40 to-fuchsia-100/40'
         }
         hasData={items.length > 0}
@@ -2065,14 +2065,14 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         const holdRatio = items.length > 0 ? holdItems.length / items.length : 0;
         if (holdRatio >= 0.6) {
           return (
-            <Card className="border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800">
+            <Card className="border-profit bg-profit dark:bg-profit/30 dark:border-profit">
               <CardContent className="p-3 flex items-start gap-2.5">
                 <span className="text-xl flex-shrink-0 mt-0.5">🛡️</span>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200 mb-0.5">
+                  <p className="text-sm font-semibold text-profit dark:text-profit mb-0.5">
                     وضع السوق الحالي لا يناسب الاستثمار طويل المدى
                   </p>
-                  <p className="text-xs text-emerald-800 dark:text-emerald-300">
+                  <p className="text-xs text-profit dark:text-profit">
                     التوقعات الحالية للانتظار والحفاظ على رأس المال ({holdItems.length} من {items.length} سهم).
                     إذا كنت ترغب في فرص شراء يومية أو أسبوعية، انتقل إلى تبويب المضارب 🎯 — السهم الذي لا يصلح فرصةً للاستثمار قد يصلح فرصةً للمضاربة.
                   </p>
@@ -2179,7 +2179,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                        className="gap-1 h-7 text-xs border-whale text-whale hover:bg-primary dark:hover:bg-primary/20"
                         onClick={() => {
                           navigator.clipboard.writeText(singleText);
                           window.open('https://www.facebook.com/', '_blank');
@@ -2271,7 +2271,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               </div>
               {selectedContext && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-profit text-white font-bold">
                     {selectedContext.rating} · {(selectedContext.score ?? 0).toFixed(0)}%
                   </span>
                 </div>

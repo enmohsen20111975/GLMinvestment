@@ -56,15 +56,15 @@ interface NewsHealthResponse {
 
 const SOURCE_TYPE_LABELS: Record<string, { ar: string; color: string }> = {
   rss: { ar: 'RSS', color: 'border-sky-500 text-sky-700' },
-  telegram: { ar: 'تيليجرام', color: 'border-teal-500 text-teal-700' },
+  telegram: { ar: 'تيليجرام', color: 'border-whale text-whale' },
   web: { ar: 'ويب', color: 'border-purple-500 text-purple-700' },
-  broken: { ar: 'معطّل', color: 'border-red-500 text-red-700' },
+  broken: { ar: 'معطّل', color: 'border-loss text-loss' },
 };
 
 const STATUS_LABELS: Record<string, { ar: string; color: string; dot: string }> = {
-  healthy: { ar: 'سليم', color: 'border-emerald-500 text-emerald-700', dot: 'bg-emerald-500' },
-  degraded: { ar: 'متدهور', color: 'border-amber-500 text-amber-700', dot: 'bg-amber-500' },
-  broken: { ar: 'معطّل', color: 'border-red-500 text-red-700', dot: 'bg-red-500' },
+  healthy: { ar: 'سليم', color: 'border-profit text-profit', dot: 'bg-profit' },
+  degraded: { ar: 'متدهور', color: 'border-warning text-warning', dot: 'bg-warning' },
+  broken: { ar: 'معطّل', color: 'border-loss text-loss', dot: 'bg-loss' },
 };
 
 export function NewsHealthTab() {
@@ -101,12 +101,12 @@ export function NewsHealthTab() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Newspaper className="w-5 h-5 text-emerald-600" />
+                <Newspaper className="w-5 h-5 text-profit" />
                 صحة مصادر الأخبار
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -131,17 +131,17 @@ export function NewsHealthTab() {
         <StatBox
           label="إجمالي المقالات"
           value={totalArticles}
-          icon={<Newspaper className="w-4 h-4 text-emerald-500" />}
+          icon={<Newspaper className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="مصادر سليمة"
           value={healthyCount}
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+          icon={<CheckCircle2 className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="مصادر معطّلة"
           value={brokenCount}
-          icon={<WifiOff className="w-4 h-4 text-red-500" />}
+          icon={<WifiOff className="w-4 h-4 text-loss" />}
         />
       </div>
 
@@ -158,11 +158,11 @@ export function NewsHealthTab() {
 
       {/* Error */}
       {!loading && data && !data.success && (
-        <Card className="border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40">
+        <Card className="border-loss bg-loss dark:bg-loss/20 dark:border-loss/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-700 dark:text-red-400">فشل تحميل بيانات مصادر الأخبار</p>
+              <p className="font-bold text-loss dark:text-loss">فشل تحميل بيانات مصادر الأخبار</p>
               <p className="text-xs text-muted-foreground mt-1">{data.error}</p>
               {data.detail && (
                 <p className="text-[11px] text-muted-foreground mt-1" dir="ltr">{data.detail}</p>
@@ -174,11 +174,11 @@ export function NewsHealthTab() {
 
       {/* Broken sources alert */}
       {data?.success && brokenCount > 0 && (
-        <Card className="border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40">
+        <Card className="border-loss bg-loss dark:bg-loss/20 dark:border-loss/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <Bug className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <Bug className="w-5 h-5 text-loss shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-800 dark:text-red-300">
+              <p className="font-bold text-loss dark:text-loss">
                 {brokenCount} مصدر معطّل — يُرجع HTML بدلاً من RSS
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -195,7 +195,7 @@ export function NewsHealthTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Newspaper className="w-4 h-4 text-emerald-500" />
+              <Newspaper className="w-4 h-4 text-profit" />
               المصادر ({sources.length})
             </CardTitle>
           </CardHeader>
@@ -220,13 +220,13 @@ export function NewsHealthTab() {
                         key={i}
                         className={cn(
                           'border-b hover:bg-muted/30',
-                          s.is_broken && 'bg-red-50 dark:bg-red-950/10',
+                          s.is_broken && 'bg-loss dark:bg-loss/10',
                         )}
                       >
                         <td className="p-2">
                           <div className="font-medium">{s.source}</div>
                           {s.broken_reason && (
-                            <div className="text-[10px] text-red-600 mt-0.5 line-clamp-2">{s.broken_reason}</div>
+                            <div className="text-[10px] text-loss mt-0.5 line-clamp-2">{s.broken_reason}</div>
                           )}
                         </td>
                         <td className="p-2">
@@ -251,7 +251,7 @@ export function NewsHealthTab() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-[10px] text-red-600">— لا يوجد</span>
+                            <span className="text-[10px] text-loss">— لا يوجد</span>
                           )}
                         </td>
                         <td className="p-2">

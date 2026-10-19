@@ -1594,7 +1594,7 @@ export function TradingViewChart({
             <span
               className={cn(
                 'text-sm font-medium flex items-center gap-0.5',
-                isPositive ? 'text-emerald-500' : 'text-red-500'
+                isPositive ? 'text-profit' : 'text-loss'
               )}
             >
               {isPositive ? (
@@ -1612,12 +1612,12 @@ export function TradingViewChart({
           <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-background/50">
             {getEGXMarketStatus().isOpen ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-emerald-600 dark:text-emerald-400">مباشر</span>
+                <span className="w-2 h-2 rounded-full bg-profit animate-pulse" />
+                <span className="text-profit dark:text-profit">مباشر</span>
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="w-2 h-2 rounded-full bg-warning" />
                 <span className="text-muted-foreground">السوق مغلق</span>
               </>
             )}
@@ -1649,8 +1649,8 @@ export function TradingViewChart({
         <div className="flex items-center gap-4 px-4 py-1.5 text-xs border-b border-border bg-muted/20" dir="ltr">
           <span className="text-muted-foreground">{hoveredPrice ? fmtDateLabel(hoveredPrice.date) : 'Latest'}</span>
           <span>O: <span className="font-medium">{(hoveredPrice?.open || allData[allData.length - 1]?.open || 0).toFixed(3)}</span></span>
-          <span>H: <span className="font-medium text-emerald-500">{(hoveredPrice?.high || allData[allData.length - 1]?.high || 0).toFixed(3)}</span></span>
-          <span>L: <span className="font-medium text-red-500">{(hoveredPrice?.low || allData[allData.length - 1]?.low || 0).toFixed(3)}</span></span>
+          <span>H: <span className="font-medium text-profit">{(hoveredPrice?.high || allData[allData.length - 1]?.high || 0).toFixed(3)}</span></span>
+          <span>L: <span className="font-medium text-loss">{(hoveredPrice?.low || allData[allData.length - 1]?.low || 0).toFixed(3)}</span></span>
           <span>C: <span className="font-medium">{(hoveredPrice?.close || allData[allData.length - 1]?.close || 0).toFixed(3)}</span></span>
           <span>Vol: <span className="font-medium">{formatVolume(hoveredPrice?.volume || allData[allData.length - 1]?.volume || 0)}</span></span>
         </div>
@@ -1809,7 +1809,7 @@ export function TradingViewChart({
       {marketClosed && dataSource === 'fallback_daily' && (
         <div
           role="status"
-          className="flex items-center justify-between px-3 py-1 border-b border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs"
+          className="flex items-center justify-between px-3 py-1 border-b border-warning/20 bg-warning/10 text-warning dark:text-warning text-xs"
         >
           <div className="flex items-center gap-1.5">
             <Clock className="size-3.5 shrink-0" />
@@ -1874,7 +1874,7 @@ export function TradingViewChart({
             <span
               className={cn(
                 'w-1.5 h-1.5 rounded-full',
-                dataSource.includes('intraday') ? 'bg-emerald-500' : 'bg-blue-500'
+                dataSource.includes('intraday') ? 'bg-profit' : 'bg-primary'
               )}
             />
             {dataSource.includes('intraday')

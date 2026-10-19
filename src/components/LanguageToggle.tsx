@@ -71,7 +71,7 @@ export function LanguageToggle({
         >
           <span className="text-base">🇪🇬</span>
           <span className="flex-1">العربية</span>
-          {locale === 'ar' && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+          {locale === 'ar' && <Check className="w-3.5 h-3.5 text-profit" />}
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => switchLocale('en')}
@@ -79,7 +79,7 @@ export function LanguageToggle({
         >
           <span className="text-base">🇺🇸</span>
           <span className="flex-1">English</span>
-          {locale === 'en' && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+          {locale === 'en' && <Check className="w-3.5 h-3.5 text-profit" />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

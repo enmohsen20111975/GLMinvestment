@@ -215,10 +215,10 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
   if (error) {
     return (
       <div className="space-y-3">
-        <Card className="border-rose-500/30 bg-rose-500/5">
+        <Card className="border-loss/30 bg-loss/5">
           <CardContent className="p-4 text-center">
-            <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-rose-500" />
-            <div className="text-sm font-medium text-rose-700 dark:text-rose-300">
+            <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-loss" />
+            <div className="text-sm font-medium text-loss dark:text-loss">
               {error}
             </div>
             <div className="text-xs text-muted-foreground mt-2">
@@ -282,7 +282,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       width: 'w-32',
       render: (s) => (
         <span className={cn('font-mono font-bold', avgChangeHeatClass(s.avg_change),
-          s.avg_change >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
+          s.avg_change >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
           {s.avg_change >= 0 ? '+' : ''}{s.avg_change}%
         </span>
       ),
@@ -311,7 +311,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       sortable: true,
       filterable: true,
       width: 'w-20',
-      className: 'font-mono text-emerald-600 font-bold',
+      className: 'font-mono text-profit font-bold',
     },
     {
       key: 'losers',
@@ -320,7 +320,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       sortable: true,
       filterable: true,
       width: 'w-20',
-      className: 'font-mono text-rose-600 font-bold',
+      className: 'font-mono text-loss font-bold',
     },
     {
       key: 'leader_change',
@@ -335,9 +335,9 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
           className="flex items-center gap-1.5 text-xs hover:bg-muted/60 rounded px-1.5 py-0.5 transition-colors"
           title={`عرض تفاصيل ${s.leader_ticker}`}
         >
-          <span className="text-amber-600">👑</span>
+          <span className="text-warning">👑</span>
           <span className="font-mono font-bold">{s.leader_ticker}</span>
-          <span className={cn('font-mono', s.leader_change != null && s.leader_change >= 0 ? 'text-emerald-600' : 'text-rose-600')}>
+          <span className={cn('font-mono', s.leader_change != null && s.leader_change >= 0 ? 'text-profit' : 'text-loss')}>
             {s.leader_change != null && s.leader_change >= 0 ? '+' : ''}{s.leader_change ?? '—'}%
           </span>
         </button>
@@ -381,7 +381,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
             {st.name_ar || st.name}
           </span>
           {st.volume_surge && (
-            <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+            <Zap className="w-3 h-3 text-warning shrink-0" />
           )}
         </div>
       ),
@@ -405,7 +405,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       width: 'w-28',
       render: (st) => (
         <span className={cn('font-mono text-xs font-bold', stockChangeHeatClass(st.change_percent),
-          st.change_percent >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
+          st.change_percent >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
           {st.change_percent >= 0 ? '+' : ''}{st.change_percent}%
         </span>
       ),
@@ -450,11 +450,11 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       render: (st) => st.above_ma50 == null ? (
         <span className="text-muted-foreground text-xs">—</span>
       ) : st.above_ma50 ? (
-        <span className="inline-flex items-center gap-0.5 text-emerald-600 text-xs font-medium">
+        <span className="inline-flex items-center gap-0.5 text-profit text-xs font-medium">
           <TrendingUp className="w-3 h-3" /> فوق
         </span>
       ) : (
-        <span className="inline-flex items-center gap-0.5 text-rose-600 text-xs font-medium">
+        <span className="inline-flex items-center gap-0.5 text-loss text-xs font-medium">
           <TrendingDown className="w-3 h-3" /> تحت
         </span>
       ),
@@ -469,7 +469,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       className: 'font-mono text-xs',
       render: (st) => st.rsi != null ? (
         <span className={cn(
-          st.rsi >= 70 ? 'text-rose-600' : st.rsi <= 30 ? 'text-emerald-600' : 'text-muted-foreground'
+          st.rsi >= 70 ? 'text-loss' : st.rsi <= 30 ? 'text-profit' : 'text-muted-foreground'
         )}>
           {(st.rsi ?? 0).toFixed(0)}
         </span>
@@ -496,7 +496,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       {/* ============= Header: Toolbar + inline summary (لا كروتات) ============= */}
       <div className="flex items-center justify-between flex-wrap gap-3 px-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <Layers className="w-5 h-5 text-teal-600" />
+          <Layers className="w-5 h-5 text-whale" />
           <h3 className="text-base font-bold">تتبع حركة القطاعات — {marketCode}</h3>
           <Badge variant="outline" className="text-xs">
             {ms.total_sectors} قطاع | {ms.total_stocks} سهم
@@ -522,7 +522,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
             className={cn(
               'inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors h-8',
               withRotation
-                ? 'bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950 dark:border-teal-800'
+                ? 'bg-whale border-whale text-whale dark:bg-whale dark:border-whale'
                 : 'bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50'
             )}
             title="تفعيل كشف دوران السيولة (أبطأ لكن predictive)"
@@ -548,17 +548,17 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
 
       {/* ============= Inline summary strip (لا كروتات) — السيولة + التغير ============= */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs px-1">
-        <div className="flex flex-col gap-0.5 py-1.5 px-2 rounded-md border border-emerald-500/20 bg-emerald-500/5">
+        <div className="flex flex-col gap-0.5 py-1.5 px-2 rounded-md border border-profit/20 bg-profit/5">
           <span className="text-muted-foreground">صاعدة</span>
-          <span className="text-emerald-600 font-bold font-mono text-sm">{ms.advancers}</span>
+          <span className="text-profit font-bold font-mono text-sm">{ms.advancers}</span>
         </div>
-        <div className="flex flex-col gap-0.5 py-1.5 px-2 rounded-md border border-rose-500/20 bg-rose-500/5">
+        <div className="flex flex-col gap-0.5 py-1.5 px-2 rounded-md border border-loss/20 bg-loss/5">
           <span className="text-muted-foreground">هابطة</span>
-          <span className="text-red-600 font-bold font-mono text-sm">{ms.decliners}</span>
+          <span className="text-loss font-bold font-mono text-sm">{ms.decliners}</span>
         </div>
         <div className="flex flex-col gap-0.5 py-1.5 px-2 rounded-md border border-muted">
           <span className="text-muted-foreground">متوسط التغير</span>
-          <span className={cn('font-bold font-mono text-sm', ms.avg_change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+          <span className={cn('font-bold font-mono text-sm', ms.avg_change >= 0 ? 'text-profit' : 'text-loss')}>
             {ms.avg_change >= 0 ? '+' : ''}{ms.avg_change}%
           </span>
         </div>
@@ -578,19 +578,19 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
 
       {/* ============= Rotation signals (optional) ============= */}
       {rotation && !rotation.error && (rotation.entering?.length > 0 || rotation.leaving?.length > 0) && (
-        <div className="border border-teal-500/30 bg-teal-500/5 rounded-md p-3">
+        <div className="border border-whale/30 bg-whale/5 rounded-md p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Activity className="w-4 h-4 text-teal-600" />
+            <Activity className="w-4 h-4 text-whale" />
             <span className="text-sm font-semibold">إشارات دوران السيولة</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {rotation.entering?.map((r: any, i: number) => (
-              <span key={`en-${i}`} className="text-xs px-2 py-1 rounded border bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300">
+              <span key={`en-${i}`} className="text-xs px-2 py-1 rounded border bg-profit/10 border-profit/30 text-profit dark:text-profit">
                 {r.sector} — السيولة راجعة ({r.days_rising} أيام صعود)
               </span>
             ))}
             {rotation.leaving?.map((r: any, i: number) => (
-              <span key={`lv-${i}`} className="text-xs px-2 py-1 rounded border bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300">
+              <span key={`lv-${i}`} className="text-xs px-2 py-1 rounded border bg-loss/10 border-loss/30 text-loss dark:text-loss">
                 {r.sector} — السيولة بتهرب ({r.days_falling} أيام هبوط)
               </span>
             ))}
@@ -660,11 +660,11 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       {/* ملاحظة للعميل — شرح الألوان */}
       <div className="text-[11px] text-muted-foreground px-1 flex items-center gap-3 flex-wrap">
         <span className="inline-flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300/40" />
+          <span className="w-3 h-3 rounded bg-profit dark:bg-profit/50 border border-profit/40" />
           تغير إيجابي
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-rose-100 dark:bg-rose-950/50 border border-rose-300/40" />
+          <span className="w-3 h-3 rounded bg-loss dark:bg-loss/50 border border-loss/40" />
           تغير سلبي
         </span>
         <span className="inline-flex items-center gap-1">

@@ -263,14 +263,14 @@ export function SystemControlPanel() {
               <>
                 {/* PHASE2-ADMIN-PANEL: red stale-DB alert — owner requirement */}
                 {staleDbs.length > 0 && (
-                  <Card className="bg-red-500/10 border-red-500/40 p-3 mb-3">
+                  <Card className="bg-loss/10 border-loss/40 p-3 mb-3">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <AlertCircle className="w-4 h-4 text-loss shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <div className="text-xs font-bold text-red-300">
+                        <div className="text-xs font-bold text-loss">
                           ⚠️ تنبيه: {staleDbs.length} قاعدة بيانات لم تتحدث منذ أكثر من ساعتين
                         </div>
-                        <div className="text-[10px] text-red-400/80 mt-1" dir="ltr">
+                        <div className="text-[10px] text-loss/80 mt-1" dir="ltr">
                           {staleDbs.map(d => `${d.name} (${timeAgoShort(d.lastModified)})`).join(' • ')}
                         </div>
                       </div>
@@ -327,7 +327,7 @@ function OverviewTab({ data, dbMeta, scrapers }: { data: any; dbMeta: DbRowMeta[
       <Card className="bg-white/5 border-white/10 p-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-gray-300">قواعد البيانات</span>
-          <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 text-[10px]">
+          <Badge variant="outline" className="text-profit border-profit/30 text-[10px]">
             {healthyCount}/{dbs.length} سليمة
           </Badge>
         </div>
@@ -391,7 +391,7 @@ function OverviewTab({ data, dbMeta, scrapers }: { data: any; dbMeta: DbRowMeta[
                   <div
                     className={cn(
                       'w-2 h-2 rounded-full',
-                      s.status === 'online' ? 'bg-emerald-400' : s.status === 'offline' ? 'bg-red-400' : 'bg-gray-500'
+                      s.status === 'online' ? 'bg-profit' : s.status === 'offline' ? 'bg-loss' : 'bg-gray-500'
                     )}
                   />
                 </div>
@@ -430,13 +430,13 @@ function DatabasesTab({ data, dbMeta, runAction, actionLoading }: any) {
 }
 
 function DBRow({ db, compact, runAction, actionLoading, meta }: any) {
-  const statusColor = db.status === 'healthy' ? 'text-emerald-400' : db.status === 'empty' ? 'text-amber-400' : 'text-red-400';
+  const statusColor = db.status === 'healthy' ? 'text-profit' : db.status === 'empty' ? 'text-warning' : 'text-loss';
   const StatusIcon = db.status === 'healthy' ? CheckCircle2 : AlertCircle;
   // PHASE2-ADMIN-PANEL: stale flag from meta.lastModified (>2h = stale)
   const stale = meta?.lastModified ? isStale(meta.lastModified) : false;
 
   return (
-    <Card className={cn('bg-white/5 border-white/10 p-3', stale && 'border-red-500/40 bg-red-500/5')}>
+    <Card className={cn('bg-white/5 border-white/10 p-3', stale && 'border-loss/40 bg-loss/5')}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Database className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -451,7 +451,7 @@ function DBRow({ db, compact, runAction, actionLoading, meta }: any) {
             </div>
             {/* PHASE2-ADMIN-PANEL: last update + stale alert per-DB */}
             {meta?.lastModified && (
-              <div className={cn('text-[10px] mt-0.5', stale ? 'text-red-400 font-bold' : 'text-gray-500')}>
+              <div className={cn('text-[10px] mt-0.5', stale ? 'text-loss font-bold' : 'text-gray-500')}>
                 آخر تحديث: {timeAgoShort(meta.lastModified)}{stale && ' ⚠️ متأخر'}
               </div>
             )}
@@ -494,11 +494,11 @@ function ServicesTab({ data, runAction, actionLoading }: any) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className={cn('w-2 h-2 rounded-full', svc.status === 'online' ? 'bg-emerald-400' : 'bg-red-400')} />
+              <div className={cn('w-2 h-2 rounded-full', svc.status === 'online' ? 'bg-profit' : 'bg-loss')} />
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 px-2 text-[10px] text-amber-400 hover:text-amber-300"
+                className="h-7 px-2 text-[10px] text-warning hover:text-warning"
                 disabled={actionLoading === `restart-${svc.name}`}
                 onClick={() => runAction('restart-service', { service: svc.name })}
               >
@@ -529,7 +529,7 @@ function EnginesTab({ data }: { data: any }) {
             </div>
             <div className="flex items-center gap-2">
               {eng.controllable && <Settings className="w-3 h-3 text-cyan-400" />}
-              <div className={cn('w-2 h-2 rounded-full', eng.status === 'active' ? 'bg-emerald-400' : 'bg-red-400')} />
+              <div className={cn('w-2 h-2 rounded-full', eng.status === 'active' ? 'bg-profit' : 'bg-loss')} />
             </div>
           </div>
         </Card>
@@ -549,15 +549,15 @@ function PricesTab({ data, runAction, actionLoading }: any) {
   const fmtNum = (n: number | null): string => n === null ? '—' : n.toLocaleString();
   return (
     <div className="space-y-3">
-      <Card className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 border-emerald-500/20 p-4">
+      <Card className="bg-gradient-to-br from-profit/10 to-cyan-500/5 border-profit/20 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-400" />
+            <TrendingUp className="w-5 h-5 text-profit" />
             <span className="text-sm font-bold">حالة الأسعار</span>
           </div>
           <Button
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white h-8"
+            className="bg-profit hover:bg-profit text-white h-8"
             disabled={actionLoading === 'update-prices'}
             onClick={() => runAction('update-prices')}
           >
@@ -571,7 +571,7 @@ function PricesTab({ data, runAction, actionLoading }: any) {
             <div className="text-[10px] text-gray-400">إجمالي الأسهم</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-2xl font-bold text-emerald-400">
+            <div className="text-2xl font-bold text-profit">
               {freshnessPct === null ? '—' : `${freshnessPct}%`}
             </div>
             <div className="text-[10px] text-gray-400">طازجة</div>
@@ -616,7 +616,7 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
           </div>
           <Button
             size="sm"
-            className="bg-amber-600 hover:bg-amber-700 text-white h-8"
+            className="bg-warning hover:bg-warning text-white h-8"
             disabled={actionLoading === 'run-daily-closer'}
             onClick={() => runAction('run-daily-closer')}
           >
@@ -630,7 +630,7 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
             <div className="text-[10px] text-gray-400">إجمالي</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className={cn('text-2xl font-bold', wr === null ? 'text-gray-500' : wr >= 50 ? 'text-emerald-400' : 'text-amber-400')}>
+            <div className={cn('text-2xl font-bold', wr === null ? 'text-gray-500' : wr >= 50 ? 'text-profit' : 'text-warning')}>
               {wr === null ? '—' : `${wr}%`}
             </div>
             <div className="text-[10px] text-gray-400">معدل النجاح</div>
@@ -640,7 +640,7 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
             <div className="text-[10px] text-gray-400">مغلقة</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-lg font-bold text-amber-400">{fmtNum(pending)}</div>
+            <div className="text-lg font-bold text-warning">{fmtNum(pending)}</div>
             <div className="text-[10px] text-gray-400">معلقة</div>
           </div>
         </div>
@@ -659,8 +659,8 @@ function LogsTab({ data }: { data: any }) {
           {logs.map((log: string, i: number) => (
             <div key={i} className={cn(
               'py-0.5 px-1 rounded',
-              log.includes('Error') || log.includes('error') ? 'bg-red-500/5 text-red-400' : '',
-              log.includes('success') || log.includes('✅') ? 'bg-emerald-500/5 text-emerald-400' : '',
+              log.includes('Error') || log.includes('error') ? 'bg-loss/5 text-loss' : '',
+              log.includes('success') || log.includes('✅') ? 'bg-profit/5 text-profit' : '',
             )}>
               {log}
             </div>
@@ -677,8 +677,8 @@ function StatCard({ icon: Icon, label, value, color }: any) {
   const colors: Record<string, string> = {
     cyan: 'text-cyan-400 bg-cyan-500/5 border-cyan-500/20',
     purple: 'text-purple-400 bg-purple-500/5 border-purple-500/20',
-    emerald: 'text-emerald-400 bg-emerald-500/5 border-emerald-500/20',
-    amber: 'text-amber-400 bg-amber-500/5 border-amber-500/20',
+    emerald: 'text-profit bg-profit/5 border-profit/20',
+    amber: 'text-warning bg-warning/5 border-warning/20',
   };
   return (
     <Card className={cn('border p-3', colors[color])}>
@@ -693,10 +693,10 @@ function StatCard({ icon: Icon, label, value, color }: any) {
 
 function QuickButton({ icon: Icon, label, onClick, loading, color }: any) {
   const colors: Record<string, string> = {
-    emerald: 'text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10',
-    amber: 'text-amber-400 border-amber-500/30 hover:bg-amber-500/10',
+    emerald: 'text-profit border-profit/30 hover:bg-profit/10',
+    amber: 'text-warning border-warning/30 hover:bg-warning/10',
     purple: 'text-purple-400 border-purple-500/30 hover:bg-purple-500/10',
-    red: 'text-red-400 border-red-500/30 hover:bg-red-500/10',
+    red: 'text-loss border-loss/30 hover:bg-loss/10',
   };
   return (
     <button

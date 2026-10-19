@@ -118,13 +118,13 @@ export function AcademyView() {
             <TabsTrigger value="strategy-lab">📊 مختبر الاستراتيجيات</TabsTrigger>
             <TabsTrigger value="advanced-lessons">🎓 دروس متقدمة</TabsTrigger>
             <TabsTrigger value="trading-floor">
-              <span className="text-emerald-600 dark:text-emerald-400">📈</span> أرض التداول
+              <span className="text-profit dark:text-profit">📈</span> أرض التداول
             </TabsTrigger>
             <TabsTrigger value="practical-tools">
-              <span className="text-amber-600 dark:text-amber-400">🧮</span> الأدوات العملية
+              <span className="text-warning dark:text-warning">🧮</span> الأدوات العملية
             </TabsTrigger>
             <TabsTrigger value="advanced-lab">
-              <span className="text-emerald-600 dark:text-emerald-400">🔬</span> المختبر المتقدم
+              <span className="text-profit dark:text-profit">🔬</span> المختبر المتقدم
             </TabsTrigger>
           </TabsList>
 
@@ -338,10 +338,10 @@ function AdvancedLessonsTab() {
   return (
     <div dir="rtl" className="flex min-h-[600px] flex-col gap-4">
       {/* Header banner */}
-      <div className="rounded-lg border bg-gradient-to-l from-amber-50/50 to-transparent p-4 dark:from-amber-950/20">
+      <div className="rounded-lg border bg-gradient-to-l from-warning/50 to-transparent p-4 dark:from-warning/20">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-xl dark:bg-amber-950/50">
-            <GraduationCap className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning text-xl dark:bg-warning/50">
+            <GraduationCap className="h-5 w-5 text-warning dark:text-warning" />
           </div>
           <div className="flex-1">
             <h2 className="text-base font-bold sm:text-lg">دروس متقدمة — من محتوى المالك</h2>
@@ -368,7 +368,7 @@ function AdvancedLessonsTab() {
           <div className="rounded-lg border bg-card">
             <div className="border-b px-4 py-3">
               <div className="flex items-center gap-2 font-semibold">
-                <BookOpen className="h-4 w-4 text-amber-600" />
+                <BookOpen className="h-4 w-4 text-warning" />
                 فهرس الدروس المتقدمة
               </div>
             </div>
@@ -390,7 +390,7 @@ function AdvancedLessonsTab() {
                         className={cn(
                           'flex w-full items-start gap-2 rounded-md px-2 py-2 text-right text-sm transition-colors',
                           isActive
-                            ? 'bg-amber-50 font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-100'
+                            ? 'bg-warning font-semibold text-warning dark:bg-warning/40 dark:text-warning'
                             : 'hover:bg-accent/60',
                         )}
                       >
@@ -415,15 +415,15 @@ function AdvancedLessonsTab() {
         <main className="min-w-0">
           <article className="rounded-lg border bg-card">
             {/* Lesson header */}
-            <header className="border-b bg-gradient-to-l from-amber-50/50 to-transparent p-5 dark:from-amber-950/20">
+            <header className="border-b bg-gradient-to-l from-warning/50 to-transparent p-5 dark:from-warning/20">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-2xl dark:bg-amber-950/50">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-warning text-2xl dark:bg-warning/50">
                     {active.emoji}
                   </div>
                   <div>
                     <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-semibold text-amber-700 dark:text-amber-400">
+                      <span className="font-semibold text-warning dark:text-warning">
                         درس متقدم
                       </span>
                       <span>·</span>
@@ -483,7 +483,7 @@ function AdvancedLessonsTab() {
                   <div className="pointer-events-none select-none blur-sm opacity-60 space-y-4" aria-hidden="true">
                     {active.sections.slice(0, 2).map((section, idx) => (
                       <section key={idx} className="space-y-3">
-                        <h3 className="flex items-center gap-2 border-r-4 border-amber-500 pr-3 text-lg font-bold">
+                        <h3 className="flex items-center gap-2 border-r-4 border-warning pr-3 text-lg font-bold">
                           <span className="text-muted-foreground/60">{idx + 1}.</span>
                           {section.heading}
                         </h3>
@@ -493,11 +493,11 @@ function AdvancedLessonsTab() {
                   </div>
 
                   {/* Lock CTA overlay */}
-                  <div className="rounded-md border border-amber-500/40 bg-amber-50/80 dark:bg-amber-950/30 p-5 text-center">
-                    <div className="mx-auto mb-3 h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
-                      <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <div className="rounded-md border border-warning/40 bg-warning/80 dark:bg-warning/30 p-5 text-center">
+                    <div className="mx-auto mb-3 h-10 w-10 rounded-full bg-warning dark:bg-warning/40 flex items-center justify-center">
+                      <Lock className="h-5 w-5 text-warning dark:text-warning" />
                     </div>
-                    <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-2">
+                    <p className="text-sm font-semibold text-warning dark:text-warning mb-2">
                       🔒 اشترك لفتح جميع الدروس
                     </p>
                     <p className="text-xs text-muted-foreground mb-3">
@@ -524,7 +524,7 @@ function AdvancedLessonsTab() {
                   {/* Preview: parsed sections (500 chars each) */}
                   {active.sections.map((section, idx) => (
                     <section key={idx} className="space-y-3">
-                      <h3 className="flex items-center gap-2 border-r-4 border-amber-500 pr-3 text-lg font-bold">
+                      <h3 className="flex items-center gap-2 border-r-4 border-warning pr-3 text-lg font-bold">
                         <span className="text-muted-foreground/60">{idx + 1}.</span>
                         {section.heading}
                       </h3>
@@ -534,15 +534,15 @@ function AdvancedLessonsTab() {
 
                   {/* Key points */}
                   {active.keyPoints && active.keyPoints.length > 0 ? (
-                    <section className="space-y-2 rounded-md bg-amber-50/50 p-3 dark:bg-amber-950/20">
+                    <section className="space-y-2 rounded-md bg-warning/50 p-3 dark:bg-warning/20">
                       <h3 className="flex items-center gap-2 text-sm font-bold">
-                        <CheckCircle2 className="h-4 w-4 text-amber-600" />
+                        <CheckCircle2 className="h-4 w-4 text-warning" />
                         النقاط الرئيسية
                       </h3>
                       <ul className="space-y-1.5">
                         {active.keyPoints.map((kp, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
                             <span className="leading-relaxed">{kp}</span>
                           </li>
                         ))}
@@ -619,13 +619,13 @@ function AdvancedMarkdownRenderer({
             );
           case 'h2':
             return (
-              <h3 key={i} className="mt-3 flex items-center gap-2 border-r-4 border-amber-500 pr-3 text-lg font-bold">
+              <h3 key={i} className="mt-3 flex items-center gap-2 border-r-4 border-warning pr-3 text-lg font-bold">
                 {block.text}
               </h3>
             );
           case 'h3':
             return (
-              <h4 key={i} className="mt-2 text-base font-bold text-amber-700 dark:text-amber-400">
+              <h4 key={i} className="mt-2 text-base font-bold text-warning dark:text-warning">
                 {block.text}
               </h4>
             );
@@ -699,7 +699,7 @@ function AdvancedMarkdownRenderer({
             return (
               <blockquote
                 key={i}
-                className="my-2 border-r-4 border-amber-400 bg-amber-50/40 p-3 text-sm italic text-muted-foreground dark:bg-amber-950/10"
+                className="my-2 border-r-4 border-warning bg-warning/40 p-3 text-sm italic text-muted-foreground dark:bg-warning/10"
               >
                 {renderInline(block.text)}
               </blockquote>
@@ -709,7 +709,7 @@ function AdvancedMarkdownRenderer({
               <ul key={i} className="space-y-1.5 pr-4">
                 {block.items?.map((item, j) => (
                   <li key={j} className="flex items-start gap-2 text-sm">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
                     <span className="flex-1">{renderInline(item)}</span>
                   </li>
                 ))}
@@ -720,7 +720,7 @@ function AdvancedMarkdownRenderer({
               <ol key={i} className="space-y-1.5 pr-4">
                 {block.items?.map((item, j) => (
                   <li key={j} className="flex items-start gap-2 text-sm">
-                    <span className="font-semibold text-amber-700 dark:text-amber-400">
+                    <span className="font-semibold text-warning dark:text-warning">
                       {j + 1}.
                     </span>
                     <span className="flex-1">{renderInline(item)}</span>
@@ -732,15 +732,15 @@ function AdvancedMarkdownRenderer({
             return (
               <div
                 key={i}
-                className="my-2 overflow-x-auto rounded-md border border-amber-200/60 dark:border-amber-900/40"
+                className="my-2 overflow-x-auto rounded-md border border-warning/60 dark:border-warning/40"
               >
                 <table className="w-full border-collapse text-xs sm:text-sm">
-                  <thead className="bg-amber-50/70 dark:bg-amber-950/30">
+                  <thead className="bg-warning/70 dark:bg-warning/30">
                     <tr>
                       {block.headers.map((h, hi) => (
                         <th
                           key={hi}
-                          className="border-b border-amber-200/60 dark:border-amber-900/40 p-2 text-right font-bold text-amber-900 dark:text-amber-100"
+                          className="border-b border-warning/60 dark:border-warning/40 p-2 text-right font-bold text-warning dark:text-warning"
                         >
                           {renderInline(h)}
                         </th>
@@ -1135,11 +1135,11 @@ function LiveMarketScanner() {
     : '—';
 
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 via-card to-card">
-      <CardHeader className="gap-3 border-b bg-emerald-950/30 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-profit/20 bg-gradient-to-br from-profit/20 via-card to-card">
+      <CardHeader className="gap-3 border-b bg-profit/30 px-4 py-3 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-emerald-600 dark:text-emerald-400">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-profit/15 text-profit dark:text-profit">
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
@@ -1164,7 +1164,7 @@ function LiveMarketScanner() {
               size="sm"
               onClick={() => fetchStocks()}
               disabled={refreshing}
-              className="border-emerald-600/40 text-emerald-700 hover:bg-emerald-600/10 dark:text-emerald-400"
+              className="border-profit/40 text-profit hover:bg-profit/10 dark:text-profit"
             >
               <RefreshCw className={cn('ml-1 h-4 w-4', refreshing && 'animate-spin')} />
               تحديث
@@ -1172,7 +1172,7 @@ function LiveMarketScanner() {
           </div>
         </div>
         {error && (
-          <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          <div className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning dark:text-warning">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -1228,8 +1228,8 @@ function LiveMarketScanner() {
                           <span
                             className={cn(
                               'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold tabular-nums',
-                              tone === 'up' && 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300',
-                              tone === 'down' && 'bg-red-600/10 text-red-700 dark:text-red-300',
+                              tone === 'up' && 'bg-profit/10 text-profit dark:text-profit',
+                              tone === 'down' && 'bg-loss/10 text-loss dark:text-loss',
                               tone === 'flat' && 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
                             )}
                             dir="ltr"
@@ -1254,7 +1254,7 @@ function LiveMarketScanner() {
                             variant="secondary"
                             size="sm"
                             onClick={() => setAnalysis({ open: true, stock: s })}
-                            className="h-8 bg-emerald-600/15 text-emerald-700 hover:bg-emerald-600/25 dark:text-emerald-300"
+                            className="h-8 bg-profit/15 text-profit hover:bg-profit/25 dark:text-profit"
                           >
                             حلّل
                           </Button>
@@ -1291,8 +1291,8 @@ function LiveMarketScanner() {
                       <span
                         className={cn(
                           'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold tabular-nums',
-                          tone === 'up' && 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300',
-                          tone === 'down' && 'bg-red-600/10 text-red-700 dark:text-red-300',
+                          tone === 'up' && 'bg-profit/10 text-profit dark:text-profit',
+                          tone === 'down' && 'bg-loss/10 text-loss dark:text-loss',
                           tone === 'flat' && 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
                         )}
                         dir="ltr"
@@ -1304,7 +1304,7 @@ function LiveMarketScanner() {
                         variant="secondary"
                         size="sm"
                         onClick={() => setAnalysis({ open: true, stock: s })}
-                        className="h-7 bg-emerald-600/15 px-2 text-xs text-emerald-700 hover:bg-emerald-600/25 dark:text-emerald-300"
+                        className="h-7 bg-profit/15 px-2 text-xs text-profit hover:bg-profit/25 dark:text-profit"
                       >
                         حلّل
                       </Button>
@@ -1321,7 +1321,7 @@ function LiveMarketScanner() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAll((v) => !v)}
-                  className="text-emerald-700 hover:bg-emerald-600/10 dark:text-emerald-400"
+                  className="text-profit hover:bg-profit/10 dark:text-profit"
                 >
                   {showAll
                     ? `عرض أقل (١٥ من ${filtered.length})`
@@ -1366,9 +1366,9 @@ function LiveMarketScanner() {
                       className={cn(
                         'font-mono text-sm font-semibold tabular-nums',
                         changeTone(analysis.stock.change_percent) === 'up' &&
-                          'text-emerald-600 dark:text-emerald-400',
+                          'text-profit dark:text-profit',
                         changeTone(analysis.stock.change_percent) === 'down' &&
-                          'text-red-600 dark:text-red-400',
+                          'text-loss dark:text-loss',
                         changeTone(analysis.stock.change_percent) === 'flat' && 'text-slate-500',
                       )}
                       dir="ltr"
@@ -1391,11 +1391,11 @@ function LiveMarketScanner() {
                       className={cn(
                         'rounded-lg border p-3 text-sm',
                         hint.tone === 'up' &&
-                          'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200',
+                          'border-profit/40 bg-profit/10 text-profit dark:text-profit',
                         hint.tone === 'down' &&
-                          'border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-200',
+                          'border-loss/40 bg-loss/10 text-loss dark:text-loss',
                         hint.tone === 'flat' &&
-                          'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200',
+                          'border-warning/40 bg-warning/10 text-warning dark:text-warning',
                       )}
                     >
                       <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
@@ -1588,25 +1588,25 @@ const SCENARIO_TONE_STYLES: Record<
   { accentBorder: string; accentStrip: string; badge: string; badgeLabel: string; iconBg: string }
 > = {
   bullish: {
-    accentBorder: 'border-emerald-500/40',
-    accentStrip: 'bg-emerald-500',
-    badge: 'bg-emerald-600/15 text-emerald-700 dark:text-emerald-300',
+    accentBorder: 'border-profit/40',
+    accentStrip: 'bg-profit',
+    badge: 'bg-profit/15 text-profit dark:text-profit',
     badgeLabel: 'صعودي',
-    iconBg: 'bg-emerald-600/15 text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-profit/15 text-profit dark:text-profit',
   },
   bearish: {
-    accentBorder: 'border-red-500/40',
-    accentStrip: 'bg-red-500',
-    badge: 'bg-red-600/15 text-red-700 dark:text-red-300',
+    accentBorder: 'border-loss/40',
+    accentStrip: 'bg-loss',
+    badge: 'bg-loss/15 text-loss dark:text-loss',
     badgeLabel: 'هبوطي',
-    iconBg: 'bg-red-600/15 text-red-600 dark:text-red-400',
+    iconBg: 'bg-loss/15 text-loss dark:text-loss',
   },
   wait: {
-    accentBorder: 'border-amber-500/40',
-    accentStrip: 'bg-amber-500',
-    badge: 'bg-amber-600/15 text-amber-700 dark:text-amber-300',
+    accentBorder: 'border-warning/40',
+    accentStrip: 'bg-warning',
+    badge: 'bg-warning/15 text-warning dark:text-warning',
     badgeLabel: 'تحذير',
-    iconBg: 'bg-amber-600/15 text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-warning/15 text-warning dark:text-warning',
   },
   neutral: {
     accentBorder: 'border-slate-500/40',
@@ -1628,20 +1628,20 @@ const VERDICT_STYLE: Record<
 > = {
   go: {
     Icon: CheckCircle2,
-    color: 'text-emerald-700 dark:text-emerald-300',
-    bg: 'bg-emerald-600/10 border-emerald-500/40',
+    color: 'text-profit dark:text-profit',
+    bg: 'bg-profit/10 border-profit/40',
     label: 'إجراء',
   },
   wait: {
     Icon: AlertTriangle,
-    color: 'text-amber-700 dark:text-amber-300',
-    bg: 'bg-amber-600/10 border-amber-500/40',
+    color: 'text-warning dark:text-warning',
+    bg: 'bg-warning/10 border-warning/40',
     label: 'انتظار',
   },
   avoid: {
     Icon: XCircle,
-    color: 'text-red-700 dark:text-red-300',
-    bg: 'bg-red-600/10 border-red-500/40',
+    color: 'text-loss dark:text-loss',
+    bg: 'bg-loss/10 border-loss/40',
     label: 'تجنّب',
   },
 };
@@ -1656,10 +1656,10 @@ function ScenarioToneIcon({ tone }: { tone: ScenarioTone }) {
 /* ---------- Section 2 component ---------- */
 function ScenarioDecisionTree() {
   return (
-    <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-amber-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-warning/10 via-card to-card">
+      <CardHeader className="gap-2 border-b bg-warning/20 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-600/15 text-amber-600 dark:text-amber-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-warning/15 text-warning dark:text-warning">
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div>
@@ -1787,7 +1787,7 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'breakout',
     icon: Rocket,
-    iconBg: 'bg-emerald-600/15 text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-profit/15 text-profit dark:text-profit',
     title: 'خطة Breakout (الاختراق)',
     condition:
       'السهم أغلق فوق مقاومة قوية بحجم > 1.5× المتوسط، والاتجاه العام صاعد (السعر فوق 50 MA).',
@@ -1806,7 +1806,7 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'pullback',
     icon: ArrowDownCircle,
-    iconBg: 'bg-emerald-600/15 text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-profit/15 text-profit dark:text-profit',
     title: 'خطة Pullback (شراء الارتداد)',
     condition:
       'السهم في اتجاه صاعد واضح (فوق 50 MA) ويهبط حالياً 2-5% لاختبار متوسط 20 يوم أو دعم قريب.',
@@ -1825,7 +1825,7 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'stop-loss',
     icon: ShieldAlert,
-    iconBg: 'bg-red-600/15 text-red-600 dark:text-red-400',
+    iconBg: 'bg-loss/15 text-loss dark:text-loss',
     title: 'خطة Stop-loss آلي (الخروج التلقائي)',
     condition:
       'تم فتح مركز شراء وحددت مسبقاً مستوى وقف الخسارة — والآن وصل السعر لهذا المستوى.',
@@ -1863,7 +1863,7 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'take-profit',
     icon: Target,
-    iconBg: 'bg-emerald-600/15 text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-profit/15 text-profit dark:text-profit',
     title: 'خطة Take-profit متدرج (Scaling Out)',
     condition:
       'المركز في ربح ≥ 1R (مسافة وقف الخسارة) وتريد تأمين الأرباح تدريجياً دون خروج كامل.',
@@ -1887,7 +1887,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
   return (
     <div className="overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md">
       {/* Emerald header strip */}
-      <div className="h-1 w-full bg-emerald-500" />
+      <div className="h-1 w-full bg-profit" />
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1926,7 +1926,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
             <ol className="space-y-1.5">
               {playbook.steps.map((s, idx) => (
                 <li key={idx} className="flex gap-2 text-xs leading-relaxed">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600/15 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-profit/15 text-[10px] font-bold text-profit dark:text-profit">
                     {idx + 1}
                   </span>
                   <span className="flex-1 pt-0.5">{s}</span>
@@ -1935,12 +1935,12 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
             </ol>
           </div>
           {/* Mistake */}
-          <div className="rounded-md border border-red-500/40 bg-red-600/10 p-2">
-            <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
+          <div className="rounded-md border border-loss/40 bg-loss/10 p-2">
+            <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-loss dark:text-loss">
               <AlertTriangle className="h-3.5 w-3.5" />
               الخطأ الشائع
             </div>
-            <p className="text-xs leading-relaxed text-red-900 dark:text-red-200">
+            <p className="text-xs leading-relaxed text-loss dark:text-loss">
               {playbook.mistake}
             </p>
           </div>
@@ -1950,7 +1950,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
               <Target className="h-3 w-3" />
               مثال
             </div>
-            <p className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="rounded-md border border-warning/30 bg-warning/5 p-2 text-xs leading-relaxed text-muted-foreground">
               {playbook.example}
             </p>
           </div>
@@ -1962,10 +1962,10 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
 
 function ActionPlaybooks() {
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-profit/20 bg-gradient-to-br from-profit/10 via-card to-card">
+      <CardHeader className="gap-2 border-b bg-profit/20 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-emerald-600 dark:text-emerald-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-profit/15 text-profit dark:text-profit">
             <ListChecks className="h-5 w-5" />
           </div>
           <div>
@@ -1991,7 +1991,7 @@ function TradingFloorView() {
   return (
     <div className="space-y-6">
       {/* Owner intent banner — sets the tone that this is a desk, not a textbook */}
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6">
+      <div className="rounded-lg border border-profit/30 bg-profit/20 px-4 py-3 text-xs text-profit dark:text-profit sm:px-6">
         <span className="font-semibold">📊 أرض التداول —</span> مكتب عملي للقرارات المباشرة:
         شاشة أسعار حية، شجرة قرارات سيناريوهات، وكتيبات إجراءات جاهزة.
       </div>
@@ -2125,10 +2125,10 @@ function PositionSizeCalculator() {
   }, [capital, riskPct, entryPrice, stopPrice]);
 
   return (
-    <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-emerald-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-profit/20 bg-gradient-to-br from-profit/10 via-card to-card">
+      <CardHeader className="gap-2 border-b bg-profit/20 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600/15 text-emerald-600 dark:text-emerald-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-profit/15 text-profit dark:text-profit">
             <Calculator className="h-5 w-5" />
           </div>
           <div>
@@ -2203,25 +2203,25 @@ function PositionSizeCalculator() {
         </div>
 
         {result && 'error' in result ? (
-          <div className="rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-200">
+          <div className="rounded-md border border-warning/40 bg-warning/60 dark:bg-warning/20 p-3 text-xs text-warning dark:text-warning">
             ⚠️ {result.error}
           </div>
         ) : result ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-md border border-profit/30 bg-profit/50 dark:bg-profit/20 p-2.5 text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-profit dark:text-profit">
                   المخاطرة (جنيه)
                 </div>
-                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200" dir="ltr">
+                <div className="mt-1 text-base font-bold text-profit dark:text-profit" dir="ltr">
                   {result.maxLoss.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-md border border-profit/30 bg-profit/50 dark:bg-profit/20 p-2.5 text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-profit dark:text-profit">
                   الحجم الأقصى (سهم)
                 </div>
-                <div className="mt-1 text-base font-bold text-emerald-800 dark:text-emerald-200" dir="ltr">
+                <div className="mt-1 text-base font-bold text-profit dark:text-profit" dir="ltr">
                   {result.maxShares.toLocaleString('en-US')}
                 </div>
               </div>
@@ -2243,14 +2243,14 @@ function PositionSizeCalculator() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-md border border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20 px-2 py-1 text-amber-800 dark:text-amber-200">
+              <span className="rounded-md border border-warning/30 bg-warning/60 dark:bg-warning/20 px-2 py-1 text-warning dark:text-warning">
                 الاتجاه: {result.direction}
               </span>
               <span className="rounded-md border border-slate-500/30 bg-muted/40 px-2 py-1 text-muted-foreground" dir="ltr">
                 المخاطرة/سهم: {(result.perShareRisk ?? 0).toFixed(3)} ج
               </span>
             </div>
-            <div className="rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 p-3 text-xs text-amber-900 dark:text-amber-100">
+            <div className="rounded-md border border-warning/40 bg-warning/60 dark:bg-warning/20 p-3 text-xs text-warning dark:text-warning">
               💡 <span className="font-semibold">ملاحظة عملية:</span> لو الحجم الأقصى أكبر من سيولة السهم في الـ order book → قلّل الكمية أو اختار stop أقرب لسعر الدخول. ما تدخلش بحجم يعادل أكتر من 10% من سيولة السهم اليومية.
             </div>
           </div>
@@ -2297,10 +2297,10 @@ function BiasDetectorQuiz() {
   };
 
   return (
-    <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-950/10 via-card to-card">
-      <CardHeader className="gap-2 border-b bg-amber-950/20 px-4 py-3 sm:px-6">
+    <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-warning/10 via-card to-card">
+      <CardHeader className="gap-2 border-b bg-warning/20 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-600/15 text-amber-600 dark:text-amber-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-warning/15 text-warning dark:text-warning">
             <Brain className="h-5 w-5" />
           </div>
           <div>
@@ -2319,7 +2319,7 @@ function BiasDetectorQuiz() {
               className="rounded-md border border-border bg-background/60 p-3"
             >
               <div className="mb-2 flex items-start gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-600/15 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-warning/15 text-[10px] font-bold text-warning dark:text-warning">
                   {i + 1}
                 </span>
                 <p className="flex-1 text-xs leading-relaxed sm:text-sm">{q.text}</p>
@@ -2331,7 +2331,7 @@ function BiasDetectorQuiz() {
                   className={cn(
                     'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
                     answers[q.id] === true
-                      ? 'border-red-500/60 bg-red-600/15 text-red-700 dark:text-red-300'
+                      ? 'border-loss/60 bg-loss/15 text-loss dark:text-loss'
                       : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60',
                   )}
                 >
@@ -2343,7 +2343,7 @@ function BiasDetectorQuiz() {
                   className={cn(
                     'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
                     answers[q.id] === false
-                      ? 'border-emerald-500/60 bg-emerald-600/15 text-emerald-700 dark:text-emerald-300'
+                      ? 'border-profit/60 bg-profit/15 text-profit dark:text-profit'
                       : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60',
                   )}
                 >
@@ -2359,7 +2359,7 @@ function BiasDetectorQuiz() {
             onClick={() => setSubmitted(true)}
             disabled={answeredCount < BIAS_QUESTIONS.length}
             size="sm"
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-warning hover:bg-warning"
           >
             <CheckCircle2 className="ml-2 h-4 w-4" />
             اعرض التحيز المهيمن
@@ -2376,12 +2376,12 @@ function BiasDetectorQuiz() {
         {submitted && (
           <div className="space-y-3">
             {dominantBias ? (
-              <div className="rounded-md border border-red-500/40 bg-red-600/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
+              <div className="rounded-md border border-loss/40 bg-loss/10 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-loss dark:text-loss">
                   <AlertTriangle className="h-4 w-4" />
                   تحيزك المهيمن: {dominantBias[0]}
                 </div>
-                <p className="text-xs leading-relaxed text-red-900 dark:text-red-100">
+                <p className="text-xs leading-relaxed text-loss dark:text-loss">
                   أجبت بـ &quot;نعم&quot; على {dominantBias[1].count} من الأسئلة المرتبطة بهذا التحيز. هذا
                   التحيز هو السبب الأكثر احتمالاً لخسائرك. راجع{' '}
                   <span className="font-semibold">درس رقم {dominantBias[1].lessonNum} — {dominantBias[1].lesson}</span>{' '}
@@ -2389,12 +2389,12 @@ function BiasDetectorQuiz() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-md border border-emerald-500/40 bg-emerald-600/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-md border border-profit/40 bg-profit/10 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-profit dark:text-profit">
                   <CheckCircle2 className="h-4 w-4" />
                   ممتاز — لا يوجد تحيز مهيمن واضح
                 </div>
-                <p className="text-xs leading-relaxed text-emerald-900 dark:text-emerald-100">
+                <p className="text-xs leading-relaxed text-profit dark:text-profit">
                   أجبت بـ &quot;لا&quot; على كل الأسئلة. هذا يعني أن سلوكك التداولي منضبط نسبياً. استمر في
                   الالتزام بـ SOPs (Checklist + Hard Rules + Journal + Review) للحفاظ على هذا الانضباط.
                 </p>
@@ -2419,7 +2419,7 @@ function BiasDetectorQuiz() {
               </div>
             )}
 
-            <div className="rounded-md border border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20 p-3 text-xs text-amber-900 dark:text-amber-100">
+            <div className="rounded-md border border-warning/30 bg-warning/60 dark:bg-warning/20 p-3 text-xs text-warning dark:text-warning">
               <span className="font-semibold">إجمالي إجابات &quot;نعم&quot;:</span> {scores.yesCount} من {BIAS_QUESTIONS.length}.{' '}
               {scores.yesCount >= 4
                 ? '⚠️ درجة عالية — راجع يومياتك وطبّق SOPs بصرامة أكبر.'
@@ -2437,7 +2437,7 @@ function BiasDetectorQuiz() {
 function PracticalToolsView() {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-xs text-amber-800 dark:text-amber-200 sm:px-6">
+      <div className="rounded-lg border border-warning/30 bg-warning/20 px-4 py-3 text-xs text-warning dark:text-warning sm:px-6">
         <span className="font-semibold">🧮 الأدوات العملية —</span> حاسبتان عمليتان لكل مستثمر: الأولى
         تحسب حجم الصفقة المثالي بناءً على المخاطرة المسموحة، والثانية تكشف تحيزاتك السلوكية المهيمنة
         وتوجّهك للدرس المناسب.
@@ -2459,7 +2459,7 @@ function PracticalToolsView() {
 function AdvancedLabView() {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-800 dark:text-emerald-200 sm:px-6" dir="rtl">
+      <div className="rounded-lg border border-profit/30 bg-profit/20 px-4 py-3 text-xs text-profit dark:text-profit sm:px-6" dir="rtl">
         <span className="font-semibold">🔬 المختبر المتقدم —</span> 5 رسوم بيانية تفاعلية + محاكيان
         متقدمان. كل أداة بتعلمك مفهوم محدد: مراحل السوق، تدفّق الأوامر، أنماط الشموع،
         حاسبة المخاطرة/العائد، توزيع المحفظة، محاكاة Monte Carlo، ومقارنة استراتيجيات

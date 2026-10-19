@@ -931,7 +931,7 @@ export function AdminView() {
     return (
       <div className="min-h-screen flex items-center justify-center" dir="rtl">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-profit" />
           <span className="text-muted-foreground">جاري التحميل...</span>
         </div>
       </div>
@@ -943,8 +943,8 @@ export function AdminView() {
       <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
-              <Shield className="w-8 h-8 text-emerald-500" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-profit dark:bg-profit/30 flex items-center justify-center">
+              <Shield className="w-8 h-8 text-profit" />
             </div>
             <CardTitle>دخول المدير</CardTitle>
             <CardDescription>أدخل بيانات الدخول للوصول للوحة التحكم</CardDescription>
@@ -972,7 +972,7 @@ export function AdminView() {
                 />
               </div>
               {directLoginError && (
-                <p className="text-sm text-red-500 text-center">{directLoginError}</p>
+                <p className="text-sm text-loss text-center">{directLoginError}</p>
               )}
               <Button type="submit" className="w-full" disabled={directLoginLoading}>
                 {directLoginLoading ? (
@@ -1010,7 +1010,7 @@ export function AdminView() {
       label: 'المراقبة وصحة النظام',
       shortLabel: 'المراقبة',
       icon: <Activity className="w-4 h-4" />,
-      accent: 'border-emerald-500/40 bg-emerald-500/5',
+      accent: 'border-profit/40 bg-profit/5',
       tabs: [
         { id: 'dashboard', label: 'لوحة التحكم', icon: <Activity className="w-3.5 h-3.5" />, desc: 'نظرة عامة + صحة النظام' },
         { id: 'system-monitor', label: 'مراقبة الموارد', icon: <Monitor className="w-3.5 h-3.5" />, desc: 'CPU/RAM/DB' },
@@ -1024,7 +1024,7 @@ export function AdminView() {
       label: 'المحركات والتعلم الذكي',
       shortLabel: 'المحركات',
       icon: <Zap className="w-4 h-4" />,
-      accent: 'border-amber-500/40 bg-amber-500/5',
+      accent: 'border-warning/40 bg-warning/5',
       tabs: [
         // Task 31-B (Engine Monitor Battalion) — unified engine control room
         // (8 engine cards + per-engine deep view + error console + start-all/stop-all).
@@ -1063,7 +1063,7 @@ export function AdminView() {
       label: 'المستخدمين والاشتراكات',
       shortLabel: 'المستخدمين',
       icon: <Users className="w-4 h-4" />,
-      accent: 'border-rose-500/40 bg-rose-500/5',
+      accent: 'border-loss/40 bg-loss/5',
       tabs: [
         { id: 'user-management', label: 'إدارة المستخدمين', icon: <Users className="w-3.5 h-3.5" />, desc: 'CRUD + باقات' },
         { id: 'users', label: 'تحليلات المستخدمين', icon: <BarChart3 className="w-3.5 h-3.5" />, desc: 'إحصائيات + behavior' },
@@ -1078,7 +1078,7 @@ export function AdminView() {
       label: 'أدوات التسويق والنشر',
       shortLabel: 'التسويق',
       icon: <Send className="w-4 h-4" />,
-      accent: 'border-teal-500/40 bg-teal-500/5',
+      accent: 'border-whale/40 bg-whale/5',
       tabs: [
         { id: 'marketing-studio', label: 'استوديو التسويق', icon: <Sparkles className="w-3.5 h-3.5" />, desc: 'فيديو + كروت + حملات + تقويم' },
         { id: 'reports', label: 'التقارير الذكية', icon: <FileText className="w-3.5 h-3.5" />, desc: 'يومية + أسبوعية + PDF' },
@@ -1096,15 +1096,15 @@ export function AdminView() {
         <div className="flex items-center gap-3">
           <div className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center",
-            healthScore >= 80 ? "bg-emerald-100 dark:bg-emerald-900/30" :
-              healthScore >= 50 ? "bg-amber-100 dark:bg-amber-900/30" :
-                "bg-red-100 dark:bg-red-900/30"
+            healthScore >= 80 ? "bg-profit dark:bg-profit/30" :
+              healthScore >= 50 ? "bg-warning dark:bg-warning/30" :
+                "bg-loss dark:bg-loss/30"
           )}>
             <Shield className={cn(
               "w-6 h-6",
-              healthScore >= 80 ? "text-emerald-600" :
-                healthScore >= 50 ? "text-amber-600" :
-                  "text-red-600"
+              healthScore >= 80 ? "text-profit" :
+                healthScore >= 50 ? "text-warning" :
+                  "text-loss"
             )} />
           </div>
           <div>
@@ -1123,7 +1123,7 @@ export function AdminView() {
             </Badge>
           )}
           {warningCount > 0 && (
-            <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+            <Badge variant="outline" className="gap-1 border-warning text-warning">
               <AlertCircle className="w-3 h-3" />
               {warningCount} تحذير
             </Badge>
@@ -1174,7 +1174,7 @@ export function AdminView() {
           variant={activeTab === 'data-engine' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => { setActiveTab('data-engine'); setExpandedHub('maestro'); }}
-          className="gap-1.5 h-9 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+          className="gap-1.5 h-9 text-xs font-semibold text-profit hover:text-profit"
         >
           <Database className="w-3.5 h-3.5" />
           <span>محرك البيانات</span>
@@ -1258,7 +1258,7 @@ export function AdminView() {
                           {tab.icon}
                           <span className="text-[11px] font-bold truncate">{tab.label}</span>
                           {tab.count !== undefined && tab.count > 0 && (
-                            <span className="mr-auto bg-rose-500 text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold shrink-0">
+                            <span className="mr-auto bg-loss text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold shrink-0">
                               {tab.count}
                             </span>
                           )}
@@ -1328,7 +1328,7 @@ export function AdminView() {
                           {tab.icon}
                           <span className="text-xs font-semibold truncate">{tab.label}</span>
                           {tab.count !== undefined && tab.count > 0 && (
-                            <span className="mr-auto bg-rose-500 text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold">
+                            <span className="mr-auto bg-loss text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold">
                               {tab.count}
                             </span>
                           )}
@@ -1362,9 +1362,9 @@ export function AdminView() {
                 <div className="text-center">
                   <div className={cn(
                     "w-20 h-20 mx-auto rounded-full flex items-center justify-center text-lg md:text-xl lg:text-2xl font-bold",
-                    healthScore >= 80 ? "bg-emerald-100 text-emerald-600" :
-                      healthScore >= 50 ? "bg-amber-100 text-amber-600" :
-                        "bg-red-100 text-red-600"
+                    healthScore >= 80 ? "bg-profit text-profit" :
+                      healthScore >= 50 ? "bg-warning text-warning" :
+                        "bg-loss text-loss"
                   )}>
                     {healthScore}%
                   </div>
@@ -1373,9 +1373,9 @@ export function AdminView() {
                     value={healthScore}
                     className={cn(
                       "mt-2 h-2",
-                      healthScore >= 80 ? "[&>div]:bg-emerald-500" :
-                        healthScore >= 50 ? "[&>div]:bg-amber-500" :
-                          "[&>div]:bg-red-500"
+                      healthScore >= 80 ? "[&>div]:bg-profit" :
+                        healthScore >= 50 ? "[&>div]:bg-warning" :
+                          "[&>div]:bg-loss"
                     )}
                   />
                 </div>
@@ -1387,12 +1387,12 @@ export function AdminView() {
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <Users className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                    <Users className="w-6 h-6 mx-auto mb-2 text-primary" />
                     <div className="text-lg md:text-xl lg:text-2xl font-bold">{stats?.users?.total ?? 0}</div>
                     <div className="text-xs text-muted-foreground">مستخدم</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <TrendingUp className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
+                    <TrendingUp className="w-6 h-6 mx-auto mb-2 text-profit" />
                     <div className="text-lg md:text-xl lg:text-2xl font-bold">{stats?.stocks?.active ?? 0}</div>
                     <div className="text-xs text-muted-foreground">سهم نشط</div>
                   </div>
@@ -1402,7 +1402,7 @@ export function AdminView() {
                     <div className="text-xs text-muted-foreground">توقع</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <BarChart3 className="w-6 h-6 mx-auto mb-2 text-amber-500" />
+                    <BarChart3 className="w-6 h-6 mx-auto mb-2 text-warning" />
                     <div className="text-lg md:text-xl lg:text-2xl font-bold">{predictionStats?.success_rate?.toFixed?.(0) ?? 0}%</div>
                     <div className="text-xs text-muted-foreground">نسبة النجاح</div>
                   </div>
@@ -1419,7 +1419,7 @@ export function AdminView() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Database className="w-5 h-5 text-emerald-500" />
+                  <Database className="w-5 h-5 text-profit" />
                   حالة تحديث البيانات (تفصيلي)
                 </CardTitle>
                 <div className="flex items-center gap-2">
@@ -1444,18 +1444,18 @@ export function AdminView() {
                   {dataStatus.categories.map((cat) => (
                     <div key={cat.category} className={cn(
                       "p-3 rounded-lg border-2",
-                      cat.status === 'fresh' ? "border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20" :
-                        cat.status === 'stale' ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20" :
-                          cat.status === 'old' ? "border-red-300 bg-red-50 dark:bg-red-950/20" :
+                      cat.status === 'fresh' ? "border-profit bg-profit dark:bg-profit/20" :
+                        cat.status === 'stale' ? "border-warning bg-warning dark:bg-warning/20" :
+                          cat.status === 'old' ? "border-loss bg-loss dark:bg-loss/20" :
                             "border-gray-300 bg-gray-50 dark:bg-gray-950/20"
                     )}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-sm">{cat.name_ar}</span>
                         <div className={cn(
                           "w-2.5 h-2.5 rounded-full",
-                          cat.status === 'fresh' ? "bg-emerald-500" :
-                            cat.status === 'stale' ? "bg-amber-500" :
-                              cat.status === 'old' ? "bg-red-500" :
+                          cat.status === 'fresh' ? "bg-profit" :
+                            cat.status === 'stale' ? "bg-warning" :
+                              cat.status === 'old' ? "bg-loss" :
                                 "bg-gray-400"
                         )} />
                       </div>
@@ -1476,7 +1476,7 @@ export function AdminView() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" />
+                <Zap className="w-5 h-5 text-warning" />
                 إجراءات سريعة
               </CardTitle>
             </CardHeader>
@@ -1515,7 +1515,7 @@ export function AdminView() {
                     );
                   }}
                   title="التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py)"
-                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white"
+                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-profit to-whale hover:from-profit hover:to-whale text-white"
                 >
                   <Sparkles className="w-6 h-6" />
                   <span>توليد التوقعات</span>
@@ -1549,7 +1549,7 @@ export function AdminView() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Server className="w-5 h-5 text-emerald-500" />
+                  <Server className="w-5 h-5 text-profit" />
                   حالة الخدمات
                 </CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => setActiveTab('dashboard')}>
@@ -1563,9 +1563,9 @@ export function AdminView() {
                   <div key={service.name} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
                     <div className={cn(
                       "w-3 h-3 rounded-full",
-                      service.status === 'online' ? "bg-emerald-500" :
-                        service.status === 'degraded' ? "bg-amber-500" :
-                          "bg-red-500"
+                      service.status === 'online' ? "bg-profit" :
+                        service.status === 'degraded' ? "bg-warning" :
+                          "bg-loss"
                     )} />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{service.nameAr}</div>
@@ -1584,11 +1584,11 @@ export function AdminView() {
           <SystemHealthCard />
 
           {/* Mini command center preview */}
-          <Card className="border-emerald-200 dark:border-emerald-800/50">
+          <Card className="border-profit dark:border-profit/50">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-emerald-500" />
+                  <Zap className="w-5 h-5 text-profit" />
                   لوحة التحكم
                 </CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => setActiveTab('dashboard')}>
@@ -1599,30 +1599,30 @@ export function AdminView() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
-                  <Server className="w-5 h-5 text-emerald-500" />
+                  <Server className="w-5 h-5 text-profit" />
                   <div>
                     <div className="text-xs text-muted-foreground">المحركات</div>
                     <div className="font-bold">
-                      <span className="text-emerald-600">{services.filter(s => s.status === 'online').length}</span>
+                      <span className="text-profit">{services.filter(s => s.status === 'online').length}</span>
                       <span className="text-muted-foreground"> / {services.length}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
-                  <Database className="w-5 h-5 text-blue-500" />
+                  <Database className="w-5 h-5 text-primary" />
                   <div>
                     <div className="text-xs text-muted-foreground">قواعد البيانات</div>
                     <div className="font-bold">
-                      <span className="text-emerald-600">{dataStatus?.categories?.filter(c => c.status === 'fresh').length || 0}</span>
+                      <span className="text-profit">{dataStatus?.categories?.filter(c => c.status === 'fresh').length || 0}</span>
                       <span className="text-muted-foreground"> متاحة</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
-                  <Zap className="w-5 h-5 text-amber-500" />
+                  <Zap className="w-5 h-5 text-warning" />
                   <div>
                     <div className="text-xs text-muted-foreground">صحة النظام</div>
-                    <div className="font-bold text-emerald-600">{healthScore}%</div>
+                    <div className="font-bold text-profit">{healthScore}%</div>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setActiveTab('dashboard')} className="h-auto py-3">
@@ -1727,19 +1727,19 @@ export function AdminView() {
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-emerald-500">{analyticsData.summary.today_unique_users}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-profit">{analyticsData.summary.today_unique_users}</div>
                     <div className="text-xs text-muted-foreground">مستخدمون نشطون</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-amber-500">{analyticsData.summary.today_events}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-warning">{analyticsData.summary.today_events}</div>
                     <div className="text-xs text-muted-foreground">أحداث اليوم</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-red-500">{analyticsData.summary.today_errors}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-loss">{analyticsData.summary.today_errors}</div>
                     <div className="text-xs text-muted-foreground">أخطاء اليوم</div>
                   </CardContent>
                 </Card>
@@ -1933,16 +1933,16 @@ export function AdminView() {
 // ==================== USER FEEDBACK TAB ====================
 
 const FEEDBACK_TYPE_META: Record<string, { label: string; cls: string }> = {
-  bug: { label: 'مشكلة', cls: 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
-  suggestion: { label: 'اقتراح', cls: 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
+  bug: { label: 'مشكلة', cls: 'border-loss bg-loss text-loss dark:bg-loss/40 dark:text-loss' },
+  suggestion: { label: 'اقتراح', cls: 'border-warning bg-warning text-warning dark:bg-warning/40 dark:text-warning' },
   opinion: { label: 'رأي / ملاحظة', cls: 'border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' },
-  praise: { label: 'إشادة', cls: 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
+  praise: { label: 'إشادة', cls: 'border-profit bg-profit text-profit dark:bg-profit/40 dark:text-profit' },
 };
 
 const FEEDBACK_STATUS_META: Record<string, { label: string; cls: string }> = {
-  new: { label: 'جديد', cls: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400' },
-  reviewed: { label: 'تمت المراجعة', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400' },
-  resolved: { label: 'تم الحل', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' },
+  new: { label: 'جديد', cls: 'bg-loss text-loss dark:bg-loss/50 dark:text-loss' },
+  reviewed: { label: 'تمت المراجعة', cls: 'bg-warning text-warning dark:bg-warning/50 dark:text-warning' },
+  resolved: { label: 'تم الحل', cls: 'bg-profit text-profit dark:bg-profit/50 dark:text-profit' },
 };
 
 function UserFeedbackTab({
@@ -2036,9 +2036,9 @@ function UserFeedbackTab({
                         {statusMeta.label}
                       </Badge>
                       {typeof f.rating === 'number' && f.rating > 0 && (
-                        <span className="flex items-center gap-0.5 text-amber-500">
+                        <span className="flex items-center gap-0.5 text-warning">
                           {Array.from({ length: f.rating }).map((_, i) => (
-                            <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <Star key={i} className="w-3.5 h-3.5 fill-warning text-warning" />
                           ))}
                         </span>
                       )}

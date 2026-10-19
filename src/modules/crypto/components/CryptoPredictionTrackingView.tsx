@@ -122,7 +122,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
     filterable: true,
     render: (p) => (
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10 text-warning text-xs font-bold">
           {p.ticker.slice(0, 3)}
         </div>
         <span className="font-semibold text-sm">{p.ticker}</span>
@@ -153,9 +153,9 @@ const predictionColumns: Column<CryptoPrediction>[] = [
     filterable: true,
     render: (p) => (
       <Badge variant="outline" className={cn('text-xs',
-        p.signal === 'BUY' ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-        : p.signal === 'SELL' ? 'text-red-600 bg-red-50 border-red-200'
-        : 'text-amber-600 bg-amber-50 border-amber-200'
+        p.signal === 'BUY' ? 'text-profit bg-profit border-profit'
+        : p.signal === 'SELL' ? 'text-loss bg-loss border-loss'
+        : 'text-warning bg-warning border-warning'
       )}>
         {p.signal}
       </Badge>
@@ -182,7 +182,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
     header: 'الهدف',
     align: 'right',
     sortable: true,
-    className: 'font-mono text-sm text-emerald-600',
+    className: 'font-mono text-sm text-profit',
     render: (p) => formatPrice(p.target_price),
   },
   {
@@ -190,7 +190,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
     header: 'الوقف',
     align: 'right',
     sortable: true,
-    className: 'font-mono text-sm text-red-600',
+    className: 'font-mono text-sm text-loss',
     render: (p) => formatPrice(p.stop_loss),
   },
   {
@@ -201,7 +201,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
     render: (p) => {
       const potential = getPotentialReturn(p);
       return potential !== null ? (
-        <Badge variant="outline" className="text-xs font-mono text-emerald-600 bg-emerald-50 border-emerald-200">
+        <Badge variant="outline" className="text-xs font-mono text-profit bg-profit border-profit">
           +{(potential ?? 0).toFixed(1)}%
         </Badge>
       ) : '—';
@@ -235,7 +235,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
       const isClosed = !!p.outcome_date;
       if (!isClosed) {
         return (
-          <Badge variant="outline" className="text-xs text-amber-600 bg-amber-50 border-amber-200">
+          <Badge variant="outline" className="text-xs text-warning bg-warning border-warning">
             <Clock className="h-3 w-3 ml-1" />
             نشط
           </Badge>
@@ -245,13 +245,13 @@ const predictionColumns: Column<CryptoPrediction>[] = [
       return (
         <div className="flex flex-col items-center gap-1">
           <Badge variant="outline" className={cn('text-xs',
-            p.hit_target === 1 ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-            : p.hit_stop === 1 ? 'text-red-600 bg-red-50 border-red-200'
+            p.hit_target === 1 ? 'text-profit bg-profit border-profit'
+            : p.hit_stop === 1 ? 'text-loss bg-loss border-loss'
             : 'text-muted-foreground'
           )}>
             {p.hit_target === 1 ? '🎯 هدف' : p.hit_stop === 1 ? '🛑 وقف' : '—'}
           </Badge>
-          <span className={cn('text-xs font-mono', actual.positive ? 'text-emerald-600' : 'text-red-600')}>
+          <span className={cn('text-xs font-mono', actual.positive ? 'text-profit' : 'text-loss')}>
             {actual.text}
           </span>
         </div>
@@ -342,7 +342,7 @@ export default function CryptoPredictionTrackingView() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning">
             <Bitcoin className="h-5 w-5" />
           </div>
           <div>

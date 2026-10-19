@@ -119,7 +119,7 @@ export function PurgeCacheButton() {
   const latestDate = stats?.latest_cache_date;
 
   return (
-    <Card className={needsPurge ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/10' : ''}>
+    <Card className={needsPurge ? 'border-warning bg-warning/50 dark:bg-warning/10' : ''}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
@@ -141,7 +141,7 @@ export function PurgeCacheButton() {
                 {cacheCount} صف قديم
               </Badge>
             ) : cacheCount === 0 ? (
-              <Badge variant="default" className="gap-1 bg-emerald-500">
+              <Badge variant="default" className="gap-1 bg-profit">
                 <CheckCircle2 className="w-3 h-3" />
                 نظيف
               </Badge>
@@ -159,14 +159,14 @@ export function PurgeCacheButton() {
 
         {/* Latest cache date warning */}
         {needsPurge && latestDate && (
-          <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700">
+          <div className="p-3 rounded-lg bg-warning dark:bg-warning/30 border border-warning dark:border-warning">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <AlertTriangle className="w-5 h-5 text-warning dark:text-warning mt-0.5 shrink-0" />
               <div className="text-sm">
-                <p className="font-semibold text-amber-700 dark:text-amber-300">
+                <p className="font-semibold text-warning dark:text-warning">
                   الكاش قديم! آخر تحليل: {latestDate}
                 </p>
-                <p className="text-amber-600 dark:text-amber-400 text-xs mt-1">
+                <p className="text-warning dark:text-warning text-xs mt-1">
                   التوقعات اللي بتظهر للعملاء هي من الكاش القديم. لازم تمسح الكاش عشان المحرك الجديد (V13 + Quant + SMC) يشتغل.
                 </p>
               </div>
@@ -179,7 +179,7 @@ export function PurgeCacheButton() {
           <Button
             onClick={() => handlePurge('all')}
             disabled={purging}
-            className="bg-red-600 hover:bg-red-700 text-white gap-2"
+            className="bg-loss hover:bg-loss text-white gap-2"
           >
             {purging ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -227,7 +227,7 @@ export function PurgeCacheButton() {
         {freedMB !== null && (
           <div
             role="status"
-            className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400"
+            className="flex items-center gap-2 text-xs text-profit dark:text-profit"
           >
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
             <span>
@@ -245,7 +245,7 @@ export function PurgeCacheButton() {
             <li>Dynamic Risk (Kaufman ER + ATR ديناميكي)</li>
             <li>EGX Tuned (Soft Penalty + RSI 80)</li>
           </ul>
-          <p className="mt-2 text-amber-600 dark:text-amber-400">
+          <p className="mt-2 text-warning dark:text-warning">
             ⚠️ يفضل تعمل restart لـ Python backend بعد المسح: pm2 restart python-backend
           </p>
         </div>

@@ -41,11 +41,11 @@ export class SafeWidget extends Component<Props, State> {
       }
 
       return (
-        <Card className="border-red-200 dark:border-red-800">
+        <Card className="border-loss dark:border-loss">
           <CardContent className="p-4 flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
+            <AlertTriangle className="w-5 h-5 text-loss" />
             <div>
-              <p className="text-sm font-medium text-red-600 dark:text-red-400">
+              <p className="text-sm font-medium text-loss dark:text-loss">
                 خطأ في تحميل {this.props.name || 'المكون'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">

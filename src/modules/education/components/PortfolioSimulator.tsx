@@ -216,10 +216,10 @@ export function PortfolioSimulator() {
   }, []);
 
   return (
-    <Card className="border-emerald-500/20" dir="rtl">
+    <Card className="border-profit/20" dir="rtl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-          <PieChart className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <PieChart className="h-5 w-5 text-profit dark:text-profit" />
           محاكي توزيع المحفظة — Monte Carlo (100 مسار)
         </CardTitle>
         <p className="text-xs text-muted-foreground">
@@ -251,8 +251,8 @@ export function PortfolioSimulator() {
             className={cn(
               'rounded-lg border p-3 text-center',
               isBalanced
-                ? 'border-emerald-500/40 bg-emerald-500/10'
-                : 'border-amber-500/40 bg-amber-500/10',
+                ? 'border-profit/40 bg-profit/10'
+                : 'border-warning/40 bg-warning/10',
             )}
           >
             <div className="text-[10px] font-semibold text-muted-foreground">إجمالي النِسب</div>
@@ -260,8 +260,8 @@ export function PortfolioSimulator() {
               className={cn(
                 'text-2xl font-bold',
                 isBalanced
-                  ? 'text-emerald-700 dark:text-emerald-400'
-                  : 'text-amber-700 dark:text-amber-400',
+                  ? 'text-profit dark:text-profit'
+                  : 'text-warning dark:text-warning',
               )}
             >
               {(totalPct ?? 0).toFixed(0)}%
@@ -339,11 +339,11 @@ export function PortfolioSimulator() {
           >
             {/* Outcome percentiles */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-red-700 dark:text-red-300">
+              <div className="rounded-lg border border-loss/30 bg-loss/10 p-3 text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-loss dark:text-loss">
                   <TrendingDown className="h-3 w-3" /> سيناريو متشائم (P5)
                 </div>
-                <div className="text-base font-bold text-red-700 dark:text-red-300 sm:text-lg">
+                <div className="text-base font-bold text-loss dark:text-loss sm:text-lg">
                   {result.p5.toLocaleString('ar-EG', { maximumFractionDigits: 0 })}
                 </div>
                 <div className="text-[9px] text-muted-foreground">
@@ -361,11 +361,11 @@ export function PortfolioSimulator() {
                   {(((result.p50 - capital) / capital) * 100).toFixed(1)}%
                 </div>
               </div>
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center">
-                <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-center">
+                <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-profit dark:text-profit">
                   <TrendingUp className="h-3 w-3" /> سيناريو متفائل (P95)
                 </div>
-                <div className="text-base font-bold text-emerald-700 dark:text-emerald-300 sm:text-lg">
+                <div className="text-base font-bold text-profit dark:text-profit sm:text-lg">
                   {result.p95.toLocaleString('ar-EG', { maximumFractionDigits: 0 })}
                 </div>
                 <div className="text-[9px] text-muted-foreground">
@@ -383,19 +383,19 @@ export function PortfolioSimulator() {
                 icon={Target}
                 label="العائد المتوقع"
                 value={`+${(result.expectedReturn * 100).toFixed(1)}%`}
-                color="text-emerald-700 dark:text-emerald-400"
+                color="text-profit dark:text-profit"
               />
               <MetricCard
                 icon={Activity}
                 label="التقلب السنوي"
                 value={`±${(result.portfolioSigma * 100).toFixed(1)}%`}
-                color="text-amber-700 dark:text-amber-400"
+                color="text-warning dark:text-warning"
               />
               <MetricCard
                 icon={AlertTriangle}
                 label="أقصى خسارة"
                 value={`${(result.maxDrawdown * 100).toFixed(1)}%`}
-                color="text-red-700 dark:text-red-400"
+                color="text-loss dark:text-loss"
               />
               <MetricCard
                 icon={Shield}
@@ -407,7 +407,7 @@ export function PortfolioSimulator() {
 
             {/* Educational takeaway */}
             <div
-              className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs leading-relaxed text-emerald-900 dark:text-emerald-200"
+              className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-xs leading-relaxed text-profit dark:text-profit"
               dir="rtl"
             >
               <div className="mb-1 font-bold">درس المحاكاة:</div>
@@ -419,7 +419,7 @@ export function PortfolioSimulator() {
               التنويع يخفض σ دون خفض μ كثيرًا → Sharpe أعلى.
             </div>
 
-            <div className="rounded-md border border-amber-500/30 bg-amber-50/60 px-3 py-2 text-[10px] text-amber-800 dark:bg-amber-950/20 dark:text-amber-200" dir="rtl">
+            <div className="rounded-md border border-warning/30 bg-warning/60 px-3 py-2 text-[10px] text-warning dark:bg-warning/20 dark:text-warning" dir="rtl">
               <span className="font-semibold">إخلاء مسؤولية:</span> المحاكاة
               تعليمية بحتة باستخدام تقلبات تاريخية تقديرية — ليست نصيحة استثمارية مرخصة.
               الأداء السابق لا يضمن المستقبلي.

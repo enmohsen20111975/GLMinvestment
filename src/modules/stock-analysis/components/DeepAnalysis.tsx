@@ -170,9 +170,9 @@ function signalClass(text: string): string {
   const t = text.toLowerCase();
   const bull = ['إيجابي', 'صعود', 'شراء', 'اشتري', 'تشبع بيعي', 'مرتفع', 'صاعد', 'bullish', 'buy', 'positive', 'oversold', 'rising'];
   const bear = ['سلبي', 'هبوط', 'بيع', 'بع', 'تشبع شرائي', 'هبوطي', 'هابط', 'bearish', 'sell', 'negative', 'overbought', 'falling'];
-  for (const w of bull) { if (t.includes(w)) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'; }
-  for (const w of bear) { if (t.includes(w)) return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'; }
-  return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400';
+  for (const w of bull) { if (t.includes(w)) return 'bg-profit text-profit dark:bg-profit/40 dark:text-profit'; }
+  for (const w of bear) { if (t.includes(w)) return 'bg-loss text-loss dark:bg-loss/40 dark:text-loss'; }
+  return 'bg-warning text-warning dark:bg-warning/40 dark:text-warning';
 }
 
 function n(val: unknown, fb = 0): number {
@@ -332,12 +332,12 @@ function MiniScoreCard({ label, score, isRisk = false }: { label: string; score:
 
 function ActionBadge({ action, actionAr }: { action: string; actionAr: string }) {
   const config: Record<string, { bg: string; icon: React.ReactNode }> = {
-    strong_buy: { bg: 'bg-emerald-600', icon: <ArrowUpCircle className="w-5 h-5" /> },
-    buy: { bg: 'bg-emerald-500', icon: <ArrowUpCircle className="w-5 h-5" /> },
-    accumulate: { bg: 'bg-teal-500', icon: <Layers className="w-5 h-5" /> },
-    hold: { bg: 'bg-amber-500', icon: <MinusCircle className="w-5 h-5" /> },
-    sell: { bg: 'bg-red-500', icon: <ArrowDownCircle className="w-5 h-5" /> },
-    strong_sell: { bg: 'bg-red-600', icon: <ArrowDownCircle className="w-5 h-5" /> },
+    strong_buy: { bg: 'bg-profit', icon: <ArrowUpCircle className="w-5 h-5" /> },
+    buy: { bg: 'bg-profit', icon: <ArrowUpCircle className="w-5 h-5" /> },
+    accumulate: { bg: 'bg-whale', icon: <Layers className="w-5 h-5" /> },
+    hold: { bg: 'bg-warning', icon: <MinusCircle className="w-5 h-5" /> },
+    sell: { bg: 'bg-loss', icon: <ArrowDownCircle className="w-5 h-5" /> },
+    strong_sell: { bg: 'bg-loss', icon: <ArrowDownCircle className="w-5 h-5" /> },
   };
   const c = config[action] || { bg: 'bg-muted', icon: <MinusCircle className="w-5 h-5" /> };
 
@@ -406,7 +406,7 @@ function PriceLevelsVisual({ levels, currentPrice }: { levels: ProfessionalAnaly
 
   return (
     <div className="relative py-4 px-2">
-      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-l from-red-300 via-blue-400 to-emerald-300" />
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-l from-loss via-primary to-profit" />
       <div className="relative flex flex-col gap-3" style={{ minHeight: '120px' }}>
         {items.map((item) => {
           const topPercent = toPercent(item.price);
@@ -418,15 +418,15 @@ function PriceLevelsVisual({ levels, currentPrice }: { levels: ProfessionalAnaly
                     <span className="text-[10px] text-muted-foreground">{item.label}</span>
                     <span className="text-xs font-bold tabular-nums" style={{ color: item.color }} dir="ltr">{fmt(item.price)}</span>
                   </div>
-                  <div className={cn('w-3 h-3 rounded-full border-2 border-background shadow-sm flex-shrink-0', item.isCurrent && 'ring-2 ring-blue-400 ring-offset-1 w-4 h-4')} style={{ backgroundColor: item.color }} />
+                  <div className={cn('w-3 h-3 rounded-full border-2 border-background shadow-sm flex-shrink-0', item.isCurrent && 'ring-2 ring-primary ring-offset-1 w-4 h-4')} style={{ backgroundColor: item.color }} />
                 </>
               )}
               {item.side === 'center' && (
                 <div className="flex-1 flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-background shadow-sm ring-2 ring-blue-400 ring-offset-1 flex-shrink-0" style={{ backgroundColor: item.color }} />
+                  <div className="w-4 h-4 rounded-full border-2 border-background shadow-sm ring-2 ring-primary ring-offset-1 flex-shrink-0" style={{ backgroundColor: item.color }} />
                   <div className="flex flex-col items-center">
-                    <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400">{item.label}</span>
-                    <span className="text-xs font-bold tabular-nums text-teal-600 dark:text-teal-400" dir="ltr">{fmt(item.price)}</span>
+                    <span className="text-[10px] font-medium text-whale dark:text-whale">{item.label}</span>
+                    <span className="text-xs font-bold tabular-nums text-whale dark:text-whale" dir="ltr">{fmt(item.price)}</span>
                   </div>
                 </div>
               )}
@@ -490,7 +490,7 @@ function IndicatorCard({ title, icon, children, signalText }: { title: string; i
     <div className="rounded-xl border bg-card p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-emerald-600 dark:text-emerald-400">{icon}</span>
+          <span className="text-profit dark:text-profit">{icon}</span>
           <span className="text-xs font-semibold">{title}</span>
         </div>
         {signalText && (
@@ -521,7 +521,7 @@ function HeaderCard({ prof, stock, currentPrice, deepAnalysis }: { prof: Profess
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Gauge className="w-4 h-4 text-emerald-600" />
+            <Gauge className="w-4 h-4 text-profit" />
             التحليل الاحترافي
           </div>
           <ShareButton
@@ -545,9 +545,9 @@ function HeaderCard({ prof, stock, currentPrice, deepAnalysis }: { prof: Profess
               <span className="text-sm text-muted-foreground mr-2">— {fmt(currentPrice)} ج.م</span>
             </div>
             <div className="flex items-center gap-2 justify-center md:justify-start">
-              {isBull ? <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                : isBear ? <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
-                : <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+              {isBull ? <TrendingUp className="w-5 h-5 text-profit dark:text-profit" />
+                : isBear ? <TrendingDown className="w-5 h-5 text-loss dark:text-loss" />
+                : <Minus className="w-5 h-5 text-warning dark:text-warning" />}
               <span className="text-sm font-semibold">{trendAr}</span>
               {prof?.trend.strength_ar && (
                 <Badge variant="outline" className="text-[10px]">{prof.trend.strength_ar}</Badge>
@@ -585,7 +585,7 @@ function ScoreCards({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | n
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-emerald-600" />
+            <BarChart3 className="w-4 h-4 text-profit" />
             تصنيف النتائج
           </CardTitle>
         </CardHeader>
@@ -607,7 +607,7 @@ function ScoreCards({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | n
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-emerald-600" />
+          <BarChart3 className="w-4 h-4 text-profit" />
           تصنيف النتائج
         </CardTitle>
       </CardHeader>
@@ -646,22 +646,22 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Target className="w-4 h-4 text-emerald-600" />
+            <Target className="w-4 h-4 text-profit" />
             الأهداف السعرية
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-              <p className="text-[11px] text-red-600 dark:text-red-400 mb-1">مستوى الدعم</p>
+            <div className="text-center p-3 rounded-lg bg-loss dark:bg-loss/20">
+              <p className="text-[11px] text-loss dark:text-loss mb-1">مستوى الدعم</p>
               <p className="font-bold text-sm tabular-nums" dir="ltr">{safeToFixed(deepAnalysis.price_targets?.support)}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-muted">
               <p className="text-[11px] text-muted-foreground mb-1">المقاومة</p>
               <p className="font-bold text-sm tabular-nums" dir="ltr">{safeToFixed(deepAnalysis.price_targets?.resistance)}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mb-1">الهدف الصاعد</p>
+            <div className="text-center p-3 rounded-lg bg-profit dark:bg-profit/20">
+              <p className="text-[11px] text-profit dark:text-profit mb-1">الهدف الصاعد</p>
               <p className="font-bold text-sm tabular-nums" dir="ltr">{safeToFixed(deepAnalysis.price_targets?.upside_target)}</p>
             </div>
           </div>
@@ -677,7 +677,7 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Crosshair className="w-4 h-4 text-emerald-600" />
+          <Crosshair className="w-4 h-4 text-profit" />
           تفاصيل التحليل
         </CardTitle>
       </CardHeader>
@@ -693,22 +693,22 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
           </Badge>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
-            <p className="text-[11px] text-teal-600 dark:text-teal-400 mb-1 flex items-center justify-center gap-1">
+          <div className="text-center p-3 rounded-lg bg-primary dark:bg-whale/20 border border-whale dark:border-whale">
+            <p className="text-[11px] text-whale dark:text-whale mb-1 flex items-center justify-center gap-1">
               <ArrowLeftRight className="w-3 h-3" />
               سعر الدخول
             </p>
             <p className="font-bold text-sm tabular-nums" dir="ltr">{fmt(rec.entry_price)}</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mb-1 flex items-center justify-center gap-1">
+          <div className="text-center p-3 rounded-lg bg-profit dark:bg-profit/20 border border-profit dark:border-profit">
+            <p className="text-[11px] text-profit dark:text-profit mb-1 flex items-center justify-center gap-1">
               <Target className="w-3 h-3" />
               الهدف
             </p>
             <p className="font-bold text-sm tabular-nums" dir="ltr">{fmt(rec.target_price)}</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <p className="text-[11px] text-red-600 dark:text-red-400 mb-1 flex items-center justify-center gap-1">
+          <div className="text-center p-3 rounded-lg bg-loss dark:bg-loss/20 border border-loss dark:border-loss">
+            <p className="text-[11px] text-loss dark:text-loss mb-1 flex items-center justify-center gap-1">
               <Shield className="w-3 h-3" />
               وقف الخسارة
             </p>
@@ -743,7 +743,7 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-600" />
+            <Activity className="w-4 h-4 text-profit" />
             الإشارات الفنية
           </CardTitle>
         </CardHeader>
@@ -773,7 +773,7 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Activity className="w-4 h-4 text-emerald-600" />
+          <Activity className="w-4 h-4 text-profit" />
           المؤشرات الفنية
         </CardTitle>
       </CardHeader>
@@ -874,7 +874,7 @@ function PriceLevelsCard({ prof, currentPrice }: { prof: ProfessionalAnalysisDat
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Layers className="w-4 h-4 text-emerald-600" />
+          <Layers className="w-4 h-4 text-profit" />
           مستويات الأسعار
         </CardTitle>
       </CardHeader>
@@ -891,9 +891,9 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
 
   const patternBadge = (type: string) => {
     switch (type) {
-      case 'bullish': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400';
-      case 'bearish': return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400';
-      default: return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400';
+      case 'bullish': return 'bg-profit text-profit dark:bg-profit/40 dark:text-profit';
+      case 'bearish': return 'bg-loss text-loss dark:bg-loss/40 dark:text-loss';
+      default: return 'bg-warning text-warning dark:bg-warning/40 dark:text-warning';
     }
   };
   const typeAr = (type: string) => {
@@ -904,7 +904,7 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <CandlestickChart className="w-4 h-4 text-emerald-600" />
+          <CandlestickChart className="w-4 h-4 text-profit" />
           أنماط الرسم البياني
         </CardTitle>
       </CardHeader>
@@ -928,8 +928,8 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
               <span className={cn(
                 'text-[10px] px-2 py-0.5 rounded-full font-medium',
                 prof.patterns.ma_cross === 'golden_cross'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                  ? 'bg-profit text-profit dark:bg-profit/40 dark:text-profit'
+                  : 'bg-loss text-loss dark:bg-loss/40 dark:text-loss'
               )}>
                 {prof.patterns.ma_cross === 'golden_cross' ? 'تقاطع ذهبي ✦' : 'تقاطع مميت ✦'}
               </span>
@@ -948,7 +948,7 @@ function VolumeCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Volume2 className="w-4 h-4 text-emerald-600" />
+          <Volume2 className="w-4 h-4 text-profit" />
           تحليل الحجم
         </CardTitle>
       </CardHeader>
@@ -981,7 +981,7 @@ function RiskMetricsCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Shield className="w-4 h-4 text-emerald-600" />
+          <Shield className="w-4 h-4 text-profit" />
           مقاييس المخاطر
         </CardTitle>
       </CardHeader>
@@ -1025,35 +1025,35 @@ function StrengthsRisksCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
-          <PieChart className="w-4 h-4 text-emerald-600" />
+          <PieChart className="w-4 h-4 text-profit" />
           نقاط القوة والمخاطر
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <h4 className="text-xs font-semibold flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+            <h4 className="text-xs font-semibold flex items-center gap-1.5 text-profit dark:text-profit">
               <CheckCircle2 className="w-3.5 h-3.5" />
               نقاط القوة
             </h4>
             <ul className="space-y-1.5 max-h-48 overflow-y-auto">
               {strengths.map((str, i) => (
                 <li key={i} className="flex items-start gap-2 text-xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-profit dark:text-profit flex-shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{str}</span>
                 </li>
               ))}
             </ul>
           </div>
           <div className="space-y-2">
-            <h4 className="text-xs font-semibold flex items-center gap-1.5 text-red-600 dark:text-red-400">
+            <h4 className="text-xs font-semibold flex items-center gap-1.5 text-loss dark:text-loss">
               <AlertTriangle className="w-3.5 h-3.5" />
               المخاطر
             </h4>
             <ul className="space-y-1.5 max-h-48 overflow-y-auto">
               {risks.map((r, i) => (
                 <li key={i} className="flex items-start gap-2 text-xs">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-loss dark:text-loss flex-shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{r}</span>
                 </li>
               ))}
@@ -1106,10 +1106,10 @@ export function DeepAnalysis() {
   // Warning if price is 0
   if (currentPrice === 0 || !currentPrice) {
     return (
-      <Card className="border-amber-200 dark:border-amber-800">
+      <Card className="border-warning dark:border-warning">
         <CardContent className="p-6 text-center">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-2">
+          <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-warning dark:text-warning mb-2">
             البيانات غير مكتملة
           </h3>
           <p className="text-sm text-muted-foreground mb-4">

@@ -136,7 +136,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
     return (
       <Badge
         variant="outline"
-        className="gap-1 border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+        className="gap-1 border-warning bg-warning text-warning dark:bg-warning/40 dark:text-warning"
       >
         <AlertCircle className="w-3 h-3" />
         تحذير
@@ -146,7 +146,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
   return (
     <Badge
       variant="outline"
-      className="gap-1 border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+      className="gap-1 border-profit bg-profit text-profit dark:bg-profit/40 dark:text-profit"
     >
       <Info className="w-3 h-3" />
       معلومة
@@ -163,10 +163,10 @@ function IssueRow({ issue }: { issue: SystemIssue }) {
       className={cn(
         'rounded-lg border p-4 transition-colors',
         isCritical
-          ? 'border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20'
+          ? 'border-loss bg-loss/50 dark:border-loss/50 dark:bg-loss/20'
           : isWarning
-            ? 'border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20'
-            : 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20',
+            ? 'border-warning bg-warning/50 dark:border-warning/50 dark:bg-warning/20'
+            : 'border-profit bg-profit/50 dark:border-profit/50 dark:bg-profit/20',
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -175,10 +175,10 @@ function IssueRow({ issue }: { issue: SystemIssue }) {
             className={cn(
               'shrink-0 mt-0.5 rounded-md p-1.5',
               isCritical
-                ? 'bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400'
+                ? 'bg-loss text-loss dark:bg-loss/50 dark:text-loss'
                 : isWarning
-                  ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400'
-                  : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400',
+                  ? 'bg-warning text-warning dark:bg-warning/50 dark:text-warning'
+                  : 'bg-profit text-profit dark:bg-profit/50 dark:text-profit',
             )}
           >
             <CategoryIcon category={issue.category} className="w-4 h-4" />
@@ -195,7 +195,7 @@ function IssueRow({ issue }: { issue: SystemIssue }) {
               {issue.description}
             </p>
             {issue.solution && (
-              <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+              <div className="mt-2 flex items-start gap-1.5 text-xs text-warning dark:text-warning">
                 <Lightbulb className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                 <span>
                   <span className="font-medium">الحل المقترح: </span>
@@ -231,9 +231,9 @@ function IssueSection({
 }) {
   if (issues.length === 0) return null;
   const accentClasses = {
-    red: 'text-red-600',
-    amber: 'text-amber-600',
-    emerald: 'text-emerald-600',
+    red: 'text-loss',
+    amber: 'text-warning',
+    emerald: 'text-profit',
   }[accent];
 
   return (
@@ -266,10 +266,10 @@ function SummaryStatCard({
   tone: 'red' | 'amber' | 'emerald' | 'neutral';
 }) {
   const toneClasses = {
-    red: 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400',
-    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400',
+    red: 'bg-loss text-loss dark:bg-loss/30 dark:text-loss',
+    amber: 'bg-warning text-warning dark:bg-warning/30 dark:text-warning',
     emerald:
-      'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400',
+      'bg-profit text-profit dark:bg-profit/30 dark:text-profit',
     neutral: 'bg-muted text-muted-foreground',
   }[tone];
 
@@ -307,7 +307,7 @@ export function SystemProblemsTab({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-amber-600" />
+            <ShieldAlert className="w-5 h-5 text-warning" />
             <CardTitle>مشاكل النظام</CardTitle>
           </div>
           <CardDescription>جاري تحميل حالة النظام...</CardDescription>
@@ -330,11 +330,11 @@ export function SystemProblemsTab({
   // ---- Healthy (empty) state ----
   if (totalCount === 0) {
     return (
-      <Card className="border-emerald-200 dark:border-emerald-900/60">
+      <Card className="border-profit dark:border-profit/60">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              <ShieldCheck className="w-5 h-5 text-profit" />
               <CardTitle>مشاكل النظام</CardTitle>
             </div>
             {onRefresh && (
@@ -353,10 +353,10 @@ export function SystemProblemsTab({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 rounded-full bg-emerald-100 p-4 dark:bg-emerald-950/40">
-              <ShieldCheck className="w-12 h-12 text-emerald-600" />
+            <div className="mb-4 rounded-full bg-profit p-4 dark:bg-profit/40">
+              <ShieldCheck className="w-12 h-12 text-profit" />
             </div>
-            <h3 className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">
+            <h3 className="text-lg font-semibold text-profit dark:text-profit">
               النظام يعمل بشكل سليم
             </h3>
             <p className="mt-1 text-sm text-muted-foreground max-w-md">
@@ -379,7 +379,7 @@ export function SystemProblemsTab({
               <ShieldAlert
                 className={cn(
                   'w-5 h-5',
-                  criticalCount > 0 ? 'text-red-600' : 'text-amber-600',
+                  criticalCount > 0 ? 'text-loss' : 'text-warning',
                 )}
               />
               <CardTitle>مشاكل النظام</CardTitle>

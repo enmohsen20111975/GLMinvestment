@@ -45,10 +45,10 @@ export function WhatsAppToast({
         'w-full max-w-sm sm:max-w-md rounded-2xl p-3.5 shadow-2xl transition-all duration-300 pointer-events-auto',
         'bg-background/95 dark:bg-zinc-900/95 backdrop-blur-md border',
         isExit
-          ? 'border-rose-500/40 border-r-4 border-r-rose-500 shadow-rose-500/10'
+          ? 'border-loss/40 border-r-4 border-r-rose-500 shadow-rose-500/10'
           : isExplosive
-          ? 'border-amber-500/40 border-r-4 border-r-amber-500 shadow-amber-500/10'
-          : 'border-emerald-500/40 border-r-4 border-r-emerald-500 shadow-emerald-500/10'
+          ? 'border-warning/40 border-r-4 border-r-amber-500 shadow-amber-500/10'
+          : 'border-profit/40 border-r-4 border-r-emerald-500 shadow-emerald-500/10'
       )}
     >
       {/* Top Header: Sender Bar (WhatsApp/Messenger Style) */}
@@ -60,10 +60,10 @@ export function WhatsAppToast({
               className={cn(
                 'w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm',
                 isExit
-                  ? 'bg-gradient-to-tr from-rose-600 to-rose-400'
+                  ? 'bg-gradient-to-tr from-loss to-loss'
                   : isExplosive
-                  ? 'bg-gradient-to-tr from-amber-600 to-amber-400'
-                  : 'bg-gradient-to-tr from-emerald-600 to-emerald-400'
+                  ? 'bg-gradient-to-tr from-warning to-warning'
+                  : 'bg-gradient-to-tr from-profit to-profit'
               )}
             >
               {isExit ? (
@@ -80,7 +80,7 @@ export function WhatsAppToast({
             <span
               className={cn(
                 'absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-background',
-                isExit ? 'bg-rose-500' : 'bg-emerald-500'
+                isExit ? 'bg-loss' : 'bg-profit'
               )}
             />
           </div>
@@ -90,7 +90,7 @@ export function WhatsAppToast({
               <span className="text-xs font-bold text-foreground">
                 {isExit ? 'إنذار رادار الأسهم' : 'رادار الفرص المباشر'}
               </span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-profit/10 text-profit dark:text-profit font-medium">
                 ✓ موثق
               </span>
             </div>
@@ -139,8 +139,8 @@ export function WhatsAppToast({
           className={cn(
             'inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-lg text-white shadow-sm transition-all',
             isExit
-              ? 'bg-rose-600 hover:bg-rose-700'
-              : 'bg-emerald-600 hover:bg-emerald-700'
+              ? 'bg-loss hover:bg-loss'
+              : 'bg-profit hover:bg-profit'
           )}
         >
           <ExternalLink className="w-3 h-3" />

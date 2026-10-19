@@ -243,7 +243,7 @@ export function StockInfographicModal({
       >
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-amber-500" />
+            <ImageIcon className="w-4 h-4 text-warning" />
             بطاقة إنفوجرافيك السهم
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
@@ -273,7 +273,7 @@ export function StockInfographicModal({
             onClick={handleDownload}
             disabled={busy !== null}
             variant="default"
-            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+            className="bg-warning hover:bg-warning text-white gap-1.5"
           >
             {busy === 'download' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -317,7 +317,7 @@ export function StockInfographicModal({
           href={OFFICIAL_LINKS.bot}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-amber-600/40 bg-amber-600/10 hover:bg-amber-600/20 text-amber-700 dark:text-amber-400 text-sm font-medium transition-colors no-underline"
+          className="mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-warning/40 bg-warning/10 hover:bg-warning/20 text-warning dark:text-warning text-sm font-medium transition-colors no-underline"
         >
           <Bot className="w-4 h-4" />
           افتح بوت تحليل الأسهم

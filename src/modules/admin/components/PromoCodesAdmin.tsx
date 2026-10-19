@@ -199,9 +199,9 @@ export function PromoCodesAdmin() {
       case 'developer':
         return { label: 'جميع المميزات (كامل)', color: 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/40' };
       case 'premium':
-        return { label: 'باقة المحترفين', color: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40' };
+        return { label: 'باقة المحترفين', color: 'bg-profit/20 text-profit dark:text-profit border-profit/40' };
       case 'normal':
-        return { label: 'الباقة العادية', color: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/40' };
+        return { label: 'الباقة العادية', color: 'bg-primary/20 text-primary dark:text-primary border-primary/40' };
       default:
         return { label: tier, color: 'bg-muted text-muted-foreground border-border' };
     }
@@ -223,7 +223,7 @@ export function PromoCodesAdmin() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/60 pb-4">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
-            <Ticket className="w-6 h-6 text-emerald-500" />
+            <Ticket className="w-6 h-6 text-profit" />
             مولّد وإدارة أكواد الخصم والاشتراكات (Promo Codes)
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
@@ -246,7 +246,7 @@ export function PromoCodesAdmin() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="bg-card border-border/60">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+            <div className="p-2.5 rounded-lg bg-profit/10 text-profit">
               <Ticket className="w-6 h-6" />
             </div>
             <div>
@@ -258,12 +258,12 @@ export function PromoCodesAdmin() {
 
         <Card className="bg-card border-border/60">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-500">
+            <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
               <Zap className="w-6 h-6" />
             </div>
             <div>
               <div className="text-xs text-muted-foreground">الأكواد المفوّضة النشطة</div>
-              <div className="text-2xl font-bold font-mono text-blue-500">
+              <div className="text-2xl font-bold font-mono text-primary">
                 {stats?.active_codes ?? codes.filter((c) => c.is_active).length}
               </div>
             </div>
@@ -286,9 +286,9 @@ export function PromoCodesAdmin() {
       </div>
 
       {/* Create Code Form */}
-      <Card className="border-emerald-500/30 bg-emerald-500/5">
+      <Card className="border-profit/30 bg-profit/5">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+          <CardTitle className="text-base flex items-center gap-2 text-profit dark:text-profit">
             <Sparkles className="w-5 h-5" />
             إنشاء كود خصم وتفعيل جديد
           </CardTitle>
@@ -331,7 +331,7 @@ export function PromoCodesAdmin() {
                 <select
                   value={planTier}
                   onChange={(e) => setPlanTier(e.target.value)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-profit"
                 >
                   <option value="all">⭐ جميع المميزات (All Features / Full Access)</option>
                   <option value="developer">💻 باقة المطورين (Developer Tier)</option>
@@ -346,13 +346,13 @@ export function PromoCodesAdmin() {
               {/* Duration Options */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                  <Clock className="w-3.5 h-3.5 text-profit" />
                   مدة صلاحية الاشتراك للمستخدم:
                 </label>
                 <select
                   value={durationPreset}
                   onChange={(e) => setDurationPreset(e.target.value)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-profit"
                 >
                   <option value="7">أسبوع واحد (7 أيام)</option>
                   <option value="14">أسبوعين (14 يوم)</option>
@@ -377,13 +377,13 @@ export function PromoCodesAdmin() {
               {/* Max Redemptions */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-blue-500" />
+                  <Users className="w-3.5 h-3.5 text-primary" />
                   أقصى عدد مرات التفعيل (Max Uses):
                 </label>
                 <select
                   value={maxUsesPreset}
                   onChange={(e) => setMaxUsesPreset(e.target.value)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="1">استخدام واحد (مستخدم شخصي واحد 1x)</option>
                   <option value="10">10 استخدامات</option>
@@ -396,13 +396,13 @@ export function PromoCodesAdmin() {
               {/* Expiry Date of Code itself */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                  <Calendar className="w-3.5 h-3.5 text-warning" />
                   مدة صلاحية رمز الكود نفسه:
                 </label>
                 <select
                   value={expiryDays}
                   onChange={(e) => setExpiryDays(parseInt(e.target.value))}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-warning"
                 >
                   <option value={7}>ينتهي بعد أسبوع (7 أيام)</option>
                   <option value={30}>ينتهي بعد شهر (30 يوم)</option>
@@ -418,7 +418,7 @@ export function PromoCodesAdmin() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 px-6 shadow-sm"
+                className="bg-profit hover:bg-profit text-white font-bold text-xs gap-2 px-6 shadow-sm"
               >
                 {submitting ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -437,7 +437,7 @@ export function PromoCodesAdmin() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-teal-500" />
+              <Gift className="w-5 h-5 text-whale" />
               سجل أكواد الخصم المفوضة ({codes.length})
             </span>
           </CardTitle>
@@ -485,7 +485,7 @@ export function PromoCodesAdmin() {
                               title="نسخ الكود"
                             >
                               {copiedCode === item.code ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                <Check className="w-3.5 h-3.5 text-profit" />
                               ) : (
                                 <Copy className="w-3.5 h-3.5" />
                               )}
@@ -508,7 +508,7 @@ export function PromoCodesAdmin() {
                         {/* Redemptions */}
                         <td className="p-3">
                           <div className="flex items-center gap-1.5 font-mono">
-                            <span className={cn('font-bold', isExhausted ? 'text-rose-500' : 'text-emerald-500')}>
+                            <span className={cn('font-bold', isExhausted ? 'text-loss' : 'text-profit')}>
                               {item.current_uses}
                             </span>
                             <span className="text-muted-foreground">/</span>
@@ -521,26 +521,26 @@ export function PromoCodesAdmin() {
                         {/* Expiry */}
                         <td className="p-3 text-[11px] text-muted-foreground">
                           {item.expires_at ? (
-                            <span className={cn(isExpired && 'text-rose-500 font-bold')}>
+                            <span className={cn(isExpired && 'text-loss font-bold')}>
                               {new Date(item.expires_at).toLocaleDateString('ar-EG')}
                             </span>
                           ) : (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">دائم</span>
+                            <span className="text-profit dark:text-profit font-semibold">دائم</span>
                           )}
                         </td>
 
                         {/* Status */}
                         <td className="p-3">
                           {isExpired ? (
-                            <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/30">
+                            <Badge variant="outline" className="bg-loss/10 text-loss border-loss/30">
                               منتهي الصلاحية
                             </Badge>
                           ) : isExhausted ? (
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30">
+                            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
                               مكتمل الاستخدام
                             </Badge>
                           ) : item.is_active ? (
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                            <Badge variant="outline" className="bg-profit/10 text-profit border-profit/30">
                               مفعّل وفعّال
                             </Badge>
                           ) : (
@@ -559,7 +559,7 @@ export function PromoCodesAdmin() {
                               onClick={() => handleToggleStatus(item.id, item.is_active)}
                               className={cn(
                                 'h-7 px-2 text-xs font-semibold gap-1',
-                                item.is_active ? 'text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:bg-emerald-500/10'
+                                item.is_active ? 'text-warning hover:bg-warning/10' : 'text-profit hover:bg-profit/10'
                               )}
                               title={item.is_active ? 'تعطيل الكود' : 'تفعيل الكود'}
                             >
@@ -571,7 +571,7 @@ export function PromoCodesAdmin() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteCode(item.id, item.code)}
-                              className="h-7 w-7 p-0 text-rose-500 hover:bg-rose-500/10"
+                              className="h-7 w-7 p-0 text-loss hover:bg-loss/10"
                               title="حذف الكود"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

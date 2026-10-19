@@ -350,17 +350,17 @@ function statusTone(status: 'online' | 'offline' | 'degraded' | 'unknown' | 'run
   switch (status) {
     case 'online':
     case 'running':
-      return { dot: 'bg-emerald-500', badge: 'border-emerald-500 text-emerald-700', label: '🟢 يعمل', bg: 'bg-emerald-50 dark:bg-emerald-950/20' };
+      return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 يعمل', bg: 'bg-profit dark:bg-profit/20' };
     case 'scheduled':
       // Task 35-C: worker engines with no live process but a recent log entry
       // (last 30 min) → "🟢 مجدول" (emerald — it's a periodic worker, not dead).
-      return { dot: 'bg-emerald-500', badge: 'border-emerald-500 text-emerald-700', label: '🟢 مجدول', bg: 'bg-emerald-50 dark:bg-emerald-950/20' };
+      return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 مجدول', bg: 'bg-profit dark:bg-profit/20' };
     case 'offline':
     case 'stopped':
-      return { dot: 'bg-red-500', badge: 'border-red-500 text-red-700', label: '🔴 متوقف', bg: 'bg-red-50 dark:bg-red-950/20' };
+      return { dot: 'bg-loss', badge: 'border-loss text-loss', label: '🔴 متوقف', bg: 'bg-loss dark:bg-loss/20' };
     case 'degraded':
     case 'slow':
-      return { dot: 'bg-amber-500', badge: 'border-amber-500 text-amber-700', label: '🟡 بطيء', bg: 'bg-amber-50 dark:bg-amber-950/20' };
+      return { dot: 'bg-warning', badge: 'border-warning text-warning', label: '🟡 بطيء', bg: 'bg-warning dark:bg-warning/20' };
     default:
       return { dot: 'bg-slate-400', badge: 'border-slate-400 text-slate-700', label: '⚪ غير معروف', bg: 'bg-slate-50 dark:bg-slate-900/20' };
   }
@@ -484,10 +484,10 @@ function nextRunCountdown(schedule: string): string {
  *  the user just triggered a manual run (running = amber). */
 function cronTone(running: boolean) {
   if (running) {
-    return { dot: 'bg-amber-500', badge: 'border-amber-500 text-amber-700', label: '🟡 يعمل الآن', bg: 'bg-amber-50 dark:bg-amber-950/20' };
+    return { dot: 'bg-warning', badge: 'border-warning text-warning', label: '🟡 يعمل الآن', bg: 'bg-warning dark:bg-warning/20' };
   }
   // CRITICAL Rule 67 fix: cron engines are NEVER "متوقف" — they're "مجدول".
-  return { dot: 'bg-emerald-500', badge: 'border-emerald-500 text-emerald-700', label: '🟢 مجدول', bg: 'bg-emerald-50 dark:bg-emerald-950/20' };
+  return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 مجدول', bg: 'bg-profit dark:bg-profit/20' };
 }
 
 // ============================================================================
@@ -566,7 +566,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
 
           {/* Errors badge */}
           {errorsCount > 0 && (
-            <div className="flex items-center gap-1 text-[10px] text-red-600">
+            <div className="flex items-center gap-1 text-[10px] text-loss">
               <AlertTriangle className="w-3 h-3" />
               {errorsCount} خطأ في آخر السجلات
             </div>
@@ -582,7 +582,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
                   key={i}
                   className={cn(
                     'truncate',
-                    looksLikeError(line) ? 'text-red-300' : 'text-slate-300',
+                    looksLikeError(line) ? 'text-loss' : 'text-slate-300',
                   )}
                   dir="ltr"
                   title={line}
@@ -598,7 +598,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 flex-1 text-[10px] gap-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+              className="h-7 flex-1 text-[10px] gap-1 hover:bg-profit dark:hover:bg-profit/30"
               disabled={actionLoading || running || !entry.controlKey}
               onClick={(e) => { e.stopPropagation(); onAction('start'); }}
             >
@@ -608,7 +608,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 flex-1 text-[10px] gap-1 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+              className="h-7 flex-1 text-[10px] gap-1 hover:bg-warning dark:hover:bg-warning/30"
               onClick={(e) => { e.stopPropagation(); onOpenLiveConsole(); }}
             >
               <Terminal className="w-3 h-3" /> السجلات
@@ -686,7 +686,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
 
           {/* Errors badge */}
           {errorsCount > 0 && (
-            <div className="flex items-center gap-1 text-[10px] text-red-600">
+            <div className="flex items-center gap-1 text-[10px] text-loss">
               <AlertTriangle className="w-3 h-3" />
               {errorsCount} خطأ في آخر السجلات
             </div>
@@ -702,7 +702,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
                   key={i}
                   className={cn(
                     'truncate',
-                    looksLikeError(line) ? 'text-red-300' : 'text-slate-300',
+                    looksLikeError(line) ? 'text-loss' : 'text-slate-300',
                   )}
                   dir="ltr"
                   title={line}
@@ -718,7 +718,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 flex-1 text-[10px] gap-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+              className="h-7 flex-1 text-[10px] gap-1 hover:bg-profit dark:hover:bg-profit/30"
               disabled={actionLoading || processRunning}
               onClick={(e) => { e.stopPropagation(); onAction('start'); }}
             >
@@ -728,7 +728,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 flex-1 text-[10px] gap-1 hover:bg-red-100 dark:hover:bg-red-900/30"
+              className="h-7 flex-1 text-[10px] gap-1 hover:bg-loss dark:hover:bg-loss/30"
               disabled={actionLoading || !processRunning}
               onClick={(e) => { e.stopPropagation(); onAction('stop'); }}
             >
@@ -737,7 +737,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 flex-1 text-[10px] gap-1 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+              className="h-7 flex-1 text-[10px] gap-1 hover:bg-warning dark:hover:bg-warning/30"
               disabled={actionLoading || !entry.controlKey}
               onClick={(e) => { e.stopPropagation(); onAction('restart'); }}
             >
@@ -812,7 +812,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
 
         {/* Errors badge */}
         {errorsCount > 0 && (
-          <div className="flex items-center gap-1 text-[10px] text-red-600">
+          <div className="flex items-center gap-1 text-[10px] text-loss">
             <AlertTriangle className="w-3 h-3" />
             {errorsCount} خطأ في آخر السجلات
           </div>
@@ -828,7 +828,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
                 key={i}
                 className={cn(
                   'truncate',
-                  looksLikeError(line) ? 'text-red-300' : 'text-slate-300',
+                  looksLikeError(line) ? 'text-loss' : 'text-slate-300',
                 )}
                 dir="ltr"
                 title={line}
@@ -844,7 +844,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 flex-1 text-[10px] gap-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+            className="h-7 flex-1 text-[10px] gap-1 hover:bg-profit dark:hover:bg-profit/30"
             disabled={actionLoading || isRunning}
             onClick={(e) => { e.stopPropagation(); onAction('start'); }}
           >
@@ -854,7 +854,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 flex-1 text-[10px] gap-1 hover:bg-red-100 dark:hover:bg-red-900/30"
+            className="h-7 flex-1 text-[10px] gap-1 hover:bg-loss dark:hover:bg-loss/30"
             disabled={actionLoading || !isRunning}
             onClick={(e) => { e.stopPropagation(); onAction('stop'); }}
           >
@@ -863,7 +863,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 flex-1 text-[10px] gap-1 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+            className="h-7 flex-1 text-[10px] gap-1 hover:bg-warning dark:hover:bg-warning/30"
             disabled={actionLoading || !entry.controlKey}
             onClick={(e) => { e.stopPropagation(); onAction('restart'); }}
           >
@@ -1049,7 +1049,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
               </div>
               <div className="min-w-0">
                 <SheetTitle className="text-sm text-slate-100 flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-emerald-400" />
+                  <Terminal className="w-4 h-4 text-profit" />
                   كونسول حي — {entry.name_ar}
                 </SheetTitle>
                 <SheetDescription className="text-[10px] text-slate-400" dir="ltr">
@@ -1064,11 +1064,11 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
                 className={cn(
                   'text-[10px] shrink-0',
                   isRunning
-                    ? 'border-amber-500 text-amber-300 bg-amber-950/30'
+                    ? 'border-warning text-warning bg-warning/30'
                     : processExited
                       ? exitedSuccessfully
-                        ? 'border-emerald-500 text-emerald-300 bg-emerald-950/30'
-                        : 'border-red-500 text-red-300 bg-red-950/30'
+                        ? 'border-profit text-profit bg-profit/30'
+                        : 'border-loss text-loss bg-loss/30'
                       : 'border-slate-500 text-slate-300 bg-slate-800/50',
                 )}
               >
@@ -1110,7 +1110,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
               className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-md border',
                 autoRefresh
-                  ? 'border-emerald-500 text-emerald-300 bg-emerald-950/30'
+                  ? 'border-profit text-profit bg-profit/30'
                   : 'border-slate-500 text-slate-400 bg-slate-800/50',
               )}
             >
@@ -1128,7 +1128,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
               <button
                 onClick={onRerun}
                 disabled={isRunning}
-                className="flex items-center gap-1 px-2 py-1 rounded-md border border-amber-500 text-amber-300 bg-amber-950/30 hover:bg-amber-900/30 disabled:opacity-50"
+                className="flex items-center gap-1 px-2 py-1 rounded-md border border-warning text-warning bg-warning/30 hover:bg-warning/30 disabled:opacity-50"
               >
                 <Zap className="w-3 h-3" />
                 {isCron ? 'إعادة التشغيل اليدوي' : 'إعادة المحاولة'}
@@ -1151,7 +1151,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
           {lines.length === 0 ? (
             <div className="text-slate-500 text-center py-8">
               {fetchError ? (
-                <span className="text-red-400">⚠ {fetchError}</span>
+                <span className="text-loss">⚠ {fetchError}</span>
               ) : fileExists ? (
                 'الملف موجود لكنه فارغ — بانتظار أول سطر...'
               ) : actionInProgress ? (
@@ -1166,8 +1166,8 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
           ) : (
             lines.map((line, i) => {
               const sev = severityOf(line);
-              const color = sev === 'error' ? 'text-red-300'
-                : sev === 'warning' ? 'text-amber-300'
+              const color = sev === 'error' ? 'text-loss'
+                : sev === 'warning' ? 'text-warning'
                 : 'text-slate-300';
               return (
                 <div key={i} className={cn('whitespace-pre-wrap break-all', color)}>
@@ -1181,8 +1181,8 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
             <div className={cn(
               'mt-2 p-2 rounded border text-[11px]',
               exitedSuccessfully
-                ? 'border-emerald-700 bg-emerald-950/40 text-emerald-300'
-                : 'border-red-700 bg-red-950/40 text-red-300',
+                ? 'border-profit bg-profit/40 text-profit'
+                : 'border-loss bg-loss/40 text-loss',
             )}>
               {exitedSuccessfully
                 ? '✅ اكتمل التشغيل — انتهت العملية بنجاح'
@@ -1283,7 +1283,7 @@ function DetailSheet({ entry, service, controlInfo, logs, onClose, onAction, act
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1 border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+                className="gap-1 border-profit text-profit hover:bg-profit"
                 disabled={actionLoading || isRunning}
                 onClick={() => onAction('start')}
               >
@@ -1292,7 +1292,7 @@ function DetailSheet({ entry, service, controlInfo, logs, onClose, onAction, act
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1 border-red-500 text-red-700 hover:bg-red-50"
+                className="gap-1 border-loss text-loss hover:bg-loss"
                 disabled={actionLoading || !isRunning}
                 onClick={() => onAction('stop')}
               >
@@ -1301,7 +1301,7 @@ function DetailSheet({ entry, service, controlInfo, logs, onClose, onAction, act
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1 border-amber-500 text-amber-700 hover:bg-amber-50"
+                className="gap-1 border-warning text-warning hover:bg-warning"
                 disabled={actionLoading}
                 onClick={() => onAction('restart')}
               >
@@ -1334,7 +1334,7 @@ function DetailSheet({ entry, service, controlInfo, logs, onClose, onAction, act
                         <div
                           key={j}
                           className={cn(
-                            looksLikeError(line) ? 'text-red-300' : 'text-slate-300',
+                            looksLikeError(line) ? 'text-loss' : 'text-slate-300',
                             'whitespace-pre-wrap break-all',
                           )}
                         >
@@ -1416,7 +1416,7 @@ function DataEngineDeepView({ logs }: { logs: EngineLogsResponse | null }) {
                   </div>
                 </div>
                 {errCount > 0 && (
-                  <div className="flex items-center gap-1 text-[10px] text-red-600">
+                  <div className="flex items-center gap-1 text-[10px] text-loss">
                     <AlertTriangle className="w-3 h-3" /> {errCount} خطأ في آخر 50 سطر
                   </div>
                 )}
@@ -1451,11 +1451,11 @@ function NewsEngineDeepView({ news }: { news: NewsHealthResponse | null }) {
         </div>
         <div className="rounded-md border p-2">
           <div className="text-[10px] text-muted-foreground">المعطّلة</div>
-          <div className="font-bold text-red-600">{news.broken_sources_count ?? 0}</div>
+          <div className="font-bold text-loss">{news.broken_sources_count ?? 0}</div>
         </div>
         <div className="rounded-md border p-2">
           <div className="text-[10px] text-muted-foreground">السليمة</div>
-          <div className="font-bold text-emerald-600">
+          <div className="font-bold text-profit">
             {(news.sources || []).filter(s => !s.is_broken).length}
           </div>
         </div>
@@ -1479,7 +1479,7 @@ function NewsEngineDeepView({ news }: { news: NewsHealthResponse | null }) {
                   {src.article_count} مقال · آخر fetch: {src.last_fetch_human || 'أبداً'}
                 </div>
                 {src.broken_reason && (
-                  <div className="text-[10px] text-red-600">{src.broken_reason}</div>
+                  <div className="text-[10px] text-loss">{src.broken_reason}</div>
                 )}
               </CardContent>
             </Card>
@@ -1522,17 +1522,17 @@ function PredictionsEngineDeepView({ logs }: { logs: EngineLogsResponse | null }
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs">
-        <AlertTriangle className="w-4 h-4 inline ml-1 text-amber-600" />
+      <div className="rounded-md border border-warning bg-warning dark:bg-warning/20 p-3 text-xs">
+        <AlertTriangle className="w-4 h-4 inline ml-1 text-warning" />
         الأداء لكل نموذج (technical / fundamental / master_score) بيتحسب من predictions.db.
         هنا بنعرض السجلات الحية لمحرك V40.2 + آخر تشغيل لكل job.
       </div>
 
       {/* PHASE2-ADMIN-PANEL: regenerate predictions for a specific market */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardContent className="p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Brain className="w-4 h-4 text-emerald-600" />
+            <Brain className="w-4 h-4 text-profit" />
             <span className="text-xs font-semibold">إعادة توليد التوقعات لسوق معين</span>
             <select
               value={market}
@@ -1550,7 +1550,7 @@ function PredictionsEngineDeepView({ logs }: { logs: EngineLogsResponse | null }
               size="sm"
               onClick={handleRegenerate}
               disabled={regenLoading}
-              className="gap-1.5 h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+              className="gap-1.5 h-8 bg-profit hover:bg-profit text-white text-xs"
             >
               {regenLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
               إعادة التوليد
@@ -1587,12 +1587,12 @@ function PredictionsEngineDeepView({ logs }: { logs: EngineLogsResponse | null }
                   آخر تشغيل: {f.mtime ? timeAgoBrief(f.mtime) : 'لم يُشغّل'}
                 </div>
                 {errCount > 0 && (
-                  <div className="text-[10px] text-red-600">{errCount} خطأ</div>
+                  <div className="text-[10px] text-loss">{errCount} خطأ</div>
                 )}
                 {f.exists && f.lines.length > 0 && (
                   <div className="rounded bg-slate-950 text-slate-200 p-1.5 font-mono text-[10px] max-h-24 overflow-y-auto" dir="ltr">
                     {f.lines.slice(-5).map((l, i) => (
-                      <div key={i} className={cn('whitespace-pre-wrap break-all truncate', looksLikeError(l) ? 'text-red-300' : 'text-slate-300')}>
+                      <div key={i} className={cn('whitespace-pre-wrap break-all truncate', looksLikeError(l) ? 'text-loss' : 'text-slate-300')}>
                         {l || ' '}
                       </div>
                     ))}
@@ -1627,7 +1627,7 @@ function ShariaEngineDeepView({ sharia }: { sharia: ShariaApiResponse | null }) 
         </div>
         <div className="rounded-md border p-2">
           <div className="text-[10px] text-muted-foreground">إجماع</div>
-          <div className="font-bold text-emerald-600">{sharia.stats?.consensus_count ?? 0}</div>
+          <div className="font-bold text-profit">{sharia.stats?.consensus_count ?? 0}</div>
         </div>
         <div className="rounded-md border p-2">
           <div className="text-[10px] text-muted-foreground">مع نسبة S&P</div>
@@ -1635,7 +1635,7 @@ function ShariaEngineDeepView({ sharia }: { sharia: ShariaApiResponse | null }) 
         </div>
         <div className="rounded-md border p-2">
           <div className="text-[10px] text-muted-foreground">مراجعة مطلوبة</div>
-          <div className="font-bold text-amber-600">{reviewQueue.length}</div>
+          <div className="font-bold text-warning">{reviewQueue.length}</div>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1648,7 +1648,7 @@ function ShariaEngineDeepView({ sharia }: { sharia: ShariaApiResponse | null }) 
                   {s.methodology || '—'}
                 </div>
               </div>
-              <Badge variant="outline" className={cn('text-[10px]', s.is_active ? 'border-emerald-500 text-emerald-700' : 'border-slate-400 text-slate-500')}>
+              <Badge variant="outline" className={cn('text-[10px]', s.is_active ? 'border-profit text-profit' : 'border-slate-400 text-slate-500')}>
                 {s.is_active ? 'نشط' : 'موقوف'}
               </Badge>
             </CardContent>
@@ -1659,7 +1659,7 @@ function ShariaEngineDeepView({ sharia }: { sharia: ShariaApiResponse | null }) 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-warning" />
               طابور المراجعة ({reviewQueue.length})
             </CardTitle>
           </CardHeader>
@@ -1668,7 +1668,7 @@ function ShariaEngineDeepView({ sharia }: { sharia: ShariaApiResponse | null }) 
               {reviewQueue.slice(0, 30).map((row, i) => (
                 <div key={i} className="text-[10px] grid grid-cols-4 gap-2 border-b border-border pb-1">
                   <code dir="ltr">{row.source_symbol}</code>
-                  <code dir="ltr" className="text-emerald-600">{row.resolved_ticker}</code>
+                  <code dir="ltr" className="text-profit">{row.resolved_ticker}</code>
                   <span className="text-muted-foreground">{row.confidence || '—'}</span>
                   <span className="text-muted-foreground truncate">{row.source_name_ar || '—'}</span>
                 </div>
@@ -1699,19 +1699,19 @@ function CronDeepView({ cron }: { cron: CronHealthResponse | null }) {
         </div>
         <div className="rounded-md border p-2">
           <div className="text-muted-foreground">شُغّلت</div>
-          <div className="font-bold text-base text-emerald-600">{cron.summary?.jobs_ran ?? 0}</div>
+          <div className="font-bold text-base text-profit">{cron.summary?.jobs_ran ?? 0}</div>
         </div>
         <div className="rounded-md border p-2">
           <div className="text-muted-foreground">لم تُشغّل</div>
-          <div className="font-bold text-base text-red-600">{cron.summary?.jobs_never_run ?? 0}</div>
+          <div className="font-bold text-base text-loss">{cron.summary?.jobs_never_run ?? 0}</div>
         </div>
         <div className="rounded-md border p-2">
           <div className="text-muted-foreground">اليوم</div>
-          <div className="font-bold text-base text-emerald-600">{cron.summary?.jobs_run_today ?? 0}</div>
+          <div className="font-bold text-base text-profit">{cron.summary?.jobs_run_today ?? 0}</div>
         </div>
         <div className="rounded-md border p-2">
           <div className="text-muted-foreground">قديمة</div>
-          <div className="font-bold text-base text-amber-600">{cron.summary?.jobs_stale_7d ?? 0}</div>
+          <div className="font-bold text-base text-warning">{cron.summary?.jobs_stale_7d ?? 0}</div>
         </div>
       </div>
       <div className="max-h-96 overflow-y-auto space-y-1">
@@ -1815,7 +1815,7 @@ function ConsoleDeepView({ logs, engineFilter, setEngineFilter, search, setSearc
         ) : (
           filtered.map((err, i) => {
             const sev = severityOf(err.line);
-            const color = sev === 'error' ? 'text-red-300' : sev === 'warning' ? 'text-amber-300' : 'text-slate-300';
+            const color = sev === 'error' ? 'text-loss' : sev === 'warning' ? 'text-warning' : 'text-slate-300';
             return (
               <div key={i} className={cn('whitespace-pre-wrap break-all border-b border-slate-800 pb-1 mb-1', color)}>
                 <span className="text-slate-500">[{err.engine}]</span>{' '}
@@ -2148,12 +2148,12 @@ export function EngineControlRoomTab() {
       {/* ============================================================ */}
       {/* Header + Quick Actions Bar                                    */}
       {/* ============================================================ */}
-      <Card className="border-amber-200 dark:border-amber-900/40">
+      <Card className="border-warning dark:border-warning/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Cpu className="w-5 h-5 text-amber-600" />
+                <Cpu className="w-5 h-5 text-warning" />
                 غرفة تحكم المحركات
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -2167,7 +2167,7 @@ export function EngineControlRoomTab() {
                 </Badge>
               )}
               {logs?.errors_only && logs.errors_only.length > 0 && (
-                <Badge variant="outline" className="text-[10px] border-red-500 text-red-700">
+                <Badge variant="outline" className="text-[10px] border-loss text-loss">
                   <AlertTriangle className="w-3 h-3 ml-1" />
                   {logs.errors_only.length} خطأ
                 </Badge>
@@ -2181,7 +2181,7 @@ export function EngineControlRoomTab() {
             <Button
               size="sm"
               variant="outline"
-              className="gap-1 border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+              className="gap-1 border-profit text-profit hover:bg-profit"
               disabled={!!batchLoading}
               onClick={handleStartAll}
             >
@@ -2194,7 +2194,7 @@ export function EngineControlRoomTab() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="gap-1 border-red-500 text-red-700 hover:bg-red-50"
+                  className="gap-1 border-loss text-loss hover:bg-loss"
                   disabled={!!batchLoading}
                 >
                   {batchLoading === 'stop' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Square className="w-3 h-3" />}
@@ -2212,7 +2212,7 @@ export function EngineControlRoomTab() {
                   <AlertDialogCancel>إلغاء</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleStopAll}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-loss hover:bg-loss text-white"
                   >
                     نعم، أوقف الكل
                   </AlertDialogAction>
@@ -2223,7 +2223,7 @@ export function EngineControlRoomTab() {
             <Button
               size="sm"
               variant="outline"
-              className="gap-1 border-amber-500 text-amber-700 hover:bg-amber-50"
+              className="gap-1 border-warning text-warning hover:bg-warning"
               disabled={!!batchLoading}
               onClick={handleFullCheck}
             >
@@ -2267,7 +2267,7 @@ export function EngineControlRoomTab() {
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-bold flex items-center gap-2">
-            <Server className="w-4 h-4 text-emerald-600" />
+            <Server className="w-4 h-4 text-profit" />
             الخدمات الدائمة (24/7 Daemons)
             <Badge variant="outline" className="text-[10px] ml-1">{DAEMON_ENTRIES.length}</Badge>
           </h3>
@@ -2314,7 +2314,7 @@ export function EngineControlRoomTab() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-600" />
+              <Activity className="w-4 h-4 text-profit" />
               عمليات الخلفية (Background Workers)
               <Badge variant="outline" className="text-[10px] ml-1">{WORKER_ENTRIES.length}</Badge>
             </h3>
@@ -2353,7 +2353,7 @@ export function EngineControlRoomTab() {
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-bold flex items-center gap-2">
-            <Clock className="w-4 h-4 text-amber-600" />
+            <Clock className="w-4 h-4 text-warning" />
             المحركات المجدولة (Cron Jobs)
             <Badge variant="outline" className="text-[10px] ml-1">{CRON_ENTRIES.length}</Badge>
           </h3>
@@ -2398,7 +2398,7 @@ export function EngineControlRoomTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Activity className="w-4 h-4 text-amber-600" />
+            <Activity className="w-4 h-4 text-warning" />
             التفاصيل لكل محرك
           </CardTitle>
         </CardHeader>
@@ -2412,7 +2412,7 @@ export function EngineControlRoomTab() {
                 className={cn(
                   'flex items-center gap-1 px-3 py-1.5 rounded-md text-xs transition-colors',
                   deepView === v.id
-                    ? 'bg-background shadow-sm text-emerald-700 dark:text-emerald-300 font-bold'
+                    ? 'bg-background shadow-sm text-profit dark:text-profit font-bold'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >

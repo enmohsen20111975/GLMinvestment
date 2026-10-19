@@ -520,7 +520,7 @@ export function DbBackupPanel() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-xl flex items-center gap-2.5">
-                <Archive className="w-6 h-6 text-emerald-500" />
+                <Archive className="w-6 h-6 text-profit" />
                 النسخ الاحتياطي لقواعد البيانات وإدارتها + رفع GitHub
               </CardTitle>
               <CardDescription className="text-sm mt-1">
@@ -568,7 +568,7 @@ export function DbBackupPanel() {
                     className={cn(
                       'px-3 py-1.5 rounded-md text-xs font-medium transition-all border',
                       active
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        ? 'bg-profit text-white border-profit shadow-sm'
                         : 'bg-background hover:bg-muted text-foreground border-border'
                     )}
                   >
@@ -625,18 +625,18 @@ export function DbBackupPanel() {
                   <div className="rounded border bg-background p-2">
                     <div className="text-muted-foreground">ahead / behind</div>
                     <div className="font-mono">
-                      <span className="text-emerald-600">↑{gitStatus.ahead}</span>
+                      <span className="text-profit">↑{gitStatus.ahead}</span>
                       <span className="mx-1 text-muted-foreground">/</span>
-                      <span className="text-rose-600">↓{gitStatus.behind}</span>
+                      <span className="text-loss">↓{gitStatus.behind}</span>
                     </div>
                   </div>
                   <div className="rounded border bg-background p-2">
                     <div className="text-muted-foreground">rebase / merge</div>
                     <div className="font-mono">
                       {gitStatus.rebase_in_progress || gitStatus.merge_in_progress ? (
-                        <span className="text-rose-600">⚠️ في progress</span>
+                        <span className="text-loss">⚠️ في progress</span>
                       ) : (
-                        <span className="text-emerald-600">✓ نظيف</span>
+                        <span className="text-profit">✓ نظيف</span>
                       )}
                     </div>
                   </div>
@@ -737,7 +737,7 @@ export function DbBackupPanel() {
             <Button
               onClick={() => handleExecuteBackup(uploadToGithub)}
               disabled={busy || selectedDbs.size === 0}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="gap-2 bg-profit hover:bg-profit text-white"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
               {busy
@@ -774,7 +774,7 @@ export function DbBackupPanel() {
           {data && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
               <SummaryStat
-                icon={<Database className="w-4 h-4 text-emerald-500" />}
+                icon={<Database className="w-4 h-4 text-profit" />}
                 label="إجمالي قواعد البيانات"
                 value={`${data.summary.total_dbs} قاعدة`}
                 subValue={`${parseFloat(data.summary.total_size_mb).toFixed(1)} MB الكلي`}
@@ -792,7 +792,7 @@ export function DbBackupPanel() {
                 subValue="حد أمان GitHub"
               />
               <SummaryStat
-                icon={<FileArchive className="w-4 h-4 text-amber-500" />}
+                icon={<FileArchive className="w-4 h-4 text-warning" />}
                 label="الأرشيفات في data/"
                 value={`${data.summary.total_archives} أرشيف`}
                 subValue="جاهزة أو مرفوعة"
@@ -808,7 +808,7 @@ export function DbBackupPanel() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <Database className="w-4 h-4 text-emerald-500" />
+                <Database className="w-4 h-4 text-profit" />
                 قواعد البيانات المتاحة ({dbs.length})
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
@@ -825,7 +825,7 @@ export function DbBackupPanel() {
                 onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
                 className="h-8 text-xs gap-1.5"
               >
-                {isAllSelected ? <Square className="w-3.5 h-3.5" /> : <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />}
+                {isAllSelected ? <Square className="w-3.5 h-3.5" /> : <CheckSquare className="w-3.5 h-3.5 text-profit" />}
                 {isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
               </Button>
               <Button
@@ -842,7 +842,7 @@ export function DbBackupPanel() {
                 variant="ghost"
                 size="sm"
                 onClick={handleSelectNonCore}
-                className="h-8 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                className="h-8 text-xs text-warning dark:text-warning hover:bg-warning dark:hover:bg-warning/40"
               >
                 غير الأساسية / القديمة
               </Button>
@@ -893,7 +893,7 @@ export function DbBackupPanel() {
                         onClick={() => handleToggleDb(db.name)}
                         className={cn(
                           'hover:bg-muted/40 cursor-pointer transition-colors',
-                          isSelected && 'bg-emerald-500/5 dark:bg-emerald-500/10'
+                          isSelected && 'bg-profit/5 dark:bg-profit/10'
                         )}
                       >
                         <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
@@ -910,7 +910,7 @@ export function DbBackupPanel() {
                           <span
                             className={cn(
                               'font-medium text-xs',
-                              isHuge ? 'text-red-500 font-bold' : isMedium ? 'text-amber-500 font-bold' : ''
+                              isHuge ? 'text-loss font-bold' : isMedium ? 'text-warning font-bold' : ''
                             )}
                           >
                             {sizeMb > 1024 ? `${(sizeMb / 1024).toFixed(2)} GB` : `${db.size_mb} MB`}
@@ -918,7 +918,7 @@ export function DbBackupPanel() {
                         </td>
                         <td className="p-2.5 whitespace-nowrap">
                           {db.is_core ? (
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[11px]">
+                            <Badge variant="outline" className="bg-profit/10 text-profit border-profit/30 text-[11px]">
                               أساسية للنظام
                             </Badge>
                           ) : (
@@ -936,7 +936,7 @@ export function DbBackupPanel() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openDeleteModalForSingle(db)}
-                            className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                            className="size-7 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/40"
                             title="حذف قاعدة البيانات"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -957,7 +957,7 @@ export function DbBackupPanel() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
-              <FileArchive className="w-4 h-4 text-amber-500" />
+              <FileArchive className="w-4 h-4 text-warning" />
               الأرشيفات الموجودة في <code className="text-xs bg-muted px-1 rounded">data/</code> ({archives.length})
             </CardTitle>
             {archives.length > 0 && (
@@ -966,7 +966,7 @@ export function DbBackupPanel() {
                 variant="outline"
                 size="sm"
                 onClick={openDeleteModalForAllArchives}
-                className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border-red-200 dark:border-red-900"
+                className="h-7 text-xs text-loss hover:text-loss hover:bg-loss dark:hover:bg-loss/40 border-loss dark:border-loss"
               >
                 <Trash2 className="w-3 h-3 ml-1" />
                 حذف كل الأرشيفات
@@ -977,7 +977,7 @@ export function DbBackupPanel() {
         <CardContent>
           {archives.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground text-sm">
-              <AlertCircle className="w-7 h-7 mx-auto mb-1.5 opacity-50 text-amber-500" />
+              <AlertCircle className="w-7 h-7 mx-auto mb-1.5 opacity-50 text-warning" />
               لا توجد ملفات أرشيف في <code className="text-xs bg-muted px-1 rounded">data/</code>. اضغط زر الضغط بالأعلى لإنشاء نسخة جديدة.
             </div>
           ) : (
@@ -1023,7 +1023,7 @@ export function DbBackupPanel() {
                           variant="ghost"
                           size="icon"
                           onClick={() => openDeleteModalForArchive(arc)}
-                          className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                          className="size-7 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/40"
                           title="حذف هذا الأرشيف"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1042,8 +1042,8 @@ export function DbBackupPanel() {
       <Dialog open={!!deleteModal} onOpenChange={(open) => !open && setDeleteModal(null)}>
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
+            <DialogTitle className="flex items-center gap-2 text-loss">
+              <AlertTriangle className="w-5 h-5 text-loss" />
               تأكيد حذف {deleteModal?.targetType === 'database' ? 'قواعد البيانات' : 'ملفات الأرشيف'}
             </DialogTitle>
             <DialogDescription className="text-sm pt-2">
@@ -1052,8 +1052,8 @@ export function DbBackupPanel() {
           </DialogHeader>
 
           {deleteModal?.hasCore && (
-            <div className="p-3 rounded-md bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-red-700 dark:text-red-400 text-xs leading-relaxed">
-              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-red-600" />
+            <div className="p-3 rounded-md bg-loss/10 border border-loss/30 flex items-start gap-2.5 text-loss dark:text-loss text-xs leading-relaxed">
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-loss" />
               <div>
                 <strong>تحذير أمني:</strong> تحتوي القائمة على قاعدة بيانات أساسية لنظام المنصة (مثل stocks.db أو auth.db أو price_history.db). حذفها قد يؤثر على تشغيل النظام إذا لم تكن تملك نسخة احتياطية!
               </div>

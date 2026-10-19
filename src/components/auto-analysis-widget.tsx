@@ -107,12 +107,12 @@ export function AutoAnalysisWidget() {
       <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-400" />
+            <AlertTriangle className="h-5 w-5 text-loss" />
             <CardTitle className="text-white">خطأ في التحميل</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-red-400 mb-4">{error}</p>
+          <p className="text-loss mb-4">{error}</p>
           <Button onClick={fetchTestResult} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             إعادة المحاولة
@@ -136,7 +136,7 @@ export function AutoAnalysisWidget() {
           </div>
           <div className="flex items-center gap-2">
             {testResult.auto_analysis_eligible ? (
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
+              <Badge className="bg-success/20 text-success border-success/50">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 جاهز للتشغيل
               </Badge>
@@ -168,7 +168,7 @@ export function AutoAnalysisWidget() {
             <div className="text-xs text-slate-400">الدقة الإجمالية</div>
           </div>
           <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-            <div className={`text-2xl font-bold ${safeNum(testResult.improvement) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <div className={`text-2xl font-bold ${safeNum(testResult.improvement) >= 0 ? 'text-success' : 'text-loss'}`}>
               {safeNum(testResult.improvement) >= 0 ? '+' : ''}{safeNum(testResult.improvement).toFixed(1)}%
             </div>
             <div className="text-xs text-slate-400">التحسن</div>
@@ -211,14 +211,14 @@ export function AutoAnalysisWidget() {
                 <div className="flex items-center gap-3">
                   <span className="text-slate-500">{safeNum(result.predictions)} توقع</span>
                   <div className="flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-green-400" />
-                    <span className="text-green-400">{safeNum(result.successful)}</span>
+                    <CheckCircle2 className="h-3 w-3 text-success" />
+                    <span className="text-success">{safeNum(result.successful)}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <XCircle className="h-3 w-3 text-red-400" />
-                    <span className="text-red-400">{safeNum(result.failed)}</span>
+                    <XCircle className="h-3 w-3 text-loss" />
+                    <span className="text-loss">{safeNum(result.failed)}</span>
                   </div>
-                  <div className={`flex items-center gap-1 ${safeNum(result.improvement) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center gap-1 ${safeNum(result.improvement) >= 0 ? 'text-success' : 'text-loss'}`}>
                     {safeNum(result.improvement) >= 0 ? (
                       <TrendingUp className="h-3 w-3" />
                     ) : (
@@ -235,12 +235,12 @@ export function AutoAnalysisWidget() {
         {/* Recommendation */}
         <div className={`p-3 rounded-lg border ${
           testResult.auto_analysis_eligible
-            ? 'bg-green-500/10 border-green-500/30'
+            ? 'bg-success/10 border-success/30'
             : 'bg-yellow-500/10 border-yellow-500/30'
         }`}>
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles className={`h-4 w-4 ${testResult.auto_analysis_eligible ? 'text-green-400' : 'text-yellow-400'}`} />
-            <span className={`font-semibold text-sm ${testResult.auto_analysis_eligible ? 'text-green-400' : 'text-yellow-400'}`}>
+            <Sparkles className={`h-4 w-4 ${testResult.auto_analysis_eligible ? 'text-success' : 'text-yellow-400'}`} />
+            <span className={`font-semibold text-sm ${testResult.auto_analysis_eligible ? 'text-success' : 'text-yellow-400'}`}>
               التحليل
             </span>
           </div>

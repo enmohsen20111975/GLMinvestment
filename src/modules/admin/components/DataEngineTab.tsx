@@ -135,8 +135,8 @@ export function DataEngineTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 bg-slate-50 min-h-screen">
-        <RefreshCw className="w-12 h-12 animate-spin text-emerald-600" />
-        <span className="ml-4 text-2xl text-emerald-600 font-bold">Loading Engine...</span>
+        <RefreshCw className="w-12 h-12 animate-spin text-profit" />
+        <span className="ml-4 text-2xl text-profit font-bold">Loading Engine...</span>
       </div>
     )
   }
@@ -154,7 +154,7 @@ export function DataEngineTab() {
           <div className="flex items-center gap-4">
             <div className={cn(
               "w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-md",
-              isActive ? "bg-emerald-500" : "bg-red-500"
+              isActive ? "bg-profit" : "bg-loss"
             )}>
               {isActive ? '🟢' : '🔴'}
             </div>
@@ -163,7 +163,7 @@ export function DataEngineTab() {
               <div className="text-sm text-slate-500 flex items-center gap-3 mt-1">
                 <span className={cn(
                   "px-3 py-1 rounded-lg font-bold text-base",
-                  isActive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                  isActive ? "bg-profit text-profit" : "bg-loss text-loss"
                 )}>
                   {isActive ? 'RUNNING' : 'STOPPED'}
                 </span>
@@ -178,7 +178,7 @@ export function DataEngineTab() {
             <Button
               variant={isActive ? "destructive" : "default"}
               size="lg"
-              className={isActive ? "bg-red-600 hover:bg-red-700 h-11 text-base px-6" : "bg-emerald-600 hover:bg-emerald-700 h-11 text-base px-6"}
+              className={isActive ? "bg-loss hover:bg-loss h-11 text-base px-6" : "bg-profit hover:bg-profit h-11 text-base px-6"}
               onClick={() => triggerAction(isActive ? 'stop_engine' : 'start_engine')}
               disabled={triggeringAction !== null}
             >
@@ -195,7 +195,7 @@ export function DataEngineTab() {
             <Button
               variant="outline"
               size="lg"
-              className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 h-11 text-base px-6"
+              className="border-profit text-profit hover:bg-profit h-11 text-base px-6"
               onClick={() => triggerAction('trigger_all')}
               disabled={triggeringAction !== null}
             >
@@ -206,7 +206,7 @@ export function DataEngineTab() {
             <Button
               variant="outline"
               size="lg"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50 h-11"
+              className="border-primary text-primary hover:bg-primary h-11"
               onClick={() => fetchData()}
             >
               <RefreshCw className="w-5 h-5" />
@@ -246,14 +246,14 @@ export function DataEngineTab() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3 mb-4">
-        <div className="bg-white rounded-xl p-4 text-center border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-          <TrendingUp className="w-6 h-6 mx-auto text-blue-600 mb-2" />
-          <div className="text-2xl font-bold text-blue-600">{formatNum(counts?.stocks || 0)}</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-primary shadow-sm hover:shadow-md transition-shadow">
+          <TrendingUp className="w-6 h-6 mx-auto text-primary mb-2" />
+          <div className="text-2xl font-bold text-primary">{formatNum(counts?.stocks || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">STOCKS</div>
         </div>
-        <div className="bg-white rounded-xl p-4 text-center border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
-          <Coins className="w-6 h-6 mx-auto text-amber-600 mb-2" />
-          <div className="text-2xl font-bold text-amber-600">{formatNum(counts?.crypto || 0)}</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-warning shadow-sm hover:shadow-md transition-shadow">
+          <Coins className="w-6 h-6 mx-auto text-warning mb-2" />
+          <div className="text-2xl font-bold text-warning">{formatNum(counts?.crypto || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">CRYPTO</div>
         </div>
         <div className="bg-white rounded-xl p-4 text-center border border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
@@ -265,9 +265,9 @@ export function DataEngineTab() {
           <div className="text-2xl font-bold text-slate-500">{formatNum(counts?.silver || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">SILVER</div>
         </div>
-        <div className="bg-white rounded-xl p-4 text-center border border-emerald-200 shadow-sm hover:shadow-md transition-shadow">
-          <Globe className="w-6 h-6 mx-auto text-emerald-600 mb-2" />
-          <div className="text-2xl font-bold text-emerald-600">{formatNum(counts?.forex || 0)}</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-profit shadow-sm hover:shadow-md transition-shadow">
+          <Globe className="w-6 h-6 mx-auto text-profit mb-2" />
+          <div className="text-2xl font-bold text-profit">{formatNum(counts?.forex || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">FOREX</div>
         </div>
         <div className="bg-white rounded-xl p-4 text-center border border-cyan-200 shadow-sm hover:shadow-md transition-shadow">
@@ -280,9 +280,9 @@ export function DataEngineTab() {
           <div className="text-2xl font-bold text-purple-600">{formatNum(counts?.historical_records || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">HIST. DATA</div>
         </div>
-        <div className="bg-white rounded-xl p-4 text-center border border-teal-200 shadow-sm hover:shadow-md transition-shadow">
-          <Calendar className="w-6 h-6 mx-auto text-teal-600 mb-2" />
-          <div className="text-2xl font-bold text-teal-600">{formatNum(counts?.daily_prices || 0)}</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-whale shadow-sm hover:shadow-md transition-shadow">
+          <Calendar className="w-6 h-6 mx-auto text-whale mb-2" />
+          <div className="text-2xl font-bold text-whale">{formatNum(counts?.daily_prices || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">DAILY PRICES</div>
         </div>
       </div>
@@ -300,7 +300,7 @@ export function DataEngineTab() {
               {Object.entries(by_market).map(([market, count]) => (
                 <div key={market} className="bg-slate-100 px-4 py-2 rounded-lg text-base flex items-center gap-3">
                   <span className="text-slate-600 font-medium">{market}</span>
-                  <span className="text-blue-600 font-bold text-lg">{formatNum(count as number)}</span>
+                  <span className="text-primary font-bold text-lg">{formatNum(count as number)}</span>
                 </div>
               ))}
             </div>
@@ -343,14 +343,14 @@ export function DataEngineTab() {
         {/* Stocks */}
         <div className={cn(
           "bg-white rounded-xl p-4 border-2 shadow-sm",
-          engine?.stocks_running ? "border-blue-500" : "border-slate-200"
+          engine?.stocks_running ? "border-primary" : "border-slate-200"
         )}>
           <div className="flex items-center justify-between mb-3">
-            <TrendingUp className="w-6 h-6 text-blue-600" />
+            <TrendingUp className="w-6 h-6 text-primary" />
             <button
               className={cn(
                 "text-sm px-3 py-1 rounded-lg font-bold",
-                engine?.stocks_running ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                engine?.stocks_running ? "bg-profit text-profit" : "bg-loss text-loss"
               )}
               onClick={() => triggerAction('toggle_scraper', 'stocks')}
             >
@@ -362,7 +362,7 @@ export function DataEngineTab() {
           <Button
             variant="outline"
             size="lg"
-            className="w-full h-10 text-sm border-blue-500 text-blue-600 hover:bg-blue-50"
+            className="w-full h-10 text-sm border-primary text-primary hover:bg-primary"
             onClick={() => triggerAction('trigger_stocks')}
             disabled={triggeringAction !== null}
           >
@@ -373,14 +373,14 @@ export function DataEngineTab() {
         {/* Crypto */}
         <div className={cn(
           "bg-white rounded-xl p-4 border-2 shadow-sm",
-          engine?.crypto_running ? "border-amber-500" : "border-slate-200"
+          engine?.crypto_running ? "border-warning" : "border-slate-200"
         )}>
           <div className="flex items-center justify-between mb-3">
-            <Coins className="w-6 h-6 text-amber-600" />
+            <Coins className="w-6 h-6 text-warning" />
             <button
               className={cn(
                 "text-sm px-3 py-1 rounded-lg font-bold",
-                engine?.crypto_running ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                engine?.crypto_running ? "bg-profit text-profit" : "bg-loss text-loss"
               )}
               onClick={() => triggerAction('toggle_scraper', 'crypto')}
             >
@@ -392,7 +392,7 @@ export function DataEngineTab() {
           <Button
             variant="outline"
             size="lg"
-            className="w-full h-10 text-sm border-amber-500 text-amber-600 hover:bg-amber-50"
+            className="w-full h-10 text-sm border-warning text-warning hover:bg-warning"
             onClick={() => triggerAction('trigger_crypto')}
             disabled={triggeringAction !== null}
           >
@@ -410,7 +410,7 @@ export function DataEngineTab() {
             <button
               className={cn(
                 "text-sm px-3 py-1 rounded-lg font-bold",
-                engine?.metals_running ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                engine?.metals_running ? "bg-profit text-profit" : "bg-loss text-loss"
               )}
               onClick={() => triggerAction('toggle_scraper', 'metals')}
             >
@@ -440,7 +440,7 @@ export function DataEngineTab() {
             <button
               className={cn(
                 "text-sm px-3 py-1 rounded-lg font-bold",
-                engine?.news_running ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                engine?.news_running ? "bg-profit text-profit" : "bg-loss text-loss"
               )}
               onClick={() => triggerAction('toggle_scraper', 'news')}
             >
@@ -466,7 +466,7 @@ export function DataEngineTab() {
             <History className="w-6 h-6 text-purple-600" />
             <div className={cn(
               "w-3 h-3 rounded-full",
-              histProgress ? "bg-amber-500 animate-pulse" : "bg-slate-300"
+              histProgress ? "bg-warning animate-pulse" : "bg-slate-300"
             )} />
           </div>
           <div className="text-lg font-bold mb-1">HISTORICAL</div>
@@ -483,17 +483,17 @@ export function DataEngineTab() {
         </div>
 
         {/* Sync */}
-        <div className="bg-white rounded-xl p-4 border-2 border-emerald-300 shadow-sm">
+        <div className="bg-white rounded-xl p-4 border-2 border-profit shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <ArrowRightLeft className="w-6 h-6 text-emerald-600" />
-            <HardDrive className="w-5 h-5 text-emerald-500" />
+            <ArrowRightLeft className="w-6 h-6 text-profit" />
+            <HardDrive className="w-5 h-5 text-profit" />
           </div>
           <div className="text-lg font-bold mb-1">SYNC DB</div>
           <div className="text-sm text-slate-500 mb-3">{formatTime(engine?.last_sync)}</div>
           <Button
             variant="outline"
             size="lg"
-            className="w-full h-10 text-sm border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+            className="w-full h-10 text-sm border-profit text-profit hover:bg-profit"
             onClick={() => triggerAction('trigger_sync')}
             disabled={triggeringAction !== null}
           >
@@ -502,16 +502,16 @@ export function DataEngineTab() {
         </div>
 
         {/* Run All */}
-        <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-4 border-2 border-emerald-400 shadow-sm">
+        <div className="bg-gradient-to-br from-profit to-primary rounded-xl p-4 border-2 border-profit shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <Zap className="w-6 h-6 text-emerald-600" />
+            <Zap className="w-6 h-6 text-profit" />
           </div>
           <div className="text-lg font-bold mb-1">RUN ALL</div>
           <div className="text-sm text-slate-500 mb-3">All scrapers</div>
           <Button
             variant="default"
             size="lg"
-            className="w-full h-10 text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+            className="w-full h-10 text-sm bg-profit text-white hover:bg-profit"
             onClick={() => triggerAction('trigger_all')}
             disabled={triggeringAction !== null}
           >
@@ -523,7 +523,7 @@ export function DataEngineTab() {
       {/* Market Hours */}
       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-4">
         <div className="flex items-center gap-3 mb-3">
-          <Clock className="w-5 h-5 text-blue-600" />
+          <Clock className="w-5 h-5 text-primary" />
           <span className="text-base font-bold">MARKET HOURS (Local)</span>
         </div>
         <div className="grid grid-cols-4 gap-3 text-sm">
@@ -553,7 +553,7 @@ export function DataEngineTab() {
           onClick={() => setShowLogs(!showLogs)}
         >
           <div className="flex items-center gap-3">
-            <Activity className="w-5 h-5 text-emerald-600" />
+            <Activity className="w-5 h-5 text-profit" />
             <span className="text-base font-bold">SYSTEM LOGS ({engine?.logs?.length || 0})</span>
           </div>
           <div className="flex items-center gap-3">
@@ -579,10 +579,10 @@ export function DataEngineTab() {
                 engine.logs.slice(-200).map((log, i) => (
                   <div key={i} className={cn(
                     "py-1 border-b border-slate-700",
-                    log.includes('✅') || log.includes('completed') || log.includes('SUCCESS') ? "text-emerald-400" :
-                    log.includes('❌') || log.includes('ERROR') ? "text-red-400" :
+                    log.includes('✅') || log.includes('completed') || log.includes('SUCCESS') ? "text-profit" :
+                    log.includes('❌') || log.includes('ERROR') ? "text-loss" :
                     log.includes('⚠️') || log.includes('WARNING') ? "text-yellow-400" :
-                    log.includes('📥') || log.includes('Fetching') ? "text-blue-400" :
+                    log.includes('📥') || log.includes('Fetching') ? "text-primary" :
                     log.includes('📊') ? "text-cyan-400" :
                     "text-slate-300"
                   )}>
@@ -599,21 +599,21 @@ export function DataEngineTab() {
 
       {/* Errors */}
       {engine?.errors && engine.errors.length > 0 && (
-        <div className="bg-red-50 rounded-xl border border-red-200 mb-4">
+        <div className="bg-loss rounded-xl border border-loss mb-4">
           <div 
-            className="p-4 flex items-center justify-between cursor-pointer hover:bg-red-100/50"
+            className="p-4 flex items-center justify-between cursor-pointer hover:bg-loss/50"
             onClick={() => setShowErrors(!showErrors)}
           >
             <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <span className="text-base font-bold text-red-700">ERRORS ({engine.errors.length})</span>
+              <AlertTriangle className="w-5 h-5 text-loss" />
+              <span className="text-base font-bold text-loss">ERRORS ({engine.errors.length})</span>
             </div>
             {showErrors ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </div>
           
           {showErrors && (
             <div className="p-4 pt-0">
-              <div className="bg-slate-900 rounded-lg p-4 max-h-40 overflow-y-auto font-mono text-sm text-red-400">
+              <div className="bg-slate-900 rounded-lg p-4 max-h-40 overflow-y-auto font-mono text-sm text-loss">
                 {engine.errors.slice(-50).map((err, i) => (
                   <div key={i} className="py-1">{err}</div>
                 ))}

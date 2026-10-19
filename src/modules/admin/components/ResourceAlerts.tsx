@@ -78,16 +78,16 @@ const SEVERITY_CONFIG: Record<string, {
   critical: {
     emoji: '🔴',
     color: '#ef4444',
-    border: 'border-red-500/40',
-    bg: 'bg-red-500/5',
-    text: 'text-red-600 dark:text-red-400',
+    border: 'border-loss/40',
+    bg: 'bg-loss/5',
+    text: 'text-loss dark:text-loss',
   },
   warning: {
     emoji: '🟡',
     color: '#f59e0b',
-    border: 'border-amber-500/40',
-    bg: 'bg-amber-500/5',
-    text: 'text-amber-600 dark:text-amber-400',
+    border: 'border-warning/40',
+    bg: 'bg-warning/5',
+    text: 'text-warning dark:text-warning',
   },
   info: {
     emoji: '🔵',
@@ -99,9 +99,9 @@ const SEVERITY_CONFIG: Record<string, {
   recovered: {
     emoji: '🟢',
     color: '#10b981',
-    border: 'border-emerald-500/40',
-    bg: 'bg-emerald-500/5',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    border: 'border-profit/40',
+    bg: 'bg-profit/5',
+    text: 'text-profit dark:text-profit',
   },
 };
 
@@ -139,19 +139,19 @@ function healthTone(score: number): {
     color: '#10b981',
     label: 'ممتاز',
     Icon: ShieldCheck,
-    ring: 'stroke-emerald-500',
+    ring: 'stroke-profit',
   };
   if (score >= 60) return {
     color: '#f59e0b',
     label: 'جيد',
     Icon: ShieldAlert,
-    ring: 'stroke-amber-500',
+    ring: 'stroke-warning',
   };
   return {
     color: '#ef4444',
     label: 'خطر',
     Icon: ShieldX,
-    ring: 'stroke-red-500',
+    ring: 'stroke-loss',
   };
 }
 
@@ -220,7 +220,7 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-sm font-bold">
-              <Bell className="w-4 h-4 text-amber-500" />
+              <Bell className="w-4 h-4 text-warning" />
               التنبيهات ودرجة الصحة
             </CardTitle>
             <CardDescription className="mt-1 text-xs">
@@ -258,8 +258,8 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
         {loading && !data ? (
           <Skeleton className="h-32 w-full rounded-lg" />
         ) : error ? (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 text-center">
-            <AlertTriangle className="w-6 h-6 text-red-500 mx-auto mb-2" />
+          <div className="rounded-lg border border-loss/30 bg-loss/5 p-4 text-center">
+            <AlertTriangle className="w-6 h-6 text-loss mx-auto mb-2" />
             <div className="text-xs text-muted-foreground">{error}</div>
             <Button
               size="sm" variant="outline" onClick={fetchData}
@@ -273,9 +273,9 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
           <div
             className={cn(
               'rounded-xl border p-4 flex items-center gap-4',
-              score >= 80 ? 'border-emerald-500/30 bg-emerald-500/5' :
-              score >= 60 ? 'border-amber-500/30 bg-amber-500/5' :
-              'border-red-500/30 bg-red-500/5',
+              score >= 80 ? 'border-profit/30 bg-profit/5' :
+              score >= 60 ? 'border-warning/30 bg-warning/5' :
+              'border-loss/30 bg-loss/5',
             )}
           >
             {/* Big number */}
@@ -302,22 +302,22 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
                 style={{ ['--progress-foreground' as any]: tone.color }} />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]">
                 {counts.critical ? (
-                  <span className="flex items-center gap-1 text-red-500">
+                  <span className="flex items-center gap-1 text-loss">
                     🔴 {counts.critical} حرج
                   </span>
                 ) : null}
                 {counts.warning ? (
-                  <span className="flex items-center gap-1 text-amber-500">
+                  <span className="flex items-center gap-1 text-warning">
                     🟡 {counts.warning} تحذير
                   </span>
                 ) : null}
                 {counts.recovered ? (
-                  <span className="flex items-center gap-1 text-emerald-500">
+                  <span className="flex items-center gap-1 text-profit">
                     🟢 {counts.recovered} تعافى
                   </span>
                 ) : null}
                 {!counts.critical && !counts.warning && !counts.recovered && (
-                  <span className="flex items-center gap-1 text-emerald-500">
+                  <span className="flex items-center gap-1 text-profit">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     لا توجد تنبيهات نشطة
                   </span>
@@ -352,7 +352,7 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
               ))}
             </div>
           ) : !loading && alerts.length === 0 ? (
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 text-center text-xs text-emerald-600 dark:text-emerald-400 flex flex-col items-center gap-2">
+            <div className="rounded-lg border border-profit/30 bg-profit/5 p-4 text-center text-xs text-profit dark:text-profit flex flex-col items-center gap-2">
               <CheckCircle2 className="w-6 h-6" />
               <div>كل المؤشرات ضمن النطاق الطبيعي — لا توجد تنبيهات.</div>
             </div>

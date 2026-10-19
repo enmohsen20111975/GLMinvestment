@@ -72313,3 +72313,27 @@ Stage Summary:
 - ❌ SMC Deep Validation: الـ edge اختفى بعد إصلاح الـ inputs
 - ❌ كل الـ features = ضوضاء
 - 🔁 محتاجين: approach مختلف من الصفر
+
+---
+Task ID: ENGINEERING-CLEANUP-Phase-A
+Agent: Alpha (Frontend Dragon — Z.ai Code, acting directly)
+Task: جون — Phase A: codemod direct palette → semantic tokens (11002 occurrences → 0).
+
+Work Log:
+- Audit: 209 files فيهم 11002 direct palette occurrences (text-emerald-600, bg-red-500, etc.).
+- Codemod (python script): 211 files changed. Mapping:
+  * emerald → profit (brand: gains/buy)
+  * red/rose → loss (losses/sell)
+  * amber → warning (caution/stop)
+  * teal → whale (institutional liquidity)
+  * green → success (semantic gains)
+  * blue → primary (info/brand)
+- Handles: text-, bg-, border-, ring-, from-, to-, via-, accent-, fill-, stroke- prefixes + /opacity + dark: prefix.
+- Result: 0 remaining direct palette occurrences in src/components + src/modules.
+- lint: exit 0 ✅.
+- browser: / renders (HTTP 200, bodyLen=2329, hasError=false). tokens verified: --profit=160 84% 39%, --loss=0 84% 60% ✅.
+
+Stage Summary:
+- ✅ 11002 → 0 direct palette (100% tokenized). 211 files changed.
+- ✅ lint 0. ✅ browser renders. ✅ tokens verified.
+- 🔁 Next: Phase B (lib/ consolidation).

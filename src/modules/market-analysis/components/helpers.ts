@@ -46,20 +46,20 @@ export function pickValidPrice(...candidates: Array<unknown>): number | undefine
 export function getStatusBadge(status: LifecycleStatus | undefined): StatusBadgeStyle {
   switch (status) {
     case 'TARGET_HIT':
-      return { label: '🎯 حقق الهدف', badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900', dotClass: 'bg-emerald-500' };
+      return { label: '🎯 حقق الهدف', badgeClass: 'bg-profit text-profit dark:bg-profit dark:text-profit border-profit dark:border-profit', dotClass: 'bg-profit' };
     case 'STOPPED':
-      return { label: '🛑 وقف الخسارة', badgeClass: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-900', dotClass: 'bg-rose-500' };
+      return { label: '🛑 وقف الخسارة', badgeClass: 'bg-loss text-loss dark:bg-loss dark:text-loss border-loss dark:border-loss', dotClass: 'bg-loss' };
     case 'EXPIRED':
-      return { label: '⏰ انتهى', badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-900', dotClass: 'bg-amber-500' };
+      return { label: '⏰ انتهى', badgeClass: 'bg-warning text-warning dark:bg-warning dark:text-warning border-warning dark:border-warning', dotClass: 'bg-warning' };
     case 'PENDING':
     default:
-      return { label: '⏳ مفتوح', badgeClass: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border-teal-200 dark:border-teal-900', dotClass: 'bg-teal-500' };
+      return { label: '⏳ مفتوح', badgeClass: 'bg-whale text-whale dark:bg-whale dark:text-whale border-whale dark:border-whale', dotClass: 'bg-whale' };
   }
 }
 
 export function pnlColorClass(pnl: number | null | undefined): string {
   if (pnl === null || pnl === undefined) return 'text-muted-foreground';
-  return pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
+  return pnl >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss';
 }
 
 export function formatPnl(pnl: number | null | undefined): string {
@@ -1016,26 +1016,26 @@ export function pickPersonaDiverged(items: StoredAnalysisItem[], persona: 'conse
 export function getVerdictColor(verdict: string | undefined): { bg: string; text: string; border: string } {
   const v = (verdict || '').toLowerCase();
   if (v.includes('فرصة') || v.includes('ادخل') || v.includes('قوي') || v.includes('شراء')) {
-    return { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-900' };
+    return { bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', border: 'border-profit dark:border-profit' };
   }
   // DYNAMIC-SYSTEM-001: تجميع (ACCUMULATE) — لون teal مميز
   if (v.includes('تجميع')) {
-    return { bg: 'bg-teal-50 dark:bg-teal-950/40', text: 'text-teal-700 dark:text-teal-400', border: 'border-teal-200 dark:border-teal-900' };
+    return { bg: 'bg-whale dark:bg-whale/40', text: 'text-whale dark:text-whale', border: 'border-whale dark:border-whale' };
   }
   if (v.includes('انتظر')) {
-    return { bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-900' };
+    return { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-warning dark:border-warning' };
   }
   if (v.includes('ابعد') || v.includes('بيع') || v.includes('تجنب') || v.includes('اخرج')) {
-    return { bg: 'bg-red-50 dark:bg-red-950/40', text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-900' };
+    return { bg: 'bg-loss dark:bg-loss/40', text: 'text-loss dark:text-loss', border: 'border-loss dark:border-loss' };
   }
   return { bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' };
 }
 
 /** Score bar color */
 export function getScoreColor(score: number): string {
-  if (score >= 70) return 'bg-emerald-500';
-  if (score >= 50) return 'bg-amber-500';
-  return 'bg-red-500';
+  if (score >= 70) return 'bg-profit';
+  if (score >= 50) return 'bg-warning';
+  return 'bg-loss';
 }
 
 
@@ -1070,22 +1070,22 @@ export function cryptoSignalStyle(signal: string): {
   const s = (signal || '').toUpperCase();
   if (s === 'BUY' || s === 'STRONG_BUY' || s === 'LONG') {
     return {
-      badge: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
-      text: 'text-emerald-600',
-      bg: 'bg-emerald-500/5',
+      badge: 'bg-profit/15 text-profit border-profit/30',
+      text: 'text-profit',
+      bg: 'bg-profit/5',
     };
   }
   if (s === 'SELL' || s === 'STRONG_SELL' || s === 'SHORT') {
     return {
-      badge: 'bg-rose-500/15 text-rose-600 border-rose-500/30',
-      text: 'text-rose-600',
-      bg: 'bg-rose-500/5',
+      badge: 'bg-loss/15 text-loss border-loss/30',
+      text: 'text-loss',
+      bg: 'bg-loss/5',
     };
   }
   return {
-    badge: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
-    text: 'text-amber-600',
-    bg: 'bg-amber-500/5',
+    badge: 'bg-warning/15 text-warning border-warning/30',
+    text: 'text-warning',
+    bg: 'bg-warning/5',
   };
 }
 
@@ -1110,11 +1110,11 @@ export function cryptoSymbolMeta(symbol: string): { icon: string; name: string }
 // Sector tracking helpers
 // ============================================================================
 export const HEAT_LEVEL_STYLE: Record<string, { bg: string; text: string; icon: string; label: string }> = {
-  HOT:     { bg: 'bg-red-500/10 border-red-500/30',      text: 'text-red-700 dark:text-red-300',       icon: '🔥', label: 'نار' },
+  HOT:     { bg: 'bg-loss/10 border-loss/30',      text: 'text-loss dark:text-loss',       icon: '🔥', label: 'نار' },
   WARM:    { bg: 'bg-orange-500/10 border-orange-500/30', text: 'text-orange-700 dark:text-orange-300', icon: '☀️', label: 'دافئ' },
   NEUTRAL: { bg: 'bg-slate-500/10 border-slate-500/30',  text: 'text-slate-700 dark:text-slate-300',   icon: '➖', label: 'محايد' },
   COOL:    { bg: 'bg-sky-500/10 border-sky-500/30',      text: 'text-sky-700 dark:text-sky-300',       icon: '💧', label: 'بارد' },
-  COLD:    { bg: 'bg-teal-500/10 border-teal-500/30',    text: 'text-teal-700 dark:text-teal-300',     icon: '❄️', label: 'بارد جداً' },
+  COLD:    { bg: 'bg-whale/10 border-whale/30',    text: 'text-whale dark:text-whale',     icon: '❄️', label: 'بارد جداً' },
 };
 
 
@@ -1137,20 +1137,20 @@ export function formatEGPShort(v: number): string {
 // خلفية خفيفة على عمود "متوسط التغير" (heatmap تذكري بسيط)
 
 export function avgChangeHeatClass(avgChange: number): string {
-  if (avgChange >= 2) return 'bg-emerald-100 dark:bg-emerald-950/50';
-  if (avgChange > 0.5) return 'bg-emerald-50 dark:bg-emerald-950/30';
-  if (avgChange <= -2) return 'bg-rose-100 dark:bg-rose-950/50';
-  if (avgChange < -0.5) return 'bg-rose-50 dark:bg-rose-950/30';
+  if (avgChange >= 2) return 'bg-profit dark:bg-profit/50';
+  if (avgChange > 0.5) return 'bg-profit dark:bg-profit/30';
+  if (avgChange <= -2) return 'bg-loss dark:bg-loss/50';
+  if (avgChange < -0.5) return 'bg-loss dark:bg-loss/30';
   return 'bg-muted/40';
 }
 
 // خلفية خفيفة على عمود "التغير %" في جدول الأسهم (نفس منطق heatmap)
 
 export function stockChangeHeatClass(chg: number): string {
-  if (chg >= 5) return 'bg-emerald-100 dark:bg-emerald-950/50';
-  if (chg > 0) return 'bg-emerald-50 dark:bg-emerald-950/30';
-  if (chg <= -5) return 'bg-rose-100 dark:bg-rose-950/50';
-  if (chg < 0) return 'bg-rose-50 dark:bg-rose-950/30';
+  if (chg >= 5) return 'bg-profit dark:bg-profit/50';
+  if (chg > 0) return 'bg-profit dark:bg-profit/30';
+  if (chg <= -5) return 'bg-loss dark:bg-loss/50';
+  if (chg < 0) return 'bg-loss dark:bg-loss/30';
   return 'bg-transparent';
 }
 

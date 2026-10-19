@@ -27,28 +27,28 @@ function SentimentGauge({ score, sentiment }: { score: number; sentiment: string
       stroke: '#10b981',
       gradientStart: '#10b981',
       gradientEnd: '#34d399',
-      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-      text: 'text-emerald-500 dark:text-emerald-400',
+      bg: 'bg-profit dark:bg-profit/30',
+      text: 'text-profit dark:text-profit',
       label: 'صعودي',
-      labelBg: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/50 dark:text-emerald-300',
+      labelBg: 'bg-profit text-profit dark:bg-profit/50 dark:text-profit',
     },
     neutral: {
       stroke: '#f59e0b',
       gradientStart: '#f59e0b',
       gradientEnd: '#fbbf24',
-      bg: 'bg-amber-50 dark:bg-amber-950/30',
-      text: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-warning dark:bg-warning/30',
+      text: 'text-warning dark:text-warning',
       label: 'محايد',
-      labelBg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+      labelBg: 'bg-warning text-warning dark:bg-warning/50 dark:text-warning',
     },
     bearish: {
       stroke: '#ef4444',
       gradientStart: '#ef4444',
       gradientEnd: '#f87171',
-      bg: 'bg-red-50 dark:bg-red-950/30',
-      text: 'text-red-600 dark:text-red-400',
+      bg: 'bg-loss dark:bg-loss/30',
+      text: 'text-loss dark:text-loss',
       label: 'هبوطي',
-      labelBg: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+      labelBg: 'bg-loss text-loss dark:bg-loss/50 dark:text-loss',
     },
   };
 
@@ -135,7 +135,7 @@ export function MarketSentiment() {
     <Card className="border-0 shadow-sm h-full">
       <CardHeader className="pb-0.5 px-3 pt-2.5">
         <CardTitle className="text-sm font-bold flex items-center gap-1.5" dir="rtl">
-          <Activity className="w-3.5 h-3.5 text-emerald-500" />
+          <Activity className="w-3.5 h-3.5 text-profit" />
           مؤشر المشاعر
         </CardTitle>
       </CardHeader>
@@ -173,20 +173,20 @@ export function MarketSentiment() {
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] font-medium text-muted-foreground">صعود / هبوط</span>
             <div className="flex items-center gap-1 text-[10px]">
-              <span className="flex items-center gap-0.5 text-emerald-500 dark:text-emerald-400 font-semibold">
+              <span className="flex items-center gap-0.5 text-profit dark:text-profit font-semibold">
                 <ArrowUpRight className="w-2.5 h-2.5" />
                 {gainers}
               </span>
               <span className="text-muted-foreground">/</span>
-              <span className="flex items-center gap-0.5 text-red-600 dark:text-red-400 font-semibold">
+              <span className="flex items-center gap-0.5 text-loss dark:text-loss font-semibold">
                 <ArrowDownRight className="w-2.5 h-2.5" />
                 {losers}
               </span>
             </div>
           </div>
-          <div className="relative h-2 bg-red-100 dark:bg-red-950/40 rounded-full overflow-hidden">
+          <div className="relative h-2 bg-loss dark:bg-loss/40 rounded-full overflow-hidden">
             <div
-              className="absolute inset-y-0 right-0 bg-emerald-500 rounded-full transition-all duration-700"
+              className="absolute inset-y-0 right-0 bg-profit rounded-full transition-all duration-700"
               style={{ width: `${breadthPercent}%` }}
             />
           </div>

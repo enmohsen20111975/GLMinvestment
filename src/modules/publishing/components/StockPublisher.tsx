@@ -125,35 +125,35 @@ const RECOMMENDATION_META: Record<
     ar: 'شراء قوي',
     emoji: '',
     badgeClass:
-      'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+      'bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit dark:border-profit',
     icon: <TrendingUp className="h-3.5 w-3.5" />,
   },
   BUY: {
     ar: 'شراء',
     emoji: '✅',
     badgeClass:
-      'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/60',
+      'bg-profit text-profit border-profit dark:bg-profit/40 dark:text-profit dark:border-profit/60',
     icon: <TrendingUp className="h-3.5 w-3.5" />,
   },
   INSTITUTIONAL_BUY: {
     ar: 'شراء مؤسسي',
     emoji: '🏛️',
     badgeClass:
-      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/60',
+      'bg-primary text-primary border-primary dark:bg-primary/40 dark:text-primary dark:border-primary/60',
     icon: <Shield className="h-3.5 w-3.5" />,
   },
   HOLD: {
     ar: 'احتفاظ',
     emoji: '⏸️',
     badgeClass:
-      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/60',
+      'bg-warning text-warning border-warning dark:bg-warning/40 dark:text-warning dark:border-warning/60',
     icon: <Activity className="h-3.5 w-3.5" />,
   },
   SELL: {
     ar: 'بيع',
     emoji: '🔻',
     badgeClass:
-      'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60',
+      'bg-loss text-loss border-loss dark:bg-loss/40 dark:text-loss dark:border-loss/60',
     icon: <TrendingDown className="h-3.5 w-3.5" />,
   },
 };
@@ -422,9 +422,9 @@ export function StockPublisher({
       <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Share2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <Share2 className="h-5 w-5 text-profit dark:text-profit" />
             نشر تحليل:{' '}
-            <span className="font-mono text-emerald-700 dark:text-emerald-300">
+            <span className="font-mono text-profit dark:text-profit">
               {data.ticker}
             </span>
           </DialogTitle>
@@ -504,7 +504,7 @@ export function StockPublisher({
             className="gap-1.5"
           >
             {copied ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <CheckCircle2 className="h-4 w-4 text-profit" />
             ) : (
               <Copy className="h-4 w-4" />
             )}
@@ -536,7 +536,7 @@ export function StockPublisher({
             {publishing === 'whatsapp' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <MessageCircle className="h-4 w-4 text-emerald-500" />
+              <MessageCircle className="h-4 w-4 text-profit" />
             )}
             واتساب
           </Button>
@@ -551,7 +551,7 @@ export function StockPublisher({
             {publishing === 'facebook' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Facebook className="h-4 w-4 text-blue-600" />
+              <Facebook className="h-4 w-4 text-primary" />
             )}
             فيسبوك
           </Button>
@@ -640,12 +640,12 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           : 'neutral';
 
   return (
-    <Card className="border-2 border-emerald-200/60 dark:border-emerald-900/40 overflow-hidden">
+    <Card className="border-2 border-profit/60 dark:border-profit/40 overflow-hidden">
       {/* Header — gradient + ticker + recommendation */}
-      <div className="bg-emerald-50 dark:bg-emerald-950/40 px-4 py-3 border-b border-emerald-100 dark:border-emerald-900/30">
+      <div className="bg-profit dark:bg-profit/40 px-4 py-3 border-b border-profit dark:border-profit/30">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-emerald-600 dark:bg-emerald-700 flex items-center justify-center text-white font-bold text-sm font-mono shadow-sm">
+            <div className="h-9 w-9 rounded-lg bg-profit dark:bg-profit flex items-center justify-center text-white font-bold text-sm font-mono shadow-sm">
               {data.ticker.slice(0, 2)}
             </div>
             <div>
@@ -706,8 +706,8 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
               className={cn(
                 'flex items-center gap-1 font-bold font-mono text-sm',
                 isUp
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-rose-600 dark:text-rose-400'
+                  ? 'text-profit dark:text-profit'
+                  : 'text-loss dark:text-loss'
               )}
             >
               {isUp ? (
@@ -788,7 +788,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
             {data.riskReward != null && (
               <Badge
                 variant="outline"
-                className="gap-1 font-mono font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50"
+                className="gap-1 font-mono font-semibold text-warning dark:text-warning bg-warning/50 dark:bg-warning/20 border-warning dark:border-warning/50"
               >
                 <Gauge className="h-3 w-3" />
                 R:R {(data.riskReward ?? 0).toFixed(1)}:1
@@ -808,9 +808,9 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
 
         {/* Signal Strength */}
         {(data.signalCount != null || data.path) && (
-          <div className="bg-blue-50/60 dark:bg-blue-950/20 rounded-md p-2.5 space-y-1.5 border border-blue-100/60 dark:border-blue-900/30">
+          <div className="bg-primary/60 dark:bg-primary/20 rounded-md p-2.5 space-y-1.5 border border-primary/60 dark:border-primary/30">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+              <span className="font-semibold text-primary dark:text-primary flex items-center gap-1">
                 <Zap className="h-3.5 w-3.5" />
                 قوة الإشارة
               </span>
@@ -837,7 +837,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           <div className="bg-muted/30 rounded-md p-2.5 space-y-2 border border-border/50">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold flex items-center gap-1">
-                <Activity className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <Activity className="h-3.5 w-3.5 text-primary dark:text-primary" />
                 حركة السيولة
               </span>
               {data.netFlow != null && (
@@ -845,8 +845,8 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                   className={cn(
                     'font-mono text-xs font-bold',
                     data.netFlow >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-rose-600 dark:text-rose-400'
+                      ? 'text-profit dark:text-profit'
+                      : 'text-loss dark:text-loss'
                   )}
                 >
                   {data.netFlow >= 0 ? '+' : '-'}
@@ -858,19 +858,19 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
               <div className="space-y-1">
                 <div className="flex h-2.5 rounded-full overflow-hidden bg-muted">
                   <div
-                    className="bg-emerald-500 dark:bg-emerald-400"
+                    className="bg-profit dark:bg-profit"
                     style={{ width: `${buyPct}%` }}
                   />
                   <div
-                    className="bg-rose-500 dark:bg-rose-400"
+                    className="bg-loss dark:bg-loss"
                     style={{ width: `${100 - buyPct}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-[10px] font-mono">
-                  <span className="text-emerald-600 dark:text-emerald-400">
+                  <span className="text-profit dark:text-profit">
                     شراء {(buyPressure ?? 0).toFixed(0)}%
                   </span>
-                  <span className="text-rose-600 dark:text-rose-400">
+                  <span className="text-loss dark:text-loss">
                     بيع {(sellPressure ?? 0).toFixed(0)}%
                   </span>
                 </div>
@@ -883,9 +883,9 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                   className={cn(
                     'font-mono font-semibold',
                     data.volumeRatio >= 1.5
-                      ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                      ? 'text-profit dark:text-profit font-bold'
                       : data.volumeRatio < 0.7
-                        ? 'text-rose-600 dark:text-rose-400 font-bold'
+                        ? 'text-loss dark:text-loss font-bold'
                         : 'text-foreground'
                   )}
                 >
@@ -921,9 +921,9 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                   }
                   stateClass={
                     rsiState === 'overbought'
-                      ? 'text-rose-600 dark:text-rose-400'
+                      ? 'text-loss dark:text-loss'
                       : rsiState === 'oversold'
-                        ? 'text-amber-600 dark:text-amber-400'
+                        ? 'text-warning dark:text-warning'
                         : 'text-muted-foreground'
                   }
                 />
@@ -960,7 +960,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           data.marketCap != null) && (
           <div className="bg-muted/30 rounded-md p-2.5 space-y-1.5 border border-border/50">
             <div className="text-xs font-semibold flex items-center gap-1 mb-1">
-              <Brain className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <Brain className="h-3.5 w-3.5 text-warning dark:text-warning" />
               الأساسيات
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-1 text-[11px]">
@@ -1034,19 +1034,19 @@ function TradingTile({ label, value, sub, accent, icon }: TradingTileProps) {
     { bg: string; text: string; border: string }
   > = {
     blue: {
-      bg: 'bg-blue-50/70 dark:bg-blue-950/30',
-      text: 'text-blue-700 dark:text-blue-300',
-      border: 'border-blue-200/60 dark:border-blue-900/40',
+      bg: 'bg-primary/70 dark:bg-primary/30',
+      text: 'text-primary dark:text-primary',
+      border: 'border-primary/60 dark:border-primary/40',
     },
     emerald: {
-      bg: 'bg-emerald-50/70 dark:bg-emerald-950/30',
-      text: 'text-emerald-700 dark:text-emerald-300',
-      border: 'border-emerald-200/60 dark:border-emerald-900/40',
+      bg: 'bg-profit/70 dark:bg-profit/30',
+      text: 'text-profit dark:text-profit',
+      border: 'border-profit/60 dark:border-profit/40',
     },
     rose: {
-      bg: 'bg-rose-50/70 dark:bg-rose-950/30',
-      text: 'text-rose-700 dark:text-rose-300',
-      border: 'border-rose-200/60 dark:border-rose-900/40',
+      bg: 'bg-loss/70 dark:bg-loss/30',
+      text: 'text-loss dark:text-loss',
+      border: 'border-loss/60 dark:border-loss/40',
     },
   };
   const c = colors[accent];

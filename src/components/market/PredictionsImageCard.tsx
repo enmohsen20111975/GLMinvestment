@@ -126,13 +126,13 @@ function statusOutcome(p: PredictionPick): {
   if (isHit) {
     return {
       label: '🎯 صفقة مكتملة',
-      cls: 'bg-emerald-600 text-white',
+      cls: 'bg-profit text-white',
     };
   }
   if (isStopped) {
     return {
       label: '🛑 ضربت الوقف',
-      cls: 'bg-rose-600 text-white',
+      cls: 'bg-loss text-white',
     };
   }
   if (status === 'PENDING' || status === 'OPEN' || (!isHit && !isStopped && entry > 0)) {
@@ -448,7 +448,7 @@ const accentDark = '#0f766e'; // Teal/emerald theme
                   compact
                   showTechnical={false}
                   rankBadge={`#${i + 1}`}
-                  className="border-teal-200/60 dark:border-teal-800/40 bg-white/90"
+                  className="border-whale/60 dark:border-whale/40 bg-white/90"
                   footer={
                     <div className="flex items-center justify-between gap-2 text-xs">
                       <span className="text-muted-foreground">
@@ -463,9 +463,9 @@ const accentDark = '#0f766e'; // Teal/emerald theme
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded font-bold text-[11px] ${
                           pnl > 0
-                            ? 'bg-emerald-100 text-emerald-700'
+                            ? 'bg-profit text-profit'
                             : pnl < 0
-                              ? 'bg-rose-100 text-rose-700'
+                              ? 'bg-loss text-loss'
                               : 'bg-zinc-100 text-zinc-600'
                         }`}
                       >

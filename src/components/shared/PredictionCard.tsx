@@ -123,30 +123,30 @@ const SIGNAL_STYLES: Record<
   }
 > = {
   strong_buy: {
-    bg: 'bg-emerald-100 dark:bg-emerald-950/50',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-300 dark:border-emerald-800',
+    bg: 'bg-profit dark:bg-profit/50',
+    text: 'text-profit dark:text-profit',
+    border: 'border-profit dark:border-profit',
     icon: <ArrowUpCircle className="h-3.5 w-3.5" />,
     defaultLabelAr: 'شراء قوي',
   },
   buy: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    text: 'text-green-700 dark:text-green-300',
-    border: 'border-green-200 dark:border-green-800',
+    bg: 'bg-profit dark:bg-profit/40',
+    text: 'text-success dark:text-success',
+    border: 'border-success dark:border-success',
     icon: <TrendingUp className="h-3.5 w-3.5" />,
     defaultLabelAr: 'شراء',
   },
   hold: {
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-200 dark:border-amber-800',
+    bg: 'bg-warning dark:bg-warning/40',
+    text: 'text-warning dark:text-warning',
+    border: 'border-warning dark:border-warning',
     icon: <Minus className="h-3.5 w-3.5" />,
     defaultLabelAr: 'احتفاظ',
   },
   sell: {
-    bg: 'bg-rose-100 dark:bg-rose-950/50',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-300 dark:border-rose-800',
+    bg: 'bg-loss dark:bg-loss/50',
+    text: 'text-loss dark:text-loss',
+    border: 'border-loss dark:border-loss',
     icon: <TrendingDown className="h-3.5 w-3.5" />,
     defaultLabelAr: 'بيع / تجنب',
   },
@@ -307,15 +307,15 @@ export function PredictionCard({
           <div
             className={cn(
               'rounded-lg p-2 border',
-              'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/40',
+              'bg-profit/60 dark:bg-profit/30 border-profit/60 dark:border-profit/40',
             )}
           >
-            <div className="text-[10px] sm:text-xs text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1">
+            <div className="text-[10px] sm:text-xs text-profit dark:text-profit flex items-center justify-center gap-1">
               <Target className="h-3 w-3" />
               الهدف
             </div>
             <div
-              className="font-bold text-sm text-emerald-700 dark:text-emerald-300 tabular-nums"
+              className="font-bold text-sm text-profit dark:text-profit tabular-nums"
               dir="ltr"
             >
               {formatPrice(targetNum)}
@@ -324,15 +324,15 @@ export function PredictionCard({
           <div
             className={cn(
               'rounded-lg p-2 border',
-              'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-800/40',
+              'bg-loss/60 dark:bg-loss/30 border-loss/60 dark:border-loss/40',
             )}
           >
-            <div className="text-[10px] sm:text-xs text-rose-700 dark:text-rose-300 flex items-center justify-center gap-1">
+            <div className="text-[10px] sm:text-xs text-loss dark:text-loss flex items-center justify-center gap-1">
               <Shield className="h-3 w-3" />
               الوقف
             </div>
             <div
-              className="font-bold text-sm text-rose-700 dark:text-rose-300 tabular-nums"
+              className="font-bold text-sm text-loss dark:text-loss tabular-nums"
               dir="ltr"
             >
               {formatPrice(stopNum)}
@@ -350,10 +350,10 @@ export function PredictionCard({
                 className={cn(
                   'font-bold tabular-nums',
                   confidence >= 70
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-profit dark:text-profit'
                     : confidence >= 50
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-rose-600 dark:text-rose-400',
+                      ? 'text-warning dark:text-warning'
+                      : 'text-loss dark:text-loss',
                 )}
               >
                 {(confidence ?? 0).toFixed(0)}%
@@ -372,7 +372,7 @@ export function PredictionCard({
           {typeof riskReward === 'number' && !Number.isNaN(riskReward) && riskReward > 0 && (
             <Badge
               variant="outline"
-              className="text-[10px] font-mono font-bold border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400"
+              className="text-[10px] font-mono font-bold border-profit text-profit dark:border-profit dark:text-profit"
             >
               R/R {(riskReward ?? 0).toFixed(2)}
             </Badge>
@@ -387,7 +387,7 @@ export function PredictionCard({
           )}
 
           {upsidePct !== null && (
-            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+            <span className="flex items-center gap-1 text-profit dark:text-profit">
               <ArrowUpCircle className="h-3.5 w-3.5" />
               <span className="font-semibold tabular-nums">{formatPct(upsidePct, true)}</span>
               <span className="text-muted-foreground">العائد المتوقع</span>
@@ -395,7 +395,7 @@ export function PredictionCard({
           )}
 
           {riskPct !== null && (
-            <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+            <span className="flex items-center gap-1 text-loss dark:text-loss">
               <ArrowDownCircle className="h-3.5 w-3.5" />
               <span className="font-semibold tabular-nums">-{(riskPct ?? 0).toFixed(1)}%</span>
               <span className="text-muted-foreground">المخاطرة</span>
@@ -408,9 +408,9 @@ export function PredictionCard({
 
         {/* ===== Risk note (if present, always visible — important warning) ===== */}
         {technicalExplanation?.riskNote && (
-          <div className="mt-2 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30 p-2 flex items-start gap-2">
-            <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-800 dark:text-amber-200">
+          <div className="mt-2 rounded-md border border-warning dark:border-warning bg-warning/70 dark:bg-warning/30 p-2 flex items-start gap-2">
+            <ShieldAlert className="h-4 w-4 text-warning dark:text-warning flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-warning dark:text-warning">
               {technicalExplanation.riskNote}
             </p>
           </div>
@@ -485,7 +485,7 @@ export function PredictionCard({
                   <ul className="space-y-1 pr-4 list-disc">
                     {technicalExplanation.proofs!.map((p, i) => (
                       <li key={i} className="flex items-start gap-1">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-1 flex-shrink-0" />
+                        <CheckCircle2 className="h-3 w-3 text-profit mt-1 flex-shrink-0" />
                         <span>{p}</span>
                       </li>
                     ))}

@@ -89,7 +89,7 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
     return (
       <Card className={className}>
         <CardContent className="p-6 text-center text-muted-foreground">
-          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-warning" />
           <p className="text-sm">{error || 'لا يتوفر تحليل لهذا السهم حالياً'}</p>
         </CardContent>
       </Card>
@@ -256,7 +256,7 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
               <ul className="space-y-1">
                 {analysis.risk.factors_ar.map((f, i) => (
                   <li key={i} className="text-xs flex items-start gap-1">
-                    <AlertTriangle className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <AlertTriangle className="w-3 h-3 text-warning mt-0.5 flex-shrink-0" />
                     <span>{f}</span>
                   </li>
                 ))}
@@ -267,8 +267,8 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
       </Card>
 
       {/* Disclaimer */}
-      <div className="mt-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+      <div className="mt-4 p-3 rounded-md bg-warning dark:bg-warning/20 border border-warning dark:border-warning">
+        <p className="text-xs text-warning dark:text-warning">
           ⚠️ إخلاء مسؤولية: هذا التحليل لأغراض تعليمية وإعلامية فقط ولا يُعتبر توصية استثمارية ملزمة.
           الاستثمار في الأسهم ينطوي على مخاطر، يُرجى استشارة مستشار مالي مرخص قبل اتخاذ قرارات الاستثمار.
         </p>
@@ -287,17 +287,17 @@ function PriceBox({ label, value, pct, rationale, color }: {
   color: 'emerald' | 'blue' | 'purple' | 'rose';
 }) {
   const colorClasses = {
-    emerald: 'border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20',
-    blue: 'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20',
+    emerald: 'border-profit dark:border-profit bg-profit dark:bg-profit/20',
+    blue: 'border-primary dark:border-primary bg-primary dark:bg-primary/20',
     purple: 'border-purple-200 dark:border-purple-900 bg-purple-50 dark:bg-purple-950/20',
-    rose: 'border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/20',
+    rose: 'border-loss dark:border-loss bg-loss dark:bg-loss/20',
   };
 
   const valueColor = {
-    emerald: 'text-emerald-700 dark:text-emerald-400',
-    blue: 'text-blue-700 dark:text-blue-400',
+    emerald: 'text-profit dark:text-profit',
+    blue: 'text-primary dark:text-primary',
     purple: 'text-purple-700 dark:text-purple-400',
-    rose: 'text-rose-700 dark:text-rose-400',
+    rose: 'text-loss dark:text-loss',
   };
 
   return (

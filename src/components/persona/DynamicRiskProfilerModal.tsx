@@ -256,7 +256,7 @@ export function DynamicRiskProfilerModal({
           ) : (
             <Card className="p-5 space-y-4 border-primary/30 bg-primary/5">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                <CheckCircle2 className="h-5 w-5 text-profit" />
                 <h3 className="font-bold">اكتمل الاستبيان</h3>
               </div>
 
@@ -271,9 +271,9 @@ export function DynamicRiskProfilerModal({
               <div className="flex flex-col items-center gap-2 py-2">
                 <div className="text-sm text-muted-foreground">الشخصية المُستنتَجة:</div>
                 <div className="flex items-center gap-2 text-lg font-bold">
-                  {derivedPersona === 'conservative' && <Shield className="h-5 w-5 text-teal-500" />}
+                  {derivedPersona === 'conservative' && <Shield className="h-5 w-5 text-whale" />}
                   {derivedPersona === 'balanced' && <Scale className="h-5 w-5 text-yellow-500" />}
-                  {derivedPersona === 'gambler' && <Flame className="h-5 w-5 text-red-500" />}
+                  {derivedPersona === 'gambler' && <Flame className="h-5 w-5 text-loss" />}
                   {personaLabelAr(derivedPersona)}
                 </div>
                 <p className="text-xs text-muted-foreground text-center max-w-sm">

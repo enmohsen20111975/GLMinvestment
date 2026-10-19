@@ -358,8 +358,8 @@ const fmtPct = (n: number | null | undefined, withSign = true): string => {
 const pnlColorClass = (pnl: number | null | undefined): string => {
   if (pnl == null || pnl === 0) return 'text-muted-foreground';
   return pnl > 0
-    ? 'text-emerald-600 dark:text-emerald-400'
-    : 'text-rose-600 dark:text-rose-400';
+    ? 'text-profit dark:text-profit'
+    : 'text-loss dark:text-loss';
 };
 
 const bucketLabel: Record<string, string> = {
@@ -409,28 +409,28 @@ const accentClasses: Record<AccentKey, {
   softBg: string;
 }> = {
   amber: {
-    card: 'border-amber-200 dark:border-amber-900/40',
-    headerBg: 'bg-amber-50/60 dark:bg-amber-950/20',
-    iconColor: 'text-amber-600 dark:text-amber-400',
-    badge: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
-    border: 'border-amber-300 dark:border-amber-800/50',
-    softBg: 'bg-amber-50/50 dark:bg-amber-950/10',
+    card: 'border-warning dark:border-warning/40',
+    headerBg: 'bg-warning/60 dark:bg-warning/20',
+    iconColor: 'text-warning dark:text-warning',
+    badge: 'bg-warning text-warning border-warning dark:bg-warning/60 dark:text-warning dark:border-warning',
+    border: 'border-warning dark:border-warning/50',
+    softBg: 'bg-warning/50 dark:bg-warning/10',
   },
   rose: {
-    card: 'border-rose-200 dark:border-rose-900/40',
-    headerBg: 'bg-rose-50/60 dark:bg-rose-950/20',
-    iconColor: 'text-rose-600 dark:text-rose-400',
-    badge: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
-    border: 'border-rose-300 dark:border-rose-800/50',
-    softBg: 'bg-rose-50/50 dark:bg-rose-950/10',
+    card: 'border-loss dark:border-loss/40',
+    headerBg: 'bg-loss/60 dark:bg-loss/20',
+    iconColor: 'text-loss dark:text-loss',
+    badge: 'bg-loss text-loss border-loss dark:bg-loss/60 dark:text-loss dark:border-loss',
+    border: 'border-loss dark:border-loss/50',
+    softBg: 'bg-loss/50 dark:bg-loss/10',
   },
   emerald: {
-    card: 'border-emerald-200 dark:border-emerald-900/40',
-    headerBg: 'bg-emerald-50/60 dark:bg-emerald-950/20',
-    iconColor: 'text-emerald-600 dark:text-emerald-400',
-    badge: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
-    border: 'border-emerald-300 dark:border-emerald-800/50',
-    softBg: 'bg-emerald-50/50 dark:bg-emerald-950/10',
+    card: 'border-profit dark:border-profit/40',
+    headerBg: 'bg-profit/60 dark:bg-profit/20',
+    iconColor: 'text-profit dark:text-profit',
+    badge: 'bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit dark:border-profit',
+    border: 'border-profit dark:border-profit/50',
+    softBg: 'bg-profit/50 dark:bg-profit/10',
   },
   purple: {
     card: 'border-purple-200 dark:border-purple-900/40',
@@ -1116,7 +1116,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   if (error && !data) {
     return (
       <Card className="p-6 text-center" dir="rtl">
-        <AlertTriangle className="h-10 w-10 text-rose-500 mx-auto mb-3" />
+        <AlertTriangle className="h-10 w-10 text-loss mx-auto mb-3" />
         <p className="text-sm text-muted-foreground mb-3">{error}</p>
         <Button size="sm" onClick={() => fetchData()}>
           <RefreshCw className="h-4 w-4 ml-1" /> إعادة المحاولة
@@ -1133,15 +1133,15 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
     <div className="space-y-4" dir="rtl">
       {/* ===== HEADER ===== (always visible — refresh buttons work across all sub-tabs) */}
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-l from-emerald-50/80 via-emerald-50/30 to-transparent dark:from-emerald-950/30 dark:to-transparent p-4 md:p-5">
+        <div className="bg-gradient-to-l from-profit/80 via-profit/30 to-transparent dark:from-profit/30 dark:to-transparent p-4 md:p-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="h-12 w-12 rounded-xl bg-emerald-600/10 dark:bg-emerald-400/10 flex items-center justify-center">
-                  <Radar className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="h-12 w-12 rounded-xl bg-profit/10 dark:bg-profit/10 flex items-center justify-center">
+                  <Radar className="h-6 w-6 text-profit dark:text-profit" />
                 </div>
                 {marketStatus.isOpen && (
-                  <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 animate-pulse border-2 border-background" />
+                  <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-profit animate-pulse border-2 border-background" />
                 )}
               </div>
               <div>
@@ -1151,11 +1151,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                     variant="outline"
                     className={
                       marketStatus.isOpen
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]'
-                        : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 text-[10px]'
+                        ? 'bg-profit text-profit border-profit dark:bg-profit dark:text-profit text-[10px]'
+                        : 'bg-warning text-warning border-warning dark:bg-warning dark:text-warning text-[10px]'
                     }
                   >
-                    <span className={`h-1.5 w-1.5 rounded-full mr-1 ${marketStatus.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                    <span className={`h-1.5 w-1.5 rounded-full mr-1 ${marketStatus.isOpen ? 'bg-profit animate-pulse' : 'bg-warning'}`} />
                     {marketStatus.isOpen ? 'LIVE' : 'السوق مقفول'}
                   </Badge>
                 </h3>
@@ -1178,9 +1178,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                   variant="outline"
                   className={`text-[10px] ${
                     data.cache_stale
-                      ? 'text-amber-700 border-amber-300 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/40'
+                      ? 'text-warning border-warning bg-warning dark:text-warning dark:bg-warning/40'
                       : data.cache_age_seconds! < 60
-                      ? 'text-emerald-700 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40'
+                      ? 'text-profit border-profit bg-profit dark:text-profit dark:bg-profit/40'
                       : 'text-muted-foreground border-border bg-muted/30'
                   }`}
                   title={`DB: ${data.db_source || 'unknown'}\nGenerated: ${data.cache_generated_at || '?'}\nLast warmup: ${data.last_warmup_status} (${data.last_warmup_duration_ms ?? 0}ms)`}
@@ -1194,8 +1194,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 </Badge>
               )}
               {data?.warmup_running && (
-                <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-200 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse mr-1" />
+                <Badge variant="outline" className="text-[10px] text-primary border-primary bg-primary dark:text-primary dark:bg-primary/40">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse mr-1" />
                   بيشتغل
                 </Badge>
               )}
@@ -1205,7 +1205,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 </Badge>
               )}
               {data?.last_warmup_status === 'failed' && data?.last_error && (
-                <Badge variant="outline" className="text-[10px] text-rose-700 border-rose-200 bg-rose-50 dark:text-rose-400 dark:bg-rose-950/40" title={data.last_error}>
+                <Badge variant="outline" className="text-[10px] text-loss border-loss bg-loss dark:text-loss dark:bg-loss/40" title={data.last_error}>
                   ⚠️ خطأ آخر تشغيل
                 </Badge>
               )}
@@ -1257,9 +1257,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           Strategy §4.1 row 7: free users see delayed radar (60 min) as a "taste hook".
           Phase 1 = display-only banner. Phase 2 will enforce the delay server-side. */}
       {radarDelayed && (
-        <Card className="border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/30 p-3">
+        <Card className="border-warning/40 bg-warning/60 dark:bg-warning/30 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+            <div className="flex items-center gap-2 text-warning dark:text-warning">
               <Clock className="h-4 w-4" />
               <span className="text-xs font-semibold">
                 البيانات متأخرة 60 دقيقة — اشترك للبيانات الفورية
@@ -1268,7 +1268,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-[11px] gap-1 border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100/50 dark:hover:bg-amber-950/40"
+              className="h-7 text-[11px] gap-1 border-warning/40 text-warning dark:text-warning hover:bg-warning/50 dark:hover:bg-warning/40"
               onClick={() => {
                 if (typeof window !== 'undefined') {
                   window.location.href = '/pricing';
@@ -1290,15 +1290,15 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       <Tabs defaultValue="maker" className="w-full">
         <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
           <TabsTrigger value="maker" className="flex items-center gap-1">
-            <Radar className="h-4 w-4 text-emerald-600" />
+            <Radar className="h-4 w-4 text-profit" />
             <span className="hidden sm:inline">رادار الميكرز</span>
           </TabsTrigger>
           <TabsTrigger value="exit-radar" className="flex items-center gap-1">
-            <DoorOpen className="h-4 w-4 text-rose-600" />
+            <DoorOpen className="h-4 w-4 text-loss" />
             <span className="hidden sm:inline">رادار الخروج</span>
           </TabsTrigger>
           <TabsTrigger value="weekly-report" className="flex items-center gap-1">
-            <FileText className="h-4 w-4 text-emerald-600" />
+            <FileText className="h-4 w-4 text-profit" />
             <span className="hidden sm:inline">التقرير الأسبوعي</span>
           </TabsTrigger>
           <TabsTrigger value="multi-market-radar" className="flex items-center gap-1">
@@ -1306,7 +1306,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             <span className="hidden sm:inline">الرادار الموحّد</span>
           </TabsTrigger>
           <TabsTrigger value="radar-accuracy" className="flex items-center gap-1">
-            <Gauge className="h-4 w-4 text-amber-600" />
+            <Gauge className="h-4 w-4 text-warning" />
             <span className="hidden sm:inline">دقة الرادار</span>
           </TabsTrigger>
           <TabsTrigger value="personalized-radar" className="flex items-center gap-1">
@@ -1323,19 +1323,19 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {data?.market_regime && (
         <Card className={`p-4 border-l-4 transition-all ${
           data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-            ? 'border-l-red-500 bg-red-500/10 dark:bg-red-950/30 border-red-300 dark:border-red-800 shadow-lg shadow-red-500/20'
+            ? 'border-l-red-500 bg-loss/10 dark:bg-loss/30 border-loss dark:border-loss shadow-lg shadow-red-500/20'
             : data.market_regime.regime === 'AGGRESSIVE'
-              ? 'border-l-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
-              : 'border-l-blue-500 bg-blue-500/5 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+              ? 'border-l-emerald-500 bg-profit/5 dark:bg-profit/20 border-profit dark:border-profit'
+              : 'border-l-blue-500 bg-primary/5 dark:bg-primary/20 border-primary dark:border-primary'
         }`}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <ShieldAlert className={`h-6 w-6 ${
                 data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                  ? 'text-red-600 dark:text-red-400 animate-pulse'
+                  ? 'text-loss dark:text-loss animate-pulse'
                   : data.market_regime.regime === 'AGGRESSIVE'
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-blue-600 dark:text-blue-400'
+                    ? 'text-profit dark:text-profit'
+                    : 'text-primary dark:text-primary'
               }`} />
               <div>
                 <div className="flex items-center gap-2">
@@ -1344,10 +1344,10 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                   </span>
                   <Badge variant="outline" className={`text-xs font-semibold ${
                     data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
-                      ? 'bg-red-100 text-red-900 border-red-400 dark:bg-red-950 dark:text-red-200 dark:border-red-700'
+                      ? 'bg-loss text-loss border-loss dark:bg-loss dark:text-loss dark:border-loss'
                       : data.market_regime.regime === 'AGGRESSIVE'
-                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
-                        : 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200'
+                        ? 'bg-profit text-profit border-profit dark:bg-profit dark:text-profit'
+                        : 'bg-primary text-primary border-primary dark:bg-primary dark:text-primary'
                   }`}>
                     {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
                       ? '🔴 دِفاعي — قلّل الحجم وركّز على وقف الخسارة'
@@ -1448,9 +1448,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 <span className="text-sm font-bold">خلاصة الرادار</span>
                 {data.market_regime && (
                   <Badge variant="outline" className={
-                    data.market_regime.effective_regime === 'AGGRESSIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' :
-                    data.market_regime.effective_regime === 'DEFENSIVE' ? 'bg-red-500/10 text-red-600 border-red-500/30' :
-                    'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                    data.market_regime.effective_regime === 'AGGRESSIVE' ? 'bg-profit/10 text-profit border-profit/30' :
+                    data.market_regime.effective_regime === 'DEFENSIVE' ? 'bg-loss/10 text-loss border-loss/30' :
+                    'bg-warning/10 text-warning border-warning/30'
                   }>
                     {data.market_regime.effective_regime === 'AGGRESSIVE' ? '🟢 السوق عدواني' :
                      data.market_regime.effective_regime === 'DEFENSIVE' ? '🔴 السوق دفاعي' :
@@ -1475,7 +1475,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 })()}
               </p>
               {data.tracked_count === 0 && (data.under_microscope_count ?? 0) > 0 && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <p className="text-[11px] text-warning dark:text-warning flex items-center gap-1">
                   ⚠️ لا توجد أسهم في قائمة المتابعة — افتح أي سهم واضغط ⭐ لإضافته للمتابعة.
                 </p>
               )}
@@ -1537,7 +1537,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             <Button
               size="sm"
               variant={sortByPrediction ? 'default' : 'outline'}
-              className={`h-7 text-xs gap-1 ${sortByPrediction ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent' : ''}`}
+              className={`h-7 text-xs gap-1 ${sortByPrediction ? 'bg-profit hover:bg-profit text-white border-transparent' : ''}`}
               onClick={() => setSortByPrediction((v) => !v)}
               title="ترتيب الأسهم من الأعلى توقع للصعود للأدنى"
             >
@@ -1560,7 +1560,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           key="radar-explosive"
           title="🔥 الأسهم المنفجرة الآن"
           subtitle="حجم فجائي + حركة قوية — تنبيه فوري"
-          icon={<Flame className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
+          icon={<Flame className="h-4 w-4 text-loss dark:text-loss" />}
           accent="rose"
           stocks={filteredExplosive}
           market={market}
@@ -1598,7 +1598,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           key="radar-quiet"
           title="🎯 تحت الميكروسكوب"
           subtitle="تجميع هادئ — أسهم بتتراكم قبل ما تنفجر"
-          icon={<Eye className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+          icon={<Eye className="h-4 w-4 text-warning dark:text-warning" />}
           accent="amber"
           stocks={filteredQuiet}
           market={market}
@@ -1617,7 +1617,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           key="radar-early-break"
           title="⚡ اختراق مبكر"
           subtitle="خروج من نطاق ضيق بحجم — أول إشارة اختراق"
-          icon={<Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+          icon={<Zap className="h-4 w-4 text-profit dark:text-profit" />}
           accent="emerald"
           stocks={filteredEarlyBreak}
           market={market}
@@ -1768,13 +1768,13 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
     let levelColor = 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300';
     if (activityPct > 30) {
       level = 'شعل عالي';
-      levelColor = 'text-rose-700 bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300';
+      levelColor = 'text-loss bg-loss dark:bg-loss/40 dark:text-loss';
     } else if (activityPct > 15) {
       level = 'شعل متوسط';
-      levelColor = 'text-amber-700 bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300';
+      levelColor = 'text-warning bg-warning dark:bg-warning/40 dark:text-warning';
     } else if (activityPct > 5) {
       level = 'شعل منخفض';
-      levelColor = 'text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300';
+      levelColor = 'text-profit bg-profit dark:bg-profit/40 dark:text-profit';
     }
 
     return {
@@ -1830,9 +1830,9 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
         <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              activity.activityPct > 30 ? 'bg-rose-500' :
-              activity.activityPct > 15 ? 'bg-amber-500' :
-              'bg-emerald-500'
+              activity.activityPct > 30 ? 'bg-loss' :
+              activity.activityPct > 15 ? 'bg-warning' :
+              'bg-profit'
             }`}
             style={{ width: `${Math.min(activity.activityPct, 100)}%` }}
           />
@@ -1849,19 +1849,19 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
         </div>
         <div className="text-center p-2 rounded-lg bg-muted/30">
           <div className="text-[10px] text-muted-foreground">تجميع هادئ</div>
-          <div className="text-sm font-bold tabular-nums text-amber-600">
+          <div className="text-sm font-bold tabular-nums text-warning">
             {Math.round(activity.quiet * periodMultiplier[activePeriod])}
           </div>
         </div>
         <div className="text-center p-2 rounded-lg bg-muted/30">
           <div className="text-[10px] text-muted-foreground">موجات منفجرة</div>
-          <div className="text-sm font-bold tabular-nums text-rose-600">
+          <div className="text-sm font-bold tabular-nums text-loss">
             {Math.round(activity.explosive * periodMultiplier[activePeriod])}
           </div>
         </div>
         <div className="text-center p-2 rounded-lg bg-muted/30">
           <div className="text-[10px] text-muted-foreground">اختراق مبكر</div>
-          <div className="text-sm font-bold tabular-nums text-emerald-600">
+          <div className="text-sm font-bold tabular-nums text-profit">
             {Math.round(activity.earlyBreak * periodMultiplier[activePeriod])}
           </div>
         </div>
@@ -1878,10 +1878,10 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
 
 function KpiCard({ icon, label, value, sub, accent }: KpiCardProps) {
   const colors: Record<KpiCardProps['accent'], { bg: string; text: string; ring: string }> = {
-    blue:   { bg: 'bg-blue-50 dark:bg-blue-950/40',     text: 'text-blue-600 dark:text-blue-400',     ring: 'ring-blue-100 dark:ring-blue-900/40' },
-    amber:  { bg: 'bg-amber-50 dark:bg-amber-950/40',  text: 'text-amber-600 dark:text-amber-400',   ring: 'ring-amber-100 dark:ring-amber-900/40' },
-    rose:   { bg: 'bg-rose-50 dark:bg-rose-950/40',    text: 'text-rose-600 dark:text-rose-400',     ring: 'ring-rose-100 dark:ring-rose-900/40' },
-    emerald:{ bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400', ring: 'ring-emerald-100 dark:ring-emerald-900/40' },
+    blue:   { bg: 'bg-primary dark:bg-primary/40',     text: 'text-primary dark:text-primary',     ring: 'ring-primary dark:ring-primary/40' },
+    amber:  { bg: 'bg-warning dark:bg-warning/40',  text: 'text-warning dark:text-warning',   ring: 'ring-warning dark:ring-warning/40' },
+    rose:   { bg: 'bg-loss dark:bg-loss/40',    text: 'text-loss dark:text-loss',     ring: 'ring-loss dark:ring-loss/40' },
+    emerald:{ bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', ring: 'ring-profit dark:ring-profit/40' },
     gold:   { bg: 'bg-yellow-50 dark:bg-yellow-950/40', text: 'text-yellow-600 dark:text-yellow-400', ring: 'ring-yellow-100 dark:ring-yellow-900/40' },
   };
   const c = colors[accent];
@@ -1961,10 +1961,10 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
 
           // Gradient based on direction
           const gradient = isInflow
-            ? 'from-emerald-500/80 to-emerald-600/60'
+            ? 'from-profit/80 to-profit/60'
             : isOutflow
-            ? 'from-rose-500/80 to-rose-600/60'
-            : 'from-amber-500/60 to-amber-600/40';
+            ? 'from-loss/80 to-loss/60'
+            : 'from-warning/60 to-warning/40';
 
           return (
             <div
@@ -2010,9 +2010,9 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
 
             // Color coding
             const cls =
-              isInflow ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' :
-              isOutflow ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800' :
-              'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+              isInflow ? 'bg-profit text-profit border-profit dark:bg-profit/40 dark:text-profit dark:border-profit' :
+              isOutflow ? 'bg-loss text-loss border-loss dark:bg-loss/40 dark:text-loss dark:border-loss' :
+              'bg-warning text-warning border-warning dark:bg-warning/40 dark:text-warning dark:border-warning';
 
             return (
               <div
@@ -2029,7 +2029,7 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
                   {((s.totalTurnover ?? 0) / 1e6).toFixed(0)}M
                 </span>
                 {/* Mini flow indicator */}
-                <span className={isInflow ? 'text-emerald-500' : isOutflow ? 'text-rose-500' : 'text-amber-500'}>
+                <span className={isInflow ? 'text-profit' : isOutflow ? 'text-loss' : 'text-warning'}>
                   {isInflow ? '→' : isOutflow ? '←' : '•'}
                 </span>
               </div>
@@ -2097,8 +2097,8 @@ const RadarSection = memo(function RadarSection({
           <Badge variant="secondary" className="text-xs">
             {stocks.length} أسهم
           </Badge>
-          <div className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-profit dark:text-profit bg-profit/10 border border-profit/30 px-2 py-0.5 rounded-full font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse" />
             <span>بث الأسعار حي</span>
           </div>
           <UnifiedPublishButton
@@ -2268,7 +2268,7 @@ const StockTable = memo(function StockTable({
               )}
             </div>
             {stock.isTracked && (
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="متابَع" />
+              <span className="h-1.5 w-1.5 rounded-full bg-warning" title="متابَع" />
             )}
           </div>
         );
@@ -2294,15 +2294,15 @@ const StockTable = memo(function StockTable({
         let badgeText = '—';
         let badgeTitle = '';
         if (q === 'fresh') {
-          badgeColor = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+          badgeColor = 'bg-profit/15 text-profit dark:text-profit';
           badgeText = src === 'live' ? '🔴 live' : `✓ ${sd ?? 0}d`;
           badgeTitle = `بيانات حديثة — ${src === 'live' ? 'مصدر حي' : `آخر إغلاق ${sd ?? 0} يوم`} (data_date: ${stock.data_date ?? '?'})`;
         } else if (q === 'stale') {
-          badgeColor = 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+          badgeColor = 'bg-warning/15 text-warning dark:text-warning';
           badgeText = `⚠️ ${sd}d`;
           badgeTitle = `بيانات قديمة (${sd} يوم) — آخر تحديث: ${stock.data_date ?? '?'}`;
         } else if (q === 'very_stale') {
-          badgeColor = 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
+          badgeColor = 'bg-loss/15 text-loss dark:text-loss';
           badgeText = `⛔ ${sd}d`;
           badgeTitle = `بيانات قديمة جداً (${sd} يوم) — السعر ده مش مظبوط! آخر تحديث: ${stock.data_date ?? '?'}`;
         } else if (q === 'unknown') {
@@ -2353,7 +2353,7 @@ const StockTable = memo(function StockTable({
             {val != null && (
               <div className="w-10 h-1 bg-muted rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${val >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                  className={`h-full rounded-full ${val >= 0 ? 'bg-profit' : 'bg-loss'}`}
                   style={{ width: `${Math.min(100, Math.abs(val) * 6)}%` }}
                 />
               </div>
@@ -2391,7 +2391,7 @@ const StockTable = memo(function StockTable({
         const volRatio = stock.volume_ratio_10d_vs_20d;
         const volHighlight = volRatio >= 1.4;
         return (
-          <span className={`font-mono ${volHighlight ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
+          <span className={`font-mono ${volHighlight ? 'text-profit dark:text-profit font-bold' : ''}`}>
             {(volRatio ?? 0).toFixed(2)}×
           </span>
         );
@@ -2411,7 +2411,7 @@ const StockTable = memo(function StockTable({
           : 2;
         return (
           <div className="flex items-center justify-center gap-1">
-            <span className={`font-mono font-semibold ${bounces >= 3 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground/80'}`}>
+            <span className={`font-mono font-semibold ${bounces >= 3 ? 'text-profit dark:text-profit' : 'text-foreground/80'}`}>
               {bounces}
             </span>
             <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -2443,12 +2443,12 @@ const StockTable = memo(function StockTable({
         const isLow = liq <= 40;
         return (
           <div className="flex flex-col items-center gap-0.5">
-            <span className={`font-bold ${isHigh ? 'text-emerald-600 dark:text-emerald-400' : isLow ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
+            <span className={`font-bold ${isHigh ? 'text-profit dark:text-profit' : isLow ? 'text-loss dark:text-loss' : 'text-muted-foreground'}`}>
               {liq}%
             </span>
             <div className="w-10 h-1 bg-muted rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full ${isHigh ? 'bg-emerald-500' : isLow ? 'bg-rose-500' : 'bg-amber-500'}`}
+                className={`h-full rounded-full ${isHigh ? 'bg-profit' : isLow ? 'bg-loss' : 'bg-warning'}`}
                 style={{ width: `${Math.min(100, liq)}%` }}
               />
             </div>
@@ -2476,7 +2476,7 @@ const StockTable = memo(function StockTable({
         const absVal = Math.abs(flowVal);
         const formatted = absVal >= 1e6 ? `${(absVal / 1e6).toFixed(1)}M` : `${(absVal / 1e3).toFixed(0)}K`;
         return (
-          <span className={`font-semibold ${flowVal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+          <span className={`font-semibold ${flowVal >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
             {sign}{formatted}
           </span>
         );
@@ -2497,11 +2497,11 @@ const StockTable = memo(function StockTable({
         const state = String(stock.money_flow_state || '⚪ متوازنة');
         let bgClass = 'bg-muted/30 text-muted-foreground border-border';
         if (state.includes('🔥 دخول') || state.includes('🟢 سيولة داخلة')) {
-          bgClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
+          bgClass = 'bg-profit text-profit border-profit dark:bg-profit/40 dark:text-profit dark:border-profit';
         } else if (state.includes('🔥 خروج') || state.includes('🔴 سيولة خارجة')) {
-          bgClass = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
+          bgClass = 'bg-loss text-loss border-loss dark:bg-loss/40 dark:text-loss dark:border-loss';
         } else if (state.includes('⚪')) {
-          bgClass = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+          bgClass = 'bg-warning text-warning border-warning dark:bg-warning/40 dark:text-warning dark:border-warning';
         }
         return (
           <Badge variant="outline" className={`text-[10px] font-bold ${bgClass}`}>
@@ -2531,21 +2531,21 @@ const StockTable = memo(function StockTable({
         return (
           <div className="flex flex-col items-center gap-1">
             <div className="flex items-center gap-2 text-[10px] font-mono">
-              <span className={`font-bold ${isBuyDominant ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+              <span className={`font-bold ${isBuyDominant ? 'text-profit dark:text-profit' : 'text-muted-foreground'}`}>
                 🟢 {(buyPct ?? 0).toFixed(0)}%
               </span>
               <span className="text-muted-foreground">|</span>
-              <span className={`font-bold ${isSellDominant ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
+              <span className={`font-bold ${isSellDominant ? 'text-loss dark:text-loss' : 'text-muted-foreground'}`}>
                 🔴 {(sellPct ?? 0).toFixed(0)}%
               </span>
             </div>
             <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden flex">
               <div
-                className="h-full bg-emerald-500"
+                className="h-full bg-profit"
                 style={{ width: `${buyPct}%` }}
               />
               <div
-                className="h-full bg-rose-500"
+                className="h-full bg-loss"
                 style={{ width: `${sellPct}%` }}
               />
             </div>
@@ -2567,7 +2567,7 @@ const StockTable = memo(function StockTable({
       className: 'text-xs',
       render: (stock) => {
         if (stock.kill_switch) {
-          return <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-300 bg-rose-50/50">⚠️ تدوير وهمي</Badge>;
+          return <Badge variant="outline" className="text-[10px] text-loss border-loss bg-loss/50">⚠️ تدوير وهمي</Badge>;
         }
         let cycle = stock.life_cycle && stock.life_cycle !== 'عادي' ? stock.life_cycle : null;
         if (!cycle) {
@@ -2604,10 +2604,10 @@ const StockTable = memo(function StockTable({
             variant="outline"
             className={`text-[10px] h-5 px-1.5 whitespace-nowrap ${
               isStrong
-                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 font-semibold'
+                ? 'bg-profit text-profit border-profit dark:bg-profit/50 dark:text-profit font-semibold'
                 : isDist
-                ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 font-semibold'
-                : 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300'
+                ? 'bg-loss text-loss border-loss dark:bg-loss/50 dark:text-loss font-semibold'
+                : 'bg-warning text-warning border-warning dark:bg-warning/40 dark:text-warning'
             }`}
           >
             {accum}
@@ -2651,7 +2651,7 @@ const StockTable = memo(function StockTable({
           const expGain = ((pred.target_price - stock.current_price) / stock.current_price * 100);
           return (
             <div className="flex flex-col items-center leading-tight">
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">
+              <span className="text-profit dark:text-profit font-bold font-mono text-xs">
                 +{(expGain ?? 0).toFixed(0)}%
               </span>
               <span className="text-[9px] text-muted-foreground whitespace-nowrap">
@@ -2662,7 +2662,7 @@ const StockTable = memo(function StockTable({
         }
         // لا توقع متاح
         return (
-          <div className="flex flex-col items-center leading-tight bg-amber-50/50 dark:bg-amber-950/10 rounded px-1">
+          <div className="flex flex-col items-center leading-tight bg-warning/50 dark:bg-warning/10 rounded px-1">
             <span className="text-muted-foreground font-mono text-xs">—</span>
           </div>
         );
@@ -2692,7 +2692,7 @@ const StockTable = memo(function StockTable({
         }
         const badge = source === 'ai' ? '🤖' : source === 'technical' ? '📊' : '';
         return (
-          <span className="font-mono font-bold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+          <span className="font-mono font-bold text-warning dark:text-warning inline-flex items-center gap-1">
             {badge && <span title={source === 'ai' ? 'توصية AI' : 'مستوى فني'}>{badge}</span>}
             {fmtNum(trig)}
           </span>
@@ -2728,15 +2728,15 @@ const StockTable = memo(function StockTable({
           ? '📊 مستوى فني'
           : null;
         const badgeCls = source === 'ai'
-          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+          ? 'bg-profit/15 text-profit dark:text-profit'
           : source === 'technical'
-          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+          ? 'bg-warning/15 text-warning dark:text-warning'
           : 'bg-muted text-muted-foreground';
 
         if (tPrice === null && slPrice === null) {
           // لا توقع ولا مستويات فنية
           return (
-            <div className="flex flex-col text-[10px] leading-tight font-mono bg-amber-50/30 dark:bg-amber-950/10 rounded p-1 gap-0.5">
+            <div className="flex flex-col text-[10px] leading-tight font-mono bg-warning/30 dark:bg-warning/10 rounded p-1 gap-0.5">
               <span className="text-muted-foreground text-center">— راجع التحليل</span>
               {badge && <span className={`text-[8px] px-1 rounded text-center ${badgeCls}`}>{badge}</span>}
             </div>
@@ -2748,13 +2748,13 @@ const StockTable = memo(function StockTable({
             {tPrice !== null && (
               <div className="flex gap-1 justify-between">
                 <span className="text-muted-foreground">هدف:</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">{fmtNum(tPrice)}</span>
+                <span className="text-profit dark:text-profit font-bold">{fmtNum(tPrice)}</span>
               </div>
             )}
             {slPrice !== null && (
               <div className="flex gap-1 justify-between">
                 <span className="text-muted-foreground">وقف:</span>
-                <span className="text-rose-600 dark:text-rose-400">{fmtNum(slPrice)}</span>
+                <span className="text-loss dark:text-loss">{fmtNum(slPrice)}</span>
               </div>
             )}
             {rr !== null ? (
@@ -2780,7 +2780,7 @@ const StockTable = memo(function StockTable({
         const pred = predictionForTicker(stock.ticker);
         if (stock.kill_switch) {
           return (
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300">
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-loss text-loss dark:bg-loss/60 dark:text-loss border-loss">
               ⚠️ حذر
             </Badge>
           );
@@ -2788,7 +2788,7 @@ const StockTable = memo(function StockTable({
         // اعرض canonical signal من prediction (لو متوفر) بدل fabrication.
         if (pred?.signal_ar) {
           return (
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300">
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-profit text-profit dark:bg-profit/40 dark:text-profit border-profit">
               {pred.signal_ar}
             </Badge>
           );
@@ -2810,12 +2810,12 @@ const StockTable = memo(function StockTable({
       render: (stock) => (
         <button
           onClick={(e) => { e.stopPropagation(); onTrackToggle(stock.ticker, stock.current_price, !!stock.isTracked); }}
-          className="text-muted-foreground hover:text-amber-500 transition-colors p-1 rounded"
+          className="text-muted-foreground hover:text-warning transition-colors p-1 rounded"
           title={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
           aria-label={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
         >
           {stock.isTracked ? (
-            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+            <Star className="h-4 w-4 fill-warning text-warning" />
           ) : (
             <StarOff className="h-4 w-4" />
           )}
@@ -3044,7 +3044,7 @@ export function StockDetailDrawer({
 
         {error && !loading && (
           <Card className="p-6 text-center">
-            <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto mb-2" />
+            <AlertTriangle className="h-8 w-8 text-loss mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">{error}</p>
             <Button size="sm" variant="outline" onClick={fetchDetail} className="mt-3">
               <RefreshCw className="h-4 w-4 ml-1" /> إعادة
@@ -3094,7 +3094,7 @@ export function StockDetailDrawer({
                   </svg>
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1">
                     <span>أدنى: {fmtNum(sparkline.min)}</span>
-                    <Badge variant="outline" className={sparkline.isUp ? 'text-emerald-600' : 'text-rose-600'}>
+                    <Badge variant="outline" className={sparkline.isUp ? 'text-profit' : 'text-loss'}>
                       {sparkline.isUp ? <TrendingUp className="h-3 w-3 ml-1" /> : <TrendingDown className="h-3 w-3 ml-1" />}
                       {fmtPct(sparkline.totalChange)}
                     </Badge>
@@ -3106,10 +3106,10 @@ export function StockDetailDrawer({
 
             {/* === Tracking banner === */}
             {detail.tracking?.isTracked && (
-              <Card className="p-3 bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50">
+              <Card className="p-3 bg-warning/60 dark:bg-warning/20 border-warning dark:border-warning/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <Star className="h-4 w-4 fill-warning text-warning" />
                     <span className="text-xs font-medium">
                       تحت المتابعة منذ {detail.tracking.entryDate}
                     </span>
@@ -3158,7 +3158,7 @@ export function StockDetailDrawer({
               <Card className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Layers className="h-4 w-4 text-primary dark:text-primary" />
                     <div>
                       <div className="text-xs font-semibold">قطاع: {sector}</div>
                       <div className="text-[10px] text-muted-foreground">أداء القطاع اليوم</div>
@@ -3456,7 +3456,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
       <div className="bg-background/60 rounded-md p-2 border border-border/40 mb-2">
         <div className="flex items-baseline justify-between flex-wrap gap-1">
           <span className="text-[11px] text-muted-foreground">💰 الدخول</span>
-          <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400" dir="ltr">
+          <span className="font-mono text-sm font-bold text-primary dark:text-primary" dir="ltr">
             {fmtNum(entryZoneLow)} → {fmtNum(entryZoneHigh)}
           </span>
         </div>
@@ -3467,36 +3467,36 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
 
       {/* ─── Targets + Stop grid (prominent, 3 cells) ───────────────────── */}
       <div className="grid grid-cols-3 gap-1.5 mb-2">
-        <div className="bg-background/60 rounded-md p-2 border border-emerald-200/60 dark:border-emerald-900/40">
+        <div className="bg-background/60 rounded-md p-2 border border-profit/60 dark:border-profit/40">
           <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
             <Target className="h-3 w-3" /> هدف 1
           </div>
-          <div className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400" dir="ltr">
+          <div className="text-sm font-mono font-bold text-profit dark:text-profit" dir="ltr">
             {fmtNum(target_1)}
           </div>
-          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="text-[10px] text-profit dark:text-profit font-mono">
             (+{(t1Gain ?? 0).toFixed(1)}%)
           </div>
         </div>
-        <div className="bg-background/60 rounded-md p-2 border border-emerald-200/60 dark:border-emerald-900/40">
+        <div className="bg-background/60 rounded-md p-2 border border-profit/60 dark:border-profit/40">
           <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
             <Award className="h-3 w-3" /> هدف 2
           </div>
-          <div className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400" dir="ltr">
+          <div className="text-sm font-mono font-bold text-profit dark:text-profit" dir="ltr">
             {fmtNum(target_2)}
           </div>
-          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="text-[10px] text-profit dark:text-profit font-mono">
             (+{(t2Gain ?? 0).toFixed(1)}%)
           </div>
         </div>
-        <div className="bg-background/60 rounded-md p-2 border border-rose-200/60 dark:border-rose-900/40">
+        <div className="bg-background/60 rounded-md p-2 border border-loss/60 dark:border-loss/40">
           <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
             <ShieldCheck className="h-3 w-3" /> وقف
           </div>
-          <div className="text-sm font-mono font-bold text-rose-600 dark:text-rose-400" dir="ltr">
+          <div className="text-sm font-mono font-bold text-loss dark:text-loss" dir="ltr">
             {fmtNum(stop_loss)}
           </div>
-          <div className="text-[10px] text-rose-600 dark:text-rose-400 font-mono">
+          <div className="text-[10px] text-loss dark:text-loss font-mono">
             ({(slLoss ?? 0).toFixed(1)}%)
           </div>
         </div>
@@ -3530,17 +3530,17 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
         </summary>
         <div className="space-y-0 mt-1">
           <TradingFieldRow label="سعر السهم الحالي" value={`${fmtNum(lastClose)} جنيه`} />
-          <TradingFieldRow label="الدعم الأول" value={fmtNum(support_1)} sub="(أقل سعر في 10 أيام)" valueClass="text-emerald-600 dark:text-emerald-400" />
-          <TradingFieldRow label="الدعم الثاني" value={fmtNum(support_2)} sub="(أقل سعر في 20 يوم)" valueClass="text-emerald-600 dark:text-emerald-400" />
-          <TradingFieldRow label="المقاومة الأولى" value={fmtNum(resistance_1)} sub="(أعلى سعر في 10 أيام)" valueClass="text-rose-600 dark:text-rose-400" />
-          <TradingFieldRow label="المقاومة الثانية" value={fmtNum(resistance_2)} sub="(أعلى سعر في 20 يوم)" valueClass="text-rose-600 dark:text-rose-400" />
-          <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${(rr_ratio ?? 0).toFixed(1)}:1`} valueClass="text-amber-600 dark:text-amber-400 font-bold" />
+          <TradingFieldRow label="الدعم الأول" value={fmtNum(support_1)} sub="(أقل سعر في 10 أيام)" valueClass="text-profit dark:text-profit" />
+          <TradingFieldRow label="الدعم الثاني" value={fmtNum(support_2)} sub="(أقل سعر في 20 يوم)" valueClass="text-profit dark:text-profit" />
+          <TradingFieldRow label="المقاومة الأولى" value={fmtNum(resistance_1)} sub="(أعلى سعر في 10 أيام)" valueClass="text-loss dark:text-loss" />
+          <TradingFieldRow label="المقاومة الثانية" value={fmtNum(resistance_2)} sub="(أعلى سعر في 20 يوم)" valueClass="text-loss dark:text-loss" />
+          <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${(rr_ratio ?? 0).toFixed(1)}:1`} valueClass="text-warning dark:text-warning font-bold" />
         </div>
       </details>
 
       {/* ─── Dynamic analysis text — changes based on MA10 / volume / range ─── */}
       <div className="pt-2 border-t border-border/50">
-        <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 mb-1">💡 التحليل:</div>
+        <div className="text-[11px] font-semibold text-primary dark:text-primary mb-1">💡 التحليل:</div>
         <div className="space-y-0.5 text-[11px] text-muted-foreground leading-relaxed">
           {analysis_lines.map((line, i) => (
             <p key={i}>{line}</p>
@@ -3602,8 +3602,8 @@ function ProofSection() {
         <CollapsibleTrigger asChild>
           <button className="w-full flex items-center justify-between p-3 md:p-4 hover:bg-muted/50 transition-colors">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
-                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="h-8 w-8 rounded-lg bg-profit dark:bg-profit/40 flex items-center justify-center">
+                <ShieldCheck className="h-4 w-4 text-profit dark:text-profit" />
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold">إثباتات دقة الرادار</div>
@@ -3611,7 +3611,7 @@ function ProofSection() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-amber-50 text-amber-700 border-amber-300">
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-warning text-warning border-warning">
                 <Award className="h-3 w-3 ml-1" />
                 بيانات حقيقية مطلوبة
               </Badge>
@@ -3623,10 +3623,10 @@ function ProofSection() {
         <CollapsibleContent>
           <div className="p-3 md:p-4 pt-0 space-y-3 border-t border-border/50">
             {/* P0-3: placeholder بدل القيم الثابتة الوهمية */}
-            <div className="mt-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-center">
+            <div className="mt-3 p-4 rounded-lg bg-warning dark:bg-warning/20 border border-warning dark:border-warning text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-                <span className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                <span className="text-sm font-bold text-warning dark:text-warning">
                   القيم الحقيقية متاحة عبر API الدقة
                 </span>
               </div>
@@ -3635,7 +3635,7 @@ function ProofSection() {
                 كأنها نتائج حية — وهذا مخالف لقاعدة &quot;لا بيانات وهمية&quot;.
                 القيم الحقيقية تُحسَب من predictions.db عبر:
               </p>
-              <code className="block text-[10px] font-mono bg-card border border-border rounded p-2 text-emerald-700 dark:text-emerald-400 mb-2" dir="ltr">
+              <code className="block text-[10px] font-mono bg-card border border-border rounded p-2 text-profit dark:text-profit mb-2" dir="ltr">
                 GET /api/radar/accuracy?market=EGX&amp;days=90
               </code>
               <p className="text-[10px] text-muted-foreground">
@@ -3666,10 +3666,10 @@ interface ProofMetricCardProps {
 
 function ProofMetricCard({ icon, label, value, sub, accent }: ProofMetricCardProps) {
   const colors: Record<ProofMetricCardProps['accent'], { bg: string; text: string }> = {
-    blue:    { bg: 'bg-blue-50 dark:bg-blue-950/40',    text: 'text-blue-600 dark:text-blue-400' },
-    amber:   { bg: 'bg-amber-50 dark:bg-amber-950/40',  text: 'text-amber-600 dark:text-amber-400' },
-    rose:    { bg: 'bg-rose-50 dark:bg-rose-950/40',   text: 'text-rose-600 dark:text-rose-400' },
-    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-600 dark:text-emerald-400' },
+    blue:    { bg: 'bg-primary dark:bg-primary/40',    text: 'text-primary dark:text-primary' },
+    amber:   { bg: 'bg-warning dark:bg-warning/40',  text: 'text-warning dark:text-warning' },
+    rose:    { bg: 'bg-loss dark:bg-loss/40',   text: 'text-loss dark:text-loss' },
+    emerald: { bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit' },
   };
   const c = colors[accent];
   return (
@@ -3696,22 +3696,22 @@ function ExplosiveBarChart({ detected, total }: { detected: number; total: numbe
     <div className="space-y-2">
       <div className="flex items-end gap-3 h-32">
         <div className="flex-1 flex flex-col items-center justify-end">
-          <div className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+          <div className="text-[10px] font-mono font-semibold text-profit dark:text-profit mb-1">
             {detected}
           </div>
           <div
-            className="w-full bg-gradient-to-t from-emerald-500 to-emerald-400 rounded-t-md transition-all"
+            className="w-full bg-gradient-to-t from-profit to-profit rounded-t-md transition-all"
             style={{ height: `${Math.max(detectedPct, 4)}%` }}
             title={`${detected} مكتشفة`}
           />
           <div className="text-[10px] text-muted-foreground mt-1 text-center">مكتشفة</div>
         </div>
         <div className="flex-1 flex flex-col items-center justify-end">
-          <div className="text-[10px] font-mono font-semibold text-rose-600 dark:text-rose-400 mb-1">
+          <div className="text-[10px] font-mono font-semibold text-loss dark:text-loss mb-1">
             {missed}
           </div>
           <div
-            className="w-full bg-gradient-to-t from-rose-500 to-rose-400 rounded-t-md transition-all"
+            className="w-full bg-gradient-to-t from-loss to-loss rounded-t-md transition-all"
             style={{ height: `${Math.max(missedPct, 4)}%` }}
             title={`${missed} فائتة`}
           />
@@ -3720,7 +3720,7 @@ function ExplosiveBarChart({ detected, total }: { detected: number; total: numbe
       </div>
       <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
         <span>إجمالي الانفجارات: <span className="font-bold text-foreground">{total}</span></span>
-        <span>نسبة الاكتشاف: <span className="font-bold text-emerald-600 dark:text-emerald-400">
+        <span>نسبة الاكتشاف: <span className="font-bold text-profit dark:text-profit">
           {total > 0 ? ((detected / total) * 100).toFixed(1) : '0.0'}%
         </span></span>
       </div>

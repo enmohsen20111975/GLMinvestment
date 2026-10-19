@@ -97,8 +97,8 @@ interface SearchResult {
 
 // ====== Helpers ======
 const AVATAR_COLORS = [
-  'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 'bg-green-600',
-  'bg-lime-600', 'bg-amber-600', 'bg-orange-600', 'bg-rose-500',
+  'bg-profit', 'bg-whale', 'bg-cyan-500', 'bg-success',
+  'bg-lime-600', 'bg-warning', 'bg-orange-600', 'bg-loss',
   'bg-pink-600', 'bg-fuchsia-600', 'bg-stone-600', 'bg-yellow-700',
 ];
 
@@ -250,9 +250,9 @@ export function TelegramTab() {
             <Key className="h-4 w-4" />
             المصادقة
             {authStatus?.connected ? (
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="inline-block h-2 w-2 rounded-full bg-profit" />
             ) : (
-              <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+              <span className="inline-block h-2 w-2 rounded-full bg-loss" />
             )}
           </TabsTrigger>
           <TabsTrigger value="dialogs" className="gap-1.5">
@@ -365,13 +365,13 @@ function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
 // ====== Not Authenticated Banner ======
 function NotAuthBanner({ onRequireAuth }: { onRequireAuth: () => void }) {
   return (
-    <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+    <Card className="border-warning dark:border-warning bg-warning dark:bg-warning/30">
       <CardContent className="py-6 flex flex-col items-center text-center gap-3">
-        <XCircle className="h-8 w-8 text-amber-600" />
-        <p className="font-medium text-amber-800 dark:text-amber-200">
+        <XCircle className="h-8 w-8 text-warning" />
+        <p className="font-medium text-warning dark:text-warning">
           يرجى تسجيل الدخول أولاً
         </p>
-        <p className="text-sm text-amber-700 dark:text-amber-300">
+        <p className="text-sm text-warning dark:text-warning">
           هذا التبويب يتطلب مصادقة على Telegram
         </p>
         <Button onClick={onRequireAuth} variant="outline">
@@ -516,7 +516,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-emerald-500" />
+            <CheckCircle className="h-5 w-5 text-profit" />
             متصل بـ Telegram
           </CardTitle>
           <CardDescription>تم تأكيد المصادقة على حسابك الشخصي</CardDescription>
@@ -531,7 +531,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-lg font-semibold">{name}</p>
-                <Badge className="bg-emerald-500 hover:bg-emerald-500 text-white">متصل</Badge>
+                <Badge className="bg-profit hover:bg-profit text-white">متصل</Badge>
               </div>
               {u?.username && (
                 <p className="text-sm text-muted-foreground" dir="ltr">@{u.username}</p>
@@ -562,7 +562,7 @@ function AuthTab({ authStatus, authLoading, onRefresh, onLogout, onAuthenticated
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <XCircle className="h-5 w-5 text-red-500" />
+          <XCircle className="h-5 w-5 text-loss" />
           غير متصل بـ Telegram
         </CardTitle>
         <CardDescription>
@@ -702,7 +702,7 @@ function DialogsTab({ authenticated, openDialog, onRequireAuth }: {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-emerald-600" />
+            <MessageSquare className="h-5 w-5 text-profit" />
             المحادثات
           </span>
           <Button variant="outline" size="sm" onClick={fetchDialogs} disabled={loading}>
@@ -772,7 +772,7 @@ function DialogsTab({ authenticated, openDialog, onRequireAuth }: {
                     {formatTime(d.last_message_at)}
                   </span>
                   {d.unread_count && d.unread_count > 0 ? (
-                    <Badge className="bg-red-500 hover:bg-red-500 text-white text-[10px] h-5 min-w-5 px-1.5 justify-center">
+                    <Badge className="bg-loss hover:bg-loss text-white text-[10px] h-5 min-w-5 px-1.5 justify-center">
                       {d.unread_count > 99 ? '99+' : d.unread_count}
                     </Badge>
                   ) : null}
@@ -1158,7 +1158,7 @@ function ChatTab({ dialog, socket, onBack, onRequireAuth }: {
             <span>جاري رفع الملف... {uploadProgress}%</span>
             <div className="flex-1 h-1.5 bg-muted rounded overflow-hidden">
               <div
-                className="h-full bg-emerald-500 transition-all"
+                className="h-full bg-profit transition-all"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -1214,7 +1214,7 @@ function ChatTab({ dialog, socket, onBack, onRequireAuth }: {
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-loss hover:bg-loss text-white"
             >
               حذف
             </AlertDialogAction>
@@ -1242,7 +1242,7 @@ function MessageBubble({ msg, editing, editText, onEditText, onSaveEdit, onCance
       <div className={cn(
         'group relative max-w-[80%] rounded-2xl px-3 py-2 text-sm break-words shadow-sm',
         msg.is_outgoing
-          ? 'bg-emerald-500 text-white rounded-tl-sm'
+          ? 'bg-profit text-white rounded-tl-sm'
           : 'bg-muted text-foreground rounded-tr-sm'
       )}>
         {editing ? (
@@ -1303,7 +1303,7 @@ function MessageBubble({ msg, editing, editText, onEditText, onSaveEdit, onCance
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={onDelete}
-                      className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950"
+                      className="text-loss focus:text-loss focus:bg-loss dark:focus:bg-loss"
                     >
                       <Trash2 className="h-3.5 w-3.5 ml-2" />
                       حذف
@@ -1420,7 +1420,7 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-emerald-600" />
+            <Users className="h-5 w-5 text-profit" />
             أعضاء: {groupTitle}
           </span>
           <Button variant="outline" size="sm" onClick={fetchMembers} disabled={loading}>
@@ -1436,7 +1436,7 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
         {/* Add member */}
         <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
-            <UserPlus className="h-4 w-4 text-emerald-600" />
+            <UserPlus className="h-4 w-4 text-profit" />
             إضافة عضو
           </p>
           <div className="flex flex-wrap gap-2">
@@ -1493,9 +1493,9 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
             {filtered.map((m) => {
               const name = [m.first_name, m.last_name].filter(Boolean).join(' ').trim() || 'بدون اسم';
               const roleBadge = m.is_banned ? (
-                <Badge className="bg-red-500 hover:bg-red-500 text-white text-[10px]">محظور</Badge>
+                <Badge className="bg-loss hover:bg-loss text-white text-[10px]">محظور</Badge>
               ) : m.is_admin ? (
-                <Badge className="bg-teal-600 hover:bg-teal-600 text-white text-[10px]">
+                <Badge className="bg-whale hover:bg-whale text-white text-[10px]">
                   <Shield className="h-2.5 w-2.5 ml-1" />
                   مشرف
                 </Badge>
@@ -1525,7 +1525,7 @@ function MembersTab({ groupId, groupTitle, authenticated, onRequireAuth }: {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                    className="h-8 w-8 text-loss hover:bg-loss dark:hover:bg-loss"
                     onClick={() => handleRemove(m)}
                     title="طرد"
                   >
@@ -1581,7 +1581,7 @@ function SearchTab({ authenticated, openDialog, onRequireAuth }: {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <Search className="h-5 w-5 text-emerald-600" />
+          <Search className="h-5 w-5 text-profit" />
           البحث في الرسائل
         </CardTitle>
         <CardDescription>بحث عام في كل المحادثات</CardDescription>
@@ -1619,7 +1619,7 @@ function SearchTab({ authenticated, openDialog, onRequireAuth }: {
               <button
                 key={`${r.chat_id}-${r.id}`}
                 onClick={() => openDialog(r.chat_id, `محادثة ${r.chat_id}`)}
-                className="w-full text-right p-3 rounded-lg border hover:border-emerald-400 hover:bg-accent transition-colors"
+                className="w-full text-right p-3 rounded-lg border hover:border-profit hover:bg-accent transition-colors"
               >
                 <p className="text-sm line-clamp-3 whitespace-pre-wrap">{r.text}</p>
                 <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
@@ -1916,7 +1916,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
 
   const getActionBadge = (action: string) => {
     const colors: Record<string, string> = {
-      buy: 'bg-emerald-500', sell: 'bg-red-500', hold: 'bg-amber-500',
+      buy: 'bg-profit', sell: 'bg-loss', hold: 'bg-warning',
     };
     return colors[action] || 'bg-gray-500';
   };
@@ -1925,7 +1925,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-emerald-600" />
+          <Bot className="h-5 w-5 text-profit" />
           أدوات البوت القديم
         </CardTitle>
         <CardDescription>
@@ -2024,7 +2024,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
                           </div>
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveChannel(c.channel_id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                          <Trash2 className="h-3.5 w-3.5 text-loss" />
                         </Button>
                       </div>
                     ))
@@ -2089,8 +2089,8 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
                       )}
                       <p className="text-sm whitespace-pre-wrap line-clamp-4">{msg.text}</p>
                       {cleanedTexts[msg.message_id] && (
-                        <div className="p-2 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs">
-                          <div className="flex items-center gap-1 mb-1 text-emerald-700 dark:text-emerald-300">
+                        <div className="p-2 rounded bg-profit dark:bg-profit/30 border border-profit dark:border-profit text-xs">
+                          <div className="flex items-center gap-1 mb-1 text-profit dark:text-profit">
                             <Sparkles className="h-3 w-3" /> <span className="font-medium">بعد التنظيف</span>
                           </div>
                           <p className="whitespace-pre-wrap">{cleanedTexts[msg.message_id]}</p>
@@ -2101,10 +2101,10 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
                           {processingMsg === msg.message_id ? <Loader2 className="h-3.5 w-3.5 ml-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 ml-1" />}
                           تنظيف بالـ AI
                         </Button>
-                        <Button variant="outline" size="sm" className="text-emerald-700 border-emerald-300 hover:bg-emerald-50" onClick={() => handleSaveMessage(msg.message_id, 'recommendation')} disabled={saving}>
+                        <Button variant="outline" size="sm" className="text-profit border-profit hover:bg-profit" onClick={() => handleSaveMessage(msg.message_id, 'recommendation')} disabled={saving}>
                           <TrendingUp className="h-3.5 w-3.5 ml-1" /> حفظ كتوقعة
                         </Button>
-                        <Button variant="outline" size="sm" className="text-amber-700 border-amber-300 hover:bg-amber-50" onClick={() => handleSaveMessage(msg.message_id, 'news')} disabled={saving}>
+                        <Button variant="outline" size="sm" className="text-warning border-warning hover:bg-warning" onClick={() => handleSaveMessage(msg.message_id, 'news')} disabled={saving}>
                           <Newspaper className="h-3.5 w-3.5 ml-1" /> حفظ كخبر
                         </Button>
                       </div>
@@ -2146,8 +2146,8 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
                             <td className="p-2">{getMarketLabel(r.market)}</td>
                             <td className="p-2"><Badge className={cn('text-white', getActionBadge(r.action))}>{r.action}</Badge></td>
                             <td className="p-2">{r.entry_price || '-'}</td>
-                            <td className="p-2 text-emerald-600">{r.target_price || '-'}</td>
-                            <td className="p-2 text-red-500">{r.stop_loss || '-'}</td>
+                            <td className="p-2 text-profit">{r.target_price || '-'}</td>
+                            <td className="p-2 text-loss">{r.stop_loss || '-'}</td>
                             <td className="p-2">{(r.confidence * 100).toFixed(0)}%</td>
                             <td className="p-2 text-xs">{r.channel_name}</td>
                           </tr>

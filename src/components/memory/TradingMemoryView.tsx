@@ -187,7 +187,7 @@ export function TradingMemoryView() {
                         {p.avg_pnl !== 0 && (
                           <span className={cn(
                             "text-sm font-medium",
-                            p.avg_pnl > 0 ? "text-green-600" : "text-red-600"
+                            p.avg_pnl > 0 ? "text-success" : "text-loss"
                           )}>
                             {p.avg_pnl > 0 ? '+' : ''}{(p.avg_pnl ?? 0).toFixed(1)}%
                           </span>
@@ -254,7 +254,7 @@ export function TradingMemoryView() {
                       onClick={() => setSelectedTicker(t.ticker)}
                     >
                       <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        <TrendingUp className="h-4 w-4 text-success" />
                         <span className="font-medium">{t.ticker}</span>
                       </div>
                       <Badge variant="success" className="text-xs">
@@ -271,7 +271,7 @@ export function TradingMemoryView() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <AlertTriangle className="h-4 w-4 text-loss" />
                 أسوأ الأسهم
               </CardTitle>
             </CardHeader>
@@ -289,7 +289,7 @@ export function TradingMemoryView() {
                       onClick={() => setSelectedTicker(t.ticker)}
                     >
                       <div className="flex items-center gap-2">
-                        <TrendingDown className="h-4 w-4 text-red-600" />
+                        <TrendingDown className="h-4 w-4 text-loss" />
                         <span className="font-medium">{t.ticker}</span>
                       </div>
                       <Badge variant="destructive" className="text-xs">

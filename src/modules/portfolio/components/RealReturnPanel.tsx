@@ -123,15 +123,15 @@ export function RealReturnPanel() {
   const hasWarnings = data.summary.has_warnings;
 
   return (
-    <Card className={cn('border-border', hasWarnings && 'border-red-300 dark:border-red-800')}>
+    <Card className={cn('border-border', hasWarnings && 'border-loss dark:border-loss')}>
       <CardContent className="p-4 space-y-4">
         {/* العنوان + معدل التضخم */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <Flame className={cn('h-5 w-5', hasWarnings ? 'text-red-500' : 'text-amber-500')} />
+            <Flame className={cn('h-5 w-5', hasWarnings ? 'text-loss' : 'text-warning')} />
             <h3 className="font-bold text-base">محرك العائد الحقيقي</h3>
             {hasWarnings && (
-              <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300">
+              <Badge className="bg-loss text-loss dark:bg-loss/40 dark:text-loss border border-loss">
                 {data.summary.warning_count} تحذير
               </Badge>
             )}
@@ -158,17 +158,17 @@ export function RealReturnPanel() {
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <div className="text-xs text-muted-foreground">العائد المرجح</div>
-            <div className="font-bold text-emerald-500">{(data.summary.weighted_yield ?? 0).toFixed(1)}%</div>
+            <div className="font-bold text-profit">{(data.summary.weighted_yield ?? 0).toFixed(1)}%</div>
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <div className="text-xs text-muted-foreground">العائد الحقيقي</div>
-            <div className={cn('font-bold', data.summary.weighted_real_return < 0 ? 'text-red-600' : 'text-emerald-500')}>
+            <div className={cn('font-bold', data.summary.weighted_real_return < 0 ? 'text-loss' : 'text-profit')}>
               {(data.summary.weighted_real_return ?? 0).toFixed(1)}%
             </div>
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <div className="text-xs text-muted-foreground">خسارة حقيقية/سنة</div>
-            <div className={cn('font-bold', data.summary.total_real_loss < 0 ? 'text-red-600' : 'text-muted-foreground')}>
+            <div className={cn('font-bold', data.summary.total_real_loss < 0 ? 'text-loss' : 'text-muted-foreground')}>
               {data.summary.total_real_loss < 0 ? `${formatEgp(data.summary.total_real_loss)} ج.م` : '—'}
             </div>
           </div>
@@ -176,14 +176,14 @@ export function RealReturnPanel() {
 
         {/* التحذير العام */}
         {hasWarnings && inflation > 0 && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-sm">
+          <div className="p-3 rounded-lg bg-loss dark:bg-loss/30 border border-loss dark:border-loss text-sm">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 text-loss flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-red-700 dark:text-red-300">
+                <p className="font-bold text-loss dark:text-loss">
                   ⚠️ فلوسك بتذوب! التضخم ({(inflation ?? 0).toFixed(1)}%) أعلى من عائد أصولك.
                 </p>
-                <p className="text-red-600 dark:text-red-400 text-xs mt-1">
+                <p className="text-loss dark:text-loss text-xs mt-1">
                   الخسارة الحقيقية المقدرة: {formatEgp(data.summary.total_real_loss)} ج.م سنوياً. حوّل جزء من محفظتك لأسهم أو ذهب للحفاظ على القيمة الشرائية.
                 </p>
               </div>
@@ -201,8 +201,8 @@ export function RealReturnPanel() {
                   key={a.id}
                   className={cn(
                     'p-2.5 rounded-md border text-sm',
-                    a.severity === 'severe' ? 'border-red-300 bg-red-50/50 dark:bg-red-950/20' :
-                    a.severity === 'mild' ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20' :
+                    a.severity === 'severe' ? 'border-loss bg-loss/50 dark:bg-loss/20' :
+                    a.severity === 'mild' ? 'border-warning bg-warning/50 dark:bg-warning/20' :
                     'border-border bg-muted/30'
                   )}
                 >
@@ -210,11 +210,11 @@ export function RealReturnPanel() {
                     <span className="font-medium">{a.name}</span>
                     <div className="flex items-center gap-1.5">
                       {a.real_return < 0 ? (
-                        <TrendingDown className="h-4 w-4 text-red-500" />
+                        <TrendingDown className="h-4 w-4 text-loss" />
                       ) : (
-                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        <TrendingUp className="h-4 w-4 text-success" />
                       )}
-                      <span className={cn('font-bold', a.real_return < 0 ? 'text-red-600' : 'text-emerald-500')}>
+                      <span className={cn('font-bold', a.real_return < 0 ? 'text-loss' : 'text-profit')}>
                         {(a.real_return ?? 0) >= 0 ? '+' : ''}{(a.real_return ?? 0).toFixed(1)}%
                       </span>
                     </div>
@@ -225,7 +225,7 @@ export function RealReturnPanel() {
                     {a.total_invested > 0 && <span>المستثمر: {formatEgp(a.total_invested)} ج.م</span>}
                   </div>
                   {a.warning && (
-                    <p className="text-xs mt-1.5 text-red-600 dark:text-red-400 flex items-start gap-1">
+                    <p className="text-xs mt-1.5 text-loss dark:text-loss flex items-start gap-1">
                       <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
                       {a.warning}
                     </p>

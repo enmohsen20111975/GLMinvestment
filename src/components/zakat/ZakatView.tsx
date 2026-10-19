@@ -77,9 +77,9 @@ function IslamicBorder() {
 function OrnamentDivider() {
   return (
     <div className="flex items-center justify-center gap-2 py-2">
-      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-500/50 to-transparent"/>
-      <Star className="w-4 h-4 text-amber-500/50"/>
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"/>
+      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-warning/50 to-transparent"/>
+      <Star className="w-4 h-4 text-warning/50"/>
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-warning/50 to-transparent"/>
     </div>
   );
 }
@@ -175,14 +175,14 @@ function formatCurrency(num: number | null | undefined): string {
 
 function IslamicBasis() {
   return (
-    <Card className="relative overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-50 via-white to-amber-50 dark:from-amber-950/30 dark:via-background dark:to-amber-950/30">
+    <Card className="relative overflow-hidden border-warning/30 bg-gradient-to-br from-warning via-white to-warning dark:from-warning/30 dark:via-background dark:to-warning/30">
       <IslamicPattern />
       <div className="relative z-10">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-2">
-            <CrescentMoon className="w-8 h-8 text-amber-600"/>
+            <CrescentMoon className="w-8 h-8 text-warning"/>
           </div>
-          <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold text-amber-700 dark:text-amber-400">
+          <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold text-warning dark:text-warning">
             <BookOpen className="w-6 h-6" />
             السند الشرعي للزكاة
           </CardTitle>
@@ -190,35 +190,35 @@ function IslamicBasis() {
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div className="space-y-3">
-            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl border border-green-200 dark:border-green-800/50 shadow-sm">
+            <div className="p-4 bg-gradient-to-r from-success to-profit dark:from-success/30 dark:to-profit/30 rounded-xl border border-success dark:border-success/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">ق</div>
-                <span className="font-bold text-green-700 dark:text-green-400">من القرآن الكريم</span>
+                <div className="w-8 h-8 rounded-full bg-success text-white flex items-center justify-center text-xs font-bold">ق</div>
+                <span className="font-bold text-success dark:text-success">من القرآن الكريم</span>
               </div>
-              <p className="text-lg leading-relaxed text-green-800 dark:text-green-200 font-arabic">
+              <p className="text-lg leading-relaxed text-success dark:text-success font-arabic">
                 ﴿وَأَقِيمُوا الصَّلَاةَ وَآتُوا الزَّكَاةَ وَارْكَعُوا مَعَ الرَّاكِعِينَ﴾
               </p>
               <p className="text-xs text-muted-foreground mt-2 text-left">سورة البقرة: 43</p>
             </div>
             
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-950/30 dark:to-teal-950/30 rounded-xl border border-teal-200 dark:border-teal-800/50 shadow-sm">
+            <div className="p-4 bg-gradient-to-r from-primary to-whale dark:from-primary/30 dark:to-whale/30 rounded-xl border border-whale dark:border-whale/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">س</div>
-                <span className="font-bold text-teal-700 dark:text-teal-400">من السنة النبوية</span>
+                <div className="w-8 h-8 rounded-full bg-whale text-white flex items-center justify-center text-xs font-bold">س</div>
+                <span className="font-bold text-whale dark:text-whale">من السنة النبوية</span>
               </div>
-              <p className="text-base leading-relaxed text-teal-800 dark:text-teal-200">
+              <p className="text-base leading-relaxed text-whale dark:text-whale">
                 "بُنِيَ الإِسْلَامُ عَلَى خَمْسٍ: شَهَادَةِ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَنَّ مُحَمَّدًا رَسُولُ اللَّهِ، وَإِقَامِ الصَّلَاةِ، وَإِيتَاءِ الزَّكَاةِ، وَالْحَجِّ، وَصَوْمِ رَمَضَانَ"
               </p>
               <p className="text-xs text-muted-foreground mt-2 text-left">متفق عليه</p>
             </div>
             
-            <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl border border-amber-200 dark:border-amber-800/50 shadow-sm">
+            <div className="p-4 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30 rounded-xl border border-warning dark:border-warning/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold">٢.٥</div>
-                <span className="font-bold text-amber-700 dark:text-amber-400">مقدار الزكاة</span>
+                <div className="w-8 h-8 rounded-full bg-warning text-white flex items-center justify-center text-xs font-bold">٢.٥</div>
+                <span className="font-bold text-warning dark:text-warning">مقدار الزكاة</span>
               </div>
-              <p className="text-base leading-relaxed text-amber-800 dark:text-amber-200">
-                "وَفِي الرِّقَابِ رُبْعُ الْعُشْرِ" <span className="text-amber-600">(2.5%)</span>
+              <p className="text-base leading-relaxed text-warning dark:text-warning">
+                "وَفِي الرِّقَابِ رُبْعُ الْعُشْرِ" <span className="text-warning">(2.5%)</span>
               </p>
               <p className="text-xs text-muted-foreground mt-2">في الذهب والفضة والنقود وعروض التجارة - رواه البخاري</p>
             </div>
@@ -238,12 +238,12 @@ function NisabInfo({ goldPrice, silverPrice }: { goldPrice: number; silverPrice:
   const silverNisabValue = silverPrice * NISAB.silver.grams;
   
   return (
-    <Card className="relative overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-50/50 via-white to-yellow-50/50 dark:from-amber-950/20 dark:via-background dark:to-yellow-950/20">
+    <Card className="relative overflow-hidden border-warning/30 bg-gradient-to-br from-warning/50 via-white to-yellow-50/50 dark:from-warning/20 dark:via-background dark:to-yellow-950/20">
       <IslamicPattern />
       <div className="relative z-10">
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center gap-2 text-xl">
-            <Scale className="w-6 h-6 text-amber-600"/>
+            <Scale className="w-6 h-6 text-warning"/>
             النصاب الشرعي
           </CardTitle>
           <CardDescription className="text-base">الحد الأدنى الذي تجب معه الزكاة</CardDescription>
@@ -253,10 +253,10 @@ function NisabInfo({ goldPrice, silverPrice }: { goldPrice: number; silverPrice:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Gold Nisab */}
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
-              <div className="relative p-6 bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/40 dark:to-amber-950/40 rounded-2xl border-2 border-yellow-300 dark:border-yellow-700/50 shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-warning rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
+              <div className="relative p-6 bg-gradient-to-br from-yellow-50 to-warning dark:from-yellow-950/40 dark:to-warning/40 rounded-2xl border-2 border-yellow-300 dark:border-yellow-700/50 shadow-lg">
                 <div className="flex items-center justify-center mb-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-warning flex items-center justify-center shadow-lg">
                     <Sparkles className="w-8 h-8 text-white"/>
                   </div>
                 </div>
@@ -298,10 +298,10 @@ function NisabInfo({ goldPrice, silverPrice }: { goldPrice: number; silverPrice:
             </div>
           </div>
           
-          <Alert className="mt-6 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
-            <Moon className="w-5 h-5 text-amber-600"/>
-            <AlertTitle className="text-amber-700 dark:text-amber-400 font-bold">ملاحظة فقهية</AlertTitle>
-            <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+          <Alert className="mt-6 border-warning bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30">
+            <Moon className="w-5 h-5 text-warning"/>
+            <AlertTitle className="text-warning dark:text-warning font-bold">ملاحظة فقهية</AlertTitle>
+            <AlertDescription className="text-sm text-warning dark:text-warning">
               يُرجح كثير من العلماء استخدام نصاب الفضة للنقود لأنه أرفق بالفقراء وأكثر إحقاقاً لمصلحة الزكاة.
             </AlertDescription>
           </Alert>
@@ -409,14 +409,14 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
   return (
     <div className="space-y-6">
       {/* Nisab Standard Selector — اختيار المعدن الذي يُحسب على أساسه نصاب النقود وعروض التجارة */}
-      <Card className="relative overflow-hidden border-2 border-amber-300 dark:border-amber-700/50 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20">
+      <Card className="relative overflow-hidden border-2 border-warning dark:border-warning/50 bg-gradient-to-br from-warning/50 to-yellow-50/50 dark:from-warning/20 dark:to-yellow-950/20">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-3 text-lg">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-yellow-500 flex items-center justify-center">
               <Scale className="w-5 h-5 text-white"/>
             </div>
             <div>
-              <span className="text-amber-700 dark:text-amber-300">معيار النصاب</span>
+              <span className="text-warning dark:text-warning">معيار النصاب</span>
               <p className="text-xs text-muted-foreground font-normal">اختر المعدن الذي يُحسب على أساسه نصاب النقود وعروض التجارة</p>
             </div>
           </CardTitle>
@@ -440,12 +440,12 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
             </ToggleGroupItem>
           </ToggleGroup>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-warning/70 dark:bg-warning/30 border border-warning dark:border-warning/50">
             <div className="flex items-center gap-2">
-              <Scale className="w-5 h-5 text-amber-600 shrink-0"/>
+              <Scale className="w-5 h-5 text-warning shrink-0"/>
               <div>
                 <p className="text-xs text-muted-foreground">قيمة النصاب الحالية</p>
-                <p className="font-bold text-amber-700 dark:text-amber-300">
+                <p className="font-bold text-warning dark:text-warning">
                   {formatCurrency(nisabValue)}
                   <span className="text-xs font-normal text-muted-foreground mr-2">
                     (بناءً على {nisabMetal === 'gold' ? 'الذهب 85 جرام' : 'الفضة 595 جرام'})
@@ -469,9 +469,9 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
             )}
           </div>
 
-          <Alert className="border-amber-300 bg-amber-50/60 dark:bg-amber-950/30">
-            <Info className="w-4 h-4 text-amber-600 shrink-0"/>
-            <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+          <Alert className="border-warning bg-warning/60 dark:bg-warning/30">
+            <Info className="w-4 h-4 text-warning shrink-0"/>
+            <AlertDescription className="text-xs text-warning dark:text-warning">
               نصاب الفضة أقل من الذهب، فيجب إخراج الزكاة لعدد أكبر من الناس. راجع مذهبك الفقهي.
             </AlertDescription>
           </Alert>
@@ -481,11 +481,11 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
       {/* Input Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gold Section */}
-        <Card className="relative overflow-hidden border-2 border-yellow-300 dark:border-yellow-700/50 bg-gradient-to-br from-yellow-50/50 to-amber-50/50 dark:from-yellow-950/20 dark:to-amber-950/20">
+        <Card className="relative overflow-hidden border-2 border-yellow-300 dark:border-yellow-700/50 bg-gradient-to-br from-yellow-50/50 to-warning/50 dark:from-yellow-950/20 dark:to-warning/20">
           <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-warning flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white"/>
               </div>
               <div>
@@ -545,15 +545,15 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
         </Card>
         
         {/* Cash Section */}
-        <Card className="relative overflow-hidden border-2 border-green-300 dark:border-green-700/50 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-green-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
+        <Card className="relative overflow-hidden border-2 border-success dark:border-success/50 bg-gradient-to-br from-success/50 to-profit/50 dark:from-success/20 dark:to-profit/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-success to-profit flex items-center justify-center">
                 <CircleDollarSign className="w-5 h-5 text-white"/>
               </div>
               <div>
-                <span className="text-green-700 dark:text-green-300">الزكاة على النقود</span>
+                <span className="text-success dark:text-success">الزكاة على النقود</span>
                 <p className="text-xs text-muted-foreground font-normal">يُستخدم نصاب {nisabMetal === 'gold' ? 'الذهب' : 'الفضة'}</p>
               </div>
             </CardTitle>
@@ -561,31 +561,31 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-green-700 dark:text-green-300">نقد باليد (ج.م)</label>
-                <Input type="number" placeholder="0" value={inputs.cash || ''} onChange={(e) => updateInput('cash', parseFloat(e.target.value) || 0)} className="border-green-200 focus:border-green-400"/>
+                <label className="text-xs font-medium text-success dark:text-success">نقد باليد (ج.م)</label>
+                <Input type="number" placeholder="0" value={inputs.cash || ''} onChange={(e) => updateInput('cash', parseFloat(e.target.value) || 0)} className="border-success focus:border-success"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-green-700 dark:text-green-300">رصيد البنك (ج.م)</label>
-                <Input type="number" placeholder="0" value={inputs.bankBalance || ''} onChange={(e) => updateInput('bankBalance', parseFloat(e.target.value) || 0)} className="border-green-200 focus:border-green-400"/>
+                <label className="text-xs font-medium text-success dark:text-success">رصيد البنك (ج.م)</label>
+                <Input type="number" placeholder="0" value={inputs.bankBalance || ''} onChange={(e) => updateInput('bankBalance', parseFloat(e.target.value) || 0)} className="border-success focus:border-success"/>
               </div>
               <div className="col-span-2 space-y-1">
-                <label className="text-xs font-medium text-green-700 dark:text-green-300">عملات أجنبية (محولة للج.م)</label>
-                <Input type="number" placeholder="0" value={inputs.foreignCurrency || ''} onChange={(e) => updateInput('foreignCurrency', parseFloat(e.target.value) || 0)} className="border-green-200 focus:border-green-400"/>
+                <label className="text-xs font-medium text-success dark:text-success">عملات أجنبية (محولة للج.م)</label>
+                <Input type="number" placeholder="0" value={inputs.foreignCurrency || ''} onChange={(e) => updateInput('foreignCurrency', parseFloat(e.target.value) || 0)} className="border-success focus:border-success"/>
               </div>
             </div>
           </CardContent>
         </Card>
         
         {/* Stocks & Trade Section */}
-        <Card className="relative overflow-hidden border-2 border-teal-300 dark:border-teal-700/50 bg-gradient-to-br from-blue-50/50 to-teal-50/50 dark:from-blue-950/20 dark:to-teal-950/20">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-teal-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
+        <Card className="relative overflow-hidden border-2 border-whale dark:border-whale/50 bg-gradient-to-br from-primary/50 to-whale/50 dark:from-primary/20 dark:to-whale/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-whale/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-whale flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white"/>
               </div>
               <div>
-                <span className="text-teal-700 dark:text-teal-300">الأسهم والتجارة</span>
+                <span className="text-whale dark:text-whale">الأسهم والتجارة</span>
                 <p className="text-xs text-muted-foreground font-normal">يختلف الحكم حسب النية</p>
               </div>
             </CardTitle>
@@ -593,24 +593,24 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">أسهم للتجارة</label>
-                <Input type="number" placeholder="0" value={inputs.stocksForTrade || ''} onChange={(e) => updateInput('stocksForTrade', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
+                <label className="text-xs font-medium text-whale dark:text-whale">أسهم للتجارة</label>
+                <Input type="number" placeholder="0" value={inputs.stocksForTrade || ''} onChange={(e) => updateInput('stocksForTrade', parseFloat(e.target.value) || 0)} className="border-whale focus:border-whale"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">أسهم استثمارية</label>
-                <Input type="number" placeholder="0" value={inputs.stocksForInvestment || ''} onChange={(e) => updateInput('stocksForInvestment', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
+                <label className="text-xs font-medium text-whale dark:text-whale">أسهم استثمارية</label>
+                <Input type="number" placeholder="0" value={inputs.stocksForInvestment || ''} onChange={(e) => updateInput('stocksForInvestment', parseFloat(e.target.value) || 0)} className="border-whale focus:border-whale"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">بضاعة تجارية</label>
-                <Input type="number" placeholder="0" value={inputs.tradeGoods || ''} onChange={(e) => updateInput('tradeGoods', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
+                <label className="text-xs font-medium text-whale dark:text-whale">بضاعة تجارية</label>
+                <Input type="number" placeholder="0" value={inputs.tradeGoods || ''} onChange={(e) => updateInput('tradeGoods', parseFloat(e.target.value) || 0)} className="border-whale focus:border-whale"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">ديون لك</label>
-                <Input type="number" placeholder="0" value={inputs.receivables || ''} onChange={(e) => updateInput('receivables', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
+                <label className="text-xs font-medium text-whale dark:text-whale">ديون لك</label>
+                <Input type="number" placeholder="0" value={inputs.receivables || ''} onChange={(e) => updateInput('receivables', parseFloat(e.target.value) || 0)} className="border-whale focus:border-whale"/>
               </div>
               <div className="col-span-2 space-y-1">
-                <label className="text-xs font-medium text-red-600 dark:text-red-400">ديون عليك (تُطرح)</label>
-                <Input type="number" placeholder="0" value={inputs.debtsOwed || ''} onChange={(e) => updateInput('debtsOwed', parseFloat(e.target.value) || 0)} className="border-red-200 focus:border-red-400"/>
+                <label className="text-xs font-medium text-loss dark:text-loss">ديون عليك (تُطرح)</label>
+                <Input type="number" placeholder="0" value={inputs.debtsOwed || ''} onChange={(e) => updateInput('debtsOwed', parseFloat(e.target.value) || 0)} className="border-loss focus:border-loss"/>
               </div>
             </div>
           </CardContent>
@@ -619,12 +619,12 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
       
       {/* Results Section */}
       {results.length > 0 && (
-        <Card className="relative overflow-hidden border-2 border-emerald-300 dark:border-emerald-700/50 bg-gradient-to-br from-emerald-50/30 to-green-50/30 dark:from-emerald-950/20 dark:to-green-950/20">
+        <Card className="relative overflow-hidden border-2 border-profit dark:border-profit/50 bg-gradient-to-br from-profit/30 to-success/30 dark:from-profit/20 dark:to-success/20">
           <IslamicPattern />
           <div className="relative z-10">
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2 text-xl">
-                <Calculator className="w-6 h-6 text-emerald-600"/>
+                <Calculator className="w-6 h-6 text-profit"/>
                 نتيجة حساب الزكاة
               </CardTitle>
               <OrnamentDivider />
@@ -635,14 +635,14 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
                   <div key={index} className={cn(
                     'p-4 rounded-xl border-2 transition-all duration-300',
                     result.nisabMet
-                      ? 'bg-gradient-to-l from-emerald-100 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-emerald-300 dark:border-emerald-700'
-                      : 'bg-gradient-to-l from-amber-100 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 border-amber-300 dark:border-amber-700'
+                      ? 'bg-gradient-to-l from-profit to-success dark:from-profit/30 dark:to-success/30 border-profit dark:border-profit'
+                      : 'bg-gradient-to-l from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-900/30 border-warning dark:border-warning'
                   )}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           'w-10 h-10 rounded-full flex items-center justify-center',
-                          result.nisabMet ? 'bg-emerald-500' : 'bg-amber-500'
+                          result.nisabMet ? 'bg-profit' : 'bg-warning'
                         )}>
                           {result.nisabMet ? (
                             <CheckCircle2 className="w-5 h-5 text-white"/>
@@ -658,13 +658,13 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
                       <div className="text-left">
                         <p className={cn(
                           'text-2xl font-bold',
-                          result.nisabMet ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                          result.nisabMet ? 'text-profit dark:text-profit' : 'text-warning dark:text-warning'
                         )}>
                           {formatCurrency(result.amount)}
                         </p>
                         <Badge className={cn(
                           'text-xs',
-                          result.nisabMet ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                          result.nisabMet ? 'bg-profit text-profit dark:bg-profit/50 dark:text-profit' : 'bg-warning text-warning dark:bg-warning/50 dark:text-warning'
                         )}>
                           {result.nisabMet ? '✓ تجب الزكاة' : '✗ لم يبلغ النصاب'}
                         </Badge>
@@ -677,7 +677,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
               <Separator className="my-6"/>
               
               {/* Total Zakat */}
-              <div className="relative p-8 bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 rounded-2xl shadow-xl overflow-hidden">
+              <div className="relative p-8 bg-gradient-to-br from-profit via-success to-whale rounded-2xl shadow-xl overflow-hidden">
                 <div className="absolute inset-0 opacity-20">
                   <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <pattern id="stars" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -754,20 +754,20 @@ function CalculationMethods() {
           <Card key={index} className={cn(
             'relative overflow-hidden border-r-4',
             method.color === 'yellow' && 'border-r-yellow-500 bg-gradient-to-l from-yellow-50/50 to-transparent dark:from-yellow-950/20',
-            method.color === 'green' && 'border-r-green-500 bg-gradient-to-l from-green-50/50 to-transparent dark:from-green-950/20',
-            method.color === 'blue' && 'border-r-blue-500 bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-950/20',
+            method.color === 'green' && 'border-r-green-500 bg-gradient-to-l from-success/50 to-transparent dark:from-success/20',
+            method.color === 'blue' && 'border-r-blue-500 bg-gradient-to-l from-primary/50 to-transparent dark:from-primary/20',
             method.color === 'purple' && 'border-r-purple-500 bg-gradient-to-l from-purple-50/50 to-transparent dark:from-purple-950/20',
-            method.color === 'emerald' && 'border-r-emerald-500 bg-gradient-to-l from-emerald-50/50 to-transparent dark:from-emerald-950/20',
+            method.color === 'emerald' && 'border-r-emerald-500 bg-gradient-to-l from-profit/50 to-transparent dark:from-profit/20',
           )}>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-3 text-lg">
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center',
                   method.color === 'yellow' && 'bg-yellow-500',
-                  method.color === 'green' && 'bg-green-500',
-                  method.color === 'blue' && 'bg-teal-500',
+                  method.color === 'green' && 'bg-success',
+                  method.color === 'blue' && 'bg-whale',
                   method.color === 'purple' && 'bg-purple-500',
-                  method.color === 'emerald' && 'bg-emerald-500',
+                  method.color === 'emerald' && 'bg-profit',
                 )}>
                   <Icon className="w-5 h-5 text-white"/>
                 </div>
@@ -868,17 +868,17 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
   const shortfall = goldNisabValue - eligible;
 
   return (
-    <Card className="relative overflow-hidden border-2 border-emerald-400 dark:border-emerald-700/50 bg-gradient-to-br from-emerald-50/60 via-white to-green-50/60 dark:from-emerald-950/30 dark:via-background dark:to-green-950/30 shadow-lg">
+    <Card className="relative overflow-hidden border-2 border-profit dark:border-profit/50 bg-gradient-to-br from-profit/60 via-white to-success/60 dark:from-profit/30 dark:via-background dark:to-success/30 shadow-lg">
       <IslamicPattern />
       <div className="relative z-10">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-profit to-success flex items-center justify-center shadow">
                 <Sparkles className="w-5 h-5 text-white"/>
               </div>
               <div>
-                <span className="text-emerald-700 dark:text-emerald-300 text-lg">الزكاة التلقائية من محفظتك</span>
+                <span className="text-profit dark:text-profit text-lg">الزكاة التلقائية من محفظتك</span>
                 <p className="text-xs text-muted-foreground font-normal">محسوبة من أصولك الفعلية — ناقص الديون النشطة</p>
               </div>
             </div>
@@ -887,7 +887,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
               size="sm"
               onClick={() => load(true)}
               disabled={refreshing}
-              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300"
+              className="border-profit text-profit hover:bg-profit dark:border-profit dark:text-profit"
             >
               <RefreshCw className={cn('w-4 h-4 ml-1', refreshing && 'animate-spin')}/>
               تحديث
@@ -904,9 +904,9 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
           )}
 
           {error && !loading && (
-            <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
-              <AlertTriangle className="w-4 h-4 text-amber-600"/>
-              <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">{error}</AlertDescription>
+            <Alert className="border-warning bg-warning dark:bg-warning/30">
+              <AlertTriangle className="w-4 h-4 text-warning"/>
+              <AlertDescription className="text-sm text-warning dark:text-warning">{error}</AlertDescription>
             </Alert>
           )}
 
@@ -925,23 +925,23 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
               <Separator/>
 
               {/* Nisab comparison */}
-              <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50">
+              <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-profit/70 dark:bg-profit/30 border border-profit dark:border-profit/50">
                 <div className="flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-emerald-600"/>
+                  <Scale className="w-5 h-5 text-profit"/>
                   <div>
                     <p className="text-xs text-muted-foreground">النصاب (85 جرام عيار 24)</p>
-                    <p className="font-bold text-emerald-700 dark:text-emerald-300">{formatCurrency(goldNisabValue)}</p>
+                    <p className="font-bold text-profit dark:text-profit">{formatCurrency(goldNisabValue)}</p>
                   </div>
                 </div>
                 <div className="text-left">
                   <p className="text-xs text-muted-foreground">ثروتك الخاضعة للزكاة</p>
-                  <p className="font-bold text-emerald-700 dark:text-emerald-300">{formatCurrency(eligible)}</p>
+                  <p className="font-bold text-profit dark:text-profit">{formatCurrency(eligible)}</p>
                 </div>
               </div>
 
               {/* Result */}
               {nisabMet ? (
-                <div className="relative p-6 bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 rounded-2xl shadow-xl overflow-hidden text-center">
+                <div className="relative p-6 bg-gradient-to-br from-profit via-success to-whale rounded-2xl shadow-xl overflow-hidden text-center">
                   <div className="absolute inset-0 opacity-20">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <pattern id="autoStars" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -958,18 +958,18 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
                   </div>
                 </div>
               ) : eligible > 0 ? (
-                <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
-                  <AlertTriangle className="w-5 h-5 text-amber-600"/>
-                  <AlertTitle className="text-amber-700 dark:text-amber-400 font-bold">لم يبلغ النصاب بعد</AlertTitle>
-                  <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+                <Alert className="border-warning bg-warning dark:bg-warning/30">
+                  <AlertTriangle className="w-5 h-5 text-warning"/>
+                  <AlertTitle className="text-warning dark:text-warning font-bold">لم يبلغ النصاب بعد</AlertTitle>
+                  <AlertDescription className="text-sm text-warning dark:text-warning">
                     ثروتك الخاضعة للزكاة {formatCurrency(eligible)} أقل من النصاب ({formatCurrency(goldNisabValue)}).
                     ينقصك {formatCurrency(shortfall)} لبلوغ النصاب. لا تجب الزكاة الآن — استمر في الادخار.
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert className="border-teal-300 bg-blue-50 dark:bg-blue-950/30">
-                  <Info className="w-5 h-5 text-teal-600"/>
-                  <AlertDescription className="text-sm text-teal-800 dark:text-teal-200">
+                <Alert className="border-whale bg-primary dark:bg-primary/30">
+                  <Info className="w-5 h-5 text-whale"/>
+                  <AlertDescription className="text-sm text-whale dark:text-whale">
                     أضف أصولاً لمحفظتك (نقد، أسهم، ذهب، كريبتو) من قسم المحفظة ليتم حساب الزكاة تلقائياً.
                   </AlertDescription>
                 </Alert>
@@ -984,12 +984,12 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
 
 function BreakdownRow({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
   const colorMap: Record<string, string> = {
-    green: 'text-green-600 dark:text-green-400',
-    emerald: 'text-emerald-600 dark:text-emerald-400',
-    blue: 'text-teal-600 dark:text-teal-400',
+    green: 'text-success dark:text-success',
+    emerald: 'text-profit dark:text-profit',
+    blue: 'text-whale dark:text-whale',
     yellow: 'text-yellow-600 dark:text-yellow-400',
     orange: 'text-orange-600 dark:text-orange-400',
-    red: 'text-red-600 dark:text-red-400',
+    red: 'text-loss dark:text-loss',
   };
   return (
     <div className="flex items-center justify-between p-2 rounded-lg bg-white/60 dark:bg-background/40 border border-muted">
@@ -1055,24 +1055,24 @@ export function ZakatView() {
   }
   
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/30 via-white to-yellow-50/30 dark:from-amber-950/10 dark:via-background dark:to-yellow-950/10" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-warning/30 via-white to-yellow-50/30 dark:from-warning/10 dark:via-background dark:to-yellow-950/10" dir="rtl">
       {/* Decorative Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
         <IslamicPattern />
       </div>
       
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-amber-50/95 via-white/95 to-yellow-50/95 dark:from-amber-950/95 dark:via-background/95 dark:to-yellow-950/95 backdrop-blur border-b border-amber-200 dark:border-amber-800/50">
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-warning/95 via-white/95 to-yellow-50/95 dark:from-warning/95 dark:via-background/95 dark:to-yellow-950/95 backdrop-blur border-b border-warning dark:border-warning/50">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-warning via-yellow-500 to-warning flex items-center justify-center shadow-lg">
                 <HandCoins className="w-7 h-7 text-white"/>
               </div>
-              <CrescentMoon className="absolute -top-1 -left-1 w-5 h-5 text-amber-500"/>
+              <CrescentMoon className="absolute -top-1 -left-1 w-5 h-5 text-warning"/>
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">حاسبة الزكاة</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-warning to-yellow-600 bg-clip-text text-transparent">حاسبة الزكاة</h1>
               <p className="text-sm text-muted-foreground">حساب زكاة المال حسب الشريعة الإسلامية</p>
             </div>
           </div>
@@ -1083,9 +1083,9 @@ export function ZakatView() {
       {/* Content */}
       <main className="relative flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 space-y-6">
         {error && (
-          <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
-            <AlertTriangle className="w-4 h-4 text-amber-600"/>
-            <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">{error}</AlertDescription>
+          <Alert className="border-warning bg-warning dark:bg-warning/30">
+            <AlertTriangle className="w-4 h-4 text-warning"/>
+            <AlertDescription className="text-sm text-warning dark:text-warning">{error}</AlertDescription>
           </Alert>
         )}
         
@@ -1115,16 +1115,16 @@ export function ZakatView() {
         </Tabs>
         
         {/* Footer */}
-        <Card className="relative overflow-hidden border-amber-300/50 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
+        <Card className="relative overflow-hidden border-warning/50 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30">
           <IslamicPattern />
           <CardContent className="relative z-10 p-6">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                <Info className="w-6 h-6 text-amber-600"/>
+              <div className="w-12 h-12 rounded-xl bg-warning/20 flex items-center justify-center">
+                <Info className="w-6 h-6 text-warning"/>
               </div>
               <div>
-                <p className="font-bold text-amber-700 dark:text-amber-400 text-lg mb-2">ملاحظة مهمة</p>
-                <p className="text-amber-800 dark:text-amber-200 leading-relaxed">
+                <p className="font-bold text-warning dark:text-warning text-lg mb-2">ملاحظة مهمة</p>
+                <p className="text-warning dark:text-warning leading-relaxed">
                   هذه الحاسبة أداة مساعدة فقط. يُستحب استشارة أهل العلم في مسائل الزكاة المعقدة.
                   تختلف بعض الأحكام بين المذاهب الفقهية، وقد تم اعتماد الراجح من أقوال أهل العلم.
                 </p>
@@ -1135,7 +1135,7 @@ export function ZakatView() {
         
         {/* Mosque Silhouette */}
         <div className="flex justify-center opacity-10">
-          <MosqueSilhouette className="w-64 h-16 text-amber-600"/>
+          <MosqueSilhouette className="w-64 h-16 text-warning"/>
         </div>
       </main>
     </div>

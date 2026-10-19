@@ -120,7 +120,7 @@ export function MobileMoreSheet() {
         <div className="absolute bottom-0 left-0 right-0 bg-background rounded-t-2xl border-t border-border shadow-2xl p-4 animate-in slide-in-from-bottom-4 duration-200">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Search className="w-4 h-4 text-profit dark:text-profit" />
               <span className="text-sm font-semibold">بحث عن سهم</span>
             </div>
             <button
@@ -170,7 +170,7 @@ export function MobileMoreSheet() {
               <div className="relative">
                 <Bell className="w-5 h-5 text-muted-foreground" />
                 {notifUnreadCount > 0 && (
-                  <Badge className="absolute -top-1.5 -left-2 h-3.5 min-w-3.5 px-1 text-[9px] bg-red-500 text-white border-0 animate-pulse">
+                  <Badge className="absolute -top-1.5 -left-2 h-3.5 min-w-3.5 px-1 text-[9px] bg-loss text-white border-0 animate-pulse">
                     {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
                   </Badge>
                 )}

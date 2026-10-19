@@ -101,10 +101,10 @@ export function SessionExpiredModal() {
         </DialogHeader>
 
         {/* Visual header (amber gradient + warning icon) */}
-        <div className="relative bg-gradient-to-br from-amber-500 via-amber-600 to-rose-600 px-6 pt-7 pb-6 text-center text-white">
+        <div className="relative bg-gradient-to-br from-warning via-warning to-loss px-6 pt-7 pb-6 text-center text-white">
           <div className="absolute inset-0 opacity-20 pointer-events-none">
             <div className="absolute -top-10 -right-10 size-40 rounded-full bg-white blur-3xl" />
-            <div className="absolute -bottom-10 -left-10 size-40 rounded-full bg-amber-200 blur-3xl" />
+            <div className="absolute -bottom-10 -left-10 size-40 rounded-full bg-warning blur-3xl" />
           </div>
 
           <div className="relative inline-flex items-center justify-center mb-3">
@@ -128,7 +128,7 @@ export function SessionExpiredModal() {
               onClick={handleSignIn}
               size="lg"
               disabled={redirecting}
-              className="w-full h-11 text-base font-bold bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white shadow-md gap-2"
+              className="w-full h-11 text-base font-bold bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-white shadow-md gap-2"
             >
               {redirecting ? (
                 <Loader2 className="size-5 animate-spin" />

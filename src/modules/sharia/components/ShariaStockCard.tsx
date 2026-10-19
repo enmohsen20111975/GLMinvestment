@@ -72,11 +72,11 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
   compliant:
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    'bg-profit text-profit dark:bg-profit/50 dark:text-profit border-profit dark:border-profit',
   non_compliant:
-    'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800',
+    'bg-loss text-loss dark:bg-loss/50 dark:text-loss border-loss dark:border-loss',
   doubtful:
-    'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    'bg-warning text-warning dark:bg-warning/50 dark:text-warning border-warning dark:border-warning',
   not_available:
     'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 };
@@ -108,14 +108,14 @@ export function ShariaStockCard({ ticker, variant = 'default', className }: Shar
   return (
     <Card
       className={cn(
-        'border-emerald-200 dark:border-emerald-900 bg-gradient-to-b from-emerald-50/40 to-background dark:from-emerald-950/10',
+        'border-profit dark:border-profit bg-gradient-to-b from-profit/40 to-background dark:from-profit/10',
         className,
       )}
     >
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between gap-2 text-sm">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <ShieldCheck className="w-4 h-4 text-profit" />
             التوافق الشرعي — {ticker}
           </span>
           {state === 'ok' && data && (
@@ -133,7 +133,7 @@ export function ShariaStockCard({ ticker, variant = 'default', className }: Shar
         )}
 
         {state === 'error' && (
-          <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-400">
+          <div className="flex items-center gap-2 text-xs text-loss dark:text-loss">
             <Info className="w-3.5 h-3.5" />
             <span>تعذّر تحميل البيانات: {error?.slice(0, 100)}</span>
           </div>
@@ -165,7 +165,7 @@ function StatusBadge({ data }: { data: import('./ShariaBadge').ShariaDetailRespo
     >
       {summary.emoji} {summary.label}
       {summary.isConsensus && (
-        <span className="text-amber-600 dark:text-amber-400">★</span>
+        <span className="text-warning dark:text-warning">★</span>
       )}
     </span>
   );
@@ -224,7 +224,7 @@ function ShariaStockCardBody({
         <>
           <Separator className="my-1" />
           {summary.isConsensus && (
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400">
+            <div className="flex items-center gap-1.5 text-[11px] text-profit dark:text-profit">
               <Award className="w-3.5 h-3.5" />
               <span>إجماع: متوافق في {summary.compliantCount} من {summary.activeCount || 8} مصادر.</span>
             </div>
@@ -232,7 +232,7 @@ function ShariaStockCardBody({
           {rates.length > 0 && (
             <div>
               <p className="text-[11px] font-semibold mb-1 flex items-center gap-1">
-                <Scale className="w-3 h-3 text-amber-600" />
+                <Scale className="w-3 h-3 text-warning" />
                 نسب التطهير المعتمدة
               </p>
               <div className="grid grid-cols-2 gap-1">
@@ -242,16 +242,16 @@ function ShariaStockCardBody({
                     className={cn(
                       'rounded border p-1 flex items-center justify-between',
                       r.is_primary === 1
-                        ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800'
+                        ? 'border-warning bg-warning dark:bg-warning/30 dark:border-warning'
                         : 'border-border bg-muted/30',
                     )}
                   >
                     <span className="text-[10px] truncate">
                       {r.method_name_ar || r.method_key}
-                      {r.is_primary === 1 && <span className="text-amber-600 ml-0.5">★</span>}
+                      {r.is_primary === 1 && <span className="text-warning ml-0.5">★</span>}
                     </span>
                     <span
-                      className="text-[11px] font-bold tabular-nums text-amber-700 dark:text-amber-400"
+                      className="text-[11px] font-bold tabular-nums text-warning dark:text-warning"
                       dir="ltr"
                     >
                       {formatPct(r.rate_pct)}
@@ -270,7 +270,7 @@ function ShariaStockCardBody({
           <Separator className="my-1" />
           <div>
             <p className="text-[11px] font-semibold mb-1 flex items-center gap-1">
-              <BookOpen className="w-3 h-3 text-emerald-600" />
+              <BookOpen className="w-3 h-3 text-profit" />
               تفصيل المصادر الثمانية
             </p>
             <div className="rounded border border-border overflow-hidden">
@@ -309,7 +309,7 @@ function ShariaStockCardBody({
       {/* Footer CTA */}
       <button
         onClick={onOpenSharia}
-        className="w-full text-[11px] flex items-center justify-center gap-1 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+        className="w-full text-[11px] flex items-center justify-center gap-1 py-1.5 rounded-md bg-profit hover:bg-profit text-white transition-colors"
       >
         <Calculator className="w-3.5 h-3.5" />
         حاسبة التطهير + شاشة التوافق الشرعي
@@ -332,8 +332,8 @@ function MetricTile({
       className={cn(
         'rounded border p-1.5 text-center',
         accent === 'emerald'
-          ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20'
-          : 'border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20',
+          ? 'border-profit dark:border-profit bg-profit/40 dark:bg-profit/20'
+          : 'border-warning dark:border-warning bg-warning/40 dark:bg-warning/20',
       )}
     >
       <div className="text-[9px] text-muted-foreground leading-tight">{label}</div>
@@ -341,8 +341,8 @@ function MetricTile({
         className={cn(
           'text-xs font-bold tabular-nums',
           accent === 'emerald'
-            ? 'text-emerald-700 dark:text-emerald-400'
-            : 'text-amber-700 dark:text-amber-400',
+            ? 'text-profit dark:text-profit'
+            : 'text-warning dark:text-warning',
         )}
         dir="ltr"
       >

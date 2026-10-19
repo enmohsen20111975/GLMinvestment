@@ -77,12 +77,12 @@ const analysisCache = new Map<string, { data: PythonAnalysis; timestamp: number 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const SIGNAL_CONFIG = {
-  'STRONG_BUY': { label: 'شراء قوي', color: 'bg-emerald-500', textColor: 'text-emerald-500', trend: 'bullish' },
-  'BUY': { label: 'شراء', color: 'bg-emerald-400', textColor: 'text-emerald-400', trend: 'bullish' },
-  'ACCUMULATE': { label: 'تجميع', color: 'bg-amber-400', textColor: 'text-amber-400', trend: 'bullish' },
-  'HOLD': { label: 'احتفاظ', color: 'bg-amber-500', textColor: 'text-amber-500', trend: 'neutral' },
-  'SELL': { label: 'بيع', color: 'bg-red-400', textColor: 'text-red-400', trend: 'bearish' },
-  'STRONG_SELL': { label: 'بيع قوي', color: 'bg-red-500', textColor: 'text-red-500', trend: 'bearish' },
+  'STRONG_BUY': { label: 'شراء قوي', color: 'bg-profit', textColor: 'text-profit', trend: 'bullish' },
+  'BUY': { label: 'شراء', color: 'bg-profit', textColor: 'text-profit', trend: 'bullish' },
+  'ACCUMULATE': { label: 'تجميع', color: 'bg-warning', textColor: 'text-warning', trend: 'bullish' },
+  'HOLD': { label: 'احتفاظ', color: 'bg-warning', textColor: 'text-warning', trend: 'neutral' },
+  'SELL': { label: 'بيع', color: 'bg-loss', textColor: 'text-loss', trend: 'bearish' },
+  'STRONG_SELL': { label: 'بيع قوي', color: 'bg-loss', textColor: 'text-loss', trend: 'bearish' },
 };
 
 export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysisWidgetProps) {
@@ -162,11 +162,11 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
     
     switch (config.trend) {
       case 'bullish':
-        return <TrendingUp className="w-5 h-5 text-emerald-500" />;
+        return <TrendingUp className="w-5 h-5 text-profit" />;
       case 'bearish':
-        return <TrendingDown className="w-5 h-5 text-red-500" />;
+        return <TrendingDown className="w-5 h-5 text-loss" />;
       default:
-        return <Minus className="w-5 h-5 text-amber-500" />;
+        return <Minus className="w-5 h-5 text-warning" />;
     }
   };
 
@@ -194,9 +194,9 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
   // Show error if no analysis
   if (error || !analysis) {
     return (
-      <Card className="overflow-hidden border-amber-200 bg-amber-50 dark:bg-amber-900/10">
+      <Card className="overflow-hidden border-warning bg-warning dark:bg-warning/10">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2 text-amber-600">
+          <CardTitle className="text-base flex items-center gap-2 text-warning">
             <AlertCircle className="w-5 h-5" />
             التحليل الذكي للسهم
           </CardTitle>
@@ -246,7 +246,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
               }
             />
             {analysis.is_tradeable && (
-              <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/50">
+              <Badge variant="outline" className="text-xs text-profit border-profit/50">
                 <CheckCircle className="w-3 h-3 ml-1" />
                 قابل للتداول
               </Badge>
@@ -285,15 +285,15 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
                   : analysis.risk_profile?.entry_price?.toFixed(2) || '--'}
               </p>
             </div>
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2 text-center">
+            <div className="bg-profit dark:bg-profit/20 rounded-lg p-2 text-center">
               <p className="text-[10px] text-muted-foreground mb-1">الهدف</p>
-              <p className="text-sm font-bold text-emerald-600">
+              <p className="text-sm font-bold text-profit">
                 {analysis.risk_profile.target_price?.toFixed(2) || '--'}
               </p>
             </div>
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-2 text-center">
+            <div className="bg-loss dark:bg-loss/20 rounded-lg p-2 text-center">
               <p className="text-[10px] text-muted-foreground mb-1">وقف الخسارة</p>
-              <p className="text-sm font-bold text-red-600">
+              <p className="text-sm font-bold text-loss">
                 {analysis.risk_profile.stop_loss_price?.toFixed(2) || '--'}
               </p>
             </div>
@@ -305,9 +305,9 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
           <div className="flex items-center justify-center gap-2 mb-4 text-sm">
             <span className="text-muted-foreground">نسبة المخاطرة/العائد:</span>
             <Badge variant="outline" className={cn(
-              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-emerald-500 border-emerald-500/50' :
-              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-amber-500 border-amber-500/50' :
-              'text-red-500 border-red-500/50'
+              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-profit border-profit/50' :
+              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-warning border-warning/50' :
+              'text-loss border-loss/50'
             )}>
               {(analysis.risk_profile?.risk_reward_ratio ?? 0).toFixed(2)}:1
             </Badge>
@@ -345,25 +345,25 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
               <div className="grid grid-cols-4 gap-2">
                 <div className="bg-muted/30 rounded p-2 text-center">
                   <p className="text-[10px] text-muted-foreground">الفني</p>
-                  <p className={cn("text-xs font-bold", (analysis.technical_score || 50) >= 60 ? "text-emerald-500" : (analysis.technical_score || 50) < 40 ? "text-red-500" : "text-amber-500")}>
+                  <p className={cn("text-xs font-bold", (analysis.technical_score || 50) >= 60 ? "text-profit" : (analysis.technical_score || 50) < 40 ? "text-loss" : "text-warning")}>
                     {analysis.technical_score?.toFixed(0) || '--'}
                   </p>
                 </div>
                 <div className="bg-muted/30 rounded p-2 text-center">
                   <p className="text-[10px] text-muted-foreground">الأساسي</p>
-                  <p className={cn("text-xs font-bold", (analysis.fundamental_score || 50) >= 60 ? "text-emerald-500" : (analysis.fundamental_score || 50) < 40 ? "text-red-500" : "text-amber-500")}>
+                  <p className={cn("text-xs font-bold", (analysis.fundamental_score || 50) >= 60 ? "text-profit" : (analysis.fundamental_score || 50) < 40 ? "text-loss" : "text-warning")}>
                     {analysis.fundamental_score?.toFixed(0) || '--'}
                   </p>
                 </div>
                 <div className="bg-muted/30 rounded p-2 text-center">
                   <p className="text-[10px] text-muted-foreground">الزخم</p>
-                  <p className={cn("text-xs font-bold", (analysis.momentum_score || 50) >= 60 ? "text-emerald-500" : (analysis.momentum_score || 50) < 40 ? "text-red-500" : "text-amber-500")}>
+                  <p className={cn("text-xs font-bold", (analysis.momentum_score || 50) >= 60 ? "text-profit" : (analysis.momentum_score || 50) < 40 ? "text-loss" : "text-warning")}>
                     {analysis.momentum_score?.toFixed(0) || '--'}
                   </p>
                 </div>
                 <div className="bg-muted/30 rounded p-2 text-center">
                   <p className="text-[10px] text-muted-foreground">المخاطر</p>
-                  <p className={cn("text-xs font-bold", (analysis.risk_score || 50) >= 60 ? "text-emerald-500" : (analysis.risk_score || 50) < 40 ? "text-red-500" : "text-amber-500")}>
+                  <p className={cn("text-xs font-bold", (analysis.risk_score || 50) >= 60 ? "text-profit" : (analysis.risk_score || 50) < 40 ? "text-loss" : "text-warning")}>
                     {analysis.risk_score?.toFixed(0) || '--'}
                   </p>
                 </div>
@@ -373,14 +373,14 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
             {/* Reasons */}
             {analysis.reasons && analysis.reasons.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-profit dark:text-profit">
                   <Lightbulb className="w-3.5 h-3.5" />
                   أسباب الإشارة
                 </h4>
                 <ul className="space-y-1">
                   {analysis.reasons.map((reason, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
-                      <CheckCircle className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
+                      <CheckCircle className="w-3 h-3 text-profit mt-0.5 shrink-0" />
                       {reason}
                     </li>
                   ))}
@@ -391,14 +391,14 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
             {/* Warnings */}
             {analysis.warnings && analysis.warnings.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-red-600 dark:text-red-400">
+                <h4 className="text-xs font-semibold mb-2 flex items-center gap-1 text-loss dark:text-loss">
                   <ShieldAlert className="w-3.5 h-3.5" />
                   تحذيرات
                 </h4>
                 <ul className="space-y-1">
                   {analysis.warnings.map((warning, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
-                      <AlertCircle className="w-3 h-3 text-amber-500 mt-0.5 shrink-0" />
+                      <AlertCircle className="w-3 h-3 text-warning mt-0.5 shrink-0" />
                       {warning}
                     </li>
                   ))}

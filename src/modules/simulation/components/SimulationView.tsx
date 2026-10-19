@@ -823,7 +823,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-28',
       render: (s) => (
-        <span className={cn('font-mono inline-flex items-center gap-1', s.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+        <span className={cn('font-mono inline-flex items-center gap-1', s.change >= 0 ? 'text-profit' : 'text-loss')}>
           {s.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
           {s.change >= 0 ? '+' : ''}{formatNumber(s.change)}
         </span>
@@ -839,7 +839,7 @@ export function SimulationView() {
       render: (s) => (
         <Badge
           variant={s.changePercent >= 0 ? 'default' : 'destructive'}
-          className={cn(s.changePercent >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}
+          className={cn(s.changePercent >= 0 ? 'bg-profit text-profit dark:bg-profit/30 dark:text-profit' : '')}
         >
           {s.changePercent >= 0 ? '+' : ''}{(s.changePercent ?? 0).toFixed(2)}%
         </Badge>
@@ -853,7 +853,7 @@ export function SimulationView() {
       hideable: false,
       render: (s) => (
         <div className="flex items-center justify-center gap-1">
-          <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'buy'); }}>
+          <Button size="sm" className="h-7 text-xs gap-1 bg-profit hover:bg-profit" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'buy'); }}>
             <Plus className="h-3 w-3" />
             شراء
           </Button>
@@ -926,7 +926,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-36',
       render: (p) => (
-        <div className={cn('font-mono font-medium', (p._pnl ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+        <div className={cn('font-mono font-medium', (p._pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss')}>
           <p>{(p._pnl ?? 0) >= 0 ? '+' : ''}{formatCurrency(p._pnl ?? 0, currencyLabel)}</p>
           <p className="text-xs">({(p._pnlPercent ?? 0) >= 0 ? '+' : ''}{(p._pnlPercent ?? 0).toFixed(2)}%)</p>
         </div>
@@ -943,7 +943,7 @@ export function SimulationView() {
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+            className="h-7 text-xs gap-1 text-loss hover:text-loss border-loss hover:bg-loss"
             onClick={(e) => { if (p._stock) { e.stopPropagation(); openTradeDialog(p._stock, 'sell'); } }}
           >
             <Minus className="h-3 w-3" />
@@ -975,7 +975,7 @@ export function SimulationView() {
       filterable: true,
       width: 'w-24',
       render: (t) => (
-        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}>
+        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-profit text-profit dark:bg-profit/30 dark:text-profit' : '')}>
           {t.type === 'buy' ? (
             <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
           ) : (
@@ -1044,7 +1044,7 @@ export function SimulationView() {
       width: 'w-28',
       render: (t) => (
         t.pnl !== undefined ? (
-          <span className={cn('font-mono font-medium text-sm', t.pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+          <span className={cn('font-mono font-medium text-sm', t.pnl >= 0 ? 'text-profit' : 'text-loss')}>
             {t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl, currencyLabel)}
           </span>
         ) : (
@@ -1093,7 +1093,7 @@ export function SimulationView() {
       {/* ─── Header ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
+          <div className="p-2.5 bg-gradient-to-br from-profit to-whale rounded-xl shadow-lg">
             <Gamepad2 className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -1107,9 +1107,9 @@ export function SimulationView() {
           <MarketSelector size="sm" />
           <Badge
             variant={marketOpen ? 'default' : 'secondary'}
-            className={cn('gap-1.5 px-3 py-1', marketOpen ? 'bg-emerald-600 hover:bg-emerald-600' : 'bg-red-600 hover:bg-red-600')}
+            className={cn('gap-1.5 px-3 py-1', marketOpen ? 'bg-profit hover:bg-profit' : 'bg-loss hover:bg-loss')}
           >
-            <span className={cn('h-2 w-2 rounded-full', marketOpen ? 'bg-white animate-pulse' : 'bg-red-200')} />
+            <span className={cn('h-2 w-2 rounded-full', marketOpen ? 'bg-white animate-pulse' : 'bg-loss')} />
             {marketOpen ? 'السوق مفتوح' : 'السوق مغلق'}
           </Badge>
           <Badge variant="outline" className="gap-1.5">
@@ -1195,8 +1195,8 @@ export function SimulationView() {
                     <p className="text-sm text-muted-foreground">الرصيد النقدي</p>
                     <p className="text-xl font-bold">{formatCurrency(simState.balance, currencyLabel)}</p>
                   </div>
-                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                    <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="p-2 bg-profit dark:bg-profit/30 rounded-lg">
+                    <Wallet className="h-5 w-5 text-profit dark:text-profit" />
                   </div>
                 </div>
               </CardContent>
@@ -1209,24 +1209,24 @@ export function SimulationView() {
                     <p className="text-sm text-muted-foreground">قيمة المحفظة</p>
                     <p className="text-xl font-bold">{formatCurrency(portfolioValue, currencyLabel)}</p>
                   </div>
-                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                    <DollarSign className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  <div className="p-2 bg-whale dark:bg-whale/30 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-whale dark:text-whale" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={cn('relative overflow-hidden', totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800' : 'border-red-200 dark:border-red-800')}>
+            <Card className={cn('relative overflow-hidden', totalPnL >= 0 ? 'border-profit dark:border-profit' : 'border-loss dark:border-loss')}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">إجمالي الربح/الخسارة</p>
-                    <p className={cn('text-xl font-bold', totalPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    <p className={cn('text-xl font-bold', totalPnL >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
                       {totalPnL >= 0 ? '+' : ''}{formatCurrency(totalPnL, currencyLabel)}
                     </p>
                   </div>
-                  <div className={cn('p-2 rounded-lg', totalPnL >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
-                    {totalPnL >= 0 ? <TrendingUp className="h-5 w-5 text-emerald-600" /> : <TrendingDown className="h-5 w-5 text-red-600" />}
+                  <div className={cn('p-2 rounded-lg', totalPnL >= 0 ? 'bg-profit dark:bg-profit/30' : 'bg-loss dark:bg-loss/30')}>
+                    {totalPnL >= 0 ? <TrendingUp className="h-5 w-5 text-profit" /> : <TrendingDown className="h-5 w-5 text-loss" />}
                   </div>
                 </div>
               </CardContent>
@@ -1237,11 +1237,11 @@ export function SimulationView() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">نسبة الربح/الخسارة</p>
-                    <p className={cn('text-xl font-bold', totalPnLPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    <p className={cn('text-xl font-bold', totalPnLPercent >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
                       {totalPnLPercent >= 0 ? '+' : ''}{(totalPnLPercent ?? 0).toFixed(2)}%
                     </p>
                   </div>
-                  <div className={cn('p-2 rounded-lg', totalPnLPercent >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
+                  <div className={cn('p-2 rounded-lg', totalPnLPercent >= 0 ? 'bg-profit dark:bg-profit/30' : 'bg-loss dark:bg-loss/30')}>
                     <Target className="h-5 w-5" />
                   </div>
                 </div>
@@ -1255,8 +1255,8 @@ export function SimulationView() {
                     <p className="text-sm text-muted-foreground">عدد الصفقات</p>
                     <p className="text-xl font-bold">{tradeCount}</p>
                   </div>
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                    <Zap className="h-5 w-5 text-amber-600" />
+                  <div className="p-2 bg-warning dark:bg-warning/30 rounded-lg">
+                    <Zap className="h-5 w-5 text-warning" />
                   </div>
                 </div>
               </CardContent>
@@ -1317,14 +1317,14 @@ export function SimulationView() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">الرصيد المتاح</p>
-                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(simState.balance, currencyLabel)}</p>
+                  <p className="text-2xl font-bold text-profit dark:text-profit">{formatCurrency(simState.balance, currencyLabel)}</p>
                   <Progress value={((INITIAL_BALANCE - simState.balance) / INITIAL_BALANCE) * 100} className="h-2" />
                   <p className="text-xs text-muted-foreground">مستثمر: {formatCurrency(investedAmount, currencyLabel)} من {formatCurrency(INITIAL_BALANCE, currencyLabel)}</p>
                 </div>
                 <Separator />
                 <div className="space-y-2">
                   <Button
-                    className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+                    className="w-full gap-2 bg-profit hover:bg-profit"
                     onClick={() => setActiveTab('trading')}
                   >
                     <ShoppingCart className="h-4 w-4" />
@@ -1374,14 +1374,14 @@ export function SimulationView() {
                     key={stock.ticker}
                     className={cn(
                       'rounded-lg border p-3 cursor-pointer transition-all hover:shadow-md',
-                      flashingTickers[stock.ticker] === 'up' && 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200',
-                      flashingTickers[stock.ticker] === 'down' && 'bg-red-50 dark:bg-red-950/30 border-red-200'
+                      flashingTickers[stock.ticker] === 'up' && 'bg-profit dark:bg-profit/30 border-profit',
+                      flashingTickers[stock.ticker] === 'down' && 'bg-loss dark:bg-loss/30 border-loss'
                     )}
                     onClick={() => openTradeDialog(stock, 'buy')}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-sm">{stock.ticker}</span>
-                      <span className={cn('text-xs font-medium', stock.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      <span className={cn('text-xs font-medium', stock.change >= 0 ? 'text-profit' : 'text-loss')}>
                         {stock.change >= 0 ? '+' : ''}{stock.changePercent}%
                       </span>
                     </div>
@@ -1423,8 +1423,8 @@ export function SimulationView() {
                   maxHeight="max-h-[600px]"
                   rowClassName={(s) => cn(
                     'transition-colors',
-                    flashingTickers[s.ticker] === 'up' && 'bg-emerald-50/50 dark:bg-emerald-950/20',
-                    flashingTickers[s.ticker] === 'down' && 'bg-red-50/50 dark:bg-red-950/20',
+                    flashingTickers[s.ticker] === 'up' && 'bg-profit/50 dark:bg-profit/20',
+                    flashingTickers[s.ticker] === 'down' && 'bg-loss/50 dark:bg-loss/20',
                   )}
                 />
               </div>
@@ -1456,10 +1456,10 @@ export function SimulationView() {
                 <p className="text-lg font-bold">{formatCurrency(portfolioValue, currencyLabel)}</p>
               </CardContent>
             </Card>
-            <Card className={cn(totalPnL >= 0 ? 'border-emerald-200 dark:border-emerald-800' : 'border-red-200 dark:border-red-800')}>
+            <Card className={cn(totalPnL >= 0 ? 'border-profit dark:border-profit' : 'border-loss dark:border-loss')}>
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">الربح/الخسارة غير المحقق</p>
-                <p className={cn('text-lg font-bold', totalPnL >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                <p className={cn('text-lg font-bold', totalPnL >= 0 ? 'text-profit' : 'text-loss')}>
                   {totalPnL >= 0 ? '+' : ''}{formatCurrency(portfolioValue - investedAmount, currencyLabel)}
                 </p>
               </CardContent>
@@ -1658,8 +1658,8 @@ export function SimulationView() {
                     key={ticker}
                     className={cn(
                       'transition-all hover:shadow-md cursor-pointer',
-                      flashingTickers[ticker] === 'up' && 'border-emerald-300 bg-emerald-50/30',
-                      flashingTickers[ticker] === 'down' && 'border-red-300 bg-red-50/30'
+                      flashingTickers[ticker] === 'up' && 'border-profit bg-profit/30',
+                      flashingTickers[ticker] === 'down' && 'border-loss bg-loss/30'
                     )}
                   >
                     <CardContent className="p-4">
@@ -1670,13 +1670,13 @@ export function SimulationView() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                              className="h-7 w-7 p-0 text-warning hover:text-warning hover:bg-warning"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleWatchlist(ticker);
                               }}
                             >
-                              <Star className="h-4 w-4 fill-amber-500" />
+                              <Star className="h-4 w-4 fill-warning" />
                             </Button>
                           </div>
                           <p className="font-medium mt-1">{stock.name_ar}</p>
@@ -1684,7 +1684,7 @@ export function SimulationView() {
                         </div>
                         <div className="text-left">
                           <p className="text-lg font-bold font-mono">{formatNumber(stock.price)}</p>
-                          <div className={cn('flex items-center gap-0.5 justify-end text-sm font-medium', stock.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                          <div className={cn('flex items-center gap-0.5 justify-end text-sm font-medium', stock.change >= 0 ? 'text-profit' : 'text-loss')}>
                             {stock.change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
                             {stock.change >= 0 ? '+' : ''}{(stock.changePercent ?? 0).toFixed(2)}%
                           </div>
@@ -1693,7 +1693,7 @@ export function SimulationView() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          className="flex-1 h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+                          className="flex-1 h-8 text-xs gap-1 bg-profit hover:bg-profit"
                           onClick={() => openTradeDialog(stock, 'buy')}
                         >
                           <Plus className="h-3 w-3" />
@@ -1750,7 +1750,7 @@ export function SimulationView() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-amber-500"
+                        className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-warning"
                         onClick={() => toggleWatchlist(stock.ticker)}
                       >
                         <Star className="h-4 w-4" />
@@ -1769,12 +1769,12 @@ export function SimulationView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {tradeType === 'buy' ? (
-                <span className="flex items-center gap-2 text-emerald-600">
+                <span className="flex items-center gap-2 text-profit">
                   <ArrowDownRight className="h-5 w-5" />
                   شراء سهم
                 </span>
               ) : (
-                <span className="flex items-center gap-2 text-red-600">
+                <span className="flex items-center gap-2 text-loss">
                   <ArrowUpRight className="h-5 w-5" />
                   بيع سهم
                 </span>
@@ -1880,7 +1880,7 @@ export function SimulationView() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">العمولة ({(COMMISSION_RATE * 100).toFixed(2)}%)</span>
-                    <span className="font-mono text-amber-600">{formatNumber(tradeQuantity * selectedStock.price * COMMISSION_RATE)} {currencyLabel}</span>
+                    <span className="font-mono text-warning">{formatNumber(tradeQuantity * selectedStock.price * COMMISSION_RATE)} {currencyLabel}</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between font-bold">
@@ -1895,7 +1895,7 @@ export function SimulationView() {
               )}
 
               {tradeType === 'buy' && tradeQuantity > 0 && tradeQuantity * selectedStock.price * (1 + COMMISSION_RATE) > simState.balance && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm text-loss bg-loss dark:bg-loss/30 rounded-lg p-3">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <span>رصيدك غير كافي لإتمام هذه الصفقة</span>
                 </div>
@@ -1904,13 +1904,13 @@ export function SimulationView() {
               {tradeType === 'sell' && (() => {
                 const pos = simState.positions.find((p) => p.ticker === selectedStock.ticker);
                 if (!pos) return (
-                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-sm text-loss bg-loss dark:bg-loss/30 rounded-lg p-3">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>ليس لديك أسهم من هذا السهم لبيعها</span>
                   </div>
                 );
                 if (tradeQuantity > pos.shares) return (
-                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-sm text-loss bg-loss dark:bg-loss/30 rounded-lg p-3">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>عدد الأسهم المطلوبة أكبر مما تملك ({pos.shares})</span>
                   </div>
@@ -1927,7 +1927,7 @@ export function SimulationView() {
             <Button
               className={cn(
                 'gap-1.5',
-                tradeType === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
+                tradeType === 'buy' ? 'bg-profit hover:bg-profit' : 'bg-loss hover:bg-loss'
               )}
               onClick={handleTradeSubmit}
               disabled={tradeQuantity <= 0}
@@ -1987,7 +1987,7 @@ export function SimulationView() {
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={executeTrade}
-              className={cn(pendingTrade?.type === 'buy' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700')}
+              className={cn(pendingTrade?.type === 'buy' ? 'bg-profit hover:bg-profit' : 'bg-loss hover:bg-loss')}
             >
               تأكيد التنفيذ
             </AlertDialogAction>

@@ -128,7 +128,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
             // FRONTEND-026: شامل لكل إشارات البيع (REDUCE, WEAK_SELL, ...) والشراء (ACCUMULATE, ...)
             const isUp = isBuySignalLabel(stock.signal);
             const isDown = isSellSignalLabel(stock.signal);
-            const signalColor = isUp ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : isDown ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' : 'bg-muted text-muted-foreground';
+            const signalColor = isUp ? 'bg-profit text-profit dark:bg-profit/40 dark:text-profit' : isDown ? 'bg-loss text-loss dark:bg-loss/40 dark:text-loss' : 'bg-muted text-muted-foreground';
             const curPrice = pickValidPrice(stock.current_price, stock.close, stock.entry_price);
             const highPrice = pickValidPrice(stock.high_price, stock.high_52w, stock.resistance);
             const lowPrice = pickValidPrice(stock.low_price, stock.low_52w, stock.support);
@@ -139,9 +139,9 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
                 <td className="p-2 text-xs text-muted-foreground">{stock.name_ar || stock.name || stock.ticker}</td>
                 <td className="p-2 text-center font-mono text-xs font-bold text-primary">{curPrice ? (curPrice ?? 0).toFixed(2) : '—'}</td>
                 <td className="p-2 text-center font-mono text-xs whitespace-nowrap">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">▲ {highPrice ? (highPrice ?? 0).toFixed(2) : '—'}</span>
+                  <span className="text-profit dark:text-profit font-semibold">▲ {highPrice ? (highPrice ?? 0).toFixed(2) : '—'}</span>
                   <span className="text-muted-foreground mx-1">/</span>
-                  <span className="text-rose-600 dark:text-rose-400 font-semibold">▼ {lowPrice ? (lowPrice ?? 0).toFixed(2) : '—'}</span>
+                  <span className="text-loss dark:text-loss font-semibold">▼ {lowPrice ? (lowPrice ?? 0).toFixed(2) : '—'}</span>
                 </td>
                 <td className="p-2 text-center">
                   <div className="flex items-center justify-center gap-1 flex-wrap">
@@ -150,7 +150,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
                     </Badge>
                     {stock.delay_compensation_applied && (
                       <Badge
-                        className="text-[10px] font-semibold border-0 cursor-help bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900 transition-colors"
+                        className="text-[10px] font-semibold border-0 cursor-help bg-warning text-warning dark:bg-warning dark:text-warning hover:bg-warning dark:hover:bg-warning transition-colors"
                         title="بسبب تأخر بيانات السوق 5 دقائق، تم توسيع الهدف وتضييق وقف الخسارة لحماية صفقتك. ينصح بالتنفيذ عند ارتداد السعر للدعم وليس عند صعوده السريع."
                         onClick={() => toast.info('⚠️ تعويض تأخير البيانات', {
                           description: 'بسبب تأخر بيانات السوق 5 دقائق، تم توسيع الهدف (+5%) وتضييق وقف الخسارة (-15%) لحماية صفقتك. ينصح بالتنفيذ عند ارتداد السعر للدعم وليس عند صعوده السريع.',
@@ -162,7 +162,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
                     )}
                     {stock.ath_breakout && (
                       <Badge
-                        className="text-[10px] font-semibold border-0 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                        className="text-[10px] font-semibold border-0 bg-profit text-profit dark:bg-profit/40 dark:text-profit"
                         title="🏆 اختراق تاريخي (All-Time High) — فرصة استثنائية مسموح لها بتجاوز بوابات القناص."
                       >
                         🏆 اختراق تاريخي
@@ -171,8 +171,8 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
                   </div>
                 </td>
                 <td className="p-2 text-center font-mono text-xs">{stock.entry_price ? (stock.entry_price ?? 0).toFixed(2) : '—'}</td>
-                <td className="p-2 text-center font-mono text-xs text-emerald-600 dark:text-emerald-400">{stock.target_price ? (stock.target_price ?? 0).toFixed(2) : '—'}</td>
-                <td className="p-2 text-center font-mono text-xs text-rose-600 dark:text-rose-400">{stock.stop_loss ? (stock.stop_loss ?? 0).toFixed(2) : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs text-profit dark:text-profit">{stock.target_price ? (stock.target_price ?? 0).toFixed(2) : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs text-loss dark:text-loss">{stock.stop_loss ? (stock.stop_loss ?? 0).toFixed(2) : '—'}</td>
                 <td className="p-2 text-center font-mono text-xs">{stock.confidence !== undefined ? `${(stock.confidence ?? 0).toFixed(0)}%` : '—'}</td>
                 <td className="p-2 text-center font-mono text-xs">{stock.rsi !== undefined ? (stock.rsi ?? 0).toFixed(0) : '—'}</td>
               </tr>
@@ -563,10 +563,10 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
       {/* وصف تفصيلي لحالة السوق (لى حصل ولى بيحصل) — يوليو 2026 */}
       {stocks.length > 0 && marketNarrative && (
-        <Card className="border-teal-200 dark:border-teal-900 bg-blue-50/40 dark:bg-blue-950/20">
+        <Card className="border-whale dark:border-whale bg-primary/40 dark:bg-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Radio className="h-4 w-4 text-teal-600" />
+              <Radio className="h-4 w-4 text-whale" />
               التقرير اليومي للسوق
             </CardTitle>
             <CardDescription>
@@ -586,7 +586,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
           <Card>
             <CardHeader className="pb-1">
               <CardTitle className="text-sm flex items-center gap-2">
-                <PieChart className="h-4 w-4 text-emerald-600" />
+                <PieChart className="h-4 w-4 text-profit" />
                 اتساع السوق (Breadth)
               </CardTitle>
             </CardHeader>
@@ -625,7 +625,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
           <Card>
             <CardHeader className="pb-1">
               <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-teal-600" />
+                <BarChart3 className="h-4 w-4 text-whale" />
                 أبرز الرابحين والخاسرين
               </CardTitle>
             </CardHeader>
@@ -657,7 +657,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
           <Card className="md:col-span-2">
             <CardHeader className="pb-1">
               <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-amber-600" />
+                <BarChart3 className="h-4 w-4 text-warning" />
                 توزيع القطاعات (عدد الأسهم)
               </CardTitle>
             </CardHeader>
@@ -686,21 +686,21 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
       {/* Market Status Card */}
       <Card className={cn(
         "border-2",
-        marketStatus.isOpen ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-red-500 bg-red-50 dark:bg-red-950"
+        marketStatus.isOpen ? "border-success bg-success dark:bg-success" : "border-loss bg-loss dark:bg-loss"
       )}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className={cn(
                 "h-5 w-5",
-                marketStatus.isOpen ? "text-green-600" : "text-red-600"
+                marketStatus.isOpen ? "text-success" : "text-loss"
               )} />
               {MARKET_NAMES_AR[market]}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge
                 variant={autoRefresh ? "default" : "outline"}
-                className={cn("text-xs gap-1", autoRefresh ? "bg-emerald-600 hover:bg-emerald-700" : "")}
+                className={cn("text-xs gap-1", autoRefresh ? "bg-profit hover:bg-profit" : "")}
                 onClick={() => setAutoRefresh(v => !v)}
                 role="button"
               >
@@ -760,7 +760,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                   return (
                     <>
                       <div
-                        className="bg-green-500"
+                        className="bg-success"
                         style={{ width: `${(gainers / total) * 100}%` }}
                         title={`${gainers} رابح`}
                       />
@@ -770,7 +770,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                         title={`${unchanged} unchanged`}
                       />
                       <div
-                        className="bg-red-500"
+                        className="bg-loss"
                         style={{ width: `${(losers / total) * 100}%` }}
                         title={`${losers} خاسر`}
                       />
@@ -809,7 +809,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              <TrendingUp className="h-4 w-4 text-profit" />
               مؤشرات السوق
             </CardTitle>
             <CardDescription>
@@ -832,9 +832,9 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                     className={cn(
                       'p-3 rounded-lg border text-center',
                       isUp
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900'
+                        ? 'bg-profit dark:bg-profit/40 border-profit dark:border-profit'
                         : isDown
-                        ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900'
+                        ? 'bg-loss dark:bg-loss/40 border-loss dark:border-loss'
                         : 'bg-muted border-border'
                     )}
                   >
@@ -846,9 +846,9 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                       className={cn(
                         'text-xs font-semibold mt-1',
                         isUp
-                          ? 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-profit dark:text-profit'
                           : isDown
-                          ? 'text-rose-600 dark:text-rose-400'
+                          ? 'text-loss dark:text-loss'
                           : 'text-muted-foreground'
                       )}
                     >
@@ -867,11 +867,11 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                 </div>
                 <div>
                   <p className="text-muted-foreground">الرابحة</p>
-                  <p className="font-bold text-base text-emerald-600 dark:text-emerald-400">{marketSummary.gainers ?? 0}</p>
+                  <p className="font-bold text-base text-profit dark:text-profit">{marketSummary.gainers ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">الخاسرة</p>
-                  <p className="font-bold text-base text-rose-600 dark:text-rose-400">{marketSummary.losers ?? 0}</p>
+                  <p className="font-bold text-base text-loss dark:text-loss">{marketSummary.losers ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">لم يتغير</p>
@@ -901,18 +901,18 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
               <p className="text-muted-foreground text-xs mb-1">متوسط التغير</p>
               <p className={cn(
                 "text-xl font-bold",
-                weekStats.avgChange >= 0 ? "text-green-600" : "text-red-600"
+                weekStats.avgChange >= 0 ? "text-success" : "text-loss"
               )}>
                 {weekStats.avgChange >= 0 ? '+' : ''}{(weekStats.avgChange ?? 0).toFixed(2)}%
               </p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950">
+            <div className="text-center p-3 rounded-lg bg-success dark:bg-success">
               <p className="text-muted-foreground text-xs mb-1">الأسهم الرابحة</p>
-              <p className="text-xl font-bold text-green-600">{weekStats.gainers}</p>
+              <p className="text-xl font-bold text-success">{weekStats.gainers}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950">
+            <div className="text-center p-3 rounded-lg bg-loss dark:bg-loss">
               <p className="text-muted-foreground text-xs mb-1">الأسهم الخاسرة</p>
-              <p className="text-xl font-bold text-red-600">{weekStats.losers}</p>
+              <p className="text-xl font-bold text-loss">{weekStats.losers}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-muted">
               <p className="text-muted-foreground text-xs mb-1">لم يتغير</p>
@@ -922,32 +922,32 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
           {/* Additional Stats */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-            <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950">
+            <div className="text-center p-3 rounded-lg bg-primary dark:bg-primary">
               <p className="text-muted-foreground text-xs mb-1">إجمالي الأسهم</p>
-              <p className="text-xl font-bold text-teal-600">{weekStats.totalStocks}</p>
+              <p className="text-xl font-bold text-whale">{weekStats.totalStocks}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950">
               <p className="text-muted-foreground text-xs mb-1">متوسط السعر</p>
               {/* currencyLabel fix */}
               <p className="text-xl font-bold text-purple-600">{(weekStats.avgPrice ?? 0).toFixed(2)} {currencyLabel}</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950">
+            <div className="text-center p-3 rounded-lg bg-warning dark:bg-warning">
               <p className="text-muted-foreground text-xs mb-1">عدد القطاعات</p>
-              <p className="text-xl font-bold text-amber-600">{Object.keys(weekStats.sectors).length}</p>
+              <p className="text-xl font-bold text-warning">{Object.keys(weekStats.sectors).length}</p>
             </div>
           </div>
 
           {/* Top Gainers & Losers */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-semibold mb-2 flex items-center gap-1 text-green-600">
+              <h4 className="font-semibold mb-2 flex items-center gap-1 text-success">
                 <TrendingUp className="h-4 w-4" />
                 أعلى الرابحين
               </h4>
               <div className="space-y-2">
                 {weekStats.topGainers.length > 0 ? (
                   weekStats.topGainers.map((stock, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-green-50 dark:bg-green-950 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
+                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-success dark:bg-success cursor-pointer hover:bg-success dark:hover:bg-success transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
                       <div className="flex items-center gap-2 min-w-0">
                         {stock.logo_url ? (
                           <img
@@ -962,7 +962,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                           <span className="text-muted-foreground text-xs mr-2">{stock.name_ar || stock.name}</span>
                         </div>
                       </div>
-                      <Badge variant="default" className="bg-green-600">
+                      <Badge variant="default" className="bg-success">
                         {formatChangePct(stock.change_percent)}
                       </Badge>
                     </div>
@@ -973,14 +973,14 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
               </div>
             </div>
             <div>
-              <h4 className="font-semibold mb-2 flex items-center gap-1 text-red-600">
+              <h4 className="font-semibold mb-2 flex items-center gap-1 text-loss">
                 <TrendingDown className="h-4 w-4" />
                 أعلى الخاسرين
               </h4>
               <div className="space-y-2">
                 {weekStats.topLosers.length > 0 ? (
                   weekStats.topLosers.map((stock, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-red-50 dark:bg-red-950 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
+                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-loss dark:bg-loss cursor-pointer hover:bg-loss dark:hover:bg-loss transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
                       <div className="flex items-center gap-2 min-w-0">
                         {stock.logo_url ? (
                           <img
@@ -1011,14 +1011,14 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
           <div className="grid md:grid-cols-2 gap-4">
             {/* Most Active */}
             <div>
-              <h4 className="font-semibold mb-2 flex items-center gap-1 text-teal-600">
+              <h4 className="font-semibold mb-2 flex items-center gap-1 text-whale">
                 <Activity className="h-4 w-4" />
                 الأكثر نشاطاً (حجم التداول)
               </h4>
               <div className="space-y-2">
                 {weekStats.mostActive.length > 0 ? (
                   weekStats.mostActive.map((stock, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-blue-50 dark:bg-blue-950 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
+                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-primary dark:bg-primary cursor-pointer hover:bg-whale dark:hover:bg-whale transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
                       <div className="flex items-center gap-2 min-w-0">
                         {stock.logo_url ? (
                           <img
@@ -1033,7 +1033,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                           <span className="text-muted-foreground text-xs mr-2">{stock.name_ar || stock.name}</span>
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-teal-600">
+                      <Badge variant="outline" className="text-whale">
                         {stock.volume || '-'}
                       </Badge>
                     </div>
@@ -1046,7 +1046,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
             {/* Sector Distribution */}
             <div>
-              <h4 className="font-semibold mb-2 flex items-center gap-1 text-amber-600">
+              <h4 className="font-semibold mb-2 flex items-center gap-1 text-warning">
                 <BarChart3 className="h-4 w-4" />
                 توزيع القطاعات
               </h4>
@@ -1055,9 +1055,9 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                   .sort(([, a], [, b]) => b - a)
                   .slice(0, 8)
                   .map(([sector, count]) => (
-                    <div key={sector} className="flex items-center justify-between p-2 rounded bg-amber-50 dark:bg-amber-950">
+                    <div key={sector} className="flex items-center justify-between p-2 rounded bg-warning dark:bg-warning">
                       <span className="text-sm font-medium">{sector}</span>
-                      <Badge variant="outline" className="text-amber-600">
+                      <Badge variant="outline" className="text-warning">
                         {count} سهم
                       </Badge>
                     </div>

@@ -54,19 +54,19 @@ const MARKET_OPTIONS = [
 ];
 
 const TIER_ICONS: Record<string, React.ReactNode> = {
-  premium: <Crown className="w-5 h-5 text-amber-500" />,
+  premium: <Crown className="w-5 h-5 text-warning" />,
   pro: <Zap className="w-5 h-5 text-purple-500" />,
-  vip_pass: <Crown className="w-5 h-5 text-amber-400 animate-bounce" />,
+  vip_pass: <Crown className="w-5 h-5 text-warning animate-bounce" />,
   b2b_starter: <Building2 className="w-5 h-5 text-sky-500" />,
   b2b_pro: <Building2 className="w-5 h-5 text-sky-600" />,
   b2b_enterprise: <Building2 className="w-5 h-5 text-indigo-600" />,
 };
 
 const TIER_ACCENT: Record<string, string> = {
-  premium: 'border-amber-500/50 bg-gradient-to-br from-amber-500/5 to-orange-500/5 shadow-md shadow-amber-500/5',
+  premium: 'border-warning/50 bg-gradient-to-br from-warning/5 to-orange-500/5 shadow-md shadow-amber-500/5',
   pro: 'border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5 shadow-md shadow-purple-500/5',
-  vip_pass: 'border-amber-400/80 bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15 ring-2 ring-amber-400/60 shadow-xl shadow-amber-500/15',
-  b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-blue-500/5',
+  vip_pass: 'border-warning/80 bg-gradient-to-br from-warning/15 via-yellow-500/10 to-orange-500/15 ring-2 ring-warning/60 shadow-xl shadow-amber-500/15',
+  b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-primary/5',
   b2b_pro: 'border-sky-600/40 bg-gradient-to-br from-sky-600/5 to-indigo-500/5',
   b2b_enterprise: 'border-indigo-600/40 bg-gradient-to-br from-indigo-600/5 to-purple-600/5',
 };
@@ -234,13 +234,13 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                 className={cn(
                   'relative flex flex-col',
                   TIER_ACCENT[plan.tier] || 'border-border',
-                  popular && 'ring-2 ring-amber-500/50',
+                  popular && 'ring-2 ring-warning/50',
                 )}
               >
                 {popular && !plan.is_vip && (
                   <Badge
                     variant="default"
-                    className="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md text-xs py-0.5"
+                    className="absolute -top-2.5 right-4 bg-gradient-to-r from-warning to-orange-500 text-white shadow-md text-xs py-0.5"
                   >
                     الأكثر شعبية ⭐
                   </Badge>
@@ -248,7 +248,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                 {plan.is_vip && (
                   <Badge
                     variant="default"
-                    className="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-400 via-yellow-500 to-orange-500 text-black font-extrabold shadow-lg text-xs py-0.5 px-3"
+                    className="absolute -top-2.5 right-4 bg-gradient-to-r from-warning via-yellow-500 to-orange-500 text-black font-extrabold shadow-lg text-xs py-0.5 px-3"
                   >
                     👑 الباقة الشاملة VIP (توفير 65%)
                   </Badge>
@@ -267,7 +267,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                       <span className="text-xs line-through text-muted-foreground/80 font-medium">
                         {formatPrice(plan.original_price_local || Math.round(plan.price_local * 2), plan.currency)}
                       </span>
-                      <Badge variant="destructive" className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[10px] px-1.5 py-0 font-bold">
+                      <Badge variant="destructive" className="bg-loss/15 text-loss dark:text-loss border border-loss/30 text-[10px] px-1.5 py-0 font-bold">
                         وفر {plan.discount_pct || 50}% 🔥
                       </Badge>
                     </div>
@@ -288,7 +288,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                   <ul className="space-y-2 flex-1">
                     {plan.features.map((f, i) => (
                       <li key={i} className="flex items-start gap-2 text-xs">
-                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                        <Check className="w-3.5 h-3.5 text-profit shrink-0 mt-0.5" />
                         <span className="text-muted-foreground">{f}</span>
                       </li>
                     ))}
@@ -299,7 +299,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                     disabled={checkoutLoading === plan.tier}
                     className={cn(
                       'w-full gap-2',
-                      popular && 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white',
+                      popular && 'bg-gradient-to-r from-warning to-orange-500 hover:from-warning hover:to-orange-600 text-white',
                     )}
                     variant={popular ? 'default' : 'outline'}
                   >

@@ -218,7 +218,7 @@ export function SystemMonitorPanel() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="w-5 h-5 text-emerald-500" />
+                <Activity className="w-5 h-5 text-profit" />
                 مركز حماية ومراقبة موارد النظام والـ VPS
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -254,8 +254,8 @@ export function SystemMonitorPanel() {
         <div className={cn(
           'p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md transition-all',
           isCriticalDisk
-            ? 'bg-red-500/10 border-red-500/40 text-red-500 dark:text-red-400'
-            : 'bg-amber-500/10 border-amber-500/40 text-amber-500 dark:text-amber-400'
+            ? 'bg-loss/10 border-loss/40 text-loss dark:text-loss'
+            : 'bg-warning/10 border-warning/40 text-warning dark:text-warning'
         )}>
           <div className="flex items-center gap-3">
             <ShieldAlert className="w-8 h-8 flex-shrink-0 animate-pulse" />
@@ -286,7 +286,7 @@ export function SystemMonitorPanel() {
               disabled={activeAction !== null}
               onClick={() => handleAction('vacuum_databases')}
             >
-              <Database className="w-3.5 h-3.5 text-amber-500" />
+              <Database className="w-3.5 h-3.5 text-warning" />
               ضغط قواعد البيانات
             </Button>
           </div>
@@ -312,7 +312,7 @@ export function SystemMonitorPanel() {
         <CardHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <Sparkles className="w-4 h-4 text-warning" />
               إجراءات تفريغ المساحة وحماية السيرفر (بنقرة واحدة)
             </CardTitle>
             <Badge variant="outline" className="text-[11px] text-muted-foreground">آمن وفوري</Badge>
@@ -326,7 +326,7 @@ export function SystemMonitorPanel() {
             {/* Clean Logs */}
             <Button
               variant="outline"
-              className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all"
+              className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-warning/50 hover:bg-warning/5 transition-all"
               disabled={activeAction !== null}
               onClick={() => handleAction('clean_logs')}
             >
@@ -345,13 +345,13 @@ export function SystemMonitorPanel() {
             {/* Vacuum Databases */}
             <Button
               variant="outline"
-              className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all"
+              className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-profit/50 hover:bg-profit/5 transition-all"
               disabled={activeAction !== null}
               onClick={() => handleAction('vacuum_databases')}
             >
               <div className="flex items-center justify-between w-full">
                 <span className="font-semibold text-xs flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-emerald-500" />
+                  <Database className="w-3.5 h-3.5 text-profit" />
                   ضغط قواعد SQLite (VACUUM)
                 </span>
                 {activeAction === 'vacuum_databases' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
@@ -383,13 +383,13 @@ export function SystemMonitorPanel() {
             {/* Clean Next.js Build Cache */}
             <Button
               variant="outline"
-              className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-rose-500/50 hover:bg-rose-500/5 transition-all"
+              className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-loss/50 hover:bg-loss/5 transition-all"
               disabled={activeAction !== null}
               onClick={() => handleAction('clean_cache')}
             >
               <div className="flex items-center justify-between w-full">
                 <span className="font-semibold text-xs flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-rose-500" />
+                  <Zap className="w-3.5 h-3.5 text-loss" />
                   تفريغ كاش Next.js المؤقت
                 </span>
                 {activeAction === 'clean_cache' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
@@ -472,7 +472,7 @@ export function SystemMonitorPanel() {
                         <td className="py-2.5 px-2">
                           <Badge
                             variant={isOnline ? 'default' : 'destructive'}
-                            className={cn('text-[10px] h-5', isOnline && 'bg-emerald-600 hover:bg-emerald-600')}
+                            className={cn('text-[10px] h-5', isOnline && 'bg-profit hover:bg-profit')}
                           >
                             {isOnline ? '🟢 شغال' : '🔴 متوقف'}
                           </Badge>
@@ -501,7 +501,7 @@ export function SystemMonitorPanel() {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-7 w-7 text-red-500 hover:bg-red-500/10"
+                                className="h-7 w-7 text-loss hover:bg-loss/10"
                                 title="إيقاف الخدمة"
                                 disabled={activeAction !== null}
                                 onClick={(e) => {
@@ -515,7 +515,7 @@ export function SystemMonitorPanel() {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-7 w-7 text-emerald-500 hover:bg-emerald-500/10"
+                                className="h-7 w-7 text-profit hover:bg-profit/10"
                                 title="تشغيل الخدمة"
                                 disabled={activeAction !== null}
                                 onClick={(e) => {
@@ -567,7 +567,7 @@ export function SystemMonitorPanel() {
                 {resources.storage_breakdown.map((item) => (
                   <div key={item.path} className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-muted/20">
                     <div className="flex items-center gap-2.5">
-                      <Folder className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      <Folder className="w-4 h-4 text-warning flex-shrink-0" />
                       <div>
                         <div className="text-xs font-semibold">{item.name_ar}</div>
                         <div className="text-[10px] text-muted-foreground font-mono" dir="ltr">{item.path}/ ({item.count} ملف)</div>
@@ -589,7 +589,7 @@ export function SystemMonitorPanel() {
         <Card className="border-border/60">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <HardDrive className="w-4 h-4 text-rose-500" />
+              <HardDrive className="w-4 h-4 text-loss" />
               كاشف أضخم الملفات على القرص (&gt; 10 MB)
             </CardTitle>
           </CardHeader>
@@ -615,14 +615,14 @@ export function SystemMonitorPanel() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge variant="outline" className="font-mono text-[11px] text-amber-500 border-amber-500/30">
+                        <Badge variant="outline" className="font-mono text-[11px] text-warning border-warning/30">
                           {file.size_formatted}
                         </Badge>
                         {isDeletable && (
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-6 w-6 text-red-500 hover:bg-red-500/10"
+                            className="h-6 w-6 text-loss hover:bg-loss/10"
                             title="حذف هذا الملف لتوفير المساحة"
                             disabled={activeAction !== null}
                             onClick={() => handleAction('delete_file', { target_file: file.path })}
@@ -648,7 +648,7 @@ export function SystemMonitorPanel() {
       <Card className="border-border/60">
         <CardHeader className="p-4 pb-2">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <CheckCircle2 className="w-4 h-4 text-profit" />
             فحص استجابة المنافذ والملفات الحيوية
           </CardTitle>
         </CardHeader>
@@ -683,16 +683,16 @@ function CpuCard({ data, loading }: { data: SystemResources | null; loading: boo
       <CardContent className="p-3.5">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Cpu className="w-3.5 h-3.5 text-emerald-500" />
+            <Cpu className="w-3.5 h-3.5 text-profit" />
             استخدام CPU
           </span>
           <Badge variant="outline" className="text-[10px] h-4">{data?.cpu?.cores ?? '—'} أنوية</Badge>
         </div>
         <div className={cn(
           'text-2xl font-bold mb-1.5',
-          tone === 'success' ? 'text-emerald-500' :
-          tone === 'warning' ? 'text-amber-500' :
-          tone === 'danger' ? 'text-red-500' : 'text-muted-foreground',
+          tone === 'success' ? 'text-profit' :
+          tone === 'warning' ? 'text-warning' :
+          tone === 'danger' ? 'text-loss' : 'text-muted-foreground',
         )}>
           {pct === null ? '—' : `${(pct ?? 0).toFixed(1)}%`}
         </div>
@@ -722,8 +722,8 @@ function MemoryCard({ data, loading }: { data: SystemResources | null; loading: 
         </div>
         <div className={cn(
           'text-2xl font-bold mb-1.5',
-          tone === 'success' ? 'text-emerald-500' :
-          tone === 'warning' ? 'text-amber-500' : 'text-red-500',
+          tone === 'success' ? 'text-profit' :
+          tone === 'warning' ? 'text-warning' : 'text-loss',
         )}>
           {pct}%
         </div>
@@ -746,15 +746,15 @@ function DiskCard({ disk, loading }: { disk: DiskInfo | null | undefined; loadin
       <CardContent className="p-3.5">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <HardDrive className="w-3.5 h-3.5 text-amber-500" />
+            <HardDrive className="w-3.5 h-3.5 text-warning" />
             القرص الأساسي ({disk?.mount || '/'})
           </span>
           <Badge variant="outline" className="text-[10px] h-4">{disk?.size_formatted ?? '—'}</Badge>
         </div>
         <div className={cn(
           'text-2xl font-bold mb-1.5',
-          tone === 'success' ? 'text-emerald-500' :
-          tone === 'warning' ? 'text-amber-500' : 'text-red-500',
+          tone === 'success' ? 'text-profit' :
+          tone === 'warning' ? 'text-warning' : 'text-loss',
         )}>
           {pct}%
         </div>
@@ -786,15 +786,15 @@ function HealthCard({ health, loading }: { health: SystemHealth | null; loading:
         </div>
         <div className={cn(
           'text-2xl font-bold mb-1.5',
-          tone === 'success' ? 'text-emerald-500' :
-          tone === 'warning' ? 'text-amber-500' : 'text-red-500',
+          tone === 'success' ? 'text-profit' :
+          tone === 'warning' ? 'text-warning' : 'text-loss',
         )}>
           {score}%
         </div>
         <Progress value={score} className="h-1.5" />
         <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5">
-          <span className="text-emerald-500">جاهز: {health?.summary?.online ?? 0}</span>
-          <span className="text-red-500">معطل: {health?.summary?.offline ?? 0}</span>
+          <span className="text-profit">جاهز: {health?.summary?.online ?? 0}</span>
+          <span className="text-loss">معطل: {health?.summary?.offline ?? 0}</span>
         </div>
       </CardContent>
     </Card>
@@ -810,19 +810,19 @@ function TopProcessesSummary({ services }: { services: Pm2Process[] }) {
   return (
     <div className="border-t border-border/40 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
       {topCpu && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2">
           <span className="text-base">🔥</span>
           <span className="text-muted-foreground">أعلى Process استخداماً للـ CPU:</span>
-          <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{topCpu.name}</span>
-          <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{topCpu.cpu_percent}%</span>
+          <span className="font-mono font-bold text-warning dark:text-warning">{topCpu.name}</span>
+          <span className="font-mono font-bold text-warning dark:text-warning">{topCpu.cpu_percent}%</span>
         </div>
       )}
       {topMem && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-profit/30 bg-profit/5 px-3 py-2">
           <span className="text-base">🧠</span>
           <span className="text-muted-foreground">أعلى Process استخداماً للـ RAM:</span>
-          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{topMem.name}</span>
-          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{topMem.memory_formatted}</span>
+          <span className="font-mono font-bold text-profit dark:text-profit">{topMem.name}</span>
+          <span className="font-mono font-bold text-profit dark:text-profit">{topMem.memory_formatted}</span>
         </div>
       )}
     </div>
@@ -836,14 +836,14 @@ function ServiceRow({ svc }: { svc: ServiceCheck }) {
   return (
     <div className={cn(
       'flex items-center gap-2 p-2 rounded-lg border text-xs',
-      isOnline ? 'border-emerald-500/20 bg-emerald-500/5' :
-      isDegraded ? 'border-amber-500/20 bg-amber-500/5' :
-      'border-red-500/20 bg-red-500/5',
+      isOnline ? 'border-profit/20 bg-profit/5' :
+      isDegraded ? 'border-warning/20 bg-warning/5' :
+      'border-loss/20 bg-loss/5',
     )}>
       <div className={cn(
         'w-2 h-2 rounded-full flex-shrink-0',
-        isOnline ? 'bg-emerald-500' :
-        isDegraded ? 'bg-amber-500' : 'bg-red-500',
+        isOnline ? 'bg-profit' :
+        isDegraded ? 'bg-warning' : 'bg-loss',
       )} />
       <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
       <div className="flex-1 min-w-0">
@@ -854,11 +854,11 @@ function ServiceRow({ svc }: { svc: ServiceCheck }) {
         <Badge variant="secondary" className="text-[10px] h-4 font-mono">{svc.latency_ms}ms</Badge>
       )}
       {isOnline ? (
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+        <CheckCircle2 className="w-3.5 h-3.5 text-profit flex-shrink-0" />
       ) : isDegraded ? (
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+        <AlertTriangle className="w-3.5 h-3.5 text-warning flex-shrink-0" />
       ) : (
-        <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+        <XCircle className="w-3.5 h-3.5 text-loss flex-shrink-0" />
       )}
     </div>
   );

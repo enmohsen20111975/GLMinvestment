@@ -391,9 +391,9 @@ export function UsersManagement() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Badge className="bg-red-500 gap-1"><Shield className="w-3 h-3" />مدير</Badge>;
+        return <Badge className="bg-loss gap-1"><Shield className="w-3 h-3" />مدير</Badge>;
       case 'premium':
-        return <Badge className="bg-amber-500 gap-1"><Crown className="w-3 h-3" />بريميوم</Badge>;
+        return <Badge className="bg-warning gap-1"><Crown className="w-3 h-3" />بريميوم</Badge>;
       default:
         return <Badge variant="secondary">مستخدم</Badge>;
     }
@@ -402,7 +402,7 @@ export function UsersManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-emerald-500 gap-1"><CheckCircle className="w-3 h-3" />نشط</Badge>;
+        return <Badge className="bg-profit gap-1"><CheckCircle className="w-3 h-3" />نشط</Badge>;
       case 'inactive':
         return <Badge variant="secondary" className="gap-1"><XCircle className="w-3 h-3" />غير نشط</Badge>;
       case 'suspended':
@@ -414,7 +414,7 @@ export function UsersManagement() {
 
   const getUserActivityBadge = (isActive: boolean) => {
     if (isActive) {
-      return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1"><Activity className="w-3 h-3" />نشط</Badge>;
+      return <Badge className="bg-profit/10 text-profit border-profit gap-1"><Activity className="w-3 h-3" />نشط</Badge>;
     }
     return <Badge className="bg-slate-500/10 text-slate-600 border-slate-200 gap-1"><XCircle className="w-3 h-3" />غير نشط</Badge>;
   };
@@ -512,19 +512,19 @@ export function UsersManagement() {
           isVip
             ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40 hover:bg-purple-500/25"
             : isPremium
-            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25"
-            : "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40 hover:bg-blue-500/25"
+            ? "bg-profit/15 text-profit dark:text-profit border-profit/40 hover:bg-profit/25"
+            : "bg-primary/15 text-primary dark:text-primary border-primary/40 hover:bg-primary/25"
         )}
       >
         <Ticket className="w-3.5 h-3.5 text-current shrink-0" />
         <span className="font-mono font-bold tracking-wider">{promo.code}</span>
         <span className="text-[11px] opacity-90 font-sans">({promo.plan_label})</span>
         {promo.is_active ? (
-          <span className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-mono font-bold">
+          <span className="text-[10px] bg-profit/20 text-profit dark:text-profit px-1.5 py-0.5 rounded font-mono font-bold">
             {promo.days_left > 365 ? 'مفتوح ♾️' : `${promo.days_left} يوم`}
           </span>
         ) : (
-          <span className="text-[10px] bg-rose-500/20 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded font-sans font-bold">
+          <span className="text-[10px] bg-loss/20 text-loss dark:text-loss px-1.5 py-0.5 rounded font-sans font-bold">
             منتهي
           </span>
         )}
@@ -535,10 +535,10 @@ export function UsersManagement() {
   const getTrialBadge = (trialStatus: any) => {
     if (!trialStatus) return null;
     if (trialStatus.isInTrial) {
-      return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 gap-1">فترة تجريبية ({trialStatus.daysLeft} يوم)</Badge>;
+      return <Badge className="bg-primary/10 text-primary border-primary gap-1">فترة تجريبية ({trialStatus.daysLeft} يوم)</Badge>;
     }
     if (trialStatus.isInWarning) {
-      return <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 gap-1"><Clock className="w-3 h-3" />تنبيه ({trialStatus.warningDaysLeft} يوم)</Badge>;
+      return <Badge className="bg-warning/10 text-warning border-warning gap-1"><Clock className="w-3 h-3" />تنبيه ({trialStatus.warningDaysLeft} يوم)</Badge>;
     }
     if (trialStatus.isExpiredAndDeletionPending) {
       return <Badge variant="destructive" className="gap-1"><Trash2 className="w-3 h-3" />بانتظار الحذف</Badge>;
@@ -719,7 +719,7 @@ export function UsersManagement() {
               <AlertDialogDescription>
                 سيتم حذف جميع المستخدمين المجانيين الذين انتهت فترة تجربتهم (30 يوم + 7 يوم تحذير) ولم يشتركوا.
                 <br />
-                <span className="text-red-500 text-sm">هذا الإجراء سيحذف بياناتهم نهائياً من كل قواعد البيانات ولا يمكن التراجع عنه.</span>
+                <span className="text-loss text-sm">هذا الإجراء سيحذف بياناتهم نهائياً من كل قواعد البيانات ولا يمكن التراجع عنه.</span>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -730,7 +730,7 @@ export function UsersManagement() {
               <AlertDialogAction
                 onClick={() => handleCleanupExpired(false)}
                 disabled={isCleaningUp}
-                className="bg-red-500 hover:bg-red-600"
+                className="bg-loss hover:bg-loss"
               >
                 {isCleaningUp ? (
                   <>
@@ -831,7 +831,7 @@ export function UsersManagement() {
                 <strong className="font-mono text-foreground font-bold">
                   {promoStats?.totalWithPromo ?? users.filter(u => !!u.promoCode).length}
                 </strong>
-                <span className="text-[11px] text-emerald-400 font-normal">
+                <span className="text-[11px] text-profit font-normal">
                   (نشط: {promoStats?.activePromoUsers ?? users.filter(u => u.promoCode?.is_active).length})
                 </span>
               </Badge>
@@ -889,7 +889,7 @@ export function UsersManagement() {
                           {user.email}
                         </span>
                         {user.emailVerified && (
-                          <span className="text-emerald-500 flex items-center gap-1">
+                          <span className="text-profit flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
                             موثق
                           </span>
@@ -910,7 +910,7 @@ export function UsersManagement() {
                           </span>
                           <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-blue-500 rounded-full"
+                              className="h-full bg-primary rounded-full"
                               style={{ width: `${Math.min(100, (user.usage.pageViews / Math.max(1, ...filteredUsers.filter(u => u.usage).map(u => u.usage!.pageViews))) * 100)}%` }}
                             />
                           </div>
@@ -920,7 +920,7 @@ export function UsersManagement() {
                           </span>
                           <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-amber-500 rounded-full"
+                              className="h-full bg-warning rounded-full"
                               style={{ width: `${Math.min(100, (user.usage.featureUses / Math.max(1, ...filteredUsers.filter(u => u.usage).map(u => u.usage!.featureUses))) * 100)}%` }}
                             />
                           </div>
@@ -986,7 +986,7 @@ export function UsersManagement() {
                         </DropdownMenuItem>
 
                         {user.promoCode && (
-                          <DropdownMenuItem onClick={() => handleRevokePromo(user.id)} className="text-rose-500">
+                          <DropdownMenuItem onClick={() => handleRevokePromo(user.id)} className="text-loss">
                             <XCircle className="w-4 h-4 ml-2" />
                             إلغاء البرومو كود
                           </DropdownMenuItem>
@@ -1012,15 +1012,15 @@ export function UsersManagement() {
                         <DropdownMenuLabel>تغيير الحالة</DropdownMenuLabel>
                         
                         <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, 'active')}>
-                          <CheckCircle className="w-4 h-4 ml-2 text-emerald-500" />
+                          <CheckCircle className="w-4 h-4 ml-2 text-profit" />
                           تفعيل
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, 'inactive')}>
-                          <XCircle className="w-4 h-4 ml-2 text-amber-500" />
+                          <XCircle className="w-4 h-4 ml-2 text-warning" />
                           تعطيل
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, 'suspended')}>
-                          <XCircle className="w-4 h-4 ml-2 text-red-500" />
+                          <XCircle className="w-4 h-4 ml-2 text-loss" />
                           إيقاف
                         </DropdownMenuItem>
                         
@@ -1031,7 +1031,7 @@ export function UsersManagement() {
                             setUserToDelete(user);
                             setShowDeleteDialog(true);
                           }}
-                          className="text-red-500 focus:text-red-500"
+                          className="text-loss focus:text-loss"
                         >
                           <Trash2 className="w-4 h-4 ml-2" />
                           حذف المستخدم
@@ -1074,7 +1074,7 @@ export function UsersManagement() {
                       <Mail className="w-4 h-4 text-muted-foreground" />
                       {selectedUser.email}
                       {selectedUser.emailVerified && (
-                        <Badge variant="outline" className="text-emerald-500 text-xs">
+                        <Badge variant="outline" className="text-profit text-xs">
                           موثق
                         </Badge>
                       )}
@@ -1114,7 +1114,7 @@ export function UsersManagement() {
                       بيانات كود الخصم والترقية (Promo Code)
                     </h4>
                     {selectedUser.promoCode ? (
-                      <Badge className={selectedUser.promoCode.is_active ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" : "bg-rose-500/20 text-rose-400 border-rose-500/40"}>
+                      <Badge className={selectedUser.promoCode.is_active ? "bg-profit/20 text-profit border-profit/40" : "bg-loss/20 text-loss border-loss/40"}>
                         {selectedUser.promoCode.is_active ? `نشط (متبقي ${selectedUser.promoCode.days_left} يوم)` : 'منتهي الصلاحية'}
                       </Badge>
                     ) : (
@@ -1134,7 +1134,7 @@ export function UsersManagement() {
                             onClick={() => copyToClipboard(selectedUser.promoCode!.code)}
                             className="h-6 w-6 p-0"
                           >
-                            {copiedCode === selectedUser.promoCode.code ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                            {copiedCode === selectedUser.promoCode.code ? <Check className="w-3 h-3 text-profit" /> : <Copy className="w-3 h-3" />}
                           </Button>
                         </div>
                       </div>
@@ -1174,7 +1174,7 @@ export function UsersManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-xs h-7 text-rose-400 border-rose-500/40 hover:bg-rose-500/10"
+                          className="text-xs h-7 text-loss border-loss/40 hover:bg-loss/10"
                           onClick={() => handleRevokePromo(selectedUser.id)}
                         >
                           إلغاء
@@ -1206,19 +1206,19 @@ export function UsersManagement() {
                   </h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-emerald-500">
+                      <div className="text-2xl font-bold text-profit">
                         {selectedUser._count?.watchlist ?? 0}
                       </div>
                       <div className="text-xs text-muted-foreground">قائمة المراقبة</div>
                     </div>
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-500">
+                      <div className="text-2xl font-bold text-primary">
                         {selectedUser._count?.portfolio ?? 0}
                       </div>
                       <div className="text-xs text-muted-foreground">محفظة</div>
                     </div>
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-2xl font-bold text-amber-500">
+                      <div className="text-2xl font-bold text-warning">
                         {selectedUser._count?.alerts ?? 0}
                       </div>
                       <div className="text-xs text-muted-foreground">تنبيهات</div>
@@ -1244,19 +1244,19 @@ export function UsersManagement() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center p-3 bg-muted/50 rounded-lg">
-                          <div className="text-2xl font-bold text-blue-500">
+                          <div className="text-2xl font-bold text-primary">
                             {selectedUser.usage.pageViews}
                           </div>
                           <div className="text-xs text-muted-foreground">مشاهدات</div>
                         </div>
                         <div className="text-center p-3 bg-muted/50 rounded-lg">
-                          <div className="text-2xl font-bold text-amber-500">
+                          <div className="text-2xl font-bold text-warning">
                             {selectedUser.usage.featureUses}
                           </div>
                           <div className="text-xs text-muted-foreground">استخدام ميزات</div>
                         </div>
                         <div className="text-center p-3 bg-muted/50 rounded-lg">
-                          <div className="text-2xl font-bold text-red-500">
+                          <div className="text-2xl font-bold text-loss">
                             {selectedUser.usage.errors}
                           </div>
                           <div className="text-xs text-muted-foreground">أخطاء</div>
@@ -1291,7 +1291,7 @@ export function UsersManagement() {
                                        <span className="text-xs text-muted-foreground">{section.count}</span>
                                      </div>
                                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                       <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                                       <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
                                      </div>
                                    </div>
                                  );
@@ -1315,7 +1315,7 @@ export function UsersManagement() {
                                        <span className="text-xs text-muted-foreground">{feature.count}</span>
                                      </div>
                                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                       <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
+                                       <div className="h-full bg-warning rounded-full" style={{ width: `${pct}%` }} />
                                      </div>
                                    </div>
                                  );
@@ -1394,7 +1394,7 @@ export function UsersManagement() {
             <AlertDialogDescription>
               هل أنت متأكد من حذف المستخدم "{userToDelete?.username}"؟
               <br />
-              <span className="text-red-500 text-sm">هذا الإجراء لا يمكن التراجع عنه.</span>
+              <span className="text-loss text-sm">هذا الإجراء لا يمكن التراجع عنه.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1402,7 +1402,7 @@ export function UsersManagement() {
             <AlertDialogAction
               onClick={handleDeleteUser}
               disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-loss hover:bg-loss"
             >
               {isDeleting ? (
                 <>

@@ -87,14 +87,14 @@ export function SettingsView() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <User className="w-5 h-5 text-profit dark:text-profit" />
               <CardTitle className="text-base">الملف الشخصي</CardTitle>
             </div>
             <CardDescription>معلومات حسابك الأساسية</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-profit to-whale flex items-center justify-center flex-shrink-0">
                 <span className="text-xl font-bold text-white">
                   {user?.username?.charAt(0).toUpperCase() || 'م'}
                 </span>
@@ -116,10 +116,10 @@ export function SettingsView() {
         </Card>
 
         {/* Subscription Section */}
-        <Card className="border-emerald-200 dark:border-emerald-800">
+        <Card className="border-profit dark:border-profit">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Crown className="w-5 h-5 text-profit dark:text-profit" />
               <CardTitle className="text-base">الاشتراك والباقات</CardTitle>
             </div>
             <CardDescription>إدارة اشتراكك والترقية لباقات أعلى</CardDescription>
@@ -134,7 +134,7 @@ export function SettingsView() {
               </div>
               <Button
                 onClick={() => setShowSubscription(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                className="bg-profit hover:bg-profit text-white gap-2"
               >
                 <Crown className="w-4 h-4" />
                 عرض الباقات
@@ -150,7 +150,7 @@ export function SettingsView() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Globe className="w-5 h-5 text-profit dark:text-profit" />
               <CardTitle className="text-base">اللغة</CardTitle>
             </div>
             <CardDescription>اختر لغة واجهة التطبيق</CardDescription>
@@ -175,7 +175,7 @@ export function SettingsView() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Download className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Download className="w-5 h-5 text-profit dark:text-profit" />
               <CardTitle className="text-base">إدارة البيانات</CardTitle>
             </div>
             <CardDescription>تصدير بيانات الأسهم والتحليلات (للاشتراكات المدفوعة)</CardDescription>
@@ -189,7 +189,7 @@ export function SettingsView() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Info className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Info className="w-5 h-5 text-profit dark:text-profit" />
               <CardTitle className="text-base">حول التطبيق</CardTitle>
             </div>
           </CardHeader>
@@ -221,7 +221,7 @@ export function SettingsView() {
         {/* Save Button */}
         <Button
           onClick={handleSave}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-5 text-sm font-semibold"
+          className="w-full bg-profit hover:bg-profit text-white py-5 text-sm font-semibold"
         >
           <Save className="w-4 h-4 ml-2" />
           حفظ الإعدادات

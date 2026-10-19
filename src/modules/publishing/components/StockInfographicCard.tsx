@@ -357,16 +357,16 @@ function TechnicalGauge({ score, label, buy, neutral, sell }: GaugeProps) {
       {/* signal counts table */}
       <div className="mt-3 w-full grid grid-cols-3 gap-1.5 text-center">
         <div className="rounded-md py-1.5 px-1" style={{ background: '#10b9811a', border: '1px solid #10b98155' }}>
-          <div className="text-[10px] text-emerald-400">شراء</div>
-          <div className="text-base font-bold text-emerald-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{buy}</div>
+          <div className="text-[10px] text-profit">شراء</div>
+          <div className="text-base font-bold text-profit" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{buy}</div>
         </div>
         <div className="rounded-md py-1.5 px-1" style={{ background: '#eab3081a', border: '1px solid #eab30855' }}>
           <div className="text-[10px]" style={{ color: COLORS.gold }}>محايد</div>
           <div className="text-base font-bold" style={{ color: COLORS.gold, fontFamily: 'JetBrains Mono, monospace' }}>{neutral}</div>
         </div>
         <div className="rounded-md py-1.5 px-1" style={{ background: '#ef44441a', border: '1px solid #ef444455' }}>
-          <div className="text-[10px] text-rose-400">بيع</div>
-          <div className="text-base font-bold text-rose-400" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{sell}</div>
+          <div className="text-[10px] text-loss">بيع</div>
+          <div className="text-base font-bold text-loss" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{sell}</div>
         </div>
       </div>
     </div>

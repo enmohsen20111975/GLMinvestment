@@ -18,8 +18,8 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
       className={cn(
         'flex items-center gap-2 px-2.5 py-2 rounded-lg transition-colors duration-150',
         isGainer
-          ? 'hover:bg-emerald-50/60 dark:hover:bg-emerald-950/20'
-          : 'hover:bg-red-50/60 dark:hover:bg-red-950/20'
+          ? 'hover:bg-profit/60 dark:hover:bg-profit/20'
+          : 'hover:bg-loss/60 dark:hover:bg-loss/20'
       )}
     >
       {/* Icon */}
@@ -27,14 +27,14 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
         className={cn(
           'flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center',
           isGainer
-            ? 'bg-emerald-100 dark:bg-emerald-900/40'
-            : 'bg-red-100 dark:bg-red-900/40'
+            ? 'bg-profit dark:bg-profit/40'
+            : 'bg-loss dark:bg-loss/40'
         )}
       >
         {isGainer ? (
-          <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+          <ArrowUpRight className="w-3.5 h-3.5 text-profit dark:text-profit" />
         ) : (
-          <ArrowDownRight className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+          <ArrowDownRight className="w-3.5 h-3.5 text-loss dark:text-loss" />
         )}
       </div>
 
@@ -59,8 +59,8 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
           className={cn(
             'text-[10px] font-bold tabular-nums flex items-center gap-0.5 justify-end',
             isGainer
-              ? 'text-emerald-500 dark:text-emerald-400'
-              : 'text-red-600 dark:text-red-400'
+              ? 'text-profit dark:text-profit'
+              : 'text-loss dark:text-loss'
           )}
         >
           {isGainer ? (
@@ -132,14 +132,14 @@ export function TopMovers() {
           <TabsList className="w-full mb-1.5">
             <TabsTrigger
               value="gainers"
-              className="flex-1 gap-1.5 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-500 dark:data-[state=active]:bg-emerald-900/40 dark:data-[state=active]:text-emerald-300"
+              className="flex-1 gap-1.5 data-[state=active]:bg-profit data-[state=active]:text-profit dark:data-[state=active]:bg-profit/40 dark:data-[state=active]:text-profit"
             >
               <TrendingUp className="w-3.5 h-3.5" />
               المرتفعة
             </TabsTrigger>
             <TabsTrigger
               value="losers"
-              className="flex-1 gap-1.5 data-[state=active]:bg-red-100 data-[state=active]:text-red-700 dark:data-[state=active]:bg-red-900/40 dark:data-[state=active]:text-red-300"
+              className="flex-1 gap-1.5 data-[state=active]:bg-loss data-[state=active]:text-loss dark:data-[state=active]:bg-loss/40 dark:data-[state=active]:text-loss"
             >
               <TrendingDown className="w-3.5 h-3.5" />
               المنخفضة

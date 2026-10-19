@@ -79,7 +79,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             aria-label={resolvedTheme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
           >
             {resolvedTheme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
+              <Sun className="w-4 h-4 text-warning" />
             ) : (
               <Moon className="w-4 h-4" />
             )}
@@ -217,7 +217,7 @@ function HeaderNotificationBell() {
     >
       <Bell className="w-4 h-4" />
       {unreadCount > 0 && (
-        <Badge className="absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-red-500 text-white border-0 animate-pulse">
+        <Badge className="absolute -top-0.5 -left-0.5 h-4 min-w-4 px-1 text-[9px] bg-loss text-white border-0 animate-pulse">
           {unreadCount > 99 ? '99+' : unreadCount}
         </Badge>
       )}

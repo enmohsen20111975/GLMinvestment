@@ -1233,8 +1233,8 @@ export function DatabaseManagerFull() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
-                <DatabaseIcon className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
+              <div className="w-12 h-12 rounded-xl bg-profit dark:bg-profit/30 flex items-center justify-center">
+                <DatabaseIcon className="w-6 h-6 text-profit dark:text-profit" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">مدير قواعد البيانات</h2>
@@ -1252,10 +1252,10 @@ export function DatabaseManagerFull() {
                     className={cn(
                       'text-[10px] gap-1 cursor-default',
                       integritySummary.corrupt > 0
-                        ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border-red-300'
+                        ? 'bg-loss dark:bg-loss/20 text-loss dark:text-loss border-loss'
                         : integritySummary.unknown > 0
-                          ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-300'
-                          : 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'
+                          ? 'bg-warning dark:bg-warning/20 text-warning dark:text-warning border-warning'
+                          : 'bg-profit dark:bg-profit/20 text-profit dark:text-profit'
                     )}
                   >
                     <ShieldCheck className="w-3 h-3" />
@@ -1266,21 +1266,21 @@ export function DatabaseManagerFull() {
                 <TooltipContent>
                   <div className="text-xs space-y-1">
                     <div className="flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" /> سليمة: {integritySummary.ok}
+                      <CheckCircle2 className="w-3 h-3 text-profit" /> سليمة: {integritySummary.ok}
                     </div>
                     {integritySummary.corrupt > 0 && (
                       <div className="flex items-center gap-1">
-                        <XCircle className="w-3 h-3 text-red-500" /> تالفة: {integritySummary.corrupt}
+                        <XCircle className="w-3 h-3 text-loss" /> تالفة: {integritySummary.corrupt}
                       </div>
                     )}
                     {integritySummary.unknown > 0 && (
                       <div className="flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3 text-amber-500" /> غير معروف: {integritySummary.unknown}
+                        <AlertCircle className="w-3 h-3 text-warning" /> غير معروف: {integritySummary.unknown}
                       </div>
                     )}
                     {walDbCount > 0 && (
                       <div className="flex items-center gap-1">
-                        <DatabaseBackup className="w-3 h-3 text-amber-500" /> WAL نشط: {walDbCount}
+                        <DatabaseBackup className="w-3 h-3 text-warning" /> WAL نشط: {walDbCount}
                       </div>
                     )}
                   </div>
@@ -1301,7 +1301,7 @@ export function DatabaseManagerFull() {
               size="sm"
               onClick={handleCheckpointAll}
               disabled={bulkLoading === 'checkpoint'}
-              className="text-amber-700 border-amber-300 hover:bg-amber-50"
+              className="text-warning border-warning hover:bg-warning"
             >
               {bulkLoading === 'checkpoint' ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1368,12 +1368,12 @@ export function DatabaseManagerFull() {
               <AlertTitle>نتيجة الاستيراد</AlertTitle>
               <AlertDescription>
                 <div className="text-sm mt-1 space-y-1">
-                  <p className="text-emerald-600 dark:text-emerald-400">
+                  <p className="text-profit dark:text-profit">
                     تم الاستيراد بنجاح: {importResult.restored.length} قواعد بيانات
                     {importResult.restored.length > 0 && ` (${importResult.restored.join(', ')})`}
                   </p>
                   {importResult.failed.length > 0 && (
-                    <p className="text-red-600 dark:text-red-400">
+                    <p className="text-loss dark:text-loss">
                       فشل: {importResult.failed.length} ({importResult.failed.join(', ')})
                     </p>
                   )}
@@ -1628,7 +1628,7 @@ export function DatabaseManagerFull() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <ShieldCheck className="w-4 h-4 text-profit" />
                     استعادة قواعد البيانات التالفة
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -1657,7 +1657,7 @@ export function DatabaseManagerFull() {
                       size="sm"
                       onClick={handleRecoverAll}
                       disabled={recoverLoading === 'all'}
-                      className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                      className="text-profit border-profit hover:bg-profit"
                     >
                       {recoverLoading === 'all' ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -1675,7 +1675,7 @@ export function DatabaseManagerFull() {
                       <AlertDescription>
                         <div className="text-sm mt-1 space-y-1">
                           {recoverResult.result?.recovered && (
-                            <p className="text-emerald-600 dark:text-emerald-400">
+                            <p className="text-profit dark:text-profit">
                               ✅ تم الاستعادة بنجاح {recoverResult.result.restored_from ? `من: ${recoverResult.result.restored_from}` : ''}
                             </p>
                           )}
@@ -1688,7 +1688,7 @@ export function DatabaseManagerFull() {
                             <p className="text-sm">{recoverResult.result.message}</p>
                           )}
                           {recoverResult.result?.error && (
-                            <p className="text-red-600 dark:text-red-400">
+                            <p className="text-loss dark:text-loss">
                               ❌ {recoverResult.result.error}
                             </p>
                           )}
@@ -1741,7 +1741,7 @@ export function DatabaseManagerFull() {
                     {/* Purge and align symbols */}
                     <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-slate-50/50">
                       <div>
-                        <div className="text-sm font-semibold text-teal-700 flex items-center gap-1.5">
+                        <div className="text-sm font-semibold text-whale flex items-center gap-1.5">
                           <ArrowRightLeft className="w-4 h-4" />
                           تنظيف الرموز ومحاذاة الأسماء
                         </div>
@@ -1753,7 +1753,7 @@ export function DatabaseManagerFull() {
                         onClick={() => handleAdvancedOperation('cleanup-symbols', 'تنظيف الرموز ومحاذاة الأسماء')}
                         disabled={advancedLoading !== null}
                         size="sm"
-                        className="bg-teal-600 hover:bg-teal-700 text-white w-full"
+                        className="bg-whale hover:bg-whale text-white w-full"
                       >
                         {advancedLoading === 'cleanup-symbols' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -1767,7 +1767,7 @@ export function DatabaseManagerFull() {
                     {/* Import EGX30 History */}
                     <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-slate-50/50">
                       <div>
-                        <div className="text-sm font-semibold text-blue-700 flex items-center gap-1.5">
+                        <div className="text-sm font-semibold text-primary flex items-center gap-1.5">
                           <History className="w-4 h-4" />
                           استيراد تاريخ مؤشر EGX30
                         </div>
@@ -1779,7 +1779,7 @@ export function DatabaseManagerFull() {
                         onClick={() => handleAdvancedOperation('import-egx30', 'استيراد وتحديث تاريخ EGX30')}
                         disabled={advancedLoading !== null}
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                        className="bg-primary hover:bg-primary text-white w-full"
                       >
                         {advancedLoading === 'import-egx30' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -1791,9 +1791,9 @@ export function DatabaseManagerFull() {
                     </div>
                   </div>
 
-                  <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-emerald-50/50 md:col-span-3 border-emerald-200">
+                  <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-profit/50 md:col-span-3 border-profit">
                     <div>
-                      <div className="text-sm font-semibold text-emerald-700 flex items-center gap-1.5">
+                      <div className="text-sm font-semibold text-profit flex items-center gap-1.5">
                         <RefreshCw className="w-4 h-4" />
                         إصلاح شامل لجميع قواعد البيانات
                       </div>
@@ -1805,7 +1805,7 @@ export function DatabaseManagerFull() {
                       onClick={() => handleAdvancedOperation('repair-all', 'إصلاح شامل لجميع قواعد البيانات')}
                       disabled={advancedLoading !== null}
                       size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                      className="bg-profit hover:bg-profit text-white w-full"
                     >
                       {advancedLoading === 'repair-all' ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -1908,9 +1908,9 @@ function DbCard({
     <button
       onClick={onSelect}
       className={cn(
-        'w-full text-right p-3 rounded-lg border transition-all hover:border-emerald-400',
+        'w-full text-right p-3 rounded-lg border transition-all hover:border-profit',
         selected
-          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20'
+          ? 'border-profit bg-profit dark:bg-profit/20'
           : 'border-border bg-card'
       )}
     >
@@ -1919,7 +1919,7 @@ function DbCard({
           <HardDrive
             className={cn(
               'w-4 h-4 flex-shrink-0',
-              selected ? 'text-emerald-600' : 'text-muted-foreground'
+              selected ? 'text-profit' : 'text-muted-foreground'
             )}
           />
           <div className="min-w-0">
@@ -1934,7 +1934,7 @@ function DbCard({
       {(db.walPresent || db.shmPresent) && (
         <div className="mt-2 flex items-center gap-1 flex-wrap">
           {db.walPresent && (
-            <Badge variant="outline" className="text-[10px] bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
+            <Badge variant="outline" className="text-[10px] bg-warning dark:bg-warning/20 text-warning dark:text-warning">
               WAL {formatBytes(db.walSizeBytes)}
             </Badge>
           )}
@@ -1952,7 +1952,7 @@ function DbCard({
 function IntegrityBadge({ integrity }: { integrity: 'ok' | 'corrupt' | 'unknown' }) {
   if (integrity === 'ok') {
     return (
-      <Badge variant="outline" className="text-[10px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400">
+      <Badge variant="outline" className="text-[10px] bg-profit dark:bg-profit/20 text-profit dark:text-profit">
         <CheckCircle2 className="w-3 h-3" />
         سليمة
       </Badge>
@@ -2000,7 +2000,7 @@ function OverviewPanel({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DatabaseIcon className="w-5 h-5 text-emerald-600" />
+          <DatabaseIcon className="w-5 h-5 text-profit" />
           {overview.name}
         </CardTitle>
         <CardDescription>المسار: {overview.path}</CardDescription>
@@ -2046,7 +2046,7 @@ function OverviewPanel({
                 </span>
                 <div className="flex gap-1">
                   {overview.walPresent ? (
-                    <Badge variant="outline" className="text-[10px] bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
+                    <Badge variant="outline" className="text-[10px] bg-warning dark:bg-warning/20 text-warning dark:text-warning">
                       WAL {formatBytes(overview.walSizeBytes)}
                     </Badge>
                   ) : (
@@ -2191,7 +2191,7 @@ function TablesPanel(props: TablesPanelProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-amber-600 hover:text-amber-700"
+                className="h-7 w-7 text-warning hover:text-warning"
                 onClick={() => props.onTruncateTable(t.name)}
               >
                 <Eraser className="w-3.5 h-3.5" />
@@ -2278,7 +2278,7 @@ function TablesPanel(props: TablesPanelProps) {
               maxHeight="max-h-72"
               rowClassName={(t) => cn(
                 'cursor-pointer',
-                props.selectedTable === t.name && 'bg-emerald-50 dark:bg-emerald-950/20',
+                props.selectedTable === t.name && 'bg-profit dark:bg-profit/20',
               )}
               onRowClick={(t) => props.onSelectTable(t.name)}
             />
@@ -2293,7 +2293,7 @@ function TablesPanel(props: TablesPanelProps) {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <TableIcon className="w-4 h-4 text-emerald-600" />
+                  <TableIcon className="w-4 h-4 text-profit" />
                   {props.selectedTable}
                 </CardTitle>
                 {props.tableRows && (
@@ -2522,7 +2522,7 @@ function SqlConsolePanel(props: SqlConsolePanelProps) {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Play className="w-4 h-4" />
-              تنفيذ SQL — <span className="font-mono text-emerald-600">{props.dbName}</span>
+              تنفيذ SQL — <span className="font-mono text-profit">{props.dbName}</span>
             </CardTitle>
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 text-xs cursor-pointer">
@@ -2645,9 +2645,9 @@ function SqlConsolePanel(props: SqlConsolePanelProps) {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 {props.result.isWrite ? (
-                  <Zap className="w-4 h-4 text-amber-600" />
+                  <Zap className="w-4 h-4 text-warning" />
                 ) : (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-profit" />
                 )}
                 النتيجة
               </CardTitle>
@@ -2657,7 +2657,7 @@ function SqlConsolePanel(props: SqlConsolePanelProps) {
                   {props.result.durationMs} ms
                 </Badge>
                 {props.result.isWrite ? (
-                  <Badge variant="outline" className="text-[10px] bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
+                  <Badge variant="outline" className="text-[10px] bg-warning dark:bg-warning/20 text-warning dark:text-warning">
                     {props.result.affected.toLocaleString('en-US')} صف متأثر
                   </Badge>
                 ) : (
@@ -2666,7 +2666,7 @@ function SqlConsolePanel(props: SqlConsolePanelProps) {
                       {props.result.rows.length} صف
                     </Badge>
                     {props.result.truncated && (
-                      <Badge variant="outline" className="text-[10px] bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
+                      <Badge variant="outline" className="text-[10px] bg-warning dark:bg-warning/20 text-warning dark:text-warning">
                         تم اقتطاع النتائج ({RESULT_LIMIT} حد أقصى)
                       </Badge>
                     )}
@@ -2759,7 +2759,7 @@ function SqlConsolePanel(props: SqlConsolePanelProps) {
               </div>
             ) : props.result.isWrite ? (
               <div className="py-6 text-center">
-                <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-600 mb-2" />
+                <CheckCircle2 className="w-10 h-10 mx-auto text-profit mb-2" />
                 <p className="text-sm">
                   تم تنفيذ الاستعلام بنجاح —{' '}
                   <strong>{props.result.affected.toLocaleString('en-US')}</strong> صف متأثر.
@@ -2904,7 +2904,7 @@ function BackupsPanel(props: BackupsPanelProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50"
+                          className="h-7 text-warning hover:text-warning border-warning hover:bg-warning"
                           onClick={() => props.onRestore(b.name)}
                         >
                           <Upload className="w-3.5 h-3.5" />
@@ -3008,7 +3008,7 @@ function MaintenancePanel(props: MaintenancePanelProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Activity className="w-4 h-4" />
-            عمليات الصيانة — <span className="font-mono text-emerald-600">{props.dbName}</span>
+            عمليات الصيانة — <span className="font-mono text-profit">{props.dbName}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -3018,7 +3018,7 @@ function MaintenancePanel(props: MaintenancePanelProps) {
                 <op.icon
                   className={cn(
                     'w-5 h-5 flex-shrink-0 mt-0.5',
-                    op.destructive ? 'text-amber-600' : 'text-emerald-600'
+                    op.destructive ? 'text-warning' : 'text-profit'
                   )}
                 />
                 <div className="flex-1">
@@ -3033,7 +3033,7 @@ function MaintenancePanel(props: MaintenancePanelProps) {
                 variant={op.destructive ? 'outline' : 'default'}
                 className={cn(
                   op.destructive &&
-                  'text-amber-700 border-amber-300 hover:bg-amber-50 hover:text-amber-800'
+                  'text-warning border-warning hover:bg-warning hover:text-warning'
                 )}
               >
                 {props.loading === op.key ? (
@@ -3053,7 +3053,7 @@ function MaintenancePanel(props: MaintenancePanelProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               {props.result.success ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-profit" />
               ) : (
                 <XCircle className="w-4 h-4 text-destructive" />
               )}
@@ -3142,7 +3142,7 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
                   className={cn(
                     'border rounded-lg p-4',
                     backup.corruptCount > 0
-                      ? 'border-red-300 bg-red-50/30 dark:bg-red-950/10'
+                      ? 'border-loss bg-loss/30 dark:bg-loss/10'
                       : 'border-border bg-card'
                   )}
                 >
@@ -3154,12 +3154,12 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
                           {backup.dayOfWeek}
                         </Badge>
                         {backup.hasSummary ? (
-                          <Badge variant="outline" className="text-[10px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400">
+                          <Badge variant="outline" className="text-[10px] bg-profit dark:bg-profit/20 text-profit dark:text-profit">
                             <CheckCircle2 className="w-3 h-3" />
                             مُلخّص
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400">
+                          <Badge variant="outline" className="text-[10px] bg-warning dark:bg-warning/20 text-warning dark:text-warning">
                             <AlertCircle className="w-3 h-3" />
                             مفحوص يدوياً
                           </Badge>
@@ -3168,7 +3168,7 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
                       <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
                         <span>{backup.dbCount} قاعدة بيانات</span>
                         <span>{backup.totalSizeHuman}</span>
-                        <span className={cn(backup.corruptCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                        <span className={cn(backup.corruptCount > 0 ? 'text-loss dark:text-loss' : 'text-profit dark:text-profit')}>
                           <CheckCircle2 className="w-3 h-3 inline" /> {backup.okCount} سليمة
                           {backup.corruptCount > 0 && (
                             <>
@@ -3188,8 +3188,8 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
                                   className={cn(
                                     'text-[10px] gap-1 cursor-default',
                                     db.integrity === 'ok'
-                                      ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'
-                                      : 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400'
+                                      ? 'bg-profit dark:bg-profit/20 text-profit dark:text-profit'
+                                      : 'bg-loss dark:bg-loss/20 text-loss dark:text-loss'
                                   )}
                                 >
                                   {db.integrity === 'ok' ? (
@@ -3204,7 +3204,7 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
                                 <div className="text-xs">
                                   <p>{db.name}</p>
                                   <p>{db.sizeHuman}</p>
-                                  <p className={db.integrity === 'ok' ? 'text-emerald-400' : 'text-red-400'}>
+                                  <p className={db.integrity === 'ok' ? 'text-profit' : 'text-loss'}>
                                     {db.integrity === 'ok' ? 'سليمة' : db.integrityMsg || 'تالفة'}
                                   </p>
                                 </div>
@@ -3220,7 +3220,7 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50"
+                            className="h-7 text-warning hover:text-warning border-warning hover:bg-warning"
                             onClick={() => props.onRestore(backup.id)}
                             disabled={backup.corruptCount > 0}
                           >
@@ -3262,12 +3262,12 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
           <AlertTitle>نتيجة الاستعادة</AlertTitle>
           <AlertDescription>
             <div className="text-sm mt-1 space-y-1">
-              <p className="text-emerald-600 dark:text-emerald-400">
+              <p className="text-profit dark:text-profit">
                 تم الاستعادة بنجاح: {props.restoreResult.restored.length} قواعد بيانات
                 {props.restoreResult.restored.length > 0 && ` (${props.restoreResult.restored.join(', ')})`}
               </p>
               {props.restoreResult.failed.length > 0 && (
-                <p className="text-red-600 dark:text-red-400">
+                <p className="text-loss dark:text-loss">
                   فشل: {props.restoreResult.failed.length} ({props.restoreResult.failed.join(', ')})
                 </p>
               )}

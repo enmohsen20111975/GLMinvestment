@@ -221,7 +221,7 @@ export function BacktestTab() {
       {
         label: 'Win Rate',
         value: `${summary!.wr!.toFixed(1)}%`,
-        icon: summary!.wr! >= 50 ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />,
+        icon: summary!.wr! >= 50 ? <TrendingUp className="w-4 h-4 text-profit" /> : <TrendingDown className="w-4 h-4 text-loss" />,
         tone: summary!.wr! >= 50 ? 'success' as const : 'danger' as const,
       },
       {
@@ -233,7 +233,7 @@ export function BacktestTab() {
       {
         label: 'Net Return',
         value: `${summary!.net! > 0 ? '+' : ''}${summary!.net!.toFixed(1)}%`,
-        icon: summary!.net! > 0 ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />,
+        icon: summary!.net! > 0 ? <TrendingUp className="w-4 h-4 text-profit" /> : <TrendingDown className="w-4 h-4 text-loss" />,
         tone: summary!.net! > 0 ? 'success' as const : 'danger' as const,
       },
       {
@@ -245,7 +245,7 @@ export function BacktestTab() {
       {
         label: 'Max Drawdown',
         value: `-${(summary!.max_drawdown ?? 0).toFixed(1)}%`,
-        icon: <TrendingDown className="w-4 h-4 text-red-500" />,
+        icon: <TrendingDown className="w-4 h-4 text-loss" />,
         tone: 'danger' as const,
       },
       {
@@ -269,7 +269,7 @@ export function BacktestTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-emerald-500" />
+            <Activity className="w-5 h-5 text-profit" />
             محرك التوقعات — Backtest (متقدم)
           </CardTitle>
         </CardHeader>
@@ -414,7 +414,7 @@ export function BacktestTab() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Database className="w-4 h-4 text-emerald-500" />
+                  <Database className="w-4 h-4 text-profit" />
                   آخر {trades.length} صفقة (تفصيلي)
                 </CardTitle>
               </CardHeader>
@@ -444,11 +444,11 @@ export function BacktestTab() {
                           </td>
                           <td className="p-2 text-xs">{t.signal || '—'}</td>
                           <td className="p-2 font-mono text-xs">{t.entry?.toFixed?.(2) ?? '—'}</td>
-                          <td className="p-2 font-mono text-xs text-emerald-600">{t.target?.toFixed?.(2) ?? '—'}</td>
-                          <td className="p-2 font-mono text-xs text-red-600">{t.stop?.toFixed?.(2) ?? '—'}</td>
+                          <td className="p-2 font-mono text-xs text-profit">{t.target?.toFixed?.(2) ?? '—'}</td>
+                          <td className="p-2 font-mono text-xs text-loss">{t.stop?.toFixed?.(2) ?? '—'}</td>
                           <td className={cn(
                             'p-2 font-mono text-xs font-bold',
-                            (t.actual_return ?? 0) > 0 ? 'text-emerald-600' : (t.actual_return ?? 0) < 0 ? 'text-red-600' : '',
+                            (t.actual_return ?? 0) > 0 ? 'text-profit' : (t.actual_return ?? 0) < 0 ? 'text-loss' : '',
                           )}>
                             {(t.actual_return ?? 0) > 0 ? '+' : ''}{(t.actual_return ?? 0).toFixed(2)}%
                           </td>
@@ -513,7 +513,7 @@ export function BacktestTab() {
                           <td className="p-2">
                             <Badge variant={(m.wr ?? 0) >= 50 ? 'default' : 'destructive'}>{(m.wr ?? 0).toFixed(0)}%</Badge>
                           </td>
-                          <td className={`p-2 font-mono ${(m.net ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          <td className={`p-2 font-mono ${(m.net ?? 0) > 0 ? 'text-profit' : 'text-loss'}`}>
                             {(m.net ?? 0) > 0 ? '+' : ''}{(m.net ?? 0).toFixed(1)}%
                           </td>
                         </tr>
@@ -530,7 +530,7 @@ export function BacktestTab() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" />
+                  <Zap className="w-4 h-4 text-warning" />
                   الأسهم الانفجارية والقيادية المُصطادة
                 </CardTitle>
               </CardHeader>
@@ -553,7 +553,7 @@ export function BacktestTab() {
                           <td className="p-2">
                             <Badge variant={(t.wr ?? 0) >= 50 ? 'default' : 'destructive'}>{(t.wr ?? 0).toFixed(0)}%</Badge>
                           </td>
-                          <td className={`p-2 font-mono ${(t.net ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          <td className={`p-2 font-mono ${(t.net ?? 0) > 0 ? 'text-profit' : 'text-loss'}`}>
                             {(t.net ?? 0) > 0 ? '+' : ''}{(t.net ?? 0).toFixed(1)}%
                           </td>
                         </tr>
@@ -590,7 +590,7 @@ export function BacktestTab() {
                           <td className="p-2">
                             <Badge variant={(t.wr ?? 0) >= 50 ? 'default' : 'destructive'}>{(t.wr ?? 0).toFixed(0)}%</Badge>
                           </td>
-                          <td className={`p-2 font-mono ${(t.net ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          <td className={`p-2 font-mono ${(t.net ?? 0) > 0 ? 'text-profit' : 'text-loss'}`}>
                             {(t.net ?? 0) > 0 ? '+' : ''}{(t.net ?? 0).toFixed(1)}%
                           </td>
                         </tr>
@@ -616,7 +616,7 @@ export function BacktestTab() {
 function StatCard({
   label, value, icon, tone,
 }: { label: string; value: string; icon?: React.ReactNode; tone?: 'success' | 'danger' | 'neutral' }) {
-  const toneClass = tone === 'success' ? 'text-emerald-600' : tone === 'danger' ? 'text-red-600' : '';
+  const toneClass = tone === 'success' ? 'text-profit' : tone === 'danger' ? 'text-loss' : '';
   return (
     <Card>
       <CardContent className="p-3">
@@ -640,8 +640,8 @@ function OosCard({ title, stats }: { title: string; stats: OutOfSampleStats }) {
       </div>
       <div className="flex gap-3 text-sm">
         <span>WR: <strong>{(stats.wr ?? 0).toFixed(1)}%</strong></span>
-        <span>PF: <strong className={tone === 'success' ? 'text-emerald-600' : tone === 'danger' ? 'text-red-600' : ''}>{(stats.pf ?? 0).toFixed(2)}</strong></span>
-        <span className={stats.net > 0 ? 'text-emerald-600' : 'text-red-600'}>
+        <span>PF: <strong className={tone === 'success' ? 'text-profit' : tone === 'danger' ? 'text-loss' : ''}>{(stats.pf ?? 0).toFixed(2)}</strong></span>
+        <span className={stats.net > 0 ? 'text-profit' : 'text-loss'}>
           Net: {stats.net > 0 ? '+' : ''}{(stats.net ?? 0).toFixed(1)}%
         </span>
       </div>

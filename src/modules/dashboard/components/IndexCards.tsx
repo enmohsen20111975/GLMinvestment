@@ -20,13 +20,13 @@ import type { MarketIndex } from '@/types';
 // Per-index accent palette (overrides market defaults when symbol matches)
 const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: string }> = {
   // EGX
-  EGX30:    { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-500 dark:text-emerald-400' },
-  EGX70:    { accent: 'bg-amber-500',   ring: 'ring-amber-500/20',   text: 'text-amber-600 dark:text-amber-400' },
-  EGX100:   { accent: 'bg-teal-500',    ring: 'ring-teal-500/20',    text: 'text-teal-600 dark:text-teal-400' },
+  EGX30:    { accent: 'bg-profit', ring: 'ring-profit/20', text: 'text-profit dark:text-profit' },
+  EGX70:    { accent: 'bg-warning',   ring: 'ring-warning/20',   text: 'text-warning dark:text-warning' },
+  EGX100:   { accent: 'bg-whale',    ring: 'ring-whale/20',    text: 'text-whale dark:text-whale' },
   EGX50:    { accent: 'bg-cyan-500',    ring: 'ring-cyan-500/20',    text: 'text-cyan-600 dark:text-cyan-400' },
-  EGX33:    { accent: 'bg-rose-500',    ring: 'ring-rose-500/20',    text: 'text-rose-600 dark:text-rose-400' },
+  EGX33:    { accent: 'bg-loss',    ring: 'ring-loss/20',    text: 'text-loss dark:text-loss' },
   // US
-  '^GSPC':  { accent: 'bg-blue-500',    ring: 'ring-blue-500/20',    text: 'text-blue-600 dark:text-blue-400' },
+  '^GSPC':  { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-primary' },
   '^IXIC':  { accent: 'bg-violet-500',  ring: 'ring-violet-500/20',  text: 'text-violet-600 dark:text-violet-400' },
   '^DJI':   { accent: 'bg-indigo-500',  ring: 'ring-indigo-500/20',  text: 'text-indigo-600 dark:text-indigo-400' },
   // CRYPTO
@@ -34,7 +34,7 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
   TOTAL_MCAP:     { accent: 'bg-purple-500', ring: 'ring-purple-500/20', text: 'text-purple-600 dark:text-purple-400' },
   FNG:            { accent: 'bg-pink-500',   ring: 'ring-pink-500/20',   text: 'text-pink-600 dark:text-pink-400' },
   // TADAWUL
-  '^TASI.SR':       { accent: 'bg-green-600',   ring: 'ring-green-500/20',   text: 'text-green-600 dark:text-green-400' },
+  '^TASI.SR':       { accent: 'bg-success',   ring: 'ring-success/20',   text: 'text-success dark:text-success' },
   TADAWUL_COMPOSITE: { accent: 'bg-lime-600',    ring: 'ring-lime-500/20',    text: 'text-lime-600 dark:text-lime-400' },
   // KSE / QSE composites
   KSE_COMPOSITE: { accent: 'bg-sky-600',     ring: 'ring-sky-500/20',     text: 'text-sky-600 dark:text-sky-400' },
@@ -44,13 +44,13 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
 // Per-market fallback palette (cycled for multi-index markets)
 const MARKET_PALETTE: Record<MarketType, Array<{ accent: string; ring: string; text: string }>> = {
   EGX: [
-    { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-500 dark:text-emerald-400' },
-    { accent: 'bg-amber-500',   ring: 'ring-amber-500/20',   text: 'text-amber-600 dark:text-amber-400' },
-    { accent: 'bg-teal-500',    ring: 'ring-teal-500/20',    text: 'text-teal-600 dark:text-teal-400' },
+    { accent: 'bg-profit', ring: 'ring-profit/20', text: 'text-profit dark:text-profit' },
+    { accent: 'bg-warning',   ring: 'ring-warning/20',   text: 'text-warning dark:text-warning' },
+    { accent: 'bg-whale',    ring: 'ring-whale/20',    text: 'text-whale dark:text-whale' },
     { accent: 'bg-cyan-500',    ring: 'ring-cyan-500/20',    text: 'text-cyan-600 dark:text-cyan-400' },
   ],
   US: [
-    { accent: 'bg-blue-500',    ring: 'ring-blue-500/20',    text: 'text-blue-600 dark:text-blue-400' },
+    { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-primary' },
     { accent: 'bg-violet-500',  ring: 'ring-violet-500/20',  text: 'text-violet-600 dark:text-violet-400' },
     { accent: 'bg-indigo-500',  ring: 'ring-indigo-500/20',  text: 'text-indigo-600 dark:text-indigo-400' },
   ],
@@ -60,7 +60,7 @@ const MARKET_PALETTE: Record<MarketType, Array<{ accent: string; ring: string; t
     { accent: 'bg-pink-500',   ring: 'ring-pink-500/20',   text: 'text-pink-600 dark:text-pink-400' },
   ],
   TADAWUL: [
-    { accent: 'bg-green-600', ring: 'ring-green-500/20', text: 'text-green-600 dark:text-green-400' },
+    { accent: 'bg-success', ring: 'ring-success/20', text: 'text-success dark:text-success' },
     { accent: 'bg-lime-600',  ring: 'ring-lime-500/20',  text: 'text-lime-600 dark:text-lime-400' },
   ],
   KSE: [
@@ -97,15 +97,15 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
             'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide',
             colors.ring,
             isPositive
-              ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300'
-              : 'bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300'
+              ? 'bg-profit text-profit dark:bg-profit/60 dark:text-profit'
+              : 'bg-loss text-loss dark:bg-loss/60 dark:text-loss'
           )}>
             {index.symbol}
           </span>
           {isPositive ? (
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+            <TrendingUp className="w-3.5 h-3.5 text-profit" />
           ) : (
-            <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+            <TrendingDown className="w-3.5 h-3.5 text-loss" />
           )}
         </div>
 
@@ -127,8 +127,8 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
           <span className={cn(
             'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums',
             isPositive
-              ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/50 dark:text-emerald-300'
-              : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+              ? 'bg-profit text-profit dark:bg-profit/50 dark:text-profit'
+              : 'bg-loss text-loss dark:bg-loss/50 dark:text-loss'
           )}>
             {isPositive ? '+' : ''}
             {safeNum(index.change_percent).toFixed(2)}%
@@ -136,8 +136,8 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
           <span className={cn(
             'text-[11px] font-medium tabular-nums',
             isPositive
-              ? 'text-emerald-500 dark:text-emerald-400'
-              : 'text-red-600 dark:text-red-400'
+              ? 'text-profit dark:text-profit'
+              : 'text-loss dark:text-loss'
           )}>
             {isPositive ? '+' : ''}
             {safeNum(index.change).toFixed(2)}

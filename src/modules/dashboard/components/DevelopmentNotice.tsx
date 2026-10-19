@@ -17,14 +17,14 @@ export function DevelopmentNotice() {
 
   return (
     <Alert 
-      className="mb-3 border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800"
+      className="mb-3 border-warning bg-warning dark:bg-warning/40 dark:border-warning"
       dir="rtl"
     >
-      <Construction className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-      <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm">
+      <Construction className="h-4 w-4 text-warning dark:text-warning" />
+      <AlertDescription className="text-warning dark:text-warning text-sm">
         <span className="font-semibold">تحت التطوير:</span>
         {' '}بيانات هذا السوق قد تكون غير مكتملة. نعمل على تحديث البيانات من مصادر متعددة.
-        <span className="block mt-1 text-xs text-amber-600 dark:text-amber-400">
+        <span className="block mt-1 text-xs text-warning dark:text-warning">
           الأسعار والبيانات التاريخية قد لا تكون متاحة لجميع الأسهم حالياً.
         </span>
       </AlertDescription>

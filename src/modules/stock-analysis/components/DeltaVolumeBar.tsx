@@ -39,19 +39,19 @@ interface DeltaData {
 }
 
 const PRESSURE_CONFIG: Record<string, { color: string; bg: string; label: string; icon: any }> = {
-  STRONG_BUY: { color: 'text-emerald-600', bg: 'bg-emerald-500', label: 'شراء قوي', icon: Zap },
-  BUY: { color: 'text-emerald-500', bg: 'bg-emerald-400', label: 'شراء', icon: TrendingUp },
-  NEUTRAL: { color: 'text-amber-500', bg: 'bg-amber-400', label: 'محايد', icon: Minus },
-  SELL: { color: 'text-red-400', bg: 'bg-red-400', label: 'بيع', icon: TrendingDown },
-  STRONG_SELL: { color: 'text-red-600', bg: 'bg-red-500', label: 'بيع قوي', icon: AlertTriangle },
+  STRONG_BUY: { color: 'text-profit', bg: 'bg-profit', label: 'شراء قوي', icon: Zap },
+  BUY: { color: 'text-profit', bg: 'bg-profit', label: 'شراء', icon: TrendingUp },
+  NEUTRAL: { color: 'text-warning', bg: 'bg-warning', label: 'محايد', icon: Minus },
+  SELL: { color: 'text-loss', bg: 'bg-loss', label: 'بيع', icon: TrendingDown },
+  STRONG_SELL: { color: 'text-loss', bg: 'bg-loss', label: 'بيع قوي', icon: AlertTriangle },
 };
 
 const MAKER_CONFIG: Record<string, { label: string; color: string; desc: string }> = {
-  ACCUMULATION: { label: 'تجميع قوي', color: 'text-emerald-600', desc: 'صانعو السوق يجمعون — السهم مرشّح للصعود' },
-  ACCUMULATION_LIGHT: { label: 'تجميع خفيف', color: 'text-emerald-500', desc: 'صانعو السوق يجمعون بهدوء' },
-  NEUTRAL: { label: 'محايد', color: 'text-amber-500', desc: 'لا يوجد اتجاه واضح' },
-  DISTRIBUTION_LIGHT: { label: 'تصريف خفيف', color: 'text-red-400', desc: 'صانعو السوق يوزّعون بهدوء' },
-  DISTRIBUTION: { label: 'تصريف قوي', color: 'text-red-600', desc: 'صانعو السوق يوزّعون — السهم مرشّح للهبوط' },
+  ACCUMULATION: { label: 'تجميع قوي', color: 'text-profit', desc: 'صانعو السوق يجمعون — السهم مرشّح للصعود' },
+  ACCUMULATION_LIGHT: { label: 'تجميع خفيف', color: 'text-profit', desc: 'صانعو السوق يجمعون بهدوء' },
+  NEUTRAL: { label: 'محايد', color: 'text-warning', desc: 'لا يوجد اتجاه واضح' },
+  DISTRIBUTION_LIGHT: { label: 'تصريف خفيف', color: 'text-loss', desc: 'صانعو السوق يوزّعون بهدوء' },
+  DISTRIBUTION: { label: 'تصريف قوي', color: 'text-loss', desc: 'صانعو السوق يوزّعون — السهم مرشّح للهبوط' },
 };
 
 export function DeltaVolumeBar({ ticker }: { ticker: string }) {
@@ -121,12 +121,12 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
       {/* Main Buy/Sell Bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+          <span className="text-profit dark:text-profit font-semibold flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
             شراء: {formatVolume(latest.buy_volume)}
           </span>
           <span className="text-muted-foreground">{latest.delta_pct > 0 ? '+' : ''}{latest.delta_pct}%</span>
-          <span className="text-red-500 dark:text-red-400 font-semibold flex items-center gap-1">
+          <span className="text-loss dark:text-loss font-semibold flex items-center gap-1">
             بيع: {formatVolume(latest.sell_volume)}
             <TrendingDown className="w-3 h-3" />
           </span>
@@ -145,7 +145,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
             )}
           </div>
           <div
-            className="h-full bg-red-500/70 transition-all duration-1000 ease-out flex items-center justify-end pl-2"
+            className="h-full bg-loss/70 transition-all duration-1000 ease-out flex items-center justify-end pl-2"
             style={{
               width: animateWidth ? `${sellPct}%` : '0%',
             }}
@@ -159,8 +159,8 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
 
       {/* Maker Direction */}
       {makerCfg && summary && (
-        <div className={`flex items-center gap-2 p-2 rounded-lg ${summary.maker_direction.includes('ACCUMULATION') ? 'bg-emerald-500/10' : summary.maker_direction.includes('DISTRIBUTION') ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
-          <div className={`w-2 h-2 rounded-full ${summary.maker_direction.includes('ACCUMULATION') ? 'bg-emerald-500 animate-pulse' : summary.maker_direction.includes('DISTRIBUTION') ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`} />
+        <div className={`flex items-center gap-2 p-2 rounded-lg ${summary.maker_direction.includes('ACCUMULATION') ? 'bg-profit/10' : summary.maker_direction.includes('DISTRIBUTION') ? 'bg-loss/10' : 'bg-warning/10'}`}>
+          <div className={`w-2 h-2 rounded-full ${summary.maker_direction.includes('ACCUMULATION') ? 'bg-profit animate-pulse' : summary.maker_direction.includes('DISTRIBUTION') ? 'bg-loss animate-pulse' : 'bg-warning'}`} />
           <div className="flex-1">
             <span className={`text-xs font-bold ${makerCfg.color}`}>{makerCfg.label}</span>
             <span className="text-[10px] text-muted-foreground block">{makerCfg.desc}</span>
@@ -190,7 +190,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
                     style={{ height: `${hBuyPct}%` }}
                   />
                   <div
-                    className="bg-red-500/50 transition-all duration-500"
+                    className="bg-loss/50 transition-all duration-500"
                     style={{ height: `${100 - hBuyPct}%` }}
                   />
                 </div>
@@ -203,17 +203,17 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
       {/* Summary stats */}
       {summary && (
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-1.5 rounded-lg bg-emerald-500/5">
+          <div className="p-1.5 rounded-lg bg-profit/5">
             <div className="text-[10px] text-muted-foreground">أيام شراء</div>
-            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{summary.buy_days}</div>
+            <div className="text-sm font-bold text-profit dark:text-profit">{summary.buy_days}</div>
           </div>
-          <div className="p-1.5 rounded-lg bg-amber-500/5">
+          <div className="p-1.5 rounded-lg bg-warning/5">
             <div className="text-[10px] text-muted-foreground">محايد</div>
-            <div className="text-sm font-bold text-amber-500">{summary.neutral_days}</div>
+            <div className="text-sm font-bold text-warning">{summary.neutral_days}</div>
           </div>
-          <div className="p-1.5 rounded-lg bg-red-500/5">
+          <div className="p-1.5 rounded-lg bg-loss/5">
             <div className="text-[10px] text-muted-foreground">أيام بيع</div>
-            <div className="text-sm font-bold text-red-500 dark:text-red-400">{summary.sell_days}</div>
+            <div className="text-sm font-bold text-loss dark:text-loss">{summary.sell_days}</div>
           </div>
         </div>
       )}

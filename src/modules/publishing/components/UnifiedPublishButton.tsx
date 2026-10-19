@@ -618,11 +618,11 @@ export function UnifiedPublishButton({
               تليجرام
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleFacebook} className="gap-2 text-xs cursor-pointer">
-              <Facebook className="w-3.5 h-3.5 text-blue-600" />
+              <Facebook className="w-3.5 h-3.5 text-primary" />
               فيسبوك
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleWhatsApp} className="gap-2 text-xs cursor-pointer">
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-500" />
+              <MessageCircle className="w-3.5 h-3.5 text-profit" />
               واتساب
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleTwitter} className="gap-2 text-xs cursor-pointer">
@@ -636,9 +636,9 @@ export function UnifiedPublishButton({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setTradeResultsOpen(true)}
-              className="gap-2 text-xs cursor-pointer font-bold text-amber-500 hover:text-amber-600 focus:text-amber-600"
+              className="gap-2 text-xs cursor-pointer font-bold text-warning hover:text-warning focus:text-warning"
             >
-              <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+              <BarChart3 className="w-3.5 h-3.5 text-warning" />
               📊 نتائج الصفقات
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -654,7 +654,7 @@ export function UnifiedPublishButton({
           title="نسخ النص"
         >
           {copySuccess ? (
-            <Check className="w-4 h-4 text-emerald-600" />
+            <Check className="w-4 h-4 text-profit" />
           ) : (
             <Copy className="w-4 h-4" />
           )}
@@ -708,11 +708,11 @@ export function UnifiedPublishButton({
           تليجرام
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleFacebook} className="gap-2 text-xs cursor-pointer">
-          <Facebook className="w-3.5 h-3.5 text-blue-600" />
+          <Facebook className="w-3.5 h-3.5 text-primary" />
           فيسبوك
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleWhatsApp} className="gap-2 text-xs cursor-pointer">
-          <MessageCircle className="w-3.5 h-3.5 text-emerald-500" />
+          <MessageCircle className="w-3.5 h-3.5 text-profit" />
           واتساب
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleTwitter} className="gap-2 text-xs cursor-pointer">
@@ -730,7 +730,7 @@ export function UnifiedPublishButton({
           className="gap-2 text-xs cursor-pointer"
         >
           {copySuccess ? (
-            <Check className="w-3.5 h-3.5 text-emerald-600" />
+            <Check className="w-3.5 h-3.5 text-profit" />
           ) : (
             <Copy className="w-3.5 h-3.5" />
           )}
@@ -755,12 +755,12 @@ export function UnifiedPublishButton({
             <DropdownMenuItem
               onClick={handleOpenInfographic}
               disabled={loadingInfographic}
-              className="gap-2 text-xs cursor-pointer font-bold text-amber-500 hover:text-amber-600 focus:text-amber-600"
+              className="gap-2 text-xs cursor-pointer font-bold text-warning hover:text-warning focus:text-warning"
             >
               {loadingInfographic ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-warning" />
               ) : (
-                <Camera className="w-3.5 h-3.5 text-amber-500" />
+                <Camera className="w-3.5 h-3.5 text-warning" />
               )}
               {loadingInfographic ? 'جارٍ تحضير الإنفوجرافيك...' : 'بطاقة إنفوجرافيك السهم والسيولة 📸'}
             </DropdownMenuItem>
@@ -771,9 +771,9 @@ export function UnifiedPublishButton({
         <DropdownMenuLabel className="text-xs">قوالب نتائج الصفقات</DropdownMenuLabel>
         <DropdownMenuItem
           onClick={() => setTradeResultsOpen(true)}
-          className="gap-2 text-xs cursor-pointer font-bold text-amber-500 hover:text-amber-600 focus:text-amber-600"
+          className="gap-2 text-xs cursor-pointer font-bold text-warning hover:text-warning focus:text-warning"
         >
-          <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+          <BarChart3 className="w-3.5 h-3.5 text-warning" />
           📊 نتائج الصفقات (يومي / أسبوعي / شهري)
         </DropdownMenuItem>
       </DropdownMenuContent>

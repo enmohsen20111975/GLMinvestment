@@ -114,9 +114,9 @@ export function StockSearchSelector({
             {icon ? (
               icon
             ) : mode === 'add' ? (
-              <Plus className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+              <Plus className="w-3.5 h-3.5 text-profit flex-shrink-0" />
             ) : (
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+              <TrendingUp className="w-3.5 h-3.5 text-profit flex-shrink-0" />
             )}
 
             <span className="truncate">
@@ -124,7 +124,7 @@ export function StockSearchSelector({
                 placeholder
               ) : selectedStock ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">
+                  <span className="font-mono font-black text-profit dark:text-profit">
                     {selectedStock.ticker}
                   </span>
                   <span className="text-muted-foreground font-normal text-[11px] truncate">
@@ -178,7 +178,7 @@ export function StockSearchSelector({
               <button
                 key={`pop-${tk}`}
                 onClick={() => handleSelect(tk)}
-                className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-background border border-border/80 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded transition-all"
+                className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-background border border-border/80 hover:border-profit hover:text-profit dark:hover:text-profit rounded transition-all"
               >
                 {tk}
               </button>
@@ -191,7 +191,7 @@ export function StockSearchSelector({
               {searchQuery ? `نتائج البحث (${filteredStocks.length})` : `جميع الأسهم المتاحة (${stocks.length})`}
             </span>
             {stocks.length > 0 && (
-              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+              <span className="font-mono text-profit dark:text-profit font-semibold">
                 {isCrypto ? 'سوق العملات الرقمية' : 'البورصة المصرية EGX'}
               </span>
             )}
@@ -213,12 +213,12 @@ export function StockSearchSelector({
                   key={`stock-item-${s.ticker}`}
                   onClick={() => handleSelect(s.ticker)}
                   className={cn(
-                    'w-full text-right p-2 text-xs flex items-center justify-between rounded-lg transition-colors hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 group',
-                    isSelected ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold' : ''
+                    'w-full text-right p-2 text-xs flex items-center justify-between rounded-lg transition-colors hover:bg-profit/10 dark:hover:bg-profit/20 group',
+                    isSelected ? 'bg-profit/15 text-profit dark:text-profit font-bold' : ''
                   )}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono font-black text-xs text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 min-w-[50px]">
+                    <span className="font-mono font-black text-xs text-foreground group-hover:text-profit dark:group-hover:text-profit min-w-[50px]">
                       {s.ticker}
                     </span>
                     <div className="flex flex-col truncate">
@@ -239,7 +239,7 @@ export function StockSearchSelector({
                         {(s.current_price ?? 0).toFixed(2)} {isCrypto ? '$' : 'ج.م'}
                       </span>
                     )}
-                    {isSelected && <Check className="w-4 h-4 text-emerald-500" />}
+                    {isSelected && <Check className="w-4 h-4 text-profit" />}
                   </div>
                 </button>
               );

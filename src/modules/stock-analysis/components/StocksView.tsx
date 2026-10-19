@@ -210,8 +210,8 @@ function formatPercent(val: number | null | undefined, decimals = 2): string {
 
 function changeColorClass(val: number | null | undefined): string {
   if (val == null || !Number.isFinite(val)) return 'text-muted-foreground';
-  if (val > 0) return 'text-emerald-600 dark:text-emerald-400';
-  if (val < 0) return 'text-red-600 dark:text-red-400';
+  if (val > 0) return 'text-profit dark:text-profit';
+  if (val < 0) return 'text-loss dark:text-loss';
   return 'text-muted-foreground';
 }
 
@@ -243,28 +243,28 @@ const PRESET_BUTTONS: Array<{
 
 // Sector → tailwind badge colors (deterministic by sector name hash)
 const SECTOR_COLOR_MAP: Record<string, string> = {
-  'Financials': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  'القطاع المالي': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  'Basic Materials': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  'الأساسية': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  'Financials': 'bg-profit text-profit dark:bg-profit/30 dark:text-profit',
+  'القطاع المالي': 'bg-profit text-profit dark:bg-profit/30 dark:text-profit',
+  'Basic Materials': 'bg-warning text-warning dark:bg-warning/30 dark:text-warning',
+  'الأساسية': 'bg-warning text-warning dark:bg-warning/30 dark:text-warning',
   'Real Estate': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   'العقارات': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   'Consumer Goods': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
   'الاستهلاكية': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
-  'Industrials': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-  'الصناعات التحويلية': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+  'Industrials': 'bg-whale text-whale dark:bg-whale/30 dark:text-whale',
+  'الصناعات التحويلية': 'bg-whale text-whale dark:bg-whale/30 dark:text-whale',
   'Food & Beverage': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   'الأغذية والمشروبات': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   'Technology': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
   'التكنولوجيا': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
-  'Consumer Services': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-  'الخدمات الاستهلاكية': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-  'Healthcare': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  'الرعاية الصحية': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  'Consumer Services': 'bg-loss text-loss dark:bg-loss/30 dark:text-loss',
+  'الخدمات الاستهلاكية': 'bg-loss text-loss dark:bg-loss/30 dark:text-loss',
+  'Healthcare': 'bg-loss text-loss dark:bg-loss/30 dark:text-loss',
+  'الرعاية الصحية': 'bg-loss text-loss dark:bg-loss/30 dark:text-loss',
   'Energy': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   'الطاقة': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  'Telecommunications': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-  'الاتصالات': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+  'Telecommunications': 'bg-whale text-whale dark:bg-whale/30 dark:text-whale',
+  'الاتصالات': 'bg-whale text-whale dark:bg-whale/30 dark:text-whale',
 };
 
 const SECTOR_FALLBACK_COLOR = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
@@ -348,15 +348,15 @@ const OverviewSummary = memo(function OverviewSummary({
         <span className="text-xs font-medium text-muted-foreground">الإجمالي</span>
         <span className="text-sm font-bold">{total}</span>
       </div>
-      <div className="flex items-center gap-1.5 bg-emerald-500/10 rounded-lg px-3 py-1.5">
-        <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">المرتفعة</span>
-        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{gainers}</span>
+      <div className="flex items-center gap-1.5 bg-profit/10 rounded-lg px-3 py-1.5">
+        <TrendingUp className="w-3.5 h-3.5 text-profit dark:text-profit" />
+        <span className="text-xs font-medium text-profit dark:text-profit">المرتفعة</span>
+        <span className="text-sm font-bold text-profit dark:text-profit">{gainers}</span>
       </div>
-      <div className="flex items-center gap-1.5 bg-red-500/10 rounded-lg px-3 py-1.5">
-        <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-        <span className="text-xs font-medium text-red-700 dark:text-red-400">المنخفضة</span>
-        <span className="text-sm font-bold text-red-600 dark:text-red-400">{losers}</span>
+      <div className="flex items-center gap-1.5 bg-loss/10 rounded-lg px-3 py-1.5">
+        <TrendingDown className="w-3.5 h-3.5 text-loss dark:text-loss" />
+        <span className="text-xs font-medium text-loss dark:text-loss">المنخفضة</span>
+        <span className="text-sm font-bold text-loss dark:text-loss">{losers}</span>
       </div>
       <div className="flex items-center gap-1.5 bg-muted/60 rounded-lg px-3 py-1.5">
         <Minus className="w-3.5 h-3.5 text-muted-foreground" />
@@ -369,9 +369,9 @@ const OverviewSummary = memo(function OverviewSummary({
           className={cn(
             'text-sm font-bold tabular-nums',
             avgChange > 0
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-profit dark:text-profit'
               : avgChange < 0
-                ? 'text-red-600 dark:text-red-400'
+                ? 'text-loss dark:text-loss'
                 : 'text-muted-foreground'
           )}
         >
@@ -406,7 +406,7 @@ const StockCard = memo(function StockCard({
 
   return (
     <Card
-      className="cursor-pointer group hover:shadow-md transition-all duration-200 hover:border-emerald-200 dark:hover:border-emerald-800/50 py-0 gap-0"
+      className="cursor-pointer group hover:shadow-md transition-all duration-200 hover:border-profit dark:hover:border-profit/50 py-0 gap-0"
       onClick={onClick}
     >
       <CardContent className="p-4">
@@ -422,17 +422,17 @@ const StockCard = memo(function StockCard({
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-bold text-base text-emerald-700 dark:text-emerald-400">
+                <span className="font-bold text-base text-profit dark:text-profit">
                   {formatCleanTicker(stock.ticker)}
                 </span>
                 <div className="flex gap-1">
                   {stock.egx30_member && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-profit text-profit dark:bg-profit/30 dark:text-profit font-medium">
                       30
                     </span>
                   )}
                   {stock.egx70_member && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-warning text-warning dark:bg-warning/30 dark:text-warning font-medium">
                       70
                     </span>
                   )}
@@ -498,8 +498,8 @@ const StockCard = memo(function StockCard({
           <div
             className={cn(
               'flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-bold tabular-nums',
-              isPositive && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-              isNegative && 'bg-red-500/10 text-red-600 dark:text-red-400',
+              isPositive && 'bg-profit/10 text-profit dark:text-profit',
+              isNegative && 'bg-loss/10 text-loss dark:text-loss',
               isNeutral && 'bg-muted text-muted-foreground'
             )}
           >
@@ -526,9 +526,9 @@ const StockCard = memo(function StockCard({
               className={cn(
                 'absolute top-0 h-full rounded-full transition-all',
                 isPositive
-                  ? 'bg-gradient-to-l from-emerald-400 to-emerald-500'
+                  ? 'bg-gradient-to-l from-profit to-profit'
                   : isNegative
-                    ? 'bg-gradient-to-l from-red-400 to-red-500'
+                    ? 'bg-gradient-to-l from-loss to-loss'
                     : 'bg-muted-foreground/30'
               )}
               style={{ width: `${Math.min(100, Math.max(0, pricePosition))}%` }}
@@ -591,17 +591,17 @@ const MobileStockRow = memo(function MobileStockRow({
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
+            <span className="font-bold text-sm text-profit dark:text-profit">
               {formatCleanTicker(stock.ticker)}
             </span>
             <div className="flex gap-1">
               {stock.egx30_member && (
-                <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium">
+                <span className="text-[9px] px-1 py-0.5 rounded bg-profit text-profit dark:bg-profit/30 dark:text-profit font-medium">
                   30
                 </span>
               )}
               {stock.egx70_member && (
-                <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                <span className="text-[9px] px-1 py-0.5 rounded bg-warning text-warning dark:bg-warning/30 dark:text-warning font-medium">
                   70
                 </span>
               )}
@@ -618,9 +618,9 @@ const MobileStockRow = memo(function MobileStockRow({
             className={cn(
               'text-xs font-medium tabular-nums flex items-center gap-0.5 justify-end',
               isPositive
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-profit dark:text-profit'
                 : isNegative
-                  ? 'text-red-600 dark:text-red-400'
+                  ? 'text-loss dark:text-loss'
                   : 'text-muted-foreground'
             )}
           >
@@ -687,7 +687,7 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
     <Card className="py-0 gap-0">
       <CardContent className="p-3 md:p-4">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <LayoutGrid className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <LayoutGrid className="w-4 h-4 text-profit dark:text-profit" />
           <span className="text-sm font-semibold">القوائم المُسبقة</span>
           <span className="text-xs text-muted-foreground">— اختر قائمة لعرض الأسهم المُصنّفة</span>
         </div>
@@ -698,7 +698,7 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
             className={cn(
               'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border',
               activePreset === 'all'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                ? 'bg-profit text-white border-profit shadow-sm'
                 : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             )}
             aria-pressed={activePreset === 'all'}
@@ -718,11 +718,11 @@ const PresetButtonsRow = memo(function PresetButtonsRow({
                 className={cn(
                   'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border',
                   isActive
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                    ? 'bg-profit text-white border-profit shadow-sm'
                     : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
                 )}
               >
-                <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-400')} />
+                <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-white' : 'text-profit dark:text-profit')} />
                 <span className="truncate">{p.label}</span>
               </button>
             );
@@ -785,7 +785,7 @@ const AdvancedFilters = memo(function AdvancedFilters({
                 className={cn(
                   'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                   isActive
-                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    ? 'bg-profit text-white border-profit'
                     : 'bg-background text-muted-foreground border-border hover:bg-muted'
                 )}
               >
@@ -1226,16 +1226,16 @@ export function StocksView() {
         filterable: true,
         render: (row) => (
           <div className="flex items-center gap-1">
-            <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
+            <span className="font-bold text-sm text-profit dark:text-profit">
               {formatCleanTicker(String(row.ticker ?? ''))}
             </span>
             {row.egx30_member && (
-              <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium">
+              <span className="text-[9px] px-1 py-0.5 rounded bg-profit text-profit dark:bg-profit/30 dark:text-profit font-medium">
                 30
               </span>
             )}
             {row.egx70_member && (
-              <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+              <span className="text-[9px] px-1 py-0.5 rounded bg-warning text-warning dark:bg-warning/30 dark:text-warning font-medium">
                 70
               </span>
             )}
@@ -1311,9 +1311,9 @@ export function StocksView() {
               className={cn(
                 'flex items-center gap-1 justify-end text-sm font-medium tabular-nums',
                 isPositive
-                  ? 'text-emerald-600 dark:text-emerald-400'
+                  ? 'text-profit dark:text-profit'
                   : isNegative
-                    ? 'text-red-600 dark:text-red-400'
+                    ? 'text-loss dark:text-loss'
                     : 'text-muted-foreground'
               )}
             >
@@ -1341,9 +1341,9 @@ export function StocksView() {
           if (high <= 0 && low <= 0) return <span className="text-muted-foreground">—</span>;
           return (
             <span className="text-xs tabular-nums text-muted-foreground" dir="ltr">
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{(high ?? 0).toFixed(2)}</span>
+              <span className="text-profit dark:text-profit font-medium">{(high ?? 0).toFixed(2)}</span>
               <span className="mx-1 text-muted-foreground/60">/</span>
-              <span className="text-red-600 dark:text-red-400 font-medium">{(low ?? 0).toFixed(2)}</span>
+              <span className="text-loss dark:text-loss font-medium">{(low ?? 0).toFixed(2)}</span>
             </span>
           );
         },
@@ -1469,9 +1469,9 @@ export function StocksView() {
                 className={cn(
                   'text-xs tabular-nums font-medium',
                   fairValue != null && currentPrice && fairValue > currentPrice
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-profit dark:text-profit'
                     : fairValue != null && currentPrice && fairValue < currentPrice
-                      ? 'text-red-600 dark:text-red-400'
+                      ? 'text-loss dark:text-loss'
                       : 'text-muted-foreground',
                 )}
               >
@@ -1493,8 +1493,8 @@ export function StocksView() {
               <span
                 className={cn(
                   'text-xs tabular-nums font-medium',
-                  upside != null && upside > 5 ? 'text-emerald-600 dark:text-emerald-400' :
-                  upside != null && upside < -5 ? 'text-red-600 dark:text-red-400' :
+                  upside != null && upside > 5 ? 'text-profit dark:text-profit' :
+                  upside != null && upside < -5 ? 'text-loss dark:text-loss' :
                   'text-muted-foreground',
                 )}
               >
@@ -1541,10 +1541,10 @@ export function StocksView() {
             const isSell = s.includes('sell') || s.includes('bear') || s.includes('avoid');
             const label = isBuy ? t('stocks.signal.buy') : isSell ? t('stocks.signal.sell') : t('stocks.signal.hold');
             const cls = isBuy
-              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              ? 'bg-profit text-profit dark:bg-profit/30 dark:text-profit'
               : isSell
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+                ? 'bg-loss text-loss dark:bg-loss/30 dark:text-loss'
+                : 'bg-warning text-warning dark:bg-warning/30 dark:text-warning';
             return (
               <span className={cn('inline-block text-[10px] px-2 py-0.5 rounded font-bold', cls)}>
                 {label}
@@ -1757,7 +1757,7 @@ export function StocksView() {
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
               stockTab === 'stocks'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                ? 'bg-profit text-white border-profit shadow-sm'
                 : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             )}
           >
@@ -1770,7 +1770,7 @@ export function StocksView() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
                 stockTab === 'bonds'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                  ? 'bg-profit text-white border-profit shadow-sm'
                   : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
               )}
             >
@@ -1784,7 +1784,7 @@ export function StocksView() {
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border',
               stockTab === 'filters'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                ? 'bg-profit text-white border-profit shadow-sm'
                 : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             )}
           >
@@ -1855,7 +1855,7 @@ export function StocksView() {
                 <Filter className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{t('stocks.filterButton.label')}</span>
                 {hasActiveFilters && (
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                  <span className="h-2 w-2 rounded-full bg-warning" />
                 )}
               </Button>
 
@@ -1883,7 +1883,7 @@ export function StocksView() {
                     className={cn(
                       'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                       isActive
-                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        ? 'bg-profit text-white border-profit'
                         : 'bg-background text-muted-foreground border-border hover:bg-muted',
                     )}
                   >
@@ -1926,7 +1926,7 @@ export function StocksView() {
                           className={cn(
                             'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                             presetPeriod === p.key
-                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              ? 'bg-profit text-white border-profit'
                               : 'bg-background text-muted-foreground border-border hover:bg-muted'
                           )}
                         >
@@ -1968,7 +1968,7 @@ export function StocksView() {
                           className={cn(
                             'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
                             selectedIndex === filter.key
-                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              ? 'bg-profit text-white border-profit'
                               : 'bg-background text-muted-foreground border-border hover:bg-muted'
                           )}
                         >
@@ -2044,7 +2044,7 @@ export function StocksView() {
           <SummarySkeleton />
         ) : isPresetMode ? (
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-emerald-500/10 rounded-lg px-3 py-1.5">
+            <div className="flex items-center gap-1.5 bg-profit/10 rounded-lg px-3 py-1.5">
               <span className="text-sm font-bold">
                 {PRESET_OPTIONS.find(p => p.key === selectedPreset)?.icon} {' '}
                 {PRESET_OPTIONS.find(p => p.key === selectedPreset)?.label}
@@ -2061,8 +2061,8 @@ export function StocksView() {
               </div>
             )}
             {presetLoading && (
-              <div className="flex items-center gap-1.5 bg-amber-500/10 rounded-lg px-3 py-1.5">
-                <span className="text-xs text-amber-600 animate-pulse">{t('stocks.footer.loading')}</span>
+              <div className="flex items-center gap-1.5 bg-warning/10 rounded-lg px-3 py-1.5">
+                <span className="text-xs text-warning animate-pulse">{t('stocks.footer.loading')}</span>
               </div>
             )}
           </div>
@@ -2162,16 +2162,16 @@ export function StocksView() {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
+                            <span className="font-bold text-sm text-profit dark:text-profit">
                               {item.ticker}
                             </span>
                             {(item as Stock).egx30_member && (
-                              <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium">
+                              <span className="text-[9px] px-1 py-0.5 rounded bg-profit text-profit dark:bg-profit/30 dark:text-profit font-medium">
                                 30
                               </span>
                             )}
                             {(item as Stock).egx70_member && (
-                              <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                              <span className="text-[9px] px-1 py-0.5 rounded bg-warning text-warning dark:bg-warning/30 dark:text-warning font-medium">
                                 70
                               </span>
                             )}
@@ -2194,9 +2194,9 @@ export function StocksView() {
                             className={cn(
                               'text-xs font-medium tabular-nums flex items-center gap-0.5 justify-end',
                               isPositive
-                                ? 'text-emerald-600 dark:text-emerald-400'
+                                ? 'text-profit dark:text-profit'
                                 : isNegative
-                                  ? 'text-red-600 dark:text-red-400'
+                                  ? 'text-loss dark:text-loss'
                                   : 'text-muted-foreground'
                             )}
                           >
@@ -2227,9 +2227,9 @@ export function StocksView() {
                           <p className={cn(
                             'text-[10px] font-semibold tabular-nums',
                             fairValue != null && item.current_price && fairValue > Number(item.current_price)
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-profit dark:text-profit'
                               : fairValue != null && item.current_price && fairValue < Number(item.current_price)
-                                ? 'text-red-600 dark:text-red-400'
+                                ? 'text-loss dark:text-loss'
                                 : 'text-muted-foreground'
                           )}>
                             {fairValue != null ? safeNum(fairValue).toFixed(1) : '—'}
@@ -2239,8 +2239,8 @@ export function StocksView() {
                           <p className="text-[9px] text-muted-foreground mb-0.5">{t('stocks.mobile.opportunity')}</p>
                           <p className={cn(
                             'text-[10px] font-semibold tabular-nums',
-                            upside != null && upside > 5 ? 'text-emerald-600 dark:text-emerald-400' :
-                            upside != null && upside < -5 ? 'text-red-600 dark:text-red-400' :
+                            upside != null && upside > 5 ? 'text-profit dark:text-profit' :
+                            upside != null && upside < -5 ? 'text-loss dark:text-loss' :
                             'text-muted-foreground'
                           )}>
                             {upside != null ? formatPercent(upside, 1) : '—'}
@@ -2288,7 +2288,7 @@ export function StocksView() {
                             onClick={() => setPage(pageNum)}
                             className={cn(
                               'h-8 w-8 p-0 text-xs',
-                              safePage === pageNum && 'bg-emerald-600 hover:bg-emerald-700'
+                              safePage === pageNum && 'bg-profit hover:bg-profit'
                             )}
                           >
                             {pageNum}

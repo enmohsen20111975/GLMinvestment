@@ -110,7 +110,7 @@ export function DailyPicksPoster() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-profit" />
       </div>
     );
   }
@@ -246,7 +246,7 @@ export function DailyPicksPoster() {
                 {/* Stock Name */}
                 <div className="py-3 px-2 flex items-center gap-2 justify-start">
                   <div 
-                    className="w-10 h-10 rounded-full bg-teal-900 flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                    className="w-10 h-10 rounded-full bg-whale flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                     style={{ background: '#1e3a8a' }}
                   >
                     {pick.ticker.substring(0, 3)}
@@ -309,7 +309,7 @@ export function DailyPicksPoster() {
               
               {/* Shield */}
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-success flex items-center justify-center">
                   <Shield className="w-7 h-7 text-white" />
                 </div>
               </div>

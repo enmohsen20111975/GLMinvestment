@@ -149,9 +149,9 @@ function PredictionsPerformanceChart({ stocks }: { stocks: StockData[] }) {
   if (chartData.length === 0) return null;
 
   return (
-    <Card className="border border-teal-200 dark:border-teal-900 bg-card p-4 my-2 shadow-sm">
+    <Card className="border border-whale dark:border-whale bg-card p-4 my-2 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="font-extrabold text-sm text-teal-800 dark:text-teal-300 flex items-center gap-2">
+        <h4 className="font-extrabold text-sm text-whale dark:text-whale flex items-center gap-2">
           📊 الأداء التراكمي وتوزيع الصفقات حسب الأيام
         </h4>
         <span className="text-xs text-muted-foreground font-mono">تتبع تلقائي لمعدلات الأرباح والتوقعات الصادرة</span>
@@ -221,9 +221,9 @@ function ProofPredictionsTableView({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-teal-200 dark:border-teal-900 bg-card shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-whale dark:border-whale bg-card shadow-sm">
       <table className="w-full text-sm min-w-[1180px] border-collapse">
-        <thead className="bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-teal-500/10 text-foreground font-semibold border-b border-teal-200 dark:border-teal-900">
+        <thead className="bg-gradient-to-r from-whale/10 via-profit/10 to-whale/10 text-foreground font-semibold border-b border-whale dark:border-whale">
           <tr>
             <th className="p-3 text-center font-medium w-12">#</th>
             <th className="p-3 text-right font-medium">السهم والرمز</th>
@@ -253,8 +253,8 @@ function ProofPredictionsTableView({
               <tr
                 key={stock.id || `proof-${stock.ticker}-${i}`}
                 className={cn(
-                  "hover:bg-teal-50/40 dark:hover:bg-teal-950/20 transition-colors cursor-pointer",
-                  isHit ? "bg-emerald-50/20 dark:bg-emerald-950/10" : isStopped ? "bg-rose-50/10 dark:bg-rose-950/10" : ""
+                  "hover:bg-whale/40 dark:hover:bg-whale/20 transition-colors cursor-pointer",
+                  isHit ? "bg-profit/20 dark:bg-profit/10" : isStopped ? "bg-loss/10 dark:bg-loss/10" : ""
                 )}
                 onClick={() => loadStockDetail(stock.ticker)}
               >
@@ -280,7 +280,7 @@ function ProofPredictionsTableView({
                       ⚡ مضارب
                     </Badge>
                   ) : (
-                    <Badge className="bg-teal-100 text-teal-700 dark:bg-blue-950 dark:text-teal-300 border border-teal-300 gap-1 py-0.5 px-2 text-[11px] font-bold">
+                    <Badge className="bg-whale text-whale dark:bg-primary dark:text-whale border border-whale gap-1 py-0.5 px-2 text-[11px] font-bold">
                       📊 مستثمر
                     </Badge>
                   )}
@@ -292,37 +292,37 @@ function ProofPredictionsTableView({
                   {entryPrice ? `${(entryPrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
                 </td>
                 <td className="p-3 text-center font-mono text-xs whitespace-nowrap">
-                  <div className="text-emerald-600 dark:text-emerald-400 font-semibold">🎯 {targetPrice ? (targetPrice ?? 0).toFixed(2) : '—'} ({targetPct}%)</div>
-                  <div className="text-rose-500 font-normal text-[11px]">🛑 {stopLoss ? (stopLoss ?? 0).toFixed(2) : '—'}</div>
+                  <div className="text-profit dark:text-profit font-semibold">🎯 {targetPrice ? (targetPrice ?? 0).toFixed(2) : '—'} ({targetPct}%)</div>
+                  <div className="text-loss font-normal text-[11px]">🛑 {stopLoss ? (stopLoss ?? 0).toFixed(2) : '—'}</div>
                 </td>
                 {/* أعلى وأقل سعر منذ التوقع */}
                 <td className="p-3 text-center font-mono text-xs whitespace-nowrap">
-                  <div className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <div className="text-profit dark:text-profit font-semibold">
                     ▲ {maxHigh > 0 ? (maxHigh ?? 0).toFixed(2) : (liveStock?.high_price ? (liveStock.high_price ?? 0).toFixed(2) : (currentPrice ? (currentPrice ?? 0).toFixed(2) : '—'))}
                   </div>
-                  <div className="text-rose-600 dark:text-rose-400 font-semibold">
+                  <div className="text-loss dark:text-loss font-semibold">
                     ▼ {minLow > 0 ? (minLow ?? 0).toFixed(2) : (liveStock?.low_price ? (liveStock.low_price ?? 0).toFixed(2) : (currentPrice ? (currentPrice ?? 0).toFixed(2) : '—'))}
                   </div>
                 </td>
                 <td className="p-3 text-center font-mono">
                   <span className={cn(
                     "inline-block px-2.5 py-1 rounded-md font-bold text-xs",
-                    pnl > 0 ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300" :
-                    pnl < 0 ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300" :
+                    pnl > 0 ? "bg-profit dark:bg-profit text-profit dark:text-profit border border-profit" :
+                    pnl < 0 ? "bg-loss dark:bg-loss text-loss dark:text-loss border border-loss" :
                     "bg-gray-100 text-gray-700"
                   )}>
                     {pnl > 0 ? `+${(pnl ?? 0).toFixed(2)}%` : `${(pnl ?? 0).toFixed(2)}%`}
                   </span>
                   {/* P6-PREDICTIONS: "best potential" للصفقات النشطة */}
                   {bestPotentialPnl !== null && bestPotentialPnl > 0 && (
-                    <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
+                    <div className="text-[10px] text-profit/80 dark:text-profit/80 mt-0.5">
                       قمة: +{(bestPotentialPnl ?? 0).toFixed(2)}%
                     </div>
                   )}
                 </td>
                 <td className="p-3 text-center whitespace-nowrap">
                   {isHit ? (
-                    <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 py-1 px-2.5 text-xs font-bold">
+                    <Badge className="bg-profit hover:bg-profit text-white gap-1 py-1 px-2.5 text-xs font-bold">
                       🎯 صفقة مكتملة (تم تحقيق الهدف)
                     </Badge>
                   ) : isStopped ? (
@@ -330,14 +330,14 @@ function ProofPredictionsTableView({
                       🛑 ضربت وقف الخسارة
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-teal-500 text-teal-700 dark:text-teal-300 bg-teal-50/50 dark:bg-teal-950/30 gap-1 py-1 px-2.5 text-xs font-bold">
+                    <Badge variant="outline" className="border-whale text-whale dark:text-whale bg-whale/50 dark:bg-whale/30 gap-1 py-1 px-2.5 text-xs font-bold">
                       ⏳ صفقة مستمرة (جارية)
                     </Badge>
                   )}
                   {/* P6-PREDICTIONS: وسم "مبنية على المسار" لما الحالة تُحدد بالقيم التاريخية */}
                   {pathBased && (
                     <div className="mt-1">
-                      <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-900">
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-whale dark:bg-whale/60 text-whale dark:text-whale border border-whale dark:border-whale">
                         مبنية على المسار
                       </span>
                     </div>
@@ -399,24 +399,24 @@ export function PreviousPredictionsArchive({
               {predictions.map((p, i) => {
                 const statusColor =
                   p.status === 'TARGET_HIT'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300'
+                    ? 'bg-success text-success dark:bg-success/40 dark:text-success border-success'
                     : p.status === 'TRAILING_PROFIT'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300'
+                    ? 'bg-profit text-profit dark:bg-profit/40 dark:text-profit border-profit'
                     : p.status === 'STOPPED'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-300'
+                    ? 'bg-loss text-loss dark:bg-loss/40 dark:text-loss border-loss'
                     : p.status === 'EXPIRED'
                     ? 'bg-slate-100 text-slate-800 dark:bg-slate-900/40 dark:text-slate-300 border-slate-300'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300';
+                    : 'bg-warning text-warning dark:bg-warning/40 dark:text-warning border-warning';
                 const ret = p.actual_return;
                 const retColor = ret === null || ret === undefined
                   ? 'text-muted-foreground'
-                  : ret >= 0 ? 'text-green-600' : 'text-red-600';
+                  : ret >= 0 ? 'text-success' : 'text-loss';
                 const dateStr = p.prediction_date
                   ? (typeof p.prediction_date === 'string' ? p.prediction_date.slice(5, 10) : '')
                   : '';
                 const sigColor: Record<string, string> = {
-                  'STRONG_BUY': 'bg-emerald-500', 'BUY': 'bg-green-500', 'ACCUMULATE': 'bg-teal-500',
-                  'HOLD': 'bg-gray-500', 'REDUCE': 'bg-orange-500', 'SELL': 'bg-red-500', 'STRONG_SELL': 'bg-red-700',
+                  'STRONG_BUY': 'bg-profit', 'BUY': 'bg-success', 'ACCUMULATE': 'bg-whale',
+                  'HOLD': 'bg-gray-500', 'REDUCE': 'bg-orange-500', 'SELL': 'bg-loss', 'STRONG_SELL': 'bg-loss',
                 };
                 // P6-PREDICTIONS: قراءة القيم التاريخية بأمان (alias fallback)
                 const entryVal = Number(p.entry_price || p.current_price || 0);
@@ -435,12 +435,12 @@ export function PreviousPredictionsArchive({
                     {/* P6-PREDICTIONS: القيم التاريخية */}
                     <td className="p-2 hidden md:table-cell font-mono text-xs">
                       {maxHigh > 0
-                        ? <span className="text-emerald-600 dark:text-emerald-400">▲ {Number(maxHigh).toFixed(2)}</span>
+                        ? <span className="text-profit dark:text-profit">▲ {Number(maxHigh).toFixed(2)}</span>
                         : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="p-2 hidden md:table-cell font-mono text-xs">
                       {minLow > 0
-                        ? <span className="text-rose-600 dark:text-rose-400">▼ {Number(minLow).toFixed(2)}</span>
+                        ? <span className="text-loss dark:text-loss">▼ {Number(minLow).toFixed(2)}</span>
                         : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="p-2">
@@ -454,7 +454,7 @@ export function PreviousPredictionsArchive({
                         : <span className="inline-flex items-center gap-1">
                             <span>{ret >= 0 ? '+' : ''}{Number(ret).toFixed(1)}%</span>
                             {p.is_live_return && (
-                              <span className="text-[9px] text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700 rounded px-1" title="عائد لحظي — الصفقة لسه مفتوحة">
+                              <span className="text-[9px] text-warning dark:text-warning border border-warning dark:border-warning rounded px-1" title="عائد لحظي — الصفقة لسه مفتوحة">
                                 معاينة
                               </span>
                             )}
@@ -676,18 +676,18 @@ export function PredictionsTab({ market }: { market: MarketType }) {
   return (
     <div className="space-y-4">
       {/* 📢 ترويسة التوثيق وإثبات مصداقية التوقعات */}
-      <Card className="border-2 border-teal-500/30 bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50 dark:from-teal-950/40 dark:via-emerald-950/40 dark:to-teal-950/40 shadow-sm">
+      <Card className="border-2 border-whale/30 bg-gradient-to-r from-whale via-profit to-whale dark:from-whale/40 dark:via-profit/40 dark:to-whale/40 shadow-sm">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h3 className="font-extrabold text-lg text-teal-800 dark:text-teal-300 flex items-center gap-2">
+              <h3 className="font-extrabold text-lg text-whale dark:text-whale flex items-center gap-2">
                 🏆 نتائج ودقة التوقعات الفنية والمالية المتقدمة — {MARKET_NAMES_AR[market] || market}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 توثيق تلقائي مباشر للنتائج والأرباح المحققة لكافة الصفقات والتوقعات الصادرة عن المنصة
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchPredictions} className="gap-1.5 border-teal-400 text-teal-700 dark:text-teal-300">
+            <Button variant="outline" size="sm" onClick={fetchPredictions} className="gap-1.5 border-whale text-whale dark:text-whale">
               <RefreshCw className="h-3.5 w-3.5" />
               تحديث النتائج المباشرة
             </Button>
@@ -695,21 +695,21 @@ export function PredictionsTab({ market }: { market: MarketType }) {
 
           {/* شريط الإحصائيات التراكمية الحية (يتغير ديناميكياً مع الفلاتر) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center pt-1">
-            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-teal-100 dark:border-teal-900">
+            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-whale dark:border-whale">
               <p className="text-xs text-muted-foreground mb-0.5">إجمالي الصفقات المحددة</p>
-              <p className="text-xl font-extrabold text-teal-700 dark:text-teal-300">{dynamicTotal}</p>
+              <p className="text-xl font-extrabold text-whale dark:text-whale">{dynamicTotal}</p>
             </div>
-            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-emerald-100 dark:border-emerald-900">
+            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-profit dark:border-profit">
               <p className="text-xs text-muted-foreground mb-0.5">صفقات حققت الهدف 🎯</p>
-              <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{dynamicHits}</p>
+              <p className="text-xl font-extrabold text-profit dark:text-profit">{dynamicHits}</p>
             </div>
-            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-emerald-100 dark:border-emerald-900">
+            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-profit dark:border-profit">
               <p className="text-xs text-muted-foreground mb-0.5">نسبة دقة التوقعات</p>
-              <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
+              <p className="text-xl font-extrabold text-profit dark:text-profit">
                 {(dynamicWinRate ?? 0).toFixed(0)}%
               </p>
             </div>
-            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-teal-100 dark:border-teal-900">
+            <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-whale dark:border-whale">
               <p className="text-xs text-muted-foreground mb-0.5">متوسط العائد المئوي</p>
               <p className={cn("text-xl font-extrabold", pnlColorClass(dynamicAvgPnl))}>
                 {formatPnl(dynamicAvgPnl)}
@@ -725,7 +725,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* تصفية المستثمر vs المضارب */}
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-teal-800 dark:text-teal-200 ml-1">فئة التوقعات:</span>
+            <span className="text-xs font-bold text-whale dark:text-whale ml-1">فئة التوقعات:</span>
             {([
               ['all', '🌐 جميع الصفقات'],
               ['investor', '📊 توقعات المستثمر'],
@@ -735,7 +735,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
                 key={p}
                 variant={personaFilter === p ? 'default' : 'outline'}
                 size="sm"
-                className={cn("h-8 text-xs px-3 font-semibold", personaFilter === p ? "bg-teal-700 text-white hover:bg-teal-800" : "")}
+                className={cn("h-8 text-xs px-3 font-semibold", personaFilter === p ? "bg-whale text-white hover:bg-whale" : "")}
                 onClick={() => setPersonaFilter(p)}
               >
                 {label}
@@ -756,7 +756,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
                 key={tf}
                 variant={timeFrame === tf ? 'secondary' : 'ghost'}
                 size="sm"
-                className={cn("h-8 text-xs px-2.5", timeFrame === tf ? "font-bold bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" : "")}
+                className={cn("h-8 text-xs px-2.5", timeFrame === tf ? "font-bold bg-whale text-whale dark:bg-whale dark:text-whale" : "")}
                 onClick={() => setTimeFrame(tf)}
               >
                 {label}
@@ -772,7 +772,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
                 onClick={() => setViewMode(m)}
                 className={cn(
                   'px-3 py-1 text-xs rounded font-medium transition-colors',
-                  viewMode === m ? 'bg-teal-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  viewMode === m ? 'bg-whale text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {l}
@@ -798,7 +798,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
               size="sm"
               className={cn(
                 "h-7 text-xs px-2.5 rounded-full transition-all",
-                filterType === ft ? "bg-emerald-600 text-white font-bold" : "text-muted-foreground"
+                filterType === ft ? "bg-profit text-white font-bold" : "text-muted-foreground"
               )}
               onClick={() => setFilterType(ft)}
             >
@@ -823,8 +823,8 @@ export function PredictionsTab({ market }: { market: MarketType }) {
           telegramCaption={shareCaptionWithLinks}
           telegramMarket={MARKET_CODES[market]}
           accentColor="#0d9488"
-          borderClass="border-teal-200"
-          bgClass="bg-gradient-to-br from-teal-50 via-emerald-50 to-teal-100/40"
+          borderClass="border-whale"
+          bgClass="bg-gradient-to-br from-whale via-profit to-whale/40"
           hasData={filteredCombinedStocks.length > 0}
           emptyHint="لا توجد توقعات متاحة حالياً"
         >

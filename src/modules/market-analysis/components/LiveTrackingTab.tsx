@@ -143,7 +143,7 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
       <Card className="bg-muted/30">
         <CardContent className="py-3 px-4">
           <div className="flex items-center gap-2 text-sm">
-            <Activity className="h-4 w-4 text-emerald-600" />
+            <Activity className="h-4 w-4 text-profit" />
             <span className="font-semibold">متابعة حية أثناء الجلسة</span>
             <span className="text-muted-foreground">— توقعات نشطة ومستوياتها الحالية، وأسهم تحت المراقبة قد تُظهر فرصاً</span>
           </div>
@@ -164,7 +164,7 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
             <CheckCircle className="h-4 w-4" />
             <span className="text-xs">حققت الهدف</span>
           </div>
-          <div className="text-lg font-bold text-emerald-600">
+          <div className="text-lg font-bold text-profit">
             {activeStatus.filter((s) => s.hit_target === 1 || s.status === 'TARGET_HIT').length}
           </div>
         </Card>
@@ -173,7 +173,7 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
             <AlertTriangle className="h-4 w-4" />
             <span className="text-xs">قرب الهدف</span>
           </div>
-          <div className="text-lg font-bold text-amber-600">
+          <div className="text-lg font-bold text-warning">
             {activeStatus.filter((s) => {
               const progress = s.progress_percent || 0;
               return progress >= 70 && progress < 100;
@@ -280,14 +280,14 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
   return (
     <div className="space-y-4">
       {/* Status banner */}
-      <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+      <Card className="bg-warning dark:bg-warning/30 border-warning dark:border-warning">
         <CardContent className="py-3 px-4">
           <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-amber-600" />
-            <span className="font-semibold text-amber-800 dark:text-amber-200">
+            <Calendar className="h-4 w-4 text-warning" />
+            <span className="font-semibold text-warning dark:text-warning">
               التوقعات الإنتاجية
             </span>
-            <span className="text-amber-700 dark:text-amber-300">
+            <span className="text-warning dark:text-warning">
               — تتولد بعد إغلاق السوق وتتبعت على تليجرام تلقائياً
             </span>
           </div>
@@ -308,7 +308,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
             <TrendingUp className="h-4 w-4" />
             <span className="text-xs">شراء</span>
           </div>
-          <div className="text-lg font-bold text-emerald-600">
+          <div className="text-lg font-bold text-profit">
             {predictions.filter((p) => ['BUY', 'STRONG_BUY'].includes(String(p.signal || p.signal_type))).length}
           </div>
         </Card>
@@ -317,7 +317,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
             <TrendingDown className="h-4 w-4" />
             <span className="text-xs">بيع</span>
           </div>
-          <div className="text-lg font-bold text-red-600">
+          <div className="text-lg font-bold text-loss">
             {predictions.filter((p) => ['SELL', 'STRONG_SELL'].includes(String(p.signal || p.signal_type))).length}
           </div>
         </Card>
@@ -381,8 +381,8 @@ const predictionsColumns: Column<PredictionRow>[] = [
         <Badge variant="outline" className={cn(
           'text-xs',
           isBuy
-            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-            : 'text-red-700 bg-red-50 border-red-200'
+            ? 'text-profit bg-profit border-profit'
+            : 'text-loss bg-loss border-loss'
         )}>
           {sig === 'STRONG_BUY' ? 'شراء قوي' : sig === 'BUY' ? 'شراء' : sig === 'STRONG_SELL' ? 'بيع قوي' : sig || '—'}
         </Badge>
@@ -402,7 +402,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
     header: 'الهدف',
     align: 'right',
     sortable: true,
-    className: 'font-mono text-sm text-emerald-600',
+    className: 'font-mono text-sm text-profit',
     render: (p) => (typeof p.target_price === 'number' ? (p.target_price ?? 0).toFixed(2) : '—'),
   },
   {
@@ -410,7 +410,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
     header: 'الوقف',
     align: 'right',
     sortable: true,
-    className: 'font-mono text-sm text-red-600',
+    className: 'font-mono text-sm text-loss',
     render: (p) => (typeof p.stop_loss === 'number' ? (p.stop_loss ?? 0).toFixed(2) : '—'),
   },
   {
@@ -524,14 +524,14 @@ const activeStatusColumns: Column<PredictionRow>[] = [
         <div className="flex flex-col items-center">
           <span className={cn(
             'font-mono text-sm font-bold',
-            p >= 70 ? 'text-emerald-600' : p >= 30 ? 'text-amber-600' : p < 0 ? 'text-red-600' : 'text-muted-foreground'
+            p >= 70 ? 'text-profit' : p >= 30 ? 'text-warning' : p < 0 ? 'text-loss' : 'text-muted-foreground'
           )}>
             {p > 0 ? '+' : ''}{(p ?? 0).toFixed(1)}%
           </span>
           <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
             <div className={cn(
               'h-full',
-              p >= 70 ? 'bg-emerald-500' : p >= 30 ? 'bg-amber-500' : p < 0 ? 'bg-red-500' : 'bg-teal-500'
+              p >= 70 ? 'bg-profit' : p >= 30 ? 'bg-warning' : p < 0 ? 'bg-loss' : 'bg-whale'
             )} style={{ width: `${Math.max(0, Math.min(100, p))}%` }} />
           </div>
         </div>
@@ -630,8 +630,8 @@ const watchlistColumns: Column<WatchlistRow>[] = [
     render: (w) => (
       <Badge variant="outline" className={cn(
         'text-xs',
-        w.priority === 'HIGH' ? 'text-red-700 bg-red-50 border-red-200'
-        : w.priority === 'MEDIUM' ? 'text-amber-700 bg-amber-50 border-amber-200'
+        w.priority === 'HIGH' ? 'text-loss bg-loss border-loss'
+        : w.priority === 'MEDIUM' ? 'text-warning bg-warning border-warning'
         : 'text-gray-700 bg-gray-50 border-gray-200'
       )}>
         {w.priority === 'HIGH' ? 'عالية' : w.priority === 'MEDIUM' ? 'متوسطة' : 'منخفضة'}
@@ -654,7 +654,7 @@ const watchlistColumns: Column<WatchlistRow>[] = [
     render: (w) => (
       <Badge variant="outline" className={cn(
         'font-mono text-xs',
-        (w.change_percent ?? 0) >= 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
+        (w.change_percent ?? 0) >= 0 ? 'text-profit bg-profit border-profit' : 'text-loss bg-loss border-loss'
       )}>
         {(w.change_percent ?? 0) >= 0 ? '+' : ''}{w.change_percent?.toFixed(2)}%
       </Badge>

@@ -17,9 +17,9 @@ interface GateAnalysisViewProps {
 }
 
 const signalColors: Record<string, string> = {
-  BUY_STRONG: 'bg-lime-600', BUY: 'bg-green-600', BUY_CONTRARIAN: 'bg-teal-600',
-  ACCUMULATE: 'bg-teal-600', SELL: 'bg-red-600', SELL_STRONG: 'bg-rose-800',
-  WAIT: 'bg-amber-600', AVOID: 'bg-gray-600',
+  BUY_STRONG: 'bg-lime-600', BUY: 'bg-success', BUY_CONTRARIAN: 'bg-whale',
+  ACCUMULATE: 'bg-whale', SELL: 'bg-loss', SELL_STRONG: 'bg-loss',
+  WAIT: 'bg-warning', AVOID: 'bg-gray-600',
 };
 const signalBanners: Record<string, string> = {
   BUY_STRONG: 'شراء قوي ▲', BUY: 'شراء ▲', BUY_CONTRARIAN: 'شراء عكسي ▲',
@@ -164,9 +164,9 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
   );
 
   const r = result;
-  const gc = 'text-green-600 dark:text-green-400';
-  const rc = 'text-red-600 dark:text-red-400';
-  const trendClr = r.trendBull ? gc : r.trendBear ? rc : 'text-amber-600 dark:text-amber-400';
+  const gc = 'text-success dark:text-success';
+  const rc = 'text-loss dark:text-loss';
+  const trendClr = r.trendBull ? gc : r.trendBear ? rc : 'text-warning dark:text-warning';
   const gatesClr = r.gatesPassed >= r.minGates ? gc : rc;
   const atrClr = r.atrPct > 5 ? rc : r.atrPct < 2 ? gc : '';
   const rrClr = r.rrRatio >= r.minRrThreshold ? gc : rc;
@@ -226,7 +226,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
             {r.gates.map((g, i) => (
               <Tooltip key={i}>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className={`cursor-default text-xs gap-1 ${g.passed ? 'border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400' : 'border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-400'}`}>
+                  <Badge variant="outline" className={`cursor-default text-xs gap-1 ${g.passed ? 'border-success/50 bg-success/10 text-success dark:text-success' : 'border-loss/50 bg-loss/10 text-loss dark:text-loss'}`}>
                     <span className="text-sm">{g.passed ? '🟢' : '🔴'}</span>{g.nameAr}
                   </Badge>
                 </TooltipTrigger>
@@ -245,7 +245,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-[10px] text-muted-foreground leading-relaxed max-w-[70%]">الحساب ديناميكي — يتغير حسب حالة السوق تلقائياً</p>
           <Button variant="ghost" size="sm" className="text-xs gap-1.5" onClick={handleCopy}>
-            {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+            {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
             نسخ TradingView
           </Button>
         </div>

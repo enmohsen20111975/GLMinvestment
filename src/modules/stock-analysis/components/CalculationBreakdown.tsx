@@ -46,7 +46,7 @@ function FormulaRow({ label, formula, result, highlight }: {
         {formula}
       </code>
       {result && (
-        <span className={cn('text-sm font-bold min-w-[80px] text-left flex-shrink-0', highlight && 'text-emerald-600 dark:text-emerald-400')}>
+        <span className={cn('text-sm font-bold min-w-[80px] text-left flex-shrink-0', highlight && 'text-profit dark:text-profit')}>
           {result}
         </span>
       )}
@@ -60,9 +60,9 @@ function VerdictBadge({ verdict, verdictAr }: { verdict: string; verdictAr: stri
   return (
     <Badge variant="outline" className={cn(
       'text-sm font-bold border-0 px-4 py-1',
-      verdict === 'undervalued' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400',
-      verdict === 'fair' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
-      verdict === 'overvalued' && 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+      verdict === 'undervalued' && 'bg-profit text-profit dark:bg-profit/50 dark:text-profit',
+      verdict === 'fair' && 'bg-warning text-warning dark:bg-warning/50 dark:text-warning',
+      verdict === 'overvalued' && 'bg-loss text-loss dark:bg-loss/50 dark:text-loss',
       verdict === 'unknown' && 'bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-400',
     )}>
       {verdictAr}
@@ -159,7 +159,7 @@ function FairValueSection() {
           {currentPrice > 0 ? (
             <p className="text-lg font-bold font-mono">{(currentPrice ?? 0).toFixed(2)}</p>
           ) : (
-            <p className="text-sm font-bold font-mono text-amber-600">غير متوفر</p>
+            <p className="text-sm font-bold font-mono text-warning">غير متوفر</p>
           )}
         </div>
         <div className="text-muted-foreground">→</div>
@@ -167,20 +167,20 @@ function FairValueSection() {
           <p className="text-[10px] text-muted-foreground">القيمة العادلة</p>
           {fairValueLocked ? (
             <div className="flex flex-col items-center gap-0.5">
-              <p className="text-xs font-bold text-amber-600 dark:text-amber-400">
+              <p className="text-xs font-bold text-warning dark:text-warning">
                 🔒 متاحة للمشتركين
               </p>
               {avgFairValue > 0 && currentPrice > 0 && (
                 <p className="text-[10px] text-muted-foreground">
                   أعلى من السعر الحالي بـ{' '}
-                  <span className="font-semibold text-amber-700 dark:text-amber-400">
+                  <span className="font-semibold text-warning dark:text-warning">
                     {Math.round(((avgFairValue - currentPrice) / currentPrice) * 100)}%
                   </span>
                 </p>
               )}
             </div>
           ) : avgFairValue > 0 ? (
-            <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">{(avgFairValue ?? 0).toFixed(2)}</p>
+            <p className="text-lg font-bold font-mono text-profit dark:text-profit">{(avgFairValue ?? 0).toFixed(2)}</p>
           ) : (
             <p className="text-sm font-bold font-mono text-gray-500">غير متاح</p>
           )}
@@ -190,7 +190,7 @@ function FairValueSection() {
             <div className="text-muted-foreground">→</div>
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground">الفرق</p>
-              <p className={cn('text-lg font-bold font-mono', upsideToFair >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+              <p className={cn('text-lg font-bold font-mono', upsideToFair >= 0 ? 'text-profit' : 'text-loss')}>
                 {upsideToFair >= 0 ? '+' : ''}{(upsideToFair ?? 0).toFixed(1)}%
               </p>
             </div>
@@ -201,9 +201,9 @@ function FairValueSection() {
 
       {/* Warning if price is 0 */}
       {currentPrice === 0 && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-          <AlertTriangle className="w-4 h-4 text-amber-600" />
-          <p className="text-xs text-amber-700 dark:text-amber-400">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-warning dark:bg-warning/30 border border-warning dark:border-warning">
+          <AlertTriangle className="w-4 h-4 text-warning" />
+          <p className="text-xs text-warning dark:text-warning">
             السعر الحالي غير متوفر - قد تكون البيانات قديمة أو غير محدثة. يرجى تحديث البيانات.
           </p>
         </div>
@@ -285,23 +285,23 @@ function FairValueSection() {
           <div className={cn(
             "p-3 rounded-lg border",
             avgFairValue > 0
-              ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/40"
+              ? "bg-profit dark:bg-profit/30 border-profit dark:border-profit/40"
               : "bg-gray-50 dark:bg-gray-950/30 border-gray-200 dark:border-gray-900/40"
           )}>
             <p className={cn(
               "text-sm font-bold mb-1",
               avgFairValue > 0
-                ? "text-emerald-700 dark:text-emerald-400"
+                ? "text-profit dark:text-profit"
                 : "text-gray-700 dark:text-gray-400"
             )}>متوسط القيمة العادلة</p>
             {avgFairValue > 0 ? (
               <>
-                <code className="text-xs font-mono text-emerald-600 dark:text-emerald-400" dir="ltr" lang="en">
+                <code className="text-xs font-mono text-profit dark:text-profit" dir="ltr" lang="en">
                   {fairValueData
                     ? `Graham: ${(grahamNumber ?? 0).toFixed(2)} | Lynch: ${(lynchValue ?? 0).toFixed(2)} | DCF: ${(dcfValue ?? 0).toFixed(2)} | P/E: ${(peBased ?? 0).toFixed(2)}`
                     : `Graham: ${(grahamNumber ?? 0).toFixed(2)} | P/E: ${(peBased ?? 0).toFixed(2)}`}
                 </code>
-                <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 mt-1">
+                <p className="text-lg font-bold text-profit dark:text-profit mt-1">
                   المتوسط = {(avgFairValue ?? 0).toFixed(2)} EGP
                 </p>
               </>
@@ -316,8 +316,8 @@ function FairValueSection() {
 
       {/* PAYWALL Gate 1: lock CTA for free users post-trial */}
       {fairValueLocked && (
-        <div className="mt-2 p-3 rounded-lg border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/30 text-center">
-          <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold">
+        <div className="mt-2 p-3 rounded-lg border border-warning/40 bg-warning/60 dark:bg-warning/30 text-center">
+          <p className="text-xs text-warning dark:text-warning font-semibold">
             🔒 تفاصيل حساب القيمة العادلة (Graham · Lynch · DCF · P/E) متاحة للمشتركين
           </p>
         </div>
@@ -347,16 +347,16 @@ function TechnicalCalculationsSection() {
   let rsiZone: string;
   let rsiSignal: string;
   let rsiColor: string;
-  if (rsi >= 70) { rsiZone = 'تشبع شرائي'; rsiSignal = 'بيع'; rsiColor = 'text-red-600'; }
-  else if (rsi >= 55) { rsiZone = 'قوي'; rsiSignal = 'صعودي'; rsiColor = 'text-emerald-600'; }
-  else if (rsi >= 45) { rsiZone = 'محايد'; rsiSignal = 'محايد'; rsiColor = 'text-amber-600'; }
+  if (rsi >= 70) { rsiZone = 'تشبع شرائي'; rsiSignal = 'بيع'; rsiColor = 'text-loss'; }
+  else if (rsi >= 55) { rsiZone = 'قوي'; rsiSignal = 'صعودي'; rsiColor = 'text-profit'; }
+  else if (rsi >= 45) { rsiZone = 'محايد'; rsiSignal = 'محايد'; rsiColor = 'text-warning'; }
   else if (rsi >= 30) { rsiZone = 'ضعيف'; rsiSignal = 'هبوطي'; rsiColor = 'text-orange-600'; }
-  else { rsiZone = 'تشبع بيعي'; rsiSignal = 'شراء'; rsiColor = 'text-emerald-600'; }
+  else { rsiZone = 'تشبع بيعي'; rsiSignal = 'شراء'; rsiColor = 'text-profit'; }
 
   // MA Cross
   const maPosition = ma50 > ma200 ? 'MA50 أعلى من MA200' : 'MA50 أقل من MA200';
   const maCrossSignal = ma50 > ma200 ? 'تقاطع ذهبي (إيجابي)' : 'تقاطع ميت (سلبي)';
-  const maCrossColor = ma50 > ma200 ? 'text-emerald-600' : 'text-red-600';
+  const maCrossColor = ma50 > ma200 ? 'text-profit' : 'text-loss';
 
   // MACD
   const macdLine = macd ? Number(macd.line) || 0 : 0;
@@ -377,8 +377,8 @@ function TechnicalCalculationsSection() {
           highlight={rsi < 30 || rsi > 70}
         />
         <div className="flex gap-2 mt-1">
-          <Badge variant="outline" className="text-[10px] border-red-200 text-red-600">≥ 70 تشبع شرائي</Badge>
-          <Badge variant="outline" className="text-[10px] border-emerald-200 text-emerald-600">≤ 30 تشبع بيعي</Badge>
+          <Badge variant="outline" className="text-[10px] border-loss text-loss">≥ 70 تشبع شرائي</Badge>
+          <Badge variant="outline" className="text-[10px] border-profit text-profit">≤ 30 تشبع بيعي</Badge>
         </div>
         <p className={cn('text-xs mt-1 font-bold', rsiColor)}>← {rsiSignal}</p>
       </div>
@@ -428,7 +428,7 @@ function TechnicalCalculationsSection() {
           </>
         )}
         {macdText && (
-          <p className={cn('text-xs mt-1 font-bold', macdHist >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+          <p className={cn('text-xs mt-1 font-bold', macdHist >= 0 ? 'text-profit' : 'text-loss')}>
             ← {macdText}
           </p>
         )}
@@ -546,11 +546,11 @@ function ScoreCalculationsSection() {
       {/* Score Bars */}
       <div className="space-y-2">
         {[
-          { label: 'الفني', score: technical, color: 'bg-teal-500' },
-          { label: 'القيمة', score: value, color: 'bg-emerald-500' },
+          { label: 'الفني', score: technical, color: 'bg-whale' },
+          { label: 'القيمة', score: value, color: 'bg-profit' },
           { label: 'الجودة', score: quality, color: 'bg-purple-500' },
-          { label: 'الزخم', score: momentum, color: 'bg-amber-500' },
-          { label: 'المخاطر', score: risk, color: 'bg-red-500' },
+          { label: 'الزخم', score: momentum, color: 'bg-warning' },
+          { label: 'المخاطر', score: risk, color: 'bg-loss' },
           { label: 'الشامل', score: composite, color: 'bg-primary' },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-3">
@@ -593,7 +593,7 @@ export function CalculationBreakdown() {
           <AccordionItem value="fair-value">
             <AccordionTrigger className="text-sm font-bold">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <TrendingUp className="w-4 h-4 text-profit" />
                 <span>القيمة العادلة (Fair Value)</span>
               </div>
             </AccordionTrigger>
@@ -606,7 +606,7 @@ export function CalculationBreakdown() {
           <AccordionItem value="technical">
             <AccordionTrigger className="text-sm font-bold">
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-teal-600" />
+                <BarChart3 className="w-4 h-4 text-whale" />
                 <span>الحسابات الفنية</span>
               </div>
             </AccordionTrigger>
@@ -619,7 +619,7 @@ export function CalculationBreakdown() {
           <AccordionItem value="scores">
             <AccordionTrigger className="text-sm font-bold">
               <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-amber-600" />
+                <Award className="w-4 h-4 text-warning" />
                 <span>حسابات النتائج</span>
               </div>
             </AccordionTrigger>

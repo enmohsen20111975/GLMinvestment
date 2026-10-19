@@ -142,13 +142,13 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
         return {
           label: 'ضغط شرائي',
           icon: <TrendingUp className="w-3 h-3" />,
-          color: 'text-emerald-700 bg-emerald-500/15 border-emerald-500/40 dark:text-emerald-300',
+          color: 'text-profit bg-profit/15 border-profit/40 dark:text-profit',
         };
       case 'sell_pressure':
         return {
           label: 'ضغط بيعي',
           icon: <TrendingDown className="w-3 h-3" />,
-          color: 'text-rose-700 bg-rose-500/15 border-rose-500/40 dark:text-rose-300',
+          color: 'text-loss bg-loss/15 border-loss/40 dark:text-loss',
         };
       default:
         return {
@@ -235,7 +235,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
         {/* ===== Error ===== */}
         {error && !loading && (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <AlertTriangle className="w-6 h-6 text-rose-500" />
+            <AlertTriangle className="w-6 h-6 text-loss" />
             <p className="text-xs text-muted-foreground">{error}</p>
             <Button size="sm" variant="outline" onClick={fetchData} className="h-7">
               <RefreshCw className="w-3 h-3 ml-1" /> إعادة المحاولة
@@ -260,7 +260,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
             <div className="grid grid-cols-2 gap-2">
               {/* ---- Asks (sell side, red) ---- */}
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-semibold text-rose-600 dark:text-rose-400 pb-1 border-b border-rose-500/20">
+                <div className="flex items-center justify-between text-[10px] font-semibold text-loss dark:text-loss pb-1 border-b border-loss/20">
                   <span>طلبات البيع</span>
                   <span className="text-muted-foreground">حجم</span>
                 </div>
@@ -274,22 +274,22 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
                     return (
                       <div
                         key={`ask-${i}`}
-                        className="relative h-7 rounded overflow-hidden bg-rose-500/5 border border-rose-500/10"
+                        className="relative h-7 rounded overflow-hidden bg-loss/5 border border-loss/10"
                       >
                         {/* Bar — fills from the inside edge (left in RTL = outer) */}
                         <div
-                          className="absolute inset-y-0 right-0 bg-rose-500/30 dark:bg-rose-500/25 transition-all"
+                          className="absolute inset-y-0 right-0 bg-loss/30 dark:bg-loss/25 transition-all"
                           style={{ width: `${wPct}%` }}
                         />
                         <div className="relative h-full flex items-center justify-between px-2 text-[11px]">
-                          <span className="font-mono font-semibold text-rose-700 dark:text-rose-300 tabular-nums">
+                          <span className="font-mono font-semibold text-loss dark:text-loss tabular-nums">
                             {fmtPrice(lvl.price)}
                           </span>
                           <span className="flex items-center gap-1.5">
                             <span className="text-[9px] text-muted-foreground tabular-nums">
                               {lvl.orders} تك
                             </span>
-                            <span className="font-mono font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
+                            <span className="font-mono font-semibold text-loss dark:text-loss tabular-nums">
                               {fmtVol(lvl.volume)}
                             </span>
                           </span>
@@ -302,7 +302,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
 
               {/* ---- Bids (buy side, green) ---- */}
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 pb-1 border-b border-emerald-500/20">
+                <div className="flex items-center justify-between text-[10px] font-semibold text-profit dark:text-profit pb-1 border-b border-profit/20">
                   <span>طلبات الشراء</span>
                   <span className="text-muted-foreground">حجم</span>
                 </div>
@@ -316,21 +316,21 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
                     return (
                       <div
                         key={`bid-${i}`}
-                        className="relative h-7 rounded overflow-hidden bg-emerald-500/5 border border-emerald-500/10"
+                        className="relative h-7 rounded overflow-hidden bg-profit/5 border border-profit/10"
                       >
                         <div
-                          className="absolute inset-y-0 left-0 bg-emerald-500/30 dark:bg-emerald-500/25 transition-all"
+                          className="absolute inset-y-0 left-0 bg-profit/30 dark:bg-profit/25 transition-all"
                           style={{ width: `${wPct}%` }}
                         />
                         <div className="relative h-full flex items-center justify-between px-2 text-[11px]">
-                          <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                          <span className="font-mono font-semibold text-profit dark:text-profit tabular-nums">
                             {fmtPrice(lvl.price)}
                           </span>
                           <span className="flex items-center gap-1.5">
                             <span className="text-[9px] text-muted-foreground tabular-nums">
                               {lvl.orders} تك
                             </span>
-                            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                            <span className="font-mono font-semibold text-profit dark:text-profit tabular-nums">
                               {fmtVol(lvl.volume)}
                             </span>
                           </span>
@@ -360,11 +360,11 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
             {/* ===== Liquidity imbalance bar ===== */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <span className="flex items-center gap-1 text-profit dark:text-profit">
                   <TrendingUp className="w-3 h-3" />
                   سيولة شراء {fmtVol(data.total_bid_volume)}
                 </span>
-                <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                <span className="flex items-center gap-1 text-loss dark:text-loss">
                   سيولة بيع {fmtVol(data.total_ask_volume)}
                   <TrendingDown className="w-3 h-3" />
                 </span>
@@ -372,13 +372,13 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
               <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted flex">
                 {/* Bid share on the right (RTL = buy side on right) */}
                 <div
-                  className="bg-emerald-500 dark:bg-emerald-500 transition-all"
+                  className="bg-profit dark:bg-profit transition-all"
                   style={{
                     width: `${(data.total_bid_volume / Math.max(data.total_bid_volume + data.total_ask_volume, 1)) * 100}%`,
                   }}
                 />
                 <div
-                  className="bg-rose-500 dark:bg-rose-500 transition-all"
+                  className="bg-loss dark:bg-loss transition-all"
                   style={{
                     width: `${(data.total_ask_volume / Math.max(data.total_bid_volume + data.total_ask_volume, 1)) * 100}%`,
                   }}
@@ -390,9 +390,9 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
                   className={cn(
                     'font-mono font-bold tabular-nums',
                     data.imbalance > 0.1
-                      ? 'text-emerald-600 dark:text-emerald-400'
+                      ? 'text-profit dark:text-profit'
                       : data.imbalance < -0.1
-                      ? 'text-rose-600 dark:text-rose-400'
+                      ? 'text-loss dark:text-loss'
                       : 'text-muted-foreground'
                   )}
                 >
@@ -404,9 +404,9 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
 
             {/* ===== Summary stats grid ===== */}
             <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-border/50">
-              <div className="text-center p-1.5 rounded bg-emerald-500/5 border border-emerald-500/15">
+              <div className="text-center p-1.5 rounded bg-profit/5 border border-profit/15">
                 <div className="text-[9px] text-muted-foreground">إجمالي الشراء</div>
-                <div className="text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                <div className="text-[11px] font-bold tabular-nums text-profit dark:text-profit">
                   {fmtVol(data.total_bid_volume)}
                 </div>
               </div>
@@ -416,9 +416,9 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
                   {data.spread > 0 ? (data.spread ?? 0).toFixed(2) : '—'}
                 </div>
               </div>
-              <div className="text-center p-1.5 rounded bg-rose-500/5 border border-rose-500/15">
+              <div className="text-center p-1.5 rounded bg-loss/5 border border-loss/15">
                 <div className="text-[9px] text-muted-foreground">إجمالي البيع</div>
-                <div className="text-[11px] font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                <div className="text-[11px] font-bold tabular-nums text-loss dark:text-loss">
                   {fmtVol(data.total_ask_volume)}
                 </div>
               </div>

@@ -53,10 +53,10 @@ export function DesktopNotificationPrompt() {
   return (
     <div
       dir="rtl"
-      className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-background/95 dark:bg-zinc-900/95 border border-emerald-500/40 border-r-4 border-r-emerald-500 shadow-2xl rounded-2xl p-4 backdrop-blur-md animate-in fade-in slide-in-from-bottom-5 duration-300"
+      className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-background/95 dark:bg-zinc-900/95 border border-profit/40 border-r-4 border-r-emerald-500 shadow-2xl rounded-2xl p-4 backdrop-blur-md animate-in fade-in slide-in-from-bottom-5 duration-300"
     >
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-profit/10 text-profit dark:text-profit flex items-center justify-center flex-shrink-0">
           <Bell className="w-5 h-5 animate-bounce" />
         </div>
 
@@ -64,7 +64,7 @@ export function DesktopNotificationPrompt() {
           <div className="flex items-center justify-between gap-1 mb-1">
             <h4 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
               <span>تنبيهات رادار الأسهم الفورية</span>
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <ShieldCheck className="w-4 h-4 text-profit" />
             </h4>
             <button
               onClick={handleDismiss}
@@ -83,7 +83,7 @@ export function DesktopNotificationPrompt() {
             <Button
               size="sm"
               onClick={handleEnable}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 px-3 shadow-md"
+              className="bg-profit hover:bg-profit text-white font-bold text-xs h-8 px-3 shadow-md"
             >
               تفعيل إشعارات سطح المكتب
             </Button>

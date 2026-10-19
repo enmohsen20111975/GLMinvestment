@@ -27,21 +27,21 @@ interface ConfluencePick {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 75) return 'text-green-500';
-  if (score >= 60) return 'text-emerald-400';
+  if (score >= 75) return 'text-success';
+  if (score >= 60) return 'text-profit';
   if (score >= 45) return 'text-yellow-500';
   if (score >= 30) return 'text-orange-400';
-  return 'text-red-500';
+  return 'text-loss';
 }
 
 function getRecBadge(rec?: string | null) {
   const lower = (rec || '').toLowerCase();
   if (!rec) return <Badge variant="outline">غير محدد</Badge>;
   if (lower.includes('strong_buy') || lower.includes('شراء قوي')) {
-    return <Badge className="bg-green-500 hover:bg-green-600">شراء قوي</Badge>;
+    return <Badge className="bg-success hover:bg-success">شراء قوي</Badge>;
   }
   if (lower.includes('buy') || lower.includes('شراء')) {
-    return <Badge className="bg-emerald-400 hover:bg-emerald-500">شراء</Badge>;
+    return <Badge className="bg-profit hover:bg-profit">شراء</Badge>;
   }
   if (lower.includes('swing_buy') || lower.includes('ت Swing')) {
     return <Badge className="bg-cyan-500 hover:bg-cyan-600">شراء متأرجح</Badge>;
@@ -50,7 +50,7 @@ function getRecBadge(rec?: string | null) {
     return <Badge className="bg-yellow-500 hover:bg-yellow-600">حيادية</Badge>;
   }
   if (lower.includes('sell') || lower.includes('بيع')) {
-    return <Badge className="bg-red-500 hover:bg-red-600">بيع</Badge>;
+    return <Badge className="bg-loss hover:bg-loss">بيع</Badge>;
   }
   return <Badge variant="outline">{rec}</Badge>;
 }
@@ -135,19 +135,19 @@ export function SmartConfluenceView() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10">
+        <Card className="bg-gradient-to-br from-success/10 to-profit/10">
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">شراء</CardTitle></CardHeader>
-          <CardContent><div className="text-xl font-bold text-green-500">{buyPicks.length}</div></CardContent>
+          <CardContent><div className="text-xl font-bold text-success">{buyPicks.length}</div></CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-yellow-500/10 to-amber-500/10">
+        <Card className="bg-gradient-to-br from-yellow-500/10 to-warning/10">
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">حيادية</CardTitle></CardHeader>
           <CardContent><div className="text-xl font-bold text-yellow-500">{holdPicks.length}</div></CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10">
+        <Card className="bg-gradient-to-br from-loss/10 to-orange-500/10">
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">بيع</CardTitle></CardHeader>
-          <CardContent><div className="text-xl font-bold text-red-500">{sellPicks.length}</div></CardContent>
+          <CardContent><div className="text-xl font-bold text-loss">{sellPicks.length}</div></CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
+        <Card className="bg-gradient-to-br from-primary/10 to-cyan-500/10">
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">الكل</CardTitle></CardHeader>
           <CardContent><div className="text-xl font-bold">{predictions.length}</div></CardContent>
         </Card>
@@ -206,11 +206,11 @@ export function SmartConfluenceView() {
                       </div>
                       <div>
                         <span className="text-muted-foreground">هدف</span>
-                        <div className="font-bold text-green-500">{pick.target_price?.toFixed(2) || '0.00'}</div>
+                        <div className="font-bold text-success">{pick.target_price?.toFixed(2) || '0.00'}</div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">وقف</span>
-                        <div className="font-bold text-red-500">{pick.stop_loss?.toFixed(2) || '0.00'}</div>
+                        <div className="font-bold text-loss">{pick.stop_loss?.toFixed(2) || '0.00'}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -226,7 +226,7 @@ export function SmartConfluenceView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {buyPicks.map((pick, idx) => (
-                <Card key={idx} className="border-green-500/20 bg-green-500/5">
+                <Card key={idx} className="border-success/20 bg-success/5">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-bold text-lg">{pick.ticker}</span>
@@ -251,7 +251,7 @@ export function SmartConfluenceView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {sellPicks.map((pick, idx) => (
-                <Card key={idx} className="border-red-500/20 bg-red-500/5">
+                <Card key={idx} className="border-loss/20 bg-loss/5">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-bold text-lg">{pick.ticker}</span>

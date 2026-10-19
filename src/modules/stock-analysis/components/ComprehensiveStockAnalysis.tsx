@@ -133,23 +133,23 @@ function numOr(v: unknown, fallback: number = 0): number {
 function changeColor(v: number | null | undefined): string {
   if (v === null || v === undefined) return 'text-muted-foreground';
   const n = Number(v);
-  if (n > 0) return 'text-emerald-600 dark:text-emerald-400';
-  if (n < 0) return 'text-red-600 dark:text-red-400';
+  if (n > 0) return 'text-profit dark:text-profit';
+  if (n < 0) return 'text-loss dark:text-loss';
   return 'text-muted-foreground';
 }
 
 function scoreColor(score: number): string {
-  if (score >= 70) return 'text-emerald-600 dark:text-emerald-400';
-  if (score >= 50) return 'text-amber-600 dark:text-amber-400';
+  if (score >= 70) return 'text-profit dark:text-profit';
+  if (score >= 50) return 'text-warning dark:text-warning';
   if (score >= 30) return 'text-orange-600 dark:text-orange-400';
-  return 'text-red-600 dark:text-red-400';
+  return 'text-loss dark:text-loss';
 }
 
 function scoreBg(score: number): string {
-  if (score >= 70) return 'bg-emerald-500';
-  if (score >= 50) return 'bg-amber-500';
+  if (score >= 70) return 'bg-profit';
+  if (score >= 50) return 'bg-warning';
   if (score >= 30) return 'bg-orange-500';
-  return 'bg-red-500';
+  return 'bg-loss';
 }
 
 function signalBadge(signal: string): { label: string; className: string } {
@@ -158,11 +158,11 @@ function signalBadge(signal: string): { label: string; className: string } {
   // ACCUMULATE/REDUCE كانوا بـ يقعوا في 'انتظار' → العميل بيشوف 'انتظار' بدل 'تجميع'.
   // الحل: إضافة الـ 7 levels الـ canonical.
   const s = (signal || '').toLowerCase();
-  if (s.includes('strong_buy')) return { label: 'شراء قوي', className: 'bg-emerald-500 text-white' };
-  if (s.includes('buy')) return { label: 'شراء', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' };
-  if (s.includes('accumulate')) return { label: 'تجميع', className: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' };
-  if (s.includes('strong_sell')) return { label: 'بيع قوي', className: 'bg-red-500 text-white' };
-  if (s.includes('sell')) return { label: 'بيع', className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' };
+  if (s.includes('strong_buy')) return { label: 'شراء قوي', className: 'bg-profit text-white' };
+  if (s.includes('buy')) return { label: 'شراء', className: 'bg-profit text-profit dark:bg-profit dark:text-profit' };
+  if (s.includes('accumulate')) return { label: 'تجميع', className: 'bg-primary text-primary dark:bg-primary dark:text-primary' };
+  if (s.includes('strong_sell')) return { label: 'بيع قوي', className: 'bg-loss text-white' };
+  if (s.includes('sell')) return { label: 'بيع', className: 'bg-loss text-loss dark:bg-loss dark:text-loss' };
   if (s.includes('reduce')) return { label: 'تخفيض', className: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' };
   return { label: 'انتظار', className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' };
 }
@@ -255,7 +255,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
     return (
       <Card className="border-destructive">
         <CardContent className="p-8 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="w-12 h-12 text-loss mx-auto mb-4" />
           <p className="text-lg font-bold mb-2">فشل تحميل التحليل</p>
           <p className="text-sm text-muted-foreground mb-4">{error}</p>
           <Button onClick={fetchData} variant="outline">
@@ -348,9 +348,9 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
       {/* Error warnings (if any API failed) */}
       {data.errors.length > 0 && (
-        <Card className="border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20">
+        <Card className="border-warning dark:border-warning/50 bg-warning dark:bg-warning/20">
           <CardContent className="p-3">
-            <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+            <div className="flex items-center gap-2 text-xs text-warning dark:text-warning">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>بعض المحركات فشلت: {data.errors.join(' | ')}</span>
             </div>
@@ -431,7 +431,7 @@ function StockHeaderBar({
           <div className="flex items-center gap-4">
             <div className={cn(
               'w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl',
-              isPositive ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-red-500 to-rose-600'
+              isPositive ? 'bg-gradient-to-br from-profit to-whale' : 'bg-gradient-to-br from-loss to-loss'
             )}>
               {ticker.slice(0, 2)}
             </div>
@@ -564,10 +564,10 @@ function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedDa
 
       {/* ─── CANONICAL Signal (UNIFIED-DATA-CONTRACT, Rule 72 + Rule 73) ─── */}
       {/* العميل بيشوف قرار واحد فقط — من unified API (single display source). */}
-      <Card className="md:col-span-2 border-emerald-500/30 bg-emerald-500/5">
+      <Card className="md:col-span-2 border-profit/30 bg-profit/5">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Award className="w-4 h-4 text-emerald-600" />
+            <Award className="w-4 h-4 text-profit" />
             الإشارة الموحدة (Canonical)
             {unifiedData?.canonical?.master_score_source && (
               <Badge variant="outline" className="text-[9px] text-muted-foreground ml-2">
@@ -634,13 +634,13 @@ function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedDa
               {prediction.target_price != null && (
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-muted-foreground">الهدف</span>
-                  <span className="font-bold tabular-nums text-emerald-600">{formatPrice(prediction.target_price)}</span>
+                  <span className="font-bold tabular-nums text-profit">{formatPrice(prediction.target_price)}</span>
                 </div>
               )}
               {prediction.stop_loss != null && (
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-muted-foreground">وقف الخسارة</span>
-                  <span className="font-bold tabular-nums text-red-600">{formatPrice(prediction.stop_loss)}</span>
+                  <span className="font-bold tabular-nums text-loss">{formatPrice(prediction.stop_loss)}</span>
                 </div>
               )}
             </div>
@@ -648,7 +648,7 @@ function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedDa
 
           {/* Freshness indicator */}
           {unifiedData?.canonical?.prediction_is_fresh === false && prediction && (
-            <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs text-amber-600">
+            <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs text-warning">
               <AlertTriangle className="w-3 h-3" />
               <span>التوقع غير حديث (أقدم من 48 ساعة) — يُنصح بمراجعة التحليل</span>
             </div>
@@ -698,7 +698,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
               <span className="text-3xl font-bold tabular-nums">{(rsi ?? 0).toFixed(1)}</span>
               <span className={cn('text-sm font-semibold', rsiColor)}>{rsiStatus}</span>
             </div>
-            <div className="relative h-3 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full">
+            <div className="relative h-3 bg-gradient-to-r from-profit via-warning to-loss rounded-full">
               <div
                 className="absolute top-0 -mt-1 w-1 h-5 bg-foreground rounded"
                 style={{ left: `${Math.min(100, Math.max(0, rsi))}%` }}
@@ -729,13 +729,13 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">MA 50</span>
-              <span className={cn('font-bold tabular-nums', current > ma50 ? 'text-emerald-600' : 'text-red-600')}>
+              <span className={cn('font-bold tabular-nums', current > ma50 ? 'text-profit' : 'text-loss')}>
                 {formatPrice(ma50)} {current > ma50 ? '▲' : '▼'}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">MA 200</span>
-              <span className={cn('font-bold tabular-nums', current > ma200 ? 'text-emerald-600' : 'text-red-600')}>
+              <span className={cn('font-bold tabular-nums', current > ma200 ? 'text-profit' : 'text-loss')}>
                 {formatPrice(ma200)} {current > ma200 ? '▲' : '▼'}
               </span>
             </div>
@@ -757,7 +757,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
           </CardHeader>
           <CardContent className="pt-2 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-red-600">المقاومة</span>
+              <span className="text-sm text-loss">المقاومة</span>
               <span className="font-bold tabular-nums text-loss">{formatPrice(numVal(t.resistance))}</span>
             </div>
             <div className="flex items-center justify-between">
@@ -935,7 +935,7 @@ function ValuationRow({ label, value, low, high, lowLabel, highLabel, reverse }:
 }) {
   const isGood = reverse ? value >= low : value <= low;
   const isBad = reverse ? value >= high : value >= high;
-  const color = isGood ? 'text-emerald-600' : isBad ? 'text-red-600' : 'text-amber-600';
+  const color = isGood ? 'text-profit' : isBad ? 'text-loss' : 'text-warning';
   const status = isGood ? lowLabel : isBad ? highLabel : 'عادل';
 
   return (
@@ -997,19 +997,19 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
                 {m.target && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">الهدف</span>
-                    <span className="font-bold tabular-nums text-emerald-600">{formatPrice(m.target)}</span>
+                    <span className="font-bold tabular-nums text-profit">{formatPrice(m.target)}</span>
                   </div>
                 )}
                 {m.stopLoss && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">وقف الخسارة</span>
-                    <span className="font-bold tabular-nums text-red-600">{formatPrice(m.stopLoss)}</span>
+                    <span className="font-bold tabular-nums text-loss">{formatPrice(m.stopLoss)}</span>
                   </div>
                 )}
                 {m.riskReward && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">R/R</span>
-                    <span className={cn('font-bold', m.riskReward >= 1.5 ? 'text-emerald-600' : m.riskReward >= 1 ? 'text-amber-600' : 'text-red-600')}>
+                    <span className={cn('font-bold', m.riskReward >= 1.5 ? 'text-profit' : m.riskReward >= 1 ? 'text-warning' : 'text-loss')}>
                       {Number(m.riskReward).toFixed(2)}:1
                     </span>
                   </div>
@@ -1280,8 +1280,8 @@ function NewsTab({ news }: { news: Array<Record<string, unknown>> }) {
                   {item.sentiment && (
                     <Badge variant="outline" className={cn(
                       'text-[10px]',
-                      item.sentiment === 'positive' ? 'text-emerald-600' :
-                      item.sentiment === 'negative' ? 'text-red-600' : ''
+                      item.sentiment === 'positive' ? 'text-profit' :
+                      item.sentiment === 'negative' ? 'text-loss' : ''
                     )}>
                       {item.sentiment === 'positive' ? 'إيجابي' : item.sentiment === 'negative' ? 'سلبي' : 'محايد'}
                     </Badge>
@@ -1346,9 +1346,9 @@ function PredictionsTab({ predictions }: { predictions: Array<Record<string, unk
                   <div className="text-left">
                     <Badge variant="outline" className={cn(
                       'text-xs',
-                      outcome === 'TARGET_HIT' ? 'text-emerald-600' :
-                      outcome === 'STOPPED' ? 'text-red-600' :
-                      outcome === 'EXPIRED' ? 'text-amber-600' : ''
+                      outcome === 'TARGET_HIT' ? 'text-profit' :
+                      outcome === 'STOPPED' ? 'text-loss' :
+                      outcome === 'EXPIRED' ? 'text-warning' : ''
                     )}>
                       {outcome === 'TARGET_HIT' ? '🎯 تحقق' :
                        outcome === 'STOPPED' ? '🛑 وقف' :
@@ -1428,7 +1428,7 @@ function AITab({ professional, ticker }: { professional: Record<string, unknown>
               {professional.risks && (
                 <div>
                   <span className="text-xs text-muted-foreground">المخاطر:</span>
-                  <p className="text-sm mt-1 text-red-600">{professional.risks}</p>
+                  <p className="text-sm mt-1 text-loss">{professional.risks}</p>
                 </div>
               )}
             </div>

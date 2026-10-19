@@ -41,8 +41,8 @@ function formatCurrency(value: number, currency = 'EGP'): string {
 }
 
 function getPnlColor(pnl: number): string {
-  if (pnl > 0) return 'text-emerald-500';
-  if (pnl < 0) return 'text-red-500';
+  if (pnl > 0) return 'text-profit';
+  if (pnl < 0) return 'text-loss';
   return 'text-muted-foreground';
 }
 
@@ -53,8 +53,8 @@ function getPnlIcon(pnl: number) {
 }
 
 function getBrokerIcon(broker: string) {
-  if (broker === 'Binance') return <Bitcoin className="h-4 w-4 text-amber-400" />;
-  return <Building2 className="h-4 w-4 text-teal-400" />;
+  if (broker === 'Binance') return <Bitcoin className="h-4 w-4 text-warning" />;
+  return <Building2 className="h-4 w-4 text-whale" />;
 }
 
 export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: MasterPortfolioSummaryProps) {
@@ -101,7 +101,7 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
 
   if (loading) {
     return (
-      <Card className="bg-gradient-to-br from-emerald-950/30 to-emerald-900/10 border-emerald-800/40">
+      <Card className="bg-gradient-to-br from-profit/30 to-profit/10 border-profit/40">
         <CardContent className="p-4 space-y-3">
           <Skeleton className="h-5 w-40" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -127,19 +127,19 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
   return (
     <div className="space-y-3">
       {/* Aggregated Summary Card */}
-      <Card className="bg-gradient-to-br from-emerald-950/40 to-emerald-900/10 border-emerald-800/40">
+      <Card className="bg-gradient-to-br from-profit/40 to-profit/10 border-profit/40">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-emerald-400" />
+              <div className="w-8 h-8 rounded-full bg-profit/20 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-profit" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">المحفظة الأم (المجمّعة)</h3>
                 <p className="text-[10px] text-muted-foreground">إجمالي كل المحافظ الفرعية</p>
               </div>
             </div>
-            <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-700">
+            <Badge variant="outline" className="text-[10px] text-profit border-profit">
               {subPortfolios.length} محفظة فرعية
             </Badge>
           </div>
@@ -154,17 +154,17 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
             </div>
             <div className="p-2.5 rounded-lg bg-background/50 border border-border/50">
               <div className="flex items-center gap-1 mb-0.5 text-muted-foreground">
-                <CreditCard className="h-3 w-3 text-amber-500" />
+                <CreditCard className="h-3 w-3 text-warning" />
                 <p className="text-[10px]">إجمالي الديون</p>
               </div>
-              <p className="text-base font-bold text-amber-500">{formatCurrency(aggregated.total_obligations_egp ?? 0)}</p>
+              <p className="text-base font-bold text-warning">{formatCurrency(aggregated.total_obligations_egp ?? 0)}</p>
             </div>
-            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 ring-1 ring-emerald-500/20">
+            <div className="p-2.5 rounded-lg bg-profit/10 border border-profit/30 ring-1 ring-profit/20">
               <div className="flex items-center gap-1 mb-0.5 text-muted-foreground">
-                <Wallet className="h-3 w-3 text-emerald-500" />
+                <Wallet className="h-3 w-3 text-profit" />
                 <p className="text-[10px]">صافي الثروة</p>
               </div>
-              <p className="text-base font-bold text-emerald-500">{formatCurrency(aggregated.net_worth_egp ?? aggregated.total_value)}</p>
+              <p className="text-base font-bold text-profit">{formatCurrency(aggregated.net_worth_egp ?? aggregated.total_value)}</p>
             </div>
             <div className="p-2.5 rounded-lg bg-background/50 border border-border/50">
               <p className="text-[10px] text-muted-foreground mb-0.5">صافي الربح/الخسارة</p>
@@ -191,7 +191,7 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
         <Card className="bg-card border-border">
           <CardContent className="p-4 space-y-2">
             <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
+              <DollarSign className="h-4 w-4 text-profit" />
               أداء كل محفظة فرعية
             </h4>
             <div className="space-y-1.5">

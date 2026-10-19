@@ -158,11 +158,11 @@ export function SmartAssistantPanel() {
   const getActionBadge = (action: string) => {
     switch (action) {
       case 'SELL':
-        return { color: 'bg-red-500 text-white', icon: <TrendingDown className="h-3 w-3" />, text: 'بيع' };
+        return { color: 'bg-loss text-white', icon: <TrendingDown className="h-3 w-3" />, text: 'بيع' };
       case 'BUY_MORE':
-        return { color: 'bg-green-500 text-white', icon: <TrendingUp className="h-3 w-3" />, text: 'شراء زيادة' };
+        return { color: 'bg-success text-white', icon: <TrendingUp className="h-3 w-3" />, text: 'شراء زيادة' };
       case 'AVERAGE_DOWN':
-        return { color: 'bg-teal-500 text-white', icon: <Target className="h-3 w-3" />, text: 'متوسط' };
+        return { color: 'bg-whale text-white', icon: <Target className="h-3 w-3" />, text: 'متوسط' };
       default:
         return { color: 'bg-yellow-500 text-white', icon: <Minus className="h-3 w-3" />, text: 'احتفاظ' };
     }
@@ -170,9 +170,9 @@ export function SmartAssistantPanel() {
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case 'high': return 'text-red-600';
+      case 'high': return 'text-loss';
       case 'medium': return 'text-yellow-600';
-      default: return 'text-emerald-500';
+      default: return 'text-profit';
     }
   };
 
@@ -219,12 +219,12 @@ export function SmartAssistantPanel() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+        <Card className="p-4 bg-gradient-to-br from-primary to-primary dark:from-primary dark:to-primary">
           <div className="flex items-center gap-2 mb-1">
-            <Wallet className="h-4 w-4 text-teal-600" />
+            <Wallet className="h-4 w-4 text-whale" />
             <span className="text-sm text-muted-foreground">إجمالى الاستثمار</span>
           </div>
-          <div className="text-xl font-bold text-teal-700 dark:text-teal-300">
+          <div className="text-xl font-bold text-whale dark:text-whale">
             {data.summary.totalInvested.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
         </Card>
@@ -240,28 +240,28 @@ export function SmartAssistantPanel() {
         <Card className={cn(
           "p-4",
           data.summary.totalProfitLoss >= 0 
-            ? "bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900"
-            : "bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900"
+            ? "bg-gradient-to-br from-success to-success dark:from-success dark:to-success"
+            : "bg-gradient-to-br from-loss to-loss dark:from-loss dark:to-loss"
         )}>
           <div className="flex items-center gap-2 mb-1">
             <BarChart3 className={cn(
               "h-4 w-4",
-              data.summary.totalProfitLoss >= 0 ? "text-emerald-500" : "text-red-600"
+              data.summary.totalProfitLoss >= 0 ? "text-profit" : "text-loss"
             )} />
             <span className="text-sm text-muted-foreground">الربح/الخسارة</span>
           </div>
           <div className={cn(
             "text-xl font-bold",
             data.summary.totalProfitLoss >= 0 
-              ? "text-emerald-500 dark:text-green-300"
-              : "text-red-700 dark:text-red-300"
+              ? "text-profit dark:text-success"
+              : "text-loss dark:text-loss"
           )}>
             {data.summary.totalProfitLoss >= 0 ? '+' : ''}
             {data.summary.totalProfitLoss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
           <div className={cn(
             "text-xs",
-            data.summary.totalProfitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
+            data.summary.totalProfitLossPercent >= 0 ? "text-profit" : "text-loss"
           )}>
             ({data.summary.totalProfitLossPercent >= 0 ? '+' : ''}{(data.summary.totalProfitLossPercent ?? 0).toFixed(2)}%)
           </div>
@@ -321,8 +321,8 @@ export function SmartAssistantPanel() {
                   key={i} 
                   className={cn(
                     "cursor-pointer transition-all hover:shadow-md",
-                    stock.profitLossPercent > 10 && "border-green-300",
-                    stock.profitLossPercent < -10 && "border-red-300"
+                    stock.profitLossPercent > 10 && "border-success",
+                    stock.profitLossPercent < -10 && "border-loss"
                   )}
                   onClick={() => setExpandedStock(isExpanded ? null : stock.asset.id)}
                 >
@@ -342,14 +342,14 @@ export function SmartAssistantPanel() {
                         <div className="text-left">
                           <div className={cn(
                             "font-bold",
-                            stock.profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
+                            stock.profitLoss >= 0 ? "text-profit" : "text-loss"
                           )}>
                             {stock.profitLoss >= 0 ? '+' : ''}
                             {stock.profitLoss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
                           </div>
                           <div className={cn(
                             "text-sm",
-                            stock.profitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
+                            stock.profitLossPercent >= 0 ? "text-profit" : "text-loss"
                           )}>
                             ({stock.profitLossPercent >= 0 ? '+' : ''}{(stock.profitLossPercent ?? 0).toFixed(1)}%)
                           </div>
@@ -395,11 +395,11 @@ export function SmartAssistantPanel() {
                             </div>
                             <div className="bg-muted/50 p-2 rounded">
                               <div className="text-muted-foreground">الدعم</div>
-                              <div className="font-medium text-emerald-500">{(stock.stockInfo.support ?? 0).toFixed(2)}</div>
+                              <div className="font-medium text-profit">{(stock.stockInfo.support ?? 0).toFixed(2)}</div>
                             </div>
                             <div className="bg-muted/50 p-2 rounded">
                               <div className="text-muted-foreground">المقاومة</div>
-                              <div className="font-medium text-red-600">{(stock.stockInfo.resistance ?? 0).toFixed(2)}</div>
+                              <div className="font-medium text-loss">{(stock.stockInfo.resistance ?? 0).toFixed(2)}</div>
                             </div>
                           </div>
                         )}
@@ -409,13 +409,13 @@ export function SmartAssistantPanel() {
                           <div className="flex gap-4">
                             {stock.recommendation.targetPrice && (
                               <div className="flex items-center gap-2 text-sm">
-                                <Target className="h-4 w-4 text-emerald-500" />
+                                <Target className="h-4 w-4 text-profit" />
                                 <span>الهدف: <strong>{(stock.recommendation.targetPrice ?? 0).toFixed(2)}</strong></span>
                               </div>
                             )}
                             {stock.recommendation.stopLoss && (
                               <div className="flex items-center gap-2 text-sm">
-                                <ShieldAlert className="h-4 w-4 text-red-600" />
+                                <ShieldAlert className="h-4 w-4 text-loss" />
                                 <span>وقف الخسارة: <strong>{(stock.recommendation.stopLoss ?? 0).toFixed(2)}</strong></span>
                               </div>
                             )}
@@ -425,17 +425,17 @@ export function SmartAssistantPanel() {
                         {/* Technical Signals */}
                         <div className="flex flex-wrap gap-2">
                           {stock.technicalSignals.nearSupport && (
-                            <Badge variant="outline" className="bg-green-50 text-emerald-500 border-green-300">
+                            <Badge variant="outline" className="bg-success text-profit border-success">
                               قريب من دعم
                             </Badge>
                           )}
                           {stock.technicalSignals.nearResistance && (
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                            <Badge variant="outline" className="bg-loss text-loss border-loss">
                               قريب من مقاومة
                             </Badge>
                           )}
                           {stock.stockInfo?.dividend_yield && stock.stockInfo.dividend_yield > 4 && (
-                            <Badge variant="outline" className="bg-blue-50 text-teal-700 border-teal-300">
+                            <Badge variant="outline" className="bg-primary text-whale border-whale">
                               يوزع {(stock.stockInfo.dividend_yield ?? 0).toFixed(1)}% أرباح
                             </Badge>
                           )}
@@ -469,7 +469,7 @@ export function SmartAssistantPanel() {
                       <div className="text-sm text-muted-foreground">{bank.bank_name}</div>
                     </div>
                     <div className="text-left">
-                      <Badge className="bg-green-500 text-white">{bank.interest_rate}% سنوياً</Badge>
+                      <Badge className="bg-success text-white">{bank.interest_rate}% سنوياً</Badge>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
@@ -479,11 +479,11 @@ export function SmartAssistantPanel() {
                     </div>
                     <div className="bg-muted/50 p-2 rounded">
                       <div className="text-muted-foreground">عائد شهرى</div>
-                      <div className="font-medium text-emerald-500">{bank.monthlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
+                      <div className="font-medium text-profit">{bank.monthlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
                     </div>
                     <div className="bg-muted/50 p-2 rounded">
                       <div className="text-muted-foreground">عائد سنوى</div>
-                      <div className="font-medium text-emerald-500">{bank.yearlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
+                      <div className="font-medium text-profit">{bank.yearlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
                     </div>
                   </div>
                 </CardContent>
@@ -514,7 +514,7 @@ export function SmartAssistantPanel() {
                     <div className="text-left">
                       <div className={cn(
                         "font-bold",
-                        gold.profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
+                        gold.profitLoss >= 0 ? "text-profit" : "text-loss"
                       )}>
                         {gold.profitLoss >= 0 ? '+' : ''}{(gold.profitLossPercent ?? 0).toFixed(1)}%
                       </div>

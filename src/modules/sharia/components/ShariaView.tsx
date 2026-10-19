@@ -125,9 +125,9 @@ function IslamicPattern() {
 function OrnamentDivider() {
   return (
     <div className="flex items-center justify-center gap-2 py-1" aria-hidden>
-      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-500/40 to-transparent" />
-      <Sparkles className="w-3.5 h-3.5 text-amber-500/70" />
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-warning/40 to-transparent" />
+      <Sparkles className="w-3.5 h-3.5 text-warning/70" />
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-warning/40 to-transparent" />
     </div>
   );
 }
@@ -272,11 +272,11 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
   compliant:
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    'bg-profit text-profit dark:bg-profit/50 dark:text-profit border-profit dark:border-profit',
   non_compliant:
-    'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800',
+    'bg-loss text-loss dark:bg-loss/50 dark:text-loss border-loss dark:border-loss',
   doubtful:
-    'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    'bg-warning text-warning dark:bg-warning/50 dark:text-warning border-warning dark:border-warning',
   not_available:
     'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 };
@@ -318,7 +318,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
 
   return (
     <Card
-      className="relative overflow-hidden border border-border hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors cursor-pointer group"
+      className="relative overflow-hidden border border-border hover:border-profit dark:hover:border-profit transition-colors cursor-pointer group"
       onClick={() => onOpenDetail(row.symbol)}
     >
       <IslamicPattern />
@@ -326,14 +326,14 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-emerald-700 dark:text-emerald-400 text-base">
+              <span className="font-bold text-profit dark:text-profit text-base">
                 {row.symbol}
               </span>
               <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full border', STATUS_BADGE_CLASS[status])}>
                 {STATUS_EMOJI[status]} {STATUS_LABELS_AR[status]}
               </span>
               {row.is_halal_consensus === 1 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-warning bg-warning text-warning dark:bg-warning/40 dark:text-warning dark:border-warning">
                   <Award className="w-2.5 h-2.5 inline ml-0.5" />
                   إجماع
                 </span>
@@ -351,7 +351,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
 
           <div className="text-left flex-shrink-0 space-y-1">
             <div className="text-[10px] text-muted-foreground">نسبة التطهير (S&P)</div>
-            <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400" dir="ltr">
+            <div className="text-sm font-bold tabular-nums text-warning dark:text-warning" dir="ltr">
               {formatPct(purificationRate)}
             </div>
             <div className="text-[10px] text-muted-foreground">
@@ -418,11 +418,11 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-emerald-200 dark:border-emerald-900 shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-profit dark:border-profit shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-emerald-50 p-4">
+        <div className="relative bg-gradient-to-l from-profit via-profit to-profit text-profit p-4">
           <IslamicPattern />
           <div className="relative flex items-start justify-between gap-3">
             <div>
@@ -430,7 +430,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
                 <ShieldCheck className="w-5 h-5" />
                 <h3 className="text-lg font-bold">التوافق الشرعي — {symbol}</h3>
               </div>
-              <p className="text-xs text-emerald-100/80 mt-1">
+              <p className="text-xs text-profit/80 mt-1">
                 التفصيل حسب المصادر الثمانية + نسب التطهير
               </p>
             </div>
@@ -438,7 +438,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-emerald-50 hover:bg-emerald-800/40 hover:text-white"
+              className="text-profit hover:bg-profit/40 hover:text-white"
               aria-label="إغلاق"
             >
               ✕
@@ -455,8 +455,8 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
             </div>
           )}
           {error && !loading && (
-            <Card className="border-red-200 dark:border-red-900/50">
-              <CardContent className="p-4 flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+            <Card className="border-loss dark:border-loss/50">
+              <CardContent className="p-4 flex items-center gap-2 text-sm text-loss dark:text-loss">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </CardContent>
@@ -487,15 +487,15 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
   return (
     <>
       {/* Headline */}
-      <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 space-y-1">
+      <div className="rounded-lg border border-profit dark:border-profit bg-profit/60 dark:bg-profit/20 p-3 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-emerald-700 dark:text-emerald-400 text-lg">{symbol}</span>
+          <span className="font-bold text-profit dark:text-profit text-lg">{symbol}</span>
           <Badge
             className={cn(
               'border',
               isHalal
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+                ? 'bg-profit text-profit dark:bg-profit/50 dark:text-profit border-profit dark:border-profit'
+                : 'bg-warning text-warning dark:bg-warning/50 dark:text-warning border-warning dark:border-warning',
             )}
           >
             {isHalal ? '🟢 متوافق (إجماع)' : '🟡 مشمول بالقائمة'}
@@ -525,7 +525,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
       {/* Sources breakdown */}
       <div>
         <h4 className="text-sm font-bold mb-2 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-emerald-600" />
+          <BookOpen className="w-4 h-4 text-profit" />
           تفصيل المصادر الثمانية
         </h4>
         <div className="rounded-md border border-border overflow-hidden">
@@ -576,7 +576,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
           <OrnamentDivider />
           <div>
             <h4 className="text-sm font-bold mb-2 flex items-center gap-2">
-              <Scale className="w-4 h-4 text-amber-600" />
+              <Scale className="w-4 h-4 text-warning" />
               نسب التطهير المعتمدة
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -586,7 +586,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
                   className={cn(
                     'rounded-md border p-2 flex items-center justify-between',
                     r.is_primary === 1
-                      ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800'
+                      ? 'border-warning bg-warning dark:bg-warning/30 dark:border-warning'
                       : 'border-border bg-muted/30',
                   )}
                 >
@@ -594,12 +594,12 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
                     <div className="text-xs font-medium">
                       {r.method_name_ar || r.method_key}
                       {r.is_primary === 1 && (
-                        <span className="text-[10px] text-amber-700 dark:text-amber-400 mr-1">★ أساسي</span>
+                        <span className="text-[10px] text-warning dark:text-warning mr-1">★ أساسي</span>
                       )}
                     </div>
                     <div className="text-[10px] text-muted-foreground">{r.basis || '—'}</div>
                   </div>
-                  <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400" dir="ltr">
+                  <div className="text-sm font-bold tabular-nums text-warning dark:text-warning" dir="ltr">
                     {formatPct(r.rate_pct)}
                   </div>
                 </div>
@@ -626,8 +626,8 @@ function MetricTile({
       className={cn(
         'rounded-md border p-2 text-center',
         accent === 'emerald'
-          ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20'
-          : 'border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20',
+          ? 'border-profit dark:border-profit bg-profit/40 dark:bg-profit/20'
+          : 'border-warning dark:border-warning bg-warning/40 dark:bg-warning/20',
       )}
     >
       <div className="text-[10px] text-muted-foreground">{label}</div>
@@ -635,8 +635,8 @@ function MetricTile({
         className={cn(
           'text-sm font-bold tabular-nums',
           accent === 'emerald'
-            ? 'text-emerald-700 dark:text-emerald-400'
-            : 'text-amber-700 dark:text-amber-400',
+            ? 'text-profit dark:text-profit'
+            : 'text-warning dark:text-warning',
         )}
         dir="ltr"
       >
@@ -709,10 +709,10 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
   }, [symbol, quantity, buyPrice, sellPrice, method, includeCapitalGain, canSubmit]);
 
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900">
+    <Card className="border-profit dark:border-profit">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Calculator className="w-4 h-4 text-emerald-600" />
+          <Calculator className="w-4 h-4 text-profit" />
           حاسبة تطهير صفقة واحدة
         </CardTitle>
         <CardDescription className="text-xs">
@@ -783,7 +783,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
               type="checkbox"
               checked={includeCapitalGain}
               onChange={(e) => setIncludeCapitalGain(e.target.checked)}
-              className="w-4 h-4 rounded border-border accent-emerald-600"
+              className="w-4 h-4 rounded border-border accent-profit"
             />
             تضمين الربح الرأسمالي المحقق
           </label>
@@ -792,7 +792,7 @@ function SingleTradePurificationCalculator({ defaultSymbol }: PurificationCalcul
         <Button
           onClick={handleCalculate}
           disabled={!canSubmit}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+          className="w-full bg-profit hover:bg-profit text-white gap-2"
         >
           {loading ? (
             <>
@@ -826,13 +826,13 @@ function PurificationResultCard({ result }: { result: PurificationResponse }) {
   const capitalGain = typeof result.realized_capital_gain === 'number' ? result.realized_capital_gain : null;
 
   return (
-    <div className="rounded-lg border-2 border-amber-300 dark:border-amber-800 bg-gradient-to-l from-amber-50 via-amber-50/40 to-amber-50 dark:from-amber-950/30 dark:via-amber-950/10 dark:to-amber-950/30 p-4">
+    <div className="rounded-lg border-2 border-warning dark:border-warning bg-gradient-to-l from-warning via-warning/40 to-warning dark:from-warning/30 dark:via-warning/10 dark:to-warning/30 p-4">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">
+          <p className="text-[10px] uppercase tracking-wider text-warning dark:text-warning font-semibold">
             قيمة التطهير الواجبة
           </p>
-          <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums" dir="ltr">
+          <p className="text-2xl font-bold text-warning dark:text-warning tabular-nums" dir="ltr">
             {amount != null ? `${amount.toFixed(2)} ج.م` : '—'}
           </p>
         </div>
@@ -841,7 +841,7 @@ function PurificationResultCard({ result }: { result: PurificationResponse }) {
           <p className="text-xs font-bold">{result.method || result.primary_method || 'S&P'}</p>
         </div>
       </div>
-      <Separator className="my-2 bg-amber-200 dark:bg-amber-900" />
+      <Separator className="my-2 bg-warning dark:bg-warning" />
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
           <p className="text-[10px] text-muted-foreground">نسبة التطهير</p>
@@ -911,10 +911,10 @@ function PortfolioPurificationCalculator() {
   }, [userId, method, includeCapitalGain, canSubmit]);
 
   return (
-    <Card className="border-amber-200 dark:border-amber-900">
+    <Card className="border-warning dark:border-warning">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Users className="w-4 h-4 text-amber-600" />
+          <Users className="w-4 h-4 text-warning" />
           تطهير المحفظة بالكامل
         </CardTitle>
         <CardDescription className="text-xs">
@@ -952,7 +952,7 @@ function PortfolioPurificationCalculator() {
             type="checkbox"
             checked={includeCapitalGain}
             onChange={(e) => setIncludeCapitalGain(e.target.checked)}
-            className="w-4 h-4 rounded border-border accent-emerald-600"
+            className="w-4 h-4 rounded border-border accent-profit"
           />
           تضمين الأرباح الرأسمالية المحققة
         </label>
@@ -960,7 +960,7 @@ function PortfolioPurificationCalculator() {
         <Button
           onClick={handleCalculate}
           disabled={!canSubmit}
-          className="w-full bg-amber-600 hover:bg-amber-700 text-white gap-2"
+          className="w-full bg-warning hover:bg-warning text-white gap-2"
         >
           {loading ? (
             <>
@@ -992,13 +992,13 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
   const perSymbol = Array.isArray(result.per_symbol) ? (result.per_symbol as Array<Record<string, unknown>>) : [];
 
   return (
-    <div className="rounded-lg border-2 border-emerald-300 dark:border-emerald-800 bg-gradient-to-l from-emerald-50 via-emerald-50/40 to-emerald-50 dark:from-emerald-950/30 dark:via-emerald-950/10 dark:to-emerald-950/30 p-4 space-y-3">
+    <div className="rounded-lg border-2 border-profit dark:border-profit bg-gradient-to-l from-profit via-profit/40 to-profit dark:from-profit/30 dark:via-profit/10 dark:to-profit/30 p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold">
+          <p className="text-[10px] uppercase tracking-wider text-profit dark:text-profit font-semibold">
             إجمالي التطهير للمحفظة
           </p>
-          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums" dir="ltr">
+          <p className="text-2xl font-bold text-profit dark:text-profit tabular-nums" dir="ltr">
             {totalPurification != null ? `${totalPurification.toFixed(2)} ج.م` : '—'}
           </p>
         </div>
@@ -1046,7 +1046,7 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
                         ? safeNumber(row.quantity ?? row.shares)?.toString()
                         : '—'}
                     </TableCell>
-                    <TableCell className="text-center tabular-nums font-bold text-amber-700 dark:text-amber-400" dir="ltr">
+                    <TableCell className="text-center tabular-nums font-bold text-warning dark:text-warning" dir="ltr">
                       {safeNumber(row.purification_amount ?? row.purification ?? row.amount) != null
                         ? `${safeNumber(row.purification_amount ?? row.purification ?? row.amount)?.toFixed(2)}`
                         : '—'}
@@ -1072,8 +1072,8 @@ function Alert({ variant, children }: { variant: 'error' | 'info'; children: Rea
       className={cn(
         'flex items-start gap-2 p-3 rounded-md text-xs border',
         variant === 'error'
-          ? 'border-red-200 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900'
-          : 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900',
+          ? 'border-loss bg-loss text-loss dark:bg-loss/30 dark:text-loss dark:border-loss'
+          : 'border-warning bg-warning text-warning dark:bg-warning/30 dark:text-warning dark:border-warning',
       )}
     >
       <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -1168,7 +1168,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
       </div>
 
       {/* Filters */}
-      <Card className="border-emerald-200 dark:border-emerald-900">
+      <Card className="border-profit dark:border-profit">
         <CardContent className="p-3 space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
@@ -1192,7 +1192,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
                 }}
                 className={cn(
                   'gap-1.5 text-xs h-9',
-                  consensusOnly && 'bg-emerald-600 hover:bg-emerald-700 text-white',
+                  consensusOnly && 'bg-profit hover:bg-profit text-white',
                 )}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -1229,7 +1229,7 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
                   'text-[11px] px-2 py-1 rounded-full border transition-all',
                   opt.color,
                   filterStatus === opt.id
-                    ? 'ring-2 ring-offset-1 ring-emerald-400 dark:ring-emerald-600 font-bold'
+                    ? 'ring-2 ring-offset-1 ring-profit dark:ring-profit font-bold'
                     : 'opacity-70 hover:opacity-100',
                 )}
               >
@@ -1336,16 +1336,16 @@ function StatPill({
       className={cn(
         'rounded-lg border p-2 flex items-center gap-2',
         accent === 'emerald'
-          ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20'
-          : 'border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20',
+          ? 'border-profit dark:border-profit bg-profit/50 dark:bg-profit/20'
+          : 'border-warning dark:border-warning bg-warning/50 dark:bg-warning/20',
       )}
     >
       <span
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-full',
           accent === 'emerald'
-            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+            ? 'bg-profit text-profit dark:bg-profit/40 dark:text-profit'
+            : 'bg-warning text-warning dark:bg-warning/40 dark:text-warning',
         )}
       >
         {icon}
@@ -1356,8 +1356,8 @@ function StatPill({
           className={cn(
             'text-sm font-bold tabular-nums',
             accent === 'emerald'
-              ? 'text-emerald-700 dark:text-emerald-400'
-              : 'text-amber-700 dark:text-amber-400',
+              ? 'text-profit dark:text-profit'
+              : 'text-warning dark:text-warning',
           )}
           dir="ltr"
         >
@@ -1389,29 +1389,29 @@ export function ShariaView() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 via-background to-background dark:from-emerald-950/10">
+    <div className="min-h-screen bg-gradient-to-b from-profit/30 via-background to-background dark:from-profit/10">
       <div className="max-w-6xl mx-auto p-3 sm:p-4 space-y-4" dir="rtl">
         {/* Hero header */}
-        <Card className="relative overflow-hidden border-emerald-300 dark:border-emerald-900 bg-gradient-to-l from-emerald-700 via-emerald-600 to-emerald-700 text-emerald-50">
+        <Card className="relative overflow-hidden border-profit dark:border-profit bg-gradient-to-l from-profit via-profit to-profit text-profit">
           <IslamicPattern />
           <CardContent className="relative p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <ShieldCheck className="w-6 h-6 text-amber-300" />
+                  <ShieldCheck className="w-6 h-6 text-warning" />
                   <h1 className="text-xl sm:text-2xl font-bold">شاشة التوافق الشرعي</h1>
                 </div>
-                <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-profit/90 max-w-2xl leading-relaxed">
                   بيانات التوافق الشرعي لأسهم البورصة المصرية من ثمانية مصادر متخصصة، مع
                   حاسبة تطهير الأرباح وفق معيار S&P الشرعي وحاسبة تطهير المحفظة بالكامل.
                 </p>
               </div>
               <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wider text-emerald-100/80">
+                <div className="text-[10px] uppercase tracking-wider text-profit/80">
                   المنهجية الأساسية
                 </div>
-                <div className="text-lg font-bold text-amber-300">معيار S&P</div>
-                <div className="text-[10px] text-emerald-100/70 mt-0.5">
+                <div className="text-lg font-bold text-warning">معيار S&P</div>
+                <div className="text-[10px] text-profit/70 mt-0.5">
                   8 مصادر · تحديث أسبوعي
                 </div>
               </div>

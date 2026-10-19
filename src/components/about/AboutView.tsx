@@ -109,46 +109,46 @@ const COLOR_CLASSES: Record<
   { bg: string; text: string; border: string; gradient: string; dot: string }
 > = {
   emerald: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    gradient: 'from-emerald-500 to-teal-600',
-    dot: 'bg-emerald-500',
+    bg: 'bg-profit dark:bg-profit/30',
+    text: 'text-profit dark:text-profit',
+    border: 'border-profit dark:border-profit',
+    gradient: 'from-profit to-whale',
+    dot: 'bg-profit',
   },
   teal: {
-    bg: 'bg-teal-50 dark:bg-teal-950/30',
-    text: 'text-teal-600 dark:text-teal-400',
-    border: 'border-teal-200 dark:border-teal-800',
-    gradient: 'from-teal-500 to-emerald-600',
-    dot: 'bg-teal-500',
+    bg: 'bg-whale dark:bg-whale/30',
+    text: 'text-whale dark:text-whale',
+    border: 'border-whale dark:border-whale',
+    gradient: 'from-whale to-profit',
+    dot: 'bg-whale',
   },
   cyan: {
     bg: 'bg-cyan-50 dark:bg-cyan-950/30',
     text: 'text-cyan-600 dark:text-cyan-400',
     border: 'border-cyan-200 dark:border-cyan-800',
-    gradient: 'from-cyan-500 to-teal-600',
+    gradient: 'from-cyan-500 to-whale',
     dot: 'bg-cyan-500',
   },
   amber: {
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    text: 'text-amber-600 dark:text-amber-400',
-    border: 'border-amber-200 dark:border-amber-800',
-    gradient: 'from-amber-500 to-orange-600',
-    dot: 'bg-amber-500',
+    bg: 'bg-warning dark:bg-warning/30',
+    text: 'text-warning dark:text-warning',
+    border: 'border-warning dark:border-warning',
+    gradient: 'from-warning to-orange-600',
+    dot: 'bg-warning',
   },
   orange: {
     bg: 'bg-orange-50 dark:bg-orange-950/30',
     text: 'text-orange-600 dark:text-orange-400',
     border: 'border-orange-200 dark:border-orange-800',
-    gradient: 'from-orange-500 to-red-600',
+    gradient: 'from-orange-500 to-loss',
     dot: 'bg-orange-500',
   },
   rose: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-600 dark:text-rose-400',
-    border: 'border-rose-200 dark:border-rose-800',
-    gradient: 'from-rose-500 to-pink-600',
-    dot: 'bg-rose-500',
+    bg: 'bg-loss dark:bg-loss/30',
+    text: 'text-loss dark:text-loss',
+    border: 'border-loss dark:border-loss',
+    gradient: 'from-loss to-pink-600',
+    dot: 'bg-loss',
   },
 };
 
@@ -157,18 +157,18 @@ export function AboutView() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-b from-background via-background to-emerald-950/5"
+      className="min-h-screen bg-gradient-to-b from-background via-background to-profit/5"
       dir="rtl"
     >
       <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
         {/* ─── مقدمة ─── */}
         <div className="text-center mb-10 md:mb-14">
-          <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 mb-5">
+          <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-profit to-whale shadow-lg shadow-emerald-500/30 mb-5">
             <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-white" />
           </div>
           <Badge
             variant="outline"
-            className="mb-4 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
+            className="mb-4 border-profit/50 text-profit dark:text-profit bg-profit dark:bg-profit/30"
           >
             منصة تحليل مالي متخصصة
           </Badge>
@@ -186,7 +186,7 @@ export function AboutView() {
         <Card className="mb-8 md:mb-10 border-border/60 shadow-sm overflow-hidden">
           <CardContent className="p-5 md:p-7">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-profit to-whale flex items-center justify-center">
                 <Globe className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -223,7 +223,7 @@ export function AboutView() {
         <Card className="mb-8 md:mb-10 border-border/60 shadow-sm overflow-hidden">
           <CardContent className="p-5 md:p-7">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-whale to-profit flex items-center justify-center">
                 <Target className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -258,7 +258,7 @@ export function AboutView() {
         {/* ─── المزايا الرئيسية ─── */}
         <div className="mb-8 md:mb-10">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-warning to-orange-600 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -302,11 +302,11 @@ export function AboutView() {
         </div>
 
         {/* ─── إخلاء المسؤولية ─── */}
-        <Card className="mb-8 md:mb-10 border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 overflow-hidden">
+        <Card className="mb-8 md:mb-10 border-warning/40 bg-warning dark:bg-warning/20 overflow-hidden">
           <CardContent className="p-5 md:p-6">
             <div className="flex items-start gap-3">
-              <div className="shrink-0 w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div className="shrink-0 w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-warning dark:text-warning" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-bold text-foreground mb-1.5">
@@ -338,27 +338,27 @@ export function AboutView() {
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />
+                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-profit mt-1.5" />
                 <span>
                   بيانات الأسعار التاريخية واللحظية من مصادر معتمدة لكل سوق.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />
+                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-profit mt-1.5" />
                 <span>
                   القوائم المالية للشركات المدرجة من التقارير الرسمية الصادرة عن
                   كل شركة.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />
+                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-profit mt-1.5" />
                 <span>
                   مؤشرات الاقتصاد الكلي وأسعار العملات والمعادن من البنوك المركزية
                   والأسواق المعتمدة.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5" />
+                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-profit mt-1.5" />
                 <span>الأخبار المالية من مصادر إخبارية متخصصة.</span>
               </li>
             </ul>
@@ -369,7 +369,7 @@ export function AboutView() {
         <div className="text-center mt-10 md:mt-12 mb-8">
           <button
             onClick={() => setCurrentView('dashboard')}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-l from-emerald-600 to-teal-600 text-white text-sm font-semibold hover:from-emerald-700 hover:to-teal-700 transition-colors shadow-md"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-l from-profit to-whale text-white text-sm font-semibold hover:from-profit hover:to-whale transition-colors shadow-md"
           >
             <TrendingUp className="w-4 h-4" />
             الانتقال إلى لوحة التحكم

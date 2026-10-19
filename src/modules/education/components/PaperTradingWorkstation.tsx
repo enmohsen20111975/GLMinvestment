@@ -182,15 +182,15 @@ function fmtPrice(v: number | null | undefined): string {
 
 function pnlColor(v: number | null | undefined): string {
   if (v == null) return 'text-muted-foreground';
-  if (v > 0) return 'text-emerald-600 dark:text-emerald-400';
-  if (v < 0) return 'text-red-600 dark:text-red-400';
+  if (v > 0) return 'text-profit dark:text-profit';
+  if (v < 0) return 'text-loss dark:text-loss';
   return 'text-muted-foreground';
 }
 
 function rowBgClass(v: number | null | undefined): string {
   if (v == null) return '';
-  if (v > 0) return 'bg-emerald-50/40 dark:bg-emerald-950/20';
-  if (v < 0) return 'bg-red-50/40 dark:bg-red-950/20';
+  if (v > 0) return 'bg-profit/40 dark:bg-profit/20';
+  if (v < 0) return 'bg-loss/40 dark:bg-loss/20';
   return '';
 }
 
@@ -688,7 +688,7 @@ export function PaperTradingWorkstation() {
         className="flex items-center justify-center min-h-[400px]"
       >
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-profit" />
           <p className="text-sm">جاري تحميل محطة التداول الورقي...</p>
         </div>
       </div>
@@ -703,7 +703,7 @@ export function PaperTradingWorkstation() {
       >
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center space-y-3">
-            <p className="text-red-600 font-medium">
+            <p className="text-loss font-medium">
               تعذّر تحميل حساب التداول الورقي
             </p>
             <Button onClick={() => fetchAccount()} variant="outline">
@@ -736,12 +736,12 @@ export function PaperTradingWorkstation() {
       {/* ==================================================
           1. ACCOUNT HEADER BAR
           ================================================== */}
-      <Card className="border-emerald-200 dark:border-emerald-900">
+      <Card className="border-profit dark:border-profit">
         <CardContent className="pt-5 pb-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
             {/* Account title */}
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex items-center justify-center w-11 h-11 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+              <div className="flex items-center justify-center w-11 h-11 rounded-full bg-profit dark:bg-profit text-profit dark:text-profit">
                 <Wallet className="w-6 h-6" />
               </div>
               <div className="min-w-0">
@@ -861,7 +861,7 @@ export function PaperTradingWorkstation() {
                       handleResetAccount();
                     }}
                     disabled={resetting}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-loss hover:bg-loss text-white"
                   >
                     {resetting ? (
                       <Loader2 className="w-4 h-4 ml-2 animate-spin" />
@@ -883,7 +883,7 @@ export function PaperTradingWorkstation() {
         <Card className="lg:col-span-4 xl:col-span-3">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Zap className="w-4 h-4 text-emerald-600" />
+              <Zap className="w-4 h-4 text-profit" />
               تنفيذ أمر تداول
             </CardTitle>
           </CardHeader>
@@ -904,10 +904,10 @@ export function PaperTradingWorkstation() {
                     </span>
                   </span>
                   {livePrice != null && (
-                    <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-semibold tabular-nums">
+                    <span className="inline-flex items-center gap-1 text-profit dark:text-profit font-semibold tabular-nums">
                       <span className="relative flex w-2 h-2">
-                        <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                        <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="absolute inline-flex w-full h-full rounded-full bg-profit opacity-75 animate-ping" />
+                        <span className="relative inline-flex w-2 h-2 rounded-full bg-profit" />
                       </span>
                       {fmtPrice(livePrice)} ج.م
                     </span>
@@ -951,8 +951,8 @@ export function PaperTradingWorkstation() {
                 onClick={() => setOrderType('BUY')}
                 className={`h-9 ${
                   orderType === 'BUY'
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : 'text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-profit hover:bg-profit text-white'
+                    : 'text-profit dark:text-profit'
                 }`}
               >
                 <ArrowUpCircle className="w-4 h-4 ml-1.5" />
@@ -964,8 +964,8 @@ export function PaperTradingWorkstation() {
                 onClick={() => setOrderType('SELL')}
                 className={`h-9 ${
                   orderType === 'SELL'
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'text-red-700 dark:text-red-300'
+                    ? 'bg-loss hover:bg-loss text-white'
+                    : 'text-loss dark:text-loss'
                 }`}
               >
                 <ArrowDownCircle className="w-4 h-4 ml-1.5" />
@@ -1022,7 +1022,7 @@ export function PaperTradingWorkstation() {
                 <button
                   type="button"
                   onClick={() => setEntryPrice(String(livePrice))}
-                  className="text-[10px] text-emerald-700 dark:text-emerald-300 hover:underline"
+                  className="text-[10px] text-profit dark:text-profit hover:underline"
                 >
                   استخدام السعر الحي: {fmtPrice(livePrice)}
                 </button>
@@ -1032,7 +1032,7 @@ export function PaperTradingWorkstation() {
             {/* Stop loss */}
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <Shield className="w-3 h-3 text-red-600" />
+                <Shield className="w-3 h-3 text-loss" />
                 وقف الخسارة (اختياري)
               </Label>
               <Input
@@ -1056,7 +1056,7 @@ export function PaperTradingWorkstation() {
             {/* Take profit */}
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <Target className="w-3 h-3 text-emerald-600" />
+                <Target className="w-3 h-3 text-profit" />
                 جني الأرباح (اختياري)
               </Label>
               <Input
@@ -1089,19 +1089,19 @@ export function PaperTradingWorkstation() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-red-600" />
+                  <Shield className="w-3 h-3 text-loss" />
                   المخاطرة
                 </span>
-                <span className="font-semibold tabular-nums text-red-700 dark:text-red-300">
+                <span className="font-semibold tabular-nums text-loss dark:text-loss">
                   {fmtEgp(riskAmount)} ج.م
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground flex items-center gap-1">
-                  <Target className="w-3 h-3 text-emerald-600" />
+                  <Target className="w-3 h-3 text-profit" />
                   العائد المستهدف
                 </span>
-                <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+                <span className="font-semibold tabular-nums text-profit dark:text-profit">
                   {fmtEgp(rewardAmount)} ج.م
                 </span>
               </div>
@@ -1127,8 +1127,8 @@ export function PaperTradingWorkstation() {
               }
               className={`w-full h-10 ${
                 orderType === 'BUY'
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-red-600 hover:bg-red-700 text-white'
+                  ? 'bg-profit hover:bg-profit text-white'
+                  : 'bg-loss hover:bg-loss text-white'
               }`}
             >
               {submitting ? (
@@ -1146,7 +1146,7 @@ export function PaperTradingWorkstation() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Activity className="w-4 h-4 text-emerald-600" />
+                <Activity className="w-4 h-4 text-profit" />
                 المراكز المفتوحة
                 <Badge variant="secondary" className="text-xs">
                   {fmtNum(positionsSorted.length)}
@@ -1217,8 +1217,8 @@ export function PaperTradingWorkstation() {
                               variant="outline"
                               className={
                                 isBuy
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                                  : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800'
+                                  ? 'bg-profit text-profit border-profit dark:bg-profit dark:text-profit dark:border-profit'
+                                  : 'bg-loss text-loss border-loss dark:bg-loss dark:text-loss dark:border-loss'
                               }
                             >
                               {isBuy ? 'شراء' : 'بيع'}
@@ -1253,14 +1253,14 @@ export function PaperTradingWorkstation() {
                           </td>
                           <td className="p-2 text-center text-[10px]">
                             {pos.stop_loss != null ? (
-                              <div className="text-red-700 dark:text-red-300 tabular-nums" dir="ltr">
+                              <div className="text-loss dark:text-loss tabular-nums" dir="ltr">
                                 SL: {fmtPrice(pos.stop_loss)}
                               </div>
                             ) : (
                               <div className="text-muted-foreground">SL: —</div>
                             )}
                             {pos.take_profit != null ? (
-                              <div className="text-emerald-700 dark:text-emerald-300 tabular-nums" dir="ltr">
+                              <div className="text-profit dark:text-profit tabular-nums" dir="ltr">
                                 TP: {fmtPrice(pos.take_profit)}
                               </div>
                             ) : (
@@ -1325,7 +1325,7 @@ export function PaperTradingWorkstation() {
                                       if (closeTarget) handleClosePosition(closeTarget);
                                     }}
                                     disabled={closing}
-                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    className="bg-loss hover:bg-loss text-white"
                                   >
                                     {closing ? (
                                       <Loader2 className="w-4 h-4 ml-2 animate-spin" />
@@ -1355,7 +1355,7 @@ export function PaperTradingWorkstation() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Clock className="w-4 h-4 text-emerald-600" />
+            <Clock className="w-4 h-4 text-profit" />
             سجل التداول والأداء
           </CardTitle>
         </CardHeader>
@@ -1406,9 +1406,9 @@ export function PaperTradingWorkstation() {
                             MANUAL:
                               'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
                             STOP_LOSS:
-                              'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+                              'bg-loss text-loss border-loss dark:bg-loss dark:text-loss dark:border-loss',
                             TAKE_PROFIT:
-                              'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+                              'bg-profit text-profit border-profit dark:bg-profit dark:text-profit dark:border-profit',
                           };
                           return (
                             <tr
@@ -1428,8 +1428,8 @@ export function PaperTradingWorkstation() {
                                   variant="outline"
                                   className={
                                     isBuy
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                                      : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800'
+                                      ? 'bg-profit text-profit border-profit dark:bg-profit dark:text-profit dark:border-profit'
+                                      : 'bg-loss text-loss border-loss dark:bg-loss dark:text-loss dark:border-loss'
                                   }
                                 >
                                   {isBuy ? 'شراء' : 'بيع'}

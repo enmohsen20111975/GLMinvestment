@@ -148,12 +148,12 @@ export function ShariaManagementTab() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <ShieldCheck className="w-5 h-5 text-profit" />
                 الفحص الشرعي — إدارة بيانات التوافق
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -164,7 +164,7 @@ export function ShariaManagementTab() {
               <Button
                 onClick={() => triggerScraper(false)}
                 disabled={running || loading}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="gap-2 bg-profit hover:bg-profit text-white"
               >
                 {running ? (
                   <>
@@ -182,7 +182,7 @@ export function ShariaManagementTab() {
                 onClick={() => triggerScraper(true)}
                 disabled={running || loading}
                 variant="outline"
-                className="gap-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+                className="gap-2 border-profit text-profit hover:bg-profit"
               >
                 <Sparkles className="w-4 h-4" />
                 تشغيل + مزامنة stocks.db
@@ -201,15 +201,15 @@ export function ShariaManagementTab() {
         <Card className={cn(
           'border',
           runResult.success
-            ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800/40'
-            : 'border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-800/40',
+            ? 'border-profit bg-profit dark:bg-profit/20 dark:border-profit/40'
+            : 'border-loss bg-loss dark:bg-loss/20 dark:border-loss/40',
         )}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 {runResult.success
-                  ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  : <XCircle className="w-4 h-4 text-red-600" />}
+                  ? <CheckCircle2 className="w-4 h-4 text-profit" />
+                  : <XCircle className="w-4 h-4 text-loss" />}
                 نتيجة تشغيل السكرابر
                 {runResult.duration_human && (
                   <Badge variant="outline" className="text-[10px]">{runResult.duration_human}</Badge>
@@ -237,7 +237,7 @@ export function ShariaManagementTab() {
             )}
             {runResult.stderr_tail && (
               <div>
-                <p className="text-[11px] font-bold text-red-700 mb-1">stderr (آخر 4KB):</p>
+                <p className="text-[11px] font-bold text-loss mb-1">stderr (آخر 4KB):</p>
                 <pre className="text-[10px] bg-muted/50 p-2 rounded overflow-auto max-h-40 whitespace-pre-wrap" dir="ltr">
                   {runResult.stderr_tail}
                 </pre>
@@ -245,7 +245,7 @@ export function ShariaManagementTab() {
             )}
             {runResult.stdout_tail && (
               <div>
-                <p className="text-[11px] font-bold text-emerald-700 mb-1">stdout (آخر 4KB):</p>
+                <p className="text-[11px] font-bold text-profit mb-1">stdout (آخر 4KB):</p>
                 <pre className="text-[10px] bg-muted/50 p-2 rounded overflow-auto max-h-40 whitespace-pre-wrap" dir="ltr">
                   {runResult.stdout_tail}
                 </pre>
@@ -260,18 +260,18 @@ export function ShariaManagementTab() {
         <StatBox
           label="إجمالي الأسهم المفحوصة"
           value={stats?.total ?? '—'}
-          icon={<ShieldCheck className="w-4 h-4 text-emerald-500" />}
+          icon={<ShieldCheck className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="متوافق (إجماع 6+)"
           value={stats?.consensus_count ?? '—'}
           sub={stats?.total ? `${consensusPct}%` : undefined}
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+          icon={<CheckCircle2 className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="بها نسبة تطهير S&P"
           value={stats?.with_sp_rate ?? '—'}
-          icon={<Coins className="w-4 h-4 text-amber-500" />}
+          icon={<Coins className="w-4 h-4 text-warning" />}
         />
         <StatBox
           label="آخر تحديث لمصدر"
@@ -295,11 +295,11 @@ export function ShariaManagementTab() {
 
       {/* Error */}
       {!loading && data && !data.success && (
-        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/40">
+        <Card className="border-warning bg-warning dark:bg-warning/20 dark:border-warning/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-amber-800 dark:text-amber-300">
+              <p className="font-bold text-warning dark:text-warning">
                 {data.error === 'sharia_not_scraped' ? 'لم تُسحب بيانات الشريعة بعد' : 'خطأ في القراءة'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -318,7 +318,7 @@ export function ShariaManagementTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-500" />
+              <Sparkles className="w-4 h-4 text-profit" />
               المصادر الشرعية ({activeSources}/{totalSources} نشط)
             </CardTitle>
             <CardDescription className="text-xs">
@@ -334,7 +334,7 @@ export function ShariaManagementTab() {
                   className={cn(
                     'p-3 rounded-lg border text-xs',
                     s.is_active
-                      ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800/40'
+                      ? 'border-profit bg-profit dark:bg-profit/20 dark:border-profit/40'
                       : 'border-muted bg-muted/20 opacity-60',
                   )}
                 >
@@ -345,7 +345,7 @@ export function ShariaManagementTab() {
                   )}
                   <Badge
                     variant={s.is_active ? 'default' : 'outline'}
-                    className={cn('mt-1 text-[9px]', s.is_active && 'bg-emerald-600')}
+                    className={cn('mt-1 text-[9px]', s.is_active && 'bg-profit')}
                   >
                     {s.is_active ? 'نشط' : 'متوقف'}
                   </Badge>
@@ -361,7 +361,7 @@ export function ShariaManagementTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-warning" />
               طابور المراجعة — رموز متعارضة ({reviewQueue.length})
             </CardTitle>
             <CardDescription className="text-xs">
@@ -391,9 +391,9 @@ export function ShariaManagementTab() {
                           variant="outline"
                           className={cn(
                             'text-[10px]',
-                            r.confidence === 'high' && 'border-emerald-500 text-emerald-700',
-                            r.confidence === 'medium' && 'border-amber-500 text-amber-700',
-                            (!r.confidence || r.confidence === 'low') && 'border-red-500 text-red-700',
+                            r.confidence === 'high' && 'border-profit text-profit',
+                            r.confidence === 'medium' && 'border-warning text-warning',
+                            (!r.confidence || r.confidence === 'low') && 'border-loss text-loss',
                           )}
                         >
                           {r.confidence || '—'}
@@ -403,7 +403,7 @@ export function ShariaManagementTab() {
                         {r.needs_review ? (
                           <Badge variant="destructive" className="text-[10px]">مراجعة</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-700">تم</Badge>
+                          <Badge variant="outline" className="text-[10px] border-profit text-profit">تم</Badge>
                         )}
                       </td>
                     </tr>
@@ -420,7 +420,7 @@ export function ShariaManagementTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <ShieldCheck className="w-4 h-4 text-profit" />
               ملخص مطابقات الرموز
             </CardTitle>
           </CardHeader>

@@ -473,7 +473,7 @@ export function VideoEditor() {
                       <button onClick={(e) => { e.stopPropagation(); duplicateFrame(frame.id); }} className="p-1 rounded hover:bg-muted" title="نسخ">
                         <Copy className="w-3 h-3" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); deleteFrame(frame.id); }} className="p-1 rounded hover:bg-red-500/10 text-red-500" title="حذف">
+                      <button onClick={(e) => { e.stopPropagation(); deleteFrame(frame.id); }} className="p-1 rounded hover:bg-loss/10 text-loss" title="حذف">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
@@ -585,7 +585,7 @@ export function VideoEditor() {
                     <div key={text.id} className="space-y-2 p-2.5 rounded-lg border border-border bg-muted/20">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-muted-foreground">نص #{ti + 1}</span>
-                        <button onClick={() => deleteText(selectedFrame.id, text.id)} className="p-1 rounded hover:bg-red-500/10 text-red-500">
+                        <button onClick={() => deleteText(selectedFrame.id, text.id)} className="p-1 rounded hover:bg-loss/10 text-loss">
                           <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
@@ -627,7 +627,7 @@ export function VideoEditor() {
                         <Label className="text-[10px]">اللون:</Label>
                         <input type="color" value={text.color} onChange={(e) => updateText(selectedFrame.id, text.id, { color: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-border" />
                         <button onClick={() => updateText(selectedFrame.id, text.id, { color: template.accentColor })} className="text-[10px] text-primary hover:underline">لون القالب</button>
-                        <button onClick={() => updateText(selectedFrame.id, text.id, { color: template.numberColor })} className="text-[10px] text-amber-500 hover:underline">لون الأرقام</button>
+                        <button onClick={() => updateText(selectedFrame.id, text.id, { color: template.numberColor })} className="text-[10px] text-warning hover:underline">لون الأرقام</button>
                       </div>
                     </div>
                   ))}

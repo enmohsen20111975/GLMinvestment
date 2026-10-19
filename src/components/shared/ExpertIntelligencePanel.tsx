@@ -126,10 +126,10 @@ interface SingleConsensus {
 // ==================== Helper ====================
 
 function verdictColor(v: string): string {
-  if (v === 'STRONG_BUY') return 'bg-green-600';
-  if (v === 'BUY') return 'bg-green-500';
-  if (v === 'SELL') return 'bg-red-500';
-  if (v === 'STRONG_SELL') return 'bg-red-600';
+  if (v === 'STRONG_BUY') return 'bg-success';
+  if (v === 'BUY') return 'bg-success';
+  if (v === 'SELL') return 'bg-loss';
+  if (v === 'STRONG_SELL') return 'bg-loss';
   return 'bg-yellow-500';
 }
 
@@ -244,14 +244,14 @@ export function ExpertIntelligencePanel({
   return (
     <div className={cn('space-y-4', className)}>
       {!compact && (
-        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 p-3 sm:p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
+        <div className="bg-gradient-to-r from-profit to-whale dark:from-profit/20 dark:to-whale/20 p-3 sm:p-4 rounded-lg border border-profit dark:border-profit">
           <div className="flex items-center gap-2">
-            <Crosshair className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-            <span className="font-bold text-emerald-800 dark:text-emerald-200 text-sm sm:text-base">
+            <Crosshair className="h-5 w-5 text-profit flex-shrink-0" />
+            <span className="font-bold text-profit dark:text-profit text-sm sm:text-base">
               ذكاء المحلل الخبير
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-300 mt-1 leading-relaxed">
+          <p className="text-xs sm:text-sm text-profit dark:text-profit mt-1 leading-relaxed">
             3 طبقات ذكاء على نفس البيانات: (1) الفرص اللي فاتتنا (2) ذكاء القطاعات (3) الإجماع الموحّد. الأسعار بتتحدث كل 5 دقايق.
           </p>
         </div>
@@ -262,7 +262,7 @@ export function ExpertIntelligencePanel({
         <CardHeader className="p-3 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-              <AlertOctagon className="h-5 w-5 text-red-500 flex-shrink-0" />
+              <AlertOctagon className="h-5 w-5 text-loss flex-shrink-0" />
               <span>الفرص الضائعة والتوقعات الغلط</span>
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={fetchMissedOpportunities} disabled={missedOppLoading} className="flex-shrink-0 h-9 w-9 p-0">
@@ -288,22 +288,22 @@ export function ExpertIntelligencePanel({
             <>
               {/* Summary stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                <div className="bg-red-50 dark:bg-red-950/20 p-2 sm:p-3 rounded-lg text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-red-600">{missedOpp.summary.missed_bulls}</div>
+                <div className="bg-loss dark:bg-loss/20 p-2 sm:p-3 rounded-lg text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-loss">{missedOpp.summary.missed_bulls}</div>
                   <div className="text-[10px] sm:text-xs text-muted-foreground">فرصة ضاعت</div>
                 </div>
                 <div className="bg-orange-50 dark:bg-orange-950/20 p-2 sm:p-3 rounded-lg text-center">
                   <div className="text-xl sm:text-2xl font-bold text-orange-600">{missedOpp.summary.false_positives}</div>
                   <div className="text-[10px] sm:text-xs text-muted-foreground">توقع خاطئ</div>
                 </div>
-                <div className="bg-green-50 dark:bg-green-950/20 p-2 sm:p-3 rounded-lg text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-green-600">
+                <div className="bg-success dark:bg-success/20 p-2 sm:p-3 rounded-lg text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-success">
                     {missedOpp.summary.correct_buys + missedOpp.summary.correct_sells}
                   </div>
                   <div className="text-[10px] sm:text-xs text-muted-foreground">توقع صحيح</div>
                 </div>
-                <div className="bg-teal-50 dark:bg-teal-950/20 p-2 sm:p-3 rounded-lg text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-teal-600">{missedOpp.summary.accuracy_rate_pct}%</div>
+                <div className="bg-whale dark:bg-whale/20 p-2 sm:p-3 rounded-lg text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-whale">{missedOpp.summary.accuracy_rate_pct}%</div>
                   <div className="text-[10px] sm:text-xs text-muted-foreground">نسبة الدقة</div>
                 </div>
               </div>
@@ -313,7 +313,7 @@ export function ExpertIntelligencePanel({
                 <div className="flex items-center gap-2 text-[11px] sm:text-xs p-2 rounded-lg bg-muted/30">
                   <Clock3 className="h-3 w-3 flex-shrink-0" />
                   <span className="text-muted-foreground">
-                    أسعار طازة: <b className="text-green-600">{missedOpp.summary.prices_fresh}</b> ·
+                    أسعار طازة: <b className="text-success">{missedOpp.summary.prices_fresh}</b> ·
                     غير محدّثة (15+ دقيقة): <b className="text-orange-600">{missedOpp.summary.prices_stale}</b>
                   </span>
                 </div>
@@ -323,7 +323,7 @@ export function ExpertIntelligencePanel({
               {missedOpp.missed_bulls && missedOpp.missed_bulls.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <ThumbsDown className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <ThumbsDown className="h-4 w-4 text-loss flex-shrink-0" />
                     <span className="font-medium text-xs sm:text-sm">فرص ضاعت</span>
                     <Badge variant="destructive" className="text-[10px]">متوسط: +{missedOpp.summary.avg_missed_gain_pct}%</Badge>
                   </div>
@@ -337,12 +337,12 @@ export function ExpertIntelligencePanel({
                               {op.name || op.sector || '—'}
                             </div>
                             <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                              <span className="text-red-600">{op.signal}</span> · {op.days_since_prediction} يوم
+                              <span className="text-loss">{op.signal}</span> · {op.days_since_prediction} يوم
                               {op.price_is_stale && <span className="text-orange-600"> · ⏱️ سعر غير محدّث</span>}
                             </div>
                           </div>
                           <div className="text-left flex-shrink-0">
-                            <div className="font-bold text-red-600 text-sm sm:text-base">+{op.pct_change}%</div>
+                            <div className="font-bold text-loss text-sm sm:text-base">+{op.pct_change}%</div>
                             <div className="text-[10px] text-muted-foreground">{op.entry_price} → {op.current_price}</div>
                           </div>
                         </div>
@@ -370,7 +370,7 @@ export function ExpertIntelligencePanel({
                               {op.name || op.sector || '—'}
                             </div>
                             <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                              <span className="text-green-600">{op.signal}</span> · {op.days_since_prediction} يوم
+                              <span className="text-success">{op.signal}</span> · {op.days_since_prediction} يوم
                               {op.price_is_stale && <span className="text-orange-600"> · ⏱️ سعر غير محدّث</span>}
                             </div>
                           </div>
@@ -389,7 +389,7 @@ export function ExpertIntelligencePanel({
               {(missedOpp.correct_buys?.length || 0) > 0 || (missedOpp.correct_sells?.length || 0) > 0 ? (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <ThumbsUp className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <ThumbsUp className="h-4 w-4 text-success flex-shrink-0" />
                     <span className="font-medium text-xs sm:text-sm">توقعات صحيحة</span>
                   </div>
                   <div className="max-h-60 overflow-y-auto border rounded-lg divide-y">
@@ -398,11 +398,11 @@ export function ExpertIntelligencePanel({
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">{op.ticker}</div>
                           <div className="text-[10px] sm:text-xs text-muted-foreground">
-                            <span className="text-green-600">{op.signal}</span> · {op.days_since_prediction} يوم
+                            <span className="text-success">{op.signal}</span> · {op.days_since_prediction} يوم
                           </div>
                         </div>
                         <div className="text-left flex-shrink-0">
-                          <div className="font-bold text-green-600 text-sm">+{op.pct_change}%</div>
+                          <div className="font-bold text-success text-sm">+{op.pct_change}%</div>
                         </div>
                       </div>
                     ))}
@@ -411,11 +411,11 @@ export function ExpertIntelligencePanel({
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">{op.ticker}</div>
                           <div className="text-[10px] sm:text-xs text-muted-foreground">
-                            <span className="text-red-600">{op.signal}</span> · {op.days_since_prediction} يوم
+                            <span className="text-loss">{op.signal}</span> · {op.days_since_prediction} يوم
                           </div>
                         </div>
                         <div className="text-left flex-shrink-0">
-                          <div className="font-bold text-green-600 text-sm">{op.pct_change}%</div>
+                          <div className="font-bold text-success text-sm">{op.pct_change}%</div>
                         </div>
                       </div>
                     ))}
@@ -432,7 +432,7 @@ export function ExpertIntelligencePanel({
         <CardHeader className="p-3 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-              <Layers className="h-5 w-5 text-teal-500 flex-shrink-0" />
+              <Layers className="h-5 w-5 text-whale flex-shrink-0" />
               <span>ذكاء القطاعات</span>
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={fetchSectorIntel} disabled={sectorIntelLoading} className="flex-shrink-0 h-9 w-9 p-0">
@@ -459,8 +459,8 @@ export function ExpertIntelligencePanel({
               {/* Market mood */}
               <div className={cn(
                 'rounded-lg p-3 sm:p-4 text-center',
-                sectorIntel.summary.market_breadth?.market_mood?.includes('صاعد') ? 'bg-green-50 dark:bg-green-950/20' :
-                sectorIntel.summary.market_breadth?.market_mood?.includes('هابط') ? 'bg-red-50 dark:bg-red-950/20' :
+                sectorIntel.summary.market_breadth?.market_mood?.includes('صاعد') ? 'bg-success dark:bg-success/20' :
+                sectorIntel.summary.market_breadth?.market_mood?.includes('هابط') ? 'bg-loss dark:bg-loss/20' :
                 'bg-yellow-50 dark:bg-yellow-950/20'
               )}>
                 <div className="text-[11px] sm:text-xs text-muted-foreground">مزاج السوق</div>
@@ -472,19 +472,19 @@ export function ExpertIntelligencePanel({
 
               {/* Best + worst */}
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <div className="border rounded-lg p-2 sm:p-3 bg-green-50 dark:bg-green-950/20">
+                <div className="border rounded-lg p-2 sm:p-3 bg-success dark:bg-success/20">
                   <div className="text-[10px] sm:text-xs text-muted-foreground">أقوى قطاع</div>
-                  <div className="font-bold text-green-700 dark:text-green-300 text-xs sm:text-sm truncate">
+                  <div className="font-bold text-success dark:text-success text-xs sm:text-sm truncate">
                     {sectorIntel.summary.best_sector?.sector || '—'}
                   </div>
-                  <div className="text-xs sm:text-sm text-green-600">+{sectorIntel.summary.best_sector?.avg_change_pct}%</div>
+                  <div className="text-xs sm:text-sm text-success">+{sectorIntel.summary.best_sector?.avg_change_pct}%</div>
                 </div>
-                <div className="border rounded-lg p-2 sm:p-3 bg-red-50 dark:bg-red-950/20">
+                <div className="border rounded-lg p-2 sm:p-3 bg-loss dark:bg-loss/20">
                   <div className="text-[10px] sm:text-xs text-muted-foreground">أضعف قطاع</div>
-                  <div className="font-bold text-red-700 dark:text-red-300 text-xs sm:text-sm truncate">
+                  <div className="font-bold text-loss dark:text-loss text-xs sm:text-sm truncate">
                     {sectorIntel.summary.worst_sector?.sector || '—'}
                   </div>
-                  <div className="text-xs sm:text-sm text-red-600">{sectorIntel.summary.worst_sector?.avg_change_pct}%</div>
+                  <div className="text-xs sm:text-sm text-loss">{sectorIntel.summary.worst_sector?.avg_change_pct}%</div>
                 </div>
               </div>
 
@@ -499,8 +499,8 @@ export function ExpertIntelligencePanel({
                           <div className="flex items-center gap-2 min-w-0">
                             <span className={cn(
                               'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0',
-                              i === 0 ? 'bg-green-100 text-green-700' :
-                              i === sectorIntel.sector_ranking!.length - 1 ? 'bg-red-100 text-red-700' :
+                              i === 0 ? 'bg-success text-success' :
+                              i === sectorIntel.sector_ranking!.length - 1 ? 'bg-loss text-loss' :
                               'bg-muted text-muted-foreground'
                             )}>{i + 1}</span>
                             <div className="min-w-0">
@@ -513,8 +513,8 @@ export function ExpertIntelligencePanel({
                           <div className="text-left flex-shrink-0">
                             <div className={cn(
                               'font-bold text-xs sm:text-sm',
-                              s.avg_change_pct > 0 ? 'text-green-600' :
-                              s.avg_change_pct < 0 ? 'text-red-600' : 'text-muted-foreground'
+                              s.avg_change_pct > 0 ? 'text-success' :
+                              s.avg_change_pct < 0 ? 'text-loss' : 'text-muted-foreground'
                             )}>
                               {s.avg_change_pct > 0 ? '+' : ''}{s.avg_change_pct}%
                             </div>
@@ -526,7 +526,7 @@ export function ExpertIntelligencePanel({
                         {(s.prices_fresh_count || 0) > 0 || (s.prices_stale_count || 0) > 0 ? (
                           <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
                             <Clock3 className="h-2.5 w-2.5" />
-                            <span className="text-green-600">{s.prices_fresh_count} طازة</span>
+                            <span className="text-success">{s.prices_fresh_count} طازة</span>
                             <span>·</span>
                             <span className="text-orange-600">{s.prices_stale_count} غير محدّثة</span>
                           </div>
@@ -541,7 +541,7 @@ export function ExpertIntelligencePanel({
               {sectorIntel.top_outperformers && sectorIntel.top_outperformers.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Trophy className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                    <Trophy className="h-4 w-4 text-warning flex-shrink-0" />
                     <span className="font-medium text-xs sm:text-sm">أقوى أسهم تتفوق على قطاعها</span>
                   </div>
                   <div className="max-h-60 overflow-y-auto border rounded-lg divide-y">
@@ -555,7 +555,7 @@ export function ExpertIntelligencePanel({
                               السهم {s.stock_change_pct > 0 ? '+' : ''}{s.stock_change_pct}% · القطاع {s.sector_avg_change_pct}%
                             </div>
                           </div>
-                          <Badge className="bg-green-100 text-green-700 text-[10px] flex-shrink-0">RS +{s.relative_strength}%</Badge>
+                          <Badge className="bg-success text-success text-[10px] flex-shrink-0">RS +{s.relative_strength}%</Badge>
                         </div>
                       </div>
                     ))}
@@ -572,7 +572,7 @@ export function ExpertIntelligencePanel({
         <CardHeader className="p-3 sm:p-5">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-              <Crosshair className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+              <Crosshair className="h-5 w-5 text-profit flex-shrink-0" />
               <span>الإجماع الخبير</span>
             </CardTitle>
             <div className="flex items-center gap-2 flex-wrap">
@@ -606,11 +606,11 @@ export function ExpertIntelligencePanel({
           {consensusSummary?.by_verdict && (
             <div className="grid grid-cols-5 gap-1 sm:gap-2">
               {[
-                { k: 'STRONG_BUY', label: 'قوي', color: 'bg-green-600' },
-                { k: 'BUY', label: 'شراء', color: 'bg-green-500' },
+                { k: 'STRONG_BUY', label: 'قوي', color: 'bg-success' },
+                { k: 'BUY', label: 'شراء', color: 'bg-success' },
                 { k: 'HOLD', label: 'احتفاظ', color: 'bg-yellow-500' },
-                { k: 'SELL', label: 'بيع', color: 'bg-red-500' },
-                { k: 'STRONG_SELL', label: 'بيع قوي', color: 'bg-red-600' },
+                { k: 'SELL', label: 'بيع', color: 'bg-loss' },
+                { k: 'STRONG_SELL', label: 'بيع قوي', color: 'bg-loss' },
               ].map((v) => (
                 <div key={v.k} className="border rounded-lg p-1.5 sm:p-2 text-center">
                   <div className={cn(
@@ -659,8 +659,8 @@ export function ExpertIntelligencePanel({
                         {c.current_state?.price != null && <span>{c.current_state.price} · </span>}
                         {c.current_state?.change_pct != null && (
                           <span className={cn(
-                            c.current_state.change_pct > 0 ? 'text-green-600' :
-                            c.current_state.change_pct < 0 ? 'text-red-600' : ''
+                            c.current_state.change_pct > 0 ? 'text-success' :
+                            c.current_state.change_pct < 0 ? 'text-loss' : ''
                           )}>
                             {c.current_state.change_pct > 0 ? '+' : ''}{c.current_state.change_pct}%
                           </span>
@@ -670,8 +670,8 @@ export function ExpertIntelligencePanel({
                         )}
                         {c.sector_context?.relative_strength != null && (
                           <span className={cn(
-                            c.sector_context.relative_strength > 0 ? ' text-green-600' :
-                            c.sector_context.relative_strength < 0 ? ' text-red-600' : ''
+                            c.sector_context.relative_strength > 0 ? ' text-success' :
+                            c.sector_context.relative_strength < 0 ? ' text-loss' : ''
                           )}>
                             {' '}· RS {c.sector_context.relative_strength > 0 ? '+' : ''}{c.sector_context.relative_strength}%
                           </span>
@@ -733,7 +733,7 @@ export function ExpertIntelligencePanel({
             {singleConsensus && (
               <div className="mt-3 border rounded-lg p-3 sm:p-4 space-y-2 bg-muted/30">
                 {singleConsensus.error ? (
-                  <div className="text-red-600 text-sm">{singleConsensus.error}</div>
+                  <div className="text-loss text-sm">{singleConsensus.error}</div>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 flex-wrap">

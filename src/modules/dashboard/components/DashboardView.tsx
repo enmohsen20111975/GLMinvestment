@@ -310,7 +310,7 @@ export function DashboardView() {
         <Card className="mb-3 py-0 gap-0">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1.5">
-              <Zap className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+              <Zap className="w-3.5 h-3.5 text-profit dark:text-profit" />
               <span className="text-xs font-semibold">
                 {currentMarket === 'CRYPTO' ? t('dashboard.quickLookup') : t('dashboard.quickLookup')}
               </span>
@@ -394,8 +394,8 @@ export function DashboardView() {
               return (
                 <section aria-label="فرص جاهزة الآن" className="space-y-2">
                   <div className="flex items-center gap-2 px-1" dir="rtl">
-                    <Zap className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <Zap className="w-4 h-4 text-profit dark:text-profit" />
+                    <span className="text-sm font-bold text-profit dark:text-profit">
                       فرص جاهزة الآن ({opportunities.length})
                     </span>
                   </div>
@@ -422,7 +422,7 @@ export function DashboardView() {
                                 <div className="font-mono font-bold text-sm">{stock.ticker}</div>
                                 <div className="text-xs text-muted-foreground truncate max-w-[120px]">{stock.nameAr || stock.name}</div>
                               </div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-profit text-profit dark:bg-profit/40 dark:text-profit' : 'bg-primary text-primary dark:bg-primary/40 dark:text-primary'}`}>
                                 {stock.recommendationAr || stock.recommendation}
                               </span>
                             </div>
@@ -434,11 +434,11 @@ export function DashboardView() {
                               </div>
                               <div>
                                 <div className="text-muted-foreground">وقف</div>
-                                <div className="font-mono font-semibold text-red-600 dark:text-red-400">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</div>
+                                <div className="font-mono font-semibold text-loss dark:text-loss">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</div>
                               </div>
                               <div>
                                 <div className="text-muted-foreground">هدف</div>
-                                <div className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</div>
+                                <div className="font-mono font-semibold text-profit dark:text-profit">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</div>
                               </div>
                             </div>
                             {/* R:R + Confidence */}
@@ -472,12 +472,12 @@ export function DashboardView() {
                   : 'السوق عرضي — انتظر فرص أوضح');
               return (
                 <section aria-label="حالة السوق">
-                  <div className={`rounded-lg border p-3 ${isDefensive ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'}`}>
+                  <div className={`rounded-lg border p-3 ${isDefensive ? 'border-loss bg-loss dark:border-loss dark:bg-loss/30' : 'border-profit bg-profit dark:border-profit dark:bg-profit/30'}`}>
                     <div className="flex items-center gap-2">
                       {isDefensive ? (
-                        <span className="text-red-600 dark:text-red-400 font-bold text-sm">⚠️ {advice}</span>
+                        <span className="text-loss dark:text-loss font-bold text-sm">⚠️ {advice}</span>
                       ) : (
-                        <span className="text-emerald-700 dark:text-emerald-300 font-bold text-sm">📊 {advice}</span>
+                        <span className="text-profit dark:text-profit font-bold text-sm">📊 {advice}</span>
                       )}
                     </div>
                   </div>
@@ -487,8 +487,8 @@ export function DashboardView() {
 
             {/* FOCUS-5-TASKS: تنبيهات أسهمك الشخصية — Owner directive: "تبقى أصغر أو في جانب" */}
             {/* خليها collapsible عشان مش تزحم الفرص فوق */}
-            <details className="rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/10">
-              <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 select-none flex items-center gap-2">
+            <details className="rounded-lg border border-profit dark:border-profit/50 bg-profit/30 dark:bg-profit/10">
+              <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-profit dark:text-profit select-none flex items-center gap-2">
                 🔔 تنبيهات أسهمك الشخصية
               </summary>
               <div className="p-4 pt-0">
@@ -500,8 +500,8 @@ export function DashboardView() {
             {showPinnedSection && (
               <section aria-label="ودجات مثبتة" className="space-y-3">
                 <div className="flex items-center gap-2 px-1" dir="rtl">
-                  <Pin className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                  <span className="text-sm font-bold text-emerald-500 dark:text-emerald-300">
+                  <Pin className="w-4 h-4 text-profit dark:text-profit" />
+                  <span className="text-sm font-bold text-profit dark:text-profit">
                   مثبتة ({pinnedList.length})
                   </span>
                 </div>

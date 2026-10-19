@@ -143,21 +143,21 @@ interface WeeklyReportTabProps {
 // ============================================================================
 const REGIME_STYLES: Record<string, { color: string; bg: string; border: string; emoji: string }> = {
   DEFENSIVE: {
-    color: 'text-rose-700 dark:text-rose-300',
-    bg: 'bg-rose-50 dark:bg-rose-950/40',
-    border: 'border-rose-200 dark:border-rose-900',
+    color: 'text-loss dark:text-loss',
+    bg: 'bg-loss dark:bg-loss/40',
+    border: 'border-loss dark:border-loss',
     emoji: '🛡️',
   },
   NORMAL: {
-    color: 'text-amber-700 dark:text-amber-300',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-200 dark:border-amber-900',
+    color: 'text-warning dark:text-warning',
+    bg: 'bg-warning dark:bg-warning/40',
+    border: 'border-warning dark:border-warning',
     emoji: '⚖️',
   },
   AGGRESSIVE: {
-    color: 'text-emerald-700 dark:text-emerald-300',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    border: 'border-emerald-200 dark:border-emerald-900',
+    color: 'text-profit dark:text-profit',
+    bg: 'bg-profit dark:bg-profit/40',
+    border: 'border-profit dark:border-profit',
     emoji: '',
   },
 };
@@ -264,7 +264,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+            <FileText className="h-5 w-5 text-profit dark:text-profit animate-pulse" />
             <h3 className="text-base font-semibold">{t('radar.weekly.title')}</h3>
           </div>
           <Skeleton className="h-6 w-32" />
@@ -284,8 +284,8 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
     return (
       <Card className="p-8 text-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
-            <FileText className="h-6 w-6 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+          <div className="h-12 w-12 rounded-full bg-profit dark:bg-profit/40 flex items-center justify-center">
+            <FileText className="h-6 w-6 text-profit dark:text-profit animate-pulse" />
           </div>
           <div>
             <h3 className="text-base font-semibold mb-1">{t('radar.weekly.loading')}</h3>
@@ -303,8 +303,8 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
   // ============================================================================
   if (error && !data) {
     return (
-      <Card className="p-4 border-dashed border-rose-200 dark:border-rose-900">
-        <div className="flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
+      <Card className="p-4 border-dashed border-loss dark:border-loss">
+        <div className="flex items-center gap-2 text-sm text-loss dark:text-loss">
           <AlertTriangle className="h-4 w-4" />
           <span>{t('radar.weekly.errorPrefix', { error })}</span>
         </div>
@@ -347,7 +347,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
           <div className="flex items-start justify-between flex-wrap gap-2">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <FileText className="h-5 w-5 text-profit dark:text-profit" />
                 <span>{t('radar.weekly.title')}</span>
               </CardTitle>
               <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -394,10 +394,10 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
       </Card>
 
       {/* ─── Stock of the Week ─────────────────────────────────────── */}
-      <Card className="border-emerald-200 dark:border-emerald-900">
-        <CardHeader className="pb-3 bg-emerald-50/50 dark:bg-emerald-950/20">
+      <Card className="border-profit dark:border-profit">
+        <CardHeader className="pb-3 bg-profit/50 dark:bg-profit/20">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Star className="h-5 w-5 text-amber-500 fill-amber-400" />
+            <Star className="h-5 w-5 text-warning fill-warning" />
             <span>{t('radar.weekly.stockOfWeek.title')}</span>
           </CardTitle>
         </CardHeader>
@@ -407,10 +407,10 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
               {/* Ticker + path */}
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                  <span className="text-2xl font-bold text-profit dark:text-profit">
                     {sow.ticker}
                   </span>
-                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  <Badge variant="outline" className="bg-profit text-profit dark:bg-profit/30 dark:text-profit">
                     {sow.path_ar || sow.path || '—'}
                   </Badge>
                 </div>
@@ -422,32 +422,32 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
 
               {/* Targets + stop loss */}
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 p-2">
+                <div className="rounded-lg border border-profit dark:border-profit p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.stockOfWeek.target1')}</div>
-                  <div className="text-base font-bold text-emerald-700 dark:text-emerald-300">
+                  <div className="text-base font-bold text-profit dark:text-profit">
                     {fmtPrice(sow.target_1)}
                   </div>
-                  <div className="text-xs text-emerald-600">
+                  <div className="text-xs text-profit">
                     +{fmtPctPlain(sow.target_1_pct)}%
                   </div>
                 </div>
-                <div className="rounded-lg border border-blue-200 dark:border-blue-900 p-2">
+                <div className="rounded-lg border border-primary dark:border-primary p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.stockOfWeek.target2')}</div>
-                  <div className="text-base font-bold text-blue-700 dark:text-blue-300">
+                  <div className="text-base font-bold text-primary dark:text-primary">
                     {fmtPrice(sow.target_2)}
                   </div>
-                  <div className="text-xs text-blue-600">
+                  <div className="text-xs text-primary">
                     {sow.target_2 && sow.current_price
                       ? `+${((sow.target_2 / sow.current_price - 1) * 100).toFixed(1)}%`
                       : '—'}
                   </div>
                 </div>
-                <div className="rounded-lg border border-rose-200 dark:border-rose-900 p-2">
+                <div className="rounded-lg border border-loss dark:border-loss p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.stockOfWeek.stopLoss')}</div>
-                  <div className="text-base font-bold text-rose-700 dark:text-rose-300">
+                  <div className="text-base font-bold text-loss dark:text-loss">
                     {fmtPrice(sow.stop_loss)}
                   </div>
-                  <div className="text-xs text-rose-600">
+                  <div className="text-xs text-loss">
                     {fmtPct(sow.stop_loss_pct)}
                   </div>
                 </div>
@@ -456,19 +456,19 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
               {/* Signal strength + R/R */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-amber-500" />
+                  <Activity className="h-4 w-4 text-warning" />
                   <span className="text-sm">{t('radar.weekly.stockOfWeek.signalStrength')}</span>
                   <span className="text-sm font-bold">
                     {sow.signal_count || 0}/6
                   </span>
-                  <span className="text-amber-400">
+                  <span className="text-warning">
                     {'⭐'.repeat(Math.min(5, sow.signal_count || 0))}
                   </span>
                 </div>
                 {sow.risk_reward != null && (
                   <div className="text-sm">
                     <span className="text-muted-foreground">R/R: </span>
-                    <span className="font-bold text-blue-700 dark:text-blue-300">
+                    <span className="font-bold text-primary dark:text-primary">
                       {(sow.risk_reward ?? 0).toFixed(2)}
                     </span>
                   </div>
@@ -479,7 +479,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
               {sow.reason && (
                 <div className="rounded-lg bg-muted/40 p-3 text-sm">
                   <div className="font-semibold mb-1 flex items-center gap-1">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    <Sparkles className="h-3.5 w-3.5 text-warning" />
                     {t('radar.weekly.stockOfWeek.reason')}
                   </div>
                   <p className="text-muted-foreground">{sow.reason}</p>
@@ -498,7 +498,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <Target className="h-5 w-5 text-primary dark:text-primary" />
             <span>{t('radar.weekly.top5.title')}</span>
           </CardTitle>
         </CardHeader>
@@ -549,7 +549,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <BarChart3 className="h-5 w-5 text-warning dark:text-warning" />
             <span>{t('radar.weekly.lastWeek.title')}</span>
           </CardTitle>
         </CardHeader>
@@ -560,19 +560,19 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-lg border border-muted p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.lastWeek.avgReturn')}</div>
-                  <div className={`text-base font-bold ${perf.avg_return_pct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <div className={`text-base font-bold ${perf.avg_return_pct >= 0 ? 'text-profit' : 'text-loss'}`}>
                     {fmtPct(perf.avg_return_pct)}
                   </div>
                 </div>
                 <div className="rounded-lg border border-muted p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.lastWeek.winRatio')}</div>
-                  <div className="text-base font-bold text-blue-700 dark:text-blue-300">
+                  <div className="text-base font-bold text-primary dark:text-primary">
                     {perf.win_count}/{perf.total_count}
                   </div>
                 </div>
                 <div className="rounded-lg border border-muted p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.lastWeek.winRate')}</div>
-                  <div className="text-base font-bold text-emerald-700 dark:text-emerald-300">
+                  <div className="text-base font-bold text-profit dark:text-profit">
                     {(perf.win_rate_pct ?? 0).toFixed(0)}%
                   </div>
                 </div>
@@ -601,9 +601,9 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                           variant="outline"
                           className={
                             s.return_pct > 0
-                              ? 'text-emerald-700 dark:text-emerald-300'
+                              ? 'text-profit dark:text-profit'
                               : s.return_pct < 0
-                              ? 'text-rose-700 dark:text-rose-300'
+                              ? 'text-loss dark:text-loss'
                               : ''
                           }
                         >
@@ -653,10 +653,10 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                       variant="outline"
                       className={
                         sec.avg_change_pct > 0
-                          ? 'text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
+                          ? 'text-profit dark:text-profit border-profit dark:border-profit'
                           : sec.avg_change_pct < 0
-                          ? 'text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900'
-                          : 'text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900'
+                          ? 'text-loss dark:text-loss border-loss dark:border-loss'
+                          : 'text-warning dark:text-warning border-warning dark:border-warning'
                       }
                     >
                       {sec.avg_change_pct > 0 ? (
@@ -675,10 +675,10 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
       )}
 
       {/* ─── Subscribe CTA ─────────────────────────────────────────── */}
-      <Card className="border-2 border-dashed border-emerald-300 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/10">
+      <Card className="border-2 border-dashed border-profit dark:border-profit bg-profit/30 dark:bg-profit/10">
         <CardContent className="p-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Bell className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <Bell className="h-5 w-5 text-profit dark:text-profit" />
             <h3 className="text-base font-semibold">{t('radar.weekly.subscribe.title')}</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
@@ -689,7 +689,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
               href={OFFICIAL_LINKS.telegram}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
+              className="inline-flex items-center gap-1 text-sm text-profit dark:text-profit hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               {t('radar.weekly.subscribe.telegram')}
@@ -699,7 +699,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
               href={OFFICIAL_LINKS.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
+              className="inline-flex items-center gap-1 text-sm text-profit dark:text-profit hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               {t('radar.weekly.subscribe.website')}
@@ -709,7 +709,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
               href={OFFICIAL_LINKS.android}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
+              className="inline-flex items-center gap-1 text-sm text-profit dark:text-profit hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               {t('radar.weekly.subscribe.android')}

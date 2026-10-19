@@ -493,10 +493,10 @@ export function EntryTimingSimulator() {
   }
 
   return (
-    <Card className="border-amber-500/20" dir="rtl">
+    <Card className="border-warning/20" dir="rtl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-          <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <Clock className="h-5 w-5 text-warning dark:text-warning" />
           محاكي توقيت الدخول — مقارنة استراتيجيات
         </CardTitle>
         <p className="text-xs text-muted-foreground">
@@ -532,8 +532,8 @@ export function EntryTimingSimulator() {
             className={cn(
               'text-[10px]',
               dataSource === 'real'
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                : 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+                ? 'border-profit/40 bg-profit/10 text-profit dark:text-profit'
+                : 'border-warning/40 bg-warning/10 text-warning dark:text-warning',
             )}
           >
             {dataSource === 'real' ? (
@@ -552,7 +552,7 @@ export function EntryTimingSimulator() {
 
         {dataSource === 'synthetic' && (
           <div
-            className="rounded-md border border-amber-500/30 bg-amber-50/60 px-3 py-2 text-[11px] text-amber-800 dark:bg-amber-950/20 dark:text-amber-200"
+            className="rounded-md border border-warning/30 bg-warning/60 px-3 py-2 text-[11px] text-warning dark:bg-warning/20 dark:text-warning"
             dir="rtl"
           >
             <span className="font-semibold">ملاحظة:</span> تعذّر تحميل البيانات الحقيقية
@@ -574,7 +574,7 @@ export function EntryTimingSimulator() {
                 className={cn(
                   'flex flex-col gap-1 rounded-lg border p-3 text-right transition',
                   isActive
-                    ? 'border-amber-500/60 bg-amber-500/10 shadow-sm'
+                    ? 'border-warning/60 bg-warning/10 shadow-sm'
                     : 'border-slate-200 bg-card hover:bg-muted/30 dark:border-slate-700',
                 )}
               >
@@ -590,7 +590,7 @@ export function EntryTimingSimulator() {
                 </div>
                 {!loading && (
                   <div className="mt-1 flex items-center gap-2 text-[10px]">
-                    <span className={cn('font-bold', r.totalReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    <span className={cn('font-bold', r.totalReturn >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
                       {(r.totalReturn * 100).toFixed(1)}%
                     </span>
                     <span className="text-muted-foreground">
@@ -629,25 +629,25 @@ export function EntryTimingSimulator() {
                 icon={TrendingUp}
                 label="عائد الاستراتيجية"
                 value={`${(active.totalReturn * 100).toFixed(1)}%`}
-                color={active.totalReturn >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}
+                color={active.totalReturn >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}
               />
               <MetricCard
                 icon={TrendingDown}
                 label="عائد Buy & Hold"
                 value={`${(active.buyHoldReturn * 100).toFixed(1)}%`}
-                color={active.buyHoldReturn >= 0 ? 'text-slate-700 dark:text-slate-300' : 'text-red-700 dark:text-red-400'}
+                color={active.buyHoldReturn >= 0 ? 'text-slate-700 dark:text-slate-300' : 'text-loss dark:text-loss'}
               />
               <MetricCard
                 icon={Target}
                 label="معدل الربح"
                 value={`${(active.winRate ?? 0).toFixed(0)}%`}
-                color="text-amber-700 dark:text-amber-400"
+                color="text-warning dark:text-warning"
               />
               <MetricCard
                 icon={Activity}
                 label="متوسط R"
                 value={(active.avgR ?? 0).toFixed(2)}
-                color={active.avgR >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}
+                color={active.avgR >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}
               />
               <MetricCard
                 icon={Calendar}
@@ -670,7 +670,7 @@ export function EntryTimingSimulator() {
 
             {/* Educational takeaway */}
             <div
-              className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200"
+              className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning dark:text-warning"
               dir="rtl"
             >
               <div className="mb-1 font-bold">درس المحاكاة:</div>
@@ -685,7 +685,7 @@ export function EntryTimingSimulator() {
               الاختيار يعتمد على مرحلة السوق + قدرتك على تحمّل التذبذب.
             </div>
 
-            <div className="rounded-md border border-amber-500/30 bg-amber-50/60 px-3 py-2 text-[10px] text-amber-800 dark:bg-amber-950/20 dark:text-amber-200" dir="rtl">
+            <div className="rounded-md border border-warning/30 bg-warning/60 px-3 py-2 text-[10px] text-warning dark:bg-warning/20 dark:text-warning" dir="rtl">
               <span className="font-semibold">إخلاء مسؤولية:</span> الباكتست تعليمي.
               الأداء التاريخي لا يضمن المستقبلي. الرسوم والـ slippage غير محسوبة.
             </div>
@@ -914,7 +914,7 @@ function TradeList({ result }: { result: BacktestResult }) {
                 <td
                   className={cn(
                     'px-2 py-1 font-bold ltr:text-left',
-                    t.pnlPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+                    t.pnlPct >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss',
                   )}
                   dir="ltr"
                 >
@@ -923,7 +923,7 @@ function TradeList({ result }: { result: BacktestResult }) {
                 <td
                   className={cn(
                     'px-2 py-1 font-bold ltr:text-left',
-                    t.rMultiple >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+                    t.rMultiple >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss',
                   )}
                   dir="ltr"
                 >

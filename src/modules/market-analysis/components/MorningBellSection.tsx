@@ -135,8 +135,8 @@ export function HorizontalSectorsBar({ marketCode }: { marketCode: string }) {
 
   return (
     <div className="flex items-center gap-2 p-2 rounded-xl bg-card/80 border border-border/80 overflow-x-auto no-scrollbar shadow-sm my-1.5">
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold text-xs flex-shrink-0 border border-teal-500/20">
-        <Layers className="w-4 h-4 text-teal-500" />
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-whale/10 text-whale dark:text-whale font-bold text-xs flex-shrink-0 border border-whale/20">
+        <Layers className="w-4 h-4 text-whale" />
         <span>ذكاء القطاعات</span>
         <Badge variant="secondary" className="text-[10px] px-1 py-0">{sectors.length}</Badge>
       </div>
@@ -156,11 +156,11 @@ export function HorizontalSectorsBar({ marketCode }: { marketCode: string }) {
           >
             <span>{s.status === 'hot' ? '🔥' : s.status === 'dead' ? '❄️' : '📊'}</span>
             <span className="font-bold">{s.sector}</span>
-            <span className={cn('font-mono text-[11px]', s.avg_chg > 0 ? 'text-emerald-500 font-bold' : s.avg_chg < 0 ? 'text-rose-500 font-bold' : 'text-muted-foreground')}>
+            <span className={cn('font-mono text-[11px]', s.avg_chg > 0 ? 'text-profit font-bold' : s.avg_chg < 0 ? 'text-loss font-bold' : 'text-muted-foreground')}>
               {s.avg_chg > 0 ? '+' : ''}{(s.avg_chg ?? 0).toFixed(1)}%
             </span>
             {s.top_leader && (
-              <span className="text-[10px] px-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">
+              <span className="text-[10px] px-1 rounded bg-profit/20 text-profit font-bold">
                 👑 {s.top_leader}
               </span>
             )}
@@ -325,9 +325,9 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
   }
 
   const contStateColor: Record<string, string> = {
-    continuing: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-    weakening: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-    exhausted: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    continuing: 'bg-profit text-profit dark:bg-profit/40 dark:text-profit',
+    weakening: 'bg-warning text-warning dark:bg-warning/40 dark:text-warning',
+    exhausted: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss',
   };
   const contStateAr: Record<string, string> = {
     continuing: 'مستمرة',
@@ -344,7 +344,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
         </h3>
         <Badge className="text-[10px] font-semibold border-0 bg-primary/10 text-primary">{label}</Badge>
         {marketStatus === 'live' && stocks.length > 0 && (
-          <Badge className="text-[10px] font-semibold border-0 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">● مباشر</Badge>
+          <Badge className="text-[10px] font-semibold border-0 bg-profit text-profit dark:bg-profit/40 dark:text-profit">● مباشر</Badge>
         )}
         {isLive && stocks.length > 0 && (
           <Badge className="text-[10px] font-semibold border-0 bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300" title={`دورة تجديد كل ${refreshMin} دقيقة`}>
@@ -353,7 +353,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
           </Badge>
         )}
         {vetoed && (
-          <Badge className="text-[10px] font-semibold border-0 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">🛡️ كاش</Badge>
+          <Badge className="text-[10px] font-semibold border-0 bg-loss text-loss dark:bg-loss/40 dark:text-loss">🛡️ كاش</Badge>
         )}
       </div>
 
@@ -366,7 +366,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
       ) : (
         <>
           {/* تحذير مسؤولية العميل */}
-          <div className="text-[11px] bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded px-2 py-1.5 text-amber-800 dark:text-amber-300">
+          <div className="text-[11px] bg-warning dark:bg-warning/30 border border-warning dark:border-warning rounded px-2 py-1.5 text-warning dark:text-warning">
             ⚠️ جرس الصباح = مخاطر عالية على مسؤولية العميل. استخدم الوقف. الخسارة بعد تجاهل خطة الخروج لا تُحسب على أداء المسار المنضبط.
           </div>
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -376,9 +376,9 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
                 className={cn(
                   'overflow-hidden border transition-shadow hover:shadow-md flex flex-col',
                   s.risk_flag === 'extreme_north'
-                    ? 'border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/10'
+                    ? 'border-loss dark:border-loss bg-loss/30 dark:bg-loss/10'
                     : s.continuation_state === 'continuing'
-                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-950/10'
+                      ? 'border-profit dark:border-profit bg-profit/30 dark:bg-profit/10'
                       : 'border-border'
                 )}
               >
@@ -387,7 +387,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono text-sm font-bold">{s.ticker}</span>
-                        {idx === 0 && <Badge className="text-[9px] font-bold border-0 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">#1</Badge>}
+                        {idx === 0 && <Badge className="text-[9px] font-bold border-0 bg-warning text-warning dark:bg-warning dark:text-warning">#1</Badge>}
                         {s.rvol !== undefined && s.rvol >= 1.5 && (
                           <Badge className="text-[9px] font-bold border-0 bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300" title="Relative Volume — حجم غير عادي">
                             RVOL ×{safeToFixed(s.rvol, 1)}
@@ -397,7 +397,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{s.name_ar}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <Badge className={cn('text-[10px] font-bold border-0', s.signal === 'strong_buy' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300')}>
+                      <Badge className={cn('text-[10px] font-bold border-0', s.signal === 'strong_buy' ? 'bg-profit text-white' : 'bg-profit text-profit dark:bg-profit/40 dark:text-profit')}>
                         {s.signal_ar}
                       </Badge>
                       {s.continuation_state && (
@@ -415,7 +415,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
                       <span className="text-muted-foreground">السعر:</span>
                       <span className="font-mono font-bold">{fmtPrice(s.price)}</span>
                       {s.extension_pct_day !== undefined && (
-                        <span className={cn('font-mono font-semibold', s.extension_pct_day >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                        <span className={cn('font-mono font-semibold', s.extension_pct_day >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
                           {s.extension_pct_day >= 0 ? '+' : ''}{safeToFixed(s.extension_pct_day, 2)}%
                         </span>
                       )}
@@ -423,33 +423,33 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
                   )}
                   {/* TP1 / TP2 / Stop */}
                   <div className="grid grid-cols-3 gap-1 text-center text-xs">
-                    <div className="rounded bg-emerald-500/10 py-1">
-                      <div className="text-[9px] text-emerald-700 dark:text-emerald-400">TP1</div>
-                      <div className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">{fmtPrice(s.suggested_tp1 ?? s.target)}</div>
+                    <div className="rounded bg-profit/10 py-1">
+                      <div className="text-[9px] text-profit dark:text-profit">TP1</div>
+                      <div className="font-mono font-semibold text-profit dark:text-profit">{fmtPrice(s.suggested_tp1 ?? s.target)}</div>
                     </div>
-                    <div className="rounded bg-emerald-500/10 py-1">
-                      <div className="text-[9px] text-emerald-700 dark:text-emerald-400">TP2</div>
-                      <div className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">{fmtPrice(s.suggested_tp2 ?? 0)}</div>
+                    <div className="rounded bg-profit/10 py-1">
+                      <div className="text-[9px] text-profit dark:text-profit">TP2</div>
+                      <div className="font-mono font-semibold text-profit dark:text-profit">{fmtPrice(s.suggested_tp2 ?? 0)}</div>
                     </div>
-                    <div className="rounded bg-red-500/10 py-1">
-                      <div className="text-[9px] text-red-700 dark:text-red-400">وقف</div>
-                      <div className="font-mono font-semibold text-red-700 dark:text-red-400">{fmtPrice(s.suggested_stop ?? s.stop)}</div>
+                    <div className="rounded bg-loss/10 py-1">
+                      <div className="text-[9px] text-loss dark:text-loss">وقف</div>
+                      <div className="font-mono font-semibold text-loss dark:text-loss">{fmtPrice(s.suggested_stop ?? s.stop)}</div>
                     </div>
                   </div>
                   {/* الاحتمالات الثلاثة */}
                   {s.prob_continue_up !== undefined && (
                     <div className="space-y-0.5">
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-emerald-700 dark:text-emerald-400">صعود</span>
-                        <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">{safeToFixed(s.prob_continue_up! * 100, 0)}%</span>
+                        <span className="text-profit dark:text-profit">صعود</span>
+                        <span className="font-mono font-semibold text-profit dark:text-profit">{safeToFixed(s.prob_continue_up! * 100, 0)}%</span>
                       </div>
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-amber-700 dark:text-amber-400">ارتداد بسيط</span>
-                        <span className="font-mono font-semibold text-amber-700 dark:text-amber-400">{safeToFixed((s.prob_mild_pullback ?? 0) * 100, 0)}%</span>
+                        <span className="text-warning dark:text-warning">ارتداد بسيط</span>
+                        <span className="font-mono font-semibold text-warning dark:text-warning">{safeToFixed((s.prob_mild_pullback ?? 0) * 100, 0)}%</span>
                       </div>
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-red-700 dark:text-red-400">هبوط قوي</span>
-                        <span className="font-mono font-semibold text-red-700 dark:text-red-400">{safeToFixed((s.prob_sharp_drop ?? 0) * 100, 0)}%</span>
+                        <span className="text-loss dark:text-loss">هبوط قوي</span>
+                        <span className="font-mono font-semibold text-loss dark:text-loss">{safeToFixed((s.prob_sharp_drop ?? 0) * 100, 0)}%</span>
                       </div>
                     </div>
                   )}
@@ -461,10 +461,10 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
                     </span>
                     <div className="flex items-center gap-1 flex-wrap">
                       {s.risk_flag === 'extreme_north' && (
-                        <Badge className="text-[9px] font-semibold border-0 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" title="أسهم الشمال — مخاطر عالية جداً">🔴 شمال</Badge>
+                        <Badge className="text-[9px] font-semibold border-0 bg-loss text-loss dark:bg-loss/40 dark:text-loss" title="أسهم الشمال — مخاطر عالية جداً">🔴 شمال</Badge>
                       )}
                       {s.delay_compensation_applied && (
-                        <Badge className="text-[9px] font-semibold border-0 cursor-help bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                        <Badge className="text-[9px] font-semibold border-0 cursor-help bg-warning text-warning dark:bg-warning dark:text-warning"
                           onClick={() => toast.info('⚠️ تعويض تأخير البيانات', { description: 'تم توسيع الهدف (+5%) وتضييق وقف الخسارة (-15%) لحماية صفقتك.', duration: 6000 })}>
                           ⚠️ تعويض
                         </Badge>

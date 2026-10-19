@@ -99,9 +99,9 @@ function formatCurrency(value: number): string {
 function getActionColor(type: string): string {
   switch (type) {
     case 'SELL':
-    case 'TAKE_PROFIT': return 'bg-red-500 text-white';
-    case 'BUY_MORE': return 'bg-green-500 text-white';
-    case 'AVERAGE_DOWN': return 'bg-teal-500 text-white';
+    case 'TAKE_PROFIT': return 'bg-loss text-white';
+    case 'BUY_MORE': return 'bg-success text-white';
+    case 'AVERAGE_DOWN': return 'bg-whale text-white';
     default: return 'bg-yellow-500 text-white';
   }
 }
@@ -128,20 +128,20 @@ function getActionText(type: string): string {
 
 function getRecommendationColor(rec: string): string {
   switch (rec) {
-    case 'STRONG_BUY': return 'text-green-600 bg-green-100';
-    case 'BUY': return 'text-green-500 bg-green-50';
-    case 'STRONG_SELL': return 'text-red-600 bg-red-100';
-    case 'SELL': return 'text-red-500 bg-red-50';
+    case 'STRONG_BUY': return 'text-success bg-success';
+    case 'BUY': return 'text-success bg-success';
+    case 'STRONG_SELL': return 'text-loss bg-loss';
+    case 'SELL': return 'text-loss bg-loss';
     default: return 'text-yellow-600 bg-yellow-100';
   }
 }
 
 function getSeverityColor(severity: string): string {
   switch (severity) {
-    case 'danger': return 'border-red-300 bg-red-50 dark:bg-red-950/20';
+    case 'danger': return 'border-loss bg-loss dark:bg-loss/20';
     case 'warning': return 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20';
-    case 'success': return 'border-green-300 bg-green-50 dark:bg-green-950/20';
-    default: return 'border-teal-300 bg-blue-50 dark:bg-blue-950/20';
+    case 'success': return 'border-success bg-success dark:bg-success/20';
+    default: return 'border-whale bg-primary dark:bg-primary/20';
   }
 }
 
@@ -158,8 +158,8 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
   return (
     <Card className={cn(
       "cursor-pointer transition-all hover:shadow-md",
-      item.profit_loss_percent > 10 && "border-green-300",
-      item.profit_loss_percent < -10 && "border-red-300"
+      item.profit_loss_percent > 10 && "border-success",
+      item.profit_loss_percent < -10 && "border-loss"
     )} onClick={onToggle}>
       <CardContent className="p-4">
         {/* Header */}
@@ -182,13 +182,13 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
             <div className="text-left">
               <div className={cn(
                 "font-bold",
-                item.profit_loss >= 0 ? "text-green-600" : "text-red-600"
+                item.profit_loss >= 0 ? "text-success" : "text-loss"
               )}>
                 {item.profit_loss >= 0 ? '+' : ''}{formatCurrency(item.profit_loss)}
               </div>
               <div className={cn(
                 "text-sm text-right",
-                item.profit_loss_percent >= 0 ? "text-green-600" : "text-red-600"
+                item.profit_loss_percent >= 0 ? "text-success" : "text-loss"
               )}>
                 {item.profit_loss_percent >= 0 ? '+' : ''}{(item.profit_loss_percent ?? 0).toFixed(1)}%
               </div>
@@ -226,9 +226,9 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
             
             {/* TradingView Integration */}
             {item.type === 'stock' && (
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-3 rounded-lg">
+              <div className="bg-gradient-to-r from-primary to-purple-50 dark:from-primary/20 dark:to-purple-950/20 p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="h-4 w-4 text-teal-600" />
+                  <Zap className="h-4 w-4 text-whale" />
                   <span className="font-medium text-sm">TradingView</span>
                 </div>
                 
@@ -290,13 +290,13 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
               
               <div className="flex gap-4 mt-2 text-sm">
                 {item.action.target_price && (
-                  <div className="flex items-center gap-1 text-green-600">
+                  <div className="flex items-center gap-1 text-success">
                     <Target className="h-3 w-3" />
                     <span>الهدف: {(item.action.target_price ?? 0).toFixed(2)}</span>
                   </div>
                 )}
                 {item.action.stop_loss && (
-                  <div className="flex items-center gap-1 text-red-600">
+                  <div className="flex items-center gap-1 text-loss">
                     <ShieldAlert className="h-3 w-3" />
                     <span>وقف الخسارة: {(item.action.stop_loss ?? 0).toFixed(2)}</span>
                   </div>
@@ -405,14 +405,14 @@ export function ProfessionalWatchlistView() {
           </div>
           <div className="text-lg font-bold">{formatCurrency(safeSummary.total_value ?? 0)}</div>
         </Card>
-        <Card className={cn("p-3", (safeSummary.total_profit_loss ?? 0) >= 0 ? "bg-green-50" : "bg-red-50")}>
+        <Card className={cn("p-3", (safeSummary.total_profit_loss ?? 0) >= 0 ? "bg-success" : "bg-loss")}>
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Activity className="h-4 w-4" />
             <span className="text-xs">الربح/الخسارة</span>
           </div>
           <div className={cn(
             "text-lg font-bold",
-            (safeSummary.total_profit_loss ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+            (safeSummary.total_profit_loss ?? 0) >= 0 ? "text-success" : "text-loss"
           )}>
             {(safeSummary.total_profit_loss ?? 0) >= 0 ? '+' : ''}{formatCurrency(safeSummary.total_profit_loss ?? 0)}
           </div>
@@ -426,10 +426,10 @@ export function ProfessionalWatchlistView() {
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <AlertTriangle className="h-4 w-4 text-loss" />
             <span className="text-xs">خطر</span>
           </div>
-          <div className="text-lg font-bold text-red-600">{summary.alerts_by_severity.danger}</div>
+          <div className="text-lg font-bold text-loss">{summary.alerts_by_severity.danger}</div>
         </Card>
       </div>
       

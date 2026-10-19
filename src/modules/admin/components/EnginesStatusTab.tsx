@@ -88,20 +88,20 @@ const REFRESH_INTERVAL = 10000; // 10 seconds
 // ============== Helpers ==============
 
 const STALENESS_CONFIG = {
-    fresh: { label: 'حديث', color: 'text-emerald-600', bg: 'bg-emerald-500', border: 'border-emerald-300' },
-    stale: { label: 'متأخر', color: 'text-amber-600', bg: 'bg-amber-500', border: 'border-amber-300' },
-    old: { label: 'قديم', color: 'text-red-600', bg: 'bg-red-500', border: 'border-red-300' },
+    fresh: { label: 'حديث', color: 'text-profit', bg: 'bg-profit', border: 'border-profit' },
+    stale: { label: 'متأخر', color: 'text-warning', bg: 'bg-warning', border: 'border-warning' },
+    old: { label: 'قديم', color: 'text-loss', bg: 'bg-loss', border: 'border-loss' },
     unknown: { label: 'غير معروف', color: 'text-gray-600', bg: 'bg-gray-400', border: 'border-gray-300' },
 };
 
 const SIGNAL_COLORS: Record<string, string> = {
-    STRONG_BUY: 'text-emerald-600',
-    BUY: 'text-green-600',
-    ACCUMULATE: 'text-teal-600',
+    STRONG_BUY: 'text-profit',
+    BUY: 'text-success',
+    ACCUMULATE: 'text-whale',
     HOLD: 'text-yellow-600',
     REDUCE: 'text-orange-600',
-    SELL: 'text-red-600',
-    STRONG_SELL: 'text-red-700',
+    SELL: 'text-loss',
+    STRONG_SELL: 'text-loss',
 };
 
 function formatTimeAgo(minutesAgo: number | null): string {
@@ -182,11 +182,11 @@ function EngineCard({
                     <div className="flex flex-col items-end gap-1">
                         <div className="flex items-center gap-1.5">
                             {engine.running ? (
-                                <Wifi className="w-4 h-4 text-emerald-500" />
+                                <Wifi className="w-4 h-4 text-profit" />
                             ) : (
-                                <WifiOff className="w-4 h-4 text-red-500" />
+                                <WifiOff className="w-4 h-4 text-loss" />
                             )}
-                            <span className={cn('text-xs font-medium', engine.running ? 'text-emerald-600' : 'text-red-600')}>
+                            <span className={cn('text-xs font-medium', engine.running ? 'text-profit' : 'text-loss')}>
                                 {engine.connection === 'connected' ? 'متصل' : engine.connection === 'disconnected' ? 'غير متصل' : 'خطأ'}
                             </span>
                         </div>
@@ -203,7 +203,7 @@ function EngineCard({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 gap-1 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                        className="flex-1 gap-1 text-profit border-profit hover:bg-profit"
                         onClick={() => onPm2Action('start', engine.pm2_name || engine.name)}
                         disabled={engine.running || actionLoading === `start-${engine.pm2_name || engine.name}`}
                     >
@@ -213,7 +213,7 @@ function EngineCard({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 gap-1 text-red-600 border-red-300 hover:bg-red-50"
+                        className="flex-1 gap-1 text-loss border-loss hover:bg-loss"
                         onClick={() => onPm2Action('stop', engine.pm2_name || engine.name)}
                         disabled={!engine.running || actionLoading === `stop-${engine.pm2_name || engine.name}`}
                     >
@@ -223,7 +223,7 @@ function EngineCard({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 gap-1 text-amber-600 border-amber-300 hover:bg-amber-50"
+                        className="flex-1 gap-1 text-warning border-warning hover:bg-warning"
                         onClick={() => onPm2Action('restart', engine.pm2_name || engine.name)}
                         disabled={actionLoading === `restart-${engine.pm2_name || engine.name}`}
                     >
@@ -238,9 +238,9 @@ function EngineCard({
                     size="sm"
                     className={cn(
                         'w-full gap-1.5 font-semibold',
-                        engine.name === 'Data Engine' ? 'bg-blue-600 hover:bg-blue-700' :
+                        engine.name === 'Data Engine' ? 'bg-primary hover:bg-primary' :
                         engine.name === 'Analysis Engine' ? 'bg-purple-600 hover:bg-purple-700' :
-                        'bg-emerald-600 hover:bg-emerald-700'
+                        'bg-profit hover:bg-profit'
                     )}
                     onClick={() => onForceUpdate(engine.name)}
                     disabled={forceLoading === engine.name}
@@ -259,7 +259,7 @@ function EngineCard({
                 <div className="grid grid-cols-2 gap-3">
                     {/* Last Update */}
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                        <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                         <div className="min-w-0">
                             <div className="text-xs text-muted-foreground">آخر تحديث</div>
                             <div className="text-sm font-medium truncate">{formatTimeAgo(engine.minutes_ago)}</div>
@@ -287,13 +287,13 @@ function EngineCard({
                     {/* Errors */}
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
                         {engine.errors_count > 0 ? (
-                            <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                            <AlertTriangle className="w-4 h-4 text-loss flex-shrink-0" />
                         ) : (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-profit flex-shrink-0" />
                         )}
                         <div className="min-w-0">
                             <div className="text-xs text-muted-foreground">الأخطاء</div>
-                            <div className={cn('text-sm font-medium', engine.errors_count > 0 ? 'text-red-600' : 'text-emerald-600')}>
+                            <div className={cn('text-sm font-medium', engine.errors_count > 0 ? 'text-loss' : 'text-profit')}>
                                 {engine.errors_count} خطأ
                             </div>
                         </div>
@@ -304,10 +304,10 @@ function EngineCard({
                 {engine.name === 'Data Engine' && engine.scrapers && (
                     <div className="grid grid-cols-3 gap-2">
                         {Object.entries(engine.scrapers).map(([key, val]) => (
-                            <div key={key} className={cn('p-2 rounded-lg border text-center', val.running ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20' : 'border-gray-200')}>
+                            <div key={key} className={cn('p-2 rounded-lg border text-center', val.running ? 'border-profit bg-profit dark:bg-profit/20' : 'border-gray-200')}>
                                 <div className="text-xs text-muted-foreground capitalize">{key}</div>
                                 <div className="flex items-center justify-center gap-1 mt-0.5">
-                                    <div className={cn('w-2 h-2 rounded-full', val.running ? 'bg-emerald-500' : 'bg-red-500')} />
+                                    <div className={cn('w-2 h-2 rounded-full', val.running ? 'bg-profit' : 'bg-loss')} />
                                     <span className="text-sm font-bold">{val.count.toLocaleString()}</span>
                                 </div>
                             </div>
@@ -323,7 +323,7 @@ function EngineCard({
                         </div>
                         <div className="p-2 rounded-lg bg-muted/50 text-center">
                             <div className="text-xs text-muted-foreground">Background Analyzer</div>
-                            <div className={cn('text-lg font-bold', engine.background_analyzer ? 'text-emerald-600' : 'text-red-600')}>
+                            <div className={cn('text-lg font-bold', engine.background_analyzer ? 'text-profit' : 'text-loss')}>
                                 {engine.background_analyzer ? 'نشط' : 'متوقف'}
                             </div>
                         </div>
@@ -335,7 +335,7 @@ function EngineCard({
                         <div className="grid grid-cols-2 gap-2">
                             <div className="p-2 rounded-lg bg-muted/50 text-center">
                                 <div className="text-xs text-muted-foreground">توقعات اليوم</div>
-                                <div className="text-lg font-bold text-blue-600">{engine.today_predictions || 0}</div>
+                                <div className="text-lg font-bold text-primary">{engine.today_predictions || 0}</div>
                             </div>
                             <div className="p-2 rounded-lg bg-muted/50 text-center">
                                 <div className="text-xs text-muted-foreground">إجمالي التوقعات</div>
@@ -381,8 +381,8 @@ function EngineCard({
                                         key={i}
                                         className={cn(
                                             'py-0.5',
-                                            log.includes('✅') || log.includes('success') ? 'text-emerald-400' :
-                                                log.includes('❌') || log.includes('error') || log.includes('ERROR') ? 'text-red-400' :
+                                            log.includes('✅') || log.includes('success') ? 'text-profit' :
+                                                log.includes('❌') || log.includes('error') || log.includes('ERROR') ? 'text-loss' :
                                                     log.includes('⚠️') || log.includes('WARNING') ? 'text-yellow-400' :
                                                         'text-slate-300'
                                         )}
@@ -544,8 +544,8 @@ export function EnginesStatusTab() {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
-                <span className="ml-3 text-lg text-emerald-600 font-bold">جاري تحميل حالة المحركات...</span>
+                <Loader2 className="w-10 h-10 animate-spin text-profit" />
+                <span className="ml-3 text-lg text-profit font-bold">جاري تحميل حالة المحركات...</span>
             </div>
         );
     }
@@ -554,9 +554,9 @@ export function EnginesStatusTab() {
         return (
             <Card>
                 <CardContent className="py-12 text-center">
-                    <XCircle className="w-12 h-12 mx-auto text-red-500 mb-3" />
+                    <XCircle className="w-12 h-12 mx-auto text-loss mb-3" />
                     <p className="text-muted-foreground">تعذر تحميل حالة المحركات</p>
-                    {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
+                    {error && <p className="text-sm text-loss mt-2">{error}</p>}
                     <Button onClick={handleRefresh} className="mt-4" variant="outline">
                         <RefreshCw className="w-4 h-4 ml-2" /> إعادة المحاولة
                     </Button>
@@ -570,7 +570,7 @@ export function EnginesStatusTab() {
         return (
             <Card>
                 <CardContent className="py-12 text-center">
-                    <XCircle className="w-12 h-12 mx-auto text-red-500 mb-3" />
+                    <XCircle className="w-12 h-12 mx-auto text-loss mb-3" />
                     <p className="text-muted-foreground">تعذر تحميل حالة المحركات</p>
                     <Button onClick={handleRefresh} className="mt-4" variant="outline">
                         <RefreshCw className="w-4 h-4 ml-2" /> إعادة المحاولة
@@ -590,9 +590,9 @@ export function EnginesStatusTab() {
                         <div className="flex items-center gap-4">
                             <div className={cn(
                                 'w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold',
-                                healthScore === 100 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30' :
-                                    healthScore >= 66 ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/30' :
-                                        'bg-red-100 text-red-600 dark:bg-red-950/30'
+                                healthScore === 100 ? 'bg-profit text-profit dark:bg-profit/30' :
+                                    healthScore >= 66 ? 'bg-warning text-warning dark:bg-warning/30' :
+                                        'bg-loss text-loss dark:bg-loss/30'
                             )}>
                                 {healthScore}%
                             </div>
@@ -607,7 +607,7 @@ export function EnginesStatusTab() {
 
                         <div className="flex items-center gap-2">
                             {summary.all_running ? (
-                                <Badge className="gap-1 bg-emerald-600">
+                                <Badge className="gap-1 bg-profit">
                                     <CheckCircle2 className="w-3 h-3" /> الكل يعمل
                                 </Badge>
                             ) : (
@@ -618,7 +618,7 @@ export function EnginesStatusTab() {
                             <Button
                                 variant="default"
                                 size="sm"
-                                className="gap-1.5 bg-amber-600 hover:bg-amber-700 font-semibold"
+                                className="gap-1.5 bg-warning hover:bg-warning font-semibold"
                                 onClick={handleForceUpdateAll}
                                 disabled={forceLoading === 'ALL'}
                             >
@@ -639,9 +639,9 @@ export function EnginesStatusTab() {
                         value={healthScore}
                         className={cn(
                             'mt-4 h-2',
-                            healthScore === 100 ? '[&>div]:bg-emerald-500' :
-                                healthScore >= 66 ? '[&>div]:bg-amber-500' :
-                                    '[&>div]:bg-red-500'
+                            healthScore === 100 ? '[&>div]:bg-profit' :
+                                healthScore >= 66 ? '[&>div]:bg-warning' :
+                                    '[&>div]:bg-loss'
                         )}
                     />
 
@@ -657,8 +657,8 @@ export function EnginesStatusTab() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <EngineCard
                     engine={{ ...engines.data, pm2_name: engines.data.pm2_name || 'data-engine' }}
-                    icon={<Database className="w-6 h-6 text-blue-600" />}
-                    color="bg-blue-100 dark:bg-blue-950/30"
+                    icon={<Database className="w-6 h-6 text-primary" />}
+                    color="bg-primary dark:bg-primary/30"
                     expanded={expandedEngine === 'data'}
                     onToggle={() => setExpandedEngine(expandedEngine === 'data' ? null : 'data')}
                     onPm2Action={handlePm2Action}
@@ -679,8 +679,8 @@ export function EnginesStatusTab() {
                 />
                 <EngineCard
                     engine={{ ...engines.prediction, pm2_name: engines.prediction.pm2_name || 'python-backend' }}
-                    icon={<Target className="w-6 h-6 text-emerald-600" />}
-                    color="bg-emerald-100 dark:bg-emerald-950/30"
+                    icon={<Target className="w-6 h-6 text-profit" />}
+                    color="bg-profit dark:bg-profit/30"
                     expanded={expandedEngine === 'prediction'}
                     onToggle={() => setExpandedEngine(expandedEngine === 'prediction' ? null : 'prediction')}
                     onPm2Action={handlePm2Action}
@@ -694,15 +694,15 @@ export function EnginesStatusTab() {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                        <Server className="w-5 h-5 text-blue-500" />
+                        <Server className="w-5 h-5 text-primary" />
                         معمارية النظام
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
+                        <div className="p-3 rounded-lg bg-primary dark:bg-primary/20 border border-primary">
                             <div className="flex items-center gap-2 mb-1">
-                                <Database className="w-4 h-4 text-blue-600" />
+                                <Database className="w-4 h-4 text-primary" />
                                 <span className="font-medium text-sm">محرك البيانات</span>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -718,9 +718,9 @@ export function EnginesStatusTab() {
                                 يحلل البيانات فنياً وأساسياً (RSI, MACD, Patterns, Fibonacci) وينتج إشارات
                             </p>
                         </div>
-                        <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200">
+                        <div className="p-3 rounded-lg bg-profit dark:bg-profit/20 border border-profit">
                             <div className="flex items-center gap-2 mb-1">
-                                <Target className="w-4 h-4 text-emerald-600" />
+                                <Target className="w-4 h-4 text-profit" />
                                 <span className="font-medium text-sm">محرك التوقعات</span>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -729,11 +729,11 @@ export function EnginesStatusTab() {
                         </div>
                     </div>
 
-                    <div className="mt-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200">
+                    <div className="mt-3 p-3 rounded-lg bg-warning dark:bg-warning/20 border border-warning">
                         <div className="flex items-start gap-2">
-                            <Zap className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <Zap className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                             <p className="text-xs text-muted-foreground">
-                                <strong className="text-amber-700 dark:text-amber-400">ملاحظة:</strong> المحركات الثلاثة تعمل معاً.
+                                <strong className="text-warning dark:text-warning">ملاحظة:</strong> المحركات الثلاثة تعمل معاً.
                                 محرك البيانات يجلب الأسعار كل 5-10 دقائق، ومحرك التحليلات يعمل كل ساعة (كامل) + كل 5 دقائق (تزايدي)،
                                 ومحرك التوقعات من المفترض أن يحدّث كل 15 دقيقة. إذا كانت شاشة التحليلات ثابتة، تأكد من أن المحركات تعمل.
                             </p>

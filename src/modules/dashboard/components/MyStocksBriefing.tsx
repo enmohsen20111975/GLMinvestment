@@ -149,26 +149,26 @@ const REFRESH_INTERVAL = 60; // 60s — quieter than LiveMonitor (10s) since thi
 const ADVICE_TYPE_INFO: Record<string, { label_ar: string; color_class: string; icon_bg: string; priority: number }> = {
   EXIT_RADAR: {
     label_ar: 'إشارة خروج',
-    color_class: 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/50 border-red-300 dark:border-red-800',
-    icon_bg: 'bg-red-500',
+    color_class: 'text-loss dark:text-loss bg-loss dark:bg-loss/50 border-loss dark:border-loss',
+    icon_bg: 'bg-loss',
     priority: 100,
   },
   STOP_LOSS: {
     label_ar: 'وقف خسارة',
-    color_class: 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/50 border-red-300 dark:border-red-800',
-    icon_bg: 'bg-red-500',
+    color_class: 'text-loss dark:text-loss bg-loss dark:bg-loss/50 border-loss dark:border-loss',
+    icon_bg: 'bg-loss',
     priority: 90,
   },
   TAKE_PROFIT: {
     label_ar: 'جني أرباح',
-    color_class: 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800',
-    icon_bg: 'bg-emerald-500',
+    color_class: 'text-profit dark:text-profit bg-profit dark:bg-profit/50 border-profit dark:border-profit',
+    icon_bg: 'bg-profit',
     priority: 70,
   },
   APPROACHING_TARGET: {
     label_ar: 'اقتراب من الهدف',
-    color_class: 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800',
-    icon_bg: 'bg-amber-500',
+    color_class: 'text-warning dark:text-warning bg-warning dark:bg-warning/50 border-warning dark:border-warning',
+    icon_bg: 'bg-warning',
     priority: 60,
   },
   HOLD: {
@@ -254,7 +254,7 @@ function AlertCard({ stock }: { stock: UserStock }) {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 text-[11px]">
           {advice.pnl_pct !== 0 && (
-            <span className={cn('font-bold', pnlPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+            <span className={cn('font-bold', pnlPositive ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
               {fmtPct(advice.pnl_pct)}
             </span>
           )}
@@ -298,12 +298,12 @@ function PortfolioSummaryCard({ data }: { data: BriefingData }) {
       </div>
       <div className="rounded-lg border bg-card p-2.5">
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
-          {isPositive ? <ArrowUpRight className="w-3 h-3 text-emerald-500" /> : <ArrowDownRight className="w-3 h-3 text-red-500" />}
+          {isPositive ? <ArrowUpRight className="w-3 h-3 text-profit" /> : <ArrowDownRight className="w-3 h-3 text-loss" />}
           المكاسب/الخسائر
         </div>
         <div className={cn(
           'text-sm font-bold',
-          isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+          isPositive ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss',
         )}>
           {isPositive ? '+' : ''}{fmtCurrency(summary.total_pnl)}
           <span className="text-[10px] ms-1 opacity-70">
@@ -451,10 +451,10 @@ export function MyStocksBriefing() {
   // ─── Loading state ─────────────────────────────────────────
   if (loading) {
     return (
-      <Card className="border-emerald-200 dark:border-emerald-900">
+      <Card className="border-profit dark:border-profit">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <BellRing className="w-4 h-4 text-emerald-500" />
+            <BellRing className="w-4 h-4 text-profit" />
             <Skeleton className="h-4 w-32" />
           </div>
         </CardHeader>
@@ -470,10 +470,10 @@ export function MyStocksBriefing() {
   // ─── Not authenticated ─────────────────────────────────────
   if (!isAuthenticated) {
     return (
-      <Card className="border-emerald-200 dark:border-emerald-900 bg-gradient-to-br from-emerald-50/50 to-background dark:from-emerald-950/20">
+      <Card className="border-profit dark:border-profit bg-gradient-to-br from-profit/50 to-background dark:from-profit/20">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <BellRing className="w-4 h-4 text-emerald-500" />
+            <BellRing className="w-4 h-4 text-profit" />
             {t('dashboard.myStocksBriefing')}
           </CardTitle>
           <CardDescription className="text-xs">
@@ -495,11 +495,11 @@ export function MyStocksBriefing() {
   // ─── Authenticated but no portfolio yet ────────────────────
   if (briefing && briefing.summary.portfolio_stocks === 0 && briefing.summary.watchlist_stocks === 0 && briefing.summary.radar_tracked === 0) {
     return (
-      <Card className="border-emerald-200 dark:border-emerald-900">
+      <Card className="border-profit dark:border-profit">
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <BellRing className="w-4 h-4 text-emerald-500" />
+              <BellRing className="w-4 h-4 text-profit" />
               {t('dashboard.myStocksBriefing')}
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
@@ -522,10 +522,10 @@ export function MyStocksBriefing() {
   // ─── Error state ────────────────────────────────────────────
   if (error || !briefing) {
     return (
-      <Card className="border-red-200 dark:border-red-900">
+      <Card className="border-loss dark:border-loss">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <AlertTriangle className="w-4 h-4 text-loss" />
             تعذّر تحميل التنبيهات
           </CardTitle>
         </CardHeader>
@@ -557,13 +557,13 @@ export function MyStocksBriefing() {
   const hasAlerts = alerts && alerts.total > 0;
 
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900 bg-gradient-to-br from-emerald-50/30 via-background to-background dark:from-emerald-950/10">
+    <Card className="border-profit dark:border-profit bg-gradient-to-br from-profit/30 via-background to-background dark:from-profit/10">
       <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="relative flex-shrink-0">
-            <BellRing className="w-4 h-4 text-emerald-500" />
+            <BellRing className="w-4 h-4 text-profit" />
             {hasAlerts && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 rounded-full bg-loss text-white text-[9px] font-bold flex items-center justify-center">
                 {alerts.total > 9 ? '9+' : alerts.total}
               </span>
             )}
@@ -596,7 +596,7 @@ export function MyStocksBriefing() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between" dir="rtl">
             <h4 className="text-xs font-semibold flex items-center gap-1.5">
-              <AlertTriangle className={cn('w-3.5 h-3.5', hasAlerts ? 'text-amber-500' : 'text-muted-foreground')} />
+              <AlertTriangle className={cn('w-3.5 h-3.5', hasAlerts ? 'text-warning' : 'text-muted-foreground')} />
               {t('alerts.alertsNeedDecision')}
             </h4>
             {hasAlerts && (
@@ -622,7 +622,7 @@ export function MyStocksBriefing() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between" dir="rtl">
             <h4 className="text-xs font-semibold flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+              <BookOpen className="w-3.5 h-3.5 text-primary" />
               {t('dashboard.latestNews')}
             </h4>
             {newsTickers.length > 0 && (

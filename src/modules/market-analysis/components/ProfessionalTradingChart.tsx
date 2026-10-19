@@ -62,16 +62,16 @@ interface Props {
 
 // ─── خريطة ألوان الإشارة (كنسي — مطابق V40.2) ─────────────────────────────────
 const SIGNAL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  STRONG_BUY:        { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
-  INSTITUTIONAL_BUY: { bg: 'bg-emerald-600', text: 'text-white', border: 'border-emerald-700' },
-  BUY:               { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-300 dark:border-emerald-700' },
-  ACCUMULATE:        { bg: 'bg-teal-100 dark:bg-teal-900/40', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-300 dark:border-teal-700' },
-  HOLD:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
-  WAIT:              { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700' },
+  STRONG_BUY:        { bg: 'bg-profit', text: 'text-white', border: 'border-profit' },
+  INSTITUTIONAL_BUY: { bg: 'bg-profit', text: 'text-white', border: 'border-profit' },
+  BUY:               { bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', border: 'border-profit dark:border-profit' },
+  ACCUMULATE:        { bg: 'bg-whale dark:bg-whale/40', text: 'text-whale dark:text-whale', border: 'border-whale dark:border-whale' },
+  HOLD:              { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-warning dark:border-warning' },
+  WAIT:              { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-warning dark:border-warning' },
   REDUCE:            { bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700' },
-  SELL:              { bg: 'bg-rose-100 dark:bg-rose-900/40', text: 'text-rose-700 dark:text-rose-300', border: 'border-rose-300 dark:border-rose-700' },
-  STRONG_SELL:       { bg: 'bg-rose-600', text: 'text-white', border: 'border-rose-700' },
-  AVOID:             { bg: 'bg-rose-600', text: 'text-white', border: 'border-rose-700' },
+  SELL:              { bg: 'bg-loss dark:bg-loss/40', text: 'text-loss dark:text-loss', border: 'border-loss dark:border-loss' },
+  STRONG_SELL:       { bg: 'bg-loss', text: 'text-white', border: 'border-loss' },
+  AVOID:             { bg: 'bg-loss', text: 'text-white', border: 'border-loss' },
 };
 
 // ─── ترجمة الإشارة للعربية (لغة المستثمر) ───────────────────────────────────────
@@ -260,16 +260,16 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   // تفرق بوضوح بين: سكين ساقطة / تصحيح صاعد / تذبذب عرضي
   const regimeBadge = (() => {
     if (flightState?.state === 'falling_down' || makerState?.state === 'distribution') {
-      return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-300 dark:border-red-800' };
+      return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-loss dark:text-loss', bg: 'bg-loss dark:bg-loss/30', border: 'border-loss dark:border-loss' };
     }
     if (flightState?.state === 'taking_off' && chgPct < 0 && chgPct > -5) {
-      return { label: '🟡 تصحيح في مسار صاعد', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-300 dark:border-amber-800' };
+      return { label: '🟡 تصحيح في مسار صاعد', color: 'text-warning dark:text-warning', bg: 'bg-warning dark:bg-warning/30', border: 'border-warning dark:border-warning' };
     }
     if (makerState?.state === 'accumulation' || (chgPct >= -2 && chgPct <= 2)) {
       return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-300 dark:border-orange-800' };
     }
     if (flightState?.state === 'taking_off') {
-      return { label: '🟢 مسار صاعد صحي', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-300 dark:border-emerald-800' };
+      return { label: '🟢 مسار صاعد صحي', color: 'text-profit dark:text-profit', bg: 'bg-profit dark:bg-profit/30', border: 'border-profit dark:border-profit' };
     }
     return null;
   })();
@@ -353,7 +353,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   if (error) {
     return (
       <div className="w-full p-8 text-center">
-        <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-3" />
+        <AlertTriangle className="w-12 h-12 mx-auto text-warning mb-3" />
         <p className="text-sm text-muted-foreground mb-3">{error}</p>
         <Button variant="outline" size="sm" onClick={() => fetchData(ticker, timeframe)}>
           <RefreshCw className="w-4 h-4 ml-1" /> إعادة المحاولة
@@ -397,8 +397,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                   className={cn(
                     'font-mono text-xs font-black px-2 py-0.5 rounded-full',
                     isUp
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300'
-                      : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300'
+                      ? 'bg-profit text-profit border-profit dark:bg-profit/40 dark:text-profit'
+                      : 'bg-loss text-loss border-loss dark:bg-loss/40 dark:text-loss'
                   )}
                 >
                   {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
@@ -410,8 +410,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                   <Badge className={cn(
                     'text-[9px] font-bold rounded-full',
                     liveData?.delayed_mode
-                      ? 'bg-amber-500 text-white border border-amber-600'
-                      : 'bg-rose-600 text-white animate-pulse'
+                      ? 'bg-warning text-white border border-warning'
+                      : 'bg-loss text-white animate-pulse'
                   )}>
                     {liveData?.delayed_mode ? `DELAYED ${liveData.delayed_minutes || 5}M` : 'LIVE'}
                   </Badge>
@@ -450,13 +450,13 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {stop !== null && stop > 0 && (
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] text-muted-foreground">الوقف</span>
-                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{(stop ?? 0).toFixed(2)}</span>
+                  <span className="font-mono font-bold text-loss dark:text-loss">{(stop ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {target1 !== null && target1 > 0 && (
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] text-muted-foreground">الهدف</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(target1 ?? 0).toFixed(2)}</span>
+                  <span className="font-mono font-bold text-profit dark:text-profit">{(target1 ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {rr !== null && rr > 0 && (
@@ -474,7 +474,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             </div>
             ) : (
               <div className="p-2 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                <ShieldAlert className="w-4 h-4 text-warning shrink-0" />
                 <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً</span>
               </div>
             )}
@@ -492,7 +492,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                   className={cn(
                     'px-2 py-1 rounded-lg transition-colors',
                     timeframe === tf
-                      ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                      ? 'bg-profit text-white font-bold shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -504,10 +504,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               <RefreshCw className={cn('h-3.5 w-3.5', loading ? 'animate-spin' : '')} />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setAlertPanelOpen(true)} className="h-8 w-8 p-0 rounded-lg relative">
-              {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-amber-500" /> : <Bell className="h-3.5 w-3.5" />}
+              {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-warning" /> : <Bell className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className="h-8 w-8 p-0 rounded-lg">
-              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Star className="h-3.5 w-3.5" />}
+              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5 text-profit" /> : <Star className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setIsMaximized((v) => !v)} className="h-8 w-8 p-0 rounded-lg">
               {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -521,7 +521,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
         {/* سبب الانتظار/الرفض (سطر واحد واضح) */}
         {(signalFinal === 'HOLD' || signalFinal === 'WAIT' || signalFinal?.includes('KILL') || signalFinal?.includes('AVOID')) && (
           <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3 text-amber-500" />
+            <AlertTriangle className="w-3 h-3 text-warning" />
             <span>
               {decision?.path_taken || data?.adjustment_reason || 'السهم في مرحلة انتظار — راجع التفاصيل بالأسفل'}
             </span>
@@ -538,7 +538,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
         </div>
       )}
       {hasMarketWarning && (
-        <div className="px-4 py-1.5 bg-rose-50 dark:bg-rose-950/20 border-b border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+        <div className="px-4 py-1.5 bg-loss dark:bg-loss/20 border-b border-loss dark:border-loss text-xs text-loss dark:text-loss flex items-center gap-2">
           <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
           <span className="font-semibold">
             {makerState?.state === 'distribution' && '🔴 تصريف مؤسسي — احذر'}
@@ -564,7 +564,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               variant={advancedLevels ? 'default' : 'outline'}
               size="sm"
               onClick={toggleAdvancedLevels}
-              className={cn('h-7 text-[10px] px-2.5 rounded-lg', advancedLevels && 'bg-emerald-600 text-white')}
+              className={cn('h-7 text-[10px] px-2.5 rounded-lg', advancedLevels && 'bg-profit text-white')}
             >
               <Activity className="w-3 h-3 ml-1" />
               مستويات متقدمة
@@ -618,7 +618,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           <div className="rounded-xl border border-border bg-muted/30 p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-emerald-600" />
+                <Target className="w-4 h-4 text-profit" />
                 <span className="text-xs font-bold">خطة الصفقة</span>
               </div>
               {rr !== null && rr > 0 && (
@@ -629,14 +629,14 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <PlanLevel label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground" />
-              <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600 dark:text-rose-400" />
-              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
-              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-emerald-600 dark:text-emerald-400" />
+              <PlanLevel label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-loss dark:text-loss" />
+              <PlanLevel label="الهدف 1" value={target1} currencyLabel={currencyLabel} color="text-profit dark:text-profit" />
+              <PlanLevel label="الهدف 2" value={target2} currencyLabel={currencyLabel} color="text-profit dark:text-profit" />
             </div>
             {data?.suggested_position_size_pct && (
               <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1">
                 <Wallet className="w-3 h-3" />
-                حجم المحفظة المقترح: <strong className="font-mono text-emerald-600">{data.suggested_position_size_pct}%</strong>
+                حجم المحفظة المقترح: <strong className="font-mono text-profit">{data.suggested_position_size_pct}%</strong>
                 {data?.analysis_text && (
                   <span className="text-muted-foreground mr-2">• {data.analysis_text.slice(0, 80)}</span>
                 )}
@@ -647,7 +647,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       ) : !isBuySignal ? (
         <div className="px-4 py-3 border-t border-border">
           <div className="p-3 rounded-xl border border-border bg-muted/40 text-xs text-muted-foreground flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+            <ShieldAlert className="w-4 h-4 text-warning shrink-0" />
             <span>لا توجد صفقة شراء مفعلة لهذا السهم حالياً — السهم غير مؤهل أو في مسار هابط/تصريفي.</span>
           </div>
         </div>
@@ -658,7 +658,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       ════════════════════════════════════════════════════════════════════════ */}
       <div className="px-4 py-3 border-t border-border">
         <div className="text-xs font-bold mb-2 flex items-center gap-1">
-          <Activity className="w-3.5 h-3.5 text-emerald-600" />
+          <Activity className="w-3.5 h-3.5 text-profit" />
           أسباب القرار
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -747,7 +747,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
       <CardContent className="pt-3 border-t border-border">
         <a
           href={`/rescue?ticker=${encodeURIComponent(ticker)}`}
-          className="block p-4 rounded-xl border border-border bg-gradient-to-l from-amber-500/10 to-transparent hover:from-amber-500/20 transition-all group"
+          className="block p-4 rounded-xl border border-border bg-gradient-to-l from-warning/10 to-transparent hover:from-warning/20 transition-all group"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -799,15 +799,15 @@ function ReasonCard({ label, value, positive, negative }: {
     <div className={cn(
       'p-2 rounded-lg border text-center',
       positive
-        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+        ? 'bg-profit dark:bg-profit/30 border-profit dark:border-profit'
         : negative
-        ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800'
+        ? 'bg-loss dark:bg-loss/30 border-loss dark:border-loss'
         : 'bg-muted/30 border-border'
     )}>
       <div className="text-[9px] text-muted-foreground mb-0.5">{label}</div>
       <div className={cn(
         'text-[11px] font-bold',
-        positive ? 'text-emerald-700 dark:text-emerald-300' : negative ? 'text-rose-700 dark:text-rose-300' : 'text-foreground'
+        positive ? 'text-profit dark:text-profit' : negative ? 'text-loss dark:text-loss' : 'text-foreground'
       )}>
         {value}
       </div>

@@ -335,12 +335,12 @@ const TYPE_META: Record<
 > = {
   bullish: {
     label: 'صعودي',
-    className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+    className: 'bg-profit/15 text-profit dark:text-profit border-profit/30',
     icon: TrendingUp,
   },
   bearish: {
     label: 'هبوطي',
-    className: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30',
+    className: 'bg-loss/15 text-loss dark:text-loss border-loss/30',
     icon: TrendingDown,
   },
   neutral: {
@@ -356,7 +356,7 @@ const RELIABILITY_META: Record<
 > = {
   high: {
     label: 'موثوقية عالية',
-    className: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40',
+    className: 'bg-warning/15 text-warning dark:text-warning border-warning/40',
   },
   medium: {
     label: 'موثوقية متوسطة',
@@ -559,7 +559,7 @@ function ProbabilityBar({ pattern }: { pattern: CandlePattern }) {
     <div className="space-y-1.5" dir="ltr">
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
         <div
-          className="bg-emerald-500 transition-all duration-300"
+          className="bg-profit transition-all duration-300"
           style={{ width: `${bull}%` }}
           title={`صعودي: ${bull}%`}
         />
@@ -569,14 +569,14 @@ function ProbabilityBar({ pattern }: { pattern: CandlePattern }) {
           title={`محايد: ${neutral}%`}
         />
         <div
-          className="bg-red-500 transition-all duration-300"
+          className="bg-loss transition-all duration-300"
           style={{ width: `${bear}%` }}
           title={`هبوطي: ${bear}%`}
         />
       </div>
       <div className="flex justify-between text-[11px] text-muted-foreground">
-        <span className="text-emerald-600 dark:text-emerald-400">▲ {bull}%</span>
-        <span className="text-red-600 dark:text-red-400">{bear}% ▼</span>
+        <span className="text-profit dark:text-profit">▲ {bull}%</span>
+        <span className="text-loss dark:text-loss">{bear}% ▼</span>
       </div>
     </div>
   );
@@ -782,7 +782,7 @@ export function CandlestickSimulator() {
             </div>
 
             <div className="rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
-              <Lightbulb className="mb-1 inline size-3.5 text-amber-500" />
+              <Lightbulb className="mb-1 inline size-3.5 text-warning" />
               {' '}
               القيد: يجب أن يكون <strong>الأعلى ≥ الافتتاح والإغلاق</strong>، و
               <strong> الأدنى ≤ الافتتاح والإغلاق</strong>. عند مخالفة ذلك يُضبط
@@ -794,12 +794,12 @@ export function CandlestickSimulator() {
           <div className="flex flex-col items-center justify-center rounded-lg border bg-gradient-to-b from-background to-muted/20 p-4">
             <CandleSvg o={openV} h={effHigh} l={effLow} c={effClose} />
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px]">
-              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
-                <span className="inline-block size-2 rounded-sm bg-emerald-500" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-profit/15 px-2 py-0.5 text-profit dark:text-profit">
+                <span className="inline-block size-2 rounded-sm bg-profit" />
                 جسم أخضر = سيطرة المشتري
               </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-red-500/15 px-2 py-0.5 text-red-700 dark:text-red-300">
-                <span className="inline-block size-2 rounded-sm bg-red-500" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-loss/15 px-2 py-0.5 text-loss dark:text-loss">
+                <span className="inline-block size-2 rounded-sm bg-loss" />
                 جسم أحمر = سيطرة البائع
               </span>
             </div>
@@ -927,7 +927,7 @@ export function CandlestickSimulator() {
         {/* Educational footer */}
         <div className="rounded-lg border bg-muted/30 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Lightbulb className="size-4 text-amber-500" />
+            <Lightbulb className="size-4 text-warning" />
             <h4 className="text-sm font-semibold">السيكولوجيا خلف الشموع</h4>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">

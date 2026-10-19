@@ -59,7 +59,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
     <TableRow className="hover:bg-muted/50">
       <TableCell>
         <div className="flex flex-col gap-0.5">
-          <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+          <span className="font-bold text-profit dark:text-profit text-sm">
             {bond.symbol}
           </span>
           <span className="text-xs text-muted-foreground">{bond.name_ar}</span>
@@ -77,7 +77,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
         {bond.coupon_rate > 0 ? (
           <div className="flex items-center gap-1">
             <Percent className="w-3 h-3 text-muted-foreground" />
-            <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+            <span className="font-semibold text-sm text-profit dark:text-profit">
               {(bond.coupon_rate ?? 0).toFixed(2)}%
             </span>
           </div>
@@ -87,8 +87,8 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
       </TableCell>
       <TableCell className="text-left tabular-nums">
         <div className="flex items-center gap-1">
-          <TrendingUp className="w-3 h-3 text-amber-500" />
-          <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
+          <TrendingUp className="w-3 h-3 text-warning" />
+          <span className="font-semibold text-sm text-warning dark:text-warning">
             {(bond.ytm ?? 0).toFixed(2)}%
           </span>
         </div>
@@ -105,7 +105,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
             variant={daysToMaturity < 90 ? "default" : "secondary"} 
             className={cn(
               "text-[10px] w-fit",
-              daysToMaturity < 90 && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+              daysToMaturity < 90 && "bg-warning text-warning dark:bg-warning/30 dark:text-warning"
             )}
           >
             <Clock className="w-3 h-3 ml-1" />
@@ -143,7 +143,7 @@ const bondColumns: Column<TreasuryBond>[] = [
     sortable: true,
     render: (bond) => (
       <div className="flex flex-col gap-0.5">
-        <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+        <span className="font-bold text-profit dark:text-profit text-sm">
           {bond.symbol}
         </span>
         <span className="text-xs text-muted-foreground">{bond.name_ar}</span>
@@ -175,7 +175,7 @@ const bondColumns: Column<TreasuryBond>[] = [
       bond.coupon_rate > 0 ? (
         <span className="text-left tabular-nums inline-flex items-center gap-1 w-full justify-start">
           <Percent className="w-3 h-3 text-muted-foreground" />
-          <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+          <span className="font-semibold text-sm text-profit dark:text-profit">
             {(bond.coupon_rate ?? 0).toFixed(2)}%
           </span>
         </span>
@@ -190,8 +190,8 @@ const bondColumns: Column<TreasuryBond>[] = [
     sortable: true,
     render: (bond) => (
       <span className="text-left tabular-nums inline-flex items-center gap-1 w-full justify-start">
-        <TrendingUp className="w-3 h-3 text-amber-500" />
-        <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
+        <TrendingUp className="w-3 h-3 text-warning" />
+        <span className="font-semibold text-sm text-warning dark:text-warning">
           {(bond.ytm ?? 0).toFixed(2)}%
         </span>
       </span>
@@ -224,7 +224,7 @@ const bondColumns: Column<TreasuryBond>[] = [
             className={cn(
               'text-[10px] w-fit',
               daysToMaturity < 90 &&
-                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                'bg-warning text-warning dark:bg-warning/30 dark:text-warning',
             )}
           >
             <Clock className="w-3 h-3 ml-1" />
@@ -287,8 +287,8 @@ export function TreasuryBondsView() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                <Landmark className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-2 bg-profit dark:bg-profit/30 rounded-lg">
+                <Landmark className="w-5 h-5 text-profit dark:text-profit" />
               </div>
               <div>
                 <h2 className="font-bold text-lg">أدوات الدخل الثابت</h2>
@@ -327,7 +327,7 @@ export function TreasuryBondsView() {
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap border',
               activeTab === tab.key
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                ? 'bg-profit text-white border-profit shadow-sm'
                 : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'
             )}
           >
@@ -338,11 +338,11 @@ export function TreasuryBondsView() {
       </div>
 
       {/* Info Banner */}
-      <Card className="py-0 gap-0 bg-blue-50 dark:bg-blue-950/20 border-teal-200 dark:border-teal-900">
+      <Card className="py-0 gap-0 bg-primary dark:bg-primary/20 border-whale dark:border-whale">
         <CardContent className="p-3">
           <div className="flex items-start gap-2">
-            <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-teal-700 dark:text-teal-300">
+            <Shield className="w-4 h-4 text-whale dark:text-whale mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-whale dark:text-whale">
               <strong>تنبيه:</strong> الأسعار المعروضة هي آخر أسعار التداول وقد تختلف عن الأسعار الحالية.
               يرجى التحقق من الأسعار من مصادرك المعتادة قبل اتخاذ أي قرار استثماري.
             </div>
@@ -392,8 +392,8 @@ export function TreasuryBondsView() {
           <Card className="py-0 gap-0">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                  <Landmark className="w-5 h-5 text-emerald-600" />
+                <div className="p-2 bg-profit dark:bg-profit/30 rounded-lg">
+                  <Landmark className="w-5 h-5 text-profit" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">السندات الحكومية</p>
@@ -405,8 +405,8 @@ export function TreasuryBondsView() {
           <Card className="py-0 gap-0">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                  <FileText className="w-5 h-5 text-teal-600" />
+                <div className="p-2 bg-whale dark:bg-whale/30 rounded-lg">
+                  <FileText className="w-5 h-5 text-whale" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">شهادات الاستثمار</p>
@@ -418,8 +418,8 @@ export function TreasuryBondsView() {
           <Card className="py-0 gap-0">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                  <Percent className="w-5 h-5 text-amber-600" />
+                <div className="p-2 bg-warning dark:bg-warning/30 rounded-lg">
+                  <Percent className="w-5 h-5 text-warning" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">أذون الخزانة</p>

@@ -71,7 +71,7 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4" dir="rtl">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-3">
-          <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center">
+          <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-warning to-loss flex items-center justify-center">
             <Shield className="w-7 h-7 text-white" />
           </div>
           <div>
@@ -80,7 +80,7 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
               السيرفر التجريبي — للتجارب والاختبارات فقط
             </CardDescription>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[11px] font-medium">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/10 text-warning dark:text-warning text-[11px] font-medium">
             <Lock className="w-3 h-3" />
             Dev Mode
           </div>
@@ -121,16 +121,16 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
-                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                <p className="text-xs text-red-700 dark:text-red-400">{error}</p>
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-loss dark:bg-loss/30 border border-loss dark:border-loss">
+                <AlertTriangle className="w-4 h-4 text-loss shrink-0" />
+                <p className="text-xs text-loss dark:text-loss">{error}</p>
               </div>
             )}
 
             <Button
               type="submit"
               disabled={loading || !username.trim() || !password.trim()}
-              className="w-full gap-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white"
+              className="w-full gap-2 bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-white"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
               {loading ? 'جارٍ الدخول...' : 'دخول كأدمن'}

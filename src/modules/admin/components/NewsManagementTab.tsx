@@ -402,7 +402,7 @@ export function NewsManagementTab() {
               <p className="text-xs text-muted-foreground">إجمالي الأخبار الحالية</p>
               <h3 className="text-2xl font-bold text-foreground mt-1">{total}</h3>
             </div>
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
               <Newspaper className="w-5 h-5" />
             </div>
           </CardContent>
@@ -428,7 +428,7 @@ export function NewsManagementTab() {
                       type="button"
                       title={`مسح جميع أخبار ${s.source}`}
                       onClick={() => handlePurgeBySource(s.source)}
-                      className="text-muted-foreground hover:text-rose-500 transition-colors mr-0.5"
+                      className="text-muted-foreground hover:text-loss transition-colors mr-0.5"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -498,9 +498,9 @@ export function NewsManagementTab() {
 
           {/* Batch Actions Bar */}
           {selectedIds.size > 0 && (
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-foreground animate-in fade-in duration-200">
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-loss/10 border border-loss/20 text-xs text-foreground animate-in fade-in duration-200">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-rose-500" />
+                <CheckCircle2 className="w-4 h-4 text-loss" />
                 <span>
                   تم تحديد <strong>{selectedIds.size}</strong> خبر
                 </span>
@@ -642,9 +642,9 @@ export function NewsManagementTab() {
                             className={cn(
                               'text-[10px] py-0 px-1.5',
                               item.importance >= 70
-                                ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                                ? 'bg-loss/10 text-loss border-loss/20'
                                 : item.importance >= 40
-                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                ? 'bg-warning/10 text-warning border-warning/20'
                                 : 'bg-muted text-muted-foreground'
                             )}
                           >
@@ -676,7 +676,7 @@ export function NewsManagementTab() {
                             type="button"
                             onClick={() => openEditModal(item)}
                             title="تعديل هذا الخبر"
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-amber-500 transition-colors"
+                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-warning transition-colors"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -700,7 +700,7 @@ export function NewsManagementTab() {
                             onClick={() => handleDeleteOne(item)}
                             disabled={actionLoading}
                             title="حذف هذا الخبر"
-                            className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
+                            className="p-1.5 rounded-md hover:bg-loss/10 text-muted-foreground hover:text-loss transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -771,7 +771,7 @@ export function NewsManagementTab() {
             <form onSubmit={handleAddNews} className="space-y-3.5 text-xs">
               <div>
                 <label className="block text-foreground font-semibold mb-1">
-                  عنوان الخبر <span className="text-rose-500">*</span>
+                  عنوان الخبر <span className="text-loss">*</span>
                 </label>
                 <Input
                   type="text"
@@ -937,7 +937,7 @@ export function NewsManagementTab() {
           <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-4 text-right" dir="rtl">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <Pencil className="w-5 h-5 text-amber-500" />
+                <Pencil className="w-5 h-5 text-warning" />
                 <h3 className="text-base font-bold text-foreground">تعديل الخبر (معرّف: #{editItem.id})</h3>
               </div>
               <button
@@ -952,7 +952,7 @@ export function NewsManagementTab() {
             <form onSubmit={handleUpdateNews} className="space-y-3.5 text-xs">
               <div>
                 <label className="block text-foreground font-semibold mb-1">
-                  عنوان الخبر <span className="text-rose-500">*</span>
+                  عنوان الخبر <span className="text-loss">*</span>
                 </label>
                 <Input
                   type="text"
@@ -1046,7 +1046,7 @@ export function NewsManagementTab() {
                   type="submit"
                   size="sm"
                   disabled={actionLoading}
-                  className="h-8 text-xs bg-amber-600 text-white hover:bg-amber-700"
+                  className="h-8 text-xs bg-warning text-white hover:bg-warning"
                 >
                   {actionLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                 </Button>

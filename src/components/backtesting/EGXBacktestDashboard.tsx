@@ -92,8 +92,8 @@ function MetricCard({ label, value, icon, color = 'text-foreground', sub }: {
 
 function PFIndicator({ pf }: { pf: number }) {
   const pct = Math.min(Math.max((pf / 3) * 100, 0), 100);
-  const color = pf >= 1.5 ? 'text-emerald-500' : pf >= 1.0 ? 'text-amber-500' : 'text-red-500';
-  const bgColor = pf >= 1.5 ? 'bg-emerald-500' : pf >= 1.0 ? 'bg-amber-500' : 'bg-red-500';
+  const color = pf >= 1.5 ? 'text-profit' : pf >= 1.0 ? 'text-warning' : 'text-loss';
+  const bgColor = pf >= 1.5 ? 'bg-profit' : pf >= 1.0 ? 'bg-warning' : 'bg-loss';
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
@@ -110,15 +110,15 @@ function PFIndicator({ pf }: { pf: number }) {
 }
 
 function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy: StrategyResult }) {
-  const pfColor = strategy.profit_factor >= 1.5 ? 'text-emerald-500' :
-    strategy.profit_factor >= 1.0 ? 'text-amber-500' : 'text-red-500';
-  const wrColor = strategy.win_rate >= 60 ? 'text-emerald-500' :
-    strategy.win_rate >= 50 ? 'text-amber-500' : 'text-red-500';
+  const pfColor = strategy.profit_factor >= 1.5 ? 'text-profit' :
+    strategy.profit_factor >= 1.0 ? 'text-warning' : 'text-loss';
+  const wrColor = strategy.win_rate >= 60 ? 'text-profit' :
+    strategy.win_rate >= 50 ? 'text-warning' : 'text-loss';
 
   return (
-    <Card className={`relative overflow-hidden ${strategy.is_best ? 'ring-2 ring-emerald-500/50' : ''}`}>
+    <Card className={`relative overflow-hidden ${strategy.is_best ? 'ring-2 ring-profit/50' : ''}`}>
       {strategy.is_best && (
-        <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
+        <div className="absolute top-0 right-0 bg-profit text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
           🏆 BEST
         </div>
       )}
@@ -145,19 +145,19 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
             label="Avg Win"
             value={`+${strategy.avg_winner_pct}%`}
             icon={<ArrowUpRight className="w-3 h-3" />}
-            color="text-emerald-500"
+            color="text-profit"
           />
           <MetricCard
             label="Avg Loss"
             value={`${strategy.avg_loser_pct}%`}
             icon={<ArrowDownRight className="w-3 h-3" />}
-            color="text-red-500"
+            color="text-loss"
           />
           <MetricCard
             label="Avg Return"
             value={`${strategy.avg_return_pct >= 0 ? '+' : ''}${strategy.avg_return_pct}%`}
             icon={<Activity className="w-3 h-3" />}
-            color={strategy.avg_return_pct >= 0 ? 'text-emerald-500' : 'text-red-500'}
+            color={strategy.avg_return_pct >= 0 ? 'text-profit' : 'text-loss'}
           />
         </div>
 
@@ -174,9 +174,9 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
             <div className="flex rounded-full overflow-hidden h-3">
               {Object.entries(strategy.exit_breakdown).map(([reason, count]) => {
                 const pct = (count / strategy.total_trades) * 100;
-                const bgColor = reason === 'target' ? 'bg-emerald-500' :
-                  reason === 'trailing_stop' ? 'bg-teal-500' :
-                  reason === 'stop' ? 'bg-red-500' : 'bg-gray-400';
+                const bgColor = reason === 'target' ? 'bg-profit' :
+                  reason === 'trailing_stop' ? 'bg-whale' :
+                  reason === 'stop' ? 'bg-loss' : 'bg-gray-400';
                 return (
                   <div
                     key={reason}
@@ -189,9 +189,9 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
             </div>
             <div className="flex flex-wrap gap-2 text-[10px]">
               {Object.entries(strategy.exit_breakdown).map(([reason, count]) => {
-                const dotColor = reason === 'target' ? 'bg-emerald-500' :
-                  reason === 'trailing_stop' ? 'bg-teal-500' :
-                  reason === 'stop' ? 'bg-red-500' : 'bg-gray-400';
+                const dotColor = reason === 'target' ? 'bg-profit' :
+                  reason === 'trailing_stop' ? 'bg-whale' :
+                  reason === 'stop' ? 'bg-loss' : 'bg-gray-400';
                 return (
                   <div key={reason} className="flex items-center gap-1">
                     <div className={`w-2 h-2 rounded-full ${dotColor}`} />
@@ -222,10 +222,10 @@ function WalkForwardComparison({ data, title }: { data: WalkForwardData; title: 
   ];
 
   const verdictIcon = data.verdict.includes('✅') ?
-    <CheckCircle2 className="w-5 h-5 text-emerald-500" /> :
+    <CheckCircle2 className="w-5 h-5 text-profit" /> :
     data.verdict.includes('⚠️') ?
-    <AlertTriangle className="w-5 h-5 text-amber-500" /> :
-    <XCircle className="w-5 h-5 text-red-500" />;
+    <AlertTriangle className="w-5 h-5 text-warning" /> :
+    <XCircle className="w-5 h-5 text-loss" />;
 
   return (
     <Card>
@@ -248,7 +248,7 @@ function WalkForwardComparison({ data, title }: { data: WalkForwardData; title: 
             <div key={m.name} className="grid grid-cols-3 gap-2 items-center px-1">
               <span className="text-xs">{m.name}</span>
               <span className="text-center text-sm font-medium">{(m.is ?? 0).toFixed(2)}{m.unit}</span>
-              <span className={`text-center text-sm font-medium ${isBetter ? 'text-emerald-500' : 'text-red-500'}`}>
+              <span className={`text-center text-sm font-medium ${isBetter ? 'text-profit' : 'text-loss'}`}>
                 {(m.oos ?? 0).toFixed(2)}{m.unit}
                 <span className="text-[10px] ml-1">
                   ({delta >= 0 ? '+' : ''}{(delta ?? 0).toFixed(2)})
@@ -278,8 +278,8 @@ function ComparisonCard({ comparison }: { comparison: BacktestData['comparison_v
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           {/* Old system */}
-          <div className="space-y-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-            <div className="text-sm font-bold text-red-500">❌ النظام القديم (v1.0)</div>
+          <div className="space-y-2 p-3 rounded-lg bg-loss/10 border border-loss/20">
+            <div className="text-sm font-bold text-loss">❌ النظام القديم (v1.0)</div>
             <div className="text-xs text-muted-foreground">{comparison.old.market}</div>
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
@@ -288,17 +288,17 @@ function ComparisonCard({ comparison }: { comparison: BacktestData['comparison_v
               </div>
               <div className="flex justify-between text-xs">
                 <span>Profit Factor</span>
-                <span className="font-bold text-red-500">{comparison.old.profit_factor}</span>
+                <span className="font-bold text-loss">{comparison.old.profit_factor}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span>Avg 30d Return</span>
-                <span className="font-medium text-red-500">{comparison.old.avg_return_30d}%</span>
+                <span className="font-medium text-loss">{comparison.old.avg_return_30d}%</span>
               </div>
             </div>
           </div>
           {/* New system */}
-          <div className="space-y-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-            <div className="text-sm font-bold text-emerald-500">✅ النظام الجديد (v2.0)</div>
+          <div className="space-y-2 p-3 rounded-lg bg-profit/10 border border-profit/20">
+            <div className="text-sm font-bold text-profit">✅ النظام الجديد (v2.0)</div>
             <div className="text-xs text-muted-foreground">{comparison.new.market}</div>
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
@@ -307,11 +307,11 @@ function ComparisonCard({ comparison }: { comparison: BacktestData['comparison_v
               </div>
               <div className="flex justify-between text-xs">
                 <span>Profit Factor</span>
-                <span className="font-bold text-emerald-500">{comparison.new.profit_factor}</span>
+                <span className="font-bold text-profit">{comparison.new.profit_factor}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span>Avg Return</span>
-                <span className="font-medium text-emerald-500">+{comparison.new.avg_return}%</span>
+                <span className="font-medium text-profit">+{comparison.new.avg_return}%</span>
               </div>
             </div>
           </div>
@@ -322,7 +322,7 @@ function ComparisonCard({ comparison }: { comparison: BacktestData['comparison_v
           <div className="text-xs font-medium">التحسينات الرئيسية:</div>
           {comparison.improvements.map((imp, i) => (
             <div key={i} className="flex items-start gap-2 text-xs">
-              <Award className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
+              <Award className="w-3 h-3 text-profit mt-0.5 shrink-0" />
               <span>{imp}</span>
             </div>
           ))}
@@ -360,7 +360,7 @@ export function EGXBacktestDashboard() {
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-red-500">فشل تحميل البيانات</p>
+        <p className="text-loss">فشل تحميل البيانات</p>
       </div>
     );
   }
@@ -372,8 +372,8 @@ export function EGXBacktestDashboard() {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-            <Target className="w-6 h-6 text-emerald-500" />
+          <div className="p-2 rounded-lg bg-profit/10 border border-profit/20">
+            <Target className="w-6 h-6 text-profit" />
           </div>
           <div>
             <h1 className="text-xl font-bold">EGX Sniper Backtest v2.0</h1>

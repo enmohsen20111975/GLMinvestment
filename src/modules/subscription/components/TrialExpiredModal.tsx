@@ -85,7 +85,7 @@ export function TrialExpiredModal({ isExpired, onResolved, hardBlock = false }: 
           </button>
 
           {/* Header */}
-          <div className="bg-gradient-to-br from-amber-500 via-amber-600 to-emerald-600 px-6 pt-7 pb-6 text-center text-white">
+          <div className="bg-gradient-to-br from-warning via-warning to-profit px-6 pt-7 pb-6 text-center text-white">
             <div className="inline-flex items-center justify-center mb-3 size-14 rounded-2xl bg-white/15 ring-4 ring-white/25 backdrop-blur">
               <Clock className="size-7" />
             </div>
@@ -100,8 +100,8 @@ export function TrialExpiredModal({ isExpired, onResolved, hardBlock = false }: 
 
           {/* Body */}
           <div className="px-6 py-5 bg-background space-y-4">
-            <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 p-3 flex items-start gap-2.5">
-              <AlertCircle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+            <div className="rounded-lg bg-warning/5 border border-warning/20 p-3 flex items-start gap-2.5">
+              <AlertCircle className="size-4 text-warning shrink-0 mt-0.5" />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 الوصول الكامل (التوقعات المتقدمة، التحليل اللحظي، المحفظة) بيتطلب اشتراك نشط.
                 تقدر تكمل تصفّح السوق والأخبار مجاناً، أو اشترك لفتح كل المزايا.
@@ -113,7 +113,7 @@ export function TrialExpiredModal({ isExpired, onResolved, hardBlock = false }: 
               <Button
                 onClick={goSubscribe}
                 size="lg"
-                className="w-full h-11 text-base font-bold bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white shadow-md gap-2"
+                className="w-full h-11 text-base font-bold bg-gradient-to-r from-warning to-profit hover:from-warning hover:to-profit text-white shadow-md gap-2"
               >
                 <Crown className="size-5" />
                 اشترك الآن
@@ -149,9 +149,9 @@ function HardTrialBlock({ onResolved }: { onResolved?: () => void }) {
       aria-labelledby="trial-expired-hard-title"
     >
       <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-background rounded-2xl shadow-2xl border border-border">
-        <div className="sticky top-0 z-[5] bg-amber-500/10 border-b border-amber-500/20 p-4 text-center">
+        <div className="sticky top-0 z-[5] bg-warning/10 border-b border-warning/20 p-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <AlertCircle className="w-5 h-5 text-amber-500" />
+            <AlertCircle className="w-5 h-5 text-warning" />
             <h2 id="trial-expired-hard-title" className="text-lg font-bold text-foreground">
               انتهت فترة التجربة المجانية
             </h2>

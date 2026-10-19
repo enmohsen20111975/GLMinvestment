@@ -98,7 +98,7 @@ export function RoboNotifierToggle() {
       variant={variant as any}
       size="sm"
       onClick={handleToggle}
-      className={`gap-1.5 flex-shrink-0 ${running ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse' : ''}`}
+      className={`gap-1.5 flex-shrink-0 ${running ? 'bg-profit hover:bg-profit text-white animate-pulse' : ''}`}
       aria-label={label}
       title={label}
     >

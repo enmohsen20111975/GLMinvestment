@@ -370,15 +370,15 @@ function extractProfessional(raw: Record<string, unknown>): ProfessionalAnalysis
 
 /* ========== Helpers ========== */
 function getScoreColor(score: number): string {
-  if (score >= 70) return 'text-emerald-400';
-  if (score >= 50) return 'text-amber-400';
-  return 'text-red-400';
+  if (score >= 70) return 'text-profit';
+  if (score >= 50) return 'text-warning';
+  return 'text-loss';
 }
 
 function getScoreBg(score: number): string {
-  if (score >= 70) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-  if (score >= 50) return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-  return 'bg-red-500/20 text-red-300 border-red-500/40';
+  if (score >= 70) return 'bg-profit/20 text-profit border-profit/40';
+  if (score >= 50) return 'bg-warning/20 text-warning border-warning/40';
+  return 'bg-loss/20 text-loss border-loss/40';
 }
 
 /* ========== Cover Page Header (Bloomberg-style) ========== */
@@ -398,20 +398,20 @@ function CoverPageHeader({
   const rec = analysis?.recommendation;
   const isUp = change >= 0;
   const actionColors: Record<string, string> = {
-    strong_buy: 'from-emerald-600 to-emerald-500 text-white',
-    buy: 'from-emerald-500 to-teal-500 text-white',
-    accumulate: 'from-teal-500 to-emerald-500 text-white',
-    hold: 'from-amber-500 to-amber-400 text-[#0a0e1a]',
-    sell: 'from-red-500 to-rose-500 text-white',
-    strong_sell: 'from-red-600 to-red-700 text-white',
+    strong_buy: 'from-profit to-profit text-white',
+    buy: 'from-profit to-whale text-white',
+    accumulate: 'from-whale to-profit text-white',
+    hold: 'from-warning to-warning text-[#0a0e1a]',
+    sell: 'from-loss to-loss text-white',
+    strong_sell: 'from-loss to-loss text-white',
   };
   const actionBg = actionColors[rec?.action ?? 'hold'] ?? 'from-slate-600 to-slate-500 text-white';
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
+      className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
       dir="rtl"
     >
-      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-amber-500 via-amber-400 to-amber-500" />
+      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
       {/* Big ticker + name */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div className="flex-1 min-w-0">
@@ -421,7 +421,7 @@ function CoverPageHeader({
             </h1>
             <Badge
               variant="outline"
-              className="text-[11px] font-bold border-amber-400/40 text-amber-300 bg-amber-500/10"
+              className="text-[11px] font-bold border-warning/40 text-warning bg-warning/10"
             >
               {stock.sector || '—'}
             </Badge>
@@ -446,7 +446,7 @@ function CoverPageHeader({
       <div className="flex items-end gap-4 flex-wrap">
         <div>
           <p className="text-[10px] text-slate-400 uppercase tracking-wide">السعر الحالي</p>
-          <p className="text-3xl sm:text-4xl font-extrabold text-amber-300 tabular-nums">
+          <p className="text-3xl sm:text-4xl font-extrabold text-warning tabular-nums">
             {safeFmtNum(price, 2, ' ج.م')}
           </p>
         </div>
@@ -454,8 +454,8 @@ function CoverPageHeader({
           className={cn(
             'px-3 py-1.5 rounded-lg tabular-nums text-sm font-bold',
             isUp
-              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-              : 'bg-red-500/15 text-red-300 border border-red-500/30',
+              ? 'bg-profit/15 text-profit border border-profit/30'
+              : 'bg-loss/15 text-loss border border-loss/30',
           )}
         >
           {isUp ? <ArrowUpRight className="w-3.5 h-3.5 inline -mt-0.5" /> : <ArrowDownRight className="w-3.5 h-3.5 inline -mt-0.5" />}
@@ -474,13 +474,13 @@ function CoverPageHeader({
         </div>
         <div className="rounded-lg bg-white/5 border border-slate-700/40 p-2">
           <p className="text-[10px] text-slate-400">الأعلى</p>
-          <p className="text-sm font-bold text-emerald-300 tabular-nums">
+          <p className="text-sm font-bold text-profit tabular-nums">
             {safeFmtNum(stock.high_price ?? 0, 2)}
           </p>
         </div>
         <div className="rounded-lg bg-white/5 border border-slate-700/40 p-2">
           <p className="text-[10px] text-slate-400">الأدنى</p>
-          <p className="text-sm font-bold text-red-300 tabular-nums">
+          <p className="text-sm font-bold text-loss tabular-nums">
             {safeFmtNum(stock.low_price ?? 0, 2)}
           </p>
         </div>
@@ -510,7 +510,7 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
   return (
     <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
           <BarChart3 className="w-5 h-5" />
           تقييم النقاط · Score Dashboard
         </CardTitle>
@@ -573,7 +573,7 @@ function TechnicalSection({ analysis }: { analysis: ProfessionalAnalysis }) {
   return (
     <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
           <Activity className="w-5 h-5" />
           المؤشرات الفنية · Technical Indicators
         </CardTitle>
@@ -671,7 +671,7 @@ function FundamentalSection({
   return (
     <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
           <Scale className="w-5 h-5" />
           القوائم الأساسية · Fundamental Analysis
         </CardTitle>
@@ -689,7 +689,7 @@ function FundamentalSection({
                   <Icon className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-[10px] text-slate-400">{it.label}</span>
                 </div>
-                <p className="text-lg font-extrabold text-amber-300 tabular-nums">
+                <p className="text-lg font-extrabold text-warning tabular-nums">
                   {it.value}
                 </p>
                 <p className="text-[10px] text-slate-500">{it.hint}</p>
@@ -698,12 +698,12 @@ function FundamentalSection({
           })}
         </div>
         {analysis.fair_value && (
-          <div className="mt-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+          <div className="mt-3 p-3 rounded-lg border border-warning/30 bg-warning/5">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-amber-300">
+              <span className="text-xs font-bold text-warning">
                 القيمة العادلة المقدّرة · Fair Value
               </span>
-              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-300">
+              <Badge variant="outline" className="text-[10px] border-warning/40 text-warning">
                 {analysis.fair_value.verdict_ar}
               </Badge>
             </div>
@@ -728,7 +728,7 @@ function FundamentalSection({
               </div>
               <div>
                 <span className="text-slate-400">Upside:</span>
-                <p className={cn('font-bold tabular-nums', analysis.fair_value.upside_to_fair > 0 ? 'text-emerald-400' : 'text-red-400')}>
+                <p className={cn('font-bold tabular-nums', analysis.fair_value.upside_to_fair > 0 ? 'text-profit' : 'text-loss')}>
                   {safeFmtPct(analysis.fair_value.upside_to_fair, 2)}
                 </p>
               </div>
@@ -776,15 +776,15 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
     },
   ];
   const toneClasses: Record<string, string> = {
-    positive: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-    negative: 'border-red-500/30 bg-red-500/10 text-red-300',
-    warning: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+    positive: 'border-profit/30 bg-profit/10 text-profit',
+    negative: 'border-loss/30 bg-loss/10 text-loss',
+    warning: 'border-warning/30 bg-warning/10 text-warning',
     neutral: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
   };
   return (
     <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
           <AlertTriangle className="w-5 h-5" />
           تحليل المخاطر · Risk Metrics
         </CardTitle>
@@ -813,30 +813,30 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
 function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis }) {
   const rec = analysis.recommendation;
   return (
-    <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-[#0d1320] to-[#10162a] print:break-inside-avoid">
+    <Card className="overflow-hidden border-warning/30 bg-gradient-to-br from-[#0d1320] to-[#10162a] print:break-inside-avoid">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
           <Shield className="w-5 h-5" />
           الخلاصة والتوصية · Conclusion
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="text-center p-3 rounded-lg bg-teal-500/10 border border-teal-500/30">
+          <div className="text-center p-3 rounded-lg bg-whale/10 border border-whale/30">
             <p className="text-[10px] text-slate-400 mb-1">سعر الدخول</p>
-            <p className="text-lg font-bold text-teal-300 tabular-nums">
+            <p className="text-lg font-bold text-whale tabular-nums">
               {safeFmtNum(rec.entry_price, 2)}
             </p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+          <div className="text-center p-3 rounded-lg bg-profit/10 border border-profit/30">
             <p className="text-[10px] text-slate-400 mb-1">الهدف</p>
-            <p className="text-lg font-bold text-emerald-300 tabular-nums">
+            <p className="text-lg font-bold text-profit tabular-nums">
               {safeFmtNum(rec.target_price, 2)}
             </p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+          <div className="text-center p-3 rounded-lg bg-loss/10 border border-loss/30">
             <p className="text-[10px] text-slate-400 mb-1">وقف الخسارة</p>
-            <p className="text-lg font-bold text-red-300 tabular-nums">
+            <p className="text-lg font-bold text-loss tabular-nums">
               {safeFmtNum(rec.stop_loss, 2)}
             </p>
           </div>
@@ -844,26 +844,26 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
             <p className="text-[10px] text-slate-400">الثقة</p>
-            <p className="text-sm font-bold text-amber-300 tabular-nums">
+            <p className="text-sm font-bold text-warning tabular-nums">
               {(rec.confidence ?? 0).toFixed(0)}%
             </p>
           </div>
           <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
             <p className="text-[10px] text-slate-400">R:R</p>
-            <p className="text-sm font-bold text-amber-300 tabular-nums">
+            <p className="text-sm font-bold text-warning tabular-nums">
               1 : {(rec.risk_reward_ratio ?? 0).toFixed(2)}
             </p>
           </div>
           <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
             <p className="text-[10px] text-slate-400">الأفق</p>
-            <p className="text-sm font-bold text-amber-300">
+            <p className="text-sm font-bold text-warning">
               {rec.time_horizon_ar}
             </p>
           </div>
         </div>
         {rec.summary_ar && (
           <div className="p-3 rounded-lg bg-black/20 border border-slate-700/40">
-            <p className="text-xs font-bold text-amber-300 mb-1">ملخص التحليل</p>
+            <p className="text-xs font-bold text-warning mb-1">ملخص التحليل</p>
             <p className="text-sm leading-relaxed text-slate-200">{rec.summary_ar}</p>
           </div>
         )}
@@ -882,12 +882,12 @@ function PriceLevelsCard({
 }) {
   const pl = analysis.price_levels;
   const levels = [
-    { label: 'مقاومة 2', value: pl.resistance_2, color: 'bg-red-500' },
-    { label: 'مقاومة 1', value: pl.resistance_1, color: 'bg-red-400' },
-    { label: 'السعر الحالي', value: currentPrice, color: 'bg-amber-400', isCurrent: true },
-    { label: 'نقطة المحور', value: pl.pivot, color: 'bg-amber-500' },
-    { label: 'دعم 1', value: pl.support_1, color: 'bg-emerald-400' },
-    { label: 'دعم 2', value: pl.support_2, color: 'bg-emerald-500' },
+    { label: 'مقاومة 2', value: pl.resistance_2, color: 'bg-loss' },
+    { label: 'مقاومة 1', value: pl.resistance_1, color: 'bg-loss' },
+    { label: 'السعر الحالي', value: currentPrice, color: 'bg-warning', isCurrent: true },
+    { label: 'نقطة المحور', value: pl.pivot, color: 'bg-warning' },
+    { label: 'دعم 1', value: pl.support_1, color: 'bg-profit' },
+    { label: 'دعم 2', value: pl.support_2, color: 'bg-profit' },
   ];
   const allValues = levels.map((l) => l.value).filter(Boolean);
   const minVal = Math.min(...allValues, 0);
@@ -896,7 +896,7 @@ function PriceLevelsCard({
   return (
     <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+        <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
           <Target className="w-5 h-5" />
           مستويات الأسعار · Price Levels
         </CardTitle>
@@ -910,7 +910,7 @@ function PriceLevelsCard({
                 <span
                   className={cn(
                     'text-xs font-medium w-20 text-left',
-                    level.isCurrent ? 'text-amber-300 font-bold' : 'text-slate-400',
+                    level.isCurrent ? 'text-warning font-bold' : 'text-slate-400',
                   )}
                 >
                   {level.label}
@@ -927,7 +927,7 @@ function PriceLevelsCard({
                 <span
                   className={cn(
                     'text-xs font-bold tabular-nums w-16 text-left',
-                    level.isCurrent ? 'text-amber-300' : 'text-slate-200',
+                    level.isCurrent ? 'text-warning' : 'text-slate-200',
                   )}
                 >
                   {(level.value ?? 0).toFixed(2)}
@@ -1107,11 +1107,11 @@ export function StockAnalysisReport() {
       {/* Header bar */}
       <div className="flex items-center justify-between flex-wrap gap-3 border-b border-slate-700/40 pb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-emerald-500 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-profit flex items-center justify-center">
             <Activity className="w-5 h-5 text-[#0a0e1a]" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-base font-extrabold text-amber-300">تقرير تحليل السهم</h1>
+            <h1 className="text-base font-extrabold text-warning">تقرير تحليل السهم</h1>
             <p className="text-[10px] text-slate-400 uppercase tracking-wide">
               Stock Analysis Report · Python Brain
             </p>
@@ -1123,7 +1123,7 @@ export function StockAnalysisReport() {
               onClick={handleExportPng}
               disabled={exportingPng}
               variant="outline"
-              className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+              className="gap-2 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning"
             >
               <Download className="w-4 h-4" />
               {exportingPng ? 'جارٍ التصدير...' : 'تصدير صورة (PNG)'}
@@ -1131,7 +1131,7 @@ export function StockAnalysisReport() {
             <Button
               onClick={handlePrint}
               variant="outline"
-              className="gap-2 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200"
+              className="gap-2 border-profit/40 text-profit hover:bg-profit/10 hover:text-profit"
             >
               <Printer className="w-4 h-4" />
               طباعة / PDF
@@ -1141,7 +1141,7 @@ export function StockAnalysisReport() {
       </div>
 
       {/* Legal Disclaimer */}
-      <p className="text-[10px] text-amber-300/70 italic text-center leading-relaxed">
+      <p className="text-[10px] text-warning/70 italic text-center leading-relaxed">
         ⚠️ إخلاء مسؤولية: هذا التقرير رأي آلي تعليمي تحليلي وليس نصيحة
         استثمارية مرخصة. القرار مسؤولية العميل. لا ضمان للنتائج.
       </p>
@@ -1171,7 +1171,7 @@ export function StockAnalysisReport() {
                 <button
                   key={stock.ticker || Math.random()}
                   onClick={() => handleSelectStock(stock as StockInfo)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-500/10 transition-colors text-right border-b border-slate-700/30 last:border-b-0"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-warning/10 transition-colors text-right border-b border-slate-700/30 last:border-b-0"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-100 truncate">
@@ -1181,7 +1181,7 @@ export function StockAnalysisReport() {
                       {stock.ticker} • {stock.sector || ''}
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-amber-300 tabular-nums">
+                  <span className="text-sm font-bold text-warning tabular-nums">
                     {(Number(stock.current_price ?? 0)).toFixed(2)}
                   </span>
                 </button>
@@ -1239,8 +1239,8 @@ export function StockAnalysisReport() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <AlertTriangle className="w-12 h-12 mb-3 text-amber-400" />
-              <p className="text-base font-bold text-amber-300 mb-1">
+              <AlertTriangle className="w-12 h-12 mb-3 text-warning" />
+              <p className="text-base font-bold text-warning mb-1">
                 تعذّر تحميل التحليل المهني لهذا السهم
               </p>
               <p className="text-xs text-slate-400 max-w-md">
@@ -1251,7 +1251,7 @@ export function StockAnalysisReport() {
                   <summary className="text-[11px] text-slate-500 cursor-pointer">
                     تفاصيل أخطاء المحركات ({comprehensive.errors.length})
                   </summary>
-                  <pre className="text-[10px] text-red-400 mt-1 overflow-auto">
+                  <pre className="text-[10px] text-loss mt-1 overflow-auto">
 {comprehensive.errors.map((e, i) => `${i + 1}. ${e.engine ?? '?'}: ${e.error ?? ''}`).join('\n')}
                   </pre>
                 </details>
@@ -1264,8 +1264,8 @@ export function StockAnalysisReport() {
       {/* Empty State */}
       {!selectedStock && !loadingAnalysis && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Search className="w-16 h-16 mb-4 opacity-30 text-amber-400" />
-          <p className="text-lg font-bold text-amber-300 mb-1">
+          <Search className="w-16 h-16 mb-4 opacity-30 text-warning" />
+          <p className="text-lg font-bold text-warning mb-1">
             اختر سهماً لعرض التقرير
           </p>
           <p className="text-sm text-slate-400 max-w-md">

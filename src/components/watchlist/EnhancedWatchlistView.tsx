@@ -388,7 +388,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={resetAndClose}>{t('watchlist.buttons.cancel')}</Button>
           <Button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-profit hover:bg-profit text-white"
             onClick={handleSubmit}
             disabled={submitting || !selectedStock}
           >
@@ -560,7 +560,7 @@ function EditStockDialog({
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
           <Button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-profit hover:bg-profit text-white"
             onClick={handleSave}
             disabled={submitting}
           >
@@ -604,15 +604,15 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
   return (
     <Card className={cn(
       'overflow-hidden',
-      hasGainLoss && item.purchase_price && item.quantity && isProfitable && 'border-emerald-200 dark:border-emerald-800',
-      hasGainLoss && item.purchase_price && item.quantity && !isProfitable && 'border-red-200 dark:border-red-800'
+      hasGainLoss && item.purchase_price && item.quantity && isProfitable && 'border-profit dark:border-profit',
+      hasGainLoss && item.purchase_price && item.quantity && !isProfitable && 'border-loss dark:border-loss'
     )}>
       <CardContent className="p-4">
         {/* Header Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+            <div className="w-10 h-10 rounded-full bg-profit dark:bg-profit/30 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-profit dark:text-profit">
                 {(item.ticker || '').slice(0, 2)}
               </span>
             </div>
@@ -624,9 +624,9 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
           <div className="flex items-center gap-1">
             {hasAnyAlert && (
               <div className="relative">
-                <Bell className="w-4 h-4 text-amber-500" />
+                <Bell className="w-4 h-4 text-warning" />
                 {(isAboveTriggered || isBelowTriggered) && (
-                  <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="absolute -top-1 -left-1 w-2 h-2 bg-loss rounded-full" />
                 )}
               </div>
             )}
@@ -653,13 +653,13 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
             <p className="font-bold text-lg">{formatCurrency(item.current_price)}</p>
             <div className="flex items-center gap-1 mt-1">
               {item.price_change >= 0 ? (
-                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                <TrendingUp className="w-3 h-3 text-profit" />
               ) : (
-                <TrendingDown className="w-3 h-3 text-red-500" />
+                <TrendingDown className="w-3 h-3 text-loss" />
               )}
               <span className={cn(
                 'text-xs font-semibold',
-                item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                item.price_change >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
               )}>
                 {formatPercent(item.price_change_percent)}
               </span>
@@ -669,20 +669,20 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
           {hasGainLoss && item.purchase_price && item.quantity && (
             <div className={cn(
               'rounded-lg p-2.5',
-              isProfitable ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-red-50 dark:bg-red-950/30'
+              isProfitable ? 'bg-profit dark:bg-profit/30' : 'bg-loss dark:bg-loss/30'
             )}>
               <p className="text-xs text-muted-foreground mb-0.5">الربح/الخسارة</p>
               <p className={cn(
                 'font-bold text-lg',
-                isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                isProfitable ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
               )}>
                 {formatCurrency(Math.abs(item.gain_loss))}
               </p>
               <Badge className={cn(
                 'text-[10px] px-1.5 mt-1',
                 isProfitable
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  ? 'bg-profit text-profit dark:bg-profit/30 dark:text-profit'
+                  : 'bg-loss text-loss dark:bg-loss/30 dark:text-loss'
               )}>
                 {formatPercent(item.gain_loss_percent)}
               </Badge>
@@ -737,7 +737,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
             variant="outline"
             size="sm"
             onClick={onDelete}
-            className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="h-9 text-loss hover:text-loss hover:bg-loss dark:hover:bg-loss/20"
           >
             <Trash2 className="w-3.5 h-3.5 ml-1.5" />
             حذف
@@ -847,8 +847,8 @@ export function EnhancedWatchlistView() {
       filterable: true,
       render: (item) => (
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+          <div className="w-9 h-9 rounded-full bg-profit dark:bg-profit/30 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-profit dark:text-profit">
               {(item.ticker || '').slice(0, 2)}
             </span>
           </div>
@@ -948,15 +948,15 @@ export function EnhancedWatchlistView() {
           <div className="flex flex-col items-center gap-0.5">
             <span className={cn(
               'text-sm font-semibold',
-              isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+              isProfitable ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
             )}>
               {formatCurrency(Math.abs(item.gain_loss))}
             </span>
             <Badge className={cn(
               'text-[10px] px-1.5',
               isProfitable
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                ? 'bg-profit text-profit dark:bg-profit/30 dark:text-profit'
+                : 'bg-loss text-loss dark:bg-loss/30 dark:text-loss'
             )}>
               {formatPercent(item.gain_loss_percent)}
             </Badge>
@@ -973,13 +973,13 @@ export function EnhancedWatchlistView() {
       render: (item) => (
         <div className="flex items-center justify-center gap-1">
           {item.price_change >= 0 ? (
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+            <TrendingUp className="w-3.5 h-3.5 text-profit" />
           ) : (
-            <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+            <TrendingDown className="w-3.5 h-3.5 text-loss" />
           )}
           <span className={cn(
             'text-xs font-semibold',
-            item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+            item.price_change >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
           )}>
             {formatPercent(item.price_change_percent)}
           </span>
@@ -1001,9 +1001,9 @@ export function EnhancedWatchlistView() {
           <div className="flex items-center justify-center gap-1">
             {hasAnyAlert ? (
               <div className="relative">
-                <Bell className="w-4 h-4 text-amber-500" />
+                <Bell className="w-4 h-4 text-warning" />
                 {(isAboveTriggered || isBelowTriggered) && (
-                  <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="absolute -top-1 -left-1 w-2 h-2 bg-loss rounded-full" />
                 )}
               </div>
             ) : (
@@ -1040,7 +1040,7 @@ export function EnhancedWatchlistView() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            className="h-8 w-8 text-muted-foreground hover:text-warning hover:bg-warning dark:hover:bg-warning/20"
             onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -1048,7 +1048,7 @@ export function EnhancedWatchlistView() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+            className="h-8 w-8 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/20"
             onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); }}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -1094,8 +1094,8 @@ export function EnhancedWatchlistView() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <Eye className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-full bg-profit dark:bg-profit/30 flex items-center justify-center">
+              <Eye className="w-5 h-5 text-profit dark:text-profit" />
             </div>
             <div>
               <h1 className="text-xl font-bold">{t('watchlist.title')}</h1>
@@ -1139,7 +1139,7 @@ export function EnhancedWatchlistView() {
               تحديث
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-profit hover:bg-profit text-white"
               size="sm"
               onClick={() => setAddDialogOpen(true)}
             >
@@ -1177,24 +1177,24 @@ export function EnhancedWatchlistView() {
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 {summary.total_gain_loss >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  <TrendingUp className="w-4 h-4 text-profit" />
                 ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500" />
+                  <TrendingDown className="w-4 h-4 text-loss" />
                 )}
                 <span className="text-xs font-medium">{t('watchlist.stats.pnl')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <p className={cn(
                   'text-xl font-bold',
-                  summary.total_gain_loss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                  summary.total_gain_loss >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
                 )}>
                   {formatCurrency(Math.abs(summary.total_gain_loss))}
                 </p>
                 <Badge className={cn(
                   'text-xs',
                   summary.total_gain_loss >= 0
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    ? 'bg-profit text-profit dark:bg-profit/30 dark:text-profit'
+                    : 'bg-loss text-loss dark:bg-loss/30 dark:text-loss'
                 )}>
                   {formatPercent(summary.total_gain_loss_percent)}
                 </Badge>
@@ -1223,7 +1223,7 @@ export function EnhancedWatchlistView() {
                 {t('watchlist.empty.body')}
               </p>
               <Button
-                className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="mt-6 bg-profit hover:bg-profit text-white"
                 onClick={() => setAddDialogOpen(true)}
               >
                 <Plus className="w-4 h-4 ml-2" />
@@ -1247,7 +1247,7 @@ export function EnhancedWatchlistView() {
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="default"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-profit hover:bg-profit text-white"
                   onClick={() => fetchData(false)}
                   disabled={loading}
                 >
@@ -1304,8 +1304,8 @@ export function EnhancedWatchlistView() {
                 filterable
                 rowClassName={(item) => cn(
                   'hover:bg-muted/50',
-                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-emerald-50/50 dark:bg-emerald-950/10',
-                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-red-50/50 dark:bg-red-950/10',
+                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-profit/50 dark:bg-profit/10',
+                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-loss/50 dark:bg-loss/10',
                 )}
               />
             </CardContent>
@@ -1332,7 +1332,7 @@ export function EnhancedWatchlistView() {
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="sm:max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-loss">
               <AlertTriangle className="w-5 h-5" />
               {t('watchlist.delete.title')}
             </DialogTitle>
@@ -1343,7 +1343,7 @@ export function EnhancedWatchlistView() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteId(null)}>{t('watchlist.buttons.cancel')}</Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-loss hover:bg-loss text-white"
               onClick={handleDelete}
             >
               {t('watchlist.buttons.delete')}

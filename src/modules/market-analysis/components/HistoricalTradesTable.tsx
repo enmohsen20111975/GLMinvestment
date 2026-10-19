@@ -249,7 +249,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
           <span
             className={cn(
               'text-xs font-bold tabular-nums inline-flex items-center gap-0.5',
-              isUp ? 'text-emerald-600 dark:text-emerald-400' : isDown ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground',
+              isUp ? 'text-profit dark:text-profit' : isDown ? 'text-loss dark:text-loss' : 'text-muted-foreground',
             )}
           >
             {isUp ? <TrendingUp className="h-3 w-3" /> : isDown ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
@@ -282,9 +282,9 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
         const o = r.exit_reason;
         if (!o) return <span className="text-muted-foreground">—</span>;
         const cls = o === 'WIN'
-          ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-500/5'
+          ? 'border-profit/40 text-profit dark:text-profit bg-profit/5'
           : o === 'LOSS'
-          ? 'border-red-500/40 text-red-700 dark:text-red-300 bg-red-500/5'
+          ? 'border-loss/40 text-loss dark:text-loss bg-loss/5'
           : 'border-muted-foreground/40 text-muted-foreground bg-muted/20';
         const labelAr = o === 'WIN' ? 'ربح' : o === 'LOSS' ? 'خسارة' : o === 'BREAKEVEN' ? 'تعادل' : o;
         return <Badge variant="outline" className={cn('text-[10px]', cls)}>{labelAr}</Badge>;
@@ -309,7 +309,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
       render: (r) => {
         const c = r.market_condition;
         if (!c) return <span className="text-muted-foreground">—</span>;
-        const cls = c === 'bull' ? 'text-emerald-600' : c === 'bear' ? 'text-red-600' : 'text-muted-foreground';
+        const cls = c === 'bull' ? 'text-profit' : c === 'bear' ? 'text-loss' : 'text-muted-foreground';
         const labelAr = c === 'bull' ? 'صاعد' : c === 'bear' ? 'هابط' : c === 'sideways' ? 'عرضي' : c;
         return <span className={cn('text-xs font-medium', cls)}>{labelAr}</span>;
       },
@@ -319,12 +319,12 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
   return (
     <div className="space-y-4" dir="rtl">
       {/* Header */}
-      <Card className="border-blue-500/30 bg-gradient-to-l from-blue-500/5 to-cyan-500/5">
+      <Card className="border-primary/30 bg-gradient-to-l from-primary/5 to-cyan-500/5">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <History className="h-5 w-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <History className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <CardTitle className="text-base">الصفقات التاريخية (Backtest)</CardTitle>
@@ -342,10 +342,10 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
         {stats && (
           <CardContent className="pt-0 pb-3">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <StatPill label="صفقات رابحة" value={stats.wins.toString()} icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-500" />} tone="emerald" />
-              <StatPill label="صفقات خاسرة" value={stats.losses.toString()} icon={<TrendingDown className="h-3.5 w-3.5 text-red-500" />} tone="red" />
-              <StatPill label="نسبة النجاح" value={`${stats.winRate}%`} icon={<Filter className="h-3.5 w-3.5 text-blue-500" />} tone="blue" />
-              <StatPill label="متوسط العائد" value={`${stats.avgReturn}%`} icon={<History className="h-3.5 w-3.5 text-amber-500" />} tone="amber" />
+              <StatPill label="صفقات رابحة" value={stats.wins.toString()} icon={<TrendingUp className="h-3.5 w-3.5 text-profit" />} tone="emerald" />
+              <StatPill label="صفقات خاسرة" value={stats.losses.toString()} icon={<TrendingDown className="h-3.5 w-3.5 text-loss" />} tone="red" />
+              <StatPill label="نسبة النجاح" value={`${stats.winRate}%`} icon={<Filter className="h-3.5 w-3.5 text-primary" />} tone="blue" />
+              <StatPill label="متوسط العائد" value={`${stats.avgReturn}%`} icon={<History className="h-3.5 w-3.5 text-warning" />} tone="amber" />
             </div>
           </CardContent>
         )}
@@ -436,14 +436,14 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
 
       {/* Table — PAYWALL Gate 6: locked for free users post-trial */}
       {tradesLocked ? (
-        <Card className="border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/20">
+        <Card className="border-warning/40 bg-warning/40 dark:bg-warning/20">
           <CardContent className="p-5 space-y-4">
             {/* Social proof — 1 winning trade card */}
             {socialProofTrade && (
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-3">
+              <div className="rounded-lg border border-profit/30 bg-profit/40 dark:bg-profit/20 p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  <TrendingUp className="h-4 w-4 text-profit dark:text-profit" />
+                  <span className="text-xs font-semibold text-profit dark:text-profit">
                     مثال على صفقة ناجحة من أرشيف التوقعات
                   </span>
                 </div>
@@ -458,8 +458,8 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
                   <span className={cn(
                     'font-bold',
                     (socialProofTrade.return_pct ?? 0) > 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-600 dark:text-red-400'
+                      ? 'text-profit dark:text-profit'
+                      : 'text-loss dark:text-loss'
                   )}>
                     {socialProofTrade.return_pct != null
                       ? `${socialProofTrade.return_pct > 0 ? '+' : ''}${(socialProofTrade.return_pct ?? 0).toFixed(2)}%`
@@ -471,10 +471,10 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
 
             {/* Lock CTA */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
-                <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="h-10 w-10 rounded-full bg-warning dark:bg-warning/40 flex items-center justify-center">
+                <Lock className="h-5 w-5 text-warning dark:text-warning" />
               </div>
-              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+              <p className="text-sm font-semibold text-warning dark:text-warning">
                 🔒 {total.toLocaleString('ar-EG')} صفقة تاريخية — تفاصيل الصفقات متاحة للمشتركين
               </p>
               <p className="text-xs text-muted-foreground max-w-md">
@@ -497,10 +497,10 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
           </CardContent>
         </Card>
       ) : error ? (
-        <Card className="border-red-500/40">
+        <Card className="border-loss/40">
           <CardContent className="p-6 text-center space-y-2">
-            <AlertCircle className="h-6 w-6 text-red-500 mx-auto" />
-            <p className="text-sm text-red-600">{error}</p>
+            <AlertCircle className="h-6 w-6 text-loss mx-auto" />
+            <p className="text-sm text-loss">{error}</p>
             <Button size="sm" variant="outline" onClick={fetchData}>
               <RefreshCw className="h-3 w-3 ml-1" /> حاول مرة أخرى
             </Button>
@@ -573,10 +573,10 @@ function StatPill({
   tone: 'emerald' | 'red' | 'blue' | 'amber';
 }) {
   const toneClass = {
-    emerald: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/5 border-emerald-500/20',
-    red: 'text-red-700 dark:text-red-300 bg-red-500/5 border-red-500/20',
-    blue: 'text-blue-700 dark:text-blue-300 bg-blue-500/5 border-blue-500/20',
-    amber: 'text-amber-700 dark:text-amber-300 bg-amber-500/5 border-amber-500/20',
+    emerald: 'text-profit dark:text-profit bg-profit/5 border-profit/20',
+    red: 'text-loss dark:text-loss bg-loss/5 border-loss/20',
+    blue: 'text-primary dark:text-primary bg-primary/5 border-primary/20',
+    amber: 'text-warning dark:text-warning bg-warning/5 border-warning/20',
   }[tone];
 
   return (

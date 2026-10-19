@@ -33,7 +33,7 @@ function TickerCard({ item }: { item: TickerItem }) {
       className={cn(
         'flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full whitespace-nowrap border text-xs font-medium flex-shrink-0',
         'bg-card',
-        isPositive ? 'border-emerald-200 dark:border-emerald-800/50' : isNegative ? 'border-red-200 dark:border-red-800/50' : 'border-border'
+        isPositive ? 'border-profit dark:border-profit/50' : isNegative ? 'border-loss dark:border-loss/50' : 'border-border'
       )}
       animate={
         movedUp
@@ -51,7 +51,7 @@ function TickerCard({ item }: { item: TickerItem }) {
       <span
         className={cn(
           'tabular-nums font-semibold',
-          isPositive ? 'text-emerald-500 dark:text-emerald-400' : isNegative ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+          isPositive ? 'text-profit dark:text-profit' : isNegative ? 'text-loss dark:text-loss' : 'text-muted-foreground'
         )}
       >
         {isPositive ? '+' : ''}
@@ -160,13 +160,13 @@ export function RealtimeTicker() {
           <div className="flex items-center gap-1.5 px-3 border-l border-border h-full bg-muted/80 flex-shrink-0" dir="rtl">
             {isConnected ? (
               <>
-                <Wifi className="w-3 h-3 text-emerald-500" />
-                <span className="text-[10px] font-medium text-emerald-500 dark:text-emerald-400 hidden xs:inline">مباشر</span>
+                <Wifi className="w-3 h-3 text-profit" />
+                <span className="text-[10px] font-medium text-profit dark:text-profit hidden xs:inline">مباشر</span>
               </>
             ) : (
               <>
-                <Database className="w-3 h-3 text-teal-500" />
-                <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400 hidden xs:inline">بيانات</span>
+                <Database className="w-3 h-3 text-whale" />
+                <span className="text-[10px] font-medium text-whale dark:text-whale hidden xs:inline">بيانات</span>
               </>
             )}
           </div>

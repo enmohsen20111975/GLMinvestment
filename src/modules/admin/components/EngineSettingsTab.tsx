@@ -336,8 +336,8 @@ export function EngineSettingsTab() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                        <Settings className="w-5 h-5 text-amber-600" />
+                    <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                        <Settings className="w-5 h-5 text-warning" />
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -493,7 +493,7 @@ export function EngineSettingsTab() {
                                                     {isChanged && (
                                                         <Badge
                                                             variant="default"
-                                                            className="text-[9px] py-0 px-1.5 bg-amber-500 hover:bg-amber-500"
+                                                            className="text-[9px] py-0 px-1.5 bg-warning hover:bg-warning"
                                                         >
                                                             مُعدّل
                                                         </Badge>
@@ -518,7 +518,7 @@ export function EngineSettingsTab() {
                                                 dir="ltr"
                                                 value={value === undefined || value === null ? '' : String(value)}
                                                 onChange={(e) => handleValueChange(key, e.target.value)}
-                                                className={`text-sm font-mono ${isChanged ? 'border-amber-500 focus-visible:ring-amber-500/30' : ''}`}
+                                                className={`text-sm font-mono ${isChanged ? 'border-warning focus-visible:ring-warning/30' : ''}`}
                                                 disabled={saving || resetting}
                                             />
                                             {meta?.description && (
@@ -538,7 +538,7 @@ export function EngineSettingsTab() {
             {/* Bottom save bar (sticky-feel) */}
             {hasChanges && (
                 <div className="sticky bottom-4 z-10">
-                    <Card className="border-amber-500/40 bg-amber-50/80 dark:bg-amber-950/30 backdrop-blur">
+                    <Card className="border-warning/40 bg-warning/80 dark:bg-warning/30 backdrop-blur">
                         <CardContent className="py-3 px-4 flex items-center justify-between gap-3 flex-wrap">
                             <div className="text-sm">
                                 <span className="font-medium">{changedKeys.length}</span> تغيير في الانتظار

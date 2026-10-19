@@ -102,8 +102,8 @@ const fmtDate = (d: string | null): string => {
 
 const pnlColorClass = (n: number | null | undefined): string => {
   if (n == null || isNaN(n as number)) return '';
-  if (n > 0) return 'text-emerald-600 dark:text-emerald-400';
-  if (n < 0) return 'text-rose-600 dark:text-rose-400';
+  if (n > 0) return 'text-profit dark:text-profit';
+  if (n < 0) return 'text-loss dark:text-loss';
   return 'text-muted-foreground';
 };
 
@@ -279,27 +279,27 @@ interface ProgressRowProps {
 
 function statusColorFor(variant: ProgressRowProps['variant'], status: string): string {
   if (variant === 'stop_loss') {
-    if (status === 'danger') return 'bg-rose-500';
-    if (status === 'warning') return 'bg-amber-500';
-    return 'bg-emerald-500'; // safe
+    if (status === 'danger') return 'bg-loss';
+    if (status === 'warning') return 'bg-warning';
+    return 'bg-profit'; // safe
   }
   // target_1 / target_2
-  if (status === 'hit') return 'bg-emerald-500';
-  if (status === 'approaching') return 'bg-amber-500';
-  if (variant === 'target_2') return 'bg-blue-500';
-  return 'bg-amber-500';
+  if (status === 'hit') return 'bg-profit';
+  if (status === 'approaching') return 'bg-warning';
+  if (variant === 'target_2') return 'bg-primary';
+  return 'bg-warning';
 }
 
 function statusBadgeClass(variant: ProgressRowProps['variant'], status: string): string {
   if (variant === 'stop_loss') {
-    if (status === 'danger') return 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400';
-    if (status === 'warning') return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
-    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400';
+    if (status === 'danger') return 'bg-loss text-loss dark:bg-loss/40 dark:text-loss';
+    if (status === 'warning') return 'bg-warning text-warning dark:bg-warning/40 dark:text-warning';
+    return 'bg-profit text-profit dark:bg-profit/40 dark:text-profit';
   }
-  if (status === 'hit') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400';
-  if (status === 'approaching') return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
-  if (variant === 'target_2') return 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400';
-  return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
+  if (status === 'hit') return 'bg-profit text-profit dark:bg-profit/40 dark:text-profit';
+  if (status === 'approaching') return 'bg-warning text-warning dark:bg-warning/40 dark:text-warning';
+  if (variant === 'target_2') return 'bg-primary text-primary dark:bg-primary/40 dark:text-primary';
+  return 'bg-warning text-warning dark:bg-warning/40 dark:text-warning';
 }
 
 function ProgressRow({ label, icon, price, pct, progress, status, statusLabel, variant }: ProgressRowProps) {
@@ -342,18 +342,18 @@ interface TimelineRowProps {
 
 function eventIcon(event: TimelineEventType): React.ReactNode {
   switch (event) {
-    case 'signal':   return <Satellite className="h-3 w-3 text-blue-500" />;
-    case 'milestone': return <Rocket className="h-3 w-3 text-emerald-500" />;
-    case 'alert':    return <AlertTriangle className="h-3 w-3 text-amber-500" />;
+    case 'signal':   return <Satellite className="h-3 w-3 text-primary" />;
+    case 'milestone': return <Rocket className="h-3 w-3 text-profit" />;
+    case 'alert':    return <AlertTriangle className="h-3 w-3 text-warning" />;
     case 'current':  return <Crosshair className="h-3.5 w-3.5 text-primary" />;
   }
 }
 
 function eventDotClass(event: TimelineEventType): string {
   switch (event) {
-    case 'signal':    return 'bg-blue-500 border-blue-300';
-    case 'milestone': return 'bg-emerald-500 border-emerald-300';
-    case 'alert':     return 'bg-amber-500 border-amber-300';
+    case 'signal':    return 'bg-primary border-primary';
+    case 'milestone': return 'bg-profit border-profit';
+    case 'alert':     return 'bg-warning border-warning';
     case 'current':   return 'bg-primary border-primary-foreground ring-2 ring-primary/30';
   }
 }
@@ -414,7 +414,7 @@ function MilestonesChecklist({ milestones }: { milestones: Milestone[] }) {
       {milestones.map((m, i) => (
         <div key={`${m.label}-${i}`} className="flex items-center gap-2 text-[11px]">
           {m.reached ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-profit shrink-0" />
           ) : (
             <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
           )}
@@ -439,10 +439,10 @@ function MilestonesChecklist({ milestones }: { milestones: Milestone[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function NotTrackedCard() {
   return (
-    <Card className="p-4 border-dashed border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/10">
+    <Card className="p-4 border-dashed border-warning dark:border-warning/40 bg-warning/40 dark:bg-warning/10">
       <div className="flex items-start gap-3">
-        <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
-          <StarOff className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <div className="h-9 w-9 rounded-full bg-warning dark:bg-warning/40 flex items-center justify-center shrink-0">
+          <StarOff className="h-4 w-4 text-warning dark:text-warning" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold mb-1">رحلة الإشارة غير متاحة</div>
@@ -457,10 +457,10 @@ function NotTrackedCard() {
 
 function NoPriceHistoryCard() {
   return (
-    <Card className="p-4 border-dashed border-blue-200 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-950/10">
+    <Card className="p-4 border-dashed border-primary dark:border-primary/40 bg-primary/40 dark:bg-primary/10">
       <div className="flex items-start gap-3">
-        <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
-          <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <div className="h-9 w-9 rounded-full bg-primary dark:bg-primary/40 flex items-center justify-center shrink-0">
+          <Activity className="h-4 w-4 text-primary dark:text-primary" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold mb-1">لا توجد بيانات أسعار كافية بعد</div>
@@ -475,10 +475,10 @@ function NoPriceHistoryCard() {
 
 function EntryPriceMissingCard() {
   return (
-    <Card className="p-4 border-dashed border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-950/10">
+    <Card className="p-4 border-dashed border-loss dark:border-loss/40 bg-loss/40 dark:bg-loss/10">
       <div className="flex items-start gap-3">
-        <div className="h-9 w-9 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center shrink-0">
-          <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+        <div className="h-9 w-9 rounded-full bg-loss dark:bg-loss/40 flex items-center justify-center shrink-0">
+          <AlertTriangle className="h-4 w-4 text-loss dark:text-loss" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold mb-1">سعر الدخول غير مُسجَّل</div>
@@ -493,9 +493,9 @@ function EntryPriceMissingCard() {
 
 function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <Card className="p-4 border-rose-200 dark:border-rose-900/40">
+    <Card className="p-4 border-loss dark:border-loss/40">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+        <AlertTriangle className="h-5 w-5 text-loss shrink-0 mt-0.5" />
         <div className="flex-1">
           <div className="text-sm font-semibold mb-1">تعذّر تحميل الخط الزمني</div>
           <div className="text-xs text-muted-foreground mb-2">{message}</div>
@@ -559,7 +559,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-3">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة</span>
         </div>
         <Skeleton className="h-24 w-full" />
@@ -574,7 +574,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <NotTrackedCard />
@@ -586,7 +586,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <EntryPriceMissingCard />
@@ -598,7 +598,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <NoPriceHistoryCard />
@@ -610,7 +610,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <ErrorCard message={errorMsg} onRetry={fetchData} />
@@ -622,7 +622,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <NoPriceHistoryCard />
@@ -647,12 +647,12 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
   const isUp = data.current.change_pct >= 0;
 
   return (
-    <Card className="p-3 space-y-3 border-blue-200/60 dark:border-blue-900/40 bg-blue-50/20 dark:bg-blue-950/10">
+    <Card className="p-3 space-y-3 border-primary/60 dark:border-primary/40 bg-primary/20 dark:bg-primary/10">
       {/* ─── 2.1 Header ─── */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between flex-wrap gap-1">
           <div className="flex items-center gap-1.5">
-            <Satellite className="h-4 w-4 text-blue-500" />
+            <Satellite className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold">{ticker}</span>
             <span className="text-xs text-muted-foreground">— رحلة الإشارة</span>
           </div>
@@ -671,7 +671,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
           <span className="font-mono font-semibold" dir="ltr">{fmtNum(data.current.price)}</span>
           <Badge
             variant="outline"
-            className={`text-[10px] ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}
+            className={`text-[10px] ${isUp ? 'text-profit' : 'text-loss'}`}
           >
             {isUp ? <TrendingUp className="h-3 w-3 ml-1" /> : <TrendingDown className="h-3 w-3 ml-1" />}
             {fmtPct(data.current.change_pct)}
@@ -692,7 +692,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
       {/* ─── 2.3 Target progress bars ─── */}
       <div className="space-y-2 bg-background/60 rounded-md p-2 border border-border/40">
         <div className="text-[11px] font-semibold flex items-center gap-1 mb-1">
-          <Target className="h-3 w-3 text-blue-500" />
+          <Target className="h-3 w-3 text-primary" />
           تقدّم الأهداف
         </div>
         <ProgressRow
@@ -730,7 +730,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
       {/* ─── 2.4 Timeline events (vertical) ─── */}
       <div className="bg-background/60 rounded-md p-2 border border-border/40">
         <div className="text-[11px] font-semibold mb-2 flex items-center gap-1">
-          <Activity className="h-3 w-3 text-blue-500" />
+          <Activity className="h-3 w-3 text-primary" />
           أحداث الخط الزمني
         </div>
         {data.timeline.length === 0 ? (
@@ -753,7 +753,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
       {/* ─── 2.5 Milestones checklist ─── */}
       <div className="bg-background/60 rounded-md p-2 border border-border/40">
         <div className="text-[11px] font-semibold mb-2 flex items-center gap-1">
-          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+          <CheckCircle2 className="h-3 w-3 text-profit" />
           محطات الإنجاز
         </div>
         <MilestonesChecklist milestones={data.milestones} />

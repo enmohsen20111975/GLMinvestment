@@ -67,20 +67,20 @@ const STATUS_META: Record<
 > = {
   online: {
     label: 'يعمل',
-    dot: 'bg-emerald-500',
-    badge: 'border-emerald-500 text-emerald-700',
+    dot: 'bg-profit',
+    badge: 'border-profit text-profit',
     icon: 'check',
   },
   offline: {
     label: 'متوقف',
-    dot: 'bg-red-500',
-    badge: 'border-red-500 text-red-700',
+    dot: 'bg-loss',
+    badge: 'border-loss text-loss',
     icon: 'x',
   },
   degraded: {
     label: 'متدهور',
-    dot: 'bg-amber-500',
-    badge: 'border-amber-500 text-amber-700',
+    dot: 'bg-warning',
+    badge: 'border-warning text-warning',
     icon: 'alert',
   },
   unknown: {
@@ -123,9 +123,9 @@ function timeAgoShort(iso: string | null | undefined): string {
 
 function StatusIcon({ status }: { status: ServiceCheck['status'] }) {
   const meta = STATUS_META[status];
-  if (meta.icon === 'check') return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
-  if (meta.icon === 'x') return <XCircle className="w-3.5 h-3.5 text-red-600" />;
-  return <AlertCircle className="w-3.5 h-3.5 text-amber-600" />;
+  if (meta.icon === 'check') return <CheckCircle2 className="w-3.5 h-3.5 text-profit" />;
+  if (meta.icon === 'x') return <XCircle className="w-3.5 h-3.5 text-loss" />;
+  return <AlertCircle className="w-3.5 h-3.5 text-warning" />;
 }
 
 export function SystemHealthCard() {
@@ -177,12 +177,12 @@ export function SystemHealthCard() {
   );
 
   return (
-    <Card className="border-emerald-200 dark:border-emerald-900/40">
+    <Card className="border-profit dark:border-profit/40">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-500" />
+              <Activity className="w-5 h-5 text-profit" />
               صحة النظام المباشرة
               {summary && (
                 <Badge
@@ -190,16 +190,16 @@ export function SystemHealthCard() {
                   className={cn(
                     'text-[10px] gap-1 ml-2',
                     healthScore >= 80
-                      ? 'border-emerald-500 text-emerald-700'
+                      ? 'border-profit text-profit'
                       : healthScore >= 50
-                        ? 'border-amber-500 text-amber-700'
-                        : 'border-red-500 text-red-700',
+                        ? 'border-warning text-warning'
+                        : 'border-loss text-loss',
                   )}
                 >
                   <span
                     className={cn(
                       'w-1.5 h-1.5 rounded-full inline-block',
-                      healthScore >= 80 ? 'bg-emerald-500' : healthScore >= 50 ? 'bg-amber-500' : 'bg-red-500',
+                      healthScore >= 80 ? 'bg-profit' : healthScore >= 50 ? 'bg-warning' : 'bg-loss',
                     )}
                   />
                   {healthScore}% ({onlineCount}/{totalCount})
@@ -235,16 +235,16 @@ export function SystemHealthCard() {
           </div>
         ) : !data?.success ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
-            <AlertCircle className="w-6 h-6 mx-auto mb-2 text-amber-500" />
+            <AlertCircle className="w-6 h-6 mx-auto mb-2 text-warning" />
             {data?.error || 'تعذّر جلب صحة النظام'}
           </div>
         ) : (
           <>
             {/* Critical alert if any offline */}
             {offlineCount > 0 && (
-              <div className="mb-3 p-2 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40 flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-600 shrink-0" />
-                <span className="text-xs font-bold text-red-700 dark:text-red-400">
+              <div className="mb-3 p-2 rounded-lg border border-loss bg-loss dark:bg-loss/20 dark:border-loss/40 flex items-center gap-2">
+                <XCircle className="w-4 h-4 text-loss shrink-0" />
+                <span className="text-xs font-bold text-loss dark:text-loss">
                   {offlineCount} خدمة متوقفة — تحتاج تدخّل فوري
                 </span>
               </div>
@@ -253,13 +253,13 @@ export function SystemHealthCard() {
             {/* PHASE2-ADMIN-PANEL: stale DB alert — owner requirement.
                 "تنبيه أحمر فوري لو توقف تحديث أي قاعدة لأكثر من ساعتين" */}
             {staleDbServices.length > 0 && (
-              <div className="mb-3 p-2 rounded-lg border border-red-400 bg-red-50 dark:bg-red-950/30 dark:border-red-800 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div className="mb-3 p-2 rounded-lg border border-loss bg-loss dark:bg-loss/30 dark:border-loss flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-loss shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <span className="text-xs font-bold text-red-700 dark:text-red-400 block">
+                  <span className="text-xs font-bold text-loss dark:text-loss block">
                     ⚠️ {staleDbServices.length} قاعدة بيانات لم تتحدث منذ أكثر من ساعتين
                   </span>
-                  <span className="text-[10px] text-red-600/80 dark:text-red-300/70 block mt-0.5" dir="ltr">
+                  <span className="text-[10px] text-loss/80 dark:text-loss/70 block mt-0.5" dir="ltr">
                     {staleDbServices.map(s => `${s.id.replace('db_', '')} (${timeAgoShort(s.last_seen)})`).join(' • ')}
                   </span>
                 </div>
@@ -277,15 +277,15 @@ export function SystemHealthCard() {
                     className={cn(
                       'p-2 rounded-lg border flex items-center gap-2 text-xs',
                       stale
-                        ? 'border-red-400 bg-red-50 dark:bg-red-950/30 dark:border-red-800'
+                        ? 'border-loss bg-loss dark:bg-loss/30 dark:border-loss'
                         : svc.status === 'online'
-                          ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40'
+                          ? 'border-profit bg-profit dark:bg-profit/20 dark:border-profit/40'
                           : svc.status === 'degraded'
-                            ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40'
-                            : 'border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40',
+                            ? 'border-warning bg-warning dark:bg-warning/20 dark:border-warning/40'
+                            : 'border-loss bg-loss dark:bg-loss/20 dark:border-loss/40',
                     )}
                   >
-                    <div className={cn('w-2 h-2 rounded-full shrink-0', stale ? 'bg-red-500' : meta.dot)} />
+                    <div className={cn('w-2 h-2 rounded-full shrink-0', stale ? 'bg-loss' : meta.dot)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {TYPE_ICON[svc.type]}
@@ -296,7 +296,7 @@ export function SystemHealthCard() {
                         {svc.message}
                         {/* PHASE2-ADMIN-PANEL: show last update age for DB files */}
                         {svc.type === 'file' && svc.last_seen && (
-                          <span className={cn('ml-1', stale ? 'text-red-600 dark:text-red-400 font-bold' : 'text-muted-foreground')}>
+                          <span className={cn('ml-1', stale ? 'text-loss dark:text-loss font-bold' : 'text-muted-foreground')}>
                             • آخر تحديث: {timeAgoShort(svc.last_seen)}{stale && ' ⚠️ متأخر'}
                           </span>
                         )}

@@ -192,14 +192,14 @@ function TrialWarningBanner({ daysLeft }: { daysLeft: number }) {
       transition={{ type: 'spring', stiffness: 220, damping: 24 }}
       className="sticky top-0 z-40 w-full"
     >
-      <div className="relative bg-gradient-to-l from-amber-600 via-amber-700 to-emerald-700 text-white shadow-md">
+      <div className="relative bg-gradient-to-l from-warning via-warning to-profit text-white shadow-md">
         <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3">
           <span className="hidden sm:inline-flex size-7 items-center justify-center rounded-full bg-white/20">
             <Clock className="size-4 animate-pulse" />
           </span>
           <p className="flex-1 text-sm sm:text-base font-semibold leading-tight">
             <span className="inline-flex items-center gap-1.5">
-              <AlertTriangle className="size-4 text-amber-200" />
+              <AlertTriangle className="size-4 text-warning" />
               ⏳ متبقي لديك {daysLeft} يوماً في فترتك التجريبية المجانية (من أصل {TRIAL_DAYS} يوماً)
             </span>
             <span className="hidden sm:inline mr-2 text-white/85 font-normal">
@@ -209,9 +209,9 @@ function TrialWarningBanner({ daysLeft }: { daysLeft: number }) {
           <Button
             onClick={() => setCurrentView('subscription')}
             size="sm"
-            className="h-8 px-4 bg-white text-amber-800 hover:bg-white/90 font-bold shadow-sm flex items-center gap-1.5"
+            className="h-8 px-4 bg-white text-warning hover:bg-white/90 font-bold shadow-sm flex items-center gap-1.5"
           >
-            <Crown className="size-3.5 text-amber-600" />
+            <Crown className="size-3.5 text-warning" />
             اشترك الآن
           </Button>
           <button
@@ -244,10 +244,10 @@ function TrialExpiredBanner({ daysLeft = 0 }: { daysLeft?: number }) {
       transition={{ type: 'spring', stiffness: 220, damping: 24 }}
       className="sticky top-0 z-40 w-full"
     >
-      <div className="relative bg-gradient-to-l from-red-600 via-rose-700 to-red-800 text-white shadow-lg border-b border-red-500">
+      <div className="relative bg-gradient-to-l from-loss via-loss to-loss text-white shadow-lg border-b border-loss">
         <div className="mx-auto max-w-7xl px-4 py-2.5 flex items-center gap-3">
           <span className="inline-flex size-7 items-center justify-center rounded-full bg-white/20">
-            <AlertTriangle className="size-4 text-red-200 animate-bounce" />
+            <AlertTriangle className="size-4 text-loss animate-bounce" />
           </span>
           <p className="flex-1 text-sm sm:text-base font-bold leading-tight">
             <span>{message}</span>
@@ -258,9 +258,9 @@ function TrialExpiredBanner({ daysLeft = 0 }: { daysLeft?: number }) {
           <Button
             onClick={() => setCurrentView('subscription')}
             size="sm"
-            className="h-8 px-4 bg-white text-red-700 hover:bg-white/90 font-bold shadow-sm flex items-center gap-1.5"
+            className="h-8 px-4 bg-white text-loss hover:bg-white/90 font-bold shadow-sm flex items-center gap-1.5"
           >
-            <Crown className="size-3.5 text-red-600" />
+            <Crown className="size-3.5 text-loss" />
             اختر خطتك للاشتراك
           </Button>
         </div>

@@ -144,7 +144,7 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800 shrink-0">
           <div className="flex items-center gap-2">
-            <BellRing className="h-5 w-5 text-amber-400" />
+            <BellRing className="h-5 w-5 text-warning" />
             <h2 className="text-base font-bold text-white">التنبيهات</h2>
             <Badge className="bg-zinc-800 text-zinc-400 font-mono">{ticker}</Badge>
           </div>
@@ -163,7 +163,7 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {soundEnabled ? (
-                <Volume2 className="h-4 w-4 text-emerald-400" />
+                <Volume2 className="h-4 w-4 text-profit" />
               ) : (
                 <VolumeX className="h-4 w-4 text-zinc-500" />
               )}
@@ -177,7 +177,7 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
               <Bell className="h-4 w-4 text-zinc-400" />
               <span className="text-sm text-zinc-300">إشعارات المتصفح</span>
               {notifPermission === 'denied' && (
-                <span className="text-[10px] text-red-400">(مرفوض)</span>
+                <span className="text-[10px] text-loss">(مرفوض)</span>
               )}
             </div>
             <Switch
@@ -201,7 +201,7 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
         {/* Add Alert Form */}
         <div className="p-4 border-b border-zinc-800 space-y-3 shrink-0">
           <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4 text-emerald-400" />
+            <Plus className="h-4 w-4 text-profit" />
             <span className="text-sm font-medium text-zinc-200">إضافة تنبيه جديد</span>
           </div>
 
@@ -241,7 +241,7 @@ export function AlertPanel({ ticker, open, onClose }: AlertPanelProps) {
 
           <Button
             onClick={handleAddAlert}
-            className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
+            className="w-full h-9 bg-profit hover:bg-profit text-white text-sm"
           >
             <Plus className="h-4 w-4 ml-2" />
             إضافة التنبيه
@@ -305,7 +305,7 @@ function AlertRow({
         alert.enabled
           ? 'bg-zinc-900/60 border-zinc-700'
           : 'bg-zinc-950/40 border-zinc-800 opacity-60'
-      } ${recentlyFired ? 'ring-1 ring-amber-500/50' : ''}`}
+      } ${recentlyFired ? 'ring-1 ring-warning/50' : ''}`}
     >
       <div
         className="w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0"
@@ -329,7 +329,7 @@ function AlertRow({
             </Badge>
           )}
           {recentlyFired && (
-            <Badge className="text-[9px] bg-amber-900/60 text-amber-300 border border-amber-700 animate-pulse">
+            <Badge className="text-[9px] bg-warning/60 text-warning border border-warning animate-pulse">
               🔔 اشتعل
             </Badge>
           )}
@@ -363,7 +363,7 @@ function AlertRow({
         variant="ghost"
         size="sm"
         onClick={onRemove}
-        className="h-7 w-7 p-0 text-zinc-500 hover:text-red-400 hover:bg-red-950/40 shrink-0"
+        className="h-7 w-7 p-0 text-zinc-500 hover:text-loss hover:bg-loss/40 shrink-0"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>

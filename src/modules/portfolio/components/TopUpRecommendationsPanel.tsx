@@ -104,7 +104,7 @@ function classifyRecommendation(pnlPct: number): {
     return {
       label: 'نجم صاعد',
       badgeColor:
-        'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-400',
+        'bg-profit text-profit dark:bg-profit/40 dark:text-profit border-profit',
       icon: 'sparkles',
     };
   }
@@ -112,14 +112,14 @@ function classifyRecommendation(pnlPct: number): {
     return {
       label: 'فرصة زيادة',
       badgeColor:
-        'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300 border-teal-400',
+        'bg-whale text-whale dark:bg-whale/40 dark:text-whale border-whale',
       icon: 'trending',
     };
   }
   return {
     label: 'متابعة',
     badgeColor:
-      'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-400',
+      'bg-warning text-warning dark:bg-warning/40 dark:text-warning border-warning',
     icon: 'watch',
   };
 }
@@ -180,7 +180,7 @@ export function TopUpRecommendationsPanel() {
           {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-emerald-500" />
+              <Sparkles className="h-5 w-5 text-profit" />
               <div>
                 <h3 className="font-bold text-base">توقعات زيادة المركز</h3>
                 <p className="text-xs text-muted-foreground">
@@ -207,27 +207,27 @@ export function TopUpRecommendationsPanel() {
           {/* Summary Cards */}
           {topUps.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-              <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
+              <div className="p-2 rounded-md bg-profit dark:bg-profit/20 border border-profit dark:border-profit">
                 <div className="text-xs text-muted-foreground">عدد الفرص</div>
-                <div className="font-bold text-emerald-500 dark:text-emerald-400">
+                <div className="font-bold text-profit dark:text-profit">
                   {AR_NUM.format(topUps.length)}
                 </div>
               </div>
-              <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
+              <div className="p-2 rounded-md bg-profit dark:bg-profit/20 border border-profit dark:border-profit">
                 <div className="text-xs text-muted-foreground">إجمالي الربح</div>
-                <div className="font-bold text-emerald-500 dark:text-emerald-400">
+                <div className="font-bold text-profit dark:text-profit">
                   {formatEgp(totalProfit)}
                 </div>
               </div>
-              <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
+              <div className="p-2 rounded-md bg-profit dark:bg-profit/20 border border-profit dark:border-profit">
                 <div className="text-xs text-muted-foreground">متوسط الربح %</div>
-                <div className="font-bold text-emerald-500 dark:text-emerald-400">
+                <div className="font-bold text-profit dark:text-profit">
                   {formatPct(avgPct)}
                 </div>
               </div>
-              <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
+              <div className="p-2 rounded-md bg-profit dark:bg-profit/20 border border-profit dark:border-profit">
                 <div className="text-xs text-muted-foreground">الأفضل أداءً</div>
-                <div className="font-bold text-emerald-500 dark:text-emerald-400 truncate">
+                <div className="font-bold text-profit dark:text-profit truncate">
                   {bestPerformer ? bestPerformer.ticker : '—'}
                 </div>
               </div>
@@ -281,8 +281,8 @@ export function TopUpRecommendationsPanel() {
                     className={cn(
                       'rounded-md border bg-card p-3 transition-all',
                       isExpanded
-                        ? 'border-emerald-300 dark:border-emerald-700 shadow-sm'
-                        : 'border-border hover:border-emerald-300 dark:hover:border-emerald-700'
+                        ? 'border-profit dark:border-profit shadow-sm'
+                        : 'border-border hover:border-profit dark:hover:border-profit'
                     )}
                   >
                     {/* Row header */}
@@ -294,7 +294,7 @@ export function TopUpRecommendationsPanel() {
                       className="w-full flex items-center justify-between gap-2 text-right"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 shrink-0">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-profit dark:bg-profit/30 text-profit dark:text-profit shrink-0">
                           <TrendingUp className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
@@ -316,7 +316,7 @@ export function TopUpRecommendationsPanel() {
                         </div>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="font-bold text-emerald-500 dark:text-emerald-400 text-sm">
+                        <div className="font-bold text-profit dark:text-profit text-sm">
                           {formatPct(h.pnl_percent)}
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -363,10 +363,10 @@ export function TopUpRecommendationsPanel() {
                         </div>
 
                         {/* Top-up suggestion */}
-                        <div className="flex items-start gap-2 p-2 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
-                          <Plus className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-2 p-2 rounded bg-profit dark:bg-profit/20 border border-profit dark:border-profit">
+                          <Plus className="h-3.5 w-3.5 text-profit dark:text-profit shrink-0 mt-0.5" />
                           <div className="text-xs">
-                            <div className="font-medium text-emerald-500 dark:text-emerald-300">
+                            <div className="font-medium text-profit dark:text-profit">
                               توقّع: زيادة المركز بـ {AR_NUM.format(suggestedTopUpQty)} سهم
                             </div>
                             <div className="text-muted-foreground mt-0.5">
@@ -381,7 +381,7 @@ export function TopUpRecommendationsPanel() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            className="h-8 gap-1.5 text-xs flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="h-8 gap-1.5 text-xs flex-1 bg-profit hover:bg-profit text-white"
                             onClick={() => {
                               toast.success(
                                 `تم تسجيل اهتمامك بزيادة مركز ${h.ticker}. تواصل مع الوسيط للتنفيذ.`

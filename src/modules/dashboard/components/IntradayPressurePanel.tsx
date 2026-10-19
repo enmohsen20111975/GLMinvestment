@@ -197,13 +197,13 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
           <div className="text-center text-xs py-6 space-y-2">
             {error ? (
               <div className="flex flex-col items-center gap-1">
-                <span className="text-amber-600 dark:text-amber-400 text-sm">⚠️ {error}</span>
+                <span className="text-warning dark:text-warning text-sm">⚠️ {error}</span>
                 <Button variant="outline" size="sm" className="h-6 text-[10px] mt-1" onClick={loadData}>
                   إعادة المحاولة
                 </Button>
               </div>
             ) : data?.note ? (
-              <span className="text-amber-600 dark:text-amber-400">{data.note}</span>
+              <span className="text-warning dark:text-warning">{data.note}</span>
             ) : (
               <span className="text-muted-foreground">لا توجد بيانات تداول داخل الجلسة لهذا السهم</span>
             )}
@@ -219,10 +219,10 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 className={cn(
                   'text-[10px]',
                   interpretation.tone === 'buy'
-                    ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
+                    ? 'bg-profit/10 text-profit dark:text-profit border-profit/30'
                     : interpretation.tone === 'sell'
-                    ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30'
-                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                    ? 'bg-loss/10 text-loss dark:text-loss border-loss/30'
+                    : 'bg-warning/10 text-warning dark:text-warning border-warning/30'
                 )}
               >
                 {interpretation.tone === 'buy' ? <TrendingUp className="w-3 h-3 ml-1" /> :
@@ -259,10 +259,10 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-sm bg-emerald-500/70" /> شراء
+                    <span className="inline-block w-2 h-2 rounded-sm bg-profit/70" /> شراء
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-sm bg-red-500/70" /> بيع
+                    <span className="inline-block w-2 h-2 rounded-sm bg-loss/70" /> بيع
                   </span>
                 </div>
               </div>
@@ -291,12 +291,12 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                         <div className="flex-1 min-w-0">
                           <div className="flex h-4 w-full overflow-hidden rounded-sm border border-border/40">
                             <div
-                              className="bg-emerald-500/70 transition-all"
+                              className="bg-profit/70 transition-all"
                               style={{ width: `${buyWidth}%` }}
                               title={`شراء: ${(b.buy_pressure_pct ?? 0).toFixed(1)}%`}
                             />
                             <div
-                              className="bg-red-500/70 transition-all"
+                              className="bg-loss/70 transition-all"
                               style={{ width: `${sellWidth}%` }}
                               title={`بيع: ${(b.sell_pressure_pct ?? 0).toFixed(1)}%`}
                             />
@@ -309,8 +309,8 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                         <div
                           className={cn(
                             'text-[10px] font-bold w-16 text-left whitespace-nowrap',
-                            netTone === 'pos' ? 'text-emerald-500 dark:text-emerald-400' :
-                            netTone === 'neg' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+                            netTone === 'pos' ? 'text-profit dark:text-profit' :
+                            netTone === 'neg' ? 'text-loss dark:text-loss' : 'text-muted-foreground'
                           )}
                           title="الضغط الصافي (شراء - بيع)"
                         >
@@ -326,17 +326,17 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
 
             {/* Volume totals */}
             <div className="grid grid-cols-3 gap-2 text-[11px]">
-              <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
+              <div className="rounded-md bg-profit/5 border border-profit/20 p-2">
                 <div className="text-[10px] text-muted-foreground">إجمالي شراء</div>
-                <div className="font-bold text-emerald-500 dark:text-emerald-400">{formatNumber(session!.total_buy_volume)}</div>
+                <div className="font-bold text-profit dark:text-profit">{formatNumber(session!.total_buy_volume)}</div>
               </div>
-              <div className="rounded-md bg-amber-500/5 border border-amber-500/20 p-2">
+              <div className="rounded-md bg-warning/5 border border-warning/20 p-2">
                 <div className="text-[10px] text-muted-foreground">محايد</div>
-                <div className="font-bold text-amber-600 dark:text-amber-400">{formatNumber(session!.total_neutral_volume)}</div>
+                <div className="font-bold text-warning dark:text-warning">{formatNumber(session!.total_neutral_volume)}</div>
               </div>
-              <div className="rounded-md bg-red-500/5 border border-red-500/20 p-2">
+              <div className="rounded-md bg-loss/5 border border-loss/20 p-2">
                 <div className="text-[10px] text-muted-foreground">إجمالي بيع</div>
-                <div className="font-bold text-red-600 dark:text-red-400">{formatNumber(session!.total_sell_volume)}</div>
+                <div className="font-bold text-loss dark:text-loss">{formatNumber(session!.total_sell_volume)}</div>
               </div>
             </div>
           </>
@@ -361,8 +361,8 @@ function SummaryCell({
       <div
         className={cn(
           'text-sm font-bold',
-          tone === 'pos' ? 'text-emerald-500 dark:text-emerald-400' :
-          tone === 'neg' ? 'text-red-600 dark:text-red-400' : ''
+          tone === 'pos' ? 'text-profit dark:text-profit' :
+          tone === 'neg' ? 'text-loss dark:text-loss' : ''
         )}
       >
         {value}

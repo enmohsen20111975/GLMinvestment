@@ -45,12 +45,12 @@ interface QuickPublishButtonProps {
 }
 
 const SIGNAL_OPTIONS = [
-  { value: 'STRONG_BUY', label: 'شراء قوي', color: 'bg-emerald-500' },
-  { value: 'BUY', label: 'شراء', color: 'bg-emerald-400' },
-  { value: 'ACCUMULATE', label: 'تجميع', color: 'bg-amber-400' },
-  { value: 'HOLD', label: 'احتفاظ', color: 'bg-amber-500' },
-  { value: 'SELL', label: 'بيع', color: 'bg-red-400' },
-  { value: 'STRONG_SELL', label: 'بيع قوي', color: 'bg-red-500' },
+  { value: 'STRONG_BUY', label: 'شراء قوي', color: 'bg-profit' },
+  { value: 'BUY', label: 'شراء', color: 'bg-profit' },
+  { value: 'ACCUMULATE', label: 'تجميع', color: 'bg-warning' },
+  { value: 'HOLD', label: 'احتفاظ', color: 'bg-warning' },
+  { value: 'SELL', label: 'بيع', color: 'bg-loss' },
+  { value: 'STRONG_SELL', label: 'بيع قوي', color: 'bg-loss' },
 ];
 
 export function QuickPublishButton({
@@ -191,9 +191,9 @@ ${reasonsList}
 
           {success ? (
             <div className="py-8 text-center">
-              <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+              <CheckCircle className="w-16 h-16 text-profit mx-auto mb-4" />
               <h3 className="text-lg font-bold mb-2">تم النشر بنجاح!</h3>
-              <div className="flex items-center justify-center gap-2 text-emerald-600">
+              <div className="flex items-center justify-center gap-2 text-profit">
                 <Coins className="w-5 h-5" />
                 <span className="font-bold">+10 نقاط</span>
               </div>
@@ -203,7 +203,7 @@ ${reasonsList}
               {/* Stock Info */}
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                 <div>
-                  <p className="font-bold text-emerald-600">{ticker}</p>
+                  <p className="font-bold text-profit">{ticker}</p>
                   <p className="text-sm text-muted-foreground">{stockName}</p>
                 </div>
                 {currentPrice && (
@@ -295,10 +295,10 @@ ${reasonsList}
               </div>
 
               {/* Points Info */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-500/20">
+              <div className="flex items-center justify-between text-sm text-muted-foreground bg-profit dark:bg-profit/20 p-2.5 rounded-lg border border-profit/20">
                 <div className="flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-emerald-500" />
-                  <span className="font-bold text-emerald-700 dark:text-emerald-300">ستحصل على 10 نقاط عند نشر هذا التوقع</span>
+                  <Coins className="w-4 h-4 text-profit" />
+                  <span className="font-bold text-profit dark:text-profit">ستحصل على 10 نقاط عند نشر هذا التوقع</span>
                 </div>
               </div>
             </div>
@@ -314,7 +314,7 @@ ${reasonsList}
                   <Button variant="outline" onClick={() => setOpen(false)}>
                     إلغاء
                   </Button>
-                  <Button onClick={handleSubmit} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Button onClick={handleSubmit} disabled={loading} className="bg-profit hover:bg-profit text-white">
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin ml-2" />

@@ -121,7 +121,7 @@ const topTickerColumns: Column<Record<string, unknown>>[] = [
     align: 'center',
     sortable: true,
     render: (t) => (
-      <span className="text-xs text-center text-emerald-600 inline-block w-full">{String(t.wins ?? 0)}</span>
+      <span className="text-xs text-center text-profit inline-block w-full">{String(t.wins ?? 0)}</span>
     ),
   },
   {
@@ -144,7 +144,7 @@ const topTickerColumns: Column<Record<string, unknown>>[] = [
         <span
           className={cn(
             'text-xs text-center font-medium inline-block w-full',
-            avgReturn >= 0 ? 'text-emerald-600' : 'text-red-600',
+            avgReturn >= 0 ? 'text-profit' : 'text-loss',
           )}
         >
           {avgReturn >= 0 ? '+' : ''}{avgReturn}%
@@ -361,7 +361,7 @@ export function DualTrackPredictionsView() {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
-              <Target className="w-4 h-4 text-amber-500" />
+              <Target className="w-4 h-4 text-warning" />
               الـ Dynamic Threshold لكل سوق (percentile_75)
             </CardTitle>
           </CardHeader>
@@ -372,11 +372,11 @@ export function DualTrackPredictionsView() {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-semibold">{t.market}</span>
                     {t.fallback_used ? (
-                      <Badge variant="outline" className="text-amber-600 text-[10px]">
+                      <Badge variant="outline" className="text-warning text-[10px]">
                         fallback
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-emerald-600 text-[10px]">
+                      <Badge variant="outline" className="text-profit text-[10px]">
                         live
                       </Badge>
                     )}
@@ -399,7 +399,7 @@ export function DualTrackPredictionsView() {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
-              <ArrowUpCircle className="w-4 h-4 text-emerald-500" />
+              <ArrowUpCircle className="w-4 h-4 text-profit" />
               أعلى الأسهم أداءً (آخر 30 يوم)
             </CardTitle>
           </CardHeader>
@@ -473,10 +473,10 @@ export function DualTrackPredictionsView() {
       </Card>
 
       {/* Disclaimer */}
-      <Card className="bg-amber-500/5 border-amber-500/20">
+      <Card className="bg-warning/5 border-warning/20">
         <CardContent className="p-3">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
             <p className="text-[10px] text-muted-foreground">
               ⚠️ التوقعات آلية مبنية على بيانات تاريخية. ليست نصيحة استثمارية مرخصة.
               استشر مستشاراً مالياً مرخّصاً قبل أي قرار. المنصة tracking only ولا تنفّذ أوامر بيع/شراء.
@@ -532,7 +532,7 @@ function TrackCard({
             <div className="text-[10px] text-muted-foreground">إجمالي</div>
           </div>
           <div>
-            <div className="text-lg font-bold text-emerald-600">{track.wins}</div>
+            <div className="text-lg font-bold text-profit">{track.wins}</div>
             <div className="text-[10px] text-muted-foreground">نجاحات</div>
           </div>
         </div>
@@ -541,7 +541,7 @@ function TrackCard({
           <span className="text-muted-foreground">
             وزن: {track.weight * 100}%
           </span>
-          <span className={track.avg_return >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+          <span className={track.avg_return >= 0 ? 'text-profit' : 'text-loss'}>
             متوسط العائد: {track.avg_return >= 0 ? '+' : ''}{track.avg_return}%
           </span>
         </div>
@@ -563,8 +563,8 @@ function PredictionRow({ pred }: { pred: Prediction }) {
         isLiquidity
           ? 'bg-purple-500/5 border-purple-500/20'
           : 'bg-cyan-500/5 border-cyan-500/20',
-        isWin && 'ring-1 ring-emerald-500/30',
-        isLoss && 'ring-1 ring-red-500/30',
+        isWin && 'ring-1 ring-profit/30',
+        isLoss && 'ring-1 ring-loss/30',
       )}
     >
       <div className="flex items-center gap-2 min-w-0">
@@ -610,8 +610,8 @@ function PredictionRow({ pred }: { pred: Prediction }) {
             pred.actual_return === null
               ? 'text-muted-foreground'
               : pred.actual_return >= 0
-                ? 'text-emerald-600'
-                : 'text-red-600'
+                ? 'text-profit'
+                : 'text-loss'
           )}>
             {pred.actual_return === null ? '—' : `${pred.actual_return >= 0 ? '+' : ''}${pred.actual_return}%`}
           </div>
@@ -620,9 +620,9 @@ function PredictionRow({ pred }: { pred: Prediction }) {
           variant="outline"
           className={cn(
             'text-[10px]',
-            isWin && 'border-emerald-500/40 text-emerald-600',
-            isLoss && 'border-red-500/40 text-red-600',
-            isActive && 'border-amber-500/40 text-amber-600',
+            isWin && 'border-profit/40 text-profit',
+            isLoss && 'border-loss/40 text-loss',
+            isActive && 'border-warning/40 text-warning',
           )}
         >
           {isActive ? '🟡 نشط' : isWin ? '✅ نجاح' : isLoss ? '❌ خسارة' : pred.status}

@@ -109,7 +109,7 @@ function getCurrentMonthName(): string {
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) {
     return (
-      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-warning flex items-center justify-center shadow-lg shadow-amber-500/30">
         <Crown className="w-5 h-5 text-slate-900" />
       </div>
     );
@@ -123,8 +123,8 @@ function RankBadge({ rank }: { rank: number }) {
   }
   if (rank === 3) {
     return (
-      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center shadow-lg shadow-amber-800/20">
-        <Award className="w-5 h-5 text-amber-100" />
+      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-warning to-warning flex items-center justify-center shadow-lg shadow-amber-800/20">
+        <Award className="w-5 h-5 text-warning" />
       </div>
     );
   }
@@ -142,10 +142,10 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
       <div
         ref={ref}
         dir="rtl"
-        className="w-[560px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-amber-500/60 shadow-2xl overflow-hidden"
+        className="w-[560px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/60 shadow-2xl overflow-hidden"
       >
         {/* Header — Golden gradient with trophy */}
-        <div className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 p-5 text-center relative overflow-hidden">
+        <div className="bg-gradient-to-r from-warning via-yellow-500 to-warning p-5 text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
             <Trophy className="w-32 h-32 text-slate-900 mx-auto" />
           </div>
@@ -193,11 +193,11 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
                   key={`${entry.ticker}-${entry.rank}`}
                   className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${
                     entry.rank === 1
-                      ? 'bg-gradient-to-l from-amber-500/10 to-transparent border border-amber-500/30'
+                      ? 'bg-gradient-to-l from-warning/10 to-transparent border border-warning/30'
                       : entry.rank === 2
                         ? 'bg-gradient-to-l from-slate-300/5 to-transparent border border-slate-400/20'
                         : entry.rank === 3
-                          ? 'bg-gradient-to-l from-amber-700/5 to-transparent border border-amber-700/20'
+                          ? 'bg-gradient-to-l from-warning/5 to-transparent border border-warning/20'
                           : 'bg-slate-800/40 border border-slate-700/30'
                   }`}
                 >
@@ -213,7 +213,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
                         {entry.ticker}
                       </span>
                       {entry.signal === 'BUY' && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium">
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-profit/20 text-profit font-medium">
                           شراء
                         </span>
                       )}
@@ -242,9 +242,9 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
                   {/* Profit % — the star */}
                   <div className="w-20 text-left">
                     <div className="flex items-center justify-end gap-0.5">
-                      <ChevronUp className="w-3.5 h-3.5 text-emerald-400" />
+                      <ChevronUp className="w-3.5 h-3.5 text-profit" />
                       <span className={`font-black ${
-                        entry.rank === 1 ? 'text-lg text-emerald-400' : 'text-base text-emerald-400'
+                        entry.rank === 1 ? 'text-lg text-profit' : 'text-base text-profit'
                       }`}>
                         {(entry.profit_pct ?? 0).toFixed(1)}%
                       </span>
@@ -257,18 +257,18 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
         </div>
 
         {/* Footer — Branding */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border-t border-amber-500/20 px-4 py-3 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border-t border-warning/20 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-warning to-warning flex items-center justify-center">
               <TrendingUp className="w-3 h-3 text-slate-900" />
             </div>
-            <span className="text-xs font-bold text-amber-400">
+            <span className="text-xs font-bold text-warning">
               دليل الاستثمار
             </span>
           </div>
           <a
             href="https://invist.m2y.net"
-            className="text-[11px] text-slate-400 hover:text-amber-400 transition-colors"
+            className="text-[11px] text-slate-400 hover:text-warning transition-colors"
           >
             invist.m2y.net
           </a>
@@ -294,10 +294,10 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
       <div
         ref={ref}
         dir="rtl"
-        className="w-[520px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-amber-500/60 shadow-2xl overflow-hidden"
+        className="w-[520px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/60 shadow-2xl overflow-hidden"
       >
         {/* Header — Golden gradient */}
-        <div className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 p-4 text-center">
+        <div className="bg-gradient-to-r from-warning via-yellow-500 to-warning p-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Trophy className="w-6 h-6 text-slate-900" />
             <h2 className="text-xl font-black text-slate-900">
@@ -329,13 +329,13 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
               {trades.map((trade, idx) => (
                 <div
                   key={`${trade.ticker}-${idx}`}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-amber-500/30 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-warning/30 transition-colors"
                 >
                   {/* Rank badge */}
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
-                    idx === 0 ? 'bg-amber-500 text-slate-900' :
+                    idx === 0 ? 'bg-warning text-slate-900' :
                     idx === 1 ? 'bg-slate-400 text-slate-900' :
-                    idx === 2 ? 'bg-amber-700 text-amber-100' :
+                    idx === 2 ? 'bg-warning text-warning' :
                     'bg-slate-700 text-slate-300'
                   }`}>
                     {idx + 1}
@@ -348,7 +348,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
                         {trade.ticker}
                       </span>
                       {trade.signal === 'BUY' && (
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium">
+                        <span className="text-[9px] px-1 py-0.5 rounded bg-profit/20 text-profit font-medium">
                           شراء
                         </span>
                       )}
@@ -380,8 +380,8 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
                   {/* Profit % — the star */}
                   <div className="flex-shrink-0 text-left">
                     <div className="flex items-center gap-0.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-lg font-black text-emerald-400">
+                      <TrendingUp className="w-3.5 h-3.5 text-profit" />
+                      <span className="text-lg font-black text-profit">
                         +{(trade.profit_pct ?? 0).toFixed(1)}%
                       </span>
                     </div>
@@ -394,18 +394,18 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
         </div>
 
         {/* Footer — Branding */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border-t border-amber-500/20 px-4 py-2.5 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border-t border-warning/20 px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-warning to-warning flex items-center justify-center">
               <TrendingUp className="w-3 h-3 text-slate-900" />
             </div>
-            <span className="text-xs font-bold text-amber-400">
+            <span className="text-xs font-bold text-warning">
               دليل الاستثمار
             </span>
           </div>
           <a
             href="https://invist.m2y.net"
-            className="text-[11px] text-slate-400 hover:text-amber-400 transition-colors"
+            className="text-[11px] text-slate-400 hover:text-warning transition-colors"
           >
             invist.m2y.net
           </a>
@@ -498,8 +498,8 @@ export function StockLeagueImageCard({
         telegramCaption={telegramCaption}
         telegramMarket="EGX"
         accentColor="#f59e0b"
-        borderClass="border-amber-200"
-        bgClass="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100/40"
+        borderClass="border-warning"
+        bgClass="bg-gradient-to-br from-warning via-yellow-50 to-orange-100/40"
         hasData={true}
         emptyHint=""
       >
@@ -524,8 +524,8 @@ export function StockLeagueImageCard({
 
   if (loading) {
     return (
-      <div className="w-[560px] h-[400px] bg-slate-900 rounded-2xl border-2 border-amber-500/30 animate-pulse flex items-center justify-center">
-        <Trophy className="w-12 h-12 text-amber-500/50" />
+      <div className="w-[560px] h-[400px] bg-slate-900 rounded-2xl border-2 border-warning/30 animate-pulse flex items-center justify-center">
+        <Trophy className="w-12 h-12 text-warning/50" />
       </div>
     );
   }
@@ -542,8 +542,8 @@ export function StockLeagueImageCard({
       telegramCaption={telegramCaption}
       telegramMarket="EGX"
       accentColor="#f59e0b"
-      borderClass="border-amber-200"
-      bgClass="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100/40"
+      borderClass="border-warning"
+      bgClass="bg-gradient-to-br from-warning via-yellow-50 to-orange-100/40"
       hasData={true}
       emptyHint=""
     >

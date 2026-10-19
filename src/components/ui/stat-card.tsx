@@ -54,9 +54,9 @@ export function StatCard({
         className={cn(
           'text-lg font-bold tabular-nums',
           color,
-          !color && tone === 'positive' && 'text-emerald-600 dark:text-emerald-400',
-          !color && tone === 'negative' && 'text-red-600 dark:text-red-400',
-          !color && tone === 'warning' && 'text-amber-600 dark:text-amber-400'
+          !color && tone === 'positive' && 'text-profit dark:text-profit',
+          !color && tone === 'negative' && 'text-loss dark:text-loss',
+          !color && tone === 'warning' && 'text-warning dark:text-warning'
         )}
       >
         {value}

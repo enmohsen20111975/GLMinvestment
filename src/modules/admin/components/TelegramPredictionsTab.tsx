@@ -85,9 +85,9 @@ function timeAgo(iso: string | null): string {
 function signalColor(signal: string | null): string {
   if (!signal) return 'border-muted text-muted-foreground';
   const s = signal.toUpperCase();
-  if (s.includes('BUY') || s.includes('LONG')) return 'border-emerald-500 text-emerald-700';
-  if (s.includes('SELL') || s.includes('SHORT')) return 'border-red-500 text-red-700';
-  return 'border-amber-500 text-amber-700';
+  if (s.includes('BUY') || s.includes('LONG')) return 'border-profit text-profit';
+  if (s.includes('SELL') || s.includes('SHORT')) return 'border-loss text-loss';
+  return 'border-warning text-warning';
 }
 
 export function TelegramPredictionsTab() {
@@ -175,12 +175,12 @@ export function TelegramPredictionsTab() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Send className="w-5 h-5 text-emerald-600" />
+                <Send className="w-5 h-5 text-profit" />
                 تدقيق التوقعات المنشورة على تيليجرام
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -197,11 +197,11 @@ export function TelegramPredictionsTab() {
 
       {/* Audit columns missing alert */}
       {data && !auditOk && (
-        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40">
+        <Card className="border-warning bg-warning dark:bg-warning/20 dark:border-warning/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-amber-800 dark:text-amber-300">
+              <p className="font-bold text-warning dark:text-warning">
                 أعمدة التدقيق غير موجودة في predictions.db
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -222,17 +222,17 @@ export function TelegramPredictionsTab() {
         <StatBox
           label="منشورة"
           value={summary?.published ?? '—'}
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+          icon={<CheckCircle2 className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="معلّقة (غير منشورة)"
           value={summary?.pending ?? '—'}
-          icon={<XCircle className="w-4 h-4 text-amber-500" />}
+          icon={<XCircle className="w-4 h-4 text-warning" />}
         />
         <StatBox
           label="معلّقة اليوم"
           value={summary?.pending_today ?? '—'}
-          icon={<Clock className="w-4 h-4 text-red-500" />}
+          icon={<Clock className="w-4 h-4 text-loss" />}
         />
       </div>
 
@@ -249,11 +249,11 @@ export function TelegramPredictionsTab() {
 
       {/* Error */}
       {!loading && data && !data.success && (
-        <Card className="border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40">
+        <Card className="border-loss bg-loss dark:bg-loss/20 dark:border-loss/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-700 dark:text-red-400">فشل تحميل بيانات التوقعات</p>
+              <p className="font-bold text-loss dark:text-loss">فشل تحميل بيانات التوقعات</p>
               <p className="text-xs text-muted-foreground mt-1">{data.error}</p>
             </div>
           </CardContent>
@@ -265,7 +265,7 @@ export function TelegramPredictionsTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4 text-red-500" />
+              <Clock className="w-4 h-4 text-loss" />
               توقعات اليوم المعلّقة ({pendingToday.length})
             </CardTitle>
             <CardDescription className="text-xs">
@@ -277,7 +277,7 @@ export function TelegramPredictionsTab() {
               {pendingToday.map((p) => (
                 <div
                   key={p.id}
-                  className="p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40 flex items-center gap-3 flex-wrap"
+                  className="p-3 rounded-lg border border-warning bg-warning dark:bg-warning/20 dark:border-warning/40 flex items-center gap-3 flex-wrap"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -288,7 +288,7 @@ export function TelegramPredictionsTab() {
                           {p.signal}
                         </Badge>
                       )}
-                      <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-500">
+                      <Badge variant="outline" className="text-[10px] text-warning border-warning">
                         ⏳ معلّق
                       </Badge>
                     </div>
@@ -308,7 +308,7 @@ export function TelegramPredictionsTab() {
                     size="sm"
                     onClick={() => setPreviewPrediction(p)}
                     disabled={publishingTicker === p.ticker}
-                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
+                    className="gap-2 bg-profit hover:bg-profit text-white h-8 text-xs"
                   >
                     {publishingTicker === p.ticker ? (
                       <>
@@ -334,7 +334,7 @@ export function TelegramPredictionsTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-profit" />
               آخر التوقعات المنشورة ({published.length})
             </CardTitle>
           </CardHeader>
@@ -409,7 +409,7 @@ export function TelegramPredictionsTab() {
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-emerald-600" />
+              <Eye className="w-5 h-5 text-profit" />
               معاينة قبل النشر على تيليجرام
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -430,13 +430,13 @@ export function TelegramPredictionsTab() {
                     {previewPrediction.signal}
                   </Badge>
                 )}
-                <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-500">
+                <Badge variant="outline" className="text-[10px] text-warning border-warning">
                   ⏳ معلّق
                 </Badge>
               </div>
 
               {/* Rendered message preview (mirrors Telegram layout) */}
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40 p-3">
+              <div className="rounded-lg border border-profit bg-profit dark:bg-profit/20 dark:border-profit/40 p-3">
                 <div className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
                   <MessageSquare className="w-3 h-3" />
                   معاينة الرسالة
@@ -466,7 +466,7 @@ export function TelegramPredictionsTab() {
                 }
               }}
               disabled={publishingTicker !== null}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              className="bg-profit hover:bg-profit text-white gap-2"
             >
               {publishingTicker ? (
                 <>

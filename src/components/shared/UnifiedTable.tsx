@@ -961,7 +961,7 @@ export function UnifiedTable<T extends object>({
       render: (row: T) => {
         const result = evaluateFormula(c.formula, row as Record<string, unknown>);
         if (!result.ok) {
-          return <span className="text-rose-500 text-[10px]" title={result.error}>خطأ</span>;
+          return <span className="text-loss text-[10px]" title={result.error}>خطأ</span>;
         }
         if (typeof result.value === 'number') {
           const isWhole = Number.isInteger(result.value);
@@ -1586,7 +1586,7 @@ export function UnifiedTable<T extends object>({
               className="h-7 text-xs gap-1"
               title="ضبط عرض الأعمدة تلقائياً حسب المحتوى"
             >
-              <MoveHorizontal className="w-3 h-3 text-emerald-600" />
+              <MoveHorizontal className="w-3 h-3 text-profit" />
               احتواء تلقائي
             </Button>
 
@@ -1604,10 +1604,10 @@ export function UnifiedTable<T extends object>({
                 className="h-7 text-xs gap-1"
                 title="إنشاء عمود بمعادلة مخصصة (Excel-style)"
               >
-                <Calculator className="w-3 h-3 text-emerald-600" />
+                <Calculator className="w-3 h-3 text-profit" />
                 عمود بمعادلة
                 {calculatedColumns.length > 0 && (
-                  <span className="bg-emerald-600 text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center">
+                  <span className="bg-profit text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center">
                     {calculatedColumns.length}
                   </span>
                 )}
@@ -1637,7 +1637,7 @@ export function UnifiedTable<T extends object>({
                         </button>
                         <button
                           onClick={() => deletePreset(p.name)}
-                          className="text-rose-500 hover:text-rose-700 p-0.5"
+                          className="text-loss hover:text-loss p-0.5"
                           title="حذف"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -1695,10 +1695,10 @@ export function UnifiedTable<T extends object>({
                     className="h-7 text-xs gap-1"
                     title="إدارة مستويات الترتيب (ترتيب بأكثر من عمود بالتتابع)"
                   >
-                    <ArrowUpDown className="w-3 h-3 text-emerald-600" />
+                    <ArrowUpDown className="w-3 h-3 text-profit" />
                     ترتيب مخصص ⇕
                     {sortStack.length > 0 && (
-                      <span className="bg-emerald-600 text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold">
+                      <span className="bg-profit text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold">
                         {sortStack.length}
                       </span>
                     )}
@@ -1711,7 +1711,7 @@ export function UnifiedTable<T extends object>({
                       {sortStack.length > 0 && (
                         <button
                           onClick={clearAllSorts}
-                          className="text-[10px] text-rose-500 hover:text-rose-700"
+                          className="text-[10px] text-loss hover:text-loss"
                           title="مسح كل مستويات الترتيب"
                         >
                           مسح الكل
@@ -1745,7 +1745,7 @@ export function UnifiedTable<T extends object>({
                               onDragEnd={() => setSortDragIdx(null)}
                               className={cn(
                                 'flex items-center gap-1.5 px-1.5 py-1 rounded border border-border bg-background hover:bg-muted/40 cursor-grab active:cursor-grabbing transition-colors',
-                                sortDragIdx === idx && 'opacity-50 ring-2 ring-emerald-500/40'
+                                sortDragIdx === idx && 'opacity-50 ring-2 ring-profit/40'
                               )}
                             >
                               <GripVertical className="w-3 h-3 text-muted-foreground/50 shrink-0" />
@@ -1762,14 +1762,14 @@ export function UnifiedTable<T extends object>({
                               <span className={cn(
                                 'text-[10px] font-mono px-1 rounded shrink-0',
                                 s.dir === 'asc'
-                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                                  : 'bg-rose-500/15 text-rose-700 dark:text-rose-400'
+                                  ? 'bg-profit/15 text-profit dark:text-profit'
+                                  : 'bg-loss/15 text-loss dark:text-loss'
                               )}>
                                 {s.dir === 'asc' ? '↑ تصاعدي' : '↓ تنازلي'}
                               </span>
                               <button
                                 onClick={() => removeSortLevel(s.key)}
-                                className="text-rose-500 hover:text-rose-700 p-0.5 shrink-0"
+                                className="text-loss hover:text-loss p-0.5 shrink-0"
                                 title="إزالة مستوى الترتيب"
                               >
                                 <X className="w-3 h-3" />
@@ -1812,7 +1812,7 @@ export function UnifiedTable<T extends object>({
                           setSortStack((prev) => [...prev, { key: newSortColKey, dir: newSortDir }]);
                           setNewSortColKey('');
                         }}
-                        className="h-7 px-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                        className="h-7 px-2 text-xs font-semibold bg-profit hover:bg-profit text-white shrink-0"
                       >
                         <Plus className="w-3.5 h-3.5 ml-0.5" />
                         أضف
@@ -1884,7 +1884,7 @@ export function UnifiedTable<T extends object>({
                                       onClick={() => togglePinned(colKey)}
                                       className={cn(
                                         'p-0.5 rounded hover:bg-muted transition-colors',
-                                        isPinned ? 'text-amber-500' : 'text-muted-foreground/40 hover:text-amber-500'
+                                        isPinned ? 'text-warning' : 'text-muted-foreground/40 hover:text-warning'
                                       )}
                                       title={isPinned ? 'إلغاء التثبيت' : 'تثبيت العمود (sticky)'}
                                     >
@@ -1992,7 +1992,7 @@ export function UnifiedTable<T extends object>({
               />
               <button
                 onClick={() => setCustomFilters(prev => prev.filter((_, i) => i !== idx))}
-                className="text-rose-500 hover:text-rose-700 text-xs"
+                className="text-loss hover:text-loss text-xs"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -2072,7 +2072,7 @@ export function UnifiedTable<T extends object>({
                             const target = calculatedColumns.find(c => c.id === String(col.key));
                             if (target) startEditCalculatedColumn(target);
                           }}
-                          className="inline-flex items-center justify-center w-4 h-4 rounded text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/15 transition-colors"
+                          className="inline-flex items-center justify-center w-4 h-4 rounded text-muted-foreground hover:text-profit hover:bg-profit/15 transition-colors"
                           title="تعديل صيغة المعادلة"
                         >
                           <Pencil className="w-2.5 h-2.5" />
@@ -2092,7 +2092,7 @@ export function UnifiedTable<T extends object>({
                               {/* (Task 34-A) Shift hint when there's >= 1 sort level */}
                               {sortStack.length >= 1 && (
                                 <span
-                                  className="text-[8px] px-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 font-mono"
+                                  className="text-[8px] px-0.5 rounded bg-warning/15 text-warning dark:text-warning font-mono"
                                   title="يمكنك إضافة مستوى ترتيب آخر بـ Shift+Click"
                                 >
                                   ⇧
@@ -2113,14 +2113,14 @@ export function UnifiedTable<T extends object>({
                               className={cn(
                                 'inline-flex items-center justify-center w-4 h-4 rounded transition-colors',
                                 filterActive
-                                  ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40'
+                                  ? 'text-profit bg-profit dark:bg-profit/40'
                                   : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted'
                               )}
                               title={filterActive ? `فلتر نشط (${filterCount})` : 'فلترة'}
                             >
                               <Filter className="w-3 h-3" />
                               {filterActive && filterCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full text-[8px] w-3.5 h-3.5 flex items-center justify-center font-bold">
+                                <span className="absolute -top-1 -right-1 bg-profit text-white rounded-full text-[8px] w-3.5 h-3.5 flex items-center justify-center font-bold">
                                   {filterCount > 99 ? '99+' : filterCount}
                                 </span>
                               )}
@@ -2139,7 +2139,7 @@ export function UnifiedTable<T extends object>({
                                 {filterActive && (
                                   <button
                                     onClick={() => clearColumnFilter(colKey)}
-                                    className="text-[10px] text-rose-500 hover:text-rose-700"
+                                    className="text-[10px] text-loss hover:text-loss"
                                   >
                                     مسح
                                   </button>
@@ -2198,8 +2198,8 @@ export function UnifiedTable<T extends object>({
                           // RTL: handle on LEFT edge. LTR: handle on RIGHT edge.
                           dir === 'rtl' ? 'left-0' : 'right-0',
                           resizingCol?.colKey === colKey
-                            ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]'
-                            : 'bg-transparent hover:bg-emerald-500/60 hover:shadow-[0_0_4px_rgba(16,185,129,0.5)]',
+                            ? 'bg-profit shadow-[0_0_6px_rgba(16,185,129,0.7)]'
+                            : 'bg-transparent hover:bg-profit/60 hover:shadow-[0_0_4px_rgba(16,185,129,0.5)]',
                         )}
                         title="اسحب لتغيير عرض العمود"
                       />
@@ -2332,7 +2332,7 @@ export function UnifiedTable<T extends object>({
                         if (calc) {
                           const r = evaluateFormula(calc.formula, row as Record<string, unknown>);
                           if (!r.ok) {
-                            content = <span className="text-rose-500 text-[10px]" title={r.error}>خطأ</span>;
+                            content = <span className="text-loss text-[10px]" title={r.error}>خطأ</span>;
                           } else if (typeof r.value === 'number') {
                             const isWhole = Number.isInteger(r.value);
                             content = <span className="font-mono text-xs">{isWhole ? r.value : (r.value ?? 0).toFixed(2)}</span>;
@@ -2361,8 +2361,8 @@ export function UnifiedTable<T extends object>({
                             isPinned && 'sticky right-0 z-10 bg-background shadow-l',
                             // (Task 37) «الجدول المتقدّم» — selection + edit styles
                             excelGrid && 'cursor-cell',
-                            isSelected && 'bg-emerald-100 dark:bg-emerald-900/30 ring-2 ring-emerald-500 ring-inset',
-                            isEditing && 'p-0 ring-2 ring-emerald-500 ring-inset bg-white dark:bg-slate-900',
+                            isSelected && 'bg-profit dark:bg-profit/30 ring-2 ring-profit ring-inset',
+                            isEditing && 'p-0 ring-2 ring-profit ring-inset bg-white dark:bg-slate-900',
                           )}
                           onClick={excelGrid ? (e) => handleCellClick(ri, colKey, e) : undefined}
                           onDoubleClick={excelGrid ? (e) => handleCellDoubleClick(ri, colKey, row, e) : undefined}
@@ -2436,7 +2436,7 @@ export function UnifiedTable<T extends object>({
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-emerald-600" />
+                <Calculator className="w-4 h-4 text-profit" />
                 {editingCalcId ? 'تعديل عمود بمعادلة' : 'إنشاء عمود بمعادلة'}
               </DialogTitle>
               <DialogDescription>
@@ -2449,15 +2449,15 @@ export function UnifiedTable<T extends object>({
             <div className="space-y-3">
               {/* Active edit mode alert banner */}
               {editingCalcId && (
-                <div className="flex items-center justify-between px-3 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+                <div className="flex items-center justify-between px-3 py-1.5 rounded-md bg-warning/10 border border-warning/30 text-xs text-warning dark:text-warning">
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                    <Pencil className="w-3.5 h-3.5 text-warning" />
                     وضع التعديل للعمود: <strong>{formulaName || 'المحدد'}</strong>
                   </span>
                   <button
                     type="button"
                     onClick={cancelEditCalculatedColumn}
-                    className="text-[11px] font-semibold underline hover:text-amber-900 dark:hover:text-amber-200"
+                    className="text-[11px] font-semibold underline hover:text-warning dark:hover:text-warning"
                   >
                     إلغاء والإنشاء كعمود جديد
                   </button>
@@ -2491,8 +2491,8 @@ export function UnifiedTable<T extends object>({
                 {formulaText.trim() && formulaValidation && (
                   <div className={cn(
                     'text-[10px] px-2 py-1 rounded',
-                    formulaValidation.ok ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400'
-                      : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400'
+                    formulaValidation.ok ? 'bg-profit dark:bg-profit/30 text-profit dark:text-profit'
+                      : 'bg-loss dark:bg-loss/30 text-loss dark:text-loss'
                   )}>
                     {formulaValidation.ok ? '✓ الصياغة صحيحة' : `✗ ${formulaValidation.error}`}
                   </div>
@@ -2519,7 +2519,7 @@ export function UnifiedTable<T extends object>({
                           <button
                             key={v.key}
                             onClick={() => insertAtCursor(`{${v.key}}`)}
-                            className="text-[10px] px-1.5 py-0.5 rounded border border-border hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors font-mono"
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-border hover:border-profit hover:bg-profit dark:hover:bg-profit/30 hover:text-profit dark:hover:text-profit transition-colors font-mono"
                             title={`${v.label}${v.unit ? ` (${v.unit})` : ''}`}
                           >
                             {v.label}
@@ -2580,7 +2580,7 @@ export function UnifiedTable<T extends object>({
                         </span>
                         <span className={cn(
                           'font-mono font-semibold',
-                          result.ok ? 'text-foreground' : 'text-rose-500'
+                          result.ok ? 'text-foreground' : 'text-loss'
                         )} dir="ltr">
                           {result.ok
                             ? (typeof result.value === 'number'
@@ -2607,11 +2607,11 @@ export function UnifiedTable<T extends object>({
                           className={cn(
                             'flex items-center gap-2 px-2 py-1.5 rounded border transition-colors',
                             isEditingThis
-                              ? 'border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                              ? 'border-profit bg-profit/10 text-profit dark:text-profit'
                               : 'border-border bg-background hover:bg-muted/40'
                           )}
                         >
-                          <Calculator className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <Calculator className="w-3.5 h-3.5 text-profit shrink-0" />
                           <button
                             type="button"
                             onClick={() => startEditCalculatedColumn(c)}
@@ -2628,8 +2628,8 @@ export function UnifiedTable<T extends object>({
                               className={cn(
                                 'p-1 rounded transition-colors',
                                 isEditingThis
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                                  ? 'bg-profit text-white'
+                                  : 'text-muted-foreground hover:text-profit hover:bg-profit dark:hover:bg-profit/30'
                               )}
                               title="تعديل المعادلة"
                             >
@@ -2638,7 +2638,7 @@ export function UnifiedTable<T extends object>({
                             <button
                               type="button"
                               onClick={() => deleteCalculatedColumn(c.id)}
-                              className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-500/10 transition-colors"
+                              className="text-loss hover:text-loss p-1 rounded hover:bg-loss/10 transition-colors"
                               title="حذف"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -2667,7 +2667,7 @@ export function UnifiedTable<T extends object>({
               <Button
                 onClick={saveCalculatedColumn}
                 disabled={!formulaName.trim() || !formulaText.trim() || (formulaValidation != null && !formulaValidation.ok)}
-                className={editingCalcId ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : undefined}
+                className={editingCalcId ? 'bg-profit hover:bg-profit text-white' : undefined}
               >
                 {editingCalcId ? (
                   <>
@@ -2692,7 +2692,7 @@ export function UnifiedTable<T extends object>({
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Save className="w-4 h-4 text-emerald-600" />
+                <Save className="w-4 h-4 text-profit" />
                 حفظ القالب
               </DialogTitle>
               <DialogDescription>
@@ -2779,7 +2779,7 @@ function NumericFilterContent({
       </div>
 
       {rangeFilter && (rangeFilter.min != null || rangeFilter.max != null) && (
-        <div className="text-[10px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-2 py-1 rounded">
+        <div className="text-[10px] bg-profit dark:bg-profit/30 text-profit dark:text-profit px-2 py-1 rounded">
           فلتر النطاق نشط: {rangeFilter.min != null ? `≥ ${rangeFilter.min}` : ''} {rangeFilter.max != null ? `≤ ${rangeFilter.max}` : ''}
         </div>
       )}

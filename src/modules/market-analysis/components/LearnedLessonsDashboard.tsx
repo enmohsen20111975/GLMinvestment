@@ -55,10 +55,10 @@ interface ApiResponse {
 }
 
 const RECOMMENDATION_AR: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  reduce_exposure: { label: 'تقليل الانكشاف', color: 'text-red-600 bg-red-500/10 border-red-500/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
+  reduce_exposure: { label: 'تقليل الانكشاف', color: 'text-loss bg-loss/10 border-loss/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
   reduce_weight: { label: 'تقليل الوزن', color: 'text-orange-600 bg-orange-500/10 border-orange-500/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
-  increase_weight: { label: 'زيادة الوزن', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30', icon: <TrendingUp className="h-3.5 w-3.5" /> },
-  add_filter: { label: 'إضافة فلتر', color: 'text-amber-600 bg-amber-500/10 border-amber-500/30', icon: <Filter className="h-3.5 w-3.5" /> },
+  increase_weight: { label: 'زيادة الوزن', color: 'text-profit bg-profit/10 border-profit/30', icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  add_filter: { label: 'إضافة فلتر', color: 'text-warning bg-warning/10 border-warning/30', icon: <Filter className="h-3.5 w-3.5" /> },
 };
 
 const SORT_OPTIONS = [
@@ -156,17 +156,17 @@ export function LearnedLessonsDashboard({ initialLimit = 50 }: LearnedLessonsDas
               <StatPill
                 label="إجمالي الدروس المعروضة"
                 value={lessons.length.toString()}
-                icon={<Activity className="h-3.5 w-3.5 text-blue-500" />}
+                icon={<Activity className="h-3.5 w-3.5 text-primary" />}
               />
               <StatPill
                 label="إجمالي التكرارات"
                 value={stats.totalOccurrences.toLocaleString('ar-EG')}
-                icon={<Lightbulb className="h-3.5 w-3.5 text-amber-500" />}
+                icon={<Lightbulb className="h-3.5 w-3.5 text-warning" />}
               />
               <StatPill
                 label="دروس فاشلة"
                 value={stats.failures.toString()}
-                icon={<XCircle className="h-3.5 w-3.5 text-red-500" />}
+                icon={<XCircle className="h-3.5 w-3.5 text-loss" />}
               />
               <StatPill
                 label="متوسط معدل الفشل"
@@ -236,10 +236,10 @@ export function LearnedLessonsDashboard({ initialLimit = 50 }: LearnedLessonsDas
           ))}
         </div>
       ) : error ? (
-        <Card className="border-red-500/40">
+        <Card className="border-loss/40">
           <CardContent className="p-6 text-center space-y-2">
-            <AlertCircle className="h-6 w-6 text-red-500 mx-auto" />
-            <p className="text-sm text-red-600">{error}</p>
+            <AlertCircle className="h-6 w-6 text-loss mx-auto" />
+            <p className="text-sm text-loss">{error}</p>
             <Button size="sm" variant="outline" onClick={fetchData}>
               <RefreshCw className="h-3 w-3 ml-1" /> حاول مرة أخرى
             </Button>
@@ -289,8 +289,8 @@ function LessonCard({ lesson }: { lesson: LearnedLesson }) {
       className={cn(
         'overflow-hidden transition-shadow hover:shadow-md',
         isFailure
-          ? 'border-red-500/30 bg-red-500/[0.02]'
-          : 'border-emerald-500/30 bg-emerald-500/[0.02]',
+          ? 'border-loss/30 bg-loss/[0.02]'
+          : 'border-profit/30 bg-profit/[0.02]',
       )}
     >
       <CardHeader className="pb-2 pt-3 px-4">
@@ -299,13 +299,13 @@ function LessonCard({ lesson }: { lesson: LearnedLesson }) {
             <div
               className={cn(
                 'p-1.5 rounded-md flex-shrink-0',
-                isFailure ? 'bg-red-500/10' : 'bg-emerald-500/10',
+                isFailure ? 'bg-loss/10' : 'bg-profit/10',
               )}
             >
               {isFailure ? (
-                <XCircle className="h-4 w-4 text-red-600" />
+                <XCircle className="h-4 w-4 text-loss" />
               ) : (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <CheckCircle2 className="h-4 w-4 text-profit" />
               )}
             </div>
             <CardTitle
@@ -320,8 +320,8 @@ function LessonCard({ lesson }: { lesson: LearnedLesson }) {
             className={cn(
               'flex-shrink-0 text-[10px] gap-1',
               isFailure
-                ? 'border-red-500/40 text-red-700 dark:text-red-300 bg-red-500/5'
-                : 'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-500/5',
+                ? 'border-loss/40 text-loss dark:text-loss bg-loss/5'
+                : 'border-profit/40 text-profit dark:text-profit bg-profit/5',
             )}
           >
             {isFailure ? 'فشل' : 'نجاح'}
@@ -390,10 +390,10 @@ function Metric({
   tone: 'blue' | 'red' | 'amber' | 'green' | 'muted';
 }) {
   const toneClass = {
-    blue: 'text-blue-700 dark:text-blue-300 bg-blue-500/5',
-    red: 'text-red-700 dark:text-red-300 bg-red-500/5',
-    amber: 'text-amber-700 dark:text-amber-300 bg-amber-500/5',
-    green: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/5',
+    blue: 'text-primary dark:text-primary bg-primary/5',
+    red: 'text-loss dark:text-loss bg-loss/5',
+    amber: 'text-warning dark:text-warning bg-warning/5',
+    green: 'text-profit dark:text-profit bg-profit/5',
     muted: 'text-muted-foreground bg-muted/20',
   }[tone];
 

@@ -61,10 +61,10 @@ class ErrorBoundary extends Component<{ children: ReactNode; title?: string }, {
   render() {
     if (this.state.hasError) {
       return (
-        <Card className="border-red-200 dark:border-red-900/50">
+        <Card className="border-loss dark:border-loss/50">
           <CardContent className="p-4 text-center">
-            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
+            <div className="w-10 h-10 rounded-full bg-loss dark:bg-loss/40 flex items-center justify-center mx-auto mb-3">
+              <AlertTriangle className="w-5 h-5 text-loss" />
             </div>
             <p className="text-sm font-bold text-foreground mb-1">
               حدث خطأ في عرض البيانات
@@ -443,7 +443,7 @@ function MetricRow({ label, value, highlight }: { label: string; value: string; 
       <span
         className={cn(
           'text-sm font-semibold tabular-nums',
-          highlight && 'text-emerald-600 dark:text-emerald-400'
+          highlight && 'text-profit dark:text-profit'
         )}
         dir="ltr"
       >
@@ -461,7 +461,7 @@ function EstimatedBadge() {
   return (
     <Badge
       variant="outline"
-      className="text-[9px] px-1 py-0 h-4 leading-none border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+      className="text-[9px] px-1 py-0 h-4 leading-none border-warning/40 text-warning dark:text-warning bg-warning/10"
       title="قيمة مقدّرة هيكلياً من القيمة السوقية ومكررات السعر (raw data unavailable)"
     >
       تقديري
@@ -623,7 +623,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-900">
         <div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-emerald-600" />
+            <BarChart3 className="w-5 h-5 text-profit" />
             تحليل البيانات الأساسية والهيكلية للسهم
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">البيانات مستخرجة مباشرة من مركز معلومات البورصة</p>
@@ -642,7 +642,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
 
       {showEstimationNote && (
         <div
-          className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2"
+          className="mb-4 px-3 py-2 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning dark:text-warning flex items-center gap-2"
           dir="rtl"
         >
           <span aria-hidden>ℹ️</span>
@@ -657,7 +657,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
           className={cn(
             "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
             activeTab === 'valuation'
-              ? "border-emerald-600 text-emerald-600 dark:text-emerald-400"
+              ? "border-profit text-profit dark:text-profit"
               : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
           )}
         >
@@ -668,7 +668,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
           className={cn(
             "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
             activeTab === 'statements'
-              ? "border-emerald-600 text-emerald-600 dark:text-emerald-400"
+              ? "border-profit text-profit dark:text-profit"
               : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
           )}
         >
@@ -679,7 +679,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
           className={cn(
             "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
             activeTab === 'dividends'
-              ? "border-emerald-600 text-emerald-600 dark:text-emerald-400"
+              ? "border-profit text-profit dark:text-profit"
               : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
           )}
         >
@@ -690,7 +690,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
           className={cn(
             "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
             activeTab === 'technical'
-              ? "border-emerald-600 text-emerald-600 dark:text-emerald-400"
+              ? "border-profit text-profit dark:text-profit"
               : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
           )}
         >
@@ -744,25 +744,25 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   <div>
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-500">العائد على حقوق الملكية (ROE)</span>
-                      <span className="font-bold text-emerald-600 flex items-center gap-1">
+                      <span className="font-bold text-profit flex items-center gap-1">
                         <span>{prof?.roe ? `${(prof.roe ?? 0).toFixed(2)}%` : (profile.basic?.roe ? `${(profile.basic.roe ?? 0).toFixed(2)}%` : 'N/A')}</span>
                         {(isEst(prof, 'roe') || isEst(profile.basic, 'roe')) && <EstimatedBadge />}
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
-                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.roe || profile.basic?.roe || 0, 0), 100)}%` }}></div>
+                      <div className="bg-profit h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.roe || profile.basic?.roe || 0, 0), 100)}%` }}></div>
                     </div>
                   </div>
 
                   <div>
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-500">هامش الربح التشغيلي (Operating Margin)</span>
-                      <span className="font-bold text-teal-600">
+                      <span className="font-bold text-whale">
                         {prof?.operating_margin ? `${(prof.operating_margin ?? 0).toFixed(2)}%` : 'N/A'}
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
-                      <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.operating_margin || 0, 0), 100)}%` }}></div>
+                      <div className="bg-whale h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.operating_margin || 0, 0), 100)}%` }}></div>
                     </div>
                   </div>
 
@@ -782,8 +782,8 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
             </div>
 
             {(!val?.pe_ratio && !profile.basic?.pe_ratio && (!prof?.roe && !profile.basic?.roe)) && (
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
+              <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning dark:text-warning flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-warning" />
                 <span>ملاحظة: البيانات المالية القوائمية غير منتشرة رسمياً بالبورصة لهذه الشركة الصغيرة. البيانات الفنية والشارت التفاعلي متوفران بالكامل بتبويب <b>(الأداء والتحليل الفني)</b>.</span>
               </div>
             )}
@@ -807,14 +807,14 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">إجمالي الالتزامات</span>
-                    <span className="font-bold text-red-500 flex items-center gap-1">
+                    <span className="font-bold text-loss flex items-center gap-1">
                       <span>{bs?.total_liabilities ? (bs.total_liabilities >= 1e9 ? `${(bs.total_liabilities / 1e9).toFixed(2)}B EGP` : `${(bs.total_liabilities / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap && profile.basic?.pb_ratio ? `${(((profile.basic.market_cap * 1.5) - (profile.basic.market_cap / profile.basic.pb_ratio)) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
                       {(isEst(bs, 'total_liabilities') || totalLiabInlineEst) && <EstimatedBadge />}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">حقوق المساهمين</span>
-                    <span className="font-bold text-emerald-600 flex items-center gap-1">
+                    <span className="font-bold text-profit flex items-center gap-1">
                       <span>{bs?.total_equity ? (bs.total_equity >= 1e9 ? `${(bs.total_equity / 1e9).toFixed(2)}B EGP` : `${(bs.total_equity / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap && profile.basic?.pb_ratio ? `${((profile.basic.market_cap / profile.basic.pb_ratio) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
                       {(isEst(bs, 'total_equity') || totalEquityInlineEst) && <EstimatedBadge />}
                     </span>
@@ -823,8 +823,8 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                     <div className="mt-3">
                       <div className="text-[10px] text-slate-400 mb-1">نسبة الهيكل المالي (حقوق ملكية/أصول)</div>
                       <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden flex">
-                        <div className="bg-emerald-500 h-2" style={{ width: `${profile.basic?.pb_ratio ? Math.min(100, Math.max(10, (1 / profile.basic.pb_ratio) * 100)) : 60}%` }}></div>
-                        <div className="bg-red-500 h-2 flex-1"></div>
+                        <div className="bg-profit h-2" style={{ width: `${profile.basic?.pb_ratio ? Math.min(100, Math.max(10, (1 / profile.basic.pb_ratio) * 100)) : 60}%` }}></div>
+                        <div className="bg-loss h-2 flex-1"></div>
                       </div>
                     </div>
                   )}
@@ -844,13 +844,13 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">نمو الإيرادات</span>
-                    <span className={cn("font-bold", (inc?.revenue_growth || 0) >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    <span className={cn("font-bold", (inc?.revenue_growth || 0) >= 0 ? "text-profit" : "text-loss")}>
                       {inc?.revenue_growth ? `${inc.revenue_growth >= 0 ? '+' : ''}${(inc.revenue_growth ?? 0).toFixed(2)}%` : '—'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">صافي الربح</span>
-                    <span className="font-bold text-emerald-600 flex items-center gap-1">
+                    <span className="font-bold text-profit flex items-center gap-1">
                       <span>{inc?.net_income ? (inc.net_income >= 1e9 ? `${(inc.net_income / 1e9).toFixed(2)}B EGP` : `${(inc.net_income / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap && profile.basic?.pe_ratio ? `${((profile.basic.market_cap / profile.basic.pe_ratio) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
                       {(isEst(inc, 'net_income') || netIncomeInlineEst) && <EstimatedBadge />}
                     </span>
@@ -871,13 +871,13 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-500">التدفق التشغيلي</span>
-                    <span className="font-bold text-emerald-600">
+                    <span className="font-bold text-profit">
                       {cf?.operating_cf ? (cf.operating_cf >= 1e9 ? `${(cf.operating_cf / 1e9).toFixed(2)}B EGP` : `${(cf.operating_cf / 1e6).toFixed(1)}M EGP`) : '—'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">التدفق الاستثماري</span>
-                    <span className="font-bold text-red-500">
+                    <span className="font-bold text-loss">
                       {cf?.investing_cf ? (cf.investing_cf >= 1e9 ? `${(cf.investing_cf / 1e9).toFixed(2)}B EGP` : `${(cf.investing_cf / 1e6).toFixed(1)}M EGP`) : '—'}
                     </span>
                   </div>
@@ -889,7 +889,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   </div>
                   <div className="flex justify-between pt-2 border-t border-slate-200/50 dark:border-slate-800 font-bold">
                     <span className="text-slate-600 dark:text-slate-400">التدفق النقدي الحر</span>
-                    <span className={cn((cf?.free_cf || 0) >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    <span className={cn((cf?.free_cf || 0) >= 0 ? "text-profit" : "text-loss")}>
                       {cf?.free_cf ? (cf.free_cf >= 1e9 ? `${(cf.free_cf / 1e9).toFixed(2)}B EGP` : `${(cf.free_cf / 1e6).toFixed(1)}M EGP`) : '—'}
                     </span>
                   </div>
@@ -898,8 +898,8 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
             </div>
 
             {(!bs?.total_assets && !inc?.revenue && !cf?.operating_cf) && (
-              <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/20 text-xs text-teal-700 dark:text-teal-300 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 flex-shrink-0 text-teal-500" />
+              <div className="p-3 rounded-lg bg-whale/10 border border-whale/20 text-xs text-whale dark:text-whale flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 flex-shrink-0 text-whale" />
                 <span>تم احتساب الهيكل المالي والالتزامات تقديرياً بناءً على القيمة السوقية الرسمية ($1.37B$) ومكرر القيمة الدفترية المعرّف بالبورصة.</span>
               </div>
             )}
@@ -915,7 +915,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">عائد التوزيع الحالي</div>
-                  <div className="text-sm font-extrabold text-emerald-600 mt-0.5">{div?.div_yield ? `${(div.div_yield ?? 0).toFixed(2)}%` : '0.00%'}</div>
+                  <div className="text-sm font-extrabold text-profit mt-0.5">{div?.div_yield ? `${(div.div_yield ?? 0).toFixed(2)}%` : '0.00%'}</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">توزيع السهم للسنة (DPS)</div>
@@ -927,7 +927,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">نمو التوزيعات</div>
-                  <div className="text-sm font-extrabold text-emerald-600 mt-0.5">{div?.dps_growth ? `${(div.dps_growth ?? 0).toFixed(1)}%` : 'N/A'}</div>
+                  <div className="text-sm font-extrabold text-profit mt-0.5">{div?.dps_growth ? `${(div.dps_growth ?? 0).toFixed(1)}%` : 'N/A'}</div>
                 </div>
               </div>
             </div>
@@ -938,25 +938,25 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
               <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">أسبوع (1W)</div>
-                  <div className={cn("font-bold mt-0.5", perf?.perf_1w >= 0 ? "text-emerald-500" : "text-red-500")}>
+                  <div className={cn("font-bold mt-0.5", perf?.perf_1w >= 0 ? "text-profit" : "text-loss")}>
                     {perf?.perf_1w ? `${perf.perf_1w >= 0 ? '+' : ''}${(perf.perf_1w ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">شهر (1M)</div>
-                  <div className={cn("font-bold mt-0.5", perf?.perf_1m >= 0 ? "text-emerald-500" : "text-red-500")}>
+                  <div className={cn("font-bold mt-0.5", perf?.perf_1m >= 0 ? "text-profit" : "text-loss")}>
                     {perf?.perf_1m ? `${perf.perf_1m >= 0 ? '+' : ''}${(perf.perf_1m ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">3 شهور (3M)</div>
-                  <div className={cn("font-bold mt-0.5", perf?.perf_3m >= 0 ? "text-emerald-500" : "text-red-500")}>
+                  <div className={cn("font-bold mt-0.5", perf?.perf_3m >= 0 ? "text-profit" : "text-loss")}>
                     {perf?.perf_3m ? `${perf.perf_3m >= 0 ? '+' : ''}${(perf.perf_3m ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">سنة (1Y)</div>
-                  <div className={cn("font-bold mt-0.5", perf?.perf_1y >= 0 ? "text-emerald-500" : "text-red-500")}>
+                  <div className={cn("font-bold mt-0.5", perf?.perf_1y >= 0 ? "text-profit" : "text-loss")}>
                     {perf?.perf_1y ? `${perf.perf_1y >= 0 ? '+' : ''}${(perf.perf_1y ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
@@ -1006,7 +1006,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">الاتجاه العام</div>
-                  <div className="font-extrabold text-emerald-600 mt-0.5">{tech?.trend ? tech.trend : 'N/A'}</div>
+                  <div className="font-extrabold text-profit mt-0.5">{tech?.trend ? tech.trend : 'N/A'}</div>
                 </div>
               </div>
             </div>
@@ -1018,8 +1018,8 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                 <div className="flex justify-between">
                   <span className="text-slate-500">التقييم الفني الإجمالي</span>
                   <span className={cn("font-bold px-2 py-0.5 rounded text-[11px]", 
-                    tech?.technical_rating?.includes('Strong Buy') || tech?.technical_rating?.includes('شراء قوي') ? "bg-emerald-500/10 text-emerald-500" :
-                    tech?.technical_rating?.includes('Buy') || tech?.technical_rating?.includes('شراء') ? "bg-emerald-400/10 text-emerald-600" : "bg-slate-500/10 text-slate-500"
+                    tech?.technical_rating?.includes('Strong Buy') || tech?.technical_rating?.includes('شراء قوي') ? "bg-profit/10 text-profit" :
+                    tech?.technical_rating?.includes('Buy') || tech?.technical_rating?.includes('شراء') ? "bg-profit/10 text-profit" : "bg-slate-500/10 text-slate-500"
                   )}>
                     {tech?.technical_rating ? tech.technical_rating : 'Neutral'}
                   </span>
@@ -1230,18 +1230,18 @@ export function StockDetail() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+            <h1 className="text-2xl font-bold text-profit dark:text-profit">
               {stock.ticker}
             </h1>
             {/* Index Membership Badges */}
             <div className="flex gap-1.5">
               {stock.egx30_member && (
-                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 border-0 text-[11px] px-2">
+                <Badge className="bg-profit text-profit dark:bg-profit/40 dark:text-profit hover:bg-profit dark:hover:bg-profit/60 border-0 text-[11px] px-2">
                   EGX 30
                 </Badge>
               )}
               {stock.egx70_member && (
-                <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/60 border-0 text-[11px] px-2">
+                <Badge className="bg-warning text-warning dark:bg-warning/40 dark:text-warning hover:bg-warning dark:hover:bg-warning/60 border-0 text-[11px] px-2">
                   EGX 70
                 </Badge>
               )}
@@ -1259,13 +1259,13 @@ export function StockDetail() {
               {stock.sector}
             </Badge>
             {stock.compliance_status === 'halal' && (
-              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-0 text-[11px] gap-1">
+              <Badge className="bg-profit text-profit dark:bg-profit/40 dark:text-profit border-0 text-[11px] gap-1">
                 <Shield className="w-3 h-3" />
                 متوافق شرعاً
               </Badge>
             )}
             {stock.compliance_status === 'doubtful' && (
-              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0 text-[11px] gap-1">
+              <Badge className="bg-warning text-warning dark:bg-warning/40 dark:text-warning border-0 text-[11px] gap-1">
                 <Shield className="w-3 h-3" />
                 غير مؤكد
               </Badge>
@@ -1285,16 +1285,16 @@ export function StockDetail() {
           </p>
           <div className="flex items-center gap-1.5 justify-end">
             {isPositive ? (
-              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <TrendingUp className="w-4 h-4 text-profit dark:text-profit" />
             ) : (
-              <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <TrendingDown className="w-4 h-4 text-loss dark:text-loss" />
             )}
             <span
               className={cn(
                 'text-sm font-bold tabular-nums',
                 isPositive
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-red-600 dark:text-red-400'
+                  ? 'text-profit dark:text-profit'
+                  : 'text-loss dark:text-loss'
               )}
               dir="ltr"
             >
@@ -1317,7 +1317,7 @@ export function StockDetail() {
         <Button
           onClick={handleAddToWatchlist}
           disabled={addingToWatchlist}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 disabled:opacity-60"
+          className="bg-profit hover:bg-profit text-white gap-2 disabled:opacity-60"
         >
           <BookmarkPlus className={cn('w-4 h-4', addingToWatchlist && 'animate-pulse')} />
           {addingToWatchlist ? 'جارٍ الإضافة...' : 'إضافة للقائمة المراقبة'}
@@ -1390,7 +1390,7 @@ export function StockDetail() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+              className="gap-2 border-warning/40 text-warning dark:text-warning hover:bg-warning/10"
               title="بطاقة إنفوجرافيك قابلة للنشر كصورة"
             >
               <Camera className="w-4 h-4" />
@@ -1446,7 +1446,7 @@ export function StockDetail() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-600" />
+            <Activity className="w-4 h-4 text-profit" />
             الإشارة الموحدة (Canonical)
           </CardTitle>
         </CardHeader>
@@ -1454,7 +1454,7 @@ export function StockDetail() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div>
               <div className="text-[10px] text-muted-foreground">الإشارة</div>
-              <div className="font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="font-bold text-profit dark:text-profit">
                 {unifiedData?.canonical?.signal_ar ?? '—'}
               </div>
             </div>
@@ -1493,7 +1493,7 @@ export function StockDetail() {
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">السعر المستهدف</div>
-                <div className="font-bold tabular-nums text-emerald-600">
+                <div className="font-bold tabular-nums text-profit">
                   {unifiedData.prediction.target_price != null
                     ? safeToFixed(unifiedData.prediction.target_price)
                     : '—'}
@@ -1501,7 +1501,7 @@ export function StockDetail() {
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">وقف الخسارة</div>
-                <div className="font-bold tabular-nums text-red-600">
+                <div className="font-bold tabular-nums text-loss">
                   {unifiedData.prediction.stop_loss != null
                     ? safeToFixed(unifiedData.prediction.stop_loss)
                     : '—'}
@@ -1557,7 +1557,7 @@ export function StockDetail() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <DollarSign className="w-4 h-4 text-profit" />
               المؤشرات المالية
             </CardTitle>
           </CardHeader>
@@ -1591,7 +1591,7 @@ export function StockDetail() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-600" />
+              <Activity className="w-4 h-4 text-profit" />
               المؤشرات الفنية
             </CardTitle>
           </CardHeader>

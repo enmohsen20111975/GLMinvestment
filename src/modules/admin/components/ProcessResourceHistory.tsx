@@ -295,9 +295,9 @@ export function ProcessResourceHistory({
         {!loading && !error && chartData.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <StatBox label="نقاط البيانات" value={String(chartData.length)} color="text-foreground" />
-            <StatBox label="أعلى CPU" value={`${(maxCpu ?? 0).toFixed(1)}%`} color="text-blue-600 dark:text-blue-400" />
-            <StatBox label="أعلى ذاكرة" value={`${(maxMem ?? 0).toFixed(0)} MB`} color="text-emerald-600 dark:text-emerald-400" />
-            <StatBox label="إجمالي Restarts" value={`${totalRestarts}`} color="text-red-600 dark:text-red-400" />
+            <StatBox label="أعلى CPU" value={`${(maxCpu ?? 0).toFixed(1)}%`} color="text-primary dark:text-primary" />
+            <StatBox label="أعلى ذاكرة" value={`${(maxMem ?? 0).toFixed(0)} MB`} color="text-profit dark:text-profit" />
+            <StatBox label="إجمالي Restarts" value={`${totalRestarts}`} color="text-loss dark:text-loss" />
           </div>
         )}
 
@@ -308,8 +308,8 @@ export function ProcessResourceHistory({
             <Skeleton className="h-[200px] w-full rounded-lg" />
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-6 text-center">
-            <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+          <div className="rounded-lg border border-loss/30 bg-loss/5 p-6 text-center">
+            <AlertTriangle className="w-8 h-8 text-loss mx-auto mb-2" />
             <div className="text-xs text-muted-foreground mb-3">{error}</div>
             <Button
               size="sm" variant="outline"
@@ -375,7 +375,7 @@ export function ProcessResourceHistory({
                 </AreaChart>
               </ResponsiveContainer>
               {restartEvents.length > 0 && (
-                <div className="mt-1 flex items-center gap-1 text-[10px] text-red-500">
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-loss">
                   <RotateCcw className="w-3 h-3" />
                   {restartEvents.length} حدث إعادة تشغيل خلال هذه الفترة
                 </div>

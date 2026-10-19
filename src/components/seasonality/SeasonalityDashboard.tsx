@@ -47,12 +47,12 @@ interface ScanSummary {
 // Helper functions
 const getSignalColor = (signal: string): string => {
   switch (signal) {
-    case 'STRONG_BUY': return 'bg-green-600 text-white';
-    case 'BUY': return 'bg-green-500 text-white';
-    case 'ACCUMULATE': return 'bg-green-400 text-white';
+    case 'STRONG_BUY': return 'bg-success text-white';
+    case 'BUY': return 'bg-success text-white';
+    case 'ACCUMULATE': return 'bg-success text-white';
     case 'HOLD': return 'bg-gray-500 text-white';
     case 'REDUCE': return 'bg-orange-500 text-white';
-    case 'SELL': return 'bg-red-500 text-white';
+    case 'SELL': return 'bg-loss text-white';
     default: return 'bg-gray-400 text-white';
   }
 };
@@ -182,22 +182,22 @@ export function SeasonalityDashboard() {
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
+          <Card className="bg-gradient-to-br from-success to-success dark:from-success/20 dark:to-success/20">
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">إجمالي الإشارات</div>
-              <div className="text-3xl font-bold text-green-600">{safeNum(summary.total_signals, 0)}</div>
+              <div className="text-3xl font-bold text-success">{safeNum(summary.total_signals, 0)}</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20">
+          <Card className="bg-gradient-to-br from-profit to-profit dark:from-profit/20 dark:to-profit/20">
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">شراء قوي</div>
-              <div className="text-3xl font-bold text-emerald-600">{safeNum(summary.strong_buy_signals, 0)}</div>
+              <div className="text-3xl font-bold text-profit">{safeNum(summary.strong_buy_signals, 0)}</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+          <Card className="bg-gradient-to-br from-primary to-primary dark:from-primary/20 dark:to-primary/20">
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">شراء</div>
-              <div className="text-3xl font-bold text-teal-600">{safeNum(summary.buy_signals, 0)}</div>
+              <div className="text-3xl font-bold text-whale">{safeNum(summary.buy_signals, 0)}</div>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
@@ -283,9 +283,9 @@ export function SeasonalityDashboard() {
       </Card>
 
       {/* Info Alert */}
-      <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-        <CheckCircle className="h-4 w-4 text-green-600" />
-        <AlertDescription className="text-green-700 dark:text-green-300">
+      <Alert className="bg-success dark:bg-success/20 border-success dark:border-success">
+        <CheckCircle className="h-4 w-4 text-success" />
+        <AlertDescription className="text-success dark:text-success">
           <strong>كيف يعمل المحرك؟</strong>
           <br />
           • يحلل الأسهم بناءً على المتوسطات المتحركة (MA50, MA200)

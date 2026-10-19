@@ -356,16 +356,16 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
   switch (regime) {
     case 'HEALTHY_BULL':
       return {
-        bg: 'bg-emerald-50 dark:bg-emerald-950/50',
-        text: 'text-emerald-500 dark:text-emerald-300',
-        border: 'border-emerald-200 dark:border-emerald-800',
+        bg: 'bg-profit dark:bg-profit/50',
+        text: 'text-profit dark:text-profit',
+        border: 'border-profit dark:border-profit',
         icon: ArrowUpRight,
       };
     case 'DISTRIBUTION':
       return {
-        bg: 'bg-amber-50 dark:bg-amber-950/50',
-        text: 'text-amber-700 dark:text-amber-300',
-        border: 'border-amber-200 dark:border-amber-800',
+        bg: 'bg-warning dark:bg-warning/50',
+        text: 'text-warning dark:text-warning',
+        border: 'border-warning dark:border-warning',
         icon: AlertTriangle,
       };
     case 'SPECULATION':
@@ -377,9 +377,9 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
       };
     case 'BEAR':
       return {
-        bg: 'bg-rose-50 dark:bg-rose-950/50',
-        text: 'text-rose-700 dark:text-rose-300',
-        border: 'border-rose-200 dark:border-rose-800',
+        bg: 'bg-loss dark:bg-loss/50',
+        text: 'text-loss dark:text-loss',
+        border: 'border-loss dark:border-loss',
         icon: ArrowDownRight,
       };
     default:
@@ -395,15 +395,15 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
 function pulseColorClasses(color: PulseInfo['color']): string {
   switch (color) {
     case 'emerald':
-      return 'text-emerald-500 dark:text-emerald-400';
+      return 'text-profit dark:text-profit';
     case 'green':
-      return 'text-emerald-500 dark:text-green-400';
+      return 'text-profit dark:text-success';
     case 'amber':
-      return 'text-amber-600 dark:text-amber-400';
+      return 'text-warning dark:text-warning';
     case 'orange':
       return 'text-orange-600 dark:text-orange-400';
     case 'rose':
-      return 'text-rose-600 dark:text-rose-400';
+      return 'text-loss dark:text-loss';
     default:
       return 'text-slate-600 dark:text-slate-400';
   }
@@ -433,8 +433,8 @@ function IndexMiniCard({
             className={cn(
               'inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums',
               up
-                ? 'text-emerald-500 dark:text-emerald-400'
-                : 'text-rose-600 dark:text-rose-400',
+                ? 'text-profit dark:text-profit'
+                : 'text-loss dark:text-loss',
             )}
             dir="ltr"
           >
@@ -481,19 +481,19 @@ function BreadthBar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-[11px] font-medium">
-        <span className="text-emerald-500 dark:text-emerald-400">
+        <span className="text-profit dark:text-profit">
           ▲ {gainers} صاعد
         </span>
         <span className="text-slate-400 dark:text-slate-500">
           {unchanged} ثابت
         </span>
-        <span className="text-rose-600 dark:text-rose-400">
+        <span className="text-loss dark:text-loss">
           ▼ {losers} هابط
         </span>
       </div>
       <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         <div
-          className="h-full bg-emerald-500 transition-all duration-700 ease-out"
+          className="h-full bg-profit transition-all duration-700 ease-out"
           style={{ width: `${gPct}%` }}
         />
         <div
@@ -501,7 +501,7 @@ function BreadthBar({
           style={{ width: `${uPct}%` }}
         />
         <div
-          className="h-full bg-rose-500 transition-all duration-700 ease-out"
+          className="h-full bg-loss transition-all duration-700 ease-out"
           style={{ width: `${lPct}%` }}
         />
       </div>
@@ -624,13 +624,13 @@ export function MarketPulseWidget() {
       <Card className="gap-2 py-4">
         <CardHeader className="px-4">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Activity className="h-4 w-4 text-rose-500" />
+            <Activity className="h-4 w-4 text-loss" />
             نبض السوق
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4">
           <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-            <WifiOff className="h-8 w-8 text-rose-400" />
+            <WifiOff className="h-8 w-8 text-loss" />
             <div className="space-y-1">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                 انقطاع الاتصال
@@ -667,7 +667,7 @@ export function MarketPulseWidget() {
       className={cn(
         'relative overflow-hidden gap-3 py-4 transition-all duration-500',
         isFresh
-          ? 'ring-2 ring-emerald-400/40 dark:ring-emerald-500/30 shadow-md'
+          ? 'ring-2 ring-profit/40 dark:ring-profit/30 shadow-md'
           : 'shadow-sm',
       )}
       dir="rtl"
@@ -680,7 +680,7 @@ export function MarketPulseWidget() {
               className={cn(
                 'flex h-7 w-7 items-center justify-center rounded-md',
                 isOpen
-                  ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-400'
+                  ? 'bg-profit text-profit dark:bg-profit/60 dark:text-profit'
                   : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400',
               )}
             >
@@ -698,13 +698,13 @@ export function MarketPulseWidget() {
             {/* مؤشر مباشر */}
             <span className="relative flex h-2 w-2">
               {isOpen && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-profit opacity-75" />
               )}
               <span
                 className={cn(
                   'relative inline-flex h-2 w-2 rounded-full',
                   isOpen
-                    ? 'bg-emerald-500'
+                    ? 'bg-profit'
                     : 'bg-slate-400 dark:bg-slate-600',
                 )}
               />
@@ -717,7 +717,7 @@ export function MarketPulseWidget() {
             {error && (
               <Badge
                 variant="outline"
-                className="border-rose-300 bg-rose-50 text-[9px] text-rose-600 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-400"
+                className="border-loss bg-loss text-[9px] text-loss dark:border-loss dark:bg-loss/50 dark:text-loss"
               >
                 <WifiOff className="h-2.5 w-2.5" />
                 انقطاع
@@ -832,9 +832,9 @@ export function MarketPulseWidget() {
 
         {/* القطاع الأكثر نشاطاً */}
         {top && (
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-gradient-to-l from-emerald-50/60 to-transparent px-2.5 py-2 dark:border-slate-800 dark:from-emerald-950/30">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-gradient-to-l from-profit/60 to-transparent px-2.5 py-2 dark:border-slate-800 dark:from-profit/30">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-profit text-profit dark:bg-profit/60 dark:text-profit">
                 {top.avg_change >= 0 ? (
                   <Signal className="h-3.5 w-3.5" />
                 ) : (
@@ -851,15 +851,15 @@ export function MarketPulseWidget() {
               </div>
             </div>
             <div className="text-left" dir="ltr">
-              <div className="text-xs font-bold tabular-nums text-emerald-500 dark:text-emerald-400">
+              <div className="text-xs font-bold tabular-nums text-profit dark:text-profit">
                 {fmtPct(top.turnover_pct)}
               </div>
               <div
                 className={cn(
                   'text-[10px] tabular-nums',
                   top.avg_change >= 0
-                    ? 'text-emerald-500 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400',
+                    ? 'text-profit dark:text-profit'
+                    : 'text-loss dark:text-loss',
                 )}
               >
                 {fmtPct(top.avg_change)}

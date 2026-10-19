@@ -55,10 +55,10 @@ interface V82Result {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  BUY: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600',
-  SELL: 'bg-red-500/10 border-red-500/30 text-red-600',
-  WAIT: 'bg-amber-500/10 border-amber-500/30 text-amber-600',
-  AVOID: 'bg-red-500/10 border-red-500/30 text-red-600',
+  BUY: 'bg-profit/10 border-profit/30 text-profit',
+  SELL: 'bg-loss/10 border-loss/30 text-loss',
+  WAIT: 'bg-warning/10 border-warning/30 text-warning',
+  AVOID: 'bg-loss/10 border-loss/30 text-loss',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -122,8 +122,8 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
       )}
 
       {!loading && result && !result.success && (
-        <Card className="p-4 border-red-500/30">
-          <div className="text-sm text-red-600">❌ {result.error}</div>
+        <Card className="p-4 border-loss/30">
+          <div className="text-sm text-loss">❌ {result.error}</div>
         </Card>
       )}
 
@@ -152,7 +152,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
                 <span>{result.buy_path}</span>
               </div>
               {result.safe_mode_active && (
-                <div className="text-xs text-red-600 font-medium">
+                <div className="text-xs text-loss font-medium">
                   🔒 وضع آمن مفعّل (خسائر متتالية)
                 </div>
               )}
@@ -167,21 +167,21 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
                 {result.best_entry_price?.toFixed(2) || '—'}
               </div>
             </Card>
-            <Card className="p-3 border-red-500/30">
+            <Card className="p-3 border-loss/30">
               <div className="text-[10px] text-muted-foreground">وقف الخسارة</div>
-              <div className="text-lg font-bold text-red-600">
+              <div className="text-lg font-bold text-loss">
                 {result.stop_loss?.toFixed(2) || '—'}
               </div>
             </Card>
-            <Card className="p-3 border-emerald-500/30">
+            <Card className="p-3 border-profit/30">
               <div className="text-[10px] text-muted-foreground">الهدف 1</div>
-              <div className="text-lg font-bold text-emerald-600">
+              <div className="text-lg font-bold text-profit">
                 {result.target_price_1?.toFixed(2) || '—'}
               </div>
             </Card>
-            <Card className="p-3 border-emerald-500/30">
+            <Card className="p-3 border-profit/30">
               <div className="text-[10px] text-muted-foreground">الهدف 2</div>
-              <div className="text-lg font-bold text-emerald-600">
+              <div className="text-lg font-bold text-profit">
                 {result.target_price_2?.toFixed(2) || '—'}
               </div>
             </Card>
@@ -191,7 +191,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="w-4 h-4 text-amber-500" />
+                <Shield className="w-4 h-4 text-warning" />
                 بوابة الدخول (9 شروط)
                 <Badge variant={gatePassed ? 'default' : 'destructive'}>
                   {gatePassed ? '✅ مقبول' : '❌ مرفوض'}
@@ -203,9 +203,9 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
                 {Object.entries(gateConditions).map(([cond, passed]) => (
                   <div key={cond} className="flex items-center gap-2 text-xs">
                     {passed ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-profit" />
                     ) : (
-                      <XCircle className="w-3.5 h-3.5 text-red-500" />
+                      <XCircle className="w-3.5 h-3.5 text-loss" />
                     )}
                     <span className={passed ? 'text-foreground' : 'text-muted-foreground'}>
                       {cond}
@@ -226,15 +226,15 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2">
-                <div className="text-center p-2 rounded-lg bg-emerald-500/5">
+                <div className="text-center p-2 rounded-lg bg-profit/5">
                   <div className="text-xs text-muted-foreground">سيولة شراء</div>
-                  <div className="text-lg font-bold text-emerald-600">
+                  <div className="text-lg font-bold text-profit">
                     {result.buy_value_m?.toFixed(2) || '0'}M
                   </div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-red-500/5">
+                <div className="text-center p-2 rounded-lg bg-loss/5">
                   <div className="text-xs text-muted-foreground">سيولة بيع</div>
-                  <div className="text-lg font-bold text-red-600">
+                  <div className="text-lg font-bold text-loss">
                     {result.sell_value_m?.toFixed(2) || '0'}M
                   </div>
                 </div>
@@ -246,7 +246,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-amber-500" />
+                <DollarSign className="w-4 h-4 text-warning" />
                 إدارة رأس المال (جنيه)
               </CardTitle>
             </CardHeader>
@@ -258,19 +258,19 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
                 </div>
                 <div>
                   <div className="text-muted-foreground">قيمة الصفقة</div>
-                  <div className="font-bold text-amber-600">
+                  <div className="font-bold text-warning">
                     {(result.position_value_egp || 0).toFixed(0)} ج.م
                   </div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">المخاطرة</div>
-                  <div className="font-bold text-red-600">
+                  <div className="font-bold text-loss">
                     {(result.risk_amount_egp || 0).toFixed(0)} ج.م
                   </div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">ربح متوقع</div>
-                  <div className="font-bold text-emerald-600">
+                  <div className="font-bold text-profit">
                     {(result.expected_profit_egp || 0).toFixed(0)} ج.م
                   </div>
                 </div>
@@ -279,7 +279,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
           </Card>
 
           {/* Disclaimer */}
-          <Card className="bg-amber-500/5 border-amber-500/20">
+          <Card className="bg-warning/5 border-warning/20">
             <CardContent className="p-2">
               <p className="text-[10px] text-muted-foreground">
                 ⚠️ توقّع آلي من نظام التحليل — ليست نصيحة استثمارية مرخصة.

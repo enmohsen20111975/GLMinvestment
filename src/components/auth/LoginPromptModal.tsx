@@ -77,7 +77,7 @@ export function LoginPromptModal() {
           </DialogDescription>
 
           {/* Compact Gradient Header */}
-          <div className="relative bg-gradient-to-r from-amber-500 via-amber-600 to-emerald-600 px-4 py-3 text-white flex items-center justify-between">
+          <div className="relative bg-gradient-to-r from-warning via-warning to-profit px-4 py-3 text-white flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="size-9 rounded-xl bg-white/20 ring-1 ring-white/30 backdrop-blur flex items-center justify-center shrink-0 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -113,19 +113,19 @@ export function LoginPromptModal() {
           <div className="px-4 py-2.5 bg-background border-b border-border/40">
             <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[11px] text-muted-foreground font-medium">
               <div className="flex items-center gap-1.5 truncate">
-                <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="size-3 text-profit shrink-0" />
                 <span className="truncate">توقعات ورادار يومي</span>
               </div>
               <div className="flex items-center gap-1.5 truncate">
-                <CheckCircle2 className="size-3 text-amber-600 shrink-0" />
+                <CheckCircle2 className="size-3 text-warning shrink-0" />
                 <span className="truncate">تحليلات فنية متقدمة</span>
               </div>
               <div className="flex items-center gap-1.5 truncate">
-                <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="size-3 text-profit shrink-0" />
                 <span className="truncate">إدارة المحفظة</span>
               </div>
               <div className="flex items-center gap-1.5 truncate">
-                <CheckCircle2 className="size-3 text-amber-600 shrink-0" />
+                <CheckCircle2 className="size-3 text-warning shrink-0" />
                 <span className="truncate">تنبيهات الأسعار</span>
               </div>
             </div>
@@ -136,7 +136,7 @@ export function LoginPromptModal() {
             <Button
               onClick={goRegister}
               size="sm"
-              className="flex-1 h-8 text-xs font-bold bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white shadow-sm"
+              className="flex-1 h-8 text-xs font-bold bg-gradient-to-r from-warning to-profit hover:from-warning hover:to-profit text-white shadow-sm"
             >
               <UserPlus className="size-3.5 ml-1" />
               سجّل مجاناً
@@ -145,7 +145,7 @@ export function LoginPromptModal() {
               onClick={goLogin}
               size="sm"
               variant="outline"
-              className="h-8 px-3 text-xs font-semibold border-amber-500/40 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/40"
+              className="h-8 px-3 text-xs font-semibold border-warning/40 text-warning hover:bg-warning hover:text-warning dark:text-warning dark:hover:bg-warning/40"
             >
               <LogIn className="size-3.5 ml-1" />
               دخول

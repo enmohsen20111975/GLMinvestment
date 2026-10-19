@@ -92,7 +92,7 @@ type Status = 'active' | 'inactive' | 'suspended';
 
 function roleBadge(role: string) {
   if (role === 'admin') return <Badge variant="destructive" className="gap-1"><Crown className="w-3 h-3" /> أدمن</Badge>;
-  if (role === 'premium') return <Badge className="gap-1 bg-amber-500 hover:bg-amber-500"><ShieldCheck className="w-3 h-3" /> مميز</Badge>;
+  if (role === 'premium') return <Badge className="gap-1 bg-warning hover:bg-warning"><ShieldCheck className="w-3 h-3" /> مميز</Badge>;
   return <Badge variant="outline" className="gap-1"><UserIcon className="w-3 h-3" /> مجاني</Badge>;
 }
 
@@ -107,19 +107,19 @@ function promoBadge(promo: AdminUser['promoCode']) {
         isVip
           ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40"
           : isPremium
-          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
-          : "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40"
+          ? "bg-profit/15 text-profit dark:text-profit border-profit/40"
+          : "bg-primary/15 text-primary dark:text-primary border-primary/40"
       )}
     >
       <Ticket className="w-3 h-3 text-current shrink-0" />
       <span className="font-mono font-bold tracking-wider">{promo.code}</span>
       <span className="text-[10px] opacity-80 font-sans">({promo.plan_label})</span>
       {promo.is_active ? (
-        <span className="text-[9px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-1 py-0.2 rounded font-mono">
+        <span className="text-[9px] bg-profit/20 text-profit dark:text-profit px-1 py-0.2 rounded font-mono">
           {promo.days_left > 365 ? '♾️' : `${promo.days_left}ي`}
         </span>
       ) : (
-        <span className="text-[9px] bg-rose-500/20 text-rose-700 dark:text-rose-300 px-1 py-0.2 rounded font-sans">
+        <span className="text-[9px] bg-loss/20 text-loss dark:text-loss px-1 py-0.2 rounded font-sans">
           منتهي
         </span>
       )}
@@ -128,9 +128,9 @@ function promoBadge(promo: AdminUser['promoCode']) {
 }
 
 function statusBadge(status: string) {
-  if (status === 'active') return <Badge variant="outline" className="gap-1 border-emerald-500 text-emerald-600"><CheckCircle2 className="w-3 h-3" /> نشط</Badge>;
-  if (status === 'suspended') return <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600"><Power className="w-3 h-3" /> موقوف</Badge>;
-  return <Badge variant="outline" className="gap-1 border-red-500 text-red-600"><XCircle className="w-3 h-3" /> غير نشط</Badge>;
+  if (status === 'active') return <Badge variant="outline" className="gap-1 border-profit text-profit"><CheckCircle2 className="w-3 h-3" /> نشط</Badge>;
+  if (status === 'suspended') return <Badge variant="outline" className="gap-1 border-warning text-warning"><Power className="w-3 h-3" /> موقوف</Badge>;
+  return <Badge variant="outline" className="gap-1 border-loss text-loss"><XCircle className="w-3 h-3" /> غير نشط</Badge>;
 }
 
 function timeAgo(iso: string | null | undefined): string {
@@ -480,7 +480,7 @@ export function UserManagementPanel() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-emerald-500" />
+                <Users className="w-5 h-5 text-profit" />
                 إدارة المستخدمين
               </CardTitle>
               <CardDescription className="mt-1">
@@ -495,7 +495,7 @@ export function UserManagementPanel() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 border-amber-500 text-amber-700 hover:bg-amber-50"
+              className="gap-2 border-warning text-warning hover:bg-warning"
               onClick={() => { setCleanupResult(null); setShowCleanupDialog(true); }}
             >
               <Trash2 className="w-4 h-4" />
@@ -506,10 +506,10 @@ export function UserManagementPanel() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <StatBox label="إجمالي المستخدمين" value={stats.total} icon={<Users className="w-4 h-4 text-sky-500" />} />
-            <StatBox label="نشط" value={stats.active} icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />} />
-            <StatBox label="مميزين + أدمن" value={stats.premium} icon={<Crown className="w-4 h-4 text-amber-500" />} />
+            <StatBox label="نشط" value={stats.active} icon={<CheckCircle2 className="w-4 h-4 text-profit" />} />
+            <StatBox label="مميزين + أدمن" value={stats.premium} icon={<Crown className="w-4 h-4 text-warning" />} />
             <StatBox label="مشتركو البرومو كود" value={`${stats.withPromo} (${stats.activePromo} نشط)`} icon={<Ticket className="w-4 h-4 text-purple-500" />} />
-            <StatBox label="أدمن" value={stats.admins} icon={<ShieldCheck className="w-4 h-4 text-red-500" />} />
+            <StatBox label="أدمن" value={stats.admins} icon={<ShieldCheck className="w-4 h-4 text-loss" />} />
           </div>
 
           {/* PHASE2-ADMIN-PANEL: Active subscribers per tier + Bot sync +
@@ -520,12 +520,12 @@ export function UserManagementPanel() {
             <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-muted-foreground">المشتركون النشطون حسب الباقة</span>
-                <Users className="w-3.5 h-3.5 text-emerald-500" />
+                <Users className="w-3.5 h-3.5 text-profit" />
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <TierStat label="مجاني" value={stats.activeByTier.free} color="text-slate-600 dark:text-slate-300" />
-                <TierStat label="مميز" value={stats.activeByTier.premium} color="text-amber-600" />
-                <TierStat label="أدمن" value={stats.activeByTier.admin} color="text-red-600" />
+                <TierStat label="مميز" value={stats.activeByTier.premium} color="text-warning" />
+                <TierStat label="أدمن" value={stats.activeByTier.admin} color="text-loss" />
                 <TierStat label="VIP" value={stats.activeByTier.vip} color="text-purple-600" />
               </div>
             </div>
@@ -540,7 +540,7 @@ export function UserManagementPanel() {
                 <span
                   className={cn(
                     'w-2 h-2 rounded-full shrink-0',
-                    botStatus === 'online' ? 'bg-emerald-500' : botStatus === 'offline' ? 'bg-red-500' : 'bg-slate-400'
+                    botStatus === 'online' ? 'bg-profit' : botStatus === 'offline' ? 'bg-loss' : 'bg-slate-400'
                   )}
                 />
                 <span className="font-bold">
@@ -558,7 +558,7 @@ export function UserManagementPanel() {
             <div className="p-3 rounded-lg bg-muted/30 border border-dashed border-border/50">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-muted-foreground">سجل معاملات Paymob</span>
-                <CreditCard className="w-3.5 h-3.5 text-amber-500" />
+                <CreditCard className="w-3.5 h-3.5 text-warning" />
               </div>
               <div className="text-xs text-muted-foreground italic">
                 💳 سيتوفر قريباً
@@ -640,10 +640,10 @@ export function UserManagementPanel() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button size="sm" variant="outline" disabled={updating} onClick={() => bulkUpdateStatus('active')} className="gap-2">
-                <Power className="w-4 h-4 text-emerald-500" /> تفعيل
+                <Power className="w-4 h-4 text-profit" /> تفعيل
               </Button>
               <Button size="sm" variant="outline" disabled={updating} onClick={() => bulkUpdateStatus('inactive')} className="gap-2">
-                <Power className="w-4 h-4 text-amber-500" /> تعطيل
+                <Power className="w-4 h-4 text-warning" /> تعطيل
               </Button>
               <Button size="sm" variant="destructive" disabled={updating} onClick={() => setBulkAction('delete')} className="gap-2">
                 <Trash2 className="w-4 h-4" /> حذف الكل
@@ -748,7 +748,7 @@ export function UserManagementPanel() {
                               <DropdownMenuItem onClick={() => updateUser(u.id, { status: 'suspended' })}>إيقاف مؤقت</DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="text-red-600 focus:text-red-700"
+                                className="text-loss focus:text-loss"
                                 onClick={() => {
                                   if (confirm(`حذف المستخدم "${u.email}"؟ لا يمكن التراجع.`)) {
                                     deleteUser(u.id);
@@ -777,7 +777,7 @@ export function UserManagementPanel() {
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد الحذف الجماعي</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف <strong className="text-red-600">{selected.size}</strong> مستخدم نهائياً.
+              سيتم حذف <strong className="text-loss">{selected.size}</strong> مستخدم نهائياً.
               لا يمكن التراجع عن هذا الإجراء. سيتم حذف كل بياناتهم (watchlist، portfolio، ...).
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -785,7 +785,7 @@ export function UserManagementPanel() {
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={bulkDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-loss hover:bg-loss text-white"
             >
               حذف نهائي
             </AlertDialogAction>
@@ -798,7 +798,7 @@ export function UserManagementPanel() {
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              <AlertTriangle className="w-5 h-5 text-warning" />
               تنظيف المستخدمين منتهي الفترة
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -806,7 +806,7 @@ export function UserManagementPanel() {
               ولم يشتركوا. هذا الإجراء يحذف بياناتهم نهائياً من كل قواعد البيانات (auth +
               stocks + analytics).
               <br />
-              <span className="text-red-500 text-sm">لا يمكن التراجع عن هذا الإجراء.</span>
+              <span className="text-loss text-sm">لا يمكن التراجع عن هذا الإجراء.</span>
               <br />
               <span className="text-xs text-muted-foreground mt-2 block">
                 نصيحة: اضغط «معاينة» أولاً لرؤية من سيتم حذفه قبل الحذف الفعلي.
@@ -831,7 +831,7 @@ export function UserManagementPanel() {
             </div>
           )}
           {cleanupResult?.dryRun && (!cleanupResult.usersPreview || cleanupResult.usersPreview.length === 0) && (
-            <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded p-2 text-xs text-emerald-700 dark:text-emerald-400">
+            <div className="bg-profit dark:bg-profit/20 rounded p-2 text-xs text-profit dark:text-profit">
               {cleanupResult.message || 'لا يوجد مستخدمين مؤهلين للحذف حالياً.'}
             </div>
           )}
@@ -849,7 +849,7 @@ export function UserManagementPanel() {
             <AlertDialogAction
               onClick={() => handleCleanupExpired(false)}
               disabled={isCleaningUp}
-              className="bg-red-600 hover:bg-red-700 text-white gap-2"
+              className="bg-loss hover:bg-loss text-white gap-2"
             >
               {isCleaningUp ? (
                 <>
@@ -869,7 +869,7 @@ export function UserManagementPanel() {
 
       {updating && (
         <div className="fixed bottom-4 left-4 z-50 bg-background/95 border rounded-lg shadow-lg p-3 flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+          <Loader2 className="w-4 h-4 animate-spin text-profit" />
           <span className="text-sm">جاري التحديث...</span>
         </div>
       )}

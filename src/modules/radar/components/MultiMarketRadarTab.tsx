@@ -66,21 +66,21 @@ const MARKET_FLAG: Record<string, string> = {
 // the API response (`section.name_ar` / `pick.market_name_ar`).
 
 const REGIME_LABEL: Record<string, { color: string }> = {
-  defensive: { color: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800' },
-  normal: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' },
-  aggressive: { color: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800' },
-  bull: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' },
-  bear: { color: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800' },
+  defensive: { color: 'bg-warning text-warning border-warning dark:bg-warning/60 dark:text-warning dark:border-warning' },
+  normal: { color: 'bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit dark:border-profit' },
+  aggressive: { color: 'bg-loss text-loss border-loss dark:bg-loss/60 dark:text-loss dark:border-loss' },
+  bull: { color: 'bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit dark:border-profit' },
+  bear: { color: 'bg-loss text-loss border-loss dark:bg-loss/60 dark:text-loss dark:border-loss' },
   sideways: { color: 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/60 dark:text-slate-300 dark:border-slate-700' },
   unknown: { color: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-700' },
 };
 
 const PATH_META: Record<string, { tKey: string; icon: React.ReactNode; color: string }> = {
   A_pre_surge: { tKey: 'preSurge', icon: <Rocket className="h-3.5 w-3.5" />, color: 'text-purple-600 dark:text-purple-400' },
-  B_quiet_accumulation_strong: { tKey: 'strongAccumulation', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-amber-600 dark:text-amber-400' },
-  C_quiet_accumulation_weak: { tKey: 'weakAccumulation', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-amber-600 dark:text-amber-400' },
-  D_explosive_surge: { tKey: 'explosiveSurge', icon: <Flame className="h-3.5 w-3.5" />, color: 'text-rose-600 dark:text-rose-400' },
-  E_early_break: { tKey: 'earlyBreak', icon: <Zap className="h-3.5 w-3.5" />, color: 'text-emerald-600 dark:text-emerald-400' },
+  B_quiet_accumulation_strong: { tKey: 'strongAccumulation', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
+  C_quiet_accumulation_weak: { tKey: 'weakAccumulation', icon: <Eye className="h-3.5 w-3.5" />, color: 'text-warning dark:text-warning' },
+  D_explosive_surge: { tKey: 'explosiveSurge', icon: <Flame className="h-3.5 w-3.5" />, color: 'text-loss dark:text-loss' },
+  E_early_break: { tKey: 'earlyBreak', icon: <Zap className="h-3.5 w-3.5" />, color: 'text-profit dark:text-profit' },
 };
 
 const pathLabel = (path?: string): { tKey: string | null; icon: React.ReactNode; color: string } => {
@@ -296,7 +296,7 @@ export function MultiMarketRadarTab() {
   if (error && !data) {
     return (
       <Card className="p-6 text-center" dir="rtl">
-        <AlertTriangle className="h-10 w-10 text-rose-500 mx-auto mb-3" />
+        <AlertTriangle className="h-10 w-10 text-loss mx-auto mb-3" />
         <p className="text-sm text-muted-foreground mb-3">{error}</p>
         <Button size="sm" onClick={() => fetchData()}>
           <RefreshCw className="h-4 w-4 ml-1" /> {t('radar.multiMarket.retry')}
@@ -309,16 +309,16 @@ export function MultiMarketRadarTab() {
     <div className="space-y-4" dir="rtl" data-testid="multi-market-radar">
       {/* ===== HEADER ===== */}
       <Card className="overflow-hidden">
-        <div className="bg-emerald-50/80 dark:bg-emerald-950/30 p-4 md:p-5">
+        <div className="bg-profit/80 dark:bg-profit/30 p-4 md:p-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-emerald-600/10 dark:bg-emerald-400/10 flex items-center justify-center">
-                <Globe className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              <div className="h-12 w-12 rounded-xl bg-profit/10 dark:bg-profit/10 flex items-center justify-center">
+                <Globe className="h-6 w-6 text-profit dark:text-profit" />
               </div>
               <div>
                 <h3 className="text-lg md:text-xl font-bold flex items-center gap-2">
                   {t('radar.multiMarket.title')}
-                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
+                  <Badge variant="outline" className="text-[10px] bg-profit text-profit border-profit dark:bg-profit dark:text-profit">
                     {t('radar.multiMarket.marketsCount', { count: markets.length })}
                   </Badge>
                 </h3>
@@ -326,7 +326,7 @@ export function MultiMarketRadarTab() {
                   <span>{t('radar.multiMarket.stocksUnderRadar', { count: totalStocks })}</span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
-                    <Activity className="h-3 w-3 text-emerald-600" />
+                    <Activity className="h-3 w-3 text-profit" />
                     {t('radar.multiMarket.marketsOpen', { count: openCount })}
                   </span>
                   {lastUpdated && (
@@ -373,7 +373,7 @@ export function MultiMarketRadarTab() {
                   aria-label={`toggle ${m}`}
                   className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 ${
                     selected
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                      ? 'bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit dark:border-profit'
                       : 'bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted'
                   }`}
                 >
@@ -389,7 +389,7 @@ export function MultiMarketRadarTab() {
       {/* ===== MARKET SUMMARY CARDS ===== */}
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <Layers className="h-4 w-4 text-emerald-600" />
+          <Layers className="h-4 w-4 text-profit" />
           <h4 className="text-sm font-bold">{t('radar.multiMarket.summaryTitle')}</h4>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -399,7 +399,7 @@ export function MultiMarketRadarTab() {
               <Card
                 key={section.market}
                 data-testid={`market-card-${section.market}`}
-                className="overflow-hidden hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+                className="overflow-hidden hover:border-profit dark:hover:border-profit transition-colors"
               >
                 <CardContent className="p-3 space-y-2">
                   {/* Flag + name + open/closed */}
@@ -412,8 +412,8 @@ export function MultiMarketRadarTab() {
                       </div>
                     </div>
                     {section.is_open ? (
-                      <Badge className="text-[9px] bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
+                      <Badge className="text-[9px] bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit">
+                        <span className="h-1.5 w-1.5 rounded-full bg-profit mr-1 animate-pulse" />
                         LIVE
                       </Badge>
                     ) : (
@@ -454,7 +454,7 @@ export function MultiMarketRadarTab() {
                   </div>
 
                   {section.warming_up && (
-                    <div className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <div className="text-[10px] text-warning dark:text-warning flex items-center gap-1">
                       <RefreshCw className="h-3 w-3 animate-spin" />
                       {section.first_generation
                         ? t('radar.multiMarket.firstGeneration', { defaultValue: 'تحميل لأول مرة — حاول تاني خلال دقيقة' })
@@ -478,16 +478,16 @@ export function MultiMarketRadarTab() {
 
       {/* ===== UNIFIED TOP 5 ===== */}
       <Card data-testid="unified-top-5" className="overflow-hidden">
-        <CardHeader className="pb-2 bg-amber-50/60 dark:bg-amber-950/20">
+        <CardHeader className="pb-2 bg-warning/60 dark:bg-warning/20">
           <CardTitle className="text-base flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <Trophy className="h-4 w-4 text-warning dark:text-warning" />
             {t('radar.multiMarket.unifiedTop5.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {unifiedTop5.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-amber-500" />
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-warning" />
               {t('radar.multiMarket.unifiedTop5.empty')}
             </div>
           ) : (
@@ -514,7 +514,7 @@ export function MultiMarketRadarTab() {
                         : null);
                   return (
                     <TableRow key={`${pick.market}-${pick.ticker}-${idx}`}>
-                      <TableCell className="text-center font-bold text-amber-600 dark:text-amber-400">
+                      <TableCell className="text-center font-bold text-warning dark:text-warning">
                         {idx + 1}
                       </TableCell>
                       <TableCell>
@@ -544,9 +544,9 @@ export function MultiMarketRadarTab() {
                       <TableCell className="text-left">
                         <span className={`font-mono text-sm font-bold flex items-center gap-1 ${
                           (change ?? 0) > 0
-                            ? 'text-emerald-600 dark:text-emerald-400'
+                            ? 'text-profit dark:text-profit'
                             : (change ?? 0) < 0
-                              ? 'text-rose-600 dark:text-rose-400'
+                              ? 'text-loss dark:text-loss'
                               : 'text-muted-foreground'
                         }`}>
                           {(change ?? 0) > 0 ? <TrendingUp className="h-3 w-3" /> : (change ?? 0) < 0 ? <TrendingDown className="h-3 w-3" /> : null}
@@ -565,7 +565,7 @@ export function MultiMarketRadarTab() {
       {/* ===== PER-MARKET DETAIL (Collapsible) ===== */}
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <Radar className="h-4 w-4 text-emerald-600" />
+          <Radar className="h-4 w-4 text-profit" />
           <h4 className="text-sm font-bold">{t('radar.multiMarket.detailTitle')}</h4>
         </div>
         <div className="space-y-2">
@@ -655,9 +655,9 @@ export function MultiMarketRadarTab() {
                                   <TableCell className="text-left font-mono text-xs">
                                     <span className={
                                       (pick.roc_10d ?? 0) > 0
-                                        ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                                        ? 'text-profit dark:text-profit font-bold'
                                         : (pick.roc_10d ?? 0) < 0
-                                          ? 'text-rose-600 dark:text-rose-400 font-bold'
+                                          ? 'text-loss dark:text-loss font-bold'
                                           : 'text-muted-foreground'
                                     }>
                                       {fmtPct(pick.roc_10d ?? null)}

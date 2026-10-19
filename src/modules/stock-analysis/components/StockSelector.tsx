@@ -388,17 +388,17 @@ function StockResultItem({
     >
       {/* Ticker + Index badges */}
       <div className="flex-shrink-0 text-left" dir="ltr">
-        <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+        <span className="font-bold text-profit dark:text-profit text-sm">
           {stock.ticker}
         </span>
         <div className="flex gap-1 mt-0.5">
           {stock.egx30_member && (
-            <span className="text-[8px] px-1 py-0 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium">
+            <span className="text-[8px] px-1 py-0 rounded bg-profit text-profit dark:bg-profit/30 dark:text-profit font-medium">
               30
             </span>
           )}
           {stock.egx70_member && (
-            <span className="text-[8px] px-1 py-0 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+            <span className="text-[8px] px-1 py-0 rounded bg-warning text-warning dark:bg-warning/30 dark:text-warning font-medium">
               70
             </span>
           )}
@@ -437,8 +437,8 @@ function StockResultItem({
           className={cn(
             'flex items-center gap-0.5 justify-end tabular-nums',
             compact ? 'text-[10px]' : 'text-xs',
-            isPositive && 'text-emerald-600 dark:text-emerald-400',
-            isNegative && 'text-red-600 dark:text-red-400',
+            isPositive && 'text-profit dark:text-profit',
+            isNegative && 'text-loss dark:text-loss',
             change === 0 && 'text-muted-foreground'
           )}
         >

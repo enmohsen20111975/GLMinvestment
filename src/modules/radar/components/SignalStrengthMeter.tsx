@@ -78,23 +78,23 @@ export function signalAccent(stars: number): {
 } {
   if (stars >= 5) {
     return {
-      bar: 'bg-emerald-500',
-      star: 'fill-emerald-500 text-emerald-500',
-      label: 'text-emerald-600 dark:text-emerald-400',
+      bar: 'bg-profit',
+      star: 'fill-profit text-profit',
+      label: 'text-profit dark:text-profit',
     };
   }
   if (stars === 4) {
     return {
-      bar: 'bg-teal-500',
-      star: 'fill-teal-500 text-teal-500',
-      label: 'text-teal-600 dark:text-teal-400',
+      bar: 'bg-whale',
+      star: 'fill-whale text-whale',
+      label: 'text-whale dark:text-whale',
     };
   }
   if (stars === 3) {
     return {
-      bar: 'bg-amber-500',
-      star: 'fill-amber-500 text-amber-500',
-      label: 'text-amber-600 dark:text-amber-400',
+      bar: 'bg-warning',
+      star: 'fill-warning text-warning',
+      label: 'text-warning dark:text-warning',
     };
   }
   if (stars === 2) {
@@ -105,9 +105,9 @@ export function signalAccent(stars: number): {
     };
   }
   return {
-    bar: 'bg-rose-400',
-    star: 'fill-rose-300 text-rose-300',
-    label: 'text-rose-500 dark:text-rose-400',
+    bar: 'bg-loss',
+    star: 'fill-loss text-loss',
+    label: 'text-loss dark:text-loss',
   };
 }
 

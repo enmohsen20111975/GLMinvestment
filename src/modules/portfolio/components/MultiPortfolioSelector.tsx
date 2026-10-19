@@ -42,19 +42,19 @@ export interface PortfolioAccount {
 }
 
 export const COLOR_OPTIONS = [
-  { value: 'emerald', label: '🟢 أخضر (Emerald)', class: 'bg-emerald-500/20 text-emerald-400 border-emerald-700' },
-  { value: 'blue', label: '🔵 أزرق (Blue)', class: 'bg-teal-500/20 text-teal-400 border-teal-700' },
+  { value: 'emerald', label: '🟢 أخضر (Emerald)', class: 'bg-profit/20 text-profit border-profit' },
+  { value: 'blue', label: '🔵 أزرق (Blue)', class: 'bg-whale/20 text-whale border-whale' },
   { value: 'purple', label: '🟣 بنفسجي (Purple)', class: 'bg-purple-500/20 text-purple-400 border-purple-700' },
-  { value: 'amber', label: '🟡 أصفر / ذهبي (Amber)', class: 'bg-amber-500/20 text-amber-400 border-amber-700' },
-  { value: 'rose', label: '🔴 أحمر / وردي (Rose)', class: 'bg-rose-500/20 text-rose-400 border-rose-700' },
-  { value: 'teal', label: '🔷 فيروزي (Teal)', class: 'bg-teal-500/20 text-teal-400 border-teal-700' },
-  { value: 'teal', label: '🪸 تركوازي (Teal)', class: 'bg-teal-500/20 text-teal-400 border-teal-700' },
+  { value: 'amber', label: '🟡 أصفر / ذهبي (Amber)', class: 'bg-warning/20 text-warning border-warning' },
+  { value: 'rose', label: '🔴 أحمر / وردي (Rose)', class: 'bg-loss/20 text-loss border-loss' },
+  { value: 'teal', label: '🔷 فيروزي (Teal)', class: 'bg-whale/20 text-whale border-whale' },
+  { value: 'teal', label: '🪸 تركوازي (Teal)', class: 'bg-whale/20 text-whale border-whale' },
   { value: 'cyan', label: '🌐 سيان (Cyan)', class: 'bg-cyan-500/20 text-cyan-400 border-cyan-700' },
 ];
 
 export function getPortfolioColorClass(colorName?: string): string {
   const found = COLOR_OPTIONS.find(c => c.value === colorName);
-  return found ? found.class : 'bg-teal-500/20 text-teal-400 border-teal-700';
+  return found ? found.class : 'bg-whale/20 text-whale border-whale';
 }
 
 interface MultiPortfolioSelectorProps {
@@ -100,9 +100,9 @@ function getBrokerIcon(broker: string): React.ReactNode {
 }
 
 function getBrokerColor(broker: string): string {
-  if (broker === 'Binance') return 'text-amber-400 bg-amber-950/40 border-amber-800';
-  if (broker === 'master') return 'text-emerald-400 bg-emerald-950/40 border-emerald-800';
-  if (broker === 'Thndr') return 'text-teal-400 bg-blue-950/40 border-teal-800';
+  if (broker === 'Binance') return 'text-warning bg-warning/40 border-warning';
+  if (broker === 'master') return 'text-profit bg-profit/40 border-profit';
+  if (broker === 'Thndr') return 'text-whale bg-primary/40 border-whale';
   if (broker === 'Direct') return 'text-purple-400 bg-purple-950/40 border-purple-800';
   return 'text-zinc-400 bg-zinc-900/40 border-zinc-700';
 }
@@ -280,7 +280,7 @@ export function MultiPortfolioSelector({
       {/* Header row */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-emerald-500" />
+          <Layers className="h-4 w-4 text-profit" />
           <h3 className="text-sm font-bold text-foreground">المحافظ متعددة الحسابات</h3>
           {portfolios.length > 0 && (
             <Badge variant="outline" className="text-[10px]">
@@ -302,7 +302,7 @@ export function MultiPortfolioSelector({
           <Button
             size="sm"
             onClick={() => setAddDialogOpen(true)}
-            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="h-7 text-xs bg-profit hover:bg-profit text-white"
           >
             <Plus className="h-3.5 w-3.5 ml-1" />
             محفظة جديدة
@@ -317,7 +317,7 @@ export function MultiPortfolioSelector({
           onClick={() => onSelect('master')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
             selectedPortfolioId === 'master'
-              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-700'
+              ? 'bg-profit/20 text-profit border-profit'
               : 'bg-zinc-900/40 text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-zinc-300'
           }`}
           title="عرض المحفظة الأم (المجمّعة)"
@@ -357,7 +357,7 @@ export function MultiPortfolioSelector({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-emerald-500" />
+              <Plus className="h-5 w-5 text-profit" />
               إضافة محفظة جديدة
             </DialogTitle>
           </DialogHeader>
@@ -457,7 +457,7 @@ export function MultiPortfolioSelector({
             <Button variant="outline" onClick={() => setAddDialogOpen(false)} disabled={saving}>
               إلغاء
             </Button>
-            <Button onClick={handleAddPortfolio} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleAddPortfolio} disabled={saving} className="bg-profit hover:bg-profit">
               {saving ? 'جاري الحفظ...' : 'إضافة'}
             </Button>
           </DialogFooter>
@@ -468,8 +468,8 @@ export function MultiPortfolioSelector({
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-teal-400">
-              <Pencil className="h-5 w-5 text-teal-400" />
+            <DialogTitle className="flex items-center gap-2 text-whale">
+              <Pencil className="h-5 w-5 text-whale" />
               تعديل بيانات المحفظة &quot;{editingPortfolio?.name}&quot;
             </DialogTitle>
           </DialogHeader>
@@ -569,7 +569,7 @@ export function MultiPortfolioSelector({
             <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={saving}>
               إلغاء
             </Button>
-            <Button onClick={handleUpdatePortfolio} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
+            <Button onClick={handleUpdatePortfolio} disabled={saving} className="bg-whale hover:bg-whale">
               {saving ? 'جاري التحديث...' : 'حفظ التعديلات'}
             </Button>
           </DialogFooter>
@@ -580,7 +580,7 @@ export function MultiPortfolioSelector({
       <Dialog open={!!deleteConfirm} onOpenChange={(o) => !o && setDeleteConfirm(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-500">
+            <DialogTitle className="flex items-center gap-2 text-loss">
               <Trash2 className="h-5 w-5" />
               حذف المحفظة
             </DialogTitle>
@@ -634,7 +634,7 @@ export function MultiPortfolioSelector({
                     variant="ghost"
                     size="sm"
                     onClick={() => openEditModal(p)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-teal-400 hover:bg-blue-950/40"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-whale hover:bg-primary/40"
                     title="تعديل المحفظة"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -643,7 +643,7 @@ export function MultiPortfolioSelector({
                     variant="ghost"
                     size="sm"
                     onClick={() => setDeleteConfirm(p)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-950/40"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-loss hover:bg-loss/40"
                     title="حذف"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

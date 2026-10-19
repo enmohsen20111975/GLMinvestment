@@ -41,10 +41,10 @@ const TYPES: {
   icon: React.ReactNode;
   color: string;
 }[] = [
-  { id: 'bug', label: 'مشكلة', icon: <Bug className="w-4 h-4" />, color: 'text-red-600 border-red-500 bg-red-50 dark:bg-red-950/40 dark:text-red-400' },
-  { id: 'suggestion', label: 'اقتراح', icon: <Lightbulb className="w-4 h-4" />, color: 'text-amber-600 border-amber-500 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400' },
+  { id: 'bug', label: 'مشكلة', icon: <Bug className="w-4 h-4" />, color: 'text-loss border-loss bg-loss dark:bg-loss/40 dark:text-loss' },
+  { id: 'suggestion', label: 'اقتراح', icon: <Lightbulb className="w-4 h-4" />, color: 'text-warning border-warning bg-warning dark:bg-warning/40 dark:text-warning' },
   { id: 'opinion', label: 'رأي / ملاحظة', icon: <MessageSquareText className="w-4 h-4" />, color: 'text-sky-600 border-sky-500 bg-sky-50 dark:bg-sky-950/40 dark:text-sky-400' },
-  { id: 'praise', label: 'إشادة', icon: <Smile className="w-4 h-4" />, color: 'text-emerald-600 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400' },
+  { id: 'praise', label: 'إشادة', icon: <Smile className="w-4 h-4" />, color: 'text-profit border-profit bg-profit dark:bg-profit/40 dark:text-profit' },
 ];
 
 export function FeedbackWidget() {
@@ -165,7 +165,7 @@ export function FeedbackWidget() {
                       className={cn(
                         'w-6 h-6',
                         n <= rating
-                          ? 'fill-amber-400 text-amber-400'
+                          ? 'fill-warning text-warning'
                           : 'text-muted-foreground/40',
                       )}
                     />

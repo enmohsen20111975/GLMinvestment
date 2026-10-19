@@ -56,13 +56,13 @@ interface Props {
 
 // ─── خريطة ألوان الإشارة الكنسية (مطابقة Pine L895) ─────────────────────────
 const SIGNAL_STYLES: Record<string, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
-  STRONG_BUY: { bg: 'bg-emerald-500', text: 'text-white', border: 'border-emerald-600', icon: <TrendingUp className="w-4 h-4" /> },
-  BUY:        { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-300 dark:border-emerald-700', icon: <TrendingUp className="w-4 h-4" /> },
-  ACCUMULATE: { bg: 'bg-teal-100 dark:bg-teal-900/40', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-300 dark:border-teal-700', icon: <Layers className="w-4 h-4" /> },
-  HOLD:       { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-300 dark:border-amber-700', icon: <Minus className="w-4 h-4" /> },
+  STRONG_BUY: { bg: 'bg-profit', text: 'text-white', border: 'border-profit', icon: <TrendingUp className="w-4 h-4" /> },
+  BUY:        { bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', border: 'border-profit dark:border-profit', icon: <TrendingUp className="w-4 h-4" /> },
+  ACCUMULATE: { bg: 'bg-whale dark:bg-whale/40', text: 'text-whale dark:text-whale', border: 'border-whale dark:border-whale', icon: <Layers className="w-4 h-4" /> },
+  HOLD:       { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', border: 'border-warning dark:border-warning', icon: <Minus className="w-4 h-4" /> },
   REDUCE:     { bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700', icon: <TrendingDown className="w-4 h-4" /> },
-  SELL:       { bg: 'bg-rose-100 dark:bg-rose-900/40', text: 'text-rose-700 dark:text-rose-300', border: 'border-rose-300 dark:border-rose-700', icon: <TrendingDown className="w-4 h-4" /> },
-  STRONG_SELL:{ bg: 'bg-rose-600', text: 'text-white', border: 'border-rose-700', icon: <TrendingDown className="w-4 h-4" /> },
+  SELL:       { bg: 'bg-loss dark:bg-loss/40', text: 'text-loss dark:text-loss', border: 'border-loss dark:border-loss', icon: <TrendingDown className="w-4 h-4" /> },
+  STRONG_SELL:{ bg: 'bg-loss', text: 'text-white', border: 'border-loss', icon: <TrendingDown className="w-4 h-4" /> },
 };
 
 // ─── خريطة WHO IS BUYING (مطابقة Pine L742-761) ─────────────────────────────
@@ -73,10 +73,10 @@ function getWhoIsBuyingStyle(state: string | null): { bg: string; text: string; 
   }
   const s = state.toLowerCase();
   if (s.includes('مؤسس') && s.includes('شراء')) {
-    return { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', icon: <Building2 className="w-4 h-4" />, label: state };
+    return { bg: 'bg-profit dark:bg-profit/40', text: 'text-profit dark:text-profit', icon: <Building2 className="w-4 h-4" />, label: state };
   }
   if (s.includes('مؤسس') && (s.includes('بيع') || s.includes('تصريف'))) {
-    return { bg: 'bg-rose-100 dark:bg-rose-900/40', text: 'text-rose-700 dark:text-rose-300', icon: <Building2 className="w-4 h-4" />, label: state };
+    return { bg: 'bg-loss dark:bg-loss/40', text: 'text-loss dark:text-loss', icon: <Building2 className="w-4 h-4" />, label: state };
   }
   if (s.includes('أفراد') && s.includes('شراء')) {
     return { bg: 'bg-sky-100 dark:bg-sky-900/40', text: 'text-sky-700 dark:text-sky-300', icon: <User className="w-4 h-4" />, label: state };
@@ -85,21 +85,21 @@ function getWhoIsBuyingStyle(state: string | null): { bg: string; text: string; 
     return { bg: 'bg-orange-100 dark:bg-orange-900/40', text: 'text-orange-700 dark:text-orange-300', icon: <User className="w-4 h-4" />, label: state };
   }
   if (s.includes('مختلط') && (s.includes('شراء') || s.includes('ميل شرائي'))) {
-    return { bg: 'bg-teal-100 dark:bg-teal-900/40', text: 'text-teal-700 dark:text-teal-300', icon: <Users2 className="w-4 h-4" />, label: state };
+    return { bg: 'bg-whale dark:bg-whale/40', text: 'text-whale dark:text-whale', icon: <Users2 className="w-4 h-4" />, label: state };
   }
   if (s.includes('مختلط') && (s.includes('بيع') || s.includes('ميل بيعي'))) {
-    return { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', icon: <Users2 className="w-4 h-4" />, label: state };
+    return { bg: 'bg-warning dark:bg-warning/40', text: 'text-warning dark:text-warning', icon: <Users2 className="w-4 h-4" />, label: state };
   }
   return { bg: 'bg-muted', text: 'text-muted-foreground', icon: <Users2 className="w-4 h-4" />, label: state };
 }
 
 // ─── خريطة Money Flow (مطابقة Pine L353-366) ────────────────────────────────
 const MONEY_FLOW_STYLES: Record<string, string> = {
-  'سيولة داخلة قوية': 'bg-emerald-500 text-white',
-  'سيولة داخلة': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  'متوازنة': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  'سيولة خارجة': 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
-  'سيولة خارجة قوية': 'bg-rose-600 text-white',
+  'سيولة داخلة قوية': 'bg-profit text-white',
+  'سيولة داخلة': 'bg-profit text-profit dark:bg-profit/40 dark:text-profit',
+  'متوازنة': 'bg-warning text-warning dark:bg-warning/40 dark:text-warning',
+  'سيولة خارجة': 'bg-loss text-loss dark:bg-loss/40 dark:text-loss',
+  'سيولة خارجة قوية': 'bg-loss text-white',
 };
 
 export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Props) {
@@ -145,10 +145,10 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
   // لو لا يوجد توقع طازج → اعرض بانر مبسّط (لا signal، لا levels — فقط تحذير)
   if (!isFreshPrediction || !prediction) {
     return (
-      <div className="mb-3 rounded-xl border-2 border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/10 p-3">
+      <div className="mb-3 rounded-xl border-2 border-warning/40 bg-warning/50 dark:bg-warning/10 p-3">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <AlertTriangle className="w-4 h-4 text-amber-600" />
-          <span className="font-bold text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="w-4 h-4 text-warning" />
+          <span className="font-bold text-warning dark:text-warning">
             لا يوجد توقع طازج من V40.2 (≤ 48 ساعة)
           </span>
         </div>
@@ -161,7 +161,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
   }
 
   return (
-    <div className="mb-3 rounded-xl border-2 border-sky-500/40 bg-gradient-to-l from-sky-50 via-card to-emerald-50 dark:from-sky-950/20 dark:via-card dark:to-emerald-950/20 overflow-hidden shadow-sm">
+    <div className="mb-3 rounded-xl border-2 border-sky-500/40 bg-gradient-to-l from-sky-50 via-card to-profit dark:from-sky-950/20 dark:via-card dark:to-profit/20 overflow-hidden shadow-sm">
       {/* ─── Header: العنوان + إحالة للقرار النهائي ─── */}
       <div className="px-4 py-3 border-b border-sky-500/20 bg-sky-100/40 dark:bg-sky-900/15 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-300">
+          <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 bg-profit text-profit border-profit">
             <Sparkles className="w-3 h-3 ml-0.5" />
             توقع طازج
           </Badge>
@@ -201,12 +201,12 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
           {(buyPct !== null || sellPct !== null) && (
             <div className="mt-2">
               <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-                <span>شراء: <strong className="font-mono text-emerald-600">{buyPct !== null ? `${(buyPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
-                <span>بيع: <strong className="font-mono text-rose-600">{sellPct !== null ? `${(sellPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
+                <span>شراء: <strong className="font-mono text-profit">{buyPct !== null ? `${(buyPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
+                <span>بيع: <strong className="font-mono text-loss">{sellPct !== null ? `${(sellPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
               </div>
-              <div className="h-2 rounded-full overflow-hidden bg-rose-200 dark:bg-rose-900/30 flex">
+              <div className="h-2 rounded-full overflow-hidden bg-loss dark:bg-loss/30 flex">
                 {buyPct !== null && (
-                  <div className="h-full bg-gradient-to-l from-emerald-500 to-emerald-400" style={{ width: `${Math.min(100, Math.max(0, buyPct))}%` }} />
+                  <div className="h-full bg-gradient-to-l from-profit to-profit" style={{ width: `${Math.min(100, Math.max(0, buyPct))}%` }} />
                 )}
               </div>
             </div>
@@ -215,7 +215,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
           {radar && radar.net_flow_egp !== null && (
             <div className="mt-1.5 text-[10px] text-muted-foreground">
               صافي التدفق:{' '}
-              <strong className={cn('font-mono', radar.net_flow_egp >= 0 ? 'text-emerald-600' : 'text-rose-600')}>
+              <strong className={cn('font-mono', radar.net_flow_egp >= 0 ? 'text-profit' : 'text-loss')}>
                 {radar.net_flow_egp >= 0 ? '+' : ''}{(radar.net_flow_egp / 1e6).toFixed(2)}M {currencyLabel}
               </strong>
               {radar.buy_value_m !== null && radar.sell_value_m !== null && (
@@ -228,9 +228,9 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
         </div>
 
         {/* Money Flow + Phase */}
-        <div className="p-3 rounded-lg bg-card/60 dark:bg-card/40 border border-emerald-500/20 space-y-2">
+        <div className="p-3 rounded-lg bg-card/60 dark:bg-card/40 border border-profit/20 space-y-2">
           <div>
-            <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <div className="text-[10px] font-bold text-profit dark:text-profit uppercase tracking-wider mb-1 flex items-center gap-1">
               <Waves className="w-3 h-3" /> تدفق السيولة
             </div>
             <Badge
@@ -243,7 +243,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
             </Badge>
           </div>
           <div>
-            <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <div className="text-[10px] font-bold text-profit dark:text-profit uppercase tracking-wider mb-1 flex items-center gap-1">
               <Layers className="w-3 h-3" /> المرحلة
             </div>
             <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -255,16 +255,16 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
 
       {/* ─── مستويات الدخول / الأهداف / الوقف (كنسي من predictions.db) ─── */}
       {(entry !== null || tp1 !== null || stop !== null) && (
-        <div className="px-4 py-3 border-t border-emerald-500/20 bg-card/40 dark:bg-card/20">
-          <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-2 flex items-center gap-1">
+        <div className="px-4 py-3 border-t border-profit/20 bg-card/40 dark:bg-card/20">
+          <div className="text-[10px] font-bold text-profit dark:text-profit uppercase tracking-wider mb-2 flex items-center gap-1">
             <Target className="w-3 h-3" /> مستويات الصفقة
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-xs">
             <LevelCell label="الدخول" value={entry} currencyLabel={currencyLabel} color="text-foreground" />
-            <LevelCell label="الهدف 1" value={tp1} currencyLabel={currencyLabel} color="text-emerald-600" />
-            <LevelCell label="الهدف 2" value={tp2} currencyLabel={currencyLabel} color="text-emerald-600" />
-            <LevelCell label="الهدف 3" value={tp3} currencyLabel={currencyLabel} color="text-emerald-600" />
-            <LevelCell label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600" icon={<ShieldAlert className="w-3 h-3" />} />
+            <LevelCell label="الهدف 1" value={tp1} currencyLabel={currencyLabel} color="text-profit" />
+            <LevelCell label="الهدف 2" value={tp2} currencyLabel={currencyLabel} color="text-profit" />
+            <LevelCell label="الهدف 3" value={tp3} currencyLabel={currencyLabel} color="text-profit" />
+            <LevelCell label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-loss" icon={<ShieldAlert className="w-3 h-3" />} />
             <LevelCell label="R:R" value={rr !== null ? `${(rr ?? 0).toFixed(2)}R` : null} currencyLabel="" color="text-foreground" icon={<Gauge className="w-3 h-3" />} />
           </div>
           {confidence !== null && (
@@ -274,7 +274,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
                 <span className="ml-3">
                   السعر الحالي: <strong className="font-mono text-foreground">{(price ?? 0).toFixed(2)} {currencyLabel}</strong>
                   {Math.abs(price - entry) / entry > 0.001 && (
-                    <span className={cn('font-mono ml-1', price > entry ? 'text-emerald-600' : 'text-rose-600')}>
+                    <span className={cn('font-mono ml-1', price > entry ? 'text-profit' : 'text-loss')}>
                       ({price > entry ? '+' : ''}{(((price - entry) / entry) * 100).toFixed(2)}%)
                     </span>
                   )}
@@ -286,8 +286,8 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
       )}
 
       {/* ─── المؤشرات الفنية الكنسية (RSI Wilder + ATR) ─── */}
-      <div className="px-4 py-2 border-t border-emerald-500/20 flex items-center gap-3 flex-wrap text-[10px]">
-        <span className="font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
+      <div className="px-4 py-2 border-t border-profit/20 flex items-center gap-3 flex-wrap text-[10px]">
+        <span className="font-bold text-profit dark:text-profit uppercase tracking-wider flex items-center gap-1">
           <Activity className="w-3 h-3" /> مؤشرات كنسية
         </span>
         <span className="text-muted-foreground">
@@ -299,12 +299,12 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
         </span>
         {technical.support !== null && (
           <span className="text-muted-foreground">
-            دعم: <strong className="font-mono text-emerald-600">{(technical.support ?? 0).toFixed(2)}</strong>
+            دعم: <strong className="font-mono text-profit">{(technical.support ?? 0).toFixed(2)}</strong>
           </span>
         )}
         {technical.resistance !== null && (
           <span className="text-muted-foreground">
-            مقاومة: <strong className="font-mono text-rose-600">{(technical.resistance ?? 0).toFixed(2)}</strong>
+            مقاومة: <strong className="font-mono text-loss">{(technical.resistance ?? 0).toFixed(2)}</strong>
           </span>
         )}
         {prediction?.hmm_regime && (
@@ -313,7 +313,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
           </span>
         )}
         {radar?.under_microscope && (
-          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded-full border-0">
+          <Badge className="bg-warning text-warning dark:bg-warning/40 dark:text-warning text-[9px] font-bold px-2 py-0.5 rounded-full border-0">
             🔬 تحت المجهر
           </Badge>
         )}
@@ -321,8 +321,8 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
 
       {/* ─── التعليق التحليلي العربي (مطابق Pine L919-951 analysis_reason) ─── */}
       {prediction?.analysis_reason && (
-        <div className="px-4 py-2.5 border-t border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/15">
-          <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+        <div className="px-4 py-2.5 border-t border-profit/20 bg-profit/40 dark:bg-profit/15">
+          <div className="text-[10px] font-bold text-profit dark:text-profit uppercase tracking-wider mb-1 flex items-center gap-1">
             <Sparkles className="w-3 h-3" /> التعليق التحليلي
           </div>
           <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-line">

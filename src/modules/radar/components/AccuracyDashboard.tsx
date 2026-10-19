@@ -126,27 +126,27 @@ function colorForWinRate(rate: number): {
 } {
   if (rate >= 60) {
     return {
-      text: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-      badge: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
-      bar: 'bg-emerald-500',
+      text: 'text-profit dark:text-profit',
+      bg: 'bg-profit dark:bg-profit/30',
+      badge: 'bg-profit text-profit border-profit dark:bg-profit/60 dark:text-profit dark:border-profit',
+      bar: 'bg-profit',
       hex: '#10b981',
     };
   }
   if (rate >= 40) {
     return {
-      text: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-950/30',
-      badge: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
-      bar: 'bg-amber-500',
+      text: 'text-warning dark:text-warning',
+      bg: 'bg-warning dark:bg-warning/30',
+      badge: 'bg-warning text-warning border-warning dark:bg-warning/60 dark:text-warning dark:border-warning',
+      bar: 'bg-warning',
       hex: '#f59e0b',
     };
   }
   return {
-    text: 'text-rose-600 dark:text-rose-400',
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    badge: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
-    bar: 'bg-rose-500',
+    text: 'text-loss dark:text-loss',
+    bg: 'bg-loss dark:bg-loss/30',
+    badge: 'bg-loss text-loss border-loss dark:bg-loss/60 dark:text-loss dark:border-loss',
+    bar: 'bg-loss',
     hex: '#f43f5e',
   };
 }
@@ -238,7 +238,7 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
   if (error && !data) {
     return (
       <Card className="p-6 text-center" dir="rtl">
-        <AlertTriangle className="h-10 w-10 text-rose-500 mx-auto mb-3" />
+        <AlertTriangle className="h-10 w-10 text-loss mx-auto mb-3" />
         <p className="text-sm text-muted-foreground mb-3">{error}</p>
         <Button size="sm" onClick={() => fetchData()}>
           <RefreshCw className="h-4 w-4 ml-1" /> إعادة المحاولة
@@ -336,14 +336,14 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
             </div>
             <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1">
               <span>0%</span>
-              <span className="text-amber-600">40%</span>
-              <span className="text-emerald-600">60%</span>
+              <span className="text-warning">40%</span>
+              <span className="text-profit">60%</span>
               <span>100%</span>
             </div>
           </div>
 
           {data?.note && (
-            <div className="mt-3 text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/30 rounded-md p-2 border border-amber-200 dark:border-amber-900">
+            <div className="mt-3 text-xs text-muted-foreground bg-warning dark:bg-warning/30 rounded-md p-2 border border-warning dark:border-warning">
               {data.note}
             </div>
           )}
@@ -354,14 +354,14 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
       {accuracyLocked ? (
         <LockedDetailsCard
           title="الاتجاه الشهري"
-          icon={<Layers className="h-4 w-4 text-emerald-600" />}
+          icon={<Layers className="h-4 w-4 text-profit" />}
           message="تفاصيل الاتجاه الشهري متاحة للمشتركين"
         />
       ) : (
       <Card data-testid="monthly-trend-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Layers className="h-4 w-4 text-emerald-600" />
+            <Layers className="h-4 w-4 text-profit" />
             الاتجاه الشهري
           </CardTitle>
         </CardHeader>
@@ -452,14 +452,14 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
       {accuracyLocked ? (
         <LockedDetailsCard
           title="حسب نوع الإشارة"
-          icon={<BarChart3 className="h-4 w-4 text-emerald-600" />}
+          icon={<BarChart3 className="h-4 w-4 text-profit" />}
           message="تفاصيل الدقة حسب نوع الإشارة متاحة للمشتركين"
         />
       ) : (
       <Card data-testid="by-signal-type-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-emerald-600" />
+            <BarChart3 className="h-4 w-4 text-profit" />
             حسب نوع الإشارة
           </CardTitle>
         </CardHeader>
@@ -493,11 +493,11 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
                     <TableCell className="text-left font-mono text-xs">{s.total}</TableCell>
                     <TableCell className="text-left font-mono text-xs">{s.verified}</TableCell>
                     <TableCell className="text-left font-mono text-xs">
-                      <span className={s.wins > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}>
+                      <span className={s.wins > 0 ? 'text-profit dark:text-profit font-bold' : ''}>
                         {s.wins}
                       </span>
                       <span className="text-muted-foreground"> / </span>
-                      <span className={s.losses > 0 ? 'text-rose-600 dark:text-rose-400' : ''}>
+                      <span className={s.losses > 0 ? 'text-loss dark:text-loss' : ''}>
                         {s.losses}
                       </span>
                     </TableCell>
@@ -521,9 +521,9 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
                     <TableCell className="text-left font-mono text-xs">
                       <span className={
                         (s.avg_outcome_30d ?? 0) > 0
-                          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                          ? 'text-profit dark:text-profit font-semibold'
                           : (s.avg_outcome_30d ?? 0) < 0
-                            ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                            ? 'text-loss dark:text-loss font-semibold'
                             : 'text-muted-foreground'
                       }>
                         {fmtPct(s.avg_outcome_30d, true)}
@@ -547,14 +547,14 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
       {accuracyLocked ? (
         <LockedDetailsCard
           title="حسب السوق"
-          icon={<Globe className="h-4 w-4 text-emerald-600" />}
+          icon={<Globe className="h-4 w-4 text-profit" />}
           message="تفاصيل الدقة حسب السوق متاحة للمشتركين"
         />
       ) : (
       <Card data-testid="by-market-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Globe className="h-4 w-4 text-emerald-600" />
+            <Globe className="h-4 w-4 text-profit" />
             حسب السوق
           </CardTitle>
         </CardHeader>
@@ -588,7 +588,7 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
                       <TableCell className="text-left font-mono text-xs">{m.total}</TableCell>
                       <TableCell className="text-left font-mono text-xs">{m.verified}</TableCell>
                       <TableCell className="text-left font-mono text-xs">
-                        <span className={m.wins > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}>
+                        <span className={m.wins > 0 ? 'text-profit dark:text-profit font-bold' : ''}>
                           {m.wins}
                         </span>
                       </TableCell>
@@ -654,7 +654,7 @@ function LockedDetailsCard({
   message: string;
 }) {
   return (
-    <Card className="border-amber-500/30 bg-amber-50/30 dark:bg-amber-950/10">
+    <Card className="border-warning/30 bg-warning/30 dark:bg-warning/10">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           {icon}
@@ -662,10 +662,10 @@ function LockedDetailsCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 flex flex-col items-center gap-2 text-center">
-        <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
-          <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        <div className="h-10 w-10 rounded-full bg-warning dark:bg-warning/40 flex items-center justify-center">
+          <Lock className="h-5 w-5 text-warning dark:text-warning" />
         </div>
-        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+        <p className="text-sm font-semibold text-warning dark:text-warning">
           🔒 {message}
         </p>
         <Button

@@ -127,7 +127,7 @@ export function PersonaSelector({
                 عتبة الشراء: {currentPersona.buyThreshold}+
               </p>
               {currentPersona.cryptoAllowed === false && (
-                <p className="text-xs text-amber-600">🚫 Crypto غير متاح</p>
+                <p className="text-xs text-warning">🚫 Crypto غير متاح</p>
               )}
             </TooltipContent>
           </Tooltip>
@@ -137,12 +137,12 @@ export function PersonaSelector({
         <AlertDialog open={showGamblerWarning} onOpenChange={setShowGamblerWarning}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertDialogTitle className="text-loss flex items-center gap-2">
                 ⚠️ تحذير: شخصية المضارب
               </AlertDialogTitle>
               <AlertDialogDescription className="text-right">
                 <div className="space-y-3 mt-4">
-                  <p className="font-bold text-red-600 text-lg">
+                  <p className="font-bold text-loss text-lg">
                     ⚠️ 70% من المضاربين يخسرون رأس مالهم خلال سنة
                   </p>
                   <p>
@@ -163,7 +163,7 @@ export function PersonaSelector({
               </AlertDialogCancel>
               <AlertDialogAction 
                 onClick={confirmGamblerPersona}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-loss hover:bg-loss"
               >
                 أوافق، أنا أفهم المخاطر
               </AlertDialogAction>
@@ -208,7 +208,7 @@ export function PersonaSelector({
                   <div className="text-xs mt-1 opacity-70">🚫 بدون Crypto</div>
                 )}
                 {p.id === 'gambler' && (
-                  <div className="text-xs mt-1 text-red-400">⚠️ تحذير عالي</div>
+                  <div className="text-xs mt-1 text-loss">⚠️ تحذير عالي</div>
                 )}
               </button>
             ))}
@@ -220,12 +220,12 @@ export function PersonaSelector({
       <AlertDialog open={showGamblerWarning} onOpenChange={setShowGamblerWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+            <AlertDialogTitle className="text-loss flex items-center gap-2">
               ⚠️ تحذير: شخصية المضارب
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right">
               <div className="space-y-3 mt-4">
-                <p className="font-bold text-red-600 text-lg">
+                <p className="font-bold text-loss text-lg">
                   ⚠️ 70% من المضاربين يخسرون رأس مالهم خلال سنة
                 </p>
                 <p>
@@ -246,7 +246,7 @@ export function PersonaSelector({
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmGamblerPersona}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-loss hover:bg-loss"
             >
               أوافق، أنا أفهم المخاطر
             </AlertDialogAction>

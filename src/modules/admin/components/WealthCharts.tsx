@@ -367,9 +367,9 @@ export function WealthCharts() {
                 key={i}
                 className={cn(
                   'flex items-center justify-between p-2.5 rounded-lg border',
-                  s.action === 'STOP_LOSS' ? 'bg-red-500/5 border-red-500/20' :
-                  s.action === 'TAKE_PROFIT' ? 'bg-emerald-500/5 border-emerald-500/20' :
-                  s.action === 'SELL' ? 'bg-amber-500/5 border-amber-500/20' :
+                  s.action === 'STOP_LOSS' ? 'bg-loss/5 border-loss/20' :
+                  s.action === 'TAKE_PROFIT' ? 'bg-profit/5 border-profit/20' :
+                  s.action === 'SELL' ? 'bg-warning/5 border-warning/20' :
                   s.action === 'BUY_MORE' ? 'bg-cyan-500/5 border-cyan-500/20' :
                   'bg-white/5 border-white/10'
                 )}
@@ -381,7 +381,7 @@ export function WealthCharts() {
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={cn(
                     'text-xs font-bold',
-                    s.pnl_pct >= 0 ? 'text-emerald-400' : 'text-red-400'
+                    s.pnl_pct >= 0 ? 'text-profit' : 'text-loss'
                   )}>
                     {s.pnl_pct >= 0 ? '+' : ''}{s.pnl_pct}%
                   </span>
@@ -416,14 +416,14 @@ export function WealthCharts() {
 
       {/* Alerts */}
       {smartData?.alerts?.length > 0 && (
-        <Card className="bg-red-500/5 border-red-500/20 p-3">
+        <Card className="bg-loss/5 border-loss/20 p-3">
           <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="w-4 h-4 text-red-400" />
-            <span className="text-xs font-bold text-red-400">التنبيهات ({smartData.alerts.length})</span>
+            <AlertCircle className="w-4 h-4 text-loss" />
+            <span className="text-xs font-bold text-loss">التنبيهات ({smartData.alerts.length})</span>
           </div>
           <div className="space-y-1">
             {smartData.alerts.map((a: string, i: number) => (
-              <div key={i} className="text-xs text-red-300 p-1.5 rounded bg-red-500/5">{a}</div>
+              <div key={i} className="text-xs text-loss p-1.5 rounded bg-loss/5">{a}</div>
             ))}
           </div>
         </Card>
@@ -447,9 +447,9 @@ function ChartCard({ title, icon: Icon, children }: any) {
 function SummaryCard({ icon: Icon, label, value, subValue, color }: any) {
   const colors: Record<string, string> = {
     cyan: 'text-cyan-400 bg-cyan-500/5 border-cyan-500/20',
-    emerald: 'text-emerald-400 bg-emerald-500/5 border-emerald-500/20',
-    red: 'text-red-400 bg-red-500/5 border-red-500/20',
-    amber: 'text-amber-400 bg-amber-500/5 border-amber-500/20',
+    emerald: 'text-profit bg-profit/5 border-profit/20',
+    red: 'text-loss bg-loss/5 border-loss/20',
+    amber: 'text-warning bg-warning/5 border-warning/20',
     purple: 'text-purple-400 bg-purple-500/5 border-purple-500/20',
   };
   return (

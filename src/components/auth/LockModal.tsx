@@ -66,7 +66,7 @@ export function LockModal({
       <DialogContent className="sm:max-w-md" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Lock className="w-4 h-4 text-amber-500" />
+            <Lock className="w-4 h-4 text-warning" />
             {isUpgrade ? 'محتوى يتطلب ترقية' : 'محتوى محمي'}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -81,7 +81,7 @@ export function LockModal({
 
         <div className="space-y-3 pt-2">
           {/* رسالة واضحة */}
-          <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-3 text-center">
+          <div className="rounded-lg bg-profit/5 border border-profit/20 p-3 text-center">
             <p className="text-sm font-semibold text-foreground">
               {isUpgrade
                 ? 'رقّي اشتراكك لفتح التحليلات المتقدمة + التوقعات اللحظية'
@@ -97,11 +97,11 @@ export function LockModal({
           {/* مزايا سريعة */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="flex items-center gap-1.5 rounded-md bg-muted/40 p-2">
-              <Sparkles className="w-3 h-3 text-emerald-500 shrink-0" />
+              <Sparkles className="w-3 h-3 text-profit shrink-0" />
               <span>تفاصيل كاملة (دخول/وقف/هدف)</span>
             </div>
             <div className="flex items-center gap-1.5 rounded-md bg-muted/40 p-2">
-              <TrendingUp className="w-3 h-3 text-amber-500 shrink-0" />
+              <TrendingUp className="w-3 h-3 text-warning shrink-0" />
               <span>الأدلة والبراهين</span>
             </div>
           </div>
@@ -116,8 +116,8 @@ export function LockModal({
               onClick={primaryAction}
               className={
                 isUpgrade
-                  ? 'flex-1 bg-amber-500 hover:bg-amber-600 text-white gap-1.5'
-                  : 'flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5'
+                  ? 'flex-1 bg-warning hover:bg-warning text-white gap-1.5'
+                  : 'flex-1 bg-profit hover:bg-profit text-white gap-1.5'
               }
             >
               {React.createElement(primaryIcon, { className: 'w-3.5 h-3.5' })}
@@ -181,8 +181,8 @@ export function LockedContent({
           className="max-w-sm w-full rounded-xl bg-background/95 backdrop-blur border border-border shadow-lg p-4 text-center"
           dir="rtl"
         >
-          <div className="inline-flex items-center justify-center mb-2 size-10 rounded-xl bg-amber-500/10 ring-2 ring-amber-500/20">
-            <Icon className="size-5 text-amber-500" />
+          <div className="inline-flex items-center justify-center mb-2 size-10 rounded-xl bg-warning/10 ring-2 ring-warning/20">
+            <Icon className="size-5 text-warning" />
           </div>
           <p className="text-sm font-semibold text-foreground">
             {feature ? `"${feature}"` : 'هذا المحتوى'}
@@ -198,8 +198,8 @@ export function LockedContent({
             onClick={action}
             className={
               isUpgrade
-                ? 'bg-amber-500 hover:bg-amber-600 text-white gap-1.5'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5'
+                ? 'bg-warning hover:bg-warning text-white gap-1.5'
+                : 'bg-profit hover:bg-profit text-white gap-1.5'
             }
           >
             <Icon className="size-3.5" />

@@ -156,17 +156,17 @@ export function ExpertMemoryPanel({
   }
 
   const getWinRateColor = (wr: number) => {
-    if (wr >= 60) return 'text-green-600';
+    if (wr >= 60) return 'text-success';
     if (wr >= 40) return 'text-yellow-600';
-    return 'text-red-600';
+    return 'text-loss';
   };
 
   const getResultIcon = (result: string) => {
     switch (result) {
       case 'win':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+        return <CheckCircle2 className="h-4 w-4 text-success" />;
       case 'loss':
-        return <XCircle className="h-4 w-4 text-red-600" />;
+        return <XCircle className="h-4 w-4 text-loss" />;
       default:
         return <MinusCircle className="h-4 w-4 text-gray-400" />;
     }
@@ -195,15 +195,15 @@ export function ExpertMemoryPanel({
               <div className="text-xs text-muted-foreground">إجمالي</div>
             </div>
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-green-600">{insight.wins}</div>
+              <div className="text-2xl font-bold text-success">{insight.wins}</div>
               <div className="text-xs text-muted-foreground">ربح</div>
             </div>
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-red-600">{insight.losses}</div>
+              <div className="text-2xl font-bold text-loss">{insight.losses}</div>
               <div className="text-xs text-muted-foreground">خسارة</div>
             </div>
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-teal-600">{insight.open_positions}</div>
+              <div className="text-2xl font-bold text-whale">{insight.open_positions}</div>
               <div className="text-xs text-muted-foreground">مفتوح</div>
             </div>
           </div>
@@ -223,7 +223,7 @@ export function ExpertMemoryPanel({
           {insight.avg_pnl !== 0 && (
             <div className={cn(
               "flex items-center gap-2 text-sm p-2 rounded-md",
-              insight.avg_pnl > 0 ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300" : "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
+              insight.avg_pnl > 0 ? "bg-success text-success dark:bg-success dark:text-success" : "bg-loss text-loss dark:bg-loss dark:text-loss"
             )}>
               {insight.avg_pnl > 0 ? (
                 <TrendingUp className="h-4 w-4" />
@@ -248,9 +248,9 @@ export function ExpertMemoryPanel({
         </CardHeader>
         <CardContent className="space-y-2">
           {insight.best_pattern && (
-            <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950 rounded-md">
+            <div className="flex items-center justify-between p-2 bg-success dark:bg-success rounded-md">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <CheckCircle2 className="h-4 w-4 text-success" />
                 <span className="text-sm">{insight.best_pattern}</span>
               </div>
               <Badge variant="success" className="text-xs">
@@ -260,9 +260,9 @@ export function ExpertMemoryPanel({
           )}
 
           {insight.worst_pattern && insight.worst_pattern !== insight.best_pattern && (
-            <div className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950 rounded-md">
+            <div className="flex items-center justify-between p-2 bg-loss dark:bg-loss rounded-md">
               <div className="flex items-center gap-2">
-                <XCircle className="h-4 w-4 text-red-600" />
+                <XCircle className="h-4 w-4 text-loss" />
                 <span className="text-sm">{insight.worst_pattern}</span>
               </div>
               <Badge variant="destructive" className="text-xs">
@@ -321,7 +321,7 @@ export function ExpertMemoryPanel({
                     {c.pnl !== undefined && c.pnl !== null && (
                       <span className={cn(
                         "font-medium",
-                        c.pnl > 0 ? "text-green-600" : "text-red-600"
+                        c.pnl > 0 ? "text-success" : "text-loss"
                       )}>
                         {c.pnl > 0 ? '+' : ''}{(c.pnl ?? 0).toFixed(1)}%
                       </span>

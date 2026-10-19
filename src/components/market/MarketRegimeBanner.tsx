@@ -112,19 +112,19 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
       <div
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
           isDefensive
-            ? 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-400'
+            ? 'bg-loss/10 border-loss/30 text-loss dark:text-loss'
             : isAggressive
             ? 'bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-400'
-            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+            : 'bg-profit/10 border-profit/30 text-profit dark:text-profit'
         } ${className}`}
         dir="rtl"
       >
         {isDefensive ? (
-          <ShieldAlert className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 animate-pulse" />
+          <ShieldAlert className="h-3.5 w-3.5 text-loss dark:text-loss animate-pulse" />
         ) : isAggressive ? (
           <TrendingUp className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
         ) : (
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <ShieldCheck className="h-3.5 w-3.5 text-profit dark:text-profit" />
         )}
         <span>
           حالة السوق:{' '}
@@ -138,10 +138,10 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
     <div
       className={`rounded-xl border p-3.5 md:p-4 transition-all duration-300 shadow-sm ${
         isDefensive
-          ? 'bg-gradient-to-l from-rose-950/20 via-rose-900/10 to-amber-950/20 border-rose-500/40 text-foreground ring-1 ring-rose-500/20'
+          ? 'bg-gradient-to-l from-loss/20 via-loss/10 to-warning/20 border-loss/40 text-foreground ring-1 ring-loss/20'
           : isAggressive
           ? 'bg-gradient-to-l from-purple-950/20 via-indigo-900/10 to-background border-purple-500/40 text-foreground ring-1 ring-purple-500/20'
-          : 'bg-gradient-to-l from-emerald-950/15 via-teal-900/10 to-background border-emerald-500/30 text-foreground'
+          : 'bg-gradient-to-l from-profit/15 via-whale/10 to-background border-profit/30 text-foreground'
       } ${className}`}
       dir="rtl"
     >
@@ -151,10 +151,10 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
           <div
             className={`p-2 rounded-lg mt-0.5 flex-shrink-0 ${
               isDefensive
-                ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/30 animate-pulse'
+                ? 'bg-loss/20 text-loss dark:text-loss ring-1 ring-loss/30 animate-pulse'
                 : isAggressive
                 ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 ring-1 ring-purple-500/30'
-                : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/30'
+                : 'bg-profit/20 text-profit dark:text-profit ring-1 ring-profit/30'
             }`}
           >
             {isDefensive ? (
@@ -179,16 +179,16 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
                 variant="outline"
                 className={`text-[11px] font-bold ${
                   isDefensive
-                    ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40'
+                    ? 'bg-loss/20 text-loss dark:text-loss border-loss/40'
                     : isAggressive
                     ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40'
-                    : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
+                    : 'bg-profit/20 text-profit dark:text-profit border-profit/40'
                 }`}
               >
                 {data.regime}
               </Badge>
               {ind.short_term_drawdown_pct != null && ind.short_term_drawdown_pct > 0.02 && (
-                <span className="text-[11px] text-rose-600 dark:text-rose-400 font-mono">
+                <span className="text-[11px] text-loss dark:text-loss font-mono">
                   (تراجع المؤشر {(ind.short_term_drawdown_pct * 100).toFixed(1)}%−)
                 </span>
               )}
@@ -241,31 +241,31 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
 
       {/* Defensive Key Guidelines Pills */}
       {isDefensive && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-rose-500/20">
-          <div className="flex items-center gap-1.5 text-xs bg-rose-500/10 dark:bg-rose-950/40 rounded-lg p-2 border border-rose-500/20">
-            <Percent className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-            <span className="font-semibold text-rose-700 dark:text-rose-300">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-loss/20">
+          <div className="flex items-center gap-1.5 text-xs bg-loss/10 dark:bg-loss/40 rounded-lg p-2 border border-loss/20">
+            <Percent className="h-3.5 w-3.5 text-loss dark:text-loss" />
+            <span className="font-semibold text-loss dark:text-loss">
               حجم الصفقات: {((thresh.position_size_multiplier ?? 0.5) * 100).toFixed(0)}% (نصف الحجم)
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs bg-rose-500/10 dark:bg-rose-950/40 rounded-lg p-2 border border-rose-500/20">
-            <Sliders className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-            <span className="font-semibold text-rose-700 dark:text-rose-300">
+          <div className="flex items-center gap-1.5 text-xs bg-loss/10 dark:bg-loss/40 rounded-lg p-2 border border-loss/20">
+            <Sliders className="h-3.5 w-3.5 text-loss dark:text-loss" />
+            <span className="font-semibold text-loss dark:text-loss">
               أقصى فرص/يوم: {thresh.max_picks_per_day ?? 2} أسهم فقط
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs bg-rose-500/10 dark:bg-rose-950/40 rounded-lg p-2 border border-rose-500/20">
-            <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-            <span className="font-semibold text-rose-700 dark:text-rose-300">
+          <div className="flex items-center gap-1.5 text-xs bg-loss/10 dark:bg-loss/40 rounded-lg p-2 border border-loss/20">
+            <AlertTriangle className="h-3.5 w-3.5 text-loss dark:text-loss" />
+            <span className="font-semibold text-loss dark:text-loss">
               وقف مشدد: {thresh.atr_stop_multiplier ?? 1.5}× ATR
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs bg-rose-500/10 dark:bg-rose-950/40 rounded-lg p-2 border border-rose-500/20">
-            <ShieldAlert className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-            <span className="font-semibold text-rose-700 dark:text-rose-300">
+          <div className="flex items-center gap-1.5 text-xs bg-loss/10 dark:bg-loss/40 rounded-lg p-2 border border-loss/20">
+            <ShieldAlert className="h-3.5 w-3.5 text-loss dark:text-loss" />
+            <span className="font-semibold text-loss dark:text-loss">
               أدنى تقييم: {thresh.min_score ?? 75}+ نقطة
             </span>
           </div>

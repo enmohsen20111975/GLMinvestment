@@ -48,10 +48,10 @@ interface HeatLevel {
 }
 
 const HEAT_STYLES: Record<string, HeatLevel> = {
-  safe: { level: 'آمن', color: 'text-emerald-500', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
+  safe: { level: 'آمن', color: 'text-profit', bgColor: 'bg-profit', borderColor: 'border-profit' },
   caution: { level: 'حذر', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
   danger: { level: 'خطر', color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
-  critical: { level: 'حرج', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
+  critical: { level: 'حرج', color: 'text-loss', bgColor: 'bg-loss', borderColor: 'border-loss' },
 };
 
 interface TradingPattern {
@@ -267,7 +267,7 @@ export function AdvancedPortfolioManager() {
                   <p className="text-xs text-muted-foreground">السحب</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (portfolioState.current_drawdown_pct ?? 0) > 10 ? "text-red-500" : "text-emerald-500"
+                    (portfolioState.current_drawdown_pct ?? 0) > 10 ? "text-loss" : "text-profit"
                   )}>
                     {(portfolioState.current_drawdown_pct ?? 0).toFixed(1)}%
                   </p>
@@ -297,11 +297,11 @@ export function AdvancedPortfolioManager() {
               {portfolioState.recommendations.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-teal-500" />
+                    <Lightbulb className="w-4 h-4 text-whale" />
                     تحليلات
                   </h4>
                   {portfolioState.recommendations.map((rec: string, i: number) => (
-                    <div key={i} className="p-2 bg-blue-50 dark:bg-teal-900/20 rounded text-sm">
+                    <div key={i} className="p-2 bg-primary dark:bg-whale/20 rounded text-sm">
                       {rec}
                     </div>
                   ))}
@@ -321,7 +321,7 @@ export function AdvancedPortfolioManager() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-emerald-500" />
+            <Target className="w-5 h-5 text-profit" />
             <CardTitle>تخطيط استراتيجية الدخول</CardTitle>
           </div>
         </CardHeader>
@@ -368,7 +368,7 @@ export function AdvancedPortfolioManager() {
             </div>
           </div>
           <Button 
-            className="w-full bg-emerald-600 hover:bg-emerald-700"
+            className="w-full bg-profit hover:bg-profit"
             onClick={planStrategy}
             disabled={loading || !ticker || !currentPrice}
           >
@@ -401,17 +401,17 @@ export function AdvancedPortfolioManager() {
 
               {/* Targets */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-center">
+                <div className="p-2 bg-profit dark:bg-profit/20 rounded text-center">
                   <p className="text-xs text-muted-foreground">الهدف 1</p>
-                  <p className="font-bold text-emerald-500">{strategyPlan.targets.target_1?.toFixed(2)}</p>
+                  <p className="font-bold text-profit">{strategyPlan.targets.target_1?.toFixed(2)}</p>
                 </div>
-                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-center">
+                <div className="p-2 bg-profit dark:bg-profit/20 rounded text-center">
                   <p className="text-xs text-muted-foreground">الهدف 2</p>
-                  <p className="font-bold text-emerald-500">{strategyPlan.targets.target_2?.toFixed(2)}</p>
+                  <p className="font-bold text-profit">{strategyPlan.targets.target_2?.toFixed(2)}</p>
                 </div>
-                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded text-center">
+                <div className="p-2 bg-loss dark:bg-loss/20 rounded text-center">
                   <p className="text-xs text-muted-foreground">الستوب</p>
-                  <p className="font-bold text-red-600">{strategyPlan.overall_stop?.toFixed(2)}</p>
+                  <p className="font-bold text-loss">{strategyPlan.overall_stop?.toFixed(2)}</p>
                 </div>
               </div>
 
@@ -452,11 +452,11 @@ export function AdvancedPortfolioManager() {
               </div>
               <div className="p-2 bg-muted/50 rounded">
                 <p className="text-xs text-muted-foreground">الهدف</p>
-                <p className="font-semibold text-emerald-500">{pattern.target_pct}</p>
+                <p className="font-semibold text-profit">{pattern.target_pct}</p>
               </div>
               <div className="p-2 bg-muted/50 rounded">
                 <p className="text-xs text-muted-foreground">الستوب</p>
-                <p className="font-semibold text-red-600">{pattern.stop_pct}</p>
+                <p className="font-semibold text-loss">{pattern.stop_pct}</p>
               </div>
               <div className="p-2 bg-muted/50 rounded">
                 <p className="text-xs text-muted-foreground">Win Rate</p>
@@ -464,9 +464,9 @@ export function AdvancedPortfolioManager() {
               </div>
             </div>
             
-            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-center">
+            <div className="p-2 bg-profit dark:bg-profit/20 rounded text-center">
               <p className="text-xs text-muted-foreground">العائد السنوي المتوقع</p>
-              <p className="font-bold text-emerald-500">{pattern.expected_annual}</p>
+              <p className="font-bold text-profit">{pattern.expected_annual}</p>
             </div>
           </CardContent>
         </Card>
@@ -483,7 +483,7 @@ export function AdvancedPortfolioManager() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-emerald-500" />
+              <Plus className="w-5 h-5 text-profit" />
               <CardTitle>قواعد الدخول الذهبية</CardTitle>
             </div>
           </CardHeader>
@@ -491,7 +491,7 @@ export function AdvancedPortfolioManager() {
             <div className="space-y-3">
               {rules.entry_rules.map((rule) => (
                 <div key={rule.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-profit text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
                     {rule.id}
                   </div>
                   <div>
@@ -508,7 +508,7 @@ export function AdvancedPortfolioManager() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-500" />
+              <TrendingUp className="w-5 h-5 text-profit" />
               <CardTitle>قواعد جني الأرباح</CardTitle>
             </div>
           </CardHeader>
@@ -516,7 +516,7 @@ export function AdvancedPortfolioManager() {
             <div className="space-y-3">
               {rules.profit_rules.map((rule) => (
                 <div key={rule.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-profit text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
                     {rule.id}
                   </div>
                   <div>
@@ -537,7 +537,7 @@ export function AdvancedPortfolioManager() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="w-7 h-7 text-emerald-500" />
+          <Shield className="w-7 h-7 text-profit" />
           إدارة المحافظ الاحترافية
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -557,7 +557,7 @@ export function AdvancedPortfolioManager() {
             variant={activeTab === tab.id ? 'default' : 'outline'}
             className={cn(
               "gap-2",
-              activeTab === tab.id && "bg-emerald-600 hover:bg-emerald-700"
+              activeTab === tab.id && "bg-profit hover:bg-profit"
             )}
             onClick={() => setActiveTab(tab.id as any)}
           >

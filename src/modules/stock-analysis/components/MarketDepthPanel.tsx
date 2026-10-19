@@ -117,10 +117,10 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
 
   // Interpretation
   let interpretation = { label: 'متوازن', color: 'text-slate-600 bg-slate-500/10 border-slate-500/30' };
-  if (buyPct >= 60) interpretation = { label: 'ضغط شرائي قوي', color: 'text-emerald-700 bg-emerald-500/15 border-emerald-500/40 dark:text-emerald-300' };
-  else if (buyPct >= 55) interpretation = { label: 'ضغط شرائي', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30 dark:text-emerald-400' };
-  else if (sellPct >= 60) interpretation = { label: 'ضغط بيعي قوي', color: 'text-red-700 bg-red-500/15 border-red-500/40 dark:text-red-300' };
-  else if (sellPct >= 55) interpretation = { label: 'ضغط بيعي', color: 'text-red-600 bg-red-500/10 border-red-500/30 dark:text-red-400' };
+  if (buyPct >= 60) interpretation = { label: 'ضغط شرائي قوي', color: 'text-profit bg-profit/15 border-profit/40 dark:text-profit' };
+  else if (buyPct >= 55) interpretation = { label: 'ضغط شرائي', color: 'text-profit bg-profit/10 border-profit/30 dark:text-profit' };
+  else if (sellPct >= 60) interpretation = { label: 'ضغط بيعي قوي', color: 'text-loss bg-loss/15 border-loss/40 dark:text-loss' };
+  else if (sellPct >= 55) interpretation = { label: 'ضغط بيعي', color: 'text-loss bg-loss/10 border-loss/30 dark:text-loss' };
 
   return (
     <Card dir="rtl">
@@ -182,25 +182,25 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
             {/* Overall buy/sell pressure bar */}
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className="flex items-center gap-1 text-profit dark:text-profit font-medium">
                   <TrendingUp className="w-3 h-3" />
                   شراء {(buyPct ?? 0).toFixed(1)}%
                 </span>
-                <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                <span className="flex items-center gap-1 text-loss dark:text-loss font-medium">
                   بيع {(sellPct ?? 0).toFixed(1)}%
                   <TrendingDown className="w-3 h-3" />
                 </span>
               </div>
               <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
-                <div className="bg-emerald-500 dark:bg-emerald-500" style={{ width: `${buyPct}%` }} />
+                <div className="bg-profit dark:bg-profit" style={{ width: `${buyPct}%` }} />
                 <div className="bg-slate-300 dark:bg-slate-600" style={{ width: `${100 - buyPct - sellPct}%` }} />
-                <div className="bg-red-500 dark:bg-red-500" style={{ width: `${sellPct}%` }} />
+                <div className="bg-loss dark:bg-loss" style={{ width: `${sellPct}%` }} />
               </div>
               <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                 <span className="tabular-nums">شراء: {fmtVol(summary.total_buy_volume)}</span>
                 <span className={cn(
                   'font-semibold tabular-nums',
-                  summary.net_pressure >= 0 ? 'text-emerald-600' : 'text-red-600'
+                  summary.net_pressure >= 0 ? 'text-profit' : 'text-loss'
                 )}>
                   صافي: {summary.net_pressure >= 0 ? '+' : ''}{fmtVol(summary.net_pressure)}
                 </span>
@@ -224,15 +224,15 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
                         <span className="font-medium tabular-nums">{b.time_label}</span>
                         <span className={cn(
                           'font-semibold tabular-nums',
-                          netPos ? 'text-emerald-600' : b.net_pressure < 0 ? 'text-red-600' : 'text-muted-foreground'
+                          netPos ? 'text-profit' : b.net_pressure < 0 ? 'text-loss' : 'text-muted-foreground'
                         )}>
                           {netPos ? '+' : ''}{fmtVol(b.net_pressure)}
                         </span>
                       </div>
                       <div className="flex h-2 w-full overflow-hidden rounded-sm bg-muted">
-                        <div className="bg-emerald-500/70" style={{ width: `${buyW}%` }} />
+                        <div className="bg-profit/70" style={{ width: `${buyW}%` }} />
                         <div className="bg-slate-300/50 dark:bg-slate-600/50" style={{ width: `${100 - buyW - sellW}%` }} />
-                        <div className="bg-red-500/70" style={{ width: `${sellW}%` }} />
+                        <div className="bg-loss/70" style={{ width: `${sellW}%` }} />
                       </div>
                     </div>
                   );
@@ -261,11 +261,11 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
               </div>
               <div className="text-center p-1.5 rounded bg-muted/30">
                 <div className="text-[9px] text-muted-foreground">أعلى</div>
-                <div className="text-[11px] font-bold tabular-nums text-emerald-600">{summary.session_high?.toFixed(2) || '—'}</div>
+                <div className="text-[11px] font-bold tabular-nums text-profit">{summary.session_high?.toFixed(2) || '—'}</div>
               </div>
               <div className="text-center p-1.5 rounded bg-muted/30">
                 <div className="text-[9px] text-muted-foreground">أدنى</div>
-                <div className="text-[11px] font-bold tabular-nums text-red-600">{summary.session_low?.toFixed(2) || '—'}</div>
+                <div className="text-[11px] font-bold tabular-nums text-loss">{summary.session_low?.toFixed(2) || '—'}</div>
               </div>
               <div className="text-center p-1.5 rounded bg-muted/30">
                 <div className="text-[9px] text-muted-foreground">نسبة ش/ب</div>

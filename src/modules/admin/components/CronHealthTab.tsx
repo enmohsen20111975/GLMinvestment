@@ -69,9 +69,9 @@ function jobStatusColor(job: CronJob): {
 } {
   if (!job.exists_log || !job.last_run) {
     return {
-      border: 'border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40',
-      badge: 'border-red-500 text-red-700',
-      dot: 'bg-red-500',
+      border: 'border-loss bg-loss dark:bg-loss/20 dark:border-loss/40',
+      badge: 'border-loss text-loss',
+      dot: 'bg-loss',
       label: 'لم يُشغّل',
     };
   }
@@ -80,24 +80,24 @@ function jobStatusColor(job: CronJob): {
   const sevenDays = 7 * oneDay;
   if (ageMs < oneDay) {
     return {
-      border: 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40',
-      badge: 'border-emerald-500 text-emerald-700',
-      dot: 'bg-emerald-500',
+      border: 'border-profit bg-profit dark:bg-profit/20 dark:border-profit/40',
+      badge: 'border-profit text-profit',
+      dot: 'bg-profit',
       label: 'طازج (<24س)',
     };
   }
   if (ageMs < sevenDays) {
     return {
-      border: 'border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40',
-      badge: 'border-amber-500 text-amber-700',
-      dot: 'bg-amber-500',
+      border: 'border-warning bg-warning dark:bg-warning/20 dark:border-warning/40',
+      badge: 'border-warning text-warning',
+      dot: 'bg-warning',
       label: 'هذا الأسبوع',
     };
   }
   return {
-    border: 'border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40',
-    badge: 'border-red-500 text-red-700',
-    dot: 'bg-red-500',
+    border: 'border-loss bg-loss dark:bg-loss/20 dark:border-loss/40',
+    badge: 'border-loss text-loss',
+    dot: 'bg-loss',
     label: 'قديم (>7أيام)',
   };
 }
@@ -137,12 +137,12 @@ export function CronHealthTab() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Clock className="w-5 h-5 text-emerald-600" />
+                <Clock className="w-5 h-5 text-profit" />
                 حالة المهام — Cron Health
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -167,22 +167,22 @@ export function CronHealthTab() {
         <StatBox
           label="شُغّلت من قبل"
           value={summary?.jobs_ran ?? '—'}
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+          icon={<CheckCircle2 className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="لم تُشغّل"
           value={summary?.jobs_never_run ?? '—'}
-          icon={<XCircle className="w-4 h-4 text-red-500" />}
+          icon={<XCircle className="w-4 h-4 text-loss" />}
         />
         <StatBox
           label="شُغّلت اليوم"
           value={summary?.jobs_run_today ?? '—'}
-          icon={<Calendar className="w-4 h-4 text-emerald-500" />}
+          icon={<Calendar className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="قديمة (>7 أيام)"
           value={summary?.jobs_stale_7d ?? '—'}
-          icon={<AlertTriangle className="w-4 h-4 text-amber-500" />}
+          icon={<AlertTriangle className="w-4 h-4 text-warning" />}
         />
       </div>
 
@@ -199,11 +199,11 @@ export function CronHealthTab() {
 
       {/* Error */}
       {!loading && data && !data.success && (
-        <Card className="border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40">
+        <Card className="border-loss bg-loss dark:bg-loss/20 dark:border-loss/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-700 dark:text-red-400">فشل تحميل بيانات الكرون</p>
+              <p className="font-bold text-loss dark:text-loss">فشل تحميل بيانات الكرون</p>
               <p className="text-xs text-muted-foreground mt-1">{data.error}</p>
             </div>
           </CardContent>
@@ -244,7 +244,7 @@ export function CronHealthTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="w-4 h-4 text-emerald-500" />
+              <FileText className="w-4 h-4 text-profit" />
               مهام الكرون ({filteredJobs.length})
             </CardTitle>
           </CardHeader>
@@ -302,7 +302,7 @@ export function CronHealthTab() {
                               </code>
                             </>
                           ) : (
-                            <div className="text-xs text-red-600 font-bold">لا يوجد لوج</div>
+                            <div className="text-xs text-loss font-bold">لا يوجد لوج</div>
                           )}
                         </div>
                       </div>

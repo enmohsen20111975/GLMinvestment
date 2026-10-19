@@ -117,7 +117,7 @@ function evaluateProfile(totalScore: number): RiskProfile {
   let type: RiskProfile['type'] = 'balanced';
   let typeAr = 'متوازن';
   let Icon = Gauge;
-  let color = 'text-teal-600';
+  let color = 'text-whale';
   let description = '';
   let idealAllocation: RiskProfile['idealAllocation'] = [];
 
@@ -125,7 +125,7 @@ function evaluateProfile(totalScore: number): RiskProfile {
     type = 'conservative';
     typeAr = 'محافظ';
     Icon = Shield;
-    color = 'text-emerald-500';
+    color = 'text-profit';
     description =
       'أنت مستثمر محافظ — تفضّل الأمان والحفاظ على رأس المال. تناسبك شهادات الإيداع والصناديق ذات الدخل الثابت، مع نسبة صغيرة من الأسهم القيادية المستقرة.';
     idealAllocation = [
@@ -137,7 +137,7 @@ function evaluateProfile(totalScore: number): RiskProfile {
     type = 'balanced';
     typeAr = 'متوازن';
     Icon = Gauge;
-    color = 'text-teal-600';
+    color = 'text-whale';
     description =
       'أنت مستثمر متوازن — تدرك كيفية مواجهة المخاطر دون تردد. التوزيع المثالي لك يوازن بين الأسهم والأصول الثابتة، مع نسبة من الذهب كتحوّط.';
     idealAllocation = [
@@ -149,7 +149,7 @@ function evaluateProfile(totalScore: number): RiskProfile {
     type = 'aggressive';
     typeAr = 'مغامر';
     Icon = Flame;
-    color = 'text-rose-600';
+    color = 'text-loss';
     description =
       'أنت مستثمر مغامر — تقبل المخاطر سعياً وراء عوائد أعلى. تناسبك أسهم النمو والأسهم الصغيرة سريعة الزخم، مع نسبة قليلة من الأصول الثابتة للطوارئ فقط.';
     idealAllocation = [
@@ -371,7 +371,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
           {/* التوزيع المثالي + التوزيع الحالي (لو متوفر) */}
           <div>
             <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <CheckCircle2 className="h-4 w-4 text-profit" />
               التوزيع المثالي لمحفظتك:
             </h4>
             <div className="space-y-2">
@@ -386,7 +386,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
                       <Progress value={a.pct} className="h-2" />
                       {currentPct !== null && (
                         <div
-                          className="absolute top-0 h-2 w-1 bg-teal-600 rounded"
+                          className="absolute top-0 h-2 w-1 bg-whale rounded"
                           style={{ right: `${100 - currentPct}%` }}
                           title={`الحالي: ${(currentPct ?? 0).toFixed(0)}%`}
                         />
@@ -412,14 +412,14 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
 
           {/* ── تنبيه إعادة التوازن (Task 6) ── */}
           {rebalanceSuggestions && hasRebalanceWarning && (
-            <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700">
+            <div className="p-4 rounded-lg bg-warning dark:bg-warning/30 border-2 border-warning dark:border-warning">
               <div className="flex items-start gap-2 mb-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                  <p className="text-sm font-bold text-warning dark:text-warning">
                     توزيعك الحالي مخالف لشخصيتك الاستثمارية.
                   </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                  <p className="text-xs text-warning dark:text-warning mt-1">
                     للعودة إلى التوزيع المناسب، اتبع التوقعات التالية:
                   </p>
                 </div>
@@ -431,8 +431,8 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
                     className={cn(
                       'flex items-center justify-between p-2 rounded-md text-sm',
                       s.action === 'sell'
-                        ? 'bg-red-100 dark:bg-red-900/30'
-                        : 'bg-green-100 dark:bg-green-900/30'
+                        ? 'bg-loss dark:bg-loss/30'
+                        : 'bg-success dark:bg-success/30'
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -443,8 +443,8 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
                       <Badge
                         variant="outline"
                         className={s.action === 'sell'
-                          ? 'border-red-400 text-red-700 dark:text-red-300'
-                          : 'border-green-400 text-emerald-500 dark:text-green-300'
+                          ? 'border-loss text-loss dark:text-loss'
+                          : 'border-success text-profit dark:text-success'
                         }
                       >
                         {s.action === 'sell' ? '↓ بيع' : '↑ شراء'}
@@ -464,8 +464,8 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
 
           {/* توقع Rebalancing (static hint — kept for context) */}
           {!currentAllocation && (
-            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800">
-              <p className="text-xs text-teal-800 dark:text-teal-300 leading-relaxed">
+            <div className="p-3 rounded-lg bg-primary dark:bg-primary/30 border border-whale dark:border-whale">
+              <p className="text-xs text-whale dark:text-whale leading-relaxed">
                 <strong>توقّع المستشار الآلي:</strong> قارن توزيع محفظتك الحالي بالتوزيع المثالي أعلاه. إذا تجاوز الفرق لأي أصل نسبة 10%، يُنصح بإعادة التوازن (بيع الزائد وشراء الناقص) للبقاء ضمن نطاق شخصيتك الاستثمارية.
               </p>
             </div>

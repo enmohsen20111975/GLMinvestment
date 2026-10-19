@@ -88,7 +88,7 @@ export function StockSearchDropdown({
         />
         {loading && (
           <div className="absolute left-2 top-1/2 -translate-y-1/2">
-            <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-profit border-t-transparent rounded-full animate-spin" />
           </div>
         )}
       </div>
@@ -107,7 +107,7 @@ export function StockSearchDropdown({
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">{(stock.current_price ?? 0) > 0 ? (stock.current_price ?? 0).toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss')}>
                   {(stock.price_change ?? 0) >= 0 ? '+' : ''}{(stock.price_change ?? 0).toFixed(2)}%
                 </div>
               </div>

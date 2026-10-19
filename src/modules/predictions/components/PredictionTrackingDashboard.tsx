@@ -187,9 +187,9 @@ const PERSONA_CONFIG: Record<'gambler' | 'balanced' | 'conservative', {
     emoji: '⚖️',
     nameAr: 'المتوازن',
     horizonAr: 'صفقات متوسطة (2-6 أسابيع)',
-    color: 'text-teal-500 dark:text-teal-400',
-    badgeBg: 'bg-teal-500/10 text-teal-600 dark:text-teal-300 border-teal-500/20',
-    border: 'border-teal-500/30 hover:border-teal-500/60',
+    color: 'text-whale dark:text-whale',
+    badgeBg: 'bg-whale/10 text-whale dark:text-whale border-whale/20',
+    border: 'border-whale/30 hover:border-whale/60',
     glow: 'shadow-teal-500/10',
     icon: Scale,
   },
@@ -198,9 +198,9 @@ const PERSONA_CONFIG: Record<'gambler' | 'balanced' | 'conservative', {
     emoji: '🛡️',
     nameAr: 'المستثمر',
     horizonAr: 'صفقات استثمارية (6-12 شهر)',
-    color: 'text-emerald-500 dark:text-emerald-400',
-    badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20',
-    border: 'border-emerald-500/30 hover:border-emerald-500/60',
+    color: 'text-profit dark:text-profit',
+    badgeBg: 'bg-profit/10 text-profit dark:text-profit border-profit/20',
+    border: 'border-profit/30 hover:border-profit/60',
     glow: 'shadow-emerald-500/10',
     icon: Shield,
   },
@@ -214,15 +214,15 @@ const OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING', {
 }> = {
   WIN: {
     label: 'هدف محقق 🎯',
-    badge: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    badge: 'bg-profit/15 text-profit dark:text-profit border-profit/30',
     icon: Trophy,
-    accentColor: 'text-emerald-500',
+    accentColor: 'text-profit',
   },
   LOSS: {
     label: 'وقف خسارة 🛑',
-    badge: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
+    badge: 'bg-loss/15 text-loss dark:text-loss border-loss/30',
     icon: TrendingDown,
-    accentColor: 'text-rose-500',
+    accentColor: 'text-loss',
   },
   EXPIRED: {
     label: 'انتهى الأفق الزمني ⏰',  // UNIFY-FIX v2: أوضح من "منتهية"
@@ -232,9 +232,9 @@ const OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING', {
   },
   PENDING: {
     label: 'جاري التداول ⏳',
-    badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    badge: 'bg-warning/15 text-warning dark:text-warning border-warning/30',
     icon: Clock3,
-    accentColor: 'text-amber-500',
+    accentColor: 'text-warning',
   },
 };
 
@@ -244,8 +244,8 @@ const OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING', {
 // لكن الـ badge بـ يـ differentiعلشان المالك يفرّق بين "هدف محقق" و"جني أرباح".
 const TRAILING_PROFIT_CONFIG = {
   label: 'خرج بربح 💰',
-  badge: 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/40 font-bold',
-  accentColor: 'text-teal-600 dark:text-teal-400',
+  badge: 'bg-whale/20 text-whale dark:text-whale border-whale/40 font-bold',
+  accentColor: 'text-whale dark:text-whale',
 };
 
 // FIX-5B: helper — يحدد هل التوقع ده TRAILING_PROFIT (للـ status display).
@@ -324,15 +324,15 @@ function computeLiveReturnPct(p: LivePrediction): number | null {
 const LIVE_OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'PENDING', { label: string; badge: string }> = {
   WIN: {
     label: 'ربح متوقع (معاينة)',
-    badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-dashed border-emerald-500/40',
+    badge: 'bg-profit/10 text-profit dark:text-profit border border-dashed border-profit/40',
   },
   LOSS: {
     label: 'خسارة متوقعة (معاينة)',
-    badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-dashed border-rose-500/40',
+    badge: 'bg-loss/10 text-loss dark:text-loss border border-dashed border-loss/40',
   },
   PENDING: {
     label: 'بانتظار الهدف',
-    badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-dashed border-amber-500/40',
+    badge: 'bg-warning/10 text-warning dark:text-warning border border-dashed border-warning/40',
   },
 };
 
@@ -368,8 +368,8 @@ const CONFIDENCE_OPTIONS: Array<{ value: number; label: string }> = [
 function formatReturnPct(pct: number | null | undefined) {
   if (pct == null || isNaN(Number(pct))) return { text: '—', color: 'text-muted-foreground' };
   const n = Number(pct);
-  if (n > 0) return { text: `+${(n ?? 0).toFixed(2)}%`, color: 'text-emerald-600 dark:text-emerald-400' };
-  if (n < 0) return { text: `${(n ?? 0).toFixed(2)}%`, color: 'text-rose-600 dark:text-rose-400' };
+  if (n > 0) return { text: `+${(n ?? 0).toFixed(2)}%`, color: 'text-profit dark:text-profit' };
+  if (n < 0) return { text: `${(n ?? 0).toFixed(2)}%`, color: 'text-loss dark:text-loss' };
   return { text: '0.00%', color: 'text-muted-foreground' };
 }
 
@@ -860,17 +860,17 @@ export function PredictionTrackingDashboard({
                 {personaCfg.emoji} {personaCfg.nameAr}
               </Badge>
               {focusTickers[p.ticker] && (
-                <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="مكرر في عدة شخصيات — إشارة قوية">
+                <Badge className="bg-warning/15 text-warning dark:text-warning border border-warning/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="مكرر في عدة شخصيات — إشارة قوية">
                   🎯 تركيز ×{focusTickers[p.ticker].count}
                 </Badge>
               )}
               {p.morning_bell && (
-                <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
+                <Badge className="bg-warning/20 text-warning dark:text-warning border border-warning/40 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
                   🔔 جرس الصباح
                 </Badge>
               )}
               {p.evidence_count != null && p.evidence_count > 0 && (
-                <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 whitespace-nowrap" title="عدد الأدلة المتوافقة">
+                <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-bold text-profit dark:text-profit border-profit/30 whitespace-nowrap" title="عدد الأدلة المتوافقة">
                   ✅ {p.evidence_count}/6
                 </Badge>
               )}
@@ -904,7 +904,7 @@ export function PredictionTrackingDashboard({
       render: (p) => (
         <div className="flex flex-col">
           <span className="font-bold text-foreground">📥 {fmtPrice(p.entryPrice)}</span>
-          <span className="text-rose-600 dark:text-rose-400 text-[11px]">🛑 {fmtPrice(p.stopLoss)}</span>
+          <span className="text-loss dark:text-loss text-[11px]">🛑 {fmtPrice(p.stopLoss)}</span>
         </div>
       ),
     },
@@ -917,7 +917,7 @@ export function PredictionTrackingDashboard({
       render: (p) => (
         <div className="flex flex-col">
           <span className="text-[9px] text-muted-foreground">المستهدف الأول</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">🎯 {fmtPrice(p.targetPrice)}</span>
+          <span className="text-profit dark:text-profit font-bold">🎯 {fmtPrice(p.targetPrice)}</span>
         </div>
       ),
     },
@@ -933,7 +933,7 @@ export function PredictionTrackingDashboard({
           <div className="flex flex-col">
             <span className="text-[9px] text-muted-foreground">المستهدف الثاني</span>
             {hasTarget2 ? (
-              <span className="text-teal-600 dark:text-teal-400 font-bold">🎯 {fmtPrice(p.targetPrice2)}</span>
+              <span className="text-whale dark:text-whale font-bold">🎯 {fmtPrice(p.targetPrice2)}</span>
             ) : (
               <span className="text-muted-foreground font-bold">—</span>
             )}
@@ -992,7 +992,7 @@ export function PredictionTrackingDashboard({
         const liveReturnPct = computeLiveReturnPct(p);
         const showLiveReturnBadge = !isClosed && liveReturnPct != null && highest > 0;
         if (isClosed) {
-          return <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">✓ مؤكدة</span>;
+          return <span className="text-[10px] text-profit dark:text-profit font-bold">✓ مؤكدة</span>;
         }
         if (showLiveReturnBadge) {
           return (
@@ -1000,8 +1000,8 @@ export function PredictionTrackingDashboard({
               className={cn(
                 'text-[9px] font-bold whitespace-nowrap border border-dashed',
                 liveReturnPct != null && liveReturnPct >= 0
-                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40'
-                  : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/40'
+                  ? 'bg-warning/15 text-warning dark:text-warning border-warning/40'
+                  : 'bg-loss/15 text-loss dark:text-loss border-loss/40'
               )}
               title="العائد اللحظي من السعر الحالي (معاينة غير رسمية — لم تُقفل الصفقة بعد)"
             >
@@ -1040,7 +1040,7 @@ export function PredictionTrackingDashboard({
       render: (p) => {
         const highest = Number(p.highestPriceReached ?? p.highest_price_reached ?? 0);
         return (
-          <span className={cn('text-[11px] font-bold', highest > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+          <span className={cn('text-[11px] font-bold', highest > 0 ? 'text-profit dark:text-profit' : 'text-muted-foreground')}>
             {highest > 0 ? fmtPrice(highest) : '—'}
           </span>
         );
@@ -1055,7 +1055,7 @@ export function PredictionTrackingDashboard({
       render: (p) => {
         const lowest = Number(p.lowestPriceReached ?? p.lowest_price_reached ?? 0);
         return (
-          <span className={cn('text-[11px] font-bold', lowest > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
+          <span className={cn('text-[11px] font-bold', lowest > 0 ? 'text-loss dark:text-loss' : 'text-muted-foreground')}>
             {lowest > 0 ? fmtPrice(lowest) : '—'}
           </span>
         );
@@ -1071,7 +1071,7 @@ export function PredictionTrackingDashboard({
         const v = computeMaxProfitPct(p);
         if (v == null) return <span className="text-[11px] text-muted-foreground">—</span>;
         return (
-          <span className={cn('text-[11px] font-bold', v >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+          <span className={cn('text-[11px] font-bold', v >= 0 ? 'text-profit dark:text-profit' : 'text-muted-foreground')}>
             {v >= 0 ? '+' : ''}{(v ?? 0).toFixed(2)}%
           </span>
         );
@@ -1087,7 +1087,7 @@ export function PredictionTrackingDashboard({
         const v = computeMaxLossPct(p);
         if (v == null) return <span className="text-[11px] text-muted-foreground">—</span>;
         return (
-          <span className={cn('text-[11px] font-bold', v < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
+          <span className={cn('text-[11px] font-bold', v < 0 ? 'text-loss dark:text-loss' : 'text-muted-foreground')}>
             {v >= 0 ? '+' : ''}{(v ?? 0).toFixed(2)}%
           </span>
         );
@@ -1117,7 +1117,7 @@ export function PredictionTrackingDashboard({
             e.stopPropagation();
             setSelectedProofTrade(p);
           }}
-          className="h-7 text-[11px] text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold gap-1"
+          className="h-7 text-[11px] text-profit dark:text-profit hover:bg-profit/10 font-bold gap-1"
         >
           إثبات الصفقة 🔍
         </Button>
@@ -1155,12 +1155,12 @@ export function PredictionTrackingDashboard({
   return (
     <div className={cn('space-y-5 dir-rtl', className)}>
       {/* ─── 1. Luxury Header & Timeframe Control Bar ─── */}
-      <Card className="border border-emerald-500/30 bg-gradient-to-br from-card via-card to-emerald-950/20 shadow-xl rounded-2xl overflow-hidden">
+      <Card className="border border-profit/30 bg-gradient-to-br from-card via-card to-profit/20 shadow-xl rounded-2xl overflow-hidden">
         <CardHeader className="p-4 md:p-6 pb-3 border-b border-border/50">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1 font-bold">
+                <Badge variant="outline" className="bg-profit/10 text-profit dark:text-profit border-profit/30 gap-1 font-bold">
                   <Sparkles className="w-3.5 h-3.5" />
                   مركز الشفافية والمصداقية الحية
                 </Badge>
@@ -1168,7 +1168,7 @@ export function PredictionTrackingDashboard({
                   <Badge className={cn(
                     'text-[10px] gap-1 font-bold',
                     session.is_open
-                      ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-pulse'
+                      ? 'bg-profit/20 text-profit dark:text-profit border border-profit/30 animate-pulse'
                       : 'bg-muted text-muted-foreground border border-border'
                   )}>
                     {session.is_open ? <Activity className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
@@ -1177,7 +1177,7 @@ export function PredictionTrackingDashboard({
                 )}
               </div>
               <h1 className="text-xl md:text-2xl font-black text-foreground mt-1.5 flex items-center gap-2">
-                <Gauge className="w-6 h-6 text-emerald-500" />
+                <Gauge className="w-6 h-6 text-profit" />
                 سجل أداء التوقعات ودلائل صحة الصفقات
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">
@@ -1193,7 +1193,7 @@ export function PredictionTrackingDashboard({
                 disabled={refreshing}
                 className="h-9 px-3 text-xs border-border bg-background hover:bg-muted font-bold"
               >
-                {refreshing ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 ml-1 text-emerald-500" />}
+                {refreshing ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 ml-1 text-profit" />}
                 تحديث {countdown > 0 && `(${countdown}s)`}
               </Button>
               <Button
@@ -1222,7 +1222,7 @@ export function PredictionTrackingDashboard({
                   }
                 }}
                 disabled={refreshing}
-                className="h-9 px-3 text-xs border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold"
+                className="h-9 px-3 text-xs border-warning/50 bg-warning/10 hover:bg-warning/20 text-warning dark:text-warning font-bold"
               >
                 {refreshing ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 ml-1" />}
                 تحقق من المعلقة
@@ -1241,7 +1241,7 @@ export function PredictionTrackingDashboard({
                 className={cn(
                   'px-3 py-1.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap border',
                   days === opt.value
-                    ? 'bg-emerald-500 text-white dark:text-emerald-950 border-emerald-500 shadow-md shadow-emerald-500/20'
+                    ? 'bg-profit text-white dark:text-profit border-profit shadow-md shadow-emerald-500/20'
                     : 'bg-background border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted'
                 )}
               >
@@ -1262,7 +1262,7 @@ export function PredictionTrackingDashboard({
                   className={cn(
                     'px-3 py-1.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap border',
                     qualityMode === opt.value
-                      ? 'bg-amber-500 text-white dark:text-amber-950 border-amber-500 shadow-md shadow-amber-500/20'
+                      ? 'bg-warning text-white dark:text-warning border-warning shadow-md shadow-amber-500/20'
                       : 'bg-background border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted'
                   )}
                 >
@@ -1270,7 +1270,7 @@ export function PredictionTrackingDashboard({
                 </button>
               ))}
               {qualityMode === 'top_picks' && (
-                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold mr-1">
+                <Badge variant="outline" className="bg-warning/10 text-warning dark:text-warning border-warning/30 text-[10px] font-bold mr-1">
                   ≥{minConfidence} ثقة · 5/يوم/شخصية
                 </Badge>
               )}
@@ -1285,7 +1285,7 @@ export function PredictionTrackingDashboard({
                     className={cn(
                       'px-2.5 py-1 text-xs font-bold rounded-lg transition-all whitespace-nowrap border',
                       minConfidence === opt.value
-                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-extrabold'
+                        ? 'bg-profit/15 border-profit text-profit dark:text-profit font-extrabold'
                         : 'bg-background border-border text-muted-foreground hover:text-foreground'
                     )}
                   >
@@ -1304,19 +1304,19 @@ export function PredictionTrackingDashboard({
             <div className={cn(
               'col-span-2 sm:col-span-1 p-4 rounded-2xl border flex flex-col justify-between relative overflow-hidden',
               activeStats.netReturn >= 0
-                ? 'bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-500/30'
-                : 'bg-gradient-to-br from-red-500/15 via-red-500/5 to-transparent border-red-500/30'
+                ? 'bg-gradient-to-br from-profit/15 via-profit/5 to-transparent border-profit/30'
+                : 'bg-gradient-to-br from-loss/15 via-loss/5 to-transparent border-loss/30'
             )}>
               <div className="flex items-center justify-between text-xs font-bold mb-1">
-                <span className={activeStats.netReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+                <span className={activeStats.netReturn >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}>
                   {activeStats.netReturn >= 0 ? 'صافي الربح' : 'صافي الخسارة'}
                 </span>
-                <TrendingUp className={cn('w-4 h-4', activeStats.netReturn >= 0 ? 'text-emerald-500' : 'text-red-500')} />
+                <TrendingUp className={cn('w-4 h-4', activeStats.netReturn >= 0 ? 'text-profit' : 'text-loss')} />
               </div>
               <div className="flex items-baseline gap-1 my-1">
                 <span className={cn(
                   'text-3xl md:text-4xl font-black tracking-tight font-mono',
-                  activeStats.netReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                  activeStats.netReturn >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'
                 )}>
                   {activeStats.netReturn >= 0 ? '+' : ''}{(activeStats.netReturn ?? 0).toFixed(1)}%
                 </span>
@@ -1327,13 +1327,13 @@ export function PredictionTrackingDashboard({
             </div>
 
             {/* إجمالي الأرباح */}
-            <div className="bg-card border border-emerald-500/20 p-4 rounded-2xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1">
+            <div className="bg-card border border-profit/20 p-4 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-profit dark:text-profit font-bold mb-1">
                 <span>إجمالي الأرباح</span>
                 <TrendingUp className="w-4 h-4" />
               </div>
               <div className="my-1">
-                <span className="text-2xl md:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                <span className="text-2xl md:text-3xl font-black font-mono text-profit dark:text-profit">
                   +{(activeStats.grossProfit ?? 0).toFixed(1)}%
                 </span>
               </div>
@@ -1343,13 +1343,13 @@ export function PredictionTrackingDashboard({
             </div>
 
             {/* إجمالي الخسائر */}
-            <div className="bg-card border border-red-500/20 p-4 rounded-2xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-red-600 dark:text-red-400 font-bold mb-1">
+            <div className="bg-card border border-loss/20 p-4 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-loss dark:text-loss font-bold mb-1">
                 <span>إجمالي الخسائر</span>
                 <TrendingDown className="w-4 h-4" />
               </div>
               <div className="my-1">
-                <span className="text-2xl md:text-3xl font-black font-mono text-red-600 dark:text-red-400">
+                <span className="text-2xl md:text-3xl font-black font-mono text-loss dark:text-loss">
                   {(activeStats.grossLoss ?? 0).toFixed(1)}%
                 </span>
               </div>
@@ -1359,13 +1359,13 @@ export function PredictionTrackingDashboard({
             </div>
 
             {/* الحماية من الخسائر — أقصى خسارة في صفقة */}
-            <div className="bg-card border border-amber-500/20 p-4 rounded-2xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400 font-bold mb-1">
+            <div className="bg-card border border-warning/20 p-4 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-warning dark:text-warning font-bold mb-1">
                 <span>أقصى خسارة (حماية)</span>
                 <Shield className="w-4 h-4" />
               </div>
               <div className="my-1">
-                <span className="text-2xl md:text-3xl font-black font-mono text-amber-600 dark:text-amber-400">
+                <span className="text-2xl md:text-3xl font-black font-mono text-warning dark:text-warning">
                   {(activeStats.maxLoss ?? 0).toFixed(1)}%
                 </span>
               </div>
@@ -1378,14 +1378,14 @@ export function PredictionTrackingDashboard({
             <div className="bg-card border border-border/80 p-4 rounded-2xl flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs text-muted-foreground font-bold mb-1">
                 <span>نسبة الربح/الخسارة</span>
-                <Scale className="w-4 h-4 text-teal-500" />
+                <Scale className="w-4 h-4 text-whale" />
               </div>
               <div className="my-1">
                 <span className={cn(
                   'text-2xl md:text-3xl font-black font-mono',
-                  activeStats.rrRatio >= 1.5 ? 'text-emerald-600 dark:text-emerald-400' :
-                  activeStats.rrRatio >= 1.0 ? 'text-amber-600 dark:text-amber-400' :
-                  'text-red-600 dark:text-red-400'
+                  activeStats.rrRatio >= 1.5 ? 'text-profit dark:text-profit' :
+                  activeStats.rrRatio >= 1.0 ? 'text-warning dark:text-warning' :
+                  'text-loss dark:text-loss'
                 )}>
                   {(activeStats.rrRatio ?? 0).toFixed(2)}:1
                 </span>
@@ -1414,7 +1414,7 @@ export function PredictionTrackingDashboard({
               className={cn(
                 'text-right p-4 rounded-2xl border transition-all duration-200 relative overflow-hidden bg-card flex flex-col justify-between group',
                 cfg.border,
-                isSelected ? 'ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/10 bg-emerald-500/5' : 'hover:shadow-md'
+                isSelected ? 'ring-2 ring-profit shadow-lg shadow-emerald-500/10 bg-profit/5' : 'hover:shadow-md'
               )}
             >
               <div className="flex items-center justify-between mb-3">
@@ -1440,16 +1440,16 @@ export function PredictionTrackingDashboard({
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">صفقات ناجحة</div>
-                  <div className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">{pStats.wins}</div>
+                  <div className="font-mono font-bold text-xs text-profit dark:text-profit">{pStats.wins}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">صفقات معلقة</div>
-                  <div className="font-mono font-bold text-xs text-amber-600 dark:text-amber-400">{pStats.pending}</div>
+                  <div className="font-mono font-bold text-xs text-warning dark:text-warning">{pStats.pending}</div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground pt-1 border-t border-border/40 mt-1">
-                <span>متوسط الربح: <strong className="text-emerald-600 dark:text-emerald-400">+{(pStats.avgWinPct ?? 0).toFixed(1)}%</strong></span>
+                <span>متوسط الربح: <strong className="text-profit dark:text-profit">+{(pStats.avgWinPct ?? 0).toFixed(1)}%</strong></span>
                 <span>تصفية بالجدول ↓</span>
               </div>
             </button>
@@ -1459,10 +1459,10 @@ export function PredictionTrackingDashboard({
 
       {/* ─── P0-v17: Focus Stocks Banner + Cumulative Profit Chart ─── */}
       {focusTickerList.length > 0 && (
-        <Card className="border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-card to-card shadow-md rounded-2xl overflow-hidden">
-          <CardHeader className="p-4 border-b border-amber-500/20">
+        <Card className="border border-warning/30 bg-gradient-to-br from-warning/10 via-card to-card shadow-md rounded-2xl overflow-hidden">
+          <CardHeader className="p-4 border-b border-warning/20">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 gap-1 font-bold text-xs">
+              <Badge className="bg-warning/15 text-warning dark:text-warning border border-warning/30 gap-1 font-bold text-xs">
                 <Layers className="w-3.5 h-3.5" />
                 أسهم تحت التركيز ({focusTickerList.length})
               </Badge>
@@ -1482,7 +1482,7 @@ export function PredictionTrackingDashboard({
                   <button
                     key={`focus-${tk}`}
                     onClick={() => setSearchQuery(tk)}
-                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors flex items-center gap-1"
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-warning/40 bg-warning/10 text-warning dark:text-warning hover:bg-warning/20 transition-colors flex items-center gap-1"
                     title="اضغط للفلترة على هذا السهم"
                   >
                     <span className="font-mono">{tk}</span>
@@ -1506,19 +1506,19 @@ export function PredictionTrackingDashboard({
           <CardHeader className="p-4 border-b border-border/60">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
-                <CalendarClock className="w-5 h-5 text-emerald-500" />
+                <CalendarClock className="w-5 h-5 text-profit" />
                 <CardTitle className="text-base font-black">حركة الأرباح التراكمية عبر الزمن</CardTitle>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="text-muted-foreground">إجمالي الصفقات المقفولة:</span>
-                <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono font-black">
+                <Badge className="bg-profit/15 text-profit dark:text-profit border border-profit/30 font-mono font-black">
                   {cumulativeProfitData.length} صفقة
                 </Badge>
                 <Badge className={cn(
                   'font-mono font-black',
                   cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                    ? 'bg-profit/15 text-profit dark:text-profit border border-profit/30'
+                    : 'bg-loss/15 text-loss dark:text-loss border border-loss/30'
                 )}>
                   تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0 ? '+' : ''}{(cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative ?? 0).toFixed(2)}%
                 </Badge>
@@ -1558,7 +1558,7 @@ export function PredictionTrackingDashboard({
         <CardHeader className="p-4 border-b border-border/60 space-y-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-emerald-500" />
+              <Target className="w-5 h-5 text-profit" />
               <CardTitle className="text-base font-black">
                 جدول صفقات التوقعات الموثقة ({filteredPredictions.length} صفقة)
               </CardTitle>
@@ -1645,7 +1645,7 @@ export function PredictionTrackingDashboard({
                 className={cn(
                   'px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all whitespace-nowrap',
                   entryPeriod === opt.v
-                    ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-extrabold'
+                    ? 'bg-warning/15 border-warning text-warning dark:text-warning font-extrabold'
                     : 'bg-background border-border text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -1655,7 +1655,7 @@ export function PredictionTrackingDashboard({
             {entryPeriod !== 'all' && (
               <button
                 onClick={() => setEntryPeriod('all')}
-                className="px-1.5 py-1 text-[11px] text-muted-foreground hover:text-rose-500"
+                className="px-1.5 py-1 text-[11px] text-muted-foreground hover:text-loss"
                 title="إلغاء الفلتر"
               >
                 <X className="w-3 h-3" />
@@ -1677,7 +1677,7 @@ export function PredictionTrackingDashboard({
             // تطابق خيارات الفلترة" — المستخدم يفتكر إن الفلاتر غلط. دلوقتي بنوضّح
             // إن المشكلة في الاتصال بالخادم، مش في الفلاتر.
             <div className="p-12 text-center space-y-3 text-muted-foreground">
-              <AlertTriangle className="w-10 h-10 mx-auto text-amber-500" />
+              <AlertTriangle className="w-10 h-10 mx-auto text-warning" />
               <p className="font-bold text-sm text-foreground">تعذّر تحميل بيانات التوقعات</p>
               <p className="text-xs">{error}</p>
               <p className="text-[11px] text-muted-foreground/70">
@@ -1739,13 +1739,13 @@ export function PredictionTrackingDashboard({
                             {personaCfg.emoji} {personaCfg.nameAr}
                           </Badge>
                           {focusTickers[pred.ticker] && (
-                            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] py-0 px-1.5 font-bold" title="مكرر في عدة شخصيات — إشارة قوية">
+                            <Badge className="bg-warning/15 text-warning dark:text-warning border border-warning/30 text-[9px] py-0 px-1.5 font-bold" title="مكرر في عدة شخصيات — إشارة قوية">
                               🎯 تركيز ×{focusTickers[pred.ticker].count}
                             </Badge>
                           )}
                           {/* NEW: WHO IS BUYING badge */}
                           {pred.who_is_buying_state && (
-                            <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title={pred.who_is_buying_state}>
+                            <Badge className="bg-primary/15 text-primary dark:text-primary border border-primary/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title={pred.who_is_buying_state}>
                               {pred.who_is_buying_state.includes('مؤسساتي') ? '🏦 مؤسساتي' : pred.who_is_buying_state.includes('أفراد') ? '👤 أفراد' : '⚪'}
                             </Badge>
                           )}
@@ -1756,12 +1756,12 @@ export function PredictionTrackingDashboard({
                             </Badge>
                           )}
                           {pred.morning_bell && (
-                            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 text-[9px] py-0 px-1.5 font-bold" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
+                            <Badge className="bg-warning/20 text-warning dark:text-warning border border-warning/40 text-[9px] py-0 px-1.5 font-bold" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
                               🔔 جرس الصباح
                             </Badge>
                           )}
                           {pred.evidence_count != null && pred.evidence_count > 0 && (
-                            <Badge variant="outline" className="text-[9px] py-0 px-1.5 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold" title="عدد الأدلة المتوافقة">
+                            <Badge variant="outline" className="text-[9px] py-0 px-1.5 text-profit dark:text-profit border-profit/30 font-bold" title="عدد الأدلة المتوافقة">
                               ✅ {pred.evidence_count}/6
                             </Badge>
                           )}
@@ -1793,19 +1793,19 @@ export function PredictionTrackingDashboard({
                         </div>
                         <div>
                           <div className="text-[9px] text-muted-foreground">المستهدف ١</div>
-                          <div className="font-bold text-emerald-600 dark:text-emerald-400">{fmtPrice(pred.targetPrice)}</div>
+                          <div className="font-bold text-profit dark:text-profit">{fmtPrice(pred.targetPrice)}</div>
                         </div>
                         <div>
                           <div className="text-[9px] text-muted-foreground">المستهدف ٢</div>
                           {hasTarget2 ? (
-                            <div className="font-bold text-teal-600 dark:text-teal-400">{fmtPrice(pred.targetPrice2)}</div>
+                            <div className="font-bold text-whale dark:text-whale">{fmtPrice(pred.targetPrice2)}</div>
                           ) : (
                             <div className="font-bold text-muted-foreground">—</div>
                           )}
                         </div>
                         <div>
                           <div className="text-[9px] text-muted-foreground">الوقف</div>
-                          <div className="font-bold text-rose-600 dark:text-rose-400">{fmtPrice(pred.stopLoss)}</div>
+                          <div className="font-bold text-loss dark:text-loss">{fmtPrice(pred.stopLoss)}</div>
                         </div>
                       </div>
 
@@ -1855,14 +1855,14 @@ export function PredictionTrackingDashboard({
 
                       {/* FIX-5B: _live_return للـ PENDING — اعرض badge بـ النسبة المئوية */}
                       {showLiveReturnBadge && (
-                        <div className="flex items-center justify-between gap-2 bg-amber-500/5 border border-dashed border-amber-500/40 rounded-lg p-2 text-[10px]">
+                        <div className="flex items-center justify-between gap-2 bg-warning/5 border border-dashed border-warning/40 rounded-lg p-2 text-[10px]">
                           <span className="text-muted-foreground font-bold">العائد اللحظي (معاينة):</span>
                           <Badge
                             className={cn(
                               'text-[9px] font-bold whitespace-nowrap',
                               liveReturnPct != null && liveReturnPct >= 0
-                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/40'
-                                : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/40'
+                                ? 'bg-warning/15 text-warning dark:text-warning border border-warning/40'
+                                : 'bg-loss/15 text-loss dark:text-loss border border-loss/40'
                             )}
                             title="العائد اللحظي من السعر الحالي (معاينة غير رسمية — لم تُقفل الصفقة بعد)"
                           >
@@ -1878,7 +1878,7 @@ export function PredictionTrackingDashboard({
                         <div className="grid grid-cols-2 gap-2 bg-muted/20 p-2 rounded-lg text-[10px] font-mono">
                           <div>
                             <div className="text-[9px] text-muted-foreground">أعلى سعر 📈</div>
-                            <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                            <div className="font-bold text-profit dark:text-profit">
                               {highest > 0 ? fmtPrice(highest) : '—'}
                               {maxProfitPct != null && (
                                 <span className="text-[9px] mr-1">
@@ -1889,7 +1889,7 @@ export function PredictionTrackingDashboard({
                           </div>
                           <div>
                             <div className="text-[9px] text-muted-foreground">أقل سعر 📉</div>
-                            <div className="font-bold text-rose-600 dark:text-rose-400">
+                            <div className="font-bold text-loss dark:text-loss">
                               {lowest > 0 ? fmtPrice(lowest) : '—'}
                               {maxLossPct != null && (
                                 <span className="text-[9px] mr-1">
@@ -1905,7 +1905,7 @@ export function PredictionTrackingDashboard({
                         <span className={cn('font-mono font-black', ret.color)}>
                           العائد: {ret.text}
                         </span>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="text-[10px] text-profit dark:text-profit font-bold flex items-center gap-1">
                           عرض بطاقة الإثبات 🔍
                         </span>
                       </div>
@@ -1923,7 +1923,7 @@ export function PredictionTrackingDashboard({
                   maxHeight="max-h-[70vh]"
                   emptyTextAr="لا توجد صفقات تطابق الفلاتر الحالية"
                   onRowClick={(p) => setSelectedProofTrade(p)}
-                  rowClassName={() => 'hover:bg-emerald-500/5 group cursor-pointer'}
+                  rowClassName={() => 'hover:bg-profit/5 group cursor-pointer'}
                   publishable
                   publishTitle="تتبّع التوقعات"
                   publishFilename={`predictions-tracking-${new Date().toISOString().slice(0,10)}`}
@@ -1942,7 +1942,7 @@ export function PredictionTrackingDashboard({
             <div ref={proofCardRef} className="p-6 bg-card space-y-4 relative">
               <DialogHeader className="p-0 border-b border-border/60 pb-3">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold text-xs gap-1">
+                  <Badge variant="outline" className="bg-profit/10 text-profit dark:text-profit border-profit/30 font-bold text-xs gap-1">
                     <Shield className="w-3.5 h-3.5" />
                     بطاقة إثبات التوقع الموثقة
                   </Badge>
@@ -1953,7 +1953,7 @@ export function PredictionTrackingDashboard({
 
                 <DialogTitle className="text-xl font-black text-foreground mt-2 flex items-center justify-between">
                   <span>{selectedProofTrade.ticker} ({selectedProofTrade.nameAr || selectedProofTrade.ticker})</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 text-lg">
+                  <span className="font-mono text-profit dark:text-profit text-lg">
                     {formatReturnPct(selectedProofTrade.returnPct).text}
                   </span>
                 </DialogTitle>
@@ -1974,19 +1974,19 @@ export function PredictionTrackingDashboard({
                 </div>
                 <div>
                   <span className="text-muted-foreground text-[10px] block">المستهدف الأول (Target 1):</span>
-                  <strong className="text-emerald-600 dark:text-emerald-400 text-sm font-bold">🎯 {fmtPrice(selectedProofTrade.targetPrice)} ج.م</strong>
+                  <strong className="text-profit dark:text-profit text-sm font-bold">🎯 {fmtPrice(selectedProofTrade.targetPrice)} ج.م</strong>
                 </div>
                 <div>
                   <span className="text-muted-foreground text-[10px] block">المستهدف الثاني (Target 2):</span>
                   {(selectedProofTrade.targetPrice2 != null && Number(selectedProofTrade.targetPrice2) > 0) ? (
-                    <strong className="text-teal-600 dark:text-teal-400 text-sm font-bold">🎯 {fmtPrice(selectedProofTrade.targetPrice2)} ج.م</strong>
+                    <strong className="text-whale dark:text-whale text-sm font-bold">🎯 {fmtPrice(selectedProofTrade.targetPrice2)} ج.م</strong>
                   ) : (
                     <strong className="text-muted-foreground text-sm font-bold">—</strong>
                   )}
                 </div>
                 <div>
                   <span className="text-muted-foreground text-[10px] block">وقف الخسارة (Stop):</span>
-                  <strong className="text-rose-600 dark:text-rose-400 text-sm font-bold">🛑 {fmtPrice(selectedProofTrade.stopLoss)} ج.م</strong>
+                  <strong className="text-loss dark:text-loss text-sm font-bold">🛑 {fmtPrice(selectedProofTrade.stopLoss)} ج.م</strong>
                 </div>
                 <div>
                   <span className="text-muted-foreground text-[10px] block">تاريخ التوقع:</span>
@@ -2008,7 +2008,7 @@ export function PredictionTrackingDashboard({
 
                 {/* Task IMPROVEMENT-25: عرض التحليل الفني الشامل (analysis_reason) */}
                 {(selectedProofTrade as any).analysis_reason && (
-                  <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 rounded-xl text-foreground text-xs leading-relaxed whitespace-pre-line">
+                  <div className="p-3 bg-profit/50 dark:bg-profit/20 border border-profit/50 dark:border-profit/30 rounded-xl text-foreground text-xs leading-relaxed whitespace-pre-line">
                     {String((selectedProofTrade as any).analysis_reason)}
                   </div>
                 )}
@@ -2034,13 +2034,13 @@ export function PredictionTrackingDashboard({
                   {(selectedProofTrade as any).support_level && (
                     <div>
                       <span className="text-muted-foreground text-[10px] block">الدعم:</span>
-                      <strong className="text-emerald-600 dark:text-emerald-400 text-sm font-bold">📊 {fmtPrice((selectedProofTrade as any).support_level)} ج.م</strong>
+                      <strong className="text-profit dark:text-profit text-sm font-bold">📊 {fmtPrice((selectedProofTrade as any).support_level)} ج.م</strong>
                     </div>
                   )}
                   {(selectedProofTrade as any).resistance_level && (
                     <div>
                       <span className="text-muted-foreground text-[10px] block">المقاومة:</span>
-                      <strong className="text-rose-600 dark:text-rose-400 text-sm font-bold">📊 {fmtPrice((selectedProofTrade as any).resistance_level)} ج.م</strong>
+                      <strong className="text-loss dark:text-loss text-sm font-bold">📊 {fmtPrice((selectedProofTrade as any).resistance_level)} ج.م</strong>
                     </div>
                   )}
 
@@ -2048,7 +2048,7 @@ export function PredictionTrackingDashboard({
                   {(selectedProofTrade as any).who_is_buying && (
                     <div>
                       <span className="text-muted-foreground text-[10px] block">من يشتري؟</span>
-                      <strong className="text-blue-600 dark:text-blue-400 text-sm font-bold">{String((selectedProofTrade as any).who_is_buying)}</strong>
+                      <strong className="text-primary dark:text-primary text-sm font-bold">{String((selectedProofTrade as any).who_is_buying)}</strong>
                     </div>
                   )}
 
@@ -2065,7 +2065,7 @@ export function PredictionTrackingDashboard({
               {/* Footer Proof Metadata */}
               <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t border-border/40">
                 <span>تاريخ التوثيق: {new Date().toLocaleDateString('ar-EG')}</span>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">M2Y INVESTMENT VERIFIED</span>
+                <span className="font-mono text-profit dark:text-profit font-bold">M2Y INVESTMENT VERIFIED</span>
               </div>
 
               {/* Modal Actions */}
@@ -2075,7 +2075,7 @@ export function PredictionTrackingDashboard({
                   size="sm"
                   onClick={handleExportProofImage}
                   disabled={downloadingProof}
-                  className="h-8 text-xs font-bold border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1"
+                  className="h-8 text-xs font-bold border-profit/40 text-profit dark:text-profit gap-1"
                 >
                   {downloadingProof ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                   تحميل بطاقة الإثبات 📸

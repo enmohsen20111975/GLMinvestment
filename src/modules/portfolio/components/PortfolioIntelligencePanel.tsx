@@ -98,8 +98,8 @@ export function PortfolioIntelligencePanel() {
 
   const getActionColor = (action: string) => {
     switch (action) {
-      case 'BUY': return 'bg-green-500 text-white';
-      case 'SELL': return 'bg-red-500 text-white';
+      case 'BUY': return 'bg-success text-white';
+      case 'SELL': return 'bg-loss text-white';
       default: return 'bg-yellow-500 text-white';
     }
   };
@@ -114,16 +114,16 @@ export function PortfolioIntelligencePanel() {
 
   const getTrendColor = (trend: string) => {
     switch (trend) {
-      case 'BULLISH': return 'text-emerald-500';
-      case 'BEARISH': return 'text-red-600';
+      case 'BULLISH': return 'text-profit';
+      case 'BEARISH': return 'text-loss';
       default: return 'text-yellow-600';
     }
   };
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'LOW': return 'bg-green-100 text-emerald-500';
-      case 'HIGH': return 'bg-red-100 text-red-700';
+      case 'LOW': return 'bg-success text-profit';
+      case 'HIGH': return 'bg-loss text-loss';
       default: return 'bg-yellow-100 text-yellow-700';
     }
   };
@@ -174,31 +174,31 @@ export function PortfolioIntelligencePanel() {
           <div className="text-sm text-muted-foreground">الربح/الخسارة</div>
           <div className={cn(
             "text-xl font-bold",
-            data.summary.total_pnl >= 0 ? "text-emerald-500" : "text-red-600"
+            data.summary.total_pnl >= 0 ? "text-profit" : "text-loss"
           )}>
             {data.summary.total_pnl >= 0 ? '+' : ''}
             {data.summary.total_pnl.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
           <div className={cn(
             "text-xs",
-            data.summary.total_pnl_percent >= 0 ? "text-emerald-500" : "text-red-600"
+            data.summary.total_pnl_percent >= 0 ? "text-profit" : "text-loss"
           )}>
             ({(data.summary.total_pnl_percent ?? 0) >= 0 ? '+' : ''}{(data.summary.total_pnl_percent ?? 0).toFixed(2)}%)
           </div>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-1">
-            <CheckCircle className="h-4 w-4 text-emerald-500" />
+            <CheckCircle className="h-4 w-4 text-profit" />
             <span className="text-sm">شراء</span>
           </div>
-          <div className="text-xl font-bold text-emerald-500">{data.summary.buy_signals}</div>
+          <div className="text-xl font-bold text-profit">{data.summary.buy_signals}</div>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-1">
-            <XCircle className="h-4 w-4 text-red-600" />
+            <XCircle className="h-4 w-4 text-loss" />
             <span className="text-sm">بيع</span>
           </div>
-          <div className="text-xl font-bold text-red-600">{data.summary.sell_signals}</div>
+          <div className="text-xl font-bold text-loss">{data.summary.sell_signals}</div>
         </Card>
       </div>
 
@@ -258,13 +258,13 @@ export function PortfolioIntelligencePanel() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         {rec.target_price && (
                           <div className="flex items-center gap-2">
-                            <Target className="h-4 w-4 text-emerald-500" />
+                            <Target className="h-4 w-4 text-profit" />
                             <span>الهدف: {(rec.target_price ?? 0).toFixed(2)} ج.م</span>
                           </div>
                         )}
                         {rec.stop_loss && (
                           <div className="flex items-center gap-2">
-                            <ShieldAlert className="h-4 w-4 text-red-600" />
+                            <ShieldAlert className="h-4 w-4 text-loss" />
                             <span>وقف الخسارة: {(rec.stop_loss ?? 0).toFixed(2)} ج.م</span>
                           </div>
                         )}
@@ -308,8 +308,8 @@ export function PortfolioIntelligencePanel() {
                     </div>
                     <Badge className={cn(
                       "text-white",
-                      analysis.trend === 'BULLISH' ? "bg-green-500" : 
-                      analysis.trend === 'BEARISH' ? "bg-red-500" : "bg-yellow-500"
+                      analysis.trend === 'BULLISH' ? "bg-success" : 
+                      analysis.trend === 'BEARISH' ? "bg-loss" : "bg-yellow-500"
                     )}>
                       {analysis.trend === 'BULLISH' ? 'صاعد' : analysis.trend === 'BEARISH' ? 'هابط' : 'محايد'}
                     </Badge>
@@ -328,8 +328,8 @@ export function PortfolioIntelligencePanel() {
                       <div className="text-muted-foreground">RSI</div>
                       <div className={cn(
                         "font-medium",
-                        analysis.rsi > 70 ? "text-red-600" : 
-                        analysis.rsi < 30 ? "text-emerald-500" : ""
+                        analysis.rsi > 70 ? "text-loss" : 
+                        analysis.rsi < 30 ? "text-profit" : ""
                       )}>
                         {(analysis.rsi ?? 0).toFixed(0)}
                       </div>
@@ -358,14 +358,14 @@ export function PortfolioIntelligencePanel() {
                   <div className="text-left">
                     <div className={cn(
                       "font-bold",
-                      (stock.profit_loss ?? 0) >= 0 ? "text-emerald-500" : "text-red-600"
+                      (stock.profit_loss ?? 0) >= 0 ? "text-profit" : "text-loss"
                     )}>
                       {(stock.profit_loss ?? 0) >= 0 ? '+' : ''}
                       {(stock.profit_loss ?? 0).toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
                     </div>
                     <div className={cn(
                       "text-sm",
-                      (stock.profit_loss_percent ?? 0) >= 0 ? "text-emerald-500" : "text-red-600"
+                      (stock.profit_loss_percent ?? 0) >= 0 ? "text-profit" : "text-loss"
                     )}>
                       ({(stock.profit_loss_percent ?? 0) >= 0 ? '+' : ''}{(stock.profit_loss_percent ?? 0).toFixed(2)}%)
                     </div>

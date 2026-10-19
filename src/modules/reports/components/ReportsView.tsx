@@ -128,7 +128,7 @@ function ExportToolbar({
         onClick={onPng}
         disabled={exporting}
         variant="outline"
-        className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 bg-[#0d1320]"
+        className="gap-2 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning bg-[#0d1320]"
       >
         <Download className="w-4 h-4" />
         {exporting ? 'جارٍ التصدير...' : pngLabel}
@@ -136,7 +136,7 @@ function ExportToolbar({
       <Button
         onClick={onPrint}
         variant="outline"
-        className="gap-2 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 bg-[#0d1320]"
+        className="gap-2 border-profit/40 text-profit hover:bg-profit/10 hover:text-profit bg-[#0d1320]"
       >
         <Printer className="w-4 h-4" />
         طباعة / PDF
@@ -161,31 +161,31 @@ function ProfessionalHeader({
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
+      className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
       dir="rtl"
     >
-      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-amber-500 via-amber-400 to-amber-500" />
+      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 via-amber-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-warning via-warning to-profit flex items-center justify-center shadow-lg shadow-amber-500/20">
             <FileBarChart className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
               دليل الاستثمار
             </h1>
-            <p className="text-[11px] text-amber-300/80 tracking-wide uppercase">
+            <p className="text-[11px] text-warning/80 tracking-wide uppercase">
               Egyptian Investment Platform · Professional Reports
             </p>
           </div>
         </div>
         <div className="text-left">
-          <h2 className="text-base sm:text-lg font-bold text-amber-300">{title}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-warning">{title}</h2>
           <p className="text-xs text-slate-300/90">{subtitle}</p>
           <div className="flex items-center justify-end gap-2 mt-1">
             <Badge
               variant="outline"
-              className="text-[10px] font-bold border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+              className="text-[10px] font-bold border-profit/40 text-profit bg-profit/10"
             >
               {market} · LIVE
             </Badge>
@@ -217,8 +217,8 @@ function OfflineState({ reason }: { reason: string }) {
       className="flex flex-col items-center justify-center py-16 text-center"
       dir="rtl"
     >
-      <AlertTriangle className="w-12 h-12 mb-3 text-amber-400" />
-      <p className="text-base font-bold text-amber-300 mb-1">تعذّر تحميل التقرير</p>
+      <AlertTriangle className="w-12 h-12 mb-3 text-warning" />
+      <p className="text-base font-bold text-warning mb-1">تعذّر تحميل التقرير</p>
       <p className="text-xs text-slate-400 max-w-md">{reason}</p>
       <p className="text-[11px] text-slate-500 mt-3 max-w-md">
         محرك التقارير (Python) هو المسؤول عن توليد كل التقارير — Node.js للعرض فقط.
@@ -317,7 +317,7 @@ function SectorReport() {
         dateStr={dateStr}
       />
 
-      <p className="text-[10px] text-amber-300/70 italic text-center leading-relaxed">
+      <p className="text-[10px] text-warning/70 italic text-center leading-relaxed">
         ⚠️ إخلاء مسؤولية: المنصة تقدم رأيًا آليًا لأغراض تعليمية فقط، وليست نصيحة استثمارية.
       </p>
 
@@ -329,9 +329,9 @@ function SectorReport() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 to-amber-400/5 p-3.5">
+        <div className="rounded-xl border border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
           <p className="text-[11px] text-slate-300 mb-1">عدد القطاعات</p>
-          <p className="text-2xl font-extrabold text-amber-200 tabular-nums">
+          <p className="text-2xl font-extrabold text-warning tabular-nums">
             {safeFmtNum(sectors.length, 0)}
           </p>
         </div>
@@ -341,15 +341,15 @@ function SectorReport() {
             {safeFmtNum(totalStocks, 0)}
           </p>
         </div>
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5">
+        <div className="rounded-xl border border-profit/30 bg-profit/10 p-3.5">
           <p className="text-[11px] text-slate-300 mb-1">متوسط التغيّر</p>
-          <p className={cn('text-2xl font-extrabold tabular-nums', avgChange >= 0 ? 'text-emerald-300' : 'text-red-300')}>
+          <p className={cn('text-2xl font-extrabold tabular-nums', avgChange >= 0 ? 'text-profit' : 'text-loss')}>
             {safeFmtPct(avgChange, 2)}
           </p>
         </div>
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-3.5">
           <p className="text-[11px] text-slate-300 mb-1">درجة السوق</p>
-          <p className="text-2xl font-extrabold text-amber-300 tabular-nums">
+          <p className="text-2xl font-extrabold text-warning tabular-nums">
             {safeFmtNum(report.summary?.market_breadth ?? 0, 0)}
           </p>
         </div>
@@ -358,27 +358,27 @@ function SectorReport() {
       {/* Best / Worst */}
       {bestSector && worstSector && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <Card className="border-profit/30 bg-profit/5">
             <CardContent className="p-4">
               <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
-                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
+                <ArrowUpRight className="w-3.5 h-3.5 text-profit" />
                 أفضل قطاع
               </p>
               <p className="text-base font-bold text-white">{bestSector.name || '—'}</p>
-              <p className="text-2xl font-extrabold text-emerald-400 tabular-nums">
+              <p className="text-2xl font-extrabold text-profit tabular-nums">
                 {safeFmtPct(bestSector.avg_change_percent, 2)}
               </p>
               <p className="text-[11px] text-slate-400">{bestSector.count ?? 0} سهم</p>
             </CardContent>
           </Card>
-          <Card className="border-red-500/30 bg-red-500/5">
+          <Card className="border-loss/30 bg-loss/5">
             <CardContent className="p-4">
               <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
-                <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />
+                <ArrowDownRight className="w-3.5 h-3.5 text-loss" />
                 أسوأ قطاع
               </p>
               <p className="text-base font-bold text-white">{worstSector.name || '—'}</p>
-              <p className="text-2xl font-extrabold text-red-400 tabular-nums">
+              <p className="text-2xl font-extrabold text-loss tabular-nums">
                 {safeFmtPct(worstSector.avg_change_percent, 2)}
               </p>
               <p className="text-[11px] text-slate-400">{worstSector.count ?? 0} سهم</p>
@@ -390,7 +390,7 @@ function SectorReport() {
       {/* Sector Heatmap */}
       <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+          <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
             <Layers className="w-5 h-5" />
             خريطة أداء القطاعات
             <span className="text-[10px] font-normal text-slate-400">
@@ -411,7 +411,7 @@ function SectorReport() {
                 const bg = change >= 0
                   ? `rgba(16, 185, 129, ${0.15 + intensity * 0.45})`
                   : `rgba(239, 68, 68, ${0.15 + intensity * 0.45})`;
-                const border = change >= 0 ? 'border-emerald-500/40' : 'border-red-500/40';
+                const border = change >= 0 ? 'border-profit/40' : 'border-loss/40';
                 return (
                   <div
                     key={`${sector.name ?? 'sector'}-${i}`}
@@ -427,7 +427,7 @@ function SectorReport() {
                     <p
                       className={cn(
                         'text-sm font-bold tabular-nums',
-                        change >= 0 ? 'text-emerald-100' : 'text-red-100',
+                        change >= 0 ? 'text-profit' : 'text-loss',
                       )}
                     >
                       {safeFmtPct(change, 2)}
@@ -444,7 +444,7 @@ function SectorReport() {
       {sectors.length > 0 && (
         <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
               <BarChart3 className="w-5 h-5" />
               جدول مقارنة القطاعات
             </CardTitle>
@@ -472,13 +472,13 @@ function SectorReport() {
                       <td className="py-2 px-3 text-left tabular-nums text-slate-300">
                         {sector.count ?? 0}
                       </td>
-                      <td className={cn('py-2 px-3 text-left tabular-nums font-bold', isUp ? 'text-emerald-400' : 'text-red-400')}>
+                      <td className={cn('py-2 px-3 text-left tabular-nums font-bold', isUp ? 'text-profit' : 'text-loss')}>
                         {safeFmtPct(change, 2)}
                       </td>
                       <td className="py-2 px-3">
                         <div className="w-24 h-2 bg-slate-700/60 rounded-full overflow-hidden">
                           <div
-                            className={cn('h-full rounded-full', isUp ? 'bg-emerald-500' : 'bg-red-500')}
+                            className={cn('h-full rounded-full', isUp ? 'bg-profit' : 'bg-loss')}
                             style={{ width: `${Math.max(barWidth, 3)}%` }}
                           />
                         </div>
@@ -592,7 +592,7 @@ function PredictionsReport() {
         dateStr={dateStr}
       />
 
-      <p className="text-[10px] text-amber-300/70 italic text-center leading-relaxed">
+      <p className="text-[10px] text-warning/70 italic text-center leading-relaxed">
         ⚠️ إخلاء مسؤولية: التوقعات رأي آلي تعليمي تحليلي وليست نصيحة استثمارية. لا ضمان للنتائج.
       </p>
 
@@ -605,30 +605,30 @@ function PredictionsReport() {
       {/* Performance KPIs */}
       <section>
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold text-amber-300 uppercase tracking-wide">
+          <Sparkles className="w-4 h-4 text-warning" />
+          <h3 className="text-sm font-bold text-warning uppercase tracking-wide">
             ملخص الأداء · Performance Summary
           </h3>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 to-amber-400/5 p-3.5">
+          <div className="rounded-xl border border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
             <p className="text-[11px] text-slate-300 mb-1">أداء EGX30 الأسبوعي</p>
-            <p className={cn('text-2xl font-extrabold tabular-nums', egx30Perf >= 0 ? 'text-emerald-300' : 'text-red-300')}>
+            <p className={cn('text-2xl font-extrabold tabular-nums', egx30Perf >= 0 ? 'text-profit' : 'text-loss')}>
               {safeFmtPct(egx30Perf, 2)}
             </p>
             {sparklineEgx.length > 1 && (
               <Sparkline values={sparklineEgx} tone={egx30Perf >= 0 ? 'positive' : 'negative'} />
             )}
           </div>
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5">
+          <div className="rounded-xl border border-warning/30 bg-warning/10 p-3.5">
             <p className="text-[11px] text-slate-300 mb-1">أداء الذهب</p>
-            <p className={cn('text-2xl font-extrabold tabular-nums', goldPerf >= 0 ? 'text-emerald-300' : 'text-red-300')}>
+            <p className={cn('text-2xl font-extrabold tabular-nums', goldPerf >= 0 ? 'text-profit' : 'text-loss')}>
               {safeFmtPct(goldPerf, 2)}
             </p>
           </div>
           <div className="rounded-xl border border-slate-500/30 bg-slate-500/10 p-3.5">
             <p className="text-[11px] text-slate-300 mb-1">أداء الدولار</p>
-            <p className={cn('text-2xl font-extrabold tabular-nums', usdPerf >= 0 ? 'text-emerald-300' : 'text-red-300')}>
+            <p className={cn('text-2xl font-extrabold tabular-nums', usdPerf >= 0 ? 'text-profit' : 'text-loss')}>
               {safeFmtPct(usdPerf, 2)}
             </p>
           </div>
@@ -638,32 +638,32 @@ function PredictionsReport() {
       {/* Best / Worst Stock */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {bestStock && (
-          <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <Card className="border-profit/30 bg-profit/5">
             <CardContent className="p-4">
               <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
-                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <Trophy className="w-3.5 h-3.5 text-warning" />
                 أفضل سهم متوقع
               </p>
               <p className="text-base font-bold text-white">
                 {bestStock.symbol || '—'} ({bestStock.name || '—'})
               </p>
-              <p className="text-2xl font-extrabold text-emerald-400 tabular-nums">
+              <p className="text-2xl font-extrabold text-profit tabular-nums">
                 {safeFmtPct(bestStock.change_percent, 2)}
               </p>
             </CardContent>
           </Card>
         )}
         {worstStock && (
-          <Card className="border-red-500/30 bg-red-500/5">
+          <Card className="border-loss/30 bg-loss/5">
             <CardContent className="p-4">
               <p className="text-[11px] text-slate-300 mb-1 flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                <AlertTriangle className="w-3.5 h-3.5 text-loss" />
                 أسوأ سهم متوقع (خسارة صريحة)
               </p>
               <p className="text-base font-bold text-white">
                 {worstStock.symbol || '—'} ({worstStock.name || '—'})
               </p>
-              <p className="text-2xl font-extrabold text-red-400 tabular-nums">
+              <p className="text-2xl font-extrabold text-loss tabular-nums">
                 {safeFmtPct(worstStock.change_percent, 2)}
               </p>
             </CardContent>
@@ -673,12 +673,12 @@ function PredictionsReport() {
 
       {/* Top 5 Successful Predictions */}
       {topPerformers.length > 0 && (
-        <Card className="overflow-hidden border-emerald-500/30 bg-[#0d1320] print:break-inside-avoid">
+        <Card className="overflow-hidden border-profit/30 bg-[#0d1320] print:break-inside-avoid">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold flex items-center gap-2 text-emerald-400">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-profit">
               <TrendingUp className="w-5 h-5" />
               أعلى 5 توقعات ناجحة
-              <span className="text-[10px] font-normal text-emerald-300/70">
+              <span className="text-[10px] font-normal text-profit/70">
                 Top 5 Successful Predictions
               </span>
             </CardTitle>
@@ -689,16 +689,16 @@ function PredictionsReport() {
               return (
                 <div
                   key={`p-${i}-${p.symbol ?? i}`}
-                  className="flex items-center gap-3 p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5"
+                  className="flex items-center gap-3 p-2.5 rounded-lg border border-profit/20 bg-profit/5"
                 >
-                  <div className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-500/20 text-xs font-bold text-emerald-300">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-md bg-profit/20 text-xs font-bold text-profit">
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white">{p.symbol || '—'}</p>
                     <p className="text-[10px] text-slate-400 truncate">{p.name || ''}</p>
                   </div>
-                  <span className="text-sm font-bold text-emerald-400 tabular-nums">
+                  <span className="text-sm font-bold text-profit tabular-nums">
                     <ArrowUpRight className="w-3.5 h-3.5 inline -mt-0.5" />{' '}
                     {safeFmtPct(change, 2)}
                   </span>
@@ -711,26 +711,26 @@ function PredictionsReport() {
 
       {/* Honest Failure Display (Rule 67 — never hide losses) */}
       {worstStock && (
-        <Card className="overflow-hidden border-red-500/30 bg-[#0d1320] print:break-inside-avoid">
+        <Card className="overflow-hidden border-loss/30 bg-[#0d1320] print:break-inside-avoid">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold flex items-center gap-2 text-red-400">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-loss">
               <TrendingDown className="w-5 h-5" />
               توقعات فشلت (عرض صريح للخسائر)
-              <span className="text-[10px] font-normal text-red-300/70">
+              <span className="text-[10px] font-normal text-loss/70">
                 Failed Predictions — Honest
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex items-center gap-3 p-2.5 rounded-lg border border-red-500/20 bg-red-500/5">
-              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-xs font-bold text-red-300">
+            <div className="flex items-center gap-3 p-2.5 rounded-lg border border-loss/20 bg-loss/5">
+              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-loss/20 text-xs font-bold text-loss">
                 1
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-white">{worstStock.symbol || '—'}</p>
                 <p className="text-[10px] text-slate-400 truncate">{worstStock.name || ''}</p>
               </div>
-              <span className="text-sm font-bold text-red-400 tabular-nums">
+              <span className="text-sm font-bold text-loss tabular-nums">
                 <ArrowDownRight className="w-3.5 h-3.5 inline -mt-0.5" />{' '}
                 {safeFmtPct(worstStock.change_percent, 2)}
               </span>
@@ -746,9 +746,9 @@ function PredictionsReport() {
       {(lessons.length > 0 || watchlist.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {lessons.length > 0 && (
-            <Card className="overflow-hidden border-amber-500/30 bg-[#0d1320]">
+            <Card className="overflow-hidden border-warning/30 bg-[#0d1320]">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-300">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-warning">
                   <Sparkles className="w-4 h-4" />
                   دروس للأسبوع القادم
                 </CardTitle>
@@ -763,9 +763,9 @@ function PredictionsReport() {
             </Card>
           )}
           {watchlist.length > 0 && (
-            <Card className="overflow-hidden border-emerald-500/30 bg-[#0d1320]">
+            <Card className="overflow-hidden border-profit/30 bg-[#0d1320]">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold flex items-center gap-2 text-emerald-300">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-profit">
                   <Shield className="w-4 h-4" />
                   أسهم للمتابعة
                 </CardTitle>
@@ -776,7 +776,7 @@ function PredictionsReport() {
                     <Badge
                       key={`wl-${i}`}
                       variant="outline"
-                      className="text-xs border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+                      className="text-xs border-profit/40 text-profit bg-profit/10"
                     >
                       {s}
                     </Badge>
@@ -790,12 +790,12 @@ function PredictionsReport() {
 
       {/* AI Summary text (Python-generated) */}
       {report.content && (
-        <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+        <Card className="overflow-hidden border-warning/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
               <Activity className="w-5 h-5" />
               الملخص الذكي لتوقعات الأسبوع
-              <span className="text-[10px] font-normal text-amber-300/70">
+              <span className="text-[10px] font-normal text-warning/70">
                 AI Summary · Python
               </span>
             </CardTitle>
@@ -877,17 +877,17 @@ export function ReportsView() {
     <div className="min-h-screen flex flex-col bg-[#0a0e1a] text-slate-100">
       <header className="sticky top-0 z-30 bg-[#0a0e1a]/95 backdrop-blur-sm border-b border-slate-700/50 print:hidden">
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-emerald-500 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-profit flex items-center justify-center">
             <FileBarChart className="w-5 h-5 text-[#0a0e1a]" strokeWidth={2.5} />
           </div>
           <div className="min-w-0 mr-auto">
-            <h1 className="text-lg font-extrabold text-amber-300 flex items-center gap-2">
+            <h1 className="text-lg font-extrabold text-warning flex items-center gap-2">
               {t('reports.view.title')}
             </h1>
             <p className="text-[11px] text-slate-400">
               Professional Financial Reports · Python Brain · Rule 67 Unified Source
             </p>
-            <p className="text-[10px] text-amber-300/60 italic mt-0.5">
+            <p className="text-[10px] text-warning/60 italic mt-0.5">
               {t('reports.view.disclaimer')}
             </p>
           </div>
@@ -900,28 +900,28 @@ export function ReportsView() {
             <TabsList className="mb-6 w-full flex h-auto flex-wrap gap-1 bg-[#0d1320] border border-slate-700/40 p-1 rounded-xl print:hidden">
               <TabsTrigger
                 value="daily"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
               >
                 <BarChart3 className="w-3.5 h-3.5" />
                 التقرير اليومي
               </TabsTrigger>
               <TabsTrigger
                 value="stock"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
               >
                 <Activity className="w-3.5 h-3.5" />
                 تقرير السهم
               </TabsTrigger>
               <TabsTrigger
                 value="sector"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
               >
                 <Layers className="w-3.5 h-3.5" />
                 تقرير القطاعات
               </TabsTrigger>
               <TabsTrigger
                 value="predictions"
-                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
+                className="flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-[100px] data-[state=active]:bg-warning data-[state=active]:text-[#0a0e1a] rounded-lg py-2 font-bold"
               >
                 <Shield className="w-3.5 h-3.5" />
                 تقرير التوقعات

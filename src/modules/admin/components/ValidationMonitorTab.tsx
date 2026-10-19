@@ -75,9 +75,9 @@ const FIELD_LABELS_AR: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<Status, string> = {
-  VALID: 'bg-emerald-500',
-  INVALID: 'bg-red-500',
-  SUSPECT: 'bg-amber-500',
+  VALID: 'bg-profit',
+  INVALID: 'bg-loss',
+  SUSPECT: 'bg-warning',
   MISSING: 'bg-sky-500',
 };
 
@@ -121,12 +121,12 @@ export function ValidationMonitorTab() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <ShieldCheck className="w-5 h-5 text-profit" />
                 مراقبة التحقق — Rule 65
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -146,13 +146,13 @@ export function ValidationMonitorTab() {
         <StatBox
           label="إجمالي الأسهم المُتحقَّق منها"
           value={totalStocks}
-          icon={<Activity className="w-4 h-4 text-emerald-500" />}
+          icon={<Activity className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="أسهم بحقول باطلة"
           value={totalInvalidTickers}
           sub={`${invalidPct}% من الإجمالي`}
-          icon={<XCircle className="w-4 h-4 text-red-500" />}
+          icon={<XCircle className="w-4 h-4 text-loss" />}
         />
         <StatBox
           label="الحقول المراقَبة"
@@ -162,7 +162,7 @@ export function ValidationMonitorTab() {
         <StatBox
           label="حقول مخفّرة (دعم/مقاومة)"
           value={totalNullified}
-          icon={<FileWarning className="w-4 h-4 text-amber-500" />}
+          icon={<FileWarning className="w-4 h-4 text-warning" />}
         />
       </div>
 
@@ -179,11 +179,11 @@ export function ValidationMonitorTab() {
 
       {/* Error */}
       {!loading && data && !data.success && (
-        <Card className="border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40">
+        <Card className="border-loss bg-loss dark:bg-loss/20 dark:border-loss/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-700 dark:text-red-400">فشل تحميل بيانات التحقق</p>
+              <p className="font-bold text-loss dark:text-loss">فشل تحميل بيانات التحقق</p>
               <p className="text-xs text-muted-foreground mt-1">{data.error}</p>
               {data.detail && (
                 <p className="text-[11px] text-muted-foreground mt-1" dir="ltr">{data.detail}</p>
@@ -195,11 +195,11 @@ export function ValidationMonitorTab() {
 
       {/* Critical alert */}
       {data?.success && invalidPct > 30 && (
-        <Card className="border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40">
+        <Card className="border-loss bg-loss dark:bg-loss/20 dark:border-loss/40">
           <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-800 dark:text-red-300">
+              <p className="font-bold text-loss dark:text-loss">
                 {invalidPct}% من الأسهم بها حقول باطلة — جودة البيانات منخفضة
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -215,7 +215,7 @@ export function ValidationMonitorTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Bug className="w-4 h-4 text-red-500" />
+              <Bug className="w-4 h-4 text-loss" />
               الحقول الأكثر إخفاقاً (مرتبة حسب INVALID)
             </CardTitle>
             <CardDescription className="text-xs">
@@ -238,10 +238,10 @@ export function ValidationMonitorTab() {
                         <code className="text-[10px] text-muted-foreground" dir="ltr">{f.field}</code>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className="text-[9px] border-red-500 text-red-700">
+                        <Badge variant="outline" className="text-[9px] border-loss text-loss">
                           {f.invalid_count} باطل
                         </Badge>
-                        <Badge variant="outline" className="text-[9px] border-amber-500 text-amber-700">
+                        <Badge variant="outline" className="text-[9px] border-warning text-warning">
                           {f.suspect_count} مشبوه
                         </Badge>
                         <Badge variant="outline" className="text-[9px] border-sky-500 text-sky-700">
@@ -281,7 +281,7 @@ export function ValidationMonitorTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-red-500" />
+              <XCircle className="w-4 h-4 text-loss" />
               أكثر الأسهم إخفاقاً ({data.top_invalid_tickers.length})
             </CardTitle>
           </CardHeader>
@@ -327,8 +327,8 @@ export function ValidationMonitorTab() {
                                 className={cn(
                                   'text-[9px]',
                                   f.status === 'INVALID'
-                                    ? 'border-red-500 text-red-700'
-                                    : 'border-amber-500 text-amber-700',
+                                    ? 'border-loss text-loss'
+                                    : 'border-warning text-warning',
                                 )}
                                 title={f.reason}
                               >
@@ -356,7 +356,7 @@ export function ValidationMonitorTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <FileWarning className="w-4 h-4 text-amber-500" />
+              <FileWarning className="w-4 h-4 text-warning" />
               آخر الحقول المخفّرة (دعم/مقاومة باطل)
             </CardTitle>
             <CardDescription className="text-xs">
@@ -369,7 +369,7 @@ export function ValidationMonitorTab() {
                 {data.recent_nullified.slice(0, 30).map((n, i) => (
                   <div
                     key={i}
-                    className="p-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40 text-xs"
+                    className="p-2 rounded-lg border border-warning bg-warning dark:bg-warning/20 dark:border-warning/40 text-xs"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
@@ -380,8 +380,8 @@ export function ValidationMonitorTab() {
                           className={cn(
                             'text-[9px]',
                             n.field === 'support'
-                              ? 'border-red-500 text-red-700'
-                              : 'border-red-500 text-red-700',
+                              ? 'border-loss text-loss'
+                              : 'border-loss text-loss',
                           )}
                         >
                           {FIELD_LABELS_AR[n.field] || n.field}
@@ -404,8 +404,8 @@ export function ValidationMonitorTab() {
       {data?.success && totalInvalidTickers === 0 && (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
-            <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-500" />
-            <p className="font-bold text-emerald-700">كل البيانات سليمة</p>
+            <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-profit" />
+            <p className="font-bold text-profit">كل البيانات سليمة</p>
             <p className="text-xs mt-1">لا توجد حقول باطلة أو مشبوهة في {totalStocks} سهم.</p>
           </CardContent>
         </Card>

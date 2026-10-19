@@ -128,10 +128,10 @@ function SubscriptionGate({ tier }: { tier: string }) {
   return (
     <div className="space-y-4">
       {/* Lock banner */}
-      <Card className="border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20">
+      <Card className="border-warning dark:border-warning/50 bg-warning/50 dark:bg-warning/20">
         <CardContent className="p-6 text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-warning dark:bg-warning/30 flex items-center justify-center">
+            <Lock className="w-8 h-8 text-warning dark:text-warning" />
           </div>
           <div className="space-y-2">
             <h3 className="font-bold text-base text-foreground">ميزة للاشتراك المدفوع</h3>
@@ -164,7 +164,7 @@ function SubscriptionGate({ tier }: { tier: string }) {
           {/* Upgrade button */}
           <Button
             onClick={() => router.push('/subscription')}
-            className="bg-gradient-to-l from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white gap-2 px-6"
+            className="bg-gradient-to-l from-profit to-profit hover:from-profit hover:to-profit text-white gap-2 px-6"
           >
             <Crown className="w-4 h-4" />
             ترقية إلى باقة {upgrade.requiredTierAr}
@@ -255,7 +255,7 @@ export function DataManager() {
       <div className="space-y-4">
         {/* Active subscription badge */}
         <div className="flex items-center justify-between">
-          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-0 gap-1 text-xs">
+          <Badge className="bg-profit text-profit dark:bg-profit/40 dark:text-profit border-0 gap-1 text-xs">
             <Crown className="w-3 h-3" />
             ميزة نشطة — الاشتراك المدفوع
           </Badge>
@@ -272,8 +272,8 @@ export function DataManager() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   {/* Icon & Info */}
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-11 h-11 rounded-xl bg-profit dark:bg-profit/30 flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-5 h-5 text-profit dark:text-profit" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-sm text-foreground">{et.label}</h3>
@@ -351,7 +351,7 @@ function ExportFormatSelector({
         {loading ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
-          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <FileSpreadsheet className="w-3.5 h-3.5 text-profit dark:text-profit" />
         )}
         CSV
       </Button>
@@ -365,7 +365,7 @@ function ExportFormatSelector({
         {loading ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
-          <FileJson className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <FileJson className="w-3.5 h-3.5 text-warning dark:text-warning" />
         )}
         JSON
       </Button>

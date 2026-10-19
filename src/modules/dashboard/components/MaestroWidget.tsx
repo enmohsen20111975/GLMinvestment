@@ -32,8 +32,8 @@ interface MaestroOverview {
 }
 
 const REGIME_CONFIG = {
-  bull: { color: 'text-emerald-500', bg: 'bg-green-100 dark:bg-green-900/30', icon: TrendingUp, label: 'صاعد' },
-  bear: { color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30', icon: TrendingDown, label: 'هابط' },
+  bull: { color: 'text-profit', bg: 'bg-success dark:bg-success/30', icon: TrendingUp, label: 'صاعد' },
+  bear: { color: 'text-loss', bg: 'bg-loss dark:bg-loss/30', icon: TrendingDown, label: 'هابط' },
   range: { color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-900/30', icon: Minus, label: 'متراوح' }
 };
 

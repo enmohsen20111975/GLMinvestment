@@ -58,7 +58,7 @@ const SECTIONS = [
       <div className="space-y-3 text-sm leading-relaxed">
         <p>
           يتحدّث الرسم البياني كل <strong className="text-cyan-400">5 ثوانٍ</strong> تقريباً.
-          عند ظهور شارة <Badge className="bg-red-600 text-white animate-pulse">LIVE</Badge>
+          عند ظهور شارة <Badge className="bg-loss text-white animate-pulse">LIVE</Badge>
           يكون السعر المعروض هو سعر تداول اليوم الفعلي، لا سعراً تاريخياً.
         </p>
         <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
@@ -91,9 +91,9 @@ const SECTIONS = [
     icon: Sparkles,
     title: 'الإشارات الذكية',
     titleEn: 'Pine Script Flags',
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-950/40',
-    border: 'border-emerald-800',
+    color: 'text-profit',
+    bg: 'bg-profit/40',
+    border: 'border-profit',
     content: (
       <div className="space-y-3 text-sm leading-relaxed">
         <p>ترصد المنصة ثلاثة أنماط على الرسم البياني، يُعدّل كلٌّ منها الإشارة تلقائياً:</p>
@@ -108,24 +108,24 @@ const SECTIONS = [
               <strong className="text-lime-400"> فرصة شراء بخصم</strong>.
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-red-950/30 border border-red-800/50">
+          <div className="p-3 rounded-lg bg-loss/30 border border-loss/50">
             <div className="flex items-center gap-2 mb-1">
-              <Badge className="bg-red-900 text-red-300 border border-red-700 animate-pulse">فخ ارتداد</Badge>
+              <Badge className="bg-loss text-loss border border-loss animate-pulse">فخ ارتداد</Badge>
               <span className="text-xs text-muted-foreground">Veto -15 نقطة</span>
             </div>
             <p className="text-xs">
-              السهم في هبوط وارتفع قليلاً. <strong className="text-red-400">يُنصح بالابتعاد</strong> —
+              السهم في هبوط وارتفع قليلاً. <strong className="text-loss">يُنصح بالابتعاد</strong> —
               غالباً ما يستمر السهم في هبوطه بعد الارتداد الوهمي.
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/50">
+          <div className="p-3 rounded-lg bg-whale/30 border border-whale/50">
             <div className="flex items-center gap-2 mb-1">
-              <Badge className="bg-teal-900 text-teal-300 border border-teal-700">تباعد إيجابي</Badge>
+              <Badge className="bg-whale text-whale border border-whale">تباعد إيجابي</Badge>
               <span className="text-xs text-muted-foreground">Boost +5 نقاط</span>
             </div>
             <p className="text-xs">
               انخفض السعر لكن مؤشر RSI ارتفع. ذلك يعني أن
-              <strong className="text-teal-400"> قوة البيع استُنزفت</strong>، وقد
+              <strong className="text-whale"> قوة البيع استُنزفت</strong>، وقد
               ينعكس السهم إلى صعود قريب.
             </p>
           </div>
@@ -138,32 +138,32 @@ const SECTIONS = [
     icon: ShoppingCart,
     title: 'وضع المضارب والمستثمر',
     titleEn: 'User State Toggle',
-    color: 'text-amber-400',
-    bg: 'bg-amber-950/40',
-    border: 'border-amber-800',
+    color: 'text-warning',
+    bg: 'bg-warning/40',
+    border: 'border-warning',
     content: (
       <div className="space-y-3 text-sm leading-relaxed">
         <p>هناك زرّان أعلى الرسم البياني؛ اختر وضعك:</p>
         <div className="grid grid-cols-2 gap-2">
-          <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/50">
+          <div className="p-3 rounded-lg bg-profit/30 border border-profit/50">
             <div className="flex items-center gap-1.5 mb-1">
-              <ShoppingCart className="h-4 w-4 text-emerald-400" />
-              <strong className="text-emerald-400">أبحث عن شراء</strong>
+              <ShoppingCart className="h-4 w-4 text-profit" />
+              <strong className="text-profit">أبحث عن شراء</strong>
             </div>
             <p className="text-xs">
               إذا تجاوز مؤشر RSI مستوى 75، ستشير المنصة إلى
-              <strong className="text-red-400"> تشبّع شرائي — يُنصح بالابتعاد</strong>
+              <strong className="text-loss"> تشبّع شرائي — يُنصح بالابتعاد</strong>
               وانتظار التصحيح.
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/50">
+          <div className="p-3 rounded-lg bg-warning/30 border border-warning/50">
             <div className="flex items-center gap-1.5 mb-1">
-              <Wallet className="h-4 w-4 text-amber-400" />
-              <strong className="text-amber-400">أملك السهم</strong>
+              <Wallet className="h-4 w-4 text-warning" />
+              <strong className="text-warning">أملك السهم</strong>
             </div>
             <p className="text-xs">
               إذا تجاوز مؤشر RSI مستوى 75 أثناء صعود، ستشير المنصة إلى
-              <strong className="text-amber-400"> تحقيق ربح</strong> — يُنصح ببيع
+              <strong className="text-warning"> تحقيق ربح</strong> — يُنصح ببيع
               جزء من المركز.
             </p>
           </div>
@@ -308,8 +308,8 @@ export function PlatformGuide({ open, onOpenChange }: PlatformGuideProps) {
         <SheetHeader className="p-4 border-b border-border shrink-0 space-y-0 sticky top-0 bg-background z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <HelpCircle className="h-5 w-5 text-emerald-400" />
+              <div className="w-9 h-9 rounded-full bg-profit/20 flex items-center justify-center">
+                <HelpCircle className="h-5 w-5 text-profit" />
               </div>
               <div>
                 <SheetTitle className="text-base font-bold">
@@ -341,7 +341,7 @@ export function PlatformGuide({ open, onOpenChange }: PlatformGuideProps) {
             </div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
+                className="h-full bg-profit transition-all duration-300 rounded-full"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -393,9 +393,9 @@ export function PlatformGuide({ open, onOpenChange }: PlatformGuideProps) {
         {/* Sticky footer navigation — always visible */}
         <div className="p-4 border-t border-border shrink-0 space-y-2 sticky bottom-0 bg-background z-10">
           {isLast && (
-            <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/50 flex items-start gap-2">
-              <Lightbulb className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-emerald-200">
+            <div className="p-3 rounded-lg bg-profit/30 border border-profit/50 flex items-start gap-2">
+              <Lightbulb className="h-4 w-4 text-profit shrink-0 mt-0.5" />
+              <p className="text-xs text-profit">
                 لقد استعرضت الآن جميع أدوات المنصة. تذكّر:
                 <strong> التحليل أداة لاتخاذ القرار، لا للمخاطرة العشوائية.</strong>
               </p>
@@ -416,7 +416,7 @@ export function PlatformGuide({ open, onOpenChange }: PlatformGuideProps) {
               <Button
                 size="sm"
                 onClick={handleFinish}
-                className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="h-9 bg-profit hover:bg-profit text-white"
               >
                 <TrendingUp className="h-4 w-4 ml-1" />
                 بدء الاستخدام
@@ -425,7 +425,7 @@ export function PlatformGuide({ open, onOpenChange }: PlatformGuideProps) {
               <Button
                 size="sm"
                 onClick={handleNext}
-                className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="h-9 bg-profit hover:bg-profit text-white"
               >
                 التالي
                 <ArrowLeft className="h-4 w-4 mr-1 rotate-180" />

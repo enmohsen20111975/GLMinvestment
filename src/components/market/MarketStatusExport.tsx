@@ -223,7 +223,7 @@ export function MarketStatusExport() {
   const busy = downloading || publishing;
 
   return (
-    <Card className="border-orange-200 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100/40">
+    <Card className="border-orange-200 bg-gradient-to-br from-orange-50 via-warning to-orange-100/40">
       <CardContent className="p-4 space-y-4">
         {/* العنوان + الأزرار */}
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -264,7 +264,7 @@ export function MarketStatusExport() {
               size="sm"
               onClick={handlePublish}
               disabled={busy}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-profit hover:bg-profit text-white"
             >
               {publishing ? (
                 <Loader2 className="h-4 w-4 ml-1 animate-spin" />

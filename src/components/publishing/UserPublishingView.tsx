@@ -209,16 +209,16 @@ export function UserPublishingView() {
 
   const getDirectionIcon = (dir: string) => {
     switch (dir) {
-      case 'buy': return <TrendingUp className="w-5 h-5 text-green-500" />;
-      case 'sell': return <TrendingDown className="w-5 h-5 text-red-500" />;
+      case 'buy': return <TrendingUp className="w-5 h-5 text-success" />;
+      case 'sell': return <TrendingDown className="w-5 h-5 text-loss" />;
       default: return <Minus className="w-5 h-5 text-yellow-500" />;
     }
   };
 
   const getDirectionColor = (dir: string) => {
     switch (dir) {
-      case 'buy': return 'text-green-500';
-      case 'sell': return 'text-red-500';
+      case 'buy': return 'text-success';
+      case 'sell': return 'text-loss';
       default: return 'text-yellow-500';
     }
   };
@@ -231,8 +231,8 @@ export function UserPublishingView() {
   const getLevelIcon = (level: number) => {
     if (level >= 5) return <Crown className="w-5 h-5 text-yellow-400" />;
     if (level >= 4) return <Trophy className="w-5 h-5 text-purple-400" />;
-    if (level >= 3) return <Award className="w-5 h-5 text-teal-400" />;
-    if (level >= 2) return <Medal className="w-5 h-5 text-green-400" />;
+    if (level >= 3) return <Award className="w-5 h-5 text-whale" />;
+    if (level >= 2) return <Medal className="w-5 h-5 text-success" />;
     return <Star className="w-5 h-5 text-gray-400" />;
   };
 
@@ -254,7 +254,7 @@ export function UserPublishingView() {
         </div>
         
         {userPoints && (
-          <Card className="bg-gradient-to-l from-amber-500/10 to-yellow-500/10 border-amber-200 dark:border-amber-800">
+          <Card className="bg-gradient-to-l from-warning/10 to-yellow-500/10 border-warning dark:border-warning">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="flex items-center gap-2">
                 {getLevelIcon(userPoints.level)}
@@ -265,7 +265,7 @@ export function UserPublishingView() {
               </div>
               <div className="h-8 w-px bg-border" />
               <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-500" />
+                <Coins className="w-5 h-5 text-warning" />
                 <div>
                   <div className="text-sm text-muted-foreground">نقاطك</div>
                   <div className="font-bold">{userPoints.available_points.toLocaleString()}</div>
@@ -332,24 +332,24 @@ export function UserPublishingView() {
                       </div>
                     )}
                     {post.target_price && (
-                      <div className="bg-green-500/10 rounded-lg p-2 text-center">
-                        <div className="text-xs text-green-600">الهدف</div>
-                        <div className="font-bold text-green-600">{(post.target_price ?? 0).toFixed(2)}</div>
+                      <div className="bg-success/10 rounded-lg p-2 text-center">
+                        <div className="text-xs text-success">الهدف</div>
+                        <div className="font-bold text-success">{(post.target_price ?? 0).toFixed(2)}</div>
                       </div>
                     )}
                     {post.stop_loss && (
-                      <div className="bg-red-500/10 rounded-lg p-2 text-center">
-                        <div className="text-xs text-red-600">الوقف</div>
-                        <div className="font-bold text-red-600">{(post.stop_loss ?? 0).toFixed(2)}</div>
+                      <div className="bg-loss/10 rounded-lg p-2 text-center">
+                        <div className="text-xs text-loss">الوقف</div>
+                        <div className="font-bold text-loss">{(post.stop_loss ?? 0).toFixed(2)}</div>
                       </div>
                     )}
                     {post.currentPrice && (
-                      <div className="bg-teal-500/10 rounded-lg p-2 text-center">
-                        <div className="text-xs text-teal-600">السعر الحالي</div>
-                        <div className="font-bold text-teal-600">
+                      <div className="bg-whale/10 rounded-lg p-2 text-center">
+                        <div className="text-xs text-whale">السعر الحالي</div>
+                        <div className="font-bold text-whale">
                           {(post.currentPrice ?? 0).toFixed(2)}
                           {post.priceChange && (
-                            <span className={post.priceChange >= 0 ? 'text-green-500 mr-1' : 'text-red-500 mr-1'}>
+                            <span className={post.priceChange >= 0 ? 'text-success mr-1' : 'text-loss mr-1'}>
                               {post.priceChange >= 0 ? '+' : ''}{(post.priceChange ?? 0).toFixed(1)}%
                             </span>
                           )}
@@ -369,12 +369,12 @@ export function UserPublishingView() {
                       </span>
                       <button 
                         onClick={() => handleLike(post.id)}
-                        className="flex items-center gap-1 hover:text-red-500 transition-colors"
+                        className="flex items-center gap-1 hover:text-loss transition-colors"
                       >
                         <Heart className="w-4 h-4" /> {post.likes}
                       </button>
                       <span className="flex items-center gap-1">
-                        <Coins className="w-4 h-4 text-amber-500" /> +{post.points_earned}
+                        <Coins className="w-4 h-4 text-warning" /> +{post.points_earned}
                       </span>
                     </div>
                     <Badge variant="outline">
@@ -393,7 +393,7 @@ export function UserPublishingView() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" />
+                <Zap className="w-5 h-5 text-warning" />
                 نشر توقع جديد
               </CardTitle>
             </CardHeader>
@@ -519,8 +519,8 @@ export function UserPublishingView() {
                 />
               </div>
 
-              <div className="bg-amber-500/10 rounded-lg p-3 flex items-center gap-2">
-                <Gift className="w-5 h-5 text-amber-500" />
+              <div className="bg-warning/10 rounded-lg p-3 flex items-center gap-2">
+                <Gift className="w-5 h-5 text-warning" />
                 <span className="text-sm">ستحصل على <strong>10 نقاط</strong> عند نشر هذا التوقع!</span>
               </div>
 
@@ -541,7 +541,7 @@ export function UserPublishingView() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-500" />
+                <Coins className="w-5 h-5 text-warning" />
                 شراء النقاط
               </CardTitle>
             </CardHeader>
@@ -550,13 +550,13 @@ export function UserPublishingView() {
                 {packages.map((pkg) => (
                   <Card key={pkg.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
                     {pkg.bonus_points > 0 && (
-                      <div className="absolute top-0 left-0 bg-green-500 text-white text-xs px-2 py-1 rounded-br-lg">
+                      <div className="absolute top-0 left-0 bg-success text-white text-xs px-2 py-1 rounded-br-lg">
                         +{pkg.bonus_points} هدية!
                       </div>
                     )}
                     <CardContent className="p-4 text-center">
                       <h3 className="font-bold text-lg mb-2">{pkg.name_ar}</h3>
-                      <div className="text-3xl font-bold text-amber-500 mb-2">
+                      <div className="text-3xl font-bold text-warning mb-2">
                         {pkg.points.toLocaleString()}
                       </div>
                       <div className="text-sm text-muted-foreground mb-3">نقطة</div>
@@ -603,15 +603,15 @@ export function UserPublishingView() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span>نقاط من التوقعات</span>
-                    <span className="font-bold text-green-500">+{userPoints.posts_points}</span>
+                    <span className="font-bold text-success">+{userPoints.posts_points}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span>نقاط من الشراء</span>
-                    <span className="font-bold text-teal-500">+{userPoints.purchase_points}</span>
+                    <span className="font-bold text-whale">+{userPoints.purchase_points}</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-amber-500/10 rounded-lg border border-amber-200">
+                  <div className="flex justify-between items-center p-3 bg-warning/10 rounded-lg border border-warning">
                     <span className="font-semibold">إجمالي النقاط المتاحة</span>
-                    <span className="font-bold text-xl text-amber-500">{userPoints.available_points.toLocaleString()}</span>
+                    <span className="font-bold text-xl text-warning">{userPoints.available_points.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -660,9 +660,9 @@ function LeaderboardTab() {
   };
 
   const getRankStyle = (rank: number) => {
-    if (rank === 1) return 'bg-gradient-to-l from-yellow-500/20 to-amber-500/20 border-yellow-400';
+    if (rank === 1) return 'bg-gradient-to-l from-yellow-500/20 to-warning/20 border-yellow-400';
     if (rank === 2) return 'bg-gradient-to-l from-gray-400/20 to-slate-500/20 border-gray-400';
-    if (rank === 3) return 'bg-gradient-to-l from-orange-600/20 to-amber-700/20 border-orange-500';
+    if (rank === 3) return 'bg-gradient-to-l from-orange-600/20 to-warning/20 border-orange-500';
     return '';
   };
 

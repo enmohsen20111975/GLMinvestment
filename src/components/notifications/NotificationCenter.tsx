@@ -43,11 +43,11 @@ function getNotificationIconElement(type: Notification['type'], className: strin
 function getNotificationColor(type: Notification['type']) {
   switch (type) {
     case 'price_alert':
-      return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40';
+      return 'text-profit dark:text-profit bg-profit dark:bg-profit/30 border-profit dark:border-profit/40';
     case 'portfolio_update':
-      return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40';
+      return 'text-warning dark:text-warning bg-warning dark:bg-warning/30 border-warning dark:border-warning/40';
     case 'market_event':
-      return 'text-teal-600 dark:text-teal-400 bg-blue-50 dark:bg-blue-950/30 border-teal-200 dark:border-teal-800/40';
+      return 'text-whale dark:text-whale bg-primary dark:bg-primary/30 border-whale dark:border-whale/40';
     case 'system':
       return 'text-muted-foreground bg-muted border-border';
     default:

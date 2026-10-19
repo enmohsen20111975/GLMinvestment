@@ -432,7 +432,7 @@ const CATEGORIES: StrategyCategory[] = [
     nameAr: 'التحليل المالي والأساسي',
     nameEn: 'Fundamental Analysis',
     icon: BookOpen,
-    accent: 'text-emerald-600',
+    accent: 'text-profit',
     topics: TOPICS.filter(t => t.category === 'fa'),
   },
 ];
@@ -1831,9 +1831,9 @@ function GrahamNumberChart() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-3 text-center"
+        className="rounded-lg border border-profit/40 bg-profit/5 p-3 text-center"
       >
-        <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-1">
+        <div className="text-sm font-bold text-profit dark:text-profit mb-1">
           معادلة Graham
         </div>
         <div dir="ltr" className="font-mono text-base">
@@ -1932,11 +1932,11 @@ function ExplanationPanel({ topic }: { topic: StrategyTopic }) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <div>
-            <div className="text-[11px] font-semibold text-emerald-600 mb-0.5">✓ نقطة الدخول</div>
+            <div className="text-[11px] font-semibold text-profit mb-0.5">✓ نقطة الدخول</div>
             <div className="text-xs text-foreground/90 leading-relaxed">{topic.howToTrade.entry}</div>
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-red-600 mb-0.5">✗ وقف الخسارة</div>
+            <div className="text-[11px] font-semibold text-loss mb-0.5">✗ وقف الخسارة</div>
             <div className="text-xs text-foreground/90 leading-relaxed">{topic.howToTrade.stopLoss}</div>
           </div>
           <div>
@@ -1949,7 +1949,7 @@ function ExplanationPanel({ topic }: { topic: StrategyTopic }) {
       {/* examples */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Activity className="size-4 text-amber-600" />
+          <Activity className="size-4 text-warning" />
           <h4 className="font-semibold text-sm">أمثلة حقيقية</h4>
         </div>
         <div className="space-y-1.5">

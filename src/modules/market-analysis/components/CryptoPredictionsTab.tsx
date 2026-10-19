@@ -155,9 +155,9 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
     rsiNum === undefined
       ? 'text-muted-foreground'
       : rsiNum >= 70
-        ? 'text-rose-600'
+        ? 'text-loss'
         : rsiNum <= 30
-          ? 'text-emerald-600'
+          ? 'text-profit'
           : 'text-foreground';
 
   return (
@@ -172,7 +172,7 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
               <CardTitle className="flex items-center gap-2 text-lg">
                 {p.symbol}
                 {p.symbol === 'BTC' ? (
-                  <Bitcoin className="h-4 w-4 text-amber-500" />
+                  <Bitcoin className="h-4 w-4 text-warning" />
                 ) : p.symbol === 'ETH' ? (
                   <Zap className="h-4 w-4 text-violet-500" />
                 ) : null}
@@ -199,15 +199,15 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
               {usdCurrencyFmt.format(p.entry_price)}
             </p>
           </div>
-          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5">
+          <div className="rounded-lg border border-profit/20 bg-profit/5 p-2.5">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">الهدف</p>
-            <p className="text-sm font-semibold tabular-nums text-emerald-600">
+            <p className="text-sm font-semibold tabular-nums text-profit">
               {usdCurrencyFmt.format(p.target_price)}
             </p>
           </div>
-          <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-2.5">
+          <div className="rounded-lg border border-loss/20 bg-loss/5 p-2.5">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">الإيقاف</p>
-            <p className="text-sm font-semibold tabular-nums text-rose-600">
+            <p className="text-sm font-semibold tabular-nums text-loss">
               {usdCurrencyFmt.format(p.stop_loss)}
             </p>
           </div>
@@ -268,9 +268,9 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
                   className={cn(
                     'text-xs font-semibold',
                     trendUp === true
-                      ? 'text-emerald-600'
+                      ? 'text-profit'
                       : trendUp === false
-                        ? 'text-rose-600'
+                        ? 'text-loss'
                         : 'text-muted-foreground'
                   )}
                 >
@@ -402,10 +402,10 @@ export function CryptoPredictionsTab() {
   // ---- Error state ----
   if (error && !data) {
     return (
-      <Card className="border-rose-500/30 bg-rose-500/5">
+      <Card className="border-loss/30 bg-loss/5">
         <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
-          <AlertTriangle className="h-8 w-8 text-rose-500" />
-          <p className="text-sm font-semibold text-rose-600">
+          <AlertTriangle className="h-8 w-8 text-loss" />
+          <p className="text-sm font-semibold text-loss">
             تعذّر تحميل توقعات الكريبتو
           </p>
           <p className="text-xs text-muted-foreground break-all">{error}</p>
@@ -457,7 +457,7 @@ export function CryptoPredictionsTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Bitcoin className="h-4 w-4 text-amber-500" />
+          <Bitcoin className="h-4 w-4 text-warning" />
           <span>
             توقعات لحظية لـ BTC و ETH — يُحدّث المختبر كل 15 دقيقة، وتُحدّث
             الصفحة كل دقيقة.
@@ -505,7 +505,7 @@ export function CryptoPredictionsTab() {
       </div>
 
       {error && (
-        <p className="text-xs text-amber-600">
+        <p className="text-xs text-warning">
           تحذير: آخر تحديث صامت فشل ({error}). يتم عرض آخر بيانات ناجحة.
         </p>
       )}

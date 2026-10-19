@@ -155,10 +155,10 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
       className="w-full min-h-screen overflow-y-auto bg-background text-foreground p-2 md:p-5 pb-28 space-y-5"
     >
       <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="border-b border-border bg-gradient-to-r from-emerald-50 via-background to-sky-50 dark:from-emerald-950/20 dark:via-card dark:to-sky-950/20 px-4 py-4 md:px-5 md:py-5">
+        <div className="border-b border-border bg-gradient-to-r from-profit via-background to-sky-50 dark:from-profit/20 dark:via-card dark:to-sky-950/20 px-4 py-4 md:px-5 md:py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-emerald-500">
+              <div className="flex items-center gap-2 text-profit">
                 <LayoutGrid className="w-5 h-5" />
                 <span className="text-xs font-bold tracking-[0.22em] uppercase">غرفة التداول</span>
               </div>
@@ -174,11 +174,11 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
               <ExchangeSelector compact className="h-9 text-xs rounded-xl border-border bg-card" />
               {marketOverview && (
                 <div className="hidden lg:flex items-center gap-2 text-[10px]">
-                  <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 px-2.5 py-1">
+                  <Badge variant="outline" className="text-profit border-profit bg-profit px-2.5 py-1">
                     <TrendingUp className="w-3 h-3 ml-0.5" />
                     ارتفاعات: {marketOverview.summary.gainers}
                   </Badge>
-                  <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50 px-2.5 py-1">
+                  <Badge variant="outline" className="text-loss border-loss bg-loss px-2.5 py-1">
                     <TrendingDown className="w-3 h-3 ml-0.5" />
                     خسائر: {marketOverview.summary.losers}
                   </Badge>
@@ -207,7 +207,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                   onClick={() => setColumns(1)}
                   className={cn(
                     'h-8 px-2.5 text-[11px] font-bold rounded-lg transition-all',
-                    columns === 1 ? 'bg-card text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-muted-foreground'
+                    columns === 1 ? 'bg-card text-profit dark:text-profit shadow-sm' : 'text-muted-foreground'
                   )}
                 >
                   1 عمود
@@ -218,14 +218,14 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                   onClick={() => setColumns(2)}
                   className={cn(
                     'h-8 px-2.5 text-[11px] font-bold rounded-lg transition-all',
-                    columns === 2 ? 'bg-card text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-muted-foreground'
+                    columns === 2 ? 'bg-card text-profit dark:text-profit shadow-sm' : 'text-muted-foreground'
                   )}
                 >
                   2 عمود
                 </Button>
               </div>
 
-              <Badge className="font-mono text-[11px] px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <Badge className="font-mono text-[11px] px-2.5 py-1 bg-profit text-profit border border-profit">
                 {selectedTickers.length} سهم
               </Badge>
 
@@ -234,7 +234,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                   variant="ghost"
                   size="sm"
                   onClick={handleResetWorkspace}
-                  className="h-8 px-2.5 text-[11px] text-rose-600 hover:bg-rose-50 gap-1.5"
+                  className="h-8 px-2.5 text-[11px] text-loss hover:bg-loss gap-1.5"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   إعادة تعيين
@@ -246,7 +246,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                 size="sm"
                 onClick={handlePublishAll}
                 disabled={publishingAll || selectedTickers.length === 0}
-                className="h-8 px-2.5 text-[11px] text-emerald-700 hover:bg-emerald-50 gap-1.5"
+                className="h-8 px-2.5 text-[11px] text-profit hover:bg-profit gap-1.5"
               >
                 {publishingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 نشر الكل
@@ -267,7 +267,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                     className={cn(
                       'text-[11px] font-mono py-1 px-2.5 flex items-center gap-1.5 rounded-full',
                       isPrimary
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        ? 'bg-profit text-profit border border-profit'
                         : 'bg-card text-foreground border border-border'
                     )}
                   >
@@ -277,7 +277,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                       <button
                         type="button"
                         onClick={() => handleRemoveStock(tk)}
-                        className="hover:text-rose-500 transition-colors ml-0.5"
+                        className="hover:text-loss transition-colors ml-0.5"
                         title={`إزالة ${tk}`}
                       >
                         <X className="w-3 h-3" />

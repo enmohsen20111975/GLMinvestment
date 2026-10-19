@@ -64,12 +64,12 @@ interface CategoryMeta {
 const CATEGORIES: CategoryMeta[] = [
   { id: 'basics', label: 'الأساسيات', icon: '📘', color: 'text-sky-600' },
   { id: 'technical', label: 'التحليل الفني', icon: '📈', color: 'text-violet-600' },
-  { id: 'fundamental', label: 'التحليل الأساسي', icon: '🏛️', color: 'text-amber-600' },
-  { id: 'smc', label: 'SMC / ICT', icon: '⚙️', color: 'text-rose-600' },
-  { id: 'risk', label: 'إدارة المخاطر', icon: '🛡️', color: 'text-emerald-600' },
+  { id: 'fundamental', label: 'التحليل الأساسي', icon: '🏛️', color: 'text-warning' },
+  { id: 'smc', label: 'SMC / ICT', icon: '⚙️', color: 'text-loss' },
+  { id: 'risk', label: 'إدارة المخاطر', icon: '🛡️', color: 'text-profit' },
   { id: 'psychology', label: 'سيكولوجية التداول', icon: '🧘', color: 'text-fuchsia-600' },
   // Task 29 Fix 4 — new category to surface Islamic finance / purification lessons
-  { id: 'islamic', label: 'التمويل الإسلامي', icon: '🕌', color: 'text-teal-700 dark:text-teal-400' },
+  { id: 'islamic', label: 'التمويل الإسلامي', icon: '🕌', color: 'text-whale dark:text-whale' },
 ];
 
 const LEVEL_LABELS: Record<Level, string> = {
@@ -1592,8 +1592,8 @@ function LessonQuiz({
             key={qi}
             className={cn(
               'rounded-lg border p-4 transition-colors',
-              isCorrect && 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30',
-              isWrong && 'border-rose-500 bg-rose-50 dark:bg-rose-950/30',
+              isCorrect && 'border-profit bg-profit dark:bg-profit/30',
+              isWrong && 'border-loss bg-loss dark:bg-loss/30',
               !state.submitted && 'border-border',
             )}
           >
@@ -1618,16 +1618,16 @@ function LessonQuiz({
                       'flex w-full items-center gap-3 rounded-md border px-3 py-2 text-right transition-colors',
                       'hover:bg-accent/60 disabled:cursor-not-allowed',
                       isSelected && !state.submitted && 'border-primary bg-primary/5',
-                      showCorrect && 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40',
-                      showWrong && 'border-rose-500 bg-rose-50 dark:bg-rose-950/40',
+                      showCorrect && 'border-profit bg-profit dark:bg-profit/40',
+                      showWrong && 'border-loss bg-loss dark:bg-loss/40',
                     )}
                   >
                     <span
                       className={cn(
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold',
                         isSelected && !state.submitted && 'border-primary bg-primary text-primary-foreground',
-                        showCorrect && 'border-emerald-500 bg-emerald-500 text-white',
-                        showWrong && 'border-rose-500 bg-rose-500 text-white',
+                        showCorrect && 'border-profit bg-profit text-white',
+                        showWrong && 'border-loss bg-loss text-white',
                       )}
                     >
                       {showCorrect ? (
@@ -1648,8 +1648,8 @@ function LessonQuiz({
                 className={cn(
                   'mt-3 rounded-md border-r-4 p-3 text-sm',
                   isCorrect
-                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
-                    : 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/30',
+                    ? 'border-profit bg-profit/60 dark:bg-profit/30'
+                    : 'border-warning bg-warning/60 dark:bg-warning/30',
                 )}
               >
                 <span className="font-semibold">
@@ -1673,10 +1673,10 @@ function LessonQuiz({
             className={cn(
               'flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4',
               scorePercent >= 70
-                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30'
+                ? 'border-profit bg-profit dark:bg-profit/30'
                 : scorePercent >= 50
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30'
-                  : 'border-rose-500 bg-rose-50 dark:bg-rose-950/30',
+                  ? 'border-warning bg-warning dark:bg-warning/30'
+                  : 'border-loss bg-loss dark:bg-loss/30',
             )}
           >
             <div className="flex items-center gap-3">
@@ -1684,10 +1684,10 @@ function LessonQuiz({
                 className={cn(
                   'h-8 w-8',
                   scorePercent >= 70
-                    ? 'text-emerald-600'
+                    ? 'text-profit'
                     : scorePercent >= 50
-                      ? 'text-amber-600'
-                      : 'text-rose-600',
+                      ? 'text-warning'
+                      : 'text-loss',
                 )}
               />
               <div>
@@ -1820,7 +1820,7 @@ export function AcademyEncyclopedia() {
       <div className="rounded-lg border bg-card p-4">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <GraduationCap className="h-4 w-4 text-emerald-600" />
+            <GraduationCap className="h-4 w-4 text-profit" />
             تقدّمك في الأكاديمية
           </div>
           <Badge variant="secondary" className="text-xs">
@@ -1843,7 +1843,7 @@ export function AcademyEncyclopedia() {
           <div className="rounded-lg border bg-card">
             <div className="border-b px-4 py-3">
               <div className="flex items-center gap-2 font-semibold">
-                <BookOpen className="h-4 w-4 text-emerald-600" />
+                <BookOpen className="h-4 w-4 text-profit" />
                 فهرس الدروس
               </div>
             </div>
@@ -1880,12 +1880,12 @@ export function AcademyEncyclopedia() {
                                   className={cn(
                                     'flex w-full items-start gap-2 rounded-md px-2 py-2 text-right text-sm transition-colors',
                                     isActive
-                                      ? 'bg-emerald-50 font-semibold text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100'
+                                      ? 'bg-profit font-semibold text-profit dark:bg-profit/40 dark:text-profit'
                                       : 'hover:bg-accent/60',
                                   )}
                                 >
                                   {isDone ? (
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-profit" />
                                   ) : (
                                     <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />
                                   )}
@@ -1911,15 +1911,15 @@ export function AcademyEncyclopedia() {
         <main className="min-w-0">
           <article className="rounded-lg border bg-card">
             {/* Lesson header */}
-            <header className="border-b bg-gradient-to-l from-emerald-50/50 to-transparent p-5 dark:from-emerald-950/20">
+            <header className="border-b bg-gradient-to-l from-profit/50 to-transparent p-5 dark:from-profit/20">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-2xl dark:bg-emerald-950/50">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-profit text-2xl dark:bg-profit/50">
                     {activeLesson.icon}
                   </div>
                   <div>
                     <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                      <span className="font-semibold text-profit dark:text-profit">
                         {CATEGORIES.find((c) => c.id === activeLesson.category)?.label}
                       </span>
                       <span>·</span>
@@ -1940,7 +1940,7 @@ export function AcademyEncyclopedia() {
                         {activeLesson.sections.length} أقسام
                       </Badge>
                       {progress.completedLessonIds.includes(activeLesson.id) ? (
-                        <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+                        <Badge className="gap-1 bg-profit text-white hover:bg-profit">
                           <CheckCircle2 className="h-3 w-3" />
                           مكتمل
                         </Badge>
@@ -1959,7 +1959,7 @@ export function AcademyEncyclopedia() {
             <div className="space-y-6 p-5">
               {activeLesson.sections.map((section, idx) => (
                 <section key={idx} className="space-y-3">
-                  <h2 className="flex items-center gap-2 border-r-4 border-emerald-500 pr-3 text-lg font-bold">
+                  <h2 className="flex items-center gap-2 border-r-4 border-profit pr-3 text-lg font-bold">
                     <span className="text-muted-foreground/60">{idx + 1}.</span>
                     {section.heading}
                   </h2>
@@ -1977,10 +1977,10 @@ export function AcademyEncyclopedia() {
                   ) : null}
 
                   {section.keyPoints && section.keyPoints.length > 0 ? (
-                    <ul className="space-y-1.5 rounded-md bg-emerald-50/50 p-3 dark:bg-emerald-950/20">
+                    <ul className="space-y-1.5 rounded-md bg-profit/50 p-3 dark:bg-profit/20">
                       {section.keyPoints.map((kp, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-profit" />
                           <span className="leading-relaxed">{kp}</span>
                         </li>
                       ))}
@@ -1993,7 +1993,7 @@ export function AcademyEncyclopedia() {
               {activeLesson.quiz && activeLesson.quiz.length > 0 ? (
                 <section className="space-y-4 border-t pt-5">
                   <h2 className="flex items-center gap-2 text-lg font-bold">
-                    <Trophy className="h-5 w-5 text-amber-500" />
+                    <Trophy className="h-5 w-5 text-warning" />
                     اختبر معلوماتك
                   </h2>
                   <p className="text-sm text-muted-foreground">

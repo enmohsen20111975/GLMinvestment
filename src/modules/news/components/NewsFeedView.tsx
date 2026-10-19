@@ -232,7 +232,7 @@ function InvestmentDecisionInsight({
           onClick={handleCopyAnalysis}
           className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
         >
-          {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+          {copied ? <Check className="w-3 h-3 text-profit" /> : <Copy className="w-3 h-3" />}
           <span>{copied ? t('news.feed.insight.copied') : t('news.feed.insight.copy')}</span>
         </Button>
       </div>
@@ -240,13 +240,13 @@ function InvestmentDecisionInsight({
       <div className="flex flex-wrap items-center gap-1.5">
         {/* Sentiment Badge */}
         {sentimentKey === 'positive' && (
-          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs gap-1">
+          <Badge className="bg-profit/10 text-profit dark:text-profit border-profit/30 text-xs gap-1">
             <ArrowUpRight className="w-3 h-3" />
             {t('news.feed.insight.sentimentPositive')}
           </Badge>
         )}
         {sentimentKey === 'negative' && (
-          <Badge className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 text-xs gap-1">
+          <Badge className="bg-loss/10 text-loss dark:text-loss border-loss/30 text-xs gap-1">
             <ArrowDownRight className="w-3 h-3" />
             {t('news.feed.insight.sentimentNegative')}
           </Badge>
@@ -260,17 +260,17 @@ function InvestmentDecisionInsight({
 
         {/* Action Badge */}
         {(action === 'buy' || action === 'شراء') && (
-          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs">
+          <Badge className="bg-profit/15 text-profit dark:text-profit border-profit/30 text-xs">
             {t('news.feed.insight.buyOpportunity')}
           </Badge>
         )}
         {(action === 'sell' || action === 'بيع') && (
-          <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30 text-xs">
+          <Badge className="bg-loss/15 text-loss dark:text-loss border-loss/30 text-xs">
             {t('news.feed.insight.sellSignal')}
           </Badge>
         )}
         {(action === 'monitor' || action === 'مراقبة') && (
-          <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs">
+          <Badge className="bg-warning/15 text-warning dark:text-warning border-warning/30 text-xs">
             {t('news.feed.insight.monitor')}
           </Badge>
         )}
@@ -525,7 +525,7 @@ function NewsCard({ item }: { item: NewsItem }) {
 
                   {/* Importance */}
                   {item.importance === 'high' && (
-                    <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs">
+                    <Badge className="bg-loss/10 text-loss dark:text-loss border border-loss/20 text-xs">
                       {t('news.feed.importanceHigh')}
                     </Badge>
                   )}
@@ -842,9 +842,9 @@ export function NewsFeedView() {
 
       {/* Error state */}
       {error && !loading && (
-        <Card className="border-rose-500/30 bg-rose-500/5">
+        <Card className="border-loss/30 bg-loss/5">
           <CardContent className="p-6 text-center space-y-2">
-            <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">{error}</p>
+            <p className="text-sm font-semibold text-loss dark:text-loss">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchNews}>
               {t('news.feed.retry')}
             </Button>

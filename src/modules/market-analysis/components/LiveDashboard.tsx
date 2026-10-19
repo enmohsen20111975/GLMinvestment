@@ -13,10 +13,10 @@ export function HeartbeatStatusBar() {
   const heartbeat = useHeartbeat();
 
   const colors = {
-    healthy: 'bg-emerald-500',
-    stale: 'bg-amber-500',
-    error: 'bg-red-500',
-    loading: 'bg-teal-500',
+    healthy: 'bg-profit',
+    stale: 'bg-warning',
+    error: 'bg-loss',
+    loading: 'bg-whale',
   };
 
   const messages = {
@@ -99,7 +99,7 @@ export function LiveDashboardWidget() {
       {/* Heartbeat */}
       <div className="flex items-center justify-between text-[10px]">
         <span className="text-muted-foreground">حالة النظام:</span>
-        <span className={`font-bold ${heartbeat.status === 'healthy' ? 'text-emerald-500' : 'text-red-500'}`}>
+        <span className={`font-bold ${heartbeat.status === 'healthy' ? 'text-profit' : 'text-loss'}`}>
           {heartbeat.message}
         </span>
       </div>

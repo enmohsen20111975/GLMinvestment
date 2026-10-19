@@ -116,12 +116,12 @@ const TIME_PERIODS = [
 ];
 
 const SIGNAL_CONFIG = {
-  'STRONG_BUY': { label: 'شراء قوي', color: 'bg-emerald-500', textColor: 'text-emerald-500', bgLight: 'bg-emerald-500/10' },
-  'BUY': { label: 'شراء', color: 'bg-emerald-400', textColor: 'text-emerald-400', bgLight: 'bg-emerald-400/10' },
-  'ACCUMULATE': { label: 'تجميع', color: 'bg-amber-400', textColor: 'text-amber-400', bgLight: 'bg-amber-400/10' },
-  'HOLD': { label: 'احتفاظ', color: 'bg-amber-500', textColor: 'text-amber-500', bgLight: 'bg-amber-500/10' },
-  'SELL': { label: 'بيع', color: 'bg-red-400', textColor: 'text-red-400', bgLight: 'bg-red-400/10' },
-  'STRONG_SELL': { label: 'بيع قوي', color: 'bg-red-500', textColor: 'text-red-500', bgLight: 'bg-red-500/10' },
+  'STRONG_BUY': { label: 'شراء قوي', color: 'bg-profit', textColor: 'text-profit', bgLight: 'bg-profit/10' },
+  'BUY': { label: 'شراء', color: 'bg-profit', textColor: 'text-profit', bgLight: 'bg-profit/10' },
+  'ACCUMULATE': { label: 'تجميع', color: 'bg-warning', textColor: 'text-warning', bgLight: 'bg-warning/10' },
+  'HOLD': { label: 'احتفاظ', color: 'bg-warning', textColor: 'text-warning', bgLight: 'bg-warning/10' },
+  'SELL': { label: 'بيع', color: 'bg-loss', textColor: 'text-loss', bgLight: 'bg-loss/10' },
+  'STRONG_SELL': { label: 'بيع قوي', color: 'bg-loss', textColor: 'text-loss', bgLight: 'bg-loss/10' },
 };
 
 /* ------------------------------------------------------------------ */
@@ -140,16 +140,16 @@ function formatPercent(value: number): string {
 
 function getScoreColor(score?: number): string {
   const s = score ?? 0
-  if (s >= 70) return 'text-emerald-500'
-  if (s >= 50) return 'text-amber-500'
-  return 'text-red-500'
+  if (s >= 70) return 'text-profit'
+  if (s >= 50) return 'text-warning'
+  return 'text-loss'
 }
 
 function getScoreBgColor(score?: number): string {
   const s = score ?? 0
-  if (s >= 70) return 'bg-emerald-500'
-  if (s >= 50) return 'bg-amber-500'
-  return 'bg-red-500'
+  if (s >= 70) return 'bg-profit'
+  if (s >= 50) return 'bg-warning'
+  return 'bg-loss'
 }
 
 /* ------------------------------------------------------------------ */
@@ -357,9 +357,9 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
 
   if (error) {
     return (
-      <Card className="border-red-200 dark:border-red-900/50">
+      <Card className="border-loss dark:border-loss/50">
         <CardContent className="p-6 text-center">
-          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <AlertCircle className="w-10 h-10 text-loss mx-auto mb-3" />
           <p className="text-sm font-medium mb-1">خطأ في التحليل</p>
           <p className="text-xs text-muted-foreground mb-3">{error}</p>
           <Button variant="outline" size="sm" onClick={fetchData}>
@@ -446,7 +446,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
                       {updatedAnalysis.signal_ar || signalConfig?.label}
                     </Badge>
                     {updatedAnalysis.is_tradeable && (
-                      <Badge variant="outline" className="text-xs text-emerald-500">
+                      <Badge variant="outline" className="text-xs text-profit">
                         <CheckCircle className="w-3 h-3 ml-1" />
                         قابل للتداول
                       </Badge>
@@ -553,15 +553,15 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
                     : updatedAnalysis.risk_profile.entry_price?.toFixed(2) || '--'}
                 </span>
               </div>
-              <div className="text-center p-3 bg-emerald-500/10 rounded-lg">
+              <div className="text-center p-3 bg-profit/10 rounded-lg">
                 <span className="text-xs text-muted-foreground block">الهدف</span>
-                <span className="font-medium text-emerald-500">
+                <span className="font-medium text-profit">
                   {formatPrice(updatedAnalysis.risk_profile.target_price)}
                 </span>
               </div>
-              <div className="text-center p-3 bg-red-500/10 rounded-lg">
+              <div className="text-center p-3 bg-loss/10 rounded-lg">
                 <span className="text-xs text-muted-foreground block">وقف الخسارة</span>
-                <span className="font-medium text-red-500">
+                <span className="font-medium text-loss">
                   {formatPrice(updatedAnalysis.risk_profile.stop_loss_price)}
                 </span>
               </div>
@@ -620,13 +620,13 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
           {updatedAnalysis.reasons && updatedAnalysis.reasons.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base text-emerald-500">أسباب الإشارة</CardTitle>
+                <CardTitle className="text-base text-profit">أسباب الإشارة</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
                   {updatedAnalysis.reasons.map((reason, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <CheckCircle className="w-4 h-4 text-profit mt-0.5 shrink-0" />
                       <span>{reason}</span>
                     </li>
                   ))}
@@ -638,13 +638,13 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
           {updatedAnalysis.warnings && updatedAnalysis.warnings.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base text-amber-500">تحذيرات</CardTitle>
+                <CardTitle className="text-base text-warning">تحذيرات</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
                   {updatedAnalysis.warnings.map((warning, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                      <AlertCircle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
                       <span>{warning}</span>
                     </li>
                   ))}
@@ -668,7 +668,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
                 <span className="text-xs text-muted-foreground block">التغير 24 ساعة</span>
                 <span className={cn(
                   "font-medium",
-                  chartData.indicators.priceChangePercent24h >= 0 ? "text-emerald-500" : "text-red-500"
+                  chartData.indicators.priceChangePercent24h >= 0 ? "text-profit" : "text-loss"
                 )}>
                   {formatPercent(chartData.indicators.priceChangePercent24h)}
                 </span>
@@ -687,9 +687,9 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
       )}
 
       {/* Disclaimer */}
-      <Card className="border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20">
+      <Card className="border-warning dark:border-warning/50 bg-warning dark:bg-warning/20">
         <CardContent className="p-4">
-          <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
+          <p className="text-xs text-warning dark:text-warning text-center">
             ⚠️ هذا التحليل للأغراض التعليمية فقط ولا يُعتبر نصيحة استثمارية. 
             جميع التحليلات مصدرها التحليل الذكي للسهم. قرارات الاستثمار مسؤوليتك الشخصية.
           </p>

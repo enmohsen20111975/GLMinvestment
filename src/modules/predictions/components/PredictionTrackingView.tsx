@@ -108,9 +108,9 @@ interface TrackingStats {
 // ============================================================
 
 const STATUS_BADGE_CLASS: Record<PickStatus, string> = {
-  pending: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
-  target_hit: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
-  stop_hit: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800',
+  pending: 'bg-warning text-warning border-warning dark:bg-warning/50 dark:text-warning dark:border-warning',
+  target_hit: 'bg-profit text-profit border-profit dark:bg-profit/50 dark:text-profit dark:border-profit',
+  stop_hit: 'bg-loss text-loss border-loss dark:bg-loss/50 dark:text-loss dark:border-loss',
   expired: 'bg-zinc-100 text-zinc-600 border-zinc-300 dark:bg-zinc-900/50 dark:text-zinc-400 dark:border-zinc-700',
 };
 
@@ -214,7 +214,7 @@ function getPredictionColumns(t: (key: string, params?: Record<string, string | 
     align: 'right',
     sortable: true,
     filterable: true,
-    className: 'font-mono text-xs text-rose-600 dark:text-rose-400',
+    className: 'font-mono text-xs text-loss dark:text-loss',
     render: (p) => formatNumber(p.stop_loss),
   },
   {
@@ -223,7 +223,7 @@ function getPredictionColumns(t: (key: string, params?: Record<string, string | 
     align: 'right',
     sortable: true,
     filterable: true,
-    className: 'font-mono text-xs text-emerald-600 dark:text-emerald-400',
+    className: 'font-mono text-xs text-profit dark:text-profit',
     render: (p) => formatNumber(p.target_price),
   },
   {
@@ -235,7 +235,7 @@ function getPredictionColumns(t: (key: string, params?: Record<string, string | 
     render: (p) => (
       <Badge
         variant="outline"
-        className="font-mono text-[11px] border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400"
+        className="font-mono text-[11px] border-profit text-profit dark:border-profit dark:text-profit"
       >
         {formatNumber(p.risk_reward, 1)}
       </Badge>
@@ -260,9 +260,9 @@ function getPredictionColumns(t: (key: string, params?: Record<string, string | 
       if (p.current_price === null) return '—';
       const diff = p.current_price - p.entry_price;
       const cls = p.current_price > p.entry_price
-        ? 'text-emerald-600 dark:text-emerald-400'
+        ? 'text-profit dark:text-profit'
         : p.current_price < p.entry_price
-          ? 'text-rose-600 dark:text-rose-400'
+          ? 'text-loss dark:text-loss'
           : '';
       return (
         <span className={cn('font-mono text-xs font-bold', cls)}>
@@ -287,8 +287,8 @@ function getPredictionColumns(t: (key: string, params?: Record<string, string | 
         pnl === null
           ? 'text-muted-foreground'
           : pnl >= 0
-            ? 'text-emerald-600 dark:text-emerald-400'
-            : 'text-rose-600 dark:text-rose-400';
+            ? 'text-profit dark:text-profit'
+            : 'text-loss dark:text-loss';
       return (
         <span className={cn('font-mono text-xs font-bold', pnlColor)}>
           {formatPct(pnl, true)}
@@ -513,8 +513,8 @@ export function PredictionTrackingView() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="rounded-xl bg-emerald-100 dark:bg-emerald-950/50 p-2.5">
-            <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-profit dark:bg-profit/50 p-2.5">
+            <Trophy className="h-5 w-5 text-profit dark:text-profit" />
           </div>
           <div>
             <h2 className="text-xl sm:text-2xl font-bold">{t('predictions.tracking.title')}</h2>
@@ -569,32 +569,32 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
               title={t('predictions.tracking.stats.total')}
               value={display.total}
               hint={t('predictions.tracking.stats.totalHint', { days: stats?.days ?? 30, market: MARKET_NAMES_AR[currentMarket] })}
-              icon={<ListChecks className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
-              iconBg="bg-emerald-100 dark:bg-emerald-950/50"
+              icon={<ListChecks className="h-5 w-5 text-profit dark:text-profit" />}
+              iconBg="bg-profit dark:bg-profit/50"
             />
             <StatCard
               title={t('predictions.tracking.stats.pending')}
               value={display.pending}
               hint={t('predictions.tracking.stats.pendingHint')}
-              icon={<Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
-              iconBg="bg-amber-100 dark:bg-amber-950/50"
-              valueColor="text-amber-600 dark:text-amber-400"
+              icon={<Clock className="h-5 w-5 text-warning dark:text-warning" />}
+              iconBg="bg-warning dark:bg-warning/50"
+              valueColor="text-warning dark:text-warning"
             />
             <StatCard
               title={t('predictions.tracking.stats.successRate')}
               value={display.successRate}
               hint={t('predictions.tracking.stats.successHint', { count: stats?.target_hit ?? 0 })}
-              icon={<CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
-              iconBg="bg-emerald-100 dark:bg-emerald-950/50"
-              valueColor="text-emerald-600 dark:text-emerald-400"
+              icon={<CheckCircle2 className="h-5 w-5 text-profit dark:text-profit" />}
+              iconBg="bg-profit dark:bg-profit/50"
+              valueColor="text-profit dark:text-profit"
             />
             <StatCard
               title={t('predictions.tracking.stats.failureRate')}
               value={display.failureRate}
               hint={t('predictions.tracking.stats.failureHint', { count: stats?.stop_hit ?? 0 })}
-              icon={<XCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />}
-              iconBg="bg-rose-100 dark:bg-rose-950/50"
-              valueColor="text-rose-600 dark:text-rose-400"
+              icon={<XCircle className="h-5 w-5 text-loss dark:text-loss" />}
+              iconBg="bg-loss dark:bg-loss/50"
+              valueColor="text-loss dark:text-loss"
             />
           </>
         )}
@@ -609,14 +609,14 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                 <span className="flex items-center gap-1.5">
-                  <Target className="h-4 w-4 text-emerald-600" />
+                  <Target className="h-4 w-4 text-profit" />
                   <span className="text-muted-foreground">{t('predictions.tracking.summary.targetHit')}</span>
-                  <span className="font-bold text-emerald-600">{stats.target_hit ?? 0}</span>
+                  <span className="font-bold text-profit">{stats.target_hit ?? 0}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Shield className="h-4 w-4 text-rose-600" />
+                  <Shield className="h-4 w-4 text-loss" />
                   <span className="text-muted-foreground">{t('predictions.tracking.summary.stopHit')}</span>
-                  <span className="font-bold text-rose-600">{stats.stop_hit ?? 0}</span>
+                  <span className="font-bold text-loss">{stats.stop_hit ?? 0}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4 text-zinc-500" />
@@ -624,14 +624,14 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
                   <span className="font-bold text-zinc-600 dark:text-zinc-300">{stats.expired ?? 0}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Gauge className="h-4 w-4 text-amber-600" />
+                  <Gauge className="h-4 w-4 text-warning" />
                   <span className="text-muted-foreground">{t('predictions.tracking.summary.avgReturn')}</span>
                   <span
                     className={cn(
                       'font-bold',
                       (stats.avg_return ?? 0) >= 0
-                        ? 'text-emerald-600'
-                        : 'text-rose-600'
+                        ? 'text-profit'
+                        : 'text-loss'
                     )}
                   >
                     {formatPct(stats.avg_return, true)}
@@ -655,7 +655,7 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
-                <ListChecks className="h-5 w-5 text-emerald-600" />
+                <ListChecks className="h-5 w-5 text-profit" />
                 {t('predictions.tracking.table.title')}
               </CardTitle>
               <CardDescription className="mt-1">

@@ -77,7 +77,7 @@ export function StockIconMini({
     return (
       <div 
         className={cn(
-          'w-6 h-6 rounded-full flex items-center justify-center bg-teal-500/10 text-teal-700 dark:text-teal-300 text-[10px] font-bold border border-teal-500/20 flex-shrink-0',
+          'w-6 h-6 rounded-full flex items-center justify-center bg-whale/10 text-whale dark:text-whale text-[10px] font-bold border border-whale/20 flex-shrink-0',
           className
         )}
         title={name ? `${cleanTicker} - ${name}` : cleanTicker}

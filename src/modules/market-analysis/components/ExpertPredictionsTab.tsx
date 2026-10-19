@@ -126,7 +126,7 @@ function ExpertPredictionsTableView({ stocks }: { stocks: StockData[] }) {
               <td className="p-2 font-medium">{s.name_ar || s.name}</td>
               <td className="p-2 font-mono">{s.ticker}</td>
               <td className="p-2 text-center font-mono">{fmtNum(s.current_price)}</td>
-              <td className={cn("p-2 text-center font-mono font-medium", (s.change_percent || 0) >= 0 ? "text-green-600" : "text-red-600")}>
+              <td className={cn("p-2 text-center font-mono font-medium", (s.change_percent || 0) >= 0 ? "text-success" : "text-loss")}>
                 {(s.change_percent || 0) >= 0 ? '+' : ''}{(s.change_percent || 0).toFixed(2)}%
               </td>
               <td className="p-2 text-right">{s.sector || '—'}</td>
@@ -291,8 +291,8 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
         telegramCaption={`🎯 توقعات الخبراء — ${MARKET_NAMES_AR[market]}\nقائمة الأسهم المراقبة — أداء اليوم\n\nمنصة دليل الاستثمار | invist.m2y.net`}
         telegramMarket={MARKET_CODES[market]}
         accentColor="#15803d"
-        borderClass="border-green-200"
-        bgClass="bg-gradient-to-br from-green-50 via-emerald-50 to-green-100/40"
+        borderClass="border-success"
+        bgClass="bg-gradient-to-br from-success via-profit to-success/40"
         hasData={stocks.length > 0}
         emptyHint="لا توجد بيانات متاحة حالياً"
       >
@@ -367,7 +367,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
                   <span className="text-muted-foreground text-xs">التغير:</span>
                   <p className={cn(
                     "font-medium",
-                    (stock.change_percent || 0) >= 0 ? "text-green-600" : "text-red-600"
+                    (stock.change_percent || 0) >= 0 ? "text-success" : "text-loss"
                   )}>
                     {(stock.change_percent || 0) >= 0 ? '+' : ''}{(stock.change_percent || 0).toFixed(1)}%
                   </p>
@@ -419,7 +419,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1 h-7 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  className="gap-1 h-7 text-xs flex-1 border-whale text-whale hover:bg-primary dark:hover:bg-primary/20"
                   onClick={() => {
                     const text = formatSingleExpertPredictionText(stock);
                     navigator.clipboard.writeText(text);
@@ -482,7 +482,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                        className="gap-1 h-7 text-xs border-whale text-whale hover:bg-primary dark:hover:bg-primary/20"
                         onClick={() => {
                           navigator.clipboard.writeText(singleText);
                           window.open('https://www.facebook.com/', '_blank');

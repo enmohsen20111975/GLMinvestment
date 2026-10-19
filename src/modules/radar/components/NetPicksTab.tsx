@@ -86,7 +86,7 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
     return (
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <Target className="h-4 w-4 text-profit dark:text-profit" />
           <Skeleton className="h-4 w-40" />
         </div>
         <Skeleton className="h-32 w-full" />
@@ -121,7 +121,7 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
         <div className="flex flex-col">
           <span className="font-bold text-sm">{row.ticker}</span>
           {row.prediction && (
-            <Badge className="text-[9px] h-4 px-1 mt-0.5 bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+            <Badge className="text-[9px] h-4 px-1 mt-0.5 bg-profit/20 text-profit dark:text-profit border-profit/30">
               {row.prediction.signal}
             </Badge>
           )}
@@ -174,7 +174,7 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
       header: 'ROC 10d',
       sortable: true,
       render: (row) => (
-        <span className={`font-mono text-xs ${row.roc_10d >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+        <span className={`font-mono text-xs ${row.roc_10d >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
           {fmtPct(row.roc_10d)}
         </span>
       ),
@@ -194,11 +194,11 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
             </div>
             <div className="flex gap-1">
               <span className="text-muted-foreground">هدف:</span>
-              <span className="font-mono text-emerald-600 dark:text-emerald-400">{p.target_price?.toFixed(2)}</span>
+              <span className="font-mono text-profit dark:text-profit">{p.target_price?.toFixed(2)}</span>
             </div>
             <div className="flex gap-1">
               <span className="text-muted-foreground">وقف:</span>
-              <span className="font-mono text-rose-600 dark:text-rose-400">{p.stop_loss?.toFixed(2)}</span>
+              <span className="font-mono text-loss dark:text-loss">{p.stop_loss?.toFixed(2)}</span>
             </div>
             <div className="flex gap-1">
               <span className="text-muted-foreground">RR:</span>
@@ -215,7 +215,7 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
       filterable: true,
       render: (row) => {
         const acc = row.accumulation || '';
-        const cls = acc.includes('قوي') ? 'text-emerald-600 dark:text-emerald-400' : acc.includes('تصريف') ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground';
+        const cls = acc.includes('قوي') ? 'text-profit dark:text-profit' : acc.includes('تصريف') ? 'text-loss dark:text-loss' : 'text-muted-foreground';
         return <span className={`text-[10px] font-medium ${cls}`}>{acc || '—'}</span>;
       },
     },
@@ -226,7 +226,7 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <Target className="h-4 w-4 text-profit dark:text-profit" />
           <div>
             <h4 className="text-sm font-semibold">صافى التوقعات</h4>
             <p className="text-[10px] text-muted-foreground">مجمع من كل مسارات الرادار + مزوّد بالتوقعات</p>
@@ -237,7 +237,7 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
             {data.stats.total_picks} سهم
           </Badge>
           {data.stats.with_predictions > 0 && (
-            <Badge className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+            <Badge className="text-[10px] bg-profit/20 text-profit dark:text-profit">
               {data.stats.with_predictions} بتوقع
             </Badge>
           )}

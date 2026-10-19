@@ -63,15 +63,15 @@ interface AlertSummary {
 }
 
 const typeIcons: Record<string, React.ReactNode> = {
-  profit_target: <Target className="h-4 w-4 text-green-600" />,
-  stop_loss: <ShieldAlert className="h-4 w-4 text-red-600" />,
-  support_near: <ArrowDownRight className="h-4 w-4 text-teal-600" />,
+  profit_target: <Target className="h-4 w-4 text-success" />,
+  stop_loss: <ShieldAlert className="h-4 w-4 text-loss" />,
+  support_near: <ArrowDownRight className="h-4 w-4 text-whale" />,
   resistance_near: <ArrowUpRight className="h-4 w-4 text-orange-600" />,
   dividend_soon: <DollarSign className="h-4 w-4 text-purple-600" />,
-  breakout: <Zap className="h-4 w-4 text-green-600" />,
-  breakdown: <AlertCircle className="h-4 w-4 text-red-600" />,
-  price_surge: <TrendingUp className="h-4 w-4 text-green-600" />,
-  price_drop: <TrendingDown className="h-4 w-4 text-red-600" />
+  breakout: <Zap className="h-4 w-4 text-success" />,
+  breakdown: <AlertCircle className="h-4 w-4 text-loss" />,
+  price_surge: <TrendingUp className="h-4 w-4 text-success" />,
+  price_drop: <TrendingDown className="h-4 w-4 text-loss" />
 };
 
 const typeLabels: Record<string, string> = {
@@ -87,17 +87,17 @@ const typeLabels: Record<string, string> = {
 };
 
 const severityColors: Record<string, string> = {
-  danger: 'border-red-300 bg-red-50 dark:bg-red-950/20',
+  danger: 'border-loss bg-loss dark:bg-loss/20',
   warning: 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20',
-  success: 'border-green-300 bg-green-50 dark:bg-green-950/20',
-  info: 'border-teal-300 bg-blue-50 dark:bg-blue-950/20'
+  success: 'border-success bg-success dark:bg-success/20',
+  info: 'border-whale bg-primary dark:bg-primary/20'
 };
 
 const severityBadgeColors: Record<string, string> = {
-  danger: 'bg-red-500 text-white',
+  danger: 'bg-loss text-white',
   warning: 'bg-yellow-500 text-white',
-  success: 'bg-green-500 text-white',
-  info: 'bg-teal-500 text-white'
+  success: 'bg-success text-white',
+  info: 'bg-whale text-white'
 };
 
 export function SmartAlertsPanel() {
@@ -143,7 +143,7 @@ export function SmartAlertsPanel() {
     return (
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-8">
-          <CheckCircle className="h-10 w-10 text-green-600 mb-3" />
+          <CheckCircle className="h-10 w-10 text-success mb-3" />
           <h3 className="text-lg font-semibold mb-1">لا توجد تنبيهات</h3>
           <p className="text-sm text-muted-foreground text-center">
             محفظتك في وضع جيد - لا توجد تحذيرات أو تنبيهات حالياً
@@ -172,11 +172,11 @@ export function SmartAlertsPanel() {
       <div className="grid grid-cols-4 gap-2">
         <Card className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter(filter === 'danger' ? 'all' : 'danger')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+            <div className="w-8 h-8 rounded-full bg-loss flex items-center justify-center">
+              <AlertTriangle className="h-4 w-4 text-loss" />
             </div>
             <div>
-              <div className="text-lg font-bold text-red-600">{summary.by_severity.danger}</div>
+              <div className="text-lg font-bold text-loss">{summary.by_severity.danger}</div>
               <div className="text-xs text-muted-foreground">خطر</div>
             </div>
           </div>
@@ -194,22 +194,22 @@ export function SmartAlertsPanel() {
         </Card>
         <Card className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter(filter === 'success' ? 'all' : 'success')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+            <div className="w-8 h-8 rounded-full bg-success flex items-center justify-center">
+              <CheckCircle className="h-4 w-4 text-success" />
             </div>
             <div>
-              <div className="text-lg font-bold text-green-600">{summary.by_severity.success}</div>
+              <div className="text-lg font-bold text-success">{summary.by_severity.success}</div>
               <div className="text-xs text-muted-foreground">نجاح</div>
             </div>
           </div>
         </Card>
         <Card className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter(filter === 'info' ? 'all' : 'info')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
-              <Info className="h-4 w-4 text-teal-600" />
+            <div className="w-8 h-8 rounded-full bg-whale flex items-center justify-center">
+              <Info className="h-4 w-4 text-whale" />
             </div>
             <div>
-              <div className="text-lg font-bold text-teal-600">{summary.by_severity.info}</div>
+              <div className="text-lg font-bold text-whale">{summary.by_severity.info}</div>
               <div className="text-xs text-muted-foreground">معلومة</div>
             </div>
           </div>
@@ -252,7 +252,7 @@ export function SmartAlertsPanel() {
                     <span>الحالي: {(alert.details?.currentPrice ?? 0).toFixed(2)}</span>
                     <span className={cn(
                       "font-medium",
-                      (alert.details?.profitLossPercent ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+                      (alert.details?.profitLossPercent ?? 0) >= 0 ? "text-success" : "text-loss"
                     )}>
                       {(alert.details?.profitLossPercent ?? 0) >= 0 ? '+' : ''}{(alert.details?.profitLossPercent ?? 0).toFixed(1)}%
                     </span>
@@ -277,17 +277,17 @@ export function SmartAlertsPanel() {
         <CardContent className="p-3">
           <div className="flex flex-wrap gap-2 text-xs">
             {summary.by_type.profit_target > 0 && (
-              <Badge variant="outline" className="bg-green-50 text-green-700">
+              <Badge variant="outline" className="bg-success text-success">
                 🎯 {summary.by_type.profit_target} هدف ربح
               </Badge>
             )}
             {summary.by_type.stop_loss > 0 && (
-              <Badge variant="outline" className="bg-red-50 text-red-700">
+              <Badge variant="outline" className="bg-loss text-loss">
                 🛡️ {summary.by_type.stop_loss} وقف خسارة
               </Badge>
             )}
             {summary.by_type.support_near > 0 && (
-              <Badge variant="outline" className="bg-blue-50 text-teal-700">
+              <Badge variant="outline" className="bg-primary text-whale">
                 📥 {summary.by_type.support_near} قريب من دعم
               </Badge>
             )}
@@ -302,12 +302,12 @@ export function SmartAlertsPanel() {
               </Badge>
             )}
             {summary.by_type.breakout > 0 && (
-              <Badge variant="outline" className="bg-green-50 text-green-700">
+              <Badge variant="outline" className="bg-success text-success">
                 {summary.by_type.breakout} كسر مقاومة
               </Badge>
             )}
             {summary.by_type.breakdown > 0 && (
-              <Badge variant="outline" className="bg-red-50 text-red-700">
+              <Badge variant="outline" className="bg-loss text-loss">
                 📉 {summary.by_type.breakdown} كسر دعم
               </Badge>
             )}

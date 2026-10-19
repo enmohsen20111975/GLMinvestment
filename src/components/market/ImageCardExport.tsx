@@ -46,7 +46,7 @@ export function ImageCardExport({
   telegramMarket = 'EGX',
   accentColor = '#ea580c',
   borderClass = 'border-orange-200',
-  bgClass = 'bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100/40',
+  bgClass = 'bg-gradient-to-br from-orange-50 via-warning to-orange-100/40',
   hasData = true,
   emptyHint = 'قيد التحليل — البيانات بتتحدث كل دورة',
   children,
@@ -193,7 +193,7 @@ export function ImageCardExport({
                 size="sm"
                 onClick={handlePublish}
                 disabled={busy}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-profit hover:bg-profit text-white"
               >
                 {publishing ? (
                   <Loader2 className="h-4 w-4 ml-1 animate-spin" />

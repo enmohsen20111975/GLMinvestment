@@ -172,7 +172,7 @@ const parsedRecColumns: Column<ParsedTextRec>[] = [
   {
     key: 'code',
     header: 'الرمز',
-    className: 'text-xs font-mono font-bold text-emerald-700',
+    className: 'text-xs font-mono font-bold text-profit',
     filterable: true,
     render: (p) => p.code || '—',
   },
@@ -195,7 +195,7 @@ const parsedRecColumns: Column<ParsedTextRec>[] = [
     key: 'stopLoss',
     header: 'الوقف',
     align: 'right',
-    className: 'text-xs text-rose-600',
+    className: 'text-xs text-loss',
     render: (p) => p.stopLoss || '—',
   },
   {
@@ -260,7 +260,7 @@ const storedRecColumns: Column<StoredRec>[] = [
     render: (r) => (
       <div className="flex items-center gap-1">
         <div className="flex flex-col">
-          <span className="font-mono font-bold text-emerald-700">
+          <span className="font-mono font-bold text-profit">
             {r.stock_symbol}
           </span>
           {r.stock_name_ar && (
@@ -310,7 +310,7 @@ const storedRecColumns: Column<StoredRec>[] = [
     key: 'target_price',
     header: 'الهدف',
     align: 'right',
-    className: 'text-xs font-mono text-emerald-700',
+    className: 'text-xs font-mono text-profit',
     render: (r) =>
       `${fmtNum(r.target_price)}${r.target_price_2 ? ` ← ${fmtNum(r.target_price_2)}` : ''}`,
   },
@@ -318,7 +318,7 @@ const storedRecColumns: Column<StoredRec>[] = [
     key: 'stop_loss',
     header: 'الوقف',
     align: 'right',
-    className: 'text-xs font-mono text-rose-600',
+    className: 'text-xs font-mono text-loss',
     render: (r) => fmtNum(r.stop_loss),
   },
   {
@@ -394,7 +394,7 @@ function actionBadge(action: string) {
   const a = (action || 'BUY').toUpperCase();
   if (a === 'SELL') {
     return (
-      <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 border-rose-200">
+      <Badge className="bg-loss text-loss hover:bg-loss border-loss">
         <TrendingDown className="w-3 h-3 ml-1" />
         بيع
       </Badge>
@@ -402,14 +402,14 @@ function actionBadge(action: string) {
   }
   if (a === 'HOLD') {
     return (
-      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200">
+      <Badge className="bg-warning text-warning hover:bg-warning border-warning">
         <Clock className="w-3 h-3 ml-1" />
         انتظار
       </Badge>
     );
   }
   return (
-    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
+    <Badge className="bg-profit text-profit hover:bg-profit border-profit">
       <TrendingUp className="w-3 h-3 ml-1" />
       شراء
     </Badge>
@@ -420,7 +420,7 @@ function statusBadge(status: string) {
   const s = (status || 'PENDING').toUpperCase();
   if (s === 'TARGET_HIT') {
     return (
-      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
+      <Badge className="bg-profit text-profit hover:bg-profit border-profit">
         <CheckCircle2 className="w-3 h-3 ml-1" />
         ضرب الهدف
       </Badge>
@@ -428,7 +428,7 @@ function statusBadge(status: string) {
   }
   if (s === 'STOPPED') {
     return (
-      <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 border-rose-200">
+      <Badge className="bg-loss text-loss hover:bg-loss border-loss">
         <AlertTriangle className="w-3 h-3 ml-1" />
         ضرب الوقف
       </Badge>
@@ -443,7 +443,7 @@ function statusBadge(status: string) {
     );
   }
   return (
-    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200">
+    <Badge className="bg-warning text-warning hover:bg-warning border-warning">
       <Clock className="w-3 h-3 ml-1" />
       قيد التنفيذ
     </Badge>
@@ -944,7 +944,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
           variant="ghost"
           onClick={(e) => { e.stopPropagation(); removeRow(r._idx); }}
           disabled={rows.length <= 1}
-          className="h-9 w-9 p-0 text-rose-600 hover:bg-rose-50"
+          className="h-9 w-9 p-0 text-loss hover:bg-loss"
           aria-label="حذف الصف"
         >
           <Trash2 className="w-4 h-4" />
@@ -960,11 +960,11 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
   return (
     <div dir="rtl" className="space-y-4 text-right">
       {/* Header */}
-      <Card className="border-emerald-200/60 bg-gradient-to-l from-emerald-50/60 to-transparent">
+      <Card className="border-profit/60 bg-gradient-to-l from-profit/60 to-transparent">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div>
-              <CardTitle className="flex items-center gap-2 text-emerald-800">
+              <CardTitle className="flex items-center gap-2 text-profit">
                 <ClipboardList className="w-5 h-5" />
                 توقعات الخبراء — {MARKET_NAMES_AR[market]}
               </CardTitle>
@@ -1066,14 +1066,14 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-base">
                 <span className="flex items-center gap-2">
-                  <ListChecks className="w-4 h-4 text-emerald-600" />
+                  <ListChecks className="w-4 h-4 text-profit" />
                   إدخال جدول التوقعات
                 </span>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={addRow}
-                  className="h-9 gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  className="h-9 gap-1 border-profit text-profit hover:bg-profit"
                 >
                   <Plus className="w-4 h-4" />
                   إضافة صف
@@ -1091,8 +1091,8 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                   data={rowsWithIdx}
                   keyField="_idx"
                   dense
-                  className="border-emerald-100"
-                  rowClassName={() => 'hover:bg-emerald-50/30'}
+                  className="border-profit"
+                  rowClassName={() => 'hover:bg-profit/30'}
                   emptyTextAr="أضف صفًا لإدخال التوقعات"
                 />
               </div>
@@ -1102,7 +1102,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                 {rows.map((r, idx) => (
                   <div
                     key={idx}
-                    className="rounded-lg border border-emerald-100 bg-emerald-50/30 p-3 space-y-2"
+                    className="rounded-lg border border-profit bg-profit/30 p-3 space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">توقع #{idx + 1}</span>
@@ -1111,7 +1111,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                         variant="ghost"
                         onClick={() => removeRow(idx)}
                         disabled={rows.length <= 1}
-                        className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50"
+                        className="h-8 w-8 p-0 text-loss hover:bg-loss"
                         aria-label="حذف الصف"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1230,7 +1230,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                 <Button
                   variant="outline"
                   onClick={addRow}
-                  className="w-full h-11 gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  className="w-full h-11 gap-1 border-profit text-profit hover:bg-profit"
                 >
                   <Plus className="w-4 h-4" />
                   إضافة صف
@@ -1238,10 +1238,10 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               </div>
 
               {/* Import button */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-t bg-emerald-50/30">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-t bg-profit/30">
                 <p className="text-xs text-muted-foreground">
                   سيتم استيراد{' '}
-                  <span className="font-bold text-emerald-700">
+                  <span className="font-bold text-profit">
                     {buildImportFromTable().length}
                   </span>{' '}
                   توقع للخبير{' '}
@@ -1252,7 +1252,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                 <Button
                   onClick={handleTableImport}
                   disabled={importingTable}
-                  className="h-11 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="h-11 gap-2 bg-profit hover:bg-profit text-white"
                 >
                   {importingTable ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1271,7 +1271,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <MessageSquare className="w-4 h-4 text-emerald-600" />
+                <MessageSquare className="w-4 h-4 text-profit" />
                 لصق النص الكامل للتحليل
               </CardTitle>
               <CardDescription>
@@ -1298,7 +1298,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                 <Button
                   onClick={handleParse}
                   disabled={parsing || !rawText.trim()}
-                  className="h-11 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="h-11 gap-2 bg-profit hover:bg-profit text-white"
                 >
                   {parsing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1326,7 +1326,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <CheckCircle2 className="w-4 h-4 text-profit" />
                       معاينة النتائج المحلَّلة
                       <Badge variant="secondary" className="mr-1">
                         {parsedRecs.length} توقع
@@ -1336,7 +1336,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                       <Button
                         onClick={handleConfirmImport}
                         disabled={confirming}
-                        className="h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        className="h-10 gap-2 bg-profit hover:bg-profit text-white"
                       >
                         {confirming ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1349,21 +1349,21 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                   </div>
 
                   {parsedRecs.length === 0 ? (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    <div className="rounded-lg border border-warning bg-warning p-4 text-sm text-warning">
                       <AlertTriangle className="w-4 h-4 inline ml-1" />
                       لم يتمكن المحلل من استخراج توقعات من النص. تأكد من أن النص يحتوي
                       على رمز سهم بين قوسين مثل (COMI) وأسعار دخول/هدف.
                     </div>
                   ) : (
-                    <div className="rounded-lg border border-emerald-100 bg-white">
+                    <div className="rounded-lg border border-profit bg-white">
                       <UnifiedTable<ParsedTextRec>
                         columns={parsedRecColumns}
                         data={parsedRecs}
                         keyField="code"
                         dense
                         maxHeight="max-h-96"
-                        className="border-emerald-100"
-                        rowClassName={() => 'hover:bg-emerald-50/40'}
+                        className="border-profit"
+                        rowClassName={() => 'hover:bg-profit/40'}
                       />
                     </div>
                   )}
@@ -1379,7 +1379,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between text-base">
             <span className="flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-emerald-600" />
+              <ClipboardList className="w-4 h-4 text-profit" />
               التوقعات المحفوظة
               <Badge variant="secondary" className="mr-1">
                 {filteredStored.length}
@@ -1435,13 +1435,13 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               ))}
             </div>
           ) : filteredStored.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50/30 p-8 text-center text-sm text-muted-foreground">
-              <ClipboardList className="w-8 h-8 mx-auto mb-2 text-emerald-400" />
+            <div className="rounded-lg border border-dashed border-profit bg-profit/30 p-8 text-center text-sm text-muted-foreground">
+              <ClipboardList className="w-8 h-8 mx-auto mb-2 text-profit" />
               لا توجد توقعات محفوظة بعد. ابدأ بإدخالها من الجدول أو النص بالأعلى.
             </div>
           ) : (
             <div
-              className="rounded-lg border border-emerald-100 bg-white"
+              className="rounded-lg border border-profit bg-white"
               style={{ scrollbarWidth: 'thin' }}
             >
               <UnifiedTable<StoredRec>
@@ -1453,7 +1453,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                 filterable
                 maxHeight="max-h-96"
                 onRowClick={(r) => openDetails(r)}
-                rowClassName={() => 'cursor-pointer hover:bg-emerald-50/40'}
+                rowClassName={() => 'cursor-pointer hover:bg-profit/40'}
               />
             </div>
           )}
@@ -1466,8 +1466,8 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
           side="left"
           className="w-full sm:max-w-md overflow-y-auto p-0"
         >
-          <SheetHeader className="p-4 border-b bg-emerald-50/60">
-            <SheetTitle className="flex items-center gap-2 text-emerald-800">
+          <SheetHeader className="p-4 border-b bg-profit/60">
+            <SheetTitle className="flex items-center gap-2 text-profit">
               <Target className="w-4 h-4" />
               تفاصيل التوقع
             </SheetTitle>
@@ -1477,7 +1477,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-emerald-800 font-mono">
+                  <div className="text-2xl font-bold text-profit font-mono">
                     {selectedRec.stock_symbol}
                   </div>
                   {selectedRec.stock_name_ar && (
@@ -1546,10 +1546,10 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               {selectedRec.technical_analysis && (
                 <div className="space-y-1">
                   <div className="text-xs font-semibold flex items-center gap-1">
-                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                    <TrendingUp className="w-3.5 h-3.5 text-profit" />
                     التحليل الفني
                   </div>
-                  <div className="rounded-md bg-emerald-50/50 p-3 text-xs leading-relaxed text-foreground">
+                  <div className="rounded-md bg-profit/50 p-3 text-xs leading-relaxed text-foreground">
                     {selectedRec.technical_analysis}
                   </div>
                 </div>
@@ -1557,10 +1557,10 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               {selectedRec.fundamental_analysis && (
                 <div className="space-y-1">
                   <div className="text-xs font-semibold flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                    <FileText className="w-3.5 h-3.5 text-profit" />
                     التحليل الأساسي
                   </div>
-                  <div className="rounded-md bg-emerald-50/50 p-3 text-xs leading-relaxed text-foreground">
+                  <div className="rounded-md bg-profit/50 p-3 text-xs leading-relaxed text-foreground">
                     {selectedRec.fundamental_analysis}
                   </div>
                 </div>
@@ -1568,10 +1568,10 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               {selectedRec.recommendation_reason && (
                 <div className="space-y-1">
                   <div className="text-xs font-semibold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <Sparkles className="w-3.5 h-3.5 text-profit" />
                     سبب التوقع
                   </div>
-                  <div className="rounded-md bg-emerald-50/50 p-3 text-xs leading-relaxed text-foreground">
+                  <div className="rounded-md bg-profit/50 p-3 text-xs leading-relaxed text-foreground">
                     {selectedRec.recommendation_reason}
                   </div>
                 </div>
@@ -1605,8 +1605,8 @@ function PriceCell({
   accent: 'emerald' | 'rose' | 'zinc';
 }) {
   const accentClasses = {
-    emerald: 'text-emerald-700',
-    rose: 'text-rose-600',
+    emerald: 'text-profit',
+    rose: 'text-loss',
     zinc: 'text-foreground',
   } as const;
   return (

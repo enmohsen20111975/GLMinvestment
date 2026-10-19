@@ -103,32 +103,32 @@ function ReportHeader({
 }) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:border-amber-500/40"
+      className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:border-warning/40"
       dir="rtl"
     >
       {/* Top gold accent line */}
-      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-amber-500 via-amber-400 to-amber-500" />
+      <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 via-amber-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-warning via-warning to-profit flex items-center justify-center shadow-lg shadow-amber-500/20">
             <BarChart3 className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
               دليل الاستثمار
             </h1>
-            <p className="text-[11px] text-amber-300/80 tracking-wide uppercase">
+            <p className="text-[11px] text-warning/80 tracking-wide uppercase">
               Egyptian Investment Platform · Professional Reports
             </p>
           </div>
         </div>
         <div className="text-left">
-          <h2 className="text-base sm:text-lg font-bold text-amber-300">{title}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-warning">{title}</h2>
           <p className="text-xs text-slate-300/90">{subtitle}</p>
           <div className="flex items-center justify-end gap-2 mt-1">
             <Badge
               variant="outline"
-              className="text-[10px] font-bold border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+              className="text-[10px] font-bold border-profit/40 text-profit bg-profit/10"
             >
               {market} · LIVE
             </Badge>
@@ -155,10 +155,10 @@ function KpiTile({
   subtext?: string;
 }) {
   const toneClasses: Record<string, string> = {
-    positive: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-    negative: 'border-red-500/30 bg-red-500/10 text-red-300',
-    warning: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-    gold: 'border-amber-400/40 bg-gradient-to-br from-amber-500/15 to-amber-400/5 text-amber-200',
+    positive: 'border-profit/30 bg-profit/10 text-profit',
+    negative: 'border-loss/30 bg-loss/10 text-loss',
+    warning: 'border-warning/30 bg-warning/10 text-warning',
+    gold: 'border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 text-warning',
     neutral: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
   };
   return (
@@ -201,16 +201,16 @@ function StockMiniCard({
       className={cn(
         'flex items-center gap-3 p-3 rounded-xl border print:break-inside-avoid',
         isGainer
-          ? 'border-emerald-500/20 bg-emerald-500/5'
-          : 'border-red-500/20 bg-red-500/5',
+          ? 'border-profit/20 bg-profit/5'
+          : 'border-loss/20 bg-loss/5',
       )}
     >
       <div
         className={cn(
           'flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold tabular-nums shrink-0',
           isGainer
-            ? 'bg-emerald-500/20 text-emerald-300'
-            : 'bg-red-500/20 text-red-300',
+            ? 'bg-profit/20 text-profit'
+            : 'bg-loss/20 text-loss',
         )}
       >
         {rank}
@@ -225,7 +225,7 @@ function StockMiniCard({
             <div
               className={cn(
                 'h-full rounded-full',
-                isGainer ? 'bg-emerald-500' : 'bg-red-500',
+                isGainer ? 'bg-profit' : 'bg-loss',
               )}
               style={{ width: `${Math.max(barWidth, 5)}%` }}
             />
@@ -238,7 +238,7 @@ function StockMiniCard({
       <div
         className={cn(
           'flex items-center gap-1 text-sm font-bold tabular-nums',
-          isGainer ? 'text-emerald-400' : 'text-red-400',
+          isGainer ? 'text-profit' : 'text-loss',
         )}
       >
         {isGainer ? (
@@ -283,7 +283,7 @@ function SectorHeatmap({ sectors }: { sectors: SectorRow[] }) {
         const bg = change >= 0
           ? `rgba(16, 185, 129, ${0.15 + intensity * 0.45})`
           : `rgba(239, 68, 68, ${0.15 + intensity * 0.45})`;
-        const border = change >= 0 ? 'border-emerald-500/40' : 'border-red-500/40';
+        const border = change >= 0 ? 'border-profit/40' : 'border-loss/40';
         return (
           <div
             key={`${s.name ?? 'sector'}-${i}`}
@@ -302,7 +302,7 @@ function SectorHeatmap({ sectors }: { sectors: SectorRow[] }) {
             <p
               className={cn(
                 'text-sm font-bold tabular-nums',
-                change >= 0 ? 'text-emerald-100' : 'text-red-100',
+                change >= 0 ? 'text-profit' : 'text-loss',
               )}
             >
               {safeFmtPct(change, 2)}
@@ -321,8 +321,8 @@ function OfflineState({ reason }: { reason: string }) {
       className="flex flex-col items-center justify-center py-16 text-center"
       dir="rtl"
     >
-      <AlertTriangle className="w-12 h-12 mb-3 text-amber-400" />
-      <p className="text-base font-bold text-amber-300 mb-1">
+      <AlertTriangle className="w-12 h-12 mb-3 text-warning" />
+      <p className="text-base font-bold text-warning mb-1">
         تعذّر تحميل التقرير اليومي
       </p>
       <p className="text-xs text-slate-400 max-w-md">{reason}</p>
@@ -422,7 +422,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
       />
 
       {/* Legal Disclaimer */}
-      <p className="text-[10px] text-amber-300/70 italic text-center leading-relaxed print:mb-2">
+      <p className="text-[10px] text-warning/70 italic text-center leading-relaxed print:mb-2">
         ⚠️ إخلاء مسؤولية: المنصة تقدم رأيًا شخصيًا آليًا لأغراض تعليمية
         وتحليلية فقط، وليست نصيحة استثمارية مرخصة. القرار مسؤولية العميل
         وحده. لا ضمان للنتائج. استشر مستشارًا ماليًا مرخصًا.
@@ -435,7 +435,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
             onClick={handleExportPng}
             disabled={exportingPng}
             variant="outline"
-            className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+            className="gap-2 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning"
           >
             <Download className="w-4 h-4" />
             {exportingPng ? 'جارٍ التصدير...' : 'تصدير صورة (PNG)'}
@@ -443,7 +443,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
           <Button
             onClick={handlePrint}
             variant="outline"
-            className="gap-2 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200"
+            className="gap-2 border-profit/40 text-profit hover:bg-profit/10 hover:text-profit"
           >
             <Printer className="w-4 h-4" />
             طباعة / PDF
@@ -454,8 +454,8 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
       {/* Market Summary KPIs */}
       <section aria-label="ملخص السوق">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold text-amber-300 uppercase tracking-wide">
+          <Sparkles className="w-4 h-4 text-warning" />
+          <h3 className="text-sm font-bold text-warning uppercase tracking-wide">
             ملخص السوق · Market Summary
           </h3>
         </div>
@@ -498,15 +498,15 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
 
         {/* Breadth + macro rates row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+          <div className="rounded-xl border border-profit/20 bg-profit/5 p-3">
             <p className="text-[11px] text-slate-300 mb-1">اتساع السوق</p>
-            <p className="text-lg font-bold text-emerald-300 tabular-nums">
+            <p className="text-lg font-bold text-profit tabular-nums">
               {safeFmtNum(breadth, 2, '%')}
             </p>
           </div>
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+          <div className="rounded-xl border border-warning/20 bg-warning/5 p-3">
             <p className="text-[11px] text-slate-300 mb-1">ذهب عيار 21</p>
-            <p className="text-lg font-bold text-amber-300 tabular-nums">
+            <p className="text-lg font-bold text-warning tabular-nums">
               {safeFmtNum(goldPrice, 0, ' ج.م')}
             </p>
           </div>
@@ -523,12 +523,12 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
       <section aria-label="أكثر الأسهم تحركاً">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Gainers */}
-          <Card className="overflow-hidden border-emerald-500/30 bg-[#0d1320]">
+          <Card className="overflow-hidden border-profit/30 bg-[#0d1320]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-2 text-emerald-400">
+              <CardTitle className="text-base font-bold flex items-center gap-2 text-profit">
                 <TrendingUp className="w-5 h-5" />
                 أكثر الأسهم ارتفاعاً
-                <span className="text-[10px] font-normal text-emerald-300/70">
+                <span className="text-[10px] font-normal text-profit/70">
                   Top 5 Gainers
                 </span>
               </CardTitle>
@@ -552,12 +552,12 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
           </Card>
 
           {/* Losers */}
-          <Card className="overflow-hidden border-red-500/30 bg-[#0d1320]">
+          <Card className="overflow-hidden border-loss/30 bg-[#0d1320]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-2 text-red-400">
+              <CardTitle className="text-base font-bold flex items-center gap-2 text-loss">
                 <TrendingDown className="w-5 h-5" />
                 أكثر الأسهم انخفاضاً
-                <span className="text-[10px] font-normal text-red-300/70">
+                <span className="text-[10px] font-normal text-loss/70">
                   Top 5 Losers
                 </span>
               </CardTitle>
@@ -586,7 +586,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
       <section aria-label="خريطة القطاعات">
         <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
               <Layers className="w-5 h-5" />
               خريطة أداء القطاعات
               <span className="text-[10px] font-normal text-slate-400">
@@ -603,12 +603,12 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
       {/* AI Summary (Python-generated text) */}
       {report.content && (
         <section aria-label="الملخص الذكي">
-          <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+          <Card className="overflow-hidden border-warning/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-300">
+              <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
                 <Activity className="w-5 h-5" />
                 الملخص الذكي للسوق
-                <span className="text-[10px] font-normal text-amber-300/70">
+                <span className="text-[10px] font-normal text-warning/70">
                   AI Summary · generated by Python
                 </span>
               </CardTitle>

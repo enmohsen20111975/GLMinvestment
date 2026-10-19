@@ -51,13 +51,13 @@ export const FlashingChangeCell = memo(function FlashingChangeCell({
     <span
       className={`inline-flex items-center justify-end gap-0.5 font-mono tabular-nums text-xs transition-all duration-300 rounded px-1.5 py-0.5 ${
         isUp
-          ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/50 font-bold shadow-sm scale-105'
+          ? 'bg-profit/20 text-profit dark:text-profit ring-1 ring-profit/50 font-bold shadow-sm scale-105'
           : isDown
-          ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/50 font-bold shadow-sm scale-105'
+          ? 'bg-loss/20 text-loss dark:text-loss ring-1 ring-loss/50 font-bold shadow-sm scale-105'
           : isPositive
-          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+          ? 'text-profit dark:text-profit font-semibold'
           : isNegative
-          ? 'text-rose-600 dark:text-rose-400 font-semibold'
+          ? 'text-loss dark:text-loss font-semibold'
           : 'text-muted-foreground'
       } ${className}`}
     >

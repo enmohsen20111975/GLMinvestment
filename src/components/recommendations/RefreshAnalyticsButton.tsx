@@ -55,7 +55,7 @@ export function RefreshAnalyticsButton({
         toast.success('تم توليد التوقعات بنجاح', {
           id: toastId,
           description: `تم فحص السوق وتوليد ${displayedCount} توقعات جديدة.`,
-          icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
+          icon: <CheckCircle2 className="w-5 h-5 text-profit" />,
           duration: 4000,
         });
 
@@ -73,14 +73,14 @@ export function RefreshAnalyticsButton({
         toast.error('حدث خطأ أثناء توليد التوقعات', {
           id: toastId,
           description: data.error || 'يرجى المحاولة مرة أخرى.',
-          icon: <AlertCircle className="w-5 h-5 text-rose-500" />,
+          icon: <AlertCircle className="w-5 h-5 text-loss" />,
         });
       }
     } catch (err: any) {
       toast.error('تعذر الاتصال بمحرك التوقعات', {
         id: toastId,
         description: err?.message || 'يرجى المحاولة مرة أخرى لاحقاً.',
-        icon: <AlertCircle className="w-5 h-5 text-rose-500" />,
+        icon: <AlertCircle className="w-5 h-5 text-loss" />,
       });
     } finally {
       setIsRefreshing(false);
@@ -97,14 +97,14 @@ export function RefreshAnalyticsButton({
       disabled={isRefreshing}
       className={cn(
         'relative group transition-all duration-300 font-medium',
-        isGlow && 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white shadow-md hover:shadow-lg hover:shadow-emerald-500/20 border-0',
+        isGlow && 'bg-gradient-to-r from-profit via-whale to-cyan-600 hover:from-profit hover:to-cyan-500 text-white shadow-md hover:shadow-lg hover:shadow-emerald-500/20 border-0',
         className
       )}
     >
       {isRefreshing ? (
         <RefreshCw className={cn('w-4 h-4 animate-spin', isGlow && 'text-white', showLabel && 'ml-2')} />
       ) : (
-        <Zap className={cn('w-4 h-4 text-emerald-500 transition-transform duration-300 group-hover:scale-110', isGlow && 'text-white', showLabel && 'ml-2')} />
+        <Zap className={cn('w-4 h-4 text-profit transition-transform duration-300 group-hover:scale-110', isGlow && 'text-white', showLabel && 'ml-2')} />
       )}
 
       {showLabel && (

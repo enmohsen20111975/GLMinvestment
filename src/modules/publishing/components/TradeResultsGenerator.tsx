@@ -396,7 +396,7 @@ export function TradeResultsGenerator({
           variant="outline"
           size="sm"
           onClick={() => setOpen(true)}
-          className="gap-1.5 border-amber-400/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+          className="gap-1.5 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning"
         >
           <span className="text-base leading-none">📊</span>
           <span className="hidden sm:inline">نتائج الصفقات</span>
@@ -409,7 +409,7 @@ export function TradeResultsGenerator({
           dir="rtl"
         >
           <DialogHeader>
-            <DialogTitle className="text-amber-400 flex items-center gap-2 text-lg">
+            <DialogTitle className="text-warning flex items-center gap-2 text-lg">
               <span>📊</span>
               نتائج الصفقات — قوالب النشر الاجتماعي
             </DialogTitle>
@@ -425,7 +425,7 @@ export function TradeResultsGenerator({
                 <TabsTrigger
                   key={p}
                   value={p}
-                  className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 data-[state=active]:font-bold"
+                  className="data-[state=active]:bg-warning data-[state=active]:text-slate-900 data-[state=active]:font-bold"
                 >
                   {PERIODS[p].title}
                 </TabsTrigger>
@@ -444,13 +444,13 @@ export function TradeResultsGenerator({
             </div>
             <div className="flex items-center gap-2">
               {!engineAvailable && (
-                <span className="inline-flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/30">
+                <span className="inline-flex items-center gap-1 text-warning bg-warning/10 px-2 py-1 rounded border border-warning/30">
                   <AlertTriangle className="h-3 w-3" />
                   محرك النتائج غير متاح بعد
                 </span>
               )}
               {data?.stats && (
-                <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/30">
+                <span className="inline-flex items-center gap-1 text-profit bg-profit/10 px-2 py-1 rounded border border-profit/30">
                   ✓ {data.stats.winning_closed} صفقة ناجحة
                 </span>
               )}
@@ -467,8 +467,8 @@ export function TradeResultsGenerator({
             )}
             {error && !loading && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <AlertTriangle className="h-8 w-8 mb-2 text-amber-500" />
-                <p className="text-amber-300 mb-1 font-bold">فشل في تحميل البيانات</p>
+                <AlertTriangle className="h-8 w-8 mb-2 text-warning" />
+                <p className="text-warning mb-1 font-bold">فشل في تحميل البيانات</p>
                 <p className="text-slate-500 text-sm">{error}</p>
                 <p className="text-slate-600 text-xs mt-3 max-w-md">
                   سيتم عرض القالب بحالة فارغة (لا توجد نتائج مؤهلة) — Rule 67: لا أرقام مبتكرة.
@@ -501,7 +501,7 @@ export function TradeResultsGenerator({
                 size="sm"
                 onClick={handleDownload}
                 disabled={busy || loading || !data}
-                className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                className="bg-warning hover:bg-warning text-white gap-1.5"
               >
                 {downloading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -514,7 +514,7 @@ export function TradeResultsGenerator({
                 size="sm"
                 onClick={handlePublish}
                 disabled={busy || loading || !data || !engineAvailable}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                className="bg-profit hover:bg-profit text-white gap-1.5"
                 title={!engineAvailable ? 'محرك النتائج غير متاح' : undefined}
               >
                 {publishing ? (
@@ -530,7 +530,7 @@ export function TradeResultsGenerator({
           {/* Hint */}
           <div className="text-[10px] text-slate-500 text-center pt-1 border-t border-slate-800 mt-1">
             القالب بدقة {cfg.width}×{cfg.height}px · الصورة تُصدّر بدقة مضاعفة (pixelRatio 2) ·
-            <span className="text-amber-500/70"> invest.m2y.net</span>
+            <span className="text-warning/70"> invest.m2y.net</span>
           </div>
         </DialogContent>
       </Dialog>

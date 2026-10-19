@@ -359,7 +359,7 @@ export function DataScraperControl() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-emerald-500" />
+            <Database className="w-5 h-5 text-profit" />
             سحب وتحديث البيانات
           </CardTitle>
           <CardDescription>
@@ -390,7 +390,7 @@ export function DataScraperControl() {
             <Button
               onClick={syncLivePrices}
               disabled={loading}
-              className="h-auto py-4 flex-col gap-2 bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto py-4 flex-col gap-2 bg-profit hover:bg-profit"
             >
               <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
               <span>تحديث الأسعار</span>
@@ -434,7 +434,7 @@ export function DataScraperControl() {
               onClick={syncMultiMarket}
               disabled={loading}
               variant="default"
-              className="h-auto py-4 flex-col gap-2 bg-blue-600 hover:bg-blue-700"
+              className="h-auto py-4 flex-col gap-2 bg-primary hover:bg-primary"
             >
               <Globe className="w-5 h-5" />
               <span>تحديث الأسواق العربية</span>
@@ -471,16 +471,16 @@ export function DataScraperControl() {
                   key={job.id}
                   className={cn(
                     "p-3 rounded-lg border",
-                    job.status === 'running' && "bg-blue-50 dark:bg-blue-950/20 border-blue-200",
-                    job.status === 'completed' && "bg-green-50 dark:bg-green-950/20 border-green-200",
-                    job.status === 'failed' && "bg-red-50 dark:bg-red-950/20 border-red-200"
+                    job.status === 'running' && "bg-primary dark:bg-primary/20 border-primary",
+                    job.status === 'completed' && "bg-success dark:bg-success/20 border-success",
+                    job.status === 'failed' && "bg-loss dark:bg-loss/20 border-loss"
                   )}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      {job.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
-                      {job.status === 'completed' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                      {job.status === 'failed' && <XCircle className="w-4 h-4 text-red-500" />}
+                      {job.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                      {job.status === 'completed' && <CheckCircle2 className="w-4 h-4 text-success" />}
+                      {job.status === 'failed' && <XCircle className="w-4 h-4 text-loss" />}
                       <span className="font-medium text-sm">
                         {job.type === 'stocks' ? 'تحديث الأسعار' : 'البيانات التاريخية'}
                       </span>
@@ -513,12 +513,12 @@ export function DataScraperControl() {
       )}
 
       {/* معلومات */}
-      <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200">
+      <Card className="bg-warning dark:bg-warning/20 border-warning">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-amber-700 dark:text-amber-400">ملاحظة مهمة</p>
+              <p className="font-medium text-warning dark:text-warning">ملاحظة مهمة</p>
               <ul className="text-muted-foreground mt-1 space-y-1">
                 <li>• تحديث الأسعار يعمل محلياً بدون Python Backend</li>
                 <li>• السحب من VPS يتطلب اتصال بالسيرفر</li>

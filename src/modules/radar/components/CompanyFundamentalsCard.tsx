@@ -103,16 +103,16 @@ function fmtField(key: string, value: string | null): { label: string; value: st
   // Color code certain fields
   if (key === 'roe' || key === 'roa' || key === 'roc') {
     const num = parseFloat(value);
-    if (!isNaN(num)) color = num > 15 ? 'text-emerald-600 dark:text-emerald-400' : num > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
+    if (!isNaN(num)) color = num > 15 ? 'text-profit dark:text-profit' : num > 5 ? 'text-warning dark:text-warning' : 'text-loss dark:text-loss';
   }
   if (key === 'net_margin' || key === 'operating_margin' || key === 'gross_margin') {
     const num = parseFloat(value);
-    if (!isNaN(num)) color = num > 20 ? 'text-emerald-600 dark:text-emerald-400' : num > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
+    if (!isNaN(num)) color = num > 20 ? 'text-profit dark:text-profit' : num > 5 ? 'text-warning dark:text-warning' : 'text-loss dark:text-loss';
   }
-  if (key === 'debt' && value !== '0') color = 'text-rose-600 dark:text-rose-400';
-  if (key === 'cash' && value !== '0') color = 'text-emerald-600 dark:text-emerald-400';
-  if ((key.includes('perf_') || key === 'market_cap_perf') && value.includes('-')) color = 'text-rose-600 dark:text-rose-400';
-  else if (key.includes('perf_') || key === 'market_cap_perf') color = 'text-emerald-600 dark:text-emerald-400';
+  if (key === 'debt' && value !== '0') color = 'text-loss dark:text-loss';
+  if (key === 'cash' && value !== '0') color = 'text-profit dark:text-profit';
+  if ((key.includes('perf_') || key === 'market_cap_perf') && value.includes('-')) color = 'text-loss dark:text-loss';
+  else if (key.includes('perf_') || key === 'market_cap_perf') color = 'text-profit dark:text-profit';
 
   return { label, value, color };
 }
@@ -150,7 +150,7 @@ export function CompanyFundamentalsCard({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3">
         <div className="flex items-center gap-2 mb-2">
-          <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Building2 className="h-4 w-4 text-primary dark:text-primary" />
           <Skeleton className="h-4 w-32" />
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -188,7 +188,7 @@ export function CompanyFundamentalsCard({ ticker }: { ticker: string }) {
     <Card className="p-3">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Building2 className="h-4 w-4 text-primary dark:text-primary" />
           <div>
             <div className="text-xs font-semibold">بيانات الشركة المالية</div>
             <div className="text-[10px] text-muted-foreground">{tablesWithData.length} جداول متاحة</div>

@@ -100,20 +100,20 @@ const EXIT_PATHS = [
     tKey: 'x1',
     pathValue: 'X1_distribution_strong',
     icon: '🔴',
-    color: 'text-rose-600 dark:text-rose-400',
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    border: 'border-rose-200 dark:border-rose-900',
-    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+    color: 'text-loss dark:text-loss',
+    bg: 'bg-loss dark:bg-loss/30',
+    border: 'border-loss dark:border-loss',
+    badge: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss',
   },
   {
     key: 'x2_volume_divergence',
     tKey: 'x2',
     pathValue: 'X2_volume_divergence',
     icon: '⚠️',
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-900',
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    color: 'text-warning dark:text-warning',
+    bg: 'bg-warning dark:bg-warning/30',
+    border: 'border-warning dark:border-warning',
+    badge: 'bg-warning text-warning dark:bg-warning/40 dark:text-warning',
   },
   {
     key: 'x3_resistance_rejection',
@@ -140,10 +140,10 @@ const EXIT_PATHS = [
     tKey: 'x5',
     pathValue: 'X5_kill_switch_triggered',
     icon: '🛑',
-    color: 'text-red-600 dark:text-red-400',
-    bg: 'bg-red-50 dark:bg-red-950/30',
-    border: 'border-red-200 dark:border-red-900',
-    badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+    color: 'text-loss dark:text-loss',
+    bg: 'bg-loss dark:bg-loss/30',
+    border: 'border-loss dark:border-loss',
+    badge: 'bg-loss text-loss dark:bg-loss/40 dark:text-loss',
   },
 ] as const;
 
@@ -246,10 +246,10 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
   // ============================================================================
   if (exitRadarLocked) {
     return (
-      <Card className="p-6 border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20" dir="rtl">
+      <Card className="p-6 border-warning/40 bg-warning/50 dark:bg-warning/20" dir="rtl">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
-            <Lock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <div className="h-12 w-12 rounded-full bg-warning dark:bg-warning/40 flex items-center justify-center">
+            <Lock className="h-6 w-6 text-warning dark:text-warning" />
           </div>
           <div>
             <h3 className="text-base font-semibold mb-1 flex items-center justify-center gap-2">
@@ -257,7 +257,7 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
             </h3>
             <p className="text-sm text-muted-foreground max-w-md">
               {t('radar.exit.lock.body')}
-              <span className="block mt-1 font-medium text-amber-700 dark:text-amber-400">
+              <span className="block mt-1 font-medium text-warning dark:text-warning">
                 {t('radar.exit.lock.teaser')}
               </span>
             </p>
@@ -287,7 +287,7 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 animate-pulse" />
+            <AlertTriangle className="h-5 w-5 text-loss dark:text-loss animate-pulse" />
             <h3 className="text-base font-semibold">{t('radar.exit.title')}</h3>
           </div>
           <Skeleton className="h-6 w-32" />
@@ -307,8 +307,8 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
     return (
       <Card className="p-8 text-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
-            <AlertTriangle className="h-6 w-6 text-rose-600 dark:text-rose-400 animate-pulse" />
+          <div className="h-12 w-12 rounded-full bg-loss dark:bg-loss/40 flex items-center justify-center">
+            <AlertTriangle className="h-6 w-6 text-loss dark:text-loss animate-pulse" />
           </div>
           <div>
             <h3 className="text-base font-semibold mb-1">{t('radar.exit.loading')}</h3>
@@ -326,8 +326,8 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
   // ============================================================================
   if (error && !data) {
     return (
-      <Card className="p-4 border-dashed border-rose-200 dark:border-rose-900">
-        <div className="flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
+      <Card className="p-4 border-dashed border-loss dark:border-loss">
+        <div className="flex items-center gap-2 text-sm text-loss dark:text-loss">
           <AlertTriangle className="h-4 w-4" />
           <span>{t('radar.exit.errorPrefix', { error })}</span>
         </div>
@@ -366,7 +366,7 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+            <AlertTriangle className="h-5 w-5 text-loss dark:text-loss" />
             <div>
               <h3 className="text-base font-semibold">{t('radar.exit.titleWithEmoji')}</h3>
               <p className="text-[11px] text-muted-foreground">
@@ -385,8 +385,8 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
               variant="outline"
               className={
                 hasAnySignals
-                  ? 'text-[11px] bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300'
-                  : 'text-[11px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300'
+                  ? 'text-[11px] bg-loss dark:bg-loss/30 text-loss dark:text-loss'
+                  : 'text-[11px] bg-profit dark:bg-profit/30 text-profit dark:text-profit'
               }
             >
               {hasAnySignals
@@ -405,7 +405,7 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
           </div>
         </div>
         {data.warning && (
-          <div className="mt-3 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded">
+          <div className="mt-3 text-xs text-warning dark:text-warning bg-warning dark:bg-warning/30 p-2 rounded">
             ⚠️ {data.warning}
           </div>
         )}
@@ -413,10 +413,10 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
 
       {/* 5 exit path sections — collapsible */}
       {!hasAnySignals && (
-        <Card className="p-8 text-center border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20">
+        <Card className="p-8 text-center border-profit dark:border-profit bg-profit/50 dark:bg-profit/20">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            <div className="h-12 w-12 rounded-full bg-profit dark:bg-profit/40 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-profit dark:text-profit" />
             </div>
             <div>
               <h3 className="text-base font-semibold mb-1">{t('radar.exit.empty.title')}</h3>
@@ -535,10 +535,10 @@ function ExitPathTable({ entries }: ExitPathTableProps) {
           ratio == null
             ? 'text-muted-foreground'
             : ratio >= 1.5
-              ? 'text-rose-600 dark:text-rose-400 font-bold'
+              ? 'text-loss dark:text-loss font-bold'
               : ratio >= 1.0
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-emerald-600 dark:text-emerald-400';
+                ? 'text-warning dark:text-warning'
+                : 'text-profit dark:text-profit';
         return <span className={`font-mono text-xs ${cls}`}>{fmtVolRatio(ratio)}</span>;
       },
     },
@@ -555,9 +555,9 @@ function ExitPathTable({ entries }: ExitPathTableProps) {
           rally == null
             ? 'text-muted-foreground'
             : rally > 15
-              ? 'text-rose-600 dark:text-rose-400'
+              ? 'text-loss dark:text-loss'
               : rally > 5
-                ? 'text-amber-600 dark:text-amber-400'
+                ? 'text-warning dark:text-warning'
                 : 'text-muted-foreground';
         return <span className={`font-mono text-xs ${cls}`}>{fmtPct(rally)}</span>;
       },

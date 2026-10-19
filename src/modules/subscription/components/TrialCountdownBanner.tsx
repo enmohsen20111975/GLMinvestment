@@ -54,10 +54,10 @@ export function TrialCountdownBanner({ daysLeft, trialEndsAt, show }: TrialCount
   let accent = 'bg-sky-500/10 border-sky-500/30 text-sky-700 dark:text-sky-300';
   let urgencyLabel = 'فترة تجريبية';
   if (daysLeft <= 2) {
-    accent = 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300';
+    accent = 'bg-loss/10 border-loss/30 text-loss dark:text-loss';
     urgencyLabel = 'آخر فرصة!';
   } else if (daysLeft <= 6) {
-    accent = 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300';
+    accent = 'bg-warning/10 border-warning/30 text-warning dark:text-warning';
     urgencyLabel = 'تذكير';
   }
 

@@ -196,9 +196,9 @@ const PERSONA_FILTER_OPTIONS: Array<{ value: FilterPersona; label: string; emoji
 // RL-FIX-7: خيارات فلتر النتيجة
 const OUTCOME_FILTER_OPTIONS: Array<{ value: FilterOutcome; label: string; color: string }> = [
   { value: 'ALL', label: 'الكل', color: 'text-slate-300' },
-  { value: 'WIN', label: 'رابحة', color: 'text-emerald-400' },
-  { value: 'LOSS', label: 'خاسرة', color: 'text-rose-400' },
-  { value: 'PENDING', label: 'معلقة', color: 'text-amber-400' },
+  { value: 'WIN', label: 'رابحة', color: 'text-profit' },
+  { value: 'LOSS', label: 'خاسرة', color: 'text-loss' },
+  { value: 'PENDING', label: 'معلقة', color: 'text-warning' },
   { value: 'EXPIRED', label: 'منتهية', color: 'text-slate-400' },
 ];
 
@@ -941,7 +941,7 @@ export function ExecutiveReportView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/60 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-border shadow-sm">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold gap-1 text-xs">
+            <Badge variant="outline" className="bg-warning/10 text-warning dark:text-warning border-warning/30 font-bold gap-1 text-xs">
               <Layers className="w-3.5 h-3.5" />
               ملخص الأداء
             </Badge>
@@ -956,7 +956,7 @@ export function ExecutiveReportView({
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-black text-foreground mt-2 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-amber-500 flex-shrink-0" />
+            <BarChart3 className="w-5 h-5 text-warning flex-shrink-0" />
             <span>ملخص أداء التوقعات</span>
           </h2>
         </div>
@@ -969,7 +969,7 @@ export function ExecutiveReportView({
             disabled={refreshing}
             className="h-10 px-4 text-sm font-bold"
           >
-            <RefreshCw className={cn('w-4 h-4 ml-1.5 text-emerald-500', refreshing && 'animate-spin')} />
+            <RefreshCw className={cn('w-4 h-4 ml-1.5 text-profit', refreshing && 'animate-spin')} />
             تحديث
           </Button>
 
@@ -977,7 +977,7 @@ export function ExecutiveReportView({
             onClick={handleExportPng}
             disabled={exporting || loading}
             size="sm"
-            className="h-10 px-4 text-sm font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black shadow-lg shadow-amber-500/20"
+            className="h-10 px-4 text-sm font-bold bg-gradient-to-r from-warning to-warning hover:from-warning hover:to-warning text-black shadow-lg shadow-amber-500/20"
           >
             <Download className="w-4 h-4 ml-1.5" />
             تصدير PNG 📸
@@ -1011,7 +1011,7 @@ export function ExecutiveReportView({
             className={cn(
               'px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 border flex-shrink-0 whitespace-nowrap',
               days === opt.value
-                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black border-amber-400 shadow-md shadow-amber-500/30'
+                ? 'bg-gradient-to-r from-warning to-warning text-black border-warning shadow-md shadow-amber-500/30'
                 : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
             )}
           >
@@ -1027,12 +1027,12 @@ export function ExecutiveReportView({
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold bg-warning/10 text-warning dark:text-warning border border-warning/30 hover:bg-warning/20 transition-colors"
           >
             <Filter className="w-4 h-4" />
             فلاتر متقدمة
             {activeFilterCount > 0 && (
-              <Badge className="bg-amber-500 text-black text-[10px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center">
+              <Badge className="bg-warning text-black text-[10px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center">
                 {activeFilterCount}
               </Badge>
             )}
@@ -1040,7 +1040,7 @@ export function ExecutiveReportView({
           {activeFilterCount > 0 && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-loss hover:bg-loss/10 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
               مسح الفلاتر ({activeFilterCount})
@@ -1051,8 +1051,8 @@ export function ExecutiveReportView({
         {showFilters && (
           <div className="space-y-3 pt-1 border-t border-border">
             {/* RL-FIX-10: Quality Mode Filter — أهم فلتر (أفضل التوقعات بس) */}
-            <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex-shrink-0 w-16 flex items-center gap-1">
+            <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-xl bg-warning/5 border border-warning/20">
+              <span className="text-xs font-bold text-warning dark:text-warning flex-shrink-0 w-16 flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5" />
                 الجودة:
               </span>
@@ -1064,7 +1064,7 @@ export function ExecutiveReportView({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1',
                     qualityMode === opt.value
-                      ? 'bg-amber-500 text-black border-amber-400 shadow-sm'
+                      ? 'bg-warning text-black border-warning shadow-sm'
                       : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
                   )}
                 >
@@ -1090,7 +1090,7 @@ export function ExecutiveReportView({
                     className={cn(
                       'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border',
                       minConfidence === opt.value
-                        ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm'
+                        ? 'bg-profit text-white border-profit shadow-sm'
                         : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
                     )}
                   >
@@ -1135,7 +1135,7 @@ export function ExecutiveReportView({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border',
                     filterSignal === opt.value
-                      ? 'bg-amber-500 text-black border-amber-400'
+                      ? 'bg-warning text-black border-warning'
                       : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
                   )}
                 >
@@ -1151,7 +1151,7 @@ export function ExecutiveReportView({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="بحث بالرمز أو الاسم..."
-                  className="w-full pr-9 pl-3 py-1.5 rounded-lg text-xs font-medium bg-card/80 border border-border focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 outline-none transition-colors text-foreground placeholder:text-muted-foreground"
+                  className="w-full pr-9 pl-3 py-1.5 rounded-lg text-xs font-medium bg-card/80 border border-border focus:border-warning/50 focus:ring-1 focus:ring-warning/30 outline-none transition-colors text-foreground placeholder:text-muted-foreground"
                 />
                 {searchQuery && (
                   <button
@@ -1170,18 +1170,18 @@ export function ExecutiveReportView({
       {/* ════════════════ MAIN REPORT (PNG snapshot target) ════════════════ */}
       <div
         ref={reportContainerRef}
-        className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-[#0c1220] via-[#0a0f1c] to-[#0c1220] border-2 border-amber-500/25 text-white shadow-2xl overflow-hidden"
+        className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-[#0c1220] via-[#0a0f1c] to-[#0c1220] border-2 border-warning/25 text-white shadow-2xl overflow-hidden"
       >
         {/* Decorative background glows — subtle, not overwhelming */}
-        <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-amber-500/8 blur-[140px] pointer-events-none rounded-full" />
-        <div className="absolute bottom-0 left-0 w-[28rem] h-[28rem] bg-emerald-500/6 blur-[140px] pointer-events-none rounded-full" />
+        <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-warning/8 blur-[140px] pointer-events-none rounded-full" />
+        <div className="absolute bottom-0 left-0 w-[28rem] h-[28rem] bg-profit/6 blur-[140px] pointer-events-none rounded-full" />
 
         <div className="relative z-10 p-6 sm:p-8 md:p-10 lg:p-12 space-y-8">
           {/* ── Branding Header (بسيط، بدون ادعاءات) ── */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-7 border-b border-white/10">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-3">
-                <span className="px-3 py-1 rounded-full text-[11px] font-black bg-amber-500/15 text-amber-300 border border-amber-500/30 tracking-wider">
+                <span className="px-3 py-1 rounded-full text-[11px] font-black bg-warning/15 text-warning border border-warning/30 tracking-wider">
                   ملخص الأداء
                 </span>
                 <span className="text-xs text-slate-400 font-mono">
@@ -1198,7 +1198,7 @@ export function ExecutiveReportView({
                 )}
                 {/* RL-FIX-7: Active filters indicator */}
                 {activeFilterCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-warning/20 text-warning border border-warning/40">
                     {activeFilterCount} فلتر نشط
                   </span>
                 )}
@@ -1206,7 +1206,7 @@ export function ExecutiveReportView({
                 <span className={cn(
                   'px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1',
                   qualityMode === 'top_picks'
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                    ? 'bg-profit/15 text-profit border-profit/40'
                     : 'bg-slate-700/50 text-slate-300 border-slate-600/50'
                 )}>
                   <Sparkles className="w-3 h-3" />
@@ -1216,14 +1216,14 @@ export function ExecutiveReportView({
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white flex items-center gap-3 tracking-tight leading-tight">
-                <Gauge className="w-8 h-8 sm:w-9 sm:h-9 text-amber-400 flex-shrink-0" />
+                <Gauge className="w-8 h-8 sm:w-9 sm:h-9 text-warning flex-shrink-0" />
                 <span>ملخص أداء التوقعات</span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 mt-2 max-w-2xl leading-relaxed">
                 ملخص لنتائج التوقعات خلال {timeframeLabel}، يعرض الأرقام الفعلية للصفقات.
                 {!loading && totalTrades > 0 && (
                   <>
-                    <span className="text-amber-300 font-bold"> — {uniqueStockCount} سهم فريد في النتائج</span>
+                    <span className="text-warning font-bold"> — {uniqueStockCount} سهم فريد في النتائج</span>
                     {totalPredictionCount > uniqueStockCount && (
                       <span className="text-slate-400"> ({totalPredictionCount} توقع · 3 شخصيات لكل سهم)</span>
                     )}
@@ -1233,12 +1233,12 @@ export function ExecutiveReportView({
             </div>
 
             {/* Market + key metric badge */}
-            <div className="flex flex-col items-start md:items-end justify-center bg-slate-900/70 px-5 py-4 rounded-2xl border border-amber-500/20 md:min-w-[220px]">
+            <div className="flex flex-col items-start md:items-end justify-center bg-slate-900/70 px-5 py-4 rounded-2xl border border-warning/20 md:min-w-[220px]">
               <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">سوق {market}</span>
-              <span className="text-2xl font-black text-emerald-400 mt-1 leading-none">
+              <span className="text-2xl font-black text-profit mt-1 leading-none">
                 {(winRate ?? 0).toFixed(1)}%
               </span>
-              <span className="text-sm text-amber-300 font-bold mt-1.5">
+              <span className="text-sm text-warning font-bold mt-1.5">
                 معامل الربحية {profitFactor >= 999 ? 'مثالي' : (profitFactor ?? 0).toFixed(2)}
               </span>
               {/* RL-FIX-7: Settled count transparency */}
@@ -1249,7 +1249,7 @@ export function ExecutiveReportView({
                   {/* نعرض عددها جنب الـ settled count علشان المالك يفرّق بين "هدف */}
                   {/* محقق" و"جني أرباح قبل الهدف". */}
                   {trailingProfitCount > 0 && (
-                    <span className="text-teal-400 font-bold"> · {trailingProfitCount} 💰 خرجت بربح</span>
+                    <span className="text-whale font-bold"> · {trailingProfitCount} 💰 خرجت بربح</span>
                   )}
                   <span className="text-slate-500"> · قياس على الأسهم الفريدة</span>
                 </span>
@@ -1331,11 +1331,11 @@ export function ExecutiveReportView({
                   stop ratchet). الكارد بـ يظهر بس لو فيه عدد > 0 علشان ما يـ clutterش
                   الـ UI لو مفيش بيانات. */}
               {trailingProfitCount > 0 && (
-                <div className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-teal-500/10 border border-teal-500/30">
+                <div className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-whale/10 border border-whale/30">
                   <span className="text-2xl">💰</span>
                   <div className="flex flex-col">
                     <span className="text-[11px] text-slate-400 font-bold">خرجت بربح (Trailing Profit)</span>
-                    <span className="text-teal-300 font-black text-lg font-mono">
+                    <span className="text-whale font-black text-lg font-mono">
                       {trailingProfitCount} صفقة
                     </span>
                   </div>
@@ -1350,7 +1350,7 @@ export function ExecutiveReportView({
                 {/* 2A. Donut: توزيع النتائج */}
                 <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
-                    <PieIcon className="w-5 h-5 text-amber-400" />
+                    <PieIcon className="w-5 h-5 text-warning" />
                     <h3 className="text-base font-bold text-white">توزيع النتائج</h3>
                   </div>
                   {outcomeDistribution.length > 0 ? (
@@ -1406,11 +1406,11 @@ export function ExecutiveReportView({
                 <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10 lg:col-span-2">
                   <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                      <TrendingUp className="w-5 h-5 text-profit" />
                       <h3 className="text-base font-bold text-white">حركة الأرباح التراكمية</h3>
                     </div>
                     {cumulativeProfitData.length > 0 && (
-                      <Badge variant="outline" className="text-[11px] text-emerald-300 border-emerald-500/30 bg-emerald-500/10">
+                      <Badge variant="outline" className="text-[11px] text-profit border-profit/30 bg-profit/10">
                         تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1].cumulative > 0 ? '+' : ''}
                         {(cumulativeProfitData[cumulativeProfitData.length - 1].cumulative ?? 0).toFixed(1)}%
                       </Badge>
@@ -1465,7 +1465,7 @@ export function ExecutiveReportView({
                 {/* 3A. Bar: العائد الشهري */}
                 <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
-                    <BarChart3 className="w-5 h-5 text-amber-400" />
+                    <BarChart3 className="w-5 h-5 text-warning" />
                     <h3 className="text-base font-bold text-white">العائد الشهري</h3>
                   </div>
                   {monthlyReturns.length > 0 ? (
@@ -1503,7 +1503,7 @@ export function ExecutiveReportView({
                 {/* 3B. Radar: مقارنة الشخصيات */}
                 <div className="bg-slate-900/70 p-5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
-                    <Gauge className="w-5 h-5 text-emerald-400" />
+                    <Gauge className="w-5 h-5 text-profit" />
                     <h3 className="text-base font-bold text-white">مقارنة الشخصيات</h3>
                   </div>
                   <div className="h-48">
@@ -1538,15 +1538,15 @@ export function ExecutiveReportView({
                 <HighlightCard
                   title="أعلى المكاسب"
                   subtitle="الأعلى عائداً"
-                  icon={<Trophy className="w-5 h-5 text-amber-400" />}
-                  accentBorder="border-amber-500/30"
+                  icon={<Trophy className="w-5 h-5 text-warning" />}
+                  accentBorder="border-warning/30"
                   items={topGains.map((item) => ({
                     ticker: item.ticker,
                     nameAr: item.nameAr,
                     returnPct: Number(item.returnPct || 0),
                     meta: `دخول ${fmtPrice(item.entryPrice)}`,
                     rightMeta: `${item.daysSinceEntry || 1} يوم`,
-                    accentText: 'text-amber-400',
+                    accentText: 'text-warning',
                   }))}
                   placeholder="لا توجد صفقات رابحة في هذه الفترة"
                 />
@@ -1555,15 +1555,15 @@ export function ExecutiveReportView({
                 <HighlightCard
                   title="أسرع الصفقات"
                   subtitle="تحقيق الهدف في مدة قصيرة"
-                  icon={<Zap className="w-5 h-5 text-emerald-400" />}
-                  accentBorder="border-emerald-500/30"
+                  icon={<Zap className="w-5 h-5 text-profit" />}
+                  accentBorder="border-profit/30"
                   items={fastestGains.map((item) => ({
                     ticker: item.ticker,
                     nameAr: item.nameAr,
                     returnPct: Number(item.returnPct || 0),
                     meta: `دخول ${fmtPrice(item.entryPrice)}`,
                     rightMeta: `⚡ ${item.daysSinceEntry || 1} يوم`,
-                    accentText: 'text-emerald-400',
+                    accentText: 'text-profit',
                   }))}
                   placeholder="لا توجد صفقات سريعة في هذه الفترة"
                 />
@@ -1574,15 +1574,15 @@ export function ExecutiveReportView({
                 <HighlightCard
                   title="أعلى الخسائر"
                   subtitle="الأكثر انخفاضاً في الفترة"
-                  icon={<TrendingDown className="w-5 h-5 text-rose-400" />}
-                  accentBorder="border-rose-500/30"
+                  icon={<TrendingDown className="w-5 h-5 text-loss" />}
+                  accentBorder="border-loss/30"
                   items={topLosses.map((item) => ({
                     ticker: item.ticker,
                     nameAr: item.nameAr,
                     returnPct: Number(item.returnPct || 0),
                     meta: `دخول ${fmtPrice(item.entryPrice)}`,
                     rightMeta: `${item.daysSinceEntry || 1} يوم`,
-                    accentText: 'text-rose-400',
+                    accentText: 'text-loss',
                   }))}
                   placeholder="لا توجد صفقات خاسرة في هذه الفترة"
                 />
@@ -1597,15 +1597,15 @@ export function ExecutiveReportView({
                   <HighlightCard
                     title="💰 خرجت بربح (Trailing Profit)"
                     subtitle="جني أرباح قبل الهدف الكامل"
-                    icon={<Trophy className="w-5 h-5 text-teal-400" />}
-                    accentBorder="border-teal-500/30"
+                    icon={<Trophy className="w-5 h-5 text-whale" />}
+                    accentBorder="border-whale/30"
                     items={topTrailingProfit.map((item) => ({
                       ticker: item.ticker,
                       nameAr: item.nameAr,
                       returnPct: Number(item.returnPct || 0),
                       meta: `دخول ${fmtPrice(item.entryPrice)}`,
                       rightMeta: `${item.daysSinceEntry || 1} يوم`,
-                      accentText: 'text-teal-400',
+                      accentText: 'text-whale',
                     }))}
                     placeholder="لا توجد صفقات trailing profit في هذه الفترة"
                   />
@@ -1615,7 +1615,7 @@ export function ExecutiveReportView({
               {/* ═══ 5. PERSONA BREAKDOWN — unified 3-col layout ═══ */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-amber-400" />
+                  <Layers className="w-5 h-5 text-warning" />
                   <h3 className="text-lg font-bold text-white">الأداء حسب استراتيجية المستثمر</h3>
                 </div>
 
@@ -1638,12 +1638,12 @@ export function ExecutiveReportView({
                   />
 
                   <PersonaCard
-                    icon={<Scale className="w-5 h-5 text-teal-400" />}
+                    icon={<Scale className="w-5 h-5 text-whale" />}
                     title="المتوازن"
                     subtitle="متوسط (2-6 أسابيع)"
                     description="موجات الصعود المنظمة"
-                    accentRing="border-teal-500/30"
-                    accentBar="bg-teal-500"
+                    accentRing="border-whale/30"
+                    accentBar="bg-whale"
                     stats={{
                       winRate: statsByPersona?.balanced?.winRate ?? 0,
                       profitFactor: statsByPersona?.balanced?.profitFactor ?? 0,
@@ -1651,16 +1651,16 @@ export function ExecutiveReportView({
                       wins: statsByPersona?.balanced?.wins ?? 0,
                       losses: statsByPersona?.balanced?.losses ?? 0,
                     }}
-                    winRateColor="text-teal-400"
+                    winRateColor="text-whale"
                   />
 
                   <PersonaCard
-                    icon={<Shield className="w-5 h-5 text-emerald-400" />}
+                    icon={<Shield className="w-5 h-5 text-profit" />}
                     title="المستثمر"
                     subtitle="استثماري (6-12 شهر)"
                     description="القيمة العادلة والأمان المالي"
-                    accentRing="border-emerald-500/30"
-                    accentBar="bg-emerald-500"
+                    accentRing="border-profit/30"
+                    accentBar="bg-profit"
                     stats={{
                       winRate: statsByPersona?.conservative?.winRate ?? 0,
                       profitFactor: statsByPersona?.conservative?.profitFactor ?? 0,
@@ -1668,7 +1668,7 @@ export function ExecutiveReportView({
                       wins: statsByPersona?.conservative?.wins ?? 0,
                       losses: statsByPersona?.conservative?.losses ?? 0,
                     }}
-                    winRateColor="text-emerald-400"
+                    winRateColor="text-profit"
                   />
                 </div>
               </div>
@@ -1676,9 +1676,9 @@ export function ExecutiveReportView({
               {/* ═══ 6. MISSED OPPORTUNITIES — الفرص الضائعة والتحليل البعدي ═══ */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-400" />
+                  <AlertTriangle className="w-5 h-5 text-warning" />
                   <h3 className="text-lg font-bold text-white">الفرص الضائعة والتحليل البعدي</h3>
-                  <Badge variant="outline" className="text-[10px] text-amber-300 border-amber-500/30 bg-amber-500/10 whitespace-nowrap">
+                  <Badge variant="outline" className="text-[10px] text-warning border-warning/30 bg-warning/10 whitespace-nowrap">
                     حد التحرك ≥ 10%
                   </Badge>
                 </div>
@@ -1687,7 +1687,7 @@ export function ExecutiveReportView({
                   <MissedOppCard
                     title="فرص ضاعت"
                     subtitle="قلنا بيع والسهم طلع"
-                    icon={<TrendingUp className="w-5 h-5 text-amber-400" />}
+                    icon={<TrendingUp className="w-5 h-5 text-warning" />}
                     accent="amber"
                     items={missedOpps?.missed_bulls}
                     loading={missedOppsLoading}
@@ -1696,7 +1696,7 @@ export function ExecutiveReportView({
                   <MissedOppCard
                     title="توقعات خاطئة"
                     subtitle="قلنا شراء والسهم نزل"
-                    icon={<TrendingDown className="w-5 h-5 text-rose-400" />}
+                    icon={<TrendingDown className="w-5 h-5 text-loss" />}
                     accent="rose"
                     items={missedOpps?.false_positives}
                     loading={missedOppsLoading}
@@ -1705,7 +1705,7 @@ export function ExecutiveReportView({
                   <MissedOppCard
                     title="توقعات صحيحة (شراء)"
                     subtitle="قلنا شراء والسهم طلع"
-                    icon={<CheckCircle className="w-5 h-5 text-emerald-400" />}
+                    icon={<CheckCircle className="w-5 h-5 text-profit" />}
                     accent="emerald"
                     items={missedOpps?.correct_buys}
                     loading={missedOppsLoading}
@@ -1714,7 +1714,7 @@ export function ExecutiveReportView({
                   <MissedOppCard
                     title="توقعات صحيحة (بيع)"
                     subtitle="قلنا بيع والسهم نزل"
-                    icon={<CheckCircle className="w-5 h-5 text-teal-400" />}
+                    icon={<CheckCircle className="w-5 h-5 text-whale" />}
                     accent="teal"
                     items={missedOpps?.correct_sells}
                     loading={missedOppsLoading}
@@ -1726,26 +1726,26 @@ export function ExecutiveReportView({
               <div className="bg-slate-900/60 p-6 rounded-2xl border border-white/10 space-y-5">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-300 font-bold">توازن الأداء</span>
-                  <span className="text-emerald-400 font-bold">
+                  <span className="text-profit font-bold">
                     {stats.wins} رابحة <span className="text-slate-500">/</span>{' '}
-                    <span className="text-rose-400">{stats.losses} خاسرة</span>
+                    <span className="text-loss">{stats.losses} خاسرة</span>
                   </span>
                 </div>
 
                 {/* Proportion bar */}
                 <div className="h-5 w-full bg-slate-800 rounded-full overflow-hidden flex border border-white/10">
                   <div
-                    className="h-full bg-gradient-to-l from-emerald-500 to-teal-400 transition-all duration-1000 flex items-center justify-center"
+                    className="h-full bg-gradient-to-l from-profit to-whale transition-all duration-1000 flex items-center justify-center"
                     style={{ width: `${winRate}%` }}
                   >
                     {winRate > 15 && (
-                      <span className="text-xs font-black text-emerald-950 px-2">
+                      <span className="text-xs font-black text-profit px-2">
                         {(winRate ?? 0).toFixed(0)}% رابحة
                       </span>
                     )}
                   </div>
                   <div
-                    className="h-full bg-gradient-to-l from-rose-500 to-red-600 transition-all duration-1000 flex items-center justify-center"
+                    className="h-full bg-gradient-to-l from-loss to-loss transition-all duration-1000 flex items-center justify-center"
                     style={{ width: `${100 - winRate}%` }}
                   >
                     {100 - winRate > 15 && (
@@ -1759,7 +1759,7 @@ export function ExecutiveReportView({
                 {/* Footer */}
                 <div className="pt-4 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3 text-sm">
                   <div className="flex items-center gap-2 text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-profit flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-center md:text-right">
                       ملخص أداء التوقعات — {timeframeLabel}
                     </span>
@@ -1782,9 +1782,9 @@ export function ExecutiveReportView({
 // ════════════════════════════════════════════════════════════════════════════
 
 const KPI_ACCENTS: Record<string, { ring: string; bar: string; value: string; glow: string }> = {
-  emerald: { ring: 'border-emerald-500/30', bar: 'bg-emerald-500', value: 'text-emerald-400', glow: 'bg-emerald-500/10' },
-  amber: { ring: 'border-amber-500/30', bar: 'bg-amber-500', value: 'text-amber-400', glow: 'bg-amber-500/10' },
-  rose: { ring: 'border-rose-500/30', bar: 'bg-rose-500', value: 'text-rose-400', glow: 'bg-rose-500/10' },
+  emerald: { ring: 'border-profit/30', bar: 'bg-profit', value: 'text-profit', glow: 'bg-profit/10' },
+  amber: { ring: 'border-warning/30', bar: 'bg-warning', value: 'text-warning', glow: 'bg-warning/10' },
+  rose: { ring: 'border-loss/30', bar: 'bg-loss', value: 'text-loss', glow: 'bg-loss/10' },
 };
 
 function KpiCard({
@@ -1948,10 +1948,10 @@ function PersonaCard({
 
       {/* Stats grid — unified, clean */}
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <StatRow label="معامل الربحية" value={stats.profitFactor >= 999 ? '∞' : (stats.profitFactor ?? 0).toFixed(2)} valueClass="text-amber-400" />
-        <StatRow label="متوسط الربح" value={`+${(stats.avgWinPct ?? 0).toFixed(1)}%`} valueClass="text-emerald-400" />
-        <StatRow label="رابحة" value={`${stats.wins}`} valueClass="text-emerald-400" />
-        <StatRow label="خاسرة" value={`${stats.losses}`} valueClass="text-rose-400" />
+        <StatRow label="معامل الربحية" value={stats.profitFactor >= 999 ? '∞' : (stats.profitFactor ?? 0).toFixed(2)} valueClass="text-warning" />
+        <StatRow label="متوسط الربح" value={`+${(stats.avgWinPct ?? 0).toFixed(1)}%`} valueClass="text-profit" />
+        <StatRow label="رابحة" value={`${stats.wins}`} valueClass="text-profit" />
+        <StatRow label="خاسرة" value={`${stats.losses}`} valueClass="text-loss" />
       </div>
     </div>
   );
@@ -1979,19 +1979,19 @@ function StatRow({
 // بتعمل review على التوقعات السابقة: فرص ضاعت / توقعات خاطئة / توقعات صحيحة (شراء/بيع)
 // ════════════════════════════════════════════════════════════════════════════
 const MISSED_OPP_ACCENTS: Record<string, { ring: string; bar: string; value: string }> = {
-  amber: { ring: 'border-amber-500/30', bar: 'bg-amber-500', value: 'text-amber-400' },
-  rose: { ring: 'border-rose-500/30', bar: 'bg-rose-500', value: 'text-rose-400' },
-  emerald: { ring: 'border-emerald-500/30', bar: 'bg-emerald-500', value: 'text-emerald-400' },
-  teal: { ring: 'border-teal-500/30', bar: 'bg-teal-500', value: 'text-teal-400' },
+  amber: { ring: 'border-warning/30', bar: 'bg-warning', value: 'text-warning' },
+  rose: { ring: 'border-loss/30', bar: 'bg-loss', value: 'text-loss' },
+  emerald: { ring: 'border-profit/30', bar: 'bg-profit', value: 'text-profit' },
+  teal: { ring: 'border-whale/30', bar: 'bg-whale', value: 'text-whale' },
 };
 
 function signalBadgeClass(signal: string): string {
   const s = (signal || '').toUpperCase();
   if (s === 'BUY' || s === 'STRONG_BUY') {
-    return 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10';
+    return 'text-profit border-profit/30 bg-profit/10';
   }
   if (s === 'SELL' || s === 'STRONG_SELL') {
-    return 'text-rose-300 border-rose-500/30 bg-rose-500/10';
+    return 'text-loss border-loss/30 bg-loss/10';
   }
   return 'text-slate-300 border-white/20 bg-white/5';
 }
@@ -2061,7 +2061,7 @@ function MissedOppCard({
                       {item.signal}
                     </Badge>
                   </div>
-                  <span className={cn('font-black text-sm sm:text-base flex-shrink-0', changePositive ? 'text-emerald-400' : 'text-rose-400')}>
+                  <span className={cn('font-black text-sm sm:text-base flex-shrink-0', changePositive ? 'text-profit' : 'text-loss')}>
                     {changePositive ? '+' : ''}{(change ?? 0).toFixed(2)}%
                   </span>
                 </div>

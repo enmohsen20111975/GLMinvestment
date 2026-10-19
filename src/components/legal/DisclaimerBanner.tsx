@@ -35,12 +35,12 @@ export function DisclaimerBanner() {
   return (
     <>
       {visible && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800 relative z-50">
+        <div className="bg-warning dark:bg-warning/40 border-b border-warning dark:border-warning relative z-50">
           <div className="max-w-7xl mx-auto px-4 py-2 flex items-start gap-3">
-            <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <ShieldCheck className="w-4 h-4 text-warning dark:text-warning flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 text-center">
               <p
-                className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 leading-relaxed font-semibold"
+                className="text-xs sm:text-sm text-warning dark:text-warning leading-relaxed font-semibold"
                 dir="rtl"
               >
                 ⚠️ إخلاء مسؤولية قانوني: هذه المنصة تقدم{' '}
@@ -50,7 +50,7 @@ export function DisclaimerBanner() {
                 القرار النهائي مسؤولية العميل وحده.
               </p>
               <p
-                className="text-[11px] sm:text-xs text-amber-600 dark:text-amber-300 mt-0.5"
+                className="text-[11px] sm:text-xs text-warning dark:text-warning mt-0.5"
                 dir="rtl"
               >
                 لا يوجد أي ضمان للنتائج. السوق يحتوي على مخاطر، والخسارة ممكنة.
@@ -60,7 +60,7 @@ export function DisclaimerBanner() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 flex-shrink-0 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+              className="h-6 w-6 flex-shrink-0 text-warning hover:text-warning dark:text-warning dark:hover:text-warning hover:bg-warning dark:hover:bg-warning/50"
               onClick={handleDismiss}
               aria-label="إغلاق التنبيه"
             >
@@ -80,15 +80,15 @@ export function DisclaimerBanner() {
 export function LegalDisclaimerFooter() {
   return (
     <div
-      className="border-t border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-2 mt-4"
+      className="border-t border-warning dark:border-warning bg-warning/50 dark:bg-warning/20 px-4 py-2 mt-4"
       dir="rtl"
     >
-      <p className="text-[10px] sm:text-[11px] text-amber-700 dark:text-amber-400 text-center leading-relaxed">
+      <p className="text-[10px] sm:text-[11px] text-warning dark:text-warning text-center leading-relaxed">
         <strong>إخلاء مسؤولية:</strong> هذه المنصة تقدم رأيًا شخصيًا آليًا لأغراض
         تعليمية وتحليلية فقط، وليست نصيحة استثمارية مرخصة أو نصيحة مالية. القرار
         النهائي مسؤولية العميل وحده. لا يوجد ضمان للنتائج، والخسارة ممكنة.
         استشر مستشارًا ماليًا مرخصًا قبل أي قرار.{' '}
-        <span className="text-amber-600 dark:text-amber-500">
+        <span className="text-warning dark:text-warning">
           This platform provides automated personal opinion for educational
           purposes only — not investment advice.
         </span>

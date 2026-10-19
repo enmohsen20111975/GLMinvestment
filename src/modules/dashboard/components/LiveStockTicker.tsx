@@ -82,10 +82,10 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
         title={`${stock.ticker} — ${fmtPct(stock.change_percent)}`}
         className={cn(
           'group inline-flex shrink-0 items-center gap-1.5 px-3 py-1 text-xs font-medium tabular-nums transition-colors',
-          'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 rounded',
+          'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-profit/50 rounded',
           up
-            ? 'text-emerald-500 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'
-            : 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40',
+            ? 'text-profit hover:bg-profit dark:text-profit dark:hover:bg-profit/40'
+            : 'text-loss hover:bg-loss dark:text-loss dark:hover:bg-loss/40',
         )}
         dir="ltr"
       >
@@ -96,8 +96,8 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
           className={cn(
             'inline-flex items-center gap-0.5 font-mono font-semibold',
             up
-              ? 'text-emerald-500 dark:text-emerald-400'
-              : 'text-rose-600 dark:text-rose-400',
+              ? 'text-profit dark:text-profit'
+              : 'text-loss dark:text-loss',
           )}
         >
           {up ? (
@@ -239,24 +239,24 @@ export function LiveStockTicker() {
         <div className="z-10 flex h-full shrink-0 items-center gap-1.5 border-l border-slate-200 bg-white/90 px-3 dark:border-slate-800 dark:bg-slate-950/90">
           <span className="relative flex h-2 w-2">
             {isOpen && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-profit opacity-75" />
             )}
             <span
               className={cn(
                 'relative inline-flex h-2 w-2 rounded-full',
                 isOpen
-                  ? 'bg-emerald-500'
+                  ? 'bg-profit'
                   : 'bg-slate-400 dark:bg-slate-600',
               )}
             />
           </span>
-          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-500 dark:text-emerald-400">
+          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-profit dark:text-profit">
             <Zap className="h-3 w-3" />
             {isOpen ? 'مباشر' : 'مغلق'}
           </span>
           {error && (
             <WifiOff
-              className="h-3 w-3 text-rose-500"
+              className="h-3 w-3 text-loss"
               title="انقطاع الاتصال — عرض آخر بيانات"
             />
           )}

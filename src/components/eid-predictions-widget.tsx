@@ -41,8 +41,8 @@ const iconMap: Record<string, any> = {
 };
 
 const signalColors: Record<string, string> = {
-  'BUY': 'bg-green-500/20 text-green-400 border-green-500/50',
-  'SELL': 'bg-red-500/20 text-red-400 border-red-500/50',
+  'BUY': 'bg-success/20 text-success border-success/50',
+  'SELL': 'bg-loss/20 text-loss border-loss/50',
   'HOLD': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
 };
 
@@ -122,7 +122,7 @@ export function EidPredictionsWidget() {
       <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-400" />
+            <Sparkles className="h-5 w-5 text-warning" />
             <Skeleton className="h-6 w-40" />
           </div>
         </CardHeader>
@@ -140,12 +140,12 @@ export function EidPredictionsWidget() {
       <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-400" />
+            <AlertTriangle className="h-5 w-5 text-loss" />
             <CardTitle className="text-white">خطأ في التحميل</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-red-400 mb-4">{error}</p>
+          <p className="text-loss mb-4">{error}</p>
           <Button onClick={() => fetchPredictions()} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             إعادة المحاولة
@@ -160,7 +160,7 @@ export function EidPredictionsWidget() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-400" />
+            <Sparkles className="h-5 w-5 text-warning" />
             <CardTitle className="text-white text-lg">
               توقعات اليوم
             </CardTitle>
@@ -183,8 +183,8 @@ export function EidPredictionsWidget() {
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Disclaimer */}
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 mb-4">
-          <p className="text-xs text-amber-400 flex items-center gap-1">
+        <div className="bg-warning/10 border border-warning/30 rounded-lg p-2 mb-4">
+          <p className="text-xs text-warning flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
             هذه التوقعات للأغراض التعليمية فقط. استشر مستشار مالي قبل الاستثمار.
           </p>
@@ -221,11 +221,11 @@ export function EidPredictionsWidget() {
                 </div>
                 <div>
                   <span className="text-slate-500">الهدف</span>
-                  <p className="text-green-400 font-mono">{formatPrice(pred.targetPrice, pred.symbol)}</p>
+                  <p className="text-success font-mono">{formatPrice(pred.targetPrice, pred.symbol)}</p>
                 </div>
                 <div>
                   <span className="text-slate-500">وقف الخسارة</span>
-                  <p className="text-red-400 font-mono">{formatPrice(pred.stopLoss, pred.symbol)}</p>
+                  <p className="text-loss font-mono">{formatPrice(pred.stopLoss, pred.symbol)}</p>
                 </div>
               </div>
 
@@ -234,13 +234,13 @@ export function EidPredictionsWidget() {
                   <span className="text-slate-500">الثقة:</span>
                   <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-green-500' : pred.confidence >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                      className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-yellow-500' : 'bg-loss'}`}
                       style={{ width: `${pred.confidence * 100}%` }}
                     />
                   </div>
                   <span className="text-slate-300">{(pred.confidence * 100).toFixed(0)}%</span>
                 </div>
-                <div className={`flex items-center gap-1 ${potentialGain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`flex items-center gap-1 ${potentialGain >= 0 ? 'text-success' : 'text-loss'}`}>
                   {potentialGain >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                   {potentialGain >= 0 ? '+' : ''}{potentialGain}%
                 </div>

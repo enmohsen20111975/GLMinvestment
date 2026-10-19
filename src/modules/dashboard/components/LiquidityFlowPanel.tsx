@@ -85,7 +85,7 @@ const PERIOD_LABEL: Record<PeriodKey, string> = {
 function FlowDirectionBadge({ direction }: { direction: SectorFlow['flow_direction'] }) {
   if (direction === 'inflow') {
     return (
-      <Badge className="text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
+      <Badge className="text-[10px] bg-profit/10 text-profit dark:text-profit border-profit/30 hover:bg-profit/20">
         <ArrowDownToLine className="w-3 h-3 ml-1" />
         داخلة
       </Badge>
@@ -93,14 +93,14 @@ function FlowDirectionBadge({ direction }: { direction: SectorFlow['flow_directi
   }
   if (direction === 'outflow') {
     return (
-      <Badge className="text-[10px] bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30 hover:bg-red-500/20">
+      <Badge className="text-[10px] bg-loss/10 text-loss dark:text-loss border-loss/30 hover:bg-loss/20">
         <ArrowUpFromLine className="w-3 h-3 ml-1" />
         خارجة
       </Badge>
     );
   }
   return (
-    <Badge className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20">
+    <Badge className="text-[10px] bg-warning/10 text-warning dark:text-warning border-warning/30 hover:bg-warning/20">
       محايدة
     </Badge>
   );
@@ -153,9 +153,9 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
     className: 'tabular-nums font-semibold',
     render: (s) => {
       const cls = s.avg_change_pct > 0
-        ? 'text-emerald-500 dark:text-emerald-400'
+        ? 'text-profit dark:text-profit'
         : s.avg_change_pct < 0
-        ? 'text-red-600 dark:text-red-400'
+        ? 'text-loss dark:text-loss'
         : 'text-muted-foreground';
       return (
         <span className={cn(cls, 'font-semibold')}>
@@ -192,9 +192,9 @@ function StockFlowRow({ stock }: { stock: StockFlowItem }) {
           className={cn(
             'text-[11px] font-bold',
             stock.latest_change_pct > 0
-              ? 'text-emerald-500 dark:text-emerald-400'
+              ? 'text-profit dark:text-profit'
               : stock.latest_change_pct < 0
-              ? 'text-red-600 dark:text-red-400'
+              ? 'text-loss dark:text-loss'
               : 'text-muted-foreground'
           )}
         >
@@ -279,7 +279,7 @@ export function LiquidityFlowPanel() {
         <CardContent>
           <div className="text-center text-xs text-muted-foreground py-6">
             {error ? (
-              <span className="text-red-600 dark:text-red-400">خطأ: {error}</span>
+              <span className="text-loss dark:text-loss">خطأ: {error}</span>
             ) : (
               'لا توجد بيانات سيولة لهذا السوق'
             )}
@@ -303,13 +303,13 @@ export function LiquidityFlowPanel() {
               {marketNameAr}
             </Badge>
             {summary.net_flow_direction === 'inflow' && (
-              <Badge className="text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30">
+              <Badge className="text-[10px] bg-profit/10 text-profit dark:text-profit border-profit/30">
                 <TrendingUp className="w-3 h-3 ml-1" />
                 صافي تدفّق داخلي
               </Badge>
             )}
             {summary.net_flow_direction === 'outflow' && (
-              <Badge className="text-[10px] bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30">
+              <Badge className="text-[10px] bg-loss/10 text-loss dark:text-loss border-loss/30">
                 <TrendingDown className="w-3 h-3 ml-1" />
                 صافي تدفّق خارجة
               </Badge>
@@ -347,18 +347,18 @@ export function LiquidityFlowPanel() {
               </div>
               <div className="rounded-md bg-muted/40 p-2">
                 <div className="text-[10px] text-muted-foreground">قطاعات صاعدة</div>
-                <div className="text-sm font-bold text-emerald-500 dark:text-emerald-400">{summary.advancing_sectors}</div>
+                <div className="text-sm font-bold text-profit dark:text-profit">{summary.advancing_sectors}</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
                 <div className="text-[10px] text-muted-foreground">قطاعات هابطة</div>
-                <div className="text-sm font-bold text-red-600 dark:text-red-400">{summary.declining_sectors}</div>
+                <div className="text-sm font-bold text-loss dark:text-loss">{summary.declining_sectors}</div>
               </div>
             </div>
 
             {/* Sector rotation table */}
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
-                <Activity className="w-3.5 h-3.5 text-amber-500" />
+                <Activity className="w-3.5 h-3.5 text-warning" />
                 <span className="text-xs font-semibold">دوران القطاعات</span>
                 <Badge variant="outline" className="text-[9px]">{sector_flow.length} قطاع</Badge>
               </div>
@@ -374,17 +374,17 @@ export function LiquidityFlowPanel() {
 
             {/* Two columns: inflow vs outflow */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2">
+              <div className="rounded-md border border-profit/30 bg-profit/5 p-2">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <ArrowDownToLine className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-                  <span className="text-xs font-semibold text-emerald-500 dark:text-emerald-400">سيولة داخلة</span>
+                  <ArrowDownToLine className="w-3.5 h-3.5 text-profit dark:text-profit" />
+                  <span className="text-xs font-semibold text-profit dark:text-profit">سيولة داخلة</span>
                 </div>
                 {top_inflow_stocks.length === 0 ? (
                   <div className="text-[11px] text-muted-foreground py-2">لا توجد سيولة داخلة في النافذة الحالية</div>
                 ) : (
                   <div className="max-h-56 overflow-y-auto
                                   [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
-                                  [&::-webkit-scrollbar-thumb]:bg-emerald-500/40 [&::-webkit-scrollbar-thumb]:rounded-full">
+                                  [&::-webkit-scrollbar-thumb]:bg-profit/40 [&::-webkit-scrollbar-thumb]:rounded-full">
                     {top_inflow_stocks.map((s) => (
                       <StockFlowRow key={s.ticker} stock={s} />
                     ))}
@@ -392,17 +392,17 @@ export function LiquidityFlowPanel() {
                 )}
               </div>
 
-              <div className="rounded-md border border-red-500/30 bg-red-500/5 p-2">
+              <div className="rounded-md border border-loss/30 bg-loss/5 p-2">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <ArrowUpFromLine className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                  <span className="text-xs font-semibold text-red-700 dark:text-red-400">سيولة هاربة</span>
+                  <ArrowUpFromLine className="w-3.5 h-3.5 text-loss dark:text-loss" />
+                  <span className="text-xs font-semibold text-loss dark:text-loss">سيولة هاربة</span>
                 </div>
                 {top_outflow_stocks.length === 0 ? (
                   <div className="text-[11px] text-muted-foreground py-2">لا توجد سيولة خارجة في النافذة الحالية</div>
                 ) : (
                   <div className="max-h-56 overflow-y-auto
                                   [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent
-                                  [&::-webkit-scrollbar-thumb]:bg-red-500/40 [&::-webkit-scrollbar-thumb]:rounded-full">
+                                  [&::-webkit-scrollbar-thumb]:bg-loss/40 [&::-webkit-scrollbar-thumb]:rounded-full">
                     {top_outflow_stocks.map((s) => (
                       <StockFlowRow key={s.ticker} stock={s} />
                     ))}

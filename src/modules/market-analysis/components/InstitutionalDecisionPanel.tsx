@@ -163,10 +163,10 @@ interface InstitutionalDecisionPanelProps {
 const signalColorMap: Record<string, string> = {
   purple: 'bg-purple-500 text-white border-purple-600',
   lime: 'bg-lime-500 text-black border-lime-600',
-  green: 'bg-emerald-500 text-white border-emerald-600',
-  yellow: 'bg-amber-400 text-black border-amber-500',
+  green: 'bg-profit text-white border-profit',
+  yellow: 'bg-warning text-black border-warning',
   orange: 'bg-orange-500 text-white border-orange-600',
-  red: 'bg-rose-500 text-white border-rose-600',
+  red: 'bg-loss text-white border-loss',
   gray: 'bg-slate-400 text-white border-slate-500',
 };
 
@@ -179,29 +179,29 @@ const flightIconMap: Record<string, React.ElementType> = {
 
 const flightColorMap: Record<string, string> = {
   flying_up: 'text-lime-500 bg-lime-500/10 border-lime-500/30',
-  falling_down: 'text-rose-500 bg-rose-500/10 border-rose-500/30',
-  coiling: 'text-amber-500 bg-amber-500/10 border-amber-500/30',
+  falling_down: 'text-loss bg-loss/10 border-loss/30',
+  coiling: 'text-warning bg-warning/10 border-warning/30',
   sideways: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
 };
 
 const makerColorMap: Record<string, string> = {
-  absorption: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30',
-  distribution: 'text-rose-500 bg-rose-500/10 border-rose-500/30',
+  absorption: 'text-profit bg-profit/10 border-profit/30',
+  distribution: 'text-loss bg-loss/10 border-loss/30',
   calm: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
 };
 
 const adviceColorMap: Record<string, string> = {
-  red: 'border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400',
+  red: 'border-loss/40 bg-loss/10 text-loss dark:text-loss',
   orange: 'border-orange-500/40 bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  yellow: 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  green: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  yellow: 'border-warning/40 bg-warning/10 text-warning dark:text-warning',
+  green: 'border-profit/40 bg-profit/10 text-profit dark:text-profit',
 };
 
 const qualityColorMap: Record<string, string> = {
   lime: 'text-lime-500',
   orange: 'text-orange-400',
   gray: 'text-slate-400',
-  red: 'text-rose-400',
+  red: 'text-loss',
 };
 
 // ───────── Component ─────────
@@ -262,18 +262,18 @@ export function InstitutionalDecisionPanel({
 
   // Tech Score gauge (0-100) — لون حسب الدرجة
   const scoreColor =
-    tech_score >= 75 ? 'text-emerald-500' :
+    tech_score >= 75 ? 'text-profit' :
     tech_score >= 60 ? 'text-lime-500' :
-    tech_score >= 40 ? 'text-amber-500' :
+    tech_score >= 40 ? 'text-warning' :
     tech_score >= 25 ? 'text-orange-500' :
-    'text-rose-500';
+    'text-loss';
 
   const scoreBg =
-    tech_score >= 75 ? 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/40' :
+    tech_score >= 75 ? 'from-profit/20 to-profit/10 border-profit/40' :
     tech_score >= 60 ? 'from-lime-500/20 to-lime-600/10 border-lime-500/40' :
-    tech_score >= 40 ? 'from-amber-500/20 to-amber-600/10 border-amber-500/40' :
+    tech_score >= 40 ? 'from-warning/20 to-warning/10 border-warning/40' :
     tech_score >= 25 ? 'from-orange-500/20 to-orange-600/10 border-orange-500/40' :
-    'from-rose-500/20 to-rose-600/10 border-rose-500/40';
+    'from-loss/20 to-loss/10 border-loss/40';
 
   const FlightIcon = flightIconMap[flight_state?.state] || Moon;
   const adviceClass = portfolio_advice ? adviceColorMap[portfolio_advice.color] : '';
@@ -299,9 +299,9 @@ export function InstitutionalDecisionPanel({
       className={cn(
         'flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border text-[11px] transition-colors',
         proof.passed
-          ? 'border-emerald-500/30 bg-emerald-500/5'
+          ? 'border-profit/30 bg-profit/5'
           : proof.score_impact < 0
-          ? 'border-rose-500/30 bg-rose-500/5'
+          ? 'border-loss/30 bg-loss/5'
           : 'border-slate-500/20 bg-slate-500/5'
       )}
       title={proof.detail || ''}
@@ -313,8 +313,8 @@ export function InstitutionalDecisionPanel({
       <div className="flex items-center gap-1 flex-shrink-0">
         <span className={cn(
           'font-bold text-[10px]',
-          proof.score_impact > 0 ? 'text-emerald-500' :
-          proof.score_impact < 0 ? 'text-rose-500' : 'text-slate-400'
+          proof.score_impact > 0 ? 'text-profit' :
+          proof.score_impact < 0 ? 'text-loss' : 'text-slate-400'
         )}>
           {proof.score_impact > 0 ? '+' : ''}{proof.score_impact}
         </span>
@@ -344,9 +344,9 @@ export function InstitutionalDecisionPanel({
           {/* V39: عدد الإثباتات */}
           <Badge className={cn(
             'text-[9px] border font-mono',
-            proofsPassed >= 4 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-            proofsPassed >= 2 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-            'bg-rose-500/20 text-rose-300 border-rose-500/40'
+            proofsPassed >= 4 ? 'bg-profit/20 text-profit border-profit/40' :
+            proofsPassed >= 2 ? 'bg-warning/20 text-warning border-warning/40' :
+            'bg-loss/20 text-loss border-loss/40'
           )}>
             {proofsPassed}/{proofsTotal} إثباتات
           </Badge>
@@ -416,7 +416,7 @@ export function InstitutionalDecisionPanel({
             </div>
             <div className="flex items-center gap-1">
               {fairValueLocked ? (
-                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                <span className="text-[10px] font-semibold text-warning dark:text-warning">
                   🔒 متاحة للمشتركين
                 </span>
               ) : (
@@ -426,8 +426,8 @@ export function InstitutionalDecisionPanel({
                     variant="outline"
                     className={cn(
                       'text-[9px] py-0 px-1.5',
-                      fair_state === 'غالي' ? 'border-rose-500/40 text-rose-400' :
-                      fair_state === 'رخيص' ? 'border-emerald-500/40 text-emerald-400' :
+                      fair_state === 'غالي' ? 'border-loss/40 text-loss' :
+                      fair_state === 'رخيص' ? 'border-profit/40 text-profit' :
                       'border-slate-500/40 text-slate-300'
                     )}
                   >
@@ -440,7 +440,7 @@ export function InstitutionalDecisionPanel({
           {fairValueLocked && current_price > 0 && fair_value && fair_value > 0 && (
             <div className="mt-1 text-[10px] text-muted-foreground">
               القيمة العادلة أعلى من السعر الحالي بـ{' '}
-              <span className="font-semibold text-amber-700 dark:text-amber-400">
+              <span className="font-semibold text-warning dark:text-warning">
                 {Math.round(((fair_value - current_price) / current_price) * 100)}%
               </span>
             </div>
@@ -450,11 +450,11 @@ export function InstitutionalDecisionPanel({
         {/* ─── 4. الإثباتات الستة (Proofs) — V39 ─── */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
-            <div className="h-px flex-1 bg-amber-500/30" />
-            <span className="text-[9px] font-bold text-amber-400 flex items-center gap-1">
+            <div className="h-px flex-1 bg-warning/30" />
+            <span className="text-[9px] font-bold text-warning flex items-center gap-1">
               <Shield className="w-3 h-3" /> الإثباتات (Proofs) — {proofsPassed}/{proofsTotal}
             </span>
-            <div className="h-px flex-1 bg-amber-500/30" />
+            <div className="h-px flex-1 bg-warning/30" />
           </div>
           <div className="grid grid-cols-1 gap-1">
             {proofs.map(renderProof)}
@@ -493,7 +493,7 @@ export function InstitutionalDecisionPanel({
               <div className="text-[8px] text-muted-foreground mb-0.5">نسبة النجاح</div>
               <div className={cn(
                 'text-[10px] font-bold font-mono',
-                (backtest?.win_rate || 0) >= 60 ? 'text-emerald-400' :
+                (backtest?.win_rate || 0) >= 60 ? 'text-profit' :
                 (backtest?.win_rate || 0) > 0 ? 'text-orange-400' : 'text-slate-400'
               )}>
                 {backtest?.win_rate_text || 'لا يوجد صفقات سابقة'}
@@ -504,7 +504,7 @@ export function InstitutionalDecisionPanel({
               <div className="text-[8px] text-muted-foreground mb-0.5">معامل الربحية (PF)</div>
               <div className={cn(
                 'text-[10px] font-bold font-mono',
-                (backtest?.profit_factor || 0) > 1.5 ? 'text-emerald-400' :
+                (backtest?.profit_factor || 0) > 1.5 ? 'text-profit' :
                 (backtest?.profit_factor || 0) > 0 ? 'text-orange-400' : 'text-slate-400'
               )}>
                 {backtest?.pf_text || '0.00'}
@@ -512,7 +512,7 @@ export function InstitutionalDecisionPanel({
               {backtest && backtest.net_return !== 0 && (
                 <div className={cn(
                   'text-[8px] mt-0.5',
-                  backtest.net_return >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                  backtest.net_return >= 0 ? 'text-profit' : 'text-loss'
                 )}>
                   صافي: {backtest.net_return >= 0 ? '+' : ''}{(backtest.net_return ?? 0).toFixed(2)}%
                 </div>
@@ -530,12 +530,12 @@ export function InstitutionalDecisionPanel({
               {/* V39: Dynamic indicators */}
               <div className="flex items-center gap-1 mr-auto">
                 {dynamic_sl_mult && (
-                  <Badge variant="outline" className="text-[7px] py-0 px-1 border-rose-500/30 text-rose-300">
+                  <Badge variant="outline" className="text-[7px] py-0 px-1 border-loss/30 text-loss">
                     SL ×{dynamic_sl_mult}
                   </Badge>
                 )}
                 {dynamic_rr1 && (
-                  <Badge variant="outline" className="text-[7px] py-0 px-1 border-emerald-500/30 text-emerald-300">
+                  <Badge variant="outline" className="text-[7px] py-0 px-1 border-profit/30 text-profit">
                     R:R {dynamic_rr1}
                   </Badge>
                 )}
@@ -554,17 +554,17 @@ export function InstitutionalDecisionPanel({
                 <div className="text-[8px] text-muted-foreground">الدخول</div>
                 <div className="text-[10px] font-mono font-bold">{risk_profile.entry?.toFixed(2)}</div>
               </div>
-              <div className="rounded bg-rose-500/10 p-1">
+              <div className="rounded bg-loss/10 p-1">
                 <div className="text-[8px] text-muted-foreground">🛑 الوقف</div>
-                <div className="text-[10px] font-mono font-bold text-rose-400">{risk_profile.sl?.toFixed(2)}</div>
+                <div className="text-[10px] font-mono font-bold text-loss">{risk_profile.sl?.toFixed(2)}</div>
               </div>
-              <div className="rounded bg-emerald-500/10 p-1">
+              <div className="rounded bg-profit/10 p-1">
                 <div className="text-[8px] text-muted-foreground">🎯 TP1</div>
-                <div className="text-[10px] font-mono font-bold text-emerald-400">{risk_profile.tp1?.toFixed(2)}</div>
+                <div className="text-[10px] font-mono font-bold text-profit">{risk_profile.tp1?.toFixed(2)}</div>
               </div>
-              <div className="rounded bg-emerald-500/15 p-1">
+              <div className="rounded bg-profit/15 p-1">
                 <div className="text-[8px] text-muted-foreground">TP2</div>
-                <div className="text-[10px] font-mono font-bold text-emerald-300">{risk_profile.tp2?.toFixed(2)}</div>
+                <div className="text-[10px] font-mono font-bold text-profit">{risk_profile.tp2?.toFixed(2)}</div>
               </div>
             </div>
             {/* V39: DNA target note */}
@@ -581,11 +581,11 @@ export function InstitutionalDecisionPanel({
         )}
 
         {/* ─── 7. التوقع بالعربي ─── */}
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+        <div className="rounded-md border border-warning/30 bg-warning/5 p-2">
           <div className="flex items-start gap-1.5">
             <span className="text-base">🔮</span>
             <div className="flex-1">
-              <div className="text-[9px] font-bold text-amber-400 mb-0.5">التوقع بالبلدي</div>
+              <div className="text-[9px] font-bold text-warning mb-0.5">التوقع بالبلدي</div>
               <div className="text-[11px] text-foreground leading-relaxed">{prediction_ar}</div>
             </div>
           </div>
@@ -617,7 +617,7 @@ export function InstitutionalDecisionPanel({
                 <div className="text-[8px] text-muted-foreground">الربح/الخسارة</div>
                 <div className={cn(
                   'font-mono font-black text-sm',
-                  portfolio_advice.pnl_pct >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                  portfolio_advice.pnl_pct >= 0 ? 'text-profit' : 'text-loss'
                 )}>
                   {portfolio_advice.pnl_pct >= 0 ? '+' : ''}{(portfolio_advice.pnl_pct ?? 0).toFixed(2)}%
                 </div>
@@ -626,7 +626,7 @@ export function InstitutionalDecisionPanel({
                 <div className="text-[8px] text-muted-foreground">القيمة (P&L)</div>
                 <div className={cn(
                   'font-mono font-black text-sm',
-                  portfolio_advice.pnl_value >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                  portfolio_advice.pnl_value >= 0 ? 'text-profit' : 'text-loss'
                 )}>
                   {portfolio_advice.pnl_value >= 0 ? '+' : ''}{(portfolio_advice.pnl_value ?? 0).toFixed(2)}
                 </div>
@@ -637,7 +637,7 @@ export function InstitutionalDecisionPanel({
             </div>
             <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-1.5">
               <span>الدخول: <strong className="font-mono text-foreground">{portfolio_advice.entry_price}</strong> × {portfolio_advice.entry_qty} سهم</span>
-              <span>الوقف الحالي: <strong className="font-mono text-rose-400">{portfolio_advice.stop_loss}</strong></span>
+              <span>الوقف الحالي: <strong className="font-mono text-loss">{portfolio_advice.stop_loss}</strong></span>
             </div>
           </div>
         ) : (
@@ -686,7 +686,7 @@ export function InstitutionalDecisionPanel({
                 <Button
                   size="sm"
                   onClick={handleApplyPosition}
-                  className="w-full h-7 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="w-full h-7 text-[10px] bg-profit hover:bg-profit text-white"
                 >
                   <CheckCircle2 className="w-3 h-3 ml-1" />
                   احسب نصيحتك

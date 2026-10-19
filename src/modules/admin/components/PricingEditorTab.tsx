@@ -183,12 +183,12 @@ export function PricingEditorTab() {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <Card className="border-emerald-200 dark:border-emerald-900/40">
+      <Card className="border-profit dark:border-profit/40">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
+                <DollarSign className="w-5 h-5 text-profit" />
                 التسعير + بوابات الاشتراك
               </CardTitle>
               <CardDescription className="mt-1 text-xs">
@@ -215,17 +215,17 @@ export function PricingEditorTab() {
           value={plansList.length > 0
             ? `${Math.max(...plansList.map(p => p.price))} EGP`
             : '—'}
-          icon={<DollarSign className="w-4 h-4 text-emerald-500" />}
+          icon={<DollarSign className="w-4 h-4 text-profit" />}
         />
         <StatBox
           label="بوابات مفعّلة"
           value={`${enabledGates}/${totalGates}`}
-          icon={<Lock className="w-4 h-4 text-amber-500" />}
+          icon={<Lock className="w-4 h-4 text-warning" />}
         />
         <StatBox
           label="بوابات متوقفة"
           value={totalGates - enabledGates}
-          icon={<Unlock className="w-4 h-4 text-emerald-500" />}
+          icon={<Unlock className="w-4 h-4 text-profit" />}
         />
       </div>
 
@@ -245,7 +245,7 @@ export function PricingEditorTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Tag className="w-4 h-4 text-emerald-500" />
+              <Tag className="w-4 h-4 text-profit" />
               الباقات الحالية
             </CardTitle>
             <CardDescription className="text-xs">
@@ -261,7 +261,7 @@ export function PricingEditorTab() {
                   className={cn(
                     'p-4 rounded-lg border-2',
                     plan.id === 'premium'
-                      ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/50'
+                      ? 'border-profit bg-profit dark:bg-profit/20 dark:border-profit/50'
                       : plan.id === 'developer'
                         ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/20 dark:border-sky-900/50'
                         : 'border-border bg-card',
@@ -270,7 +270,7 @@ export function PricingEditorTab() {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-bold">{plan.nameAr}</h3>
                     {plan.id === 'premium' && (
-                      <Badge className="bg-emerald-600 text-[10px]">الأكثر شيوعاً</Badge>
+                      <Badge className="bg-profit text-[10px]">الأكثر شيوعاً</Badge>
                     )}
                     {plan.id === 'free' && (
                       <Badge variant="outline" className="text-[10px]">مجاني</Badge>
@@ -289,7 +289,7 @@ export function PricingEditorTab() {
                   <ul className="space-y-1 text-xs">
                     {plan.features.slice(0, 5).map((f, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-3 h-3 text-profit shrink-0 mt-0.5" />
                         <span>{f}</span>
                       </li>
                     ))}
@@ -315,7 +315,7 @@ export function PricingEditorTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Lock className="w-4 h-4 text-amber-500" />
+            <Lock className="w-4 h-4 text-warning" />
             بوابات الـ Paywall السبع
           </CardTitle>
           <CardDescription className="text-xs">
@@ -330,13 +330,13 @@ export function PricingEditorTab() {
                 className={cn(
                   'p-3 rounded-lg border flex items-start gap-3',
                   gate.enabled
-                    ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40'
-                    : 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40',
+                    ? 'border-warning bg-warning dark:bg-warning/20 dark:border-warning/40'
+                    : 'border-profit bg-profit dark:bg-profit/20 dark:border-profit/40',
                 )}
               >
                 <div className={cn(
                   'w-9 h-9 rounded-full flex items-center justify-center shrink-0',
-                  gate.enabled ? 'bg-amber-500' : 'bg-emerald-500',
+                  gate.enabled ? 'bg-warning' : 'bg-profit',
                 )}>
                   {gate.enabled
                     ? <Lock className="w-4 h-4 text-white" />
@@ -353,8 +353,8 @@ export function PricingEditorTab() {
                       className={cn(
                         'text-[10px]',
                         gate.enabled
-                          ? 'bg-amber-600'
-                          : 'border-emerald-500 text-emerald-700',
+                          ? 'bg-warning'
+                          : 'border-profit text-profit',
                       )}
                     >
                       {gate.enabled ? 'مفعّلة' : 'متوقفة'}

@@ -68,11 +68,11 @@ const SIGNAL_TYPE_AR: Record<string, string> = {
 };
 
 const SIGNAL_TYPE_COLOR: Record<string, string> = {
-  explosive_surge: 'text-rose-600 dark:text-rose-400',
-  quiet_accumulation_strong: 'text-amber-600 dark:text-amber-400',
+  explosive_surge: 'text-loss dark:text-loss',
+  quiet_accumulation_strong: 'text-warning dark:text-warning',
   quiet_accumulation_weak: 'text-yellow-600 dark:text-yellow-400',
   pre_surge: 'text-purple-600 dark:text-purple-400',
-  early_break: 'text-emerald-600 dark:text-emerald-400',
+  early_break: 'text-profit dark:text-profit',
 };
 
 function fmtPct(n: number | null | undefined, withSign = true): string {
@@ -83,8 +83,8 @@ function fmtPct(n: number | null | undefined, withSign = true): string {
 
 function pnlColorClass(n: number | null | undefined): string {
   if (n == null) return 'text-muted-foreground';
-  if (n > 0) return 'text-emerald-600 dark:text-emerald-400';
-  if (n < 0) return 'text-rose-600 dark:text-rose-400';
+  if (n > 0) return 'text-profit dark:text-profit';
+  if (n < 0) return 'text-loss dark:text-loss';
   return 'text-muted-foreground';
 }
 
@@ -172,7 +172,7 @@ export function RadarSignalStatsCard() {
     <Card className="p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <Trophy className="h-4 w-4 text-warning dark:text-warning" />
           <div>
             <h4 className="text-sm font-semibold">مصير إشارات الرادار</h4>
             <p className="text-[10px] text-muted-foreground">تتبّع دقة كل نوع إشارة بعد 7/14/30 يوم</p>
@@ -225,7 +225,7 @@ export function RadarSignalStatsCard() {
             </div>
             <div className="text-center p-2 rounded-md bg-muted/30">
               <div className="text-[10px] text-muted-foreground">قيد التحقق</div>
-              <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{stats.pending}</div>
+              <div className="text-lg font-bold text-warning dark:text-warning">{stats.pending}</div>
             </div>
             <div className="text-center p-2 rounded-md bg-muted/30">
               <div className="text-[10px] text-muted-foreground">تم التحقق</div>
@@ -233,7 +233,7 @@ export function RadarSignalStatsCard() {
             </div>
             <div className="text-center p-2 rounded-md bg-muted/30">
               <div className="text-[10px] text-muted-foreground">نسبة النجاح</div>
-              <div className={`text-lg font-bold ${stats.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : stats.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              <div className={`text-lg font-bold ${stats.win_rate_pct >= 60 ? 'text-profit dark:text-profit' : stats.win_rate_pct >= 40 ? 'text-warning dark:text-warning' : 'text-loss dark:text-loss'}`}>
                 {(stats.win_rate_pct ?? 0).toFixed(1)}%
               </div>
             </div>
@@ -280,7 +280,7 @@ export function RadarSignalStatsCard() {
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">{s.wins} رابح</span>
-                    <span className={`font-bold ${s.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : s.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    <span className={`font-bold ${s.win_rate_pct >= 60 ? 'text-profit dark:text-profit' : s.win_rate_pct >= 40 ? 'text-warning dark:text-warning' : 'text-loss dark:text-loss'}`}>
                       {(s.win_rate_pct ?? 0).toFixed(0)}%
                     </span>
                   </div>
@@ -327,9 +327,9 @@ interface SectorTreemapData {
 }
 
 const DIRECTION_STYLE: Record<string, { bg: string; text: string; label: string }> = {
-  inflow: { bg: 'bg-emerald-500/80', text: 'text-white', label: 'دخول' },
-  outflow: { bg: 'bg-rose-500/80', text: 'text-white', label: 'خروج' },
-  neutral: { bg: 'bg-amber-500/70', text: 'text-white', label: 'محايد' },
+  inflow: { bg: 'bg-profit/80', text: 'text-white', label: 'دخول' },
+  outflow: { bg: 'bg-loss/80', text: 'text-white', label: 'خروج' },
+  neutral: { bg: 'bg-warning/70', text: 'text-white', label: 'محايد' },
 };
 
 export function SectorTreemapCard() {
@@ -385,7 +385,7 @@ export function SectorTreemapCard() {
     <Card className="p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Layers className="h-4 w-4 text-primary dark:text-primary" />
           <div>
             <h4 className="text-sm font-semibold">خريطة سيولة القطاعات</h4>
             <p className="text-[10px] text-muted-foreground">حجم القطاع = سيولته · اللون = اتجاه الأموال</p>
@@ -440,7 +440,7 @@ export function SectorTreemapCard() {
                 <Badge
                   key={t.ticker}
                   variant="outline"
-                  className={`text-[9px] h-4 px-1 ${(t.change_pct ?? 0) >= 0 ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400' : 'border-rose-500/40 text-rose-700 dark:text-rose-400'}`}
+                  className={`text-[9px] h-4 px-1 ${(t.change_pct ?? 0) >= 0 ? 'border-profit/40 text-profit dark:text-profit' : 'border-loss/40 text-loss dark:text-loss'}`}
                 >
                   {t.ticker} {(t.change_pct ?? 0) >= 0 ? '+' : ''}{(t.change_pct ?? 0).toFixed(1)}%
                 </Badge>
@@ -473,10 +473,10 @@ interface EntryTimingData {
 }
 
 const LABEL_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
-  emerald: { bg: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', ring: 'ring-emerald-500/40' },
-  amber: { bg: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', ring: 'ring-amber-500/40' },
+  emerald: { bg: 'bg-profit', text: 'text-profit dark:text-profit', ring: 'ring-profit/40' },
+  amber: { bg: 'bg-warning', text: 'text-warning dark:text-warning', ring: 'ring-warning/40' },
   yellow: { bg: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400', ring: 'ring-yellow-500/40' },
-  rose: { bg: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', ring: 'ring-rose-500/40' },
+  rose: { bg: 'bg-loss', text: 'text-loss dark:text-loss', ring: 'ring-loss/40' },
 };
 
 export function EntryTimingCard({ ticker }: { ticker: string }) {
@@ -532,7 +532,7 @@ export function EntryTimingCard({ ticker }: { ticker: string }) {
     <Card className="p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Gauge className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Gauge className="h-4 w-4 text-primary dark:text-primary" />
           <div>
             <div className="text-xs font-semibold">توقيت الدخول الذكي</div>
             <div className="text-[10px] text-muted-foreground">درجة من 0-100 بناءً على 4 عوامل</div>
@@ -577,7 +577,7 @@ export function EntryTimingCard({ ticker }: { ticker: string }) {
             </div>
             <div className="h-1 rounded-full bg-muted overflow-hidden mb-1">
               <div
-                className={`h-full ${b.score >= b.max * 0.7 ? 'bg-emerald-500' : b.score >= b.max * 0.4 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                className={`h-full ${b.score >= b.max * 0.7 ? 'bg-profit' : b.score >= b.max * 0.4 ? 'bg-warning' : 'bg-loss'}`}
                 style={{ width: `${(b.score / b.max) * 100}%` }}
               />
             </div>
@@ -587,7 +587,7 @@ export function EntryTimingCard({ ticker }: { ticker: string }) {
       </div>
 
       {/* Recommendation */}
-      <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-[11px] text-blue-700 dark:text-blue-300 flex items-start gap-1.5">
+      <div className="mt-2 p-2 rounded-md bg-primary dark:bg-primary/20 border border-primary dark:border-primary/40 text-[11px] text-primary dark:text-primary flex items-start gap-1.5">
         <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
         <span>{data.recommendation}</span>
       </div>
@@ -742,14 +742,14 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
             <div className="font-bold text-purple-700 dark:text-purple-300">{(data.poc_price ?? 0).toFixed(2)}</div>
             <div className="text-[9px] text-muted-foreground">نقطة التحكم</div>
           </div>
-          <div className="p-1.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-center">
+          <div className="p-1.5 rounded bg-profit dark:bg-profit/20 text-center">
             <div className="text-[9px] text-muted-foreground">VAH</div>
-            <div className="font-bold text-emerald-700 dark:text-emerald-300">{(data.vah_price ?? 0).toFixed(2)}</div>
+            <div className="font-bold text-profit dark:text-profit">{(data.vah_price ?? 0).toFixed(2)}</div>
             <div className="text-[9px] text-muted-foreground">قمة منطقة القيمة</div>
           </div>
-          <div className="p-1.5 rounded bg-rose-50 dark:bg-rose-950/20 text-center">
+          <div className="p-1.5 rounded bg-loss dark:bg-loss/20 text-center">
             <div className="text-[9px] text-muted-foreground">VAL</div>
-            <div className="font-bold text-rose-700 dark:text-rose-300">{(data.val_price ?? 0).toFixed(2)}</div>
+            <div className="font-bold text-loss dark:text-loss">{(data.val_price ?? 0).toFixed(2)}</div>
             <div className="text-[9px] text-muted-foreground">قاع منطقة القيمة</div>
           </div>
         </div>
@@ -763,22 +763,22 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
       {/* Buy/Sell pressure */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-[10px] mb-1">
-          <span className="text-emerald-600 dark:text-emerald-400">شراء {fmtMoney(data.buy_volume)}</span>
+          <span className="text-profit dark:text-profit">شراء {fmtMoney(data.buy_volume)}</span>
           <span className="text-muted-foreground"> delta {data.delta_volume >= 0 ? '+' : ''}{fmtMoney(data.delta_volume)} </span>
-          <span className="text-rose-600 dark:text-rose-400">بيع {fmtMoney(data.sell_volume)}</span>
+          <span className="text-loss dark:text-loss">بيع {fmtMoney(data.sell_volume)}</span>
         </div>
         <div className="flex h-2 rounded-full overflow-hidden bg-muted">
           <div
-            className="bg-emerald-500"
+            className="bg-profit"
             style={{ width: `${(data.buy_volume / (data.buy_volume + data.sell_volume)) * 100}%` }}
           />
           <div
-            className="bg-rose-500"
+            className="bg-loss"
             style={{ width: `${(data.sell_volume / (data.buy_volume + data.sell_volume)) * 100}%` }}
           />
         </div>
         <div className="text-[9px] text-muted-foreground text-center mt-1">
-          نسبة الشراء/البيع: <span className={`font-semibold ${data.buy_sell_ratio >= 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{(data.buy_sell_ratio ?? 0).toFixed(2)}x</span>
+          نسبة الشراء/البيع: <span className={`font-semibold ${data.buy_sell_ratio >= 1 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>{(data.buy_sell_ratio ?? 0).toFixed(2)}x</span>
         </div>
       </div>
 
@@ -803,12 +803,12 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
                   <div className="flex-1 relative h-4 rounded-sm overflow-hidden bg-muted/40">
                     {/* Buy volume (right side, green) */}
                     <div
-                      className="absolute right-0 top-0 h-full bg-emerald-500/70"
+                      className="absolute right-0 top-0 h-full bg-profit/70"
                       style={{ width: `${(lvl.buy_volume / maxVolume) * 100}%` }}
                     />
                     {/* Sell volume (left side, red) */}
                     <div
-                      className="absolute left-0 top-0 h-full bg-rose-500/70"
+                      className="absolute left-0 top-0 h-full bg-loss/70"
                       style={{ width: `${(lvl.sell_volume / maxVolume) * 100}%` }}
                     />
                     {/* POC marker */}

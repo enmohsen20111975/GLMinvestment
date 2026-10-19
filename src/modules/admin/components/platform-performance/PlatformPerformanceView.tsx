@@ -198,8 +198,8 @@ function channelLabel(ch: string): string {
 }
 
 function returnColor(ret: number): string {
-  if (ret >= 0) return 'text-emerald-600 dark:text-emerald-400 font-semibold';
-  return 'text-red-600 dark:text-red-400 font-semibold';
+  if (ret >= 0) return 'text-profit dark:text-profit font-semibold';
+  return 'text-loss dark:text-loss font-semibold';
 }
 
 // ============================================================================
@@ -221,15 +221,15 @@ function KPICard({
 }) {
   const colorClasses = {
     default: 'text-foreground',
-    success: 'text-emerald-600 dark:text-emerald-400',
-    warning: 'text-amber-600 dark:text-amber-400',
-    danger: 'text-red-600 dark:text-red-400',
+    success: 'text-profit dark:text-profit',
+    warning: 'text-warning dark:text-warning',
+    danger: 'text-loss dark:text-loss',
   };
   const borderClasses = {
     default: 'border-border',
-    success: 'border-emerald-200 dark:border-emerald-800/50',
-    warning: 'border-amber-200 dark:border-amber-800/50',
-    danger: 'border-red-200 dark:border-red-800/50',
+    success: 'border-profit dark:border-profit/50',
+    warning: 'border-warning dark:border-warning/50',
+    danger: 'border-loss dark:border-loss/50',
   };
   return (
     <Card className={`border ${borderClasses[variant]} shadow-xs`}>
@@ -275,7 +275,7 @@ function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Tra
       <td className={`px-2 py-2 text-xs ${returnColor(trade.actual_return)}`} dir="ltr">
         {fmtPct(trade.actual_return)}
         {trade.capped && (
-          <Badge variant="outline" className="ml-1 text-[9px] border-amber-300 text-amber-700 px-1 py-0">
+          <Badge variant="outline" className="ml-1 text-[9px] border-warning text-warning px-1 py-0">
             capped
           </Badge>
         )}
@@ -285,9 +285,9 @@ function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Tra
       </td>
       <td className="px-2 py-2 text-xs">
         {trade.hit_target === 1 ? (
-          <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[10px]">هدف ✓</Badge>
+          <Badge className="bg-profit text-profit hover:bg-profit text-[10px]">هدف ✓</Badge>
         ) : trade.hit_stop === 1 ? (
-          <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-[10px]">وقف ✗</Badge>
+          <Badge className="bg-loss text-loss hover:bg-loss text-[10px]">وقف ✗</Badge>
         ) : (
           <Badge variant="outline" className="text-[10px]">{trade.status}</Badge>
         )}
@@ -352,7 +352,7 @@ export function PlatformPerformanceView() {
               <div className="flex items-center gap-2 mb-1">
                 <Gauge className="h-6 w-6 text-primary" />
                 <h2 className="text-xl sm:text-2xl font-bold">كفاءة المنصة</h2>
-                <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs">
+                <Badge className="bg-warning text-warning hover:bg-warning text-xs">
                   للتقييم الداخلي — Admin Only
                 </Badge>
               </div>
@@ -541,13 +541,13 @@ export function PlatformPerformanceView() {
 
       {/* === Readiness Box === */}
       {readiness && !insufficientData && (
-        <Card className={readiness.recommendation === 'candidate' ? 'border-emerald-300 bg-emerald-50/50' : 'border-amber-300 bg-amber-50/50'}>
+        <Card className={readiness.recommendation === 'candidate' ? 'border-profit bg-profit/50' : 'border-warning bg-warning/50'}>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               {readiness.recommendation === 'candidate' ? (
-                <ShieldCheck className="h-6 w-6 text-emerald-600 flex-shrink-0" />
+                <ShieldCheck className="h-6 w-6 text-profit flex-shrink-0" />
               ) : (
-                <ShieldAlert className="h-6 w-6 text-amber-600 flex-shrink-0" />
+                <ShieldAlert className="h-6 w-6 text-warning flex-shrink-0" />
               )}
               <div className="flex-1">
                 <h3 className="text-base font-semibold mb-1">
@@ -593,7 +593,7 @@ export function PlatformPerformanceView() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="h-5 w-5 text-emerald-600" />
+              <Trophy className="h-5 w-5 text-profit" />
               أفضل الصفقات المحترمة (Top {data.top_trades.length})
               <Badge variant="outline" className="text-xs">≥ +{minReturn}%</Badge>
             </CardTitle>
@@ -635,7 +635,7 @@ export function PlatformPerformanceView() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Target className="h-5 w-5 text-emerald-600" />
+              <Target className="h-5 w-5 text-profit" />
               تحقق المستهدفات ({data.target_hits.length})
             </CardTitle>
             <CardDescription className="text-xs">
@@ -666,7 +666,7 @@ export function PlatformPerformanceView() {
                       <td className="px-2 py-2 text-xs font-mono" dir="ltr">{fmtPrice(t.highest_price ?? t.exit_price)}</td>
                       <td className={`px-2 py-2 text-xs ${returnColor(t.actual_return)}`} dir="ltr">{fmtPct(t.actual_return)}</td>
                       <td className="px-2 py-2 text-xs">
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[10px]">تحقق ✓</Badge>
+                        <Badge className="bg-profit text-profit hover:bg-profit text-[10px]">تحقق ✓</Badge>
                       </td>
                     </tr>
                   ))}
@@ -679,12 +679,12 @@ export function PlatformPerformanceView() {
 
       {/* === Worst Trades (إجباري) === */}
       {data && data.worst_trades.length > 0 && (
-        <Card className="border-red-200 dark:border-red-800/50">
+        <Card className="border-loss dark:border-loss/50">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-red-700 dark:text-red-400">
+            <CardTitle className="flex items-center gap-2 text-base text-loss dark:text-loss">
               <Skull className="h-5 w-5" />
               أسوأ الصفقات (Worst {data.worst_trades.length})
-              <Badge variant="outline" className="text-xs border-red-300 text-red-700">شفافية داخلية</Badge>
+              <Badge variant="outline" className="text-xs border-loss text-loss">شفافية داخلية</Badge>
             </CardTitle>
             <CardDescription className="text-xs">
               أسوأ الصفقات بدون إخفاء — للأمانة الداخلية
@@ -719,12 +719,12 @@ export function PlatformPerformanceView() {
 
       {/* === Excluded Examples (شفافية) === */}
       {data && data.excluded_examples.length > 0 && (
-        <Card className="border-amber-200 dark:border-amber-800/50">
+        <Card className="border-warning dark:border-warning/50">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-amber-700 dark:text-amber-400">
+            <CardTitle className="flex items-center gap-2 text-base text-warning dark:text-warning">
               <AlertTriangle className="h-5 w-5" />
               صفقات مستبعدة من القياس ({data.excluded_examples.length})
-              <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">شفافية</Badge>
+              <Badge variant="outline" className="text-xs border-warning text-warning">شفافية</Badge>
             </CardTitle>
             <CardDescription className="text-xs">
               صفقات استُبعدت من KPI بسبب تكرار/دخول=0/خروج غير منطقي
@@ -752,7 +752,7 @@ export function PlatformPerformanceView() {
                       <td className="px-2 py-2 text-xs font-mono" dir="ltr">{fmtPrice(t.entry_price)}</td>
                       <td className="px-2 py-2 text-xs font-mono" dir="ltr">{fmtPrice(t.exit_price)}</td>
                       <td className="px-2 py-2 text-xs">
-                        <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700">
+                        <Badge variant="outline" className="text-[10px] border-warning text-warning">
                           {t.exclusion_reason || 'unknown'}
                         </Badge>
                       </td>
@@ -800,13 +800,13 @@ export function PlatformPerformanceView() {
                       <td className="px-3 py-2 text-sm text-muted-foreground">{m.n_raw}</td>
                       <td className="px-3 py-2 text-sm font-medium">{m.n_valid}</td>
                       <td className="px-3 py-2 text-sm">{fmtNum(m.win_rate, 1)}%</td>
-                      <td className={`px-3 py-2 text-sm ${m.profit_factor >= 1.3 ? 'text-emerald-600 font-medium' : 'text-amber-600'}`}>
+                      <td className={`px-3 py-2 text-sm ${m.profit_factor >= 1.3 ? 'text-profit font-medium' : 'text-warning'}`}>
                         {fmtNum(m.profit_factor)}
                       </td>
-                      <td className={`px-3 py-2 text-sm ${m.expectancy_pct >= 0 ? 'text-emerald-600' : 'text-red-600'}`} dir="ltr">
+                      <td className={`px-3 py-2 text-sm ${m.expectancy_pct >= 0 ? 'text-profit' : 'text-loss'}`} dir="ltr">
                         {fmtPct(m.expectancy_pct)}
                       </td>
-                      <td className="px-3 py-2 text-sm text-red-600" dir="ltr">{fmtPct(m.max_loss_pct)}</td>
+                      <td className="px-3 py-2 text-sm text-loss" dir="ltr">{fmtPct(m.max_loss_pct)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -849,13 +849,13 @@ export function PlatformPerformanceView() {
                       </td>
                       <td className="px-3 py-2 text-sm">{ch.n}</td>
                       <td className="px-3 py-2 text-sm">{fmtNum(ch.win_rate, 1)}%</td>
-                      <td className={`px-3 py-2 text-sm ${ch.profit_factor >= 1.3 ? 'text-emerald-600 font-medium' : 'text-amber-600'}`}>
+                      <td className={`px-3 py-2 text-sm ${ch.profit_factor >= 1.3 ? 'text-profit font-medium' : 'text-warning'}`}>
                         {fmtNum(ch.profit_factor)}
                       </td>
-                      <td className={`px-3 py-2 text-sm ${ch.expectancy_pct >= 0 ? 'text-emerald-600' : 'text-red-600'}`} dir="ltr">
+                      <td className={`px-3 py-2 text-sm ${ch.expectancy_pct >= 0 ? 'text-profit' : 'text-loss'}`} dir="ltr">
                         {fmtPct(ch.expectancy_pct)}
                       </td>
-                      <td className="px-3 py-2 text-sm text-red-600" dir="ltr">{fmtPct(ch.max_loss_pct)}</td>
+                      <td className="px-3 py-2 text-sm text-loss" dir="ltr">{fmtPct(ch.max_loss_pct)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -881,7 +881,7 @@ export function PlatformPerformanceView() {
                 </div>
                 {data.data_missing.length > 0 && (
                   <div className="mt-2">
-                    <span className="text-amber-600">بيانات ناقصة:</span>{' '}
+                    <span className="text-warning">بيانات ناقصة:</span>{' '}
                     {data.data_missing.join('، ')}
                   </div>
                 )}
