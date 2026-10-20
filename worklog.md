@@ -1164,3 +1164,44 @@ Stage Summary:
 - ✅ API routes: بـ تـ service requests + بـ تـ degrade gracefully لو DB missing.
 - ⚠️ /api/market-pulse بيرجع 500 بسبب missing DB — pre-existing (مش من Phase 0/1 changes).
 - 🎯 Phase 0 + Phase 1 متـverified فعلياً. جاهز لـ Phase 2.
+
+---
+Task ID: P0-COMPONENT-UNIFICATION-PHASE-2-PARTIAL
+Agent: Z.ai Code (الفاحص التقني + منفّذ)
+Task: محسن — "ابدأ وبنفس الاسلوب". تنفيذ Phase 2 codemod migrations بـ نفس الأسلوب (تنفيذ → build → HTTP probe → worklog).
+
+Work Log:
+
+Phase 2.6 — PALETTE_MIGRATION codemod (DONE):
+- بنيت scripts/codemod-palette-to-tokens.py — Python script آمن بـ str.replace (literal, NO regex) — تعلمت من previous disaster (c26374cf).
+- Run 1: 228 replacements في 14 ملف.
+- Run 2 (مع dark: variant removal): 73 replacements في 8 ملفات.
+- TOTAL: 301 replacements في 22 ملف.
+- HTML raw palette occurrences: 1347 (audit) → 1 (after Run 1) → 0 (after Run 2).
+- التحقق: lint Exit 0 + build Exit 0 + HTTP 200 on /, /api/notifications, /api/stocks.
+- Commit: 547a19e.
+
+Phase 2.4 — Inline Pagination migration (PARTIAL — 2 من 7):
+- Migration 1: PersonaTab.tsx (lines 2218-2245) — استبدلت 4 inline Buttons + counter بـ <UnifiedPagination>. شيلت unused ArrowLeft import.
+- Migration 2: LiquidityRadarView.tsx (lines 586-602) — استبدلت inline ChevronRight/ChevronLeft + Buttons بـ <UnifiedPagination>. شيلت unused ChevronLeft/Right imports.
+- التحقق بعد كل migration: lint Exit 0 + build Exit 0 + HTTP 200.
+- Commits: 90a5c02 + 5d289cb.
+
+Phase 2.7 — fmtPrice duplicates (DEFERRED):
+- اكتشفت 16+ local fmtPrice/formatPrice definitions بـ signatures مختلفة (digits, currency, symbol). مش migration 1:1 — لازم per-file analysis. هـ يتـعمل في batch تاني.
+
+Remaining Phase 2 work:
+- 2.4: 5+ inline paginations متـ斋لة (HistoricalTradesTable, ShariaView, و 3+ تانيين).
+- 2.2: 36+ inline empty states → UnifiedEmptyState.
+- 2.3: 328+ inline skeletons → Skeleton variants.
+- 2.5: 268 manual useEffect+fetch → useApiQuery.
+- 2.1: 44+ inline tables → UnifiedTable (most complex).
+- 2.7: 16+ fmtPrice duplicates → import from lib/format (per-file analysis).
+- 2.8: 420 direct fetch('/api/...') → apiGet.
+
+Stage Summary:
+- ✅ Phase 2.6 (PALETTE_MIGRATION) كاملة: 301 replacements، 0 raw palette في HTML.
+- ✅ Phase 2.4 (Pagination) partial: 2/7 migrations.
+- ✅ كل migration متـverified بـ build + HTTP probe.
+- 🎯 الـ methodology شغّالة: تنفيذ → lint → build → HTTP probe → commit → worklog.
+- ⏳ فيه شغل تاني في Phase 2 بس كله بدأ + الـ approach ثابت.
