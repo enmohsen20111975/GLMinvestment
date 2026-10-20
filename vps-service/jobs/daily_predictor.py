@@ -1048,6 +1048,27 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                     # volume ratio (اليوم / متوسط 20 يوم)
                                     _avg_vol_20 = sum(_vols_soft[-21:-1]) / 20 if len(_vols_soft) >= 21 else 0
                                     _today_vol_soft = _vols_soft[-1]
+                                    # BRAVO-VOL-EXTRAP (2026-10-20): لو شغّلنا في نص الجلسة، الحجم جزئي
+                                    # استخرج الحجم الكامل التقديري (elapsed → total session)
+                                    _vol_extrap_note = ""
+                                    try:
+                                        from datetime import datetime as _dt_extrap
+                                        _now_extrap = _dt_extrap.now()
+                                        _scan_date_str = str(scan_date)[:10] if scan_date else ""
+                                        if _scan_date_str == _now_extrap.strftime('%Y-%m-%d') and market_code == 'EGX':
+                                            # EGX session: 10:00-14:30 Cairo = 08:00-12:30 UTC
+                                            _session_start_utc = 8.0
+                                            _session_end_utc = 12.5
+                                            _current_utc = _now_extrap.hour + _now_extrap.minute / 60.0
+                                            if _session_start_utc <= _current_utc < _session_end_utc and _today_vol_soft > 0:
+                                                _elapsed = _current_utc - _session_start_utc
+                                                _total = _session_end_utc - _session_start_utc
+                                                if _elapsed > 0.5:  # على الأقل 30 دقيقة من البيانات
+                                                    _factor = _total / _elapsed
+                                                    _today_vol_soft = _today_vol_soft * _factor
+                                                    _vol_extrap_note = f" (extrapolated {_factor:.1f}x from partial)"
+                                    except Exception:
+                                        pass
                                     _vol_ratio_soft = (_today_vol_soft / _avg_vol_20) if _avg_vol_20 > 0 else 0
                                     # ROC5
                                     _roc5_soft = ((_closes_soft[-1] - _closes_soft[-6]) / _closes_soft[-6] * 100) if len(_closes_soft) >= 6 and _closes_soft[-6] > 0 else 0
@@ -1159,11 +1180,23 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                                 result['signal'] = 'HOLD'
                                     else:
                                         # Task IMPROVEMENT-12: volume data insufficient → احتفظ بالإشارة الأصلية
+                                        # BRAVO-MSG-FIX (2026-10-20): وضّح السبب الحقيقي بدل "insufficient vol data"
                                         if signal in ('HOLD', 'WAIT', 'SELL', 'STRONG_SELL'):
                                             if signal == 'WAIT':
                                                 signal = 'HOLD'
                                                 result['signal'] = 'HOLD'
-                                            print(f"📝 [NON-BUY-SIGNAL] {ticker} on {scan_date}: signal={signal} (insufficient vol data) → keeping for DB", flush=True)
+                                            # اعرض الأسباب الحقيقية للرفض
+                                            _reject_reasons = []
+                                            _vol_thresh = float(get_setting('v402_soft_surge_vol_ratio', default=2.0))
+                                            _roc_thresh = float(get_setting('v402_soft_surge_roc5_min', default=3.0))
+                                            if _vol_ratio_soft < _vol_thresh:
+                                                _reject_reasons.append(f"vol_ratio={_vol_ratio_soft:.2f}x < {_vol_thresh}")
+                                            if _roc5_soft <= _roc_thresh:
+                                                _reject_reasons.append(f"roc5={_roc5_soft:.2f}% <= {_roc_thresh}%")
+                                            if not (_above_sma50_soft or _near_sma50_soft):
+                                                _reject_reasons.append("below SMA50")
+                                            _reasons_str = "; ".join(_reject_reasons) if _reject_reasons else "soft-surge conditions not met"
+                                            print(f"📝 [NON-BUY-SIGNAL] {ticker} on {scan_date}: signal={signal} ({_reasons_str}){_vol_extrap_note} → keeping for DB", flush=True)
                                 else:
                                     # Task IMPROVEMENT-12: insufficient closes → احتفظ بالإشارة الأصلية
                                     if signal in ('HOLD', 'WAIT', 'SELL', 'STRONG_SELL'):
