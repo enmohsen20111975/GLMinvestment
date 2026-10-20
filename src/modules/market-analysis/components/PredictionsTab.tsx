@@ -370,7 +370,17 @@ export function PreviousPredictionsArchive({
  predictions: PreviousPrediction[];
  title?: string;
 }) {
- if (!predictions || predictions.length === 0) return null;
+  const dedupedPredictions = useMemo(() => {
+    const seen = new Set<string>();
+    return (predictions || []).filter((p) => {
+      const key = `${p.ticker || (p as any).stock_symbol || ''}_${p.prediction_date || ''}_${p.status || ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [predictions]);
+
+  if (!dedupedPredictions || dedupedPredictions.length === 0) return null;
 
  return (
  <Card className="border-border">
@@ -398,7 +408,7 @@ export function PreviousPredictionsArchive({
  </tr>
  </thead>
  <tbody>
- {predictions.map((p, i) => {
+ {dedupedPredictions.map((p, i) => {
  // DESIGN-SYSTEM-1: removed local statusColor ternary + sigColor map.
  // Now using <StatusBadge> from '@/components/shared/ui' which imports
  // from '@/lib/design-tokens' (SIGNAL_BADGE_STYLES + STATUS_BADGE_STYLES).
