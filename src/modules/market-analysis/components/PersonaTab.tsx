@@ -422,13 +422,7 @@ function PersonaCard({
  </div>
  )}
 
- {/* تنبيه R/R ضعيف — يوليو 2026 */}
- {data.risk_reward !== null && data.risk_reward !== undefined && data.risk_reward > 0 && data.risk_reward < 1.5 && (data.entry || data.target || data.stop) && (
- <div className="flex items-center gap-1.5 rounded-md bg-loss /40 border border-loss p-2 text-xs text-loss ">
- <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
- <span>⚠️ عائد/مخاطرة {(data.risk_reward ?? 0).toFixed(2)}:1 — المخاطرة أكبر من الربح، الصفقة غير آمنة.</span>
- </div>
- )}
+ {/* ALPHA-RR-GATE-1: الصفقات الـ R/R < 1.5 اتشالت من الجدول — مش محتاجين تحذير */}
 
  {/* Score bar */}
  <div>
@@ -1644,6 +1638,16 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  // (HOLD fallback was deleted in PRED-RADAR-GAP-AUDIT Step 1 —
  // HOLD was masking the real bug instead of fixing it)
  if (signal !== 'BUY' && signal !== 'STRONG_BUY') return null;
+ // ALPHA-RR-GATE-1: HARD GATE R/R >= 1.5 — اقتل أي BUY بـ R/R < 1.5 (ممنوع توصيات Zبالة)
+ const _rr = p.risk_reward != null ? Number(p.risk_reward) : (() => {
+   const _entry = Number(p.entry_price) || 0;
+   const _target = Number(p.target_price) || 0;
+   const _stop = Number(p.stop_loss) || 0;
+   const _risk = _entry - _stop;
+   const _reward = _target - _entry;
+   return _risk > 0 ? _reward / _risk : 0;
+ })();
+ if (_rr > 0 && _rr < 1.5) return null;
  // P26: isLongTerm = conservative (أفق طويل). balanced و gambler = أفق أقصر.
  const isLongTerm = persona === 'conservative' || (persona as string) === 'investor';
  let verdict = isLongTerm ? 'شراء قوي' : 'شراء';
@@ -1703,8 +1707,8 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  console.error('[PersonaTab] fallback failed', fbErr);
  }
 
- // لا توجد بيانات من أي مصدر (DB فاضي) → عرض حالة "جاري التحليل"
- // بدون أي API ثقيل (P42-NO-FREEZE).
+ // لا توجد صفقات مطابقة (R/R >= 1.5) → عرض «كاش وانتظار»
+ // ALPHA-RR-GATE-1: كل الصفقات اتـ filtered (R/R < 1.5) → كاش
  setItems([]);
  } catch (err) {
  setError('فشل في الاتصال بالخادم');
