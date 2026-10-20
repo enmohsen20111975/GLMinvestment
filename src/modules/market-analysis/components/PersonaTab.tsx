@@ -899,10 +899,10 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  <td className={cn('p-2 text-center font-mono text-xs', scoreColor(pd.score))}>
  {Number(score).toFixed(0)}
  </td>
- <td className="p-2 text-center font-mono text-xs">{fmtPrice(pd.entry)}</td>
- <td className="p-2 text-center font-mono text-xs text-profit ">{fmtPrice(pd.target)}</td>
- <td className="p-2 text-center font-mono text-xs text-loss ">{fmtPrice(pd.stop)}</td>
- <td className={cn('p-2 text-center font-mono text-xs', rrColor(rr))}>
+ <td className="p-2 text-center font-mono text-xs tabular-nums">{fmtPrice(pd.entry)}</td>
+ <td className="p-2 text-center font-mono text-xs tabular-nums text-profit glow-profit">{fmtPrice(pd.target)}</td>
+ <td className="p-2 text-center font-mono text-xs tabular-nums text-loss glow-loss">{fmtPrice(pd.stop)}</td>
+ <td className={cn('p-2 text-center font-mono text-xs tabular-nums font-bold', rrColor(rr))}>
  {rr != null ? `${rr.toFixed(2)}:1` : '—'}
  </td>
  <td className="p-2 text-center text-xs hidden md:table-cell">{pd.timeframe || '—'}</td>
