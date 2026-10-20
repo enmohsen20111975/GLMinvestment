@@ -431,7 +431,7 @@ function StockHeaderBar({
  <div className="flex items-center gap-4">
  <div className={cn(
  'w-14 h-14 rounded-xl flex items-center justify-center text-foreground font-bold text-xl',
- isPositive ? 'bg-gradient-to-br from-profit to-whale' : 'bg-gradient-to-br from-loss to-loss'
+ isPositive ? 'from-profit to-whale' : 'from-loss to-loss'
  )}>
  {ticker.slice(0, 2)}
  </div>
@@ -698,7 +698,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  <span className="text-3xl font-bold tabular-nums">{(rsi ?? 0).toFixed(1)}</span>
  <span className={cn('text-sm font-semibold', rsiColor)}>{rsiStatus}</span>
  </div>
- <div className="relative h-3 bg-gradient-to-r from-profit via-warning to-loss rounded-full">
+ <div className="relative h-3 from-profit via-warning to-loss rounded-full">
  <div
  className="absolute top-0 -mt-1 w-1 h-5 bg-foreground rounded"
  style={{ left: `${Math.min(100, Math.max(0, rsi))}%` }}
@@ -796,7 +796,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  </div>
  {t.high_52w && t.low_52w && current > 0 && (
  <>
- <div className="relative h-2 bg-gradient-to-r from-loss via-warning to-profit rounded-full mt-2">
+ <div className="relative h-2 from-loss via-warning to-profit rounded-full mt-2">
  <div
  className="absolute top-0 -mt-1 w-1 h-4 bg-foreground rounded"
  style={{

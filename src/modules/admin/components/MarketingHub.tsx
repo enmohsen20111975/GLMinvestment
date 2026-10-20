@@ -139,7 +139,7 @@ function CampaignBuilder({ feature, market, ctaGoal }: { feature: FeatureKey; ma
  onClick={generate}
  disabled={generating}
  size="lg"
- className="gap-2 bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-foreground"
+ className="gap-2 from-warning to-loss hover:from-warning hover:to-loss text-foreground"
  >
  {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
  {generating ? 'بيبني الحملة...' : 'ابنِ الحملة كاملة'}
@@ -242,7 +242,7 @@ function CampaignBuilder({ feature, market, ctaGoal }: { feature: FeatureKey; ma
  {cards.length === 0 && !generating && (
  <Card className="border-dashed">
  <CardContent className="py-10 flex flex-col items-center text-center gap-3">
- <div className="w-12 h-12 rounded-full bg-gradient-to-br from-warning/20 to-loss/20 flex items-center justify-center">
+ <div className="w-12 h-12 rounded-full flex items-center justify-center">
  <Megaphone className="w-6 h-6 text-warning" />
  </div>
  <div>
@@ -363,10 +363,10 @@ export function MarketingHub() {
  return (
  <div className="space-y-6">
  {/* Header */}
- <Card className="border-whale/20 bg-gradient-to-br from-whale/5 via-cyan-500/5 to-sky-500/5">
+ <Card className="border-whale/20 via-cyan-500/5 to-sky-500/5">
  <CardHeader>
  <div className="flex items-start gap-3">
- <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-whale to-cyan-500 flex items-center justify-center shrink-0">
+ <div className="w-11 h-11 rounded-xl from-whale to-cyan-500 flex items-center justify-center shrink-0">
  <Megaphone className="w-6 h-6 text-foreground" />
  </div>
  <div className="flex-1 min-w-0">

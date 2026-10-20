@@ -104,7 +104,7 @@ export function SeasonalitySignalsWidget() {
  <CardHeader className="pb-3">
  <div className="flex items-center justify-between">
  <CardTitle className="text-sm font-semibold flex items-center gap-2">
- <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-whale to-cyan-500 flex items-center justify-center">
+ <div className="w-8 h-8 rounded-lg from-whale to-cyan-500 flex items-center justify-center">
  <Calendar className="w-4 h-4 text-foreground" />
  </div>
  إشارات الموسمية (EGX)

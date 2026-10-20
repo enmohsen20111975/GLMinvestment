@@ -223,7 +223,7 @@ export function MarketStatusExport() {
  const busy = downloading || publishing;
 
  return (
- <Card className="border-orange-200 bg-gradient-to-br from-orange-50 via-warning to-orange-100/40">
+ <Card className="border-orange-200 from-orange-50 via-warning to-orange-100/40">
  <CardContent className="p-4 space-y-4">
  {/* العنوان + الأزرار */}
  <div className="flex items-center justify-between flex-wrap gap-3">

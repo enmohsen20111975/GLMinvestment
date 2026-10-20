@@ -871,7 +871,7 @@ export default function AdminEducationalCardsPage() {
     return (
       <div
         dir="rtl"
-        className="min-h-screen bg-gradient-to-br from-amber-50/30 via-background to-emerald-50/30 dark:from-amber-950/10 dark:via-background dark:to-emerald-950/10 flex items-center justify-center"
+        className="min-h-screen from-amber-50/30 via-background to-emerald-50/30 dark:from-amber-950/10 dark:via-background dark:to-emerald-950/10 flex items-center justify-center"
       >
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 animate-spin text-amber-600 mx-auto" />
@@ -887,7 +887,7 @@ export default function AdminEducationalCardsPage() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-gradient-to-br from-amber-50/30 via-background to-emerald-50/30 dark:from-amber-950/10 dark:via-background dark:to-emerald-950/10"
+      className="min-h-screen from-amber-50/30 via-background to-emerald-50/30 dark:from-amber-950/10 dark:via-background dark:to-emerald-950/10"
     >
       <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-7xl">
         {/* ====================================================================
@@ -951,7 +951,7 @@ export default function AdminEducationalCardsPage() {
         ==================================================================== */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {/* Total generated */}
-          <Card className="border-amber-200/60 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/60 to-amber-100/30 dark:from-amber-950/30 dark:to-amber-900/10">
+          <Card className="border-amber-200/60 dark:border-amber-900/50 from-amber-50/60 to-amber-100/30 dark:from-amber-950/30 dark:to-amber-900/10">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between text-sm font-medium text-amber-700 dark:text-amber-300">
                 <span>إجمالي الكروت المولّدة</span>
@@ -967,7 +967,7 @@ export default function AdminEducationalCardsPage() {
           </Card>
 
           {/* Published */}
-          <Card className="border-emerald-200/60 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50/60 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-900/10">
+          <Card className="border-emerald-200/60 dark:border-emerald-900/50 from-emerald-50/60 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-900/10">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between text-sm font-medium text-emerald-700 dark:text-emerald-300">
                 <span>الكروت المنشورة</span>
@@ -983,7 +983,7 @@ export default function AdminEducationalCardsPage() {
           </Card>
 
 {/* Lessons available */}
-           <Card className="border-teal-200/60 dark:border-teal-900/50 bg-gradient-to-br from-teal-50/60 to-teal-100/30 dark:from-teal-950/30 dark:to-teal-900/10">
+           <Card className="border-teal-200/60 dark:border-teal-900/50 from-teal-50/60 to-teal-100/30 dark:from-teal-950/30 dark:to-teal-900/10">
              <CardHeader className="pb-2">
                <CardTitle className="flex items-center justify-between text-sm font-medium text-teal-700 dark:text-teal-300">
                  <span>الدروس المتاحة</span>
@@ -1008,7 +1008,7 @@ export default function AdminEducationalCardsPage() {
            </Card>
 
           {/* Last generation */}
-          <Card className="border-orange-200/60 dark:border-orange-900/50 bg-gradient-to-br from-orange-50/60 to-orange-100/30 dark:from-orange-950/30 dark:to-orange-900/10">
+          <Card className="border-orange-200/60 dark:border-orange-900/50 from-orange-50/60 to-orange-100/30 dark:from-orange-950/30 dark:to-orange-900/10">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between text-sm font-medium text-orange-700 dark:text-orange-300">
                 <span>آخر توليد</span>
@@ -1028,7 +1028,7 @@ export default function AdminEducationalCardsPage() {
             AVAILABLE LESSONS + GENERATION SETTINGS
         ==================================================================== */}
         <section>
-          <Card className="border-amber-200/60 dark:border-amber-900/40 bg-gradient-to-l from-amber-50/40 to-emerald-50/40 dark:from-amber-950/20 dark:to-emerald-950/20">
+          <Card className="border-amber-200/60 dark:border-amber-900/40 from-amber-50/40 to-emerald-50/40 dark:from-amber-950/20 dark:to-emerald-950/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Sparkles className="w-5 h-5 text-amber-600" />

@@ -528,9 +528,9 @@ const StockCard = memo(function StockCard({
  className={cn(
  'absolute top-0 h-full rounded-full transition-all',
  isPositive
- ? 'bg-gradient-to-l from-profit to-profit'
+ ? 'from-profit to-profit'
  : isNegative
- ? 'bg-gradient-to-l from-loss to-loss'
+ ? 'from-loss to-loss'
  : 'bg-muted-foreground/30'
  )}
  style={{ width: `${Math.min(100, Math.max(0, pricePosition))}%` }}

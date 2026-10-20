@@ -130,7 +130,7 @@ export function LearnedLessonsDashboard({ initialLimit = 50 }: LearnedLessonsDas
  return (
  <div className="space-y-4" dir="rtl">
  {/* Header */}
- <Card className="border-violet-500/30 bg-gradient-to-l from-violet-500/5 to-fuchsia-500/5">
+ <Card className="border-violet-500/30 from-violet-500/5 to-fuchsia-500/5">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-2">
  <div className="flex items-center gap-2">

@@ -882,7 +882,7 @@ export function MarketPulseWidget() {
 
  {/* القطاع الأكثر نشاطاً */}
  {top && (
- <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-gradient-to-l from-profit/60 to-transparent px-2.5 py-2 /30">
+ <div className="flex items-center justify-between gap-2 rounded-lg border border-border to-transparent px-2.5 py-2 /30">
  <div className="flex items-center gap-2">
  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-profit text-profit/60">
  {top.avg_change >= 0 ? (

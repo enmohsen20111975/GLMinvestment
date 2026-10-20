@@ -470,7 +470,7 @@ export function MyStocksBriefing() {
  // ─── Not authenticated ─────────────────────────────────────
  if (!isAuthenticated) {
  return (
- <Card className="border-profit bg-gradient-to-br from-profit/50 to-background /20">
+ <Card className="border-profit to-background /20">
  <CardHeader className="pb-2">
  <CardTitle className="text-base flex items-center gap-2">
  <BellRing className="w-4 h-4 text-profit" />
@@ -557,7 +557,7 @@ export function MyStocksBriefing() {
  const hasAlerts = alerts && alerts.total > 0;
 
  return (
- <Card className="border-profit bg-gradient-to-br from-profit/30 via-background to-background /10">
+ <Card className="border-profit via-background to-background /10">
  <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
  <div className="flex items-center gap-2 min-w-0">
  <div className="relative flex-shrink-0">

@@ -1196,7 +1196,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
  width: '800px',
  minHeight: '600px',
  padding: '0',
- background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+ background: 'transparent',
  borderRadius: '20px',
  fontFamily: 'Arial, sans-serif',
  direction: 'rtl',
@@ -1206,7 +1206,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
  >
  {/* Header */}
  <div style={{
- background: 'linear-gradient(135deg, #ea580c, #d97706)',
+ background: 'transparent',
  padding: '20px 28px',
  display: 'flex',
  justifyContent: 'space-between',
@@ -1998,10 +1998,10 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  borderClass={isLongTerm ? 'border-profit' : (persona === 'balanced' ? 'border-warning' : 'border-fuchsia-200')}
  bgClass={
  isLongTerm
- ? 'bg-gradient-to-br from-profit via-whale/40 to-profit/40'
+ ? 'from-profit '
  : persona === 'balanced'
- ? 'bg-gradient-to-br from-warning via-yellow-50/40 to-warning/40'
- : 'bg-gradient-to-br from-fuchsia-50 via-pink-50/40 to-fuchsia-100/40'
+ ? 'from-warning via-yellow-50/40 '
+ : 'from-fuchsia-50 via-pink-50/40 to-fuchsia-100/40'
  }
  hasData={items.length > 0}
  emptyHint={

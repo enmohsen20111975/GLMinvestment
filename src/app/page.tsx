@@ -873,7 +873,7 @@ function AppShell() {
     if (botLinkToken) {
       return (
         <div
-          className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/20 dark:via-background dark:to-background p-4 gap-4"
+          className="min-h-screen flex flex-col items-center justify-center from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/20 dark:via-background dark:to-background p-4 gap-4"
           dir="rtl"
         >
           <div className="max-w-md w-full rounded-xl border border-primary/20 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
@@ -898,7 +898,7 @@ function AppShell() {
   if (authStatus === 'loading') {
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background"
+        className="min-h-screen flex items-center justify-center from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background"
         dir="rtl"
       >
         <div className="flex flex-col items-center gap-3">

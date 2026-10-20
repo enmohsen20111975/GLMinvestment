@@ -1116,7 +1116,7 @@ export function SuperLearningSystem() {
  {/* Header */}
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-gradient-to-br from-violet-500 via-purple-600 to-whale rounded-xl shadow-lg">
+ <div className="p-2.5 from-violet-500 via-purple-600 to-whale rounded-xl shadow-lg">
  <Brain className="h-6 w-6 text-foreground" />
  </div>
  <div>
@@ -1269,7 +1269,7 @@ export function SuperLearningSystem() {
  {/* 5-Pillar Smart Learning & Predictions Engine Tab */}
  <TabsContent value="predictions-engine" className="space-y-6">
  {/* Pillar 1 & 4: Generation Control & Dry-Run / Purge Panel */}
- <Card className="border-profit bg-gradient-to-br from-profit/5 via-card to-card">
+ <Card className="border-profit via-card to-card">
  <CardHeader className="pb-3">
  <div className="flex items-center justify-between flex-wrap gap-2">
  <CardTitle className="text-base flex items-center gap-2">
@@ -1516,31 +1516,31 @@ export function SuperLearningSystem() {
 
  {/* Pillar 2: Accuracy & P&L Analytics KPIs */}
  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
- <Card className="p-3 bg-gradient-to-br from-profit/10 to-card">
+ <Card className="p-3 to-card">
  <span className="text-xs text-muted-foreground font-medium">معدل النجاح (Win Rate)</span>
  <p className="text-2xl font-bold text-profit mt-1">{predictionMetrics.winRate}%</p>
  <span className="text-xs text-muted-foreground">{predictionMetrics.winning} رابحة من {predictionMetrics.total}</span>
  </Card>
 
- <Card className="p-3 bg-gradient-to-br from-primary/10 to-card">
+ <Card className="p-3 to-card">
  <span className="text-xs text-muted-foreground font-medium">عامل الربحية (Profit Factor)</span>
  <p className="text-2xl font-bold text-primary mt-1">{predictionMetrics.profitFactor}</p>
  <span className="text-xs text-muted-foreground">ممتاز ({'>'} 2.0)</span>
  </Card>
 
- <Card className="p-3 bg-gradient-to-br from-purple-500/10 to-card">
+ <Card className="p-3 from-purple-500/10 to-card">
  <span className="text-xs text-muted-foreground font-medium">إجمالي العائد (Total Return)</span>
  <p className="text-2xl font-bold text-primary mt-1">+{predictionMetrics.totalReturn}%</p>
  <span className="text-xs text-muted-foreground">منذ {fromDate}</span>
  </Card>
 
- <Card className="p-3 bg-gradient-to-br from-loss/10 to-card">
+ <Card className="p-3 to-card">
  <span className="text-xs text-muted-foreground font-medium">أقصى هبوط (Max Drawdown)</span>
  <p className="text-2xl font-bold text-loss mt-1">-{predictionMetrics.maxDrawdown}%</p>
  <span className="text-xs text-muted-foreground">مخاطرة آمنة للغاية</span>
  </Card>
 
- <Card className="p-3 bg-gradient-to-br from-warning/10 to-card">
+ <Card className="p-3 to-card">
  <span className="text-xs text-muted-foreground font-medium">متوسط الربح / الخسارة</span>
  <p className="text-lg font-bold text-foreground mt-1">
  <span className="text-profit">+{predictionMetrics.avgWinner}%</span> / <span className="text-loss">-{predictionMetrics.avgLoser}%</span>
@@ -2437,7 +2437,7 @@ export function SuperLearningSystem() {
  <Button
  onClick={runIterativeLearningSystem}
  disabled={isRunning || loading !== null}
- className="gap-2 bg-gradient-to-r from-profit to-whale hover:from-profit hover:to-whale"
+ className="gap-2 from-profit to-whale hover:from-profit hover:to-whale"
  >
  {loading === 'iterative' ? (
  <Loader2 className="w-4 h-4 animate-spin" />

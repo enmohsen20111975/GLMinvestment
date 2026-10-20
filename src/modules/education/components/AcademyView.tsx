@@ -338,7 +338,7 @@ function AdvancedLessonsTab() {
  return (
  <div dir="rtl" className="flex min-h-[600px] flex-col gap-4">
  {/* Header banner */}
- <div className="rounded-lg border bg-gradient-to-l from-warning/50 to-transparent p-4 dark:from-warning/20">
+ <div className="rounded-lg border to-transparent p-4 dark:">
  <div className="flex items-start gap-3">
  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning text-xl /50">
  <GraduationCap className="h-5 w-5 text-warning " />
@@ -415,7 +415,7 @@ function AdvancedLessonsTab() {
  <main className="min-w-0">
  <article className="rounded-lg border bg-card">
  {/* Lesson header */}
- <header className="border-b bg-gradient-to-l from-warning/50 to-transparent p-5 dark:from-warning/20">
+ <header className="border-b to-transparent p-5 dark:">
  <div className="flex flex-wrap items-start justify-between gap-3">
  <div className="flex items-start gap-3">
  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-warning text-2xl /50">
@@ -1135,7 +1135,7 @@ function LiveMarketScanner() {
  : '—';
 
  return (
- <Card className="overflow-hidden border-profit/20 bg-gradient-to-br from-profit/20 via-card to-card">
+ <Card className="overflow-hidden border-profit/20 via-card to-card">
  <CardHeader className="gap-3 border-b bg-profit/10 px-4 py-3 sm:px-6">
  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
  <div className="flex items-center gap-2">
@@ -1656,7 +1656,7 @@ function ScenarioToneIcon({ tone }: { tone: ScenarioTone }) {
 /* ---------- Section 2 component ---------- */
 function ScenarioDecisionTree() {
  return (
- <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-warning/10 via-card to-card">
+ <Card className="overflow-hidden border-warning/20 via-card to-card">
  <CardHeader className="gap-2 border-b bg-warning/20 px-4 py-3 sm:px-6">
  <div className="flex items-center gap-2">
  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-warning/15 text-warning ">
@@ -1962,7 +1962,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
 
 function ActionPlaybooks() {
  return (
- <Card className="overflow-hidden border-profit/20 bg-gradient-to-br from-profit/10 via-card to-card">
+ <Card className="overflow-hidden border-profit/20 via-card to-card">
  <CardHeader className="gap-2 border-b bg-profit/20 px-4 py-3 sm:px-6">
  <div className="flex items-center gap-2">
  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-profit/15 text-profit ">
@@ -2125,7 +2125,7 @@ function PositionSizeCalculator() {
  }, [capital, riskPct, entryPrice, stopPrice]);
 
  return (
- <Card className="overflow-hidden border-profit/20 bg-gradient-to-br from-profit/10 via-card to-card">
+ <Card className="overflow-hidden border-profit/20 via-card to-card">
  <CardHeader className="gap-2 border-b bg-profit/20 px-4 py-3 sm:px-6">
  <div className="flex items-center gap-2">
  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-profit/15 text-profit ">
@@ -2297,7 +2297,7 @@ function BiasDetectorQuiz() {
  };
 
  return (
- <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-warning/10 via-card to-card">
+ <Card className="overflow-hidden border-warning/20 via-card to-card">
  <CardHeader className="gap-2 border-b bg-warning/20 px-4 py-3 sm:px-6">
  <div className="flex items-center gap-2">
  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-warning/15 text-warning ">

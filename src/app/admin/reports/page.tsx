@@ -34,7 +34,7 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-background p-4 md:p-6 space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full from-amber-400 to-amber-600 flex items-center justify-center">
           <FileText className="w-6 h-6 text-slate-900" />
         </div>
         <div>
@@ -69,7 +69,7 @@ export default function ReportsPage() {
                   className={cn(
                     'flex flex-col items-center gap-0.5 h-auto py-2 px-4 min-w-[100px]',
                     isActive
-                      ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0'
+                      ? 'from-amber-500 to-amber-600 text-white border-0'
                       : 'hover:border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/20'
                   )}
                 >
@@ -93,7 +93,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Content Calendar Hint */}
-      <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
+      <Card className="from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
         <CardContent className="p-4">
           <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-1.5">
             <Calendar className="w-4 h-4" />

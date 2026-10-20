@@ -220,7 +220,7 @@ export function WatchlistIntelligenceSection() {
  <p className="text-2xl font-bold">{summary.total_watching}</p>
  </Card>
 
- <Card className="p-4 gap-2 bg-gradient-to-br from-profit to-transparent /20">
+ <Card className="p-4 gap-2 from-profit to-transparent /20">
  <div className="flex items-center gap-2 text-muted-foreground mb-1">
  <TrendingUp className="w-4 h-4 text-profit" />
  <span className="text-xs font-medium">فرص شراء</span>
@@ -232,7 +232,7 @@ export function WatchlistIntelligenceSection() {
  />
  </Card>
 
- <Card className="p-4 gap-2 bg-gradient-to-br from-loss to-transparent /20">
+ <Card className="p-4 gap-2 from-loss to-transparent /20">
  <div className="flex items-center gap-2 text-muted-foreground mb-1">
  <TrendingDown className="w-4 h-4 text-loss" />
  <span className="text-xs font-medium">تحذيرات</span>
@@ -244,7 +244,7 @@ export function WatchlistIntelligenceSection() {
  />
  </Card>
 
- <Card className="p-4 gap-2 bg-gradient-to-br from-primary to-transparent dark:from-primary/20">
+ <Card className="p-4 gap-2 from-primary to-transparent dark:">
  <div className="flex items-center gap-2 text-muted-foreground mb-1">
  <Target className="w-4 h-4 text-whale" />
  <span className="text-xs font-medium">قرب الدعم</span>
@@ -252,7 +252,7 @@ export function WatchlistIntelligenceSection() {
  <p className="text-2xl font-bold text-whale">{summary.near_support_count}</p>
  </Card>
 
- <Card className="p-4 gap-2 bg-gradient-to-br from-warning to-transparent dark:from-warning/20">
+ <Card className="p-4 gap-2 from-warning to-transparent dark:">
  <div className="flex items-center gap-2 text-muted-foreground mb-1">
  <AlertTriangle className="w-4 h-4 text-warning" />
  <span className="text-xs font-medium">قرب المقاومة</span>

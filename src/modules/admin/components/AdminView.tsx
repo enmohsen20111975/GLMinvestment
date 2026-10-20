@@ -1515,7 +1515,7 @@ export function AdminView() {
  );
  }}
  title="التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py)"
- className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-profit to-whale hover:from-profit hover:to-whale text-foreground"
+ className="h-auto py-4 flex-col gap-2 from-profit to-whale hover:from-profit hover:to-whale text-foreground"
  >
  <Sparkles className="w-6 h-6" />
  <span>توليد التوقعات</span>

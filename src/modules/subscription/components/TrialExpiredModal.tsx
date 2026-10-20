@@ -85,7 +85,7 @@ export function TrialExpiredModal({ isExpired, onResolved, hardBlock = false }: 
  </button>
 
  {/* Header */}
- <div className="bg-gradient-to-br from-warning via-warning to-profit px-6 pt-7 pb-6 text-center text-foreground">
+ <div className="from-warning via-warning to-profit px-6 pt-7 pb-6 text-center text-foreground">
  <div className="inline-flex items-center justify-center mb-3 size-14 rounded-2xl bg-white/15 ring-4 ring-white/25 backdrop-blur">
  <Clock className="size-7" />
  </div>
@@ -113,7 +113,7 @@ export function TrialExpiredModal({ isExpired, onResolved, hardBlock = false }: 
  <Button
  onClick={goSubscribe}
  size="lg"
- className="w-full h-11 text-base font-bold bg-gradient-to-r from-warning to-profit hover:from-warning hover:to-profit text-foreground shadow-md gap-2"
+ className="w-full h-11 text-base font-bold from-warning to-profit hover:from-warning hover:to-profit text-foreground shadow-md gap-2"
  >
  <Crown className="size-5" />
  اشترك الآن

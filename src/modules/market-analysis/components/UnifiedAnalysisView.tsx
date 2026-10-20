@@ -243,7 +243,7 @@ export default function UnifiedAnalysisView() {
 
  {/* Header */}
  <div className="mb-8 print:hidden">
- <h1 className="text-3xl font-bold bg-gradient-to-l from-primary to-purple-400 bg-clip-text text-transparent">
+ <h1 className="text-3xl font-bold from-primary to-purple-400 bg-clip-text text-transparent">
  نظام التحليل الموحد
  </h1>
  <p className="text-muted-foreground mt-1 text-sm">
@@ -357,7 +357,7 @@ export default function UnifiedAnalysisView() {
  <button
  onClick={activeTab === 'analyze' ? handleAnalyze : handleCompare}
  disabled={loading}
- className="w-full py-3 bg-gradient-to-l from-primary to-purple-600 rounded-xl font-semibold text-foreground disabled:opacity-50 transition-opacity"
+ className="w-full py-3 from-primary to-purple-600 rounded-xl font-semibold text-foreground disabled:opacity-50 transition-opacity"
  >
  {loading ? '⏳ جاري التحليل...' : activeTab === 'analyze' ? '🔍 تحليل' : '⚖️ مقارنة الشخصيات'}
  </button>
@@ -373,7 +373,7 @@ export default function UnifiedAnalysisView() {
  <button
  onClick={handleScan}
  disabled={loading}
- className="w-full py-3 bg-gradient-to-l from-primary to-purple-600 rounded-xl font-semibold text-foreground disabled:opacity-50 transition-opacity"
+ className="w-full py-3 from-primary to-purple-600 rounded-xl font-semibold text-foreground disabled:opacity-50 transition-opacity"
  >
  {loading ? '⏳ جاري الفحص...' : `🔭 فحص ${selectedMarket}`}
  </button>

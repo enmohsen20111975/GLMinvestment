@@ -638,10 +638,10 @@ export function ContentStudioHub() {
  return (
  <div className="space-y-6">
  {/* Header */}
- <Card className="border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5">
+ <Card className="border-violet-500/30 from-violet-500/5 to-fuchsia-500/5">
  <CardHeader>
  <div className="flex items-start gap-3">
- <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shrink-0">
+ <div className="w-11 h-11 rounded-xl from-violet-500 to-fuchsia-500 flex items-center justify-center shrink-0">
  <Film className="w-6 h-6 text-foreground" />
  </div>
  <div className="flex-1 min-w-0">
@@ -816,7 +816,7 @@ export function ContentStudioHub() {
  onClick={handleRender}
  disabled={renderer.renderState === 'rendering'}
  size="lg"
- className="gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-foreground"
+ className="gap-2 from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-foreground"
  >
  {renderer.renderState === 'rendering' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
  {renderer.renderState === 'rendering' ? 'بيشتغل...' : 'أنتج الفيديو'}
@@ -861,7 +861,7 @@ export function ContentStudioHub() {
 
  {renderer.renderState === 'rendering' && (
  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
- <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all" style={{ width: `${Math.round(renderer.renderProgress * 100)}%` }} />
+ <div className="h-full from-violet-500 to-fuchsia-500 transition-all" style={{ width: `${Math.round(renderer.renderProgress * 100)}%` }} />
  </div>
  )}
 

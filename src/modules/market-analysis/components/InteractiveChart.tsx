@@ -1843,7 +1843,7 @@ export function InteractiveChart(props: FullChartProps) {
  First thing the eye sees. Only renders when canonical + showDecisionHeader.
  ════════════════════════════════════════════════════════════════════════ */}
  {canonical && showDecisionHeader && (
- <div className="px-4 py-3 border-b border-border bg-gradient-to-l from-muted/50 to-card rounded-t-xl">
+ <div className="px-4 py-3 border-b border-border to-card rounded-t-xl">
  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  {/* Right: ticker name + signal */}
  <div className="flex items-center gap-3 flex-wrap">
@@ -2050,7 +2050,7 @@ export function InteractiveChart(props: FullChartProps) {
  {showRescueCTA && tickerName && (
  <a
  href={`/rescue?ticker=${encodeURIComponent(tickerName)}`}
- className="block p-4 rounded-xl border border-border bg-gradient-to-l from-warning/10 to-transparent hover:from-warning/20 transition-all group"
+ className="block p-4 rounded-xl border border-border to-transparent hover:transition-all group"
  >
  <div className="flex items-center justify-between gap-3">
  <div className="flex items-center gap-2">

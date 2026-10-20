@@ -14,7 +14,7 @@ export default function FeaturesPage() {
   return (
     <div className="min-h-screen bg-background page-transition" dir="rtl">
       <section className="relative overflow-hidden gradient-border mx-4 mt-6 rounded-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-profit/5" />
+        <div className="absolute inset-0 via-transparent " />
         <div className="relative px-6 py-16 text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />

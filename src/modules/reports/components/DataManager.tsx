@@ -164,7 +164,7 @@ function SubscriptionGate({ tier }: { tier: string }) {
  {/* Upgrade button */}
  <Button
  onClick={() => router.push('/subscription')}
- className="bg-gradient-to-l from-profit to-profit hover:from-profit hover:to-profit text-foreground gap-2 px-6"
+ className="from-profit to-profit hover:from-profit hover:to-profit text-foreground gap-2 px-6"
  >
  <Crown className="w-4 h-4" />
  ترقية إلى باقة {upgrade.requiredTierAr}

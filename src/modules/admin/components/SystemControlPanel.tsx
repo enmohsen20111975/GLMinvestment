@@ -549,7 +549,7 @@ function PricesTab({ data, runAction, actionLoading }: any) {
  const fmtNum = (n: number | null): string => n === null ? '—' : n.toLocaleString();
  return (
  <div className="space-y-3">
- <Card className="bg-gradient-to-br from-profit/10 to-cyan-500/5 border-profit/20 p-4">
+ <Card className="to-cyan-500/5 border-profit/20 p-4">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2">
  <TrendingUp className="w-5 h-5 text-profit" />
@@ -608,7 +608,7 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
 
  return (
  <div className="space-y-3">
- <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border-purple-500/20 p-4">
+ <Card className="from-purple-500/10 to-pink-500/5 border-purple-500/20 p-4">
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-2">
  <Zap className="w-5 h-5 text-primary" />

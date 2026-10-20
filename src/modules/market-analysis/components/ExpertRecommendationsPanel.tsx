@@ -960,7 +960,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  return (
  <div dir="rtl" className="space-y-4 text-right">
  {/* Header */}
- <Card className="border-profit/20 bg-gradient-to-l from-profit/60 to-transparent">
+ <Card className="border-profit/20 to-transparent">
  <CardHeader className="pb-3">
  <div className="flex items-center justify-between gap-2 flex-wrap">
  <div>

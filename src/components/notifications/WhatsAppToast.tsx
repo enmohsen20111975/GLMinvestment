@@ -60,10 +60,10 @@ export function WhatsAppToast({
  className={cn(
  'w-7 h-7 rounded-full flex items-center justify-center text-foreground shadow-sm',
  isExit
- ? 'bg-gradient-to-tr from-loss to-loss'
+ ? 'from-loss to-loss'
  : isExplosive
- ? 'bg-gradient-to-tr from-warning to-warning'
- : 'bg-gradient-to-tr from-profit to-profit'
+ ? 'from-warning to-warning'
+ : 'from-profit to-profit'
  )}
  >
  {isExit ? (

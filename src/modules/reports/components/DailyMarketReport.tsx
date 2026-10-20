@@ -103,14 +103,14 @@ function ReportHeader({
 }) {
  return (
  <div
- className="relative overflow-hidden rounded-2xl border border-warning/20 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:border-warning/20"
+ className="relative overflow-hidden rounded-2xl border border-warning/20 from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:border-warning/20"
  dir="rtl"
  >
  {/* Top gold accent line */}
- <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
+ <div className="absolute top-0 right-0 left-0 h-[3px] from-warning via-warning to-warning" />
  <div className="flex items-center justify-between gap-4 flex-wrap">
  <div className="flex items-center gap-3">
- <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-warning via-warning to-profit flex items-center justify-center shadow-lg shadow-amber-500/20">
+ <div className="w-14 h-14 rounded-xl from-warning via-warning to-profit flex items-center justify-center shadow-lg shadow-amber-500/20">
  <BarChart3 className="w-7 h-7 text-[#0a0e1a]" strokeWidth={2.5} />
  </div>
  <div>
@@ -158,7 +158,7 @@ function KpiTile({
  positive: 'border-profit/20 bg-profit/10 text-profit',
  negative: 'border-loss/20 bg-loss/10 text-loss',
  warning: 'border-warning/20 bg-warning/10 text-warning',
- gold: 'border-warning/20 bg-gradient-to-br from-warning/15 to-warning/5 text-warning',
+ gold: 'border-warning/20 text-warning',
  neutral: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
  };
  return (
@@ -603,7 +603,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  {/* AI Summary (Python-generated text) */}
  {report.content && (
  <section aria-label="الملخص الذكي">
- <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+ <Card className="overflow-hidden border-warning/20 from-[#0d1320] to-[#10162a]">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Activity className="w-5 h-5" />

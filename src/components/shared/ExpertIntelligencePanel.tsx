@@ -244,7 +244,7 @@ export function ExpertIntelligencePanel({
  return (
  <div className={cn('space-y-4', className)}>
  {!compact && (
- <div className="bg-gradient-to-r from-profit to-whale /20 dark:to-whale/20 p-3 sm:p-4 rounded-lg border border-profit ">
+ <div className="from-profit to-whale /20 dark:p-3 sm:p-4 rounded-lg border border-profit ">
  <div className="flex items-center gap-2">
  <Crosshair className="h-5 w-5 text-profit flex-shrink-0" />
  <span className="font-bold text-profit text-sm sm:text-base">

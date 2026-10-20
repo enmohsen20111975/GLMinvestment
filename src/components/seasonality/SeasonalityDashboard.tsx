@@ -182,25 +182,25 @@ export function SeasonalityDashboard() {
  {/* Summary Cards */}
  {summary && (
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
- <Card className="bg-gradient-to-br from-success to-success dark:from-success/20 dark:to-success/20">
+ <Card className="from-success to-success dark:dark:">
  <CardContent className="p-4">
  <div className="text-sm text-muted-foreground">إجمالي الإشارات</div>
  <div className="text-3xl font-bold text-success">{safeNum(summary.total_signals, 0)}</div>
  </CardContent>
  </Card>
- <Card className="bg-gradient-to-br from-profit to-profit /20 /20">
+ <Card className="from-profit to-profit /20 /20">
  <CardContent className="p-4">
  <div className="text-sm text-muted-foreground">شراء قوي</div>
  <div className="text-3xl font-bold text-profit">{safeNum(summary.strong_buy_signals, 0)}</div>
  </CardContent>
  </Card>
- <Card className="bg-gradient-to-br from-primary to-primary dark:from-primary/20 dark:to-primary/20">
+ <Card className="from-primary to-primary dark:dark:">
  <CardContent className="p-4">
  <div className="text-sm text-muted-foreground">شراء</div>
  <div className="text-3xl font-bold text-whale">{safeNum(summary.buy_signals, 0)}</div>
  </CardContent>
  </Card>
- <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
+ <Card className="from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
  <CardContent className="p-4">
  <div className="text-sm text-muted-foreground">متوسط الثقة</div>
  <div className="text-3xl font-bold text-primary">{safeNum(summary.avg_confidence, 0)}%</div>

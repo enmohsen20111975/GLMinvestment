@@ -2153,7 +2153,7 @@ export function StrategySandbox() {
  className="space-y-4 py-2"
  >
  {/* Chart area */}
- <div className="rounded-xl border border-border/60 bg-gradient-to-b from-muted/20 to-transparent p-3 sm:p-4">
+ <div className="rounded-xl border border-border/60 to-transparent p-3 sm:p-4">
  <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-2">
  <BarChart3 className="size-4 text-primary" />

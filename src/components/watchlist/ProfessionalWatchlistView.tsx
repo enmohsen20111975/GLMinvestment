@@ -226,7 +226,7 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
  
  {/* TradingView Integration */}
  {item.type === 'stock' && (
- <div className="bg-gradient-to-r from-primary to-purple-50 dark:from-primary/20 dark:to-purple-950/20 p-3 rounded-lg">
+ <div className="from-primary to-purple-50 dark:dark:to-purple-950/20 p-3 rounded-lg">
  <div className="flex items-center gap-2 mb-2">
  <Zap className="h-4 w-4 text-whale" />
  <span className="font-medium text-sm">TradingView</span>

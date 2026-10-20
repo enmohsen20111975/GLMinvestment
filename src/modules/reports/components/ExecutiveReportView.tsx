@@ -977,7 +977,7 @@ export function ExecutiveReportView({
  onClick={handleExportPng}
  disabled={exporting || loading}
  size="sm"
- className="h-10 px-4 text-sm font-bold bg-gradient-to-r from-warning to-warning hover:from-warning hover:to-warning text-black shadow-lg shadow-amber-500/20"
+ className="h-10 px-4 text-sm font-bold from-warning to-warning hover:from-warning hover:to-warning text-black shadow-lg shadow-amber-500/20"
  >
  <Download className="w-4 h-4 ml-1.5" />
  تصدير PNG 📸
@@ -1011,7 +1011,7 @@ export function ExecutiveReportView({
  className={cn(
  'px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 border flex-shrink-0 whitespace-nowrap',
  days === opt.value
- ? 'bg-gradient-to-r from-warning to-warning text-black border-warning shadow-md shadow-amber-500/30'
+ ? 'from-warning to-warning text-black border-warning shadow-md shadow-amber-500/30'
  : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
  )}
  >
@@ -1170,7 +1170,7 @@ export function ExecutiveReportView({
  {/* ════════════════ MAIN REPORT (PNG snapshot target) ════════════════ */}
  <div
  ref={reportContainerRef}
- className="relative max-w-6xl mx-auto rounded-3xl bg-gradient-to-b from-primary/10 via-card to-muted border-2 border-warning/25 text-foreground shadow-2xl overflow-hidden"
+ className="relative max-w-6xl mx-auto rounded-3xl via-card to-muted border-2 border-warning/25 text-foreground shadow-2xl overflow-hidden"
  >
  {/* Decorative background glows — subtle, not overwhelming */}
  <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-warning/8 blur-[140px] pointer-events-none rounded-full" />
@@ -1734,7 +1734,7 @@ export function ExecutiveReportView({
  {/* Proportion bar */}
  <div className="h-5 w-full bg-card rounded-full overflow-hidden flex border border-white/10">
  <div
- className="h-full bg-gradient-to-l from-profit to-whale transition-all duration-1000 flex items-center justify-center"
+ className="h-full from-profit to-whale transition-all duration-1000 flex items-center justify-center"
  style={{ width: `${winRate}%` }}
  >
  {winRate > 15 && (
@@ -1744,7 +1744,7 @@ export function ExecutiveReportView({
  )}
  </div>
  <div
- className="h-full bg-gradient-to-l from-loss to-loss transition-all duration-1000 flex items-center justify-center"
+ className="h-full from-loss to-loss transition-all duration-1000 flex items-center justify-center"
  style={{ width: `${100 - winRate}%` }}
  >
  {100 - winRate > 15 && (

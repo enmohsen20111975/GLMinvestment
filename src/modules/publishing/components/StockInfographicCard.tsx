@@ -837,13 +837,13 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
  <div
  style={{
  width: `${buyPct}%`,
- background: 'linear-gradient(90deg, #059669, #10b981)',
+ background: 'transparent',
  }}
  />
  <div
  style={{
  width: `${100 - buyPct}%`,
- background: 'linear-gradient(90deg, #ef4444, #dc2626)',
+ background: 'transparent',
  }}
  />
  </div>

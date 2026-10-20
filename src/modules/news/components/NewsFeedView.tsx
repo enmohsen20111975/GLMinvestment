@@ -126,7 +126,7 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
  (e.target as HTMLElement).style.display = 'none';
  }}
  />
- <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 text-foreground text-xs">
+ <div className="absolute inset-0 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 text-foreground text-xs">
  <span>{t('news.feed.imageFromSource', { source })}</span>
  <span className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded">
  <Maximize2 className="w-3.5 h-3.5" /> {t('news.feed.zoom')}

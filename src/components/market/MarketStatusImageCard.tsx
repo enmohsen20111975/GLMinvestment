@@ -452,7 +452,7 @@ export const MarketStatusImageCard = forwardRef<
  >
  <div
  style={{
- background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+ background: 'transparent',
  color: '#fff',
  padding: '10px 14px',
  fontSize: 14,
@@ -496,7 +496,7 @@ export const MarketStatusImageCard = forwardRef<
  >
  <div
  style={{
- background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+ background: 'transparent',
  color: '#fff',
  padding: '10px 14px',
  fontSize: 14,

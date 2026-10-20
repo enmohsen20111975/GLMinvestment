@@ -108,7 +108,7 @@ export function ShariaStockCard({ ticker, variant = 'default', className }: Shar
  return (
  <Card
  className={cn(
- 'border-profit bg-gradient-to-b from-profit/40 to-background /10',
+ 'border-profit to-background /10',
  className,
  )}
  >

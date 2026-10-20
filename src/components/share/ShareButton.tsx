@@ -73,7 +73,7 @@ function ShareCard({
  style={{
  width: '600px',
  padding: '32px',
- background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+ background: 'transparent',
  borderRadius: '16px',
  fontFamily: 'Arial, sans-serif',
  direction: 'rtl',
@@ -86,7 +86,7 @@ function ShareCard({
  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
  <div style={{
  width: '48px', height: '48px', borderRadius: '12px',
- background: 'linear-gradient(135deg, #059669, #0d9488)',
+ background: 'transparent',
  display: 'flex', alignItems: 'center', justifyContent: 'center',
  color: 'white', fontWeight: 'bold', fontSize: '18px',
  }}>
@@ -109,7 +109,7 @@ function ShareCard({
  <div style={{ textAlign: 'left' }}>
  <div style={{
  padding: '6px 16px', borderRadius: '20px',
- background: 'linear-gradient(135deg, #059669, #0d9488)',
+ background: 'transparent',
  color: 'white', fontWeight: 'bold', fontSize: '13px',
  }}>
  دليل الاستثمار

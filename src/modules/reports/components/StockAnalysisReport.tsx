@@ -408,10 +408,10 @@ function CoverPageHeader({
  const actionBg = actionColors[rec?.action ?? 'hold'] ?? 'from-slate-600 to-slate-500 text-foreground';
  return (
  <div
- className="relative overflow-hidden rounded-2xl border border-warning/20 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
+ className="relative overflow-hidden rounded-2xl border border-warning/20 from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
  dir="rtl"
  >
- <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
+ <div className="absolute top-0 right-0 left-0 h-[3px] from-warning via-warning to-warning" />
  {/* Big ticker + name */}
  <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
  <div className="flex-1 min-w-0">
@@ -433,7 +433,7 @@ function CoverPageHeader({
  {rec && (
  <div
  className={cn(
- 'px-4 py-2 rounded-xl text-sm font-extrabold bg-gradient-to-l shadow-lg',
+ 'px-4 py-2 rounded-xl text-sm font-extrabold shadow-lg',
  actionBg,
  )}
  >
@@ -813,7 +813,7 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
 function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  const rec = analysis.recommendation;
  return (
- <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-[#0d1320] to-[#10162a] print:break-inside-avoid">
+ <Card className="overflow-hidden border-warning/20 from-[#0d1320] to-[#10162a] print:break-inside-avoid">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Shield className="w-5 h-5" />
@@ -1107,7 +1107,7 @@ export function StockAnalysisReport() {
  {/* Header bar */}
  <div className="flex items-center justify-between flex-wrap gap-3 border-b border-slate-700/40 pb-3">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-profit flex items-center justify-center">
+ <div className="w-10 h-10 rounded-xl from-warning to-profit flex items-center justify-center">
  <Activity className="w-5 h-5 text-[#0a0e1a]" strokeWidth={2.5} />
  </div>
  <div>

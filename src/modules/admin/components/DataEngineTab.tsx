@@ -502,7 +502,7 @@ export function DataEngineTab() {
  </div>
 
  {/* Run All */}
- <div className="bg-gradient-to-br from-profit to-primary rounded-xl p-4 border-2 border-profit shadow-sm">
+ <div className="from-profit to-primary rounded-xl p-4 border-2 border-profit shadow-sm">
  <div className="flex items-center justify-between mb-3">
  <Zap className="w-6 h-6 text-profit" />
  </div>

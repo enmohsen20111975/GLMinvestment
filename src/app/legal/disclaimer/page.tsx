@@ -13,7 +13,7 @@ export default function DisclaimerPage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-l from-amber-600 to-amber-800 px-8 py-6">
+          <div className="from-amber-600 to-amber-800 px-8 py-6">
             <h1 className="text-3xl font-bold text-white">إخلاء المسؤولية</h1>
             <p className="text-amber-100 mt-2">آخر تحديث: مايو 2025</p>
           </div>

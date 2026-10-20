@@ -293,7 +293,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
  className="w-full min-h-screen overflow-y-auto bg-background text-foreground p-2 md:p-5 pb-28 space-y-5"
  >
  <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
- <div className="border-b border-border bg-gradient-to-r from-profit via-background to-sky-50/20 dark:via-card dark:to-sky-950/20 px-4 py-4 md:px-5 md:py-5">
+ <div className="border-b border-border from-profit via-background to-sky-50/20 dark:via-card dark:to-sky-950/20 px-4 py-4 md:px-5 md:py-5">
  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
  <div className="space-y-2">
  <div className="flex items-center gap-2 text-profit">

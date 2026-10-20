@@ -223,7 +223,7 @@ function ProofPredictionsTableView({
  return (
  <div className="overflow-x-auto rounded-xl border border-whale bg-card shadow-sm">
  <table className="w-full text-sm min-w-[1180px] border-collapse">
- <thead className="bg-gradient-to-r from-whale/10 via-profit/10 to-whale/10 text-foreground font-semibold border-b border-whale ">
+ <thead className="text-foreground font-semibold border-b border-whale ">
  <tr>
  <th className="p-3 text-center font-medium w-12">#</th>
  <th className="p-3 text-right font-medium">السهم والرمز</th>
@@ -676,7 +676,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  return (
  <div className="space-y-4">
  {/* 📢 ترويسة التوثيق وإثبات مصداقية التوقعات */}
- <Card className="border-2 border-whale/20 bg-gradient-to-r from-whale via-profit to-whale dark:from-whale/40 /40 dark:to-whale/40 shadow-sm">
+ <Card className="border-2 border-whale/20 from-whale via-profit to-whale dark:/40 dark:shadow-sm">
  <CardContent className="p-4 space-y-3">
  <div className="flex items-center justify-between gap-3 flex-wrap">
  <div>
@@ -824,7 +824,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  telegramMarket={MARKET_CODES[market]}
  accentColor="#0d9488"
  borderClass="border-whale"
- bgClass="bg-gradient-to-br from-whale via-profit to-whale/40"
+ bgClass="from-whale via-profit "
  hasData={filteredCombinedStocks.length > 0}
  emptyHint="لا توجد توقعات متاحة حالياً"
  >

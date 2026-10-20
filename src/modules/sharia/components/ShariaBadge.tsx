@@ -346,7 +346,7 @@ function ShariaBadgePopoverBody({
  return (
  <div className="text-xs">
  {/* Header */}
- <div className="bg-gradient-to-l from-profit to-profit text-profit p-2.5 rounded-t-md">
+ <div className="from-profit to-profit text-profit p-2.5 rounded-t-md">
  <div className="flex items-center gap-1.5">
  <ShieldCheck className="w-3.5 h-3.5" />
  <span className="font-bold">التوافق الشرعي — {ticker}</span>
